@@ -1,36 +1,5 @@
 /*
- * Coque Live — cockpits opérationnels temps réel (domaine « Live »).
- * Activée par navigation-policy-v4 : body.kmc-shell-live. Présentation seule :
- * aucun comportement, aucune donnée. Les écrans de gestion gardent la coque claire.
+ * Coque Live — domaine « Live » (body.kmc-shell-live, posée par navigation-policy-v4).
+ * Les écrans Live utilisent la coque claire standard : aucune surcharge de couleur ici.
+ * La classe reste le point d'ancrage si un écran Live a besoin d'une règle de mise en page.
  */
-
-body.kmc-shell-live{
-  background:#07111F !important;
-  color:#E4ECF6;
-}
-
-/* Menu latéral et logo : coque standard (identique aux autres rubriques). */
-
-/* Barre du haut, recherche, marché, compte */
-body.kmc-shell-live .kmc-admin-topbar{
-  background:#07111F !important;
-  border-bottom:1px solid #14263B !important;
-  box-shadow:none !important;
-}
-body.kmc-shell-live .kmc-admin-search{background:#0B1828 !important;border-color:#1D3148 !important}
-body.kmc-shell-live .kmc-admin-search:focus-within{border-color:#2F80ED !important;box-shadow:0 0 0 2px rgb(47 128 237 / .18) !important}
-body.kmc-shell-live .kmc-admin-search-input{color:#E4ECF6 !important;background:transparent !important}
-body.kmc-shell-live .kmc-admin-search-input::placeholder{color:#6F849D}
-body.kmc-shell-live .kmc-admin-search-icon{color:#6F849D}
-body.kmc-shell-live .kmc-admin-topbar .kmc-admin-market-select,
-body.kmc-shell-live .kmc-admin-topbar .kmc-admin-account{background:#0B1828 !important;color:#C9D6E6 !important;border-color:#1D3148 !important}
-
-/* Onglets N2 (quand un domaine Live porte plusieurs cockpits) */
-body.kmc-shell-live .kmc-admin-domain-tabs{background:#07111F !important;border-bottom:1px solid #14263B !important}
-body.kmc-shell-live .kmc-admin-domain-tab{color:#9FB2C8 !important}
-body.kmc-shell-live .kmc-admin-domain-tab:hover,
-body.kmc-shell-live .kmc-admin-domain-tab:focus-visible{color:#F3F7FC !important;background:#0D1D2F !important}
-body.kmc-shell-live .kmc-admin-domain-tab.is-active{color:#4C9DFF !important;border-bottom-color:#4C9DFF !important;background:transparent !important}
-
-/* Contenu */
-body.kmc-shell-live #canonical-admin-root{background:#07111F !important}

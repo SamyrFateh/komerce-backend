@@ -98,14 +98,15 @@ test('le moteur ne contient aucune écriture : GET uniquement', () => {
   expect(source).not.toMatch(/method:\s*'(POST|PUT|PATCH|DELETE)'/);
 });
 
-test('live-kit.css : lignes de tableau et tuiles gardent le gabarit noir (calque legacy neutralisé)', () => {
+test('live-kit.css : lignes de tableau et tuiles gardent le gabarit clair (calque legacy neutralisé)', () => {
   const css = fs.readFileSync(require.resolve('../../public/dashboards/canonical/css/live-kit.css'), 'utf8');
   expect(css).toContain('.lk-table tbody tr');
-  expect(css).toContain('background:#0A1625 !important');
+  expect(css).toContain('background:#FFFFFF !important');
+  expect(css).not.toMatch(/#0A1625|#0B1828|#07111F/i);
   expect(css).toContain('.lk-flow-track');
 });
 
-test('moteur : une première lecture en erreur garde la coque noire et affiche l’erreur sous les onglets', async () => {
+test('moteur : une première lecture en erreur garde la coque et affiche l’erreur sous les onglets', async () => {
   const views = { home:{ tab:() => 'a', load:async () => { throw new Error('Erreur interne du serveur'); }, render:() => ({ hero:'', body:'' }) } };
   const attrs = {};
   const root = { className:'', innerHTML:'', setAttribute:(k, v) => { attrs[k] = v; }, addEventListener() {}, querySelector:() => null };
@@ -182,4 +183,34 @@ test('LIVE-02 : plus de 3 intervalles sans lecture réussie → l’écran se d�
     await tick(); await new Promise(r => setImmediate(r));
     expect(root.attrs['data-live-stale']).toBeUndefined();
   } finally { Date.now = realNow; }
+});
+
+test('processBoard : une pastille par étape, flèches entre étapes, cartes colorées par état, colonne vide explicite', () => {
+  const { kit } = loadKit();
+  const html = kit.processBoard([
+    { label:'À préparer', icon:'▤', hue:'blue', count:3, tone:'attention', href:'/a', cards:[
+      { label:'KMC-1', sub:'Client <1>', href:'/o/1', tone:'blocked' }, { label:'KMC-2', tone:'attention' }, { label:'KMC-3' },
+    ], more:{ href:'/a', label:'Voir les 3 commandes →' } },
+    { label:'Relais', icon:'⌂', hue:'green', count:0, cards:[], countLabel:'Aucun colis' },
+  ]);
+  expect((html.match(/lk-pb-stage"/g) || []).length).toBe(2);
+  expect((html.match(/lk-pb-arrow/g) || []).length).toBe(1);
+  expect(html).toContain('lk-pb-circle is-blue is-attention');
+  expect(html).toContain('lk-pb-circle is-green"');
+  expect(html).toContain('lk-pb-card is-blocked');
+  expect(html).toContain('lk-pb-card is-attention');
+  expect(html).toContain('lk-pb-card is-ok');
+  expect(html).toContain('Client &lt;1&gt;');
+  expect(html).toContain('href="/o/1" data-cockpit-nav');
+  expect(html).toContain('Voir les 3 commandes →');
+  expect(html).toContain('<div class="lk-pb-empty">Aucun colis</div>');
+  expect(html).toContain('lk-pb-head"><span');
+});
+
+test('processBoard : repli par défaut (teinte, icône, texte vide)', () => {
+  const { kit } = loadKit();
+  const html = kit.processBoard([{ label:'X', count:0 }]);
+  expect(html).toContain('lk-pb-circle is-blue');
+  expect(html).toContain('>●<');
+  expect(html).toContain('Rien à traiter');
 });

@@ -47,7 +47,7 @@ async function mountShell(page, { role = 'admin', surface = 'import-runtime', pa
 
 const lum = (c) => c.match(/\d+/g).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
 
-test.describe('Coque Live — menu dédié et noir complet', () => {
+test.describe('Coque Live — menu dédié, coque claire', () => {
   test('le menu latéral porte une entrée « Live » distincte d’Opérations', async ({ page }) => {
     await mountShell(page);
     const links = await page.$$eval('.kmc-admin-primary-link', (els) => els.map((el) => ({
@@ -63,45 +63,21 @@ test.describe('Coque Live — menu dédié et noir complet', () => {
     expect(links.find((l) => l.id === 'flow-operations').active).toBe(false);
   });
 
-  test('barre du haut, recherche et contenu sont noirs (le menu garde la coque standard)', async ({ page }) => {
+  test('la coque Live est claire et identique à celle des autres rubriques (aucun fond noir)', async ({ page }) => {
+    const surfaces = () => page.evaluate(() => {
+      const c = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : null; };
+      return { body: c('body'), topbar: c('.kmc-admin-topbar'), search: c('.kmc-admin-search'), root: c('#canonical-admin-root'), tabs: c('.kmc-admin-domain-tabs') };
+    });
     await mountShell(page);
     await expect(page.locator('body')).toHaveClass(/kmc-shell-live/);
-    const bg = await page.evaluate(() => {
-      const c = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : null; };
-      return {
-        body: c('body'), topbar: c('.kmc-admin-topbar'),
-        search: c('.kmc-admin-search'), root: c('#canonical-admin-root'), tabs: c('.kmc-admin-domain-tabs'),
-      };
-    });
-    for (const [name, value] of Object.entries(bg)) {
+    const live = await surfaces();
+    for (const [name, value] of Object.entries(live)) {
       if (value === null) continue;
-      expect(lum(value), `${name} = ${value}`).toBeLessThan(40);
+      expect(lum(value), `${name} = ${value}`).toBeGreaterThan(200);
     }
-    expect(bg.topbar).not.toBeNull();
-  });
-
-  test('pas de bordure orange claire sous la barre du haut, texte lisible', async ({ page }) => {
-    await mountShell(page);
-    const info = await page.evaluate(() => {
-      const top = getComputedStyle(document.querySelector('.kmc-admin-topbar'));
-      const input = getComputedStyle(document.querySelector('.kmc-admin-search-input'));
-      return { border: top.borderBottomColor, width: parseFloat(top.borderBottomWidth), text: input.color };
-    });
-    expect(info.width).toBeLessThanOrEqual(1);
-    expect(lum(info.border)).toBeLessThan(80);
-    expect(lum(info.text)).toBeGreaterThan(150);
-  });
-
-  test('aucune grande surface blanche dans la page Live', async ({ page }) => {
-    await mountShell(page);
-    const info = await page.evaluate(() => {
-      const whites = [...document.querySelectorAll('body *')].filter((el) => {
-        const r = el.getBoundingClientRect();
-        return r.width > 300 && r.height > 30 && getComputedStyle(el).backgroundColor === 'rgb(255, 255, 255)';
-      }).map((el) => el.className || el.tagName);
-      return { whites };
-    });
-    expect(info.whites).toEqual([]);
+    await mountShell(page, { surface: 'operations', pathname: '/admin/operations' });
+    const ops = await surfaces();
+    for (const key of ['body']) expect(live[key]).toBe(ops[key]);
   });
 
   test('le menu latéral Live a la même largeur et les mêmes couleurs que celui des autres rubriques', async ({ page }) => {

@@ -63,7 +63,7 @@ test.describe('Cockpit Hub — navigation canonique', () => {
     await mountHub(page);
     await expect(page.locator('.kir-hero h1')).toContainText('Suivi du Hub');
     await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
-    await expect(page.locator('.kir-run-flow-step')).toHaveCount(4);
+    await expect(page.locator('.lk-pb-stage')).toHaveCount(4);
     await expect(page.locator('.kir-run-truth-grid > *')).toHaveCount(4);
     await expect(page.locator('.lk-signals')).toContainText('4 cash à sécuriser');
     await expect(page.locator('.lk-block tbody tr')).toHaveCount(3);
@@ -134,7 +134,7 @@ test.describe('Cockpit Hub — navigation canonique', () => {
     test(`responsive ${name} : aucun débordement`, async ({ page }) => {
       await mountHub(page);
       await page.setViewportSize({ width, height });
-      await expect(page.locator('.kir-run-flow-step')).toHaveCount(4);
+      await expect(page.locator('.lk-pb-stage')).toHaveCount(4);
       const geo = await page.evaluate(() => ({ scroll:document.documentElement.scrollWidth, inner:window.innerWidth,
         blocks:[...document.querySelectorAll('.kir-run-flow, .kir-run-truth, .lk-block')].map((el) => Math.round(el.getBoundingClientRect().right)) }));
       expect(geo.scroll).toBeLessThanOrEqual(geo.inner);

@@ -22,7 +22,7 @@
 (function initHubLive(global) {
   const kit = global.KomerceLiveKit;
   if (!kit) throw new Error('live_kit_missing');
-  const { esc, num, fmtDate, fmtKmf, ageLabel, queryString, flowTrack, tiles, table, pager } = kit;
+  const { esc, num, fmtDate, fmtKmf, ageLabel, queryString, processBoard, tiles, table, pager } = kit;
 
   const BASE = '/admin/hub-live';
   const PAGE_SIZE = 25;
@@ -89,16 +89,23 @@
     const incidents = dash.incidents || {};
     const blockedTotal = num(data?.blocked?.pagination?.total);
     const urgent = num(o.urgent);
-    const steps = [
-      { label:'À préparer', count:`${num(o.to_prepare)} commande${num(o.to_prepare) > 1 ? 's' : ''}`, n:num(o.to_prepare), href:queueUrl('to_prepare') },
-      { label:'En préparation', count:`${num(o.in_preparation)} commande${num(o.in_preparation) > 1 ? 's' : ''}`, n:num(o.in_preparation), href:queueUrl('preparation') },
-      { label:'Expédiées', count:`${num(o.shipped_total)} commande${num(o.shipped_total) > 1 ? 's' : ''}`, n:num(o.shipped_total), href:queueUrl('ready') },
-      { label:'Disponibles au relais', count:`${num(parcels.at_relay)} colis`, n:num(parcels.at_relay), href:null },
+    const asCards = (list, tab) => (Array.isArray(list?.data) ? list.data : []).map(order => ({
+      label:order.reference,
+      sub:order.client_name || order.relais_name || '',
+      href:orderUrl(order.id, tab),
+      tone:num(order.open_incidents) > 0 ? 'blocked' : order.is_urgent ? 'attention' : 'ok',
+    }));
+    const more = (n, shown, tab) => (n > shown ? { href:queueUrl(tab), label:`Voir les ${n} commandes →` } : null);
+    const stages = [
+      { label:'À préparer', icon:'▤', hue:'blue', count:num(o.to_prepare), tone:urgent > 0 ? 'attention' : 'ok', href:queueUrl('to_prepare'),
+        cards:asCards(data?.first, 'to_prepare'), more:more(num(o.to_prepare), asCards(data?.first).length, 'to_prepare'), countLabel:'Aucune commande à préparer' },
+      { label:'En préparation', icon:'▣', hue:'violet', count:num(o.in_preparation), href:queueUrl('preparation'),
+        cards:asCards(data?.inPrep, 'preparation'), more:more(num(o.in_preparation), asCards(data?.inPrep).length, 'preparation'), countLabel:'Aucune commande en préparation' },
+      { label:'Expédiées', icon:'➤', hue:'teal', count:num(o.shipped_total), href:queueUrl('ready'),
+        cards:asCards(data?.shipped, 'ready'), more:more(num(o.shipped_total), asCards(data?.shipped).length, 'ready'), countLabel:'Aucune expédition' },
+      { label:'Disponibles au relais', icon:'⌂', hue:'green', count:num(parcels.at_relay),
+        cards:[], countLabel:`${num(parcels.at_relay)} colis au relais` },
     ];
-    const firstWork = steps.findIndex(step => step.n > 0);
-    steps.forEach((step, index) => {
-      step.state = index === 0 && urgent > 0 ? 'attention' : index === firstWork ? 'running' : step.n > 0 ? 'done' : 'pending';
-    });
     const title = urgent > 0
       ? `${urgent} commande${urgent > 1 ? 's' : ''} en attente depuis plus de 48 h`
       : num(o.to_prepare) + num(o.in_preparation) > 0 ? 'Le Hub prépare les commandes' : 'Aucune commande à traiter';
@@ -120,7 +127,7 @@
       </header>`,
       body: `<section class="kir-run-flow is-live" aria-label="Flux du Hub">
           <div class="kir-run-flow-head"><div><span class="kir-section-kicker">FLUX DU HUB</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div></div>
-          ${flowTrack(steps)}
+          ${processBoard(stages)}
         </section>
         ${tiles('RÉSULTAT DU HUB', [
           { label:'À préparer', value:num(o.to_prepare), sub:urgent > 0 ? `dont ${urgent} urgente${urgent > 1 ? 's' : ''}` : 'commandes', href:queueUrl('to_prepare'), cls:'is-received' },
@@ -208,12 +215,14 @@
     overview:{
       tab:() => 'suivi',
       async load(p, api) {
-        const [dash, first, blocked] = await Promise.all([
+        const [dash, first, blocked, inPrep, shipped] = await Promise.all([
           api('/api/hub-dash/dashboard'),
           api('/api/hub-dash/queue?tab=to_prepare&limit=5&projection=live'),
           api('/api/hub-dash/queue?tab=blocked&limit=1&projection=live'),
+          api('/api/hub-dash/queue?tab=preparation&limit=5&projection=live'),
+          api('/api/hub-dash/queue?tab=ready&limit=5&projection=live'),
         ]);
-        return { dash, first, blocked, fetched_at:dash?.generated_at || new Date().toISOString() };
+        return { dash, first, blocked, inPrep, shipped, fetched_at:dash?.generated_at || new Date().toISOString() };
       },
       render:renderOverview,
       nav:() => ({ crumbs:[], back:null }),

@@ -88,6 +88,28 @@
     }).join('')}</div>`;
   }
 
+  // Chaîne de processus (même langage visuel que « Où en sont les commandes ? ») : une pastille
+  // par étape gouvernante, reliées par des flèches, et sous chacune les objets réellement présents.
+  // stage : { label, icon, hue, count, countLabel, href, tone, cards:[{ label, sub, href, tone }], more:{ href, label } }
+  function processBoard(stages) {
+    const card = c => {
+      const body = `<span class="lk-pb-dot"></span><span class="lk-pb-card-text"><strong>${esc(c.label)}</strong>${c.sub ? `<small>${esc(c.sub)}</small>` : ''}</span>`;
+      const cls = `lk-pb-card is-${c.tone || 'ok'}`;
+      return c.href ? `<a class="${cls}" href="${c.href}" data-cockpit-nav>${body}</a>` : `<div class="${cls}">${body}</div>`;
+    };
+    return `<div class="lk-pb" role="list">${stages.map((stage, index) => {
+      const head = `<span class="lk-pb-circle is-${stage.hue || 'blue'}${stage.tone === 'attention' ? ' is-attention' : ''}" aria-hidden="true">${esc(stage.icon || '●')}</span>
+        <strong class="lk-pb-label">${esc(stage.label)}</strong>
+        <span class="lk-pb-count">${esc(String(stage.count))}</span>`;
+      const headLink = stage.href ? `<a class="lk-pb-head" href="${stage.href}" data-cockpit-nav>${head}</a>` : `<div class="lk-pb-head">${head}</div>`;
+      const cards = (stage.cards || []).map(card).join('');
+      const more = stage.more ? `<a class="lk-pb-more" href="${stage.more.href}" data-cockpit-nav>${esc(stage.more.label)}</a>` : '';
+      const empty = !cards ? `<div class="lk-pb-empty">${esc(stage.countLabel || 'Rien à traiter')}</div>` : '';
+      return `<div class="lk-pb-stage" role="listitem">${index > 0 ? '<span class="lk-pb-arrow" aria-hidden="true">→</span>' : ''}${headLink}
+        <div class="lk-pb-col">${cards}${empty}${more}</div></div>`;
+    }).join('')}</div>`;
+  }
+
   function tiles(label, items) {
     return `<section class="kir-run-truth" aria-label="${esc(label)}">
       <div class="kir-run-truth-head"><span class="kir-section-kicker">${esc(label)}</span></div>
@@ -260,6 +282,6 @@
   }
 
   global.KomerceLiveKit = Object.freeze({
-    createCockpit, esc, num, fmtDate, fmtKmf, ageLabel, queryString, flowTrack, tiles, table, pager,
+    createCockpit, esc, num, fmtDate, fmtKmf, ageLabel, queryString, flowTrack, processBoard, tiles, table, pager,
   });
 })(typeof window !== 'undefined' ? window : globalThis);
