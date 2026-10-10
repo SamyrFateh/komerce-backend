@@ -1095,3 +1095,27 @@
   color: var(--kmc-ink, #0f172a);
   border-bottom-color: var(--kmc-ink, #0f172a);
 }
+
+/* Catalogue — chaîne de curation (visuel seul) et hiérarchie des actions */
+.kmc-catalog-chain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 28px;margin:0 0 14px;padding:0;list-style:none}
+.kmc-catalog-chain-stage{position:relative;display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #E2E8F0;border-radius:12px;background:#fff;min-width:0}
+.kmc-catalog-chain-stage+.kmc-catalog-chain-stage::before{content:"→";position:absolute;left:-23px;top:50%;transform:translateY(-50%);width:18px;text-align:center;color:#CBD5E1;font-size:15px}
+.kmc-catalog-chain-stage.is-current::before,.kmc-catalog-chain-stage.is-done::before{color:#D4A63C}
+.kmc-catalog-chain-icon{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#FBBF24,#D97706);color:#fff;font-size:15px;font-weight:800}
+.kmc-catalog-chain-stage.is-ok .kmc-catalog-chain-icon{background:linear-gradient(135deg,#4ADE80,#16A34A)}
+.kmc-catalog-chain-label{flex:1;min-width:0;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#0F172A}
+.kmc-catalog-chain-count{flex:none;min-width:26px;padding:2px 8px;border:1px solid #E2E8F0;border-radius:999px;background:#fff;color:#0F172A;font-size:13px;font-weight:800;text-align:center}
+.kmc-catalog-chain-stage.is-current{border-color:#93B4F5;background:#F5F9FF;box-shadow:0 0 0 4px rgb(37 99 235 / .10)}
+.kmc-catalog-chain-stage.is-current.is-warn{border-color:#F3C46B;background:#FFFBF0;box-shadow:0 0 0 4px rgb(245 158 11 / .16)}
+.kmc-catalog-chain-stage.is-current .kmc-catalog-chain-label{color:#B45309}
+.kmc-catalog-chain-stage.is-current.is-ok .kmc-catalog-chain-label{color:#15803D}
+.kmc-catalog-chain-stage.is-pending{border-style:dashed;background:#FCFCFD}
+.kmc-catalog-chain-stage.is-pending .kmc-catalog-chain-icon{background:#E2E8F0;color:#94A3B8}
+.kmc-catalog-chain-stage.is-pending .kmc-catalog-chain-label,.kmc-catalog-chain-stage.is-pending .kmc-catalog-chain-count{color:#94A3B8}
+@media (max-width:760px){.kmc-catalog-chain{grid-template-columns:1fr;gap:10px}.kmc-catalog-chain-stage+.kmc-catalog-chain-stage::before{display:none}}
+.kmc-catalog-curation-table .kmc-workspace-action.is-approve{border-color:#15803D;background:linear-gradient(180deg,#22A559,#15803D);color:#fff;box-shadow:0 2px 8px rgb(21 128 61 / .22)}
+.kmc-catalog-curation-table .kmc-workspace-action.is-approve:hover:not(:disabled){box-shadow:0 5px 14px rgb(21 128 61 / .30)}
+.kmc-catalog-curation-table a.kmc-workspace-action.is-price{display:inline-flex;align-items:center;border-color:#1D5CD6;background:linear-gradient(180deg,#3B82F6,#1D5CD6);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgb(29 92 214 / .22)}
+.kmc-catalog-curation-table .kmc-workspace-action.is-danger{border-color:#F6C9CE;background:#fff;color:#B42318}
+.kmc-catalog-curation-table .kmc-workspace-action.is-danger:hover:not(:disabled){background:#FEF2F3;border-color:#E5848E}
+@media (prefers-reduced-motion:no-preference){.kmc-catalog-chain-stage.is-current{transition:box-shadow .2s}}

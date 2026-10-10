@@ -801,6 +801,40 @@
     return overlay;
   }
 
+  // Chaîne de curation : visuel seul. Les compteurs décrivent les lignes affichées (aucun filtre, aucune donnée nouvelle).
+  function renderCurationChain(doc, rows, page) {
+    const counts = { fr: 0, price: 0, ready: 0 };
+    rows.forEach(row => {
+      if (needsFrenchPreparation(row)) counts.fr += 1;
+      else if (!hasPublishablePrice(row)) counts.price += 1;
+      else counts.ready += 1;
+    });
+    const stages = [
+      { key: 'fr', icon: '✎', label: 'FR à préparer', count: counts.fr, tone: 'warn' },
+      { key: 'price', icon: '€', label: 'Prix à définir', count: counts.price, tone: 'warn' },
+      { key: 'ready', icon: '✓', label: 'Prêt à valider', count: counts.ready, tone: 'ok' },
+    ];
+    const firstWork = stages.findIndex(stage => stage.count > 0);
+    const chain = doc.createElement('ol');
+    chain.className = 'kmc-catalog-chain';
+    chain.setAttribute('aria-label', 'Parcours de curation');
+    stages.forEach((stage, index) => {
+      const state = index === firstWork ? 'current' : (stage.count > 0 ? 'done' : 'pending');
+      const item = doc.createElement('li');
+      item.className = `kmc-catalog-chain-stage is-${state} is-${stage.tone}`;
+      if (state === 'current') item.setAttribute('aria-current', 'step');
+      item.setAttribute('data-chain-stage', stage.key);
+      item.appendChild(text(doc, 'span', 'kmc-catalog-chain-icon', stage.icon));
+      item.appendChild(text(doc, 'strong', 'kmc-catalog-chain-label', stage.label));
+      item.appendChild(text(doc, 'span', 'kmc-catalog-chain-count', formatNumber(stage.count)));
+      chain.appendChild(item);
+    });
+    const shown = rows.length;
+    const total = Number(page && page.total) || shown;
+    if (total > shown) chain.setAttribute('data-chain-scope', `Compteurs sur les ${shown} lignes affichées`);
+    return chain;
+  }
+
   function renderApproval(rootNode, ui, doc, payload, context) {
     const slot = createSection(rootNode, ui, 'Produits à valider', 'Relisez, corrigez ou ajoutez les produits proposés.');
     const rows = payload.approval || [];
@@ -825,6 +859,7 @@
       summary.appendChild(text(doc, 'span', `kmc-workspace-feedback ${sourcingDecisionTone(key)}`, `${sourcingDecisionLabel(key)} · ${formatNumber(count)}`));
     });
     slot.appendChild(summary);
+    slot.appendChild(renderCurationChain(doc, rows, page));
     if (strategy.value_density_used === false) {
       slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Classement indicatif : signal sourcing + confiance + stock. Densité de valeur non utilisée tant qu’elle n’est pas calibrée.'));
     }
@@ -928,7 +963,7 @@
           actionContent.appendChild(prepare);
         }
       } else if (!priceReady) {
-        const pricing = text(doc, 'a', 'kmc-workspace-action', 'Définir le prix');
+        const pricing = text(doc, 'a', 'kmc-workspace-action is-price', 'Définir le prix');
         pricing.setAttribute('data-workspace-action', 'define-price');
         const pricingPath = `/admin/workspaces/pricing?product_ref=${encodeURIComponent(row.product_ref)}`;
         const returnTo = `/admin/workspaces/catalog?product_ref=${encodeURIComponent(row.product_ref)}`;
@@ -939,6 +974,7 @@
           ? 'Valider après relecture'
           : 'Ajouter à la sélection';
         const approve = makeButton(doc, approveLabel, 'approve');
+        approve.className += ' is-approve';
         approve.addEventListener('click', async () => {
           if (!context.confirm(`Ajouter ${row.product_ref} · ${row.name} à la sélection publiée ?`)) return;
           await runAction(context, approve, {
@@ -977,6 +1013,7 @@
       if (!mustPrepareFrench && priceReady) actionContent.appendChild(correct);
 
       const reject = makeButton(doc, 'Écarter', 'reject', true);
+      reject.className += ' is-danger';
       reject.addEventListener('click', () => {
         const reason = context.prompt(`Raison pour écarter ${row.product_ref}`);
         if (!reason || !reason.trim()) return;
