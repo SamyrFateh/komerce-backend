@@ -117,3 +117,10 @@ test('candidats : hiérarchie visuelle par classes, sans changer les valeurs aff
   expect(src).toContain("pillCell(row.state, 'state')");
   expect(src).toContain(' is-approve');
 });
+
+test('candidats : état et décision affichés en français (libellés mappés, valeur brute en repli)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/sourcing-workspace.js'), 'utf8');
+  expect(src).toContain("imported_to_catalog: 'Dans le catalogue'");
+  expect(src).toContain("test: 'À tester'");
+  expect(src).toContain('CANDIDATE_STATE_LABELS');
+});

@@ -39,6 +39,27 @@
     return node;
   }
 
+  const CANDIDATE_STATE_LABELS = {
+    raw_imported: 'Importé brut',
+    normalized: 'Normalisé',
+    scanned: 'Scanné',
+    test_ready: 'Prêt à tester',
+    watchlist: 'En surveillance',
+    imported_to_catalog: 'Dans le catalogue',
+    quarantined: 'En quarantaine',
+    rejected: 'Rejeté',
+    archived: 'Archivé',
+  };
+  const CANDIDATE_DECISION_LABELS = {
+    priority: 'Prioritaire',
+    test: 'À tester',
+    watch: 'À surveiller',
+    avoid: 'À éviter',
+    loss: 'Perte',
+    unknown: 'Non évalué',
+    excluded: 'Exclu',
+  };
+
   function td(doc, value) {
     const cell = doc.createElement('td');
     cell.textContent = value == null || value === '' ? '—' : String(value);
@@ -170,8 +191,9 @@
       // Hiérarchie visuelle seule : mêmes valeurs, classes de style (référence, produit, prix, pastilles).
       const pillCell = (value, kind) => {
         const cell = doc.createElement('td');
-        const label = value == null || value === '' ? '—' : String(value);
-        const tone = String(label).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const raw = value == null || value === '' ? '—' : String(value);
+        const tone = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const label = (kind === 'state' ? CANDIDATE_STATE_LABELS : CANDIDATE_DECISION_LABELS)[raw.toLowerCase()] || raw;
         cell.appendChild(text(doc, 'span', `kmc-pill is-${kind}-${tone}`, label));
         return cell;
       };
