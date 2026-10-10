@@ -50,7 +50,7 @@ describe('komerce-visual-canon-v1 — canon visuel validé (parité mocks)', () 
   });
 });
 
-test('le canon des cartes KPI couvre aussi les decision dashboards (Commandes)', () => {
+test('le canon des cartes KPI couvre aussi les decision dashboards (Commandes) et les métriques des workspaces', () => {
   const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/komerce-visual-canon-v1.css'), 'utf8');
-  expect(css).toContain(':is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard) .kmc-metric-card');
+  expect(css).toContain(':is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard, .kmc-workspace-metrics) .kmc-metric-card');
 });
