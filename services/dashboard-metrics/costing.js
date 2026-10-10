@@ -101,7 +101,7 @@ async function getCoutReel(filters = {}) {
     itemsWithData,
     completeness: itemsTotal === 0 ? 'provisional' : (itemsWithData === itemsTotal ? 'complete' : 'partial'),
     warning: itemsTotal > 0 && itemsWithData < itemsTotal
-      ? `Reel partiel : ${itemsWithData}/${itemsTotal} commandes ventilees`
+      ? `Réel partiel : ${itemsWithData}/${itemsTotal} commandes ventilées`
       : null,
   });
 }
@@ -242,7 +242,7 @@ async function getMargeConsolidee(filters = {}) {
       ? 'provisional'
       : (itemsWithData === itemsTotal ? 'complete' : 'partial'),
     warning: itemsWithData < itemsTotal
-      ? `${pct != null ? pct + '% sur ' : ''}${itemsWithData}/${itemsTotal} cmds finalisees (cost_status=actual)`
+      ? `${pct != null ? pct + '% sur ' : ''}${itemsWithData}/${itemsTotal} commandes finalisées (coûts réels)`
       : null,
   });
 }

@@ -94,7 +94,7 @@
       items.push({
         key: 'supplier-payments-review',
         label: 'Paiements fournisseur à revoir',
-        helper: 'État courant : ambigu, rejeté ou rapprochement mismatched — hors filtre période',
+        helper: 'État courant : ambigu, rejeté ou écart de rapprochement — hors filtre période',
         value: base.formatNumber(supplierReview.count, 0),
         tone: 'warning',
         icon: '!',
@@ -289,18 +289,27 @@
     const rows = Array.isArray(review.items) ? review.items : [];
     return rows.length
       ? { state: 'rows', message: null }
-      : { state: 'empty', message: 'Aucun paiement fournisseur ambigu, rejeté ou mismatched.' };
+      : { state: 'empty', message: 'Aucun paiement fournisseur ambigu, rejeté ou en écart de rapprochement.' };
   }
+
+  const PAYMENT_STATUS_LABELS = { ambiguous: 'ambigu', rejected: 'rejeté', pending: 'en attente', failed: 'échoué', succeeded: 'réussi' };
+  const RECONCILIATION_LABELS = { unverified: 'non vérifié', mismatched: 'écart constaté', matched: 'rapproché', pending: 'en cours' };
+  const REVIEW_REASON_LABELS = {
+    PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED: 'rapprochement à confirmer',
+    PAYMENT_REJECTED_REVIEW_REQUIRED: 'rejet à examiner',
+    PAYMENT_RECONCILIATION_MISMATCH: 'écart de rapprochement',
+  };
+  const frenchLabel = (labels, value) => labels[value] || (/^[A-Z0-9_]+$/.test(String(value)) ? 'motif à examiner' : value);
 
   function supplierPaymentReviewItems(payload, base) {
     const review = payload && payload.supplier_payment_review;
     const rows = review && Array.isArray(review.items) ? review.items : [];
     return rows.map(row => ({
-      title: `${row.provider || 'Provider'} · PO ${base.shortId(row.purchase_order_id)}`,
+      title: `${row.provider || 'Fournisseur'} · PO ${base.shortId(row.purchase_order_id)}`,
       helper: [
-        row.status || 'statut inconnu',
-        `rapprochement ${row.reconciliation_status || 'inconnu'}`,
-        row.review_reason || null,
+        row.status ? frenchLabel(PAYMENT_STATUS_LABELS, row.status) : 'statut inconnu',
+        `rapprochement ${row.reconciliation_status ? frenchLabel(RECONCILIATION_LABELS, row.reconciliation_status) : 'inconnu'}`,
+        row.review_reason ? frenchLabel(REVIEW_REASON_LABELS, row.review_reason) : null,
         `débit réel prouvé ${row.real_debit_verified === true ? 'oui' : 'non'}`,
         base.formatDate(row.updated_at),
       ].filter(Boolean).join(' · '),

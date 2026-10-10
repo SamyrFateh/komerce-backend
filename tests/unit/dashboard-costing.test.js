@@ -103,3 +103,10 @@ describe('dashboard-metrics/costing', () => {
     expect(result.data_quality.completeness).toBe('provisional');
   });
 });
+
+test('libellés de coûts en français accentué', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/dashboard-metrics/costing.js'), 'utf8');
+  expect(src).toContain('Réel partiel');
+  expect(src).toContain('commandes finalisées (coûts réels)');
+  expect(src).not.toContain('cost_status=actual)');
+});

@@ -222,14 +222,14 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(items).toHaveLength(2);
     expect(items[0]).toEqual(expect.objectContaining({
       title: 'cj · PO aaaaaaaa',
-      helper: expect.stringContaining('ambiguous · rapprochement unverified'),
+      helper: expect.stringContaining('ambigu · rapprochement non vérifié'),
       value: 'attendu 19.9900 USD · observé —',
       tone: 'warning',
     }));
     expect(items[0].helper).toContain('débit réel prouvé non');
     expect(items[1]).toEqual(expect.objectContaining({
       title: 'aliexpress · PO bbbbbbbb',
-      helper: expect.stringContaining('succeeded · rapprochement mismatched'),
+      helper: expect.stringContaining('réussi · rapprochement écart constaté'),
       value: 'attendu 88.0000 CNY · observé 90.0000 CNY',
       tone: 'critical',
     }));
