@@ -696,6 +696,7 @@ module.exports = {
       'tests/unit/canonical-market-access.test.js',
       'tests/unit/canonical-markets-decision.test.js',
       'tests/unit/markets-decision-bootstrap.test.js',
+      'tests/unit/markets-management.test.js',
       'tests/unit/canonical-navigation-policy-v3.test.js',
       'tests/unit/canonical-navigation-policy-v4-capability-gate.test.js',
       'tests/unit/canonical-operations-workspace-app.test.js',
