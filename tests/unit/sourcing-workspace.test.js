@@ -77,3 +77,10 @@ test('un type partenaire hors sourcing est refusé avant écriture', async () =>
   await expect(workspace.createSupplier({ name: 'Relay', partner_type: 'relais' }))
     .rejects.toMatchObject({ code: 'sourcing_partner_type_forbidden' });
 });
+
+test('timed mesure la durée de chaque lecture pour Server-Timing', async () => {
+  const timings = {};
+  await expect(workspace.timed(timings, 'lecture', Promise.resolve('ok'))).resolves.toBe('ok');
+  expect(typeof timings.lecture).toBe('number');
+  await expect(workspace.timed(null, 'sans-mesure', Promise.resolve(1))).resolves.toBe(1);
+});

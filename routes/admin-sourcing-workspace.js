@@ -55,6 +55,16 @@ function rejectForbiddenDimensions(req, res, next) {
 
 router.use(...guard, rejectForbiddenDimensions);
 
+function timed(timings, label, promise) {
+  const startedAt = Date.now();
+  return Promise.resolve(promise).finally(() => { timings[label] = Date.now() - startedAt; });
+}
+
+// « portfolio;dur=120, candidates;dur=40 » : visible dans l'onglet Réseau du navigateur (Timing).
+function serverTiming(timings) {
+  return Object.entries(timings).map(([name, ms]) => `${name};dur=${ms}`).join(', ');
+}
+
 function sendAction(res, action, result, status = 200) {
   res.status(status).json({ ok: true, action, result });
 }
@@ -73,10 +83,12 @@ function handleError(err, res, next) {
 router.get('/', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store');
+    const timings = {};
     const [payload, health] = await Promise.all([
-      workspace.buildWorkspace(),
-      sourcingHealth.buildHealthDashboard(),
+      workspace.buildWorkspace({ timings }),
+      timed(timings, 'health', sourcingHealth.buildHealthDashboard()),
     ]);
+    res.set('Server-Timing', serverTiming(timings));
     res.json({ ...payload, health });
   } catch (err) { handleError(err, res, next); }
 });
@@ -109,10 +121,11 @@ router.get('/import-cockpit', async (req, res, next) => {
     const requestedRun = req.query.run ? String(req.query.run) : null;
     if (requestedRun && !RUN_REF_RE.test(requestedRun)) return runNotFound(res);
 
+    const timings = {};
     const [lots, sourceControls, sourceRequests] = await Promise.all([
-      importLotRegistry.listLots({ limit: req.query.limit || 12 }),
-      workspace.listSourceControls(),
-      workspace.listSourceRequests(),
+      timed(timings, 'lots', importLotRegistry.listLots({ limit: req.query.limit || 12 })),
+      timed(timings, 'source_controls', workspace.listSourceControls()),
+      timed(timings, 'source_requests', workspace.listSourceRequests()),
     ]);
     const selectedRef = requestedRun || lots[0]?.run_ref || null;
     let selectedLot = selectedRef ? lots.find(lot => lot.run_ref === selectedRef) : null;
@@ -121,8 +134,8 @@ router.get('/import-cockpit', async (req, res, next) => {
 
     const [selected, runNav] = selectedRef
       ? await Promise.all([
-          importRuns.getRun(selectedRef),
-          importRuns.getRunNeighbors(selectedRef),
+          timed(timings, 'run', importRuns.getRun(selectedRef)),
+          timed(timings, 'run_nav', importRuns.getRunNeighbors(selectedRef)),
         ])
       : [null, { older_ref: null, newer_ref: null }];
     if (selectedRef && !selected) return runNotFound(res);
@@ -132,6 +145,7 @@ router.get('/import-cockpit', async (req, res, next) => {
       : lots;
 
     res.set('Cache-Control', 'no-store');
+    res.set('Server-Timing', serverTiming(timings));
     res.json({
       source_controls: sourceControls,
       source_requests: sourceRequests,

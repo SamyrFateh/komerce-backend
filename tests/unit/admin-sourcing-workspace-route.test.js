@@ -59,6 +59,7 @@ const mockCalls = {
 jest.mock('../../services/sourcing-workspace', () => ({
   SourcingWorkspaceError: class SourcingWorkspaceError extends Error {},
   buildWorkspace: (...args) => mockCalls.buildWorkspace(...args),
+  timed: (timings, label, promise) => Promise.resolve(promise).then((value) => { timings[label] = 1; return value; }),
   importCatalog: (...args) => mockCalls.importCatalog(...args),
   updatePortfolioProduct: (...args) => mockCalls.updatePortfolioProduct(...args),
   updateCandidate: (...args) => mockCalls.updateCandidate(...args),
@@ -129,6 +130,7 @@ test('grant sourcing ouvre une projection globale incluant la santé canonique',
   expect(mockCalls.buildWorkspace).toHaveBeenCalledTimes(1);
   expect(mockCalls.buildHealthDashboard).toHaveBeenCalledTimes(1);
   expect(res.body.health).toMatchObject({ schema_version: 'sourcing-health-dashboard-v1', state: { global: 'HEALTHY' } });
+  expect(res.headers['server-timing']).toContain('health;dur=');
 });
 
 test('role admin seul ne suffit jamais sans grant sourcing', async () => {

@@ -217,13 +217,21 @@ function buildSummary({ portfolio, candidates, imports, suppliers, sources }) {
   };
 }
 
-async function buildWorkspace() {
+// Mesure de chaque lecture (ms) pour l'en-tête Server-Timing : rend visible la section lente en prod.
+function timed(timings, label, promise) {
+  const startedAt = Date.now();
+  return Promise.resolve(promise).finally(() => {
+    if (timings) timings[label] = Date.now() - startedAt;
+  });
+}
+
+async function buildWorkspace({ timings = null } = {}) {
   const [portfolio, imports, candidates, suppliers, sources] = await Promise.all([
-    listPortfolio(),
-    listImports(),
-    listCandidates(),
-    listSourcingSuppliers(),
-    sourceAutopilot.listSources(),
+    timed(timings, 'portfolio', listPortfolio()),
+    timed(timings, 'imports', listImports()),
+    timed(timings, 'candidates', listCandidates()),
+    timed(timings, 'suppliers', listSourcingSuppliers()),
+    timed(timings, 'sources', sourceAutopilot.listSources()),
   ]);
   return {
     scope: { mode: 'global_sourcing' },
@@ -603,6 +611,7 @@ async function setSupplierActive(partnerRef, isActive) {
 }
 
 module.exports = {
+  timed,
   credentialStatus,
   configureCredentials,
   rotateCredentials,
