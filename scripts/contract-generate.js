@@ -550,6 +550,16 @@ const KNOWN_RESPONSES = {
   '/api/market-delegation/markets/{marketCode}/customs-shipments': {
     get: { fields: ['market_code','period','shipments','truncated','read_only'], source: 'test' }
   },
+  '/api/market-delegation/markets/{marketCode}/payment-accounts': {
+    get: { fields: ['market_code','accounts','read_only'], source: 'test' }
+  },
+  '/api/admin/market-payment-accounts/markets/{marketCode}': {
+    get: { fields: ['market_code','accounts'], source: 'test' },
+    post: { fields: ['account_id','market_code','status'], source: 'test' }
+  },
+  '/api/admin/market-payment-accounts/{accountId}/status': {
+    post: { fields: ['changed','account_id','status','previous_status'], source: 'test' }
+  },
   '/api/admin/markets/{marketCode}/assignment/status': {
     post: { fields: ['changed','assignment_id','status','previous_status'], source: 'test' }
   },

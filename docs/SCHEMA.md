@@ -167,6 +167,13 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
 <!-- schema-pending
+object: market_payment_accounts
+kind: table
+migration: 285
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Configuration de paiement par Market indépendante du prestataire : titulaire du compte, vendeur juridique, opérateur et entité supportant les remboursements distingués ; credentials_ref est une référence de coffre, jamais un secret ; ACTIVE exige référence, base juridique et vérification.
+-->
+<!-- schema-pending
 object: catalog_publication_decision_audit
 kind: table
 migration: 283

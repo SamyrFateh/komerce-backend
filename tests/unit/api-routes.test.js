@@ -37,3 +37,9 @@ test('monte /api/market-delegation/.../customs-shipments (douane du marché, lec
   expect(source).toContain("require('../routes/market-delegation-customs')");
   expect(source).toContain("app.use('/api/market-delegation', marketDelegationCustomsRouter)");
 });
+
+test('monte les comptes de paiement par Market (admin central + lecture Market)', () => {
+  expect(source).toContain("require('../routes/admin-market-payment-accounts')");
+  expect(source).toContain("app.use('/api/admin/market-payment-accounts', adminMarketPaymentAccountsRouter)");
+  expect(source).toContain("app.use('/api/market-delegation', marketDelegationPaymentAccountsRouter)");
+});
