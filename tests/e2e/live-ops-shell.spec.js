@@ -104,6 +104,18 @@ test.describe('Coque Live — menu dédié et noir complet', () => {
     expect(info.whites).toEqual([]);
   });
 
+  test('le menu latéral Live a la même largeur et les mêmes couleurs que celui des autres rubriques', async ({ page }) => {
+    const sidebar = () => page.evaluate(() => {
+      const nav = document.querySelector('body > .kmc-admin-navigation');
+      const cs = getComputedStyle(nav);
+      return { width: Math.round(nav.getBoundingClientRect().width), bg: cs.backgroundColor, border: cs.borderRightColor };
+    });
+    await mountShell(page);
+    const live = await sidebar();
+    await mountShell(page, { surface: 'operations', pathname: '/admin/operations' });
+    expect(live).toEqual(await sidebar());
+  });
+
   test('les écrans de gestion gardent la coque claire (pas de contamination)', async ({ page }) => {
     await mountShell(page, { surface: 'operations', pathname: '/admin/operations' });
     await expect(page.locator('body')).not.toHaveClass(/kmc-shell-live/);

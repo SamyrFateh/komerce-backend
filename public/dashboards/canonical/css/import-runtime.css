@@ -1615,62 +1615,7 @@ body.kmc-shell-v4:has(.kmc-import-runtime) #canonical-admin-root{
  * White page, larger native text, neutral source cards, almost no tinted fills.
  * Color is signal only: green health, red failure, amber human decision. */
 body.kmc-shell-v4:has(.kmc-import-runtime){
-  --kmc-shell-sidebar-width:220px;
-  padding-left:220px;
   background:#fff !important;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) > .kmc-admin-navigation{
-  width:220px;
-  background:#fff;
-  color:#0F172A;
-  border-right:1px solid #E2E8F0;
-  box-shadow:none;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-navigation-inner{
-  padding:0;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-navigation-identity{
-  min-height:96px;
-  padding:18px 22px 16px;
-  border-bottom:1px solid #E2E8F0;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-nav{
-  padding:14px 0;
-  gap:0;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link{
-  min-height:40px;
-  height:40px;
-  padding:0 22px;
-  gap:12px;
-  color:#64748B;
-  border-radius:0;
-  font-size:14px;
-  font-weight:400;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link:hover,
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link:focus-visible{
-  color:#0F172A;
-  background:#F8FAFC;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link.is-active{
-  color:#D97706;
-  background:#FFF7ED;
-  font-weight:500;
-  box-shadow:inset 2px 0 0 #F59E0B;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-icon{
-  color:currentColor;
-  font-size:14px;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-utility-nav{
-  padding:14px 22px 18px;
-  border-top:1px solid #E2E8F0;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-settings-link,
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
-  color:#64748B;
-  font-size:13px;
 }
 
 /* Legacy content begins close to the sidebar; no narrow centered island. */
@@ -2125,11 +2070,6 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 }
 
 @media(max-width:1180px){
-  body.kmc-shell-v4:has(.kmc-import-runtime){
-    --kmc-shell-sidebar-width:176px;
-    padding-left:176px;
-  }
-  body.kmc-shell-v4:has(.kmc-import-runtime) > .kmc-admin-navigation{width:176px}
   .kir-source-control{grid-template-columns:1fr}
   .kir-source-pill{max-width:none}
 }
@@ -2503,31 +2443,6 @@ body.kmc-shell-v4:has(.kmc-import-runtime){
 }
 body.kmc-shell-v4:has(.kmc-import-runtime) #canonical-admin-root{
   background:#07111F !important;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) > .kmc-admin-navigation{
-  background:#081421 !important;
-  border-right-color:#1B2B3E !important;
-  color:#DCE7F5 !important;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-home,
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link,
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-secondary-link,
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-account{
-  color:#AFC0D4 !important;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link.is-active,
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-secondary-link.is-active{
-  color:#F7FBFF !important;
-  background:#11243A !important;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-capability-group-label{
-  color:#647A94 !important;
-}
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-settings-link,
-body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
-  color:#93A7BF !important;
-  border-color:#22344A !important;
-  background:#0B1827 !important;
 }
 
 .kmc-import-runtime{
