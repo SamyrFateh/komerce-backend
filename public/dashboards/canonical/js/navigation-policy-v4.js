@@ -133,7 +133,7 @@
     'pilotage', 'commerce', 'operations', 'finance', 'action-center',
     'pricing-workspace', 'catalog-workspace', 'sourcing-workspace', 'purchasing-workspace',
     'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace', 'client-index',
-    'users-admin', 'providers-admin',
+    'users-admin', 'providers-admin', 'settings', 'demo',
   ]);
 
   const SURFACE_TO_SPACE = Object.freeze({

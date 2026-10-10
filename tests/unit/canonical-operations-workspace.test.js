@@ -75,11 +75,19 @@ test('Hub / Relais overview ne rend plus le doublon Signaux réseau et porte son
   const renderStart = SOURCE.indexOf('function renderPayload');
   const renderSource = SOURCE.slice(renderStart);
   expect(renderSource).not.toContain('renderSignals(rootNode');
-  expect(SOURCE).toContain("'HUB / RELAIS'");
+  expect(SOURCE).toContain("'HUB & RELAIS'");
   expect(SOURCE).toContain("'Flux à traiter'");
 });
 
 test('l\'en-tête du workspace porte le rôle hero (cadre et illustration communs aux overviews)', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
   expect(src).toContain("header.setAttribute('data-dashboard-role', 'hero')");
+});
+
+test('UX-07 — Hub & Relais : une vue exclusive à la fois (Hub / Relais / Stock)', () => {
+  expect(SOURCE).toContain("data-workspace-view");
+  expect(SOURCE).toContain("if (view === 'hub') {");
+  expect(SOURCE).toContain("if (view === 'relay') {");
+  expect(SOURCE).toContain("if (view === 'inventory') renderInventorySection");
+  expect(SOURCE).toContain("'Stock à affecter'");
 });

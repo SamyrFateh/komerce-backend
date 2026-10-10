@@ -30,9 +30,9 @@ describe('operations-decision visual hierarchy contract',()=>{
   });
 });
 
-test('le Hero Operations porte le kicker LOGISTIQUE (canon visuel)', () => {
+test('le Hero Operations porte le kicker OPÉRATIONS (= libellé du menu, UX-06)', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
-  expect(src).toContain("'LOGISTIQUE'");
+  expect(src).toContain("'OPÉRATIONS'");
   expect(src).not.toContain('KOMERCE · ADMIN CANONICAL');
 });
 
@@ -43,7 +43,7 @@ test('le helper des retards critiques affiche le seuil serveur (thresholds.shipp
 
 test('le titre du Hero Operations n’est plus doublé (« Tour de contrôle » vit dans Piloter)', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
-  expect(src).toContain("'kmc-dashboard-title', 'Opérations')");
+  expect(src).toContain("'kmc-dashboard-title', 'Où en sont les commandes ?')");
   expect(src).not.toContain('Opérations — Tour de contrôle');
 });
 

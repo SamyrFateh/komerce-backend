@@ -12,9 +12,11 @@ const decision=fs.readFileSync(path.join(__dirname,'..','..','public','dashboard
 
 test('Finance Comptabilité garde Hero filtrable + décisions + rapprochement + dépôts + cash à traiter',()=>{
   expect(workspace).toContain("data-workspace-kind', 'accounting");
-  expect(workspace).toContain("'FINANCE / COMPTABILITÉ'");
+  expect(workspace).toContain("'COMPTABILITÉ'");
   expect(workspace).toContain("'Cash & dépôts'");
-  expect(workspace).toContain('header.appendChild(filterControls(doc, payload, context))');
+  // UX-04 : le filtre n'est plus dans le Hero
+  expect(workspace).not.toContain('header.appendChild(filterControls(doc, payload, context))');
+  expect(workspace).toContain("'Période'");
 
   const renderStart=workspace.indexOf('function renderPayload');
   const renderSource=workspace.slice(renderStart, workspace.indexOf('async function mount', renderStart));

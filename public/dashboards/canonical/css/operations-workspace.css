@@ -1035,10 +1035,40 @@
 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header .kmc-workspace-feedback {
   grid-column: 1 / -1;
 }
+/* UX-04 : les contrôles de période vivent dans la section « Période », hors Hero. */
+.kmc-workspace-section .kmc-accounting-hero-controls,
+.kmc-section .kmc-accounting-hero-controls {
+  grid-column: auto;
+  grid-row: auto;
+  justify-content: flex-start;
+}
 @media (max-width: 900px) {
   .kmc-accounting-hero-controls {
     grid-column: 1 / -1;
     grid-row: auto;
     justify-content: flex-start;
   }
+}
+
+/* UX-07 : onglets de vue exclusive (Hub / Relais / Stock). */
+.kmc-workspace-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--kmc-line, #e2e8f0);
+}
+.kmc-workspace-tab {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--kmc-muted, #64748b);
+  cursor: pointer;
+}
+.kmc-workspace-tab.is-active {
+  color: var(--kmc-ink, #0f172a);
+  border-bottom-color: var(--kmc-ink, #0f172a);
 }

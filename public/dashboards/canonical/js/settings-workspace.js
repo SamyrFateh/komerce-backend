@@ -216,12 +216,13 @@
   /* ── Rendu principal ────────────────────────────────────────────────── */
   function _render(root) {
     root.innerHTML = `
-      <div class="sv-header">
+      <header class="kmc-workspace-header" data-dashboard-role="hero">
         <div>
-          <h2>⚙️ Paramètres business</h2>
-          <div class="sv-subtitle">Gouvernez les règles métier sans redéploiement</div>
+          <span class="kmc-workspace-kicker">CONFIGURATION</span>
+          <h1 class="kmc-workspace-title">Paramètres business</h1>
+          <p class="kmc-workspace-subtitle">Gouvernez les règles métier sans redéploiement</p>
         </div>
-      </div>
+      </header>
       <div class="sv-tabs">
         <button class="sv-tab ${_tab==='rules' ?'active':''}" data-tab="rules">📋 Règles</button>
         <button class="sv-tab ${_tab==='taxes' ?'active':''}" data-tab="taxes">💰 Taxes</button>

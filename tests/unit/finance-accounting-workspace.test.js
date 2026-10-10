@@ -110,7 +110,7 @@ test('deposit_ref existant hors marché est invisible', async () => {
 });
 
 
-test('UI essentielle place les filtres dans le Hero et retire les historiques par défaut', () => {
+test('UI essentielle place les filtres dans la section Période (hors Hero) et retire les historiques par défaut', () => {
   const fs = require('fs');
   const path = require('path');
   const source = fs.readFileSync(
@@ -118,7 +118,8 @@ test('UI essentielle place les filtres dans le Hero et retire les historiques pa
     'utf8'
   );
   expect(source).toContain("data-workspace-kind', 'accounting");
-  expect(source).toContain('header.appendChild(filterControls(doc, payload, context))');
+  expect(source).not.toContain('header.appendChild(filterControls(doc, payload, context))');
+  expect(source).toContain('.appendChild(filterControls(doc, payload, context))');
   const start = source.indexOf('function renderPayload');
   const render = source.slice(start, source.indexOf('async function mount', start));
   expect(render).not.toContain('renderFilters(rootNode');

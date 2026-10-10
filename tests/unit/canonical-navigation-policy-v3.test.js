@@ -185,7 +185,7 @@ describe('Canonical Navigation Policy — cadre hero-first', () => {
     const block = source.match(/const HERO_FIRST_SURFACES = new Set\(\[([\s\S]*?)\]\)/)[1];
     for (const surface of ['pilotage', 'commerce', 'operations', 'finance', 'action-center',
       'pricing-workspace', 'catalog-workspace', 'sourcing-workspace', 'purchasing-workspace',
-      'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace', 'client-index', 'users-admin', 'providers-admin']) {
+      'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace', 'client-index', 'users-admin', 'providers-admin', 'settings', 'demo']) {
       expect(block).toContain(`'${surface}'`);
     }
     expect(source).toContain("classList?.toggle?.('kmc-hero-first', HERO_FIRST_SURFACES.has(surface))");

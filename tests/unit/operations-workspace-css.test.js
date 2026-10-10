@@ -32,3 +32,9 @@ test('Finance / Comptabilité possède un Hero contextuel propre',()=>{
   expect(css).toContain('linear-gradient(112deg, #f6fbf8');
   expect(css).toContain('.kmc-accounting-hero-controls');
 });
+
+test('UX-07 — onglets de vue exclusive stylés', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/operations-workspace.css'), 'utf8');
+  expect(css).toContain('.kmc-workspace-tab.is-active');
+  expect(css).toContain('.kmc-accounting-hero-controls');
+});
