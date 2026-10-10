@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-10T22:13:32.209Z",
+  "generatedAt": "2026-10-10T22:56:52.609Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 711,
-    "protected": 656,
+    "total": 716,
+    "protected": 661,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1102,6 +1102,34 @@
     },
     {
       "key": "GET /api/admin/margins",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-payment-accounts/{accountId}/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-payment-accounts/{accountId}/verify",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/market-payment-accounts/markets/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-payment-accounts/markets/{marketCode}",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -3636,6 +3664,11 @@
     },
     {
       "key": "POST /api/market-delegation/markets/{marketCode}/network/relais",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/payment-accounts",
       "level": "PROTECTED",
       "roles": []
     },

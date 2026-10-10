@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-10T21:51:47.670Z",
+  "generatedAt": "2026-10-10T22:56:40.506Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 703,
+  "count": 709,
   "routes": [
     {
       "method": "GET",
@@ -1047,6 +1047,46 @@
         "bootstrap/api-routes.js",
         "routes/admin.js",
         "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/market-payment-accounts/:accountId/status",
+      "mountPrefix": "/api/admin/market-payment-accounts",
+      "localPath": "/:accountId/status",
+      "routeFile": "routes/admin-market-payment-accounts.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/market-payment-accounts/:accountId/verify",
+      "mountPrefix": "/api/admin/market-payment-accounts",
+      "localPath": "/:accountId/verify",
+      "routeFile": "routes/admin-market-payment-accounts.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/market-payment-accounts/markets/:marketCode",
+      "mountPrefix": "/api/admin/market-payment-accounts",
+      "localPath": "/markets/:marketCode",
+      "routeFile": "routes/admin-market-payment-accounts.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/market-payment-accounts/markets/:marketCode",
+      "mountPrefix": "/api/admin/market-payment-accounts",
+      "localPath": "/markets/:marketCode",
+      "routeFile": "routes/admin-market-payment-accounts.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
       ]
     },
     {
@@ -4659,6 +4699,16 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/customs-shipments",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/customs-shipments",
+      "routeFile": "routes/market-delegation-customs.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/market-delegation/markets/:marketCode/local-offer/physical-offers",
       "mountPrefix": "/api/market-delegation",
       "localPath": "/markets/:marketCode/local-offer/physical-offers",
@@ -4793,6 +4843,16 @@
       "mountPrefix": "/api/market-delegation",
       "localPath": "/markets/:marketCode/network/relais/:relaisId/suspend",
       "routeFile": "routes/market-delegation-network.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/payment-accounts",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/payment-accounts",
+      "routeFile": "routes/market-delegation-payment-accounts.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
