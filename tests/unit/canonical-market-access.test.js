@@ -133,3 +133,16 @@ describe('canonical market access', () => {
     expect(source).not.toMatch(/JSON\.stringify\([^)]*market_id/s);
   });
 });
+
+describe('canonical market access — en-tête de section (UX-02)', () => {
+  test('market-access.js n’émet plus de h1 de page : l’en-tête est un h2 de section', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/market-access.js'), 'utf8');
+    expect(src).toContain("'kmc-access-hero is-section'");
+    expect(src).toContain("el(doc, 'h2', '', 'Responsables pays')");
+  });
+
+  test('market-access.css compacte l’en-tête de section sans toucher au Hero canon', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/css/market-access.css'), 'utf8');
+    expect(css).toContain('.kmc-access-hero.is-section');
+  });
+});
