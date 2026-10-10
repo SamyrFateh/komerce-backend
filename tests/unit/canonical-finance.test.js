@@ -371,3 +371,8 @@ test('Finance overview garde uniquement Hero + décisions + situation financièr
   expect(renderSource).not.toContain("'Approfondir'");
   expect(renderSource).not.toContain("TrustFooter.render");
 });
+
+test('Finance précise que les paiements en attente sont bornés par la période', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/finance.js'), 'utf8');
+  expect(src).toContain("label: 'Paiements en attente (période)'");
+});

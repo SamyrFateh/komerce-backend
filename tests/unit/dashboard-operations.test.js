@@ -111,3 +111,9 @@ describe('dashboard-operations', () => {
     expect(mockControlChain).toHaveBeenCalledWith({ market: null });
   });
 });
+
+test('le payload Opérations publie ses seuils nommés et n\'a plus de 14 jours codé en dur', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'services/dashboard-operations.js'), 'utf8');
+  expect(src).toContain('thresholds: LATE_THRESHOLDS');
+  expect(src).not.toContain("INTERVAL '14 days'");
+});

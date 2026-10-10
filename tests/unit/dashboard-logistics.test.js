@@ -90,3 +90,9 @@ describe('dashboard-metrics/logistics', () => {
     expect(result.data_quality.completeness).toBe('complete');
   });
 });
+
+test('le seuil des retards critiques vient de LATE_THRESHOLDS (une seule source)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'services/dashboard-metrics/logistics.js'), 'utf8');
+  expect(src).toContain('LATE_THRESHOLDS.shipped_late_days');
+  expect(src).not.toContain("INTERVAL '14 days'");
+});

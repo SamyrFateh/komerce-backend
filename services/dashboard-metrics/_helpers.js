@@ -46,6 +46,19 @@ const ACTIVE_ORDER_STATUSES = Object.freeze([
   'confirmed', 'ordered', 'preparation', 'shipped', 'in_transit', 'available',
 ]);
 
+// Seuils de retard NOMMÉS — une seule source pour tous les dashboards. Chaque libellé affiché
+// porte son seuil ; un « retard » sans seuil n'a pas de sens stable (audit BACKOFFICE_CANONICAL_GAP, DASH-03).
+//   - shipped_late_days : colis expédié sans arrivée au relais (Pilotage, Opérations)
+//   - pickup_late_hours : commande disponible au relais non retirée (Commandes)
+//   - payment_pending_hours : paiement en attente « ancien » (Commandes)
+//   - stale_hours : commande sans mouvement (Commandes)
+const LATE_THRESHOLDS = Object.freeze({
+  shipped_late_days: 14,
+  pickup_late_hours: 72,
+  payment_pending_hours: 72,
+  stale_hours: 72,
+});
+
 const VALID_PAID_STATUSES = Object.freeze(['paid']);
 
 const TRANSIT_PARCEL_STATUSES = Object.freeze([
@@ -220,6 +233,7 @@ module.exports = {
   computeDelta,
   makeKpi,
   ACTIVE_ORDER_STATUSES,
+  LATE_THRESHOLDS,
   VALID_PAID_STATUSES,
   TRANSIT_PARCEL_STATUSES,
   EXCLUDED_FROM_REVENUE,

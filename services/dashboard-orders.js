@@ -18,10 +18,12 @@
 'use strict';
 
 const db = require('../db');
+const { ACTIVE_ORDER_STATUSES, LATE_THRESHOLDS } = require('./dashboard-metrics/_helpers');
 
-// Séquence canonique du cycle de vie commande (order-status-machine.js).
-// L'état `cancelled` est terminal et compté à part (hors funnel de progression).
-const LIFECYCLE = Object.freeze(['pending', 'confirmed', 'paid', 'ordered', 'available', 'collected', 'in_transit']);
+// Séquence canonique du cycle de vie commande = chemin nominal de VALID_TRANSITIONS
+// (order-status-machine.js). `cancelled` / `refunded` sont terminaux et comptés à part.
+// `paid` n'est pas un statut de commande (c'est payment_status).
+const LIFECYCLE = Object.freeze(['pending', 'confirmed', 'ordered', 'preparation', 'shipped', 'in_transit', 'available', 'collected']);
 
 function publicScope(market) {
   if (!market) return Object.freeze({ mode: 'global', market: null });
@@ -141,9 +143,9 @@ function kpi(key, label, value) {
 //     conservée telle qu'affichée dans le mock plutôt que le seuil plus
 //     large de l'alert-engine (7j), qui sert une alerte différente
 //     (colis physiquement coincé, pas juste "sans mouvement récent").
-const PAYMENT_PENDING_HOURS = 72;
-const RETRAIT_LATE_HOURS = 72;
-const STALE_HOURS = 72;
+const PAYMENT_PENDING_HOURS = LATE_THRESHOLDS.payment_pending_hours;
+const RETRAIT_LATE_HOURS = LATE_THRESHOLDS.pickup_late_hours;
+const STALE_HOURS = LATE_THRESHOLDS.stale_hours;
 
 /**
  * Couche de pilotage additive — bandeau de décision + SLA du mock
@@ -220,8 +222,8 @@ async function getPriorityOrders(mid, limit = 20) {
            AND (
              oi.id IS NOT NULL
              OR d.id IS NOT NULL
-             OR (o.status NOT IN ('collected') AND o.payment_status = 'pending' AND o.created_at < NOW() - INTERVAL '72 hours')
-             OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '72 hours')
+             OR (o.status NOT IN ('collected') AND o.payment_status = 'pending' AND o.created_at < NOW() - INTERVAL '${PAYMENT_PENDING_HOURS} hours')
+             OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '${RETRAIT_LATE_HOURS} hours')
            )
      )
      SELECT * FROM candidates
@@ -347,7 +349,8 @@ async function buildOrders(options = {}) {
   ]);
 
   const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
-  const active = LIFECYCLE.reduce((a, s) => a + (byStatus[s] || 0), 0);
+  // « Commandes actives » = définition unique partagée avec le Pilotage (ACTIVE_ORDER_STATUSES).
+  const active = ACTIVE_ORDER_STATUSES.reduce((a, s) => a + (byStatus[s] || 0), 0);
 
   // Funnel du cycle de vie : comptes serveur par étape, ordre canonique conservé.
   const lifecycle = LIFECYCLE.map(status => Object.freeze({ status, count: byStatus[status] || 0 }));

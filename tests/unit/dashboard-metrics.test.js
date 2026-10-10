@@ -407,3 +407,8 @@ describe('getTauxCollecteRelais', () => {
     expect(k.value).toBe(70);
   });
 });
+
+test('LATE_THRESHOLDS est exposé par dashboard-metrics', () => {
+  const m = require('../../services/dashboard-metrics');
+  expect(m.LATE_THRESHOLDS).toEqual({ shipped_late_days: 14, pickup_late_hours: 72, payment_pending_hours: 72, stale_hours: 72 });
+});

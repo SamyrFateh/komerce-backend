@@ -25,3 +25,8 @@ test('Commandes overview garde Hero + décisions + état/progression + files d�
   expect(renderSource).not.toContain("'Commandes prioritaires'");
   expect(renderSource).not.toContain('TrustFooter.render');
 });
+
+test('le bandeau Commandes nomme son seuil (paiements en attente > 72 h)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/orders-decision.js'), 'utf8');
+  expect(src).toContain("label: 'Paiements en attente > 72 h'");
+});
