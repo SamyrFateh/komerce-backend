@@ -146,3 +146,9 @@ describe('canonical market access — en-tête de section (UX-02)', () => {
     expect(css).toContain('.kmc-access-hero.is-section');
   });
 });
+
+test('market-access.css style la section Gestion des marchés', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/css/market-access.css'), 'utf8');
+  expect(css).toContain('.kmc-markets-mgmt-table');
+  expect(css).toContain('.kmc-markets-mgmt-actions');
+});
