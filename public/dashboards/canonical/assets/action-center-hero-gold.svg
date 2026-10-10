@@ -1,19 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 260" preserveAspectRatio="xMaxYMid meet" role="img" aria-label="Action Center : décisions, cible et horloge">
   <defs>
     <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0" stop-color="#E7D7A3" stop-opacity=".75"/>
-      <stop offset="1" stop-color="#E7D7A3" stop-opacity="0"/>
+      <stop offset="0" stop-color="#A3BCE7" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#A3BCE7" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#F6EFDF"/>
+      <stop offset="1" stop-color="#DFE7F6"/>
     </linearGradient>
     <linearGradient id="goldF" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#E0C25A"/>
-      <stop offset="1" stop-color="#B58C18"/>
+      <stop offset="0" stop-color="#5A8BE0"/>
+      <stop offset="1" stop-color="#1A52B3"/>
     </linearGradient>
     <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse">
-      <circle cx="3" cy="3" r="1.5" fill="#C9A227"/>
+      <circle cx="3" cy="3" r="1.5" fill="#2762C9"/>
     </pattern>
     <clipPath id="land">
       <path d="M470 70c30-18 70-20 100-8s48 26 40 44-40 26-78 22-80-20-62-58z"/>
@@ -29,54 +29,54 @@
 
   <!-- ground -->
   <ellipse cx="690" cy="236" rx="330" ry="9" fill="#071A3D" opacity=".07"/>
-  <path d="M400 232h580" stroke="#C9A227" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+  <path d="M400 232h580" stroke="#2762C9" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
 
   <!-- stacked decision cards -->
   <g>
-    <rect x="462" y="104" width="186" height="116" rx="10" fill="#F3EBDD" stroke="#E0CB8B" stroke-width="1.5" transform="rotate(-5 555 162)"/>
-    <rect x="474" y="96" width="186" height="116" rx="10" fill="#FBF3E1" stroke="#E0CB8B" stroke-width="1.5" transform="rotate(-2 567 154)"/>
-    <rect x="488" y="92" width="190" height="126" rx="11" fill="url(#card)" stroke="#C9A227" stroke-width="1.8"/>
+    <rect x="462" y="104" width="186" height="116" rx="10" fill="#DDE5F3" stroke="#8BAAE0" stroke-width="1.5" transform="rotate(-5 555 162)"/>
+    <rect x="474" y="96" width="186" height="116" rx="10" fill="#E1EBFB" stroke="#8BAAE0" stroke-width="1.5" transform="rotate(-2 567 154)"/>
+    <rect x="488" y="92" width="190" height="126" rx="11" fill="url(#card)" stroke="#2762C9" stroke-width="1.8"/>
     <rect x="488" y="92" width="190" height="14" rx="7" fill="#071A3D"/>
     <g>
       <circle cx="512" cy="132" r="11" fill="url(#goldF)"/>
-      <path d="M506.5 132l4 4.2 7.5-8.2" fill="none" stroke="#FFF9F0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M506.5 132l4 4.2 7.5-8.2" fill="none" stroke="#F2F6FD" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       <rect x="532" y="124" width="104" height="6" rx="3" fill="#0D2A52"/>
-      <rect x="532" y="136" width="70" height="5" rx="2.5" fill="#E0CB8B"/>
+      <rect x="532" y="136" width="70" height="5" rx="2.5" fill="#8BAAE0"/>
       <circle cx="512" cy="166" r="11" fill="url(#goldF)"/>
-      <path d="M506.5 166l4 4.2 7.5-8.2" fill="none" stroke="#FFF9F0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M506.5 166l4 4.2 7.5-8.2" fill="none" stroke="#F2F6FD" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       <rect x="532" y="158" width="116" height="6" rx="3" fill="#0D2A52"/>
-      <rect x="532" y="170" width="84" height="5" rx="2.5" fill="#E0CB8B"/>
-      <circle cx="512" cy="200" r="11" fill="#FFFFFF" stroke="#C9A227" stroke-width="2.4"/>
+      <rect x="532" y="170" width="84" height="5" rx="2.5" fill="#8BAAE0"/>
+      <circle cx="512" cy="200" r="11" fill="#FFFFFF" stroke="#2762C9" stroke-width="2.4"/>
       <rect x="532" y="192" width="96" height="6" rx="3" fill="#0D2A52" fill-opacity=".75"/>
-      <rect x="532" y="204" width="60" height="5" rx="2.5" fill="#E0CB8B"/>
+      <rect x="532" y="204" width="60" height="5" rx="2.5" fill="#8BAAE0"/>
     </g>
   </g>
 
   <!-- decision target + dart -->
   <g>
-    <circle cx="790" cy="154" r="62" fill="#FBF3E1" stroke="#E0CB8B" stroke-width="1.5"/>
-    <circle cx="790" cy="154" r="46" fill="#F1E4B8"/>
+    <circle cx="790" cy="154" r="62" fill="#E1EBFB" stroke="#8BAAE0" stroke-width="1.5"/>
+    <circle cx="790" cy="154" r="46" fill="#B8CDF1"/>
     <circle cx="790" cy="154" r="32" fill="url(#goldF)"/>
     <circle cx="790" cy="154" r="18" fill="#071A3D"/>
-    <circle cx="790" cy="154" r="7" fill="#FFF9F0"/>
+    <circle cx="790" cy="154" r="7" fill="#F2F6FD"/>
     <path d="M790 154L868 92" stroke="#071A3D" stroke-width="4" stroke-linecap="round"/>
-    <path d="M868 92l18-10-4 18zM858 86l22-14-2 20z" fill="#C9A227" stroke="#A67C12" stroke-width="1.3" stroke-linejoin="round"/>
+    <path d="M868 92l18-10-4 18zM858 86l22-14-2 20z" fill="#2762C9" stroke="#174AA1" stroke-width="1.3" stroke-linejoin="round"/>
   </g>
 
   <!-- clock -->
   <g>
     <circle cx="928" cy="182" r="30" fill="#FFFFFF" stroke="#071A3D" stroke-width="4"/>
-    <circle cx="928" cy="182" r="24" fill="none" stroke="#E0CB8B" stroke-width="1.5"/>
+    <circle cx="928" cy="182" r="24" fill="none" stroke="#8BAAE0" stroke-width="1.5"/>
     <path d="M928 182V164M928 182l13 8" stroke="#071A3D" stroke-width="3.4" stroke-linecap="round"/>
-    <circle cx="928" cy="182" r="3.4" fill="#C9A227"/>
-    <path d="M928 154v4M928 206v4M900 182h4M952 182h4" stroke="#A67C12" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="928" cy="182" r="3.4" fill="#2762C9"/>
+    <path d="M928 154v4M928 206v4M900 182h4M952 182h4" stroke="#174AA1" stroke-width="2.2" stroke-linecap="round"/>
     <path d="M908 154l-6-8M948 154l6-8" stroke="#071A3D" stroke-width="3.4" stroke-linecap="round"/>
   </g>
 
   <!-- priority flag -->
   <g>
     <path d="M706 232V176" stroke="#071A3D" stroke-width="3.5" stroke-linecap="round"/>
-    <path d="M706 178h34l-8 11 8 11h-34z" fill="#C9A227" stroke="#A67C12" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M706 178h34l-8 11 8 11h-34z" fill="#2762C9" stroke="#174AA1" stroke-width="1.5" stroke-linejoin="round"/>
   </g>
 
   <!-- left extension: shared territory, route and ground so the scene fills the lane -->
@@ -87,9 +87,9 @@
     <path d="M300 150c24-10 56-6 72 10s4 36-20 44-52-2-60-22 0-24 8-32z"/>
   </clipPath></defs>
   <rect x="40" y="40" width="360" height="170" fill="url(#dots)" opacity=".34" clip-path="url(#landL)"/>
-  <path d="M60 232h340" stroke="#C9A227" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
-  <path d="M110 190C170 96 260 70 390 112" fill="none" stroke="#C9A227" stroke-width="2.2" stroke-dasharray="2 8" stroke-linecap="round"/>
-  <g transform="translate(110 190)"><circle r="9" fill="#FFF9F0" stroke="#A67C12" stroke-width="2"/><circle r="3.5" fill="#071A3D"/></g>
-  <g transform="translate(250 84)"><circle r="8" fill="#FFF9F0" stroke="#A67C12" stroke-width="2"/><circle r="3" fill="#071A3D"/></g>
-  <g transform="translate(150 214)"><rect x="0" y="-34" width="90" height="48" rx="8" fill="#FFFFFF" stroke="#C9A227" stroke-width="1.6"/><rect x="0" y="-34" width="90" height="10" rx="5" fill="#071A3D"/><circle cx="16" cy="-6" r="7" fill="url(#goldF)"/><rect x="30" y="-10" width="46" height="5" rx="2.5" fill="#0D2A52"/><rect x="30" y="0" width="30" height="4" rx="2" fill="#E0CB8B"/></g>
+  <path d="M60 232h340" stroke="#2762C9" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+  <path d="M110 190C170 96 260 70 390 112" fill="none" stroke="#2762C9" stroke-width="2.2" stroke-dasharray="2 8" stroke-linecap="round"/>
+  <g transform="translate(110 190)"><circle r="9" fill="#F2F6FD" stroke="#174AA1" stroke-width="2"/><circle r="3.5" fill="#071A3D"/></g>
+  <g transform="translate(250 84)"><circle r="8" fill="#F2F6FD" stroke="#174AA1" stroke-width="2"/><circle r="3" fill="#071A3D"/></g>
+  <g transform="translate(150 214)"><rect x="0" y="-34" width="90" height="48" rx="8" fill="#FFFFFF" stroke="#2762C9" stroke-width="1.6"/><rect x="0" y="-34" width="90" height="10" rx="5" fill="#071A3D"/><circle cx="16" cy="-6" r="7" fill="url(#goldF)"/><rect x="30" y="-10" width="46" height="5" rx="2.5" fill="#0D2A52"/><rect x="30" y="0" width="30" height="4" rx="2" fill="#8BAAE0"/></g>
 </svg>
