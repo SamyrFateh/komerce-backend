@@ -7,3 +7,7 @@ test('admin api client exposes Market Control Plane calls',()=>{
   expect(s).toMatch(/function provisionMarket/);
   expect(s).toMatch(/function setMarketLifecycle/);
 });
+test('admin api client n’expose plus les appels Settings Legacy (L9)',()=>{
+  expect(s).not.toMatch(/function getSettings\b/);
+  expect(s).not.toMatch(/function putSettingsTaxes/);
+});
