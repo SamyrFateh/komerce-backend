@@ -424,14 +424,11 @@ describe('bootstrap/html-routes', () => {
       );
     });
 
-    test('/admin/settings?legacy=1 conserve le rollback Legacy 1', () => {
+    test('/admin/settings?legacy=1 ne propose plus de rollback Legacy (L9)', () => {
       const res = fakeRes();
       app._routes['/admin/settings']({ query: { legacy: '1' } }, res);
-      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
-      expect(res.sendFile).toHaveBeenCalledWith(
-        require('path').join(PUBLIC_DIR, 'dashboards', 'admin', 'index.html'),
-        expect.any(Function)
-      );
+      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
+      expect(res.setHeader).not.toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
     });
   });
 

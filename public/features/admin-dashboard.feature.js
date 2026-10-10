@@ -67,7 +67,6 @@ module.exports = {
     '../admin/js/views/SalesView.js',
     '../admin/js/views/SanteView.js',
     '../admin/js/views/MarketsView.js',
-    '../admin/js/views/SettingsView.js',
     '../admin/js/views/SharedCartsView.js',
     '../admin/js/views/SimulatorView.js',
     '../admin/js/views/SuppliersView.js',
