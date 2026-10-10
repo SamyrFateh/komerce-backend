@@ -108,3 +108,12 @@ test('Sourcing ne duplique plus le registre KIR et garde la santé technique en 
   expect(decision).toContain('renderHealth');
   expect(source).not.toContain('?diagnostic=1');
 });
+
+test('candidats : hiérarchie visuelle par classes, sans changer les valeurs affichées', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/sourcing-workspace.js'), 'utf8');
+  expect(src).toContain('kmc-cand-ref');
+  expect(src).toContain('kmc-cand-product');
+  expect(src).toContain('kmc-cand-price');
+  expect(src).toContain("pillCell(row.state, 'state')");
+  expect(src).toContain(' is-approve');
+});
