@@ -81,6 +81,19 @@ router.post('/markets/:marketCode', ...centralAdmin, async (req, res, next) => {
   }
 });
 
+router.post('/:accountId/verify', ...centralAdmin, async (req, res, next) => {
+  try {
+    res.json(await withTransaction(client => accounts.verifyPaymentAccount(client, {
+      actorUserId: req.user.id,
+      accountId: req.params.accountId,
+      verificationRef: req.body && req.body.verification_ref,
+      correlationId: correlation(req),
+    })));
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
 router.post('/:accountId/status', ...centralAdmin, async (req, res, next) => {
   try {
     res.json(await withTransaction(client => accounts.setPaymentAccountStatus(client, {

@@ -557,6 +557,9 @@ const KNOWN_RESPONSES = {
     get: { fields: ['market_code','accounts'], source: 'test' },
     post: { fields: ['account_id','market_code','status'], source: 'test' }
   },
+  '/api/admin/market-payment-accounts/{accountId}/verify': {
+    post: { fields: ['account_id','status','verified','verification_ref'], source: 'test' }
+  },
   '/api/admin/market-payment-accounts/{accountId}/status': {
     post: { fields: ['changed','account_id','status','previous_status'], source: 'test' }
   },

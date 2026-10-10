@@ -36,7 +36,8 @@ function executor({ account = null, market = { id: 'm-cm', code: 'CM' }, updateE
     },
   };
 }
-const accountRow = (status, extra = {}) => ({ id: ACCOUNT, market_id: 'm-cm', provider: 'orange_money', currency: 'XAF', status, credentials_ref: 'vault/x', legal_basis_ref: 'contrat-2026-01', ...extra });
+const accountRow = (status, extra = {}) => ({ id: ACCOUNT, market_id: 'm-cm', provider: 'orange_money', currency: 'XAF', status, credentials_ref: 'vault/x', legal_basis_ref: 'contrat-2026-01', verified_at: '2026-10-10T10:00:00Z', verified_by: 'u9', verification_ref: 'revue-juridique-2026-10', ...extra });
+const unverified = { verified_at: null, verified_by: null, verification_ref: null };
 
 beforeEach(() => resolveAuthorization.mockReset());
 
@@ -80,13 +81,54 @@ describe('création d’un compte de paiement de Market (D4a)', () => {
 });
 
 describe('cycle de vie du compte', () => {
-  test('DRAFT → ACTIVE exige référence de coffre et base juridique ; vérification tracée', async () => {
+  test('DRAFT → ACTIVE exige référence de coffre, base juridique et vérification préalable ; l’activation n’écrit aucune preuve', async () => {
     await expect(svc.setPaymentAccountStatus(executor({ account: accountRow('DRAFT', { legal_basis_ref: null }) }), { actorUserId: 'u1', accountId: ACCOUNT, targetStatus: 'ACTIVE' }))
       .rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_INCOMPLETE', status: 409 });
+    for (const missing of ['verified_at', 'verified_by', 'verification_ref']) {
+      const db = executor({ account: accountRow('DRAFT', { ...unverified, [missing]: null, ...Object.fromEntries(['verified_at', 'verified_by', 'verification_ref'].filter(k => k !== missing).map(k => [k, 'x'])) }) });
+      await expect(svc.setPaymentAccountStatus(db, { actorUserId: 'u1', accountId: ACCOUNT, targetStatus: 'ACTIVE' })).rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_NOT_VERIFIED', status: 409 });
+      expect(db.calls.some(c => /UPDATE market_payment_accounts/.test(c.sql))).toBe(false);
+    }
     const db = executor({ account: accountRow('DRAFT') });
     await expect(svc.setPaymentAccountStatus(db, { actorUserId: 'u1', accountId: ACCOUNT, targetStatus: 'active' })).resolves.toMatchObject({ changed: true, status: 'ACTIVE', previous_status: 'DRAFT' });
-    expect(db.calls.find(c => /UPDATE market_payment_accounts/.test(c.sql)).sql).toMatch(/verified_by/);
+    const update = db.calls.find(c => /UPDATE market_payment_accounts/.test(c.sql));
+    expect(update.sql).not.toMatch(/verified_at|verified_by|verification_ref/);
+    expect(update.params).toEqual([ACCOUNT, 'ACTIVE']);
     expect(JSON.stringify(db.calls.find(c => /market_delegation_audit/.test(c.sql)).params)).toContain('MARKET_PAYMENT_ACCOUNT_STATUS_CHANGED');
+  });
+
+  test('un compte suspendu déjà vérifié se réactive sans nouvelle preuve ; un non vérifié reste refusé', async () => {
+    await expect(svc.setPaymentAccountStatus(executor({ account: accountRow('SUSPENDED') }), { actorUserId: 'u1', accountId: ACCOUNT, targetStatus: 'ACTIVE' })).resolves.toMatchObject({ changed: true });
+    await expect(svc.setPaymentAccountStatus(executor({ account: accountRow('SUSPENDED', unverified) }), { actorUserId: 'u1', accountId: ACCOUNT, targetStatus: 'ACTIVE' })).rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_NOT_VERIFIED' });
+  });
+
+  test('vérification administrative : acte distinct, tracé (acteur, référence de preuve, audit), depuis DRAFT ou SUSPENDED seulement', async () => {
+    for (const status of ['DRAFT', 'SUSPENDED']) {
+      const db = executor({ account: accountRow(status, unverified) });
+      await expect(svc.verifyPaymentAccount(db, { actorUserId: 'u1', accountId: ACCOUNT, verificationRef: ' revue-juridique-2026-10 ' }))
+        .resolves.toMatchObject({ account_id: ACCOUNT, status, verified: true, verification_ref: 'revue-juridique-2026-10' });
+      const update = db.calls.find(c => /UPDATE market_payment_accounts/.test(c.sql));
+      expect(update.sql).not.toMatch(/status\s*=/);
+      expect(update.params).toEqual([ACCOUNT, 'u1', 'revue-juridique-2026-10']);
+      expect(JSON.stringify(db.calls.find(c => /market_delegation_audit/.test(c.sql)).params)).toContain('MARKET_PAYMENT_ACCOUNT_VERIFIED');
+    }
+    await expect(svc.verifyPaymentAccount(executor({ account: accountRow('ACTIVE') }), { actorUserId: 'u1', accountId: ACCOUNT, verificationRef: 'preuve-1' })).rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_TRANSITION_FORBIDDEN', status: 409 });
+    await expect(svc.verifyPaymentAccount(executor({ account: accountRow('CLOSED') }), { actorUserId: 'u1', accountId: ACCOUNT, verificationRef: 'preuve-1' })).rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_TRANSITION_FORBIDDEN' });
+  });
+
+  test('une erreur SQL inattendue lors du changement de statut est propagée telle quelle', async () => {
+    const boom = Object.assign(new Error('boom'), { code: '40001' });
+    await expect(svc.setPaymentAccountStatus(executor({ account: accountRow('DRAFT'), updateError: boom }), { actorUserId: 'u1', accountId: ACCOUNT, targetStatus: 'ACTIVE' })).rejects.toBe(boom);
+  });
+
+  test('vérification refusée : preuve absente/secrète, acteur absent, dossier incomplet, compte introuvable', async () => {
+    const ok = executor({ account: accountRow('DRAFT', unverified) });
+    await expect(svc.verifyPaymentAccount(ok, { actorUserId: 'u1', accountId: ACCOUNT })).rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_FIELD_REQUIRED' });
+    await expect(svc.verifyPaymentAccount(ok, { actorUserId: 'u1', accountId: ACCOUNT, verificationRef: 'sk_live_abcdef123' })).rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_SECRET_REJECTED' });
+    await expect(svc.verifyPaymentAccount(ok, { accountId: ACCOUNT, verificationRef: 'preuve-1' })).rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_ACTOR_REQUIRED' });
+    await expect(svc.verifyPaymentAccount(executor({ account: accountRow('DRAFT', { ...unverified, credentials_ref: null }) }), { actorUserId: 'u1', accountId: ACCOUNT, verificationRef: 'preuve-1' })).rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_INCOMPLETE' });
+    await expect(svc.verifyPaymentAccount(executor(), { actorUserId: 'u1', accountId: ACCOUNT, verificationRef: 'preuve-1' })).rejects.toMatchObject({ code: 'PAYMENT_ACCOUNT_NOT_FOUND', status: 404 });
+    expect(ok.calls.some(c => /UPDATE market_payment_accounts/.test(c.sql))).toBe(false);
   });
 
   test('un second compte actif pour le même marché/prestataire/devise → 409 ; transitions interdites ; idempotence ; introuvable', async () => {
@@ -138,7 +180,8 @@ describe('lectures', () => {
 describe('garde-fous structurels', () => {
   test('migration : aucun secret stocké, ACTIVE exige preuves, un seul compte actif par marché/prestataire/devise', () => {
     expect(migration).toMatch(/credentials_ref !~\* '\(\^\|\[\^a-z\]\)\(sk\|rk\|pk\|whsec\)_'/);
-    expect(migration).toMatch(/market_payment_accounts_active_complete_chk/);
+    expect(migration).toMatch(/market_payment_accounts_active_complete_chk[\s\S]*verification_ref IS NOT NULL\s*\)/);
+    expect(migration).toMatch(/market_payment_accounts_verification_chk[\s\S]*verified_by IS NULL AND verification_ref IS NULL/);
     expect(migration).toMatch(/uniq_market_payment_accounts_active[\s\S]*WHERE status = 'ACTIVE'/);
     expect(migration).toMatch(/refund_bearer\s+text NOT NULL CHECK \(refund_bearer IN \('MARKET', 'PLATFORM'\)\)/);
     expect(migration.replace(/ON DELETE RESTRICT/g, '')).not.toMatch(/\b(DROP|DELETE|UPDATE|ALTER)\b/i);
@@ -146,8 +189,9 @@ describe('garde-fous structurels', () => {
 
   test('route centrale : admin déclaré, écritures transactionnelles, aucun SQL direct ; route Market : GET seul', () => {
     expect(centralRoute).toMatch(/const centralAdmin = \[authenticate, requireRole\(\['admin'\]\)\]/);
-    expect((centralRoute.match(/\.\.\.centralAdmin/g) || []).length).toBe(3);
+    expect((centralRoute.match(/\.\.\.centralAdmin/g) || []).length).toBe(4);
     expect(centralRoute).toMatch(/withTransaction/);
+    expect(centralRoute).toMatch(/router\.post\('\/:accountId\/verify'/);
     expect(centralRoute).not.toMatch(/db\.query/);
     expect(marketRoute).toMatch(/router\.get\('\/markets\/:marketCode\/payment-accounts', authenticate/);
     expect(marketRoute).not.toMatch(/router\.(post|put|patch|delete)\(/);

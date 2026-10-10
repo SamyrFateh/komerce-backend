@@ -12,7 +12,7 @@
  * @db-write      market_payment_accounts
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        caller-owned
- * @doctrine      payment_account_is_provider_agnostic, no_secret_stored_only_vault_reference, holder_seller_operator_refund_bearer_are_distinct, active_requires_evidence
+ * @doctrine      payment_account_is_provider_agnostic, no_secret_stored_only_vault_reference, holder_seller_operator_refund_bearer_are_distinct, active_requires_evidence, verification_is_separate_from_activation
  * @impact-areas  payments, market-delegation, finance
  * @version       2026-10
  */
@@ -128,7 +128,7 @@ async function setPaymentAccountStatus(executor, { actorUserId, accountId, targe
     throw accountError('PAYMENT_ACCOUNT_STATUS_INVALID', 'Statut invalide (ACTIVE, SUSPENDED ou CLOSED).');
   }
   const { rows } = await db.query(
-    `SELECT id, market_id, provider, currency, status, credentials_ref, legal_basis_ref, verified_at
+    `SELECT id, market_id, provider, currency, status, credentials_ref, legal_basis_ref, verified_at, verified_by, verification_ref
        FROM market_payment_accounts WHERE id = $1::uuid FOR UPDATE`, [accountId]
   );
   const account = rows[0];
@@ -140,15 +140,15 @@ async function setPaymentAccountStatus(executor, { actorUserId, accountId, targe
   if (target === 'ACTIVE' && (!account.credentials_ref || !account.legal_basis_ref)) {
     throw accountError('PAYMENT_ACCOUNT_INCOMPLETE', 'Activation refusée : référence de coffre et base juridique requises.', 409);
   }
+  // L'activation ne fabrique jamais sa propre preuve : la vérification est un acte distinct et préalable.
+  if (target === 'ACTIVE' && (!account.verified_at || !account.verified_by || !account.verification_ref)) {
+    throw accountError('PAYMENT_ACCOUNT_NOT_VERIFIED', 'Activation refusée : vérification administrative préalable (acteur et référence de preuve) requise.', 409);
+  }
 
   try {
     await db.query(
-      `UPDATE market_payment_accounts
-          SET status = $2, updated_at = NOW(),
-              verified_at = CASE WHEN $2 = 'ACTIVE' THEN COALESCE(verified_at, NOW()) ELSE verified_at END,
-              verified_by = CASE WHEN $2 = 'ACTIVE' THEN COALESCE(verified_by, $3::uuid) ELSE verified_by END
-        WHERE id = $1::uuid`,
-      [account.id, target, actorUserId]
+      `UPDATE market_payment_accounts SET status = $2, updated_at = NOW() WHERE id = $1::uuid`,
+      [account.id, target]
     );
   } catch (error) {
     if (error && error.code === '23505') {
@@ -167,8 +167,47 @@ async function setPaymentAccountStatus(executor, { actorUserId, accountId, targe
   return { changed: true, account_id: account.id, status: target, previous_status: account.status };
 }
 
+// Vérification administrative : acte distinct de l'activation. Elle atteste qu'un acteur identifié a
+// contrôlé le dossier (base juridique, titulaire) selon une preuve référencée. Elle ne prouve PAS que
+// la référence de coffre pointe vers un secret valide : cette vérification effective relève de D4b.
+async function verifyPaymentAccount(executor, { actorUserId, accountId, verificationRef, correlationId = null }) {
+  const db = requireExecutor(executor);
+  if (!actorUserId) throw accountError('PAYMENT_ACCOUNT_ACTOR_REQUIRED', 'Acteur de vérification requis.', 400);
+  const ref = text(verificationRef, 'verification_ref', { min: 3, max: 300 });
+  if (SECRET_PATTERN.test(ref)) {
+    throw accountError('PAYMENT_ACCOUNT_SECRET_REJECTED', 'verification_ref ne doit contenir aucun secret.');
+  }
+  const { rows } = await db.query(
+    `SELECT id, market_id, provider, currency, status, credentials_ref, legal_basis_ref, verified_at, verification_ref
+       FROM market_payment_accounts WHERE id = $1::uuid FOR UPDATE`, [accountId]
+  );
+  const account = rows[0];
+  if (!account) throw accountError('PAYMENT_ACCOUNT_NOT_FOUND', 'Compte de paiement introuvable.', 404);
+  if (!['DRAFT', 'SUSPENDED'].includes(account.status)) {
+    throw accountError('PAYMENT_ACCOUNT_TRANSITION_FORBIDDEN', `Vérification impossible depuis le statut ${account.status}.`, 409);
+  }
+  if (!account.credentials_ref || !account.legal_basis_ref) {
+    throw accountError('PAYMENT_ACCOUNT_INCOMPLETE', 'Vérification refusée : référence de coffre et base juridique requises.', 409);
+  }
+  await db.query(
+    `UPDATE market_payment_accounts
+        SET verified_at = NOW(), verified_by = $2::uuid, verification_ref = $3, updated_at = NOW()
+      WHERE id = $1::uuid`,
+    [account.id, actorUserId, ref]
+  );
+  await audit(db, {
+    actorUserId,
+    marketId: account.market_id,
+    action: 'MARKET_PAYMENT_ACCOUNT_VERIFIED',
+    before: { account_id: account.id, verified: Boolean(account.verified_at), verification_ref: account.verification_ref || null },
+    after: { account_id: account.id, verification_ref: ref, provider: account.provider, currency: account.currency },
+    correlationId,
+  });
+  return { account_id: account.id, status: account.status, verified: true, verification_ref: ref };
+}
+
 const CENTRAL_COLUMNS = `a.id, a.provider, a.adapter, a.currency, a.account_holder, a.legal_seller, a.market_operator_entity,
-  a.refund_bearer, a.external_account_id, a.credentials_ref, a.legal_basis_ref, a.status, a.verified_at, a.created_at, a.updated_at`;
+  a.refund_bearer, a.external_account_id, a.credentials_ref, a.legal_basis_ref, a.status, a.verification_ref, a.verified_at, a.created_at, a.updated_at`;
 // Projection Market : jamais la référence de coffre ni l'identité du vérificateur (internes plateforme).
 const MARKET_COLUMNS = `a.id, a.provider, a.adapter, a.currency, a.account_holder, a.legal_seller, a.market_operator_entity,
   a.refund_bearer, a.external_account_id, a.legal_basis_ref, a.status, a.verified_at`;
@@ -196,5 +235,5 @@ async function listMarketPaymentAccounts(executor, { marketCode, actorUserId }) 
 }
 
 module.exports = {
-  TRANSITIONS, createPaymentAccount, setPaymentAccountStatus, listPaymentAccounts, listMarketPaymentAccounts,
+  TRANSITIONS, createPaymentAccount, verifyPaymentAccount, setPaymentAccountStatus, listPaymentAccounts, listMarketPaymentAccounts,
 };

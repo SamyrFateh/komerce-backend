@@ -171,7 +171,7 @@ object: market_payment_accounts
 kind: table
 migration: 285
 section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Configuration de paiement par Market indépendante du prestataire : titulaire du compte, vendeur juridique, opérateur et entité supportant les remboursements distingués ; credentials_ref est une référence de coffre, jamais un secret ; ACTIVE exige référence, base juridique et vérification.
+role: Configuration de paiement par Market indépendante du prestataire : titulaire du compte, vendeur juridique, opérateur et entité supportant les remboursements distingués ; credentials_ref est une référence de coffre, jamais un secret ; ACTIVE exige référence, base juridique et une vérification administrative préalable tracée (acteur, date, verification_ref), acte distinct de l'activation ; la validité effective du secret relève de D4b.
 -->
 <!-- schema-pending
 object: catalog_publication_decision_audit

@@ -28,16 +28,24 @@ CREATE TABLE IF NOT EXISTS public.market_payment_accounts (
   ),
   legal_basis_ref        text NULL CHECK (legal_basis_ref IS NULL OR char_length(btrim(legal_basis_ref)) BETWEEN 3 AND 300),
   status                 text NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'ACTIVE', 'SUSPENDED', 'CLOSED')),
+  verification_ref       text NULL CHECK (verification_ref IS NULL OR char_length(btrim(verification_ref)) BETWEEN 3 AND 300),
   verified_at            timestamptz NULL,
   verified_by            uuid NULL REFERENCES public.users(id) ON DELETE RESTRICT,
   created_by             uuid NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
   created_at             timestamptz NOT NULL DEFAULT now(),
   updated_at             timestamptz NOT NULL DEFAULT now(),
 
-  -- Un compte ne devient ACTIF qu'avec référence de coffre, base juridique et vérification.
+  -- La vérification administrative est une preuve tracée à part (acteur, date, référence de preuve),
+  -- jamais produite par l'activation. Elle ne garantit pas la validité du secret : la vérification
+  -- effective du coffre relève de D4b.
+  CONSTRAINT market_payment_accounts_verification_chk CHECK (
+    (verified_at IS NULL AND verified_by IS NULL AND verification_ref IS NULL)
+    OR (verified_at IS NOT NULL AND verified_by IS NOT NULL AND verification_ref IS NOT NULL)
+  ),
+  -- Un compte ne devient ACTIF qu'avec référence de coffre, base juridique et vérification tracée.
   CONSTRAINT market_payment_accounts_active_complete_chk CHECK (
     status <> 'ACTIVE'
-    OR (credentials_ref IS NOT NULL AND legal_basis_ref IS NOT NULL AND verified_at IS NOT NULL AND verified_by IS NOT NULL)
+    OR (credentials_ref IS NOT NULL AND legal_basis_ref IS NOT NULL AND verified_at IS NOT NULL AND verified_by IS NOT NULL AND verification_ref IS NOT NULL)
   )
 );
 
