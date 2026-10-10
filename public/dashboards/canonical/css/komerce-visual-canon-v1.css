@@ -59,7 +59,7 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active {
 
 body.kmc-shell-v4 .kmc-admin-primary-link:hover,
 body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible {
-  background: rgba(231,215,163,.08);
+  background: rgba(219,232,253,.35);
 }
 
 body.kmc-shell-v4 .kmc-admin-sidebar-group-label,
