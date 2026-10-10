@@ -104,7 +104,7 @@
       "implementation": {
         "byCategory": {
           "js": {
-            "count": 39,
+            "count": 38,
             "files": [
               {
                 "declared": "../../../tests/unit/admin-markets-view.test.js",
@@ -272,11 +272,6 @@
                 "status": "resolved-in-dash-repo"
               },
               {
-                "declared": "../admin/js/views/SettingsView.js",
-                "resolvedPath": "dash:dashboards/admin/js/views/SettingsView.js",
-                "status": "resolved-in-dash-repo"
-              },
-              {
                 "declared": "../admin/js/views/SharedCartsView.js",
                 "resolvedPath": "dash:dashboards/admin/js/views/SharedCartsView.js",
                 "status": "resolved-in-dash-repo"
@@ -304,7 +299,7 @@
             ]
           }
         },
-        "totalFiles": 39,
+        "totalFiles": 38,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6339,7 +6334,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 139,
+            "count": 138,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6664,11 +6659,6 @@
               {
                 "declared": "dashboards/admin/js/views/SanteView.js",
                 "resolvedPath": "public/dashboards/admin/js/views/SanteView.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "dashboards/admin/js/views/SettingsView.js",
-                "resolvedPath": "public/dashboards/admin/js/views/SettingsView.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7209,7 +7199,7 @@
             ]
           },
           "services": {
-            "count": 32,
+            "count": 33,
             "files": [
               {
                 "declared": "services/canonical-reference-resolver.js",
@@ -7332,6 +7322,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/operations-relay-projection.js",
+                "resolvedPath": "services/operations-relay-projection.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/operations-workspace.js",
                 "resolvedPath": "services/operations-workspace.js",
                 "status": "resolved-in-technical-graph"
@@ -7374,7 +7369,7 @@
             ]
           },
           "tests": {
-            "count": 178,
+            "count": 181,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8117,8 +8112,23 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/markets-decision-bootstrap.test.js",
+                "resolvedPath": "tests/unit/markets-decision-bootstrap.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/markets-management.test.js",
+                "resolvedPath": "tests/unit/markets-management.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/navigation.test.js",
                 "resolvedPath": "tests/unit/navigation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/operations-relay-projection.test.js",
+                "resolvedPath": "tests/unit/operations-relay-projection.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8269,7 +8279,7 @@
             ]
           }
         },
-        "totalFiles": 380,
+        "totalFiles": 383,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -18848,11 +18858,16 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 10,
+            "count": 14,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
                 "resolvedPath": "public/dashboards/canonical/access.html",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/market-access.css",
+                "resolvedPath": "public/dashboards/canonical/css/market-access.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18863,6 +18878,11 @@
               {
                 "declared": "dashboards/canonical/css/market-team.css",
                 "resolvedPath": "public/dashboards/canonical/css/market-team.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-access.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-access.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18878,6 +18898,16 @@
               {
                 "declared": "dashboards/canonical/js/market-team.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-team.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/markets-decision-bootstrap.js",
+                "resolvedPath": "public/dashboards/canonical/js/markets-decision-bootstrap.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/markets-management.js",
+                "resolvedPath": "public/dashboards/canonical/js/markets-management.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18973,7 +19003,7 @@
             ]
           }
         },
-        "totalFiles": 21,
+        "totalFiles": 25,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -4709,6 +4709,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/operations-relay-projection.js",
+        "resolvedPath": "services/operations-relay-projection.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/order-360.js",
         "resolvedPath": "services/order-360.js",
         "status": "resolved-in-technical-graph"
@@ -5549,13 +5556,6 @@
       {
         "feature": "dashboard",
         "category": "dash",
-        "declared": "dashboards/admin/js/views/SettingsView.js",
-        "resolvedPath": "public/dashboards/admin/js/views/SettingsView.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "dashboard",
-        "category": "dash",
         "declared": "dashboards/admin/js/views/ActionCenterView.js",
         "resolvedPath": "public/dashboards/admin/js/views/ActionCenterView.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6389,6 +6389,20 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/markets-decision-bootstrap.test.js",
+        "resolvedPath": "tests/unit/markets-decision-bootstrap.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/markets-management.test.js",
+        "resolvedPath": "tests/unit/markets-management.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/canonical-navigation-policy-v3.test.js",
         "resolvedPath": "tests/unit/canonical-navigation-policy-v3.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6958,6 +6972,13 @@
         "category": "tests",
         "declared": "tests/unit/operations-workspace-service.test.js",
         "resolvedPath": "tests/unit/operations-workspace-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/operations-relay-projection.test.js",
+        "resolvedPath": "tests/unit/operations-relay-projection.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12983,6 +13004,34 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-access.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-access.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/markets-management.js",
+        "resolvedPath": "public/dashboards/canonical/js/markets-management.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/market-access.css",
+        "resolvedPath": "public/dashboards/canonical/css/market-access.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/markets-decision-bootstrap.js",
+        "resolvedPath": "public/dashboards/canonical/js/markets-decision-bootstrap.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/css/market-team.css",
         "resolvedPath": "public/dashboards/canonical/css/market-team.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -18578,13 +18627,6 @@
         "category": "js",
         "declared": "../admin/js/views/MarketsView.js",
         "resolvedPath": "dash:dashboards/admin/js/views/MarketsView.js",
-        "status": "resolved-in-dash-repo"
-      },
-      {
-        "feature": "admin-dashboard",
-        "category": "js",
-        "declared": "../admin/js/views/SettingsView.js",
-        "resolvedPath": "dash:dashboards/admin/js/views/SettingsView.js",
         "status": "resolved-in-dash-repo"
       },
       {
@@ -33159,6 +33201,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/operations-relay-projection.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/order-360.js",
                 "targetFile": "db.js"
               },
@@ -44605,14 +44651,14 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1996
+        "filesObserved": 2002
       },
       "boutique": {
         "filesObserved": 214,
         "nonCanonicalManifestFiles": 15
       },
       "dash": {
-        "filesObserved": 80,
+        "filesObserved": 79,
         "limitations": [
           "dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)",
           "dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées \"views/\" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés",
@@ -47754,8 +47800,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 596,
-        "technicalNodesOwned": 596,
+        "technicalNodesTotal": 597,
+        "technicalNodesOwned": 597,
         "technicalOrphans": 0
       },
       "dash": {

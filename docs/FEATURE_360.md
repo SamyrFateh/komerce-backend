@@ -104,8 +104,8 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "sourcing" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 39 fichier(s) déclaré(s)
-  - js : 39
+**Implementation** : 38 fichier(s) déclaré(s)
+  - js : 38
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="admin-dashboard"]_
 
@@ -593,13 +593,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 380 fichier(s) déclaré(s)
-  - dash : 139
+**Implementation** : 383 fichier(s) déclaré(s)
+  - dash : 138
   - middleware : 1
   - migrations : 2
   - routes : 28
-  - services : 32
-  - tests : 178
+  - services : 33
+  - tests : 181
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -1448,8 +1448,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth-identity" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-delegation" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 21 fichier(s) déclaré(s)
-  - dash : 10
+**Implementation** : 25 fichier(s) déclaré(s)
+  - dash : 14
   - migrations : 1
   - services : 4
   - tests : 6

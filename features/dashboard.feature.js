@@ -568,7 +568,6 @@ module.exports = {
 
       // ── Views Legacy 1 ─────────────────────────────────────────────
       'dashboards/admin/js/views/ClientsView.js',
-      'dashboards/admin/js/views/SettingsView.js',
       'dashboards/admin/js/views/ActionCenterView.js',
       'dashboards/admin/js/views/ProblemsView.js',
       'dashboards/admin/js/views/SanteView.js',

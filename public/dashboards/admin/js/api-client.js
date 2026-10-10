@@ -458,53 +458,6 @@
     );
   }
 
-  // ── Lot 6 — Settings ──────────────────────────────────────────────────────
-
-  /** Toutes les règles groupées par catégorie. Retourne { categories } */
-  function getSettings() {
-    return fetchJSON(`${BASE_API}/admin/rules`);
-  }
-
-  /** Détail d'une règle + historique. Retourne { rule, history } */
-  function getSettingRule(key) {
-    return fetchJSON(`${BASE_API}/admin/rules/${encodeURIComponent(key)}`);
-  }
-
-  /** Modifier la valeur d'une règle. @param {{ value, reason }} body */
-  function patchSettingRule(key, body) {
-    return fetchMutation(`${BASE_API}/admin/rules/${encodeURIComponent(key)}`, 'PATCH', body);
-  }
-
-  /** Remettre une règle à sa valeur d'origine. */
-  function resetSettingRule(key) {
-    return fetchMutation(`${BASE_API}/admin/rules/${encodeURIComponent(key)}/reset`, 'POST');
-  }
-
-  /** Matrices de taxes par catégorie. Retourne { taxes } */
-  function getSettingsTaxes() {
-    return fetchJSON(`${BASE_API}/admin/pricing-matrices/taxes`);
-  }
-
-  /** Mettre à jour les taxes d'une catégorie. @param {{ douane_pct, tva_pct, taxe_add_pct, reason }} body */
-  function putSettingsTaxes(category, body) {
-    return fetchMutation(`${BASE_API}/admin/pricing-matrices/taxes/${encodeURIComponent(category)}`, 'PUT', body);
-  }
-
-  /** Matrices de dimensions par catégorie. Retourne { dims } */
-  function getSettingsDims() {
-    return fetchJSON(`${BASE_API}/admin/pricing-matrices/dims`);
-  }
-
-  /** Mettre à jour les dimensions d'une catégorie. @param {{ length_cm, width_cm, height_cm, reason }} body */
-  function putSettingsDims(category, body) {
-    return fetchMutation(`${BASE_API}/admin/pricing-matrices/dims/${encodeURIComponent(category)}`, 'PUT', body);
-  }
-
-  /** Audit trail global (toutes les règles). Retourne { history } */
-  function getSettingsAudit() {
-    return fetchJSON(`${BASE_API}/admin/rules/audit`);
-  }
-
   // ── Lot 6 — Simulator ─────────────────────────────────────────────────────
 
   /** Statut courant du simulateur. Retourne { running, tick_count, orders_tracked, config, stats, recent_journal } */
@@ -668,17 +621,6 @@
     getMarketControlPlane,
     provisionMarket,
     setMarketLifecycle,
-
-    // Lot 6 — Settings (9)
-    getSettings,
-    getSettingRule,
-    patchSettingRule,
-    resetSettingRule,
-    getSettingsTaxes,
-    putSettingsTaxes,
-    getSettingsDims,
-    putSettingsDims,
-    getSettingsAudit,
 
     // Lot 6 — Simulator (5)
     simStatus,

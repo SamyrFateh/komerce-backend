@@ -6,26 +6,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 700
-- Files with full headers: 655
+- Scanned code files: 701
+- Files with full headers: 656
 - Files with lite headers: 45
-- Files with any headers: 700
+- Files with any headers: 701
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1694
-- Edges: 8529
+- Graph nodes: 1697
+- Edges: 8545
 - DB tables: 194
-- Doctrines: 604
+- Doctrines: 606
 - Impact areas: 196
-- Unresolved code edges: 841
+- Unresolved code edges: 842
 - Tables multi-écrivains directs (>=2): 84
 - Avertissements db-write / db-write-via en chevauchement: 8
 
 ## Domains
 
 - account: 2
-- admin-dashboard: 30
+- admin-dashboard: 31
 - auth: 14
 - auth-identity: 7
 - auth-passkey: 7
@@ -89,7 +89,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 134
 - route-manifest: 1
 - schema: 1
-- service: 388
+- service: 389
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -459,6 +459,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/notifications/order.js — notification-order (notification, high, full)
 - services/notifications/otp-auth.js — notification-otp-auth (notification, high, full)
 - services/notifications/parcel.js — notification-parcel (notification, high, full)
+- services/operations-relay-projection.js — dashboard-operations-relay-projection (admin-dashboard, high, full)
 - services/operations-workspace.js — canonical-operations-workspace-service (admin-dashboard, high, full)
 - services/order-360.js — canonical-order-360-service (admin-dashboard, high, full)
 - services/order-financial-closure-reconciliation.js — order-financial-closure-reconciliation (orders, high, full)

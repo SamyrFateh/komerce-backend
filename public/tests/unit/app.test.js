@@ -64,7 +64,7 @@ describe('app.js (SPA entrypoint)', () => {
     consoleErrorSpy.mockRestore();
     delete window.PilotageView;
     delete window.ClientsView;
-    delete window.SettingsView;
+    delete window.SimulatorView;
     delete window.PricingView;
     delete window.ProblemsView;
   });
@@ -127,12 +127,12 @@ describe('app.js (SPA entrypoint)', () => {
     });
 
     test('navigateTo() dispatche vers la vue stubée du global correspondant', async () => {
-      window.SettingsView = { render: jest.fn(() => Promise.resolve()) };
-      const ok = window.KmcApp.navigateTo('/admin/settings');
+      window.SimulatorView = { render: jest.fn(() => Promise.resolve()) };
+      const ok = window.KmcApp.navigateTo('/admin/simulator');
       expect(ok).toBe(true);
       await Promise.resolve();
-      expect(window.SettingsView.render).toHaveBeenCalledTimes(1);
-      expect(window.location.pathname).toBe('/admin/settings');
+      expect(window.SimulatorView.render).toHaveBeenCalledTimes(1);
+      expect(window.location.pathname).toBe('/admin/simulator');
     });
 
     test('navigateTo() sur un chemin inconnu retourne false, ne change rien', () => {
@@ -171,10 +171,10 @@ describe('app.js (SPA entrypoint)', () => {
       stubFetch(() => okJson({ role: 'support' }));
       loadApp();
       await window.KmcApp.init(); // support -> shell bo par défaut
-      window.SettingsView = { render: jest.fn() }; // roles: ['admin'] uniquement
-      window.KmcApp.navigateTo('/admin/settings');
+      window.SimulatorView = { render: jest.fn() }; // roles: ['admin'] uniquement
+      window.KmcApp.navigateTo('/admin/simulator');
       await Promise.resolve();
-      expect(window.SettingsView.render).not.toHaveBeenCalled();
+      expect(window.SimulatorView.render).not.toHaveBeenCalled();
       expect(document.getElementById('main-content').innerHTML).toMatch(/Accès refusé/);
     });
   });
