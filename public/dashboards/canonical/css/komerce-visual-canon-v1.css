@@ -14,15 +14,15 @@ body.kmc-shell-v4 {
   /* Brand */
   --kmc-brand-navy: #071A3D;
   --kmc-brand-navy-2: #0D2A52;
-  --kmc-brand-gold: #C9A227;
-  --kmc-brand-gold-strong: #A67C12;
-  --kmc-brand-champagne: #E7D7A3;
-  --kmc-brand-ivory: #FFF9F0;
-  --kmc-brand-sand: #F3EBDD;
+  --kmc-brand-gold: #3B82F6;
+  --kmc-brand-gold-strong: #1D5CD6;
+  --kmc-brand-champagne: #DBE8FD;
+  --kmc-brand-ivory: #F8FAFC;
+  --kmc-brand-sand: #F1F5F9;
   --kmc-brand-canvas: #FFFFFF;
   --kmc-brand-ink: #15213A;
   --kmc-brand-muted: #65718A;
-  --kmc-brand-line: #E8DFD1;
+  --kmc-brand-line: #D5DCE6;
 
   /* State — never brand decoration */
   --kmc-state-critical: #DC2626;
@@ -35,7 +35,7 @@ body.kmc-shell-v4 {
   --kmc-canon-radius-md: 14px;
   --kmc-canon-radius-lg: 16px;
   --kmc-canon-shadow: 0 8px 24px rgba(7,26,61,.06);
-  --kmc-canon-shadow-soft: 0 2px 8px rgba(7,26,61,.045);
+  --kmc-canon-shadow-soft: 0 2px 10px rgba(7,26,61,.08);
   --kmc-canon-font: "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
 
   color: var(--kmc-brand-ink);
@@ -59,7 +59,7 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active {
 
 body.kmc-shell-v4 .kmc-admin-primary-link:hover,
 body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible {
-  background: rgba(231,215,163,.08);
+  background: rgba(219,232,253,.35);
 }
 
 body.kmc-shell-v4 .kmc-admin-sidebar-group-label,
@@ -310,7 +310,7 @@ body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header {
   border: 1px solid color-mix(in srgb, var(--kmc-brand-gold) 40%, var(--kmc-brand-line));
   border-radius: var(--kmc-canon-radius-lg);
   background:
-    linear-gradient(108deg, rgba(255,249,240,.99) 0 54%, rgba(255,255,255,.92) 67%, rgba(231,215,163,.34) 100%);
+    linear-gradient(108deg, #FFFFFF 0 54%, rgba(255,255,255,.92) 67%, rgba(219,232,253,.55) 100%);
   box-shadow: var(--kmc-canon-shadow);
 }
 

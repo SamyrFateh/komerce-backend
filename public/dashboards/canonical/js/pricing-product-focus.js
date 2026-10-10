@@ -81,6 +81,15 @@
     }
   }
 
+  const SOURCE_LABELS = {
+    real: 'réel',
+    category: 'catégorie',
+    estimated: 'estimé',
+    default: 'par défaut',
+    manual: 'saisi',
+    missing: 'manquant',
+  };
+
   function renderResult(doc, host, result, productRef, onApply) {
     host.replaceChildren();
 
@@ -106,7 +115,7 @@
       ['poids', sources.weight],
       ['volume', sources.volume],
       ['douane', sources.customs_category],
-    ].filter(([, value]) => value).map(([label, value]) => `${label}: ${value}`);
+    ].filter(([, value]) => value).map(([label, value]) => `${label} : ${SOURCE_LABELS[String(value).toLowerCase()] || value}`);
     if (sourceBits.length) {
       host.appendChild(text(doc, 'p', 'kmc-workspace-note', `Sources : ${sourceBits.join(' · ')}`));
     }
@@ -130,7 +139,7 @@
 
     const actions = doc.createElement('div');
     actions.className = 'kmc-workspace-actions';
-    const apply = text(doc, 'button', 'kmc-workspace-action', 'Choisir ce prix');
+    const apply = text(doc, 'button', 'kmc-workspace-action is-approve', 'Choisir ce prix');
     apply.type = 'button';
     apply.setAttribute('data-pricing-focus-apply', '');
     apply.addEventListener('click', () => onApply(apply, result));

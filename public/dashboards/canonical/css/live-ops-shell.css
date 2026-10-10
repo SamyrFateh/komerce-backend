@@ -45,3 +45,15 @@ body .kmc-workspace-action.is-danger:hover:not(:disabled) { background: #FEF2F3;
 .kmc-pill.is-decision-watch { border-color: #D9D2F5; background: #F7F5FF; color: #6D4FD3; }
 .kmc-pill.is-state-rejected, .kmc-pill.is-decision-avoid, .kmc-pill.is-decision-loss { border-color: #F6C9CE; background: #FEF2F3; color: #B42318; }
 .kmc-sourcing-candidates-table td:last-child .kmc-workspace-nav-link { color: #1D5CD6; font-weight: 700; }
+
+/* Tarification produit (focus) : carte lisible, KPI en grille, actions sur une ligne */
+.kmc-pricing-product-focus .kmc-section-body { display: grid; gap: 14px; }
+.kmc-pricing-product-focus .kmc-workspace-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.kmc-pricing-product-focus .kmc-workspace-kpi { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid #D5DCE6; border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgb(7 26 61 / .06); }
+.kmc-pricing-product-focus .kmc-workspace-kpi-label { color: #64748B; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.kmc-pricing-product-focus .kmc-workspace-kpi-value { color: #0F172A; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.kmc-pricing-product-focus .kmc-workspace-kpi:last-child { border-color: #BBE5C8; background: #F0FAF3; }
+.kmc-pricing-product-focus .kmc-workspace-kpi:last-child .kmc-workspace-kpi-value { color: #15803D; }
+.kmc-pricing-product-focus .kmc-workspace-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.kmc-pricing-product-focus [data-pricing-focus-result] .kmc-workspace-actions { margin-top: 4px; }
+@media (max-width: 900px) { .kmc-pricing-product-focus .kmc-workspace-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

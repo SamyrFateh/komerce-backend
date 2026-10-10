@@ -26,3 +26,8 @@ test('pastilles candidats : cellules état/décision aérées (pas collées à l
   expect(css).toContain('td:nth-child(5)');
   expect(css).toContain('padding-right: 18px');
 });
+
+test('tarification produit : KPI en grille et actions sur une ligne', () => {
+  expect(css).toContain('.kmc-pricing-product-focus .kmc-workspace-kpis');
+  expect(css).toContain('.kmc-pricing-product-focus .kmc-workspace-actions');
+});
