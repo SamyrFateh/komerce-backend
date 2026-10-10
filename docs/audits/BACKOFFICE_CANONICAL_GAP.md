@@ -18,7 +18,7 @@ Le nom de fichier ne porte pas la date demandée (`…_2026-10-10.md`) : `gate:d
 Le shell est désormais cohérent : un seul en-tête, un seul cadre, recherche et marché dans le Hero sur 20 surfaces sur 23. Mais le Backoffice n'est **pas encore le plus simple possible**, pour quatre raisons :
 
 1. **Les chiffres ne sont pas une seule vérité.** « Commandes actives », « Paiements en attente » et « retards » ont 2 à 4 définitions selon l'écran. Une de ces définitions (`dashboard-orders.js:24`) contredit la machine d'états.
-2. **Le menu promet des écrans que le serveur refuse.** Seule l'entrée Clients tient compte des capabilities déléguées. L'Action Center est affiché à trois rôles agents que l'API rejette.
+2. **Le menu promet des écrans que le serveur peut refuser.** Seule l'entrée Clients tient compte des capabilities déléguées ; les autres s'affichent même quand le serveur refusera la lecture.
 3. **Deux paires d'écrans font doublon :**
    - Commandes (`/admin/orders`) et Opérations ;
    - Hub & Relais workspace et Hub live / Relais live, qui comptent différemment.
@@ -113,7 +113,7 @@ Les routes Pilotage, Commerce, Commandes, Opérations et Finance sont toutes ser
 | Entrée actuelle | Décision | Cible | Justification (constat) |
 |---|---|---|---|
 | Tour de contrôle | CONSERVER | Piloter › Tour de contrôle | point d'entrée transverse |
-| Action Center | RENOMMER, RESTREINDRE | Piloter › À traiter (admin, market_operator) | le Hero dit déjà « Décisions à traiter » ; l'API refuse les agents (NAV-02) |
+| Action Center | RENOMMER | Piloter › À traiter (admin, market_operator, agents en vue simplifiée) | le Hero dit déjà « Décisions à traiter » ; les agents ont une vue simplifiée via `/api/agent/action-center` (NAV-02, corrigé) |
 | Commerce | DÉPLACER, RENOMMER | Commerce › Vue d'ensemble | regroupement par domaine (D1) |
 | Commandes & logistique | RENOMMER, DÉPLACER | Opérations › Vue d'ensemble | son titre affiche « Opérations — Tour de contrôle », un second « Tour de contrôle » (NAV-05) |
 | Finance | DÉPLACER | Finance › Vue d'ensemble | idem |
@@ -154,7 +154,7 @@ Les routes Pilotage, Commerce, Commandes, Opérations et Finance sont toutes ser
 ```
 PILOTER                      admin · market_operator
   Tour de contrôle           /admin/pilotage
-  À traiter                  /admin/action-center      (agents : quand B-AC-agents livré)
+  À traiter                  /admin/action-center      (agents : vue simplifiée, Vu / Reporter seulement)
 COMMERCE
   Vue d'ensemble             /admin/commerce            cap dashboard.market.read
   Catalogue                  /admin/workspaces/catalog  admin · onglets : Vue catalogue | Produits
@@ -186,7 +186,7 @@ ADMINISTRATION               admin
 |---|---|---|
 | admin | 22 | 20 |
 | market_operator | 13 | 12, puis selon ses capabilities |
-| agents | — | perdent « Action Center » tant que l'API les refuse |
+| agents | — | inchangés : ils gardent leur vue simplifiée |
 
 Pour l'admin, deux entrées sont fusionnées (Produits, Commandes) et le doublon de pied de menu « Paramètres » est retiré. Pour le market_operator, l'entrée Commandes est fusionnée.
 
@@ -211,7 +211,7 @@ Pour l'admin, deux entrées sont fusionnées (Produits, Commandes) et le doublon
 
 | ID | P | Constat | Preuve | Impact | Décision | Cx |
 |---|---|---|---|---|---|---|
-| DASH-01 | **P0** | « Commandes actives » sur Commandes utilise `LIFECYCLE = pending, confirmed, paid, ordered, available, collected, in_transit`. `paid` n'est pas un statut de commande ; `collected` est terminal ; `preparation` et `shipped` manquent. Le commentaire cite pourtant la machine d'états. Le Pilotage utilise `ACTIVE_ORDER_STATUSES`. | `services/dashboard-orders.js:22-24,350` · `services/order-status-machine.js:87-97` · `services/dashboard-metrics/_helpers.js:45-47` — PROUVÉ | même libellé, deux chiffres, dont un faux | une seule définition (`ACTIVE_ORDER_STATUSES`), séquence alignée sur `VALID_TRANSITIONS` | S |
+| DASH-01 | **P0** | « Commandes actives » sur Commandes utilise `LIFECYCLE = pending, confirmed, paid, ordered, available, collected, in_transit`. `paid` n'est pas un statut de commande ; `collected` est terminal ; `preparation` et `shipped` manquent. Le commentaire cite pourtant la machine d'états. Le Pilotage utilise `ACTIVE_ORDER_STATUSES`. | `services/dashboard-orders.js:22-24,350` · `services/order-status-machine.js:87-97` · enum `order_status` (`db/schema.sql:127-139`, pas de `paid`) · `services/dashboard-metrics/_helpers.js:45-47` — PROUVÉ | même libellé, deux chiffres, dont un faux | une seule définition (`ACTIVE_ORDER_STATUSES`), séquence alignée sur `VALID_TRANSITIONS` | S |
 | DASH-02 | P1 | « Paiements en attente » a 4 définitions : Opérations (tous), Finance (sur la période), bandeau Commandes (plus de 72 h), KPI Commandes (tous) | `dashboard-metrics/logistics.js:58` · `dashboard-finance-canonical.js:444,80` · `dashboard-orders.js:67,258` — PROUVÉ | chiffres contradictoires | une définition par défaut ; les variantes portent leur seuil dans le libellé (« … depuis plus de 72 h ») | S |
 | DASH-03 | P1 | « Retard » a 4 seuils muets : 14 j (expédié), 72 h (au relais), 7 j (signal `pickup_overdue`), 3 j (`parcel_blocked`) | `logistics.js:115` · `dashboard-orders.js:224` · `signal-service.js:699` · `:442` — PROUVÉ | « en retard » n'a pas de sens stable | les seuils sont nommés et affichés ; ils sont centralisés dans `dashboard-metrics/_helpers.js` (constantes existantes, aucune nouvelle source) | S |
 | DASH-04 | P1 | Le Pilotage global compte tous les signaux (`1=1`) ; l'Action Center global ne liste que `market_id IS NULL`. En vue marché, le rattachement passe par la commande d'un côté, par `signals.market_id` de l'autre. | `_helpers.js:122-125,129` · `signal-admin-service.js:84` — PROUVÉ | le chiffre cliqué ne correspond pas à la liste ouverte | le compteur du Pilotage réutilise le prédicat de `signal-admin-service` | M |
@@ -227,7 +227,7 @@ Pour l'admin, deux entrées sont fusionnées (Produits, Commandes) et le doublon
 | LIVE-04 | P1 | Dans Relais live, « Tous les colis » exclut `in_transit` alors que la tuile l'inclut | `relay-dashboard-queries.js:146-150` contre `:67` — PROUVÉ | liste incohérente avec la tuile | inclure `in_transit` dans le filtre par défaut | S |
 | LIVE-05 | P2 | Le KPI Hub « expédiées aujourd'hui » repose sur `orders.updated_at` | `hub-dashboard-queries.js:46` — PROUVÉ | compte toute mise à jour d'une commande expédiée | utiliser la date de transition (historique de statut) | S |
 | LIVE-06 | P1 | Deux vérités pour Hub et Relais : les services Live et `operations-workspace.js` calculent séparément ; « Disponibles au relais » compte des `parcels` côté Hub et des `orders` côté Relais | `hub-dashboard-queries.js:85` · `relay-dashboard-queries.js` · `services/operations-workspace.js` — PROUVÉ (chiffres non comparés ligne à ligne) | un même état, deux nombres | D4 : une projection propriétaire ; l'autre la consomme | M |
-| LIVE-07 | P1 | Les API Live renvoient `client_phone`, `client_email`, `relais_phone` (et le code de retrait masqué côté Relais), non affichés, alors que la carte promet « aucune donnée de contact client exposée » | `hub-dashboard-queries.js:230-231` · `relay-dashboard-queries.js:168,205,226-227` · `features/dashboard.feature.js:375,377` — PROUVÉ | données personnelles inutiles dans la réponse réseau | retirer ces champs des projections utilisées par les écrans Live (les applis terrain qui en ont besoin passent par leurs propres routes : à vérifier, NON VÉRIFIÉ) | S |
+| LIVE-07 | P1 | Les API Live renvoient `client_phone`, `client_email`, `relais_phone` (et le code de retrait masqué côté Relais), non affichés, alors que la carte promet « aucune donnée de contact client exposée » | `hub-dashboard-queries.js:230-231` · `relay-dashboard-queries.js:168,205,226-227` · `features/dashboard.feature.js:375,377` — PROUVÉ ; consommateur terrain vérifié (`hub.js:144`), `relais.js` ne lit pas ces champs dans le code consulté | données personnelles inutiles dans la réponse réseau | **Ne pas retirer ces champs de la route** : l'appli terrain `/hub` affiche `client_phone` à partir du même endpoint `/api/hub-dash/orders/:id` (`public/hub/js/hub.js:132,144`). Deux options : (a) la route canonique Live reçoit une projection sans contact (paramètre ou route dédiée), l'appli terrain garde la sienne ; (b) corriger la promesse de la carte (« non affichés ») au lieu de la route. À trancher (D10). | S |
 | LIVE-08 | P2 | Le badge Hub « en retard (plus de 48 h) » est recalculé côté client alors que le serveur fournit `urgent` | `hub-live.js:74` · service `:49` — PROUVÉ | règle métier dans le navigateur | utiliser `urgent` | S |
 | LIVE-09 | info | Des capacités backend n'ont aucun appelant : `hub-dash …/escalate` et `/comment`, `relay …/comment` et `/escalate`, `import-runs/replay`, `catalog-changes/observe` | rapport d'exploration — PROBABLE | capacités invisibles | aucune action : à exposer seulement sur un besoin exprimé | — |
 
@@ -254,7 +254,7 @@ Pour l'admin, deux entrées sont fusionnées (Produits, Commandes) et le doublon
 | ID | P | Constat | Preuve | Décision | Cx |
 |---|---|---|---|---|---|
 | NAV-01 | P1 | Le menu ignore les capabilities déléguées, sauf pour Clients. Un market_operator sans capability voit Commerce, Opérations, Finance, Hub & Relais, Expéditions et Comptabilité, que le serveur refuse. | `navigation-policy-v4.js:1001-1007` (seul `tab.capability` est testé) · `routes/admin-dashboard-market.js:120-124` · `admin-operations-workspace.js:137` · `admin-finance-accounting-workspace.js:42` — PROUVÉ | déclarer `capability` sur chaque entrée selon la capability serveur ; test de matrice menu ↔ serveur | S |
-| NAV-02 | P1 | L'Action Center est affiché à agent_hub, agent_relais et agent_transitaire alors que toutes les routes exigent admin ou market_operator | `navigation-policy-v4.js:759` · `routes/admin-action-center.js:152,164,175,186,197` — PROUVÉ | masquer jusqu'au lot « Action Center agents » (filtrage serveur strict, déjà décidé) | S |
+| NAV-02 | — | **Constat retiré (erreur de l'audit initial).** L'entrée Action Center est bien affichée aux agents, mais ils ont leur propre API `/api/agent/action-center` (lecture bornée par rôle et périmètre, `Vu` et `Reporter` seulement, pas de « Résolu ») et la vue canonique agent (`action-center.js:9-13`). Rien à masquer. | `routes/agent-action-center.js:41-75` · `public/dashboards/canonical/js/action-center.js:9-13` · `bootstrap/api-routes.js:157` — PROUVÉ | — | aucune action | — |
 | NAV-03 | P2 | « Paramètres » apparaît deux fois (entrée Administration et lien de pied de menu) | `navigation-policy-v4.js:158,629-638,817` — PROUVÉ | garder l'entrée Administration | S |
 | NAV-04 | P2 | « Produits » ouvre le même écran que Catalogue (`?view=advanced`) | `navigation-policy-v4.js:785` · rendu — PROUVÉ | onglet local uniquement | S |
 | NAV-05 | P1 | Retour sans contexte : les liens vers Order 360 depuis l'Action Center, le Pilotage, les Opérations et le Commerce ne passent pas `returnTo` ; le retour ramène alors au Commerce (`BACK_TARGETS['order-360']`) | 0 occurrence de `returnTo` dans `action-center.js`, `operations*.js`, `pilotage*.js`, `commerce*.js` ; `navigation-policy-v4.js:162,208` ; Order 360 → Achats le fait bien (`order-360.js:188`) — PROUVÉ | utiliser `nav.withReturnTo` partout (le helper existe) | S |
@@ -345,7 +345,7 @@ Les lots sont ordonnés par dépendance. Chaque lot = 1 PR. Pour chaque lot : `a
 - **Rollback :** revert de la PR (aucune migration).
 
 ### L2 — Menu honnête · P1 · S
-- **Objectif :** NAV-01, NAV-02, NAV-03, NAV-04, NAV-08, plus les renommages qui ne dépendent pas de D1 (À traiter, Prix & économie, Comptabilité, Responsables pays, et le titre d'Opérations sans « Tour de contrôle »).
+- **Objectif :** NAV-01, NAV-03, NAV-04, NAV-08 (NAV-02 retiré), plus les renommages qui ne dépendent pas de D1 (À traiter, Prix & économie, Comptabilité, Responsables pays, et le titre d'Opérations sans « Tour de contrôle »).
 - **Périmètre :** `navigation-policy-v4.js` (déclaration de `capability` par entrée), `canonical-client-router-v4.js:91`, `operations-decision.js:552`.
 - **À préserver :**
   - `SURFACE_TO_DOMAIN` et le garde de landing ;
@@ -358,7 +358,7 @@ Les lots sont ordonnés par dépendance. Chaque lot = 1 PR. Pour chaque lot : `a
   - nouveau test de matrice « entrée visible ⇒ capability serveur requise accordée ».
 - **Critère d'acceptation :**
   - un market_operator sans `finance.read` ne voit ni Finance ni Comptabilité ;
-  - les agents ne voient pas À traiter ;
+  - les agents gardent leur vue simplifiée (aucune régression) ;
   - un seul lien Paramètres.
 - **Rollback :** revert.
 
@@ -406,7 +406,7 @@ Les lots sont ordonnés par dépendance. Chaque lot = 1 PR. Pour chaque lot : `a
   - 1 relecture par intervalle après 5 navigations ;
   - l'heure affichée est celle du serveur ;
   - « Tous » inclut les colis en transit ;
-  - aucun champ de contact dans les réponses des endpoints Live.
+  - l'écran Live ne reçoit aucun champ de contact (projection dédiée), `/hub` fonctionne comme avant.
 - **Rollback :** revert.
 
 ### L6 — Résolution avec preuve dans l'Action Center · P1 · M
@@ -491,10 +491,11 @@ Les lots sont ordonnés par dépendance. Chaque lot = 1 PR. Pour chaque lot : `a
 | D7 | Date de fermeture des rollbacks `?legacy=1` | Domaine par domaine, après 2 semaines sans usage constaté |
 | D8 | Le rôle finance doit-il voir la vue d'ensemble Finance (aujourd'hui seulement Comptabilité) ? | Oui si `finance.read` ; à confirmer |
 | D9 | L'admin doit-il voir les écrans locaux d'un marché (Autonomie, Catalogue pays) ? | Oui, en lecture, via le sélecteur de marché |
+| D10 | Contact client dans les réponses Live : projection sans contact pour l'écran Live (option a), ou promesse de la carte corrigée (option b) ? | Option (a) si l'admin n'a pas besoin du téléphone dans le Live ; sinon (b) |
 
 **Risques :**
 - **L1 :** des chiffres vont changer en production. C'est voulu, à annoncer.
-- **L5 :** retirer des champs de contact peut casser un consommateur terrain non identifié ; vérifier `/hub` et `/relais` avant.
+- **L5 :** l'appli `/hub` lit `client_phone` sur `/api/hub-dash/orders/:id` (`hub.js:144`) : ne pas retirer le champ de la route sans projection dédiée à l'écran Live (D10).
 - **L9 :** le portail est la seule porte du support ; ne pas le retirer avant SharedCarts.
 
 ---
@@ -506,7 +507,7 @@ Les lots sont ordonnés par dépendance. Chaque lot = 1 PR. Pour chaque lot : `a
    - Commandes, fusionnée dans Opérations.
    - Le doublon Paramètres.
    
-   S'y ajoutent 7 renommages et, avec D1, le regroupement de 22 entrées en 6 groupes métier. Pour les agents, « Action Center » est masqué tant que l'API les refuse.
+   S'y ajoutent 7 renommages et, avec D1, le regroupement de 22 entrées en 6 groupes métier. Les agents gardent leur Action Center simplifié.
 2. **Dashboards réellement nécessaires : 5 de décision + 3 cockpits Live.**
    - Décision : Tour de contrôle, À traiter, Commerce, Opérations, Finance.
    - Live : Sourcing, Hub, Relais.
