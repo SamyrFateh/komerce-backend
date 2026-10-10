@@ -727,7 +727,6 @@
     'flow-finance': '▤',
     'entity-orders': '◇',
     'entity-products': '◇',
-    'entity-suppliers': '▦',
     'entity-clients': '♙',
     'live-import-runtime': '◉',
     'live-hub': '◉',
@@ -777,7 +776,6 @@
       items: Object.freeze([
         Object.freeze({ id: 'entity-orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], surfaces: ['orders', 'order-360'] }),
         Object.freeze({ id: 'entity-products', label: 'Produits', href: '/admin/workspaces/catalog?view=advanced', roles: ['admin'], surfaces: ['product-360'] }),
-        Object.freeze({ id: 'entity-suppliers', label: 'Fournisseurs', href: '/admin/suppliers', roles: ['admin'], surfaces: ['supplier-360'] }),
         Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
       ]),
     }),
@@ -787,7 +785,7 @@
       items: Object.freeze([
         Object.freeze({ id: 'workspace-pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], surfaces: ['pricing-workspace'] }),
         Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace'] }),
-        Object.freeze({ id: 'workspace-sourcing', label: 'Sourcing', href: '/admin/workspaces/sourcing', roles: ['admin', 'sourcing'], surfaces: ['sourcing-workspace'] }),
+        Object.freeze({ id: 'workspace-sourcing', label: 'Sourcing', href: '/admin/workspaces/sourcing', roles: ['admin', 'sourcing'], surfaces: ['sourcing-workspace', 'supplier-360'] }),
         Object.freeze({ id: 'workspace-purchasing', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: ['admin'], surfaces: ['purchasing-workspace'] }),
         Object.freeze({ id: 'workspace-operations', label: 'Hub & Relais', href: '/admin/workspaces/operations', roles: ['admin', 'agent_hub', 'agent_relais', 'market_operator'], surfaces: ['operations-workspace'] }),
         Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], surfaces: ['shipping-customs-workspace'] }),

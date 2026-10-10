@@ -19,7 +19,7 @@ const EXPECTED = Object.freeze({
     'control-tower', 'action-center',
     'flow-commerce', 'flow-operations', 'flow-finance',
     'live-import-runtime', 'live-hub', 'live-relais',
-    'entity-orders', 'entity-products', 'entity-suppliers', 'entity-clients',
+    'entity-orders', 'entity-products', 'entity-clients',
     'workspace-pricing', 'workspace-catalog', 'workspace-sourcing', 'workspace-purchasing',
     'workspace-operations', 'workspace-shipping', 'workspace-accounting',
     'markets-home',

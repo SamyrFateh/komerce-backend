@@ -133,8 +133,8 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
       .toEqual(['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live']);
     expect(groups.find(group => group.id === 'entities').items.map(item => item.label))
-      .toEqual(['Commandes', 'Produits', 'Fournisseurs', 'Clients']);
-    expect(groups.flatMap(group => group.items).some(item => item.href === '/admin/suppliers')).toBe(true);
+      .toEqual(['Commandes', 'Produits', 'Clients']);
+    expect(groups.flatMap(group => group.items).some(item => item.href === '/admin/suppliers')).toBe(false);
   });
 
   test('client entity remains capability-gated for a market operator', () => {

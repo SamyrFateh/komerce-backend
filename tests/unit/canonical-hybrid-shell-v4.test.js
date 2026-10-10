@@ -95,7 +95,8 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
       expect(v4).toContain(`label: '${label}'`);
     }
     expect(v4).toContain("id: 'workspace-sourcing'");
-    expect(v4).toContain("id: 'entity-suppliers'");
+    expect(v4).not.toContain("id: 'entity-suppliers'");
+    expect(v4).toContain("surfaces: ['sourcing-workspace', 'supplier-360']");
   });
 
   test('le sync V4 est syntaxiquement valide et resynchronise après remplacement du header', () => {
