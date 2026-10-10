@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 0,
-    "total_routes": 644,
+    "total_routes": 648,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -4854,6 +4854,10 @@
                       "type": "string",
                       "x-observed": true
                     },
+                    "control_chain": {
+                      "type": "string",
+                      "x-observed": true
+                    },
                     "system_alerts": {
                       "type": "string",
                       "x-observed": true
@@ -5133,6 +5137,47 @@
         }
       }
     },
+    "/api/admin/dashboard/reference/resolve": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/reference/resolve",
+        "x-route-file": "routes/admin-dashboard-market.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "found": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ambiguous": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "matches": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/dashboard/commerce": {
       "get": {
         "summary": "GET /api/admin/dashboard/commerce",
@@ -5356,7 +5401,7 @@
     "/api/admin/dashboard/control-tower": {
       "get": {
         "summary": "GET /api/admin/dashboard/control-tower",
-        "x-route-file": "routes/admin-dashboard-market.js",
+        "x-route-file": "routes/admin-dashboard.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5397,7 +5442,7 @@
     "/api/admin/dashboard/costing": {
       "get": {
         "summary": "GET /api/admin/dashboard/costing",
-        "x-route-file": "routes/admin-dashboard-market.js",
+        "x-route-file": "routes/admin-dashboard.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5434,7 +5479,7 @@
     "/api/admin/dashboard/logistics": {
       "get": {
         "summary": "GET /api/admin/dashboard/logistics",
-        "x-route-file": "routes/admin-dashboard-market.js",
+        "x-route-file": "routes/admin-dashboard.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5475,7 +5520,7 @@
     "/api/admin/dashboard/unified": {
       "get": {
         "summary": "GET /api/admin/dashboard/unified",
-        "x-route-file": "routes/admin-dashboard-market.js",
+        "x-route-file": "routes/admin-dashboard.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5516,7 +5561,7 @@
     "/api/admin/dashboard/cache/clear": {
       "post": {
         "summary": "POST /api/admin/dashboard/cache/clear",
-        "x-route-file": "routes/admin-dashboard-market.js",
+        "x-route-file": "routes/admin-dashboard.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7810,38 +7855,11 @@
       }
     },
     "/api/admin/markets": {
-      "get": {
-        "summary": "GET /api/admin/markets",
-        "x-route-file": "routes/admin-market-control-plane.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "markets": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      },
       "post": {
         "summary": "POST /api/admin/markets",
         "x-route-file": "routes/admin-market-control-plane.js",
         "responses": {
-          "201": {
+          "200": {
             "description": "Succès",
             "content": {
               "application/json": {
@@ -7871,6 +7889,257 @@
                       "x-observed": true
                     },
                     "gaps": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "get": {
+        "summary": "GET /api/admin/markets",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/markets/{marketCode}/reprovision": {
+      "post": {
+        "summary": "POST /api/admin/markets/{marketCode}/reprovision",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "market": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "assignment_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "central_referent_user_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lead": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "readiness": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "gaps": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/markets/{marketCode}/lifecycle": {
+      "post": {
+        "summary": "POST /api/admin/markets/{marketCode}/lifecycle",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "before": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "after": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "changed": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/markets/{marketCode}/assignment/status": {
+      "post": {
+        "summary": "POST /api/admin/markets/{marketCode}/assignment/status",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "changed": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "assignment_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "previous_status": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/markets/{marketCode}/exit-readiness": {
+      "get": {
+        "summary": "GET /api/admin/markets/{marketCode}/exit-readiness",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "market_code": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "assignment": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "open_settlements": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "active_members": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "open_disputes": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "blockers": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ready_to_end": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "not_covered": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -12049,6 +12318,104 @@
                       "x-observed": true
                     },
                     "signals": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/agent/action-center/{signalRef}/acknowledge": {
+      "post": {
+        "summary": "POST /api/agent/action-center/{signalRef}/acknowledge",
+        "x-route-file": "routes/agent-action-center.js",
+        "parameters": [
+          {
+            "name": "signalRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "signal_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actions": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/agent/action-center/{signalRef}/snooze": {
+      "post": {
+        "summary": "POST /api/agent/action-center/{signalRef}/snooze",
+        "x-route-file": "routes/agent-action-center.js",
+        "parameters": [
+          {
+            "name": "signalRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "signal_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "snoozed_until": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actions": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -27141,6 +27508,43 @@
         }
       }
     },
+    "/api/market-delegation/central/team-matrix": {
+      "get": {
+        "summary": "GET /api/market-delegation/central/team-matrix",
+        "x-route-file": "routes/market-delegation-team.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "authority": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "mode": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/market-delegation/markets/{marketCode}/team": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/team",
@@ -30052,288 +30456,6 @@
                   "type": "object",
                   "properties": {
                     "config": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/markets/{marketCode}/lifecycle": {
-      "post": {
-        "summary": "POST /api/admin/markets/{marketCode}/lifecycle",
-        "x-route-file": "routes/admin-market-control-plane.js",
-        "parameters": [
-          {
-            "name": "marketCode",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "before": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "after": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "changed": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/markets/{marketCode}/reprovision": {
-      "post": {
-        "summary": "POST /api/admin/markets/{marketCode}/reprovision",
-        "x-route-file": "routes/admin-market-control-plane.js",
-        "responses": {
-          "201": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "market": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "assignment_id": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "central_referent_user_id": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "lead": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "readiness": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "gaps": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
-        "parameters": [
-          {
-            "name": "marketCode",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
-      }
-    },
-    "/api/admin/dashboard/reference/resolve": {
-      "get": {
-        "summary": "GET /api/admin/dashboard/reference/resolve",
-        "x-route-file": "routes/admin-dashboard-market.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "query": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "found": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "ambiguous": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "matches": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/market-delegation/central/team-matrix": {
-      "get": {
-        "summary": "GET /api/market-delegation/central/team-matrix",
-        "x-route-file": "routes/market-delegation-team.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "service-read",
-                  "description": "Champs observés (source: service-read)",
-                  "type": "object",
-                  "properties": {
-                    "authority": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "mode": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "markets": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/agent/action-center/{signalRef}/acknowledge": {
-      "post": {
-        "summary": "POST /api/agent/action-center/{signalRef}/acknowledge",
-        "x-route-file": "routes/agent-action-center.js",
-        "parameters": [
-          {
-            "name": "signalRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "signal_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "status": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "actions": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/agent/action-center/{signalRef}/snooze": {
-      "post": {
-        "summary": "POST /api/agent/action-center/{signalRef}/snooze",
-        "x-route-file": "routes/agent-action-center.js",
-        "parameters": [
-          {
-            "name": "signalRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "signal_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "status": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "snoozed_until": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "actions": {
                       "type": "string",
                       "x-observed": true
                     }

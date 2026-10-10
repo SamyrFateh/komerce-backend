@@ -8,7 +8,7 @@
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
  * @depends       db.js, services/market-delegation-service.js
  * @used-by       routes/admin-market-control-plane.js
- * @db-read       markets, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais
+ * @db-read       market_settlements, disputes, orders, markets, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais
  * @db-write      none
  * @db-txn        none
  * @doctrine      control_plane_is_read_only, gaps_are_reported_never_repaired, no_second_authorization_engine
@@ -168,4 +168,50 @@ async function getControlPlane(executor, marketCode) {
   return { ...snapshot, gaps, readiness: readinessFromGaps(gaps) };
 }
 
-module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, listMarkets };
+/**
+ * Projection de sortie d'un mandat (lecture seule) : ce qui reste ouvert avant de terminer
+ * l'exploitation d'un marché. Bloquant = argent encore dû (règlements non reçus).
+ * Non couvert : le cash détenu sur le terrain (pas de statut de dépôt exploitable par marché).
+ */
+async function getExitReadiness(executor, marketCode) {
+  const db = requireExecutor(executor);
+  const code = normalizeMarketCode(marketCode);
+  if (!code) throw delegationError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
+  const market = (await db.query('SELECT id, code FROM markets WHERE code = $1', [code])).rows[0];
+  if (!market) throw delegationError('MARKET_NOT_FOUND', 'Marché introuvable.', 404);
+
+  const assignment = (await db.query(
+    `SELECT id, status FROM market_operating_assignments
+      WHERE market_id = $1 AND status IN ('ACTIVE','SUSPENDED')
+      ORDER BY (status = 'ACTIVE') DESC, created_at DESC LIMIT 1`, [market.id]
+  )).rows[0] || null;
+
+  const settlements = (await db.query(
+    `SELECT currency, COUNT(*)::int AS n, SUM(amount)::text AS amount
+       FROM market_settlements
+      WHERE market_id = $1 AND status <> 'RECEIVED'
+      GROUP BY currency ORDER BY currency`, [market.id]
+  )).rows;
+  const members = assignment ? Number((await db.query(
+    `SELECT COUNT(*)::int AS n FROM assignment_memberships WHERE assignment_id = $1 AND status = 'ACTIVE'`, [assignment.id]
+  )).rows[0].n) : 0;
+  const disputes = Number((await db.query(
+    `SELECT COUNT(*)::int AS n FROM disputes d JOIN orders o ON o.id = d.order_id
+      WHERE o.market_id = $1 AND d.status IN ('open','processing')`, [market.id]
+  )).rows[0].n);
+
+  const openSettlements = settlements.reduce((sum, row) => sum + row.n, 0);
+  const blockers = openSettlements > 0 ? ['OPEN_SETTLEMENTS'] : [];
+  return {
+    market_code: market.code,
+    assignment,
+    open_settlements: { count: openSettlements, by_currency: settlements.map(row => ({ currency: row.currency, count: row.n, amount: row.amount })) },
+    active_members: members,
+    open_disputes: disputes,
+    blockers,
+    ready_to_end: Boolean(assignment) && blockers.length === 0,
+    not_covered: ['field_cash_held'],
+  };
+}
+
+module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, getExitReadiness, listMarkets };
