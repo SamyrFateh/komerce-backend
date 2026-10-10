@@ -194,10 +194,11 @@ test('processBoard : une pastille par étape, flèches entre étapes, cartes col
     { label:'Relais', icon:'⌂', hue:'green', count:0, cards:[], countLabel:'Aucun colis' },
   ]);
   expect(html).toContain('lk-pb lk-pb-n2');
-  expect((html.match(/lk-pb-stage"/g) || []).length).toBe(2);
+  expect((html.match(/lk-pb-stage is-/g) || []).length).toBe(2);
   expect((html.match(/lk-pb-arrow/g) || []).length).toBe(1);
-  expect(html).toContain('lk-pb-circle is-blue is-attention');
-  expect(html).toContain('lk-pb-circle is-green"');
+  expect(html).toContain('lk-pb-stage is-attention');
+  expect(html).toContain('>!</span>');
+  expect(html).toContain('lk-pb-stage is-pending');
   expect(html).toContain('lk-pb-card is-blocked');
   expect(html).toContain('lk-pb-card is-attention');
   expect(html).toContain('lk-pb-card is-ok');
@@ -214,4 +215,20 @@ test('processBoard : repli par défaut (teinte, icône, texte vide)', () => {
   expect(html).toContain('lk-pb-circle is-blue');
   expect(html).toContain('>●<');
   expect(html).toContain('Rien à traiter');
+});
+
+test('processBoard : états du flux — focus sur la 1re étape alimentée, alerte, alimenté, vide ; flèche active après une étape non vide', () => {
+  const { kit } = loadKit();
+  const html = kit.processBoard([
+    { label:'A', count:0 }, { label:'B', count:4, href:'/b' }, { label:'C', count:2 }, { label:'D', count:1, tone:'attention' },
+  ]);
+  expect(html).toContain('lk-pb-stage is-pending');
+  expect(html).toContain('lk-pb-stage is-current');
+  expect(html).toContain('lk-pb-stage is-done');
+  expect(html).toContain('lk-pb-stage is-attention');
+  expect((html.match(/aria-current="step"/g) || []).length).toBe(2);
+  expect(html).toContain('lk-pb-arrow"');          // B (précédent A vide) : flèche inactive
+  expect((html.match(/lk-pb-arrow is-on/g) || []).length).toBe(2); // vers C et D
+  const forced = kit.processBoard([{ label:'X', count:0, state:'done' }]);
+  expect(forced).toContain('lk-pb-stage is-done');
 });

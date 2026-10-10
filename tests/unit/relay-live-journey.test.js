@@ -100,7 +100,7 @@ test('LIVE-02/07 : l’écran lit les endpoints en projection Live et affiche l�
 
 test('Suivi : chaîne de processus En transit → Disponibles → Retirés avec les colis réels par étape', () => {
   const h = html('', { ...OVERVIEW, transit:{ orders:[ORDER({ id:'r-9', reference:'KMC-0109', status:'in_transit', urgence:'normale', incidents_ouverts:1 })] } });
-  expect((h.match(/lk-pb-stage"/g) || []).length).toBe(3);
+  expect((h.match(/lk-pb-stage is-/g) || []).length).toBe(3);
   expect(h).toContain('lk-pb lk-pb-n3');
   expect(h).toContain('href="/admin/relais-live?view=order&order=r-9&from=in_transit"');
   expect(h).toContain('lk-pb-card is-blocked');
