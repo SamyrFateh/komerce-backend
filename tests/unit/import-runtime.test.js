@@ -15,4 +15,9 @@ describe('import-runtime.css — le menu latéral appartient à la coque standar
   test('les libellés d’étape du flux Sourcing reprennent la typographie de Hub / Relais (visuel seul)', () => {
     expect(css).toContain('.kmc-import-runtime .kir-run-flow .kir-run-flow-step strong{text-transform:uppercase');
   });
+
+  test('le flux Sourcing porte des anneaux d’état (fait / en cours / attente) comme la chaîne Hub / Relais', () => {
+    expect(css).toContain('.kir-run-flow-step.is-completed .kir-run-flow-marker{box-shadow:0 0 0 5px');
+    expect(css).toContain('.kir-run-flow-step.is-pending{opacity:.72}');
+  });
 });

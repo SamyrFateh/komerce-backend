@@ -52,7 +52,6 @@
 .kmc-import-runtime .lk-pb-circle.is-violet{background:linear-gradient(135deg,#A78BFA,#7C3AED)}
 .kmc-import-runtime .lk-pb-circle.is-teal{background:linear-gradient(135deg,#2DD4BF,#0F9488)}
 .kmc-import-runtime .lk-pb-circle.is-green{background:linear-gradient(135deg,#4ADE80,#16A34A)}
-.kmc-import-runtime .lk-pb-circle.is-attention{box-shadow:0 0 0 5px rgb(245 158 11 / .28)}
 .kmc-import-runtime .lk-pb-label{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;text-align:center}
 .kmc-import-runtime .lk-pb-count{display:inline-grid;place-items:center;min-width:24px;height:20px;padding:0 7px;border:1px solid #E2E8F0;border-radius:999px;background:#fff;color:#0F172A;font-size:12px;font-weight:800}
 .kmc-import-runtime .lk-pb-col{display:grid;align-content:start;gap:8px;min-height:150px;padding:10px;border:1px solid #F1E4BE;border-radius:12px;background:#FCFCFD}
@@ -73,3 +72,21 @@
   .kmc-import-runtime .lk-pb-arrow{display:none}
 }
 @media(max-width:560px){.kmc-import-runtime .lk-pb,.kmc-import-runtime .lk-pb.lk-pb-n3{grid-template-columns:minmax(0,1fr)}}
+
+/* ── États du processus : on voit le flux se dérouler (focus / alerte / alimenté / vide) ───────── */
+@keyframes lk-pb-pulse{0%,100%{box-shadow:0 0 0 4px rgb(37 99 235 / .14)}50%{box-shadow:0 0 0 10px rgb(37 99 235 / .26)}}
+@keyframes lk-pb-pulse-warn{0%,100%{box-shadow:0 0 0 4px rgb(245 158 11 / .22)}50%{box-shadow:0 0 0 10px rgb(245 158 11 / .38)}}
+.kmc-import-runtime .lk-pb-stage.is-current .lk-pb-circle{animation:lk-pb-pulse 1.4s ease-in-out infinite}
+.kmc-import-runtime .lk-pb-stage.is-attention .lk-pb-circle{background:linear-gradient(135deg,#FBBF24,#D97706);animation:lk-pb-pulse-warn 1.4s ease-in-out infinite}
+.kmc-import-runtime .lk-pb-stage.is-current .lk-pb-label{color:#1D4ED8}
+.kmc-import-runtime .lk-pb-stage.is-attention .lk-pb-label{color:#B45309}
+.kmc-import-runtime .lk-pb-stage.is-current .lk-pb-col{border-color:#93B4F5;background:#F5F9FF}
+.kmc-import-runtime .lk-pb-stage.is-attention .lk-pb-col{border-color:#F3C46B;background:#FFFBF0}
+.kmc-import-runtime .lk-pb-stage.is-pending .lk-pb-circle{background:#E2E8F0;color:#94A3B8;box-shadow:0 0 0 5px rgb(15 23 42 / .03)}
+.kmc-import-runtime .lk-pb-stage.is-pending .lk-pb-label,.kmc-import-runtime .lk-pb-stage.is-pending .lk-pb-count{color:#94A3B8}
+.kmc-import-runtime .lk-pb-stage.is-pending .lk-pb-col{border-style:dashed;border-color:#E2E8F0;background:#FCFCFD}
+.kmc-import-runtime .lk-pb-arrow{color:#CBD5E1}
+.kmc-import-runtime .lk-pb-arrow.is-on{color:#D4A63C}
+@media (prefers-reduced-motion:reduce){
+  .kmc-import-runtime .lk-pb-stage.is-current .lk-pb-circle,.kmc-import-runtime .lk-pb-stage.is-attention .lk-pb-circle{animation:none}
+}

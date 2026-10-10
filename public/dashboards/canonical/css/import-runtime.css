@@ -2384,6 +2384,13 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 .kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-pending strong{color:#64748B}
 .kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current strong{color:#1D5CD6}
 
+/* Anneaux d'état (même impact visuel que la chaîne Hub / Relais) : fait / en cours / en attente. */
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step .kir-run-flow-marker{box-shadow:0 0 0 5px rgb(15 23 42 / .04)}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-completed .kir-run-flow-marker{box-shadow:0 0 0 5px rgb(22 163 74 / .16)}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-pending{opacity:.72}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-attention .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-failed .kir-run-flow-marker{box-shadow:0 0 0 6px rgb(245 158 11 / .28)}
+
 /* ==========================================================================
  * ANIMATION CIBLÉE — seule l'étape courante du pipeline « respire ».
  * Ce bloc doit rester le DERNIER du fichier.

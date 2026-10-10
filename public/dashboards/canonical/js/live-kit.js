@@ -97,15 +97,26 @@
       const cls = `lk-pb-card is-${c.tone || 'ok'}`;
       return c.href ? `<a class="${cls}" href="${c.href}" data-cockpit-nav>${body}</a>` : `<div class="${cls}">${body}</div>`;
     };
+    // État de chaque étape (le processus « se déroule ») : la première étape qui porte du travail est
+    // le point de focus (current, ou attention si un retard est signalé) ; les suivantes déjà alimentées
+    // sont « done » ; les vides sont « pending » (grisées). Un état explicite (stage.state) prime.
+    const firstWork = stages.findIndex(stage => Number(stage.count) > 0);
+    const states = stages.map((stage, index) => stage.state
+      || (stage.tone === 'attention' && Number(stage.count) > 0 ? 'attention'
+        : index === firstWork ? 'current'
+          : Number(stage.count) > 0 ? 'done' : 'pending'));
     return `<div class="lk-pb lk-pb-n${stages.length}" role="list">${stages.map((stage, index) => {
-      const head = `<span class="lk-pb-circle is-${stage.hue || 'blue'}${stage.tone === 'attention' ? ' is-attention' : ''}" aria-hidden="true">${esc(stage.icon || '●')}</span>
+      const state = states[index];
+      const head = `<span class="lk-pb-circle is-${stage.hue || 'blue'}" aria-hidden="true">${esc(state === 'attention' ? '!' : stage.icon || '●')}</span>
         <strong class="lk-pb-label">${esc(stage.label)}</strong>
         <span class="lk-pb-count">${esc(String(stage.count))}</span>`;
-      const headLink = stage.href ? `<a class="lk-pb-head" href="${stage.href}" data-cockpit-nav>${head}</a>` : `<div class="lk-pb-head">${head}</div>`;
+      const aria = state === 'current' || state === 'attention' ? ' aria-current="step"' : '';
+      const headLink = stage.href ? `<a class="lk-pb-head" href="${stage.href}" data-cockpit-nav${aria}>${head}</a>` : `<div class="lk-pb-head"${aria}>${head}</div>`;
       const cards = (stage.cards || []).map(card).join('');
       const more = stage.more ? `<a class="lk-pb-more" href="${stage.more.href}" data-cockpit-nav>${esc(stage.more.label)}</a>` : '';
       const empty = !cards ? `<div class="lk-pb-empty">${esc(stage.countLabel || 'Rien à traiter')}</div>` : '';
-      return `<div class="lk-pb-stage" role="listitem">${index > 0 ? '<span class="lk-pb-arrow" aria-hidden="true">→</span>' : ''}${headLink}
+      const arrowOn = index > 0 && states[index - 1] !== 'pending';
+      return `<div class="lk-pb-stage is-${state}" role="listitem">${index > 0 ? `<span class="lk-pb-arrow${arrowOn ? ' is-on' : ''}" aria-hidden="true">→</span>` : ''}${headLink}
         <div class="lk-pb-col">${cards}${empty}${more}</div></div>`;
     }).join('')}</div>`;
   }
