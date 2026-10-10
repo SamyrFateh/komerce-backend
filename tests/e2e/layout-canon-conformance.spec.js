@@ -309,6 +309,41 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
     }
   });
 
+  test('après un changement de rubrique (sans rechargement) le marché reste dans la topbar, dans le Hero', async ({ page }) => {
+    await page.setViewportSize({ width: 2142, height: 760 });
+    await page.goto(`${ORIGIN}/admin/pilotage`);
+    await page.waitForSelector('[data-dashboard-role="hero"]');
+    // Régression : le sync du shell détruisait la topbar reconstruite par le routeur client ;
+    // le marché disparaissait avec elle et le bloc « Marché » de la surface réapparaissait.
+    for (const route of ['/admin/commerce', '/admin/pilotage', '/admin/operations', '/admin/pilotage']) {
+      await page.click(`.kmc-admin-navigation a[href^="${route}"]`);
+      await page.waitForURL(`**${route}*`);
+      await page.waitForSelector('[data-dashboard-role="hero"]');
+      await page.waitForTimeout(400);
+      const r = await page.evaluate(() => {
+        const box = el => { const b = el.getBoundingClientRect(); return { left:b.left, right:b.right, top:b.top, bottom:b.bottom }; };
+        const duplicate = document.querySelector('.kmc-market-context');
+        return {
+          topbars: document.querySelectorAll('.kmc-admin-topbar').length,
+          marketControls: document.querySelectorAll('.kmc-admin-topbar .kmc-admin-market-select').length,
+          duplicateVisible: !!duplicate && getComputedStyle(duplicate).display !== 'none',
+          hero: box(document.querySelector('[data-dashboard-role="hero"]')),
+          search: box(document.querySelector('.kmc-admin-topbar .kmc-admin-search')),
+          market: box(document.querySelector('.kmc-admin-topbar .kmc-admin-market-select')),
+        };
+      });
+      expect(r.topbars, route).toBe(1);
+      expect(r.marketControls, route).toBe(1);
+      expect(r.duplicateVisible, route).toBe(false);
+      for (const control of [r.search, r.market]) {
+        expect(control.right, route).toBeLessThanOrEqual(r.hero.right - 8);
+        expect(control.top, route).toBeGreaterThanOrEqual(r.hero.top);
+        expect(control.bottom, route).toBeLessThanOrEqual(r.hero.bottom);
+      }
+      expect(r.search.right, route).toBeLessThanOrEqual(r.market.left + 1);
+    }
+  });
+
   test('les quatre écrans produisent une capture de référence au même viewport', async ({ page }, testInfo) => {
     for (const route of ['/admin/pilotage','/admin/action-center','/admin/commerce','/admin/operations']) {
       await geometry(page, route);
