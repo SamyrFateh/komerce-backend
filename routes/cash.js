@@ -327,6 +327,7 @@ router.post('/deposits/:id/verify', authenticate, requireAdmin, async (req, res,
       depositId: req.params.id,
       verifierId: req.user.id,
       notes: req.body && req.body.notes,
+      central: true,
     });
     return res.json({ success: true, message: 'Dépôt vérifié', deposit });
   } catch (err) {
@@ -345,6 +346,8 @@ router.post('/deposits/:id/dispute', authenticate, requireAdmin, async (req, res
       depositId: req.params.id,
       verifierId: req.user.id,
       reason: req.body && req.body.reason,
+      correction: req.body && req.body.correction === true,
+      central: true,
     });
     return res.json({ success: true, message: 'Dépôt contesté', deposit });
   } catch (err) {

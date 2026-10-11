@@ -344,6 +344,15 @@ describe('cash — GET /deposits', () => {
   });
 });
 
+// Client transactionnel scripté : BEGIN/COMMIT/ROLLBACK neutres, les autres requêtes
+// consomment `results` dans l'ordre (verrou, UPDATE, audit).
+function mockTxClient(...results) {
+  const query = jest.fn(async sql => (/^(BEGIN|COMMIT|ROLLBACK)$/.test(sql) ? { rows: [] } : (results.shift() || { rows: [] })));
+  db.getClient.mockResolvedValueOnce({ query, release: jest.fn() });
+  return query;
+}
+const lockRow = (status, extra = {}) => ({ rows: [{ id: 'd1', deposit_ref: 'KDP-1', agent_id: 'agent-9', status, amount_kmf: 1000, review_market_id: 'm1', ...extra }] });
+
 describe('cash — POST /deposits/:id/verify', () => {
   it('403 si non-admin', async () => {
     const res = await request(app).post('/api/cash/deposits/d1/verify').send({});
@@ -352,21 +361,32 @@ describe('cash — POST /deposits/:id/verify', () => {
 
   it('404 si dépôt introuvable', async () => {
     mockState.user = { id: 'admin-1', role: 'admin' };
-    db.query.mockResolvedValueOnce({ rows: [] });
-
+    mockTxClient({ rows: [] });
     const res = await request(app).post('/api/cash/deposits/d1/verify').send({});
-
     expect(res.status).toBe(404);
   });
 
-  it('succès → dépôt vérifié', async () => {
+  it('succès → dépôt vérifié, audité', async () => {
     mockState.user = { id: 'admin-1', role: 'admin' };
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'd1', status: 'verified' }] });
-
+    const query = mockTxClient(lockRow('pending'), { rows: [{ id: 'd1', status: 'verified' }] });
     const res = await request(app).post('/api/cash/deposits/d1/verify').send({ notes: 'ok' });
-
     expect(res.status).toBe(200);
     expect(res.body.deposit.status).toBe('verified');
+    expect(query.mock.calls.some(c => String(c[0]).includes('market_delegation_audit'))).toBe(true);
+  });
+
+  it('403 si l admin est le déposant (auto-revue)', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    mockTxClient(lockRow('pending', { agent_id: 'admin-1' }));
+    const res = await request(app).post('/api/cash/deposits/d1/verify').send({});
+    expect(res.status).toBe(403);
+  });
+
+  it('409 si le dépôt est déjà vérifié (aucun écrasement)', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    mockTxClient(lockRow('verified'));
+    const res = await request(app).post('/api/cash/deposits/d1/verify').send({});
+    expect(res.status).toBe(409);
   });
 });
 
@@ -384,21 +404,31 @@ describe('cash — POST /deposits/:id/dispute', () => {
 
   it('404 si dépôt introuvable', async () => {
     mockState.user = { id: 'admin-1', role: 'admin' };
-    db.query.mockResolvedValueOnce({ rows: [] });
-
+    mockTxClient({ rows: [] });
     const res = await request(app).post('/api/cash/deposits/d1/dispute').send({ reason: 'écart' });
-
     expect(res.status).toBe(404);
   });
 
   it('succès → dépôt contesté', async () => {
     mockState.user = { id: 'admin-1', role: 'admin' };
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'd1', status: 'disputed' }] });
-
+    mockTxClient(lockRow('pending'), { rows: [{ id: 'd1', status: 'disputed' }] });
     const res = await request(app).post('/api/cash/deposits/d1/dispute').send({ reason: 'écart' });
-
     expect(res.status).toBe(200);
     expect(res.body.deposit.status).toBe('disputed');
+  });
+
+  it('409 : contester un dépôt vérifié sans correction explicite', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    mockTxClient(lockRow('verified'));
+    const res = await request(app).post('/api/cash/deposits/d1/dispute').send({ reason: 'écart' });
+    expect(res.status).toBe(409);
+  });
+
+  it('200 : correction exceptionnelle explicite d un dépôt vérifié', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    mockTxClient(lockRow('verified'), { rows: [{ id: 'd1', status: 'disputed' }] });
+    const res = await request(app).post('/api/cash/deposits/d1/dispute').send({ reason: 'relevé non conforme', correction: true });
+    expect(res.status).toBe(200);
   });
 });
 
