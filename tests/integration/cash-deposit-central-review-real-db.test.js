@@ -35,9 +35,10 @@ if (!process.env.DATABASE_URL) {
     return u.id;
   }
   async function newDeposit(agentId, amount = 150000) {
-    const dep = await service.createDeposit({ agentId, payload: {
-      amount_kmf: amount, deposit_method: 'bank', period_start: '2026-10-01', period_end: '2026-10-07',
-    } });
+    // Remise historique (LEGACY) : seule forme encore soumise à la revue centrale.
+    const { rows: [dep] } = await q(
+      `INSERT INTO cash_deposits(agent_id,amount_kmf,deposit_method,period_start,period_end) VALUES ($1,$2,'bank','2026-10-01','2026-10-07') RETURNING *`,
+      [agentId, amount]);
     ids.deposits.push(dep.id);
     return dep;
   }

@@ -139,7 +139,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | Table | Rôle |
 |---|---|
 | `cash_collections` | Encaissements cash relais. |
-| `cash_deposits` | Dépôts agents. **Migration 286 (`intended_migration_schema`)** : + `declared_amount` NUMERIC(18,2), `declared_currency` TEXT, `fx_rate_to_kmf` NUMERIC(18,6), `fx_source` TEXT, tous nullables et liés par un CHECK « tout ou rien » (KMF ⇒ taux 1) ; `amount_kmf` reste la valeur canonique KMF, NULL = saisie historique en KMF. |
+| `cash_deposits` | Dépôts agents. **Migration 286 (`intended_migration_schema`)** : + `declared_amount` NUMERIC(18,2), `declared_currency` TEXT, `fx_rate_to_kmf` NUMERIC(18,6), `fx_source` TEXT, tous nullables et liés par un CHECK « tout ou rien » (KMF ⇒ taux 1) ; `amount_kmf` reste la valeur canonique KMF, NULL = saisie historique en KMF. **Migration 289 (`intended_migration_schema`)** : + `recipient_user_id` (personne habilitée destinataire d'un transfert), `destination_id` (destination finale d'une réception finale), `regularizes_deposit_id` (remise historique vérifiée que la nouvelle remise régularise) ; exactement une cible hors historique (CHECK `cash_deposits_custody_target_chk`), cible et origine immuables, statut non historique dérivé des seuls reçus. |
 | `cash_reconciliation` | Réconciliation cash. |
 | `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `payment_total_amount` NUMERIC(18,4), `payment_currency` TEXT et `payment_minor_unit` INTEGER pour figer la devise réellement encaissée par les rails natifs comme Mobile Money XAF, sans réinterpréter `display_total_amount`. |
 | `refunds` | Remboursements. Contraintes UNIQUE(order_id, refund_type) et UNIQUE(stripe_refund_id) pour idempotence ON CONFLICT. |
@@ -166,6 +166,27 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `basket_items` | Items panier. |
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
+<!-- schema-pending
+object: cash_custody_receipts
+kind: table
+migration: 289
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Faits append-only de réception d'une remise non historique : RECEIVED/REFUSED par le destinataire désigné, CONTROL par un acteur indépendant (clôture), REVERSAL en contre-écriture motivée. Montant annoncé distinct du montant reçu, devise et taux figés ; un transfert accepté déplace la responsabilité sur le seul montant reçu, une réception finale ne clôt qu'après contrôle.
+-->
+<!-- schema-pending
+object: cash_custody_losses
+kind: table
+migration: 289
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Décisions centrales de perte (LOSS) et leurs contre-écritures (LOSS_REVERSAL), append-only : décideur distinct du détenteur, motif obligatoire, jamais déduites d'un montant reçu ; le détenteur ne peut pas devenir négatif.
+-->
+<!-- schema-pending
+object: cash_custody_movements
+kind: view
+migration: 289
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Vue unique des mouvements de garde cash (COLLECTION, TRANSFER_OUT, TRANSFER_IN, FINAL_CLOSURE, LOSS) dont la somme par détenteur et Market est le solde canonique ; aucune seconde vérité, lecture seule.
+-->
 <!-- schema-pending
 object: market_cash_destinations
 kind: table

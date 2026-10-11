@@ -408,19 +408,24 @@ router.get('/reconciliation', authenticate, requireAdmin, async (req, res, next)
       GROUP BY cc.collected_by
     `;
 
-    // ── Déposé : cash_deposits dans la période ──
+    // ── Remis : autorité canonique (vue cash_custody_movements). Seul un transfert ACCEPTÉ, une
+    // clôture finale CONTRÔLÉE ou une perte décidée décharge l'agent ; une déclaration en attente
+    // (pending) n'est qu'annoncée ; une remise historique « vérifiée » ne décharge rien.
     const depositedQuery = `
       SELECT
-        cd.agent_id,
-        SUM(cd.amount_kmf) AS deposited_kmf,
-        COUNT(*) AS deposit_count,
-        SUM(cd.amount_kmf) FILTER (WHERE cd.status = 'verified') AS verified_kmf,
-        SUM(cd.amount_kmf) FILTER (WHERE cd.status = 'pending') AS pending_kmf,
-        SUM(cd.amount_kmf) FILTER (WHERE cd.status = 'disputed') AS disputed_kmf
-      FROM cash_deposits cd
-      WHERE cd.period_start >= $1 AND cd.period_end <= $2
-      ${agent_id ? 'AND cd.agent_id = $3' : ''}
-      GROUP BY cd.agent_id
+        h.holder_id AS agent_id,
+        COALESCE(-SUM(h.delta_kmf) FILTER (WHERE h.source IN ('TRANSFER_OUT', 'FINAL_CLOSURE', 'LOSS')), 0) AS released_kmf,
+        COALESCE(-SUM(h.delta_kmf) FILTER (WHERE h.source = 'FINAL_CLOSURE'), 0) AS closed_kmf,
+        COALESCE((SELECT SUM(cd.amount_kmf) FROM cash_deposits cd
+                   WHERE cd.agent_id = h.holder_id AND cd.movement_kind <> 'LEGACY' AND cd.status = 'pending'
+                     AND cd.deposited_at::date BETWEEN $1 AND $2), 0) AS pending_kmf,
+        COALESCE((SELECT COUNT(*) FROM cash_deposits cd
+                   WHERE cd.agent_id = h.holder_id AND cd.movement_kind <> 'LEGACY'
+                     AND cd.deposited_at::date BETWEEN $1 AND $2), 0) AS deposit_count
+      FROM cash_custody_movements h
+      WHERE h.source <> 'COLLECTION' AND h.occurred_at::date BETWEEN $1 AND $2
+      ${agent_id ? 'AND h.holder_id = $3' : ''}
+      GROUP BY h.holder_id
     `;
 
     const [expectedRes, declaredRes, depositedRes] = await Promise.all([
@@ -441,11 +446,10 @@ router.get('/reconciliation', authenticate, requireAdmin, async (req, res, next)
         expected_count: Number(row.expected_count),
         declared_kmf: 0,
         declared_count: 0,
-        deposited_kmf: 0,
+        released_kmf: 0,
+        closed_kmf: 0,
         deposit_count: 0,
-        verified_kmf: 0,
         pending_kmf: 0,
-        disputed_kmf: 0,
       });
     }
 
@@ -453,8 +457,7 @@ router.get('/reconciliation', authenticate, requireAdmin, async (req, res, next)
       const entry = agentMap.get(row.agent_id) || {
         agent_id: row.agent_id,
         expected_kmf: 0, expected_count: 0,
-        deposited_kmf: 0, deposit_count: 0,
-        verified_kmf: 0, pending_kmf: 0, disputed_kmf: 0,
+        released_kmf: 0, closed_kmf: 0, deposit_count: 0, pending_kmf: 0,
       };
       entry.declared_kmf = Number(row.declared_kmf);
       entry.declared_count = Number(row.declared_count);
@@ -467,11 +470,10 @@ router.get('/reconciliation', authenticate, requireAdmin, async (req, res, next)
         expected_kmf: 0, expected_count: 0,
         declared_kmf: 0, declared_count: 0,
       };
-      entry.deposited_kmf = Number(row.deposited_kmf);
-      entry.deposit_count = Number(row.deposit_count);
-      entry.verified_kmf = Number(row.verified_kmf || 0);
+      entry.released_kmf = Number(row.released_kmf || 0);
+      entry.closed_kmf = Number(row.closed_kmf || 0);
+      entry.deposit_count = Number(row.deposit_count || 0);
       entry.pending_kmf = Number(row.pending_kmf || 0);
-      entry.disputed_kmf = Number(row.disputed_kmf || 0);
       agentMap.set(row.agent_id, entry);
     }
 
@@ -479,8 +481,8 @@ router.get('/reconciliation', authenticate, requireAdmin, async (req, res, next)
     const agents = [];
     for (const a of agentMap.values()) {
       a.gap_collection = a.expected_kmf - a.declared_kmf;
-      // Seul un dépôt vérifié réduit l'écart : pending (en transit) et disputed restent un écart.
-      a.gap_deposit = a.declared_kmf - a.verified_kmf;
+      // Seul un transfert accepté, une clôture contrôlée ou une perte décidée réduit l'écart.
+      a.gap_deposit = a.declared_kmf - a.released_kmf;
 
       // Status
       if (a.gap_collection === 0 && a.gap_deposit === 0) {
@@ -500,11 +502,11 @@ router.get('/reconciliation', authenticate, requireAdmin, async (req, res, next)
     const totals = agents.reduce((acc, a) => ({
       expected_kmf: acc.expected_kmf + a.expected_kmf,
       declared_kmf: acc.declared_kmf + a.declared_kmf,
-      deposited_kmf: acc.deposited_kmf + a.deposited_kmf,
-      verified_kmf: acc.verified_kmf + a.verified_kmf,
+      released_kmf: acc.released_kmf + a.released_kmf,
+      closed_kmf: acc.closed_kmf + a.closed_kmf,
       gap_collection: acc.gap_collection + a.gap_collection,
       gap_deposit: acc.gap_deposit + a.gap_deposit,
-    }), { expected_kmf: 0, declared_kmf: 0, deposited_kmf: 0, verified_kmf: 0, gap_collection: 0, gap_deposit: 0 });
+    }), { expected_kmf: 0, declared_kmf: 0, released_kmf: 0, closed_kmf: 0, gap_collection: 0, gap_deposit: 0 });
 
     res.json({
       period: { from, to },
@@ -530,16 +532,20 @@ router.get('/reconciliation/agents', authenticate, requireAdmin, async (req, res
         FROM cash_collections cc
         GROUP BY cc.collected_by
       ),
-      agent_deposits AS (
+      agent_custody AS (
         SELECT
-          cd.agent_id,
-          SUM(cd.amount_kmf) AS total_deposited_kmf,
-          SUM(cd.amount_kmf) FILTER (WHERE cd.status = 'verified') AS verified_kmf,
-          SUM(cd.amount_kmf) FILTER (WHERE cd.status = 'pending') AS pending_kmf,
-          COUNT(*) AS total_deposits,
-          MAX(cd.deposited_at) AS last_deposit
-        FROM cash_deposits cd
-        GROUP BY cd.agent_id
+          h.holder_id AS agent_id,
+          COALESCE(SUM(h.delta_kmf), 0) AS balance_kmf,
+          COALESCE(-SUM(h.delta_kmf) FILTER (WHERE h.source IN ('TRANSFER_OUT', 'FINAL_CLOSURE', 'LOSS')), 0) AS released_kmf,
+          COALESCE(-SUM(h.delta_kmf) FILTER (WHERE h.source = 'FINAL_CLOSURE'), 0) AS closed_kmf,
+          MAX(h.occurred_at) FILTER (WHERE h.source <> 'COLLECTION') AS last_release
+        FROM cash_custody_movements h
+        GROUP BY h.holder_id
+      ),
+      agent_pending AS (
+        SELECT cd.agent_id, SUM(cd.amount_kmf) AS pending_kmf, COUNT(*) AS total_deposits, MAX(cd.deposited_at) AS last_deposit
+          FROM cash_deposits cd WHERE cd.movement_kind <> 'LEGACY'
+         GROUP BY cd.agent_id
       )
       SELECT
         u.id AS agent_id,
@@ -548,15 +554,16 @@ router.get('/reconciliation/agents', authenticate, requireAdmin, async (req, res
         COALESCE(ac.total_declared_kmf, 0) AS total_declared_kmf,
         COALESCE(ac.total_collections, 0) AS total_collections,
         ac.last_collection,
-        COALESCE(ad.total_deposited_kmf, 0) AS total_deposited_kmf,
-        COALESCE(ad.verified_kmf, 0) AS verified_kmf,
-        COALESCE(ad.pending_kmf, 0) AS pending_deposit_kmf,
-        COALESCE(ad.total_deposits, 0) AS total_deposits,
-        ad.last_deposit,
-        COALESCE(ac.total_declared_kmf, 0) - COALESCE(ad.verified_kmf, 0) AS balance_kmf
+        COALESCE(cu.released_kmf, 0) AS released_kmf,
+        COALESCE(cu.closed_kmf, 0) AS closed_kmf,
+        COALESCE(ap.pending_kmf, 0) AS pending_deposit_kmf,
+        COALESCE(ap.total_deposits, 0) AS total_deposits,
+        ap.last_deposit,
+        COALESCE(cu.balance_kmf, 0) AS balance_kmf
       FROM users u
       LEFT JOIN agent_collections ac ON ac.agent_id = u.id
-      LEFT JOIN agent_deposits ad ON ad.agent_id = u.id
+      LEFT JOIN agent_custody cu ON cu.agent_id = u.id
+      LEFT JOIN agent_pending ap ON ap.agent_id = u.id
       WHERE u.role = 'agent_relais'
       ORDER BY balance_kmf DESC
     `);

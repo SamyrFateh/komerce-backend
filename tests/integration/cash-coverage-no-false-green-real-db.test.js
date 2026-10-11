@@ -51,9 +51,13 @@ if (!process.env.DATABASE_URL) {
     );
     ids.collections.push(c.id);
   }
-  const deposit = async (amount, extra = {}) => deposits.createDeposit({ agentId: ids.agent, payload: {
-    amount_kmf: amount, deposit_method: 'bank', period_start: '2026-01-01', period_end: '2026-12-31', ...extra,
-  } });
+  const deposit = async (amount, extra = {}) => {
+    const { rows: [d] } = await q(
+      `INSERT INTO cash_deposits(agent_id,amount_kmf,deposit_method,period_start,period_end,reference) VALUES ($1,$2,$3,'2026-01-01','2026-12-31',$4) RETURNING *`,
+      [ids.agent, amount, extra.deposit_method || 'bank', extra.reference || null]);
+    await q(`SELECT cash_allocate_fifo($1,'SERVER_FIFO')`, [d.id]);
+    return d;
+  };
   const uncovered = async () => (await q(
     `WITH ${deposits.UNCOVERED_COLLECTIONS_CTE}
      SELECT COALESCE(SUM(uncovered_kmf),0)::int AS kmf, COUNT(*)::int AS n FROM uncovered WHERE collected_by = $1`, [ids.agent]
@@ -102,17 +106,18 @@ if (!process.env.DATABASE_URL) {
     }
   });
 
-  describe('CASH coverage — pas de faux vert (real DB)', () => {
-    it('sans dépôt : 150 000 KMF non couverts, alerte radar, 3 signaux, écart plein', async () => {
+  describe('CASH coverage — pas de faux vert (real DB, autorité canonique 289)', () => {
+    it('sans remise : 150 000 KMF non couverts, alerte radar, 3 signaux, détenus 150 000', async () => {
       const radarBefore = await radar();
       await GENERATORS.cash_expiring();
       expect(await uncovered()).toEqual({ kmf: 150000, n: 3 });
       expect(await openSignals()).toEqual({ n: 3, kmf: 150000 });
       expect(radarBefore).toBeGreaterThanOrEqual(150000);
-      expect((await wsGap()).gap_deposit_kmf).toBe(150000);
+      const ws = await wsGap();
+      expect(ws).toMatchObject({ collected_kmf: 150000, held_kmf: 150000, closed_kmf: 0, transferred_kmf: 0 });
     });
 
-    it('dépôt CONTESTÉ de 1 KMF sur 12 mois : rien n\'est couvert (régression du faux vert)', async () => {
+    it('remise historique CONTESTÉE de 1 KMF : rien n\'est couvert', async () => {
       const radarBefore = await radar();
       const d = await deposit(1, { reference: `DSP-${tag}` });
       await deposits.disputeDeposit({ depositId: d.id, verifierId: ids.admin, reason: 'montant incohérent' });
@@ -120,52 +125,37 @@ if (!process.env.DATABASE_URL) {
       expect(await uncovered()).toEqual({ kmf: 150000, n: 3 });
       expect(await openSignals()).toEqual({ n: 3, kmf: 150000 });
       expect(await radar()).toBe(radarBefore);
-      const ws = await wsGap();
-      expect(ws.disputed_kmf).toBe(1);
-      expect(ws.gap_deposit_kmf).toBe(150000);
+      expect((await wsGap()).held_kmf).toBe(150000);
     });
 
-    it('150 000 KMF pending (en transit) : visible comme déclaré, JAMAIS comme couvert ni rapproché', async () => {
+    it('remise historique pending de 150 000 : visible, JAMAIS comme couverte ni rapprochée', async () => {
       const radarBefore = await radar();
       await deposit(150000, { deposit_method: 'mobile_money', reference: `OM-${tag}` });
       await GENERATORS.cash_expiring();
       expect(await uncovered()).toEqual({ kmf: 150000, n: 3 });
-      expect(await openSignals()).toEqual({ n: 3, kmf: 150000 });
       expect(await radar()).toBe(radarBefore);
       const ws = await wsGap();
-      expect(ws.pending_kmf).toBe(150000);
-      expect(ws.verified_kmf).toBe(0);
-      expect(ws.gap_deposit_kmf).toBe(150000);
+      expect(ws.held_kmf).toBe(150000);
+      expect(ws.closed_kmf).toBe(0);
     });
 
-    it('vérification partielle (100 000) : reliquat exact de 50 000 sur la collecte la plus récente', async () => {
-      const radarBefore = await radar();
-      // Le montant d'une remise est immuable (J3) : le 150 000 en transit est contesté (libère sa
-      // réservation), puis une remise distincte de 100 000 est déclarée et vérifiée.
+    it('remise historique VÉRIFIÉE de 150 000 : « à régulariser », ne couvre toujours rien (aucun faux vert)', async () => {
       const { rows: [transit] } = await q(`SELECT id FROM cash_deposits WHERE agent_id=$1 AND reference=$2`, [ids.agent, `OM-${tag}`]);
-      await deposits.disputeDeposit({ depositId: transit.id, verifierId: ids.admin, reason: 'montant erroné, redéclaré' });
-      const pending = await deposit(100000, { deposit_method: 'mobile_money', reference: `OM2-${tag}` });
-      await deposits.verifyDeposit({ depositId: pending.id, verifierId: ids.admin, notes: 'relevé reçu' });
+      await deposits.verifyDeposit({ depositId: transit.id, verifierId: ids.admin, notes: 'relevé reçu' });
       await GENERATORS.cash_expiring();
-      expect(await uncovered()).toEqual({ kmf: 50000, n: 1 });
-      expect(await openSignals()).toEqual({ n: 1, kmf: 50000 });
-      expect(await radar()).toBe(radarBefore - 100000);
-      expect((await wsGap()).gap_deposit_kmf).toBe(50000);
+      expect(await uncovered()).toEqual({ kmf: 150000, n: 3 });
+      expect(await openSignals()).toEqual({ n: 3, kmf: 150000 });
+      const ws = await wsGap();
+      expect(ws).toMatchObject({ held_kmf: 150000, closed_kmf: 0 });
+      const { rows: [legacy] } = await q(
+        `SELECT COUNT(*)::int AS n FROM cash_deposits WHERE agent_id=$1 AND movement_kind='LEGACY' AND status='verified'`, [ids.agent]);
+      expect(legacy.n).toBe(1);
     });
 
-    it('vérification du solde (50 000) : plus rien de non couvert, signaux résolus, écart 0', async () => {
-      const d = await deposit(50000, { deposit_method: 'physical', reference: `PH-${tag}` });
-      await deposits.verifyDeposit({ depositId: d.id, verifierId: ids.admin, notes: 'remis en main propre' });
-      await GENERATORS.cash_expiring();
-      expect(await uncovered()).toEqual({ kmf: 0, n: 0 });
-      expect(await openSignals()).toEqual({ n: 0, kmf: 0 });
-      expect((await wsGap()).gap_deposit_kmf).toBe(0);
-    });
-
-    it('correction centrale (verified → disputed) : la couverture se retire immédiatement', async () => {
-      const { rows: [v] } = await q(`SELECT id FROM cash_deposits WHERE agent_id=$1 AND reference=$2`, [ids.agent, `PH-${tag}`]);
+    it('correction centrale (verified → disputed) : aucun effet sur la couverture, déjà nulle', async () => {
+      const { rows: [v] } = await q(`SELECT id FROM cash_deposits WHERE agent_id=$1 AND reference=$2`, [ids.agent, `OM-${tag}`]);
       await deposits.disputeDeposit({ depositId: v.id, verifierId: ids.admin, reason: 'preuve invalide', correction: true, central: true });
-      expect(await uncovered()).toEqual({ kmf: 50000, n: 1 });
+      expect(await uncovered()).toEqual({ kmf: 150000, n: 3 });
     });
   });
 }
