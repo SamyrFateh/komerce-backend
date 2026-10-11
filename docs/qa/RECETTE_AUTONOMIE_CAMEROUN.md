@@ -5,6 +5,10 @@ Périmètre : voir, décider, agir sur le Market Cameroun (CM). Hors périmètre
 ## Prérequis (à fournir avant de commencer)
 - Un **staging isolé** avec la migration 286 appliquée et les parités KMF/XAF présentes. Relever d'abord `currency_parities` (XAF, KMF) : le résultat attendu du parcours 3 en dépend (aucun taux n'est figé dans cette feuille).
 - 4 comptes : administrateur central, responsable CM (`finance.act` + lecture sur CM), agent relais CM (affecté à un relais CM), responsable d'un autre Market (ex. Comores) ; pour 5e, un compte responsable CM qui a lui-même déclaré un dépôt.
+- **Agent relais** : une membership de lecture sur son Market est nécessaire pour ouvrir l'écran Comptabilité. Sans elle, il est redirigé vers la boutique alors que l'API répond. À vérifier sur les vrais agents CM.
+- **Administrateur central** : lecture d'un Market uniquement avec un grant global explicite (`dashboard_global_access_grants`).
+- **Serveur et base en UTC** (comme Railway) : sinon les dates affichées sont décalées d'un jour.
+- La **performance** n'est décisionnelle qu'avec une politique de décision Market et des données économiques ; sans elles l'écran affiche `Non décisionnel` avec le motif serveur (comportement attendu, pas un échec).
 - Aucune donnée ni action en production. Si un prérequis manque : noter `NON PROUVÉ` et le prérequis.
 
 ## Parcours
@@ -17,7 +21,7 @@ Périmètre : voir, décider, agir sur le Market Cameroun (CM). Hors périmètre
 | 4 | Responsable CM | Contester (motif) puis vérifier le dépôt | `pending → disputed → verified`, note conservée | Statut + `verified_by` |
 | 4b | Administrateur | Lire l'audit | 2 lignes `finance.act`, Market CM, avant/après | `market_delegation_audit` |
 | 5a | Responsable CM sans `finance.act` | Vérifier un dépôt CM | 403 (capability absente) | Réponse API |
-| 5b | Responsable autorisé sur un autre Market uniquement | Appeler la route du Market CM | 403 `MARKET_SCOPE_DENIED` (capability hors Market) | Réponse API |
+| 5b | Responsable autorisé sur un autre Market uniquement | Appeler la route du Market CM | 403 `MARKET_MEMBERSHIP_REQUIRED` (aucune membership active sur le Market CM) | Réponse API |
 | 5c | Responsable CM autorisé | Vérifier, via CM, la référence d'un dépôt d'un autre Market | 404 `deposit_not_found` (référence hors du Market autorisé), aucune écriture | Réponse API + statut du dépôt inchangé |
 | 5d | Agent relais CM | Appeler la vérification d'un dépôt | 403 de rôle (`agent_relais` n'a pas la voie de revue) | Réponse API |
 | 5e | Responsable CM (`finance.act`) ayant lui-même déclaré le dépôt | Vérifier son propre dépôt | 403 `deposit_self_review_forbidden` | Réponse API + statut inchangé |
