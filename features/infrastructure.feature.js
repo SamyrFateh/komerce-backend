@@ -270,6 +270,7 @@ module.exports = {
       '.github/copilot-instructions.md',
       '.github/pull_request_template.md',
       '.github/workflows/pr-enforcement.yml',
+      '.github/workflows/nightly-e2e-certification.yml',
       '.github/workflows/staging-discovery-ops.yml',
       '.github/workflows/showcase-v2-media-realism.yml',
       '.github/workflows/schema-refresh.yml',
