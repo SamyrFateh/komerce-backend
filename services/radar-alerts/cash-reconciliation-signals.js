@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        runtime_context
  * @outputs       response_or_domain_result
- * @depends       db.js
+ * @depends       db.js, services/cash-deposit-service.js, services/cash-custody-service.js
  * @used-by       services/radar-queries.js
- * @db-read       orders, cash_collections, cash_deposits, users
+ * @db-read       orders, cash_collections, cash_deposits, cash_custody_movements, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      resolve_before_behavior_change
@@ -17,6 +17,9 @@
  */
 
 'use strict';
+
+const { UNCOVERED_COLLECTIONS_CTE } = require('../cash-deposit-service');
+const custody = require('../cash-custody-service');
 
 /**
  * services/radar-alerts/cash-reconciliation-signals.js
@@ -62,18 +65,15 @@ async function checkCashNotCollected(db, cashNotCollectedHrs) {
 
 async function checkCashNotDeposited(db, cashNotDepositedHrs) {
   try {
+    // Couverture canonique (UNCOVERED_COLLECTIONS_CTE) : seuls un transfert accepté, une clôture
+    // finale contrôlée ou une perte décidée déchargent ; une déclaration ou une remise historique non.
     const { rows: [undeposited] } = await db.query(`
+      WITH ${UNCOVERED_COLLECTIONS_CTE}
       SELECT
         COUNT(DISTINCT cc.collected_by) AS agent_count,
-        COALESCE(SUM(cc.amount_kmf), 0) AS total_kmf
-      FROM cash_collections cc
+        COALESCE(SUM(cc.uncovered_kmf), 0) AS total_kmf
+      FROM uncovered cc
       WHERE cc.confirmed_at < NOW() - ($1 * INTERVAL '1 hour')
-        AND NOT EXISTS (
-          SELECT 1 FROM cash_deposits cd
-          WHERE cd.agent_id = cc.collected_by
-            AND cd.period_start <= cc.confirmed_at::date
-            AND cd.period_end >= cc.confirmed_at::date
-        )
     `, [cashNotDepositedHrs]);
 
     if (Number(undeposited.total_kmf) <= 0) return null;
@@ -82,10 +82,10 @@ async function checkCashNotDeposited(db, cashNotDepositedHrs) {
       level: 'critical',
       icon: '🏦',
       code: 'CASH_NOT_DEPOSITED',
-      title: `${Number(undeposited.total_kmf).toLocaleString('fr-FR')} KMF encaissés non déposés (${undeposited.agent_count} agent(s))`,
+      title: `${Number(undeposited.total_kmf).toLocaleString('fr-FR')} KMF encaissés non remis et acceptés (${undeposited.agent_count} agent(s))`,
       value_kmf: Number(undeposited.total_kmf),
       count: Number(undeposited.agent_count),
-      action: 'Demander les versements',
+      action: 'Faire déclarer puis accepter les remises, ou clôturer par réception finale contrôlée',
       target_view: 'cash',
       target_filter: { type: 'undeposited' },
     };
@@ -118,6 +118,61 @@ async function checkDepositsPendingReview(db) {
     };
   } catch (_) {
     // table may not exist yet
+    return null;
+  }
+}
+
+// Remises historiques « vérifiées » avant la garde canonique : elles ne déchargent PAS l'agent et
+// ne sont jamais clôturées automatiquement. Elles restent à régulariser par un transfert accepté
+// (avec preuve) tant qu'aucune régularisation vérifiée ne les couvre.
+async function checkCashLegacyToRegularize(db) {
+  try {
+    const { rows: [r] } = await db.query(`
+      SELECT COUNT(*) FILTER (WHERE remaining > 0) AS cnt,
+             COALESCE(SUM(remaining) FILTER (WHERE remaining > 0), 0) AS total_kmf
+        FROM (
+          SELECT d.amount_kmf - COALESCE((
+                   SELECT SUM(x.amount_kmf) FROM cash_deposits x
+                    WHERE x.regularizes_deposit_id = d.id AND x.status = 'verified'), 0) AS remaining
+            FROM cash_deposits d
+           WHERE d.movement_kind = 'LEGACY' AND d.status = 'verified'
+        ) t
+    `);
+    if (Number(r.total_kmf) <= 0) return null;
+    return {
+      level: 'signal',
+      icon: '🧾',
+      code: 'CASH_LEGACY_TO_REGULARIZE',
+      title: `${Number(r.total_kmf).toLocaleString('fr-FR')} KMF de remises historiques à régulariser (${r.cnt} remise(s)) : l'agent n'est pas déchargé`,
+      value_kmf: Number(r.total_kmf),
+      count: Number(r.cnt),
+      action: 'Faire déclarer puis accepter un transfert avec preuve pour chaque remise historique',
+      target_view: 'cash',
+      target_filter: { type: 'legacy_to_regularize' },
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+// Détenteurs au-delà de leur plafond ou du délai de garde du Market (limites centrales respectées).
+async function checkCashCustodyLimits(db) {
+  try {
+    const rows = await custody.overdueHoldings(db);
+    if (!rows.length) return null;
+    const total = rows.reduce((sum, row) => sum + row.balance_kmf, 0);
+    return {
+      level: 'critical',
+      icon: '⏱️',
+      code: 'CASH_CUSTODY_LIMIT_EXCEEDED',
+      title: `${rows.length} détenteur(s) hors plafond ou hors délai de garde (${total.toLocaleString('fr-FR')} KMF)`,
+      value_kmf: total,
+      count: rows.length,
+      action: 'Faire remettre les fonds à la personne habilitée ou à la destination finale',
+      target_view: 'cash',
+      target_filter: { type: 'custody_limits' },
+    };
+  } catch (_) {
     return null;
   }
 }
@@ -189,5 +244,7 @@ module.exports = {
   checkCashNotCollected,
   checkCashNotDeposited,
   checkDepositsPendingReview,
+  checkCashLegacyToRegularize,
+  checkCashCustodyLimits,
   checkSuspectCashPattern,
 };

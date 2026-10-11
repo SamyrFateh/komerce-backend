@@ -78,6 +78,7 @@ module.exports = {
       'services/cash-operations.js',
       'services/cash-confirmation-control-service.js',
       'services/cash-deposit-service.js',
+      'services/cash-custody-service.js',
       'services/reconciliation-service.js',
       'services/payment-mobile-money.js',
       'services/market-payment-provider-config-service.js',
@@ -101,6 +102,8 @@ module.exports = {
       'migrations/079_paypal_payment_mode.sql',
       'migrations/148_cash_deposit_business_reference.sql',
       'migrations/285_market_payment_accounts.sql',
+      'migrations/287_cash_custody_ledger.sql',
+      'migrations/288_cash_custody_recipients.sql',
       'migrations/169_mobile_money_foundation.sql',
       'migrations/171_kartapay_km_mobile_money.sql',
       'migrations/199_cash_confirmation_control.sql',
@@ -172,7 +175,9 @@ module.exports = {
   db: {
     tables: [
       'cash_collections: RW',
+      'cash_deposit_allocations: RW',
       'cash_deposits: RW',
+      'market_cash_destinations: RW',
       'cash_confirmation_controls: RW',
       'market_cash_control_policies: R',
       'market_operating_assignments: R',

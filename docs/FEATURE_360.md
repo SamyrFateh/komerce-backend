@@ -5,15 +5,15 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 ## Global scorecard
 
 - Features : **40**
-- Healthy : **34**
+- Healthy : **33**
 - Attention : **6**
-- Blocked : **0**
+- Blocked : **1**
 - Business dependencies : **304**
-- Direct cross-feature imports : **0**
+- Direct cross-feature imports : **1**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
 - Ontology gaps : **0**
-- Debt items (total) : **10**
+- Debt items (total) : **11**
 - Gate health — healthy : **37** · blocked : **2**
 
 ## Gate findings — intégrité de projection
@@ -36,7 +36,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | catalog | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, catalog_media, catalog_taxonomy_audit, catalog_terminology_reference, product_attributes, product_content_profile, product_content_sections, product_market_exposure, product_sku_media, product_skus, product_variants, products, supplier_catalog_imports, supplier_catalog_sync_checkpoints, supplier_oauth_connections | auth, auth-identity, business-rules, customs, economic-engine, external-provider-contracts, infrastructure, logistics, market, market-autonomy, notifications, orders, platform-ops, purchasing, shared-cart, sourcing, supplier-connectivity | admin-dashboard, auth-identity, customs, dashboard, documents, economic-engine, infrastructure, inventory, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution | 0 |
 | customs | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | customs_categories, customs_shipment_parcels, customs_shipments | auth, catalog, documents, economic-engine, infrastructure, logistics, orders | admin-dashboard, catalog, dashboard, documents, economic-engine, infrastructure, orders | 0 |
 | dashboard | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | order_incidents, partners | auth, auth-identity, business-rules, catalog, customs, decision-signals, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, inventory, local-stock, logistics, market, market-autonomy, market-delegation, notifications, orders, payments, purchasing, shared-cart, sourcing, supplier-connectivity, wallet | admin-dashboard, economic-engine, infrastructure, market-control-plane, market-delegation, sourcing | 0 |
-| decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | auth, business-rules, infrastructure, logistics, market-delegation, purchasing | admin-dashboard, dashboard, incident-management, market-control-plane, orders | 0 |
+| decision-signals | piloting-capability | 🔴 BLOCKED | 🟢 HEALTHY | signals | auth, business-rules, infrastructure, logistics, market-delegation, purchasing | admin-dashboard, dashboard, incident-management, market-control-plane, orders | 1 |
 | documents | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | invoices, transaction_documents | auth, auth-identity, catalog, customs, infrastructure, logistics, orders, refunds, wallet | admin-dashboard, auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, refunds, wallet | 0 |
 | economic-engine | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_component_market_override_events, cost_component_market_overrides, cost_components, economic_risk_cost_events, economic_risk_watermark_events, economic_snapshots, economic_structure_cost_events, exchange_rates, finance_config, market_price_observation_events, market_price_observations, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_market_decision_policy_events, pricing_matrices_audit, pricing_maturity_disposition_events, pricing_strategies, pricing_strategy_history, risk_provisions | auth, auth-identity, business-rules, catalog, customs, dashboard, infrastructure, logistics, loyalty, market, market-autonomy, market-delegation, orders, platform-ops, refunds | admin-dashboard, catalog, customs, dashboard, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, sourcing | 0 |
 | external-provider-contracts | technical-transversal | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | _aucune_ | catalog, dashboard, purchasing, supplier-connectivity | 1 |
@@ -646,11 +646,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
 
-**Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Boundary health** : 🔴 BLOCKED — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
 **Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
-**Architectural debt** : _aucune_
+**Architectural debt** (1) :
+- `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
 **Implementation** : 29 fichier(s) déclaré(s)
   - middleware : 1
@@ -1448,11 +1449,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth-identity" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-delegation" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 28 fichier(s) déclaré(s)
-  - dash : 17
+**Implementation** : 31 fichier(s) déclaré(s)
+  - dash : 18
   - migrations : 1
   - services : 4
-  - tests : 6
+  - tests : 8
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market-autonomy"]_
 
@@ -1665,13 +1666,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 100 fichier(s) déclaré(s)
+**Implementation** : 106 fichier(s) déclaré(s)
   - config : 1
   - middleware : 3
   - migrations : 22
-  - routes : 12
-  - services : 15
-  - tests : 47
+  - routes : 14
+  - services : 17
+  - tests : 49
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market-delegation"]_
 
@@ -1944,13 +1945,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 66 fichier(s) déclaré(s), boutique: 6 fichier(s)
+**Implementation** : 72 fichier(s) déclaré(s), boutique: 6 fichier(s)
   - boutique : 4
-  - migrations : 5
-  - routes : 5
+  - migrations : 6
+  - routes : 7
   - scripts : 1
-  - services : 19
-  - tests : 32
+  - services : 20
+  - tests : 34
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="payments"]_
 

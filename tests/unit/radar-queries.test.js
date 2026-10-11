@@ -152,6 +152,21 @@ describe('getAlerts', () => {
     expect(result.total).toBe(0);
   });
 
+  it('expose CASH_LEGACY_TO_REGULARIZE (remises historiques : agent non déchargé) dans getAlerts', async () => {
+    db.query.mockImplementation(async (sql) => {
+      const s = sql.trim();
+      if (s.startsWith('SELECT o.id, o.reference')) return { rows: [] };
+      if (s.includes('agent_gaps')) return { rows: [] };
+      if (s.includes('regularizes_deposit_id')) return { rows: [{ cnt: 2, total_kmf: 70000 }] };
+      return { rows: [ROW_ZERO] };
+    });
+    const result = await radarQueries.getAlerts();
+    const alert = result.alerts.find(a => a.code === 'CASH_LEGACY_TO_REGULARIZE');
+    expect(alert).toMatchObject({ level: 'signal', value_kmf: 70000, count: 2 });
+    expect(alert.title).toMatch(/n'est pas déchargé/);
+    expect(result.alerts.find(a => a.code === 'CASH_REMITTANCE_UNPROVEN')).toBeUndefined();
+  });
+
   it('déclenche CASH_OVERDUE si cashOverdue.cnt > 0', async () => {
     let call = 0;
     db.query.mockImplementation(async (sql) => {

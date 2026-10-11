@@ -58,14 +58,19 @@ describe('finance / comptabilité decision-first', () => {
 
   test('la carte rapprochement reprend les écarts backend et ne crée aucun seuil arbitraire', () => {
     expect(decision.reconciliationCard({ gap_collection_kmf: 0, gap_deposit_kmf: 0 })).toEqual(
-      expect.objectContaining({ tone: 'positive' })
+      expect.objectContaining({ tone: 'neutral' })
     );
+    // Sans allocation, l'absence d'écart n'est jamais présentée comme un vert définitif.
+    const zero = decision.reconciliationCard({ gap_collection_kmf: 0, gap_deposit_kmf: 0 });
+    expect(zero.tone).not.toBe('positive');
+    expect(zero.subtitle).toMatch(/provisoire/);
+    expect(zero.subtitle).toMatch(/sans allocation ni confirmation bancaire/);
     const card = decision.reconciliationCard({ gap_collection_kmf: 25000, gap_deposit_kmf: 0 });
     expect(card.tone).toBe('warning');
     expect(card.metrics[0].label).toBe('Écart collecte');
     expect(card.metrics[0].value).toContain('25');
     expect(card.metrics[0].value).toContain('KMF');
-    expect(card.metrics[1]).toEqual(expect.objectContaining({ label: 'Écart dépôt' }));
+    expect(card.metrics[1]).toEqual(expect.objectContaining({ label: 'Écart (collecté − vérifié)' }));
     expect(card.metrics[1].value).toContain('0');
   });
 

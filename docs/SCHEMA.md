@@ -139,7 +139,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | Table | Rôle |
 |---|---|
 | `cash_collections` | Encaissements cash relais. |
-| `cash_deposits` | Dépôts agents. **Migration 286 (`intended_migration_schema`)** : + `declared_amount` NUMERIC(18,2), `declared_currency` TEXT, `fx_rate_to_kmf` NUMERIC(18,6), `fx_source` TEXT, tous nullables et liés par un CHECK « tout ou rien » (KMF ⇒ taux 1) ; `amount_kmf` reste la valeur canonique KMF, NULL = saisie historique en KMF. |
+| `cash_deposits` | Dépôts agents. **Migration 286 (`intended_migration_schema`)** : + `declared_amount` NUMERIC(18,2), `declared_currency` TEXT, `fx_rate_to_kmf` NUMERIC(18,6), `fx_source` TEXT, tous nullables et liés par un CHECK « tout ou rien » (KMF ⇒ taux 1) ; `amount_kmf` reste la valeur canonique KMF, NULL = saisie historique en KMF. **Migration 289 (`intended_migration_schema`)** : + `recipient_user_id` (personne habilitée destinataire d'un transfert), `destination_id` (destination finale d'une réception finale), `regularizes_deposit_id` (remise historique vérifiée que la nouvelle remise régularise) ; exactement une cible hors historique (CHECK `cash_deposits_custody_target_chk`), cible et origine immuables, statut non historique dérivé des seuls reçus. |
 | `cash_reconciliation` | Réconciliation cash. |
 | `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `payment_total_amount` NUMERIC(18,4), `payment_currency` TEXT et `payment_minor_unit` INTEGER pour figer la devise réellement encaissée par les rails natifs comme Mobile Money XAF, sans réinterpréter `display_total_amount`. |
 | `refunds` | Remboursements. Contraintes UNIQUE(order_id, refund_type) et UNIQUE(stripe_refund_id) pour idempotence ON CONFLICT. |
@@ -166,6 +166,41 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `basket_items` | Items panier. |
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
+<!-- schema-pending
+object: cash_custody_receipts
+kind: table
+migration: 289
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Faits append-only de réception d'une remise non historique : RECEIVED/REFUSED par le destinataire désigné, CONTROL par un acteur indépendant (clôture), REVERSAL en contre-écriture motivée. Montant annoncé distinct du montant reçu, devise et taux figés ; un transfert accepté déplace la responsabilité sur le seul montant reçu, une réception finale ne clôt qu'après contrôle.
+-->
+<!-- schema-pending
+object: cash_custody_losses
+kind: table
+migration: 289
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Décisions centrales de perte (LOSS) et leurs contre-écritures (LOSS_REVERSAL), append-only : décideur distinct du détenteur, motif obligatoire, jamais déduites d'un montant reçu ; le détenteur ne peut pas devenir négatif.
+-->
+<!-- schema-pending
+object: cash_custody_movements
+kind: view
+migration: 289
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Vue unique des mouvements de garde cash (COLLECTION, TRANSFER_OUT, TRANSFER_IN, FINAL_CLOSURE, LOSS) dont la somme par détenteur et Market est le solde canonique ; aucune seconde vérité, lecture seule.
+-->
+<!-- schema-pending
+object: market_cash_destinations
+kind: table
+migration: 288
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Destinations finales autorisées des espèces par Market (BANK, MOBILE_MONEY) : proposée par un acteur, activée par un second acteur distinct (contrainte en base), suspendue/clôturée avec motif, jamais supprimée ; peut référencer un compte de paiement du même Market et de même devise sans jamais le modifier.
+-->
+<!-- schema-pending
+object: cash_deposit_allocations
+kind: table
+migration: 287
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Grand livre de garde cash append-only : part de chaque encaissement couverte par une remise (cash_deposits reste l'autorité des remises). Allocation RECONSTRUCTED (FIFO serveur/historique) ou CONFIRMED (PR 4) ; Σ lignes vivantes ≤ encaissement, Σ lignes ≤ remise, même Market et même agent, verrous de lignes. Ne décharge jamais l'agent : la couverture reste provisoire jusqu'à la réception finale prouvée.
+-->
 <!-- schema-pending
 object: market_payment_accounts
 kind: table
@@ -422,7 +457,7 @@ role: Preuves monétaires provider liées à supplier_execution_payments ; unici
 | `ceiling_template_capabilities` | Association entre un template de ceiling et ses capabilities autorisées. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_delegation_audit` | Journal append-only des mutations de délégation, distinct des faits économiques. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_team_invitations` | Invitations d’équipe expirantes pour un Market Operating Assignment ; seul le hash SHA-256 du token est persisté et les capabilities demandées sont revalidées à l’acceptation. **Migration 196 — promue le 2026-09-09 (schema-promote, dump live verifie).** **Migration 277 (`intended_migration_schema`)** : + `phone_e164` TEXT nullable pour le destinataire WhatsApp au format E.164, + `channel` EMAIL|WHATSAPP, + `invited_by_user_id` pour tracer l’invitant central ou membre, + `grants_operating_lead` pour porter explicitement l’intention de désignation sans créer de capability implicite ; email peut être nullable lorsque le canal est WHATSAPP. |
-| `market_cash_control_policies` | Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS. **Migration 198 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
+| `market_cash_control_policies` | Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS. **Migration 198 — promue le 2026-09-10 (schema-promote, dump live verifie).** **Migration 288 (2026-10-11, `intended_migration_schema`)** : + `custody_max_days` INTEGER nullable (1–365), délai de garde des espèces du Market ; `NULL` = défaut central ; toujours borné par la limite centrale côté service. |
 
 ### 4.13 Monitoring et alertes (10 tables)
 

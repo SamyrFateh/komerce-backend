@@ -475,7 +475,7 @@ describe('GENERATORS.parcel_blocked', () => {
 describe('GENERATORS.cash_expiring', () => {
   const row = (extra = {}) => ({ id: 'cc1', order_id: 'o1', amount_kmf: 150000, relais_id: 'r1', collected_by: 'u1', market_id: 'm-cm', days_pending: 12, reference: 'CMD-2', ...extra });
 
-  test('SQL sur colonnes réelles : amount_kmf, confirmed_at, dépôt couvrant, market via commande', async () => {
+  test('SQL sur colonnes réelles : amount_kmf, confirmed_at, autorité canonique de garde, market via commande', async () => {
     mockQuery = jest.fn().mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
     const { GENERATORS } = loadService();
     await GENERATORS.cash_expiring();
@@ -483,8 +483,23 @@ describe('GENERATORS.cash_expiring', () => {
     expect(sql).toMatch(/cc\.amount_kmf/);
     expect(sql).toMatch(/cc\.confirmed_at/);
     expect(sql).toMatch(/JOIN orders o ON o\.id = cc\.order_id/);
-    expect(sql).toMatch(/NOT EXISTS[\s\S]*cash_deposits[\s\S]*cd\.agent_id = cc\.collected_by/);
+    // Couverture canonique (vue cash_custody_movements) : sorties ACCEPTÉES uniquement, jamais l'existence d'un dépôt.
+    expect(sql).toMatch(/FROM cash_custody_movements/);
+    expect(sql).toMatch(/'TRANSFER_OUT', 'FINAL_CLOSURE', 'LOSS'/);
+    expect(sql).not.toMatch(/cash_deposit_allocations|d\.status = 'verified'/);
+    expect(sql).toMatch(/uncovered_kmf/);
+    expect(sql).not.toMatch(/NOT EXISTS|period_start|period_end/);
     expect(sql).not.toMatch(/cc\.amount\b|cc\.relay_id|cc\.status/);
+  });
+
+  test('le montant du signal est le reliquat non couvert, pas le montant brut', async () => {
+    const row = { id: 'c1', order_id: 'o1', amount_kmf: '149999', relais_id: 'r1', collected_by: 'a1', market_id: 'm1', reference: 'K-1', days_pending: 9 };
+    mockQuery = jest.fn().mockResolvedValueOnce({ rows: [row] }).mockResolvedValue({ rows: [] });
+    const { GENERATORS } = loadService();
+    await GENERATORS.cash_expiring();
+    const upsert = mockQuery.mock.calls.map(c => c[1]).find(p => Array.isArray(p) && p.some(v => typeof v === 'string' && v.startsWith('Cash non couvert')));
+    expect(upsert).toBeDefined();
+    expect(upsert.some(v => typeof v === 'string' && /aucun transfert accepté ni clôture contrôlée/.test(v))).toBe(true);
   });
 
   test('aucune ligne et aucun signal ouvert → generated:0, aucune résolution', async () => {

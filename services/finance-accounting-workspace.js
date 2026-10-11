@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        server_resolved_market, authenticated_actor, accounting_filters, deposit_business_reference
  * @outputs       market_scoped_accounting_projection, delegated_cash_deposit_mutations
- * @depends       db, services/cash-deposit-service.js, services/market-delegation-service.js
+ * @depends       db, services/cash-deposit-service.js, services/cash-custody-service.js, services/market-delegation-service.js
  * @used-by       routes/admin-finance-accounting-workspace.js
- * @db-read       orders, cash_collections, cash_deposits, users, relais, invoices
+ * @db-read       orders, cash_collections, cash_deposits, cash_custody_movements, users, relais, invoices
  * @db-write      none
  * @db-write-via:cash-deposit-service cash_deposits
  * @db-write-via:market-delegation-service market_delegation_audit
@@ -22,6 +22,7 @@
 
 const db = require('../db');
 const deposits = require('./cash-deposit-service');
+const custody = require('./cash-custody-service');
 const { audit } = require('./market-delegation-service');
 
 class FinanceAccountingWorkspaceError extends Error {
@@ -111,6 +112,7 @@ async function queryDeposits(marketId) {
       JOIN users u ON u.id = cd.agent_id
       JOIN relais r ON r.id = u.relais_id AND r.market_id = $1
       LEFT JOIN users v ON v.id = cd.verified_by
+     WHERE cd.movement_kind = 'LEGACY'
      ORDER BY CASE cd.status WHEN 'pending' THEN 0 WHEN 'disputed' THEN 1 ELSE 2 END,
               cd.deposited_at DESC
      LIMIT 200
@@ -164,7 +166,7 @@ async function queryInvoices(marketId) {
 }
 
 async function queryReconciliation(marketId, filters) {
-  const [expectedRes, collectedRes, depositedRes] = await Promise.all([
+  const [expectedRes, collectedRes, flowRes, heldRes] = await Promise.all([
     db.query(`
       SELECT COALESCE(SUM(o.total_kmf), 0)::numeric AS expected_kmf,
              COUNT(*)::int AS expected_count
@@ -186,52 +188,63 @@ async function queryReconciliation(marketId, filters) {
          AND cc.confirmed_at::date BETWEEN $2 AND $3
          AND (r.id IS NULL OR r.market_id = $1)
     `, [marketId, filters.from, filters.to]),
+    // Autorité canonique unique (vue cash_custody_movements) : flux de la période.
     db.query(`
-      SELECT COALESCE(SUM(cd.amount_kmf), 0)::numeric AS deposited_kmf,
-             COALESCE(SUM(cd.amount_kmf) FILTER (WHERE cd.status = 'verified'), 0)::numeric AS verified_kmf,
-             COALESCE(SUM(cd.amount_kmf) FILTER (WHERE cd.status = 'pending'), 0)::numeric AS pending_kmf,
-             COALESCE(SUM(cd.amount_kmf) FILTER (WHERE cd.status = 'disputed'), 0)::numeric AS disputed_kmf,
-             COUNT(*)::int AS deposit_count
-        FROM cash_deposits cd
-        JOIN users u ON u.id = cd.agent_id
-        JOIN relais r ON r.id = u.relais_id AND r.market_id = $1
-       WHERE cd.period_start >= $2
-         AND cd.period_end <= $3
+      SELECT COALESCE(-SUM(delta_kmf) FILTER (WHERE source = 'TRANSFER_OUT'), 0)::numeric AS transferred_kmf,
+             COALESCE(-SUM(delta_kmf) FILTER (WHERE source = 'FINAL_CLOSURE'), 0)::numeric AS closed_kmf,
+             COALESCE(-SUM(delta_kmf) FILTER (WHERE source = 'LOSS'), 0)::numeric AS lost_kmf
+        FROM cash_custody_movements
+       WHERE market_id = $1 AND occurred_at::date BETWEEN $2 AND $3
     `, [marketId, filters.from, filters.to]),
+    // Point dans le temps : qui détient encore, et ce qui attend une réponse.
+    db.query(`
+      SELECT (SELECT COALESCE(SUM(delta_kmf), 0) FROM cash_custody_movements WHERE market_id = $1)::numeric AS held_kmf,
+             (SELECT COALESCE(SUM(d.amount_kmf), 0) FROM cash_deposits d
+               WHERE d.market_id = $1 AND d.movement_kind <> 'LEGACY' AND d.status = 'pending')::numeric AS awaiting_kmf
+    `, [marketId]),
   ]);
 
   const expected = expectedRes.rows[0] || {};
   const collected = collectedRes.rows[0] || {};
-  const deposited = depositedRes.rows[0] || {};
+  const flow = flowRes.rows[0] || {};
+  const held = heldRes.rows[0] || {};
   const expectedKmf = Number(expected.expected_kmf || 0);
   const collectedKmf = Number(collected.collected_kmf || 0);
-  const depositedKmf = Number(deposited.deposited_kmf || 0);
+  const closedKmf = Number(flow.closed_kmf || 0);
+  const lostKmf = Number(flow.lost_kmf || 0);
   return {
     period: { from: filters.from, to: filters.to },
     expected_kmf: expectedKmf,
     expected_count: Number(expected.expected_count || 0),
     collected_kmf: collectedKmf,
     collection_count: Number(collected.collection_count || 0),
-    deposited_kmf: depositedKmf,
-    verified_kmf: Number(deposited.verified_kmf || 0),
-    pending_kmf: Number(deposited.pending_kmf || 0),
-    disputed_kmf: Number(deposited.disputed_kmf || 0),
-    deposit_count: Number(deposited.deposit_count || 0),
     gap_collection_kmf: expectedKmf - collectedKmf,
-    gap_deposit_kmf: collectedKmf - depositedKmf,
+    // Canonique : seul un transfert ACCEPTÉ décharge ; seule une réception finale CONTRÔLÉE clôt.
+    transferred_kmf: Number(flow.transferred_kmf || 0),
+    closed_kmf: closedKmf,
+    lost_kmf: lostKmf,
+    held_kmf: Number(held.held_kmf || 0),
+    awaiting_reply_kmf: Number(held.awaiting_kmf || 0),
+    // Écart de clôture = collecté − clôturé − perte décidée (jamais « vérifié »).
+    gap_closure_kmf: collectedKmf - closedKmf - lostKmf,
   };
 }
 
 async function buildWorkspace({ market, from, to, hours } = {}) {
   const resolved = requireMarket(market);
   const filters = normalizeFilters({ from, to, hours });
-  const [reconciliation, collections, depositRows, uncollected, invoices] = await Promise.all([
+  const [reconciliation, collections, depositRows, uncollected, invoices, custodySnapshot, holders, transfers, legacy] = await Promise.all([
     queryReconciliation(resolved.id, filters),
     queryCollections(resolved.id, filters),
     queryDeposits(resolved.id),
     queryUncollected(resolved.id, filters),
     queryInvoices(resolved.id),
+    custody.snapshot(db, resolved.id),
+    custody.holdings(db, resolved.id),
+    custody.transferRows(db, resolved.id),
+    custody.legacyToRegularize(db, resolved.id),
   ]);
+  const toAct = transfers.filter(row => ['DECLARED', 'AWAITING_PROOF', 'TO_CONTROL'].includes(row.state));
   const missingKmf = uncollected.reduce((sum, row) => sum + Number(row.total_kmf || 0), 0);
   return {
     scope: publicMarket(resolved),
@@ -239,8 +252,11 @@ async function buildWorkspace({ market, from, to, hours } = {}) {
     summary: {
       expected_kmf: reconciliation.expected_kmf,
       collected_kmf: reconciliation.collected_kmf,
-      deposited_kmf: reconciliation.deposited_kmf,
-      verified_kmf: reconciliation.verified_kmf,
+      held_kmf: reconciliation.held_kmf,
+      closed_kmf: reconciliation.closed_kmf,
+      transfers_to_act: toAct.length,
+      legacy_to_regularize: legacy.length,
+      legacy_to_regularize_kmf: legacy.reduce((sum, row) => sum + row.remaining_kmf, 0),
       pending_deposits: depositRows.filter(row => row.status === 'pending').length,
       disputed_deposits: depositRows.filter(row => row.status === 'disputed').length,
       uncollected_orders: uncollected.length,
@@ -252,6 +268,7 @@ async function buildWorkspace({ market, from, to, hours } = {}) {
     uncollected,
     collections,
     invoices,
+    custody: { ...custodySnapshot, holders, transfers, legacy_to_regularize: legacy },
   };
 }
 
@@ -337,23 +354,68 @@ async function withDepositTransaction(work) {
   }
 }
 
+function asWorkspaceError(err) {
+  if (err instanceof deposits.CashDepositError || err instanceof custody.CashCustodyError) {
+    return new FinanceAccountingWorkspaceError(err.code, err.message, err.status);
+  }
+  const mapped = custody.mapDbError(err);
+  return mapped instanceof custody.CashCustodyError
+    ? new FinanceAccountingWorkspaceError(mapped.code, mapped.message, mapped.status)
+    : err;
+}
+
+// Remise de garde : le remettant est la session ; relais lié au Market, ou personne habilitée
+// (cash.custody.receive, vérifiée par la route et la base). Le Market vient de la route.
 async function createDeposit(payload, market, actor = {}) {
   const resolved = requireMarket(market);
-  await resolveActorRelaisInMarket(actor.id, resolved.id);
+  if (actor.role === 'agent_relais') await resolveActorRelaisInMarket(actor.id, resolved.id);
   try {
-    const deposit = await deposits.createDeposit({ agentId: actor.id, payload });
+    const deposit = await deposits.createDeposit({ agentId: actor.id, marketId: resolved.id, payload });
     return {
       deposit_ref: deposit.deposit_ref,
+      kind: deposit.movement_kind,
       amount_kmf: Number(deposit.amount_kmf || 0),
       status: deposit.status,
     };
   } catch (err) {
-    if (err instanceof deposits.CashDepositError) {
-      throw new FinanceAccountingWorkspaceError(err.code, err.message, err.status);
-    }
-    throw err;
+    throw asWorkspaceError(err);
   }
 }
+
+async function custodyAction(market, work) {
+  const resolved = requireMarket(market);
+  try {
+    return await deposits.withTransaction(db, client => work(client, resolved.id));
+  } catch (err) {
+    throw asWorkspaceError(err);
+  }
+}
+
+const receiveTransfer = (depositRef, body = {}, market, actor = {}) => custodyAction(market, (client, marketId) =>
+  custody.recordReceipt(client, {
+    actorId: actor.id, marketId, depositRef, outcome: body.outcome, receivedAmount: body.received_amount,
+    proofRef: body.proof_ref, proofUrl: body.proof_url, reason: body.reason,
+  }));
+
+const controlFinal = (depositRef, body = {}, market, actor = {}) => custodyAction(market, (client, marketId) =>
+  custody.recordControl(client, {
+    actorId: actor.id, marketId, depositRef, controlledKmf: body.controlled_kmf, reason: body.reason,
+  }));
+
+const reverseReceipt = (depositRef, body = {}, market, actor = {}) => custodyAction(market, (client, marketId) =>
+  custody.reverseReceipt(client, {
+    actorId: actor.id, marketId, depositRef, receiptId: body.receipt_id, amountKmf: body.amount_kmf, reason: body.reason,
+  }));
+
+const decideLoss = (body = {}, market, actor = {}) => custodyAction(market, (client, marketId) =>
+  custody.decideLoss(client, {
+    actorId: actor.id, marketId, holderId: body.holder_id, amountKmf: body.amount_kmf, reason: body.reason, depositRef: body.deposit_ref,
+  }));
+
+const reverseLoss = (lossId, body = {}, market, actor = {}) => custodyAction(market, (client, marketId) =>
+  custody.reverseLoss(client, {
+    actorId: actor.id, marketId, lossId, amountKmf: body.amount_kmf, reason: body.reason,
+  }));
 
 async function reviewDeposit({ reference, market, actor, target, mutate, auditAction, afterNote }) {
   const resolved = requireMarket(market);
@@ -403,6 +465,11 @@ module.exports = {
   resolveActorRelaisInMarket,
   resolveDeposit,
   createDeposit,
+  receiveTransfer,
+  controlFinal,
+  reverseReceipt,
+  decideLoss,
+  reverseLoss,
   verifyDeposit,
   disputeDeposit,
 };

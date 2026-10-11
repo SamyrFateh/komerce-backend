@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        authenticated user, market code, partner cash policy
  * @outputs       effective market cash policy, auditable policy mutation
- * @depends       services/market-delegation-team-service.js, services/market-delegation-service.js
+ * @depends       services/market-delegation-team-service.js, services/market-delegation-service.js, services/cash-custody-service.js
  * @used-by       routes/market-delegation-cash-control.js, services/cash-confirmation-control-service.js
  * @db-read       market_cash_control_policies, market_operating_assignments, markets, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write      market_cash_control_policies
@@ -20,10 +20,12 @@
 
 const { resolveAuthorization } = require('./market-delegation-team-service');
 const { audit } = require('./market-delegation-service');
+const { centralLimits } = require('./cash-custody-service');
 
 const DEFAULT_POLICY = Object.freeze({
   cash_enabled: true,
   confirmation_mode: 'SINGLE',
+  custody_max_days: null,
 });
 
 function requireExecutor(executor) {
@@ -42,7 +44,7 @@ function policyError(code, message, status = 400) {
 
 function normalizePolicyInput(payload) {
   const source = payload || {};
-  const allowed = new Set(['cash_enabled', 'confirmation_mode']);
+  const allowed = new Set(['cash_enabled', 'confirmation_mode', 'custody_max_days']);
   const unknown = Object.keys(source).filter(key => !allowed.has(key));
   if (unknown.length) {
     throw policyError('CASH_POLICY_FIELD_FORBIDDEN', `Champ(s) non autorisé(s) : ${unknown.join(', ')}`);
@@ -58,9 +60,19 @@ function normalizePolicyInput(payload) {
     throw policyError('CASH_POLICY_CONFIRMATION_MODE_INVALID', 'confirmation_mode doit être SINGLE ou DUAL_ALWAYS.');
   }
 
+  // Délai de garde (jours) : absent = inchangé, null = défaut central, entier borné par la limite centrale.
+  let custodyMaxDays;
+  if (Object.prototype.hasOwnProperty.call(source, 'custody_max_days')) {
+    const raw = source.custody_max_days;
+    if (raw === null) custodyMaxDays = null;
+    else if (Number.isInteger(raw) && raw >= 1 && raw <= 365) custodyMaxDays = raw;
+    else throw policyError('CASH_POLICY_CUSTODY_DAYS_INVALID', 'custody_max_days doit être un entier entre 1 et 365, ou null.');
+  }
+
   return {
     cash_enabled: cashEnabled,
     confirmation_mode: confirmationMode,
+    custody_max_days: custodyMaxDays,
   };
 }
 
@@ -82,6 +94,7 @@ function serializePolicy(row, fallback = {}) {
     market_code: fallback.market_code || null,
     cash_enabled: Boolean(row.cash_enabled),
     confirmation_mode: row.confirmation_mode,
+    custody_max_days: row.custody_max_days ?? null,
     source: 'MARKET_POLICY',
     updated_by_membership_id: row.updated_by_membership_id || null,
     updated_at: row.updated_at,
@@ -91,7 +104,7 @@ function serializePolicy(row, fallback = {}) {
 async function loadPolicyForAssignment(executor, { assignmentId, marketId, marketCode = null, forUpdate = false }) {
   const db = requireExecutor(executor);
   const { rows } = await db.query(
-    `SELECT id, assignment_id, market_id, cash_enabled, confirmation_mode,
+    `SELECT id, assignment_id, market_id, cash_enabled, confirmation_mode, custody_max_days,
             updated_by_membership_id, created_at, updated_at
        FROM market_cash_control_policies
       WHERE assignment_id=$1::uuid
@@ -142,19 +155,28 @@ async function updateMarketCashPolicy(executor, {
     forUpdate: true,
   });
 
+  if (next.custody_max_days != null) {
+    const limits = await centralLimits();
+    if (next.custody_max_days > limits.max_days) {
+      throw policyError('CASH_POLICY_CUSTODY_DAYS_ABOVE_CENTRAL', `Délai de garde supérieur à la limite centrale (${limits.max_days} jours).`, 422);
+    }
+  }
+  const touchesCustody = next.custody_max_days !== undefined;
   const { rows } = await db.query(
     `INSERT INTO market_cash_control_policies
-      (assignment_id, market_id, cash_enabled, confirmation_mode, updated_by_membership_id)
-     VALUES ($1::uuid,$2::uuid,$3,$4,$5::uuid)
+      (assignment_id, market_id, cash_enabled, confirmation_mode, updated_by_membership_id, custody_max_days)
+     VALUES ($1::uuid,$2::uuid,$3,$4,$5::uuid,$7::integer)
      ON CONFLICT (assignment_id) DO UPDATE SET
        market_id = EXCLUDED.market_id,
        cash_enabled = EXCLUDED.cash_enabled,
        confirmation_mode = EXCLUDED.confirmation_mode,
        updated_by_membership_id = EXCLUDED.updated_by_membership_id,
+       custody_max_days = CASE WHEN $6::boolean THEN EXCLUDED.custody_max_days ELSE market_cash_control_policies.custody_max_days END,
        updated_at = NOW()
-     RETURNING id, assignment_id, market_id, cash_enabled, confirmation_mode,
+     RETURNING id, assignment_id, market_id, cash_enabled, confirmation_mode, custody_max_days,
                updated_by_membership_id, created_at, updated_at`,
-    [authz.assignment_id, authz.market_id, next.cash_enabled, next.confirmation_mode, authz.membership_id]
+    [authz.assignment_id, authz.market_id, next.cash_enabled, next.confirmation_mode, authz.membership_id,
+      touchesCustody, touchesCustody ? next.custody_max_days : null]
   );
 
   const after = serializePolicy(rows[0], { market_code: authz.market_code });

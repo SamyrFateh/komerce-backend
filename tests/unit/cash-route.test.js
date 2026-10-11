@@ -59,6 +59,20 @@ jest.mock('../../services/purchasing-trigger-service', () => ({
   triggerPurchasing: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../../services/cash-custody-service', () => {
+  class CashCustodyError extends Error {
+    constructor(code, message, status = 400) { super(message || code); this.code = code; this.status = status; }
+  }
+  return {
+    RECEIVE_CAPABILITY: 'cash.custody.receive',
+    CashCustodyError,
+    assertAuthorizedRecipient: jest.fn(async () => ({})),
+    assertActiveDestination: jest.fn(async () => ({ id: 'dest-1', kind: 'BANK', currency: 'XAF' })),
+    holdingOf: jest.fn(async () => 1000000),
+    mapDbError: jest.fn(error => error),
+  };
+});
+
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
@@ -284,41 +298,51 @@ describe('cash — GET /collections', () => {
 });
 
 describe('cash — POST /deposit', () => {
+  const target = { recipient_user_id: 'user-r' };
+  const txClient = () => {
+    const client = {
+      query: jest.fn(async sql => {
+        if (/INSERT INTO cash_deposits/.test(String(sql))) return { rows: [{ id: 'dep-1', amount_kmf: 5000, movement_kind: 'TRANSFER' }] };
+        if (/FROM users u JOIN relais r/.test(String(sql))) return { rows: [{ market_id: 'm1' }] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    db.getClient.mockResolvedValueOnce(client);
+    return client;
+  };
+
+  it('422 si aucune cible (personne habilitée ou destination finale)', async () => {
+    const res = await request(app).post('/api/cash/deposit').send({ amount_kmf: 1000 });
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/Cible requise/);
+  });
+
   it('400 si amount_kmf manquant ou <= 0', async () => {
-    const res = await request(app).post('/api/cash/deposit').send({ amount_kmf: 0 });
+    const res = await request(app).post('/api/cash/deposit').send({ ...target, amount_kmf: 0 });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Montant/);
   });
 
   it('400 si deposit_method invalide', async () => {
-    const res = await request(app).post('/api/cash/deposit').send({ amount_kmf: 1000, deposit_method: 'crypto' });
+    txClient();
+    const res = await request(app).post('/api/cash/deposit').send({ ...target, amount_kmf: 1000, deposit_method: 'crypto' });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Méthode invalide/);
   });
 
-  it('400 si période manquante', async () => {
-    const res = await request(app).post('/api/cash/deposit').send({ amount_kmf: 1000, deposit_method: 'bank' });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/Période/);
-  });
-
-  it('succès → 201 + INSERT cash_deposits', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'dep-1', amount_kmf: 5000 }] });
-
-    const res = await request(app).post('/api/cash/deposit').send({
-      amount_kmf: 5000, deposit_method: 'mobile_money', period_start: '2026-06-01', period_end: '2026-06-07',
-    });
-
+  it('succès → 201 + INSERT cash_deposits (remise de garde, période par défaut)', async () => {
+    const client = txClient();
+    const res = await request(app).post('/api/cash/deposit').send({ ...target, amount_kmf: 5000 });
     expect(res.status).toBe(201);
-    expect(res.body.deposit).toEqual({ id: 'dep-1', amount_kmf: 5000 });
+    expect(res.body.deposit).toEqual({ id: 'dep-1', amount_kmf: 5000, movement_kind: 'TRANSFER' });
     expect(res.body.message).toMatch(/5.000 KMF/);
+    expect(client.query.mock.calls.some(c => /INSERT INTO cash_deposits/.test(String(c[0])))).toBe(true);
   });
 
   it('erreur DB → next(err) → 500', async () => {
-    db.query.mockRejectedValueOnce(new Error('db down'));
-    const res = await request(app).post('/api/cash/deposit').send({
-      amount_kmf: 5000, deposit_method: 'bank', period_start: '2026-06-01', period_end: '2026-06-07',
-    });
+    db.getClient.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).post('/api/cash/deposit').send({ ...target, amount_kmf: 5000 });
     expect(res.status).toBe(500);
   });
 });
@@ -344,6 +368,15 @@ describe('cash — GET /deposits', () => {
   });
 });
 
+// Client transactionnel scripté : BEGIN/COMMIT/ROLLBACK neutres, les autres requêtes
+// consomment `results` dans l'ordre (verrou, UPDATE, audit).
+function mockTxClient(...results) {
+  const query = jest.fn(async sql => (/^(BEGIN|COMMIT|ROLLBACK)$/.test(sql) ? { rows: [] } : (results.shift() || { rows: [] })));
+  db.getClient.mockResolvedValueOnce({ query, release: jest.fn() });
+  return query;
+}
+const lockRow = (status, extra = {}) => ({ rows: [{ id: 'd1', deposit_ref: 'KDP-1', movement_kind: 'LEGACY', agent_id: 'agent-9', status, amount_kmf: 1000, review_market_id: 'm1', ...extra }] });
+
 describe('cash — POST /deposits/:id/verify', () => {
   it('403 si non-admin', async () => {
     const res = await request(app).post('/api/cash/deposits/d1/verify').send({});
@@ -352,21 +385,32 @@ describe('cash — POST /deposits/:id/verify', () => {
 
   it('404 si dépôt introuvable', async () => {
     mockState.user = { id: 'admin-1', role: 'admin' };
-    db.query.mockResolvedValueOnce({ rows: [] });
-
+    mockTxClient({ rows: [] });
     const res = await request(app).post('/api/cash/deposits/d1/verify').send({});
-
     expect(res.status).toBe(404);
   });
 
-  it('succès → dépôt vérifié', async () => {
+  it('succès → dépôt vérifié, audité', async () => {
     mockState.user = { id: 'admin-1', role: 'admin' };
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'd1', status: 'verified' }] });
-
+    const query = mockTxClient(lockRow('pending'), { rows: [{ id: 'd1', status: 'verified' }] });
     const res = await request(app).post('/api/cash/deposits/d1/verify').send({ notes: 'ok' });
-
     expect(res.status).toBe(200);
     expect(res.body.deposit.status).toBe('verified');
+    expect(query.mock.calls.some(c => String(c[0]).includes('market_delegation_audit'))).toBe(true);
+  });
+
+  it('403 si l admin est le déposant (auto-revue)', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    mockTxClient(lockRow('pending', { agent_id: 'admin-1' }));
+    const res = await request(app).post('/api/cash/deposits/d1/verify').send({});
+    expect(res.status).toBe(403);
+  });
+
+  it('409 si le dépôt est déjà vérifié (aucun écrasement)', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    mockTxClient(lockRow('verified'));
+    const res = await request(app).post('/api/cash/deposits/d1/verify').send({});
+    expect(res.status).toBe(409);
   });
 });
 
@@ -384,21 +428,31 @@ describe('cash — POST /deposits/:id/dispute', () => {
 
   it('404 si dépôt introuvable', async () => {
     mockState.user = { id: 'admin-1', role: 'admin' };
-    db.query.mockResolvedValueOnce({ rows: [] });
-
+    mockTxClient({ rows: [] });
     const res = await request(app).post('/api/cash/deposits/d1/dispute').send({ reason: 'écart' });
-
     expect(res.status).toBe(404);
   });
 
   it('succès → dépôt contesté', async () => {
     mockState.user = { id: 'admin-1', role: 'admin' };
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'd1', status: 'disputed' }] });
-
+    mockTxClient(lockRow('pending'), { rows: [{ id: 'd1', status: 'disputed' }] });
     const res = await request(app).post('/api/cash/deposits/d1/dispute').send({ reason: 'écart' });
-
     expect(res.status).toBe(200);
     expect(res.body.deposit.status).toBe('disputed');
+  });
+
+  it('409 : contester un dépôt vérifié sans correction explicite', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    mockTxClient(lockRow('verified'));
+    const res = await request(app).post('/api/cash/deposits/d1/dispute').send({ reason: 'écart' });
+    expect(res.status).toBe(409);
+  });
+
+  it('200 : correction exceptionnelle explicite d un dépôt vérifié', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    mockTxClient(lockRow('verified'), { rows: [{ id: 'd1', status: 'disputed' }] });
+    const res = await request(app).post('/api/cash/deposits/d1/dispute').send({ reason: 'relevé non conforme', correction: true });
+    expect(res.status).toBe(200);
   });
 });
 
@@ -417,7 +471,7 @@ describe('cash — GET /reconciliation', () => {
     db.query
       .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', agent_name: 'Agent 1', agent_phone: '+269', expected_kmf: '10000', expected_count: '2' }] })
       .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', declared_kmf: '10000', declared_count: '2' }] })
-      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', deposited_kmf: '10000', deposit_count: '1', verified_kmf: '10000', pending_kmf: '0', disputed_kmf: '0' }] });
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', released_kmf: '10000', closed_kmf: '0', deposit_count: '1', pending_kmf: '0' }] });
 
     const res = await request(app).get('/api/cash/reconciliation');
 
@@ -425,11 +479,33 @@ describe('cash — GET /reconciliation', () => {
     expect(res.body.agents[0].status).toBe('clean');
   });
 
+  it('jamais clean : 150 000 KMF déclarés mais remise seulement annoncée (en attente d’acceptation)', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', agent_name: 'A', agent_phone: null, expected_kmf: '150000', expected_count: '3' }] })
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', declared_kmf: '150000', declared_count: '3' }] })
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', released_kmf: '0', closed_kmf: '0', deposit_count: '1', pending_kmf: '150000' }] });
+    const res = await request(app).get('/api/cash/reconciliation');
+    const a = res.body.agents[0];
+    expect(a.gap_deposit).toBe(150000);
+    expect(a.status).not.toBe('clean');
+    expect(res.body.totals).toMatchObject({ released_kmf: 0, closed_kmf: 0, gap_deposit: 150000 });
+  });
+
+  it('un transfert de 1 KMF accepté ne ferme pas l\'écart de 150 000 KMF', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', agent_name: 'A', agent_phone: null, expected_kmf: '150000', expected_count: '3' }] })
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', declared_kmf: '150000', declared_count: '3' }] })
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', released_kmf: '1', closed_kmf: '0', deposit_count: '1', pending_kmf: '0' }] });
+    const res = await request(app).get('/api/cash/reconciliation');
+    expect(res.body.agents[0].gap_deposit).toBe(149999);
+    expect(res.body.agents[0].status).toBe('alert');
+  });
+
   it('status warning si petit écart de collecte', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', agent_name: 'A', agent_phone: null, expected_kmf: '10000', expected_count: '2' }] })
       .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', declared_kmf: '9500', declared_count: '2' }] }) // gap = 500 < 10% de 10000
-      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', deposited_kmf: '9500', deposit_count: '1', verified_kmf: '9500', pending_kmf: '0', disputed_kmf: '0' }] });
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', released_kmf: '9500', closed_kmf: '0', deposit_count: '1', pending_kmf: '0' }] });
 
     const res = await request(app).get('/api/cash/reconciliation');
 
@@ -465,6 +541,16 @@ describe('cash — GET /reconciliation', () => {
 });
 
 describe('cash — GET /reconciliation/agents', () => {
+  it('balance_kmf = solde de garde canonique (vue cash_custody_movements), jamais « déclaré − vérifié »', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    db.query.mockResolvedValueOnce({ rows: [] });
+    await request(app).get('/api/cash/reconciliation/agents');
+    const sql = String(db.query.mock.calls[db.query.mock.calls.length - 1][0]);
+    expect(sql).toContain('FROM cash_custody_movements');
+    expect(sql).toMatch(/COALESCE\(cu\.balance_kmf, 0\) AS balance_kmf/);
+    expect(sql).not.toMatch(/verified_kmf/);
+  });
+
   it('403 si non-admin', async () => {
     const res = await request(app).get('/api/cash/reconciliation/agents');
     expect(res.status).toBe(403);

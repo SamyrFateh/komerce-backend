@@ -31,7 +31,8 @@ const MARKET_CODE = /^[A-Z]{2}$/;
 // Responsable pays : lecture Finance de son seul Market ID.
 // Dépôt terrain et validation comptable restent des gestes séparés et spécialisés.
 const requireWorkspaceReadRole = requireRole(['admin', 'finance', 'agent_relais', 'market_operator']);
-const requireDepositAction = requireRole(['admin', 'agent_relais']);
+const requireDepositAction = requireRole(['admin', 'agent_relais', 'finance', 'market_operator']);
+const requireCustodyAction = requireRole(['admin', 'agent_relais', 'finance', 'market_operator']);
 // Le rôle ne suffit jamais : finance.act sur le marché exact (requireFinanceAct) reste l'autorité.
 const requireVerificationAction = requireRole(['admin', 'market_operator']);
 
@@ -42,6 +43,9 @@ const requireVerificationAction = requireRole(['admin', 'market_operator']);
 // exigent finance.act, même pour admin.
 const requireFinanceRead = requireMarketDelegatedCapability('finance.read', { audit: false });
 const requireFinanceAct = requireMarketDelegatedCapability('finance.act');
+// Garde : recevoir, refuser et déclarer une remise de garde exigent l'habilitation du Market
+// (le relais est borné par son rattachement serveur) ; le contrôle final exige finance.act.
+const requireCustodyReceive = requireMarketDelegatedCapability('cash.custody.receive');
 
 async function requireRelayMarketBinding(req, res, next) {
   try {
@@ -75,7 +79,20 @@ function requireDepositMarketAccess(req, res, next) {
   if (req.user && req.user.role === 'agent_relais') {
     return requireRelayMarketBinding(req, res, next);
   }
-  return requireFinanceAct(req, res, next);
+  return requireCustodyReceive(req, res, next);
+}
+
+// Décision centrale (pertes, contre-écritures) : rôle admin ET autorité dashboard globale ;
+// jamais une délégation de Market.
+async function requireCentralAuthority(req, res, next) {
+  try {
+    if (!req.user || req.user.role !== 'admin' || !(await hasDashboardGlobalAuthority(req.user.id))) {
+      return res.status(403).json({ error: 'Décision centrale requise', code: 'central_authority_required' });
+    }
+    return next();
+  } catch (err) {
+    return next(err);
+  }
 }
 
 function rejectClientMarketAuthority(req, res, next) {
@@ -213,6 +230,32 @@ router.post('/market/:marketCode/deposits/:depositRef/dispute', requireVerificat
   }
 });
 
+function custodyHandler(action, run) {
+  return async (req, res, next) => {
+    try {
+      const result = await run(req);
+      return res.status(201).json({ ok: true, action, result });
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
+  };
+}
+
+router.post('/market/:marketCode/custody/:depositRef/receipt', requireCustodyAction, requireCustodyReceive, custodyHandler('record_custody_receipt',
+  req => workspace.receiveTransfer(req.params.depositRef, req.body || {}, req.workspaceMarket, actionActor(req))));
+
+router.post('/market/:marketCode/custody/:depositRef/control', requireVerificationAction, requireFinanceAct, custodyHandler('control_final_reception',
+  req => workspace.controlFinal(req.params.depositRef, req.body || {}, req.workspaceMarket, actionActor(req))));
+
+router.post('/market/:marketCode/custody/:depositRef/reversal', requireCentralAuthority, custodyHandler('reverse_custody_receipt',
+  req => workspace.reverseReceipt(req.params.depositRef, req.body || {}, req.workspaceMarket, actionActor(req))));
+
+router.post('/market/:marketCode/custody/losses', requireCentralAuthority, custodyHandler('decide_custody_loss',
+  req => workspace.decideLoss(req.body || {}, req.workspaceMarket, actionActor(req))));
+
+router.post('/market/:marketCode/custody/losses/:lossId/reversal', requireCentralAuthority, custodyHandler('reverse_custody_loss',
+  req => workspace.reverseLoss(req.params.lossId, req.body || {}, req.workspaceMarket, actionActor(req))));
+
 module.exports = router;
 module.exports._test = {
   rejectClientMarketAuthority,
@@ -221,6 +264,7 @@ module.exports._test = {
   requireRelayMarketBinding,
   requireWorkspaceReadAccess,
   requireDepositMarketAccess,
+  requireCentralAuthority,
   actionActor,
   sendWorkspaceError,
 };

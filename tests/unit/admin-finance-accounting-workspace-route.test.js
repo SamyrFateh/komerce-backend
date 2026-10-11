@@ -43,6 +43,7 @@ const mockCreateDeposit = jest.fn();
 const mockVerifyDeposit = jest.fn();
 const mockDisputeDeposit = jest.fn();
 const mockResolveActorRelaisInMarket = jest.fn();
+const mockCustody = { receiveTransfer: jest.fn(), controlFinal: jest.fn(), reverseReceipt: jest.fn(), decideLoss: jest.fn(), reverseLoss: jest.fn() };
 
 jest.mock('../../services/finance-accounting-workspace', () => {
   class FinanceAccountingWorkspaceError extends Error {
@@ -59,6 +60,11 @@ jest.mock('../../services/finance-accounting-workspace', () => {
     verifyDeposit: (...args) => mockVerifyDeposit(...args),
     disputeDeposit: (...args) => mockDisputeDeposit(...args),
     resolveActorRelaisInMarket: (...args) => mockResolveActorRelaisInMarket(...args),
+    receiveTransfer: (...args) => mockCustody.receiveTransfer(...args),
+    controlFinal: (...args) => mockCustody.controlFinal(...args),
+    reverseReceipt: (...args) => mockCustody.reverseReceipt(...args),
+    decideLoss: (...args) => mockCustody.decideLoss(...args),
+    reverseLoss: (...args) => mockCustody.reverseLoss(...args),
   };
 });
 
@@ -169,7 +175,7 @@ test.each(['admin', 'finance', 'agent_relais', 'market_operator'])('%s peut lire
 const VERIFY_CM = '/api/admin/workspaces/accounting/market/CM/deposits/KDP-000001/verify';
 const DISPUTE_CM = '/api/admin/workspaces/accounting/market/CM/deposits/KDP-000001/dispute';
 
-test('market_operator avec finance.act valide et conteste dans son Market, mais ne crée pas de dépôt', async () => {
+test('market_operator avec finance.act valide et conteste dans son Market, mais sans cash.custody.receive ne crée pas de remise', async () => {
   mockUserRole = 'market_operator';
   const create = await request(app()).post('/api/admin/workspaces/accounting/market/CM/deposits').send({
     amount_kmf: 1000,
@@ -355,4 +361,77 @@ test('admin doté de finance.act sur CM est refusé pour valider un dépôt CG',
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
   expect(mockVerifyDeposit).not.toHaveBeenCalled();
+});
+
+describe('garde des espèces : réception, contrôle indépendant, décisions centrales', () => {
+  const BASE = '/api/admin/workspaces/accounting/market/CM/custody';
+  beforeEach(() => {
+    for (const fn of Object.values(mockCustody)) fn.mockReset().mockResolvedValue({ ok: 1 });
+  });
+
+  test('une personne habilitée non-relais déclare une remise (cash.custody.receive sur le Market), jamais sans cette capability', async () => {
+    mockUserRole = 'market_operator';
+    mockGrantedCapabilities = new Set(['finance.read@CM', 'cash.custody.receive@CM']);
+    const res = await request(app()).post('/api/admin/workspaces/accounting/market/CM/deposits').send({ destination_id: 'dest-1', declared_amount: 100, declared_currency: 'XAF' });
+    expect(res.status).toBe(201);
+    expect(mockCreateDeposit).toHaveBeenCalledWith(expect.objectContaining({ destination_id: 'dest-1' }), expect.objectContaining({ code: 'CM' }), expect.objectContaining({ role: 'market_operator' }));
+    mockGrantedCapabilities = new Set(['finance.read@CM']);
+    expect((await request(app()).post('/api/admin/workspaces/accounting/market/CM/deposits').send({ destination_id: 'dest-1' })).status).toBe(403);
+  });
+
+  test('réception / refus : cash.custody.receive requis sur le Market exact, Market serveur, acteur de session', async () => {
+    mockUserRole = 'market_operator';
+    mockGrantedCapabilities = new Set(['finance.read@CM', 'cash.custody.receive@CM']);
+    const ok = await request(app()).post(`${BASE}/KDP-000001/receipt`).send({ outcome: 'received', received_amount: 500, proof_ref: 'REL-1' });
+    expect(ok.status).toBe(201);
+    expect(mockCustody.receiveTransfer).toHaveBeenCalledWith('KDP-000001', { outcome: 'received', received_amount: 500, proof_ref: 'REL-1' }, expect.objectContaining({ id: 'market-cm-id' }), expect.objectContaining({ id: 'market_operator-1' }));
+    const other = await request(app()).post('/api/admin/workspaces/accounting/market/CG/custody/KDP-000001/receipt').send({ outcome: 'refused', reason: 'x' });
+    expect(other.status).toBe(403);
+    mockGrantedCapabilities = new Set(['finance.read@CM']);
+    expect((await request(app()).post(`${BASE}/KDP-000001/receipt`).send({})).status).toBe(403);
+    expect(mockCustody.receiveTransfer).toHaveBeenCalledTimes(1);
+  });
+
+  test('contrôle final : finance.act sur le Market ET rôle admin / market_operator ; finance seule ne contrôle jamais', async () => {
+    mockUserRole = 'market_operator';
+    expect((await request(app()).post(`${BASE}/KDP-000001/control`).send({ controlled_kmf: 5 })).status).toBe(201);
+    expect(mockCustody.controlFinal).toHaveBeenCalledWith('KDP-000001', { controlled_kmf: 5 }, expect.objectContaining({ code: 'CM' }), expect.objectContaining({ id: 'market_operator-1' }));
+    mockUserRole = 'finance';
+    expect((await request(app()).post(`${BASE}/KDP-000001/control`).send({})).status).toBe(403);
+    mockUserRole = 'market_operator';
+    mockGrantedCapabilities = new Set(['finance.read@CM']);
+    expect((await request(app()).post(`${BASE}/KDP-000001/control`).send({})).status).toBe(403);
+    expect(mockCustody.controlFinal).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([
+    ['reversal', `${BASE}/KDP-000001/reversal`, 'reverseReceipt'],
+    ['perte', `${BASE}/losses`, 'decideLoss'],
+    ['contre-écriture de perte', `${BASE}/losses/loss-1/reversal`, 'reverseLoss'],
+  ])('décision centrale (%s) : admin + autorité dashboard globale, jamais une délégation de Market', async (_label, url, fn) => {
+    mockUserRole = 'admin';
+    mockGrantedCapabilities = new Set(['finance.read@CM', 'finance.act@CM', 'cash.custody.receive@CM']);
+    mockGlobalAllowed = false;
+    const denied = await request(app()).post(url).send({ amount_kmf: 1, reason: 'motif détaillé' });
+    expect(denied.status).toBe(403);
+    expect(denied.body.code).toBe('central_authority_required');
+    mockGlobalAllowed = true;
+    mockUserRole = 'market_operator';
+    expect((await request(app()).post(url).send({})).status).toBe(403);
+    mockUserRole = 'admin';
+    const ok = await request(app()).post(url).send({ amount_kmf: 1, reason: 'motif détaillé' });
+    expect(ok.status).toBe(201);
+    expect(mockCustody[fn]).toHaveBeenCalledTimes(1);
+  });
+
+  test('une erreur métier de garde est restituée avec son code et son statut', async () => {
+    mockUserRole = 'market_operator';
+    mockGrantedCapabilities = new Set(['finance.read@CM', 'finance.act@CM']);
+    const { FinanceAccountingWorkspaceError } = require('../../services/finance-accounting-workspace');
+    mockCustody.controlFinal.mockRejectedValueOnce(new FinanceAccountingWorkspaceError('custody_rule_violation', 'acteur non indépendant', 409));
+    const res = await request(app()).post(`${BASE}/KDP-000001/control`).send({});
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'custody_rule_violation' });
+    expect(router._test.requireCentralAuthority).toBeInstanceOf(Function);
+  });
 });

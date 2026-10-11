@@ -52,6 +52,7 @@
     'execution.parcel.receive': 'Réceptionner un colis au relais',
     'execution.parcel.collect': 'Remettre un colis au client',
     'execution.cash.confirm': 'Confirmer un encaissement terrain',
+    'cash.custody.receive': 'Recevoir des espèces en garde (plafond par personne)',
   });
 
   const READ_PRESET = Object.freeze([

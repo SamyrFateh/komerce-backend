@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-10T22:56:40.506Z",
+  "generatedAt": "2026-10-11T16:20:41.992Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 709,
+  "count": 717,
   "routes": [
     {
       "method": "GET",
@@ -2086,6 +2086,56 @@
       "fullPath": "/api/admin/workspaces/accounting/market/:marketCode",
       "mountPrefix": "/api/admin/workspaces/accounting",
       "localPath": "/market/:marketCode",
+      "routeFile": "routes/admin-finance-accounting-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/accounting/market/:marketCode/custody/:depositRef/control",
+      "mountPrefix": "/api/admin/workspaces/accounting",
+      "localPath": "/market/:marketCode/custody/:depositRef/control",
+      "routeFile": "routes/admin-finance-accounting-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/accounting/market/:marketCode/custody/:depositRef/receipt",
+      "mountPrefix": "/api/admin/workspaces/accounting",
+      "localPath": "/market/:marketCode/custody/:depositRef/receipt",
+      "routeFile": "routes/admin-finance-accounting-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/accounting/market/:marketCode/custody/:depositRef/reversal",
+      "mountPrefix": "/api/admin/workspaces/accounting",
+      "localPath": "/market/:marketCode/custody/:depositRef/reversal",
+      "routeFile": "routes/admin-finance-accounting-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/accounting/market/:marketCode/custody/losses",
+      "mountPrefix": "/api/admin/workspaces/accounting",
+      "localPath": "/market/:marketCode/custody/losses",
+      "routeFile": "routes/admin-finance-accounting-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/accounting/market/:marketCode/custody/losses/:lossId/reversal",
+      "mountPrefix": "/api/admin/workspaces/accounting",
+      "localPath": "/market/:marketCode/custody/losses/:lossId/reversal",
       "routeFile": "routes/admin-finance-accounting-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -4602,6 +4652,36 @@
       "fullPath": "/api/market-delegation/markets/:marketCode/cash-control-policy",
       "mountPrefix": "/api/market-delegation",
       "localPath": "/markets/:marketCode/cash-control-policy",
+      "routeFile": "routes/market-delegation-cash-control.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/cash-custody",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/cash-custody",
+      "routeFile": "routes/market-delegation-cash-control.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/cash-custody/destinations",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/cash-custody/destinations",
+      "routeFile": "routes/market-delegation-cash-control.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/cash-custody/destinations/:destinationId/:verb",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/cash-custody/destinations/:destinationId/:verb",
       "routeFile": "routes/market-delegation-cash-control.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

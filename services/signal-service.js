@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload, optional_server_resolved_market_id, optional_transaction_executor
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js, utils/rules.js, services/supplier-payment-review.js
+ * @depends       db, utils/logger.js, utils/rules.js, services/supplier-payment-review.js, services/cash-deposit-service.js
  * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js,
  *                services/incident-escalation.js
  * @db-read       cash_collections, cash_deposits, customs_shipment_parcels, customs_shipments, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments
@@ -32,6 +32,7 @@ let db = require('../db');
 let log = require('../utils/logger').child({ module: 'signal-service' });
 const { getSupplierPaymentReview } = require('./supplier-payment-review');
 const { getRuleNumber } = require('../utils/rules');
+const { UNCOVERED_COLLECTIONS_CTE } = require('./cash-deposit-service');
 
 /* ═══════════════════════════════════════════════════════════════
    UPSERT — insert or update one active derived fact
@@ -484,22 +485,19 @@ const CASH_EXPIRING_LIMIT = 50;
 GENERATORS.cash_expiring = async function() {
   try {
     // Règle canonique (alignée sur radar checkCashNotDeposited) : cash encaissé
-    // par un agent relais depuis > 5 jours, sans dépôt de cet agent couvrant la
-    // date d'encaissement. Montant en KMF, périmètre Market porté par la commande.
+    // par un agent relais depuis > 5 jours et non déchargé par un transfert ACCEPTÉ, une clôture
+    // finale contrôlée ou une perte décidée (UNCOVERED_COLLECTIONS_CTE : conservation des montants ;
+    // déclaration, remise historique ou réception non contrôlée ne couvrent pas). Montant = reliquat non couvert, en KMF ;
+    // périmètre Market porté par la commande.
     // LIMIT CASH_EXPIRING_LIMIT + 1 : la ligne en trop détecte une troncature.
     const fetched = (await db.query(`
-      SELECT cc.id, cc.order_id, cc.amount_kmf, cc.relais_id, cc.collected_by,
+      WITH ${UNCOVERED_COLLECTIONS_CTE}
+      SELECT cc.id, cc.order_id, cc.uncovered_kmf AS amount_kmf, cc.relais_id, cc.collected_by,
              o.market_id, o.reference,
              EXTRACT(DAY FROM NOW() - cc.confirmed_at)::int AS days_pending
-      FROM cash_collections cc
+      FROM uncovered cc
       JOIN orders o ON o.id = cc.order_id
       WHERE cc.confirmed_at < NOW() - INTERVAL '5 days'
-        AND NOT EXISTS (
-          SELECT 1 FROM cash_deposits cd
-           WHERE cd.agent_id = cc.collected_by
-             AND cd.period_start <= cc.confirmed_at::date
-             AND cd.period_end >= cc.confirmed_at::date
-        )
       ORDER BY cc.confirmed_at ASC
       LIMIT ${CASH_EXPIRING_LIMIT + 1}
     `)).rows;
@@ -518,12 +516,12 @@ GENERATORS.cash_expiring = async function() {
       const severity = r.days_pending > 10 ? 'critical' : 'warning';
       await upsertSignal({
         signal_type: 'cash_expiring', severity, market_id: marketId,
-        title: 'Cash non déposé — ' + amount.toLocaleString('fr-FR') + ' KMF',
-        summary: 'Encaissé depuis ' + r.days_pending + ' jours, sans dépôt' + (r.reference ? ' (cmd ' + r.reference + ')' : ''),
+        title: 'Cash non couvert — ' + amount.toLocaleString('fr-FR') + ' KMF',
+        summary: 'Encaissé depuis ' + r.days_pending + ' jours, aucun transfert accepté ni clôture contrôlée' + (r.reference ? ' (cmd ' + r.reference + ')' : ''),
         source_module: 'signal-service', target_shell: 'bo', target_view: 'reconciliation',
         target_filters: { status: 'pending' }, owner_role: 'relais',
         entity_type: 'cash_collection', entity_id: r.id,
-        recommendation: 'Relancer le relais pour déclarer son dépôt', confidence: 'high',
+        recommendation: 'Relancer le relais (remise à déclarer) ou le destinataire (remise déclarée à accepter)', confidence: 'high',
         meta: { amount_kmf: amount, days_pending: r.days_pending, relais_id: r.relais_id, collected_by: r.collected_by },
       });
       generated++;

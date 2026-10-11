@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-10T22:56:52.609Z",
+  "generatedAt": "2026-10-11T16:20:57.372Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 716,
-    "protected": 661,
+    "total": 724,
+    "protected": 669,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1810,6 +1810,56 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/{depositRef}/control",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/{depositRef}/receipt",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/{depositRef}/reversal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/losses/{lossId}/reversal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/losses",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/dispute",
       "level": "PROTECTED",
       "roles": [
@@ -3544,6 +3594,21 @@
     },
     {
       "key": "PUT /api/market-delegation/markets/{marketCode}/cash-control-policy",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations/{destinationId}/{verb}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/cash-custody",
       "level": "PROTECTED",
       "roles": []
     },

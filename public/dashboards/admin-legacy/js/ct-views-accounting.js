@@ -357,11 +357,12 @@ CT.views.accounting = function(main) {
     html += '<div style="display:flex;gap:16px;margin-bottom:12px;padding:10px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;flex-wrap:wrap">';
     html += '<span><strong>Attendu :</strong> ' + fmt(Math.round(totals.expected_kmf || 0)) + ' KMF</span>';
     html += '<span><strong>Collecté :</strong> ' + fmt(Math.round(totals.declared_kmf || 0)) + ' KMF</span>';
-    html += '<span><strong>Déposé :</strong> ' + fmt(Math.round(totals.deposited_kmf || 0)) + ' KMF</span>';
+    html += '<span><strong>Déclaré (tous statuts) :</strong> ' + fmt(Math.round(totals.deposited_kmf || 0)) + ' KMF</span>';
+    html += '<span><strong>Vérifié (interne) :</strong> ' + fmt(Math.round(totals.verified_kmf || 0)) + ' KMF</span>';
     var gapColl = totals.gap_collection || 0;
     var gapDep = totals.gap_deposit || 0;
     html += '<span><strong>Gap collecte :</strong> <span style="color:' + (Math.abs(gapColl) > 0 ? '#dc2626' : '#16a34a') + '">' + fmt(Math.round(gapColl)) + '</span></span>';
-    html += '<span><strong>En transit (collecté-déposé) :</strong> <span style="color:' + (Math.abs(gapDep) > 0 ? '#d97706' : '#16a34a') + '">' + fmt(Math.round(gapDep)) + '</span></span>';
+    html += '<span><strong>Non couvert (collecté − vérifié, provisoire) :</strong> <span style="color:' + (Math.abs(gapDep) > 0 ? '#d97706' : '#16a34a') + '">' + fmt(Math.round(gapDep)) + '</span></span>';
     html += '</div>';
 
     if (!reco.agents.length) {

@@ -132,8 +132,11 @@
     return [
       { key: 'expected', label: 'Cash attendu', value: formatKmf(summary.expected_kmf), tone: 'neutral' },
       { key: 'collected', label: 'Cash collecté', value: formatKmf(summary.collected_kmf), tone: 'neutral' },
-      { key: 'verified', label: 'Dépôts vérifiés', value: formatKmf(summary.verified_kmf), tone: 'positive' },
-      { key: 'pending', label: 'Dépôts à vérifier', value: formatNumber(summary.pending_deposits), tone: summary.pending_deposits ? 'warning' : 'neutral' },
+      { key: 'held', label: 'Détenu (non clôturé)', value: formatKmf(summary.held_kmf), tone: summary.held_kmf ? 'warning' : 'neutral' },
+      { key: 'closed', label: 'Clôturé (réception finale contrôlée)', value: formatKmf(summary.closed_kmf), tone: 'positive' },
+      { key: 'toact', label: 'Remises à traiter', value: formatNumber(summary.transfers_to_act), tone: summary.transfers_to_act ? 'warning' : 'neutral' },
+      { key: 'legacy', label: 'Historique à régulariser', value: formatKmf(summary.legacy_to_regularize_kmf), tone: summary.legacy_to_regularize ? 'warning' : 'neutral' },
+      { key: 'pending', label: 'Dépôts historiques à vérifier', value: formatNumber(summary.pending_deposits), tone: summary.pending_deposits ? 'warning' : 'neutral' },
       { key: 'missing', label: 'Non encaissé', value: formatKmf(summary.uncollected_kmf), tone: summary.uncollected_kmf ? 'critical' : 'neutral' },
     ];
   }
@@ -197,62 +200,80 @@
 
   function renderReconciliation(rootNode, ui, doc, payload) {
     const r = payload.reconciliation || {};
-    const slot = createSection(rootNode, ui, 'Rapprochement cash', 'Attendu, collecté et déposé sont calculés exclusivement dans le marché sélectionné.');
+    const slot = createSection(rootNode, ui, 'Rapprochement cash', 'Calculé dans le marché sélectionné, depuis l’autorité unique de garde : seul un transfert accepté décharge, seule une réception finale contrôlée par un acteur indépendant clôt, une perte est une décision centrale distincte.');
     ui.DataTable.render(slot, {
       columns: [
         { key: 'expected', label: 'Attendu' },
         { key: 'collected', label: 'Collecté' },
-        { key: 'deposited', label: 'Déposé' },
+        { key: 'transferred', label: 'Transféré (accepté)' },
+        { key: 'closed', label: 'Clôturé' },
+        { key: 'lost', label: 'Perte décidée' },
+        { key: 'held', label: 'Détenu maintenant' },
         { key: 'gap_collection', label: 'Écart collecte' },
-        { key: 'gap_deposit', label: 'Écart dépôt' },
+        { key: 'gap_closure', label: 'Écart (collecté − clôturé − perte)' },
       ],
       rows: [{
         expected: formatKmf(r.expected_kmf),
         collected: formatKmf(r.collected_kmf),
-        deposited: formatKmf(r.deposited_kmf),
+        transferred: formatKmf(r.transferred_kmf),
+        closed: formatKmf(r.closed_kmf),
+        lost: formatKmf(r.lost_kmf),
+        held: formatKmf(r.held_kmf),
         gap_collection: formatKmf(r.gap_collection_kmf),
-        gap_deposit: formatKmf(r.gap_deposit_kmf),
+        gap_closure: formatKmf(r.gap_closure_kmf),
       }],
       emptyText: 'Aucune donnée de rapprochement.',
     });
   }
 
-  function renderDepositCreation(rootNode, ui, doc, context) {
-    if (!context.user || context.user.role !== 'agent_relais') return;
-    const slot = createSection(rootNode, ui, 'Relais · Déclarer un dépôt', 'Le déposant est toujours la session authentifiée et doit être affecté à un relais du marché.');
-    const button = makeButton(doc, 'Déclarer un dépôt', 'create-cash-deposit');
+  function pickOne(context, label, options) {
+    if (!options.length) return null;
+    const lines = options.map((option, index) => `${index + 1}. ${option.label}`).join('\n');
+    const answer = (context.prompt || (() => null))(`${label}\n${lines}`, '1');
+    const index = Number(answer) - 1;
+    return Number.isInteger(index) && options[index] ? options[index] : null;
+  }
+
+  function renderDepositCreation(rootNode, ui, doc, payload, context) {
+    const user = context.user || {};
+    const custody = payload.custody || {};
+    const isHolder = (custody.holders || []).some(row => String(row.holder_id) === String(user.id));
+    const isRecipient = (custody.recipients || []).some(row => String(row.user_id) === String(user.id));
+    if (user.role !== 'agent_relais' && !isHolder && !isRecipient) return;
+    const slot = createSection(rootNode, ui, 'Remettre des espèces', 'Le remettant est la session authentifiée. La déclaration ne décharge personne : la garde ne change qu’à l’acceptation du destinataire ; seule une réception finale prouvée et contrôlée clôt.');
+    const button = makeButton(doc, 'Déclarer une remise', 'create-cash-deposit');
     slot.appendChild(button);
     button.addEventListener('click', async () => {
-      const promptFn = context.prompt || (() => null);
-      const currency = (promptFn('Devise du montant (KMF ou XAF)', 'XAF') || '').trim().toUpperCase();
+      const recipients = (custody.recipients || []).filter(row => String(row.user_id) !== String(user.id))
+        .map(row => ({ label: `${row.full_name} (personne habilitée)`, body: { recipient_user_id: row.user_id } }));
+      const destinations = (custody.destinations || []).filter(row => row.status === 'ACTIVE')
+        .map(row => ({ label: `${row.label} · ${DESTINATION_KIND_LABELS[row.kind] || row.kind} (destination finale, ${row.currency})`, body: { destination_id: row.id }, currency: row.currency }));
+      const target = pickOne(context, 'À qui remettre ? (numéro)', [...recipients, ...destinations]);
+      if (!target) return;
+      const defaultCurrency = target.currency || 'XAF';
+      const currency = (context.prompt('Devise du montant', defaultCurrency) || '').trim().toUpperCase();
       if (!currency) return;
-      const amount = promptFn(`Montant du dépôt (${currency})`);
+      const amount = context.prompt(`Montant annoncé (${currency})`);
       if (!amount) return;
-      const method = promptFn('Méthode : mobile_money, bank ou physical', 'mobile_money');
-      if (!method) return;
-      const start = promptFn('Début période (YYYY-MM-DD)', context.filters.from);
-      if (!start) return;
-      const end = promptFn('Fin période (YYYY-MM-DD)', context.filters.to);
-      if (!end) return;
-      const reference = promptFn('Référence transaction / reçu (optionnel)', '') || '';
+      const reference = context.prompt('Référence du reçu / de la transaction (optionnel)', '') || '';
+      const legacyRef = context.prompt('Remise historique à régulariser (référence, optionnel)', '') || '';
       await runAction(context, button, {
         url: endpointFor(context.marketCode, 'deposits'),
         body: {
+          ...target.body,
           declared_amount: Number(amount),
           declared_currency: currency,
-          deposit_method: method,
-          period_start: start,
-          period_end: end,
           reference: reference || undefined,
+          regularizes_deposit_ref: legacyRef || undefined,
         },
-        confirmMessage: `Déclarer ${amount} ${currency} pour cette période ?`,
-        successMessage: 'Dépôt enregistré et envoyé à la vérification.',
+        confirmMessage: `Annoncer ${amount} ${currency} ? La garde ne change qu’à l’acceptation.`,
+        successMessage: 'Remise annoncée : en attente de la réponse du destinataire.',
       });
     });
   }
 
   function renderDeposits(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Dépôts relais', 'Vérifiez ou contestez les dépôts du marché.');
+    const slot = createSection(rootNode, ui, 'Remises historiques', 'Anciennes remises vérifiées avant la garde canonique : elles ne déchargent pas l’agent et restent à régulariser par un transfert accepté avec preuve.');
     const rows = payload.deposits || [];
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun dépôt rattaché à ce marché.'));
@@ -314,6 +335,190 @@
     wrap.className = 'kmc-workspace-table-wrap';
     wrap.appendChild(table);
     slot.appendChild(wrap);
+  }
+
+  const DESTINATION_KIND_LABELS = { BANK: 'Banque', MOBILE_MONEY: 'Mobile Money' };
+  const DESTINATION_STATUS_LABELS = { PROPOSED: 'À activer (second acteur)', ACTIVE: 'Active', SUSPENDED: 'Suspendue', CLOSED: 'Clôturée' };
+
+  const STATE_LABELS = {
+    DECLARED: 'Annoncée — en attente du destinataire',
+    ACCEPTED: 'Acceptée (intermédiaire : non clôturée)',
+    ACCEPTED_PARTIAL: 'Acceptée partiellement — écart ouvert',
+    REFUSED: 'Refusée',
+    AWAITING_PROOF: 'Preuve de réception finale manquante',
+    TO_CONTROL: 'Réception prouvée — contrôle indépendant à faire',
+    CLOSED: 'Clôturée (réception finale contrôlée)',
+    CONTROL_REJECTED: 'Contrôle négatif — rien de clôturé',
+  };
+
+  function transferActions(doc, context, row) {
+    const cell = doc.createElement('td');
+    const user = context.user || {};
+    const act = (label, action, suffix, body, confirmMessage, successMessage) => {
+      const button = makeButton(doc, label, action);
+      button.addEventListener('click', () => runAction(context, button, {
+        url: endpointFor(context.marketCode, `custody/${encodeURIComponent(row.deposit_ref)}/${suffix}`),
+        body, confirmMessage, successMessage,
+      }));
+      cell.appendChild(button);
+    };
+    const prompt = context.prompt || (() => null);
+    const canReceive = row.state === 'DECLARED' && String(row.recipient_user_id) === String(user.id);
+    const canProve = row.state === 'AWAITING_PROOF' && String(row.remitter_id) !== String(user.id);
+    if (canReceive || canProve) {
+      const receive = makeButton(doc, 'Enregistrer la réception', 'record-custody-receipt');
+      receive.addEventListener('click', () => {
+        const amount = prompt(`Montant réellement reçu (${row.declared_currency}) — annoncé : ${row.declared_amount}`, row.declared_amount);
+        if (!amount) return;
+        const proof = row.movement_kind === 'FINAL' ? prompt('Référence de la preuve (relevé, reçu bancaire, transaction)') : (prompt('Référence du reçu (optionnel)', '') || undefined);
+        if (row.movement_kind === 'FINAL' && !proof) return;
+        runAction(context, receive, {
+          url: endpointFor(context.marketCode, `custody/${encodeURIComponent(row.deposit_ref)}/receipt`),
+          body: { outcome: 'received', received_amount: Number(amount), proof_ref: proof },
+          confirmMessage: `Confirmer avoir reçu ${amount} ${row.declared_currency} ? La responsabilité vous est transférée à hauteur du montant reçu.`,
+          successMessage: 'Réception enregistrée.',
+        });
+      });
+      cell.appendChild(receive);
+      const refuse = makeButton(doc, 'Refuser', 'refuse-custody-receipt');
+      refuse.addEventListener('click', () => {
+        const reason = prompt(`Motif du refus pour ${row.deposit_ref}`);
+        if (!reason) return;
+        runAction(context, refuse, {
+          url: endpointFor(context.marketCode, `custody/${encodeURIComponent(row.deposit_ref)}/receipt`),
+          body: { outcome: 'refused', reason },
+          confirmMessage: `Refuser la remise ${row.deposit_ref} ?`,
+          successMessage: 'Remise refusée : la garde reste au remettant.',
+        });
+      });
+      cell.appendChild(refuse);
+    }
+    if (row.state === 'TO_CONTROL' && (user.role === 'admin' || user.role === 'market_operator')
+        && String(row.remitter_id) !== String(user.id) && String(row.received_by) !== String(user.id)) {
+      const control = makeButton(doc, 'Contrôler et clôturer', 'control-final-reception');
+      control.addEventListener('click', () => {
+        const amount = prompt(`Montant contrôlé en KMF (reçu : ${row.received_net_kmf}) — 0 pour rejeter`, row.received_net_kmf);
+        if (amount == null || amount === '') return;
+        const reason = Number(amount) > 0 ? undefined : prompt('Motif du rejet');
+        if (Number(amount) <= 0 && !reason) return;
+        runAction(context, control, {
+          url: endpointFor(context.marketCode, `custody/${encodeURIComponent(row.deposit_ref)}/control`),
+          body: { controlled_kmf: Number(amount), reason },
+          confirmMessage: `Clôturer ${amount} KMF pour ${row.deposit_ref} ?`,
+          successMessage: Number(amount) > 0 ? 'Réception finale contrôlée : circuit clôturé.' : 'Contrôle négatif enregistré.',
+        });
+      });
+      cell.appendChild(control);
+    }
+    return cell;
+  }
+
+  function renderTransfers(slot, doc, context, rows) {
+    if (!rows.length) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune remise de garde sur ce marché.'));
+      return;
+    }
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table';
+    table.innerHTML = '<thead><tr><th>Remise</th><th>De</th><th>Vers</th><th>Annoncé</th><th>Reçu</th><th>Écart</th><th>Contrôlé</th><th>Preuve</th><th>État</th><th></th></tr></thead>';
+    const tbody = doc.createElement('tbody');
+    rows.forEach(row => {
+      const tr = doc.createElement('tr');
+      [
+        row.deposit_ref + (row.regularizes_ref ? ` (régularise ${row.regularizes_ref})` : ''),
+        row.remitter_name,
+        row.recipient_name || `${row.destination_label} · destination finale`,
+        `${formatNumber(row.declared_amount)} ${row.declared_currency} = ${formatKmf(row.amount_kmf)}`,
+        row.received_net_kmf == null ? '—' : `${formatKmf(row.received_net_kmf)}${row.received_by_name ? ` (${row.received_by_name})` : ''}`,
+        row.discrepancy_kmf ? formatKmf(row.discrepancy_kmf) : '—',
+        row.controlled_net_kmf == null ? '—' : `${formatKmf(row.controlled_net_kmf)}${row.controlled_by_name ? ` (${row.controlled_by_name})` : ''}`,
+        row.proof_ref || '—',
+        STATE_LABELS[row.state] || row.state,
+      ].forEach(value => {
+        const td = doc.createElement('td');
+        td.textContent = value || '—';
+        tr.appendChild(td);
+      });
+      tr.appendChild(transferActions(doc, context, row));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    wrap.appendChild(table);
+    slot.appendChild(wrap);
+  }
+
+  function renderCustody(rootNode, ui, doc, payload, context = {}) {
+    const custody = payload.custody || {};
+    const limits = custody.limits || {};
+    // DataTable.render vide son conteneur : un sous-conteneur par tableau, sinon seul le dernier survit.
+    const slot = createSection(rootNode, ui, 'Garde des espèces',
+      `Qui détient l’argent, depuis quand, à qui le remettre. Délai de garde : ${limits.market_max_days || '—'} jour(s) ; plafond central : ${formatKmf(limits.max_holding_kmf)}. Une déclaration ne transfère rien ; aucun transfert intermédiaire ne clôture.`);
+    const part = () => { const node = doc.createElement('div'); slot.appendChild(node); return node; };
+    ui.DataTable.render(part(), {
+      columns: [
+        { key: 'full_name', label: 'Détenteur' },
+        { key: 'balance_kmf', label: 'Détient', format: formatKmf },
+        { key: 'since', label: 'Depuis', format: formatDate },
+        { key: 'held_days', label: 'Jours' },
+        { key: 'ceiling_kmf', label: 'Plafond', format: formatKmf },
+        { key: 'flags', label: 'Alerte' },
+      ],
+      rows: (custody.holders || []).map(row => ({
+        ...row,
+        flags: [row.over_ceiling ? 'Plafond dépassé' : null, row.overdue ? `Délai dépassé (${row.max_days} j)` : null].filter(Boolean).join(' · ') || '—',
+      })),
+      emptyText: 'Personne ne détient d’espèces non clôturées.',
+    });
+    renderTransfers(slot, doc, context, custody.transfers || []);
+    if (context.user && context.user.role === 'admin' && (custody.holders || []).length) {
+      const loss = makeButton(doc, 'Décider une perte (décision centrale)', 'decide-custody-loss');
+      loss.addEventListener('click', async () => {
+        const holder = pickOne(context, 'Détenteur concerné ? (numéro)', custody.holders.map(row => ({ label: `${row.full_name} — ${formatKmf(row.balance_kmf)}`, id: row.holder_id })));
+        if (!holder) return;
+        const amount = context.prompt('Montant de la perte (KMF)');
+        if (!amount) return;
+        const reason = context.prompt('Motif détaillé (10 caractères minimum) — décision tracée');
+        if (!reason) return;
+        await runAction(context, loss, {
+          url: endpointFor(context.marketCode, 'custody/losses'),
+          body: { holder_id: holder.id, amount_kmf: Number(amount), reason },
+          confirmMessage: `Constater ${amount} KMF de perte pour ${holder.label} ? Décision centrale, distincte des montants reçus.`,
+          successMessage: 'Perte décidée et tracée.',
+        });
+      });
+      slot.appendChild(loss);
+    }
+    ui.DataTable.render(part(), {
+      columns: [
+        { key: 'deposit_ref', label: 'Remise historique vérifiée' },
+        { key: 'agent_name', label: 'Agent' },
+        { key: 'remaining_kmf', label: 'Reste à régulariser', format: formatKmf },
+        { key: 'verified_at', label: 'Vérifiée le', format: formatDate },
+      ],
+      rows: custody.legacy_to_regularize || [],
+      emptyText: 'Aucune remise historique à régulariser.',
+    });
+    ui.DataTable.render(part(), {
+      columns: [
+        { key: 'full_name', label: 'Personne habilitée' },
+        { key: 'role', label: 'Rôle' },
+        { key: 'holding_limit_kmf', label: 'Plafond de détention', format: formatKmf },
+      ],
+      rows: custody.recipients || [],
+      emptyText: 'Aucune personne habilitée à recevoir des fonds : aucune remise ne peut être acceptée.',
+    });
+    ui.DataTable.render(part(), {
+      columns: [
+        { key: 'label', label: 'Destination finale' },
+        { key: 'kind', label: 'Type', format: value => DESTINATION_KIND_LABELS[value] || value },
+        { key: 'currency', label: 'Devise' },
+        { key: 'status', label: 'État', format: value => DESTINATION_STATUS_LABELS[value] || value },
+      ],
+      rows: custody.destinations || [],
+      emptyText: 'Aucune destination finale activée : aucune clôture n\'est possible.',
+    });
   }
 
   function renderUncollected(rootNode, ui, doc, payload) {
@@ -414,8 +619,9 @@
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
     renderReconciliation(rootNode, ui, doc, payload);
-    renderDepositCreation(rootNode, ui, doc, context);
+    renderDepositCreation(rootNode, ui, doc, payload, context);
     renderDeposits(rootNode, ui, doc, payload, context);
+    renderCustody(rootNode, ui, doc, payload, context);
     renderUncollected(rootNode, ui, doc, payload);
   }
 
