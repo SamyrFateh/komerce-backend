@@ -85,6 +85,7 @@ module.exports = {
       'dashboards/canonical/js/market-team.js',
       'dashboards/canonical/css/market-cash-control.css',
       'dashboards/canonical/js/market-cash-control.js',
+      'dashboards/canonical/js/market-readonly-views.js',
       'dashboards/canonical/team-invite.html',
       'dashboards/canonical/js/team-invite.js',
     ],
@@ -95,6 +96,8 @@ module.exports = {
       'tests/unit/market-local-price-activation-service.test.js',
       'tests/unit/market-delegation-team-ui.test.js',
       'tests/unit/market-cash-control-ui.test.js',
+      'tests/unit/market-readonly-views.test.js',
+      'tests/e2e/market-readonly-views.spec.js',
     ],
   },
 
