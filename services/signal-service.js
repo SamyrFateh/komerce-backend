@@ -485,9 +485,9 @@ const CASH_EXPIRING_LIMIT = 50;
 GENERATORS.cash_expiring = async function() {
   try {
     // Règle canonique (alignée sur radar checkCashNotDeposited) : cash encaissé
-    // par un agent relais depuis > 5 jours et non couvert par des dépôts VÉRIFIÉS
-    // (UNCOVERED_COLLECTIONS_CTE : conservation des montants, jamais existence d'un
-    // dépôt ; pending/disputed ne couvrent pas). Montant = reliquat non couvert, en KMF ;
+    // par un agent relais depuis > 5 jours et non déchargé par un transfert ACCEPTÉ, une clôture
+    // finale contrôlée ou une perte décidée (UNCOVERED_COLLECTIONS_CTE : conservation des montants ;
+    // déclaration, remise historique ou réception non contrôlée ne couvrent pas). Montant = reliquat non couvert, en KMF ;
     // périmètre Market porté par la commande.
     // LIMIT CASH_EXPIRING_LIMIT + 1 : la ligne en trop détecte une troncature.
     const fetched = (await db.query(`
@@ -517,11 +517,11 @@ GENERATORS.cash_expiring = async function() {
       await upsertSignal({
         signal_type: 'cash_expiring', severity, market_id: marketId,
         title: 'Cash non couvert — ' + amount.toLocaleString('fr-FR') + ' KMF',
-        summary: 'Encaissé depuis ' + r.days_pending + ' jours, non couvert par un dépôt vérifié' + (r.reference ? ' (cmd ' + r.reference + ')' : ''),
+        summary: 'Encaissé depuis ' + r.days_pending + ' jours, aucun transfert accepté ni clôture contrôlée' + (r.reference ? ' (cmd ' + r.reference + ')' : ''),
         source_module: 'signal-service', target_shell: 'bo', target_view: 'reconciliation',
         target_filters: { status: 'pending' }, owner_role: 'relais',
         entity_type: 'cash_collection', entity_id: r.id,
-        recommendation: 'Relancer le relais (dépôt à déclarer, ou dépôt déclaré à faire vérifier)', confidence: 'high',
+        recommendation: 'Relancer le relais (remise à déclarer) ou le destinataire (remise déclarée à accepter)', confidence: 'high',
         meta: { amount_kmf: amount, days_pending: r.days_pending, relais_id: r.relais_id, collected_by: r.collected_by },
       });
       generated++;

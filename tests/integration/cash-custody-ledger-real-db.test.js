@@ -21,7 +21,7 @@ if (!process.env.DATABASE_URL) {
   const crypto = require('crypto');
   const db = require('../../db');
   const deposits = require('../../services/cash-deposit-service');
-  const { checkCashRemittanceUnproven } = require('../../services/radar-alerts/cash-reconciliation-signals');
+  const { checkCashLegacyToRegularize } = require('../../services/radar-alerts/cash-reconciliation-signals');
 
   const tag = crypto.randomBytes(4).toString('hex');
   const q = (sql, p) => db.query(sql, p);
@@ -58,9 +58,14 @@ if (!process.env.DATABASE_URL) {
     ids.collections.push(c.id);
     return c.id;
   }
-  const deposit = (agentId, amount, extra = {}) => deposits.createDeposit({ agentId, payload: {
-    amount_kmf: amount, deposit_method: 'bank', period_start: '2026-01-01', period_end: '2026-12-31', ...extra,
-  } });
+  // Remise historique (LEGACY) : insertion brute, puis allocation FIFO serveur comme avant la 289.
+  const deposit = async (agentId, amount, extra = {}) => {
+    const { rows: [d] } = await q(
+      `INSERT INTO cash_deposits(agent_id,amount_kmf,deposit_method,period_start,period_end,reference) VALUES ($1,$2,$3,'2026-01-01','2026-12-31',$4) RETURNING *`,
+      [agentId, amount, extra.deposit_method || 'bank', extra.reference || null]);
+    await q(`SELECT cash_allocate_fifo($1,'SERVER_FIFO')`, [d.id]);
+    return d;
+  };
   const lines = async depositId => (await q(
     `SELECT a.collection_id, a.amount_kmf::int AS kmf, a.allocation_basis, a.allocation_source
        FROM cash_deposit_allocations a JOIN cash_collections cc ON cc.id = a.collection_id
@@ -211,7 +216,7 @@ if (!process.env.DATABASE_URL) {
       await sqlFails(`DELETE FROM cash_deposit_allocations WHERE deposit_id=$1`, [d.id], /append-only/);
       await sqlFails(`UPDATE cash_deposit_allocations SET amount_kmf = 1 WHERE deposit_id=$1`, [d.id], /append-only/);
       await sqlFails(`UPDATE cash_deposits SET movement_kind='FINAL' WHERE id=$1`, [d.id], /immuables/);
-      await sqlFails(`INSERT INTO cash_deposits(agent_id,amount_kmf,deposit_method,period_start,period_end,movement_kind) VALUES ($1,5,'bank','2026-01-01','2026-01-02','TRANSFER')`, [ids.agent], /pr3_only_legacy/);
+      await sqlFails(`INSERT INTO cash_deposits(agent_id,amount_kmf,deposit_method,period_start,period_end,movement_kind) VALUES ($1,5,'bank','2026-01-01','2026-01-02','TRANSFER')`, [ids.agent], /destinataire non habilité|cible/i);
     });
 
     it('J5 : statut jamais ramené à pending ; réactivation d\'une remise contestée revérifie le double comptage', async () => {
@@ -242,9 +247,9 @@ if (!process.env.DATABASE_URL) {
       const d = await deposit(agent, 70000, { reference: `V1-${tag}` });
       expect(await uncovered(agent)).toEqual({ kmf: 100000, n: 2 });                  // pending réserve mais ne couvre pas
       await deposits.verifyDeposit({ depositId: d.id, verifierId: ids.admin, notes: 'reçu' });
-      expect(await uncovered(agent)).toEqual({ kmf: 30000, n: 1 });                   // 60 000 + 10 000 couverts, reliquat 30 000 exact
-      const alert = await checkCashRemittanceUnproven(db);
-      expect(alert).toMatchObject({ code: 'CASH_REMITTANCE_UNPROVEN', level: 'signal' });
+      expect(await uncovered(agent)).toEqual({ kmf: 100000, n: 2 });                  // 289 : une remise historique vérifiée ne couvre plus (à régulariser)
+      const alert = await checkCashLegacyToRegularize(db);
+      expect(alert).toMatchObject({ code: 'CASH_LEGACY_TO_REGULARIZE', level: 'signal' });
       expect(alert.value_kmf).toBeGreaterThanOrEqual(70000);
       await deposits.disputeDeposit({ depositId: d.id, verifierId: ids.admin, reason: 'preuve invalide', correction: true, central: true });
       expect(await uncovered(agent)).toEqual({ kmf: 100000, n: 2 });
@@ -292,7 +297,7 @@ if (!process.env.DATABASE_URL) {
       expect((await lines(ver)).every(l => l.allocation_basis === 'RECONSTRUCTED' && l.allocation_source === 'LEGACY_BACKFILL')).toBe(true);
       expect(await liveOn(k1) + await liveOn(k2)).toBe(90000);
       // LEGACY vérifié ≠ agent déchargé : couverture provisoire uniquement (alerte explicite), reliquat visible
-      expect(await uncovered(agent)).toEqual({ kmf: 40000, n: 1 });
+      expect(await uncovered(agent)).toEqual({ kmf: 100000, n: 2 });                  // 289 : l'historique ne ferme jamais la chaîne
       expect(Number((await q('SELECT cash_ledger_backfill_legacy() AS n')).rows[0].n)).toBe(0);
     });
 
