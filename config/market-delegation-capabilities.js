@@ -50,6 +50,7 @@ const EFFECTS = Object.freeze({
   'execution.parcel.receive': 'ACT',
   'execution.parcel.collect': 'ACT',
   'execution.cash.confirm': 'ACT',
+  'cash.custody.receive': 'ACT',
   'execution.transit.confirm': 'ACT',
   'group_cost.allocate': 'ACT',
   'dashboard.global.read': 'READ',
@@ -59,7 +60,7 @@ const EFFECTS = Object.freeze({
 
 // Capabilities dont l'exécution porte un montant (F3 du plan Control Plane).
 // Les limites financières ne s'appliqueront qu'à elles (PR E).
-const AMOUNT_BEARING = Object.freeze(['execution.cash.confirm', 'settlement.receive', 'finance.act']);
+const AMOUNT_BEARING = Object.freeze(['execution.cash.confirm', 'settlement.receive', 'finance.act', 'cash.custody.receive']);
 
 function declaredEffect(capability) {
   const effect = EFFECTS[capability];
@@ -125,6 +126,7 @@ const CAPABILITIES = Object.freeze([
   ['execution.parcel.receive','EXECUTION','operations','MARKET','DELEGABLE',true,'LIVE'],
   ['execution.parcel.collect','EXECUTION','operations','MARKET','DELEGABLE',true,'LIVE'],
   ['execution.cash.confirm','EXECUTION','payments','MARKET','DELEGABLE',true,'LIVE'],
+  ['cash.custody.receive','EXECUTION','payments','MARKET','DELEGABLE',true,'LIVE'],
   ['execution.transit.confirm','EXECUTION','operations','MARKET','DELEGABLE',true,'LIVE'],
   ['group_cost.allocate','BOUNDARY','structure','GROUP','CENTRAL_ONLY',true,'LIVE'],
   ['dashboard.global.read','BOUNDARY','pilotage','GROUP','CENTRAL_ONLY',false,'LIVE'],

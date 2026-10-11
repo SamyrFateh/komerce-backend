@@ -30,6 +30,13 @@ jest.mock('../../services/cash-deposit-service', () => {
   };
 });
 
+const mockCustodySnapshot = jest.fn();
+jest.mock('../../services/cash-custody-service', () => ({ snapshot: (...args) => mockCustodySnapshot(...args) }));
+beforeEach(() => {
+  mockCustodySnapshot.mockReset();
+  mockCustodySnapshot.mockResolvedValue({ limits: { market_max_days: 7, max_holding_kmf: 5000000 }, recipients: [], destinations: [] });
+});
+
 const db = require('../../db');
 const workspace = require('../../services/finance-accounting-workspace');
 
@@ -77,6 +84,8 @@ test('buildWorkspace applique market_id à toutes les sources cash et factures',
   const payload = await workspace.buildWorkspace({ market, from: '2026-08-20', to: '2026-08-26', hours: 48 });
 
   expect(payload.scope).toEqual({ code: 'CM', name: 'Comores', currency: 'KMF' });
+  expect(mockCustodySnapshot).toHaveBeenCalledWith(db, 'market-cm-id');
+  expect(payload.custody).toMatchObject({ recipients: [], destinations: [] });
   expect(payload.summary.expected_kmf).toBe(10000);
   expect(payload.summary.uncollected_kmf).toBe(2000);
   expect(payload.reconciliation.gap_collection_kmf).toBe(2000);

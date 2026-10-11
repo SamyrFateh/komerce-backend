@@ -167,6 +167,13 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
 <!-- schema-pending
+object: market_cash_destinations
+kind: table
+migration: 288
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Destinations finales autorisées des espèces par Market (BANK, MOBILE_MONEY) : proposée par un acteur, activée par un second acteur distinct (contrainte en base), suspendue/clôturée avec motif, jamais supprimée ; peut référencer un compte de paiement du même Market et de même devise sans jamais le modifier.
+-->
+<!-- schema-pending
 object: cash_deposit_allocations
 kind: table
 migration: 287
