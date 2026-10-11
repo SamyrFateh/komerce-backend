@@ -17,6 +17,7 @@
     "test:e2e:feature": "node scripts/run-e2e-feature-tests.js",
     "test:e2e:lot": "node scripts/run-e2e-feature-tests.js",
     "test:e2e:dashboards": "playwright test",
+    "test:e2e:cash": "playwright test -c playwright.cash-e2e.config.js",
     "test:e2e:dashboards:install": "playwright install --with-deps chromium",
     "test:unit:coverage": "jest --config jest.unit.config.js --ci --coverage --forceExit",
     "test:unit:v41": "jest tests/unit/shared-cart-v41-transitions.test.js --no-coverage",

@@ -141,6 +141,26 @@
     ];
   }
 
+  async function runAction(context, button, options) {
+    const confirmFn = context.confirm || (() => true);
+    if (options.confirmMessage && !confirmFn(options.confirmMessage)) return null;
+    const previous = button.textContent;
+    button.disabled = true;
+    button.textContent = 'En cours…';
+    setFeedback(context.root, options.runningMessage || 'Action en cours…');
+    try {
+      const result = await jsonRequest(context.fetch, options.url, { method: 'POST', body: options.body });
+      setFeedback(context.root, options.successMessage || 'Action appliquée.', 'positive');
+      await context.reload();
+      return result;
+    } catch (error) {
+      setFeedback(context.root, error.message, 'critical');
+      button.disabled = false;
+      button.textContent = previous;
+      return null;
+    }
+  }
+
   function filterControls(doc, payload, context) {
     const form = doc.createElement('div');
     form.className = 'kmc-workspace-section-actions kmc-accounting-hero-controls';
@@ -432,9 +452,11 @@
   function renderCustody(rootNode, ui, doc, payload, context = {}) {
     const custody = payload.custody || {};
     const limits = custody.limits || {};
+    // DataTable.render vide son conteneur : un sous-conteneur par tableau, sinon seul le dernier survit.
     const slot = createSection(rootNode, ui, 'Garde des espèces',
       `Qui détient l’argent, depuis quand, à qui le remettre. Délai de garde : ${limits.market_max_days || '—'} jour(s) ; plafond central : ${formatKmf(limits.max_holding_kmf)}. Une déclaration ne transfère rien ; aucun transfert intermédiaire ne clôture.`);
-    ui.DataTable.render(slot, {
+    const part = () => { const node = doc.createElement('div'); slot.appendChild(node); return node; };
+    ui.DataTable.render(part(), {
       columns: [
         { key: 'full_name', label: 'Détenteur' },
         { key: 'balance_kmf', label: 'Détient', format: formatKmf },
@@ -468,7 +490,7 @@
       });
       slot.appendChild(loss);
     }
-    ui.DataTable.render(slot, {
+    ui.DataTable.render(part(), {
       columns: [
         { key: 'deposit_ref', label: 'Remise historique vérifiée' },
         { key: 'agent_name', label: 'Agent' },
@@ -478,7 +500,7 @@
       rows: custody.legacy_to_regularize || [],
       emptyText: 'Aucune remise historique à régulariser.',
     });
-    ui.DataTable.render(slot, {
+    ui.DataTable.render(part(), {
       columns: [
         { key: 'full_name', label: 'Personne habilitée' },
         { key: 'role', label: 'Rôle' },
@@ -487,7 +509,7 @@
       rows: custody.recipients || [],
       emptyText: 'Aucune personne habilitée à recevoir des fonds : aucune remise ne peut être acceptée.',
     });
-    ui.DataTable.render(slot, {
+    ui.DataTable.render(part(), {
       columns: [
         { key: 'label', label: 'Destination finale' },
         { key: 'kind', label: 'Type', format: value => DESTINATION_KIND_LABELS[value] || value },
