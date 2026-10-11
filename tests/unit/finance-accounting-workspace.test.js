@@ -404,3 +404,12 @@ describe('actions de garde (réception, contrôle, contre-écriture, pertes)', (
     await expect(workspace.createDeposit({}, market, { id: 'mgr', role: 'market_operator' })).rejects.toMatchObject({ code: 'deposit_target_required', status: 422 });
   });
 });
+
+test('UI : runAction définie et utilisée par toutes les actions ; Garde des espèces = un conteneur par tableau', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/finance-accounting-workspace.js'), 'utf8');
+  expect(src).toMatch(/async function runAction\(context, button, options\)/);
+  const custody = src.slice(src.indexOf('function renderCustody'), src.indexOf('function renderUncollected'));
+  // DataTable.render vide son conteneur : rendre plusieurs tableaux dans le même `slot` n'en laisserait qu'un.
+  expect(custody).not.toContain('DataTable.render(slot');
+  expect((custody.match(/DataTable\.render\(part\(\)/g) || []).length).toBeGreaterThanOrEqual(4);
+});
