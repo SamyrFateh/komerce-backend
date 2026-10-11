@@ -224,7 +224,9 @@
     slot.appendChild(button);
     button.addEventListener('click', async () => {
       const promptFn = context.prompt || (() => null);
-      const amount = promptFn('Montant du dépôt (KMF)');
+      const currency = (promptFn('Devise du montant (KMF ou XAF)', 'XAF') || '').trim().toUpperCase();
+      if (!currency) return;
+      const amount = promptFn(`Montant du dépôt (${currency})`);
       if (!amount) return;
       const method = promptFn('Méthode : mobile_money, bank ou physical', 'mobile_money');
       if (!method) return;
@@ -236,13 +238,14 @@
       await runAction(context, button, {
         url: endpointFor(context.marketCode, 'deposits'),
         body: {
-          amount_kmf: Number(amount),
+          declared_amount: Number(amount),
+          declared_currency: currency,
           deposit_method: method,
           period_start: start,
           period_end: end,
           reference: reference || undefined,
         },
-        confirmMessage: `Déclarer ${formatKmf(amount)} pour cette période ?`,
+        confirmMessage: `Déclarer ${amount} ${currency} pour cette période ?`,
         successMessage: 'Dépôt enregistré et envoyé à la vérification.',
       });
     });

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_actor, deposit_payload_or_id
  * @outputs       cash_deposit_mutation_result
- * @depends       db.js
+ * @depends       db.js, utils/currency.js
  * @used-by       routes/cash.js, services/finance-accounting-workspace.js
  * @db-read       cash_deposits
  * @db-write      cash_deposits
@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const { getCurrencyParity, roundToMinorUnit } = require('../utils/currency');
 
 const METHODS = Object.freeze(['mobile_money', 'bank', 'physical']);
 
@@ -57,14 +58,52 @@ function normalizePayload(payload = {}) {
   };
 }
 
+/**
+ * Montant déclaré en devise d'origine -> snapshot figé + amount_kmf canonique.
+ * Un seul calcul : parités de utils/currency.js (via EUR), échec fermé si la
+ * parité manque. Sans declared_currency : chemin historique (amount_kmf libre).
+ */
+async function resolveDeclaredAmount(payload = {}) {
+  const currency = payload.declared_currency;
+  if (currency === undefined || currency === null || currency === '') return { payload, snapshot: null };
+  if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) {
+    throw new CashDepositError('deposit_currency_invalid', 'Devise invalide (code ISO 4217 en majuscules)', 400);
+  }
+  const declared = Number(payload.declared_amount);
+  if (!Number.isFinite(declared) || declared <= 0) {
+    throw new CashDepositError('deposit_amount_invalid', 'Montant requis et > 0', 400);
+  }
+  let rate = 1;
+  let source = 'identity:KMF';
+  if (currency !== 'KMF') {
+    let kmfRate;
+    let fromRate;
+    try {
+      [fromRate, kmfRate] = await Promise.all([getCurrencyParity(currency), getCurrencyParity('KMF')]);
+    } catch (err) {
+      throw new CashDepositError('deposit_currency_parity_missing', `Aucune parité enregistrée pour ${currency}`, 422);
+    }
+    rate = roundToMinorUnit(kmfRate / fromRate, 6);
+    source = `currency_parities:${currency}->EUR->KMF`;
+  }
+  const amountKmf = roundToMinorUnit(declared * rate, 2);
+  return {
+    payload: { ...payload, amount_kmf: amountKmf },
+    snapshot: { declared_amount: declared, declared_currency: currency, fx_rate_to_kmf: rate, fx_source: source },
+  };
+}
+
 async function createDeposit({ agentId, payload, dbClient = db }) {
   if (!agentId) throw new CashDepositError('deposit_agent_required', 'Agent requis', 400);
-  const input = normalizePayload(payload);
+  const resolved = await resolveDeclaredAmount(payload);
+  const input = normalizePayload(resolved.payload);
+  const snap = resolved.snapshot || {};
   const { rows: [deposit] } = await dbClient.query(`
     INSERT INTO cash_deposits
       (agent_id, amount_kmf, deposit_method, reference, proof_url,
-       period_start, period_end, notes)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       period_start, period_end, notes,
+       declared_amount, declared_currency, fx_rate_to_kmf, fx_source)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *
   `, [
     agentId,
@@ -75,6 +114,10 @@ async function createDeposit({ agentId, payload, dbClient = db }) {
     input.period_start,
     input.period_end,
     input.notes,
+    snap.declared_amount ?? null,
+    snap.declared_currency ?? null,
+    snap.fx_rate_to_kmf ?? null,
+    snap.fx_source ?? null,
   ]);
   return deposit;
 }
@@ -113,6 +156,7 @@ module.exports = {
   METHODS,
   CashDepositError,
   normalizePayload,
+  resolveDeclaredAmount,
   createDeposit,
   verifyDeposit,
   disputeDeposit,
