@@ -1,0 +1,117 @@
+# Certification nocturne E2E Komerce (lot S1 de docs/audits/KOMERCE_E2E_CERTIFICATION_GAP.md).
+#
+# Niveau de preuve revendiqué : L5 « local intégré » — vrai serveur Komerce, vraie base PostgreSQL
+# reconstruite, vrais navigateurs, sur un environnement ÉPHÉMÈRE détruit en fin de job.
+# Ce workflow ne prouve NI le staging déployé, NI un fournisseur (sandbox ou live) : ces niveaux
+# restent des recettes séparées.
+#
+# Isolation (garantie par tests/unit/nightly-certification-workflow.test.js) :
+#   - aucun `secrets.*` référencé, aucune URL de staging/production ;
+#   - base et serveur sur localhost, clés fournisseurs = placeholders, crons coupés ;
+#   - compte admin éphémère créé par le script officiel reset-admin, mot de passe aléatoire masqué ;
+#   - la recette cash échoue elle-même si un effet externe (notification/outbox) apparaît.
+name: Nightly E2E certification
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-e2e-certification
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    name: Integration + E2E API + cash multi-utilisateurs (éphémère)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+      PORT: '3911'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Rebuild PostgreSQL from canonical schema-only snapshot
+        run: |
+          PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-db-bootstrap.js
+      - name: Integration DB proofs (full)
+        run: npm run test:integration
+      - name: Feature-first E2E API proofs (full)
+        if: ${{ !cancelled() }}
+        run: npm run test:e2e:features
+      - name: Install Chromium
+        if: ${{ !cancelled() }}
+        run: npx playwright install --with-deps chromium
+      - name: Cash multi-user recette (local server, real browsers)
+        if: ${{ !cancelled() }}
+        run: |
+          pw="Nt-$(openssl rand -hex 8)-Aa1"
+          echo "::add-mask::$pw"
+          node scripts/reset-admin.js --create --password "$pw"
+          node server.js > server.log 2>&1 &
+          echo $! > server.pid
+          for i in $(seq 1 40); do curl -fsS -m 2 http://localhost:3911/health >/dev/null 2>&1 && break; sleep 1; done
+          set +e
+          E2E_BASE_URL=http://localhost:3911 E2E_ADMIN_PASSWORD="$pw" npm run test:e2e:cash
+          code=$?
+          kill "$(cat server.pid)" 2>/dev/null
+          exit $code
+      - name: Proof level summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo '## Certification nocturne — niveau de preuve'
+            echo ''
+            echo '**L5 local intégré** : serveur Komerce réel + PostgreSQL reconstruit + navigateurs réels, environnement éphémère.'
+            echo 'Non prouvé ici : staging déployé, sandbox fournisseur, fournisseur live, paiement ou fulfillment externe réel.'
+            echo ''
+            if [ -f test-results/cash-e2e/report.md ]; then cat test-results/cash-e2e/report.md; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Archive proofs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-e2e-certification-${{ github.run_id }}
+          path: |
+            test-results/cash-e2e
+            .playwright-output/cash
+            server.log
+          if-no-files-found: warn
+          retention-days: 14
