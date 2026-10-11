@@ -45,3 +45,16 @@ test('Déclaration de dépôt relais : devise + montant d\'origine, jamais un KM
   expect(src).toContain('declared_currency: currency');
   expect(src).not.toContain('amount_kmf');
 });
+
+test('Toutes les actions du workspace passent par runAction, définie dans le module (jamais de ReferenceError au clic)', () => {
+  expect(workspace).toMatch(/async function runAction\(context, button, options\)/);
+  const calls = (workspace.match(/\brunAction\(/g) || []).length;
+  expect(calls).toBeGreaterThan(5);
+});
+
+test('Garde des espèces : un conteneur par tableau (DataTable.render vide son conteneur)', () => {
+  const start = workspace.indexOf('function renderCustody');
+  const src = workspace.slice(start, workspace.indexOf('function renderUncollected', start));
+  expect(src).not.toContain('DataTable.render(slot');
+  expect((src.match(/DataTable\.render\(part\(\)/g) || []).length).toBeGreaterThanOrEqual(4);
+});
