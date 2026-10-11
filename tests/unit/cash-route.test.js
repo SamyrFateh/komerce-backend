@@ -303,7 +303,11 @@ describe('cash — POST /deposit', () => {
   });
 
   it('succès → 201 + INSERT cash_deposits', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'dep-1', amount_kmf: 5000 }] });
+    const client = {
+      query: jest.fn(async sql => (/INSERT INTO cash_deposits/.test(String(sql)) ? { rows: [{ id: 'dep-1', amount_kmf: 5000 }] } : { rows: [] })),
+      release: jest.fn(),
+    };
+    db.getClient.mockResolvedValueOnce(client);
 
     const res = await request(app).post('/api/cash/deposit').send({
       amount_kmf: 5000, deposit_method: 'mobile_money', period_start: '2026-06-01', period_end: '2026-06-07',
@@ -315,7 +319,7 @@ describe('cash — POST /deposit', () => {
   });
 
   it('erreur DB → next(err) → 500', async () => {
-    db.query.mockRejectedValueOnce(new Error('db down'));
+    db.getClient.mockRejectedValueOnce(new Error('db down'));
     const res = await request(app).post('/api/cash/deposit').send({
       amount_kmf: 5000, deposit_method: 'bank', period_start: '2026-06-01', period_end: '2026-06-07',
     });

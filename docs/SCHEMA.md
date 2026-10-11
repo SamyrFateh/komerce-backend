@@ -167,6 +167,13 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
 <!-- schema-pending
+object: cash_deposit_allocations
+kind: table
+migration: 287
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Grand livre de garde cash append-only : part de chaque encaissement couverte par une remise (cash_deposits reste l'autorité des remises). Allocation RECONSTRUCTED (FIFO serveur/historique) ou CONFIRMED (PR 4) ; Σ lignes vivantes ≤ encaissement, Σ lignes ≤ remise, même Market et même agent, verrous de lignes. Ne décharge jamais l'agent : la couverture reste provisoire jusqu'à la réception finale prouvée.
+-->
+<!-- schema-pending
 object: market_payment_accounts
 kind: table
 migration: 285

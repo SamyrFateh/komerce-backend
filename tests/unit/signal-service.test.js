@@ -484,7 +484,7 @@ describe('GENERATORS.cash_expiring', () => {
     expect(sql).toMatch(/cc\.confirmed_at/);
     expect(sql).toMatch(/JOIN orders o ON o\.id = cc\.order_id/);
     // Couverture par montants VÉRIFIÉS (conservation), jamais par existence d'un dépôt sur une période.
-    expect(sql).toMatch(/FROM cash_deposits WHERE status = 'verified'/);
+    expect(sql).toMatch(/FROM cash_deposit_allocations a\s+JOIN cash_deposits d ON d\.id = a\.deposit_id\s+WHERE d\.status = 'verified'/);
     expect(sql).toMatch(/uncovered_kmf/);
     expect(sql).not.toMatch(/NOT EXISTS|period_start|period_end/);
     expect(sql).not.toMatch(/cc\.amount\b|cc\.relay_id|cc\.status/);

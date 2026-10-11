@@ -28,8 +28,19 @@ test('createDeposit conserve les validations Legacy', async () => {
   } })).rejects.toMatchObject({ code: 'deposit_method_invalid', status: 400 });
 });
 
+// createDeposit : INSERT + allocation FIFO dans une transaction (client dédié).
+function txInsert(row) {
+  const client = {
+    query: jest.fn(async sql => (/INSERT INTO cash_deposits/.test(sql) ? { rows: [row] } : { rows: [] })),
+    release: jest.fn(),
+  };
+  db.getClient.mockResolvedValueOnce(client);
+  return client;
+}
+const insertCall = client => client.query.mock.calls.find(c => /INSERT INTO cash_deposits/.test(String(c[0])));
+
 test('createDeposit écrit au nom de l acteur fourni', async () => {
-  db.query.mockResolvedValueOnce({ rows: [{ id: 'uuid', deposit_ref: 'KDP-000001', amount_kmf: 5000, status: 'pending' }] });
+  const client = txInsert({ id: 'uuid', deposit_ref: 'KDP-000001', amount_kmf: 5000, status: 'pending' });
   const result = await service.createDeposit({
     agentId: 'agent-1',
     payload: {
@@ -41,8 +52,15 @@ test('createDeposit écrit au nom de l acteur fourni', async () => {
     },
   });
   expect(result.deposit_ref).toBe('KDP-000001');
-  expect(db.query.mock.calls[0][1][0]).toBe('agent-1');
-  expect(String(db.query.mock.calls[0][0])).toContain('INSERT INTO cash_deposits');
+  expect(insertCall(client)[1][0]).toBe('agent-1');
+  expect(String(insertCall(client)[0])).toContain('INSERT INTO cash_deposits');
+  // allocation FIFO serveur, reconstruite, dans la même transaction
+  const alloc = client.query.mock.calls.find(c => /cash_allocate_fifo/.test(String(c[0])));
+  expect(alloc[1]).toEqual(['uuid', 'SERVER_FIFO']);
+  const order = client.query.mock.calls.map(c => String(c[0]));
+  expect(order[0]).toBe('BEGIN');
+  expect(order[order.length - 1]).toBe('COMMIT');
+  expect(client.release).toHaveBeenCalled();
 });
 
 // Client scripté : BEGIN/COMMIT/ROLLBACK neutres ; les autres requêtes consomment `results`.
@@ -140,9 +158,9 @@ test('transaction propre : COMMIT sur succès, ROLLBACK + release sur échec', a
 const base = { deposit_method: 'mobile_money', period_start: '2026-08-20', period_end: '2026-08-26' };
 
 test('dépôt déclaré en XAF : amount_kmf dérivé des parités et snapshot figé', async () => {
-  db.query.mockResolvedValueOnce({ rows: [{ deposit_ref: 'KDP-2', amount_kmf: 75000 }] });
+  const client = txInsert({ id: 'd2', deposit_ref: 'KDP-2', amount_kmf: 75000 });
   await service.createDeposit({ agentId: 'a', payload: { ...base, declared_amount: 100000, declared_currency: 'XAF' } });
-  const params = db.query.mock.calls[0][1];
+  const params = insertCall(client)[1];
   expect(params[1]).toBe(75000);
   expect(params.slice(8)).toEqual([100000, 'XAF', 0.75, 'currency_parities:XAF->EUR->KMF']);
 });
@@ -150,18 +168,25 @@ test('dépôt déclaré en XAF : amount_kmf dérivé des parités et snapshot fi
 test('dépôt déclaré en KMF : taux 1, aucun lookup de parité', async () => {
   const { getCurrencyParity } = require('../../utils/currency');
   getCurrencyParity.mockClear();
-  db.query.mockResolvedValueOnce({ rows: [{}] });
+  const client = txInsert({ id: 'd3' });
   await service.createDeposit({ agentId: 'a', payload: { ...base, declared_amount: 5000, declared_currency: 'KMF' } });
-  const params = db.query.mock.calls[0][1];
+  const params = insertCall(client)[1];
   expect(params[1]).toBe(5000);
   expect(params.slice(8)).toEqual([5000, 'KMF', 1, 'identity:KMF']);
   expect(getCurrencyParity).not.toHaveBeenCalled();
 });
 
 test('chemin historique amount_kmf : snapshot NULL', async () => {
-  db.query.mockResolvedValueOnce({ rows: [{}] });
+  const client = txInsert({ id: 'd4' });
   await service.createDeposit({ agentId: 'a', payload: { ...base, amount_kmf: 5000 } });
-  expect(db.query.mock.calls[0][1].slice(8)).toEqual([null, null, null, null]);
+  expect(insertCall(client)[1].slice(8)).toEqual([null, null, null, null]);
+
+  // l'allocation échoue : la remise est annulée (ROLLBACK), jamais une remise sans allocation silencieuse
+  const ko = { query: jest.fn(async sql => { if (/cash_allocate_fifo/.test(String(sql))) throw new Error('alloc down'); return { rows: [{ id: 'd5' }] }; }), release: jest.fn() };
+  db.getClient.mockResolvedValueOnce(ko);
+  await expect(service.createDeposit({ agentId: 'a', payload: { ...base, amount_kmf: 5000 } })).rejects.toThrow('alloc down');
+  expect(ko.query.mock.calls.map(c => c[0])).toContain('ROLLBACK');
+  expect(ko.release).toHaveBeenCalled();
 });
 
 test('devise sans parité : échec fermé 422, aucune écriture', async () => {
@@ -184,9 +209,9 @@ test('gardes et valeurs par défaut', async () => {
   await expect(service.resolveDeclaredAmount({ declared_currency: 42 })).rejects.toMatchObject({ code: 'deposit_currency_invalid' });
   expect(() => service.normalizePayload()).toThrow();
   expect(() => service.normalizePayload({ amount_kmf: 1, deposit_method: 'bank' })).toThrow(/Période/);
-  db.query.mockResolvedValue({ rows: [{ id: 'd' }] });
+  const client = txInsert({ id: 'd' });
   await service.createDeposit({ agentId: 'a', payload: { ...base, amount_kmf: 10, reference: 'R', proof_url: 'u', notes: 'n' } });
-  expect(db.query.mock.calls[0][1].slice(3, 8)).toEqual(['R', 'u', '2026-08-20', '2026-08-26', 'n']);
+  expect(insertCall(client)[1].slice(3, 8)).toEqual(['R', 'u', '2026-08-20', '2026-08-26', 'n']);
 });
 
 test('CashDepositError : statut 400 par défaut', () => {

@@ -8,8 +8,8 @@
  * @outputs       cash_deposit_mutation_result
  * @depends       db.js, utils/currency.js, services/market-delegation-service.js
  * @used-by       routes/cash.js, services/finance-accounting-workspace.js
- * @db-read       cash_collections, cash_deposits, relais, users
- * @db-write      cash_deposits, market_delegation_audit
+ * @db-read       cash_collections, cash_deposit_allocations, cash_deposits, relais, users
+ * @db-write      cash_deposit_allocations, cash_deposits, market_delegation_audit
  * @db-txn        caller_or_pool
  * @doctrine      single_cash_deposit_mutation_authority, stable_business_reference_at_browser_boundary
  * @impact-areas  payment, cash-reconciliation, admin-dashboard
@@ -99,28 +99,34 @@ async function createDeposit({ agentId, payload, dbClient = db }) {
   const resolved = await resolveDeclaredAmount(payload);
   const input = normalizePayload(resolved.payload);
   const snap = resolved.snapshot || {};
-  const { rows: [deposit] } = await dbClient.query(`
-    INSERT INTO cash_deposits
-      (agent_id, amount_kmf, deposit_method, reference, proof_url,
-       period_start, period_end, notes,
-       declared_amount, declared_currency, fx_rate_to_kmf, fx_source)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-    RETURNING *
-  `, [
-    agentId,
-    input.amount_kmf,
-    input.deposit_method,
-    input.reference,
-    input.proof_url,
-    input.period_start,
-    input.period_end,
-    input.notes,
-    snap.declared_amount ?? null,
-    snap.declared_currency ?? null,
-    snap.fx_rate_to_kmf ?? null,
-    snap.fx_source ?? null,
-  ]);
-  return deposit;
+  // Remise + allocation FIFO serveur (reconstruite, jamais confirmée) dans une même
+  // transaction ; le Market est dérivé par la base. Le surplus n'est jamais alloué
+  // et l'allocation ne bloque jamais la déclaration.
+  return withTransaction(dbClient, async client => {
+    const { rows: [deposit] } = await client.query(`
+      INSERT INTO cash_deposits
+        (agent_id, amount_kmf, deposit_method, reference, proof_url,
+         period_start, period_end, notes,
+         declared_amount, declared_currency, fx_rate_to_kmf, fx_source)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *
+    `, [
+      agentId,
+      input.amount_kmf,
+      input.deposit_method,
+      input.reference,
+      input.proof_url,
+      input.period_start,
+      input.period_end,
+      input.notes,
+      snap.declared_amount ?? null,
+      snap.declared_currency ?? null,
+      snap.fx_rate_to_kmf ?? null,
+      snap.fx_source ?? null,
+    ]);
+    await client.query('SELECT cash_allocate_fifo($1, $2)', [deposit.id, 'SERVER_FIFO']);
+    return deposit;
+  });
 }
 
 // Transitions légales d'une revue de dépôt. Un dépôt vérifié est terminal, sauf
@@ -216,29 +222,32 @@ async function disputeDeposit({ depositId, verifierId, reason, correction = fals
 }
 
 /**
- * Couverture cash canonique (sans allocation encaissement↔dépôt, qui n'existe pas encore).
- * Règle de conservation, jamais d'existence : seul un dépôt `verified` couvre ; `pending`
- * (en transit) et `disputed` (écart) ne couvrent rien, quelle que soit leur période.
- * Par agent, le total vérifié couvre les encaissements du plus ancien au plus récent ;
- * `uncovered_kmf` est le reliquat non couvert. L'ordre est une convention d'affichage
- * (aucune correspondance stockée) ; le total non couvert est exact. Une validation interne
- * n'est pas une confirmation bancaire. À préfixer par `WITH` ; expose la CTE `uncovered`.
+ * Couverture cash canonique, par grand livre (cash_deposit_allocations, migration 287).
+ * Seul un dépôt `verified` couvre, à hauteur de ses allocations par encaissement ;
+ * `pending` (réservé, en transit) et `disputed` ne couvrent rien. Σ allocations vivantes
+ * ≤ encaissement et ≤ remise (garanti par la base) : aucun double comptage. Les
+ * allocations sont RECONSTRUITES (FIFO serveur) donc la couverture est PROVISOIRE : elle ne
+ * décharge pas l'agent (réception finale prouvée = PR 4b) et n'est pas une confirmation
+ * bancaire. À préfixer par `WITH` ; expose la CTE `uncovered` (colonnes inchangées).
  */
 const UNCOVERED_COLLECTIONS_CTE = `
-  verified AS (
-    SELECT agent_id, SUM(amount_kmf) AS verified_kmf
-      FROM cash_deposits WHERE status = 'verified' GROUP BY agent_id
-  ),
   running AS (
     SELECT cc.id, cc.order_id, cc.collected_by, cc.relais_id, cc.amount_kmf, cc.confirmed_at,
            SUM(cc.amount_kmf) OVER (PARTITION BY cc.collected_by ORDER BY cc.confirmed_at, cc.id) AS cumulative_kmf
       FROM cash_collections cc
   ),
+  covered AS (
+    SELECT a.collection_id, SUM(a.amount_kmf) AS covered_kmf
+      FROM cash_deposit_allocations a
+      JOIN cash_deposits d ON d.id = a.deposit_id
+     WHERE d.status = 'verified'
+     GROUP BY a.collection_id
+  ),
   uncovered AS (
-    SELECT r.*, LEAST(r.amount_kmf, r.cumulative_kmf - COALESCE(v.verified_kmf, 0)) AS uncovered_kmf
+    SELECT r.*, r.amount_kmf - COALESCE(cv.covered_kmf, 0) AS uncovered_kmf
       FROM running r
-      LEFT JOIN verified v ON v.agent_id = r.collected_by
-     WHERE r.cumulative_kmf > COALESCE(v.verified_kmf, 0)
+      LEFT JOIN covered cv ON cv.collection_id = r.id
+     WHERE r.amount_kmf > COALESCE(cv.covered_kmf, 0)
   )`;
 
 module.exports = {

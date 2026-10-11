@@ -61,7 +61,16 @@ if (!process.env.DATABASE_URL) {
       for (const id of ids.deposits) {
         await q(`DELETE FROM market_delegation_audit WHERE payload_before->>'deposit_ref' = (SELECT deposit_ref FROM cash_deposits WHERE id=$1)`, [id]);
       }
-      await q('DELETE FROM cash_deposits WHERE agent_id = ANY($1::uuid[])', [[ids.agent, ids.admin1, ids.admin2]]);
+      // Grand livre append-only (migration 287) : nettoyage de fixtures uniquement, triggers rétablis aussitôt.
+      await q('ALTER TABLE cash_deposit_allocations DISABLE TRIGGER trg_prevent_cash_alloc_delete');
+      await q('ALTER TABLE cash_deposits DISABLE TRIGGER trg_prevent_cash_deposits_delete');
+      try {
+        await q('DELETE FROM cash_deposit_allocations WHERE deposit_id IN (SELECT id FROM cash_deposits WHERE agent_id = ANY($1::uuid[]))', [[ids.agent, ids.admin1, ids.admin2]]);
+        await q('DELETE FROM cash_deposits WHERE agent_id = ANY($1::uuid[])', [[ids.agent, ids.admin1, ids.admin2]]);
+      } finally {
+        await q('ALTER TABLE cash_deposits ENABLE TRIGGER trg_prevent_cash_deposits_delete');
+        await q('ALTER TABLE cash_deposit_allocations ENABLE TRIGGER trg_prevent_cash_alloc_delete');
+      }
       await q('DELETE FROM users WHERE id = ANY($1::uuid[])', [[ids.agent, ids.admin1, ids.admin2]]);
       await q('DELETE FROM relais WHERE id=$1', [ids.relais]);
       await q('DELETE FROM markets WHERE id=$1', [ids.market]);

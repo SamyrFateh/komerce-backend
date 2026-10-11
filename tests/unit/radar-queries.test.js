@@ -152,6 +152,20 @@ describe('getAlerts', () => {
     expect(result.total).toBe(0);
   });
 
+  it('expose CASH_REMITTANCE_UNPROVEN (couverture provisoire du grand livre) dans getAlerts', async () => {
+    db.query.mockImplementation(async (sql) => {
+      const s = sql.trim();
+      if (s.startsWith('SELECT o.id, o.reference')) return { rows: [] };
+      if (s.includes('agent_gaps')) return { rows: [] };
+      if (s.includes('cash_deposit_allocations')) return { rows: [{ cnt: 2, total_kmf: 70000 }] };
+      return { rows: [ROW_ZERO] };
+    });
+    const result = await radarQueries.getAlerts();
+    const alert = result.alerts.find(a => a.code === 'CASH_REMITTANCE_UNPROVEN');
+    expect(alert).toMatchObject({ level: 'signal', value_kmf: 70000, count: 2 });
+    expect(alert.title).toMatch(/provisoire/);
+  });
+
   it('déclenche CASH_OVERDUE si cashOverdue.cnt > 0', async () => {
     let call = 0;
     db.query.mockImplementation(async (sql) => {

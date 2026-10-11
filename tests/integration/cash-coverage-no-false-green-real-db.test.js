@@ -11,8 +11,8 @@
  * Preuve PostgreSQL réelle de l'absence de faux vert : seul un dépôt VÉRIFIÉ couvre des
  * encaissements, par conservation de montants. Un dépôt de 1 KMF contesté (ou 150 000 KMF
  * seulement pending) face à 150 000 KMF encaissés ne ferme ni l'alerte, ni l'écart.
- * Limite assumée : pas d'allocation encaissement↔dépôt ; une validation interne n'est pas
- * une confirmation bancaire.
+ * Depuis la migration 287 la couverture passe par le grand livre d'allocations (par encaissement,
+ * reconstruit FIFO donc provisoire) ; une validation interne n'est pas une confirmation bancaire.
  */
 
 if (!process.env.DATABASE_URL) {
@@ -81,7 +81,16 @@ if (!process.env.DATABASE_URL) {
   afterAll(async () => {
     try {
       await q('DELETE FROM signals WHERE entity_id = ANY($1::text[])', [ids.collections.map(String)]);
-      await q('DELETE FROM cash_deposits WHERE agent_id=$1', [ids.agent]);
+      // Grand livre append-only (migration 287) : nettoyage de fixtures uniquement, triggers rétablis aussitôt.
+      await q('ALTER TABLE cash_deposit_allocations DISABLE TRIGGER trg_prevent_cash_alloc_delete');
+      await q('ALTER TABLE cash_deposits DISABLE TRIGGER trg_prevent_cash_deposits_delete');
+      try {
+        await q('DELETE FROM cash_deposit_allocations WHERE deposit_id IN (SELECT id FROM cash_deposits WHERE agent_id = ANY($1::uuid[]))', [[ids.agent]]);
+        await q('DELETE FROM cash_deposits WHERE agent_id = ANY($1::uuid[])', [[ids.agent]]);
+      } finally {
+        await q('ALTER TABLE cash_deposits ENABLE TRIGGER trg_prevent_cash_deposits_delete');
+        await q('ALTER TABLE cash_deposit_allocations ENABLE TRIGGER trg_prevent_cash_alloc_delete');
+      }
       await q('DELETE FROM cash_collections WHERE id = ANY($1::uuid[])', [ids.collections]);
       await q('DELETE FROM orders WHERE id = ANY($1::uuid[])', [ids.orders]);
       await q('DELETE FROM market_delegation_audit WHERE actor_user_id = $1', [ids.admin]);
@@ -131,8 +140,11 @@ if (!process.env.DATABASE_URL) {
 
     it('vérification partielle (100 000) : reliquat exact de 50 000 sur la collecte la plus récente', async () => {
       const radarBefore = await radar();
-      const { rows: [pending] } = await q(`SELECT id FROM cash_deposits WHERE agent_id=$1 AND reference=$2`, [ids.agent, `OM-${tag}`]);
-      await q(`UPDATE cash_deposits SET amount_kmf = 100000 WHERE id=$1`, [pending.id]);
+      // Le montant d'une remise est immuable (J3) : le 150 000 en transit est contesté (libère sa
+      // réservation), puis une remise distincte de 100 000 est déclarée et vérifiée.
+      const { rows: [transit] } = await q(`SELECT id FROM cash_deposits WHERE agent_id=$1 AND reference=$2`, [ids.agent, `OM-${tag}`]);
+      await deposits.disputeDeposit({ depositId: transit.id, verifierId: ids.admin, reason: 'montant erroné, redéclaré' });
+      const pending = await deposit(100000, { deposit_method: 'mobile_money', reference: `OM2-${tag}` });
       await deposits.verifyDeposit({ depositId: pending.id, verifierId: ids.admin, notes: 'relevé reçu' });
       await GENERATORS.cash_expiring();
       expect(await uncovered()).toEqual({ kmf: 50000, n: 1 });

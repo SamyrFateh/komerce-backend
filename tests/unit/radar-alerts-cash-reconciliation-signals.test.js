@@ -16,7 +16,7 @@
  */
 
 const {
-  checkCashNotCollected, checkCashNotDeposited, checkDepositsPendingReview, checkSuspectCashPattern,
+  checkCashNotCollected, checkCashNotDeposited, checkDepositsPendingReview, checkCashRemittanceUnproven, checkSuspectCashPattern,
 } = require('../../services/radar-alerts/cash-reconciliation-signals');
 
 describe('checkCashNotCollected', () => {
@@ -86,5 +86,27 @@ describe('checkSuspectCashPattern', () => {
     };
     const alert = await checkSuspectCashPattern(db);
     expect(alert).toMatchObject({ level: 'critical', code: 'CASH_SUSPECT_PATTERN', detail: 'Ali' });
+  });
+});
+
+describe('checkCashRemittanceUnproven (couverture provisoire, PR 3)', () => {
+  it('null si aucune allocation vérifiée reconstruite', async () => {
+    const db = { query: jest.fn(async () => ({ rows: [{ cnt: 0, total_kmf: 0 }] })) };
+    expect(await checkCashRemittanceUnproven(db)).toBeNull();
+  });
+
+  it('signal explicite « provisoire », jamais critical, sur allocations vérifiées RECONSTRUCTED', async () => {
+    const db = { query: jest.fn(async () => ({ rows: [{ cnt: 2, total_kmf: 70000 }] })) };
+    const alert = await checkCashRemittanceUnproven(db);
+    expect(alert).toMatchObject({ level: 'signal', code: 'CASH_REMITTANCE_UNPROVEN', value_kmf: 70000, count: 2 });
+    expect(alert.title).toMatch(/provisoire/);
+    const sql = String(db.query.mock.calls[0][0]);
+    expect(sql).toMatch(/d\.status = 'verified'/);
+    expect(sql).toMatch(/allocation_basis = 'RECONSTRUCTED'/);
+  });
+
+  it('défensif : table absente → null', async () => {
+    const db = { query: jest.fn(async () => { throw new Error('relation does not exist'); }) };
+    expect(await checkCashRemittanceUnproven(db)).toBeNull();
   });
 });

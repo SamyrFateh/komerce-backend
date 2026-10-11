@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result
  * @depends       db.js, services/cash-deposit-service.js
  * @used-by       services/radar-queries.js
- * @db-read       orders, cash_collections, cash_deposits, users
+ * @db-read       orders, cash_collections, cash_deposit_allocations, cash_deposits, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      resolve_before_behavior_change
@@ -121,6 +121,36 @@ async function checkDepositsPendingReview(db) {
   }
 }
 
+// Couverture PROVISOIRE (PR 3) : encaissements couverts par une remise vérifiée dont
+// l'allocation est reconstruite (FIFO), sans réception finale prouvée (PR 4b).
+// Ce n'est pas un écart : c'est l'état explicite « pas encore clos ». Disparaît en PR 4b.
+async function checkCashRemittanceUnproven(db) {
+  try {
+    const { rows: [r] } = await db.query(`
+      SELECT COUNT(DISTINCT a.collection_id) AS cnt,
+             COALESCE(SUM(a.amount_kmf), 0) AS total_kmf
+        FROM cash_deposit_allocations a
+        JOIN cash_deposits d ON d.id = a.deposit_id
+       WHERE d.status = 'verified'
+         AND a.allocation_basis = 'RECONSTRUCTED'
+    `);
+    if (Number(r.total_kmf) <= 0) return null;
+    return {
+      level: 'signal',
+      icon: '🧾',
+      code: 'CASH_REMITTANCE_UNPROVEN',
+      title: `${Number(r.total_kmf).toLocaleString('fr-FR')} KMF couverts par une remise vérifiée, réception finale non prouvée (provisoire)`,
+      value_kmf: Number(r.total_kmf),
+      count: Number(r.cnt),
+      action: 'La remise est vérifiée mais l\'agent n\'est pas déchargé tant que la réception finale n\'est pas prouvée',
+      target_view: 'cash',
+      target_filter: { type: 'remittance_unproven' },
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
 async function checkSuspectCashPattern(db) {
   try {
     const { rows: suspectAgents } = await db.query(`
@@ -188,5 +218,6 @@ module.exports = {
   checkCashNotCollected,
   checkCashNotDeposited,
   checkDepositsPendingReview,
+  checkCashRemittanceUnproven,
   checkSuspectCashPattern,
 };
