@@ -115,8 +115,9 @@
     return header;
   }
 
-  function createSection(rootNode, ui, title, description) {
+  function createSection(rootNode, ui, title, description, sectionId = null) {
     const section = ui.Section.create({ title, description });
+    if (sectionId) section.element.id = sectionId;
     rootNode.appendChild(section.element);
     return section.slot;
   }
@@ -135,6 +136,8 @@
       { key: 'held', label: 'Détenu (non clôturé)', value: formatKmf(summary.held_kmf), tone: summary.held_kmf ? 'warning' : 'neutral' },
       { key: 'closed', label: 'Clôturé (réception finale contrôlée)', value: formatKmf(summary.closed_kmf), tone: 'positive' },
       { key: 'toact', label: 'Remises à traiter', value: formatNumber(summary.transfers_to_act), tone: summary.transfers_to_act ? 'warning' : 'neutral' },
+      { key: 'over-ceiling', label: 'Détenteurs hors plafond', value: formatNumber(summary.holders_over_ceiling), tone: summary.holders_over_ceiling ? 'critical' : 'neutral' },
+      { key: 'overdue', label: 'Détenteurs hors délai', value: formatNumber(summary.holders_overdue), tone: summary.holders_overdue ? 'critical' : 'neutral' },
       { key: 'legacy', label: 'Historique à régulariser', value: formatKmf(summary.legacy_to_regularize_kmf), tone: summary.legacy_to_regularize ? 'warning' : 'neutral' },
       { key: 'pending', label: 'Dépôts historiques à vérifier', value: formatNumber(summary.pending_deposits), tone: summary.pending_deposits ? 'warning' : 'neutral' },
       { key: 'missing', label: 'Non encaissé', value: formatKmf(summary.uncollected_kmf), tone: summary.uncollected_kmf ? 'critical' : 'neutral' },
@@ -273,7 +276,7 @@
   }
 
   function renderDeposits(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Remises historiques', 'Anciennes remises vérifiées avant la garde canonique : elles ne déchargent pas l’agent et restent à régulariser par un transfert accepté avec preuve.');
+    const slot = createSection(rootNode, ui, 'Remises historiques', 'Anciennes remises vérifiées avant la garde canonique : elles ne déchargent pas l’agent et restent à régulariser par un transfert accepté avec preuve.', 'accounting-deposits');
     const rows = payload.deposits || [];
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun dépôt rattaché à ce marché.'));
@@ -454,7 +457,7 @@
     const limits = custody.limits || {};
     // DataTable.render vide son conteneur : un sous-conteneur par tableau, sinon seul le dernier survit.
     const slot = createSection(rootNode, ui, 'Garde des espèces',
-      `Qui détient l’argent, depuis quand, à qui le remettre. Délai de garde : ${limits.market_max_days || '—'} jour(s) ; plafond central : ${formatKmf(limits.max_holding_kmf)}. Une déclaration ne transfère rien ; aucun transfert intermédiaire ne clôture.`);
+      `Qui détient l’argent, depuis quand, à qui le remettre. Délai de garde : ${limits.market_max_days || '—'} jour(s) ; plafond central : ${formatKmf(limits.max_holding_kmf)}. Une déclaration ne transfère rien ; aucun transfert intermédiaire ne clôture.`, 'accounting-custody');
     const part = () => { const node = doc.createElement('div'); slot.appendChild(node); return node; };
     ui.DataTable.render(part(), {
       columns: [
@@ -522,7 +525,7 @@
   }
 
   function renderUncollected(rootNode, ui, doc, payload) {
-    const slot = createSection(rootNode, ui, 'Cash non encaissé', 'Commandes cash qui dépassent le délai sélectionné.');
+    const slot = createSection(rootNode, ui, 'Cash non encaissé', 'Commandes cash qui dépassent le délai sélectionné.', 'accounting-uncollected');
     const rows = payload.uncollected || [];
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune commande cash en anomalie.'));
