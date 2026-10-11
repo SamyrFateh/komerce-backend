@@ -526,6 +526,31 @@ describe('GENERATORS.cash_expiring', () => {
     expect(mockQuery.mock.calls[3][1]).toEqual(['cash_expiring', ['cc1'], null]);
   });
 
+  test('51 encaissements : troncature détectée, 50 signalés, AUCUNE auto-résolution', async () => {
+    const rows = Array.from({ length: 51 }, (_, i) => row({ id: `cc${i}`, reference: `CMD-${i}` }));
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows })
+      .mockResolvedValue({ rows: [{ id: 'sig' }] });
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.cash_expiring();
+    expect(result).toEqual({ generated: 50, truncated: true });
+    expect(String(mockQuery.mock.calls[0][0])).toMatch(/LIMIT 51/);
+    const sqls = mockQuery.mock.calls.map(c => String(c[0]));
+    expect(sqls.some(q => /status = 'resolved'/.test(q))).toBe(false);
+    expect(sqls.some(q => /SELECT DISTINCT market_id FROM signals/.test(q))).toBe(false);
+    expect(mockQuery).toHaveBeenCalledTimes(1 + 50);
+  });
+
+  test('exactement 50 encaissements : résultat complet, résolution normale', async () => {
+    const rows = Array.from({ length: 50 }, (_, i) => row({ id: `cc${i}` }));
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows })
+      .mockResolvedValue({ rows: [], rowCount: 0 });
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.cash_expiring()).toEqual({ generated: 50 });
+    expect(mockQuery.mock.calls.map(c => String(c[0])).some(q => /status = 'resolved'|entity_id != ALL/.test(q))).toBe(true);
+  });
+
   test('un Market sans plus aucune ligne mais avec signal ouvert est résolu (pas de faux vert persistant)', async () => {
     mockQuery = jest.fn()
       .mockResolvedValueOnce({ rows: [] })
