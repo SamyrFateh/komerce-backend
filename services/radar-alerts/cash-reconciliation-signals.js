@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context
  * @outputs       response_or_domain_result
- * @depends       db.js
+ * @depends       db.js, services/cash-deposit-service.js
  * @used-by       services/radar-queries.js
  * @db-read       orders, cash_collections, cash_deposits, users
  * @db-write      none
@@ -17,6 +17,8 @@
  */
 
 'use strict';
+
+const { UNCOVERED_COLLECTIONS_CTE } = require('../cash-deposit-service');
 
 /**
  * services/radar-alerts/cash-reconciliation-signals.js
@@ -62,18 +64,15 @@ async function checkCashNotCollected(db, cashNotCollectedHrs) {
 
 async function checkCashNotDeposited(db, cashNotDepositedHrs) {
   try {
+    // Couverture par montants vérifiés (UNCOVERED_COLLECTIONS_CTE), jamais par simple
+    // existence d'un dépôt : pending et disputed ne couvrent rien.
     const { rows: [undeposited] } = await db.query(`
+      WITH ${UNCOVERED_COLLECTIONS_CTE}
       SELECT
         COUNT(DISTINCT cc.collected_by) AS agent_count,
-        COALESCE(SUM(cc.amount_kmf), 0) AS total_kmf
-      FROM cash_collections cc
+        COALESCE(SUM(cc.uncovered_kmf), 0) AS total_kmf
+      FROM uncovered cc
       WHERE cc.confirmed_at < NOW() - ($1 * INTERVAL '1 hour')
-        AND NOT EXISTS (
-          SELECT 1 FROM cash_deposits cd
-          WHERE cd.agent_id = cc.collected_by
-            AND cd.period_start <= cc.confirmed_at::date
-            AND cd.period_end >= cc.confirmed_at::date
-        )
     `, [cashNotDepositedHrs]);
 
     if (Number(undeposited.total_kmf) <= 0) return null;
@@ -82,10 +81,10 @@ async function checkCashNotDeposited(db, cashNotDepositedHrs) {
       level: 'critical',
       icon: '🏦',
       code: 'CASH_NOT_DEPOSITED',
-      title: `${Number(undeposited.total_kmf).toLocaleString('fr-FR')} KMF encaissés non déposés (${undeposited.agent_count} agent(s))`,
+      title: `${Number(undeposited.total_kmf).toLocaleString('fr-FR')} KMF encaissés non couverts par un dépôt vérifié (${undeposited.agent_count} agent(s))`,
       value_kmf: Number(undeposited.total_kmf),
       count: Number(undeposited.agent_count),
-      action: 'Demander les versements',
+      action: 'Demander les versements ou faire vérifier les dépôts déclarés',
       target_view: 'cash',
       target_filter: { type: 'undeposited' },
     };

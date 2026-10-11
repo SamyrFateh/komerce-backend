@@ -8,7 +8,7 @@
  * @outputs       cash_deposit_mutation_result
  * @depends       db.js, utils/currency.js, services/market-delegation-service.js
  * @used-by       routes/cash.js, services/finance-accounting-workspace.js
- * @db-read       cash_deposits, users, relais
+ * @db-read       cash_collections, cash_deposits, relais, users
  * @db-write      cash_deposits, market_delegation_audit
  * @db-txn        caller_or_pool
  * @doctrine      single_cash_deposit_mutation_authority, stable_business_reference_at_browser_boundary
@@ -215,8 +215,35 @@ async function disputeDeposit({ depositId, verifierId, reason, correction = fals
   return reviewDeposit({ depositId, verifierId, target: 'disputed', reason, correction, central, dbClient });
 }
 
+/**
+ * Couverture cash canonique (sans allocation encaissement↔dépôt, qui n'existe pas encore).
+ * Règle de conservation, jamais d'existence : seul un dépôt `verified` couvre ; `pending`
+ * (en transit) et `disputed` (écart) ne couvrent rien, quelle que soit leur période.
+ * Par agent, le total vérifié couvre les encaissements du plus ancien au plus récent ;
+ * `uncovered_kmf` est le reliquat non couvert. L'ordre est une convention d'affichage
+ * (aucune correspondance stockée) ; le total non couvert est exact. Une validation interne
+ * n'est pas une confirmation bancaire. À préfixer par `WITH` ; expose la CTE `uncovered`.
+ */
+const UNCOVERED_COLLECTIONS_CTE = `
+  verified AS (
+    SELECT agent_id, SUM(amount_kmf) AS verified_kmf
+      FROM cash_deposits WHERE status = 'verified' GROUP BY agent_id
+  ),
+  running AS (
+    SELECT cc.id, cc.order_id, cc.collected_by, cc.relais_id, cc.amount_kmf, cc.confirmed_at,
+           SUM(cc.amount_kmf) OVER (PARTITION BY cc.collected_by ORDER BY cc.confirmed_at, cc.id) AS cumulative_kmf
+      FROM cash_collections cc
+  ),
+  uncovered AS (
+    SELECT r.*, LEAST(r.amount_kmf, r.cumulative_kmf - COALESCE(v.verified_kmf, 0)) AS uncovered_kmf
+      FROM running r
+      LEFT JOIN verified v ON v.agent_id = r.collected_by
+     WHERE r.cumulative_kmf > COALESCE(v.verified_kmf, 0)
+  )`;
+
 module.exports = {
   METHODS,
+  UNCOVERED_COLLECTIONS_CTE,
   CashDepositError,
   normalizePayload,
   resolveDeclaredAmount,

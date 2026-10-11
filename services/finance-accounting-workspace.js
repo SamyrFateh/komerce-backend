@@ -218,7 +218,8 @@ async function queryReconciliation(marketId, filters) {
     disputed_kmf: Number(deposited.disputed_kmf || 0),
     deposit_count: Number(deposited.deposit_count || 0),
     gap_collection_kmf: expectedKmf - collectedKmf,
-    gap_deposit_kmf: collectedKmf - depositedKmf,
+    // Écart = collecté − VÉRIFIÉ : un dépôt pending/disputed ne ferme jamais l'écart.
+    gap_deposit_kmf: collectedKmf - Number(deposited.verified_kmf || 0),
   };
 }
 

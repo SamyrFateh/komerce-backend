@@ -479,7 +479,8 @@ router.get('/reconciliation', authenticate, requireAdmin, async (req, res, next)
     const agents = [];
     for (const a of agentMap.values()) {
       a.gap_collection = a.expected_kmf - a.declared_kmf;
-      a.gap_deposit = a.declared_kmf - a.deposited_kmf;
+      // Seul un dépôt vérifié réduit l'écart : pending (en transit) et disputed restent un écart.
+      a.gap_deposit = a.declared_kmf - a.verified_kmf;
 
       // Status
       if (a.gap_collection === 0 && a.gap_deposit === 0) {
@@ -500,9 +501,10 @@ router.get('/reconciliation', authenticate, requireAdmin, async (req, res, next)
       expected_kmf: acc.expected_kmf + a.expected_kmf,
       declared_kmf: acc.declared_kmf + a.declared_kmf,
       deposited_kmf: acc.deposited_kmf + a.deposited_kmf,
+      verified_kmf: acc.verified_kmf + a.verified_kmf,
       gap_collection: acc.gap_collection + a.gap_collection,
       gap_deposit: acc.gap_deposit + a.gap_deposit,
-    }), { expected_kmf: 0, declared_kmf: 0, deposited_kmf: 0, gap_collection: 0, gap_deposit: 0 });
+    }), { expected_kmf: 0, declared_kmf: 0, deposited_kmf: 0, verified_kmf: 0, gap_collection: 0, gap_deposit: 0 });
 
     res.json({
       period: { from, to },
@@ -551,7 +553,7 @@ router.get('/reconciliation/agents', authenticate, requireAdmin, async (req, res
         COALESCE(ad.pending_kmf, 0) AS pending_deposit_kmf,
         COALESCE(ad.total_deposits, 0) AS total_deposits,
         ad.last_deposit,
-        COALESCE(ac.total_declared_kmf, 0) - COALESCE(ad.total_deposited_kmf, 0) AS balance_kmf
+        COALESCE(ac.total_declared_kmf, 0) - COALESCE(ad.verified_kmf, 0) AS balance_kmf
       FROM users u
       LEFT JOIN agent_collections ac ON ac.agent_id = u.id
       LEFT JOIN agent_deposits ad ON ad.agent_id = u.id

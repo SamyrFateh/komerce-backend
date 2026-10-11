@@ -53,15 +53,15 @@
   },
   "summary": {
     "features": 40,
-    "healthy": 34,
+    "healthy": 33,
     "attention": 6,
-    "blocked": 0,
+    "blocked": 1,
     "businessDependencies": 304,
-    "directCrossFeatureImports": 0,
+    "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 10,
+    "debtItemsTotal": 11,
     "gateHealthy": 37,
     "gateBlocked": 2
   },
@@ -9419,8 +9419,8 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
-        "directCrossFeatureImports": 0,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -9444,8 +9444,14 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 0,
-        "debtItems": []
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DIRECT_CROSS_FEATURE_IMPORT",
+            "severity": "high",
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -18918,7 +18924,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 17,
+            "count": 18,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -18968,6 +18974,11 @@
               {
                 "declared": "dashboards/canonical/js/market-cash-control.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-cash-control.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-readonly-views.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-readonly-views.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19043,8 +19054,13 @@
             ]
           },
           "tests": {
-            "count": 6,
+            "count": 8,
             "files": [
+              {
+                "declared": "tests/e2e/market-readonly-views.spec.js",
+                "resolvedPath": "tests/e2e/market-readonly-views.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/market-local-price-state-transition-real-db.test.js",
                 "resolvedPath": "tests/integration/market-local-price-state-transition-real-db.test.js",
@@ -19074,11 +19090,16 @@
                 "declared": "tests/unit/market-local-price-resolution-service.test.js",
                 "resolvedPath": "tests/unit/market-local-price-resolution-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-readonly-views.test.js",
+                "resolvedPath": "tests/unit/market-readonly-views.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 28,
+        "totalFiles": 31,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -20190,7 +20211,7 @@
             ]
           },
           "routes": {
-            "count": 12,
+            "count": 14,
             "files": [
               {
                 "declared": "routes/market-delegation-cash-control.js",
@@ -20210,6 +20231,16 @@
               {
                 "declared": "routes/market-delegation-client.js",
                 "resolvedPath": "routes/market-delegation-client.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-cost-statement.js",
+                "resolvedPath": "routes/market-delegation-cost-statement.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-customs.js",
+                "resolvedPath": "routes/market-delegation-customs.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -20255,7 +20286,7 @@
             ]
           },
           "services": {
-            "count": 15,
+            "count": 17,
             "files": [
               {
                 "declared": "services/capability-registry.js",
@@ -20275,6 +20306,16 @@
               {
                 "declared": "services/market-delegation-client-case-service.js",
                 "resolvedPath": "services/market-delegation-client-case-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-cost-statement-service.js",
+                "resolvedPath": "services/market-delegation-cost-statement-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-customs-service.js",
+                "resolvedPath": "services/market-delegation-customs-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -20335,7 +20376,7 @@
             ]
           },
           "tests": {
-            "count": 47,
+            "count": 49,
             "files": [
               {
                 "declared": "tests/e2e-api/market-delegation.authority-team-network.e2e.test.js",
@@ -20430,6 +20471,16 @@
               {
                 "declared": "tests/unit/market-delegation-client-routes.test.js",
                 "resolvedPath": "tests/unit/market-delegation-client-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-cost-statement.test.js",
+                "resolvedPath": "tests/unit/market-delegation-cost-statement.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-customs.test.js",
+                "resolvedPath": "tests/unit/market-delegation-customs.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -20575,7 +20626,7 @@
             ]
           }
         },
-        "totalFiles": 100,
+        "totalFiles": 106,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -21226,6 +21277,7 @@
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -23751,7 +23803,7 @@
             ]
           },
           "migrations": {
-            "count": 5,
+            "count": 6,
             "files": [
               {
                 "declared": "migrations/079_paypal_payment_mode.sql",
@@ -23777,15 +23829,30 @@
                 "declared": "migrations/199_cash_confirmation_control.sql",
                 "resolvedPath": "migrations/199_cash_confirmation_control.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/285_market_payment_accounts.sql",
+                "resolvedPath": "migrations/285_market_payment_accounts.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "routes": {
-            "count": 5,
+            "count": 7,
             "files": [
+              {
+                "declared": "routes/admin-market-payment-accounts.js",
+                "resolvedPath": "routes/admin-market-payment-accounts.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "routes/cash.js",
                 "resolvedPath": "routes/cash.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-payment-accounts.js",
+                "resolvedPath": "routes/market-delegation-payment-accounts.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -23821,7 +23888,7 @@
             ]
           },
           "services": {
-            "count": 19,
+            "count": 20,
             "files": [
               {
                 "declared": "services/cash-confirmation-control-service.js",
@@ -23846,6 +23913,11 @@
               {
                 "declared": "services/confirm-pickup-cash-payment.js",
                 "resolvedPath": "services/confirm-pickup-cash-payment.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-payment-account-service.js",
+                "resolvedPath": "services/market-payment-account-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -23921,7 +23993,7 @@
             ]
           },
           "tests": {
-            "count": 32,
+            "count": 34,
             "files": [
               {
                 "declared": "public/boutique/tests/unit/b-mobile-money.test.js",
@@ -23991,6 +24063,16 @@
               {
                 "declared": "tests/unit/kartapay-webhook.test.js",
                 "resolvedPath": "tests/unit/kartapay-webhook.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-payment-accounts.test.js",
+                "resolvedPath": "tests/unit/market-delegation-payment-accounts.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-payment-accounts.test.js",
+                "resolvedPath": "tests/unit/market-payment-accounts.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -24086,7 +24168,7 @@
             ]
           }
         },
-        "totalFiles": 66,
+        "totalFiles": 72,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 6,
@@ -24441,6 +24523,7 @@
           "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
