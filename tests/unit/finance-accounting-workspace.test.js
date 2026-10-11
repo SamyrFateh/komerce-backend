@@ -282,3 +282,12 @@ test('rapprochement : un dépôt pending ou contesté ne ferme jamais l\'écart 
   expect(payload.reconciliation.verified_kmf).toBe(0);
   expect(payload.reconciliation.gap_deposit_kmf).toBe(150000);
 });
+
+test('UI : colonne « Déclaré (tous statuts) » + « Vérifié », rapprochement présenté comme provisoire', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/finance-accounting-workspace.js'), 'utf8');
+  expect(src).toContain("label: 'Déclaré (tous statuts)'");
+  expect(src).toContain("label: 'Vérifié'");
+  expect(src).toContain('Rapprochement cash (provisoire)');
+  expect(src).toMatch(/sans allocation encaissement↔dépôt ni confirmation bancaire/);
+  expect(src).not.toContain('non vérifié)');
+});

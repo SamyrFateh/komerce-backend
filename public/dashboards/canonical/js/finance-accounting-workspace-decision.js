@@ -122,12 +122,12 @@
     return {
       key: 'reconciliation',
       title: 'Rapprochement',
-      subtitle: 'Écarts calculés par le serveur pour la période',
+      subtitle: 'Couverture provisoire : dépôts vérifiés en interne, sans allocation ni confirmation bancaire',
       icon: 'R',
-      tone: hasGap ? 'warning' : 'positive',
+      tone: hasGap ? 'warning' : 'neutral',
       metrics: [
         { label: 'Écart collecte', value: formatKmf(reconciliation.gap_collection_kmf) },
-        { label: 'Écart dépôt', value: formatKmf(reconciliation.gap_deposit_kmf) },
+        { label: 'Écart (collecté − vérifié)', value: formatKmf(reconciliation.gap_deposit_kmf) },
       ],
     };
   }
