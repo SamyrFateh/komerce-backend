@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        authenticated_actor, deposit_payload_or_id
  * @outputs       cash_deposit_mutation_result
- * @depends       db.js, utils/currency.js
+ * @depends       db.js, utils/currency.js, services/market-delegation-service.js
  * @used-by       routes/cash.js, services/finance-accounting-workspace.js
- * @db-read       cash_deposits
- * @db-write      cash_deposits
+ * @db-read       cash_deposits, users, relais
+ * @db-write      cash_deposits, market_delegation_audit
  * @db-txn        caller_or_pool
  * @doctrine      single_cash_deposit_mutation_authority, stable_business_reference_at_browser_boundary
  * @impact-areas  payment, cash-reconciliation, admin-dashboard
@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const { getCurrencyParity, roundToMinorUnit } = require('../utils/currency');
+const { audit } = require('./market-delegation-service');
 
 const METHODS = Object.freeze(['mobile_money', 'bank', 'physical']);
 
@@ -122,34 +123,96 @@ async function createDeposit({ agentId, payload, dbClient = db }) {
   return deposit;
 }
 
-async function verifyDeposit({ depositId, verifierId, notes = null, dbClient = db }) {
-  if (!depositId) throw new CashDepositError('deposit_id_required', 'Dépôt requis', 400);
-  const { rows: [deposit] } = await dbClient.query(`
-    UPDATE cash_deposits
-       SET status = 'verified',
-           verified_by = $1,
-           verified_at = NOW(),
-           notes = COALESCE($3, notes)
-     WHERE id = $2
-     RETURNING *
-  `, [verifierId || null, depositId, notes || null]);
-  if (!deposit) throw new CashDepositError('deposit_not_found', 'Dépôt introuvable', 404);
-  return deposit;
+// Transitions légales d'une revue de dépôt. Un dépôt vérifié est terminal, sauf
+// correction exceptionnelle centrale explicite (verified → disputed, motif obligatoire).
+const REVIEW_TRANSITIONS = Object.freeze({
+  pending: ['verified', 'disputed'],
+  disputed: ['verified'],
+});
+
+const CENTRAL_AUDIT_ACTIONS = Object.freeze({
+  verified: 'CASH_DEPOSIT_CENTRAL_VERIFIED',
+  disputed: 'CASH_DEPOSIT_CENTRAL_DISPUTED',
+  correction: 'CASH_DEPOSIT_CENTRAL_CORRECTED',
+});
+
+async function withTransaction(dbClient, work) {
+  if (dbClient !== db) return work(dbClient);
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const result = await work(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* conserver l'erreur d'origine */ }
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
-async function disputeDeposit({ depositId, verifierId, reason, dbClient = db }) {
+/**
+ * Autorité unique de revue : verrou, déclarant ≠ vérificateur, transition légale,
+ * jamais d'écrasement silencieux d'une validation. `central` ajoute l'audit
+ * transactionnel (avant/après, validateur précédent conservé).
+ */
+async function reviewDeposit({ depositId, verifierId, target, notes = null, reason = null, correction = false, central = false, dbClient = db }) {
+  if (!depositId) throw new CashDepositError('deposit_id_required', 'Dépôt requis', 400);
+  return withTransaction(dbClient, async client => {
+    const { rows: [deposit] } = await client.query(`
+      SELECT cd.*, r.market_id AS review_market_id
+        FROM cash_deposits cd
+        LEFT JOIN users u ON u.id = cd.agent_id
+        LEFT JOIN relais r ON r.id = u.relais_id
+       WHERE cd.id = $1
+         FOR UPDATE OF cd
+    `, [depositId]);
+    if (!deposit) throw new CashDepositError('deposit_not_found', 'Dépôt introuvable', 404);
+    if (deposit.agent_id && verifierId && String(deposit.agent_id) === String(verifierId)) {
+      throw new CashDepositError('deposit_self_review_forbidden', 'Le déposant ne peut pas valider ni contester son propre dépôt', 403);
+    }
+    const isCorrection = deposit.status === 'verified' && target === 'disputed';
+    if (isCorrection) {
+      if (!central || correction !== true) {
+        throw new CashDepositError('deposit_correction_required', 'Dépôt déjà vérifié : correction exceptionnelle explicite requise (correction=true) avec motif', 409);
+      }
+    } else if (!(REVIEW_TRANSITIONS[deposit.status] || []).includes(target)) {
+      throw new CashDepositError('deposit_transition_forbidden', `Transition ${deposit.status} → ${target} interdite pour ce dépôt`, 409);
+    }
+    const { rows: [updated] } = await client.query(`
+      UPDATE cash_deposits
+         SET status = $2,
+             verified_by = $1,
+             verified_at = NOW(),
+             notes = CASE WHEN $2 = 'disputed' THEN $4 ELSE COALESCE($3, notes) END
+       WHERE id = $5 AND status = $6
+       RETURNING *
+    `, [verifierId || null, target, notes || null, reason || null, depositId, deposit.status]);
+    if (!updated) throw new CashDepositError('deposit_transition_forbidden', 'Le dépôt a changé de statut pendant la revue', 409);
+    if (central) {
+      await audit(client, {
+        actorUserId: verifierId || null,
+        marketId: deposit.review_market_id || null,
+        action: CENTRAL_AUDIT_ACTIONS[isCorrection ? 'correction' : target],
+        before: {
+          deposit_ref: deposit.deposit_ref, status: deposit.status, amount_kmf: deposit.amount_kmf,
+          verified_by: deposit.verified_by || null, verified_at: deposit.verified_at || null, previous_notes: deposit.notes || null,
+        },
+        after: { deposit_ref: deposit.deposit_ref, status: target, note: (target === 'disputed' ? reason : notes) || null },
+      });
+    }
+    return updated;
+  });
+}
+
+async function verifyDeposit({ depositId, verifierId, notes = null, central = false, dbClient = db }) {
+  return reviewDeposit({ depositId, verifierId, target: 'verified', notes, central, dbClient });
+}
+
+async function disputeDeposit({ depositId, verifierId, reason, correction = false, central = false, dbClient = db }) {
   if (!reason) throw new CashDepositError('deposit_dispute_reason_required', 'Raison requise', 400);
-  const { rows: [deposit] } = await dbClient.query(`
-    UPDATE cash_deposits
-       SET status = 'disputed',
-           verified_by = $1,
-           verified_at = NOW(),
-           notes = $3
-     WHERE id = $2
-     RETURNING *
-  `, [verifierId || null, depositId, reason]);
-  if (!deposit) throw new CashDepositError('deposit_not_found', 'Dépôt introuvable', 404);
-  return deposit;
+  return reviewDeposit({ depositId, verifierId, target: 'disputed', reason, correction, central, dbClient });
 }
 
 module.exports = {
