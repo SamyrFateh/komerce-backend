@@ -6,13 +6,14 @@
  * @criticality   high
  * @inputs        server_resolved_market, authenticated_actor, accounting_filters, deposit_business_reference
  * @outputs       market_scoped_accounting_projection, delegated_cash_deposit_mutations
- * @depends       db, services/cash-deposit-service.js
+ * @depends       db, services/cash-deposit-service.js, services/market-delegation-service.js
  * @used-by       routes/admin-finance-accounting-workspace.js
  * @db-read       orders, cash_collections, cash_deposits, users, relais, invoices
  * @db-write      none
  * @db-write-via:cash-deposit-service cash_deposits
- * @db-txn        delegated_to_domain_authority
- * @doctrine      workspace_acts_dashboard_observes, server_market_scope_is_authority, no_global_workspace_mutation, stable_business_reference_at_browser_boundary
+ * @db-write-via:market-delegation-service market_delegation_audit
+ * @db-txn        explicit for deposit review (verify, dispute)
+ * @doctrine      workspace_acts_dashboard_observes, server_market_scope_is_authority, no_global_workspace_mutation, stable_business_reference_at_browser_boundary, deposit_review_legal_transitions_only, depositor_never_reviews_own_deposit, deposit_review_audited_in_same_transaction
  * @impact-areas  admin-dashboard, payment, accounting, market-authorization
  * @version       2026-08
  */
@@ -21,6 +22,7 @@
 
 const db = require('../db');
 const deposits = require('./cash-deposit-service');
+const { audit } = require('./market-delegation-service');
 
 class FinanceAccountingWorkspaceError extends Error {
   constructor(code, message, status = 400) {
@@ -272,19 +274,19 @@ async function resolveActorRelaisInMarket(actorId, marketId) {
   return rows[0];
 }
 
-async function resolveDeposit(reference, marketId) {
+async function resolveDeposit(reference, marketId, executor = db, { lock = false } = {}) {
   const ref = String(reference || '').trim().toUpperCase();
   if (!/^KDP-\d{6,}$/.test(ref)) {
     throw new FinanceAccountingWorkspaceError('deposit_reference_invalid', 'Référence dépôt invalide', 400);
   }
-  const { rows } = await db.query(`
-    SELECT cd.id, cd.deposit_ref, cd.status
+  const { rows } = await executor.query(`
+    SELECT cd.id, cd.deposit_ref, cd.status, cd.agent_id, cd.notes, cd.amount_kmf::text AS amount_kmf
       FROM cash_deposits cd
       JOIN users u ON u.id = cd.agent_id
       JOIN relais r ON r.id = u.relais_id
      WHERE cd.deposit_ref = $1
        AND r.market_id = $2
-     LIMIT 1
+     LIMIT 1${lock ? '\n       FOR UPDATE OF cd' : ''}
   `, [ref, marketId]);
   if (!rows.length) {
     throw new FinanceAccountingWorkspaceError(
@@ -294,6 +296,45 @@ async function resolveDeposit(reference, marketId) {
     );
   }
   return rows[0];
+}
+
+// Transitions légales d'une revue de dépôt (voie marché) : un dépôt validé est terminal ;
+// la correction exceptionnelle d'un dépôt validé reste une décision centrale (/api/cash/deposits/:id/*).
+const DEPOSIT_REVIEW_TRANSITIONS = Object.freeze({
+  pending: ['verified', 'disputed'],
+  disputed: ['verified'],
+});
+
+function assertReviewable(deposit, target, actor) {
+  if (deposit.agent_id && actor && String(deposit.agent_id) === String(actor.id)) {
+    throw new FinanceAccountingWorkspaceError(
+      'deposit_self_review_forbidden',
+      'Le déposant ne peut pas valider ni contester son propre dépôt',
+      403
+    );
+  }
+  if (!(DEPOSIT_REVIEW_TRANSITIONS[deposit.status] || []).includes(target)) {
+    throw new FinanceAccountingWorkspaceError(
+      'deposit_transition_forbidden',
+      `Transition ${deposit.status} → ${target} interdite pour ce dépôt`,
+      409
+    );
+  }
+}
+
+async function withDepositTransaction(work) {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const result = await work(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* conserver l'erreur d'origine */ }
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function createDeposit(payload, market, actor = {}) {
@@ -314,16 +355,23 @@ async function createDeposit(payload, market, actor = {}) {
   }
 }
 
-async function verifyDeposit(reference, body, market, actor = {}) {
+async function reviewDeposit({ reference, market, actor, target, mutate, auditAction, afterNote }) {
   const resolved = requireMarket(market);
-  const deposit = await resolveDeposit(reference, resolved.id);
   try {
-    const updated = await deposits.verifyDeposit({
-      depositId: deposit.id,
-      verifierId: actor.id,
-      notes: body && body.notes,
+    return await withDepositTransaction(async client => {
+      const deposit = await resolveDeposit(reference, resolved.id, client, { lock: true });
+      assertReviewable(deposit, target, actor);
+      const updated = await mutate(client, deposit);
+      await audit(client, {
+        actorUserId: actor.id,
+        marketId: resolved.id,
+        capability: 'finance.act',
+        action: auditAction,
+        before: { deposit_ref: deposit.deposit_ref, status: deposit.status, amount_kmf: deposit.amount_kmf, previous_notes: deposit.notes || null },
+        after: { deposit_ref: deposit.deposit_ref, status: target, note: afterNote || null },
+      });
+      return { deposit_ref: updated.deposit_ref, status: updated.status, verified_at: updated.verified_at };
     });
-    return { deposit_ref: updated.deposit_ref, status: updated.status, verified_at: updated.verified_at };
   } catch (err) {
     if (err instanceof deposits.CashDepositError) {
       throw new FinanceAccountingWorkspaceError(err.code, err.message, err.status);
@@ -332,22 +380,20 @@ async function verifyDeposit(reference, body, market, actor = {}) {
   }
 }
 
+async function verifyDeposit(reference, body, market, actor = {}) {
+  const notes = body && body.notes;
+  return reviewDeposit({
+    reference, market, actor, target: 'verified', auditAction: 'CASH_DEPOSIT_VERIFIED', afterNote: notes,
+    mutate: (client, deposit) => deposits.verifyDeposit({ depositId: deposit.id, verifierId: actor.id, notes, dbClient: client }),
+  });
+}
+
 async function disputeDeposit(reference, body, market, actor = {}) {
-  const resolved = requireMarket(market);
-  const deposit = await resolveDeposit(reference, resolved.id);
-  try {
-    const updated = await deposits.disputeDeposit({
-      depositId: deposit.id,
-      verifierId: actor.id,
-      reason: body && body.reason,
-    });
-    return { deposit_ref: updated.deposit_ref, status: updated.status, verified_at: updated.verified_at };
-  } catch (err) {
-    if (err instanceof deposits.CashDepositError) {
-      throw new FinanceAccountingWorkspaceError(err.code, err.message, err.status);
-    }
-    throw err;
-  }
+  const reason = body && body.reason;
+  return reviewDeposit({
+    reference, market, actor, target: 'disputed', auditAction: 'CASH_DEPOSIT_DISPUTED', afterNote: reason,
+    mutate: (client, deposit) => deposits.disputeDeposit({ depositId: deposit.id, verifierId: actor.id, reason, dbClient: client }),
+  });
 }
 
 module.exports = {

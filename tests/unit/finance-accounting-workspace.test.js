@@ -6,7 +6,9 @@
  * @test-requires none
  */
 
-jest.mock('../../db', () => ({ query: jest.fn() }));
+jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
+const mockAudit = jest.fn();
+jest.mock('../../services/market-delegation-service', () => ({ audit: (...args) => mockAudit(...args) }));
 
 const mockCreateDeposit = jest.fn();
 const mockVerifyDeposit = jest.fn();
@@ -32,6 +34,24 @@ const db = require('../../db');
 const workspace = require('../../services/finance-accounting-workspace');
 
 const market = { id: 'market-cm-id', code: 'CM', name: 'Comores', currency: 'KMF' };
+
+// Client transactionnel simulé : la première requête hors BEGIN/COMMIT/ROLLBACK lit le dépôt (FOR UPDATE).
+function txClient(depositRow, { failCommit = false } = {}) {
+  const calls = [];
+  const client = {
+    calls,
+    release: jest.fn(),
+    query: jest.fn(async sql => {
+      calls.push(String(sql).trim().split(/\s+/)[0]);
+      if (/FROM cash_deposits cd/.test(sql)) return { rows: depositRow ? [depositRow] : [] };
+      if (failCommit && /^COMMIT/.test(String(sql))) throw new Error('commit failed');
+      return { rows: [] };
+    }),
+  };
+  db.getClient.mockResolvedValue(client);
+  return client;
+}
+const pendingDeposit = (extra = {}) => ({ id: 'deposit-uuid-secret', deposit_ref: 'KDP-000001', status: 'pending', agent_id: 'agent-1', notes: 'billet 1', amount_kmf: '5000.00', ...extra });
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -90,23 +110,117 @@ test('déclaration délègue au service paiement avec acteur serveur', async () 
   expect(mockCreateDeposit).toHaveBeenCalledWith({ agentId: 'agent-1', payload });
 });
 
-test('verify résout deposit_ref dans le marché puis délègue l UUID seulement serveur-side', async () => {
-  db.query.mockResolvedValueOnce({ rows: [{ id: 'deposit-uuid-secret', deposit_ref: 'KDP-000001', status: 'pending' }] });
+test('verify : transaction unique — verrou du dépôt du marché, mutation, audit sur le même client, puis COMMIT', async () => {
+  const client = txClient(pendingDeposit());
   mockVerifyDeposit.mockResolvedValue({ deposit_ref: 'KDP-000001', status: 'verified', verified_at: '2026-08-26T12:00:00Z' });
 
-  const result = await workspace.verifyDeposit('KDP-000001', { notes: 'OK' }, market, { id: 'admin-1', role: 'admin' });
-  expect(result.deposit_ref).toBe('KDP-000001');
-  expect(mockVerifyDeposit).toHaveBeenCalledWith({
-    depositId: 'deposit-uuid-secret', verifierId: 'admin-1', notes: 'OK',
-  });
+  const result = await workspace.verifyDeposit('KDP-000001', { notes: 'OK' }, market, { id: 'manager-1', role: 'market_operator' });
+
+  expect(result).toEqual({ deposit_ref: 'KDP-000001', status: 'verified', verified_at: '2026-08-26T12:00:00Z' });
+  expect(mockVerifyDeposit).toHaveBeenCalledWith({ depositId: 'deposit-uuid-secret', verifierId: 'manager-1', notes: 'OK', dbClient: client });
+  expect(client.calls).toEqual(['BEGIN', 'SELECT', 'COMMIT']);
+  expect(client.query.mock.calls[1][0]).toMatch(/FOR UPDATE OF cd/);
+  expect(client.query.mock.calls[1][1]).toEqual(['KDP-000001', 'market-cm-id']);
+  expect(mockAudit).toHaveBeenCalledWith(client, expect.objectContaining({
+    actorUserId: 'manager-1',
+    marketId: 'market-cm-id',
+    capability: 'finance.act',
+    action: 'CASH_DEPOSIT_VERIFIED',
+    before: { deposit_ref: 'KDP-000001', status: 'pending', amount_kmf: '5000.00', previous_notes: 'billet 1' },
+    after: { deposit_ref: 'KDP-000001', status: 'verified', note: 'OK' },
+  }));
+  expect(client.release).toHaveBeenCalledTimes(1);
 });
 
-test('deposit_ref existant hors marché est invisible', async () => {
-  db.query.mockResolvedValueOnce({ rows: [] });
-  await expect(workspace.verifyDeposit('KDP-000001', {}, market, { id: 'admin-1' })).rejects.toMatchObject({
+test('dispute : motif tracé dans l’audit, ancienne note conservée dans le « avant »', async () => {
+  const client = txClient(pendingDeposit());
+  mockDisputeDeposit.mockResolvedValue({ deposit_ref: 'KDP-000001', status: 'disputed', verified_at: '2026-08-26T12:00:00Z' });
+
+  await workspace.disputeDeposit('KDP-000001', { reason: 'écart de 500' }, market, { id: 'manager-1' });
+
+  expect(mockDisputeDeposit).toHaveBeenCalledWith({ depositId: 'deposit-uuid-secret', verifierId: 'manager-1', reason: 'écart de 500', dbClient: client });
+  expect(mockAudit).toHaveBeenCalledWith(client, expect.objectContaining({
+    action: 'CASH_DEPOSIT_DISPUTED',
+    before: expect.objectContaining({ previous_notes: 'billet 1' }),
+    after: { deposit_ref: 'KDP-000001', status: 'disputed', note: 'écart de 500' },
+  }));
+});
+
+test('deposit_ref existant hors marché est invisible : aucune mutation, rollback', async () => {
+  const client = txClient(null);
+  await expect(workspace.verifyDeposit('KDP-000001', {}, market, { id: 'manager-1' })).rejects.toMatchObject({
     code: 'deposit_not_found', status: 404,
   });
   expect(mockVerifyDeposit).not.toHaveBeenCalled();
+  expect(mockAudit).not.toHaveBeenCalled();
+  expect(client.calls).toEqual(['BEGIN', 'SELECT', 'ROLLBACK']);
+  expect(client.release).toHaveBeenCalledTimes(1);
+});
+
+test('référence invalide : refus avant toute mutation', async () => {
+  txClient(pendingDeposit());
+  await expect(workspace.verifyDeposit('XYZ', {}, market, { id: 'manager-1' })).rejects.toMatchObject({ code: 'deposit_reference_invalid', status: 400 });
+  expect(mockVerifyDeposit).not.toHaveBeenCalled();
+});
+
+test('le déposant ne peut ni valider ni contester son propre dépôt', async () => {
+  for (const [name, call] of [
+    ['verify', () => workspace.verifyDeposit('KDP-000001', {}, market, { id: 'agent-1' })],
+    ['dispute', () => workspace.disputeDeposit('KDP-000001', { reason: 'x' }, market, { id: 'agent-1' })],
+  ]) {
+    const client = txClient(pendingDeposit());
+    await expect(call()).rejects.toMatchObject({ code: 'deposit_self_review_forbidden', status: 403 });
+    expect(client.calls).toEqual(['BEGIN', 'SELECT', 'ROLLBACK']);
+    expect(name).toBeTruthy();
+  }
+  expect(mockVerifyDeposit).not.toHaveBeenCalled();
+  expect(mockDisputeDeposit).not.toHaveBeenCalled();
+  expect(mockAudit).not.toHaveBeenCalled();
+});
+
+test.each([
+  ['pending', 'verify', true], ['pending', 'dispute', true], ['disputed', 'verify', true],
+  ['disputed', 'dispute', false], ['verified', 'verify', false], ['verified', 'dispute', false],
+])('transition depuis %s via %s : autorisée=%s', async (status, action, allowed) => {
+  txClient(pendingDeposit({ status }));
+  mockVerifyDeposit.mockResolvedValue({ deposit_ref: 'KDP-000001', status: 'verified' });
+  mockDisputeDeposit.mockResolvedValue({ deposit_ref: 'KDP-000001', status: 'disputed' });
+  const run = action === 'verify'
+    ? workspace.verifyDeposit('KDP-000001', {}, market, { id: 'manager-1' })
+    : workspace.disputeDeposit('KDP-000001', { reason: 'motif' }, market, { id: 'manager-1' });
+  if (allowed) {
+    await expect(run).resolves.toMatchObject({ deposit_ref: 'KDP-000001' });
+  } else {
+    await expect(run).rejects.toMatchObject({ code: 'deposit_transition_forbidden', status: 409 });
+    expect(mockVerifyDeposit).not.toHaveBeenCalled();
+    expect(mockDisputeDeposit).not.toHaveBeenCalled();
+    expect(mockAudit).not.toHaveBeenCalled();
+  }
+});
+
+test('échec de la mutation, de l’audit ou du COMMIT : rollback, jamais de verdict sans trace', async () => {
+  const boom = new Error('audit down');
+  let client = txClient(pendingDeposit());
+  mockVerifyDeposit.mockResolvedValue({ deposit_ref: 'KDP-000001', status: 'verified' });
+  mockAudit.mockRejectedValueOnce(boom);
+  await expect(workspace.verifyDeposit('KDP-000001', {}, market, { id: 'manager-1' })).rejects.toBe(boom);
+  expect(client.calls).toEqual(['BEGIN', 'SELECT', 'ROLLBACK']);
+
+  client = txClient(pendingDeposit(), { failCommit: true });
+  await expect(workspace.verifyDeposit('KDP-000001', {}, market, { id: 'manager-1' })).rejects.toThrow('commit failed');
+  expect(client.calls).toContain('ROLLBACK');
+  expect(client.release).toHaveBeenCalledTimes(1);
+});
+
+test('erreur métier du service paiement (motif manquant) traduite et annulée', async () => {
+  const { CashDepositError } = require('../../services/cash-deposit-service');
+  const client = txClient(pendingDeposit());
+  mockDisputeDeposit.mockRejectedValue(new CashDepositError('deposit_dispute_reason_required', 'Raison requise', 400));
+  await expect(workspace.disputeDeposit('KDP-000001', {}, market, { id: 'manager-1' })).rejects.toMatchObject({
+    name: 'FinanceAccountingWorkspaceError', code: 'deposit_dispute_reason_required', status: 400,
+  });
+  expect(client.calls).toEqual(['BEGIN', 'SELECT', 'ROLLBACK']);
+  expect(mockAudit).not.toHaveBeenCalled();
 });
 
 
@@ -125,4 +239,17 @@ test('UI essentielle place les filtres dans la section Période (hors Hero) et r
   expect(render).not.toContain('renderFilters(rootNode');
   expect(render).not.toContain('renderCollections(rootNode');
   expect(render).not.toContain('renderInvoices(rootNode');
+});
+
+test('UI : les gestes Vérifier / Contester sont offerts à admin et market_operator, Contester seulement sur un dépôt en attente', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'finance-accounting-workspace.js'),
+    'utf8'
+  );
+  expect(source).toContain("context.user.role === 'admin' || context.user.role === 'market_operator'");
+  expect(source).toContain("if (row.status !== 'verified') {\n          const verify");
+  expect(source).toContain("if (row.status === 'pending') {\n          const dispute");
+  expect(source).not.toContain("if (row.status !== 'disputed') {\n          const dispute");
 });

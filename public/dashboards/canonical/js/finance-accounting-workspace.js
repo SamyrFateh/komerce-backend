@@ -276,7 +276,8 @@
         tr.appendChild(td);
       });
       const actionCell = doc.createElement('td');
-      if (context.user && context.user.role === 'admin') {
+      // Le serveur reste l'autorité (finance.act sur le Market) : l'UI n'affiche que les gestes de revue possibles.
+      if (context.user && (context.user.role === 'admin' || context.user.role === 'market_operator')) {
         if (row.status !== 'verified') {
           const verify = makeButton(doc, 'Vérifier', 'verify-cash-deposit');
           verify.addEventListener('click', () => runAction(context, verify, {
@@ -287,7 +288,7 @@
           }));
           actionCell.appendChild(verify);
         }
-        if (row.status !== 'disputed') {
+        if (row.status === 'pending') {
           const dispute = makeButton(doc, 'Contester', 'dispute-cash-deposit');
           dispute.addEventListener('click', () => {
             const reason = (context.prompt || (() => null))(`Raison de la contestation pour ${row.deposit_ref}`);
