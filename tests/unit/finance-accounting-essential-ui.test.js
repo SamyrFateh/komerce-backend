@@ -36,3 +36,12 @@ test('Finance Comptabilité garde Hero filtrable + décisions + rapprochement + 
   const enhanceSource=decision.slice(enhanceStart);
   expect(enhanceSource).not.toContain('appendReconciliationOverview(options');
 });
+
+test('Déclaration de dépôt relais : devise + montant d\'origine, jamais un KMF saisi à la main', () => {
+  const start = workspace.indexOf('function renderDepositCreation');
+  const src = workspace.slice(start, workspace.indexOf('function renderDeposits', start));
+  expect(src).toContain("'Devise du montant (KMF ou XAF)'");
+  expect(src).toContain('declared_amount: Number(amount)');
+  expect(src).toContain('declared_currency: currency');
+  expect(src).not.toContain('amount_kmf');
+});
