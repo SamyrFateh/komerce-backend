@@ -108,7 +108,7 @@ test('buildWorkspace applique market_id à toutes les sources cash et factures, 
     .mockResolvedValueOnce({ rows: [{ deposit_ref: 'KDP-000001', status: 'verified', amount_kmf: 5000 }] })
     .mockResolvedValueOnce({ rows: [{ order_ref: 'CMD-2', total_kmf: 2000 }] })
     .mockResolvedValueOnce({ rows: [{ invoice_number: 'KOM-INV-2026-000001', order_ref: 'CMD-1' }] });
-  mockHoldings.mockResolvedValue([{ holder_id: 'u1', balance_kmf: 4500 }]);
+  mockHoldings.mockResolvedValue([{ holder_id: 'u1', balance_kmf: 4500, over_ceiling: true, overdue: true }]);
   mockTransferRows.mockResolvedValue([{ state: 'DECLARED' }, { state: 'TO_CONTROL' }, { state: 'CLOSED' }]);
   mockLegacy.mockResolvedValue([{ remaining_kmf: 2000 }, { remaining_kmf: 500 }]);
 
@@ -120,7 +120,8 @@ test('buildWorkspace applique market_id à toutes les sources cash et factures, 
   expect(payload.custody).toMatchObject({ recipients: [], destinations: [], holders: [{ holder_id: 'u1' }], legacy_to_regularize: [{ remaining_kmf: 2000 }, { remaining_kmf: 500 }] });
   expect(payload.summary).toMatchObject({
     expected_kmf: 10000, uncollected_kmf: 2000, held_kmf: 4500, closed_kmf: 3000,
-    transfers_to_act: 2, legacy_to_regularize: 2, legacy_to_regularize_kmf: 2500,
+    transfers_to_act: 2, holders_over_ceiling: 1, holders_overdue: 1,
+    legacy_to_regularize: 2, legacy_to_regularize_kmf: 2500,
   });
   expect(payload.summary).not.toHaveProperty('verified_kmf');
   expect(payload.reconciliation).toMatchObject({
