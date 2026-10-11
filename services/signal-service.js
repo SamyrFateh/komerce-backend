@@ -479,12 +479,15 @@ GENERATORS.parcel_blocked = async function() {
   }
 };
 
+const CASH_EXPIRING_LIMIT = 50;
+
 GENERATORS.cash_expiring = async function() {
   try {
     // Règle canonique (alignée sur radar checkCashNotDeposited) : cash encaissé
     // par un agent relais depuis > 5 jours, sans dépôt de cet agent couvrant la
     // date d'encaissement. Montant en KMF, périmètre Market porté par la commande.
-    const rows = (await db.query(`
+    // LIMIT CASH_EXPIRING_LIMIT + 1 : la ligne en trop détecte une troncature.
+    const fetched = (await db.query(`
       SELECT cc.id, cc.order_id, cc.amount_kmf, cc.relais_id, cc.collected_by,
              o.market_id, o.reference,
              EXTRACT(DAY FROM NOW() - cc.confirmed_at)::int AS days_pending
@@ -498,8 +501,12 @@ GENERATORS.cash_expiring = async function() {
              AND cd.period_end >= cc.confirmed_at::date
         )
       ORDER BY cc.confirmed_at ASC
-      LIMIT 50
+      LIMIT ${CASH_EXPIRING_LIMIT + 1}
     `)).rows;
+    // Résultat incomplet : on signale les plus anciens mais on ne résout RIEN
+    // (un signal encore valable au-delà de la limite serait clos à tort).
+    const truncated = fetched.length > CASH_EXPIRING_LIMIT;
+    const rows = truncated ? fetched.slice(0, CASH_EXPIRING_LIMIT) : fetched;
 
     let generated = 0;
     const byMarket = new Map();
@@ -520,6 +527,10 @@ GENERATORS.cash_expiring = async function() {
         meta: { amount_kmf: amount, days_pending: r.days_pending, relais_id: r.relais_id, collected_by: r.collected_by },
       });
       generated++;
+    }
+    if (truncated) {
+      log.warn({ limit: CASH_EXPIRING_LIMIT }, '[signal-service] cash_expiring tronqué : auto-résolution suspendue');
+      return { generated, truncated: true };
     }
     // Résolution par Market, y compris les Markets dont plus aucun cash n'est en attente.
     const open = (await db.query(
