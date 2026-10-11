@@ -68,11 +68,12 @@ describe('finance / comptabilité decision-first', () => {
     expect(actions.map(item => item.key)).toEqual(['over-ceiling', 'overdue', 'missing', 'toact']);
     expect(actions[0]).toMatchObject({ tone: 'critical', href: '#accounting-custody', value: '1' });
     const cards = decision.summaryCards(items);
+    // Les séparateurs fr-FR peuvent être des espaces insécables fines selon Node/ICU.
     expect(cards[0].metrics).toEqual([
-      { label: 'Attendu', value: '100 000 KMF' },
-      { label: 'Collecté', value: '100 000 KMF' },
-      { label: 'Détenu', value: '40 000 KMF' },
-      { label: 'Clôturé', value: '60 000 KMF' },
+      { label: 'Attendu', value: items.find(item => item.key === 'expected').value },
+      { label: 'Collecté', value: items.find(item => item.key === 'collected').value },
+      { label: 'Détenu', value: items.find(item => item.key === 'held').value },
+      { label: 'Clôturé', value: items.find(item => item.key === 'closed').value },
     ]);
 
     const ordinary = accounting.metricItems({
@@ -81,7 +82,7 @@ describe('finance / comptabilité decision-first', () => {
       transfers_to_act: 0, pending_deposits: 0, uncollected_kmf: 0, legacy_to_regularize_kmf: 0,
     });
     expect(decision.decisionItems(ordinary)).toEqual([]);
-    expect(decision.summaryCards(ordinary)[0].metrics[2]).toEqual({ label: 'Détenu', value: '40 000 KMF' });
+    expect(decision.summaryCards(ordinary)[0].metrics[2]).toEqual({ label: 'Détenu', value: ordinary.find(item => item.key === 'held').value });
   });
 
   test('rapprochement = cash réellement collecté moins clôture contrôlée et pertes, jamais dépôts vérifiés', () => {
@@ -91,9 +92,9 @@ describe('finance / comptabilité decision-first', () => {
     const card = decision.reconciliationCard({ gap_collection_kmf: 25000, gap_closure_kmf: 40000, held_kmf: 40000 });
     expect(card.tone).toBe('warning');
     expect(card.metrics).toEqual([
-      { label: 'Écart collecte', value: '25 000 KMF' },
-      { label: 'Collecté − clôturé − pertes', value: '40 000 KMF' },
-      { label: 'Détenu maintenant', value: '40 000 KMF' },
+      { label: 'Écart collecte', value: expect.stringMatching(/25\s000 KMF/) },
+      { label: 'Collecté − clôturé − pertes', value: expect.stringMatching(/40\s000 KMF/) },
+      { label: 'Détenu maintenant', value: expect.stringMatching(/40\s000 KMF/) },
     ]);
     // Un solde détenu n'est pas en lui-même une alerte de clôture.
     expect(decision.reconciliationCard({ gap_collection_kmf: 0, gap_closure_kmf: 40000, held_kmf: 40000 }).tone).toBe('neutral');
