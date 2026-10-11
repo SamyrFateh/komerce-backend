@@ -35,8 +35,8 @@ describe('capability_registry — effect et amount_bearing déclarés', () => {
     expect(CAPABILITIES.filter(c => c.effect === 'ACT')).toHaveLength(CAPABILITIES.length - 12);
   });
 
-  test('amount_bearing : exactement les trois capacités à montant de la V1', () => {
-    expect(AMOUNT_BEARING.slice().sort()).toEqual(['execution.cash.confirm', 'finance.act', 'settlement.receive']);
+  test('amount_bearing : les trois capacités à montant de la V1 + la détention de fonds (288)', () => {
+    expect(AMOUNT_BEARING.slice().sort()).toEqual(['cash.custody.receive', 'execution.cash.confirm', 'finance.act', 'settlement.receive']);
     expect(CAPABILITIES.filter(c => c.amount_bearing).map(c => c.capability).sort()).toEqual(AMOUNT_BEARING.slice().sort());
     for (const name of AMOUNT_BEARING) expect(CAPABILITIES.find(c => c.capability === name).effect).toBe('ACT');
   });
@@ -53,7 +53,9 @@ describe('capability_registry — effect et amount_bearing déclarés', () => {
 describe('migration 270 — snapshot historique avant D8, sans effet d’autorisation', () => {
   test('les listes SQL READ et montant sont celles de la configuration', () => {
     expect(quotedList(migration, "SET effect = 'READ'")).toEqual(EXPECTED_READ.filter(name => name !== 'partners.read'));
-    expect(quotedList(migration, 'SET amount_bearing = TRUE')).toEqual(AMOUNT_BEARING.slice().sort());
+    // Snapshot historique : la migration 270 ne connaît que les trois capacités V1 (288 ajoute cash.custody.receive).
+    expect(quotedList(migration, 'SET amount_bearing = TRUE'))
+      .toEqual(AMOUNT_BEARING.filter(name => name !== 'cash.custody.receive').sort());
   });
 
   test('colonnes ajoutées de façon idempotente, effet contraint à READ|ACT, défaut ACT', () => {

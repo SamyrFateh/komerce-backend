@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        server_resolved_market, authenticated_actor, accounting_filters, deposit_business_reference
  * @outputs       market_scoped_accounting_projection, delegated_cash_deposit_mutations
- * @depends       db, services/cash-deposit-service.js, services/market-delegation-service.js
+ * @depends       db, services/cash-deposit-service.js, services/cash-custody-service.js, services/market-delegation-service.js
  * @used-by       routes/admin-finance-accounting-workspace.js
  * @db-read       orders, cash_collections, cash_deposit_allocations, cash_deposits, users, relais, invoices
  * @db-write      none
@@ -22,6 +22,7 @@
 
 const db = require('../db');
 const deposits = require('./cash-deposit-service');
+const custody = require('./cash-custody-service');
 const { audit } = require('./market-delegation-service');
 
 class FinanceAccountingWorkspaceError extends Error {
@@ -245,12 +246,13 @@ async function queryReconciliation(marketId, filters) {
 async function buildWorkspace({ market, from, to, hours } = {}) {
   const resolved = requireMarket(market);
   const filters = normalizeFilters({ from, to, hours });
-  const [reconciliation, collections, depositRows, uncollected, invoices] = await Promise.all([
+  const [reconciliation, collections, depositRows, uncollected, invoices, custodySnapshot] = await Promise.all([
     queryReconciliation(resolved.id, filters),
     queryCollections(resolved.id, filters),
     queryDeposits(resolved.id),
     queryUncollected(resolved.id, filters),
     queryInvoices(resolved.id),
+    custody.snapshot(db, resolved.id),
   ]);
   const missingKmf = uncollected.reduce((sum, row) => sum + Number(row.total_kmf || 0), 0);
   return {
@@ -272,6 +274,7 @@ async function buildWorkspace({ market, from, to, hours } = {}) {
     uncollected,
     collections,
     invoices,
+    custody: custodySnapshot,
   };
 }
 

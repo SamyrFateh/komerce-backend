@@ -23,6 +23,19 @@ describe('market-delegation cash control API contract', () => {
     expect(bootstrap).toContain("app.use('/api/market-delegation', marketDelegationCashControlRouter)");
   });
 
+  test('garde des espèces (288) : lecture + destinations authentifiées, activation par verbe, market_id client refusé', () => {
+    expect(route).toMatch(/router\.get\('\/markets\/:marketCode\/cash-custody', authenticate/);
+    expect(route).toMatch(/router\.post\('\/markets\/:marketCode\/cash-custody\/destinations', authenticate/);
+    expect(route).toMatch(/cash-custody\/destinations\/:destinationId\/:verb', authenticate/);
+    expect(route.match(/rejectClientMarketId\(req\.body\)/g).length).toBeGreaterThanOrEqual(3);
+  });
+
+  test('cash.custody.receive : DELEGATION MARKET DELEGABLE LIVE, à montant, auditable', () => {
+    expect(registry.CAPABILITIES.find(row => row.capability === 'cash.custody.receive')).toMatchObject({
+      class: 'DELEGATION', authority_scope: 'MARKET', delegation_mode: 'DELEGABLE', requires_audit: true, status: 'LIVE', amount_bearing: true,
+    });
+  });
+
   test('le body market_id/marketId est refusé explicitement', () => {
     expect(route).toMatch(/body\.market_id/);
     expect(route).toMatch(/body\.marketId/);

@@ -318,6 +318,35 @@
     slot.appendChild(wrap);
   }
 
+  const DESTINATION_KIND_LABELS = { BANK: 'Banque', MOBILE_MONEY: 'Mobile Money' };
+  const DESTINATION_STATUS_LABELS = { PROPOSED: 'À activer (second acteur)', ACTIVE: 'Active', SUSPENDED: 'Suspendue', CLOSED: 'Clôturée' };
+
+  function renderCustody(rootNode, ui, doc, payload) {
+    const custody = payload.custody || {};
+    const limits = custody.limits || {};
+    const slot = createSection(rootNode, ui, 'Garde des espèces',
+      `Personnes habilitées à recevoir et destinations finales autorisées. Délai de garde : ${limits.market_max_days || '—'} jour(s) ; plafond central : ${formatKmf(limits.max_holding_kmf)}.`);
+    ui.DataTable.render(slot, {
+      columns: [
+        { key: 'full_name', label: 'Personne habilitée' },
+        { key: 'role', label: 'Rôle' },
+        { key: 'holding_limit_kmf', label: 'Plafond de détention', format: formatKmf },
+      ],
+      rows: custody.recipients || [],
+      emptyText: 'Aucune personne habilitée à recevoir des fonds : aucune remise ne peut être acceptée.',
+    });
+    ui.DataTable.render(slot, {
+      columns: [
+        { key: 'label', label: 'Destination finale' },
+        { key: 'kind', label: 'Type', format: value => DESTINATION_KIND_LABELS[value] || value },
+        { key: 'currency', label: 'Devise' },
+        { key: 'status', label: 'État', format: value => DESTINATION_STATUS_LABELS[value] || value },
+      ],
+      rows: custody.destinations || [],
+      emptyText: 'Aucune destination finale activée : aucune clôture n\'est possible.',
+    });
+  }
+
   function renderUncollected(rootNode, ui, doc, payload) {
     const slot = createSection(rootNode, ui, 'Cash non encaissé', 'Commandes cash qui dépassent le délai sélectionné.');
     const rows = payload.uncollected || [];
@@ -418,6 +447,7 @@
     renderReconciliation(rootNode, ui, doc, payload);
     renderDepositCreation(rootNode, ui, doc, context);
     renderDeposits(rootNode, ui, doc, payload, context);
+    renderCustody(rootNode, ui, doc, payload);
     renderUncollected(rootNode, ui, doc, payload);
   }
 

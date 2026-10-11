@@ -25,7 +25,6 @@
 |---|---|---|---|---|---|---|---|---|---|
 | dashboard → loyalty | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | dashboard → platform | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | frontend-transversal | static-code | business-file-import | non-runtime-evidence | — | `` |
-| decision-signals → payments | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_ONLY | piloting-capability | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
 | infrastructure → auth-identity | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → business-rules | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-transversal | static-code | import-mixed | application-wiring-not-consumption | — | `` |
@@ -48,6 +47,7 @@
 | market → market-delegation | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | market-control-plane → orders | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | market-delegation → market-operator-dashboard | NON_RUNTIME_TEST | TEST_ONLY | business-feature | unclassified | static-code | business-file-import | non-runtime-evidence | — | `` |
+| market-delegation → payments | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_ONLY | business-feature | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
 | platform-ops → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → notifications | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-transversal | business-transversal | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → payments | NON_RUNTIME_TEST | TEST_ONLY | technical-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |

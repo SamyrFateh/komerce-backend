@@ -152,7 +152,13 @@ describeE2E('E2E-REFUNDS-CREDITS-CASH-NUMERIC — flux financiers integer -> num
        VALUES ($1, $2, 7777.77, 'bank', CURRENT_DATE, CURRENT_DATE)`,
       [depositId, userId]
     );
-    cleanup.track('cash_deposits', 'id', depositId);
+    // cash_deposits est append-only depuis la migration 287 : nettoyage de fixture uniquement,
+    // trigger rétabli dans la même instruction.
+    cleanup.trackSql(`DO $$ BEGIN
+      ALTER TABLE cash_deposits DISABLE TRIGGER trg_prevent_cash_deposits_delete;
+      DELETE FROM cash_deposits WHERE id = '${depositId}';
+      ALTER TABLE cash_deposits ENABLE TRIGGER trg_prevent_cash_deposits_delete;
+    END $$`);
 
     const { rows: [col] } = await db.query('SELECT amount_kmf FROM cash_collections WHERE id = $1', [collectionId]);
     const { rows: [dep] } = await db.query('SELECT amount_kmf FROM cash_deposits WHERE id = $1', [depositId]);

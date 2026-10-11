@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 708,
-    "filesWithFullHeaders": 663,
+    "scannedCodeFiles": 709,
+    "filesWithFullHeaders": 664,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 708,
+    "filesWithAnyHeaders": 709,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1718,
-    "edges": 8641,
-    "dbTables": 195,
-    "doctrines": 619,
-    "impactAreas": 196,
-    "unresolvedCodeEdges": 847,
+    "graphNodes": 1726,
+    "edges": 8675,
+    "dbTables": 197,
+    "doctrines": 622,
+    "impactAreas": 198,
+    "unresolvedCodeEdges": 848,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 84
   },
@@ -47,7 +47,7 @@
     "checkout": 3,
     "shared-cart": 25,
     "account": 2,
-    "payment": 28,
+    "payment": 29,
     "shared-cart-modal": 7,
     "recommendations": 6,
     "auth-passkey": 7,
@@ -109,7 +109,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 392,
+    "service": 393,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -118,7 +118,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 96,
+    "critical": 97,
     "medium": 140,
     "high": 418,
     "low": 54
@@ -9632,7 +9632,8 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
-        "services/market-cash-control-policy-service.js"
+        "services/market-cash-control-policy-service.js",
+        "services/cash-custody-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js",
@@ -9646,6 +9647,12 @@
           "tables": [
             "market_cash_control_policies",
             "market_delegation_audit"
+          ]
+        },
+        {
+          "via": "cash-custody-service",
+          "tables": [
+            "market_cash_destinations"
           ]
         }
       ],
@@ -13530,6 +13537,71 @@
       "version": "2026-09"
     },
     {
+      "id": "services/cash-custody-service.js",
+      "file": "services/cash-custody-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "payment-cash-custody-service",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "market_code",
+        "destination_payload"
+      ],
+      "outputs": [
+        "cash_custody_recipients_destinations_limits"
+      ],
+      "depends": [
+        "db.js",
+        "utils/rules.js",
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [
+        "routes/market-delegation-cash-control.js",
+        "services/finance-accounting-workspace.js"
+      ],
+      "dbRead": [
+        "market_cash_destinations",
+        "market_cash_control_policies",
+        "assignment_memberships",
+        "membership_capabilities",
+        "market_operating_assignments",
+        "markets",
+        "users"
+      ],
+      "dbWrite": [
+        "market_cash_destinations"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "no_recipient_added_freely_by_relay_agent",
+        "two_distinct_actors_for_destination_activation",
+        "central_custody_limits_non_bypassable",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "payment",
+        "cash-custody",
+        "market-delegation",
+        "finance-accounting"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/cash-deposit-service.js",
       "file": "services/cash-deposit-service.js",
       "type": "file",
@@ -13549,7 +13621,8 @@
       ],
       "depends": [
         "db.js",
-        "utils/currency.js"
+        "utils/currency.js",
+        "services/market-delegation-service.js"
       ],
       "usedBy": [
         "routes/cash.js",
@@ -13557,10 +13630,15 @@
       ],
       "dbRead": [
         "cash_collections",
-        "cash_deposits"
+        "cash_deposit_allocations",
+        "cash_deposits",
+        "relais",
+        "users"
       ],
       "dbWrite": [
-        "cash_deposits"
+        "cash_deposit_allocations",
+        "cash_deposits",
+        "market_delegation_audit"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -17539,6 +17617,7 @@
       "depends": [
         "db",
         "services/cash-deposit-service.js",
+        "services/cash-custody-service.js",
         "services/market-delegation-service.js"
       ],
       "usedBy": [
@@ -17547,6 +17626,7 @@
       "dbRead": [
         "orders",
         "cash_collections",
+        "cash_deposit_allocations",
         "cash_deposits",
         "users",
         "relais",
@@ -18919,7 +18999,8 @@
       ],
       "depends": [
         "services/market-delegation-team-service.js",
-        "services/market-delegation-service.js"
+        "services/market-delegation-service.js",
+        "services/cash-custody-service.js"
       ],
       "usedBy": [
         "routes/market-delegation-cash-control.js",
@@ -26161,6 +26242,7 @@
       "dbRead": [
         "orders",
         "cash_collections",
+        "cash_deposit_allocations",
         "cash_deposits",
         "users"
       ],
@@ -34476,6 +34558,11 @@
       "table": "v_loyalty_summary"
     },
     {
+      "id": "db:market_cash_destinations",
+      "type": "db-table",
+      "table": "market_cash_destinations"
+    },
+    {
       "id": "db:services",
       "type": "db-table",
       "table": "services"
@@ -34644,6 +34731,11 @@
       "id": "db:cash_confirmation_controls",
       "type": "db-table",
       "table": "cash_confirmation_controls"
+    },
+    {
+      "id": "db:cash_deposit_allocations",
+      "type": "db-table",
+      "table": "cash_deposit_allocations"
     },
     {
       "id": "db:catalog_media",
@@ -36369,6 +36461,21 @@
       "id": "doctrine:in_flight_policy_never_silently_weakened",
       "type": "doctrine",
       "doctrine": "in_flight_policy_never_silently_weakened"
+    },
+    {
+      "id": "doctrine:no_recipient_added_freely_by_relay_agent",
+      "type": "doctrine",
+      "doctrine": "no_recipient_added_freely_by_relay_agent"
+    },
+    {
+      "id": "doctrine:two_distinct_actors_for_destination_activation",
+      "type": "doctrine",
+      "doctrine": "two_distinct_actors_for_destination_activation"
+    },
+    {
+      "id": "doctrine:central_custody_limits_non_bypassable",
+      "type": "doctrine",
+      "doctrine": "central_custody_limits_non_bypassable"
     },
     {
       "id": "doctrine:single_cash_deposit_mutation_authority",
@@ -38899,6 +39006,16 @@
       "id": "impact:relay",
       "type": "impact-area",
       "area": "relay"
+    },
+    {
+      "id": "impact:cash-custody",
+      "type": "impact-area",
+      "area": "cash-custody"
+    },
+    {
+      "id": "impact:finance-accounting",
+      "type": "impact-area",
+      "area": "finance-accounting"
     },
     {
       "id": "impact:cash-reconciliation",
@@ -53176,6 +53293,12 @@
       "label": "services/market-cash-control-policy-service.js"
     },
     {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "services/cash-custody-service.js",
+      "type": "depends",
+      "label": "services/cash-custody-service.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/market-delegation-cash-control.js",
       "type": "uses",
@@ -53200,6 +53323,13 @@
       "type": "db-write-via",
       "label": "market_delegation_audit",
       "via": "market-cash-control-policy-service"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "db:market_cash_destinations",
+      "type": "db-write-via",
+      "label": "market_cash_destinations",
+      "via": "cash-custody-service"
     },
     {
       "from": "routes/market-delegation-cash-control.js",
@@ -59128,6 +59258,139 @@
       "label": "market-delegation"
     },
     {
+      "from": "services/cash-custody-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "utils/rules.js",
+      "type": "depends",
+      "label": "utils/rules.js"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "routes/market-delegation-cash-control.js",
+      "to": "services/cash-custody-service.js",
+      "type": "uses",
+      "label": "routes/market-delegation-cash-control.js"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "services/cash-custody-service.js",
+      "type": "uses",
+      "label": "services/finance-accounting-workspace.js"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:market_cash_destinations",
+      "type": "db-read",
+      "label": "market_cash_destinations"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-read",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:market_cash_destinations",
+      "type": "db-write",
+      "label": "market_cash_destinations"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "doctrine:no_recipient_added_freely_by_relay_agent",
+      "type": "doctrine",
+      "label": "no_recipient_added_freely_by_relay_agent"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "doctrine:two_distinct_actors_for_destination_activation",
+      "type": "doctrine",
+      "label": "two_distinct_actors_for_destination_activation"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "doctrine:central_custody_limits_non_bypassable",
+      "type": "doctrine",
+      "label": "central_custody_limits_non_bypassable"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "impact:cash-custody",
+      "type": "impact",
+      "label": "cash-custody"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "impact:finance-accounting",
+      "type": "impact",
+      "label": "finance-accounting"
+    },
+    {
       "from": "services/cash-deposit-service.js",
       "to": "db.js",
       "type": "depends",
@@ -59138,6 +59401,12 @@
       "to": "utils/currency.js",
       "type": "depends",
       "label": "utils/currency.js"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
     },
     {
       "from": "routes/cash.js",
@@ -59159,15 +59428,45 @@
     },
     {
       "from": "services/cash-deposit-service.js",
+      "to": "db:cash_deposit_allocations",
+      "type": "db-read",
+      "label": "cash_deposit_allocations"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
       "to": "db:cash_deposits",
       "type": "db-read",
       "label": "cash_deposits"
     },
     {
       "from": "services/cash-deposit-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "db:cash_deposit_allocations",
+      "type": "db-write",
+      "label": "cash_deposit_allocations"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
       "to": "db:cash_deposits",
       "type": "db-write",
       "label": "cash_deposits"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write",
+      "label": "market_delegation_audit"
     },
     {
       "from": "services/cash-deposit-service.js",
@@ -65517,6 +65816,12 @@
     },
     {
       "from": "services/finance-accounting-workspace.js",
+      "to": "services/cash-custody-service.js",
+      "type": "depends",
+      "label": "services/cash-custody-service.js"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
       "to": "services/market-delegation-service.js",
       "type": "depends",
       "label": "services/market-delegation-service.js"
@@ -65538,6 +65843,12 @@
       "to": "db:cash_collections",
       "type": "db-read",
       "label": "cash_collections"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db:cash_deposit_allocations",
+      "type": "db-read",
+      "label": "cash_deposit_allocations"
     },
     {
       "from": "services/finance-accounting-workspace.js",
@@ -67987,6 +68298,12 @@
       "to": "services/market-delegation-service.js",
       "type": "depends",
       "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/market-cash-control-policy-service.js",
+      "to": "services/cash-custody-service.js",
+      "type": "depends",
+      "label": "services/cash-custody-service.js"
     },
     {
       "from": "routes/market-delegation-cash-control.js",
@@ -79636,6 +79953,12 @@
       "to": "db:cash_collections",
       "type": "db-read",
       "label": "cash_collections"
+    },
+    {
+      "from": "services/radar-alerts/cash-reconciliation-signals.js",
+      "to": "db:cash_deposit_allocations",
+      "type": "db-read",
+      "label": "cash_deposit_allocations"
     },
     {
       "from": "services/radar-alerts/cash-reconciliation-signals.js",
@@ -100955,7 +101278,8 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
-        "services/market-cash-control-policy-service.js"
+        "services/market-cash-control-policy-service.js",
+        "services/cash-custody-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js",
@@ -100970,6 +101294,12 @@
           "tables": [
             "market_cash_control_policies",
             "market_delegation_audit"
+          ]
+        },
+        {
+          "via": "cash-custody-service",
+          "tables": [
+            "market_cash_destinations"
           ]
         }
       ],
@@ -100987,6 +101317,7 @@
       "mustCheck": [
         "bootstrap/api-routes.js",
         "db:market_cash_control_policies",
+        "db:market_cash_destinations",
         "db:market_delegation_audit",
         "doctrine:capability_authorizes_policy",
         "doctrine:market_code_route_is_context_not_authority",
@@ -100996,6 +101327,7 @@
         "impact:market-delegation",
         "impact:payments",
         "middleware/auth.js",
+        "services/cash-custody-service.js",
         "services/market-cash-control-policy-service.js"
       ]
     },
@@ -104834,6 +105166,79 @@
         "services/payment-cash-confirm.js"
       ]
     },
+    "services/cash-custody-service.js": {
+      "role": "payment-cash-custody-service",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "utils/rules.js",
+        "services/market-delegation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/market-delegation-cash-control.js",
+        "services/finance-accounting-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "market_cash_destinations",
+        "market_cash_control_policies",
+        "assignment_memberships",
+        "membership_capabilities",
+        "market_operating_assignments",
+        "markets",
+        "users"
+      ],
+      "dbWrite": [
+        "market_cash_destinations"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "no_recipient_added_freely_by_relay_agent",
+        "two_distinct_actors_for_destination_activation",
+        "central_custody_limits_non_bypassable",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "payment",
+        "cash-custody",
+        "market-delegation",
+        "finance-accounting"
+      ],
+      "mustCheck": [
+        "db:assignment_memberships",
+        "db:market_cash_control_policies",
+        "db:market_cash_destinations",
+        "db:market_delegation_audit",
+        "db:market_operating_assignments",
+        "db:markets",
+        "db:membership_capabilities",
+        "db:users",
+        "doctrine:central_custody_limits_non_bypassable",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:no_recipient_added_freely_by_relay_agent",
+        "doctrine:two_distinct_actors_for_destination_activation",
+        "impact:cash-custody",
+        "impact:finance-accounting",
+        "impact:market-delegation",
+        "impact:payment",
+        "routes/market-delegation-cash-control.js",
+        "services/finance-accounting-workspace.js",
+        "services/market-cash-control-policy-service.js",
+        "services/market-delegation-service.js",
+        "utils/rules.js"
+      ]
+    },
     "services/cash-deposit-service.js": {
       "role": "payment-cash-deposit-service",
       "domain": "payment",
@@ -104843,7 +105248,8 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "utils/currency.js"
+        "utils/currency.js",
+        "services/market-delegation-service.js"
       ],
       "directUsedBy": [
         "routes/cash.js",
@@ -104852,10 +105258,15 @@
       "ownedFiles": [],
       "dbRead": [
         "cash_collections",
-        "cash_deposits"
+        "cash_deposit_allocations",
+        "cash_deposits",
+        "relais",
+        "users"
       ],
       "dbWrite": [
-        "cash_deposits"
+        "cash_deposit_allocations",
+        "cash_deposits",
+        "market_delegation_audit"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -104869,7 +105280,11 @@
       ],
       "mustCheck": [
         "db:cash_collections",
+        "db:cash_deposit_allocations",
         "db:cash_deposits",
+        "db:market_delegation_audit",
+        "db:relais",
+        "db:users",
         "doctrine:single_cash_deposit_mutation_authority",
         "doctrine:stable_business_reference_at_browser_boundary",
         "impact:admin-dashboard",
@@ -104877,6 +105292,7 @@
         "impact:payment",
         "routes/cash.js",
         "services/finance-accounting-workspace.js",
+        "services/market-delegation-service.js",
         "services/radar-alerts/cash-reconciliation-signals.js",
         "services/signal-service.js",
         "utils/currency.js"
@@ -108798,6 +109214,7 @@
       "directDependsOn": [
         "db",
         "services/cash-deposit-service.js",
+        "services/cash-custody-service.js",
         "services/market-delegation-service.js"
       ],
       "directUsedBy": [
@@ -108807,6 +109224,7 @@
       "dbRead": [
         "orders",
         "cash_collections",
+        "cash_deposit_allocations",
         "cash_deposits",
         "users",
         "relais",
@@ -108844,6 +109262,7 @@
       ],
       "mustCheck": [
         "db:cash_collections",
+        "db:cash_deposit_allocations",
         "db:cash_deposits",
         "db:invoices",
         "db:market_delegation_audit",
@@ -108862,6 +109281,7 @@
         "impact:market-authorization",
         "impact:payment",
         "routes/admin-finance-accounting-workspace.js",
+        "services/cash-custody-service.js",
         "services/cash-deposit-service.js",
         "services/market-delegation-service.js"
       ]
@@ -110226,7 +110646,8 @@
       "purpose": null,
       "directDependsOn": [
         "services/market-delegation-team-service.js",
-        "services/market-delegation-service.js"
+        "services/market-delegation-service.js",
+        "services/cash-custody-service.js"
       ],
       "directUsedBy": [
         "routes/market-delegation-cash-control.js",
@@ -110280,6 +110701,7 @@
         "impact:relay",
         "routes/market-delegation-cash-control.js",
         "services/cash-confirmation-control-service.js",
+        "services/cash-custody-service.js",
         "services/market-delegation-service.js",
         "services/market-delegation-team-service.js",
         "services/market-provisioning-service.js"
@@ -110954,6 +111376,8 @@
         "routes/admin-action-center.js",
         "routes/admin-market-settlement.js",
         "services/capability-registry.js",
+        "services/cash-custody-service.js",
+        "services/cash-deposit-service.js",
         "services/dashboard-admin-context.js",
         "services/finance-accounting-workspace.js",
         "services/market-cash-control-policy-service.js",
@@ -117473,6 +117897,7 @@
       "dbRead": [
         "orders",
         "cash_collections",
+        "cash_deposit_allocations",
         "cash_deposits",
         "users"
       ],
@@ -117486,6 +117911,7 @@
       ],
       "mustCheck": [
         "db:cash_collections",
+        "db:cash_deposit_allocations",
         "db:cash_deposits",
         "db:orders",
         "db:users",
@@ -125096,6 +125522,7 @@
         "routes/orders/create.js",
         "routes/orders/list.js",
         "routes/orders/qr.js",
+        "services/cash-custody-service.js",
         "services/cash-reminder-service.js",
         "services/catalog-approval.js",
         "services/catalog-enrichment.js",
@@ -125573,6 +126000,16 @@
       ]
     },
     {
+      "table": "market_delegation_audit",
+      "writerCount": 4,
+      "writers": [
+        "middleware/require-market-delegated-capability.js",
+        "middleware/require-market-execution-capability.js",
+        "services/cash-deposit-service.js",
+        "services/market-delegation-service.js"
+      ]
+    },
+    {
       "table": "order_comments",
       "writerCount": 4,
       "writers": [
@@ -125658,15 +126095,6 @@
         "services/incident-escalation.js",
         "services/incident-service.js",
         "services/incident-write-service.js"
-      ]
-    },
-    {
-      "table": "market_delegation_audit",
-      "writerCount": 3,
-      "writers": [
-        "middleware/require-market-delegated-capability.js",
-        "middleware/require-market-execution-capability.js",
-        "services/market-delegation-service.js"
       ]
     },
     {
@@ -128125,6 +128553,12 @@
       "to": "market_cash_control_policies",
       "type": "depends",
       "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/cash-deposit-service.js",

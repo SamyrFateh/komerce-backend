@@ -167,6 +167,13 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
 <!-- schema-pending
+object: market_cash_destinations
+kind: table
+migration: 288
+section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
+role: Destinations finales autorisées des espèces par Market (BANK, MOBILE_MONEY) : proposée par un acteur, activée par un second acteur distinct (contrainte en base), suspendue/clôturée avec motif, jamais supprimée ; peut référencer un compte de paiement du même Market et de même devise sans jamais le modifier.
+-->
+<!-- schema-pending
 object: cash_deposit_allocations
 kind: table
 migration: 287
@@ -429,7 +436,7 @@ role: Preuves monétaires provider liées à supplier_execution_payments ; unici
 | `ceiling_template_capabilities` | Association entre un template de ceiling et ses capabilities autorisées. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_delegation_audit` | Journal append-only des mutations de délégation, distinct des faits économiques. **Migration 194 — promue le 2026-09-09 (schema-promote, dump live verifie).** |
 | `market_team_invitations` | Invitations d’équipe expirantes pour un Market Operating Assignment ; seul le hash SHA-256 du token est persisté et les capabilities demandées sont revalidées à l’acceptation. **Migration 196 — promue le 2026-09-09 (schema-promote, dump live verifie).** **Migration 277 (`intended_migration_schema`)** : + `phone_e164` TEXT nullable pour le destinataire WhatsApp au format E.164, + `channel` EMAIL|WHATSAPP, + `invited_by_user_id` pour tracer l’invitant central ou membre, + `grants_operating_lead` pour porter explicitement l’intention de désignation sans créer de capability implicite ; email peut être nullable lorsque le canal est WHATSAPP. |
-| `market_cash_control_policies` | Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS. **Migration 198 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
+| `market_cash_control_policies` | Politique de contrôle cash définie par le partenaire pour son assignment ; cash activé/désactivé et mode SINGLE ou DUAL_ALWAYS. **Migration 198 — promue le 2026-09-10 (schema-promote, dump live verifie).** **Migration 288 (2026-10-11, `intended_migration_schema`)** : + `custody_max_days` INTEGER nullable (1–365), délai de garde des espèces du Market ; `NULL` = défaut central ; toujours borné par la limite centrale côté service. |
 
 ### 4.13 Monitoring et alertes (10 tables)
 

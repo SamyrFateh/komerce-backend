@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-10T22:56:52.609Z",
+  "generatedAt": "2026-10-11T15:15:16.665Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 716,
-    "protected": 661,
+    "total": 719,
+    "protected": 664,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3544,6 +3544,21 @@
     },
     {
       "key": "PUT /api/market-delegation/markets/{marketCode}/cash-control-policy",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations/{destinationId}/{verb}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/cash-custody",
       "level": "PROTECTED",
       "roles": []
     },
