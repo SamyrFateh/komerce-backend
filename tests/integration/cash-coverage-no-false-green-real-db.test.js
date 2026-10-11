@@ -84,6 +84,7 @@ if (!process.env.DATABASE_URL) {
       await q('DELETE FROM cash_deposits WHERE agent_id=$1', [ids.agent]);
       await q('DELETE FROM cash_collections WHERE id = ANY($1::uuid[])', [ids.collections]);
       await q('DELETE FROM orders WHERE id = ANY($1::uuid[])', [ids.orders]);
+      await q('DELETE FROM market_delegation_audit WHERE actor_user_id = $1', [ids.admin]);
       await q('DELETE FROM users WHERE id = ANY($1::uuid[])', [[ids.agent, ids.admin]]);
       await q('DELETE FROM relais WHERE id=$1', [ids.relais]);
       await q('DELETE FROM markets WHERE id=$1', [ids.market]);
