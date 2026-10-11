@@ -39,7 +39,8 @@ const { checkWalletTotalHigh } = require('./radar-alerts/treasury-signals');
 const { checkBlockedParcels, checkStaleDeliveries } = require('./radar-alerts/logistics-signals');
 const { checkCancelRate, checkOpenIncidents, checkLowStock, checkStockOut } = require('./radar-alerts/commerce-signals');
 const {
-  checkCashNotCollected, checkCashNotDeposited, checkDepositsPendingReview, checkSuspectCashPattern,
+  checkCashNotCollected, checkCashNotDeposited, checkDepositsPendingReview,
+  checkCashRemittanceUnproven, checkSuspectCashPattern,
 } = require('./radar-alerts/cash-reconciliation-signals');
 
 // Fallback : si computeOrderStatusDetail pas exporté par parcels.js, on le calcule localement
@@ -163,6 +164,7 @@ async function getAlerts() {
     push(await checkCashNotCollected(db, cashNotCollectedHrs));          // K
     push(await checkCashNotDeposited(db, cashNotDepositedHrs));          // L
     push(await checkDepositsPendingReview(db));                          // M
+    push(await checkCashRemittanceUnproven(db));                         // M2 (provisoire jusqu'à PR 4b)
     push(await checkSuspectCashPattern(db));                             // N
 
     // Tri : critical d'abord, puis signal

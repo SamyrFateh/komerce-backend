@@ -68,6 +68,7 @@ test('buildWorkspace applique market_id à toutes les sources cash et factures',
     .mockResolvedValueOnce({ rows: [{ expected_kmf: '10000', expected_count: 1 }] })
     .mockResolvedValueOnce({ rows: [{ collected_kmf: '8000', collection_count: 1 }] })
     .mockResolvedValueOnce({ rows: [{ deposited_kmf: '5000', verified_kmf: '5000', pending_kmf: '0', disputed_kmf: '0', deposit_count: 1 }] })
+    .mockResolvedValueOnce({ rows: [{ covered_kmf: '5000', reserved_kmf: '0' }] })
     .mockResolvedValueOnce({ rows: [{ order_ref: 'CMD-1', amount_kmf: 8000 }] })
     .mockResolvedValueOnce({ rows: [{ deposit_ref: 'KDP-000001', status: 'verified', amount_kmf: 5000 }] })
     .mockResolvedValueOnce({ rows: [{ order_ref: 'CMD-2', total_kmf: 2000 }] })
@@ -80,6 +81,7 @@ test('buildWorkspace applique market_id à toutes les sources cash et factures',
   expect(payload.summary.uncollected_kmf).toBe(2000);
   expect(payload.reconciliation.gap_collection_kmf).toBe(2000);
   expect(payload.reconciliation.gap_deposit_kmf).toBe(3000);
+  expect(payload.reconciliation).toMatchObject({ ledger_covered_provisional_kmf: 5000, ledger_uncovered_kmf: 3000, ledger_coverage_basis: 'RECONSTRUCTED_PROVISIONAL' });
 
   const sql = db.query.mock.calls.map(call => String(call[0])).join('\n');
   expect(sql).toContain('o.market_id = $1');
@@ -271,6 +273,7 @@ test('rapprochement : un dépôt pending ou contesté ne ferme jamais l\'écart 
     .mockResolvedValueOnce({ rows: [{ expected_kmf: '150000', expected_count: 3 }] })
     .mockResolvedValueOnce({ rows: [{ collected_kmf: '150000', collection_count: 3 }] })
     .mockResolvedValueOnce({ rows: [{ deposited_kmf: '150001', verified_kmf: '0', pending_kmf: '150000', disputed_kmf: '1', deposit_count: 2 }] })
+    .mockResolvedValueOnce({ rows: [{ covered_kmf: '0', reserved_kmf: '150000' }] })
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rows: [] })
@@ -281,6 +284,8 @@ test('rapprochement : un dépôt pending ou contesté ne ferme jamais l\'écart 
   expect(payload.reconciliation.deposited_kmf).toBe(150001);
   expect(payload.reconciliation.verified_kmf).toBe(0);
   expect(payload.reconciliation.gap_deposit_kmf).toBe(150000);
+  // grand livre : réservé en transit (pending) ≠ couvert ; l'écart ne se ferme pas
+  expect(payload.reconciliation).toMatchObject({ ledger_covered_provisional_kmf: 0, ledger_reserved_pending_kmf: 150000, ledger_uncovered_kmf: 150000 });
 });
 
 test('UI : colonne « Déclaré (tous statuts) » + « Vérifié », rapprochement présenté comme provisoire', () => {
@@ -288,6 +293,6 @@ test('UI : colonne « Déclaré (tous statuts) » + « Vérifié », rapprocheme
   expect(src).toContain("label: 'Déclaré (tous statuts)'");
   expect(src).toContain("label: 'Vérifié'");
   expect(src).toContain('Rapprochement cash (provisoire)');
-  expect(src).toMatch(/sans allocation encaissement↔dépôt ni confirmation bancaire/);
+  expect(src).toMatch(/reconstruite \(FIFO\), sans réception finale prouvée ni confirmation bancaire/);
   expect(src).not.toContain('non vérifié)');
 });

@@ -8,7 +8,7 @@
  * @outputs       market_scoped_accounting_projection, delegated_cash_deposit_mutations
  * @depends       db, services/cash-deposit-service.js, services/market-delegation-service.js
  * @used-by       routes/admin-finance-accounting-workspace.js
- * @db-read       orders, cash_collections, cash_deposits, users, relais, invoices
+ * @db-read       orders, cash_collections, cash_deposit_allocations, cash_deposits, users, relais, invoices
  * @db-write      none
  * @db-write-via:cash-deposit-service cash_deposits
  * @db-write-via:market-delegation-service market_delegation_audit
@@ -164,7 +164,7 @@ async function queryInvoices(marketId) {
 }
 
 async function queryReconciliation(marketId, filters) {
-  const [expectedRes, collectedRes, depositedRes] = await Promise.all([
+  const [expectedRes, collectedRes, depositedRes, ledgerRes] = await Promise.all([
     db.query(`
       SELECT COALESCE(SUM(o.total_kmf), 0)::numeric AS expected_kmf,
              COUNT(*)::int AS expected_count
@@ -198,8 +198,22 @@ async function queryReconciliation(marketId, filters) {
        WHERE cd.period_start >= $2
          AND cd.period_end <= $3
     `, [marketId, filters.from, filters.to]),
+    // Grand livre de garde (PR 3) : part des encaissements de la période couverte par une
+    // remise. Couverture reconstruite (FIFO), donc PROVISOIRE : elle ne décharge pas l'agent.
+    db.query(`
+      SELECT COALESCE(SUM(al.amount_kmf) FILTER (WHERE d.status = 'verified'), 0)::numeric AS covered_kmf,
+             COALESCE(SUM(al.amount_kmf) FILTER (WHERE d.status = 'pending'), 0)::numeric AS reserved_kmf
+        FROM cash_deposit_allocations al
+        JOIN cash_deposits d ON d.id = al.deposit_id
+        JOIN cash_collections cc ON cc.id = al.collection_id
+        JOIN orders o ON o.id = cc.order_id
+       WHERE al.market_id = $1
+         AND o.market_id = $1
+         AND cc.confirmed_at::date BETWEEN $2 AND $3
+    `, [marketId, filters.from, filters.to]),
   ]);
 
+  const ledger = ledgerRes.rows[0] || {};
   const expected = expectedRes.rows[0] || {};
   const collected = collectedRes.rows[0] || {};
   const deposited = depositedRes.rows[0] || {};
@@ -220,6 +234,11 @@ async function queryReconciliation(marketId, filters) {
     gap_collection_kmf: expectedKmf - collectedKmf,
     // Écart = collecté − VÉRIFIÉ : un dépôt pending/disputed ne ferme jamais l'écart.
     gap_deposit_kmf: collectedKmf - Number(deposited.verified_kmf || 0),
+    // Compartiments du grand livre (par encaissement, sans double comptage).
+    ledger_covered_provisional_kmf: Number(ledger.covered_kmf || 0),
+    ledger_reserved_pending_kmf: Number(ledger.reserved_kmf || 0),
+    ledger_uncovered_kmf: collectedKmf - Number(ledger.covered_kmf || 0),
+    ledger_coverage_basis: 'RECONSTRUCTED_PROVISIONAL',
   };
 }
 

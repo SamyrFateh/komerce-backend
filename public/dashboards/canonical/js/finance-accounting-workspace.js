@@ -197,7 +197,7 @@
 
   function renderReconciliation(rootNode, ui, doc, payload) {
     const r = payload.reconciliation || {};
-    const slot = createSection(rootNode, ui, 'Rapprochement cash (provisoire)', 'Calculé exclusivement dans le marché sélectionné. Couverture provisoire : « vérifié » est une validation interne, sans allocation encaissement↔dépôt ni confirmation bancaire.');
+    const slot = createSection(rootNode, ui, 'Rapprochement cash (provisoire)', 'Calculé exclusivement dans le marché sélectionné. Couverture provisoire : « vérifié » est une validation interne ; l’allocation encaissement↔dépôt est reconstruite (FIFO), sans réception finale prouvée ni confirmation bancaire.');
     ui.DataTable.render(slot, {
       columns: [
         { key: 'expected', label: 'Attendu' },
