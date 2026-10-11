@@ -473,16 +473,32 @@ describe('GENERATORS.parcel_blocked', () => {
 });
 
 describe('GENERATORS.cash_expiring', () => {
-  test('aucune ligne → generated:0', async () => {
-    mockQuery = jest.fn().mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rowCount: 0 });
+  const row = (extra = {}) => ({ id: 'cc1', order_id: 'o1', amount_kmf: 150000, relais_id: 'r1', collected_by: 'u1', market_id: 'm-cm', days_pending: 12, reference: 'CMD-2', ...extra });
+
+  test('SQL sur colonnes réelles : amount_kmf, confirmed_at, dépôt couvrant, market via commande', async () => {
+    mockQuery = jest.fn().mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
     const { GENERATORS } = loadService();
-    expect(await GENERATORS.cash_expiring()).toEqual({ generated: 0 });
+    await GENERATORS.cash_expiring();
+    const sql = String(mockQuery.mock.calls[0][0]);
+    expect(sql).toMatch(/cc\.amount_kmf/);
+    expect(sql).toMatch(/cc\.confirmed_at/);
+    expect(sql).toMatch(/JOIN orders o ON o\.id = cc\.order_id/);
+    expect(sql).toMatch(/NOT EXISTS[\s\S]*cash_deposits[\s\S]*cd\.agent_id = cc\.collected_by/);
+    expect(sql).not.toMatch(/cc\.amount\b|cc\.relay_id|cc\.status/);
   });
 
-  test('severity critical si days_pending > 10, titre avec montant formaté, résumé avec référence', async () => {
+  test('aucune ligne et aucun signal ouvert → generated:0, aucune résolution', async () => {
+    mockQuery = jest.fn().mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.cash_expiring()).toEqual({ generated: 0 });
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+  });
+
+  test('critical si days_pending > 10, montant KMF, Market porté par le signal, résolution bornée au Market', async () => {
     mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [{ id: 'cc1', order_id: 'o1', amount: 150000, relay_id: 'r1', days_pending: 12, reference: 'CMD-2' }] })
+      .mockResolvedValueOnce({ rows: [row()] })
       .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rowCount: 0 });
     const { GENERATORS } = loadService();
     const result = await GENERATORS.cash_expiring();
@@ -491,12 +507,15 @@ describe('GENERATORS.cash_expiring', () => {
     expect(params[1]).toBe('critical');
     expect(params[2]).toContain(`${(150000).toLocaleString('fr-FR')} KMF`);
     expect(params[3]).toMatch(/CMD-2/);
+    expect(params).toContain('m-cm');
+    expect(mockQuery.mock.calls[3][1]).toEqual(['cash_expiring', ['cc1'], 'm-cm']);
   });
 
-  test('severity warning si days_pending <= 10', async () => {
+  test('warning si days_pending <= 10, sans référence ni Market (signal global)', async () => {
     mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [{ id: 'cc1', order_id: 'o1', amount: null, relay_id: 'r1', days_pending: 6 }] })
+      .mockResolvedValueOnce({ rows: [row({ amount_kmf: null, days_pending: 6, reference: null, market_id: null })] })
       .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rowCount: 0 });
     const { GENERATORS } = loadService();
     await GENERATORS.cash_expiring();
@@ -504,6 +523,18 @@ describe('GENERATORS.cash_expiring', () => {
     expect(params[1]).toBe('warning');
     expect(params[2]).toMatch(/0 KMF/);
     expect(params[3]).not.toMatch(/cmd/);
+    expect(mockQuery.mock.calls[3][1]).toEqual(['cash_expiring', ['cc1'], null]);
+  });
+
+  test('un Market sans plus aucune ligne mais avec signal ouvert est résolu (pas de faux vert persistant)', async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ market_id: 'm-km' }] })
+      .mockResolvedValueOnce({ rowCount: 1 });
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.cash_expiring()).toEqual({ generated: 0 });
+    expect(String(mockQuery.mock.calls[2][0])).toMatch(/status = 'resolved'/);
+    expect(mockQuery.mock.calls[2][1]).toEqual(['cash_expiring', 'm-km']);
   });
 
   test('erreur DB → catch non-fatal', async () => {

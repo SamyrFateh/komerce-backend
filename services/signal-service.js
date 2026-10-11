@@ -9,7 +9,7 @@
  * @depends       db, utils/logger.js, utils/rules.js, services/supplier-payment-review.js
  * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js,
  *                services/incident-escalation.js
- * @db-read       cash_collections, customs_shipment_parcels, customs_shipments, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments
+ * @db-read       cash_collections, cash_deposits, customs_shipment_parcels, customs_shipments, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments
  * @db-write      signals
  * @db-txn        optional_caller_owned_transaction_for_upsert
  * @doctrine      resolve_before_behavior_change, market_scope_is_server_authority, preserve_caller_transaction
@@ -481,36 +481,55 @@ GENERATORS.parcel_blocked = async function() {
 
 GENERATORS.cash_expiring = async function() {
   try {
+    // Règle canonique (alignée sur radar checkCashNotDeposited) : cash encaissé
+    // par un agent relais depuis > 5 jours, sans dépôt de cet agent couvrant la
+    // date d'encaissement. Montant en KMF, périmètre Market porté par la commande.
     const rows = (await db.query(`
-      SELECT cc.id, cc.order_id, cc.amount, cc.relay_id,
-             EXTRACT(DAY FROM NOW() - cc.created_at)::int AS days_pending,
-             o.reference
+      SELECT cc.id, cc.order_id, cc.amount_kmf, cc.relais_id, cc.collected_by,
+             o.market_id, o.reference,
+             EXTRACT(DAY FROM NOW() - cc.confirmed_at)::int AS days_pending
       FROM cash_collections cc
-      LEFT JOIN orders o ON o.id = cc.order_id
-      WHERE cc.status = 'pending'
-        AND cc.created_at < NOW() - INTERVAL '5 days'
-      ORDER BY cc.created_at ASC
+      JOIN orders o ON o.id = cc.order_id
+      WHERE cc.confirmed_at < NOW() - INTERVAL '5 days'
+        AND NOT EXISTS (
+          SELECT 1 FROM cash_deposits cd
+           WHERE cd.agent_id = cc.collected_by
+             AND cd.period_start <= cc.confirmed_at::date
+             AND cd.period_end >= cc.confirmed_at::date
+        )
+      ORDER BY cc.confirmed_at ASC
       LIMIT 50
     `)).rows;
 
     let generated = 0;
-    const entityIds = [];
+    const byMarket = new Map();
     for (const r of rows) {
-      entityIds.push(r.id);
+      const marketId = r.market_id || null;
+      if (!byMarket.has(marketId)) byMarket.set(marketId, []);
+      byMarket.get(marketId).push(r.id);
+      const amount = Number(r.amount_kmf) || 0;
       const severity = r.days_pending > 10 ? 'critical' : 'warning';
       await upsertSignal({
-        signal_type: 'cash_expiring', severity,
-        title: 'Cash en attente — ' + (r.amount || 0).toLocaleString('fr-FR') + ' KMF',
-        summary: 'En attente depuis ' + r.days_pending + ' jours' + (r.reference ? ' (cmd ' + r.reference + ')' : ''),
+        signal_type: 'cash_expiring', severity, market_id: marketId,
+        title: 'Cash non déposé — ' + amount.toLocaleString('fr-FR') + ' KMF',
+        summary: 'Encaissé depuis ' + r.days_pending + ' jours, sans dépôt' + (r.reference ? ' (cmd ' + r.reference + ')' : ''),
         source_module: 'signal-service', target_shell: 'bo', target_view: 'reconciliation',
         target_filters: { status: 'pending' }, owner_role: 'relais',
         entity_type: 'cash_collection', entity_id: r.id,
-        recommendation: 'Relancer le relais pour confirmer la réception', confidence: 'high',
-        meta: { amount: r.amount, days_pending: r.days_pending, relay_id: r.relay_id },
+        recommendation: 'Relancer le relais pour déclarer son dépôt', confidence: 'high',
+        meta: { amount_kmf: amount, days_pending: r.days_pending, relais_id: r.relais_id, collected_by: r.collected_by },
       });
       generated++;
     }
-    await autoResolveSignals('cash_expiring', entityIds);
+    // Résolution par Market, y compris les Markets dont plus aucun cash n'est en attente.
+    const open = (await db.query(
+      `SELECT DISTINCT market_id FROM signals
+        WHERE signal_type = 'cash_expiring' AND status IN ('open','acknowledged','snoozed')`
+    )).rows;
+    const markets = new Set([...byMarket.keys(), ...open.map(r => r.market_id || null)]);
+    for (const marketId of markets) {
+      await autoResolveSignals('cash_expiring', byMarket.get(marketId) || [], marketId);
+    }
     return { generated };
   } catch (e) {
     log.warn({ err: e }, '[signal-service] cash_expiring error:');
