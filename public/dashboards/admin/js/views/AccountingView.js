@@ -356,9 +356,10 @@ const AccountingView = (function () {
     html += `<div class="acct-totals-bar">
       <span><strong>Attendu :</strong> ${fmt(Math.round(totals.expected_kmf || 0))} KMF</span>
       <span><strong>Collecté :</strong> ${fmt(Math.round(totals.declared_kmf || 0))} KMF</span>
-      <span><strong>Déposé :</strong> ${fmt(Math.round(totals.deposited_kmf || 0))} KMF</span>
+      <span><strong>Déclaré (tous statuts) :</strong> ${fmt(Math.round(totals.deposited_kmf || 0))} KMF</span>
+      <span><strong>Vérifié (interne) :</strong> ${fmt(Math.round(totals.verified_kmf || 0))} KMF</span>
       <span><strong>Gap collecte :</strong> <span class="${Math.abs(gColl) > 0 ? 'acct-reco-gap-alert' : ''}">${fmt(Math.round(gColl))}</span></span>
-      <span><strong>En transit :</strong> <span class="${Math.abs(gDep) > 0 ? 'acct-reco-gap-warn' : ''}">${fmt(Math.round(gDep))}</span></span>
+      <span><strong>Non couvert (collecté − vérifié, provisoire) :</strong> <span class="${Math.abs(gDep) > 0 ? 'acct-reco-gap-warn' : ''}">${fmt(Math.round(gDep))}</span></span>
     </div>`;
 
     if (!reco.agents.length) {

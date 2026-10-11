@@ -13165,6 +13165,13 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-readonly-views.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-readonly-views.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/team-invite.html",
         "resolvedPath": "public/dashboards/canonical/team-invite.html",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13216,6 +13223,20 @@
         "category": "tests",
         "declared": "tests/unit/market-cash-control-ui.test.js",
         "resolvedPath": "tests/unit/market-cash-control-ui.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/unit/market-readonly-views.test.js",
+        "resolvedPath": "tests/unit/market-readonly-views.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/e2e/market-readonly-views.spec.js",
+        "resolvedPath": "tests/e2e/market-readonly-views.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13605,6 +13626,20 @@
       },
       {
         "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-cost-statement-service.js",
+        "resolvedPath": "services/market-delegation-cost-statement-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
+        "declared": "services/market-delegation-customs-service.js",
+        "resolvedPath": "services/market-delegation-customs-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
         "category": "routes",
         "declared": "routes/market-delegation-team.js",
         "resolvedPath": "routes/market-delegation-team.js",
@@ -13678,6 +13713,20 @@
         "category": "routes",
         "declared": "routes/market-delegation-performance.js",
         "resolvedPath": "routes/market-delegation-performance.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-cost-statement.js",
+        "resolvedPath": "routes/market-delegation-cost-statement.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-customs.js",
+        "resolvedPath": "routes/market-delegation-customs.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -13944,6 +13993,20 @@
         "category": "tests",
         "declared": "tests/unit/market-delegation-performance-routes.test.js",
         "resolvedPath": "tests/unit/market-delegation-performance-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-cost-statement.test.js",
+        "resolvedPath": "tests/unit/market-delegation-cost-statement.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-customs.test.js",
+        "resolvedPath": "tests/unit/market-delegation-customs.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15097,6 +15160,13 @@
       {
         "feature": "payments",
         "category": "services",
+        "declared": "services/market-payment-account-service.js",
+        "resolvedPath": "services/market-payment-account-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
         "declared": "services/mobile-money-reconciliation.js",
         "resolvedPath": "services/mobile-money-reconciliation.js",
         "status": "resolved-in-technical-graph"
@@ -15166,6 +15236,20 @@
       },
       {
         "feature": "payments",
+        "category": "routes",
+        "declared": "routes/admin-market-payment-accounts.js",
+        "resolvedPath": "routes/admin-market-payment-accounts.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
+        "category": "routes",
+        "declared": "routes/market-delegation-payment-accounts.js",
+        "resolvedPath": "routes/market-delegation-payment-accounts.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
         "category": "migrations",
         "declared": "migrations/079_paypal_payment_mode.sql",
         "resolvedPath": "migrations/079_paypal_payment_mode.sql",
@@ -15176,6 +15260,13 @@
         "category": "migrations",
         "declared": "migrations/148_cash_deposit_business_reference.sql",
         "resolvedPath": "migrations/148_cash_deposit_business_reference.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
+        "declared": "migrations/285_market_payment_accounts.sql",
+        "resolvedPath": "migrations/285_market_payment_accounts.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15232,6 +15323,20 @@
         "category": "tests",
         "declared": "tests/unit/stripe-golden-p4.test.js",
         "resolvedPath": "tests/unit/stripe-golden-p4.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/market-payment-accounts.test.js",
+        "resolvedPath": "tests/unit/market-payment-accounts.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-payment-accounts.test.js",
+        "resolvedPath": "tests/unit/market-delegation-payment-accounts.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -33861,6 +33966,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/finance-accounting-workspace.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
                 "sourceFileId": "services/dashboard-admin-context.js",
                 "targetFile": "services/market-delegation-service.js"
               },
@@ -34077,6 +34186,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/finance-accounting-workspace.js",
+                "targetFile": "services/cash-deposit-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/finance-accounting-workspace.test.js",
                 "targetFile": "services/cash-deposit-service.js"
               }
             ]
@@ -34353,6 +34466,26 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "decision-signals",
+        "to": "payments",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/radar-alerts/cash-reconciliation-signals.js",
+                "targetFile": "services/cash-deposit-service.js"
+              },
+              {
+                "sourceFileId": "services/signal-service.js",
+                "targetFile": "services/cash-deposit-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "decision-signals",
@@ -36176,6 +36309,14 @@
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-cost-statement.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-customs.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/market-delegation-market-config.js"
               }
             ]
@@ -36273,6 +36414,14 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/cash.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-payment-accounts.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-market-payment-accounts.js"
               },
               {
                 "sourceFileId": "bootstrap/crons.js",
@@ -38350,6 +38499,14 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/market-delegation-cost-statement.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-customs.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/market-delegation-market-config.js",
                 "targetFile": "middleware/auth.js"
               }
@@ -38545,6 +38702,14 @@
               },
               {
                 "sourceFileId": "routes/market-delegation-performance.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-cost-statement.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-customs.js",
                 "targetFile": "db.js"
               },
               {
@@ -40414,6 +40579,14 @@
                 "targetFile": "middleware/auth-guest.js"
               },
               {
+                "sourceFileId": "routes/admin-market-payment-accounts.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-payment-accounts.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/payments.stripe-pipeline-p3.e2e.test.js",
                 "targetFile": "utils/auth-session.js"
               }
@@ -40675,6 +40848,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/admin-market-payment-accounts.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-payment-accounts.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/isweep-transactional-flows.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
@@ -40894,7 +41075,15 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/cash-deposit-service.js",
+                "targetFile": "utils/currency.js"
+              },
+              {
                 "sourceFileId": "services/payment-mobile-money.js",
+                "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "tests/unit/cash-deposit-service.test.js",
                 "targetFile": "utils/currency.js"
               },
               {
@@ -40910,6 +41099,23 @@
         "from": "payments",
         "to": "market-delegation",
         "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-payment-account-service.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "services/market-payment-account-service.js",
+                "targetFile": "services/market-delegation-team-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-payment-accounts.test.js",
+                "targetFile": "services/market-delegation-team-service.js"
+              }
+            ]
+          },
           {
             "channel": "data-read",
             "evidence": [
@@ -44756,7 +44962,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2004
+        "filesObserved": 2018
       },
       "boutique": {
         "filesObserved": 214,
@@ -44795,7 +45001,7 @@
       "NON_RUNTIME_TEST": 16,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
-      "CROSS_FEATURE_DIRECT_IMPORT": 0,
+      "CROSS_FEATURE_DIRECT_IMPORT": 1,
       "BUSINESS_FEATURE_INTERFACE": 0,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -44830,6 +45036,23 @@
         "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
+      },
+      {
+        "from": "decision-signals",
+        "to": "payments",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "piloting-capability",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
       },
       {
         "from": "infrastructure",
@@ -45346,6 +45569,7 @@
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|frontend-transversal|business-file-import": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|piloting-capability|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 8,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
@@ -45368,7 +45592,9 @@
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
-    "missingExceptions": [],
+    "missingExceptions": [
+      "decision-signals->payments"
+    ],
     "emptyRationaleExceptions": [],
     "unexplainedRuntimeCycles": [],
     "ontologyGapCoverage": {
@@ -47905,8 +48131,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 597,
-        "technicalNodesOwned": 597,
+        "technicalNodesTotal": 604,
+        "technicalNodesOwned": 604,
         "technicalOrphans": 0
       },
       "dash": {
@@ -48005,8 +48231,20 @@
   },
   "drifts": {
     "error": [],
-    "warn": [],
-    "debt": [],
+    "warn": [
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "decision-signals -> payments",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"decision-signals\" vers \"payments\""
+      }
+    ],
+    "debt": [
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "decision-signals -> payments",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"decision-signals\" vers \"payments\""
+      }
+    ],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -48076,7 +48314,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> market-delegation",
-        "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market-delegation\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market-delegation\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -48307,11 +48545,11 @@
       }
     ],
     "summary": {
-      "signals": 0,
-      "debt": 0,
+      "signals": 1,
+      "debt": 1,
       "expectedTopology": 47,
       "generatorLimitations": 12,
-      "classifiedCandidates": 59
+      "classifiedCandidates": 60
     }
   }
 }

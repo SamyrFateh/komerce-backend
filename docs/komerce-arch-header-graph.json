@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 701,
-    "filesWithFullHeaders": 656,
+    "scannedCodeFiles": 708,
+    "filesWithFullHeaders": 663,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 701,
+    "filesWithAnyHeaders": 708,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1697,
-    "edges": 8548,
-    "dbTables": 194,
-    "doctrines": 606,
+    "graphNodes": 1718,
+    "edges": 8641,
+    "dbTables": 195,
+    "doctrines": 619,
     "impactAreas": 196,
-    "unresolvedCodeEdges": 842,
+    "unresolvedCodeEdges": 847,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 84
   },
@@ -38,7 +38,7 @@
     "catalog": 125,
     "admin-dashboard": 31,
     "decision-signals": 14,
-    "market-delegation": 30,
+    "market-delegation": 35,
     "market": 4,
     "economic-engine": 57,
     "sourcing": 36,
@@ -47,7 +47,7 @@
     "checkout": 3,
     "shared-cart": 25,
     "account": 2,
-    "payment": 26,
+    "payment": 28,
     "shared-cart-modal": 7,
     "recommendations": 6,
     "auth-passkey": 7,
@@ -107,9 +107,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 134,
+    "route": 138,
     "entrypoint": 1,
-    "service": 389,
+    "service": 392,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -120,7 +120,7 @@
   "byCriticality": {
     "critical": 96,
     "medium": 140,
-    "high": 411,
+    "high": 418,
     "low": 54
   },
   "nodes": [
@@ -6481,6 +6481,59 @@
       "version": "2026-10-v1"
     },
     {
+      "id": "routes/admin-market-payment-accounts.js",
+      "file": "routes/admin-market-payment-accounts.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "admin-market-payment-accounts-api",
+      "domain": "payment",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "central admin actor",
+        "canonical market code or account id in path"
+      ],
+      "outputs": [
+        "payment accounts per market (central view)",
+        "creation and status transitions"
+      ],
+      "depends": [
+        "db.js",
+        "middleware/auth.js",
+        "services/market-payment-account-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "central admin workspace"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-payment-account-service",
+          "tables": [
+            "market_payment_accounts"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "explicit for mutation routes"
+      ],
+      "doctrine": [
+        "payment_account_is_provider_agnostic",
+        "no_secret_stored_only_vault_reference",
+        "central_by_role_declared"
+      ],
+      "impactAreas": [
+        "payments",
+        "market-delegation",
+        "finance"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "routes/admin-market-settlement.js",
       "file": "routes/admin-market-settlement.js",
       "type": "file",
@@ -9792,6 +9845,92 @@
       "version": "2026-09"
     },
     {
+      "id": "routes/market-delegation-cost-statement.js",
+      "file": "routes/market-delegation-cost-statement.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-cost-statement-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical market code",
+        "optional from/to"
+      ],
+      "outputs": [
+        "relevé de coûts du marché (lecture seule)"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/market-delegation-cost-statement-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "cost_statement_is_a_projection_never_a_new_truth",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine",
+        "finance"
+      ],
+      "version": "2026-10"
+    },
+    {
+      "id": "routes/market-delegation-customs.js",
+      "file": "routes/market-delegation-customs.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-customs-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical market code",
+        "optional from/to"
+      ],
+      "outputs": [
+        "expéditions douane du marché (lecture seule)"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/market-delegation-customs-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "customs_read_view_is_a_projection",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "customs",
+        "logistics"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "routes/market-delegation-local-offer.js",
       "file": "routes/market-delegation-local-offer.js",
       "type": "file",
@@ -9949,6 +10088,50 @@
         "network"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "routes/market-delegation-payment-accounts.js",
+      "file": "routes/market-delegation-payment-accounts.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-payment-accounts-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical market code",
+        "optional from/to"
+      ],
+      "outputs": [
+        "comptes de paiement du marché (lecture seule",
+        "sans référence de coffre)"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/market-payment-account-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "payment_accounts_read_view_is_a_projection",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "payments",
+        "finance"
+      ],
+      "version": "2026-10"
     },
     {
       "id": "routes/market-delegation-performance.js",
@@ -13365,13 +13548,15 @@
         "cash_deposit_mutation_result"
       ],
       "depends": [
-        "db.js"
+        "db.js",
+        "utils/currency.js"
       ],
       "usedBy": [
         "routes/cash.js",
         "services/finance-accounting-workspace.js"
       ],
       "dbRead": [
+        "cash_collections",
         "cash_deposits"
       ],
       "dbWrite": [
@@ -17353,7 +17538,8 @@
       ],
       "depends": [
         "db",
-        "services/cash-deposit-service.js"
+        "services/cash-deposit-service.js",
+        "services/market-delegation-service.js"
       ],
       "usedBy": [
         "routes/admin-finance-accounting-workspace.js"
@@ -17373,16 +17559,26 @@
           "tables": [
             "cash_deposits"
           ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
         }
       ],
       "dbTxn": [
-        "delegated_to_domain_authority"
+        "explicit for deposit review (verify",
+        "dispute)"
       ],
       "doctrine": [
         "workspace_acts_dashboard_observes",
         "server_market_scope_is_authority",
         "no_global_workspace_mutation",
-        "stable_business_reference_at_browser_boundary"
+        "stable_business_reference_at_browser_boundary",
+        "deposit_review_legal_transitions_only",
+        "depositor_never_reviews_own_deposit",
+        "deposit_review_audited_in_same_transaction"
       ],
       "impactAreas": [
         "admin-dashboard",
@@ -19061,6 +19257,98 @@
       "version": "2026-09"
     },
     {
+      "id": "services/market-delegation-cost-statement-service.js",
+      "file": "services/market-delegation-cost-statement-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-cost-statement-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated market operator",
+        "market code",
+        "optional economic period (from/to)"
+      ],
+      "outputs": [
+        "relevé de coûts du marché : charges directes + charges mutualisées attribuées",
+        "en lecture seule"
+      ],
+      "depends": [
+        "services/market-delegation-team-service.js"
+      ],
+      "usedBy": [
+        "routes/market-delegation-cost-statement.js"
+      ],
+      "dbRead": [
+        "economic_structure_cost_events",
+        "market_cost_attributions",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "cost_statement_is_a_projection_never_a_new_truth",
+        "client_market_id_never_authority",
+        "hq_evidence_never_exposed_to_market"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine",
+        "finance"
+      ],
+      "version": "2026-10"
+    },
+    {
+      "id": "services/market-delegation-customs-service.js",
+      "file": "services/market-delegation-customs-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-customs-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated market operator",
+        "market code",
+        "optional shipment period (from/to)"
+      ],
+      "outputs": [
+        "expéditions douane du marché (lecture seule) : coûts de douane et de fret propres au marché"
+      ],
+      "depends": [
+        "services/market-delegation-team-service.js"
+      ],
+      "usedBy": [
+        "routes/market-delegation-customs.js"
+      ],
+      "dbRead": [
+        "customs_shipments",
+        "customs_shipment_parcels"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "customs_read_view_is_a_projection",
+        "client_market_id_never_authority",
+        "customs_per_market"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "customs",
+        "logistics"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/market-delegation-local-offer-service.js",
       "file": "services/market-delegation-local-offer-service.js",
       "type": "file",
@@ -19816,6 +20104,71 @@
       "version": "2026-10-v1"
     },
     {
+      "id": "services/market-payment-account-service.js",
+      "file": "services/market-payment-account-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-payment-account-owner",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "central admin actor",
+        "canonical market code",
+        "payment account identity (holder",
+        "legal seller",
+        "refund bearer",
+        "vault reference)"
+      ],
+      "outputs": [
+        "market_payment_accounts lifecycle (DRAFT",
+        "ACTIVE",
+        "SUSPENDED",
+        "CLOSED) and market-safe read projection"
+      ],
+      "depends": [
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-market-payment-accounts.js",
+        "routes/market-delegation-payment-accounts.js"
+      ],
+      "dbRead": [
+        "market_payment_accounts",
+        "markets"
+      ],
+      "dbWrite": [
+        "market_payment_accounts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "payment_account_is_provider_agnostic",
+        "no_secret_stored_only_vault_reference",
+        "holder_seller_operator_refund_bearer_are_distinct",
+        "active_requires_evidence",
+        "verification_is_separate_from_activation"
+      ],
+      "impactAreas": [
+        "payments",
+        "market-delegation",
+        "finance"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/market-payment-provider-config-service.js",
       "file": "services/market-payment-provider-config-service.js",
       "type": "file",
@@ -19897,7 +20250,9 @@
         "routes/admin-market-control-plane.js"
       ],
       "dbRead": [
-        "central authority grant tables"
+        "central authority grant tables",
+        "markets",
+        "market_operating_assignments"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -25797,7 +26152,8 @@
         "response_or_domain_result"
       ],
       "depends": [
-        "db.js"
+        "db.js",
+        "services/cash-deposit-service.js"
       ],
       "usedBy": [
         "services/radar-queries.js"
@@ -27156,7 +27512,8 @@
         "db",
         "utils/logger.js",
         "utils/rules.js",
-        "services/supplier-payment-review.js"
+        "services/supplier-payment-review.js",
+        "services/cash-deposit-service.js"
       ],
       "usedBy": [
         "routes/signals.js",
@@ -27165,6 +27522,7 @@
       ],
       "dbRead": [
         "cash_collections",
+        "cash_deposits",
         "customs_shipment_parcels",
         "customs_shipments",
         "hub_physical_unit_placements",
@@ -33863,6 +34221,11 @@
       "table": "market_payment_providers"
     },
     {
+      "id": "db:market_payment_accounts",
+      "type": "db-table",
+      "table": "market_payment_accounts"
+    },
+    {
       "id": "db:market_settlements",
       "type": "db-table",
       "table": "market_settlements"
@@ -35408,6 +35771,16 @@
       "doctrine": "no_second_authorization_engine"
     },
     {
+      "id": "doctrine:payment_account_is_provider_agnostic",
+      "type": "doctrine",
+      "doctrine": "payment_account_is_provider_agnostic"
+    },
+    {
+      "id": "doctrine:no_secret_stored_only_vault_reference",
+      "type": "doctrine",
+      "doctrine": "no_secret_stored_only_vault_reference"
+    },
+    {
       "id": "doctrine:ready_is_central_attestation",
       "type": "doctrine",
       "doctrine": "ready_is_central_attestation"
@@ -35703,6 +36076,16 @@
       "doctrine": "client_account_facets_global_only"
     },
     {
+      "id": "doctrine:cost_statement_is_a_projection_never_a_new_truth",
+      "type": "doctrine",
+      "doctrine": "cost_statement_is_a_projection_never_a_new_truth"
+    },
+    {
+      "id": "doctrine:customs_read_view_is_a_projection",
+      "type": "doctrine",
+      "doctrine": "customs_read_view_is_a_projection"
+    },
+    {
       "id": "doctrine:capabilities_authorize_local_offer_exposure",
       "type": "doctrine",
       "doctrine": "capabilities_authorize_local_offer_exposure"
@@ -35716,6 +36099,11 @@
       "id": "doctrine:suspend_not_delete",
       "type": "doctrine",
       "doctrine": "suspend_not_delete"
+    },
+    {
+      "id": "doctrine:payment_accounts_read_view_is_a_projection",
+      "type": "doctrine",
+      "doctrine": "payment_accounts_read_view_is_a_projection"
     },
     {
       "id": "doctrine:performance_is_a_projection_never_a_new_truth",
@@ -36398,6 +36786,21 @@
       "doctrine": "no_global_workspace_mutation"
     },
     {
+      "id": "doctrine:deposit_review_legal_transitions_only",
+      "type": "doctrine",
+      "doctrine": "deposit_review_legal_transitions_only"
+    },
+    {
+      "id": "doctrine:depositor_never_reviews_own_deposit",
+      "type": "doctrine",
+      "doctrine": "depositor_never_reviews_own_deposit"
+    },
+    {
+      "id": "doctrine:deposit_review_audited_in_same_transaction",
+      "type": "doctrine",
+      "doctrine": "deposit_review_audited_in_same_transaction"
+    },
+    {
       "id": "doctrine:market_operator_scoping (GAP-1)",
       "type": "doctrine",
       "doctrine": "market_operator_scoping (GAP-1)"
@@ -36583,6 +36986,16 @@
       "doctrine": "client_case_authority_is_capability_based"
     },
     {
+      "id": "doctrine:hq_evidence_never_exposed_to_market",
+      "type": "doctrine",
+      "doctrine": "hq_evidence_never_exposed_to_market"
+    },
+    {
+      "id": "doctrine:customs_per_market",
+      "type": "doctrine",
+      "doctrine": "customs_per_market"
+    },
+    {
       "id": "doctrine:local_offer_authority_is_capability_based",
       "type": "doctrine",
       "doctrine": "local_offer_authority_is_capability_based"
@@ -36701,6 +37114,21 @@
       "id": "doctrine:delegation_membership_is_the_only_authority",
       "type": "doctrine",
       "doctrine": "delegation_membership_is_the_only_authority"
+    },
+    {
+      "id": "doctrine:holder_seller_operator_refund_bearer_are_distinct",
+      "type": "doctrine",
+      "doctrine": "holder_seller_operator_refund_bearer_are_distinct"
+    },
+    {
+      "id": "doctrine:active_requires_evidence",
+      "type": "doctrine",
+      "doctrine": "active_requires_evidence"
+    },
+    {
+      "id": "doctrine:verification_is_separate_from_activation",
+      "type": "doctrine",
+      "doctrine": "verification_is_separate_from_activation"
     },
     {
       "id": "doctrine:payment_provider_config_owned_by_payments",
@@ -38298,14 +38726,14 @@
       "area": "loyalty"
     },
     {
-      "id": "impact:settlement",
-      "type": "impact-area",
-      "area": "settlement"
-    },
-    {
       "id": "impact:finance",
       "type": "impact-area",
       "area": "finance"
+    },
+    {
+      "id": "impact:settlement",
+      "type": "impact-area",
+      "area": "settlement"
     },
     {
       "id": "impact:logistics",
@@ -47920,6 +48348,79 @@
       "label": "authorization"
     },
     {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "services/market-payment-account-service.js",
+      "type": "depends",
+      "label": "services/market-payment-account-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-market-payment-accounts.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "central admin workspace",
+      "to": "routes/admin-market-payment-accounts.js",
+      "type": "uses",
+      "label": "central admin workspace"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "db:market_payment_accounts",
+      "type": "db-write-via",
+      "label": "market_payment_accounts",
+      "via": "market-payment-account-service"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "doctrine:payment_account_is_provider_agnostic",
+      "type": "doctrine",
+      "label": "payment_account_is_provider_agnostic"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "doctrine:no_secret_stored_only_vault_reference",
+      "type": "doctrine",
+      "label": "no_secret_stored_only_vault_reference"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "doctrine:central_by_role_declared",
+      "type": "doctrine",
+      "label": "central_by_role_declared"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
       "from": "routes/admin-market-settlement.js",
       "to": "middleware/auth.js",
       "type": "depends",
@@ -53006,6 +53507,126 @@
       "label": "clients"
     },
     {
+      "from": "routes/market-delegation-cost-statement.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-delegation-cost-statement.js",
+      "to": "services/market-delegation-cost-statement-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-cost-statement-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-cost-statement.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-cost-statement.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "routes/market-delegation-cost-statement.js",
+      "to": "doctrine:cost_statement_is_a_projection_never_a_new_truth",
+      "type": "doctrine",
+      "label": "cost_statement_is_a_projection_never_a_new_truth"
+    },
+    {
+      "from": "routes/market-delegation-cost-statement.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-delegation-cost-statement.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "routes/market-delegation-cost-statement.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "routes/market-delegation-cost-statement.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "routes/market-delegation-cost-statement.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "routes/market-delegation-customs.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-delegation-customs.js",
+      "to": "services/market-delegation-customs-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-customs-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-customs.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-customs.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "routes/market-delegation-customs.js",
+      "to": "doctrine:customs_read_view_is_a_projection",
+      "type": "doctrine",
+      "label": "customs_read_view_is_a_projection"
+    },
+    {
+      "from": "routes/market-delegation-customs.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-delegation-customs.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "routes/market-delegation-customs.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "routes/market-delegation-customs.js",
+      "to": "impact:customs",
+      "type": "impact",
+      "label": "customs"
+    },
+    {
+      "from": "routes/market-delegation-customs.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
       "from": "routes/market-delegation-local-offer.js",
       "to": "middleware/auth.js",
       "type": "depends",
@@ -53213,6 +53834,66 @@
       "to": "impact:network",
       "type": "impact",
       "label": "network"
+    },
+    {
+      "from": "routes/market-delegation-payment-accounts.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-delegation-payment-accounts.js",
+      "to": "services/market-payment-account-service.js",
+      "type": "depends",
+      "label": "services/market-payment-account-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-payment-accounts.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-payment-accounts.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "routes/market-delegation-payment-accounts.js",
+      "to": "doctrine:payment_accounts_read_view_is_a_projection",
+      "type": "doctrine",
+      "label": "payment_accounts_read_view_is_a_projection"
+    },
+    {
+      "from": "routes/market-delegation-payment-accounts.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-delegation-payment-accounts.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "routes/market-delegation-payment-accounts.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "routes/market-delegation-payment-accounts.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "routes/market-delegation-payment-accounts.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
     },
     {
       "from": "routes/market-delegation-performance.js",
@@ -58453,6 +59134,12 @@
       "label": "db.js"
     },
     {
+      "from": "services/cash-deposit-service.js",
+      "to": "utils/currency.js",
+      "type": "depends",
+      "label": "utils/currency.js"
+    },
+    {
       "from": "routes/cash.js",
       "to": "services/cash-deposit-service.js",
       "type": "uses",
@@ -58463,6 +59150,12 @@
       "to": "services/cash-deposit-service.js",
       "type": "uses",
       "label": "services/finance-accounting-workspace.js"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "db:cash_collections",
+      "type": "db-read",
+      "label": "cash_collections"
     },
     {
       "from": "services/cash-deposit-service.js",
@@ -64823,6 +65516,12 @@
       "label": "services/cash-deposit-service.js"
     },
     {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
       "from": "routes/admin-finance-accounting-workspace.js",
       "to": "services/finance-accounting-workspace.js",
       "type": "uses",
@@ -64873,6 +65572,13 @@
     },
     {
       "from": "services/finance-accounting-workspace.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
       "to": "doctrine:workspace_acts_dashboard_observes",
       "type": "doctrine",
       "label": "workspace_acts_dashboard_observes"
@@ -64894,6 +65600,24 @@
       "to": "doctrine:stable_business_reference_at_browser_boundary",
       "type": "doctrine",
       "label": "stable_business_reference_at_browser_boundary"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "doctrine:deposit_review_legal_transitions_only",
+      "type": "doctrine",
+      "label": "deposit_review_legal_transitions_only"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "doctrine:depositor_never_reviews_own_deposit",
+      "type": "doctrine",
+      "label": "depositor_never_reviews_own_deposit"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "doctrine:deposit_review_audited_in_same_transaction",
+      "type": "doctrine",
+      "label": "deposit_review_audited_in_same_transaction"
     },
     {
       "from": "services/finance-accounting-workspace.js",
@@ -67847,6 +68571,144 @@
       "label": "orders"
     },
     {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-team-service.js"
+    },
+    {
+      "from": "routes/market-delegation-cost-statement.js",
+      "to": "services/market-delegation-cost-statement-service.js",
+      "type": "uses",
+      "label": "routes/market-delegation-cost-statement.js"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-read",
+      "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "db:market_cost_attributions",
+      "type": "db-read",
+      "label": "market_cost_attributions"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "doctrine:cost_statement_is_a_projection_never_a_new_truth",
+      "type": "doctrine",
+      "label": "cost_statement_is_a_projection_never_a_new_truth"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "doctrine:hq_evidence_never_exposed_to_market",
+      "type": "doctrine",
+      "label": "hq_evidence_never_exposed_to_market"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-team-service.js"
+    },
+    {
+      "from": "routes/market-delegation-customs.js",
+      "to": "services/market-delegation-customs-service.js",
+      "type": "uses",
+      "label": "routes/market-delegation-customs.js"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "doctrine:customs_read_view_is_a_projection",
+      "type": "doctrine",
+      "label": "customs_read_view_is_a_projection"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "doctrine:customs_per_market",
+      "type": "doctrine",
+      "label": "customs_per_market"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "impact:delegation",
+      "type": "impact",
+      "label": "delegation"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "impact:customs",
+      "type": "impact",
+      "label": "customs"
+    },
+    {
+      "from": "services/market-delegation-customs-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
       "from": "services/market-delegation-local-offer-service.js",
       "to": "services/market-delegation-team-service.js",
       "type": "depends",
@@ -69073,6 +69935,103 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/market-payment-account-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-team-service.js"
+    },
+    {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "services/market-payment-account-service.js",
+      "type": "uses",
+      "label": "routes/admin-market-payment-accounts.js"
+    },
+    {
+      "from": "routes/market-delegation-payment-accounts.js",
+      "to": "services/market-payment-account-service.js",
+      "type": "uses",
+      "label": "routes/market-delegation-payment-accounts.js"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "db:market_payment_accounts",
+      "type": "db-read",
+      "label": "market_payment_accounts"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "db:market_payment_accounts",
+      "type": "db-write",
+      "label": "market_payment_accounts"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "doctrine:payment_account_is_provider_agnostic",
+      "type": "doctrine",
+      "label": "payment_account_is_provider_agnostic"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "doctrine:no_secret_stored_only_vault_reference",
+      "type": "doctrine",
+      "label": "no_secret_stored_only_vault_reference"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "doctrine:holder_seller_operator_refund_bearer_are_distinct",
+      "type": "doctrine",
+      "label": "holder_seller_operator_refund_bearer_are_distinct"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "doctrine:active_requires_evidence",
+      "type": "doctrine",
+      "label": "active_requires_evidence"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "doctrine:verification_is_separate_from_activation",
+      "type": "doctrine",
+      "label": "verification_is_separate_from_activation"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "services/market-payment-account-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
       "from": "services/market-provisioning-service.js",
       "to": "services/market-payment-provider-config-service.js",
       "type": "uses",
@@ -69185,6 +70144,18 @@
       "to": "db:central authority grant tables",
       "type": "db-read",
       "label": "central authority grant tables"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
     },
     {
       "from": "services/market-provisioning-service.js",
@@ -78643,6 +79614,12 @@
       "label": "db.js"
     },
     {
+      "from": "services/radar-alerts/cash-reconciliation-signals.js",
+      "to": "services/cash-deposit-service.js",
+      "type": "depends",
+      "label": "services/cash-deposit-service.js"
+    },
+    {
       "from": "services/radar-queries.js",
       "to": "services/radar-alerts/cash-reconciliation-signals.js",
       "type": "uses",
@@ -80736,6 +81713,12 @@
       "label": "services/supplier-payment-review.js"
     },
     {
+      "from": "services/signal-service.js",
+      "to": "services/cash-deposit-service.js",
+      "type": "depends",
+      "label": "services/cash-deposit-service.js"
+    },
+    {
       "from": "routes/signals.js",
       "to": "services/signal-service.js",
       "type": "uses",
@@ -80758,6 +81741,12 @@
       "to": "db:cash_collections",
       "type": "db-read",
       "label": "cash_collections"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "db:cash_deposits",
+      "type": "db-read",
+      "label": "cash_deposits"
     },
     {
       "from": "services/signal-service.js",
@@ -90320,6 +91309,7 @@
         "routes/admin-finance-config.js",
         "routes/admin-loyalty.js",
         "routes/admin-market-control-plane.js",
+        "routes/admin-market-payment-accounts.js",
         "routes/admin-market-settlement.js",
         "routes/admin-operations-workspace.js",
         "routes/admin-order-360.js",
@@ -90382,9 +91372,12 @@
         "routes/market-delegation-catalog.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-client.js",
+        "routes/market-delegation-cost-statement.js",
+        "routes/market-delegation-customs.js",
         "routes/market-delegation-local-offer.js",
         "routes/market-delegation-market-config.js",
         "routes/market-delegation-network.js",
+        "routes/market-delegation-payment-accounts.js",
         "routes/market-delegation-performance.js",
         "routes/market-delegation-provider.js",
         "routes/market-delegation-settlement.js",
@@ -90952,6 +91945,7 @@
         "routes/admin-finance-config.js",
         "routes/admin-loyalty.js",
         "routes/admin-market-control-plane.js",
+        "routes/admin-market-payment-accounts.js",
         "routes/admin-market-settlement.js",
         "routes/admin-pricing-components.js",
         "routes/admin-pricing-matrices.js",
@@ -91008,9 +92002,12 @@
         "routes/market-delegation-catalog.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-client.js",
+        "routes/market-delegation-cost-statement.js",
+        "routes/market-delegation-customs.js",
         "routes/market-delegation-local-offer.js",
         "routes/market-delegation-market-config.js",
         "routes/market-delegation-network.js",
+        "routes/market-delegation-payment-accounts.js",
         "routes/market-delegation-performance.js",
         "routes/market-delegation-provider.js",
         "routes/market-delegation-settlement.js",
@@ -96896,6 +97893,56 @@
         "services/market-provisioning-service.js"
       ]
     },
+    "routes/admin-market-payment-accounts.js": {
+      "role": "admin-market-payment-accounts-api",
+      "domain": "payment",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "middleware/auth.js",
+        "services/market-payment-account-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "central admin workspace"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-payment-account-service",
+          "tables": [
+            "market_payment_accounts"
+          ]
+        }
+      ],
+      "doctrines": [
+        "payment_account_is_provider_agnostic",
+        "no_secret_stored_only_vault_reference",
+        "central_by_role_declared"
+      ],
+      "impactAreas": [
+        "payments",
+        "market-delegation",
+        "finance"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:market_payment_accounts",
+        "doctrine:central_by_role_declared",
+        "doctrine:no_secret_stored_only_vault_reference",
+        "doctrine:payment_account_is_provider_agnostic",
+        "impact:finance",
+        "impact:market-delegation",
+        "impact:payments",
+        "middleware/auth.js",
+        "services/market-payment-account-service.js"
+      ]
+    },
     "routes/admin-market-settlement.js": {
       "role": "admin-market-settlement-api",
       "domain": "settlement",
@@ -100130,6 +101177,88 @@
         "services/client-index.js"
       ]
     },
+    "routes/market-delegation-cost-statement.js": {
+      "role": "market-delegation-cost-statement-api",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/market-delegation-cost-statement-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "cost_statement_is_a_projection_never_a_new_truth",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine",
+        "finance"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:cost_statement_is_a_projection_never_a_new_truth",
+        "impact:delegation",
+        "impact:economic-engine",
+        "impact:finance",
+        "impact:market",
+        "middleware/auth.js",
+        "services/market-delegation-cost-statement-service.js"
+      ]
+    },
+    "routes/market-delegation-customs.js": {
+      "role": "market-delegation-customs-api",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/market-delegation-customs-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "customs_read_view_is_a_projection",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "customs",
+        "logistics"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:customs_read_view_is_a_projection",
+        "impact:customs",
+        "impact:delegation",
+        "impact:logistics",
+        "impact:market",
+        "middleware/auth.js",
+        "services/market-delegation-customs-service.js"
+      ]
+    },
     "routes/market-delegation-local-offer.js": {
       "role": "market-delegation-local-offer-api",
       "domain": "market-delegation",
@@ -100282,6 +101411,47 @@
         "impact:network",
         "middleware/auth.js",
         "services/market-delegation-network-service.js"
+      ]
+    },
+    "routes/market-delegation-payment-accounts.js": {
+      "role": "market-delegation-payment-accounts-api",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/market-payment-account-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "payment_accounts_read_view_is_a_projection",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "payments",
+        "finance"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:payment_accounts_read_view_is_a_projection",
+        "impact:delegation",
+        "impact:finance",
+        "impact:market",
+        "impact:payments",
+        "middleware/auth.js",
+        "services/market-payment-account-service.js"
       ]
     },
     "routes/market-delegation-performance.js": {
@@ -103672,7 +104842,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js"
+        "db.js",
+        "utils/currency.js"
       ],
       "directUsedBy": [
         "routes/cash.js",
@@ -103680,6 +104851,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "cash_collections",
         "cash_deposits"
       ],
       "dbWrite": [
@@ -103696,6 +104868,7 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:cash_collections",
         "db:cash_deposits",
         "doctrine:single_cash_deposit_mutation_authority",
         "doctrine:stable_business_reference_at_browser_boundary",
@@ -103703,7 +104876,10 @@
         "impact:cash-reconciliation",
         "impact:payment",
         "routes/cash.js",
-        "services/finance-accounting-workspace.js"
+        "services/finance-accounting-workspace.js",
+        "services/radar-alerts/cash-reconciliation-signals.js",
+        "services/signal-service.js",
+        "utils/currency.js"
       ]
     },
     "services/cash-operations.js": {
@@ -107621,7 +108797,8 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "services/cash-deposit-service.js"
+        "services/cash-deposit-service.js",
+        "services/market-delegation-service.js"
       ],
       "directUsedBy": [
         "routes/admin-finance-accounting-workspace.js"
@@ -107642,13 +108819,22 @@
           "tables": [
             "cash_deposits"
           ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
         }
       ],
       "doctrines": [
         "workspace_acts_dashboard_observes",
         "server_market_scope_is_authority",
         "no_global_workspace_mutation",
-        "stable_business_reference_at_browser_boundary"
+        "stable_business_reference_at_browser_boundary",
+        "deposit_review_legal_transitions_only",
+        "depositor_never_reviews_own_deposit",
+        "deposit_review_audited_in_same_transaction"
       ],
       "impactAreas": [
         "admin-dashboard",
@@ -107660,9 +108846,13 @@
         "db:cash_collections",
         "db:cash_deposits",
         "db:invoices",
+        "db:market_delegation_audit",
         "db:orders",
         "db:relais",
         "db:users",
+        "doctrine:deposit_review_audited_in_same_transaction",
+        "doctrine:deposit_review_legal_transitions_only",
+        "doctrine:depositor_never_reviews_own_deposit",
         "doctrine:no_global_workspace_mutation",
         "doctrine:server_market_scope_is_authority",
         "doctrine:stable_business_reference_at_browser_boundary",
@@ -107672,7 +108862,8 @@
         "impact:market-authorization",
         "impact:payment",
         "routes/admin-finance-accounting-workspace.js",
-        "services/cash-deposit-service.js"
+        "services/cash-deposit-service.js",
+        "services/market-delegation-service.js"
       ]
     },
     "services/finance-metrics/annulations.js": {
@@ -109391,6 +110582,98 @@
         "services/market-delegation-team-service.js"
       ]
     },
+    "services/market-delegation-cost-statement-service.js": {
+      "role": "market-delegation-cost-statement-service",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-team-service.js"
+      ],
+      "directUsedBy": [
+        "routes/market-delegation-cost-statement.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "economic_structure_cost_events",
+        "market_cost_attributions",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "cost_statement_is_a_projection_never_a_new_truth",
+        "client_market_id_never_authority",
+        "hq_evidence_never_exposed_to_market"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "economic-engine",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:economic_structure_cost_events",
+        "db:market_cost_attributions",
+        "db:markets",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:cost_statement_is_a_projection_never_a_new_truth",
+        "doctrine:hq_evidence_never_exposed_to_market",
+        "impact:delegation",
+        "impact:economic-engine",
+        "impact:finance",
+        "impact:market",
+        "routes/market-delegation-cost-statement.js",
+        "services/market-delegation-team-service.js"
+      ]
+    },
+    "services/market-delegation-customs-service.js": {
+      "role": "market-delegation-customs-service",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-team-service.js"
+      ],
+      "directUsedBy": [
+        "routes/market-delegation-customs.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "customs_shipments",
+        "customs_shipment_parcels"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "customs_read_view_is_a_projection",
+        "client_market_id_never_authority",
+        "customs_per_market"
+      ],
+      "impactAreas": [
+        "market",
+        "delegation",
+        "customs",
+        "logistics"
+      ],
+      "mustCheck": [
+        "db:customs_shipment_parcels",
+        "db:customs_shipments",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:customs_per_market",
+        "doctrine:customs_read_view_is_a_projection",
+        "impact:customs",
+        "impact:delegation",
+        "impact:logistics",
+        "impact:market",
+        "routes/market-delegation-customs.js",
+        "services/market-delegation-team-service.js"
+      ]
+    },
     "services/market-delegation-local-offer-service.js": {
       "role": "market-delegation-local-offer-service",
       "domain": "market-delegation",
@@ -109672,6 +110955,7 @@
         "routes/admin-market-settlement.js",
         "services/capability-registry.js",
         "services/dashboard-admin-context.js",
+        "services/finance-accounting-workspace.js",
         "services/market-cash-control-policy-service.js",
         "services/market-control-plane.js",
         "services/market-delegation-catalog-service.js",
@@ -109683,6 +110967,7 @@
         "services/market-delegation-structure-event-service.js",
         "services/market-delegation-team-service.js",
         "services/market-operator-provisioning.js",
+        "services/market-payment-account-service.js",
         "services/market-provisioning-service.js"
       ]
     },
@@ -109873,11 +111158,14 @@
         "services/market-cash-control-policy-service.js",
         "services/market-delegation-catalog-service.js",
         "services/market-delegation-client-case-service.js",
+        "services/market-delegation-cost-statement-service.js",
+        "services/market-delegation-customs-service.js",
         "services/market-delegation-local-offer-service.js",
         "services/market-delegation-performance-service.js",
         "services/market-delegation-service.js",
         "services/market-delegation-settlement-service.js",
         "services/market-delegation-structure-event-service.js",
+        "services/market-payment-account-service.js",
         "services/market-provisioning-service.js"
       ]
     },
@@ -110171,6 +111459,67 @@
         "services/market-scope-projector.js"
       ]
     },
+    "services/market-payment-account-service.js": {
+      "role": "market-payment-account-owner",
+      "domain": "payment",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-market-payment-accounts.js",
+        "routes/market-delegation-payment-accounts.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "market_payment_accounts",
+        "markets"
+      ],
+      "dbWrite": [
+        "market_payment_accounts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "payment_account_is_provider_agnostic",
+        "no_secret_stored_only_vault_reference",
+        "holder_seller_operator_refund_bearer_are_distinct",
+        "active_requires_evidence",
+        "verification_is_separate_from_activation"
+      ],
+      "impactAreas": [
+        "payments",
+        "market-delegation",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:market_delegation_audit",
+        "db:market_payment_accounts",
+        "db:markets",
+        "doctrine:active_requires_evidence",
+        "doctrine:holder_seller_operator_refund_bearer_are_distinct",
+        "doctrine:no_secret_stored_only_vault_reference",
+        "doctrine:payment_account_is_provider_agnostic",
+        "doctrine:verification_is_separate_from_activation",
+        "impact:finance",
+        "impact:market-delegation",
+        "impact:payments",
+        "routes/admin-market-payment-accounts.js",
+        "routes/market-delegation-payment-accounts.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ]
+    },
     "services/market-payment-provider-config-service.js": {
       "role": "market-payment-provider-config-writer",
       "domain": "payment",
@@ -110232,7 +111581,9 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "central authority grant tables"
+        "central authority grant tables",
+        "markets",
+        "market_operating_assignments"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -116112,7 +117463,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js"
+        "db.js",
+        "services/cash-deposit-service.js"
       ],
       "directUsedBy": [
         "services/radar-queries.js"
@@ -116139,6 +117491,7 @@
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:decision-signals",
+        "services/cash-deposit-service.js",
         "services/radar-queries.js"
       ]
     },
@@ -117434,7 +118787,8 @@
         "db",
         "utils/logger.js",
         "utils/rules.js",
-        "services/supplier-payment-review.js"
+        "services/supplier-payment-review.js",
+        "services/cash-deposit-service.js"
       ],
       "directUsedBy": [
         "routes/signals.js",
@@ -117444,6 +118798,7 @@
       "ownedFiles": [],
       "dbRead": [
         "cash_collections",
+        "cash_deposits",
         "customs_shipment_parcels",
         "customs_shipments",
         "hub_physical_unit_placements",
@@ -117475,6 +118830,7 @@
       "mustCheck": [
         "bootstrap/feature-wiring.js",
         "db:cash_collections",
+        "db:cash_deposits",
         "db:customs_shipment_parcels",
         "db:customs_shipments",
         "db:hub_physical_unit_placements",
@@ -117497,6 +118853,7 @@
         "impact:purchasing",
         "routes/signals.js",
         "services/action-center-workspace.js",
+        "services/cash-deposit-service.js",
         "services/incident-escalation.js",
         "services/order-financial-closure-signal.js",
         "services/signal-admin-service.js",
@@ -122688,6 +124045,7 @@
         "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026.",
         "impact:economic-engine",
         "impact:market",
+        "services/cash-deposit-service.js",
         "services/dashboard-metrics/market-currency.js",
         "services/market-local-price-resolution-service.js",
         "services/order-display-snapshot.js",
@@ -125401,6 +126759,18 @@
       "label": "central admin workspace"
     },
     {
+      "from": "routes/admin-market-payment-accounts.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "central admin workspace",
+      "to": "routes/admin-market-payment-accounts.js",
+      "type": "uses",
+      "label": "central admin workspace"
+    },
+    {
       "from": "central finance workspace",
       "to": "routes/admin-market-settlement.js",
       "type": "uses",
@@ -126116,6 +127486,18 @@
     },
     {
       "from": "market operator dashboard",
+      "to": "routes/market-delegation-cost-statement.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-customs.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "market operator dashboard",
       "to": "routes/market-delegation-local-offer.js",
       "type": "uses",
       "label": "market operator dashboard"
@@ -126129,6 +127511,12 @@
     {
       "from": "market operator dashboard",
       "to": "routes/market-delegation-network.js",
+      "type": "uses",
+      "label": "market operator dashboard"
+    },
+    {
+      "from": "market operator dashboard",
+      "to": "routes/market-delegation-payment-accounts.js",
       "type": "uses",
       "label": "market operator dashboard"
     },

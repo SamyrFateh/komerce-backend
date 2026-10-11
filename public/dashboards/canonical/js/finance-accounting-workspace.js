@@ -197,19 +197,21 @@
 
   function renderReconciliation(rootNode, ui, doc, payload) {
     const r = payload.reconciliation || {};
-    const slot = createSection(rootNode, ui, 'Rapprochement cash', 'Attendu, collecté et déposé sont calculés exclusivement dans le marché sélectionné.');
+    const slot = createSection(rootNode, ui, 'Rapprochement cash (provisoire)', 'Calculé exclusivement dans le marché sélectionné. Couverture provisoire : « vérifié » est une validation interne, sans allocation encaissement↔dépôt ni confirmation bancaire.');
     ui.DataTable.render(slot, {
       columns: [
         { key: 'expected', label: 'Attendu' },
         { key: 'collected', label: 'Collecté' },
-        { key: 'deposited', label: 'Déposé' },
+        { key: 'deposited', label: 'Déclaré (tous statuts)' },
+        { key: 'verified', label: 'Vérifié' },
         { key: 'gap_collection', label: 'Écart collecte' },
-        { key: 'gap_deposit', label: 'Écart dépôt' },
+        { key: 'gap_deposit', label: 'Écart (collecté − vérifié)' },
       ],
       rows: [{
         expected: formatKmf(r.expected_kmf),
         collected: formatKmf(r.collected_kmf),
         deposited: formatKmf(r.deposited_kmf),
+        verified: formatKmf(r.verified_kmf),
         gap_collection: formatKmf(r.gap_collection_kmf),
         gap_deposit: formatKmf(r.gap_deposit_kmf),
       }],

@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 597 | 597 | 0 |
+| backend | 36 | 36 | 604 | 604 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -431,8 +431,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 4
 - migrations: 1
-- dash: 17
-- tests: 6
+- dash: 18
+- tests: 8
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
 - interfaces exposed: 0
@@ -462,9 +462,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 22
 - config: 1
 - middleware: 3
-- services: 15
-- routes: 12
-- tests: 47
+- services: 17
+- routes: 14
+- tests: 49
 - tables owned (lifecycle): 10 — `market_operating_assignments`, `assignment_memberships`, `membership_capabilities`, `assignment_capability_ceiling`, `market_cash_control_policies`, `capability_registry`, `ceiling_templates`, `ceiling_template_capabilities`, `market_delegation_audit`, `market_team_invitations`
 - tables written: 10
 - interfaces exposed: 33
@@ -522,11 +522,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Encaisser un paiement (carte, PayPal, Mobile Money, especes au retrait) et confirmer son etat de facon idempotente.
 
 - scripts: 1
-- services: 19
-- routes: 5
-- migrations: 5
+- services: 20
+- routes: 7
+- migrations: 6
 - boutique: 4
-- tests: 32
+- tests: 34
 - tables owned (lifecycle): 7 — `market_payment_providers`, `cash_collections`, `cash_deposits`, `cash_confirmation_controls`, `mobile_money_transactions`, `paypal_events_processed`, `stripe_events_processed`
 - tables written: 7
 - interfaces exposed: 25
@@ -2135,11 +2135,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (0)
+### DETTE / DRIFT ACTIONNABLE (1)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- none
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ decision-signals -> payments — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "decision-signals" vers "payments"
 
 ### TOPOLOGIE ATTENDUE — hors dette (47)
 
@@ -2156,7 +2156,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> local-stock — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "local-stock"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> loyalty — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "loyalty"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> market-control-plane — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "market-control-plane"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> market-delegation — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "market-delegation"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> market-delegation — dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "market-delegation"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> providers-services — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "providers-services"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> purchasing — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "purchasing"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> settlement — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "settlement"
@@ -2218,7 +2218,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2004 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2018 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2301,10 +2301,10 @@ Meta Graph monté : oui.
 | dashboard | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
 | dashboard | market | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | dashboard | market-autonomy | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | market-delegation | static-code | 26 | **DECLARED_AND_OBSERVED** |
+| dashboard | market-delegation | static-code | 27 | **DECLARED_AND_OBSERVED** |
 | dashboard | notifications | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code, data-write, data-read | 12 | **DECLARED_AND_OBSERVED** |
-| dashboard | payments | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | platform | static-code | 1 | **OBSERVED_UNDECLARED** |
 | dashboard | purchasing | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | dashboard | shared-cart | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -2316,6 +2316,7 @@ Meta Graph monté : oui.
 | decision-signals | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | decision-signals | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | decision-signals | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | payments | static-code | 2 | **OBSERVED_UNDECLARED** |
 | decision-signals | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | documents | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | documents | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -2361,10 +2362,10 @@ Meta Graph monté : oui.
 | infrastructure | logistics | static-code | 22 | **DECLARED_AND_OBSERVED** |
 | infrastructure | loyalty | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | market-control-plane | static-code | 1 | **OBSERVED_UNDECLARED** |
-| infrastructure | market-delegation | static-code | 12 | **OBSERVED_UNDECLARED** |
+| infrastructure | market-delegation | static-code | 14 | **OBSERVED_UNDECLARED** |
 | infrastructure | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | infrastructure | orders | static-code | 7 | **DECLARED_AND_OBSERVED** |
-| infrastructure | payments | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| infrastructure | payments | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | infrastructure | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | infrastructure | providers-services | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | purchasing | static-code | 2 | **OBSERVED_UNDECLARED** |
@@ -2425,12 +2426,12 @@ Meta Graph monté : oui.
 | market-control-plane | orders | static-code | 1 | **OBSERVED_UNDECLARED** |
 | market-control-plane | payments | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | sourcing | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| market-delegation | auth | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| market-delegation | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | market-delegation | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | market-delegation | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-delegation | dashboard | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | market-delegation | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
-| market-delegation | infrastructure | static-code | 21 | **DECLARED_AND_OBSERVED** |
+| market-delegation | infrastructure | static-code | 23 | **DECLARED_AND_OBSERVED** |
 | market-delegation | logistics | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
@@ -2471,16 +2472,16 @@ Meta Graph monté : oui.
 | orders | refunds | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | orders | wallet | static-code, interface | 11 | **DECLARED_AND_OBSERVED** |
-| payments | auth | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| payments | auth | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | payments | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | payments | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | payments | documents | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | payments | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| payments | infrastructure | static-code, interface | 53 | **DECLARED_AND_OBSERVED** |
+| payments | infrastructure | static-code, interface | 55 | **DECLARED_AND_OBSERVED** |
 | payments | logistics | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
 | payments | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
-| payments | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| payments | market-delegation | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| payments | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| payments | market-delegation | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | payments | notifications | static-code | 17 | **DECLARED_AND_OBSERVED** |
 | payments | orders | static-code, data-read | 25 | **DECLARED_AND_OBSERVED** |
 | payments | platform-ops | static-code | 5 | **DECLARED_AND_OBSERVED** |
@@ -2574,6 +2575,7 @@ Meta Graph monté : oui.
 
 - `dashboard` → `loyalty` (canaux: static-code)
 - `dashboard` → `platform` (canaux: static-code)
+- `decision-signals` → `payments` (canaux: static-code)
 - `infrastructure` → `auth-identity` (canaux: static-code)
 - `infrastructure` → `auth-passkey` (canaux: static-code)
 - `infrastructure` → `business-rules` (canaux: static-code)
@@ -2663,11 +2665,11 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | NON_RUNTIME_TEST | 16 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
-| CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
+| CROSS_FEATURE_DIRECT_IMPORT | 1 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **36** | |
+| **TOTAL** | **37** | |
 
 ### Projection dependencies
 
@@ -2737,7 +2739,7 @@ Consommation réelle d'un service transversal métier — candidat `contract.con
 
 require() direct d'un fichier d'une autre business-feature — couture à casser AVANT déclaration.
 
-- _none_
+- `decision-signals` → `payments` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
 
 ### Business feature interfaces
 

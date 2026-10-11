@@ -47,6 +47,16 @@ describe('checkCashNotDeposited', () => {
     const db = { query: jest.fn(async () => { throw new Error('missing table'); }) };
     await expect(checkCashNotDeposited(db, 72)).resolves.toBeNull();
   });
+
+  it('couverture par montants vérifiés : jamais par existence d\'un dépôt sur la période', async () => {
+    const db = { query: jest.fn(async () => ({ rows: [{ agent_count: 1, total_kmf: 150000 }] })) };
+    const alert = await checkCashNotDeposited(db, 72);
+    const sql = String(db.query.mock.calls[0][0]);
+    expect(sql).toMatch(/status = 'verified'/);
+    expect(sql).not.toMatch(/NOT EXISTS|period_start/);
+    expect(alert).toMatchObject({ code: 'CASH_NOT_DEPOSITED', value_kmf: 150000 });
+    expect(alert.title).toMatch(/non couverts par un dépôt vérifié/);
+  });
 });
 
 describe('checkDepositsPendingReview', () => {

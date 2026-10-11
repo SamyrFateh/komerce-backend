@@ -19,3 +19,10 @@ test('le manifest conserve Action Center comme lifecycle de signaux uniquement',
   expect(capability.perimeter.out.some(item => /aucune decision metier engageante/i.test(item))).toBe(true);
   expect(capability.contract.exposes).toContain('POST /api/admin/action-center/signals/:signalRef/resolve');
 });
+
+test('decision-signals consomme la couverture cash de payments en lecture seule (seul un dépôt vérifié couvre)', () => {
+  const dep = capability.contract.consumes.find(item => /^payments/.test(item));
+  expect(dep).toMatch(/UNCOVERED_COLLECTIONS_CTE/);
+  expect(dep).toMatch(/verifie/);
+  expect(dep).toMatch(/aucune mutation de depot/);
+});

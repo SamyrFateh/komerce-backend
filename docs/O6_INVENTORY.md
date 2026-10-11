@@ -13,11 +13,11 @@
 | NON_RUNTIME_TEST | 16 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
-| CROSS_FEATURE_DIRECT_IMPORT | 0 |
+| CROSS_FEATURE_DIRECT_IMPORT | 1 |
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **36** |
+| **TOTAL** | **37** |
 
 ## The 94 pairs (from → to)
 
@@ -25,6 +25,7 @@
 |---|---|---|---|---|---|---|---|---|---|
 | dashboard → loyalty | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | dashboard → platform | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | frontend-transversal | static-code | business-file-import | non-runtime-evidence | — | `` |
+| decision-signals → payments | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_ONLY | piloting-capability | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
 | infrastructure → auth-identity | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → business-rules | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-transversal | static-code | import-mixed | application-wiring-not-consumption | — | `` |

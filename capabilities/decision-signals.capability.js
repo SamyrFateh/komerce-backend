@@ -124,6 +124,7 @@ module.exports = {
       "purchasing (lecture de la population canonique supplier_payment_review ; aucune mutation du paiement fournisseur)",
       "business-rules (lecture du referentiel de regles metier)",
       "market-delegation (resolution serveur du Market ID, capability dashboard.market.read / decision_signal.manage et audit des mutations pays)",
+      "payments (services/cash-deposit-service.js — couverture cash canonique UNCOVERED_COLLECTIONS_CTE : seul un depot verifie couvre un encaissement ; lecture seule, aucune mutation de depot)",
     ],
   },
 };
