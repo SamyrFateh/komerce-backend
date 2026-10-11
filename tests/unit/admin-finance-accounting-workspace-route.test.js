@@ -166,7 +166,10 @@ test.each(['admin', 'finance', 'agent_relais', 'market_operator'])('%s peut lire
   }
 });
 
-test('market_operator lit mais ne crée, valide ni conteste un dépôt terrain', async () => {
+const VERIFY_CM = '/api/admin/workspaces/accounting/market/CM/deposits/KDP-000001/verify';
+const DISPUTE_CM = '/api/admin/workspaces/accounting/market/CM/deposits/KDP-000001/dispute';
+
+test('market_operator avec finance.act valide et conteste dans son Market, mais ne crée pas de dépôt', async () => {
   mockUserRole = 'market_operator';
   const create = await request(app()).post('/api/admin/workspaces/accounting/market/CM/deposits').send({
     amount_kmf: 1000,
@@ -174,13 +177,44 @@ test('market_operator lit mais ne crée, valide ni conteste un dépôt terrain',
     period_start: '2026-08-20',
     period_end: '2026-08-26',
   });
-  const verify = await request(app()).post('/api/admin/workspaces/accounting/market/CM/deposits/KDP-000001/verify').send({});
-  const dispute = await request(app()).post('/api/admin/workspaces/accounting/market/CM/deposits/KDP-000001/dispute').send({ reason: 'écart' });
+  const verify = await request(app()).post(VERIFY_CM).send({ notes: 'OK' });
+  const dispute = await request(app()).post(DISPUTE_CM).send({ reason: 'écart' });
 
   expect(create.status).toBe(403);
-  expect(verify.status).toBe(403);
-  expect(dispute.status).toBe(403);
+  expect(verify.status).toBe(200);
+  expect(dispute.status).toBe(200);
   expect(mockCreateDeposit).not.toHaveBeenCalled();
+  expect(mockVerifyDeposit).toHaveBeenCalledWith('KDP-000001', { notes: 'OK' }, expect.objectContaining({ id: 'market-cm-id', code: 'CM' }), expect.objectContaining({ role: 'market_operator' }));
+  expect(mockDisputeDeposit).toHaveBeenCalledWith('KDP-000001', { reason: 'écart' }, expect.objectContaining({ id: 'market-cm-id', code: 'CM' }), expect.anything());
+});
+
+test('market_operator sans finance.act, ou sur un autre Market, est refusé avant toute mutation', async () => {
+  mockUserRole = 'market_operator';
+  mockGrantedCapabilities = new Set(['finance.read@CM']);
+  const noAct = await request(app()).post(VERIFY_CM).send({});
+  expect(noAct.status).toBe(403);
+  expect(noAct.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+
+  mockGrantedCapabilities = new Set(['finance.read@CM', 'finance.act@CM']);
+  const otherMarket = await request(app()).post('/api/admin/workspaces/accounting/market/CG/deposits/KDP-000001/verify').send({});
+  const otherDispute = await request(app()).post('/api/admin/workspaces/accounting/market/CG/deposits/KDP-000001/dispute').send({ reason: 'x' });
+  expect(otherMarket.status).toBe(403);
+  expect(otherDispute.status).toBe(403);
+  expect(mockVerifyDeposit).not.toHaveBeenCalled();
+  expect(mockDisputeDeposit).not.toHaveBeenCalled();
+});
+
+test('révocation de finance.act retire immédiatement le droit de valider', async () => {
+  mockUserRole = 'market_operator';
+  expect((await request(app()).post(VERIFY_CM).send({})).status).toBe(200);
+  mockGrantedCapabilities = new Set(['finance.read@CM']);
+  expect((await request(app()).post(VERIFY_CM).send({})).status).toBe(403);
+});
+
+test.each(['agent_hub', 'agent_transitaire', 'sourcing', 'support'])('le rôle %s ne valide ni ne conteste, même avec finance.act', async role => {
+  mockUserRole = role;
+  expect((await request(app()).post(VERIFY_CM).send({})).status).toBe(403);
+  expect((await request(app()).post(DISPUTE_CM).send({ reason: 'x' })).status).toBe(403);
   expect(mockVerifyDeposit).not.toHaveBeenCalled();
   expect(mockDisputeDeposit).not.toHaveBeenCalled();
 });

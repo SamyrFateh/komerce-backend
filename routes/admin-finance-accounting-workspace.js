@@ -32,7 +32,8 @@ const MARKET_CODE = /^[A-Z]{2}$/;
 // Dépôt terrain et validation comptable restent des gestes séparés et spécialisés.
 const requireWorkspaceReadRole = requireRole(['admin', 'finance', 'agent_relais', 'market_operator']);
 const requireDepositAction = requireRole(['admin', 'agent_relais']);
-const requireVerificationAction = requireRole(['admin']);
+// Le rôle ne suffit jamais : finance.act sur le marché exact (requireFinanceAct) reste l'autorité.
+const requireVerificationAction = requireRole(['admin', 'market_operator']);
 
 // D2 Market Control Plane : operator_market_scopes n'est plus une autorité
 // Finance / Comptabilité. Lecture : finance.read, sauf autorité dashboard
