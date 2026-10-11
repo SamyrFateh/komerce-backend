@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-10T22:56:40.506Z",
+  "generatedAt": "2026-10-11T15:14:51.411Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 709,
+  "count": 712,
   "routes": [
     {
       "method": "GET",
@@ -4602,6 +4602,36 @@
       "fullPath": "/api/market-delegation/markets/:marketCode/cash-control-policy",
       "mountPrefix": "/api/market-delegation",
       "localPath": "/markets/:marketCode/cash-control-policy",
+      "routeFile": "routes/market-delegation-cash-control.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/cash-custody",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/cash-custody",
+      "routeFile": "routes/market-delegation-cash-control.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/cash-custody/destinations",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/cash-custody/destinations",
+      "routeFile": "routes/market-delegation-cash-control.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/cash-custody/destinations/:destinationId/:verb",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/cash-custody/destinations/:destinationId/:verb",
       "routeFile": "routes/market-delegation-cash-control.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
