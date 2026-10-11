@@ -21,7 +21,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../../db');
 const { createMarketDelegationFixture, READ_ONLY_CAPABILITIES } = require('../helpers/marketDelegationE2EKit');
 const { projectAssignment, LEGACY_VIEWER_CAPABILITIES } = require('../../services/market-scope-projector');
-const { PREFIX, PASSWORD, rnd, target, api, login } = require('./support');
+const { PREFIX, PASSWORD, rnd, target, api, login, preflight, externalEffects } = require('./support');
 
 const OUT = path.join(__dirname, '..', '..', 'test-results', 'cash-e2e');
 const report = { target: null, started_at: new Date().toISOString(), steps: [], refusals: [], fixtures: {} };
@@ -29,12 +29,13 @@ const digits = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '[\\s\\u00a0\\u20
 const asRegex = (label, n) => new RegExp(`${label}[\\s\\S]{0,40}?${digits(n)}`);
 const q = (sql, p) => db.query(sql, p);
 
-let fx; let base; let admin; const who = {}; const sessions = {}; const ids = {};
+let fx; let base; let admin; let guard; const who = {}; const sessions = {}; const ids = {};
 const MARKET = () => fx.marketA.code;
 
 async function seed() {
   fx = await createMarketDelegationFixture(db);
   const tag = rnd();
+  await q('UPDATE markets SET name = $2 WHERE id = ANY($1::uuid[])', [[fx.marketA.id, fx.marketB.id], `${PREFIX} Market ${tag}`]);
   const { rows: [relais] } = await q(`INSERT INTO relais(name,phone,address,market_id) VALUES ($1,'+2690000000','Adresse recette',$2) RETURNING id`, [`${PREFIX} Relais ${tag}`, fx.marketA.id]);
   ids.relais = relais.id;
   const { rows: [agent] } = await q(
@@ -173,10 +174,13 @@ test.describe.serial('Chaîne de garde cash — acteurs réels', () => {
   test.beforeAll(async () => {
     const t = target();
     base = t.base; report.target = t.host;
+    const adminEmail = process.env.E2E_ADMIN_EMAIL || 'admin@komerce.km';
     if (!process.env.E2E_ADMIN_PASSWORD) throw new Error('E2E_ADMIN_PASSWORD requis (compte admin de test, jamais journalisé)');
-    await seed();
     admin = await pwRequest.newContext({ baseURL: base });
-    await login(admin, process.env.E2E_ADMIN_EMAIL || 'admin@komerce.km', process.env.E2E_ADMIN_PASSWORD);
+    // Prévalidation sans écriture : AUCUNE fixture n'est créée tant qu'elle n'a pas réussi.
+    guard = await preflight({ db, request: admin, adminEmail, adminPassword: process.env.E2E_ADMIN_PASSWORD });
+    report.preflight = { database: guard.database, db_host: guard.dbHost, monitored_tables: guard.monitors, started_at: guard.started_at };
+    await seed();
     await provision();
   });
 
@@ -307,5 +311,12 @@ test.describe.serial('Chaîne de garde cash — acteurs réels', () => {
     }
     await shot('controller', '8-bilan-final');
     step('Bilan : encaissé 100 000 = clôturé 60 000 + détenu 40 000 + perdu 0, identique pour les 4 acteurs', seen.agent);
+  });
+
+  test('9 · aucun effet externe (notification, SMS, WhatsApp) pendant toute la recette', async () => {
+    const effects = await externalEffects(db, guard);
+    report.external_effects = effects;
+    expect(Object.values(effects).reduce((a, b) => a + b, 0), JSON.stringify(effects)).toBe(0);
+    step('Aucune ligne de notification/outbox créée pendant la recette', effects);
   });
 });
