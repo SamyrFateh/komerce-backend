@@ -36,10 +36,11 @@ describe('nightly-e2e-certification.yml', () => {
     }
   });
 
-  test('admin éphémère : mot de passe aléatoire masqué, script officiel, jamais en clair dans le dépôt', () => {
+  test('admin éphémère : mot de passe aléatoire masqué, injecté au boot du serveur et à la recette', () => {
     expect(code).toMatch(/openssl rand -hex/);
     expect(code).toMatch(/::add-mask::\$pw/);
-    expect(code).toMatch(/node scripts\/reset-admin\.js --create --password "\$pw"/);
+    expect(code).toMatch(/ADMIN_PASSWORD="\$pw" node server\.js/);
+    expect(code).toMatch(/E2E_ADMIN_PASSWORD="\$pw"/);
   });
 
   test('exécute les trois preuves complètes et archive même en cas d’échec partiel', () => {
