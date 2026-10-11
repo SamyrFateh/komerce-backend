@@ -30,7 +30,11 @@ test('Finance Comptabilité garde Hero filtrable + décisions + rapprochement + 
   const decisionStart=decision.indexOf('function renderMetricOverview');
   const decisionSource=decision.slice(decisionStart, decision.indexOf('function decorateUi', decisionStart));
   expect(decisionSource).toContain("'À contrôler maintenant'");
-  expect(decisionSource).not.toContain('SummaryCards.render');
+  // Contrat one-glance : montrer les montants canoniques même sans anomalie.
+  expect(decisionSource).toContain('decisionUi.SummaryCards.render(totals, { items: summaryCards(items) })');
+  expect(decision).toContain("title: 'Cash du marché'");
+  expect(decision).toContain("{ label: 'Détenu', value: value('held') }");
+  expect(decision).toContain("{ label: 'Clôturé', value: value('closed') }");
 
   const enhanceStart=decision.indexOf('function enhance');
   const enhanceSource=decision.slice(enhanceStart);

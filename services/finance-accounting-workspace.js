@@ -255,6 +255,9 @@ async function buildWorkspace({ market, from, to, hours } = {}) {
       held_kmf: reconciliation.held_kmf,
       closed_kmf: reconciliation.closed_kmf,
       transfers_to_act: toAct.length,
+      // Signaux de garde issus des soldes et seuils serveur, jamais d'un seuil inventé par l'UI.
+      holders_over_ceiling: holders.filter(row => row.over_ceiling).length,
+      holders_overdue: holders.filter(row => row.overdue).length,
       legacy_to_regularize: legacy.length,
       legacy_to_regularize_kmf: legacy.reduce((sum, row) => sum + row.remaining_kmf, 0),
       pending_deposits: depositRows.filter(row => row.status === 'pending').length,

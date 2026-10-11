@@ -56,60 +56,67 @@
   function decisionItems(items) {
     const index = indexMetrics(items);
     const decisions = [];
-
-    if (index.missing && index.missing.tone === 'critical') {
+    const add = (key, label, helper, tone, href, actionLabel, icon = '•') => {
+      const item = index[key];
+      if (!item || item.tone !== tone) return;
       decisions.push({
-        key: 'missing',
-        label: 'Cash non encaissé',
-        helper: 'Montant dépassant le seuil de rapprochement du marché',
-        value: index.missing.value == null ? '—' : index.missing.value,
-        tone: 'critical',
-        icon: '!',
-        href: '#accounting-uncollected',
-        actionLabel: 'Voir les commandes →',
+        key, label, helper, tone, href, actionLabel, icon,
+        value: item.value == null ? '—' : item.value,
       });
-    }
+    };
 
-    if (index.pending && index.pending.tone === 'warning') {
-      decisions.push({
-        key: 'pending',
-        label: 'Dépôts à vérifier',
-        helper: 'Dépôts relais en attente de contrôle',
-        value: index.pending.value == null ? '—' : index.pending.value,
-        tone: 'warning',
-        icon: '✓',
-        href: '#accounting-deposits',
-        actionLabel: 'Voir les dépôts →',
-      });
-    }
+    // L'ordre suit l'urgence des faits métier : garde hors limites, cash absent,
+    // puis actions de remise et dépôts. Ne pas alerter pour une simple garde normale.
+    add('over-ceiling', 'Plafond de garde dépassé',
+      'Détenteurs au-delà du plafond autorisé par le serveur', 'critical',
+      '#accounting-custody', 'Voir les détenteurs →', '!');
+    add('overdue', 'Garde hors délai',
+      'Détenteurs dépassant le délai de garde du Market', 'critical',
+      '#accounting-custody', 'Voir les détenteurs →', '!');
+    add('missing', 'Cash non encaissé',
+      'Montant dépassant le seuil de rapprochement du marché', 'critical',
+      '#accounting-uncollected', 'Voir les commandes →', '!');
+    add('toact', 'Remises à traiter',
+      'Parmi les remises récentes : réception, preuve finale ou contrôle attendu', 'warning',
+      '#accounting-custody', 'Traiter les remises →', '↗');
+    add('pending', 'Dépôts à vérifier',
+      'Dépôts historiques en attente de contrôle', 'warning',
+      '#accounting-deposits', 'Voir les dépôts →', '✓');
+    add('legacy', 'Historique à régulariser',
+      'Montant des anciennes remises qui ne déchargent pas encore le détenteur', 'warning',
+      '#accounting-custody', 'Voir la régularisation →', '↗');
 
-    return decisions;
+    return decisions.slice(0, 4);
   }
 
   function summaryCards(items) {
     const index = indexMetrics(items);
+    const value = key => index[key] ? index[key].value : '—';
     return [
       {
         key: 'cash-flow',
         title: 'Cash du marché',
-        subtitle: 'Attendu · collecté · vérifié',
+        subtitle: 'Attendu · encaissé · détenu · clôturé avec contrôle',
         icon: '¤',
         tone: index.missing && index.missing.tone === 'critical' ? 'critical' : 'neutral',
         metrics: [
-          { label: 'Attendu', value: index.expected ? index.expected.value : '—' },
-          { label: 'Collecté', value: index.collected ? index.collected.value : '—' },
-          { label: 'Vérifié', value: index.verified ? index.verified.value : '—' },
+          { label: 'Attendu', value: value('expected') },
+          { label: 'Collecté', value: value('collected') },
+          { label: 'Détenu', value: value('held') },
+          { label: 'Clôturé', value: value('closed') },
         ],
       },
       {
         key: 'control',
-        title: 'Contrôle dépôts',
-        subtitle: 'Files réellement ouvertes',
+        title: 'Actions de garde',
+        subtitle: 'Remises à suivre et contrôles ouverts',
         icon: 'C',
-        tone: index.pending && index.pending.tone === 'warning' ? 'warning' : 'positive',
+        tone: ['over-ceiling', 'overdue'].some(key => index[key] && index[key].tone === 'critical')
+          ? 'critical' : (index.toact && index.toact.tone === 'warning' ? 'warning' : 'neutral'),
         metrics: [
-          { label: 'À vérifier', value: index.pending ? index.pending.value : '—' },
-          { label: 'Non encaissé', value: index.missing ? index.missing.value : '—' },
+          { label: 'Remises à traiter', value: value('toact') },
+          { label: 'Hors plafond', value: value('over-ceiling') },
+          { label: 'Hors délai', value: value('overdue') },
         ],
       },
     ];
@@ -117,17 +124,19 @@
 
   function reconciliationCard(reconciliation = {}) {
     const gapCollection = numeric(reconciliation.gap_collection_kmf);
-    const gapDeposit = numeric(reconciliation.gap_deposit_kmf);
-    const hasGap = (gapCollection != null && gapCollection !== 0) || (gapDeposit != null && gapDeposit !== 0);
+    const gapClosure = numeric(reconciliation.gap_closure_kmf);
+    // Le cash détenu n'est PAS en soi un incident : seul un écart de collecte est signalé ici.
+    const hasCollectionGap = gapCollection != null && gapCollection !== 0;
     return {
       key: 'reconciliation',
       title: 'Rapprochement',
-      subtitle: 'Couverture provisoire : dépôts vérifiés en interne, sans allocation ni confirmation bancaire',
+      subtitle: 'Seule la réception finale contrôlée clôture les fonds ; le reliquat demeure détenu',
       icon: 'R',
-      tone: hasGap ? 'warning' : 'neutral',
+      tone: hasCollectionGap ? 'warning' : 'neutral',
       metrics: [
         { label: 'Écart collecte', value: formatKmf(reconciliation.gap_collection_kmf) },
-        { label: 'Écart (collecté − vérifié)', value: formatKmf(reconciliation.gap_deposit_kmf) },
+        { label: 'Collecté − clôturé − pertes', value: formatKmf(gapClosure) },
+        { label: 'Détenu maintenant', value: formatKmf(reconciliation.held_kmf) },
       ],
     };
   }
@@ -156,7 +165,7 @@
     heading.appendChild(title);
     const copy = documentRef.createElement('p');
     copy.className = 'kmc-decision-dashboard-section-copy';
-    copy.textContent = 'Les écarts et dépôts qui demandent une intervention maintenant.';
+    copy.textContent = 'Priorités fondées sur les faits du marché ; les fonds détenus restent visibles tant qu’ils ne sont pas clôturés.';
     heading.appendChild(copy);
     container.appendChild(heading);
 
@@ -166,6 +175,11 @@
       decisionUi.DecisionStrip.render(decisionHost, { items: decisions });
       container.appendChild(decisionHost);
     }
+
+    // Toujours afficher la vérité des fonds, même en l'absence d'alerte.
+    const totals = documentRef.createElement('div');
+    decisionUi.SummaryCards.render(totals, { items: summaryCards(items) });
+    container.appendChild(totals);
 
     return container;
   }
