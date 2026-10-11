@@ -39,6 +39,7 @@ const DASHBOARD_SPECS = [
   'admin-menu-navigation',
   'legacy-theme-audit',
   'operations-control-board',
+  'market-readonly-views',
 ];
 
 module.exports = defineConfig({
