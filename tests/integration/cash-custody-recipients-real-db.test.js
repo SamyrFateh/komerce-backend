@@ -64,14 +64,6 @@ if (!process.env.DATABASE_URL) {
 
   beforeAll(async () => {
     fx = await createMarketDelegationFixture(db);
-    // Les EXECUTION n'entrent pas dans le ceiling du fixture : on reproduit ce que fait la migration 288
-    // sur les assignments actifs (rendre la capability accordable, sans l'accorder à personne).
-    for (const assignment of [fx.assignmentA, fx.assignmentB]) {
-      const ceilingId = uuid();
-      await q(`INSERT INTO assignment_capability_ceiling(id,assignment_id,capability,granted_by) VALUES ($1,$2,'cash.custody.receive',$3)`,
-        [ceilingId, assignment.id, fx.central.id]);
-      fx.cleanup.track('assignment_capability_ceiling', 'id', ceilingId);
-    }
     secondManager = await newManager(fx.assignmentA, fx.central.id);
     fx.cleanup.trackSql(
       'DELETE FROM market_delegation_audit WHERE market_id = ANY($1::uuid[]) OR actor_user_id = ANY($2::uuid[])',
@@ -103,8 +95,12 @@ if (!process.env.DATABASE_URL) {
       expect(tpl).toHaveLength(1);
     });
 
-    it('personne n\'est destinataire par défaut ; un agent sans habilitation est refusé', async () => {
-      expect(await custody.listRecipients(db, fx.marketA.id)).toEqual([]);
+    const ids = list => list.map(r => r.user_id).sort();
+
+    it('seul un membre portant la capability est destinataire (le fixture ne l\'accorde qu\'au manager) ; un agent sans habilitation est refusé', async () => {
+      expect(ids(await custody.listRecipients(db, fx.marketA.id))).toEqual([fx.managerA.id]);
+      await expect(custody.assertAuthorizedRecipient(db, { marketId: fx.marketA.id, userId: fx.viewerA.id }))
+        .rejects.toMatchObject({ code: 'custody_recipient_not_authorized' });
       await expect(custody.assertAuthorizedRecipient(db, { marketId: fx.marketA.id, userId: fx.outsider.id }))
         .rejects.toMatchObject({ code: 'custody_recipient_not_authorized', status: 403 });
     });
@@ -113,26 +109,24 @@ if (!process.env.DATABASE_URL) {
       const limits = await custody.centralLimits();
       // Le membre viewerA reçoit la capability (le ceiling du Market la rend accordable) avec un plafond excessif.
       const grantId = await grantReceive(fx.viewerAMembership.id, limits.max_holding_kmf * 10, fx.central.id);
-      let list = await custody.listRecipients(db, fx.marketA.id);
-      expect(list).toHaveLength(1);
-      expect(list[0]).toMatchObject({ user_id: fx.viewerA.id, holding_limit_kmf: limits.max_holding_kmf });
+      const viewer = async () => (await custody.listRecipients(db, fx.marketA.id)).find(r => r.user_id === fx.viewerA.id);
+      expect(await viewer()).toMatchObject({ holding_limit_kmf: limits.max_holding_kmf });
       await q(`UPDATE membership_capabilities SET limit_amount = 250000 WHERE id=$1`, [grantId]);
-      list = await custody.listRecipients(db, fx.marketA.id);
-      expect(list[0].holding_limit_kmf).toBe(250000);
+      expect((await viewer()).holding_limit_kmf).toBe(250000);
       await q(`UPDATE membership_capabilities SET limit_amount = NULL WHERE id=$1`, [grantId]);
-      expect((await custody.listRecipients(db, fx.marketA.id))[0].holding_limit_kmf).toBe(limits.default_holding_kmf);
+      expect((await viewer()).holding_limit_kmf).toBe(limits.default_holding_kmf);
       expect(await custody.assertAuthorizedRecipient(db, { marketId: fx.marketA.id, userId: fx.viewerA.id })).toMatchObject({ user_id: fx.viewerA.id });
     });
 
     it('séparation des Markets : un habilité du Market A n\'est pas destinataire dans le Market B', async () => {
       await expect(custody.assertAuthorizedRecipient(db, { marketId: fx.marketB.id, userId: fx.viewerA.id }))
         .rejects.toMatchObject({ code: 'custody_recipient_not_authorized' });
-      expect(await custody.listRecipients(db, fx.marketB.id)).toEqual([]);
+      expect(ids(await custody.listRecipients(db, fx.marketB.id))).toEqual([fx.managerB.id]);
     });
 
     it('une habilitation révoquée ne compte plus', async () => {
       await q(`UPDATE membership_capabilities SET revoked_at = NOW(), revoked_by = $2 WHERE membership_id=$1 AND capability='cash.custody.receive'`, [fx.viewerAMembership.id, fx.central.id]);
-      expect(await custody.listRecipients(db, fx.marketA.id)).toEqual([]);
+      expect(ids(await custody.listRecipients(db, fx.marketA.id))).toEqual([fx.managerA.id]);
     });
   });
 

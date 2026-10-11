@@ -13,9 +13,10 @@ const CHECKPOINT = Object.freeze({
   // (DELEGATION mais CENTRAL_ONLY/CENTRAL_HELD depuis la migration 246) n'y
   // appartient plus : 36 lignes class=DELEGATION au total, 35 réellement
   // délégables. D8 ajoute partners.read + partners.manage en DELEGATION LIVE :
-  // le total passe à 48 et le dénominateur DELEGATION à 35. La migration 288 ajoute cash.custody.receive (EXECUTION, hors dénominateur) : total 49.
-  delegation: 35,
-  live: 35,
+  // le total passe à 48 et le dénominateur DELEGATION à 35. La migration 288 ajoute cash.custody.receive
+  // (DELEGATION finance LIVE, comme settlement.receive) : total 49, dénominateur 36.
+  delegation: 36,
+  live: 36,
   p0_live: 15,
 });
 

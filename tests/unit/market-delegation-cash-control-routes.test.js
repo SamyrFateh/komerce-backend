@@ -30,9 +30,9 @@ describe('market-delegation cash control API contract', () => {
     expect(route.match(/rejectClientMarketId\(req\.body\)/g).length).toBeGreaterThanOrEqual(3);
   });
 
-  test('cash.custody.receive : EXECUTION MARKET DELEGABLE LIVE, à montant, auditable', () => {
+  test('cash.custody.receive : DELEGATION MARKET DELEGABLE LIVE, à montant, auditable', () => {
     expect(registry.CAPABILITIES.find(row => row.capability === 'cash.custody.receive')).toMatchObject({
-      class: 'EXECUTION', authority_scope: 'MARKET', delegation_mode: 'DELEGABLE', requires_audit: true, status: 'LIVE', amount_bearing: true,
+      class: 'DELEGATION', authority_scope: 'MARKET', delegation_mode: 'DELEGABLE', requires_audit: true, status: 'LIVE', amount_bearing: true,
     });
   });
 

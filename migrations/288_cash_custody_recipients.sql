@@ -16,7 +16,7 @@
 INSERT INTO capability_registry
   (capability, class, domain, authority_scope, delegation_mode, requires_audit, status, effect, amount_bearing)
 VALUES
-  ('cash.custody.receive', 'EXECUTION', 'payments', 'MARKET', 'DELEGABLE', TRUE, 'LIVE', 'ACT', TRUE)
+  ('cash.custody.receive', 'DELEGATION', 'finance', 'MARKET', 'DELEGABLE', TRUE, 'LIVE', 'ACT', TRUE)
 ON CONFLICT (capability) DO NOTHING;
 
 -- Template de ceiling courant + assignments actifs (la détention reste une habilitation
