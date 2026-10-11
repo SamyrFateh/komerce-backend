@@ -253,3 +253,15 @@ test('UI : les gestes Vérifier / Contester sont offerts à admin et market_oper
   expect(source).toContain("if (row.status === 'pending') {\n          const dispute");
   expect(source).not.toContain("if (row.status !== 'disputed') {\n          const dispute");
 });
+
+test('UI relais : déclaration en devise + montant d\'origine, jamais un KMF saisi à la main', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const ui = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'finance-accounting-workspace.js'), 'utf8');
+  const start = ui.indexOf('function renderDepositCreation');
+  const src = ui.slice(start, ui.indexOf('function renderDeposits', start));
+  expect(src).toContain("'Devise du montant (KMF ou XAF)'");
+  expect(src).toContain('declared_amount: Number(amount)');
+  expect(src).toContain('declared_currency: currency');
+  expect(src).not.toContain('amount_kmf');
+});

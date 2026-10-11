@@ -139,7 +139,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | Table | Rôle |
 |---|---|
 | `cash_collections` | Encaissements cash relais. |
-| `cash_deposits` | Dépôts agents. |
+| `cash_deposits` | Dépôts agents. **Migration 286 (`intended_migration_schema`)** : + `declared_amount` NUMERIC(18,2), `declared_currency` TEXT, `fx_rate_to_kmf` NUMERIC(18,6), `fx_source` TEXT, tous nullables et liés par un CHECK « tout ou rien » (KMF ⇒ taux 1) ; `amount_kmf` reste la valeur canonique KMF, NULL = saisie historique en KMF. |
 | `cash_reconciliation` | Réconciliation cash. |
 | `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `payment_total_amount` NUMERIC(18,4), `payment_currency` TEXT et `payment_minor_unit` INTEGER pour figer la devise réellement encaissée par les rails natifs comme Mobile Money XAF, sans réinterpréter `display_total_amount`. |
 | `refunds` | Remboursements. Contraintes UNIQUE(order_id, refund_type) et UNIQUE(stripe_refund_id) pour idempotence ON CONFLICT. |
