@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-11T15:15:16.665Z",
+  "generatedAt": "2026-10-11T16:20:57.372Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 719,
-    "protected": 664,
+    "total": 724,
+    "protected": 669,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1807,6 +1807,56 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/{depositRef}/control",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/{depositRef}/receipt",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/{depositRef}/reversal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/losses/{lossId}/reversal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/custody/losses",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
       ]
     },
     {
