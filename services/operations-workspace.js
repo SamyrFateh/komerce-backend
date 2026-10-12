@@ -28,7 +28,7 @@ const { transitionOrderStatus } = require('./order-status-machine');
 const autoParcel = require('./auto-parcel');
 const scanEngine = require('./scan-engine');
 const inventory = require('./inventory-service');
-const { confirmCashAndCreateParcel } = require('./parcel-auto-create-service');
+const { confirmCashByReference } = require('./payment-cash-confirm');
 const { countRelayParcels } = require('./operations-relay-projection');
 const { cacheCodeForReveal } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'operations-workspace' });
@@ -365,7 +365,7 @@ async function buildWorkspace(options = {}) {
 async function resolveOrderInMarket(reference, marketId) {
   const { rows } = await db.query(
     `SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status,
-            o.total_kmf, o.relais_id, r.market_id AS relais_market_id
+            o.total_kmf, o.cash_ref_code, o.relais_id, r.market_id AS relais_market_id
        FROM orders o
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.reference = $1
@@ -586,39 +586,42 @@ async function scanParcel(reference, action, market, actor = {}) {
 async function confirmCash(reference, market, actor = {}) {
   const resolvedMarket = requireMarket(market);
   const order = await resolveOrderInMarket(reference, resolvedMarket.id);
-  const operationActor = {
-    id: actor.id || null,
-    role: actor.role || 'admin',
-    full_name: actor.full_name || 'Workspace Opérations',
-    email: actor.email || null,
-  };
-
-  const { order: confirmed, parcelResult, pickupCodeToCache } =
-    await confirmCashAndCreateParcel(order.reference, operationActor);
-
-  if (pickupCodeToCache) {
-    cacheCodeForReveal(confirmed.id, pickupCodeToCache)
-      .catch(err => log.error({ err, reference }, '[operations-workspace] pickup cache failed'));
+  if (!order.cash_ref_code) {
+    throw new OperationsWorkspaceError('cash_reference_missing',
+      'Référence de paiement cash indisponible', 409);
+  }
+  if (!actor.id || !actor.role) {
+    throw new OperationsWorkspaceError('cash_actor_missing',
+      'Acteur authentifié requis pour confirmer le cash', 403);
   }
 
-  const notifications = require('./notification-service');
-  notifications.notifyPaymentConfirmed(confirmed.id, confirmed.reference)
-    .catch(err => log.error({ err, reference }, '[operations-workspace] payment notification failed'));
-  require('./invoice-service').issueInvoice(confirmed.id)
-    .catch(err => log.error({ err, reference }, '[operations-workspace] invoice generation failed'));
-
-  if (parcelResult && parcelResult.success && parcelResult.parcel) {
-    notifications.notifyParcelCreated(parcelResult.parcel.reference, confirmed.id, confirmed.reference)
-      .catch(err => log.error({ err, reference }, '[operations-workspace] parcel notification failed'));
+  // Single cash authority: cross-relais, 2-actor approval, stock,
+  // cash_collections and payment state are committed together.
+  const result = await confirmCashByReference({
+    cashRefCode: order.cash_ref_code,
+    actor: { id: actor.id, role: actor.role },
+    triggerPurchasing: require('./purchasing-trigger-service').triggerPurchasing,
+    db,
+  });
+  if (result.status === 202 && result.body.pending_second_approval) {
+    return Object.freeze({
+      reference: order.reference,
+      payment_status: 'pending',
+      pending_second_approval: true,
+      cash_control: result.body,
+    });
   }
-
+  if (result.status !== 200) {
+    throw new OperationsWorkspaceError(
+      result.body.code || 'cash_confirmation_rejected',
+      result.body.error || 'Confirmation cash refusée',
+      result.status
+    );
+  }
   return Object.freeze({
-    reference: confirmed.reference,
+    reference: order.reference,
     payment_status: 'paid',
-    order_status: parcelResult && parcelResult.success ? 'preparation' : 'confirmed',
-    parcel_ref: parcelResult && parcelResult.success && parcelResult.parcel
-      ? parcelResult.parcel.reference
-      : null,
+    cash_control: result.body.cash_control,
   });
 }
 
