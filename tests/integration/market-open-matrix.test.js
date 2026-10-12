@@ -50,7 +50,7 @@ if (!hasIntegrationEnv) {
     await db.query('DELETE FROM users WHERE email LIKE $1', [PFX + '%']);
   });
 
-  test.each(CASES)('$code existe avec sa devise/minor_unit canonique', async ({ code, currency, minorUnit }) => {
+  describe('market opening matrix', () => {\n  test.each(CASES)('$code existe avec sa devise/minor_unit canonique', async ({ code, currency, minorUnit }) => {
     const id = marketIds.get(code);
     expect(id).toBeDefined();
     const { rows } = await db.query('SELECT currency, minor_unit, is_active FROM markets WHERE id=$1', [id]);
@@ -88,4 +88,5 @@ if (!hasIntegrationEnv) {
     expect(r.rows[0].market_id).toBe(marketIds.get('YT'));
     await db.query('DELETE FROM relais WHERE id=$1', [r.rows[0].id]);
   });
-});
+  });
+}
