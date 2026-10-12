@@ -287,6 +287,30 @@ async function advanceGoldenCustomerHandoff(db, reference) {
   return inspectGoldenJourney(db, reference);
 }
 
+
+async function advanceGoldenJourney(db, reference) {
+  assertTestDatabase();
+  const inspection = await inspectGoldenJourney(db, reference);
+  if (!inspection.next) return inspection;
+
+  switch (inspection.next.key) {
+    case 'HUB_INBOUND':
+      return advanceGoldenHubInbound(db, reference);
+    case 'CUSTOMS':
+      return advanceGoldenCustoms(db, reference);
+    case 'RELAY_AVAILABLE':
+      return advanceGoldenRelayAvailable(db, reference);
+    case 'CUSTOMER_HANDOFF':
+      return advanceGoldenCustomerHandoff(db, reference);
+    case 'FINANCIAL_CLOSE':
+      // No mutation owns this boundary. Financial close is a reconciled
+      // consequence of the complete evidence chain and must never be forced.
+      return inspectGoldenJourney(db, reference);
+    default:
+      throw new Error('Unsupported Golden boundary: ' + inspection.next.key);
+  }
+}
+
 module.exports = {
   PROGRESSIVE_BOUNDARIES,
   assertGoldenReference,
@@ -298,4 +322,5 @@ module.exports = {
   advanceGoldenCustoms,
   advanceGoldenRelayAvailable,
   advanceGoldenCustomerHandoff,
+  advanceGoldenJourney,
 };
