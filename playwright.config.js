@@ -40,6 +40,7 @@ const DASHBOARD_SPECS = [
   'legacy-theme-audit',
   'operations-control-board',
   'market-readonly-views',
+  'finance-accounting-workspace',
 ];
 
 module.exports = defineConfig({
