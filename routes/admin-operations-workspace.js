@@ -253,7 +253,7 @@ router.post(
         req.workspaceMarket,
         actionActor(req)
       );
-      return res.json({ ok: true, action: 'confirm_cash', result });
+      return res.status(result.pending_second_approval ? 202 : 200).json({\n        ok: !result.pending_second_approval, action: 'confirm_cash', result\n      });
     } catch (err) {
       return sendWorkspaceError(err, res, next);
     }
