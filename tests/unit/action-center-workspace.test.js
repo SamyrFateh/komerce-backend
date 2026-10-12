@@ -109,6 +109,22 @@ test('market projection passes exact server market id but publishes only market 
   expect(JSON.stringify(result)).not.toContain(market.id);
 });
 
+test('without manage rights the market signals are listed with no action offered', async () => {
+  const market = { id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', code: 'CM', name: 'Cameroun', currency: 'XAF' };
+  mockAdmin.listSignals.mockResolvedValue({
+    signals: [{ signal_ref: 'KSG-000011', signal_type: 'best_seller_local_unavailable', severity: 'warning', title: 'Best-seller', status: 'open', entity_type: null, entity_id: null, market_id: market.id }],
+    total: 1, limit: 100, offset: 0,
+  });
+
+  const readOnly = await workspace.buildMarketWorkspace(market, {}, { canManage: false });
+  const manager = await workspace.buildMarketWorkspace(market, {}, { canManage: true });
+
+  expect(readOnly.signals).toHaveLength(1);
+  expect(readOnly.signals[0].actions).toEqual([]);
+  expect(readOnly.summary).toEqual(manager.summary);
+  expect(manager.signals[0].actions).toEqual(['acknowledge', 'snooze', 'resolve']);
+});
+
 test('Order signal drill-down is resolved by business order reference inside scope', async () => {
   mockAdmin.familyForType.mockReturnValue('ops');
   mockAdmin.listSignals.mockResolvedValue({

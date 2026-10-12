@@ -136,9 +136,48 @@ test('market_operator GET resolves market server-side through dashboard.market.r
   });
   expect(mockWorkspace.buildMarketWorkspace).toHaveBeenCalledWith(
     { id: MARKET_AUTHZ.market_id, code: 'CM', name: 'Cameroun', currency: 'XAF' },
-    expect.any(Object)
+    expect.any(Object),
+    { canManage: true }
   );
   expect(JSON.stringify(res.body)).not.toContain(MARKET_AUTHZ.market_id);
+});
+
+test('a read-only delegate gets the signals without any action offered (canManage=false)', async () => {
+  mockUser = { id: 'viewer-cm', role: 'market_operator' };
+  mockResolveAuthorization.mockImplementation(async (_db, { requiredCapability }) => {
+    if (requiredCapability === 'decision_signal.manage') {
+      throw Object.assign(new Error('Capability absente'), { status: 403, code: 'MARKET_CAPABILITY_NOT_GRANTED' });
+    }
+    return MARKET_AUTHZ;
+  });
+  mockWorkspace.buildMarketWorkspace.mockResolvedValue({ scope: { mode: 'market_decision_signals' }, signals: [] });
+
+  const res = await request(app()).get('/api/admin/action-center/market/CM');
+
+  expect(res.status).toBe(200);
+  expect(mockWorkspace.buildMarketWorkspace).toHaveBeenLastCalledWith(expect.any(Object), expect.any(Object), { canManage: false });
+});
+
+test('a non-authorization failure while checking the manage right is not swallowed', async () => {
+  mockUser = { id: 'operator-cm', role: 'market_operator' };
+  mockResolveAuthorization.mockImplementation(async (_db, { requiredCapability }) => {
+    if (requiredCapability === 'decision_signal.manage') throw new Error('db down');
+    return MARKET_AUTHZ;
+  });
+
+  const res = await request(app()).get('/api/admin/action-center/market/CM');
+
+  expect(res.status).toBe(500);
+});
+
+test('admin keeps manage rights on the market view without a delegation lookup', async () => {
+  mockUser = { id: 'admin-1', role: 'admin' };
+  mockWorkspace.buildMarketWorkspace.mockResolvedValue({ scope: { mode: 'market_decision_signals' }, signals: [] });
+  mockResolveAssignment.mockResolvedValue(MARKET_AUTHZ);
+
+  await request(app()).get('/api/admin/action-center/market/CM');
+
+  expect(mockWorkspace.buildMarketWorkspace).toHaveBeenLastCalledWith(expect.any(Object), expect.any(Object), { canManage: true });
 });
 
 test('market lifecycle is atomic: signal mutation and delegation audit share the same transaction client', async () => {
