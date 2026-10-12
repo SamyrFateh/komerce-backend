@@ -45,6 +45,30 @@ const ROOT_CANDIDATES = Object.freeze([
   'incidents',
   'outbox_events',
   'physical_outcome_receipts',
+  // Full customer→customer certification runtime added after the original purge.
+  // These are business facts, not foundation/configuration. Listing the roots
+  // explicitly keeps the purge auditable while PostgreSQL still computes the
+  // FK cascade closure before any destructive statement.
+  'supplier_execution_orders',
+  'supplier_execution_order_lines',
+  'supplier_execution_payments',
+  'supplier_execution_events',
+  'supplier_execution_group_members',
+  'supplier_execution_fulfillments',
+  'supplier_execution_payment_proofs',
+  'hub_physical_units',
+  'hub_physical_unit_placements',
+  'hub_custody_events',
+  'hub_purchase_allocations',
+  'cash_collections',
+  'cash_deposits',
+  'cash_deposit_allocations',
+  'cash_custody_receipts',
+  'cash_custody_losses',
+  'cash_custody_transfers',
+  'market_settlements',
+  'market_settlement_events',
+  'signals',
   'baskets',
   'recipients',
   'cart_shares',
@@ -95,7 +119,7 @@ const PROTECTED_TABLES = Object.freeze(new Set([
   'market_payment_providers',
 ]));
 
-const TRANSIENT_HINT_RE = /(order|purchase|payment|refund|invoice|notification|parcel|scan|shipping|basket|cart|sourcing|catalog|product|incident|inventory|outbox|receipt)/i;
+const TRANSIENT_HINT_RE = /(order|purchase|supplier_execution|payment|refund|invoice|notification|parcel|scan|shipping|basket|cart|sourcing|catalog|product|incident|inventory|outbox|receipt|hub_|custody|cash_|settlement|signal)/i;
 
 function quoteIdent(name) {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error(`Unsafe identifier: ${name}`);
