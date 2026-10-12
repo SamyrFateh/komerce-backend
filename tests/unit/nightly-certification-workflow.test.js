@@ -59,7 +59,7 @@ describe('nightly-e2e-certification.yml', () => {
   });
 
   test('annonce explicitement son niveau de preuve et ses limites', () => {
-    expect(yml).toMatch(/L5 local intégré/);
+    expect(yml).toMatch(/L4 local intégré/);
     expect(yml).toMatch(/Non prouvé ici : staging déployé, sandbox fournisseur/);
   });
 });
