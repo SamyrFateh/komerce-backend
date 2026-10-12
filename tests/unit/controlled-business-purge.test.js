@@ -30,7 +30,8 @@ describe('controlled business purge safety', () => {
       .toEqual(['markets', 'sourcing_sources']);
   });
 
-  test('source capability registry stays foundation, never a purge root', () => {
+  test('source registry and capture back-reference stay outside TRUNCATE roots', () => {
+    expect(ROOT_CANDIDATES).not.toContain('sourcing_captures');
     expect(ROOT_CANDIDATES).not.toContain('sourcing_source_provides');
     expect(PROTECTED_TABLES.has('sourcing_source_provides')).toBe(true);
     expect(PROTECTED_TABLES.has('sourcing_source_execution_modes')).toBe(true);
