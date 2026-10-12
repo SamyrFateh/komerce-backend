@@ -183,6 +183,8 @@ describe('Golden create route contract', () => {
     const path = require('path');
     const source = fs.readFileSync(path.join(__dirname, '../../routes/admin-order-360.js'), 'utf8');
     expect(source).toContain("'/golden-create'");
+    expect(source).toContain("['KM','CM','CG'].includes(marketCode)");
+    expect(source).toContain("golden_market_unsupported");
     expect(source).toContain("attachMarketDelegatedRoleFor(['admin'])");
     expect(source).toContain("requireRole(['admin'])");
     expect(source).toContain('golden_create_production_forbidden');
