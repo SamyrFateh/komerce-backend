@@ -131,6 +131,18 @@ describe('bootstrap/html-routes', () => {
     });
   });
 
+  describe('/admin/golden-e2e — cockpit de recette humaine', () => {
+    test('sert le cockpit dédié sans passer par une surface métier', () => {
+      const res = fakeRes();
+      app._routes['/admin/golden-e2e']({}, res);
+      expect(res.sendFile).toHaveBeenCalledWith(
+        require('path').join(PUBLIC_DIR, 'golden-e2e-cockpit.html'),
+        expect.any(Function)
+      );
+      expect(res._headers['X-Admin-Generation']).toBeUndefined();
+    });
+  });
+
   // ── safeToken / redirectToGroup (via les routes qui les exercent) ───────
   describe('/c/:token — safeToken + redirection groupe', () => {
     test('token valide (alphanum + tirets) → redirige vers /boutique/?p=...&tab=group', () => {
