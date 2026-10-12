@@ -79,7 +79,6 @@ const ROOT_CANDIDATES = Object.freeze([
   'supplier_catalog_imports',
   'supplier_catalog_sync_checkpoints',
   'sourcing_candidates',
-  'sourcing_captures',
   'sourcing_observations',
   'sourcing_candidate_events',
   'sourcing_resolutions',
@@ -118,6 +117,9 @@ const PROTECTED_TABLES = Object.freeze(new Set([
   'catalog_glossary',
   'sourcing_global_access_grants',
   'market_payment_providers',
+  'decision_signal_global_access_grants',
+  'market_cash_control_policies',
+  'market_cash_destinations',
 ]));
 
 const TRANSIENT_HINT_RE = /(order|purchase|supplier_execution|payment|refund|invoice|notification|parcel|scan|shipping|basket|cart|sourcing|catalog|product|incident|inventory|outbox|receipt|hub_|custody|cash_|settlement|signal)/i;
@@ -261,6 +263,16 @@ async function run({ execute = false, env = process.env, q = db } = {}) {
       `TRUNCATE TABLE ${plan.roots.map(quoteIdent).join(', ')} RESTART IDENTITY CASCADE`
     );
 
+    // sourcing_sources.production_certified_capture_id points back to captures.
+    // PostgreSQL TRUNCATE follows FK structure regardless of ON DELETE SET NULL,
+    // so making sourcing_captures a TRUNCATE root would also truncate the
+    // protected source registry. Its append-only children are already emptied
+    // by the roots above; DELETE can now safely clear captures and lets the FK
+    // null the certification pointer without touching sourcing_sources.
+    if ((await listPublicTables(client)).includes('sourcing_captures')) {
+      await client.query('DELETE FROM sourcing_captures');
+    }
+
     const protectedAfter = await countTables(Object.keys(plan.protected_before), client);
     const protectedChanged = Object.keys(plan.protected_before).filter(
       (table) => Number(protectedAfter[table]) !== Number(plan.protected_before[table])
@@ -270,6 +282,10 @@ async function run({ execute = false, env = process.env, q = db } = {}) {
     }
 
     const afterCounts = await countTables(plan.cascade_tables, client);
+    if ((await listPublicTables(client)).includes('sourcing_captures')) {
+      const { rows: [captureRow] } = await client.query('SELECT COUNT(*)::bigint AS c FROM sourcing_captures');
+      afterCounts.sourcing_captures = Number(captureRow.c);
+    }
     const residual = nonZeroEntries(afterCounts);
     if (Object.keys(residual).length) {
       throw new Error(`PURGE_RESIDUAL_ROWS:${JSON.stringify(residual)}`);
