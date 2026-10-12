@@ -11,6 +11,7 @@
  */
 
 const { projectGoldenEvidence } = require('../../services/golden-e2e-cockpit');
+const { assertTestDatabase, uuid } = require('./e2eDbKit');
 
 const PROGRESSIVE_BOUNDARIES = Object.freeze([
   'HUB_INBOUND',
@@ -60,6 +61,68 @@ async function inspectGoldenJourney(db, reference) {
   };
 }
 
+async function advanceGoldenHubInbound(db, reference) {
+  assertTestDatabase();
+  const inspection = await inspectGoldenJourney(db, reference);
+  if (!inspection.next || inspection.next.key !== 'HUB_INBOUND') {
+    throw new Error('Golden HUB_INBOUND is not the current boundary');
+  }
+
+  const order = await resolveGoldenOrder(db, reference);
+  const facts = (await db.query(
+    `SELECT pl.purchase_order_id, pl.id AS purchase_line_id, pl.order_item_id,
+            pl.product_sku_id, pl.supplier_id, pl.supplier_unit_ref,
+            pl.supplier_order_identity, f.tracking_number
+       FROM purchase_lines pl
+       JOIN order_items oi ON oi.id=pl.order_item_id
+       JOIN supplier_execution_orders seo ON seo.purchase_order_id=pl.purchase_order_id
+       JOIN supplier_execution_fulfillments f ON f.supplier_execution_order_id=seo.id
+      WHERE oi.order_id=$1 AND f.reconciliation_status='matched'
+      ORDER BY f.created_at DESC LIMIT 1`,
+    [order.id]
+  )).rows[0];
+
+  if (!facts || !facts.tracking_number) {
+    throw new Error('Golden HUB_INBOUND requires matched supplier fulfillment with tracking');
+  }
+
+  const allocationId = uuid();
+  const unitId = uuid();
+  const run = order.reference.replace(/^K-GOLDEN-/i, '');
+
+  await db.query('BEGIN');
+  try {
+    await db.query(
+      `INSERT INTO hub_purchase_allocations
+         (id,purchase_order_id,order_id,order_item_id,product_sku_id,supplier_id,
+          supplier_unit_ref,supplier_order_identity,quantity,market_id,destination_ref,purchase_line_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,1,$9,$10,$11)`,
+      [allocationId, facts.purchase_order_id, order.id, facts.order_item_id,
+       facts.product_sku_id, facts.supplier_id, facts.supplier_unit_ref,
+       JSON.stringify(facts.supplier_order_identity), order.market_id,
+       'relais:' + order.relais_id, facts.purchase_line_id]
+    );
+    await db.query(
+      `INSERT INTO hub_physical_units
+         (id,reference,unit_type,state,external_ref,current_location_ref)
+       VALUES ($1,$2,'SUPPLIER_PACKAGE','RECEIVED',$3,'DXB-HUB')`,
+      [unitId, 'KOM-RCV-GOLDEN-' + run, facts.tracking_number]
+    );
+    await db.query(
+      `INSERT INTO hub_physical_unit_placements
+         (physical_unit_id,allocation_id,quantity,operation_type)
+       VALUES ($1,$2,1,'RECEIVE')`,
+      [unitId, allocationId]
+    );
+    await db.query('COMMIT');
+  } catch (error) {
+    await db.query('ROLLBACK');
+    throw error;
+  }
+
+  return inspectGoldenJourney(db, reference);
+}
+
 module.exports = {
   PROGRESSIVE_BOUNDARIES,
   assertGoldenReference,
@@ -67,4 +130,5 @@ module.exports = {
   projectGoldenJourney,
   nextGoldenBoundary,
   inspectGoldenJourney,
+  advanceGoldenHubInbound,
 };
