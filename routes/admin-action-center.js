@@ -88,6 +88,19 @@ async function resolveMarketAuthority(req, requiredCapability) {
   });
 }
 
+// Le droit d'agir (decision_signal.manage) est distinct du droit de lire : un délégué en lecture voit les
+// signaux sans qu'on lui propose des boutons que le serveur refuserait.
+async function canManageSignals(req) {
+  if (req.user.role === 'admin') return true;
+  try {
+    await resolveMarketAuthority(req, 'decision_signal.manage');
+    return true;
+  } catch (error) {
+    if (error && error.status === 403) return false;
+    throw error;
+  }
+}
+
 function publicMarket(authz) {
   return {
     id: authz.market_id,
@@ -156,7 +169,7 @@ router.get(
     try {
       const authz = await resolveMarketAuthority(req, 'dashboard.market.read');
       res.set('Cache-Control', 'private, no-store');
-      res.json(await workspace.buildMarketWorkspace(publicMarket(authz), req.query || {}));
+      res.json(await workspace.buildMarketWorkspace(publicMarket(authz), req.query || {}, { canManage: await canManageSignals(req) }));
     } catch (error) { handleError(error, res, next); }
   }
 );

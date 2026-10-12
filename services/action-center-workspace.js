@@ -152,7 +152,7 @@ async function resolveEntityBusinessRefs(signals, marketId = null) {
   return maps;
 }
 
-function publicSignal(signal, entityMaps) {
+function publicSignal(signal, entityMaps, canManage = true) {
   const entityMap = entityMaps[signal.entity_type];
   const entity = signal.entity_id && entityMap
     ? entityMap.get(String(signal.entity_id)) || { type: signal.entity_type, ref: null, label: signal.entity_type, href: null }
@@ -178,7 +178,9 @@ function publicSignal(signal, entityMaps) {
     updated_at: signal.updated_at,
     expires_at: signal.expires_at || null,
     auto_resolves: signalAdminService.isAutoResolved(signal.signal_type),
-    actions: actionSet(signal.status, signal.signal_type),
+    // Une action n'est proposée que si l'appelant peut l'exécuter (decision_signal.manage) : la garde serveur
+    // refuse déjà le reste, mais l'écran ne doit pas offrir un bouton voué au 403.
+    actions: canManage ? actionSet(signal.status, signal.signal_type) : [],
     work_item: Object.freeze({
       owner_role: ownerRole,
       instruction: recommendation,
@@ -215,7 +217,7 @@ function summaryFromStats(stats) {
   };
 }
 
-async function buildScopedWorkspace({ market = null, filters = {} } = {}) {
+async function buildScopedWorkspace({ market = null, filters = {}, canManage = true } = {}) {
   const marketId = market ? requireMarket(market).id : null;
   await signalAdminService.reactivateExpiredSnoozes(marketId);
   const scopedFilters = {
@@ -253,7 +255,7 @@ async function buildScopedWorkspace({ market = null, filters = {} } = {}) {
     },
     summary: summaryFromStats(stats),
     work_queues: workQueues(list.signals),
-    signals: list.signals.map(signal => publicSignal(signal, entityMaps)),
+    signals: list.signals.map(signal => publicSignal(signal, entityMaps, canManage)),
     pagination: { total: list.total, limit: list.limit, offset: list.offset },
   };
 }
@@ -262,8 +264,8 @@ async function buildWorkspace(filters = {}) {
   return buildScopedWorkspace({ filters });
 }
 
-async function buildMarketWorkspace(market, filters = {}) {
-  return buildScopedWorkspace({ market: requireMarket(market), filters });
+async function buildMarketWorkspace(market, filters = {}, { canManage = true } = {}) {
+  return buildScopedWorkspace({ market: requireMarket(market), filters, canManage });
 }
 
 async function generateSignals(types) {
