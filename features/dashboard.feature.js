@@ -432,6 +432,7 @@ module.exports = {
       'services/operations-workspace.js',
       'services/operations-relay-projection.js',
       'services/order-360.js',
+      'services/golden-e2e-cockpit.js',
       'services/product-360.js',
       'services/supplier-360.js',
       'services/provider-certification-overview.js',

@@ -42,9 +42,13 @@ jest.mock('../../services/order-360', () => ({
   loadOrder360: (...args) => mockLoadOrder360(...args),
 }));
 
-jest.mock('../../utils/logger', () => ({
-  child: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() }),
-}));
+jest.mock('../../utils/logger', () => {
+  const logger = { error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() };
+  return {
+    child: () => logger,
+    forModule: () => logger,
+  };
+});
 
 const express = require('express');
 const request = require('supertest');
@@ -141,4 +145,18 @@ test('commande sans marché est fail-closed pour un opérateur pays', async () =
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('order_market_unresolved');
   expect(mockLoadOrder360).not.toHaveBeenCalled();
+});
+
+
+describe('Golden evidence route contract', () => {
+  test('route source keeps Golden evidence behind admin auth and Golden reference guard', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '../../routes/admin-order-360.js'), 'utf8');
+    expect(source).toContain("'/orders/:orderReference/golden-evidence'");
+    expect(source).toContain("attachMarketDelegatedRoleFor(['admin'])");
+    expect(source).toContain("requireRole(['admin'])");
+    expect(source).toContain("/^K-GOLDEN-/i");
+    expect(source).toContain('projectGoldenEvidence(db, req.order360Order)');
+  });
 });
