@@ -14,7 +14,7 @@ describeE2E('Golden cockpit progressive full loop',()=>{
   afterAll(async()=>cleanup.run());
   test('create puis avance une frontière à la fois jusqu à la clôture reconciliée',async()=>{
     const created=await createGoldenJourney(db,{marketCode:'KM'});
-    cleanup.track('orders',created.orderId);
+    cleanup.track('orders','id',created.orderId);
     let state=await inspectGoldenJourney(db,created.reference);
     expect(state.next).toMatchObject({key:'HUB_INBOUND'});
     const expected=['CUSTOMS','RELAY_AVAILABLE','CUSTOMER_HANDOFF','FINANCIAL_CLOSE'];
@@ -22,9 +22,14 @@ describeE2E('Golden cockpit progressive full loop',()=>{
       state=await advanceGoldenJourney(db,created.reference);
       expect(state.next).toMatchObject({key});
     }
+    expect(state.complete).toBe(true);
+    expect(state.next).toBeNull();
+    expect(state.projection.verdict).toBe('FINANCIAL_CLOSE_MATCHED');
     const before=await inspectGoldenJourney(db,created.reference);
     state=await advanceGoldenJourney(db,created.reference);
-    expect(state.next).toMatchObject({key:'FINANCIAL_CLOSE'});
-    expect(state.projection).toEqual(before.projection);
+    expect(state.complete).toBe(true);
+    expect(state.next).toBeNull();
+    expect(state.projection.steps).toEqual(before.projection.steps);
+    expect(state.projection.verdict).toBe(before.projection.verdict);
   });
 });
