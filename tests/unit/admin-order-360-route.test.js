@@ -160,3 +160,18 @@ describe('Golden evidence route contract', () => {
     expect(source).toContain('projectGoldenEvidence(db, req.order360Order)');
   });
 });
+
+
+describe('Golden advance route contract', () => {
+  test('mutation is admin-only, Golden-only and forbidden in production', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '../../routes/admin-order-360.js'), 'utf8');
+    expect(source).toContain("'/orders/:orderReference/golden-advance'");
+    expect(source).toContain("attachMarketDelegatedRoleFor(['admin'])");
+    expect(source).toContain("requireRole(['admin'])");
+    expect(source).toContain("process.env.NODE_ENV === 'production'");
+    expect(source).toContain('golden_advance_production_forbidden');
+    expect(source).toContain('advanceGoldenJourney(db, req.order360Order.reference)');
+  });
+});

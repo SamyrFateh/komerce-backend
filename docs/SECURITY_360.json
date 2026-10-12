@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-12T16:17:11.714Z",
+  "generatedAt": "2026-10-12T17:55:28.204Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 725,
-    "protected": 670,
+    "total": 726,
+    "protected": 671,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -988,6 +988,13 @@
     },
     {
       "key": "GET /api/admin/entities/clients",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/entities/orders/{orderReference}/golden-advance",
       "level": "PROTECTED",
       "roles": [
         "admin"

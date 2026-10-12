@@ -25,6 +25,7 @@ const { attachAuthorizedMarketsForCapability } = require('../middleware/require-
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const order360 = require('../services/order-360');
 const { projectGoldenEvidence } = require('../services/golden-e2e-cockpit');
+const { advanceGoldenJourney } = require('../tests/helpers/goldenJourney');
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'admin-order-360' });
 
@@ -118,6 +119,29 @@ router.get(
       }
       res.set('Cache-Control', 'private, no-store');
       return res.json(await projectGoldenEvidence(db, req.order360Order));
+    } catch (err) { return next(err); }
+  }
+);
+
+
+router.post(
+  '/orders/:orderReference/golden-advance',
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin']),
+  requireRole(['admin']),
+  resolveOrderReference,
+  attachOrder360Authority,
+  requireOrderMarketRead,
+  async (req, res, next) => {
+    try {
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ error:'Golden advance interdit en production', code:'golden_advance_production_forbidden' });
+      }
+      if (!/^K-GOLDEN-/i.test(req.order360Order.reference || '')) {
+        return res.status(400).json({ error:'Commande non Golden', code:'not_golden_order' });
+      }
+      res.set('Cache-Control', 'private, no-store');
+      return res.json(await advanceGoldenJourney(db, req.order360Order.reference));
     } catch (err) { return next(err); }
   }
 );
