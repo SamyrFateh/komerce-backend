@@ -449,6 +449,9 @@ async function _finalizeAndLog(client, params, parcel, flow, qtyBefore, result) 
  */
 async function _resolvePhysicalProofIncidents(client, params, result) {
   if (!result.event_id) return;
+  // Unrelated scans are evidence of movement, not evidence that the physical
+  // invariant was restored. Only corrective scan types may close incidents.
+  if (!['weight_check', 'content_verified'].includes(params.event_type)) return;
   const { rows: incidents } = await client.query(`
     SELECT id, incident_type, details
       FROM incidents
@@ -991,4 +994,5 @@ module.exports = {
   _buildQtySnapshot: buildQtySnapshot,
   _processContentVerification: processContentVerification,
   _logScanEventDirect: logScanEventDirect,
+  _resolvePhysicalProofIncidents,
 };
