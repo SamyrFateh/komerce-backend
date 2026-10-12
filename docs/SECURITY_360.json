@@ -896,6 +896,13 @@
       ]
     },
     {
+      "key": "POST /api/admin/entities/orders/{orderReference}/golden-advance",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /api/admin/entities/products/{productRef}",
       "level": "PROTECTED",
       "roles": [
@@ -3033,13 +3040,6 @@
     },
     {
       "key": "POST /api/admin/economic/redistribute",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "POST /api/admin/entities/orders/{orderReference}/golden-advance",
       "level": "PROTECTED",
       "roles": [
         "admin"
