@@ -1,6 +1,6 @@
 # Certification nocturne E2E Komerce (lot S1 de docs/audits/KOMERCE_E2E_CERTIFICATION_GAP.md).
 #
-# Niveau de preuve revendiqué : L5 « local intégré » — vrai serveur Komerce, vraie base PostgreSQL
+# Niveau de preuve revendiqué : L4 « local intégré » — vrai serveur Komerce, vraie base PostgreSQL
 # reconstruite, vrais navigateurs, sur un environnement ÉPHÉMÈRE détruit en fin de job.
 # Ce workflow ne prouve NI le staging déployé, NI un fournisseur (sandbox ou live) : ces niveaux
 # restent des recettes séparées.
@@ -99,7 +99,7 @@ jobs:
           {
             echo '## Certification nocturne — niveau de preuve'
             echo ''
-            echo '**L5 local intégré** : serveur Komerce réel + PostgreSQL reconstruit + navigateurs réels, environnement éphémère.'
+            echo '**L4 local intégré** : serveur Komerce réel + PostgreSQL reconstruit + navigateurs réels, environnement éphémère.'
             echo 'Non prouvé ici : staging déployé, sandbox fournisseur, fournisseur live, paiement ou fulfillment externe réel.'
             echo ''
             if [ -f test-results/cash-e2e/report.md ]; then cat test-results/cash-e2e/report.md; echo; fi

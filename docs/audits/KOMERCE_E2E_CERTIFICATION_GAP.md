@@ -215,6 +215,6 @@ Un parcours est **certifié** seulement si toutes les conditions sont vraies, me
 
 ## 9. Avancement
 
-- **S1 — livré** (#2432, #2433) : `nightly-e2e-certification.yml`, éphémère, niveau L5 local intégré. Critère de sortie : 3 nuits vertes consécutives (à observer).
+- **S1 — livré** (#2432, #2433) : `nightly-e2e-certification.yml`, éphémère, niveau L4 local intégré. Critère de sortie : 3 nuits vertes consécutives (à observer).
 - **S2 — livré** : `tests/e2e-cash/dashboard-truth.spec.js` (Pilotage, Action Center, Opérations, Hub Live, Relais Live, Finance, Comptabilité ; 2 Markets, 6 rôles ; oracle SQL = API = écran ; 2 actions ; refus, états vides, erreur de lecture). Rapport `test-results/dashboard-truth/report.md`, archivé par le nightly. Défauts corrigés par PR ciblées : #2434 (actions d'Action Center offertes sans droit), #2435 (scans du workspace Opérations en 500 pour tout acteur non-admin). Observations ouvertes : voir le rapport (boutons d'Opérations offerts sans droit ; définitions de « en transit »).
 - **S3 — à venir** : fil réel de bout en bout puis recette cash branchée sur un encaissement produit par le fil.
