@@ -994,14 +994,14 @@
       ]
     },
     {
-      "key": "POST /api/admin/entities/orders/{orderReference}/golden-advance",
+      "key": "POST /api/admin/entities/golden-create",
       "level": "PROTECTED",
       "roles": [
         "admin"
       ]
     },
     {
-      "key": "POST /api/admin/entities/golden-create",
+      "key": "POST /api/admin/entities/orders/{orderReference}/golden-advance",
       "level": "PROTECTED",
       "roles": [
         "admin"
