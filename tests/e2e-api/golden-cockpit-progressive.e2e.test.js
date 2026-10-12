@@ -12,8 +12,8 @@ const { inspectGoldenJourney, advanceGoldenJourney }=require('../helpers/goldenJ
 describeE2E('Golden cockpit progressive full loop',()=>{
   const cleanup=createCleanup(db);
   afterAll(async()=>cleanup.run());
-  test('create puis avance une frontière à la fois jusqu à la clôture reconciliée',async()=>{
-    const created=await createGoldenJourney(db,{marketCode:'KM'});
+  test.each(['KM','CM','CG'])('%s : create puis avance une frontière à la fois jusqu à la clôture reconciliée',async(marketCode)=>{
+    const created=await createGoldenJourney(db,{marketCode});
     cleanup.trackSql(`UPDATE orders SET status='cancelled', updated_at=NOW() WHERE id=$1`,[created.orderId]);
     let state=await inspectGoldenJourney(db,created.reference);
     expect(state.next).toMatchObject({key:'HUB_INBOUND'});
