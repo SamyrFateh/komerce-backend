@@ -32,7 +32,7 @@ describe('mobile-money-reconciliation', () => {
 
     const result = await reconcilePendingMobileMoney({ limit: 25 });
 
-    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining("status IN ('initiated', 'pending')"), [25]);
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining("status IN ('initiated', 'pending', 'failed', 'expired')"), [25]);
     expect(mockReconcile.mock.calls).toEqual([['tx-1'], ['tx-2']]);
     expect(result).toEqual({ scanned: 2, reconciled: 2, succeeded: 1, failed: 0 });
   });
@@ -48,5 +48,20 @@ describe('mobile-money-reconciliation', () => {
     expect(mockQuery).toHaveBeenCalledWith(expect.any(String), [100]);
     expect(mockReconcile).toHaveBeenCalledTimes(2);
     expect(result).toEqual({ scanned: 2, reconciled: 1, succeeded: 0, failed: 1 });
+  });
+
+  test('rechecks recent failed/expired observations so late provider success can recover', async () => {
+    mockQuery.mockResolvedValue({ rows: [{ id: 'tx-failed' }, { id: 'tx-expired' }] });
+    mockReconcile
+      .mockResolvedValueOnce({ transaction: { status: 'succeeded' } })
+      .mockResolvedValueOnce({ transaction: { status: 'expired' } });
+
+    const result = await reconcilePendingMobileMoney({ limit: 25 });
+
+    const sql = mockQuery.mock.calls[0][0];
+    expect(sql).toContain("status IN ('initiated', 'pending', 'failed', 'expired')");
+    expect(sql).toContain("completed_at > NOW() - INTERVAL '24 hours'");
+    expect(mockReconcile.mock.calls).toEqual([['tx-failed'], ['tx-expired']]);
+    expect(result).toEqual({ scanned: 2, reconciled: 2, succeeded: 1, failed: 0 });
   });
 });
