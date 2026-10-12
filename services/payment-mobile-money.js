@@ -391,6 +391,9 @@ async function finalizeSucceededTransaction(tx, providerResult) {
     orderReference = locked.order_reference;
 
     if (locked.status === 'succeeded' || locked.payment_status === 'paid') {
+      // Concurrency fence: another reconciliation may have finalized this
+      // transaction while this caller was waiting on FOR UPDATE. Never run
+      // payment-cycle side effects twice.
       if (locked.status !== 'succeeded') {
         await client.query(
           `UPDATE mobile_money_transactions
