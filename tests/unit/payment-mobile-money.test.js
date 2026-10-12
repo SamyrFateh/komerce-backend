@@ -191,6 +191,24 @@ describe('S5 Mobile Money ordering and replay', () => {
     expect(client.query.mock.calls.some(([sql]) => String(sql).includes("SET status='succeeded'"))).toBe(true);
   });
 
+  test('concurrent replay that finds payment already finalized does not rerun payment cycle', async () => {
+    mockDb.query
+      .mockImplementationOnce(() => q([{ ...terminalTx, status: 'pending' }]))
+      .mockImplementationOnce(() => q([{ ...terminalTx, status: 'succeeded', payment_status: 'paid' }]));
+    mockAdapter.getStatus.mockResolvedValueOnce({ status: 'succeeded', providerStatus: 'SUCCESSFUL', amount: 13334, currency: 'XAF', safePayload: {} });
+    const client = { query: jest.fn(), release: jest.fn() };
+    mockDb.getClient.mockResolvedValueOnce(client);
+    client.query
+      .mockImplementationOnce(() => q([]))
+      .mockImplementationOnce(() => q([{ ...terminalTx, status: 'succeeded', payment_status: 'paid' }]))
+      .mockImplementationOnce(() => q([]));
+
+    const result = await mobileMoney.reconcileMobileMoneyTransaction(terminalTx.id);
+    expect(result.reconciled).toBe(true);
+    expect(require('../../services/order-payment-confirmation').confirmPaymentCycle).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+  });
+
   test('already succeeded transaction is idempotent and does not call provider again', async () => {
     mockDb.query.mockImplementationOnce(() => q([{ ...terminalTx, status: 'succeeded', payment_status: 'paid' }]));
     const result = await mobileMoney.reconcileMobileMoneyTransaction(terminalTx.id);
