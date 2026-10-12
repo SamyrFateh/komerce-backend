@@ -994,14 +994,14 @@
       ]
     },
     {
-      "key": "GET /api/admin/entities/orders/{orderReference}/golden-evidence",
+      "key": "POST /api/admin/entities/orders/{orderReference}/golden-advance",
       "level": "PROTECTED",
       "roles": [
         "admin"
       ]
     },
     {
-      "key": "POST /api/admin/entities/orders/{orderReference}/golden-advance",
+      "key": "GET /api/admin/entities/orders/{orderReference}/golden-evidence",
       "level": "PROTECTED",
       "roles": [
         "admin"
