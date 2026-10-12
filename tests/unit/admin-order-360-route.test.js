@@ -188,6 +188,6 @@ describe('Golden create route contract', () => {
     expect(source).toContain("attachMarketDelegatedRoleFor(['admin'])");
     expect(source).toContain("requireRole(['admin'])");
     expect(source).toContain('golden_create_production_forbidden');
-    expect(source).toContain("createGoldenJourney(db, { marketCode:");
+    expect(source).toContain("createGoldenJourney(db, { marketCode })");
   });
 });
