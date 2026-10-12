@@ -4,6 +4,7 @@ const {
   computeCascadeClosure,
   protectedHits,
   PROTECTED_TABLES,
+  ROOT_CANDIDATES,
 } = require('../../scripts/controlled-business-purge');
 
 describe('controlled business purge safety', () => {
@@ -25,6 +26,18 @@ describe('controlled business purge safety', () => {
 
     expect(protectedHits(['orders', 'order_items', 'markets', 'sourcing_sources']))
       .toEqual(['markets', 'sourcing_sources']);
+  });
+
+  test('full E2E runtime roots include supplier, hub, cash and settlement facts', () => {
+    for (const table of [
+      'supplier_execution_orders',
+      'hub_physical_unit_placements',
+      'hub_purchase_allocations',
+      'cash_deposit_allocations',
+      'cash_custody_receipts',
+      'market_settlements',
+      'signals',
+    ]) expect(ROOT_CANDIDATES).toContain(table);
   });
 
   test('ordinary commerce cascade contains no protected foundation', () => {
