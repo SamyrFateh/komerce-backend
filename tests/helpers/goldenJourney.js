@@ -13,6 +13,7 @@
 const { projectGoldenEvidence } = require('../../services/golden-e2e-cockpit');
 const { assertTestDatabase, uuid } = require('./e2eDbKit');
 const { createShipment, declareCustomsPayment } = require('../../services/customs-shipment-service');
+const { transitionOrderStatus } = require('../../services/order-status-machine');
 
 const PROGRESSIVE_BOUNDARIES = Object.freeze([
   'HUB_INBOUND',
@@ -200,6 +201,49 @@ async function advanceGoldenCustoms(db, reference) {
   return inspectGoldenJourney(db, reference);
 }
 
+
+async function advanceGoldenRelayAvailable(db, reference) {
+  assertTestDatabase();
+  const inspection = await inspectGoldenJourney(db, reference);
+  if (!inspection.next || inspection.next.key !== 'RELAY_AVAILABLE') {
+    throw new Error('Golden RELAY_AVAILABLE is not the current boundary');
+  }
+
+  const order = await resolveGoldenOrder(db, reference);
+  const parcel = (await db.query(
+    `SELECT p.id
+       FROM parcels p
+       JOIN customs_shipment_parcels csp ON csp.parcel_id=p.id
+       JOIN customs_shipments cs ON cs.id=csp.shipment_id
+      WHERE p.order_id=$1
+        AND cs.status IN ('declared','confirmed')
+        AND p.customs_cleared_at IS NOT NULL
+      ORDER BY p.created_at LIMIT 1`,
+    [order.id]
+  )).rows[0];
+  if (!parcel) throw new Error('Golden RELAY_AVAILABLE requires customs-cleared parcel');
+
+  await db.query(
+    `UPDATE parcels
+        SET status='available', available_at=COALESCE(available_at,NOW()), updated_at=NOW()
+      WHERE id=$1`,
+    [parcel.id]
+  );
+
+  const transitioned = await transitionOrderStatus({
+    orderId: order.id,
+    newStatus: 'available',
+    actor: { id: order.user_id, role: 'admin' },
+    source: 'scan',
+    dbClient: db,
+  });
+  if (!transitioned || transitioned.success !== true) {
+    throw new Error('Golden RELAY_AVAILABLE canonical order transition failed');
+  }
+
+  return inspectGoldenJourney(db, reference);
+}
+
 module.exports = {
   PROGRESSIVE_BOUNDARIES,
   assertGoldenReference,
@@ -209,4 +253,5 @@ module.exports = {
   inspectGoldenJourney,
   advanceGoldenHubInbound,
   advanceGoldenCustoms,
+  advanceGoldenRelayAvailable,
 };
