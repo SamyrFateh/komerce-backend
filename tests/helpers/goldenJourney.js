@@ -12,6 +12,7 @@
 
 const { projectGoldenEvidence } = require('../../services/golden-e2e-cockpit');
 const { assertTestDatabase, uuid } = require('./e2eDbKit');
+const { createShipment, declareCustomsPayment } = require('../../services/customs-shipment-service');
 
 const PROGRESSIVE_BOUNDARIES = Object.freeze([
   'HUB_INBOUND',
@@ -123,6 +124,82 @@ async function advanceGoldenHubInbound(db, reference) {
   return inspectGoldenJourney(db, reference);
 }
 
+
+async function advanceGoldenCustoms(db, reference) {
+  assertTestDatabase();
+  const inspection = await inspectGoldenJourney(db, reference);
+  if (!inspection.next || inspection.next.key !== 'CUSTOMS') {
+    throw new Error('Golden CUSTOMS is not the current boundary');
+  }
+
+  const order = await resolveGoldenOrder(db, reference);
+  const item = (await db.query(
+    'SELECT id, product_id FROM order_items WHERE order_id=$1 ORDER BY created_at LIMIT 1',
+    [order.id]
+  )).rows[0];
+  if (!item) throw new Error('Golden CUSTOMS requires an order item');
+
+  let parcel = (await db.query(
+    'SELECT * FROM parcels WHERE order_id=$1 ORDER BY created_at LIMIT 1',
+    [order.id]
+  )).rows[0];
+
+  const run = order.reference.replace(/^K-GOLDEN-/i, '');
+  if (!parcel) {
+    const parcelId = uuid();
+    await db.query('BEGIN');
+    try {
+      await db.query(
+        `INSERT INTO parcels
+           (id,order_id,reference,status,type,relais_id,shipped_at,in_transit_at,arrived_at)
+         VALUES ($1,$2,$3,'arrived','standard',$4,
+                 NOW()-INTERVAL '3 hours',NOW()-INTERVAL '2 hours',NOW()-INTERVAL '1 hour')`,
+        [parcelId, order.id, 'KOM-BOX-GOLDEN-' + run, order.relais_id]
+      );
+      await db.query(
+        'INSERT INTO parcel_items(parcel_id,order_item_id,product_id,quantity) VALUES($1,$2,$3,1)',
+        [parcelId, item.id, item.product_id]
+      );
+      await db.query('COMMIT');
+    } catch (error) {
+      await db.query('ROLLBACK');
+      throw error;
+    }
+    parcel = (await db.query('SELECT * FROM parcels WHERE id=$1', [parcelId])).rows[0];
+  }
+
+  const existing = (await db.query(
+    `SELECT cs.id, cs.status
+       FROM customs_shipments cs
+       JOIN customs_shipment_parcels csp ON csp.shipment_id=cs.id
+      WHERE csp.parcel_id=$1
+      ORDER BY cs.created_at DESC LIMIT 1`,
+    [parcel.id]
+  )).rows[0];
+
+  let shipmentId = existing && existing.id;
+  if (!shipmentId) {
+    const created = await createShipment(db, {
+      reference: 'CUS-GOLDEN-' + run,
+      shipment_date: new Date().toISOString().slice(0, 10),
+      transitaire_name: 'Golden Forwarder',
+      transport_mode: 'sea',
+      cif_value_kmf: 25000,
+      allocation_method: 'by_cif_value',
+      parcel_ids: [parcel.id],
+    }, order.user_id, { marketId: order.market_id });
+    shipmentId = created.shipment.id;
+  }
+
+  await declareCustomsPayment(db, shipmentId, {
+    customs_paid_kmf: 2500,
+    freight_kmf: 1500,
+    notes: 'Golden customs declaration',
+  }, order.user_id);
+
+  return inspectGoldenJourney(db, reference);
+}
+
 module.exports = {
   PROGRESSIVE_BOUNDARIES,
   assertGoldenReference,
@@ -131,4 +208,5 @@ module.exports = {
   nextGoldenBoundary,
   inspectGoldenJourney,
   advanceGoldenHubInbound,
+  advanceGoldenCustoms,
 };
