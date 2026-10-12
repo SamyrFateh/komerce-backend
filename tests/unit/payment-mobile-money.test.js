@@ -164,3 +164,38 @@ describe('initiateMobileMoney', () => {
     expect(currency.projectAmount).not.toHaveBeenCalled();
   });
 });
+
+describe('S5 Mobile Money ordering and replay', () => {
+  const terminalTx = {
+    id: '33333333-3333-4333-8333-333333333333', order_id: 'order-1', market_id: 'market-cm',
+    provider: 'orange_money', currency: 'XAF', minor_unit: 0, amount_minor: 13334,
+    external_transaction_id: 'PAY-LATE', status: 'failed', provider_status: 'FAILED',
+    order_reference: 'K-CM-001', payment_status: 'pending', provider_payload: {},
+  };
+
+  test('late provider success after local failed observation is reconciled, not ignored', async () => {
+    mockDb.query
+      .mockImplementationOnce(() => q([terminalTx]))
+      .mockImplementationOnce(() => q([{ ...terminalTx, status: 'succeeded', provider_status: 'SUCCESSFUL' }]));
+    mockAdapter.getStatus.mockResolvedValueOnce({ status: 'succeeded', providerStatus: 'SUCCESSFUL', amount: 13334, currency: 'XAF', safePayload: {} });
+    const client = { query: jest.fn(), release: jest.fn() };
+    mockDb.getClient.mockResolvedValueOnce(client);
+    client.query
+      .mockImplementationOnce(() => q([])) // BEGIN
+      .mockImplementationOnce(() => q([{ ...terminalTx, status: 'failed' }])) // lock
+      .mockImplementationOnce(() => q([])) // mark succeeded
+      .mockImplementationOnce(() => q([])) // ROLLBACK after mocked cycle rejection below
+    require('../../services/order-payment-confirmation').confirmPaymentCycle.mockResolvedValueOnce({ success: false, error: 'stop after proving finalizer reached' });
+    await expect(mobileMoney.reconcileMobileMoneyTransaction(terminalTx.id)).rejects.toMatchObject({ code: 'mobile_money_cycle_rejected' });
+    expect(mockAdapter.getStatus).toHaveBeenCalledTimes(1);
+    expect(client.query.mock.calls.some(([sql]) => String(sql).includes("SET status='succeeded'"))).toBe(true);
+  });
+
+  test('already succeeded transaction is idempotent and does not call provider again', async () => {
+    mockDb.query.mockImplementationOnce(() => q([{ ...terminalTx, status: 'succeeded', payment_status: 'paid' }]));
+    const result = await mobileMoney.reconcileMobileMoneyTransaction(terminalTx.id);
+    expect(result.reconciled).toBe(false);
+    expect(result.transaction.status).toBe('succeeded');
+    expect(mockAdapter.getStatus).not.toHaveBeenCalled();
+  });
+});
