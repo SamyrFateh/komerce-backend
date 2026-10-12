@@ -165,7 +165,9 @@ async function createMarketDelegationFixture(db) {
   const liveCapabilities = await ensureCapabilityRegistry(db, cleanup);
   await ensureFixedCurrencyParities(db, cleanup);
 
-  const used = new Set(['KM', 'YT', 'CM', 'CG']);
+  // Codes déjà pris en base exclus : sur un environnement qui accumule des fixtures, un tirage aveugle collisionne.
+  const { rows: taken } = await db.query('SELECT code FROM markets');
+  const used = new Set(['KM', 'YT', 'CM', 'CG', ...taken.map(row => row.code)]);
   const codeA = randomMarketCode(used); used.add(codeA);
   const codeB = randomMarketCode(used);
 

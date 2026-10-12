@@ -94,4 +94,32 @@ async function externalEffects(db, { monitors, started_at }) {
   return out;
 }
 
-module.exports = { PREFIX, PASSWORD, rnd, target, api, login, preflight, externalEffects };
+/**
+ * Provisioning des acteurs d'une fixture de délégation : emails propres et reconnaissables (ceux de la
+ * fixture contiennent des espaces), mot de passe et rôle par les routes admin officielles.
+ * `who[key]` = { id, email, scope?: 'manager'|'viewer', market?: code }.
+ * Les comptes de fixture naissent sans hash (la route de réinitialisation exige un hash existant :
+ * défaut constaté, hors périmètre) : hash jetable aléatoire, remplacé aussitôt par la route officielle.
+ */
+async function provisionActors({ db, admin, who, tag, defaultMarket, bcrypt }) {
+  for (const [key, u] of Object.entries(who)) {
+    if (!u.email.includes('e2e-cash.test')) {
+      u.email = `${PREFIX}.${key}.${tag}@e2e-cash.test`.toLowerCase();
+      await db.query('UPDATE users SET email = $2 WHERE id = $1', [u.id, u.email]);
+    }
+  }
+  await db.query('UPDATE users SET password_hash = $2 WHERE id = ANY($1::uuid[])',
+    [Object.values(who).map(u => u.id), bcrypt.hashSync(rnd() + rnd(), 4)]);
+  for (const [key, u] of Object.entries(who)) {
+    const pw = await api(admin, 'PUT', `/api/admin/users/${u.id}/password`, { password: PASSWORD });
+    if (pw.status !== 200) throw new Error(`password ${key} → ${pw.status}`);
+    if (u.scope) {
+      const role = await api(admin, 'PUT', `/api/admin/users/${u.id}/role`, {
+        role: 'market_operator', market_scope: { market_code: u.market || defaultMarket, scope_role: u.scope },
+      });
+      if (role.status !== 200) throw new Error(`role ${key} → ${role.status}`);
+    }
+  }
+}
+
+module.exports = { PREFIX, PASSWORD, rnd, target, api, login, preflight, externalEffects, provisionActors };

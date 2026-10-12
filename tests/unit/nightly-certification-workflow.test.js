@@ -36,6 +36,13 @@ describe('nightly-e2e-certification.yml', () => {
     }
   });
 
+  test('le limiteur de connexion n’est désactivé que sur le serveur éphémère local, et les rapports sont archivés', () => {
+    expect(code).toMatch(/DISABLE_RATE_LIMIT=1 ADMIN_PASSWORD="\$pw" node server\.js/);
+    expect(code.match(/DISABLE_RATE_LIMIT/g)).toHaveLength(1);
+    expect(code).toMatch(/test-results\/cash-e2e/);
+    expect(code).toMatch(/test-results\/dashboard-truth/);
+  });
+
   test('admin éphémère : mot de passe aléatoire masqué, injecté au boot du serveur et à la recette', () => {
     expect(code).toMatch(/openssl rand -hex/);
     expect(code).toMatch(/::add-mask::\$pw/);

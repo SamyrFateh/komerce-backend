@@ -9,7 +9,8 @@
 #   - aucun `secrets.*` référencé, aucune URL de staging/production ;
 #   - base et serveur sur localhost, clés fournisseurs = placeholders, crons coupés ;
 #   - compte admin éphémère créé au boot du serveur (mécanisme officiel ADMIN_PASSWORD), mot de passe aléatoire masqué ;
-#   - la recette cash échoue elle-même si un effet externe (notification/outbox) apparaît.
+#   - les recettes cash et dashboards échouent elles-mêmes si un effet externe (notification/outbox) apparaît ;
+#   - limiteur de connexion désactivé (DISABLE_RATE_LIMIT, jamais effectif en production) : une dizaine de sessions réelles par recette.
 name: Nightly E2E certification
 
 on:
@@ -26,7 +27,7 @@ concurrency:
 
 jobs:
   certify:
-    name: Integration + E2E API + cash multi-utilisateurs (éphémère)
+    name: Integration + E2E API + cash multi-utilisateurs + vérité des dashboards (éphémère)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     services:
@@ -79,12 +80,12 @@ jobs:
       - name: Install Chromium
         if: ${{ !cancelled() }}
         run: npx playwright install --with-deps chromium
-      - name: Cash multi-user recette (local server, real browsers)
+      - name: Cash multi-user + dashboards truth recettes (local server, real browsers)
         if: ${{ !cancelled() }}
         run: |
           pw="Nt-$(openssl rand -hex 8)-Aa1"
           echo "::add-mask::$pw"
-          ADMIN_PASSWORD="$pw" node server.js > server.log 2>&1 &
+          DISABLE_RATE_LIMIT=1 ADMIN_PASSWORD="$pw" node server.js > server.log 2>&1 &
           echo $! > server.pid
           for i in $(seq 1 40); do curl -fsS -m 2 http://localhost:3911/health >/dev/null 2>&1 && break; sleep 1; done
           set +e
@@ -101,7 +102,8 @@ jobs:
             echo '**L5 local intégré** : serveur Komerce réel + PostgreSQL reconstruit + navigateurs réels, environnement éphémère.'
             echo 'Non prouvé ici : staging déployé, sandbox fournisseur, fournisseur live, paiement ou fulfillment externe réel.'
             echo ''
-            if [ -f test-results/cash-e2e/report.md ]; then cat test-results/cash-e2e/report.md; fi
+            if [ -f test-results/cash-e2e/report.md ]; then cat test-results/cash-e2e/report.md; echo; fi
+            if [ -f test-results/dashboard-truth/report.md ]; then cat test-results/dashboard-truth/report.md; fi
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Archive proofs
         if: ${{ !cancelled() }}
@@ -110,6 +112,7 @@ jobs:
           name: nightly-e2e-certification-${{ github.run_id }}
           path: |
             test-results/cash-e2e
+            test-results/dashboard-truth
             .playwright-output/cash
             server.log
           if-no-files-found: warn
