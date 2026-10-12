@@ -1,22 +1,35 @@
 'use strict';
 
-// RED regression contract for #2440. The workspace cash-confirm flow currently
-// calls confirmCashAndCreateParcel, which marks paid without recording the
-// canonical cash_collections fact. Do not weaken this assertion to go green.
 const fs = require('fs');
 const path = require('path');
+const source = relative => fs.readFileSync(path.join(__dirname, '../..', relative), 'utf8');
 
-test('workspace cash confirmation uses the canonical controlled cash boundary (#2440)', () => {
-  const workspace = fs.readFileSync(path.join(__dirname, '../../services/operations-workspace.js'), 'utf8');
-  const legacy = fs.readFileSync(path.join(__dirname, '../../services/parcel-auto-create-service.js'), 'utf8');
-  const canonical = fs.readFileSync(path.join(__dirname, '../../services/payment-cash-confirm.js'), 'utf8');
-  expect(canonical).toContain('prepareCashConfirmation(');
-  expect(canonical).toContain('INSERT INTO cash_collections');
-  // This assertion is intentionally red until workspace delegates cash confirmation
-  // through the same control boundary, including 2-actor approval and Market scope.
+describe('workspace cash confirmation boundary (#2440)', () => {
+  const workspace = source('services/operations-workspace.js');
+  const route = source('routes/admin-operations-workspace.js');
+  const canonical = source('services/payment-cash-confirm.js');
   const start = workspace.indexOf('async function confirmCash(');
-  expect(start).toBeGreaterThan(-1);
-  const body = workspace.slice(start, workspace.indexOf('\nasync function ', start + 1) < 0 ? undefined : workspace.indexOf('\nasync function ', start + 1));
-  expect(body).not.toContain('confirmCashAndCreateParcel(');
-  expect(legacy).toContain('async function confirmCashAndCreateParcel(');
+  const end = workspace.indexOf('async function assignInventory(', start);
+  const action = workspace.slice(start, end);
+
+  test('resolves the order in the server market before any payment mutation', () => {
+    expect(action.indexOf('resolveOrderInMarket(')).toBeGreaterThan(-1);
+    expect(action.indexOf('resolveOrderInMarket(')).toBeLessThan(action.indexOf('confirmCashByReference('));
+    expect(workspace).toContain('o.cash_ref_code');
+    expect(action).toContain('order.cash_ref_code');
+  });
+
+  test('delegates to canonical controls, never legacy paid-without-collection path', () => {
+    expect(action).toContain('confirmCashByReference(');
+    expect(action).not.toContain('confirmCashAndCreateParcel(');
+    expect(canonical).toContain('prepareCashConfirmation(');
+    expect(canonical).toContain('INSERT INTO cash_collections');
+    expect(canonical).toContain('finalizeCashConfirmation(');
+  });
+
+  test('pending second approval is not presented as paid or HTTP 200', () => {
+    expect(action).toContain('result.status === 202 && result.body.pending_second_approval');
+    expect(action).toContain("payment_status: 'pending'");
+    expect(route).toContain('result.pending_second_approval ? 202 : 200');
+  });
 });
