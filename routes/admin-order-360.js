@@ -24,6 +24,8 @@ const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-d
 const { attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const order360 = require('../services/order-360');
+const { projectGoldenEvidence } = require('../services/golden-e2e-cockpit');
+const db = require('../db');
 const log = require('../utils/logger').child({ module: 'admin-order-360' });
 
 const router = express.Router();
@@ -98,6 +100,25 @@ router.get(
       log.error({ err, orderReference: req.params.orderReference }, '[admin-order-360] read failed');
       return next(err);
     }
+  }
+);
+
+router.get(
+  '/orders/:orderReference/golden-evidence',
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin']),
+  requireRole(['admin']),
+  resolveOrderReference,
+  attachOrder360Authority,
+  requireOrderMarketRead,
+  async (req, res, next) => {
+    try {
+      if (!/^K-GOLDEN-/i.test(req.order360Order.reference || '')) {
+        return res.status(400).json({ error:'Commande non Golden', code:'not_golden_order' });
+      }
+      res.set('Cache-Control', 'private, no-store');
+      return res.json(await projectGoldenEvidence(db, req.order360Order));
+    } catch (err) { return next(err); }
   }
 );
 
