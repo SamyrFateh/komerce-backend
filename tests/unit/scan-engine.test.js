@@ -250,6 +250,9 @@ describe('processScan — weight_check écart > tolérance', () => {
       { rows: [], rowCount: 1 },
       // syncOrderFromParcels SELECT stats
       { rows: [{ active: '1', collected: '0', available: '0', in_transit: '0', pending: '1' }] },
+      // S4: active physical incidents for this parcel. The incident created by
+      // this same scan is not eligible as a corrective proof target.
+      { rows: [] },
       // SELECT parcel final
       { rows: [parcel] }
     ]);

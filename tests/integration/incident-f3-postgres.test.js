@@ -12,6 +12,7 @@ const { Pool } = require('pg');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const { escalateOneOverdueIncident } = require('../../services/incident-escalation');
 const { resolvePhysicalProofIncident, resolveUpstreamTruthIncident } = require('../../services/incident-write-service');
+const { _resolvePhysicalProofIncidents } = require('../../services/scan-engine');
 
 jest.setTimeout(30000);
 
@@ -293,6 +294,57 @@ describe('F3 PostgreSQL — physical proof resolution', () => {
 
     const { rows: [state] } = await query('SELECT status FROM incidents WHERE id=$1', [inc.id]);
     expect(state.status).toBe('open');
+  });
+});
+
+
+
+describe('S4 PostgreSQL — scan corrective -> preuve -> résolution', () => {
+  test('weight scan closes only after durable truth is restored', async () => {
+    await seedParcel({ parcelId: 'p-s4-weight', orderId: null });
+    await query('ALTER TABLE parcels ADD COLUMN IF NOT EXISTS expected_weight_kg NUMERIC');
+    await query('ALTER TABLE parcels ADD COLUMN IF NOT EXISTS actual_weight_kg NUMERIC');
+    await query("UPDATE parcels SET expected_weight_kg=10, actual_weight_kg=13 WHERE id='p-s4-weight'");
+    await query("INSERT INTO scan_events(id, parcel_id, event_type, status, created_at) VALUES ('s4-trigger','p-s4-weight','weight_check','applied','2026-09-15T10:00:00Z')");
+    const inc = await seedIncident({ id: 'inc-s4-weight', parcel_id: 'p-s4-weight', scan_event_id: 's4-trigger', incident_type: 'weight_mismatch', created_at: new Date('2026-09-15T10:00:30Z') });
+    await query("INSERT INTO scan_events(id, parcel_id, event_type, status, created_at) VALUES ('s4-proof-bad','p-s4-weight','weight_check','applied','2026-09-15T11:00:00Z')");
+    const badClient = await clientInSchema();
+    try {
+      await badClient.query('BEGIN');
+      const result = { event_id: 's4-proof-bad' };
+      await _resolvePhysicalProofIncidents(badClient, { parcel_id: 'p-s4-weight', event_type: 'weight_check' }, result);
+      expect(result.resolved_incidents).toBeUndefined();
+      await badClient.query('COMMIT');
+    } finally { badClient.release(); }
+    expect((await query('SELECT status FROM incidents WHERE id=$1', [inc.id])).rows[0].status).toBe('open');
+
+    await query("UPDATE parcels SET actual_weight_kg=10.5 WHERE id='p-s4-weight'");
+    await query("INSERT INTO scan_events(id, parcel_id, event_type, status, created_at) VALUES ('s4-proof-good','p-s4-weight','weight_check','applied','2026-09-15T12:00:00Z')");
+    const goodClient = await clientInSchema();
+    try {
+      await goodClient.query('BEGIN');
+      const result = { event_id: 's4-proof-good' };
+      await _resolvePhysicalProofIncidents(goodClient, { parcel_id: 'p-s4-weight', event_type: 'weight_check', scanned_by: 'agent-s4' }, result);
+      expect(result.resolved_incidents).toEqual([inc.id]);
+      await goodClient.query('COMMIT');
+    } finally { goodClient.release(); }
+    const { rows: [state] } = await query('SELECT status, resolution_type, resolved_by, resolution FROM incidents WHERE id=$1', [inc.id]);
+    expect(state.status).toBe('resolved');
+    expect(state.resolution_type).toBe('auto_resolved');
+    expect(state.resolved_by).toBe('agent-s4');
+    expect(state.resolution.proof_scan_event_id).toBe('s4-proof-good');
+  });
+
+  test('non-corrective scan cannot close an otherwise resolvable incident', async () => {
+    await seedParcel({ parcelId: 'p-s4-unrelated', orderId: null });
+    const inc = await seedIncident({ id: 'inc-s4-unrelated', parcel_id: 'p-s4-unrelated', incident_type: 'weight_mismatch' });
+    const client = await clientInSchema();
+    try {
+      await client.query('BEGIN');
+      await _resolvePhysicalProofIncidents(client, { parcel_id: 'p-s4-unrelated', event_type: 'shipped' }, { event_id: 's4-shipped' });
+      await client.query('COMMIT');
+    } finally { client.release(); }
+    expect((await query('SELECT status FROM incidents WHERE id=$1', [inc.id])).rows[0].status).toBe('open');
   });
 });
 
