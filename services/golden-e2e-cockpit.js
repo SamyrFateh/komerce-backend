@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @komerce-arch
  * @role          golden-e2e-cockpit-projection
@@ -17,6 +15,8 @@
  * @impact-areas  dashboard, e2e-certification
  * @version       2026-10
  */
+
+'use strict';
 
 /**
  * Read-only projection for the human Golden Order cockpit.
