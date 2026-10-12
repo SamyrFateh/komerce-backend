@@ -43,3 +43,21 @@ test('projette exactement la vérité canonique du cockpit', async () => {
   await expect(projectGoldenJourney(db, order.reference)).resolves.toEqual(projection);
   expect(mockProject).toHaveBeenCalledWith(db, order);
 });
+
+
+test('désigne la première frontière métier non prouvée', () => {
+  const { nextGoldenBoundary } = require('../helpers/goldenJourney');
+  const projection = { steps: [
+    { key: 'CLIENT_ORDER', passed: true },
+    { key: 'HUB_INBOUND', passed: true },
+    { key: 'CUSTOMS', passed: false, evidence: 'PENDING' },
+    { key: 'RELAY_AVAILABLE', passed: false },
+  ] };
+  expect(nextGoldenBoundary(projection)).toMatchObject({ key: 'CUSTOMS', passed: false });
+});
+
+test('ne propose aucune progression lorsque toutes les frontières sont prouvées', () => {
+  const { PROGRESSIVE_BOUNDARIES, nextGoldenBoundary } = require('../helpers/goldenJourney');
+  const projection = { steps: PROGRESSIVE_BOUNDARIES.map(key => ({ key, passed: true })) };
+  expect(nextGoldenBoundary(projection)).toBeNull();
+});
