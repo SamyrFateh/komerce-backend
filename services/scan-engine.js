@@ -204,9 +204,10 @@ async function _loadScanContext(client, params) {
 
   // ── 2. Charger les items du colis ──
   const { rows: parcelItems } = await client.query(
-    `SELECT pi.*, oi.product_id, oi.product_name AS oi_product_name
+    `SELECT pi.*, oi.product_id, pr.name AS oi_product_name
      FROM parcel_items pi
      LEFT JOIN order_items oi ON oi.id = pi.order_item_id
+     LEFT JOIN products pr ON pr.id = oi.product_id
      WHERE pi.parcel_id = $1`,
     [params.parcel_id]
   );
@@ -522,9 +523,10 @@ async function processContentVerification(client, parcelId, orderId, items, veri
 
   // Charger les items attendus
   const { rows: expectedItems } = await client.query(
-    `SELECT pi.*, oi.product_name AS oi_product_name, oi.product_id
+    `SELECT pi.*, pr.name AS oi_product_name, oi.product_id
      FROM parcel_items pi
      LEFT JOIN order_items oi ON oi.id = pi.order_item_id
+     LEFT JOIN products pr ON pr.id = oi.product_id
      WHERE pi.parcel_id = $1`,
     [parcelId]
   );
@@ -875,9 +877,9 @@ async function getParcelTrace(parcelId) {
   const { rows: items } = await pool.query(`
     SELECT
       pi.*,
-      oi.product_name AS oi_product_name,
+      pr.name AS oi_product_name,
       oi.product_id,
-      oi.price,
+      oi.price_kmf AS price,
       oi.qty_ordered AS oi_qty_ordered,
       pr.name AS product_ref_name
     FROM parcel_items pi
