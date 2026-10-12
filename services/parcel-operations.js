@@ -642,9 +642,6 @@ async function transitionParcelStatus(dbClient, parcelId, newStatus, opts = {}) 
   const tsCol = TIMESTAMP_MAP[newStatus];
   if (tsCol) updates.push(`${tsCol} = COALESCE(${tsCol}, NOW())`);
 
-  // Alias spécifique : scan-engine pose received_at pour 'available'
-  if (newStatus === 'available') updates.push(`received_at = COALESCE(received_at, NOW())`);
-
   if (trackingRef) {
     updates.push(`reference = $${pi++}`);
     params.push(trackingRef);

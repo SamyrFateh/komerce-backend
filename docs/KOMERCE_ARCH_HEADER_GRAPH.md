@@ -13,10 +13,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1726
-- Edges: 8675
-- DB tables: 197
-- Doctrines: 622
+- Graph nodes: 1733
+- Edges: 8687
+- DB tables: 200
+- Doctrines: 626
 - Impact areas: 198
 - Unresolved code edges: 848
 - Tables multi-écrivains directs (>=2): 84
@@ -727,7 +727,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/cash-operations.js -> cash_confirmation_controls
 - WRITE services/confirm-pickup-cash-payment.js -> cash_confirmation_controls
 - WRITE services/payment-cash-confirm.js -> cash_confirmation_controls
-- WRITE services/cash-deposit-service.js -> cash_deposit_allocations
+- WRITE services/cash-custody-service.js -> cash_custody_losses
+- WRITE services/cash-custody-service.js -> cash_custody_receipts
 - WRITE routes/cash.js -> cash_deposits
 - WRITE services/cash-deposit-service.js -> cash_deposits
 - WRITE services/catalog-enrichment.js -> catalog_enrichment_runs
@@ -799,7 +800,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE middleware/require-market-delegated-capability.js -> market_delegation_audit
 - WRITE middleware/require-market-execution-capability.js -> market_delegation_audit
 - WRITE services/cash-deposit-service.js -> market_delegation_audit
-- WRITE services/market-delegation-service.js -> market_delegation_audit
 
 ## DB Write-Via Edges (délégation déclarée)
 

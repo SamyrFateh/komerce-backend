@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   certify:
-    name: Integration + E2E API + cash multi-utilisateurs + vérité des dashboards (éphémère)
+    name: Integration + E2E API + cash multi-utilisateurs + vérité des dashboards + fil commande→cash (éphémère)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     services:
@@ -80,7 +80,7 @@ jobs:
       - name: Install Chromium
         if: ${{ !cancelled() }}
         run: npx playwright install --with-deps chromium
-      - name: Cash multi-user + dashboards truth recettes (local server, real browsers)
+      - name: Cash multi-user + dashboards truth + order-to-cash thread recettes (local server, real browsers)
         if: ${{ !cancelled() }}
         run: |
           pw="Nt-$(openssl rand -hex 8)-Aa1"
@@ -103,7 +103,8 @@ jobs:
             echo 'Non prouvé ici : staging déployé, sandbox fournisseur, fournisseur live, paiement ou fulfillment externe réel.'
             echo ''
             if [ -f test-results/cash-e2e/report.md ]; then cat test-results/cash-e2e/report.md; echo; fi
-            if [ -f test-results/dashboard-truth/report.md ]; then cat test-results/dashboard-truth/report.md; fi
+            if [ -f test-results/dashboard-truth/report.md ]; then cat test-results/dashboard-truth/report.md; echo; fi
+            if [ -f test-results/order-to-cash-thread/report.md ]; then cat test-results/order-to-cash-thread/report.md; fi
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Archive proofs
         if: ${{ !cancelled() }}
@@ -113,6 +114,7 @@ jobs:
           path: |
             test-results/cash-e2e
             test-results/dashboard-truth
+            test-results/order-to-cash-thread
             .playwright-output/cash
             server.log
           if-no-files-found: warn

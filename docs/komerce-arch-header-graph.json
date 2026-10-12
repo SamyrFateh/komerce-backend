@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1726,
-    "edges": 8675,
-    "dbTables": 197,
-    "doctrines": 622,
+    "graphNodes": 1733,
+    "edges": 8687,
+    "dbTables": 200,
+    "doctrines": 626,
     "impactAreas": 198,
     "unresolvedCodeEdges": 848,
     "dbWriteViaOverlapWarnings": 8,
@@ -13553,7 +13553,7 @@
         "destination_payload"
       ],
       "outputs": [
-        "cash_custody_recipients_destinations_limits"
+        "cash_custody_recipients_destinations_limits_holdings_receipts"
       ],
       "depends": [
         "db.js",
@@ -13571,10 +13571,16 @@
         "membership_capabilities",
         "market_operating_assignments",
         "markets",
-        "users"
+        "users",
+        "cash_deposits",
+        "cash_custody_receipts",
+        "cash_custody_losses",
+        "cash_custody_movements"
       ],
       "dbWrite": [
-        "market_cash_destinations"
+        "market_cash_destinations",
+        "cash_custody_receipts",
+        "cash_custody_losses"
       ],
       "dbWriteVia": [
         {
@@ -13588,6 +13594,10 @@
         "caller-owned"
       ],
       "doctrine": [
+        "cash_custody_single_balance_authority",
+        "declaration_is_not_transfer",
+        "closure_only_on_controlled_final_reception",
+        "loss_is_central_decision",
         "no_recipient_added_freely_by_relay_agent",
         "two_distinct_actors_for_destination_activation",
         "central_custody_limits_non_bypassable",
@@ -13622,7 +13632,8 @@
       "depends": [
         "db.js",
         "utils/currency.js",
-        "services/market-delegation-service.js"
+        "services/market-delegation-service.js",
+        "services/cash-custody-service.js"
       ],
       "usedBy": [
         "routes/cash.js",
@@ -13632,11 +13643,11 @@
         "cash_collections",
         "cash_deposit_allocations",
         "cash_deposits",
+        "cash_custody_movements",
         "relais",
         "users"
       ],
       "dbWrite": [
-        "cash_deposit_allocations",
         "cash_deposits",
         "market_delegation_audit"
       ],
@@ -17626,8 +17637,8 @@
       "dbRead": [
         "orders",
         "cash_collections",
-        "cash_deposit_allocations",
         "cash_deposits",
+        "cash_custody_movements",
         "users",
         "relais",
         "invoices"
@@ -26234,7 +26245,8 @@
       ],
       "depends": [
         "db.js",
-        "services/cash-deposit-service.js"
+        "services/cash-deposit-service.js",
+        "services/cash-custody-service.js"
       ],
       "usedBy": [
         "services/radar-queries.js"
@@ -26242,8 +26254,8 @@
       "dbRead": [
         "orders",
         "cash_collections",
-        "cash_deposit_allocations",
         "cash_deposits",
+        "cash_custody_movements",
         "users"
       ],
       "dbWrite": [],
@@ -34733,6 +34745,21 @@
       "table": "cash_confirmation_controls"
     },
     {
+      "id": "db:cash_custody_receipts",
+      "type": "db-table",
+      "table": "cash_custody_receipts"
+    },
+    {
+      "id": "db:cash_custody_losses",
+      "type": "db-table",
+      "table": "cash_custody_losses"
+    },
+    {
+      "id": "db:cash_custody_movements",
+      "type": "db-table",
+      "table": "cash_custody_movements"
+    },
+    {
       "id": "db:cash_deposit_allocations",
       "type": "db-table",
       "table": "cash_deposit_allocations"
@@ -36461,6 +36488,26 @@
       "id": "doctrine:in_flight_policy_never_silently_weakened",
       "type": "doctrine",
       "doctrine": "in_flight_policy_never_silently_weakened"
+    },
+    {
+      "id": "doctrine:cash_custody_single_balance_authority",
+      "type": "doctrine",
+      "doctrine": "cash_custody_single_balance_authority"
+    },
+    {
+      "id": "doctrine:declaration_is_not_transfer",
+      "type": "doctrine",
+      "doctrine": "declaration_is_not_transfer"
+    },
+    {
+      "id": "doctrine:closure_only_on_controlled_final_reception",
+      "type": "doctrine",
+      "doctrine": "closure_only_on_controlled_final_reception"
+    },
+    {
+      "id": "doctrine:loss_is_central_decision",
+      "type": "doctrine",
+      "doctrine": "loss_is_central_decision"
     },
     {
       "id": "doctrine:no_recipient_added_freely_by_relay_agent",
@@ -59331,9 +59378,45 @@
     },
     {
       "from": "services/cash-custody-service.js",
+      "to": "db:cash_deposits",
+      "type": "db-read",
+      "label": "cash_deposits"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:cash_custody_receipts",
+      "type": "db-read",
+      "label": "cash_custody_receipts"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:cash_custody_losses",
+      "type": "db-read",
+      "label": "cash_custody_losses"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:cash_custody_movements",
+      "type": "db-read",
+      "label": "cash_custody_movements"
+    },
+    {
+      "from": "services/cash-custody-service.js",
       "to": "db:market_cash_destinations",
       "type": "db-write",
       "label": "market_cash_destinations"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:cash_custody_receipts",
+      "type": "db-write",
+      "label": "cash_custody_receipts"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "db:cash_custody_losses",
+      "type": "db-write",
+      "label": "cash_custody_losses"
     },
     {
       "from": "services/cash-custody-service.js",
@@ -59341,6 +59424,30 @@
       "type": "db-write-via",
       "label": "market_delegation_audit",
       "via": "market-delegation-service"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "doctrine:cash_custody_single_balance_authority",
+      "type": "doctrine",
+      "label": "cash_custody_single_balance_authority"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "doctrine:declaration_is_not_transfer",
+      "type": "doctrine",
+      "label": "declaration_is_not_transfer"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "doctrine:closure_only_on_controlled_final_reception",
+      "type": "doctrine",
+      "label": "closure_only_on_controlled_final_reception"
+    },
+    {
+      "from": "services/cash-custody-service.js",
+      "to": "doctrine:loss_is_central_decision",
+      "type": "doctrine",
+      "label": "loss_is_central_decision"
     },
     {
       "from": "services/cash-custody-service.js",
@@ -59409,6 +59516,12 @@
       "label": "services/market-delegation-service.js"
     },
     {
+      "from": "services/cash-deposit-service.js",
+      "to": "services/cash-custody-service.js",
+      "type": "depends",
+      "label": "services/cash-custody-service.js"
+    },
+    {
       "from": "routes/cash.js",
       "to": "services/cash-deposit-service.js",
       "type": "uses",
@@ -59440,6 +59553,12 @@
     },
     {
       "from": "services/cash-deposit-service.js",
+      "to": "db:cash_custody_movements",
+      "type": "db-read",
+      "label": "cash_custody_movements"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
       "to": "db:relais",
       "type": "db-read",
       "label": "relais"
@@ -59449,12 +59568,6 @@
       "to": "db:users",
       "type": "db-read",
       "label": "users"
-    },
-    {
-      "from": "services/cash-deposit-service.js",
-      "to": "db:cash_deposit_allocations",
-      "type": "db-write",
-      "label": "cash_deposit_allocations"
     },
     {
       "from": "services/cash-deposit-service.js",
@@ -65846,15 +65959,15 @@
     },
     {
       "from": "services/finance-accounting-workspace.js",
-      "to": "db:cash_deposit_allocations",
-      "type": "db-read",
-      "label": "cash_deposit_allocations"
-    },
-    {
-      "from": "services/finance-accounting-workspace.js",
       "to": "db:cash_deposits",
       "type": "db-read",
       "label": "cash_deposits"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db:cash_custody_movements",
+      "type": "db-read",
+      "label": "cash_custody_movements"
     },
     {
       "from": "services/finance-accounting-workspace.js",
@@ -79937,6 +80050,12 @@
       "label": "services/cash-deposit-service.js"
     },
     {
+      "from": "services/radar-alerts/cash-reconciliation-signals.js",
+      "to": "services/cash-custody-service.js",
+      "type": "depends",
+      "label": "services/cash-custody-service.js"
+    },
+    {
       "from": "services/radar-queries.js",
       "to": "services/radar-alerts/cash-reconciliation-signals.js",
       "type": "uses",
@@ -79956,15 +80075,15 @@
     },
     {
       "from": "services/radar-alerts/cash-reconciliation-signals.js",
-      "to": "db:cash_deposit_allocations",
-      "type": "db-read",
-      "label": "cash_deposit_allocations"
-    },
-    {
-      "from": "services/radar-alerts/cash-reconciliation-signals.js",
       "to": "db:cash_deposits",
       "type": "db-read",
       "label": "cash_deposits"
+    },
+    {
+      "from": "services/radar-alerts/cash-reconciliation-signals.js",
+      "to": "db:cash_custody_movements",
+      "type": "db-read",
+      "label": "cash_custody_movements"
     },
     {
       "from": "services/radar-alerts/cash-reconciliation-signals.js",
@@ -105190,10 +105309,16 @@
         "membership_capabilities",
         "market_operating_assignments",
         "markets",
-        "users"
+        "users",
+        "cash_deposits",
+        "cash_custody_receipts",
+        "cash_custody_losses",
+        "cash_custody_movements"
       ],
       "dbWrite": [
-        "market_cash_destinations"
+        "market_cash_destinations",
+        "cash_custody_receipts",
+        "cash_custody_losses"
       ],
       "dbWriteVia": [
         {
@@ -105204,6 +105329,10 @@
         }
       ],
       "doctrines": [
+        "cash_custody_single_balance_authority",
+        "declaration_is_not_transfer",
+        "closure_only_on_controlled_final_reception",
+        "loss_is_central_decision",
         "no_recipient_added_freely_by_relay_agent",
         "two_distinct_actors_for_destination_activation",
         "central_custody_limits_non_bypassable",
@@ -105217,6 +105346,10 @@
       ],
       "mustCheck": [
         "db:assignment_memberships",
+        "db:cash_custody_losses",
+        "db:cash_custody_movements",
+        "db:cash_custody_receipts",
+        "db:cash_deposits",
         "db:market_cash_control_policies",
         "db:market_cash_destinations",
         "db:market_delegation_audit",
@@ -105224,8 +105357,12 @@
         "db:markets",
         "db:membership_capabilities",
         "db:users",
+        "doctrine:cash_custody_single_balance_authority",
         "doctrine:central_custody_limits_non_bypassable",
         "doctrine:client_market_id_never_authority",
+        "doctrine:closure_only_on_controlled_final_reception",
+        "doctrine:declaration_is_not_transfer",
+        "doctrine:loss_is_central_decision",
         "doctrine:no_recipient_added_freely_by_relay_agent",
         "doctrine:two_distinct_actors_for_destination_activation",
         "impact:cash-custody",
@@ -105233,9 +105370,11 @@
         "impact:market-delegation",
         "impact:payment",
         "routes/market-delegation-cash-control.js",
+        "services/cash-deposit-service.js",
         "services/finance-accounting-workspace.js",
         "services/market-cash-control-policy-service.js",
         "services/market-delegation-service.js",
+        "services/radar-alerts/cash-reconciliation-signals.js",
         "utils/rules.js"
       ]
     },
@@ -105249,7 +105388,8 @@
       "directDependsOn": [
         "db.js",
         "utils/currency.js",
-        "services/market-delegation-service.js"
+        "services/market-delegation-service.js",
+        "services/cash-custody-service.js"
       ],
       "directUsedBy": [
         "routes/cash.js",
@@ -105260,11 +105400,11 @@
         "cash_collections",
         "cash_deposit_allocations",
         "cash_deposits",
+        "cash_custody_movements",
         "relais",
         "users"
       ],
       "dbWrite": [
-        "cash_deposit_allocations",
         "cash_deposits",
         "market_delegation_audit"
       ],
@@ -105280,6 +105420,7 @@
       ],
       "mustCheck": [
         "db:cash_collections",
+        "db:cash_custody_movements",
         "db:cash_deposit_allocations",
         "db:cash_deposits",
         "db:market_delegation_audit",
@@ -105291,6 +105432,7 @@
         "impact:cash-reconciliation",
         "impact:payment",
         "routes/cash.js",
+        "services/cash-custody-service.js",
         "services/finance-accounting-workspace.js",
         "services/market-delegation-service.js",
         "services/radar-alerts/cash-reconciliation-signals.js",
@@ -109224,8 +109366,8 @@
       "dbRead": [
         "orders",
         "cash_collections",
-        "cash_deposit_allocations",
         "cash_deposits",
+        "cash_custody_movements",
         "users",
         "relais",
         "invoices"
@@ -109262,7 +109404,7 @@
       ],
       "mustCheck": [
         "db:cash_collections",
-        "db:cash_deposit_allocations",
+        "db:cash_custody_movements",
         "db:cash_deposits",
         "db:invoices",
         "db:market_delegation_audit",
@@ -117888,7 +118030,8 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/cash-deposit-service.js"
+        "services/cash-deposit-service.js",
+        "services/cash-custody-service.js"
       ],
       "directUsedBy": [
         "services/radar-queries.js"
@@ -117897,8 +118040,8 @@
       "dbRead": [
         "orders",
         "cash_collections",
-        "cash_deposit_allocations",
         "cash_deposits",
+        "cash_custody_movements",
         "users"
       ],
       "dbWrite": [],
@@ -117911,12 +118054,13 @@
       ],
       "mustCheck": [
         "db:cash_collections",
-        "db:cash_deposit_allocations",
+        "db:cash_custody_movements",
         "db:cash_deposits",
         "db:orders",
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:decision-signals",
+        "services/cash-custody-service.js",
         "services/cash-deposit-service.js",
         "services/radar-queries.js"
       ]

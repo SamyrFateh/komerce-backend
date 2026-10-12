@@ -5227,6 +5227,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/finance-accounting-workspace-decision.js",
+        "resolvedPath": "public/dashboards/canonical/js/finance-accounting-workspace-decision.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/sourcing-workspace.js",
         "resolvedPath": "public/dashboards/canonical/js/sourcing-workspace.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10533,6 +10540,13 @@
       {
         "feature": "infrastructure",
         "category": "ci",
+        "declared": ".github/workflows/nightly-e2e-certification.yml",
+        "resolvedPath": ".github/workflows/nightly-e2e-certification.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
         "declared": ".github/workflows/staging-discovery-ops.yml",
         "resolvedPath": ".github/workflows/staging-discovery-ops.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15139,6 +15153,13 @@
       {
         "feature": "payments",
         "category": "services",
+        "declared": "services/cash-custody-service.js",
+        "resolvedPath": "services/cash-custody-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
         "declared": "services/reconciliation-service.js",
         "resolvedPath": "services/reconciliation-service.js",
         "status": "resolved-in-technical-graph"
@@ -15267,6 +15288,20 @@
         "category": "migrations",
         "declared": "migrations/285_market_payment_accounts.sql",
         "resolvedPath": "migrations/285_market_payment_accounts.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
+        "declared": "migrations/287_cash_custody_ledger.sql",
+        "resolvedPath": "migrations/287_cash_custody_ledger.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
+        "declared": "migrations/288_cash_custody_recipients.sql",
+        "resolvedPath": "migrations/288_cash_custody_recipients.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -27055,6 +27090,12 @@
         "resolved": true
       },
       {
+        "from": "market-delegation",
+        "to": "payments",
+        "raw": "payments",
+        "resolved": true
+      },
+      {
         "from": "market-operator-dashboard",
         "to": "market",
         "raw": "market (markets, Currency Boundary ; operator_market_scopes uniquement comme projection de compatibilité des surfaces non encore migrées)",
@@ -27898,6 +27939,12 @@
         "from": "decision-signals",
         "to": "market-delegation",
         "raw": "market-delegation (resolution serveur du Market ID, capability dashboard.market.read / decision_signal.manage et audit des mutations pays)",
+        "resolved": true
+      },
+      {
+        "from": "decision-signals",
+        "to": "payments",
+        "raw": "payments (services/cash-deposit-service.js — couverture cash canonique UNCOVERED_COLLECTIONS_CTE : seul un depot verifie couvre un encaissement ; lecture seule, aucune mutation de depot)",
         "resolved": true
       }
     ],
@@ -34189,8 +34236,16 @@
                 "targetFile": "services/cash-deposit-service.js"
               },
               {
+                "sourceFileId": "services/finance-accounting-workspace.js",
+                "targetFile": "services/cash-custody-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/finance-accounting-workspace.test.js",
                 "targetFile": "services/cash-deposit-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/finance-accounting-workspace.test.js",
+                "targetFile": "services/cash-custody-service.js"
               }
             ]
           }
@@ -34479,13 +34534,21 @@
                 "targetFile": "services/cash-deposit-service.js"
               },
               {
+                "sourceFileId": "services/radar-alerts/cash-reconciliation-signals.js",
+                "targetFile": "services/cash-custody-service.js"
+              },
+              {
                 "sourceFileId": "services/signal-service.js",
                 "targetFile": "services/cash-deposit-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/radar-alerts-cash-reconciliation-signals.test.js",
+                "targetFile": "services/cash-custody-service.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "decision-signals",
@@ -38867,6 +38930,26 @@
       },
       {
         "from": "market-delegation",
+        "to": "payments",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-cash-control-policy-service.js",
+                "targetFile": "services/cash-custody-service.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-cash-control.js",
+                "targetFile": "services/cash-custody-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
         "to": "providers-services",
         "channels": [
           {
@@ -40623,6 +40706,10 @@
                 "targetFile": "utils/rules.js"
               },
               {
+                "sourceFileId": "services/cash-custody-service.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
                 "sourceFileId": "tests/unit/cash-reminder-service.test.js",
                 "targetFile": "utils/rules.js"
               }
@@ -41079,6 +41166,10 @@
                 "targetFile": "utils/currency.js"
               },
               {
+                "sourceFileId": "services/cash-custody-service.js",
+                "targetFile": "utils/currency.js"
+              },
+              {
                 "sourceFileId": "services/payment-mobile-money.js",
                 "targetFile": "utils/currency.js"
               },
@@ -41103,6 +41194,14 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/cash-deposit-service.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "services/cash-custody-service.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
                 "sourceFileId": "services/market-payment-account-service.js",
                 "targetFile": "services/market-delegation-service.js"
               },
@@ -41113,6 +41212,10 @@
               {
                 "sourceFileId": "tests/unit/market-payment-accounts.test.js",
                 "targetFile": "services/market-delegation-team-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/cash-deposit-service.test.js",
+                "targetFile": "services/market-delegation-service.js"
               }
             ]
           },
@@ -44962,7 +45065,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2018
+        "filesObserved": 2020
       },
       "boutique": {
         "filesObserved": 214,
@@ -45001,7 +45104,7 @@
       "NON_RUNTIME_TEST": 16,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
-      "CROSS_FEATURE_DIRECT_IMPORT": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT": 0,
       "BUSINESS_FEATURE_INTERFACE": 0,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -45036,23 +45139,6 @@
         "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
-      },
-      {
-        "from": "decision-signals",
-        "to": "payments",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "piloting-capability",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
       },
       {
         "from": "infrastructure",
@@ -45569,7 +45655,6 @@
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|frontend-transversal|business-file-import": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|piloting-capability|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 8,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
@@ -45592,9 +45677,7 @@
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
-    "missingExceptions": [
-      "decision-signals->payments"
-    ],
+    "missingExceptions": [],
     "emptyRationaleExceptions": [],
     "unexplainedRuntimeCycles": [],
     "ontologyGapCoverage": {
@@ -47726,7 +47809,33 @@
       "lifecycleOwner": "payments",
       "resolution": "single-writer"
     },
+    "cash_deposit_allocations": {
+      "writers": [
+        {
+          "feature": "payments",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "payments",
+      "resolution": "single-writer"
+    },
     "cash_deposits": {
+      "writers": [
+        {
+          "feature": "payments",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "payments",
+      "resolution": "single-writer"
+    },
+    "market_cash_destinations": {
       "writers": [
         {
           "feature": "payments",
@@ -48131,8 +48240,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 604,
-        "technicalNodesOwned": 604,
+        "technicalNodesTotal": 605,
+        "technicalNodesOwned": 605,
         "technicalOrphans": 0
       },
       "dash": {
@@ -48231,20 +48340,8 @@
   },
   "drifts": {
     "error": [],
-    "warn": [
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "decision-signals -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"decision-signals\" vers \"payments\""
-      }
-    ],
-    "debt": [
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "decision-signals -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"decision-signals\" vers \"payments\""
-      }
-    ],
+    "warn": [],
+    "debt": [],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -48545,11 +48642,11 @@
       }
     ],
     "summary": {
-      "signals": 1,
-      "debt": 1,
+      "signals": 0,
+      "debt": 0,
       "expectedTopology": 47,
       "generatorLimitations": 12,
-      "classifiedCandidates": 60
+      "classifiedCandidates": 59
     }
   }
 }

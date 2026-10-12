@@ -523,3 +523,14 @@ describe('cancelBackorder', () => {
     expectTransactionCommitted(client);
   });
 });
+
+describe('transitionParcelStatus — horodatage de disponibilité', () => {
+  test("available pose available_at et n'écrit jamais received_at (colonne absente du schéma live)", async () => {
+    const { transitionParcelStatus } = require('../../services/parcel-operations');
+    const client = { query: jest.fn().mockResolvedValue({ rows: [{ status: 'arrived' }], rowCount: 1 }) };
+    await transitionParcelStatus(client, 'p1', 'available', { skipValidation: true });
+    const update = client.query.mock.calls.map(c => c[0]).find(sql => /UPDATE parcels SET/.test(sql));
+    expect(update).toContain('available_at = COALESCE(available_at, NOW())');
+    expect(update).not.toContain('received_at');
+  });
+});

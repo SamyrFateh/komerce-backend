@@ -13,11 +13,11 @@
 | NON_RUNTIME_TEST | 16 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
-| CROSS_FEATURE_DIRECT_IMPORT | 1 |
+| CROSS_FEATURE_DIRECT_IMPORT | 0 |
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **37** |
+| **TOTAL** | **36** |
 
 ## The 94 pairs (from → to)
 
@@ -47,7 +47,6 @@
 | market → market-delegation | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | market-control-plane → orders | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | market-delegation → market-operator-dashboard | NON_RUNTIME_TEST | TEST_ONLY | business-feature | unclassified | static-code | business-file-import | non-runtime-evidence | — | `` |
-| market-delegation → payments | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_ONLY | business-feature | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
 | platform-ops → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → notifications | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-transversal | business-transversal | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → payments | NON_RUNTIME_TEST | TEST_ONLY | technical-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
