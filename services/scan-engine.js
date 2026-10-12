@@ -36,7 +36,10 @@
  *   - Jamais de suppression, toujours correction append-only
  */
 const pool = require('../db');
-const { createScanIncident: createIncident } = require('./incident-write-service');
+const {
+  createScanIncident: createIncident,
+  resolvePhysicalProofIncident,
+} = require('./incident-write-service');
 const log = require('../utils/logger').child({ module: 'scan-engine' });
 log.info('[SCAN-ENGINE] version 5ed2bac loaded');
 
@@ -126,6 +129,10 @@ async function processScan(params) {
     await _applyEvent(client, params, parcel, parcelItems, flow, result);
 
     await _finalizeAndLog(client, params, parcel, flow, qtyBefore, result);
+
+    // F3 — a corrective physical scan is the proof. Revalidate active
+    // PHYSICAL_PROOF incidents for this parcel in the SAME transaction.
+    await _resolvePhysicalProofIncidents(client, params, result);
 
     await client.query('COMMIT');
 
@@ -433,6 +440,56 @@ async function _finalizeAndLog(client, params, parcel, flow, qtyBefore, result) 
 
   // ── 12. Propager vers order_items + recalculer statut commande ──
   await syncOrderFromParcels(client, parcel.order_id);
+}
+
+/**
+ * F3 — close only physical incidents whose predicate is restored by this scan.
+ * Incident Management remains the sole terminal boundary; Scan Engine owns the
+ * physical predicate and supplies the fresh append-only scan as proof.
+ */
+async function _resolvePhysicalProofIncidents(client, params, result) {
+  if (!result.event_id) return;
+  const { rows: incidents } = await client.query(`
+    SELECT id, incident_type, details
+      FROM incidents
+     WHERE parcel_id = $1
+       AND status IN ('open', 'investigating')
+       AND origin_domain = 'LOGISTICS'
+       AND resolver_domain = 'LOGISTICS'
+       AND resolution_class = 'PHYSICAL_PROOF'
+     FOR UPDATE
+  `, [params.parcel_id]);
+
+  for (const incident of incidents) {
+    const resolution = await resolvePhysicalProofIncident(client, {
+      incidentId: incident.id,
+      proofScanEventId: result.event_id,
+      resolvedBy: params.scanned_by || null,
+      notes: `Revalidation by ${params.event_type}`,
+      revalidate: async (executor, { incident: lockedIncident }) => {
+        if (lockedIncident.incident_type === 'weight_mismatch') {
+          const { rows: [p] } = await executor.query(
+            'SELECT expected_weight_kg, actual_weight_kg FROM parcels WHERE id = $1',
+            [params.parcel_id]
+          );
+          if (!p || p.expected_weight_kg == null || p.actual_weight_kg == null || Number(p.expected_weight_kg) <= 0) return false;
+          return Math.abs(Number(p.actual_weight_kg) - Number(p.expected_weight_kg)) <= Number(p.expected_weight_kg) * 0.15;
+        }
+        if (lockedIncident.incident_type === 'content_mismatch') {
+          const { rows: [p] } = await executor.query(
+            'SELECT verification_status FROM parcels WHERE id = $1',
+            [params.parcel_id]
+          );
+          return Boolean(p && p.verification_status === 'verified');
+        }
+        return false;
+      },
+    });
+    if (resolution.resolved) {
+      result.resolved_incidents = result.resolved_incidents || [];
+      result.resolved_incidents.push(incident.id);
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════════════════
