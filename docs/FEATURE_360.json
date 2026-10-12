@@ -53,15 +53,15 @@
   },
   "summary": {
     "features": 40,
-    "healthy": 33,
+    "healthy": 34,
     "attention": 6,
-    "blocked": 1,
-    "businessDependencies": 304,
-    "directCrossFeatureImports": 1,
+    "blocked": 0,
+    "businessDependencies": 306,
+    "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 11,
+    "debtItemsTotal": 10,
     "gateHealthy": 37,
     "gateBlocked": 2
   },
@@ -6334,7 +6334,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 150,
+            "count": 151,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6904,6 +6904,11 @@
               {
                 "declared": "dashboards/canonical/js/demo-order-flow.js",
                 "resolvedPath": "public/dashboards/canonical/js/demo-order-flow.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/finance-accounting-workspace-decision.js",
+                "resolvedPath": "public/dashboards/canonical/js/finance-accounting-workspace-decision.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8339,7 +8344,7 @@
             ]
           }
         },
-        "totalFiles": 395,
+        "totalFiles": 396,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -9364,6 +9369,13 @@
           ]
         },
         {
+          "provider": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -9419,8 +9431,8 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 1,
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -9444,14 +9456,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -13059,7 +13065,7 @@
             ]
           },
           "ci": {
-            "count": 23,
+            "count": 24,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -13154,6 +13160,11 @@
               {
                 "declared": ".github/workflows-disabled/lot8-reconcile-current-main-once.yml",
                 "resolvedPath": ".github/workflows-disabled/lot8-reconcile-current-main-once.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/nightly-e2e-certification.yml",
+                "resolvedPath": ".github/workflows/nightly-e2e-certification.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -14809,7 +14820,7 @@
             ]
           }
         },
-        "totalFiles": 380,
+        "totalFiles": 381,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -21213,6 +21224,13 @@
           ]
         },
         {
+          "provider": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "providers-services",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -23803,7 +23821,7 @@
             ]
           },
           "migrations": {
-            "count": 6,
+            "count": 8,
             "files": [
               {
                 "declared": "migrations/079_paypal_payment_mode.sql",
@@ -23833,6 +23851,16 @@
               {
                 "declared": "migrations/285_market_payment_accounts.sql",
                 "resolvedPath": "migrations/285_market_payment_accounts.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/287_cash_custody_ledger.sql",
+                "resolvedPath": "migrations/287_cash_custody_ledger.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/288_cash_custody_recipients.sql",
+                "resolvedPath": "migrations/288_cash_custody_recipients.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -23888,11 +23916,16 @@
             ]
           },
           "services": {
-            "count": 20,
+            "count": 21,
             "files": [
               {
                 "declared": "services/cash-confirmation-control-service.js",
                 "resolvedPath": "services/cash-confirmation-control-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/cash-custody-service.js",
+                "resolvedPath": "services/cash-custody-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -24168,7 +24201,7 @@
             ]
           }
         },
-        "totalFiles": 72,
+        "totalFiles": 75,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 6,
@@ -24229,7 +24262,15 @@
             "resolution": "single-writer"
           },
           {
+            "table": "cash_deposit_allocations",
+            "resolution": "single-writer"
+          },
+          {
             "table": "cash_deposits",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "market_cash_destinations",
             "resolution": "single-writer"
           },
           {
@@ -24263,7 +24304,19 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "cash_deposit_allocations",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "cash_deposits",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_cash_destinations",
             "mode": "RW",
             "lifecycleOwner": "payments",
             "ownershipStatus": "owner"
@@ -24343,7 +24396,15 @@
             "resolution": "single-writer"
           },
           {
+            "table": "cash_deposit_allocations",
+            "resolution": "single-writer"
+          },
+          {
             "table": "cash_deposits",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "market_cash_destinations",
             "resolution": "single-writer"
           },
           {
@@ -24377,7 +24438,19 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "cash_deposit_allocations",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "cash_deposits",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_cash_destinations",
             "mode": "RW",
             "lifecycleOwner": "payments",
             "ownershipStatus": "owner"
@@ -24580,6 +24653,13 @@
           ]
         },
         {
+          "consumer": "decision-signals",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -24599,6 +24679,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {

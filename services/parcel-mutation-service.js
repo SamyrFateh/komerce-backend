@@ -8,7 +8,7 @@
  * @outputs       parcel_mutation_result
  * @depends       none
  * @used-by       routes/hub-dashboard.js, services/customs-shipment-service.js, services/cash-reminder-service.js
- * @db-read       none
+ * @db-read       orders
  * @db-write      parcels
  * @db-txn        caller_owned_queryable
  * @doctrine      lifecycle_owner_boundary, preserve_caller_transaction
