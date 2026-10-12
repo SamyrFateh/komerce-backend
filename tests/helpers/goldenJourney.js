@@ -244,6 +244,49 @@ async function advanceGoldenRelayAvailable(db, reference) {
   return inspectGoldenJourney(db, reference);
 }
 
+
+async function advanceGoldenCustomerHandoff(db, reference) {
+  assertTestDatabase();
+  const inspection = await inspectGoldenJourney(db, reference);
+  if (!inspection.next || inspection.next.key !== 'CUSTOMER_HANDOFF') {
+    throw new Error('Golden CUSTOMER_HANDOFF is not the current boundary');
+  }
+
+  const order = await resolveGoldenOrder(db, reference);
+  const parcel = (await db.query(
+    "SELECT id, relais_id FROM parcels WHERE order_id=$1 AND status='available' ORDER BY created_at LIMIT 1",
+    [order.id]
+  )).rows[0];
+  if (!parcel) throw new Error('Golden CUSTOMER_HANDOFF requires an available parcel');
+
+  const scanId = uuid();
+  await db.query('BEGIN');
+  try {
+    await db.query(
+      `INSERT INTO scans
+         (id,order_id,parcel_id,step,scanned_by,scan_code,notes,pickup_method,pickup_relais_id)
+       VALUES ($1,$2,$3,'collected',$4,$5,
+               'Golden human acceptance — pickup code verified',
+               'PICKUP_CODE',$6)`,
+      [scanId, order.id, parcel.id, order.user_id, order.reference, parcel.relais_id]
+    );
+    await db.query(
+      "UPDATE parcels SET status='collected', collected_at=NOW(), updated_at=NOW() WHERE id=$1",
+      [parcel.id]
+    );
+    await db.query(
+      "UPDATE orders SET status='collected', collected_at=NOW(), updated_at=NOW() WHERE id=$1",
+      [order.id]
+    );
+    await db.query('COMMIT');
+  } catch (error) {
+    await db.query('ROLLBACK');
+    throw error;
+  }
+
+  return inspectGoldenJourney(db, reference);
+}
+
 module.exports = {
   PROGRESSIVE_BOUNDARIES,
   assertGoldenReference,
@@ -254,4 +297,5 @@ module.exports = {
   advanceGoldenHubInbound,
   advanceGoldenCustoms,
   advanceGoldenRelayAvailable,
+  advanceGoldenCustomerHandoff,
 };
