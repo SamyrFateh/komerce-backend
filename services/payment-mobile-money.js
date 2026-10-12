@@ -391,6 +391,9 @@ async function finalizeSucceededTransaction(tx, providerResult) {
     orderReference = locked.order_reference;
 
     if (locked.status === 'succeeded' || locked.payment_status === 'paid') {
+      // Concurrency fence: another reconciliation may have finalized this
+      // transaction while this caller was waiting on FOR UPDATE. Never run
+      // payment-cycle side effects twice.
       if (locked.status !== 'succeeded') {
         await client.query(
           `UPDATE mobile_money_transactions
@@ -502,8 +505,10 @@ async function reconcileMobileMoneyTransaction(transactionId, { expectedProvider
   if (expectedProvider && tx.provider !== expectedProvider) {
     throw new MobileMoneyError('mobile_money_provider_mismatch', 'Provider incohérent', 400);
   }
+  // `succeeded` is the only terminal state that may short-circuit provider truth.
+  // A late provider success after a local failed/expired observation must still
+  // be recoverable: asynchronous rails can deliver observations out of order.
   if (tx.status === 'succeeded') return { transaction: publicTransaction(tx), reconciled: false };
-  if (tx.status === 'failed' || tx.status === 'expired') return { transaction: publicTransaction(tx), reconciled: false };
   if (!tx.external_transaction_id) {
     return { transaction: publicTransaction(tx), reconciled: false };
   }
@@ -564,7 +569,7 @@ async function reconcileMobileMoneyTransaction(transactionId, { expectedProvider
             completed_at = CASE WHEN $2 IN ('failed','expired') THEN COALESCE(completed_at,NOW()) ELSE completed_at END,
             updated_at=NOW()
       WHERE id=$1
-        AND status IN ('initiated','pending')
+        AND status <> 'succeeded'
       RETURNING *`,
     [tx.id, normalized, providerResult.providerStatus || 'UNKNOWN', JSON.stringify({ provider: providerResult.safePayload || {} })]
   );

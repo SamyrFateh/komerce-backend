@@ -33,8 +33,9 @@ async function reconcilePendingMobileMoney({ limit = 25 } = {}) {
   const { rows } = await db.query(
     `SELECT id
        FROM mobile_money_transactions
-      WHERE status IN ('initiated', 'pending')
+      WHERE status IN ('initiated', 'pending', 'failed', 'expired')
         AND updated_at < NOW() - INTERVAL '20 seconds'
+        AND (status IN ('initiated','pending') OR completed_at > NOW() - INTERVAL '24 hours')
       ORDER BY updated_at ASC
       LIMIT $1`,
     [safeLimit]
