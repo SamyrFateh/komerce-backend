@@ -488,13 +488,23 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    await safeSyncScanToParcels({
+    const shipmentSync = await safeSyncScanToParcels({
       order_id: parcel.order_id,
       step: 'shipped',
       scan_id: null,
       scanned_by: req.user.id,
       notes: notes || `Expédié par hub — transport: ${transport || 'non spécifié'}`
     });
+
+    // L'expédition est une transition métier : une sync silencieusement échouée
+    // ne peut jamais produire un HTTP 200 ni un commentaire « expédié ».
+    if (!shipmentSync.synced) {
+      return res.status(503).json({
+        error: 'Synchronisation de l’expédition non confirmée',
+        code: 'SHIPMENT_SYNC_FAILED',
+        retryable: true,
+      });
+    }
 
     await appendParcelShipmentInfo(db, {
       parcelId: parcel.id,
