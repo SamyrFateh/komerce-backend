@@ -289,9 +289,12 @@ async function advanceGoldenCustomerHandoff(db, reference) {
 
 
 async function advanceGoldenJourney(db, reference) {
-  assertTestDatabase();
   const inspection = await inspectGoldenJourney(db, reference);
-  if (!inspection.next) return inspection;
+  if (!inspection.next || inspection.next.key === 'FINANCIAL_CLOSE') return inspection;
+
+  // The DB guard belongs to mutation paths only. Observation-only status and
+  // financial-close projection remain safe to call without a writable E2E DB.
+  assertTestDatabase();
 
   switch (inspection.next.key) {
     case 'HUB_INBOUND':
