@@ -89,7 +89,7 @@ jest.mock('../../services/hub-dashboard-queries', () => ({
 }));
 
 jest.mock('../../services/order-status-machine', () => ({ transitionOrderStatus: jest.fn() }));
-jest.mock('../../utils/parcelSync', () => ({ safeSyncScanToParcels: jest.fn().mockResolvedValue({}) }));
+jest.mock('../../utils/parcelSync', () => ({ safeSyncScanToParcels: jest.fn().mockResolvedValue({ synced: true }) }));
 jest.mock('../../utils/reference', () => ({ generateParcelRef: jest.fn().mockResolvedValue('COL-000123') }));
 jest.mock('../../services/parcel-security', () => ({
   generateExternalCode: jest.fn(() => 'EXT-STUB'),
