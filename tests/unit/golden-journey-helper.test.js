@@ -61,3 +61,20 @@ test('ne propose aucune progression lorsque toutes les frontières sont prouvée
   const projection = { steps: PROGRESSIVE_BOUNDARIES.map(key => ({ key, passed: true })) };
   expect(nextGoldenBoundary(projection)).toBeNull();
 });
+
+
+test('la clôture financière reste observation-only dans le driver', async () => {
+  const helper = require('../helpers/goldenJourney');
+  const order = { id: 'order-1', reference: 'K-GOLDEN-CLOSE' };
+  const steps = helper.PROGRESSIVE_BOUNDARIES.map(key => ({
+    key,
+    passed: key !== 'FINANCIAL_CLOSE',
+    evidence: key === 'FINANCIAL_CLOSE' ? 'FINANCIAL_CLOSE_PENDING' : 'MATCHED',
+  }));
+  const db = { query: jest.fn().mockResolvedValue({ rows: [order] }) };
+  mockProject.mockResolvedValue({ steps });
+
+  const result = await helper.advanceGoldenJourney(db, order.reference);
+  expect(result.next).toMatchObject({ key: 'FINANCIAL_CLOSE' });
+  expect(db.query.mock.calls.every(([sql]) => /^SELECT /i.test(sql.trim()))).toBe(true);
+});
