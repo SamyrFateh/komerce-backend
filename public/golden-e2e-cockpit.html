@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Komerce · Golden E2E Cockpit</title>
+  <style>
+    :root{font-family:Inter,system-ui,sans-serif;color:#171717;background:#f6f5f2}*{box-sizing:border-box}body{margin:0}.shell{max-width:1180px;margin:auto;padding:28px}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6b6b}h1{margin:5px 0 6px;font-size:28px}.sub{color:#686868}.badge{padding:8px 12px;border:1px solid #d6d3cd;border-radius:999px;font-weight:800;font-size:12px;background:white}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0}.stat,.panel{background:white;border:1px solid #ddd9d1;border-radius:16px;padding:16px}.stat small{display:block;color:#777;margin-bottom:6px}.stat strong{font-size:18px}.rail{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:18px 0}.stepbtn{min-height:54px;border:1px solid #d9d6d0;border-radius:12px;background:white;font-weight:800;cursor:pointer}.stepbtn.active{outline:3px solid #222}.stepbtn.pass{background:#eef4ed}.stepbtn.fail{background:#f8ecea}.grid{display:grid;grid-template-columns:1.3fr .7fr;gap:14px}.panel h2{margin:6px 0 8px}.callout{background:#f5f3ef;border-radius:12px;padding:14px;margin:14px 0}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.btn,a.btn{border:1px solid #222;border-radius:10px;padding:11px 14px;background:#fff;color:#111;text-decoration:none;font-weight:800;cursor:pointer}.btn.primary{background:#191919;color:white}.btn.danger{border-color:#9f3028}.links{display:grid;gap:8px;margin-top:12px}.links a{color:#171717;font-weight:750}.mono{font-family:ui-monospace,SFMono-Regular,monospace;word-break:break-all}.muted{color:#707070}.blocked{padding:12px;border-radius:10px;background:#f8ecea;margin-top:12px}.hidden{display:none}@media(max-width:760px){.shell{padding:16px}.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.rail{grid-template-columns:repeat(5,1fr)}.top{display:block}.badge{display:inline-block;margin-top:12px}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <div class="top"><div><div class="eyebrow">Recette humaine · Customer → Customer</div><h1>Golden Order Cockpit</h1><div class="sub">Guide visuel relié aux vraies interfaces Komerce. Aucun état métier n'est modifié depuis ce cockpit.</div></div><span id="global" class="badge">PRÊT</span></div>
+  <div class="stats"><div class="stat"><small>Market</small><strong>KM · Comores</strong></div><div class="stat"><small>Commande</small><strong id="orderRef">à renseigner</strong></div><div class="stat"><small>Validé</small><strong id="score">0 / 10</strong></div><div class="stat"><small>Verdict humain</small><strong id="verdict">En attente</strong></div></div>
+  <div id="rail" class="rail" aria-label="Étapes de recette"></div>
+  <div class="grid">
+    <section class="panel">
+      <div id="num" class="eyebrow"></div><h2 id="title"></h2><p id="meaning"></p>
+      <div class="callout"><div class="eyebrow">Ce que tu dois voir</div><p id="see"></p></div>
+      <div><div class="eyebrow">Preuve attendue</div><p id="proof"></p></div>
+      <div class="actions"><a id="openReal" class="btn primary" target="_blank" rel="noopener">Ouvrir l'écran réel ↗</a><button id="pass" class="btn" type="button">✓ Conforme</button><button id="fail" class="btn danger" type="button">✕ Anomalie</button></div>
+      <div id="blocked" class="blocked hidden">Recette bloquée ici : ne pas promouvoir l'étape suivante tant que l'écart n'est pas compris.</div>
+    </section>
+    <aside class="panel">
+      <div class="eyebrow">Acteur</div><h2 id="actor"></h2><div id="surface" class="muted"></div>
+      <div class="callout"><div class="eyebrow">Liens utiles</div><div id="links" class="links"></div></div>
+      <div class="eyebrow">Golden Order</div><p class="muted">Colle la référence générée par la recette pour que les liens Order 360 pointent sur la commande exacte.</p>
+      <form id="refForm"><input id="refInput" aria-label="Référence commande" placeholder="K-GOLDEN-..." style="width:100%;padding:12px;border:1px solid #ccc;border-radius:10px;font-size:16px"><button class="btn" style="margin-top:8px" type="submit">Utiliser cette référence</button></form>
+      <button id="reset" class="btn" style="margin-top:18px" type="button">Réinitialiser le suivi humain</button>
+    </aside>
+  </div>
+</main>
+<script>
+(()=>{const steps=[
+['Commande client','Client / Admin','/admin/operations','La commande Comores existe avec la bonne identité métier.','Référence, client, relais, montant et lignes cohérents.','La commande apparaît dans Opérations et sa fiche 360 est accessible.'],
+['Paiement client','Client / Finance','/admin/finance','Le paiement client est confirmé sans duplication.','payment_status=paid et preuve liée à cette commande.','La commande est payée ; Finance reflète le même fait.'],
+['Achat fournisseur','Achats','/admin/workspaces/purchasing','Le besoin client devient une PO fournisseur.','PO + ligne d’achat vers le SKU exact vendu.','Une PO existe avec fournisseur, quantité et SKU corrects.'],
+['Exécution fournisseur','Achats','/admin/workspaces/purchasing','La commande et le paiement fournisseur ont leur preuve propre.','Supplier execution + paiement matched + débit réel vérifié.','L’exécution fournisseur est rattachée à la bonne PO.'],
+['Fulfillment','Achats / Logistique','/admin/workspaces/purchasing','Le fournisseur a expédié ; cela ne prouve pas le Hub.','Fulfillment + tracking présents, Hub encore PENDING.','Le tracking existe sans fausse réception physique.'],
+['Réception Hub','Agent Hub','/admin/hub-live','Une unité physique est reçue et affectée.','Allocation + physical unit + placement RECEIVE.','Hub Live montre la réception et la quantité exacte.'],
+['Transport & douane','Transitaire / Ops','/admin/workspaces/shipping-customs','Le colis rejoint le market et passe la frontière douane.','Parcel + shipment + déclaration et coûts réels.','La disponibilité reste bloquée tant que la douane n’est pas déclarée.'],
+['Disponible relais','Agent Relais','/admin/relais-live','Le colis est réellement disponible au relais choisi.','Parcel/order AVAILABLE après le gate douane.','Relais Live montre le colis dans la bonne file.'],
+['Remise client','Agent Relais / Client','/admin/relais-live','La remise client possède une preuve autorisée.','Scan COLLECTED + PICKUP_CODE + bon relais.','Après retrait, colis et commande sont collectés.'],
+['Clôture financière','Finance','/admin/workspaces/accounting','Toutes les frontières et tous les coûts convergent.','FINANCIAL_CLOSE_MATCHED + economic maturity + aucune divergence.','Comptabilité/Finance reflètent une boucle entièrement fermée.']
+];let cur=0,ref='',states=Array(10).fill('pending');const $=x=>document.getElementById(x);function href(path){return path}function render(){const s=steps[cur],n=states.filter(x=>x==='pass').length;$('num').textContent='Étape '+(cur+1)+' / 10';$('title').textContent=s[0];$('actor').textContent=s[1];$('surface').textContent=s[2];$('meaning').textContent=s[3];$('proof').textContent=s[4];$('see').textContent=s[5];$('score').textContent=n+' / 10';$('verdict').textContent=n===10?'Golden certifié':states.includes('fail')?'Bloqué':'En cours';$('global').textContent=n===10?'GOLDEN VERT':states.includes('fail')?'BLOQUÉ':'EN RECETTE';$('blocked').classList.toggle('hidden',states[cur]!=='fail');$('openReal').href=href(s[2]);$('orderRef').textContent=ref||'à renseigner';const links=$('links');links.innerHTML='';[['Pilotage','/admin/pilotage'],['Action Center','/admin/action-center'],['Order 360',ref?'/admin/orders/'+encodeURIComponent(ref):'/admin/operations']].forEach(([label,url])=>{const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';a.textContent=label+' ↗';links.appendChild(a)});const rail=$('rail');rail.innerHTML='';steps.forEach((x,i)=>{const b=document.createElement('button');b.type='button';b.className='stepbtn '+(i===cur?'active ':'')+states[i];b.textContent=(states[i]==='pass'?'✓ ':states[i]==='fail'?'! ':'')+(i+1);b.title=x[0];b.addEventListener('click',()=>{cur=i;render()});rail.appendChild(b)})}
+$('pass').addEventListener('click',()=>{states[cur]='pass';if(cur<9)cur++;render()});$('fail').addEventListener('click',()=>{states[cur]='fail';render()});$('reset').addEventListener('click',()=>{states.fill('pending');cur=0;render()});$('refForm').addEventListener('submit',e=>{e.preventDefault();ref=$('refInput').value.trim().slice(0,80);render()});render()})();
+</script>
+</body></html>

@@ -111,6 +111,12 @@ function mountHtmlRoutes(app, rootDir) {
   // Les signets existants arrivent sur l'écran qui porte désormais ces files ; /admin/orders/:ref est inchangé.
   app.get('/admin/orders', (req, res) => res.redirect(302, '/admin/operations'));
 
+  // Golden E2E cockpit — guide de recette humaine, lecture/navigation uniquement.
+  // Il ne porte aucune autorité métier et ne modifie aucun état applicatif.
+  app.get('/admin/golden-e2e', (_req, res) => {
+    sendHtml(res, path.join(publicDir, 'golden-e2e-cockpit.html'));
+  });
+
   [
     '/admin',
     '/admin/commerce',
