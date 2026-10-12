@@ -154,6 +154,14 @@ function actionActor(req) {
   };
 }
 
+function sendCashConfirmationResult(res, result) {
+  return res.status(result.pending_second_approval ? 202 : 200).json({
+    ok: !result.pending_second_approval,
+    action: 'confirm_cash',
+    result,
+  });
+}
+
 function sendWorkspaceError(err, res, next) {
   if (err instanceof workspace.OperationsWorkspaceError) {
     return res.status(err.status || 400).json({ error: err.message, code: err.code });
@@ -253,7 +261,7 @@ router.post(
         req.workspaceMarket,
         actionActor(req)
       );
-      return res.status(result.pending_second_approval ? 202 : 200).json({\n        ok: !result.pending_second_approval, action: 'confirm_cash', result\n      });
+      return sendCashConfirmationResult(res, result);
     } catch (err) {
       return sendWorkspaceError(err, res, next);
     }
@@ -327,5 +335,6 @@ module.exports._test = {
   requireWorkspaceReadAccess,
   requireRelayPhysicalMarket,
   actionActor,
+  sendCashConfirmationResult,
   sendWorkspaceError,
 };
