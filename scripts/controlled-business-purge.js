@@ -86,7 +86,6 @@ const ROOT_CANDIDATES = Object.freeze([
   'sourcing_offers',
   'sourcing_canonical_entities',
   'sourcing_canonical_entity_refs',
-  'sourcing_source_provides',
   'products',
 ]);
 
@@ -108,6 +107,8 @@ const PROTECTED_TABLES = Object.freeze(new Set([
   'business_rules_history',
   'supplier_oauth_connections',
   'sourcing_sources',
+  'sourcing_source_provides',
+  'sourcing_source_execution_modes',
   'market_delegations',
   'market_operator_delegations',
   'loyalty_tiers',
