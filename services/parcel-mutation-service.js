@@ -37,16 +37,16 @@ async function createHubParcel(executor, {
 
   if (externalCode) {
     const { rows: [parcel] } = await db.query(
-      `INSERT INTO parcels (reference, external_code, seal_code, order_id, type, notes, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'draft') RETURNING *`,
+      `INSERT INTO parcels (reference, external_code, seal_code, order_id, type, notes, status, relais_id)
+       VALUES ($1, $2, $3, $4, $5, $6, 'draft', (SELECT relais_id FROM orders WHERE id = $4)) RETURNING *`,
       [reference, externalCode, sealCode, orderId, type, notes || null]
     );
     return parcel;
   }
 
   const { rows: [parcel] } = await db.query(
-    `INSERT INTO parcels (reference, order_id, type, notes, status)
-     VALUES ($1, $2, $3, $4, 'draft') RETURNING *`,
+    `INSERT INTO parcels (reference, order_id, type, notes, status, relais_id)
+     VALUES ($1, $2, $3, $4, 'draft', (SELECT relais_id FROM orders WHERE id = $2)) RETURNING *`,
     [reference, orderId, type, notes || null]
   );
   return parcel;
@@ -63,16 +63,16 @@ async function createAutoPreparedParcel(executor, {
 
   if (externalCode) {
     const { rows: [parcel] } = await db.query(
-      `INSERT INTO parcels (reference, external_code, seal_code, order_id, type, status, notes)
-       VALUES ($1, $2, $3, $4, 'standard', 'draft', $5) RETURNING *`,
+      `INSERT INTO parcels (reference, external_code, seal_code, order_id, type, status, notes, relais_id)
+       VALUES ($1, $2, $3, $4, 'standard', 'draft', $5, (SELECT relais_id FROM orders WHERE id = $4)) RETURNING *`,
       [reference, externalCode, sealCode, orderId, notes]
     );
     return parcel;
   }
 
   const { rows: [parcel] } = await db.query(
-    `INSERT INTO parcels (reference, order_id, type, status, notes)
-     VALUES ($1, $2, 'standard', 'draft', $3) RETURNING *`,
+    `INSERT INTO parcels (reference, order_id, type, status, notes, relais_id)
+     VALUES ($1, $2, 'standard', 'draft', $3, (SELECT relais_id FROM orders WHERE id = $2)) RETURNING *`,
     [reference, orderId, notes]
   );
   return parcel;

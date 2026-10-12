@@ -34,6 +34,8 @@ describe('parcel-mutation-service', () => {
     expect(executor.query).toHaveBeenCalledTimes(1);
     expect(executor.query.mock.calls[0][0]).toContain('INSERT INTO parcels');
     expect(executor.query.mock.calls[0][0]).toContain('external_code');
+    // destination = relais de la commande : sans elle le trigger d'expédition refuse le colis (« sans destination »)
+    expect(executor.query.mock.calls[0][0]).toContain('(SELECT relais_id FROM orders WHERE id = $4)');
     expect(executor.query.mock.calls[0][1]).toEqual([
       'P-1', 'EXT-1', 'SEAL-1', 'o1', 'standard', 'note',
     ]);

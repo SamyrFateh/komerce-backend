@@ -41,6 +41,7 @@ describe('nightly-e2e-certification.yml', () => {
     expect(code.match(/DISABLE_RATE_LIMIT/g)).toHaveLength(1);
     expect(code).toMatch(/test-results\/cash-e2e/);
     expect(code).toMatch(/test-results\/dashboard-truth/);
+    expect(code).toMatch(/test-results\/order-to-cash-thread/);
   });
 
   test('admin éphémère : mot de passe aléatoire masqué, injecté au boot du serveur et à la recette', () => {
