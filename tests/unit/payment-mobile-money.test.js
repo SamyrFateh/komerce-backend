@@ -49,6 +49,10 @@ function q(rows) { return Promise.resolve({ rows }); }
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDb.query.mockReset();
+  mockDb.getClient.mockReset();
+  mockAdapter.getStatus.mockReset();
+  mockAdapter.initiate.mockReset();
   mockAdapter.isConfigured.mockReturnValue(true);
   process.env.PUBLIC_BASE_URL = 'https://staging.komerce.test';
 });
@@ -186,6 +190,7 @@ describe('S5 Mobile Money ordering and replay', () => {
       .mockImplementationOnce(() => q([])) // mark succeeded
       .mockImplementationOnce(() => q([])) // ROLLBACK after mocked cycle rejection below
     require('../../services/order-payment-confirmation').confirmPaymentCycle.mockResolvedValueOnce({ success: false, error: 'stop after proving finalizer reached' });
+    require('../../utils/alerts').createAlert.mockResolvedValueOnce(undefined);
     await expect(mobileMoney.reconcileMobileMoneyTransaction(terminalTx.id)).rejects.toMatchObject({ code: 'mobile_money_cycle_rejected' });
     expect(mockAdapter.getStatus).toHaveBeenCalledTimes(1);
     expect(client.query.mock.calls.some(([sql]) => String(sql).includes("SET status='succeeded'"))).toBe(true);
