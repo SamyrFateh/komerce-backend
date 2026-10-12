@@ -158,7 +158,11 @@ router.post(
         return res.status(403).json({ error:'Golden create interdit en production', code:'golden_create_production_forbidden' });
       }
       res.set('Cache-Control', 'private, no-store');
-      return res.status(201).json(await createGoldenJourney(db, { marketCode: (req.body && req.body.marketCode) || 'KM' }));
+      const marketCode = String((req.body && req.body.marketCode) || 'KM').toUpperCase();
+      if (!['KM','CM','CG'].includes(marketCode)) {
+        return res.status(400).json({ error:'Market Golden non supporté', code:'golden_market_unsupported' });
+      }
+      return res.status(201).json(await createGoldenJourney(db, { marketCode }));
     } catch (err) { return next(err); }
   }
 );
