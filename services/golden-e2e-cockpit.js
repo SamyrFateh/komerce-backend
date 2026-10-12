@@ -1,6 +1,24 @@
 'use strict';
 
 /**
+ * @komerce-arch
+ * @role          golden-e2e-cockpit-projection
+ * @domain        admin-dashboard
+ * @layer         service
+ * @criticality   medium
+ * @inputs        authorized_golden_order
+ * @outputs       read_only_golden_boundary_evidence
+ * @depends       services/hub-inbound-reconciliation, services/customer-handoff-reconciliation, services/order-financial-closure-reconciliation
+ * @used-by       routes/admin-order-360
+ * @db-read       purchase_lines, order_items, supplier_execution_payments, purchase_orders, supplier_execution_fulfillments, supplier_execution_orders, customs_shipment_parcels, parcels, customs_shipments
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      projection_only_no_business_authority
+ * @impact-areas  dashboard, e2e-certification
+ * @version       2026-10
+ */
+
+/**
  * Read-only projection for the human Golden Order cockpit.
  * It never mutates business state: every green step is derived from canonical persisted facts.
  */
