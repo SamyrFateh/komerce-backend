@@ -89,7 +89,7 @@ test.describe('S7 Finance / Comptabilité — L3', () => {
     });
     await page.goto(ORIGIN + PAGE);
     await expect(page.locator('#canonical-admin-navigation')).toHaveCount(1);
-    const ids = await page.$eval('.kmc-admin-primary-link', links => links.map(link => link.getAttribute('data-dashboard')));
+    const ids = await page.locator('.kmc-admin-primary-link').evaluateAll(links => links.map(link => link.getAttribute('data-dashboard')));
     expect(ids).not.toContain('workspace-accounting');
   });
 });
