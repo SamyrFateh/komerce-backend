@@ -42,9 +42,13 @@ jest.mock('../../services/order-360', () => ({
   loadOrder360: (...args) => mockLoadOrder360(...args),
 }));
 
-jest.mock('../../utils/logger', () => ({
-  child: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() }),
-}));
+jest.mock('../../utils/logger', () => {
+  const logger = { error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() };
+  return {
+    child: () => logger,
+    forModule: () => logger,
+  };
+});
 
 const express = require('express');
 const request = require('supertest');
