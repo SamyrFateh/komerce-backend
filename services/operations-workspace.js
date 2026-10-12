@@ -365,7 +365,7 @@ async function buildWorkspace(options = {}) {
 async function resolveOrderInMarket(reference, marketId) {
   const { rows } = await db.query(
     `SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status,
-            o.total_kmf, o.relais_id, r.market_id AS relais_market_id
+            o.total_kmf, o.cash_ref_code, o.relais_id, r.market_id AS relais_market_id
        FROM orders o
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.reference = $1
