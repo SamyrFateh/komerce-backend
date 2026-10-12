@@ -23,9 +23,17 @@ describe('controlled business purge safety', () => {
     expect(PROTECTED_TABLES.has('relais')).toBe(true);
     expect(PROTECTED_TABLES.has('supplier_oauth_connections')).toBe(true);
     expect(PROTECTED_TABLES.has('sourcing_sources')).toBe(true);
+    expect(PROTECTED_TABLES.has('sourcing_source_provides')).toBe(true);
+    expect(PROTECTED_TABLES.has('sourcing_source_execution_modes')).toBe(true);
 
     expect(protectedHits(['orders', 'order_items', 'markets', 'sourcing_sources']))
       .toEqual(['markets', 'sourcing_sources']);
+  });
+
+  test('source capability registry stays foundation, never a purge root', () => {
+    expect(ROOT_CANDIDATES).not.toContain('sourcing_source_provides');
+    expect(PROTECTED_TABLES.has('sourcing_source_provides')).toBe(true);
+    expect(PROTECTED_TABLES.has('sourcing_source_execution_modes')).toBe(true);
   });
 
   test('full E2E runtime roots include supplier, hub, cash and settlement facts', () => {
