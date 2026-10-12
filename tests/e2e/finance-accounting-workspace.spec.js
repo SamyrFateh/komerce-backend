@@ -31,7 +31,7 @@ const nominalPayload = {
 async function mount(page, { role, payload = emptyPayload, apiStatus = 200 }) {
   await page.route(ORIGIN + '/**', async route => {
     const url = new URL(route.request().url());
-    if (url.pathname === PAGE) return route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="fr"><body><main id="root"></main><script src="/dashboards/canonical/js/primitives.js"></script><script src="/dashboards/canonical/js/admin-context.js"></script><script src="/dashboards/canonical/js/finance-accounting-workspace.js"></script></body></html>' });
+    if (url.pathname === PAGE) return route.fulfill({ contentType: 'text/html; charset=utf-8', body: '<!doctype html><html lang="fr"><body><main id="root"></main><script src="/dashboards/canonical/js/primitives.js"></script><script src="/dashboards/canonical/js/admin-context.js"></script><script src="/dashboards/canonical/js/finance-accounting-workspace.js"></script></body></html>' });
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
@@ -81,7 +81,15 @@ test.describe('S7 Finance / Comptabilité — L3', () => {
   });
 
   test('agent_hub ne reçoit pas la destination Comptabilité dans la navigation canonique', async ({ page }) => {
-    const nav = require(path.join(CANONICAL, 'js', 'navigation-policy-v4.js'));
-    expect(nav.destinationsFor({ role: 'agent_hub' }).map(item => item.id)).not.toContain('workspace-accounting');
+    await page.route(ORIGIN + '/**', async route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === PAGE) return route.fulfill({ contentType: 'text/html; charset=utf-8', body: '<!doctype html><html><body><main id="canonical-admin-root"></main><script>window.KOMERCE_CANONICAL_AUTH_USER={role:"agent_hub"}</script><script src="/dashboards/canonical/js/navigation-policy-v4.js"></script></body></html>' });
+      if (url.pathname.startsWith('/dashboards/canonical/')) { const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', '')); return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' }); }
+      return route.fulfill({ status: 404, body: '' });
+    });
+    await page.goto(ORIGIN + PAGE);
+    await expect(page.locator('#canonical-admin-navigation')).toHaveCount(1);
+    const ids = await page.$eval('.kmc-admin-primary-link', links => links.map(link => link.getAttribute('data-dashboard')));
+    expect(ids).not.toContain('workspace-accounting');
   });
 });
