@@ -26,6 +26,7 @@ const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard
 const order360 = require('../services/order-360');
 const { projectGoldenEvidence } = require('../services/golden-e2e-cockpit');
 const { advanceGoldenJourney } = require('../tests/helpers/goldenJourney');
+const { createGoldenJourney } = require('../tests/helpers/goldenJourneySetup');
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'admin-order-360' });
 
@@ -142,6 +143,22 @@ router.post(
       }
       res.set('Cache-Control', 'private, no-store');
       return res.json(await advanceGoldenJourney(db, req.order360Order.reference));
+    } catch (err) { return next(err); }
+  }
+);
+
+router.post(
+  '/golden-create',
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin']),
+  requireRole(['admin']),
+  async (req, res, next) => {
+    try {
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ error:'Golden create interdit en production', code:'golden_create_production_forbidden' });
+      }
+      res.set('Cache-Control', 'private, no-store');
+      return res.status(201).json(await createGoldenJourney(db, { marketCode: (req.body && req.body.marketCode) || 'KM' }));
     } catch (err) { return next(err); }
   }
 );

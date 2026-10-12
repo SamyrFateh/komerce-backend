@@ -175,3 +175,17 @@ describe('Golden advance route contract', () => {
     expect(source).toContain('advanceGoldenJourney(db, req.order360Order.reference)');
   });
 });
+
+
+describe('Golden create route contract', () => {
+  test('creation is admin-only and forbidden in production', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '../../routes/admin-order-360.js'), 'utf8');
+    expect(source).toContain("'/golden-create'");
+    expect(source).toContain("attachMarketDelegatedRoleFor(['admin'])");
+    expect(source).toContain("requireRole(['admin'])");
+    expect(source).toContain('golden_create_production_forbidden');
+    expect(source).toContain("createGoldenJourney(db, { marketCode:");
+  });
+});

@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-12T17:55:28.204Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 726,
-    "protected": 671,
+    "total": 727,
+    "protected": 672,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -988,6 +988,13 @@
     },
     {
       "key": "GET /api/admin/entities/clients",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/entities/golden-create",
       "level": "PROTECTED",
       "roles": [
         "admin"
