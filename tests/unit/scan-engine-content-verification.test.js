@@ -217,3 +217,19 @@ describe('logScanEventDirect', () => {
     expect(params[9]).toBe('{}');         // metadata JSON
   });
 });
+
+describe('scan-engine — colonnes order_items alignées sur le schéma live', () => {
+  // order_items n'a ni product_name ni price (schéma live) : lire ces colonnes faisait échouer tout scan
+  // (500 « column oi.product_name does not exist ») dès le chargement des articles du colis.
+  const source = require('fs').readFileSync(require('path').join(__dirname, '../../services/scan-engine.js'), 'utf8');
+
+  test('aucune requête ne lit oi.product_name ni oi.price', () => {
+    expect(source).not.toMatch(/\boi\.product_name\b/);
+    expect(source).not.toMatch(/\boi\.price\b(?!_)/);
+  });
+
+  test('le nom d’article vient du catalogue et le prix de price_kmf', () => {
+    expect(source.match(/pr\.name AS oi_product_name/g).length).toBe(3);
+    expect(source).toMatch(/oi\.price_kmf AS price/);
+  });
+});

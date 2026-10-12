@@ -189,6 +189,24 @@ test('scanParcel résout le colis dans le marché avant d appeler le moteur appe
   expect(result.reference).toBe('PCL-CM-001');
 });
 
+test.each([
+  ['admin', 'ship', 'admin'],
+  ['agent_hub', 'ship', 'hub_agent'],
+  ['agent_relais', 'receive', 'relay_agent'],
+  ['agent_relais', 'collect', 'relay_agent'],
+  // rôle inattendu : la station qui exécute l'action décide (jamais d'étiquette « admin » par défaut)
+  ['market_operator', 'collect', 'relay_agent'],
+  [undefined, 'ship', 'hub_agent'],
+])('scanParcel traduit le rôle %s (%s) en actor_role %s accepté par scan_events', async (role, action, expected) => {
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'parcel-cm-id', reference: 'PCL-CM-001', status: 'preparation', order_id: 'order-cm-id', relais_id: 'relay-cm', order_market_id: 'market-cm-id', relais_market_id: 'market-cm-id' }],
+  });
+
+  await workspace.scanParcel('PCL-CM-001', action, MARKET, { id: 'actor-1', role });
+
+  expect(mockProcessScan).toHaveBeenLastCalledWith(expect.objectContaining({ actor_role: expected }));
+});
+
 test('assignInventory revalide article et colis dans le même marché avant mutation', async () => {
   mockQuery
     .mockResolvedValueOnce({

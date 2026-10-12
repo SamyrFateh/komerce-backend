@@ -539,6 +539,13 @@ const SCAN_ACTIONS = Object.freeze({
   collect: Object.freeze({ event_type: 'customer_collected', notes: 'Remis au client · Workspace Opérations' }),
 });
 
+// scan_events.actor_role n'accepte que hub_agent / relay_agent / driver / system / admin : les rôles de
+// compatibilité projetés par la délégation (agent_hub, agent_relais) sont traduits, sinon le rôle de la
+// station qui exécute l'action est utilisé. Sans cette traduction, tout scan d'un acteur non-admin était
+// refusé par la contrainte (500).
+const SCAN_ACTOR_ROLE = Object.freeze({ admin: 'admin', agent_hub: 'hub_agent', agent_relais: 'relay_agent' });
+const SCAN_STATION_ROLE = Object.freeze({ ship: 'hub_agent', receive: 'relay_agent', collect: 'relay_agent' });
+
 async function scanParcel(reference, action, market, actor = {}) {
   const resolvedMarket = requireMarket(market);
   const scan = SCAN_ACTIONS[action];
@@ -551,7 +558,7 @@ async function scanParcel(reference, action, market, actor = {}) {
     event_type: scan.event_type,
     scanned_by: actor.id || null,
     actor_name: actor.full_name || 'Workspace Opérations',
-    actor_role: actor.role || 'admin',
+    actor_role: SCAN_ACTOR_ROLE[actor.role] || SCAN_STATION_ROLE[action],
     location: resolvedMarket.code,
     notes: scan.notes,
     metadata: {
