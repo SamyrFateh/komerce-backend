@@ -41,7 +41,7 @@ async function createGoldenJourney(db, { marketCode = 'KM' } = {}) {
     await db.query(`INSERT INTO product_skus
       (id,product_id,sku,stock,is_active,source,supplier_sku,supplier_unit_ref,supplier_order_identity)
       VALUES($1,$2,$3,10,true,'SUPPLIER',$4,$5,$6::jsonb)`,
-      [ids.sku, 'K-'+run, 'K-GOLDEN-SKU-'+run, soi.payload.supplier_sku, supplierUnit, JSON.stringify(soi)]);
+      [ids.sku, ids.product, 'K-GOLDEN-SKU-'+run, soi.payload.supplier_sku, supplierUnit, JSON.stringify(soi)]);
     await db.query(`INSERT INTO orders
       (id,user_id,relais_id,market_id,reference,status,payment_status,payment_mode,total_kmf,total_eur)
       VALUES($1,$2,$3,$4,$5,'ordered','paid','stripe_eur',25000,50)`,
