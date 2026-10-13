@@ -25,7 +25,7 @@ const ROOT_TABLES = Object.freeze([
   'products',
   'supplier_catalog_imports',
   'import_runtime_runs',
-  'sourcing_captures',
+  // sourcing_captures is deleted after unlinking preserved sourcing_sources.
   'sourcing_commercial_principals',
 ]);
 
@@ -128,6 +128,42 @@ async function reset() {
       preserved: await counts(client, PRESERVE_TABLES),
     };
 
+    // A provider configuration can hold a FK to a certified sourcing capture.
+    // It is explicitly preserved, so remove only its obsolete evidence pointers.
+    await client.query(`UPDATE sourcing_sources
+         SET production_certified_capture_id = NULL,
+             production_certified_at = NULL
+       WHERE production_certified_capture_id IS NOT NULL
+          OR production_certified_at IS NOT NULL`);
+
+    // Inspect the FK cascade closure BEFORE any TRUNCATE. Never permit a
+    // structural configuration table to enter a CASCADE indirectly.
+    const { rows: fkEdges } = await client.query(`
+      SELECT rel_child.relname AS child, rel_parent.relname AS parent
+        FROM pg_constraint fk
+        JOIN pg_class rel_child ON rel_child.oid = fk.conrelid
+        JOIN pg_namespace ns_child ON ns_child.oid = rel_child.relnamespace
+        JOIN pg_class rel_parent ON rel_parent.oid = fk.confrelid
+        JOIN pg_namespace ns_parent ON ns_parent.oid = rel_parent.relnamespace
+       WHERE fk.contype = 'f' AND ns_child.nspname = 'public'
+         AND ns_parent.nspname = 'public'
+    `);
+    const closure = new Set(ROOT_TABLES);
+    let expanded = true;
+    while (expanded) {
+      expanded = false;
+      for (const { child, parent } of fkEdges) {
+        if (closure.has(parent) && !closure.has(child)) {
+          closure.add(child);
+          expanded = true;
+        }
+      }
+    }
+    const protectedCascade = PRESERVE_TABLES.filter(table => closure.has(table));
+    if (protectedCascade.length) {
+      throw new Error(`REFUS: TRUNCATE CASCADE atteindrait des configurations: ${protectedCascade.join(', ')}`);
+    }
+
     // Clean-room staging reset:
     // - root business/test data are truncated,
     // - CASCADE removes all dependent operational projections,
@@ -138,6 +174,10 @@ async function reset() {
     await client.query(
       `TRUNCATE TABLE ${ROOT_TABLES.join(', ')} RESTART IDENTITY CASCADE`
     );
+
+    // DELETE respects the preserved FK relationship, unlike TRUNCATE CASCADE.
+    // All dependent operational tables have been cleared above.
+    await client.query('DELETE FROM sourcing_captures');
 
     // Business-reference sequences are standalone sequences, not necessarily
     // OWNED BY the tables above; reset them explicitly for a readable clean run.
