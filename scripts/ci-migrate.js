@@ -47,6 +47,18 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  '274_market_delegation_audit_market.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema='public' AND table_name='market_delegation_audit' AND column_name='market_id')
+        AND EXISTS (SELECT 1 FROM pg_trigger
+                    WHERE tgname='trg_market_delegation_audit_market_guard' AND NOT tgisinternal)
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
   '270_capability_registry_effect_amount_bearing.sql': async (client) => {
     const { rows: [row] } = await client.query(`
       SELECT
