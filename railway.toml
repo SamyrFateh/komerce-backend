@@ -22,6 +22,8 @@ watchPatterns = [
   "public/boutique/**",
   "dashboard-app/**",
   "public/dashboards/**",
+  "public/js/**",
+  "public/golden-e2e-cockpit.html",
   "bootstrap/**",
   "migrations/**",
   "scripts/**",

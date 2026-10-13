@@ -14,7 +14,15 @@ async function mount(page){
   const state={creates:[],advances:0};
   await page.route(ORIGIN+'/**',async route=>{
     const req=route.request(), url=new URL(req.url());
-    if(url.pathname==='/admin/golden-e2e') return route.fulfill({contentType:'text/html',body:html});
+    if(url.pathname==='/admin/golden-e2e') return route.fulfill({
+      contentType:'text/html',
+      headers:{'Content-Security-Policy':"default-src 'self'; script-src 'self'; script-src-attr 'none'; object-src 'none'"},
+      body:html
+    });
+    if(url.pathname==='/js/golden-e2e-cockpit-journey.js'||url.pathname==='/js/golden-e2e-cockpit-upstream.js'){
+      const file=path.join(__dirname,'..','..','public',url.pathname.slice(1));
+      return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(file,'utf8')});
+    }
     if(url.pathname==='/api/admin/entities/golden-create'&&req.method()==='POST'){
       state.creates.push(req.postDataJSON());
       return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',marketCode:state.creates.at(-1).marketCode})});
@@ -33,6 +41,39 @@ async function mount(page){
 }
 
 test.describe('Golden cockpit — recette visuelle',()=>{
+
+  test('recette FULL : les dix étapes gardent leurs preuves contextuelles distinctes du verdict humain',async({page})=>{
+    await mount(page);
+    const expectedPaths=['/admin/operations','/admin/finance','/admin/workspaces/purchasing','/admin/workspaces/purchasing','/admin/workspaces/purchasing','/admin/hub-live','/admin/workspaces/shipping-customs','/admin/relais-live','/admin/relais-live','/admin/workspaces/accounting'];
+    await expect(page.locator('#existing-e2e-evidence')).toBeVisible();
+    await expect(page.locator('#rail .stepbtn')).toHaveCount(10);
+    await expect(page.locator('#title')).toHaveText('Commande client');
+    await expect(page.locator('#upstream [data-gate]')).toHaveCount(5);
+    await expect(page.locator('#existing-e2e-evidence a')).toHaveCount(4);
+    await expect(page.locator('#score')).toHaveText('0 / 10');
+    const rail=page.locator('#rail .stepbtn');
+    for(let i=0;i<10;i++){
+      await rail.nth(i).click();
+      await expect(page.locator('#openReal')).toHaveAttribute('href',expectedPaths[i]);
+      await expect(page.locator('#stepCi')).toHaveAttribute('href',/^https:\/\/github\.com\/SamyrFateh\/komerce-backend\//);
+      await expect(page.locator('#stepCiScope')).not.toBeEmpty();
+    }
+    await rail.nth(0).click();
+    await expect(rail.nth(0)).not.toHaveClass(/pass/);
+    await expect(rail.nth(0)).toHaveAttribute('title',/humain : non vérifié/);
+    await expect(rail.nth(0)).toHaveAttribute('title',/backend : non prouvé/);
+    await page.locator('#pass').click();
+    await expect(page.locator('#score')).toHaveText('0 / 10');
+    await expect(page.locator('#liveState')).toContainText('Renseigne la référence');
+    await page.locator('#createGolden').click();
+    await expect(rail.nth(0)).not.toHaveClass(/pass/);
+    await expect(rail.nth(0)).toContainText('· 1');
+    await expect(rail.nth(0)).toHaveAttribute('title',/backend : preuve disponible/);
+    await page.locator('#pass').click();
+    await expect(rail.nth(0)).toHaveClass(/pass/);
+    await expect(page.locator('#score')).toHaveText('1 / 10');
+  });
+
   test('CM : crée la Golden, charge les preuves et avance sans valider humainement',async({page})=>{
     const state=await mount(page);
     await page.locator('#marketSelect').selectOption('CM');
