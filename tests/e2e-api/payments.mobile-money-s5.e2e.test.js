@@ -10,14 +10,15 @@ const { describeE2E, createCleanup, uuid, tag } = require('../helpers/e2eDbKit')
 jest.setTimeout(30000);
 
 const adapter = require('../../services/mobile-money/orange-money-cm');
+const registry = require('../../services/mobile-money/registry');
 const statusQueue = [];
-jest.spyOn(adapter, 'isConfigured').mockImplementation(() => true);
-jest.spyOn(adapter, 'getStatus').mockImplementation(async () => {
+const testAdapter = { ...adapter, isConfigured: () => true, getStatus: async () => {
   const next = statusQueue.shift();
   if (next instanceof Error) throw next;
   if (!next) throw new Error('S5 provider status queue exhausted');
   return next;
-});
+}};
+jest.spyOn(registry, 'getAdapter').mockImplementation((provider) => provider === adapter.name ? testAdapter : registry.getAdapter(provider));
 const mobileMoney = require('../../services/payment-mobile-money');
 
 describeE2E('S5 — Mobile Money replay, ordering and provider faults', ({ db }) => {
