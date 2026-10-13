@@ -1,0 +1,112 @@
+# P1/P2 — isolated boutique readiness and optional real OTP + order proof.
+# Never targets staging or production; credentials are supplied only as Actions secrets.
+name: Golden P2 isolated boutique
+on:
+  push:
+    branches: [test/golden-p2-boutique-real-browser]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  boutique:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+      PORT: '3911'
+      BASE_URL: http://localhost:3911/boutique/
+      GOLDEN_P1_ISOLATED: 'true'
+      ALLOW_ORDER_SUBMIT: 'true'
+      TEST_ACCOUNT_PHONE: ${{ secrets.GOLDEN_TEST_ACCOUNT_PHONE }}
+      TEST_ACCOUNT_OTP: ${{ secrets.GOLDEN_TEST_ACCOUNT_OTP }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Rebuild isolated PostgreSQL
+        run: |
+          PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql > /dev/null
+          node scripts/ci-db-bootstrap.js
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start real backend and prove environment identity
+        run: |
+          set -eu
+          pw="Gp2-$(openssl rand -hex 8)-Aa1"
+          echo "::add-mask::$pw"
+          ADMIN_PASSWORD="$pw" DISABLE_RATE_LIMIT=1 node server.js > golden-p2-server.log 2>&1 &
+          echo $! > golden-p2-server.pid
+          for i in $(seq 1 40); do
+            curl -fsS --max-time 2 http://localhost:3911/health > golden-p2-health.json && break
+            sleep 1
+          done
+          test -s golden-p2-health.json
+          curl -fsS --max-time 10 http://localhost:3911/boutique/ > /dev/null
+          node -e "const h=require('./golden-p2-health.json');if(h.environment!=='test' && h.komerce_env!=='test' && h.env!=='test') {console.log('Health response:',JSON.stringify(h)); process.exitCode=2}"
+      - name: Readiness gate — dedicated OTP account
+        id: otp_gate
+        env:
+          PHONE: ${{ secrets.GOLDEN_TEST_ACCOUNT_PHONE }}
+          OTP: ${{ secrets.GOLDEN_TEST_ACCOUNT_OTP }}
+        run: |
+          if [ -z "$PHONE" ] || [ -z "$OTP" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "## P2 BLOCKED — dedicated isolated OTP fixture unavailable" >> "$GITHUB_STEP_SUMMARY"
+            echo "Real login and mutation intentionally not executed. Configure GOLDEN_TEST_ACCOUNT_PHONE + GOLDEN_TEST_ACCOUNT_OTP for isolated test only." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Real OTP session + boutique order + persistence
+        if: steps.otp_gate.outputs.ready == 'true'
+        working-directory: public/boutique
+        run: |
+          npx playwright test tests/e2e/authenticated/order-flow.spec.js --project=authenticated --config=playwright.config.js --retries=0
+      - name: Evidence
+        if: always()
+        run: |
+          {
+            echo "## Golden P2 — environment test only"
+            echo "P1: reconstructed PG, real server, Chromium and storefront health. P2: requires a dedicated isolated OTP identity and actual order persistence."
+            echo "A skipped P2 is NOT a successful P2 certification."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-p2-${{ github.run_id }}
+          path: |
+            golden-p2-health.json
+            golden-p2-server.log
+            public/boutique/test-results/
+            public/boutique/playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
