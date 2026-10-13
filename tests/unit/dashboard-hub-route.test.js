@@ -72,6 +72,8 @@ describe('routes/dashboard-hub', () => {
         kpi: { a_optimiser: 0, a_emballer: 0, a_expedier: 0, total_poids_kg: 0 },
       });
       expect(mockDbQuery).toHaveBeenCalledTimes(2); // pas de 3e requête (parcelIds vide)
+      // HUB-B : « sans colis » tient compte des lignes déjà portées par un colis d'une autre commande
+      expect(mockDbQuery.mock.calls[0][0]).toContain('parcel_items');
       expect(setCache).toHaveBeenCalledWith('hub-dubai', res.body);
     });
 

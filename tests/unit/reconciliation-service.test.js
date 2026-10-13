@@ -69,6 +69,9 @@ describe('reconciliation-service', () => {
 
       const result = await reconcileOrder('order-001');
 
+      // HUB-B : les colis sont chargés par appartenance (lignes), pas par parcels.order_id seul
+      const parcelsSql = client.query.mock.calls.map(c => c[0]).find(sql => /FROM parcels p/.test(sql));
+      expect(parcelsSql).toContain('parcel_items');
       expect(result).toEqual(expect.objectContaining({
         ok: true,
         order_id: 'order-001',

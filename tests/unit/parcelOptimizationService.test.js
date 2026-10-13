@@ -254,6 +254,9 @@ describe('bootstrapOrderParcels (DB mockée)', () => {
 
     const updateCall = pool.query.mock.calls.find(c => c[0].includes('UPDATE orders SET computed_status'));
     expect(updateCall[1]).toEqual(['preparation', 'O1']);
+    // HUB-B : le recalcul lit les colis par appartenance (lignes), pas par parcels.order_id seul
+    const parcelsRead = pool.query.mock.calls.find(c => c[0].includes('SELECT p.status, p.type FROM parcels p'));
+    expect(parcelsRead[0]).toContain('parcel_items');
 
     jest.dontMock('../../utils/reference');
     jest.dontMock('../../utils/parcelSync');

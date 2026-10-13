@@ -171,6 +171,8 @@ describe('GET /orders — authentification requise', () => {
     expect(res.body.orders).toHaveLength(1);
     expect(res.body.orders[0].items[0].name).toBe('Riz');
     expect(res.body.orders[0].parcels).toHaveLength(1);
+    // HUB-B : le suivi client inclut les colis partagés (appartenance par lignes)
+    expect(mockQuery.mock.calls[2][0]).toContain('parcel_items');
     expect(res.body.orders[0].statusLabel).toBe('Expédiée');
     expect(res.body.orders[0].totalKmf).toBe(5000);
   });
