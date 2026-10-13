@@ -614,7 +614,7 @@ CT.views.pendingCash = async function(container) {
         btn.textContent = '⏳ Confirmation...';
         try {
           var result = await CT.api.v2ConfirmCash(ref);
-          alert((result.pending_second_approval ? '⏳ ' : '✅ ') + result.message);
+          alert('✅ ' + result.message);
           CT.views.pendingCash(container); // Refresh
         } catch (err) {
           alert('❌ ' + err.message);

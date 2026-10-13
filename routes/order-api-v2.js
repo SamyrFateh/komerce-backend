@@ -250,7 +250,7 @@ router.post('/:ref/confirm-cash', ...cashGuard, async (req, res, next) => {
         state,
         pending_second_approval: true,
         code: control.code || 'pending_second_approval',
-        message: control.message || 'Encaissement déclaré — en attente de la seconde validation',
+        message: control.message || 'En attente de la seconde validation : encaissement déclaré, pas encore payé',
         reference: order.reference,
         required_approvals: control.required_approvals || 2,
         order: { reference: order.reference, old_status: order.status, new_status: order.status, payment_status: 'pending' },
