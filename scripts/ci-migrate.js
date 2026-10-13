@@ -47,6 +47,20 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  '278_market_lifecycle.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'markets' AND column_name = 'lifecycle_status')
+        AND EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'markets' AND column_name = 'storefront_texts')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'markets_lifecycle_status_check')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'markets_lifecycle_is_active_check')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
   '110_catalog_import_audit.sql': async (client) => {
     const { rows: [row] } = await client.query(`
       SELECT
