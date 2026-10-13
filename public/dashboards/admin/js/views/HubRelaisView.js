@@ -70,7 +70,7 @@
   function showToast(msg, type = 'success') {
     const el = document.createElement('div');
     el.className = 'kmc-toast';
-    const bg = type === 'error' ? '#991b1b' : '#065f46';
+    const bg = type === 'error' ? '#991b1b' : (type === 'info' ? '#92400e' : '#065f46');
     el.style.cssText =
       `position:fixed;top:20px;right:20px;z-index:9999;padding:12px 20px;
        border-radius:10px;font-size:14px;font-weight:600;color:#fff;
@@ -181,16 +181,39 @@
 
   // ── Action helpers (delegates to KmcApi mutations) ────────────────────────
 
-  async function doAction(btn, originalLabel, apiFn, successMsg, refreshFn) {
+  // Message d'erreur réel de l'API (corps JSON {error}) plutôt que « 409 Conflict ».
+  function describeError(err) {
+    try {
+      const body = err && err.body ? JSON.parse(err.body) : null;
+      if (body && body.error) return body.error;
+    } catch (_) { /* corps non JSON */ }
+    return err.message;
+  }
+
+  // États réels de l'encaissement cash (autorité payment-cash-confirm) : jamais un « paid » prématuré.
+  function cashOutcome(ref) {
+    return (result) => {
+      if (result && result.pending_second_approval) {
+        return { type: 'info', msg: `⏳ ${ref} : encaissement déclaré — en attente de la seconde validation` };
+      }
+      if (result && result.state === 'already_confirmed') {
+        return { type: 'success', msg: `✅ ${ref} : cash déjà confirmé` };
+      }
+      return { type: 'success', msg: `✅ Cash confirmé ${ref} 💰` };
+    };
+  }
+
+  async function doAction(btn, originalLabel, apiFn, successMsg, refreshFn, outcomeFn) {
     if (!confirm(`${successMsg} — confirmer ?`)) return;
     btn.disabled = true;
     btn.textContent = '⏳…';
     try {
-      await apiFn();
-      showToast(`✅ ${successMsg}`);
+      const result = await apiFn();
+      const outcome = outcomeFn ? outcomeFn(result) : null;
+      showToast(outcome ? outcome.msg : `✅ ${successMsg}`, outcome ? outcome.type : 'success');
       refreshFn();
     } catch (err) {
-      showToast(`❌ ${err.message}`, 'error');
+      showToast(`❌ ${describeError(err)}`, 'error');
       btn.disabled = false;
       btn.textContent = originalLabel;
     }
@@ -736,8 +759,9 @@
       btn.addEventListener('click', () => doAction(
         btn, '💰 Encaisser',
         () => KmcApi.relaisConfirmCash(btn.dataset.ref),
-        `Cash confirmé ${btn.dataset.ref} 💰`,
-        () => refreshView('relais')
+        `Encaisser le cash de ${btn.dataset.ref}`,
+        () => refreshView('relais'),
+        cashOutcome(btn.dataset.ref)
       ));
     });
 

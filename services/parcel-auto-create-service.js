@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/parcel-order-membership.js, services/order-status-machine.js, services/payment-service.js, utils/logger.js
+ * @depends       db, services/parcel-order-membership.js, services/order-status-machine.js, services/payment-cash-confirm.js, services/purchasing-trigger-service.js, utils/logger.js
  * @used-by       routes/order-api-v2.js
  * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      orders, parcel_items, parcels, scan_events
@@ -44,9 +44,7 @@ const { randomBytes, randomUUID } = require('crypto');
 const db  = require('../db');
 
 const { transitionOrderStatus } = require('./order-status-machine');
-const { markPaid } = require('./payment-service');
 const { memberParcelPredicate } = require('./parcel-order-membership');
-const { ensureSecretGenerated } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'parcel-auto-create-service' });
 
 /**
@@ -219,85 +217,91 @@ async function autoCreateParcel(client, orderId, actor) {
 // ─── Confirmation paiement cash + création colis ───────────────────────────────
 
 /**
- * Confirme le paiement cash d'une commande et crée automatiquement le colis.
- * Gère sa propre transaction.
+ * Confirme le paiement cash d'une commande puis crée le colis — SANS seconde logique d'encaissement.
+ *
+ * L'encaissement appartient à l'autorité unique `payment-cash-confirm` (droits, contrôle cross-relais,
+ * double validation, cash_collections, cycle de stock, notifications). Ici on ne fait que :
+ *   1. résoudre la commande et sa référence cash ;
+ *   2. déléguer à l'autorité ;
+ *   3. créer le colis (transaction propre, idempotent) UNIQUEMENT si le paiement est réellement confirmé.
+ * États retournés : confirmed | pending_second_approval | already_confirmed. Tout refus lève {status, code}.
+ * Aucun `paid` prématuré : un premier visa ne crée ni paiement, ni colis.
  *
  * @param {string} ref    - référence ou UUID de la commande
  * @param {{ id, role, full_name, email }} actor
- * @returns {{ order: object, parcelResult: object }}
- * @throws {{ status, error }} 404/400 selon la validation
  */
-async function confirmCashAndCreateParcel(ref, actor) {
+async function confirmCashAndCreateParcel(ref, actor, deps = {}) {
+  const confirmCash = deps.confirmCashByReference || require('./payment-cash-confirm').confirmCashByReference;
+  const triggerPurchasing = deps.triggerPurchasing || require('./purchasing-trigger-service').triggerPurchasing;
+
+  const { rows: [order] } = await db.query(
+    `SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status, o.total_kmf, o.user_id, o.relais_id,
+       o.cash_ref_code, u.full_name AS customer_name, u.phone AS customer_phone
+     FROM orders o
+     LEFT JOIN users u ON u.id = o.user_id
+     WHERE o.reference = $1 OR o.id::text = $1`,
+    [ref]
+  );
+  if (!order) throw cashError(404, 'order_not_found', `Commande ${ref} introuvable`);
+  if (order.payment_mode !== 'cash_relais') {
+    throw cashError(400, 'not_cash_relais', "Cette commande n'est pas en paiement cash relais");
+  }
+
+  if (order.payment_status === 'paid') {
+    // Idempotence : un rejeu ne ré-encaisse rien ; il ne fait que rattraper un colis manquant.
+    const parcelResult = await createParcelInOwnTransaction(order.id, actor);
+    return { state: 'already_confirmed', order, parcelResult };
+  }
+  if (order.payment_status !== 'pending') {
+    throw cashError(409, 'payment_status_not_confirmable',
+      `Confirmation cash impossible : payment_status actuel ('${order.payment_status}') n'autorise pas la transition vers 'paid'`);
+  }
+  if (!order.cash_ref_code) {
+    throw cashError(409, 'cash_reference_missing', 'Référence de paiement cash indisponible');
+  }
+
+  const result = await confirmCash({
+    cashRefCode: order.cash_ref_code,
+    actor: { id: actor.id || null, role: actor.role || 'system' },
+    triggerPurchasing,
+    db,
+  });
+
+  if (result.status === 202 && result.body && result.body.pending_second_approval) {
+    return { state: 'pending_second_approval', order, control: result.body };
+  }
+  if (result.status !== 200) {
+    throw cashError(result.status, (result.body && result.body.code) || 'cash_confirmation_rejected',
+      (result.body && result.body.error) || 'Confirmation cash refusée');
+  }
+
+  const parcelResult = await createParcelInOwnTransaction(order.id, actor);
+  return { state: 'confirmed', order, parcelResult };
+}
+
+function cashError(status, code, message) {
+  const err = new Error(message);
+  err.status = status;
+  err.code = code;
+  return err;
+}
+
+/** Création du colis dans sa propre transaction : un échec ici ne défait jamais un encaissement déjà acté. */
+async function createParcelInOwnTransaction(orderId, actor) {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-
-    const { rows: [order] } = await client.query(
-      `SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status, o.total_kmf, o.user_id, o.relais_id,
-         u.full_name AS customer_name, u.phone AS customer_phone
-       FROM orders o
-       LEFT JOIN users u ON u.id = o.user_id
-       WHERE o.reference = $1 OR o.id::text = $1`,
-      [ref]
-    );
-    if (!order) {
-      await client.query('ROLLBACK');
-      const err = new Error(`Commande ${ref} introuvable`); err.status = 404; throw err;
-    }
-    if (order.payment_mode !== 'cash_relais') {
-      await client.query('ROLLBACK');
-      const err = new Error("Cette commande n'est pas en paiement cash relais"); err.status = 400; throw err;
-    }
-    if (order.payment_status === 'paid') {
-      await client.query('ROLLBACK');
-      const err = new Error('Paiement déjà confirmé'); err.status = 400; throw err;
-    }
-
-    const markPaidResult = await markPaid(order.id, { client, cashPaidAt: true });
-    if (!markPaidResult.changed) {
-      // La commande n'était ni 'paid' (déjà exclu ci-dessus) ni 'pending' —
-      // ex. 'refunded' ou 'failed'. markPaid a fait un no-op (cf.
-      // payment-status-validator) : ne PAS continuer vers confirmed/parcel
-      // sur un paiement qui n'a pas réellement été acté.
-      await client.query('ROLLBACK');
-      const err = new Error(
-        `Confirmation cash impossible : payment_status actuel ('${order.payment_status}') n'autorise pas la transition vers 'paid'`
-      );
-      err.status = 409;
-      throw err;
-    }
-
-    const dbActor = { id: actor.id || null, role: actor.role || 'system' };
-    const _confirmResult = await transitionOrderStatus({
-      orderId: order.id, newStatus: 'confirmed',
-      actor: dbActor, source: 'cash_confirm',
-      note: 'Paiement cash confirmé par agent', dbClient: client,
-    });
-    if (!_confirmResult.success) {
-      log.warn(`[ORDER-V2] transitionOrderStatus confirm failed for ${order.id}: ${_confirmResult.error}`);
-    }
-
-    const parcelResult = await autoCreateParcel(client, order.id, {
+    const parcelResult = await autoCreateParcel(client, orderId, {
       id: actor.id || null,
       name: actor.full_name || 'Admin CT',
       role: actor.role || 'system',
     });
-
-    // Code de retrait canonique — généré ici, à la confirmation du paiement
-    // (jamais à la création). Idempotent : no-op si déjà généré (ex. via le
-    // hook order-status-machine → available, plus tard dans le cycle de vie).
-    const secretResult = await ensureSecretGenerated({
-      orderId:  order.id,
-      relaisId: order.relais_id || null,
-      channel:  'cash_confirm',
-      dbClient: client,
-    });
-
     await client.query('COMMIT');
-    return { order, parcelResult, pickupCodeToCache: secretResult.code || null };
+    return parcelResult;
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    throw err;
+    log.error({ err, order_id: orderId }, '[CASH-CONFIRM] création colis après encaissement échouée — rejouer confirm-cash ou create-parcel');
+    return { success: false, reason: 'parcel_creation_failed' };
   } finally {
     client.release();
   }

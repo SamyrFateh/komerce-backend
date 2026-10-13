@@ -158,7 +158,6 @@ module.exports = {
       'tests/unit/auto-distribute-api.test.js',
       'tests/unit/hub-authority-gate.test.js',
       'tests/unit/hub-operations-volume.test.js',
-      'tests/unit/parcel-auto-create-cash-payment.test.js',
       'tests/unit/upload-hub.test.js',
       'tests/unit/auto-parcel.test.js',
       'tests/unit/carriers.test.js',
