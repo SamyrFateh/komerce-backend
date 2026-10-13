@@ -47,6 +47,13 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  '285_market_payment_accounts.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT to_regclass('public.market_payment_accounts') IS NOT NULL AS represented
+    `);
+    return row?.represented === true;
+  },
+
   // Financial custody chain: snapshot baseline must prove 287 → 288 → 289 structures.
   '287_cash_custody_ledger.sql': async (client) => {
     const { rows: [row] } = await client.query(`
