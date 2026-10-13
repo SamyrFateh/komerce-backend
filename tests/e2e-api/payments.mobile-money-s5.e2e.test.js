@@ -24,12 +24,13 @@ describeE2E('S5 — Mobile Money replay, ordering and provider faults', ({ db })
   const marketId = uuid();
   const userId = uuid();
   const productId = uuid();
+  const relaisId = uuid();
   let cleanup;
 
   async function seedAttempt(label) {
     const orderId = uuid(); const txId = uuid();
     const ref = tag(`mm-${label}`); const external = tag(`provider-${label}`);
-    await db.query(`INSERT INTO orders (id,reference,user_id,market_id,total_kmf,payment_mode,payment_status,status) VALUES ($1,$2,$3,$4,10000,'mobile_money','pending','pending')`, [orderId,ref,userId,marketId]);
+    await db.query(`INSERT INTO orders (id,reference,user_id,market_id,relais_id,total_kmf,payment_mode,payment_status,status) VALUES ($1,$2,$3,$4,$5,10000,'mobile_money','pending','pending')`, [orderId,ref,userId,marketId,relaisId]);
     cleanup.track('orders','id',orderId);
     cleanup.trackSql('DELETE FROM invoices WHERE order_id=$1',[orderId]);
     cleanup.trackSql('DELETE FROM order_items WHERE order_id=$1',[orderId]);
@@ -50,6 +51,7 @@ describeE2E('S5 — Mobile Money replay, ordering and provider faults', ({ db })
   beforeAll(async()=>{
     cleanup=createCleanup(db);
     await db.query(`INSERT INTO markets (id,code,name,currency,minor_unit,is_active,lifecycle_status) VALUES ($1,$2,$3,'XAF',0,true,'ACTIVE')`,[marketId,tag('S5').slice(0,12).toUpperCase(),'S5 Mobile Money Market']); cleanup.track('markets','id',marketId);
+    await db.query(`INSERT INTO relais (id,name,agent_name,phone,address,market_id) VALUES ($1,$2,'S5 Agent','+237600000001','S5 Relay',$3)`,[relaisId,tag('S5 Relay'),marketId]); cleanup.track('relais','id',relaisId);
     await db.query(`INSERT INTO users (id,full_name,email,phone,role) VALUES ($1,'S5 Client',$2,$3,'client')`,[userId,`${tag('s5')}@komerce.test`,`+2693${Date.now().toString().slice(-7)}`]); cleanup.track('users','id',userId);
     await db.query(`INSERT INTO products (id,name,price_kmf,stock) VALUES ($1,$2,10000,100)`,[productId,tag('S5 Product')]); cleanup.track('products','id',productId);
   });
