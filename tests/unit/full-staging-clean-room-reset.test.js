@@ -28,12 +28,14 @@ describe('staging clean-room reset guards and scope', () => {
       'products',
       'supplier_catalog_imports',
       'import_runtime_runs',
-      'sourcing_captures',
       'sourcing_commercial_principals',
     ]));
+    // #2473 : les captures ne partent plus par TRUNCATE ... CASCADE (qui effaçait les sources) mais par DELETE après détachement.
+    expect(reset.ROOT_TABLES).not.toContain('sourcing_captures');
     expect(reset.ZERO_TABLES).toEqual(expect.arrayContaining([
       'sourcing_candidates',
       'sourcing_observations',
+      'sourcing_captures',
       'sourcing_resolution_decisions',
       'sourcing_canonical_entities',
       'import_runtime_runs',

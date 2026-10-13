@@ -41,6 +41,7 @@ const DASHBOARD_SPECS = [
   'operations-control-board',
   'market-readonly-views',
   'finance-accounting-workspace',
+  'golden-cockpit-browser-flow',
 ];
 
 module.exports = defineConfig({

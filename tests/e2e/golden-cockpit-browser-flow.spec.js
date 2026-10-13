@@ -20,8 +20,8 @@ async function mount(page){
       return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',marketCode:state.creates.at(-1).marketCode})});
     }
     if(url.pathname.endsWith('/golden-evidence')) return route.fulfill({contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',steps:[
-      {key:'CLIENT_ORDER',passed:true,detail:'ordered'},{key:'CLIENT_PAYMENT',passed:true,detail:'paid'},{key:'PURCHASING',passed:true,detail:'PO confirmed'},{key:'SUPPLIER_EXECUTION',passed:true,detail:'matched'},{key:'FULFILLMENT',passed:true,detail:'tracking'},
-      {key:'HUB_INBOUND',passed:state.advances>0,detail:state.advances>0?'matched':'pending'},{key:'CUSTOMS',passed:false,detail:'pending'},{key:'RELAY_AVAILABLE',passed:false,detail:'pending'},{key:'CUSTOMER_HANDOFF',passed:false,detail:'pending'},{key:'FINANCIAL_CLOSE',passed:false,detail:'pending'}]})});
+      {key:'CLIENT_ORDER',passed:true,evidence:'ordered'},{key:'CLIENT_PAYMENT',passed:true,evidence:'paid'},{key:'PURCHASING',passed:true,evidence:'PO confirmed'},{key:'SUPPLIER_EXECUTION',passed:true,evidence:'matched'},{key:'FULFILLMENT',passed:true,evidence:'tracking'},
+      {key:'HUB_INBOUND',passed:state.advances>0,evidence:state.advances>0?'matched':'pending'},{key:'CUSTOMS',passed:false,evidence:'pending'},{key:'RELAY_AVAILABLE',passed:false,evidence:'pending'},{key:'CUSTOMER_HANDOFF',passed:false,evidence:'pending'},{key:'FINANCIAL_CLOSE',passed:false,evidence:'pending'}]})});
     if(url.pathname.endsWith('/golden-advance')&&req.method()==='POST'){
       state.advances++;
       return route.fulfill({contentType:'application/json',body:JSON.stringify({ok:true})});
@@ -80,5 +80,42 @@ test.describe('Golden cockpit — recette visuelle',()=>{
     await expect(page.locator('#nextAction')).toContainText('Anomalie déclarée');
     await page.locator('#rail .stepbtn').nth(9).click();
     await expect(page.locator('#nextAction')).toContainText('observation uniquement');
+  });
+
+  // Niveau L3 : API simulée dans le navigateur — ces cas prouvent le contrat d'affichage, jamais un fait staging.
+  test('dix validations humaines sans preuves backend ne donnent jamais une Golden verte',async({page})=>{
+    await mount(page);
+    await page.locator('#createGolden').click();
+    for(let i=0;i<10;i++) await page.locator('#pass').click();
+    await expect(page.locator('#score')).toHaveText('10 / 10');
+    await expect(page.locator('#verdict')).toContainText('NON CERTIFIÉE');
+    await expect(page.locator('#global')).not.toHaveText(/GOLDEN VERT|certifié/i);
+    await expect(page.locator('body')).not.toContainText('GOLDEN VERT');
+    await expect(page.locator('#certLine')).toContainText('NON CERTIFIÉE');
+  });
+
+  test('portes amont : API indisponible → NON PROUVÉ, jamais PASS',async({page})=>{
+    await mount(page);
+    await expect(page.locator('#upstream [data-gate]')).toHaveCount(4);
+    await expect(page.locator('#global')).toHaveText('NON DÉMARRÉ');
+    await page.locator('#productId').fill('11111111-1111-4111-8111-111111111111');
+    await page.locator('#readUpstream').click();
+    await expect(page.locator('#upstream [data-gate="SOURCE_PROVED"]')).toContainText('NON PROUVÉ');
+    await expect(page.locator('#upstream .st.PROVED')).toHaveCount(0);
+    await expect(page.locator('#global')).toHaveText('PREUVE MANQUANTE');
+  });
+
+  test('portes amont : preuves canoniques → PRÊT POUR RECETTE avec liens réels, certification toujours refusée',async({page})=>{
+    await mount(page);
+    const gate=(key,label,link)=>({key,label,link,expected:'attendu',status:'PROVED',finding:'ok',evidence:{candidate_ref:key==='SOURCE_PROVED'?'KSC-1':null},next_action:'contrôle humain',human_checks:['à lire à l’écran']});
+    await page.route('http://komerce.test/api/admin/entities/golden-upstream**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({
+      stage:'PRÊT POUR RECETTE',certification:'NON CERTIFIÉE',ids:{product_id:'p1',market_code:'KM'},
+      gates:[gate('SOURCE_PROVED','Sourcing','/admin/workspaces/sourcing'),gate('REFINERY_PROVED','Raffinerie','/admin/workspaces/catalog'),gate('CATALOG_RELEASE_PROVED','Catalogue','/admin/workspaces/catalog'),gate('STOREFRONT_PROVED','Boutique','https://staging.example/boutique/')]})}));
+    await page.locator('#productId').fill('11111111-1111-4111-8111-111111111111');
+    await page.locator('#readUpstream').click();
+    await expect(page.locator('#global')).toHaveText('PRÊT POUR RECETTE');
+    await expect(page.locator('#upstream [data-gate="SOURCE_PROVED"] a')).toHaveAttribute('href','/admin/workspaces/sourcing');
+    await expect(page.locator('#upstream [data-gate="SOURCE_PROVED"]')).toContainText('candidate_ref=KSC-1');
+    await expect(page.locator('#certLine')).toContainText('NON CERTIFIÉE');
   });
 });
