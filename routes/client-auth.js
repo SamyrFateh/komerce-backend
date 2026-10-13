@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/parcel-order-membership.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       invoices, order_items, orders, parcels, products, relais, users
+ * @db-read       invoices, order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      users
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -28,6 +28,7 @@ const log = require('../utils/logger').child({ module: 'client-auth' });
 // AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
 const { setAuthCookie } = require('../utils/auth-cookie');
 const { signAuthToken } = require('../utils/auth-session');
+const { memberParcelPredicate } = require('../services/parcel-order-membership');
 
 function maskPhone(phone) {
   if (!phone) return null;
@@ -188,9 +189,9 @@ router.get('/orders', authenticate, async (req, res, next) => {
       }));
 
       const { rows: parcels } = await pool.query(`
-        SELECT id, reference, status, weight_kg
-        FROM parcels WHERE order_id = $1
-        ORDER BY created_at ASC
+        SELECT p.id, p.reference, p.status, p.weight_kg
+        FROM parcels p WHERE ${memberParcelPredicate('p', '$1')}
+        ORDER BY p.created_at ASC
       `, [order.id]);
       order.parcels = parcels;
 

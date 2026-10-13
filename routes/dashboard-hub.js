@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/parcel-order-membership.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, parcel_items, parcels, products, users
  * @db-write      none
@@ -23,6 +23,7 @@ const router  = express.Router();
 const db      = require('../db');
 const log = require('../utils/logger').child({ module: 'dashboard' });
 const { cached, setCache, getEurKmf, loadDashConfig } = require('./dashboard-shared');
+const { memberParcelPredicate } = require('../services/parcel-order-membership');
 
 router.get('/hub-dubai', async (req, res, next) => {
   try {
@@ -38,7 +39,7 @@ router.get('/hub-dubai', async (req, res, next) => {
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
       WHERE o.status IN ('confirmed', 'ordered')
-        AND NOT EXISTS (SELECT 1 FROM parcels p2 WHERE p2.order_id = o.id AND p2.status != 'cancelled')
+        AND NOT EXISTS (SELECT 1 FROM parcels p2 WHERE ${memberParcelPredicate('p2', 'o.id')} AND p2.status != 'cancelled')
       ORDER BY o.created_at ASC
     `);
 

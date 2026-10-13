@@ -193,6 +193,7 @@ module.exports = {
       'tests/unit/parcel-mutation-service.test.js',
       'tests/unit/parcel-order-membership.test.js',
       'tests/e2e-api/hub-multi-order-parcels.e2e.test.js',
+      'tests/e2e-api/hub-membership-readers.e2e.test.js',
       'tests/unit/parcel-guards.test.js',
       'tests/unit/parcel-auto-create-service.test.js',
       'tests/unit/hub-operations.test.js',

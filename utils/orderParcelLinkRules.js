@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/order-status-machine.js, utils/logger.js, utils/parcels.js
+ * @depends       services/order-status-machine.js, services/parcel-order-membership.js, utils/logger.js, utils/parcels.js
  * @db-write      none
- * @db-read      orders, parcels
+ * @db-read      order_items, orders, parcel_items, parcels
  * @used-by       routes/parcels.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  orders, checkout, logistics
@@ -33,6 +33,7 @@
 
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { computeOrderStatus } = require('./parcels');
+const { memberParcelPredicate } = require('../services/parcel-order-membership');
 const log = require('../utils/logger').child({ module: 'orderParcelLinkRules' });
 
 /**
@@ -45,7 +46,7 @@ const log = require('../utils/logger').child({ module: 'orderParcelLinkRules' })
  */
 async function evaluateOrderParcelLinkRules(order_id, db) {
   const { rows: allParcels } = await db.query(
-    'SELECT status FROM parcels WHERE order_id = $1',
+    `SELECT p.status FROM parcels p WHERE ${memberParcelPredicate('p', '$1')}`,
     [order_id]
   );
 

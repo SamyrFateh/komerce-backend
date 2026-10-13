@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/order-status-machine.js, services/payment-service.js, utils/logger.js
+ * @depends       db, services/parcel-order-membership.js, services/order-status-machine.js, services/payment-service.js, utils/logger.js
  * @used-by       routes/order-api-v2.js
- * @db-read       order_items, orders, parcels, products, relais, users
+ * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      orders, parcel_items, parcels, scan_events
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-txn        resolve_before_behavior_change
@@ -45,6 +45,7 @@ const db  = require('../db');
 
 const { transitionOrderStatus } = require('./order-status-machine');
 const { markPaid } = require('./payment-service');
+const { memberParcelPredicate } = require('./parcel-order-membership');
 const { ensureSecretGenerated } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'parcel-auto-create-service' });
 
@@ -78,7 +79,7 @@ async function autoCreateParcel(client, orderId, actor) {
 
   // 3. Bail si colis déjà existant (idempotence)
   const { rows: existing } = await client.query(
-    'SELECT id, reference FROM parcels WHERE order_id = $1',
+    `SELECT p.id, p.reference FROM parcels p WHERE ${memberParcelPredicate('p', '$1')}`,
     [orderId]
   );
   if (existing.length > 0) {

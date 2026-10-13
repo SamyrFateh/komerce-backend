@@ -6,15 +6,17 @@
  * @criticality   high
  * @inputs        customer order id
  * @outputs       canonical handoff verdict from parcel progression + authorized collection proof
- * @depends       orders, parcels, scans
+ * @depends       orders, parcels, scans, services/parcel-order-membership.js
  * @used-by       future Control Tower / Order 360 / financial closure
- * @db-read       orders, parcels, scans
+ * @db-read       order_items, orders, parcel_items, parcels, scans
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/chantier/CUSTOMER_TO_CUSTOMER_CLOSURE.md
  * @impact-areas  logistics, orders
  */
 'use strict';
+
+const { memberParcelPredicate } = require('./parcel-order-membership');
 
 const VERDICT = Object.freeze({
   MATCHED: 'HANDOFF_MATCHED',
@@ -94,12 +96,12 @@ async function loadOrder(client, orderId) {
 
 async function loadParcels(client, orderId) {
   const { rows } = await client.query(`
-    SELECT id, reference, status::text AS status,
-           shipped_at, in_transit_at, arrived_at, available_at, collected_at
-      FROM parcels
-     WHERE order_id = $1
-       AND status::text <> 'cancelled'
-     ORDER BY created_at, id
+    SELECT p.id, p.reference, p.status::text AS status,
+           p.shipped_at, p.in_transit_at, p.arrived_at, p.available_at, p.collected_at
+      FROM parcels p
+     WHERE ${memberParcelPredicate('p', '$1')}
+       AND p.status::text <> 'cancelled'
+     ORDER BY p.created_at, p.id
   `, [orderId]);
   return rows;
 }
