@@ -49,7 +49,7 @@ describeE2E('S5 — Mobile Money replay, ordering and provider faults', ({ db })
 
   beforeAll(async()=>{
     cleanup=createCleanup(db);
-    await db.query(`INSERT INTO markets (id,code,name,currency,minor_unit,is_active,lifecycle_status) VALUES ($1,$2,$3,'XAF',0,true,'OPEN')`,[marketId,tag('S5').slice(0,12).toUpperCase(),'S5 Mobile Money Market']); cleanup.track('markets','id',marketId);
+    await db.query(`INSERT INTO markets (id,code,name,currency,minor_unit,is_active,lifecycle_status) VALUES ($1,$2,$3,'XAF',0,true,'ACTIVE')`,[marketId,tag('S5').slice(0,12).toUpperCase(),'S5 Mobile Money Market']); cleanup.track('markets','id',marketId);
     await db.query(`INSERT INTO users (id,full_name,email,phone,role) VALUES ($1,'S5 Client',$2,$3,'client')`,[userId,`${tag('s5')}@komerce.test`,`+2693${Date.now().toString().slice(-7)}`]); cleanup.track('users','id',userId);
     await db.query(`INSERT INTO products (id,name,price_kmf,stock) VALUES ($1,$2,10000,100)`,[productId,tag('S5 Product')]); cleanup.track('products','id',productId);
   });
