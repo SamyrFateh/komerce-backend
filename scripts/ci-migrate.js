@@ -47,6 +47,19 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  '270_capability_registry_effect_amount_bearing.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'capability_registry' AND column_name = 'effect')
+        AND EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'capability_registry' AND column_name = 'amount_bearing')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'capability_registry_effect_check')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
   '278_market_lifecycle.sql': async (client) => {
     const { rows: [row] } = await client.query(`
       SELECT
