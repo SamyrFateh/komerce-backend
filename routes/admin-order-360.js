@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_admin, order_reference
  * @outputs       authorized_order_360_projection, purchasing_projection_only_when_admin_guard_matches
- * @depends       middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/order-360
+ * @depends       middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/order-360, services/golden-upstream-evidence
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
@@ -25,6 +25,7 @@ const { attachAuthorizedMarketsForCapability } = require('../middleware/require-
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const order360 = require('../services/order-360');
 const { projectGoldenEvidence } = require('../services/golden-e2e-cockpit');
+const { projectUpstreamEvidence } = require('../services/golden-upstream-evidence');
 const { advanceGoldenJourney } = require('../tests/helpers/goldenJourney');
 const { createGoldenJourney } = require('../tests/helpers/goldenJourneySetup');
 const db = require('../db');
@@ -102,6 +103,31 @@ router.get(
       log.error({ err, orderReference: req.params.orderReference }, '[admin-order-360] read failed');
       return next(err);
     }
+  }
+);
+
+router.get(
+  '/golden-upstream',
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin']),
+  requireRole(['admin']),
+  async (req, res, next) => {
+    try {
+      // Les portes amont lisent Sourcing, Catalogue et la boutique : autorité centrale explicite, fail-closed.
+      if (!(await hasDashboardGlobalAuthority(req.user && req.user.id))) {
+        return res.status(403).json({
+          error: 'Accès refusé — autorité dashboard globale requise pour les preuves amont',
+          code: 'golden_upstream_global_authority_required',
+        });
+      }
+      res.set('Cache-Control', 'private, no-store');
+      return res.json(await projectUpstreamEvidence(db, {
+        productId: req.query.product_id ? String(req.query.product_id) : null,
+        marketCode: req.query.market ? String(req.query.market) : null,
+        orderReference: req.query.order_reference ? String(req.query.order_reference) : null,
+        storefrontBaseUrl: process.env.STOREFRONT_BASE_URL || process.env.PUBLIC_BASE_URL || null,
+      }));
+    } catch (err) { return next(err); }
   }
 );
 

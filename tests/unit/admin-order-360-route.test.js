@@ -42,6 +42,11 @@ jest.mock('../../services/order-360', () => ({
   loadOrder360: (...args) => mockLoadOrder360(...args),
 }));
 
+const mockProjectUpstream = jest.fn();
+jest.mock('../../services/golden-upstream-evidence', () => ({
+  projectUpstreamEvidence: (...args) => mockProjectUpstream(...args),
+}));
+
 jest.mock('../../utils/logger', () => {
   const logger = { error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() };
   return {
@@ -189,5 +194,28 @@ describe('Golden create route contract', () => {
     expect(source).toContain("requireRole(['admin'])");
     expect(source).toContain('golden_create_production_forbidden');
     expect(source).toContain("createGoldenJourney(db, { marketCode })");
+  });
+});
+
+
+describe('Golden upstream route', () => {
+  const PID = '11111111-1111-4111-8111-111111111111';
+
+  test('sans autorité dashboard globale → 403 fail-closed, aucune lecture', async () => {
+    mockGlobalAllowed = false;
+    const res = await request(app()).get(`/api/admin/entities/golden-upstream?product_id=${PID}&market=KM`);
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('golden_upstream_global_authority_required');
+    expect(mockProjectUpstream).not.toHaveBeenCalled();
+  });
+
+  test('autorité globale → projection read-only, no-store, paramètres transmis tels quels', async () => {
+    mockGlobalAllowed = true;
+    mockProjectUpstream.mockResolvedValue({ stage: 'NON DÉMARRÉ', gates: [], certification: 'NON CERTIFIÉE' });
+    const res = await request(app()).get(`/api/admin/entities/golden-upstream?product_id=${PID}&market=KM&order_reference=K-GOLDEN-1`);
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(res.body.certification).toBe('NON CERTIFIÉE');
+    expect(mockProjectUpstream).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ productId: PID, marketCode: 'KM', orderReference: 'K-GOLDEN-1' }));
   });
 });

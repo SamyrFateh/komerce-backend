@@ -433,6 +433,8 @@ module.exports = {
       'services/operations-relay-projection.js',
       'services/order-360.js',
       'services/golden-e2e-cockpit.js',
+      'services/golden-upstream-evidence.js',
+      'public/golden-e2e-cockpit.html',
       'services/product-360.js',
       'services/supplier-360.js',
       'services/provider-certification-overview.js',
