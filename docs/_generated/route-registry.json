@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-11T16:20:41.992Z",
+  "generatedAt": "2026-10-13T11:00:26.409Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 717,
+  "count": 721,
   "routes": [
     {
       "method": "GET",
@@ -888,10 +888,50 @@
       ]
     },
     {
+      "method": "POST",
+      "fullPath": "/api/admin/entities/golden-create",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/golden-create",
+      "routeFile": "routes/admin-order-360.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/entities/golden-upstream",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/golden-upstream",
+      "routeFile": "routes/admin-order-360.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "GET",
       "fullPath": "/api/admin/entities/orders/:orderReference",
       "mountPrefix": "/api/admin/entities",
       "localPath": "/orders/:orderReference",
+      "routeFile": "routes/admin-order-360.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/entities/orders/:orderReference/golden-advance",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/orders/:orderReference/golden-advance",
+      "routeFile": "routes/admin-order-360.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/entities/orders/:orderReference/golden-evidence",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/orders/:orderReference/golden-evidence",
       "routeFile": "routes/admin-order-360.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
