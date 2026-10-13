@@ -58,6 +58,20 @@ const PRESERVE_TABLES = Object.freeze([
   'sourcing_global_access_grants',
 ]);
 
+// Structural protection is broader than the tables whose counts we verify.
+// TRUNCATE CASCADE must never reach foundation, identity or supplier credentials.
+const PROTECTED_CASCADE_TABLES = Object.freeze([
+  ...PRESERVE_TABLES,
+  'schema_migrations', 'migrations', 'markets', 'relais', 'partners',
+  'users', 'roles', 'permissions', 'supplier_oauth_connections',
+  'provider_credentials', 'finance_config', 'economic_variables',
+  'business_rules', 'business_rules_history', 'market_delegations',
+  'market_operator_delegations', 'market_payment_providers',
+  'market_cash_control_policies', 'market_cash_destinations',
+  'pricing_rules', 'catalog_exclusions', 'catalog_glossary',
+  'catalog_global_access_grants', 'sourcing_global_access_grants',
+]);
+
 const RESET_SEQUENCES = Object.freeze([
   'product_ref_seq',
   'catalog_import_ref_seq',
@@ -159,7 +173,7 @@ async function reset() {
         }
       }
     }
-    const protectedCascade = PRESERVE_TABLES.filter(table => closure.has(table));
+    const protectedCascade = PROTECTED_CASCADE_TABLES.filter(table => closure.has(table));
     if (protectedCascade.length) {
       throw new Error(`REFUS: TRUNCATE CASCADE atteindrait des configurations: ${protectedCascade.join(', ')}`);
     }
