@@ -434,6 +434,8 @@ module.exports = {
       'services/order-360.js',
       'services/golden-e2e-cockpit.js',
       'services/golden-upstream-evidence.js',
+      'services/golden-gate-kit.js',
+      'services/golden-checkout-thread.js',
       'public/golden-e2e-cockpit.html',
       'services/product-360.js',
       'services/supplier-360.js',
