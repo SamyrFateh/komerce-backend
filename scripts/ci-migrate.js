@@ -47,6 +47,36 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  // Financial custody chain: snapshot baseline must prove 287 → 288 → 289 structures.
+  '287_cash_custody_ledger.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT to_regclass('public.cash_deposit_allocations') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='movement_kind')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='market_id_source')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+  '288_cash_custody_recipients.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT to_regclass('public.market_cash_destinations') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='market_cash_control_policies' AND column_name='custody_max_days')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='membership_capabilities' AND column_name='limit_amount')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+  '289_cash_custody_transfers.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT to_regclass('public.cash_custody_movements') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='recipient_user_id')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='regularizes_deposit_id')
+        AND to_regclass('public.cash_custody_receipts') IS NOT NULL
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
   '231_incident_sla_escalation_contract.sql': async (client) => {
     const { rows: [row] } = await client.query(`
       SELECT
