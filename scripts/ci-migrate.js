@@ -47,6 +47,131 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  '276_market_delegation_operating_governance.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='membership_capabilities' AND column_name='limit_amount')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='assignment_capability_ceiling' AND column_name='limit_amount')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='assignment_memberships' AND column_name='is_operating_lead')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='assignment_memberships' AND column_name='effective_until')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='market_operating_assignments' AND column_name='central_referent_user_id')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname='membership_capability_limit_nonnegative_check')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
+  '286_cash_deposit_declared_currency.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='declared_amount')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='declared_currency')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='fx_rate_to_kmf')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='fx_source')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname='cash_deposits_declared_snapshot_chk')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
+  '285_market_payment_accounts.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT to_regclass('public.market_payment_accounts') IS NOT NULL AS represented
+    `);
+    return row?.represented === true;
+  },
+
+  // Financial custody chain: snapshot baseline must prove 287 → 288 → 289 structures.
+  '287_cash_custody_ledger.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT to_regclass('public.cash_deposit_allocations') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='movement_kind')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='market_id_source')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+  '288_cash_custody_recipients.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT to_regclass('public.market_cash_destinations') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='market_cash_control_policies' AND column_name='custody_max_days')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='membership_capabilities' AND column_name='limit_amount')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+  '289_cash_custody_transfers.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT to_regclass('public.cash_custody_movements') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='recipient_user_id')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='regularizes_deposit_id')
+        AND to_regclass('public.cash_custody_receipts') IS NOT NULL
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
+  '231_incident_sla_escalation_contract.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='incidents' AND column_name='due_at')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='incidents' AND column_name='escalation_level')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname='incidents_escalation_level_check')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
+  '230_incident_governance_contract.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='incidents' AND column_name='origin_domain')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='incidents' AND column_name='resolver_domain')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='incidents' AND column_name='resolution_class')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
+  '274_market_delegation_audit_market.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema='public' AND table_name='market_delegation_audit' AND column_name='market_id')
+        AND EXISTS (SELECT 1 FROM pg_trigger
+                    WHERE tgname='trg_market_delegation_audit_market_guard' AND NOT tgisinternal)
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
+  '270_capability_registry_effect_amount_bearing.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'capability_registry' AND column_name = 'effect')
+        AND EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'capability_registry' AND column_name = 'amount_bearing')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'capability_registry_effect_check')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
+  '278_market_lifecycle.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'markets' AND column_name = 'lifecycle_status')
+        AND EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'markets' AND column_name = 'storefront_texts')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'markets_lifecycle_status_check')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'markets_lifecycle_is_active_check')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
   '110_catalog_import_audit.sql': async (client) => {
     const { rows: [row] } = await client.query(`
       SELECT
