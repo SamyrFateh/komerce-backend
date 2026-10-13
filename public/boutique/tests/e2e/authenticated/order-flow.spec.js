@@ -35,6 +35,9 @@ const {
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
 const { getClientCart, verifyOrder, cancelOrder } = require('../helpers/api.helpers');
+const { assertRemoteMutantTargetSafe } = require('../helpers/environment.helpers');
+const ALLOW_REAL_ORDER = process.env.ALLOW_ORDER_SUBMIT === 'true';
+
 
 test.describe('FLOW — Commande complète (browse → checkout)', () => {
 
@@ -51,6 +54,17 @@ test.describe('FLOW — Commande complète (browse → checkout)', () => {
   });
 
   test('F01 — Parcours complet : catalogue → panier → checkout → commande vérifiée côté backend', async ({ page }) => {
+    // Toute commande effective exige une identité d'environnement vérifiée, jamais seulement un flag.
+    if (ALLOW_REAL_ORDER) {
+      if (!process.env.BASE_URL) throw new Error('ALLOW_ORDER_SUBMIT exige BASE_URL et un backend réel');
+      await assertRemoteMutantTargetSafe();
+      if (process.env.GOLDEN_P1_ISOLATED === 'true') {
+        const origin = new URL(process.env.BASE_URL);
+        if (!['localhost', '127.0.0.1'].includes(origin.hostname) || process.env.KOMERCE_ENV !== 'test') {
+          throw new Error('GOLDEN_P1_ISOLATED exige un backend local et KOMERCE_ENV=test');
+        }
+      }
+    }
     // ── 1. Charger le catalogue ──
     await page.goto(BASE_URL);
     await waitForGrid(page);
@@ -140,7 +154,7 @@ test.describe('FLOW — Commande complète (browse → checkout)', () => {
         try { body = request.postDataJSON(); } catch { body = request.postData(); }
         orderCalls.push({ url: request.url(), method: request.method(), body, timestamp: Date.now() });
       }
-      if (process.env.ALLOW_ORDER_SUBMIT) {
+      if (ALLOW_REAL_ORDER) {
         // Staging avec soumission réelle autorisée : laisser passer.
         await route.continue();
       } else {
@@ -205,7 +219,7 @@ test.describe('FLOW — Commande complète (browse → checkout)', () => {
       // payload envoyé), puis on la nettoie via afterEach. Sans cette étape,
       // F01 ne teste que ce que le frontend ENVOIE, jamais ce que le backend
       // ENREGISTRE (schéma DB, calcul du total, statut initial...).
-      if (process.env.ALLOW_ORDER_SUBMIT) {
+      if (ALLOW_REAL_ORDER) {
         const response = await responsePromise;
         expect(response, 'Pas de réponse serveur reçue pour POST /api/orders').not.toBeNull();
 
