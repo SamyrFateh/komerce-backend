@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/parcel-order-membership.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       order_items, order_status_history, orders, parcels, products, relais, users
+ * @db-read       order_items, order_status_history, orders, parcel_items, parcels, products, relais, users
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -30,6 +30,7 @@ const router  = express.Router();
 const db      = require('../../db');
 const { authenticate } = require('../../middleware/auth');
 const { softAuthenticate } = require('../../middleware/soft-auth'); // F3 LOT-387
+const { memberParcelPredicate } = require('../../services/parcel-order-membership');
 
 // ─── GET /api/orders/:ref — détail + suivi (public par référence) ─────────────
 
@@ -86,7 +87,7 @@ router.get('/:ref', softAuthenticate, async (req, res, next) => {
     // If not authenticated, return minimal public data + parcel tracking
     if (!req.user) {
       const { rows: trackParcels } = await db.query(
-        `SELECT reference, status FROM parcels WHERE order_id = $1 ORDER BY created_at ASC`,
+        `SELECT p.reference, p.status FROM parcels p WHERE ${memberParcelPredicate('p', '$1')} ORDER BY p.created_at ASC`,
         [order.id]
       );
       return res.json({

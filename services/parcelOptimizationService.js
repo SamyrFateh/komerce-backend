@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       utils/parcelSync.js, utils/parcels.js, utils/reference.js
+ * @depends       services/parcel-order-membership.js, utils/parcelSync.js, utils/parcels.js, utils/reference.js
  * @used-by       none
  * @db-read       order_items, parcel_items, parcels, products
  * @db-write      orders, parcel_items, parcels
@@ -44,6 +44,7 @@
 const {
   setComputedStatus,
 } = require('./order-mutation-service');
+const { memberParcelPredicate } = require('./parcel-order-membership');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION PAR DÉFAUT
@@ -522,7 +523,7 @@ async function bootstrapOrderParcels(orderId, pool, config = {}) {
   // On utilise plutôt une query directe pour refresher computed_status
   const { computeOrderStatus } = require('../utils/parcels');
   const { rows: allParcels } = await pool.query(
-    'SELECT status, type FROM parcels WHERE order_id = $1',
+    `SELECT p.status, p.type FROM parcels p WHERE ${memberParcelPredicate('p', '$1')}`,
     [orderId]
   );
   const newStatus = computeOrderStatus(allParcels);

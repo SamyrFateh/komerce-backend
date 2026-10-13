@@ -101,6 +101,8 @@ describe('GET /api/orders/:ref', () => {
     });
     expect(res.body.cash_ref_code).toBeUndefined();
     expect(res.body.pickup_code).toBeUndefined();
+    // HUB-B : le suivi public inclut les colis partagés (appartenance par lignes)
+    expect(mockDbQuery.mock.calls[3][0]).toContain('parcel_items');
     expect(res.body.supplier_name).toBeUndefined();
   });
 

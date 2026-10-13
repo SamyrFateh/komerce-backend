@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/incident-write-service.js, utils/logger.js, utils/parcels.js
+ * @depends       db, services/parcel-order-membership.js, services/incident-write-service.js, utils/logger.js, utils/parcels.js
  * @used-by       none
  * @db-read       incidents, order_items, orders, parcel_items, parcels, scan_events
  * @db-write-via:incident-write-service incidents
@@ -46,6 +46,7 @@
  * ╚══════════════════════════════════════════════════════════════════════╝
  */
 
+const { memberParcelPredicate } = require('./parcel-order-membership');
 const pool = require('../db');
 const { createReconciliationIncident } = require('./incident-write-service');
 // ── CANONIQUE: source de vérité unique pour le calcul agrégé colis → commande ──
@@ -79,7 +80,7 @@ async function reconcileOrder(orderId) {
 
     // 3. Charger les colis actifs
     const { rows: parcels } = await client.query(
-      `SELECT * FROM parcels WHERE order_id = $1 AND status != 'cancelled'`, [orderId]
+      `SELECT p.* FROM parcels p WHERE ${memberParcelPredicate('p', '$1')} AND p.status != 'cancelled'`, [orderId]
     );
 
     // 4. Charger les parcel_items
