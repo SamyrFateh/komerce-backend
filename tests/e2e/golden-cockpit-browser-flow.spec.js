@@ -66,4 +66,19 @@ test.describe('Golden cockpit — recette visuelle',()=>{
       await expect(page.locator('#openReal')).toHaveAttribute('href',expected[i]);
     }
   });
+
+  test('le conducteur change la prochaine action selon preuve et verdict humain',async({page})=>{
+    await mount(page);
+    await expect(page.locator('#nextAction')).toContainText('Crée ou charge');
+    await page.locator('#createGolden').click();
+    await expect(page.locator('#nextAction')).toContainText('Preuve backend acquise');
+    await page.locator('#pass').click();
+    await expect(page.locator('#nextAction')).toContainText('Preuve backend acquise');
+    await page.locator('#rail .stepbtn').nth(5).click();
+    await expect(page.locator('#nextAction')).toContainText('Déclenche');
+    await page.locator('#fail').click();
+    await expect(page.locator('#nextAction')).toContainText('Anomalie déclarée');
+    await page.locator('#rail .stepbtn').nth(9).click();
+    await expect(page.locator('#nextAction')).toContainText('observation uniquement');
+  });
 });
