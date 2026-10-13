@@ -96,7 +96,8 @@ test.describe('Golden cockpit — recette visuelle',()=>{
 
   test('portes amont : API indisponible → NON PROUVÉ, jamais PASS',async({page})=>{
     await mount(page);
-    await expect(page.locator('#upstream [data-gate]')).toHaveCount(4);
+    await expect(page.locator('#upstream [data-gate]')).toHaveCount(5);
+    await expect(page.locator('#upstream [data-gate="CUSTOMER_ORDER_PROVED"]')).toContainText('NON PROUVÉ');
     await expect(page.locator('#global')).toHaveText('NON DÉMARRÉ');
     await page.locator('#productId').fill('11111111-1111-4111-8111-111111111111');
     await page.locator('#readUpstream').click();
@@ -110,12 +111,17 @@ test.describe('Golden cockpit — recette visuelle',()=>{
     const gate=(key,label,link)=>({key,label,link,expected:'attendu',status:'PROVED',finding:'ok',evidence:{candidate_ref:key==='SOURCE_PROVED'?'KSC-1':null},next_action:'contrôle humain',human_checks:['à lire à l’écran']});
     await page.route('http://komerce.test/api/admin/entities/golden-upstream**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({
       stage:'PRÊT POUR RECETTE',certification:'NON CERTIFIÉE',ids:{product_id:'p1',market_code:'KM'},
-      gates:[gate('SOURCE_PROVED','Sourcing','/admin/workspaces/sourcing'),gate('REFINERY_PROVED','Raffinerie','/admin/workspaces/catalog'),gate('CATALOG_RELEASE_PROVED','Catalogue','/admin/workspaces/catalog'),gate('STOREFRONT_PROVED','Boutique','https://staging.example/boutique/')]})}));
+      gates:[gate('SOURCE_PROVED','Sourcing','/admin/workspaces/sourcing'),gate('REFINERY_PROVED','Raffinerie','/admin/workspaces/catalog'),gate('CATALOG_RELEASE_PROVED','Catalogue','/admin/workspaces/catalog'),gate('STOREFRONT_PROVED','Boutique','https://staging.example/boutique/'),gate('CUSTOMER_ORDER_PROVED','Commande → achat','/admin/workspaces/purchasing')],
+      dossier:{sha256:'ab'.repeat(32),complete:false,incomplete_reasons:['Origine du checkout non prouvée par cette projection']}})}));
     await page.locator('#productId').fill('11111111-1111-4111-8111-111111111111');
     await page.locator('#readUpstream').click();
     await expect(page.locator('#global')).toHaveText('PRÊT POUR RECETTE');
     await expect(page.locator('#upstream [data-gate="SOURCE_PROVED"] a')).toHaveAttribute('href','/admin/workspaces/sourcing');
     await expect(page.locator('#upstream [data-gate="SOURCE_PROVED"]')).toContainText('candidate_ref=KSC-1');
     await expect(page.locator('#certLine')).toContainText('NON CERTIFIÉE');
+    // Dossier exportable : lien de téléchargement, jamais présenté comme complet quand l'origine du checkout n'est pas prouvée.
+    await expect(page.locator('#upstream [data-gate="CUSTOMER_ORDER_PROVED"] a')).toHaveAttribute('href','/admin/workspaces/purchasing');
+    await expect(page.locator('#exportDossier')).toHaveAttribute('href',/golden-upstream\?.*download=1/);
+    await expect(page.locator('#exportDossier')).toHaveAttribute('title',/INCOMPLET.*sha256 abab/);
   });
 });

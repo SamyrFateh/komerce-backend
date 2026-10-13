@@ -8,7 +8,7 @@
  * @outputs       read_only_upstream_gate_evidence, cockpit_readiness_stage
  * @depends       services/sourcing-certification, services/sourcing-canonical-unit-product-sku-resolution
  * @used-by       routes/admin-order-360
- * @db-read       sourcing_candidates, import_runtime_runs, sourcing_sources, sourcing_captures, sourcing_observations, catalog_enrichment_runs, catalog_media, products, product_skus, product_market_exposure, product_market_price_drafts, markets
+ * @db-read       orders, order_items, purchase_lines, purchase_orders, sourcing_candidates, import_runtime_runs, sourcing_sources, sourcing_captures, sourcing_observations, catalog_enrichment_runs, catalog_media, products, product_skus, product_market_exposure, product_market_price_drafts, markets
  * @db-write      none
  * @db-txn        none
  * @doctrine      projection_only_no_business_authority, absent_or_ambiguous_proof_is_not_proved
@@ -24,6 +24,7 @@
  * résolveur canonique Unit↔SKU, exposition Market, prix local actif, API publique de la boutique).
  * Règle fail-closed : une preuve absente, ambiguë ou illisible est NON_PROUVE, jamais PROVED.
  */
+const crypto = require('crypto');
 const { evaluateSourcingCandidateOutcome } = require('./sourcing-certification');
 const unitResolver = require('./sourcing-canonical-unit-product-sku-resolution');
 
@@ -335,11 +336,103 @@ async function loadStorefrontGate({ productId, marketCode, baseUrl, fetchImpl, c
  * Étape du cockpit, déduite UNIQUEMENT des preuves automatiques (jamais des clics humains).
  * Chaîne attendue : Sourcing → Raffinerie → Catalogue → Boutique.
  */
+/**
+ * Dossier de preuve exportable (HUB P0b) : séparation explicite des niveaux, provenance des données et
+ * empreinte SHA-256 de la partie probante (sans horodatage), pour qu'un export identique soit vérifiable.
+ * Le verdict humain n'est jamais porté par le serveur : il reste un constat distinct, jamais une preuve backend.
+ */
+function buildDossierMeta({ ids, gates, stage }) {
+  const ref = ids.order_reference || '';
+  const provenance = /^K-GOLDEN-/i.test(ref)
+    ? 'SYNTHETIC_GOLDEN_CREATE'
+    : (ref ? 'ORDER_ORIGIN_NOT_PROVED' : 'NO_ORDER');
+  const probative = {
+    ids,
+    stage,
+    gates: gates.map((g) => ({ key: g.key, status: g.status, checks: g.checks.map((c) => [c.key, c.ok]), anomalies: g.anomalies })),
+  };
+  return {
+    version: 1,
+    provenance,
+    // Une projection de faits persistés ne prouve jamais, seule, qu'un navigateur a traversé un vrai checkout.
+    complete: stage === STAGE.PRET && provenance === 'REAL_CHECKOUT_PROVED',
+    incomplete_reasons: [
+      ...(stage === STAGE.PRET ? [] : [`Étape ${stage}`]),
+      ...(provenance === 'SYNTHETIC_GOLDEN_CREATE' ? ['Commande synthétique (golden-create) : ne certifie pas un vrai checkout'] : []),
+      ...(provenance === 'ORDER_ORIGIN_NOT_PROVED' ? ['Origine du checkout non prouvée par cette projection'] : []),
+      'Verdict humain et niveau de preuve L0–L6 non portés par le serveur',
+    ],
+    proof_levels: { backend_projection: 'faits persistés de la cible interrogée (L4 local / L5 staging selon la cible)', human_verdict: 'constat distinct, jamais une preuve backend' },
+    sha256: crypto.createHash('sha256').update(JSON.stringify(probative)).digest('hex'),
+  };
+}
+
+/**
+ * CUSTOMER_ORDER_PROVED — filiation order_items → purchase_lines → PO, identité exacte.
+ * Aucune substitution tolérée : le product_sku_id acheté doit être celui vendu, et le supplier_unit_ref
+ * (et l'identité SOI) de la ligne d'achat doit être celui du SKU sourcé. Quantités exactes.
+ */
+async function loadCustomerOrderGate(db, { productId, orderReference }) {
+  const meta = {
+    key: 'CUSTOMER_ORDER_PROVED',
+    label: 'Commande client → achat fournisseur',
+    link: '/admin/workspaces/purchasing',
+    expected: 'Chaque ligne vendue du produit sourcé est couverte par des lignes d’achat portant le même SKU et la même unité fournisseur',
+  };
+  const nextAction = 'Rattacher la commande au PO fournisseur exact (SKU/SOI) via le propriétaire Purchasing, sans substitution.';
+  if (!orderReference) return unproved(meta.key, meta.label, meta.link, meta.expected, 'order_reference_missing', 'Renseigner la référence de la commande issue du vrai checkout.');
+  const order = await safeQuery(db, 'SELECT id, reference, status, payment_status FROM orders WHERE reference = $1', [String(orderReference)]);
+  if (order.error) return unproved(meta.key, meta.label, meta.link, meta.expected, 'order_unreadable', nextAction);
+  if (!order.rows.length) return unproved(meta.key, meta.label, meta.link, meta.expected, 'order_not_found', nextAction);
+  const orderId = order.rows[0].id;
+
+  const items = await safeQuery(db, `
+    SELECT oi.id AS order_item_id, oi.quantity, oi.sku_id, oi.product_id,
+           ps.product_id AS sku_product_id, ps.supplier_unit_ref AS sku_unit_ref,
+           ps.supplier_order_identity->'payload'->>'supplier_unit_ref' AS sku_soi_unit_ref
+      FROM order_items oi
+      LEFT JOIN product_skus ps ON ps.id = oi.sku_id
+     WHERE oi.order_id = $1 AND oi.product_id = $2`, [orderId, productId]);
+  const lines = await safeQuery(db, `
+    SELECT pl.order_item_id, pl.product_sku_id, pl.supplier_unit_ref, pl.quantity, pl.purchase_order_id,
+           pl.supplier_order_identity->'payload'->>'supplier_unit_ref' AS soi_unit_ref,
+           po.status AS po_status
+      FROM purchase_lines pl
+      LEFT JOIN purchase_orders po ON po.id = pl.purchase_order_id
+     WHERE pl.cancelled_at IS NULL
+       AND pl.order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)`, [orderId]);
+  if (items.error || lines.error) return unproved(meta.key, meta.label, meta.link, meta.expected, 'purchase_chain_unreadable', nextAction);
+
+  const checks = [check('order_has_item_of_product', items.rows.length > 0, 'La commande contient une ligne du produit sourcé')];
+  const anomalies = [];
+  const perItem = [];
+  for (const item of items.rows) {
+    const mine = lines.rows.filter((l) => l.order_item_id === item.order_item_id);
+    const covered = mine.reduce((sum, l) => sum + Number(l.quantity || 0), 0);
+    const substituted = mine.filter((l) => l.product_sku_id !== item.sku_id);
+    const unitMismatch = item.sku_unit_ref
+      ? mine.filter((l) => l.supplier_unit_ref !== item.sku_unit_ref || (l.soi_unit_ref && l.soi_unit_ref !== item.sku_unit_ref))
+      : [];
+    if (substituted.length) anomalies.push(`SKU_SUBSTITUTION:${item.order_item_id}`);
+    if (unitMismatch.length) anomalies.push(`SUPPLIER_UNIT_MISMATCH:${item.order_item_id}`);
+    if (covered > Number(item.quantity)) anomalies.push(`PURCHASE_OVER_QUANTITY:${item.order_item_id}`);
+    checks.push(check(`sku_belongs_to_product:${item.order_item_id}`, item.sku_id && item.sku_product_id === item.product_id, 'Le SKU vendu appartient au produit sourcé'));
+    checks.push(check(`sku_has_supplier_unit:${item.order_item_id}`, Boolean(item.sku_unit_ref), 'Le SKU porte une unité fournisseur'));
+    checks.push(check(`purchase_line_exists:${item.order_item_id}`, mine.length > 0, 'Au moins une ligne d’achat'));
+    checks.push(check(`purchase_attached_to_po:${item.order_item_id}`, mine.length > 0 && mine.every((l) => l.purchase_order_id), 'Chaque ligne d’achat est rattachée à un PO'));
+    checks.push(check(`quantity_exactly_covered:${item.order_item_id}`, covered === Number(item.quantity), `couvert ${covered} / vendu ${item.quantity}`));
+    perItem.push({ order_item_id: item.order_item_id, sold_quantity: Number(item.quantity), purchased_quantity: covered, purchase_lines: mine.length });
+  }
+  return settle({ ...meta, checks, anomalies, nextAction, evidence: { order_reference: order.rows[0].reference, items: perItem } });
+}
+
 function deriveReadiness({ gates = [], productId = null, orderReference = null } = {}) {
   if (!productId && !orderReference && !gates.length) return STAGE.NON_DEMARRE;
   if (gates.some((g) => g.status === GATE.ANOMALIE)) return STAGE.ANOMALIE;
   const proved = gates.map((g) => g.status === GATE.PROVED);
-  if (proved.length === 4 && proved.every(Boolean)) return STAGE.PRET;
+  // Sans commande : les 4 portes amont. Avec commande : la 5e porte (commande → achat exact) est exigée.
+  const expectedGates = orderReference ? 5 : 4;
+  if (proved.length === expectedGates && proved.every(Boolean)) return STAGE.PRET;
   const firstGap = proved.indexOf(false);
   const hole = firstGap >= 0 && proved.slice(firstGap + 1).some(Boolean);
   if (hole) return STAGE.PREUVE_MANQUANTE;
@@ -366,8 +459,10 @@ async function projectUpstreamEvidence(db, {
       ? await loadStorefrontGate({ productId: product, marketCode: market, baseUrl: storefrontBaseUrl, fetchImpl, catalogGate: catalog })
       : unproved('STOREFRONT_PROVED', 'Boutique', null, 'Produit visible et vendable dans la boutique', 'storefront_probe_unavailable', 'Sonde HTTP indisponible dans ce runtime.');
     gates = [source, refinery, catalog, storefront];
+    if (orderReference) gates.push(await loadCustomerOrderGate(db, { productId: product, orderReference: String(orderReference) }));
   }
   const stage = deriveReadiness({ gates, productId: product, orderReference });
+  const ids = { product_id: product, market_code: market, order_reference: orderReference || null };
   return {
     doctrine: 'read_only_projection_no_business_authority',
     proof_level: 'Projection des faits persistés de la cible interrogée ; ne vaut pas L5 sans exécution réelle observée',
@@ -377,12 +472,9 @@ async function projectUpstreamEvidence(db, {
       'Une validation humaine ne remplace jamais une preuve backend',
     ],
     stage,
-    ids: {
-      product_id: product,
-      market_code: market,
-      order_reference: orderReference || null,
-    },
+    ids,
     gates,
+    dossier: buildDossierMeta({ ids, gates, stage }),
     observed_at: new Date().toISOString(),
   };
 }
