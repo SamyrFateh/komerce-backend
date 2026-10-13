@@ -36,6 +36,11 @@ test('Railway watchPatterns stay in the build section', () => {
   expect(deployPos).toBeGreaterThan(watchPos);
 });
 
+test('Railway watch paths include Golden cockpit assets', () => {
+  expect(railway).toContain('"public/golden-e2e-cockpit.html"');
+  expect(railway).toContain('"public/js/**"');
+});
+
 test('sourcing enum preparation is a separate migration ordered before immutable 149', () => {
   expect(migration148a).toContain("ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'sourcing';");
   expect(migration149).toContain("WHERE role = 'sourcing'");
