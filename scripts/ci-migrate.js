@@ -47,6 +47,19 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  '286_cash_deposit_declared_currency.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='declared_amount')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='declared_currency')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='fx_rate_to_kmf')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='cash_deposits' AND column_name='fx_source')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname='cash_deposits_declared_snapshot_chk')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
   '285_market_payment_accounts.sql': async (client) => {
     const { rows: [row] } = await client.query(`
       SELECT to_regclass('public.market_payment_accounts') IS NOT NULL AS represented
