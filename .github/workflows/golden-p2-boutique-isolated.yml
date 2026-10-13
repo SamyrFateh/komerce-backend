@@ -72,7 +72,7 @@ jobs:
           done
           test -s golden-p2-health.json
           curl -fsS --max-time 10 http://localhost:3911/boutique/ > /dev/null
-          node -e "const h=require('./golden-p2-health.json');if(h.environment!=='test' && h.komerce_env!=='test' && h.env!=='test') {console.log('Health response:',JSON.stringify(h)); process.exitCode=2}"
+          node -e "const h=require('./golden-p2-health.json');if(h.komerce_env!=='test' || h.status!=='ok' || h.db!=='connected') {console.log('Health response:',JSON.stringify(h)); process.exitCode=2}"
       - name: Readiness gate — dedicated OTP account
         id: otp_gate
         env:
