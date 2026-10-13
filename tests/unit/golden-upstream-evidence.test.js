@@ -179,11 +179,13 @@ describe('CUSTOMER_ORDER_PROVED — commande → achat fournisseur exact (P0b)',
   const runOrder = (f) => run(f, { orderReference: REF });
   const orderGate = (r) => gateOf(r, 'CUSTOMER_ORDER_PROVED');
 
-  test('filiation exacte → 5 portes prouvées, PRÊT POUR RECETTE, dossier avec empreinte', async () => {
+  test('filiation exacte → 7 portes, preuves checkout absentes bloquées, dossier avec empreinte', async () => {
     const report = await runOrder(orderFacts());
-    expect(report.gates).toHaveLength(5);
+    expect(report.gates).toHaveLength(7);
     expect(orderGate(report).status).toBe(GATE.PROVED);
-    expect(report.stage).toBe(STAGE.PRET);
+    expect(report.gates[5].status).toBe(GATE.NON_PROUVE);
+    expect(report.gates[6].status).toBe(GATE.NON_PROUVE);
+    expect(report.stage).not.toBe(STAGE.PRET);
     expect(report.dossier.sha256).toMatch(/^[0-9a-f]{64}$/);
     expect(report.dossier.provenance).toBe('ORDER_ORIGIN_NOT_PROVED');
     expect(report.dossier.complete).toBe(false);
@@ -239,10 +241,10 @@ describe('CUSTOMER_ORDER_PROVED — commande → achat fournisseur exact (P0b)',
     expect(orderGate(await runOrder(orderFacts({ items: [{ order_item_id: 'oi1', quantity: 2, sku_id: 's1', product_id: PID, sku_product_id: PID, sku_unit_ref: null }] }))).status).toBe(GATE.NON_PROUVE);
   });
 
-  test('la 5e porte est exigée dès qu’une commande est fournie', () => {
+  test('les 7 portes sont exigées dès qu’une commande est fournie', () => {
     const g = (...statuses) => statuses.map((status) => ({ status }));
     expect(deriveReadiness({ productId: PID, orderReference: 'K-1', gates: g('PROVED', 'PROVED', 'PROVED', 'PROVED') })).not.toBe(STAGE.PRET);
-    expect(deriveReadiness({ productId: PID, orderReference: 'K-1', gates: g('PROVED', 'PROVED', 'PROVED', 'PROVED', 'PROVED') })).toBe(STAGE.PRET);
+    expect(deriveReadiness({ productId: PID, orderReference: 'K-1', gates: g('PROVED', 'PROVED', 'PROVED', 'PROVED', 'PROVED', 'PROVED', 'PROVED') })).toBe(STAGE.PRET);
   });
 
   test('sans référence de commande côté porte directe → NON_PROUVE (lecture seule)', async () => {
