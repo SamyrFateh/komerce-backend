@@ -47,6 +47,20 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  '276_market_delegation_operating_governance.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='membership_capabilities' AND column_name='limit_amount')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='assignment_capability_ceiling' AND column_name='limit_amount')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='assignment_memberships' AND column_name='is_operating_lead')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='assignment_memberships' AND column_name='effective_until')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='market_operating_assignments' AND column_name='central_referent_user_id')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname='membership_capability_limit_nonnegative_check')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
   '286_cash_deposit_declared_currency.sql': async (client) => {
     const { rows: [row] } = await client.query(`
       SELECT
