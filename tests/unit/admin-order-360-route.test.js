@@ -218,4 +218,15 @@ describe('Golden upstream route', () => {
     expect(res.body.certification).toBe('NON CERTIFIÉE');
     expect(mockProjectUpstream).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ productId: PID, marketCode: 'KM', orderReference: 'K-GOLDEN-1' }));
   });
+
+  test('export du dossier (?download=1) : pièce jointe nommée par l’empreinte, même projection', async () => {
+    mockGlobalAllowed = true;
+    mockProjectUpstream.mockResolvedValue({ stage: 'PREUVE MANQUANTE', gates: [], certification: 'NON CERTIFIÉE', dossier: { sha256: 'a'.repeat(64), complete: false } });
+    const attached = await request(app()).get(`/api/admin/entities/golden-upstream?product_id=${PID}&market=KM&download=1`);
+    expect(attached.status).toBe(200);
+    expect(attached.headers['content-disposition']).toBe(`attachment; filename="golden-dossier-${'a'.repeat(12)}.json"`);
+    expect(attached.body.dossier.complete).toBe(false);
+    const inline = await request(app()).get(`/api/admin/entities/golden-upstream?product_id=${PID}&market=KM`);
+    expect(inline.headers['content-disposition']).toBeUndefined();
+  });
 });

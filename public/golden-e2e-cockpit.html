@@ -16,7 +16,7 @@
   <section class="up" aria-label="Parcours amont">
     <div class="eyebrow">Parcours amont · Sourcing → Raffinerie → Catalogue → Boutique</div>
     <p class="muted">Faits canoniques en lecture seule. Preuve absente, ambiguë ou inaccessible = NON PROUVÉ. Les contrôles humains restent distincts.</p>
-    <div class="upbar"><input id="productId" placeholder="Product ID canonique (uuid)" aria-label="Product ID"><button id="readUpstream" class="btn primary" type="button">Lire les preuves amont</button><span id="stageBadge" class="badge">NON DÉMARRÉ</span></div>
+    <div class="upbar"><input id="productId" placeholder="Product ID canonique (uuid)" aria-label="Product ID"><button id="readUpstream" class="btn primary" type="button">Lire les preuves amont</button><a id="exportDossier" class="btn" href="#" download>Exporter le dossier (JSON + SHA-256)</a><span id="stageBadge" class="badge">NON DÉMARRÉ</span></div>
     <div id="certLine" class="certline">GOLDEN SOURCE → CLIENT : NON CERTIFIÉE</div>
     <div id="upstreamIds" class="muted"></div>
     <div id="upstream" class="upgrid"></div>
@@ -59,7 +59,7 @@ $('advance').addEventListener('click',async()=>{if(!ref)return;$('advance').disa
 </script>
 <script>
 (()=>{const $=x=>document.getElementById(x);
-const GATES=[['SOURCE_PROVED','Sourcing','/admin/workspaces/sourcing','Source, offre, identité fournisseur, capture/observation et décision attestées'],['REFINERY_PROVED','Raffinerie','/admin/workspaces/catalog','Contrôles exécutés, contenu FR, médias, variantes, rejets ou approbations'],['CATALOG_RELEASE_PROVED','Catalogue','/admin/workspaces/catalog','KIR, produit/SKU/SOI exacts, prix local, exposition Market'],['STOREFRONT_PROVED','Boutique','','Produit visible et vendable dans la boutique, variante et prix cohérents']];
+const GATES=[['SOURCE_PROVED','Sourcing','/admin/workspaces/sourcing','Source, offre, identité fournisseur, capture/observation et décision attestées'],['REFINERY_PROVED','Raffinerie','/admin/workspaces/catalog','Contrôles exécutés, contenu FR, médias, variantes, rejets ou approbations'],['CATALOG_RELEASE_PROVED','Catalogue','/admin/workspaces/catalog','KIR, produit/SKU/SOI exacts, prix local, exposition Market'],['STOREFRONT_PROVED','Boutique','','Produit visible et vendable dans la boutique, variante et prix cohérents'],['CUSTOMER_ORDER_PROVED','Commande → achat','/admin/workspaces/purchasing','Lignes vendues couvertes par des lignes d’achat de même SKU et même unité fournisseur']];
 const LABEL={PROVED:'PROUVÉ',NON_PROUVE:'NON PROUVÉ',ANOMALIE:'ANOMALIE'};
 function line(parent,label,text){const p=document.createElement('p');const b=document.createElement('strong');b.textContent=label+' : ';p.appendChild(b);p.appendChild(document.createTextNode(text||'—'));parent.appendChild(p)}
 function card(g){const d=document.createElement('div');d.className='gate';d.dataset.gate=g.key;const h=document.createElement('h3');h.textContent=g.label;d.appendChild(h);const st=document.createElement('span');st.className='st '+g.status;st.textContent=LABEL[g.status]||g.status;d.appendChild(st);
@@ -76,7 +76,7 @@ async function readUpstream(){const pid=$('productId').value.trim();const market
 if(!pid){show(placeholders('NON_PROUVE','Aucun produit renseigné : rien n’est prouvé.'),'NON DÉMARRÉ','');return}
 const q=new URLSearchParams({product_id:pid,market});if(ref&&ref!=='à renseigner')q.set('order_reference',ref);
 try{const r=await fetch('/api/admin/entities/golden-upstream?'+q.toString(),{credentials:'include',headers:{Accept:'application/json'}});
-if(!r.ok)throw new Error('HTTP '+r.status);const b=await r.json();show(b.gates,b.stage,'product_id='+(b.ids.product_id||'—')+' · market='+(b.ids.market_code||'—')+' · '+b.certification);}
+if(!r.ok)throw new Error('HTTP '+r.status);const b=await r.json();q.set('download','1');$('exportDossier').href='/api/admin/entities/golden-upstream?'+q.toString();$('exportDossier').title=(b.dossier&&b.dossier.complete?'Dossier complet':'Dossier INCOMPLET : '+((b.dossier&&b.dossier.incomplete_reasons)||[]).join(' · '))+' · sha256 '+((b.dossier&&b.dossier.sha256)||'');show(b.gates,b.stage,'product_id='+(b.ids.product_id||'—')+' · market='+(b.ids.market_code||'—')+' · '+b.certification);}
 catch(e){show(placeholders('NON_PROUVE','API indisponible ('+e.message+') : état NON PROUVÉ, jamais PASS.'),'PREUVE MANQUANTE','','Lecture impossible')}
 if(window.__goldenRender)window.__goldenRender()}
 $('readUpstream').addEventListener('click',readUpstream);

@@ -121,12 +121,17 @@ router.get(
         });
       }
       res.set('Cache-Control', 'private, no-store');
-      return res.json(await projectUpstreamEvidence(db, {
+      const projection = await projectUpstreamEvidence(db, {
         productId: req.query.product_id ? String(req.query.product_id) : null,
         marketCode: req.query.market ? String(req.query.market) : null,
         orderReference: req.query.order_reference ? String(req.query.order_reference) : null,
         storefrontBaseUrl: process.env.STOREFRONT_BASE_URL || process.env.PUBLIC_BASE_URL || null,
-      }));
+      });
+      if (req.query.download === '1') {
+        // Dossier exportable : même projection, empreinte incluse, jamais de verdict humain côté serveur.
+        res.set('Content-Disposition', `attachment; filename="golden-dossier-${projection.dossier.sha256.slice(0, 12)}.json"`);
+      }
+      return res.json(projection);
     } catch (err) { return next(err); }
   }
 );

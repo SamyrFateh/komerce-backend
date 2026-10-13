@@ -56,6 +56,9 @@ function dbWith(f) {
       if (/SELECT id, supplier_unit_ref FROM product_skus/.test(sql)) return { rows: f.skus };
       if (/FROM product_market_exposure/.test(sql)) return { rows: f.exposure };
       if (/FROM product_market_price_drafts/.test(sql)) return { rows: f.price };
+      if (/FROM orders WHERE reference/.test(sql)) return { rows: f.order || [] };
+      if (/FROM order_items oi\s+LEFT JOIN product_skus/.test(sql)) return { rows: f.items || [] };
+      if (/FROM purchase_lines pl/.test(sql)) { if (f.linesError) throw new Error('boom'); return { rows: f.lines || [] }; }
       throw new Error(`SQL inattendu : ${sql.slice(0, 60)}`);
     }),
   };
@@ -162,5 +165,90 @@ describe('étape du cockpit déduite des seules preuves automatiques', () => {
     expect(deriveReadiness({ productId: PID, gates: g('PROVED', 'ANOMALIE', 'NON_PROUVE', 'NON_PROUVE') })).toBe(STAGE.ANOMALIE);
     expect(deriveReadiness({ productId: PID, gates: g('PROVED', 'PROVED', 'PROVED', 'PROVED') })).toBe(STAGE.PRET);
     expect(deriveReadiness({ orderReference: 'K-GOLDEN-1', gates: [] })).toBe(STAGE.PREUVE_MANQUANTE);
+  });
+});
+
+describe('CUSTOMER_ORDER_PROVED — commande → achat fournisseur exact (P0b)', () => {
+  const REF = 'K-1042';
+  const orderFacts = (over = {}) => facts({
+    order: [{ id: 'o1', reference: REF, status: 'ordered', payment_status: 'paid' }],
+    items: [{ order_item_id: 'oi1', quantity: 2, sku_id: 's1', product_id: PID, sku_product_id: PID, sku_unit_ref: 'U-1', sku_soi_unit_ref: 'U-1' }],
+    lines: [{ order_item_id: 'oi1', product_sku_id: 's1', supplier_unit_ref: 'U-1', quantity: 2, purchase_order_id: 'po1', soi_unit_ref: 'U-1', po_status: 'confirmed' }],
+    ...over,
+  });
+  const runOrder = (f) => run(f, { orderReference: REF });
+  const orderGate = (r) => gateOf(r, 'CUSTOMER_ORDER_PROVED');
+
+  test('filiation exacte → 5 portes prouvées, PRÊT POUR RECETTE, dossier avec empreinte', async () => {
+    const report = await runOrder(orderFacts());
+    expect(report.gates).toHaveLength(5);
+    expect(orderGate(report).status).toBe(GATE.PROVED);
+    expect(report.stage).toBe(STAGE.PRET);
+    expect(report.dossier.sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(report.dossier.provenance).toBe('ORDER_ORIGIN_NOT_PROVED');
+    expect(report.dossier.complete).toBe(false);
+    expect(report.dossier.incomplete_reasons.join(' ')).toContain('Origine du checkout non prouvée');
+  });
+
+  test('empreinte stable pour des faits identiques, différente si un fait change', async () => {
+    const a = await runOrder(orderFacts());
+    const b = await runOrder(orderFacts());
+    const c = await runOrder(orderFacts({ lines: [] }));
+    expect(a.dossier.sha256).toBe(b.dossier.sha256);
+    expect(a.dossier.sha256).not.toBe(c.dossier.sha256);
+  });
+
+  test('commande synthétique golden-create → dossier jamais complet', async () => {
+    const f = orderFacts({ order: [{ id: 'o1', reference: 'K-GOLDEN-X', status: 'ordered', payment_status: 'paid' }] });
+    const report = await run(f, { orderReference: 'K-GOLDEN-X' });
+    expect(report.dossier.provenance).toBe('SYNTHETIC_GOLDEN_CREATE');
+    expect(report.dossier.complete).toBe(false);
+  });
+
+  test('substitution de SKU similaire → ANOMALIE', async () => {
+    const report = await runOrder(orderFacts({ lines: [{ order_item_id: 'oi1', product_sku_id: 's-similar', supplier_unit_ref: 'U-1', quantity: 2, purchase_order_id: 'po1' }] }));
+    expect(orderGate(report).status).toBe(GATE.ANOMALIE);
+    expect(orderGate(report).anomalies).toContain('SKU_SUBSTITUTION:oi1');
+    expect(report.stage).toBe(STAGE.ANOMALIE);
+  });
+
+  test('unité fournisseur ou SOI divergente → ANOMALIE', async () => {
+    const unit = await runOrder(orderFacts({ lines: [{ order_item_id: 'oi1', product_sku_id: 's1', supplier_unit_ref: 'U-2', quantity: 2, purchase_order_id: 'po1' }] }));
+    expect(orderGate(unit).anomalies).toContain('SUPPLIER_UNIT_MISMATCH:oi1');
+    const soi = await runOrder(orderFacts({ lines: [{ order_item_id: 'oi1', product_sku_id: 's1', supplier_unit_ref: 'U-1', soi_unit_ref: 'U-9', quantity: 2, purchase_order_id: 'po1' }] }));
+    expect(orderGate(soi).anomalies).toContain('SUPPLIER_UNIT_MISMATCH:oi1');
+  });
+
+  test('achat partiel, absent ou sans PO → NON_PROUVE ; sur-achat → ANOMALIE', async () => {
+    const partial = await runOrder(orderFacts({ lines: [{ order_item_id: 'oi1', product_sku_id: 's1', supplier_unit_ref: 'U-1', quantity: 1, purchase_order_id: 'po1' }] }));
+    expect(orderGate(partial).status).toBe(GATE.NON_PROUVE);
+    expect(orderGate(partial).checks.find((c) => c.key === 'quantity_exactly_covered:oi1').ok).toBe(false);
+    expect(orderGate(await runOrder(orderFacts({ lines: [] }))).status).toBe(GATE.NON_PROUVE);
+    const noPo = await runOrder(orderFacts({ lines: [{ order_item_id: 'oi1', product_sku_id: 's1', supplier_unit_ref: 'U-1', quantity: 2, purchase_order_id: null }] }));
+    expect(orderGate(noPo).checks.find((c) => c.key === 'purchase_attached_to_po:oi1').ok).toBe(false);
+    const over = await runOrder(orderFacts({ lines: [{ order_item_id: 'oi1', product_sku_id: 's1', supplier_unit_ref: 'U-1', quantity: 3, purchase_order_id: 'po1' }] }));
+    expect(orderGate(over).anomalies).toContain('PURCHASE_OVER_QUANTITY:oi1');
+  });
+
+  test('commande inconnue, sans ligne du produit, SKU d’un autre produit ou lecture en erreur → jamais vert', async () => {
+    expect(orderGate(await runOrder(orderFacts({ order: [] }))).status).toBe(GATE.NON_PROUVE);
+    expect(orderGate(await runOrder(orderFacts({ items: [] }))).status).toBe(GATE.NON_PROUVE);
+    const foreign = await runOrder(orderFacts({ items: [{ order_item_id: 'oi1', quantity: 2, sku_id: 's1', product_id: PID, sku_product_id: 'autre', sku_unit_ref: 'U-1' }] }));
+    expect(orderGate(foreign).status).toBe(GATE.NON_PROUVE);
+    expect(orderGate(await runOrder(orderFacts({ linesError: true }))).status).toBe(GATE.NON_PROUVE);
+    expect(orderGate(await runOrder(orderFacts({ items: [{ order_item_id: 'oi1', quantity: 2, sku_id: 's1', product_id: PID, sku_product_id: PID, sku_unit_ref: null }] }))).status).toBe(GATE.NON_PROUVE);
+  });
+
+  test('la 5e porte est exigée dès qu’une commande est fournie', () => {
+    const g = (...statuses) => statuses.map((status) => ({ status }));
+    expect(deriveReadiness({ productId: PID, orderReference: 'K-1', gates: g('PROVED', 'PROVED', 'PROVED', 'PROVED') })).not.toBe(STAGE.PRET);
+    expect(deriveReadiness({ productId: PID, orderReference: 'K-1', gates: g('PROVED', 'PROVED', 'PROVED', 'PROVED', 'PROVED') })).toBe(STAGE.PRET);
+  });
+
+  test('sans référence de commande côté porte directe → NON_PROUVE (lecture seule)', async () => {
+    const db = dbWith(orderFacts());
+    const report = await projectUpstreamEvidence(db, { productId: PID, marketCode: 'KM', fetchImpl: okFetch, storefrontBaseUrl: 'https://staging.example', orderReference: REF });
+    expect(db.query.mock.calls.every(([sql]) => /^\s*SELECT/i.test(sql))).toBe(true);
+    expect(report.gates[4].key).toBe('CUSTOMER_ORDER_PROVED');
   });
 });
