@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/incident-write-service.js, services/notification-service.js, services/order-status-machine.js, utils/logger.js
+ * @depends       db, services/incident-write-service.js, services/notification-service.js, services/order-status-machine.js, services/parcel-order-membership.js, utils/logger.js
  * @used-by       routes/parcel-api-v2/scans.js
  * @db-read       incidents, order_items, orders, parcel_items, parcels, products, relais, scan_events
  * @db-write      order_items, parcel_items, parcels, scan_events
@@ -36,6 +36,7 @@
  *   - Jamais de suppression, toujours correction append-only
  */
 const pool = require('../db');
+const { memberParcelPredicate, listOrdersRepresentedByParcel } = require('./parcel-order-membership');
 const {
   createScanIncident: createIncident,
   resolvePhysicalProofIncident,
@@ -439,7 +440,12 @@ async function _finalizeAndLog(client, params, parcel, flow, qtyBefore, result) 
   result.event_id = mainEvent.id;
 
   // ── 12. Propager vers order_items + recalculer statut commande ──
-  await syncOrderFromParcels(client, parcel.order_id);
+  // HUB-A : propager à chaque commande représentée par le colis.
+  const represented = await listOrdersRepresentedByParcel(client, parcel.id);
+  if (!represented.includes(parcel.order_id)) represented.push(parcel.order_id);
+  for (const oid of represented) {
+    await syncOrderFromParcels(client, oid);
+  }
 }
 
 /**
@@ -746,7 +752,8 @@ async function syncOrderFromParcels(client, orderId) {
         SUM(pi.qty_received) AS total_received,
         SUM(pi.qty_collected) AS total_collected
       FROM parcel_items pi
-      JOIN parcels p ON p.id = pi.parcel_id AND p.order_id = $1 AND p.status != 'cancelled'
+      JOIN parcels p ON p.id = pi.parcel_id AND p.status != 'cancelled'
+      JOIN order_items own ON own.id = pi.order_item_id AND own.order_id = $1
       WHERE pi.order_item_id IS NOT NULL
       GROUP BY pi.order_item_id
     ) agg
@@ -763,7 +770,7 @@ async function syncOrderFromParcels(client, orderId) {
       COUNT(*) FILTER (WHERE status = 'available') AS available,
       COUNT(*) FILTER (WHERE status IN ('shipped', 'in_transit')) AS in_transit,
       COUNT(*) FILTER (WHERE status IN ('draft', 'preparation')) AS pending
-    FROM parcels WHERE order_id = $1
+    FROM parcels p WHERE ${memberParcelPredicate('p', '$1')}
   `, [orderId]);
 
   // Map parcel aggregate status → valid order status

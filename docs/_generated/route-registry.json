@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-13T11:00:26.409Z",
+  "generatedAt": "2026-10-13T11:32:54.452Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 721,
+  "count": 722,
   "routes": [
     {
       "method": "GET",
@@ -4142,6 +4142,16 @@
       "fullPath": "/api/hub-dash/parcels/:id/ready",
       "mountPrefix": "/api/hub-dash",
       "localPath": "/parcels/:id/ready",
+      "routeFile": "routes/hub-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/hub-dash/parcels/:id/reassign-item",
+      "mountPrefix": "/api/hub-dash",
+      "localPath": "/parcels/:id/reassign-item",
       "routeFile": "routes/hub-dashboard.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

@@ -10,7 +10,7 @@
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, order_items, orders, parcel_items, parcels, products
  * @db-write      order_comments, order_incidents
- * @db-write-via:parcel-item-mutation-service parcel_items
+ * @db-write-via:parcel-item-mutation-service parcel_events, parcel_items
  * @db-write-via:parcel-mutation-service parcels
  * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
@@ -54,9 +54,11 @@ const { recordHubPreparationScan } = require('../services/scan-write-service');
 const {
   assignWholeOrderItemToParcel,
   assignParcelItem,
-  addParcelItem,
-  removeParcelItem,
+  addParcelItemTraced,
+  removeParcelItemTraced,
+  reassignParcelItem,
 } = require('../services/parcel-item-mutation-service');
+const { listOrdersRepresentedByParcel } = require('../services/parcel-order-membership');
 const {
   createHubParcel,
   createAutoPreparedParcel,
@@ -375,32 +377,57 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
   }
 });
 
+// ── HUB-A : colis multi-commandes / réaffectations tracées ─────────────────
+// Le Hub organise librement ses colis : une ligne de n'importe quelle commande
+// (même destination) peut rejoindre un colis ; chaque mouvement est tracé dans
+// parcel_events et conserve identité, quantité et compteurs qty_*.
+async function withHubTransaction(work) {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const out = await work(client);
+    await client.query('COMMIT');
+    return out;
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+function sendMutationError(res, e) {
+  if (e && e.code && e.status) return res.status(e.status).json({ error: e.message, code: e.code });
+  return null;
+}
+
 router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
   try {
     const { order_item_id, quantity } = req.body;
     if (!order_item_id) return res.status(400).json({ error: 'order_item_id requis' });
 
-    const { rows: [parcel] } = await db.query(
-      'SELECT id, order_id, reference FROM parcels WHERE id = $1', [req.params.id]
-    );
-    if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
+    const out = await withHubTransaction((client) => addParcelItemTraced(client, {
+      parcelId: req.params.id, orderItemId: order_item_id, quantity, actorId: req.user.id,
+    }));
+    res.json({ message: 'Article ajout\u00e9', item: out.row || { already_assigned: true }, order_id: out.order_id });
+  } catch(e) { if (!sendMutationError(res, e)) next(e); }
+});
 
-    const { rows: [item] } = await db.query(
-      'SELECT id, quantity, product_id FROM order_items WHERE id = $1 AND order_id = $2',
-      [order_item_id, parcel.order_id]
-    );
-    if (!item) return res.status(400).json({ error: "Article n'appartient pas à cette commande" });
-
-    const qty = quantity || item.quantity;
-    const pi = await addParcelItem(db, {
-      parcelId: parcel.id,
-      orderItemId: order_item_id,
-      productId: item.product_id,
-      quantity: qty,
+router.post('/parcels/:id/reassign-item', ...hubAuth, async (req, res, next) => {
+  try {
+    const { order_item_id, to_parcel_id, reason } = req.body;
+    if (!order_item_id || !to_parcel_id) {
+      return res.status(400).json({ error: 'order_item_id et to_parcel_id requis' });
+    }
+    const out = await withHubTransaction((client) => reassignParcelItem(client, {
+      fromParcelId: req.params.id, toParcelId: to_parcel_id, orderItemId: order_item_id,
+      actorId: req.user.id, reason,
+    }));
+    res.json({
+      message: `Article réaffecté ${out.from.reference} → ${out.to.reference}`,
+      item: out.moved, from_parcel_id: out.from.id, to_parcel_id: out.to.id, order_id: out.order_id,
     });
-
-    res.json({ message: 'Article ajout\u00e9', item: pi || { already_assigned: true } });
-  } catch(e) { next(e); }
+  } catch(e) { if (!sendMutationError(res, e)) next(e); }
 });
 
 router.post('/parcels/:id/remove-item', ...hubAuth, async (req, res, next) => {
@@ -408,14 +435,13 @@ router.post('/parcels/:id/remove-item', ...hubAuth, async (req, res, next) => {
     const { order_item_id } = req.body;
     if (!order_item_id) return res.status(400).json({ error: 'order_item_id requis' });
 
-    const deleted = await removeParcelItem(db, {
-      parcelId: req.params.id,
-      orderItemId: order_item_id,
-    });
+    const deleted = await withHubTransaction((client) => removeParcelItemTraced(client, {
+      parcelId: req.params.id, orderItemId: order_item_id, actorId: req.user.id,
+    }));
 
     if (!deleted) return res.status(404).json({ error: 'Article non trouv\u00e9 dans ce colis' });
     res.json({ message: 'Article retir\u00e9', deleted });
-  } catch(e) { next(e); }
+  } catch(e) { if (!sendMutationError(res, e)) next(e); }
 });
 
 router.post('/parcels/:id/ready', ...hubAuth, async (req, res, next) => {
@@ -426,19 +452,24 @@ router.post('/parcels/:id/ready', ...hubAuth, async (req, res, next) => {
     );
     if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
 
-    const { rows: [cov] } = await db.query(`
-      SELECT COUNT(oi.id) AS total,
-             COUNT(pi.order_item_id) FILTER (WHERE pa.status <> 'cancelled') AS packed
-      FROM order_items oi
-      LEFT JOIN parcel_items pi ON pi.order_item_id = oi.id
-      LEFT JOIN parcels pa ON pa.id = pi.parcel_id
-      WHERE oi.order_id = $1
-    `, [parcel.order_id]);
-    if (parseInt(cov.total) === 0 || parseInt(cov.packed) < parseInt(cov.total)) {
-      return res.status(400).json({
-        error: 'Colis incomplet',
-        hint: `${cov.packed}/${cov.total} article(s) emballé(s) — emballez tout avant de marquer prêt`
-      });
+    // HUB-A : chaque commande représentée par le colis doit être entièrement emballée.
+    const representedOrders = await listOrdersRepresentedByParcel(db, parcel.id);
+    if (!representedOrders.includes(parcel.order_id)) representedOrders.push(parcel.order_id);
+    for (const orderId of representedOrders) {
+      const { rows: [cov] } = await db.query(`
+        SELECT COUNT(oi.id) AS total,
+               COUNT(pi.order_item_id) FILTER (WHERE pa.status <> 'cancelled') AS packed
+        FROM order_items oi
+        LEFT JOIN parcel_items pi ON pi.order_item_id = oi.id
+        LEFT JOIN parcels pa ON pa.id = pi.parcel_id
+        WHERE oi.order_id = $1
+      `, [orderId]);
+      if (parseInt(cov.total) === 0 || parseInt(cov.packed) < parseInt(cov.total)) {
+        return res.status(400).json({
+          error: 'Colis incomplet',
+          hint: `${cov.packed}/${cov.total} article(s) emballé(s) — emballez tout avant de marquer prêt`
+        });
+      }
     }
 
     await safeSyncScanToParcels({
@@ -477,13 +508,18 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    const { rows: [order] } = await db.query(
-      'SELECT payment_mode, payment_status, reference FROM orders WHERE id = $1',
-      [parcel.order_id]
+    // HUB-A : la règle de paiement existante (payée ou cash_relais) s'applique
+    // à CHAQUE commande représentée par le colis — jamais assouplie.
+    const shippedOrders = await listOrdersRepresentedByParcel(db, parcel.id);
+    if (!shippedOrders.includes(parcel.order_id)) shippedOrders.push(parcel.order_id);
+    const { rows: shippedOrderRows } = await db.query(
+      'SELECT payment_mode, payment_status, reference FROM orders WHERE id = ANY($1::uuid[])',
+      [shippedOrders]
     );
-    if (order.payment_status !== 'paid' && order.payment_mode !== 'cash_relais') {
+    const unpaid = shippedOrderRows.find(o => o.payment_status !== 'paid' && o.payment_mode !== 'cash_relais');
+    if (unpaid) {
       return res.status(400).json({
-        error: `⚠️ Commande ${order.reference} non payée`,
+        error: `⚠️ Commande ${unpaid.reference} non payée`,
         hint: 'Vérifiez le paiement avant expédition'
       });
     }

@@ -79,7 +79,9 @@ describe('syncScanToParcels — legacy safe (pas de parcels)', () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [] });
     await syncScanToParcels({ order_id: 'o1', step: 'shipped', scan_id: 's1' });
     const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).toContain('WHERE order_id = $1 AND status != \'cancelled\'');
+    expect(sql).toContain('parcel_items');
+    expect(sql).toContain('p.order_id = $1');
+    expect(sql).toContain('p.status != \'cancelled\'');
     expect(params).toEqual(['o1']);
   });
 });
@@ -89,6 +91,7 @@ describe('syncScanToParcels — forward only', () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [{ id: 'parcel-1', status: 'in_transit' }] }) // déjà in_transit (poids 3)
       .mockResolvedValueOnce({ rows: [] }) // UPDATE scans (lien scan→parcel, fait même si pas avancé)
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }] }) // HUB-A : commandes représentées
       .mockResolvedValueOnce({ rows: [{ status: 'in_transit', type: 'standard' }] }); // allParcels (recompute)
 
     const result = await syncScanToParcels({ order_id: 'o1', step: 'shipped', scan_id: 's1' }); // shipped = poids 2 < 3
@@ -101,6 +104,7 @@ describe('syncScanToParcels — forward only', () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [{ id: 'parcel-1', status: 'shipped' }] })
       .mockResolvedValueOnce({ rows: [] }) // UPDATE scans
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }] }) // HUB-A : commandes représentées
       .mockResolvedValueOnce({ rows: [{ status: 'shipped', type: 'standard' }] });
 
     const result = await syncScanToParcels({ order_id: 'o1', step: 'shipped', scan_id: 's1' });
@@ -113,6 +117,7 @@ describe('syncScanToParcels — forward only', () => {
       .mockResolvedValueOnce({ rows: [] }) // UPDATE parcels
       .mockResolvedValueOnce({ rows: [] }) // INSERT parcel_events
       .mockResolvedValueOnce({ rows: [] }) // UPDATE scans (lien scan→parcel)
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }] }) // HUB-A : commandes représentées
       .mockResolvedValueOnce({ rows: [{ status: 'shipped', type: 'standard' }] }); // allParcels
 
     const result = await syncScanToParcels({ order_id: 'o1', step: 'shipped', scan_id: 's1', scanned_by: 'u1', notes: 'note test' });
@@ -139,6 +144,7 @@ describe('syncScanToParcels — plusieurs parcels', () => {
       .mockResolvedValueOnce({ rows: [] }) // UPDATE parcel-1
       .mockResolvedValueOnce({ rows: [] }) // INSERT event parcel-1
       .mockResolvedValueOnce({ rows: [] }) // UPDATE scans → lien au firstParcelId (parcel-1)
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }] }) // HUB-A : commandes représentées
       .mockResolvedValueOnce({ rows: [{ status: 'shipped', type: 'standard' }, { status: 'shipped', type: 'standard' }] });
 
     const result = await syncScanToParcels({ order_id: 'o1', step: 'shipped', scan_id: 's1' });
@@ -153,6 +159,7 @@ describe('syncScanToParcels — plusieurs parcels', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'parcel-1', status: 'preparation' }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }] }) // HUB-A : commandes représentées
       .mockResolvedValueOnce({ rows: [{ status: 'shipped', type: 'standard' }] });
 
     await syncScanToParcels({ order_id: 'o1', step: 'shipped', scan_id: null });
@@ -168,6 +175,7 @@ describe('syncScanToParcels — recompute + transition machine', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }] }) // HUB-A : commandes représentées
       .mockResolvedValueOnce({ rows: [{ status: 'shipped', type: 'standard' }] });
     mockComputeOrderStatus.mockReturnValue('shipped');
     mockTransitionOrderStatus.mockResolvedValue({ newStatus: 'shipped' });
@@ -192,6 +200,7 @@ describe('syncScanToParcels — recompute + transition machine', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }] }) // HUB-A : commandes représentées
       .mockResolvedValueOnce({ rows: [{ status: 'shipped', type: 'standard' }] });
 
     await syncScanToParcels({ order_id: 'o1', step: 'shipped', scan_id: 's1', notes: 'note perso' });
@@ -204,6 +213,7 @@ describe('syncScanToParcels — recompute + transition machine', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }] }) // HUB-A : commandes représentées
       .mockResolvedValueOnce({ rows: [{ status: 'shipped', type: 'standard' }] });
     mockComputeOrderStatus.mockReturnValue('shipped');
     mockTransitionOrderStatus.mockResolvedValue({ newStatus: null }); // machine noop sans newStatus
@@ -220,6 +230,7 @@ describe('syncScanToParcels — recompute + transition machine', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }] }) // HUB-A : commandes représentées
       .mockResolvedValueOnce({ rows: [{ status: 'shipped', type: 'standard' }] });
 
     await syncScanToParcels({ order_id: 'o1', step: 'shipped', scan_id: 's1' }, dbClient);
