@@ -778,6 +778,7 @@ module.exports = {
       'tests/unit/canonical-demo-order-flow.test.js',
       'tests/unit/canonical-finance-accounting-workspace-boundary.test.js',
       'tests/unit/canonical-sourcing-workspace-boundary.test.js',
+      'tests/unit/sourcing-handoff-clean-queue.test.js',
       'tests/unit/canonical-action-center-boundary.test.js',
       'tests/unit/partner-admin-service.test.js',
       'tests/unit/require-dashboard-global-authority.test.js',
