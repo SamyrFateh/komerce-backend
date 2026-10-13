@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/order-status-machine.js, utils/logger.js, utils/parcels.js
+ * @depends       db, services/order-status-machine.js, services/parcel-order-membership.js, utils/logger.js, utils/parcels.js
  * @db-write      alerts, parcel_events, parcels, scans
  * @db-write-via:order-status-machine product_variants, order_status_history, products
- * @db-read      parcel_items, parcels
+ * @db-read      order_items, parcel_items, parcels
  * @used-by       routes/hub-dashboard.js, routes/logistics.js, routes/parcels.js, routes/transit-dashboard.js, routes/transitaire-api.js, services/hub-operations.js, services/parcelOptimizationService.js, services/scan-operations.js, services/verify-qr-collection.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
@@ -56,6 +56,7 @@
 const { computeOrderStatus, STATUS_WEIGHT, PARCEL_STATUSES } = require('./parcels');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const db = require('../db');
+const { memberParcelPredicate, listParcelsRepresentingOrder, listOrdersRepresentedByParcels } = require('../services/parcel-order-membership');
 const log = require('../utils/logger').child({ module: 'parcelSync' });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -128,12 +129,12 @@ async function syncScanToParcels({ order_id, step, scan_id, target_one_available
     // Retrait physique : un événement de collecte cible UN SEUL colis prêt.
     // L'ordre stable évite toute ambiguïté quand plusieurs lots sont prêts.
     const { rows } = await q.query(
-      `SELECT id, status, reference
-       FROM parcels
-       WHERE order_id = $1
-         AND status = 'available'
-       ORDER BY available_at NULLS LAST, created_at ASC, id ASC
-       FOR UPDATE
+      `SELECT p.id, p.status, p.reference
+       FROM parcels p
+       WHERE ${memberParcelPredicate('p', '$1')}
+         AND p.status = 'available'
+       ORDER BY p.available_at NULLS LAST, p.created_at ASC, p.id ASC
+       FOR UPDATE OF p
        LIMIT 1`,
       [order_id]
     );
@@ -141,9 +142,9 @@ async function syncScanToParcels({ order_id, step, scan_id, target_one_available
 
     if (!parcels.length) {
       const { rows: active } = await q.query(
-        `SELECT id
-         FROM parcels
-         WHERE order_id = $1 AND status != 'cancelled'
+        `SELECT p.id
+         FROM parcels p
+         WHERE ${memberParcelPredicate('p', '$1')} AND p.status != 'cancelled'
          LIMIT 1`,
         [order_id]
       );
@@ -171,9 +172,9 @@ async function syncScanToParcels({ order_id, step, scan_id, target_one_available
   } else {
     // Scan commande entière → tous les parcels actifs
     const { rows } = await q.query(
-      `SELECT id, status, reference
-       FROM parcels
-       WHERE order_id = $1 AND status != 'cancelled'`,
+      `SELECT p.id, p.status, p.reference
+       FROM parcels p
+       WHERE ${memberParcelPredicate('p', '$1')} AND p.status != 'cancelled'`,
       [order_id]
     );
     parcels = rows;
@@ -226,23 +227,30 @@ async function syncScanToParcels({ order_id, step, scan_id, target_one_available
   // ── 4. Recompute order status + transition via MACHINE (D1/D2) ──────────
   // The machine is the SINGLE SOURCE OF TRUTH for orders.status.
   // It handles: status validation, timestamps, order_status_history.
-  const { rows: allParcels } = await q.query(
-    `SELECT status, type FROM parcels WHERE order_id = $1`,
-    [order_id]
-  );
+  // HUB-A : un colis peut représenter plusieurs commandes → chaque commande
+  // représentée par un colis touché est recalculée (commande demandée en tête).
+  const touchedOrderIds = [order_id];
+  for (const oid of await listOrdersRepresentedByParcels(q, parcels.map(p => p.id))) {
+    if (!touchedOrderIds.includes(oid)) touchedOrderIds.push(oid);
+  }
 
-  const orderStatus = computeOrderStatus(allParcels);
-
-  // Call the machine — source 'scan' allows forward-only transitions
-  const transition = await transitionOrderStatus({
-    orderId: order_id,
-    newStatus: orderStatus,
-    actor: { id: scanned_by, role: 'system' },
-    source: 'scan',
-    scanId: scan_id,
-    note: notes || `[scan] step=${step}`,
-    dbClient: q,
-  });
+  let orderStatus = null;
+  let transition = { newStatus: null };
+  for (const oid of touchedOrderIds) {
+    const allParcels = await listParcelsRepresentingOrder(q, oid, { columns: 'p.status, p.type' });
+    const computed = computeOrderStatus(allParcels);
+    // Call the machine — source 'scan' allows forward-only transitions
+    const t = await transitionOrderStatus({
+      orderId: oid,
+      newStatus: computed,
+      actor: { id: scanned_by, role: 'system' },
+      source: 'scan',
+      scanId: scan_id,
+      note: notes || `[scan] step=${step}`,
+      dbClient: q,
+    });
+    if (oid === order_id) { orderStatus = computed; transition = t; }
+  }
 
   // Use the machine's result (may differ if it was a no-op)
   const finalOrderStatus = transition.newStatus || orderStatus;

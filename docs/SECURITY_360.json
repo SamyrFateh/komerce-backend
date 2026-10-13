@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-13T11:00:56.829Z",
+  "generatedAt": "2026-10-13T11:31:27.121Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 728,
-    "protected": 673,
+    "total": 729,
+    "protected": 674,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3210,6 +3210,14 @@
     },
     {
       "key": "POST /api/hub-dash/parcels/{id}/ready",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/parcels/{id}/reassign-item",
       "level": "PROTECTED",
       "roles": [
         "admin",

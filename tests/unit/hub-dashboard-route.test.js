@@ -382,81 +382,194 @@ describe('routes/hub-dashboard', () => {
     });
   });
 
-  describe('POST /parcels/:id/add-item', () => {
+  describe('POST /parcels/:id/add-item (HUB-A)', () => {
+    const parcelRow = { id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'draft', relais_id: 'r1' };
+    const itemRow = { id: 'oi1', quantity: 3, product_id: 'prod-1', order_id: 'order-1', relais_id: 'r1' };
+    const run = (client, body = { order_item_id: 'oi1' }) => {
+      mockGetClient.mockResolvedValue(client);
+      return request(buildApp()).post('/api/hub-dashboard/parcels/p1/add-item').send(body);
+    };
+
     test('400 si order_item_id manquant', async () => {
       const res = await request(buildApp()).post('/api/hub-dashboard/parcels/p1/add-item').send({});
       expect(res.status).toBe(400);
-      expect(mockDbQuery).not.toHaveBeenCalled();
+      expect(mockGetClient).not.toHaveBeenCalled();
     });
 
-    test('404 si colis introuvable', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [] });
-      const res = await request(buildApp())
-        .post('/api/hub-dashboard/parcels/p1/add-item')
-        .send({ order_item_id: 'oi1' });
+    test('404 si colis introuvable (rollback)', async () => {
+      const client = makeClient([{ rows: [] }]);
+      const res = await run(client);
       expect(res.status).toBe(404);
+      expectTransactionRolledBack(client);
     });
 
-    test("400 si l'article n'appartient pas à la commande du colis", async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1' }] })
-        .mockResolvedValueOnce({ rows: [] }); // item lookup miss
-      const res = await request(buildApp())
-        .post('/api/hub-dashboard/parcels/p1/add-item')
-        .send({ order_item_id: 'oi1' });
+    test('404 si article inconnu', async () => {
+      const client = makeClient([{ rows: [parcelRow] }, { rows: [] }]);
+      const res = await run(client);
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe('ORDER_ITEM_NOT_FOUND');
+    });
+
+    test('409 si le colis est déjà expédié (affectations figées)', async () => {
+      const client = makeClient([{ rows: [{ ...parcelRow, status: 'shipped' }] }]);
+      const res = await run(client);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('PARCEL_NOT_MUTABLE');
+    });
+
+    test('409 si destination (relais) différente', async () => {
+      const client = makeClient([{ rows: [parcelRow] }, { rows: [{ ...itemRow, relais_id: 'r2' }] }]);
+      const res = await run(client);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('DESTINATION_MISMATCH');
+    });
+
+    test('409 si article déjà dans un autre colis (réaffectation explicite requise)', async () => {
+      const client = makeClient([{ rows: [parcelRow] }, { rows: [itemRow] }, { rows: [{ parcel_id: 'p2' }] }]);
+      const res = await run(client);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('ITEM_ALREADY_IN_OTHER_PARCEL');
+    });
+
+    test('400 si quantité supérieure à la ligne de commande', async () => {
+      const client = makeClient([{ rows: [parcelRow] }, { rows: [itemRow] }]);
+      const res = await run(client, { order_item_id: 'oi1', quantity: 9 });
       expect(res.status).toBe(400);
+      expect(res.body.code).toBe('QUANTITY_EXCEEDS_ORDER_LINE');
     });
 
-    test("ajoute l'article (quantity par défaut = quantité de l'item)", async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'oi1', quantity: 3 }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'pi1', quantity: 3 }] });
-
-      const res = await request(buildApp())
-        .post('/api/hub-dashboard/parcels/p1/add-item')
-        .send({ order_item_id: 'oi1' });
-
+    test("ajoute l'article avec trace (quantity par défaut = quantité de la ligne)", async () => {
+      const client = makeClient([
+        { rows: [parcelRow] }, { rows: [itemRow] }, { rows: [] },
+        { rows: [{ id: 'pi1', quantity: 3 }] }, { rows: [] },
+      ]);
+      const res = await run(client);
       expect(res.status).toBe(200);
       expect(res.body.item).toEqual({ id: 'pi1', quantity: 3 });
+      expectTransactionCommitted(client);
+      const trace = client.query.mock.calls.find(c => /INSERT INTO parcel_events/.test(c[0]));
+      expect(trace[1][1]).toBe('item_assigned');
     });
 
-    test('already_assigned si ON CONFLICT DO NOTHING ne renvoie aucune ligne', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'oi1', quantity: 3 }] })
-        .mockResolvedValueOnce({ rows: [] }); // conflit, rien inséré
+    test("accepte l'article d'une autre commande de même destination (colis multi-commandes)", async () => {
+      const client = makeClient([
+        { rows: [parcelRow] }, { rows: [{ ...itemRow, order_id: 'order-2' }] }, { rows: [] },
+        { rows: [{ id: 'pi2', quantity: 3 }] }, { rows: [] },
+      ]);
+      const res = await run(client);
+      expect(res.status).toBe(200);
+      expect(res.body.order_id).toBe('order-2');
+      const trace = client.query.mock.calls.find(c => /INSERT INTO parcel_events/.test(c[0]));
+      expect(JSON.parse(trace[1][4])).toEqual(expect.objectContaining({ cross_order: true, order_id: 'order-2', carrier_order_id: 'order-1' }));
+    });
 
-      const res = await request(buildApp())
-        .post('/api/hub-dashboard/parcels/p1/add-item')
-        .send({ order_item_id: 'oi1' });
-
+    test('already_assigned si la ligne est déjà dans ce même colis', async () => {
+      const client = makeClient([{ rows: [parcelRow] }, { rows: [itemRow] }, { rows: [{ parcel_id: 'p1' }] }]);
+      const res = await run(client);
       expect(res.status).toBe(200);
       expect(res.body.item).toEqual({ already_assigned: true });
     });
   });
 
+  describe('POST /parcels/:id/reassign-item (HUB-A)', () => {
+    const p1 = { id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'draft', relais_id: 'r1' };
+    const p2 = { id: 'p2', order_id: 'order-2', reference: 'COL-2', status: 'preparation', relais_id: 'r1' };
+    const run = (client, body = { order_item_id: 'oi1', to_parcel_id: 'p2', reason: 'regroupement' }) => {
+      mockGetClient.mockResolvedValue(client);
+      return request(buildApp()).post('/api/hub-dashboard/parcels/p1/reassign-item').send(body);
+    };
+
+    test('400 si champs manquants', async () => {
+      const res = await request(buildApp()).post('/api/hub-dashboard/parcels/p1/reassign-item').send({ order_item_id: 'oi1' });
+      expect(res.status).toBe(400);
+    });
+
+    test('400 si source = destination', async () => {
+      const client = makeClient([]);
+      const res = await run(client, { order_item_id: 'oi1', to_parcel_id: 'p1' });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe('SAME_PARCEL');
+    });
+
+    test('réaffecte en conservant la ligne et trace les deux colis', async () => {
+      const moved = { id: 'pi1', parcel_id: 'p2', order_item_id: 'oi1', product_id: 'prod-1', quantity: 3 };
+      const client = makeClient([
+        { rows: [p1] }, { rows: [p2] },
+        { rows: [{ id: 'oi1', order_id: 'order-1', relais_id: 'r1' }] },
+        { rows: [moved] }, { rows: [] }, { rows: [] },
+      ]);
+      const res = await run(client);
+      expect(res.status).toBe(200);
+      expect(res.body.item).toEqual(moved);
+      expectTransactionCommitted(client);
+      const traces = client.query.mock.calls.filter(c => /INSERT INTO parcel_events/.test(c[0]));
+      expect(traces.map(t => t[1][1]).sort()).toEqual(['item_reassigned_in', 'item_reassigned_out']);
+    });
+
+    test('409 si un colis est expédié', async () => {
+      const client = makeClient([{ rows: [p1] }, { rows: [{ ...p2, status: 'shipped' }] }]);
+      const res = await run(client);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('PARCEL_NOT_MUTABLE');
+      expectTransactionRolledBack(client);
+    });
+
+    test('409 si destination différente', async () => {
+      const client = makeClient([
+        { rows: [p1] }, { rows: [p2] },
+        { rows: [{ id: 'oi1', order_id: 'order-1', relais_id: 'r9' }] },
+      ]);
+      const res = await run(client);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('DESTINATION_MISMATCH');
+    });
+
+    test('404 si article absent du colis source (rien déplacé, rien tracé)', async () => {
+      const client = makeClient([
+        { rows: [p1] }, { rows: [p2] },
+        { rows: [{ id: 'oi1', order_id: 'order-1', relais_id: 'r1' }] },
+        { rows: [] },
+      ]);
+      const res = await run(client);
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe('ITEM_NOT_IN_SOURCE_PARCEL');
+      expect(client.query.mock.calls.some(c => /INSERT INTO parcel_events/.test(c[0]))).toBe(false);
+    });
+  });
+
   describe('POST /parcels/:id/remove-item', () => {
+    const p1 = { id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'draft', relais_id: 'r1' };
+    const run = (client) => {
+      mockGetClient.mockResolvedValue(client);
+      return request(buildApp()).post('/api/hub-dashboard/parcels/p1/remove-item').send({ order_item_id: 'oi1' });
+    };
+
     test('400 si order_item_id manquant', async () => {
       const res = await request(buildApp()).post('/api/hub-dashboard/parcels/p1/remove-item').send({});
       expect(res.status).toBe(400);
     });
 
     test("404 si l'article n'est pas dans ce colis", async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [] });
-      const res = await request(buildApp())
-        .post('/api/hub-dashboard/parcels/p1/remove-item')
-        .send({ order_item_id: 'oi1' });
+      const client = makeClient([{ rows: [p1] }, { rows: [] }]);
+      const res = await run(client);
       expect(res.status).toBe(404);
     });
 
-    test("retire l'article", async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ order_item_id: 'oi1' }] });
-      const res = await request(buildApp())
-        .post('/api/hub-dashboard/parcels/p1/remove-item')
-        .send({ order_item_id: 'oi1' });
+    test('409 si le colis est expédié : aucun effacement silencieux', async () => {
+      const client = makeClient([{ rows: [{ ...p1, status: 'shipped' }] }]);
+      const res = await run(client);
+      expect(res.status).toBe(409);
+      expect(client.query.mock.calls.some(c => /DELETE FROM parcel_items/.test(c[0]))).toBe(false);
+    });
+
+    test("retire l'article et trace le retrait", async () => {
+      const deleted = { order_item_id: 'oi1', product_id: 'prod-1', quantity: 3 };
+      const client = makeClient([{ rows: [p1] }, { rows: [deleted] }, { rows: [] }]);
+      const res = await run(client);
       expect(res.status).toBe(200);
-      expect(res.body.deleted).toEqual({ order_item_id: 'oi1' });
+      expect(res.body.deleted).toEqual(deleted);
+      const trace = client.query.mock.calls.find(c => /INSERT INTO parcel_events/.test(c[0]));
+      expect(trace[1][1]).toBe('item_removed');
     });
   });
 
@@ -470,6 +583,7 @@ describe('routes/hub-dashboard', () => {
     test('400 si colis incomplet (tous les articles pas emballés)', async () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'draft' }] })
+        .mockResolvedValueOnce({ rows: [{ order_id: 'order-1' }] }) // HUB-A : commandes représentées
         .mockResolvedValueOnce({ rows: [{ total: '3', packed: '1' }] });
 
       const res = await request(buildApp()).post('/api/hub-dashboard/parcels/p1/ready');
@@ -481,15 +595,28 @@ describe('routes/hub-dashboard', () => {
     test('400 si la commande n\'a aucun article (total = 0)', async () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'draft' }] })
+        .mockResolvedValueOnce({ rows: [{ order_id: 'order-1' }] }) // HUB-A : commandes représentées
         .mockResolvedValueOnce({ rows: [{ total: '0', packed: '0' }] });
 
       const res = await request(buildApp()).post('/api/hub-dashboard/parcels/p1/ready');
       expect(res.status).toBe(400);
     });
 
+    test('HUB-A : colis multi-commandes — chaque commande représentée doit être complète', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'draft' }] })
+        .mockResolvedValueOnce({ rows: [{ order_id: 'order-1' }, { order_id: 'order-2' }] })
+        .mockResolvedValueOnce({ rows: [{ total: '2', packed: '2' }] })
+        .mockResolvedValueOnce({ rows: [{ total: '3', packed: '1' }] });
+      const res = await request(buildApp()).post('/api/hub-dashboard/parcels/p1/ready');
+      expect(res.status).toBe(400);
+      expect(safeSyncScanToParcels).not.toHaveBeenCalled();
+    });
+
     test('marque prêt quand tous les articles sont emballés', async () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'draft' }] })
+        .mockResolvedValueOnce({ rows: [{ order_id: 'order-1' }] }) // HUB-A : commandes représentées
         .mockResolvedValueOnce({ rows: [{ total: '3', packed: '3' }] });
 
       const res = await request(buildApp()).post('/api/hub-dashboard/parcels/p1/ready');
@@ -527,9 +654,25 @@ describe('routes/hub-dashboard', () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'preparation' }] })
         .mockResolvedValueOnce({ rows: [{ cnt: '2' }] })
+        .mockResolvedValueOnce({ rows: [{ order_id: 'order-1' }] }) // HUB-A : commandes représentées
         .mockResolvedValueOnce({ rows: [{ payment_mode: 'card', payment_status: 'pending', reference: 'CMD-1' }] });
       const res = await request(buildApp()).post('/api/hub-dashboard/parcels/p1/ship').send({});
       expect(res.status).toBe(400);
+      expect(safeSyncScanToParcels).not.toHaveBeenCalled();
+    });
+
+    test('HUB-A : colis multi-commandes — une seule commande non payée bloque l\'expédition', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'preparation' }] })
+        .mockResolvedValueOnce({ rows: [{ cnt: '2' }] })
+        .mockResolvedValueOnce({ rows: [{ order_id: 'order-1' }, { order_id: 'order-2' }] })
+        .mockResolvedValueOnce({ rows: [
+          { payment_mode: 'card', payment_status: 'paid', reference: 'CMD-1' },
+          { payment_mode: 'card', payment_status: 'pending', reference: 'CMD-2' },
+        ] });
+      const res = await request(buildApp()).post('/api/hub-dashboard/parcels/p1/ship').send({});
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('CMD-2');
       expect(safeSyncScanToParcels).not.toHaveBeenCalled();
     });
 
@@ -537,6 +680,7 @@ describe('routes/hub-dashboard', () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'preparation' }] })
         .mockResolvedValueOnce({ rows: [{ cnt: '2' }] })
+        .mockResolvedValueOnce({ rows: [{ order_id: 'order-1' }] }) // HUB-A : commandes représentées
         .mockResolvedValueOnce({ rows: [{ payment_mode: 'cash_relais', payment_status: 'pending', reference: 'CMD-1' }] })
         .mockResolvedValueOnce({ rows: [] }) // UPDATE parcels
         .mockResolvedValueOnce({ rows: [] }); // INSERT order_comments
@@ -554,6 +698,7 @@ describe('routes/hub-dashboard', () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'p1', order_id: 'order-1', reference: 'COL-1', status: 'preparation' }] })
         .mockResolvedValueOnce({ rows: [{ cnt: '2' }] })
+        .mockResolvedValueOnce({ rows: [{ order_id: 'order-1' }] }) // HUB-A : commandes représentées
         .mockResolvedValueOnce({ rows: [{ payment_mode: 'card', payment_status: 'paid', reference: 'CMD-1' }] })
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [] });

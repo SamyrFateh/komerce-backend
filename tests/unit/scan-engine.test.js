@@ -79,6 +79,8 @@ function makeNominalScript({ parcel, items, extraAfterItems = [] } = {}) {
     { rows: it },
     // 11. INSERT scan_events RETURNING *
     { rows: [{ id: 'event-001' }] },
+    // HUB-A : commandes représentées par le colis
+    { rows: [{ order_id: ORDER_ID }] },
     // syncOrderFromParcels: UPDATE order_items
     { rows: [], rowCount: 1 },
     // syncOrderFromParcels: SELECT stats parcels
@@ -204,6 +206,8 @@ describe('processScan — smart-catchup (shipped sans packed)', () => {
       { rows: [{ ...item, qty_packed: 2, qty_shipped: 2 }] },
       // 11. INSERT scan_events
       { rows: [{ id: 'event-main-001' }] },
+      // HUB-A : commandes représentées par le colis
+      { rows: [{ order_id: ORDER_ID }] },
       // syncOrderFromParcels UPDATE order_items
       { rows: [], rowCount: 1 },
       // syncOrderFromParcels SELECT stats
@@ -246,6 +250,8 @@ describe('processScan — weight_check écart > tolérance', () => {
       { rows: [item] },
       // INSERT scan_events
       { rows: [{ id: 'event-weight-001' }] },
+      // HUB-A : commandes représentées par le colis
+      { rows: [{ order_id: ORDER_ID }] },
       // syncOrderFromParcels UPDATE
       { rows: [], rowCount: 1 },
       // syncOrderFromParcels SELECT stats
@@ -289,6 +295,8 @@ describe('processScan — idempotence catchup (isStepCompleted)', () => {
       { rows: [item] },
       // 11. INSERT scan_events
       { rows: [{ id: 'event-idem-001' }] },
+      // HUB-A : commandes représentées par le colis
+      { rows: [{ order_id: ORDER_ID }] },
       // syncOrderFromParcels UPDATE
       { rows: [], rowCount: 1 },
       // syncOrderFromParcels SELECT stats
@@ -326,6 +334,7 @@ describe('processScan — syncOrderFromParcels → transitionOrderStatus', () =>
       { rows: [], rowCount: 1 }, // UPDATE parcels status
       { rows: [item] },
       { rows: [{ id: 'event-sync-001' }] },
+      { rows: [{ order_id: ORDER_ID }] }, // HUB-A : commandes représentées par le colis
       { rows: [], rowCount: 1 }, // UPDATE order_items
       { rows: [{ active: '1', collected: '0', available: '0', in_transit: '1', pending: '0' }] },
       { rows: [makeParcel({ status: 'shipped' })] }
