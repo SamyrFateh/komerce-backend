@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        catalog_product_id, market_code, storefront_base_url
  * @outputs       read_only_upstream_gate_evidence, cockpit_readiness_stage
- * @depends       services/sourcing-certification, services/sourcing-canonical-unit-product-sku-resolution
+ * @depends       services/sourcing-certification, services/sourcing-canonical-unit-product-sku-resolution, services/golden-gate-kit, services/golden-checkout-thread
  * @used-by       routes/admin-order-360
  * @db-read       orders, order_items, purchase_lines, purchase_orders, sourcing_candidates, import_runtime_runs, sourcing_sources, sourcing_captures, sourcing_observations, catalog_enrichment_runs, catalog_media, products, product_skus, product_market_exposure, product_market_price_drafts, markets
  * @db-write      none
@@ -28,12 +28,6 @@ const crypto = require('crypto');
 const { evaluateSourcingCandidateOutcome } = require('./sourcing-certification');
 const unitResolver = require('./sourcing-canonical-unit-product-sku-resolution');
 
-const GATE = Object.freeze({
-  PROVED: 'PROVED',
-  NON_PROUVE: 'NON_PROUVE',
-  ANOMALIE: 'ANOMALIE',
-});
-
 const STAGE = Object.freeze({
   NON_DEMARRE: 'NON DÉMARRÉ',
   EN_PREPARATION: 'EN PRÉPARATION',
@@ -42,50 +36,10 @@ const STAGE = Object.freeze({
   PRET: 'PRÊT POUR RECETTE',
 });
 
+const { GATE, check, settle, unproved, safeQuery } = require('./golden-gate-kit');
+const checkoutThread = require('./golden-checkout-thread');
+
 const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const rowsOf = (result) => (result && Array.isArray(result.rows) ? result.rows : []);
-
-function check(key, ok, detail) {
-  return { key, ok: Boolean(ok), detail: detail || null };
-}
-
-function settle({ key, label, link, expected, checks, anomalies = [], evidence = {}, nextAction, humanChecks = [] }) {
-  const failed = checks.filter((c) => !c.ok);
-  let status = GATE.PROVED;
-  if (anomalies.length) status = GATE.ANOMALIE;
-  else if (failed.length) status = GATE.NON_PROUVE;
-  return {
-    key,
-    label,
-    link,
-    expected,
-    status,
-    checks,
-    anomalies,
-    evidence,
-    human_checks: humanChecks,
-    finding: status === GATE.PROVED
-      ? 'Tous les faits canoniques attendus sont présents.'
-      : (anomalies[0] || `Preuve manquante : ${failed.map((c) => c.key).join(', ')}`),
-    next_action: status === GATE.PROVED ? 'Contrôle humain à l’écran réel (distinct de la preuve automatique).' : nextAction,
-  };
-}
-
-function unproved(key, label, link, expected, reason, nextAction) {
-  return settle({
-    key, label, link, expected, nextAction,
-    checks: [check(reason, false, 'preuve non lisible ou absente')],
-  });
-}
-
-async function safeQuery(db, sql, params) {
-  try {
-    return { rows: rowsOf(await db.query(sql, params)), error: null };
-  } catch (err) {
-    return { rows: [], error: err.code || err.message || 'read_error' };
-  }
-}
-
 async function loadSourceGate(db, productId) {
   const meta = {
     key: 'SOURCE_PROVED',
@@ -341,30 +295,19 @@ async function loadStorefrontGate({ productId, marketCode, baseUrl, fetchImpl, c
  * empreinte SHA-256 de la partie probante (sans horodatage), pour qu'un export identique soit vérifiable.
  * Le verdict humain n'est jamais porté par le serveur : il reste un constat distinct, jamais une preuve backend.
  */
-function buildDossierMeta({ ids, gates, stage }) {
-  const ref = ids.order_reference || '';
-  const provenance = /^K-GOLDEN-/i.test(ref)
-    ? 'SYNTHETIC_GOLDEN_CREATE'
-    : (ref ? 'ORDER_ORIGIN_NOT_PROVED' : 'NO_ORDER');
-  const probative = {
-    ids,
-    stage,
-    gates: gates.map((g) => ({ key: g.key, status: g.status, checks: g.checks.map((c) => [c.key, c.ok]), anomalies: g.anomalies })),
-  };
-  return {
-    version: 1,
-    provenance,
-    // Une projection de faits persistés ne prouve jamais, seule, qu'un navigateur a traversé un vrai checkout.
-    complete: stage === STAGE.PRET && provenance === 'REAL_CHECKOUT_PROVED',
-    incomplete_reasons: [
-      ...(stage === STAGE.PRET ? [] : [`Étape ${stage}`]),
-      ...(provenance === 'SYNTHETIC_GOLDEN_CREATE' ? ['Commande synthétique (golden-create) : ne certifie pas un vrai checkout'] : []),
-      ...(provenance === 'ORDER_ORIGIN_NOT_PROVED' ? ['Origine du checkout non prouvée par cette projection'] : []),
-      'Verdict humain et niveau de preuve L0–L6 non portés par le serveur',
-    ],
-    proof_levels: { backend_projection: 'faits persistés de la cible interrogée (L4 local / L5 staging selon la cible)', human_verdict: 'constat distinct, jamais une preuve backend' },
-    sha256: crypto.createHash('sha256').update(JSON.stringify(probative)).digest('hex'),
-  };
+function buildDossierMeta({ ids, gates, stage, evidenceLevel = checkoutThread.EVIDENCE_LEVEL.L4_ISOLATED, thread = null }) {
+  const provenance = checkoutThread.resolveProvenance({orderReference: ids.order_reference || '',gates});
+  const probative = {ids,stage,evidence_level:evidenceLevel,trace_id:thread?.trace_id||null,gates:gates.map(g=>({key:g.key,status:g.status,checks:g.checks.map(c=>[c.key,c.ok]),anomalies:g.anomalies}))};
+  const staging=evidenceLevel===checkoutThread.EVIDENCE_LEVEL.L5_STAGING;
+  return {version:2,provenance,evidence_level:evidenceLevel,
+    complete:stage===STAGE.PRET&&provenance==='CHECKOUT_EVENTS_PROVED'&&staging,
+    incomplete_reasons:[...(stage===STAGE.PRET?[]:['Étape '+stage]),
+      ...(provenance==='SYNTHETIC_GOLDEN_CREATE'?['Commande synthétique non probante']:[]),
+      ...(provenance==='ORDER_ORIGIN_NOT_PROVED'?['Origine du checkout non prouvée par les événements canoniques']:[]),
+      ...(staging?[]:['Cible isolée L4, pas une observation staging L5']),
+      'Verdict humain non porté par le serveur'],
+    proof_levels:{backend_projection:'Lecture des faits persistés, ne certifie pas seule un navigateur réel',human_verdict:'distinct, jamais preuve backend'},
+    sha256:crypto.createHash('sha256').update(JSON.stringify(probative)).digest('hex')};
 }
 
 /**
@@ -431,7 +374,7 @@ function deriveReadiness({ gates = [], productId = null, orderReference = null }
   if (gates.some((g) => g.status === GATE.ANOMALIE)) return STAGE.ANOMALIE;
   const proved = gates.map((g) => g.status === GATE.PROVED);
   // Sans commande : les 4 portes amont. Avec commande : la 5e porte (commande → achat exact) est exigée.
-  const expectedGates = orderReference ? 5 : 4;
+  const expectedGates = orderReference ? 7 : 4;
   if (proved.length === expectedGates && proved.every(Boolean)) return STAGE.PRET;
   const firstGap = proved.indexOf(false);
   const hole = firstGap >= 0 && proved.slice(firstGap + 1).some(Boolean);
@@ -451,6 +394,7 @@ async function projectUpstreamEvidence(db, {
   const market = marketCode && /^[A-Z]{2}$/i.test(marketCode) ? String(marketCode).toUpperCase() : null;
   const product = productId && UUID_RX.test(productId) ? String(productId).toLowerCase() : null;
   let gates = [];
+  let thread = null;
   if (product) {
     const source = await loadSourceGate(db, product);
     const refinery = await loadRefineryGate(db, product);
@@ -459,10 +403,16 @@ async function projectUpstreamEvidence(db, {
       ? await loadStorefrontGate({ productId: product, marketCode: market, baseUrl: storefrontBaseUrl, fetchImpl, catalogGate: catalog })
       : unproved('STOREFRONT_PROVED', 'Boutique', null, 'Produit visible et vendable dans la boutique', 'storefront_probe_unavailable', 'Sonde HTTP indisponible dans ce runtime.');
     gates = [source, refinery, catalog, storefront];
-    if (orderReference) gates.push(await loadCustomerOrderGate(db, { productId: product, orderReference: String(orderReference) }));
+    if (orderReference) {
+      gates.push(await loadCustomerOrderGate(db, { productId: product, orderReference: String(orderReference) }));
+      const t = await checkoutThread.loadCheckoutThread(db, {orderReference:String(orderReference),productId:product,marketCode:market,upstreamGates:gates});
+      gates.push(...t.gates);
+      thread=t.thread;
+    }
   }
   const stage = deriveReadiness({ gates, productId: product, orderReference });
   const ids = { product_id: product, market_code: market, order_reference: orderReference || null };
+  const evidenceLevel = checkoutThread.resolveEvidenceLevel();
   return {
     doctrine: 'read_only_projection_no_business_authority',
     proof_level: 'Projection des faits persistés de la cible interrogée ; ne vaut pas L5 sans exécution réelle observée',
@@ -474,7 +424,10 @@ async function projectUpstreamEvidence(db, {
     stage,
     ids,
     gates,
-    dossier: buildDossierMeta({ ids, gates, stage }),
+    evidence_level: evidenceLevel,
+    thread,
+    operator_script: checkoutThread.buildOperatorScript({ gates }),
+    dossier: buildDossierMeta({ ids, gates, stage, evidenceLevel, thread }),
     observed_at: new Date().toISOString(),
   };
 }
