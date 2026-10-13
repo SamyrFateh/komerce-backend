@@ -108,8 +108,8 @@ async function insertUser(db, cleanup, { role = 'client', label }) {
 async function insertMarket(db, cleanup, { code, label, currency = 'XAF', minorUnit = 0 }) {
   const id = uuid();
   await db.query(
-    `INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
-     VALUES ($1,$2,$3,$4,$5,TRUE)`,
+    `INSERT INTO markets (id, code, name, currency, minor_unit, is_active, lifecycle_status)
+     VALUES ($1,$2,$3,$4,$5,TRUE,'ACTIVE')`,
     [id, code, `E2E ${label}`, currency, minorUnit]
   );
   cleanup.track('markets', 'id', id);
