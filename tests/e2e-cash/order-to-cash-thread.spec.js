@@ -305,7 +305,16 @@ test.describe.serial('Fil commande → encaissement → garde — routes réelle
     const log = (await q(`SELECT status, COUNT(*)::int n FROM notification_log WHERE created_at >= $1 GROUP BY status`, [guard.started_at])).rows;
     report.external_effects = { ...effects, notification_log_par_statut: Object.fromEntries(log.map(r => [r.status, r.n])) };
     expect(log.filter(r => !['failed', 'logged', 'pending'].includes(r.status)), JSON.stringify(log)).toEqual([]);
-    expect({ sms_log: effects.sms_log, outbox_events: effects.outbox_events }, JSON.stringify(effects)).toEqual({ sms_log: 0, outbox_events: 0 });
+    expect(effects.sms_log, JSON.stringify(effects)).toBe(0);
+    // Le schéma canonique peut ne pas exposer outbox_events : prouver son absence
+    // plutôt que d'exiger undefined === 0 ou de masquer une table non surveillée.
+    const { rows: [outboxSchema] } = await q("SELECT to_regclass('public.outbox_events') IS NOT NULL AS present");
+    if (outboxSchema.present) {
+      expect(guard.monitors, 'outbox_events existe mais n’est pas surveillée').toContain('outbox_events');
+      expect(effects.outbox_events, JSON.stringify(effects)).toBe(0);
+    } else {
+      expect(effects.outbox_events, 'aucune table outbox_events ne doit produire des faits').toBeUndefined();
+    }
     step('Notifications : tentatives internes seulement, aucune livraison fournisseur', JSON.stringify(report.external_effects));
   });
 });
