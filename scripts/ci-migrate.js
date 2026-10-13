@@ -47,6 +47,17 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  '230_incident_governance_contract.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='incidents' AND column_name='origin_domain')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='incidents' AND column_name='resolver_domain')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='incidents' AND column_name='resolution_class')
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+
   '274_market_delegation_audit_market.sql': async (client) => {
     const { rows: [row] } = await client.query(`
       SELECT
