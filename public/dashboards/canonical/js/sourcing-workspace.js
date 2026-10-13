@@ -172,12 +172,14 @@
     const slot = createSection(
       rootNode,
       ui,
-      'Candidats à qualifier',
-      'Relisez, corrigez, scannez ou promouvez les candidats proposés.'
+      'Exceptions sourcing à traiter',
+      'Seuls les candidats non transmis restent ici ; la préparation produit relève de la Raffinerie.'
     );
-    const rows = payload.candidates || [];
+    // Une fois remis à la Raffinerie, le candidat reste traçable dans l'historique,
+    // mais il ne constitue plus une action Sourcing ouverte.
+    const rows = (payload.candidates || []).filter(row => !['imported_to_catalog', 'rejected'].includes(row.state));
     if (!rows.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat sourcing.'));
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat à traiter : les produits transmis poursuivent leur préparation en Raffinerie.'));
       return;
     }
 
