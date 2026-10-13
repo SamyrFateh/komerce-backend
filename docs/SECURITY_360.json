@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T11:42:37.497Z",
+  "generatedAt": "2026-10-13T12:09:14.819Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 729,
@@ -5008,7 +5008,6 @@
       "level": "PROTECTED",
       "roles": [
         "admin",
-        "agent_hub",
         "agent_relais"
       ]
     },

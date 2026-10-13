@@ -32,7 +32,7 @@
  *   GET  /api/v2/orders                     → Liste complète + KPIs
  *   GET  /api/v2/orders/pending-cash        → Commandes cash en attente
  *   GET  /api/v2/orders/ready-for-parcel    → Commandes CONFIRMÉES sans colis
- *   POST /api/v2/orders/:ref/confirm-cash   → Confirmer paiement cash + FACTURE + AUTO-PARCEL
+ *   POST /api/v2/orders/:ref/confirm-cash   → Confirmer cash (autorité payment-cash-confirm) + AUTO-PARCEL
  *   POST /api/v2/orders/:ref/create-parcel  → Créer colis manuellement (fallback)
  * ═══════════════════════════════════════════════════════════════
  */
@@ -42,7 +42,6 @@ const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { confirmCashAndCreateParcel, createParcelManually } = require('../services/parcel-auto-create-service');
-const { cacheCodeForReveal } = require('../services/pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'order-api-v2' });
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
@@ -229,7 +228,10 @@ router.get('/:ref', ...guard, async (req, res, next) => {
 //    → AUTO-PARCEL: crée automatiquement le colis après confirmation
 // ═══════════════════════════════════════════════════════════════
 
-router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
+// Droits alignés sur l'autorité d'encaissement (payments /cash/confirm) : admin et agent_relais uniquement.
+const cashGuard = [authenticate, requireRole(['admin', 'agent_relais'])];
+
+router.post('/:ref/confirm-cash', ...cashGuard, async (req, res, next) => {
   try {
     const actor = {
       id:        req.user?.id        || null,
@@ -237,30 +239,35 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
       full_name: req.user?.full_name || 'Admin CT',
       email:     req.user?.email,
     };
-    const { order, parcelResult, pickupCodeToCache } = await confirmCashAndCreateParcel(req.params.ref, actor);
+    // L'encaissement, les notifications de paiement, la facture et le sourcing sont portés par l'autorité
+    // payment-cash-confirm : cette route ne les rejoue pas.
+    const { state, order, parcelResult, control } = await confirmCashAndCreateParcel(req.params.ref, actor);
 
-    log.info(`💰 Cash confirmed + auto-parcel: ${order.reference} by ${actor.email || 'system'}`);
-
-    if (pickupCodeToCache) {
-      cacheCodeForReveal(order.id, pickupCodeToCache)
-        .catch(e => log.error({ err: e }, '[CONFIRM-CASH] cacheCodeForReveal error:'));
+    if (state === 'pending_second_approval') {
+      log.info(`⏳ Cash déclaré, en attente de seconde validation: ${order.reference} by ${actor.email || 'system'}`);
+      return res.status(202).json({
+        success: false,
+        state,
+        pending_second_approval: true,
+        code: control.code || 'pending_second_approval',
+        message: control.message || 'Encaissement déclaré — en attente de la seconde validation',
+        reference: order.reference,
+        required_approvals: control.required_approvals || 2,
+        order: { reference: order.reference, old_status: order.status, new_status: order.status, payment_status: 'pending' },
+        parcel: null,
+      });
     }
 
-    // Notifications (fire-and-forget)
-    const notif = require('../services/notification-service');
-    notif.notifyPaymentConfirmed(order.id, order.reference)
-      .then(r => { if (r?.invoice) log.info(`🧾 Invoice ${r.invoice} sent for ${order.reference}`); })
-      .catch(e => log.error({ err: e }, '[CONFIRM-NOTIF]'));
-    require('../services/invoice-service').issueInvoice(order.id)
-      .catch(e => log.error({ err: e }, '[CONFIRM-INVOICE] private PDF generation failed'));
-
-    if (parcelResult.success) {
-      notif.notifyParcelCreated(parcelResult.parcel.reference, order.id, order.reference)
+    log.info(`💰 Cash ${state}: ${order.reference} by ${actor.email || 'system'}`);
+    if (state === 'confirmed' && parcelResult.success) {
+      require('../services/notification-service')
+        .notifyParcelCreated(parcelResult.parcel.reference, order.id, order.reference)
         .catch(e => log.error({ err: e }, '[AUTO-PARCEL-NOTIF]'));
     }
 
-    res.json({
+    return res.json({
       success: true,
+      state,
       message: parcelResult.success
         ? `✅ Paiement confirmé + 📦 Colis ${parcelResult.parcel.reference} créé automatiquement`
         : `✅ Paiement confirmé pour ${order.reference} — facture disponible dans Mon Komerce`,
@@ -276,7 +283,7 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
       parcel: parcelResult.success ? parcelResult.parcel : null,
     });
   } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message });
+    if (err.status) return res.status(err.status).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });
     next(err);
   }
 });

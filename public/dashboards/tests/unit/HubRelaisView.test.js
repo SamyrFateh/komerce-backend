@@ -506,6 +506,53 @@ describe('HubRelaisView', () => {
       expect(global.KmcApi.relaisConfirmCash).toHaveBeenCalledWith('CMD-CASH2');
     });
 
+    describe('relais-confirm-cash : états réels de l\'encaissement (autorité unique)', () => {
+      async function clickCash(apiResult) {
+        global.KmcApi.getPipeline.mockResolvedValue({
+          pipeline: {
+            pending: { orders: [makeOrder({ reference: 'CMD-CASH3', status: 'pending', payment_mode: 'cash_relay', payment_status: 'unpaid' })] },
+            confirmed: { orders: [] }, ordered: { orders: [] },
+          },
+        });
+        global.KmcApi.getParcels.mockResolvedValue({ parcels: [] });
+        apiResult();
+        await switchToRelais();
+        root.querySelector('[data-action="relais-confirm-cash"]').click();
+        await flush();
+        return document.querySelector('.kmc-toast');
+      }
+
+      it('confirmé → toast succès « Cash confirmé »', async () => {
+        const toast = await clickCash(() => global.KmcApi.relaisConfirmCash.mockResolvedValue({ success: true, state: 'confirmed' }));
+        expect(toast.textContent).toContain('✅ Cash confirmé CMD-CASH3');
+      });
+
+      it('premier visa (202) → toast « en attente de la seconde validation », jamais un succès de paiement', async () => {
+        const toast = await clickCash(() => global.KmcApi.relaisConfirmCash.mockResolvedValue({ success: false, state: 'pending_second_approval', pending_second_approval: true }));
+        expect(toast.textContent).toContain('⏳');
+        expect(toast.textContent).toContain('seconde validation');
+        expect(toast.textContent).not.toContain('Cash confirmé');
+      });
+
+      it('rejeu déjà encaissé → toast « déjà confirmé »', async () => {
+        const toast = await clickCash(() => global.KmcApi.relaisConfirmCash.mockResolvedValue({ success: true, state: 'already_confirmed' }));
+        expect(toast.textContent).toContain('cash déjà confirmé');
+      });
+
+      it('refus de l\'autorité → motif réel du corps JSON, bouton réactivé', async () => {
+        const toast = await clickCash(() => global.KmcApi.relaisConfirmCash.mockRejectedValue(
+          Object.assign(new Error('403 Forbidden'), { status: 403, body: JSON.stringify({ error: 'Cette commande appartient à un autre relais' }) })));
+        expect(toast.textContent).toContain('❌ Cette commande appartient à un autre relais');
+        expect(root.querySelector('[data-action="relais-confirm-cash"]').disabled).toBe(false);
+      });
+
+      it('refus sans corps JSON → message HTTP', async () => {
+        const toast = await clickCash(() => global.KmcApi.relaisConfirmCash.mockRejectedValue(
+          Object.assign(new Error('502 Bad Gateway'), { status: 502, body: '<html>' })));
+        expect(toast.textContent).toContain('❌ 502 Bad Gateway');
+      });
+    });
+
     it('relais-arrived : colis en transit sans cash (onglet "Réceptionner" par défaut)', async () => {
       global.KmcApi.getPipeline.mockResolvedValue(emptyPipeline());
       global.KmcApi.getParcels.mockResolvedValue({

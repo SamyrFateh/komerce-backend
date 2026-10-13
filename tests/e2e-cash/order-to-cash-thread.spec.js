@@ -69,6 +69,10 @@ test.describe.serial('Fil commande → encaissement → garde — routes réelle
     await mkUser('client', 'client');
     const agentRelais = await mkUser('agentRelais', 'agent_relais', relais);
     const agentHub = await mkUser('agentHub', 'agent_hub');
+    // CASH : second agent du même relais (second visa) et agent d'un AUTRE relais (contrôle cross-relais).
+    await mkUser('agentRelais2', 'agent_relais', relais);
+    const relaisOther = (await q(`INSERT INTO relais(name,phone,address,market_id,island,island_code) VALUES ($1,'+2690000001','Autre adresse',$2,'Ngazidja','MORONI') RETURNING id`, [`${PREFIX} Relais autre ${tag}`, fx.marketA.id])).rows[0].id;
+    await mkUser('agentOther', 'agent_relais', relaisOther);
     const controller = await mkUser('controller', 'client');
     // Habilitations d'exécution accordées par la délégation officielle (plafond d'assignation + membre + projection).
     const exec = { [agentRelais.id]: ['execution.cash.confirm', 'execution.parcel.receive', 'execution.parcel.collect'], [agentHub.id]: ['execution.parcel.ship'] };
@@ -213,17 +217,85 @@ test.describe.serial('Fil commande → encaissement → garde — routes réelle
     step('Garde : 75 000 encaissés par le fil → 45 000 clôturés (preuve + contrôle indépendants), 30 000 encore détenus', `${ref1}, ${ref2}`);
   });
 
-  test('7 · observation : la confirmation cash du workspace marque payé sans trace d’encaissement', async () => {
+  const newCashOrder = async (qty = 1) => {
     const res = ok(await call('client', 'POST', '/api/orders', {
-      items: [{ product_id: ids.product, quantity: 1 }], relais_id: ids.relais, payment_mode: 'cash_relais',
-      recipient_name: 'Destinataire observation', recipient_phone: '+269000444', tracking_phone: '+269000444',
-    }), 'seconde commande');
-    ok(await call('agentRelais', 'POST', wsApi(`orders/${res.json.order.reference}/confirm-cash`), {}), 'confirm-cash workspace');
-    const o = await orderOf(res.json.order.id);
-    const rows = (await q('SELECT COUNT(*)::int n FROM cash_collections WHERE order_id = $1', [res.json.order.id])).rows[0].n;
-    report.observations = [`Workspace Opérations « confirm-cash » : commande ${o.payment_status}, ${rows} ligne(s) cash_collections (la route /api/payments/cash/confirm en écrit une) — à arbitrer : autorité unique de la confirmation cash.`];
-    expect(o.payment_status).toBe('paid');
-    step('Observation tracée (non corrigée, décision d’autorité)', report.observations[0]);
+      items: [{ product_id: ids.product, quantity: qty }], relais_id: ids.relais, payment_mode: 'cash_relais',
+      recipient_name: 'Destinataire CASH', recipient_phone: '+269000555', tracking_phone: '+269000555',
+    }), 'commande cash');
+    return { id: res.json.order.id, ref: res.json.order.reference };
+  };
+  const v2Confirm = (key, ref) => call(key, 'POST', `/api/v2/orders/${ref}/confirm-cash`, {});
+  const collectionRows = async id => (await q('SELECT collected_by FROM cash_collections WHERE order_id = $1', [id])).rows;
+  const parcelCount = async id => (await q('SELECT COUNT(*)::int n FROM parcels WHERE order_id = $1', [id])).rows[0].n;
+
+  test('7 · la confirmation cash du workspace converge sur l’autorité unique : payé AVEC trace d’encaissement', async () => {
+    const o = await newCashOrder();
+    ok(await call('agentRelais', 'POST', wsApi(`orders/${o.ref}/confirm-cash`), {}), 'confirm-cash workspace');
+    expect((await orderOf(o.id)).payment_status).toBe('paid');
+    expect(await collectionRows(o.id)).toHaveLength(1);
+    step('Workspace Opérations : confirm-cash passe par l’autorité unique', 'paiement + 1 ligne cash_collections');
+  });
+
+  test('7b · CASH : POST /api/v2/orders/:ref/confirm-cash converge sur la même autorité (paiement, cash_collections, colis, rejeu idempotent)', async () => {
+    const o = await newCashOrder(2);
+    refuse('le client ne peut pas confirmer', await v2Confirm('client', o.ref), [403]);
+    refuse('l’agent hub n’a pas le droit d’encaisser (droits de l’autorité)', await v2Confirm('agentHub', o.ref), [403]);
+    expect((await orderOf(o.id)).payment_status).toBe('pending');
+    expect(await collectionRows(o.id)).toHaveLength(0);
+    const res = ok(await v2Confirm('agentRelais', o.ref), 'v2 confirm-cash');
+    expect(res.json).toMatchObject({ success: true, state: 'confirmed', order: { payment_status: 'paid' } });
+    expect(await collectionRows(o.id)).toEqual([{ collected_by: who.agentRelais.id }]);
+    expect((await orderOf(o.id)).payment_status).toBe('paid');
+    expect(await parcelCount(o.id)).toBe(1);
+    const replay = ok(await v2Confirm('agentRelais', o.ref), 'rejeu');
+    expect(replay.json.state).toBe('already_confirmed');
+    expect(await collectionRows(o.id)).toHaveLength(1);
+    expect(await parcelCount(o.id)).toBe(1);
+    step('V2 confirm-cash : une seule vérité d’encaissement', `paiement paid, 1 cash_collections, 1 colis, rejeu ${replay.json.state}`);
+  });
+
+  test('7c · CASH : un agent d’un autre relais est refusé (cross-relais) : ni paiement, ni encaissement, ni colis', async () => {
+    const o = await newCashOrder();
+    refuse('cross-relais refusé', await v2Confirm('agentOther', o.ref), [403]);
+    expect((await orderOf(o.id)).payment_status).toBe('pending');
+    expect(await collectionRows(o.id)).toHaveLength(0);
+    expect(await parcelCount(o.id)).toBe(0);
+  });
+
+  test('7d · CASH : deux confirmations simultanées → un seul encaissement, un seul colis', async () => {
+    const o = await newCashOrder();
+    const [a, b] = await Promise.all([v2Confirm('agentRelais', o.ref), v2Confirm('agentRelais2', o.ref)]);
+    const states = [a, b].map(r => `${r.status}:${(r.json && (r.json.state || r.json.code)) || ''}`);
+    expect([a.status, b.status].filter(c => c === 200).length, JSON.stringify(states)).toBeGreaterThanOrEqual(1);
+    for (const r of [a, b]) expect([200, 404, 409], JSON.stringify(states)).toContain(r.status);
+    expect((await orderOf(o.id)).payment_status).toBe('paid');
+    expect(await collectionRows(o.id)).toHaveLength(1);
+    expect(await parcelCount(o.id)).toBe(1);
+    step('Concurrence v2 confirm-cash', states.join(' | '));
+  });
+
+  test('7e · CASH : double validation — le premier visa ne paie rien (202), le même acteur ne peut pas valider seul, le second acteur confirme', async () => {
+    await q(`DELETE FROM market_cash_control_policies WHERE market_id = $1`, [fx.marketA.id]);
+    await q(`INSERT INTO market_cash_control_policies(assignment_id, market_id, confirmation_mode) VALUES ($1,$2,'DUAL_ALWAYS')`, [fx.assignmentA.id, fx.marketA.id]);
+    try {
+      const o = await newCashOrder();
+      const first = await v2Confirm('agentRelais', o.ref);
+      expect(first.status, JSON.stringify(first.json)).toBe(202);
+      expect(first.json).toMatchObject({ success: false, state: 'pending_second_approval', pending_second_approval: true, parcel: null, order: { payment_status: 'pending' } });
+      expect((await orderOf(o.id)).payment_status).toBe('pending');
+      expect(await collectionRows(o.id)).toHaveLength(0);
+      expect(await parcelCount(o.id)).toBe(0);
+      const same = await v2Confirm('agentRelais', o.ref);
+      expect(same.status).toBe(202);
+      expect((await orderOf(o.id)).payment_status).toBe('pending');
+      const second = ok(await v2Confirm('agentRelais2', o.ref), 'second visa');
+      expect(second.json).toMatchObject({ success: true, state: 'confirmed', order: { payment_status: 'paid' } });
+      expect(await collectionRows(o.id)).toHaveLength(1);
+      expect(await parcelCount(o.id)).toBe(1);
+      step('Double validation via v2', 'visa 1 → 202 sans paiement ni colis ; même acteur → 202 ; second acteur → payé + 1 encaissement + 1 colis');
+    } finally {
+      await q(`DELETE FROM market_cash_control_policies WHERE market_id = $1`, [fx.marketA.id]);
+    }
   });
 
   test('8 · aucune notification n’a atteint un fournisseur pendant tout le fil', async () => {

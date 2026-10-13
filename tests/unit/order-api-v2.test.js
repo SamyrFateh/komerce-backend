@@ -139,6 +139,7 @@ describe('POST /api/v2/orders/:ref/confirm-cash', () => {
 
   it("confirme le paiement et signale le colis cree quand l'auto-parcel reussit", async () => {
     mockConfirmCashAndCreateParcel.mockResolvedValue({
+      state: 'confirmed',
       order: { id: 'o1', reference: 'K12345', status: 'confirmed', total_kmf: 5000, customer_name: 'X', customer_phone: 'Y' },
       parcelResult: { success: true, parcel: { reference: 'PCL1' } },
     });
@@ -151,6 +152,7 @@ describe('POST /api/v2/orders/:ref/confirm-cash', () => {
 
   it("confirme le paiement sans colis si l'auto-parcel echoue silencieusement", async () => {
     mockConfirmCashAndCreateParcel.mockResolvedValue({
+      state: 'confirmed',
       order: { id: 'o1', reference: 'K12345', status: 'confirmed', total_kmf: 5000, customer_name: 'X', customer_phone: 'Y' },
       parcelResult: { success: false },
     });
@@ -280,6 +282,7 @@ describe('order-api-v2 — Lot A, branches manquantes', () => {
     it('req.user sans full_name/email → valeurs par défaut appliquées à actor', async () => {
       mockState.user = { id: 'adm1', role: 'admin' }; // pas de full_name ni email
       mockConfirmCashAndCreateParcel.mockResolvedValue({
+      state: 'confirmed',
         order: { id: 'o1', reference: 'K1', status: 'confirmed', total_kmf: 1000, customer_name: 'X', customer_phone: 'Y' },
         parcelResult: { success: false },
       });
@@ -291,33 +294,71 @@ describe('order-api-v2 — Lot A, branches manquantes', () => {
       }));
     });
 
-    it("notifyPaymentConfirmed avec facture → log info sans faire echouer la reponse", async () => {
+    it("la route ne rejoue ni notification de paiement ni facture : l'autorité d'encaissement les porte", async () => {
       mockConfirmCashAndCreateParcel.mockResolvedValue({
+        state: 'confirmed',
         order: { id: 'o1', reference: 'K1', status: 'confirmed', total_kmf: 1000, customer_name: 'X', customer_phone: 'Y' },
         parcelResult: { success: false },
       });
-      mockNotifyPaymentConfirmed.mockResolvedValueOnce({ invoice: 'INV-1' });
-
       const res = await request(buildApp()).post('/api/v2/orders/K1/confirm-cash');
       expect(res.status).toBe(200);
       await new Promise((r) => setImmediate(r));
-      expect(mockNotifyPaymentConfirmed).toHaveBeenCalledWith('o1', 'K1');
+      expect(mockNotifyPaymentConfirmed).not.toHaveBeenCalled();
+      expect(mockIssueInvoice).not.toHaveBeenCalled();
     });
 
-    it('notifyPaymentConfirmed rejette → catch silencieux, reponse deja envoyee reste 200', async () => {
+    it("premier visa : 202 « en attente de validation », aucun paid prématuré, aucun colis", async () => {
       mockConfirmCashAndCreateParcel.mockResolvedValue({
-        order: { id: 'o1', reference: 'K1', status: 'confirmed', total_kmf: 1000, customer_name: 'X', customer_phone: 'Y' },
-        parcelResult: { success: false },
+        state: 'pending_second_approval',
+        order: { id: 'o1', reference: 'K1', status: 'pending', total_kmf: 1000 },
+        control: { code: 'CASH_SECOND_APPROVAL_REQUIRED', message: 'Seconde validation requise', required_approvals: 2 },
       });
-      mockNotifyPaymentConfirmed.mockRejectedValueOnce(new Error('whatsapp down'));
+      const res = await request(buildApp()).post('/api/v2/orders/K1/confirm-cash');
+      expect(res.status).toBe(202);
+      expect(res.body).toMatchObject({
+        success: false, state: 'pending_second_approval', pending_second_approval: true,
+        code: 'CASH_SECOND_APPROVAL_REQUIRED', required_approvals: 2, parcel: null,
+        order: { payment_status: 'pending', new_status: 'pending' },
+      });
+      expect(mockNotifyParcelCreated).not.toHaveBeenCalled();
+    });
 
+    it("rejeu sur commande déjà encaissée : 200 already_confirmed, pas de notification de colis redoublée", async () => {
+      mockConfirmCashAndCreateParcel.mockResolvedValue({
+        state: 'already_confirmed',
+        order: { id: 'o1', reference: 'K1', status: 'preparation', total_kmf: 1000 },
+        parcelResult: { success: false, reason: 'parcel_exists' },
+      });
       const res = await request(buildApp()).post('/api/v2/orders/K1/confirm-cash');
       expect(res.status).toBe(200);
-      await new Promise((r) => setImmediate(r));
+      expect(res.body).toMatchObject({ success: true, state: 'already_confirmed', order: { payment_status: 'paid' } });
+    });
+
+    it('refus de l’autorité : statut et code propagés tels quels', async () => {
+      const err = new Error('Cette commande appartient à un autre relais');
+      err.status = 403; err.code = 'cross_relais';
+      mockConfirmCashAndCreateParcel.mockRejectedValue(err);
+      const res = await request(buildApp()).post('/api/v2/orders/K1/confirm-cash');
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ error: 'Cette commande appartient à un autre relais', code: 'cross_relais' });
+    });
+
+    it('droits alignés sur l’autorité : agent_hub refusé, agent_relais accepté', async () => {
+      mockState.user = { id: 'hub1', role: 'agent_hub' };
+      const denied = await request(buildApp()).post('/api/v2/orders/K1/confirm-cash');
+      expect(denied.status).toBe(403);
+      expect(mockConfirmCashAndCreateParcel).not.toHaveBeenCalled();
+      mockState.user = { id: 'rel1', role: 'agent_relais' };
+      mockConfirmCashAndCreateParcel.mockResolvedValue({
+        state: 'confirmed', order: { id: 'o1', reference: 'K1', status: 'pending', total_kmf: 1000 }, parcelResult: { success: false },
+      });
+      expect((await request(buildApp()).post('/api/v2/orders/K1/confirm-cash')).status).toBe(200);
+      expect(mockConfirmCashAndCreateParcel).toHaveBeenCalledWith('K1', expect.objectContaining({ id: 'rel1', role: 'agent_relais' }));
     });
 
     it('notifyParcelCreated rejette quand auto-parcel reussit → catch silencieux', async () => {
       mockConfirmCashAndCreateParcel.mockResolvedValue({
+      state: 'confirmed',
         order: { id: 'o1', reference: 'K1', status: 'confirmed', total_kmf: 1000, customer_name: 'X', customer_phone: 'Y' },
         parcelResult: { success: true, parcel: { reference: 'PCL9' } },
       });

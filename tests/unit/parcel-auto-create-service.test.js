@@ -20,12 +20,8 @@
  *     □ INSERT parcel_item échoue      → SAVEPOINT rollback, colis quand même créé
  *     □ commande déjà 'ordered'        → transition preparation seulement (pas confirmed→ordered)
  *
- *   confirmCashAndCreateParcel :
- *     □ commande introuvable            → throw 404
- *     □ pas cash_relais                → throw 400
- *     □ déjà payé                      → throw 400
- *     □ nominal                        → UPDATE payment_status + autoCreateParcel + COMMIT
- *     □ autoCreateParcel échoue        → COMMIT quand même (résultat success: false)
+ *   confirmCashAndCreateParcel (délégation à payment-cash-confirm) :
+ *     □ refus (404/400/409), nominal, premier visa 202, refus de l'autorité, idempotence, échec colis
  *
  *   createParcelManually :
  *     □ commande introuvable            → throw 404
@@ -39,8 +35,10 @@
 
 let mockGetClient = jest.fn();
 
+let mockQuery = jest.fn();
 jest.mock('../../db', () => ({
   getClient: (...args) => mockGetClient(...args),
+  query: (...args) => mockQuery(...args),
 }));
 
 jest.mock('../../utils/logger', () => ({
@@ -246,91 +244,127 @@ describe('autoCreateParcel', () => {
 //   confirmCashAndCreateParcel
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('confirmCashAndCreateParcel', () => {
-  test('commande introuvable → throw 404', async () => {
-    const client = makeClient([{ rows: [] }]);
+describe('confirmCashAndCreateParcel — délégation à l\'autorité unique payment-cash-confirm', () => {
+  const PENDING = { ...ORDER_PAID, payment_status: 'pending', payment_mode: 'cash_relais', cash_ref_code: 'CASH-1' };
+  const confirmCashByReference = jest.fn();
+  const triggerPurchasing = jest.fn();
+  const deps = () => ({ confirmCashByReference, triggerPurchasing });
+  // autoCreateParcel nominal (queue du client transactionnel)
+  const parcelScript = [
+    { rows: [ORDER_PAID] }, { rows: [] }, { rows: [ITEM] }, { rows: [{ max_seq: 5 }] },
+    { rows: [] }, { rows: [] }, { rows: [] },
+  ];
+
+  beforeEach(() => { jest.clearAllMocks(); mockQuery = jest.fn(); });
+
+  test('commande introuvable → 404 order_not_found, aucune délégation', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await expect(confirmCashAndCreateParcel('KOM-INCONNU', ACTOR, deps())).rejects.toMatchObject({ status: 404, code: 'order_not_found' });
+    expect(confirmCashByReference).not.toHaveBeenCalled();
+  });
+
+  test('pas cash_relais → 400, aucune délégation', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ ...PENDING, payment_mode: 'stripe_eur' }] });
+    await expect(confirmCashAndCreateParcel('KOM-001', ACTOR, deps())).rejects.toMatchObject({ status: 400, code: 'not_cash_relais' });
+    expect(confirmCashByReference).not.toHaveBeenCalled();
+  });
+
+  test('statut de paiement non confirmable (refunded/failed) → 409, aucune délégation', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ ...PENDING, payment_status: 'refunded' }] });
+    await expect(confirmCashAndCreateParcel('KOM-001', ACTOR, deps())).rejects.toMatchObject({ status: 409, code: 'payment_status_not_confirmable' });
+    expect(confirmCashByReference).not.toHaveBeenCalled();
+  });
+
+  test('référence cash absente → 409 cash_reference_missing', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ ...PENDING, cash_ref_code: null }] });
+    await expect(confirmCashAndCreateParcel('KOM-001', ACTOR, deps())).rejects.toMatchObject({ status: 409, code: 'cash_reference_missing' });
+    expect(confirmCashByReference).not.toHaveBeenCalled();
+  });
+
+  test('nominal : l\'autorité encaisse (acteur, code et purchasing transmis), PUIS le colis est créé', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [PENDING] });
+    confirmCashByReference.mockResolvedValue({ status: 200, body: { message: 'ok' } });
+    const client = makeClient([...parcelScript]);
     mockGetClient.mockResolvedValue(client);
 
-    await expect(confirmCashAndCreateParcel('KOM-INCONNU', ACTOR))
-      .rejects.toMatchObject({ status: 404 });
+    const out = await confirmCashAndCreateParcel('KOM-001', ACTOR, deps());
 
+    expect(out.state).toBe('confirmed');
+    expect(out.parcelResult.success).toBe(true);
+    expect(confirmCashByReference).toHaveBeenCalledWith(expect.objectContaining({
+      cashRefCode: 'CASH-1', actor: { id: ACTOR.id, role: ACTOR.role }, triggerPurchasing,
+    }));
+    expect(client.calls.some(c => /^COMMIT$/i.test(c.sql))).toBe(true);
+    // Aucune seconde logique d'encaissement dans ce service.
+    expect(client.calls.some(c => /cash_collections|payment_status\s*=\s*'paid'/i.test(c.sql))).toBe(false);
+  });
+
+  test('premier visa (202) : aucun colis créé, aucun client transactionnel ouvert', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [PENDING] });
+    confirmCashByReference.mockResolvedValue({ status: 202, body: { pending_second_approval: true, code: 'X', message: 'm', required_approvals: 2 } });
+    const out = await confirmCashAndCreateParcel('KOM-001', ACTOR, deps());
+    expect(out.state).toBe('pending_second_approval');
+    expect(out.control.required_approvals).toBe(2);
+    expect(mockGetClient).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    [403, { error: 'Cette commande appartient à un autre relais' }, 'cash_confirmation_rejected'],
+    [409, { error: 'Stock insuffisant', code: 'STOCK' }, 'STOCK'],
+    [404, { error: 'Code invalide ou paiement déjà enregistré' }, 'cash_confirmation_rejected'],
+  ])('refus de l\'autorité %s → propagé, aucun colis', async (status, body, code) => {
+    mockQuery.mockResolvedValueOnce({ rows: [PENDING] });
+    confirmCashByReference.mockResolvedValue({ status, body });
+    await expect(confirmCashAndCreateParcel('KOM-001', ACTOR, deps())).rejects.toMatchObject({ status, code, message: body.error });
+    expect(mockGetClient).not.toHaveBeenCalled();
+  });
+
+  test('refus sans corps explicite → message et code par défaut', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [PENDING] });
+    confirmCashByReference.mockResolvedValue({ status: 500 });
+    await expect(confirmCashAndCreateParcel('KOM-001', ACTOR, deps())).rejects.toMatchObject({ status: 500, code: 'cash_confirmation_rejected', message: 'Confirmation cash refusée' });
+  });
+
+  test('idempotence : déjà payé → aucune ré-encaissement, seul le colis manquant est rattrapé', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ ...PENDING, payment_status: 'paid' }] });
+    const client = makeClient([...parcelScript]);
+    mockGetClient.mockResolvedValue(client);
+    const out = await confirmCashAndCreateParcel('KOM-001', ACTOR, deps());
+    expect(out.state).toBe('already_confirmed');
+    expect(out.parcelResult.success).toBe(true);
+    expect(confirmCashByReference).not.toHaveBeenCalled();
+  });
+
+  test('rejeu avec colis déjà existant → parcel_exists, rien de dupliqué', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ ...PENDING, payment_status: 'paid' }] });
+    mockGetClient.mockResolvedValue(makeClient([{ rows: [ORDER_PAID] }, { rows: [{ id: 'old', reference: 'PCL-2026-0001' }] }]));
+    const out = await confirmCashAndCreateParcel('KOM-001', ACTOR, deps());
+    expect(out.parcelResult).toMatchObject({ success: false, reason: 'parcel_exists' });
+  });
+
+  test('échec de création du colis après encaissement : l\'encaissement n\'est jamais défait, rejouable', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [PENDING] });
+    confirmCashByReference.mockResolvedValue({ status: 200, body: {} });
+    const client = makeClient([]);
+    mockGetClient.mockResolvedValue(client);
+    const boom = new Error('db down');
+    const original = client.query;
+    client.query = jest.fn(async (sql, ...r) => { if (/SELECT o\.id/.test(sql)) throw boom; return original(sql, ...r); });
+    const out = await confirmCashAndCreateParcel('KOM-001', ACTOR, deps());
+    expect(out.state).toBe('confirmed');
+    expect(out.parcelResult).toEqual({ success: false, reason: 'parcel_creation_failed' });
     expect(client.released).toBe(true);
   });
 
-  test('pas cash_relais → throw 400', async () => {
-    const orderStripe = { ...ORDER_PAID, payment_mode: 'stripe_eur', payment_status: 'pending' };
-    const client = makeClient([{ rows: [orderStripe] }]);
-    mockGetClient.mockResolvedValue(client);
-
-    await expect(confirmCashAndCreateParcel('KOM-001', ACTOR))
-      .rejects.toMatchObject({ status: 400 });
-
-    expect(client.released).toBe(true);
-  });
-
-  test('déjà payé → throw 400', async () => {
-    const orderAlreadyPaid = { ...ORDER_PAID, payment_status: 'paid' };
-    const client = makeClient([{ rows: [orderAlreadyPaid] }]);
-    mockGetClient.mockResolvedValue(client);
-
-    await expect(confirmCashAndCreateParcel('KOM-001', ACTOR))
-      .rejects.toMatchObject({ status: 400 });
-
-    expect(client.released).toBe(true);
-  });
-
-  test('nominal → payment_status mis à jour + colis créé + COMMIT', async () => {
-    const orderPending = { ...ORDER_PAID, payment_status: 'pending' };
-
-    const client = makeClient([
-      { rows: [orderPending] },       // SELECT order (confirmCash)
-      { rows: [], rowCount: 1 },      // UPDATE payment_status = paid
-      // autoCreateParcel queries :
-      { rows: [ORDER_PAID] },         // SELECT order (autoCreateParcel)
-      { rows: [] },                   // pas de colis existant
-      { rows: [ITEM] },               // items
-      { rows: [{ max_seq: 5 }] },     // séquence PCL
-      { rows: [] },                   // INSERT parcels
-      { rows: [] },                   // INSERT parcel_items
-      { rows: [] },                   // INSERT scan_events
-      { rows: [{}] },                 // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
-      { rows: [] },                   // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
-      { rows: [] },                   // generateAndStoreSecret: UPDATE orders (stockage du secret)
-    ]);
-    mockGetClient.mockResolvedValue(client);
-
-    const { order, parcelResult } = await confirmCashAndCreateParcel('KOM-001', ACTOR);
-
-    expect(order.reference).toBe('KOM-001');
-    expect(parcelResult.success).toBe(true);
-    expect(parcelResult.parcel.reference).toBe('PCL-2026-0006');
-
-    const commit = client.calls.find(c => /^COMMIT$/i.test(c.sql));
-    expect(commit).toBeDefined();
-    expect(client.released).toBe(true);
-  });
-
-  test('autoCreateParcel → success: false → COMMIT quand même, résultat propagé', async () => {
-    const orderPending = { ...ORDER_PAID, payment_status: 'pending' };
-
-    const client = makeClient([
-      { rows: [orderPending] },
-      { rows: [], rowCount: 1 },    // UPDATE payment_status
-      { rows: [ORDER_PAID] },       // SELECT order (autoCreateParcel)
-      { rows: [{ id: 'old-parcel', reference: 'PCL-2026-0001' }] }, // colis déjà existant
-      { rows: [{}] },               // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
-      { rows: [] },                 // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
-      { rows: [] },                 // generateAndStoreSecret: UPDATE orders (stockage du secret)
-    ]);
-    mockGetClient.mockResolvedValue(client);
-
-    const { parcelResult } = await confirmCashAndCreateParcel('KOM-001', ACTOR);
-
-    expect(parcelResult.success).toBe(false);
-    expect(parcelResult.reason).toBe('parcel_exists');
-
-    const commit = client.calls.find(c => /^COMMIT$/i.test(c.sql));
-    expect(commit).toBeDefined();
+  test('dépendances par défaut : autorité réelle et purchasing résolus à l\'appel', async () => {
+    jest.resetModules();
+    jest.doMock('../../services/payment-cash-confirm', () => ({ confirmCashByReference: jest.fn().mockResolvedValue({ status: 202, body: { pending_second_approval: true } }) }));
+    jest.doMock('../../services/purchasing-trigger-service', () => ({ triggerPurchasing: jest.fn() }));
+    const fresh = require('../../services/parcel-auto-create-service');
+    mockQuery.mockResolvedValueOnce({ rows: [PENDING] });
+    expect((await fresh.confirmCashAndCreateParcel('KOM-001', ACTOR)).state).toBe('pending_second_approval');
+    jest.dontMock('../../services/payment-cash-confirm');
+    jest.dontMock('../../services/purchasing-trigger-service');
   });
 });
 

@@ -453,7 +453,7 @@ function _wireRelaisActions(container) {
       btn.disabled = true; btn.textContent = '⏳...';
       try {
         var r = await CT.api.v2ConfirmCash(ref);
-        _toast('✅ ' + (r.message || 'Cash confirmé') + ' 💰');
+        _toast((r.pending_second_approval ? '⏳ ' : '✅ ') + (r.message || 'Cash confirmé') + (r.pending_second_approval ? '' : ' 💰'));
         CT.views.relais(document.getElementById('ct-main'));
       } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '💰 Encaisser'; }
     });
