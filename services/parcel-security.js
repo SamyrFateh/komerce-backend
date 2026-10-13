@@ -111,7 +111,6 @@ const EVENT_TYPES = [
   'location_changed',  // Changement de lieu
   'collected',         // Remis au destinataire
   'photo_taken',       // Photo prise (preuve)
-  'item_assigned', 'item_removed', 'item_reassigned_in', 'item_reassigned_out', // HUB-A traçabilité des affectations
 ];
 
 /**
