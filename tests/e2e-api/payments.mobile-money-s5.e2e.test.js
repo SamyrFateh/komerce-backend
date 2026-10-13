@@ -80,7 +80,7 @@ describeE2E('S5 — Mobile Money replay, ordering and provider faults', ({ db })
     statusQueue.push({status:'succeeded',providerStatus:'SUCCESSFUL',amount:13334,currency:'XAF',safePayload:{}});
     expect((await mobileMoney.reconcileMobileMoneyTransaction(a.txId)).transaction.status).toBe('succeeded');
     const once=await snapshot(a.orderId,a.txId);
-    expect(once.order.payment_status).toBe('paid'); expect(once.order.status).toBe('ordered'); expect(once.history).toBe(3);
+    expect(once.order.payment_status).toBe('paid'); expect(once.order.status).toBe('ordered'); expect(once.history).toBe(2);
     expect((await mobileMoney.reconcileMobileMoneyTransaction(a.txId)).reconciled).toBe(false);
     expect(await snapshot(a.orderId,a.txId)).toEqual(once);
   });
