@@ -7,6 +7,7 @@
   <style>
     :root{font-family:Inter,system-ui,sans-serif;color:#171717;background:#f6f5f2}*{box-sizing:border-box}body{margin:0}.shell{max-width:1180px;margin:auto;padding:28px}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6b6b}h1{margin:5px 0 6px;font-size:28px}.sub{color:#686868}.badge{padding:8px 12px;border:1px solid #d6d3cd;border-radius:999px;font-weight:800;font-size:12px;background:white}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0}.stat,.panel{background:white;border:1px solid #ddd9d1;border-radius:16px;padding:16px}.stat small{display:block;color:#777;margin-bottom:6px}.stat strong{font-size:18px}.rail{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:18px 0}.stepbtn{min-height:54px;border:1px solid #d9d6d0;border-radius:12px;background:white;font-weight:800;cursor:pointer}.stepbtn.active{outline:3px solid #222}.stepbtn.pass{background:#eef4ed}.stepbtn.fail{background:#f8ecea}.grid{display:grid;grid-template-columns:1.3fr .7fr;gap:14px}.panel h2{margin:6px 0 8px}.callout{background:#f5f3ef;border-radius:12px;padding:14px;margin:14px 0}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.btn,a.btn{border:1px solid #222;border-radius:10px;padding:11px 14px;background:#fff;color:#111;text-decoration:none;font-weight:800;cursor:pointer}.btn.primary{background:#191919;color:white}.btn.danger{border-color:#9f3028}.links{display:grid;gap:8px;margin-top:12px}.links a{color:#171717;font-weight:750}.mono{font-family:ui-monospace,SFMono-Regular,monospace;word-break:break-all}.muted{color:#707070}.blocked{padding:12px;border-radius:10px;background:#f8ecea;margin-top:12px}.hidden{display:none}@media(max-width:760px){.shell{padding:16px}.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.rail{grid-template-columns:repeat(5,1fr)}.top{display:block}.badge{display:inline-block;margin-top:12px}}
   .up{margin:18px 0}.upgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.gate{background:#fff;border:1px solid #deddd8;border-radius:14px;padding:14px}.gate h3{margin:0 0 6px;font-size:16px}.gate p{margin:4px 0;font-size:13px;color:#444}.gate .st{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;background:#eee}.gate .st.PROVED{background:#d9f2e0;color:#14532d}.gate .st.NON_PROUVE{background:#fdf0cf;color:#7a4b00}.gate .st.ANOMALIE{background:#fbd9d9;color:#8a1111}.upbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}.upbar input{padding:10px;border:1px solid #ccc;border-radius:10px;min-width:300px}.certline{font-weight:800;color:#8a1111}
+.p1steps{list-style:none;margin:10px 0;padding:0;display:grid;gap:8px}.p1step{background:#fff;border:1px solid #deddd8;border-radius:14px;padding:12px}.p1step.locked{opacity:.55}.p1step h3{margin:0 0 4px;font-size:14px}.p1step p{margin:2px 0;font-size:12px;color:#444}.p1st{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:#eee;margin-left:6px}.p1st.PROVED{background:#d9f2e0;color:#14532d}.p1st.NON_PROUVE{background:#fdf0cf;color:#7a4b00}.p1st.ANOMALIE{background:#fbd9d9;color:#8a1111}
   </style>
 </head>
 <body>
@@ -20,6 +21,13 @@
     <div id="certLine" class="certline">GOLDEN SOURCE → CLIENT : NON CERTIFIÉE</div>
     <div id="upstreamIds" class="muted"></div>
     <div id="upstream" class="upgrid"></div>
+  </section>
+  <section class="up" id="p1" aria-label="Parcours client P1">
+    <div class="eyebrow">Parcours client · Boutique → OTP → Checkout → Paiement (P1)</div>
+    <p class="muted">Les preuves automatiques sont indépendantes de la validation humaine. Une étape reste verrouillée si la précédente n’est pas prouvée.</p>
+    <div id="p1Level" class="muted">NIVEAU DE PREUVE : NON LU</div>
+    <div id="p1Thread" class="muted">Renseigner produit et commande pour afficher le fil unique.</div>
+    <ol id="p1Steps" class="p1steps"></ol>
   </section>
   <div id="rail" class="rail" aria-label="Étapes de recette"></div>
   <div class="grid">
@@ -76,9 +84,13 @@ async function readUpstream(){const pid=$('productId').value.trim();const market
 if(!pid){show(placeholders('NON_PROUVE','Aucun produit renseigné : rien n’est prouvé.'),'NON DÉMARRÉ','');return}
 const q=new URLSearchParams({product_id:pid,market});if(ref&&ref!=='à renseigner')q.set('order_reference',ref);
 try{const r=await fetch('/api/admin/entities/golden-upstream?'+q.toString(),{credentials:'include',headers:{Accept:'application/json'}});
-if(!r.ok)throw new Error('HTTP '+r.status);const b=await r.json();q.set('download','1');$('exportDossier').href='/api/admin/entities/golden-upstream?'+q.toString();$('exportDossier').title=(b.dossier&&b.dossier.complete?'Dossier complet':'Dossier INCOMPLET : '+((b.dossier&&b.dossier.incomplete_reasons)||[]).join(' · '))+' · sha256 '+((b.dossier&&b.dossier.sha256)||'');show(b.gates,b.stage,'product_id='+(b.ids.product_id||'—')+' · market='+(b.ids.market_code||'—')+' · '+b.certification);}
-catch(e){show(placeholders('NON_PROUVE','API indisponible ('+e.message+') : état NON PROUVÉ, jamais PASS.'),'PREUVE MANQUANTE','','Lecture impossible')}
+if(!r.ok)throw new Error('HTTP '+r.status);const b=await r.json();q.set('download','1');$('exportDossier').href='/api/admin/entities/golden-upstream?'+q.toString();$('exportDossier').title=(b.dossier&&b.dossier.complete?'Dossier complet':'Dossier INCOMPLET : '+((b.dossier&&b.dossier.incomplete_reasons)||[]).join(' · '))+' · sha256 '+((b.dossier&&b.dossier.sha256)||'');show(b.gates,b.stage,'product_id='+(b.ids.product_id||'—')+' · market='+(b.ids.market_code||'—')+' · '+b.certification);renderP1(b);}
+catch(e){show(placeholders('NON_PROUVE','API indisponible ('+e.message+') : état NON PROUVÉ, jamais PASS.'),'PREUVE MANQUANTE','','Lecture impossible');renderP1(null)}
 if(window.__goldenRender)window.__goldenRender()}
+function renderP1(b){const root=$('p1Steps');if(!root)return;root.innerHTML='';
+const lvl=b&&b.evidence_level;$('p1Level').textContent='NIVEAU DE PREUVE : '+(lvl||'NON LU')+(lvl==='L5_STAGING'?'':' · cible isolée, pas une preuve staging');
+const t=b&&b.thread;$('p1Thread').textContent=t?('Fil · market='+(t.market||'—')+' · source='+(t.source_id||'—')+' · capture='+(t.capture_id||'—')+' · product='+(t.product_id||'—')+' · sku='+((t.sku_ids||[]).join(',')||'—')+' · soi='+((t.soi_unit_refs||[]).join(',')||'—')+' · commande='+(t.order_reference||'—')+' · trace='+(t.trace_id||'—')):'Fil : renseigner produit et commande pour établir le fil unique.';
+((b&&b.operator_script)||[]).forEach(st=>{const li=document.createElement('li');li.className='p1step'+(st.locked?' locked':'');const h=document.createElement('h3');h.textContent=st.label;const sp=document.createElement('span');sp.className='p1st '+st.status;sp.textContent=st.locked?'VERROUILLÉ':st.status;h.appendChild(sp);li.appendChild(h);if(st.finding){const p=document.createElement('p');p.textContent=st.finding;li.appendChild(p)}root.appendChild(li)})}
 $('readUpstream').addEventListener('click',readUpstream);
 show(placeholders('NON_PROUVE','Aucune lecture effectuée.'),'NON DÉMARRÉ','');
 })();
