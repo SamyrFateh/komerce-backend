@@ -300,13 +300,13 @@ function buildDossierMeta({ ids, gates, stage, evidenceLevel = checkoutThread.EV
   const probative = {ids,stage,evidence_level:evidenceLevel,trace_id:thread?.trace_id||null,gates:gates.map(g=>({key:g.key,status:g.status,checks:g.checks.map(c=>[c.key,c.ok]),anomalies:g.anomalies}))};
   const staging=evidenceLevel===checkoutThread.EVIDENCE_LEVEL.L5_STAGING;
   return {version:2,provenance,evidence_level:evidenceLevel,
-    complete:stage===STAGE.PRET&&provenance==='CHECKOUT_EVENTS_PROVED'&&staging,
+    complete:false, // P1 ne dispose d'aucune attestation indépendante du navigateur ; staging seul ne constitue pas une preuve L5.
     incomplete_reasons:[...(stage===STAGE.PRET?[]:['Étape '+stage]),
       ...(provenance==='SYNTHETIC_GOLDEN_CREATE'?['Commande synthétique non probante']:[]),
       ...(provenance==='ORDER_ORIGIN_NOT_PROVED'?['Origine du checkout non prouvée par les événements canoniques']:[]),
       ...(staging?[]:['Cible isolée L4, pas une observation staging L5']),
-      'Verdict humain non porté par le serveur'],
-    proof_levels:{backend_projection:'Lecture des faits persistés, ne certifie pas seule un navigateur réel',human_verdict:'distinct, jamais preuve backend'},
+      'Parcours navigateur réel et verdict humain non attestés par cette projection read-only'],
+    proof_levels:{backend_projection:'Lecture des faits persistés ; aucune attestation navigateur ou L5 de bout en bout',human_verdict:'distinct, jamais preuve backend'},
     sha256:crypto.createHash('sha256').update(JSON.stringify(probative)).digest('hex')};
 }
 
