@@ -1,0 +1,94 @@
+# Golden P1 — preuve L4 isolée. Aucune cible ni credential staging.
+name: Golden L4 isolated real browser
+on:
+  push:
+    branches:
+      - test/golden-l4-real-browser-postgres
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: golden-l4-isolated-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  golden-l4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+      PORT: '3911'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Rebuild isolated PostgreSQL schema
+        run: |
+          PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-db-bootstrap.js
+      - name: Install real Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Execute actual backend + PG + Chromium order-to-cash
+        run: |
+          set -eu
+          pw="Gl4-$(openssl rand -hex 8)-Aa1"
+          echo "::add-mask::$pw"
+          DISABLE_RATE_LIMIT=1 ADMIN_PASSWORD="$pw" node server.js > golden-l4-server.log 2>&1 &
+          echo $! > golden-l4-server.pid
+          trap 'kill "$(cat golden-l4-server.pid)" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            curl -fsS -m 2 http://localhost:3911/health >/dev/null 2>&1 && break
+            sleep 1
+          done
+          curl -fsS http://localhost:3911/health
+          E2E_BASE_URL=http://localhost:3911 E2E_ADMIN_PASSWORD="$pw" npx playwright test tests/e2e-cash/order-to-cash-thread.spec.js --config=playwright.cash-e2e.config.js
+      - name: Evidence report (real integrated L4 only)
+        if: always()
+        run: |
+          {
+            echo "## GOLDEN-P1 L4 isolé — réel serveur + PostgreSQL + Chromium"
+            echo "Niveau: L4 local intégré. Ne prouve PAS une session boutique OTP réelle ni staging L5."
+            if [ -f test-results/order-to-cash-thread/report.md ]; then cat test-results/order-to-cash-thread/report.md; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-l4-isolated-${{ github.run_id }}
+          path: |
+            test-results/order-to-cash-thread/
+            .playwright-output/cash/
+            golden-l4-server.log
+          if-no-files-found: warn
+          retention-days: 14
