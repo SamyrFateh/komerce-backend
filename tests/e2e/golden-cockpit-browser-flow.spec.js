@@ -55,4 +55,15 @@ test.describe('Golden cockpit — recette visuelle',()=>{
     await page.locator('#fail').click();
     await expect(page.locator('#blocked')).toBeVisible();
   });
+
+  test('chaque étape pointe vers la vraie surface métier',async({page})=>{
+    await mount(page);
+    const expected=['/admin/operations','/admin/finance','/admin/workspaces/purchasing','/admin/workspaces/purchasing','/admin/workspaces/purchasing','/admin/hub-live','/admin/workspaces/shipping-customs','/admin/relais-live','/admin/relais-live','/admin/workspaces/accounting'];
+    const buttons=page.locator('#rail .stepbtn');
+    await expect(buttons).toHaveCount(10);
+    for(let i=0;i<expected.length;i++){
+      await buttons.nth(i).click();
+      await expect(page.locator('#openReal')).toHaveAttribute('href',expected[i]);
+    }
+  });
 });
