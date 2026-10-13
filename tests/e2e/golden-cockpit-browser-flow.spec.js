@@ -33,6 +33,36 @@ async function mount(page){
 }
 
 test.describe('Golden cockpit — recette visuelle',()=>{
+
+  test('recette FULL : les dix étapes gardent leurs preuves contextuelles distinctes du verdict humain',async({page})=>{
+    await mount(page);
+    const expectedPaths=['/admin/operations','/admin/finance','/admin/workspaces/purchasing','/admin/workspaces/purchasing','/admin/workspaces/purchasing','/admin/hub-live','/admin/workspaces/shipping-customs','/admin/relais-live','/admin/relais-live','/admin/workspaces/accounting'];
+    await expect(page.locator('#existing-e2e-evidence')).toBeVisible();
+    await expect(page.locator('#existing-e2e-evidence a')).toHaveCount(4);
+    await expect(page.locator('#score')).toHaveText('0 / 10');
+    const rail=page.locator('#rail .stepbtn');
+    for(let i=0;i<10;i++){
+      await rail.nth(i).click();
+      await expect(page.locator('#openReal')).toHaveAttribute('href',expectedPaths[i]);
+      await expect(page.locator('#stepCi')).toHaveAttribute('href',/^https:\/\/github\.com\/SamyrFateh\/komerce-backend\//);
+      await expect(page.locator('#stepCiScope')).not.toBeEmpty();
+    }
+    await rail.nth(0).click();
+    await expect(rail.nth(0)).not.toHaveClass(/pass/);
+    await expect(rail.nth(0)).toHaveAttribute('title',/humain : non vérifié/);
+    await expect(rail.nth(0)).toHaveAttribute('title',/backend : non prouvé/);
+    await page.locator('#pass').click();
+    await expect(page.locator('#score')).toHaveText('0 / 10');
+    await expect(page.locator('#liveState')).toContainText('Renseigne la référence');
+    await page.locator('#createGolden').click();
+    await expect(rail.nth(0)).not.toHaveClass(/pass/);
+    await expect(rail.nth(0)).toContainText('· 1');
+    await expect(rail.nth(0)).toHaveAttribute('title',/backend : preuve disponible/);
+    await page.locator('#pass').click();
+    await expect(rail.nth(0)).toHaveClass(/pass/);
+    await expect(page.locator('#score')).toHaveText('1 / 10');
+  });
+
   test('CM : crée la Golden, charge les preuves et avance sans valider humainement',async({page})=>{
     const state=await mount(page);
     await page.locator('#marketSelect').selectOption('CM');
