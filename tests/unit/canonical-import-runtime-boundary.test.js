@@ -147,7 +147,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(css).toContain('.kir-source-pill.is-prep');
   expect(css).toContain('background:#fff !important');
   expect(source).toContain('kir-empty-launch');
-  expect(source).toContain('Activez une source pour lancer un premier passage réel');
+  expect(source).toContain('Lancez un premier passage ponctuel depuis une source prête');
   expect(css).toContain('border-left:4px solid #16A34A');
   expect(css).toContain('background:#FFFFFF');
   expect(css).toContain('border-left:4px solid #DC2626');
