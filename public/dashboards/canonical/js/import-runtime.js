@@ -1155,7 +1155,7 @@
     const empty = `<div class="kir-empty-launch">
       <div class="kir-empty-launch-copy">
         <strong>Aucun passage importé</strong>
-        <span>Activez une source pour lancer un premier passage réel et suivre sa progression ici.</span>
+        <span>Lancez un premier passage ponctuel depuis une source prête, sans activer l’alimentation automatique.</span>
       </div>
     </div>`;
     return `<nav class="kir-lot-strip ${cards ? '' : 'is-empty'}" aria-label="Passages d'import récents">
@@ -1806,7 +1806,7 @@
         ${domainNav('overview', null)}
         <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span><h1>Suivi d’import — Source → Catalogue</h1><p>Aucun passage pour l’instant.</p></div></header>
         <div class="kir-empty-launch">
-          <div class="kir-empty-launch-copy"><strong>Aucun passage Sourcing</strong><span>Activez une source pour lancer le premier passage réel.</span></div>
+          <div class="kir-empty-launch-copy"><strong>Aucun passage Sourcing</strong><span>Choisissez une source prête, puis lancez son premier passage depuis « Sources ».</span></div>
           <a class="kir-subtle-link" href="${urlFor(null, 'sources')}" data-cockpit-nav>Gérer les sources →</a>
         </div>
       </section>`;
