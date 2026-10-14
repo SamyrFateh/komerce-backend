@@ -8,10 +8,10 @@ test('navigation policy V4 porte la taxonomie métier cible complète', () => {
     path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'navigation-policy-v4.js'),
     'utf8'
   );
-  ['Piloter', 'Commerce', 'Opérations', 'Finance', 'Live', 'Marchés', 'Administration'].forEach(label => {
+  ['Dashboard', 'Prix & économie', 'Catalogue', 'Commerce', 'Opérations', 'Finance', 'Live', 'Marchés'].forEach(label => {
     expect(source).toContain(`label: '${label}'`);
   });
-  expect(source).toContain("id: 'workspace-sourcing'");
+  expect(source).toContain("id: 'import-runtime', label: 'Sourcing live'");
   // Pas d'écran liste « Fournisseurs » : la fiche /admin/suppliers/:id s'atteint depuis les achats, les produits et le sourcing.
   expect(source).not.toContain("id: 'entity-suppliers'");
   expect(source).not.toContain("href: '/admin/suppliers'");
@@ -92,4 +92,12 @@ test('withEntityReturnTo ne contextualise que les fiches 360 et les PO', () => {
   expect(wrap(once)).toBe(once);
   // retour invalide : lien inchangé
   expect(nav.withEntityReturnTo('/admin/orders/CMD-1', 'https://evil.test', 'x')).toBe('/admin/orders/CMD-1');
+});
+
+test('Marchés reste hero-first avec une illustration contextuelle propre à la surface', () => {
+  const block = __src.match(/const HERO_FIRST_SURFACES = new Set\(\[([\s\S]*?)\]\)/)[1];
+  for (const surface of ['market-access', 'market-autonomy', 'market-catalog']) {
+    expect(block).toContain(`'${surface}'`);
+  }
+  expect(__src).toContain("classList?.toggle?.('kmc-hero-first', HERO_FIRST_SURFACES.has(surface))");
 });

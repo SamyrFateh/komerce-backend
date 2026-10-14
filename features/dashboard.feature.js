@@ -497,6 +497,7 @@ module.exports = {
       'dashboards/canonical/css/hero-first-shell-conformance-v1.css',
       'dashboards/canonical/css/komerce-layout-canon-v1.css',
       'dashboards/canonical/css/komerce-visual-canon-v1.css',
+      'dashboards/canonical/css/canonical-unified-chrome-v1.css',
       'dashboards/canonical/css/operations-control-board-v1.css',
       'dashboards/canonical/css/renderer.css',
       'dashboards/canonical/css/demo-order-flow.css',
