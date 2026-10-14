@@ -329,7 +329,7 @@ test('anomalie de comptage : 19/20 et 1 produit à retrouver devient une vraie a
 
 test('header : statut Sourcing seulement (LIVE / Terminé / Action requise / Bloqué)', () => {
   const label = (data) => (render(data).match(/kir-status-large is-([a-z]+)">.*?<\/i>([^<]+)</) || []).slice(1, 3).join(':');
-  expect(label(scenario())).toBe('positive:Terminé');
+  expect(label(scenario())).toBe('positive:Traitement terminé');
   expect(label(scenario({ action_required:2 }, { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS.slice(0, 2) }))).toBe('warning:Action requise');
   expect(label(scenario({}, { status:'RUNNING', sourcing_status:'RUNNING' }))).toBe('live:LIVE');
   const blocked = scenario({}, { status:'FAILED', sourcing_status:'BLOCKED' });
@@ -537,7 +537,7 @@ test('CAS C : « Écartés automatiquement 3 » = les produits + raison, aucune 
   expect(html).toContain('Doublon');
   expect(html).toContain('Exclu par règle');
   expect(html).toContain('1 × Produit non retenu');
-  expect(html).toContain('un produit correctement écarté n’est pas une erreur');
+  expect(html).toContain('Rejets dès la réception ou par règle.');
   for (const alarm of ['kir-row-action', 'Corriger', 'is-failed', 'kir-error']) expect(html.slice(html.indexOf('kir-drill-head'))).not.toContain(alarm);
 });
 
@@ -844,7 +844,7 @@ test('KIR réel 20/7/12/1 : le traitement terminé ne masque pas le blocage de p
       reject_reasons:{ 'media absent':1 },
     },
     stages:CALM_STAGES.map(stage => ({
-      ...stage, status:'COMPLETED', processed:stage.key === 'CATALOGUE' ? 7 : stage.processed,
+      ...stage, status:'COMPLETED', reason:null, processed:stage.key === 'CATALOGUE' ? 7 : stage.processed,
     })),
   });
   const html = render(p, `?run=${RUN}`);
