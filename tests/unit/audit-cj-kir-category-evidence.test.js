@@ -84,6 +84,20 @@ describe('audit CJ KIR : preuve brute et comparaison taxonomie en lecture seule'
     expect(query.mock.calls[1][0]).not.toMatch(/\bUPDATE\b|\bDELETE\b|\bINSERT\b/i);
     expect(loadConfig).toHaveBeenCalledTimes(1);
   });
+  test('compare la classification des produits TEST sans aucune mutation', () => {
+    const accepted=row('Wireless Headphones', {
+      candidate_ref:'KSC-000010',komerce_category:'home',
+      supplier_category:'Consumer Electronics > Audio > Headphones',
+      scan_result:{sourcing_decision:'TEST'},
+    });
+    const result=audit.projectEvidence([accepted,row('Key Box')],config);
+    expect(result.summary.accepted_baseline).toBe(1);
+    expect(result.summary.accepted_category_drift).toBe(1);
+    expect(result.summary.accepted_category_drift_examples[0])
+      .toMatchObject({candidate_ref:'KSC-000010',before:'home',preview:null});
+    expect(result.items).toHaveLength(1);
+  });
+
   test('fail closed sur KIR invalide et sur fournisseur autre que CJ', async () => {
     await expect(audit.auditRun('KIR-000003; DROP TABLE',{})).rejects.toThrow('KIR_REF_INVALID');
     const query=jest.fn().mockResolvedValueOnce({rows:[{
