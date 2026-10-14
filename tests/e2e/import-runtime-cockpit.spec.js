@@ -349,6 +349,15 @@ test.describe('Cockpit imports — Action requise', () => {
 });
 
 // Commandes réelles : mount() + API simulée. Aucune mécanique parallèle : import-now / deactivate / activate.
+// Navigation may update the URL before the new document has loaded its script.
+async function mountLiveWhenReady(page) {
+  await page.waitForFunction(() => (
+    typeof window.KomerceCanonicalImportRuntime?.mount === 'function'
+    && Boolean(document.getElementById('root'))
+  ));
+  await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+}
+
 async function mountLive(page, data) {
   const state = { payload: JSON.parse(JSON.stringify(data)), calls: [], cockpitDelayByRun: {} };
   await page.route(`${ORIGIN}/**`, async (route) => {
@@ -415,7 +424,7 @@ async function mountLive(page, data) {
   });
   await page.setViewportSize({ width: 1672, height: 941 });
   await page.goto(`${ORIGIN}/admin/import-runtime?run=KIR-000009`);
-  await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+  await mountLiveWhenReady(page);
   return state;
 }
 
@@ -754,7 +763,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     await expect(page.locator('.kmc-admin-back')).toHaveAttribute('data-back-context', 'contextual');
     await page.locator('.kmc-admin-back').click();
     await expect(page).toHaveURL(`${ORIGIN}${returnTo}`);
-    await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+    await mountLiveWhenReady(page);
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Coque 1');
     await expect(page.locator('.kir-back')).toHaveText('← Retour à Transmis à la Raffinerie');
   });
@@ -774,7 +783,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     await page.locator('.kir-run-truth-grid > a.is-received').click();
     await expect(page).toHaveURL(/run=KIR-000008.*view=population/);
     await page.goto(`${ORIGIN}/admin/import-runtime?run=KIR-000009`);
-    await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+    await mountLiveWhenReady(page);
     await page.getByText('← passage précédent').click();
     await expect(page).toHaveURL(/run=KIR-000008$/);
     expect(page.url()).not.toMatch(/view=|kind=|item=|from=|stage=/);
@@ -835,7 +844,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     await expect(page.locator('[data-passage-filter="source"]')).toHaveValue('CJ');
     await expect(page.locator('.kir-passage-row')).toHaveCount(1);
     await page.reload();
-    await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+    await mountLiveWhenReady(page);
     await expect(page.locator('[data-passage-filter="source"]')).toHaveValue('CJ');
     await activeTab(page);
   });
@@ -902,7 +911,7 @@ test.describe('Cockpit imports — vue Sources (cartes opérateur)', () => {
     await page.unroute(`${ORIGIN}/**`).catch(() => {});
     await mountLive(page, none);
     await page.goto(`${ORIGIN}/admin/import-runtime?view=sources`);
-    await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+    await mountLiveWhenReady(page);
     await expect(page.locator('.kir-sources-board')).toHaveCount(1);
     await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
     await expect(page.locator('.kir-back')).toHaveAttribute('href', '/admin/import-runtime');
