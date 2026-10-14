@@ -11,7 +11,7 @@ const ORIGIN='http://komerce.test';
 const html=fs.readFileSync(path.join(__dirname,'..','..','public','golden-e2e-cockpit.html'),'utf8');
 
 async function mount(page){
-  const state={creates:[],advances:0,evidenceUnavailable:false,version:'c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad'};
+  const state={creates:[],advances:0,evidenceUnavailable:false,malformedEvidence:false,version:'c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad'};
   await page.route(ORIGIN+'/**',async route=>{
     const req=route.request(), url=new URL(req.url());
     if(url.pathname==='/admin/golden-e2e') return route.fulfill({
@@ -19,7 +19,7 @@ async function mount(page){
       headers:{'Content-Security-Policy':"default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; object-src 'none'"},
       body:html
     });
-    if(url.pathname==='/js/golden-e2e-cockpit-journey.js'||url.pathname==='/js/golden-e2e-cockpit-upstream.js'){
+    if(url.pathname==='/js/golden-e2e-cockpit-journey.js'||url.pathname==='/js/golden-e2e-cockpit-upstream.js'||url.pathname==='/js/golden-recipe-scenarios.js'){
       const file=path.join(__dirname,'..','..','public',url.pathname.slice(1));
       return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(file,'utf8')});
     }
@@ -29,6 +29,7 @@ async function mount(page){
       return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',marketCode:state.creates.at(-1).marketCode})});
     }
     if(url.pathname.endsWith('/golden-evidence')&&state.evidenceUnavailable) return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Backend indisponible'})});
+    if(url.pathname.endsWith('/golden-evidence')&&state.malformedEvidence)return route.fulfill({contentType:'application/json',body:JSON.stringify({order:{reference:'K-GOLDEN-BROWSER',market_code:state.creates.at(-1)?.marketCode||'KM'},steps:[]})});
     if(url.pathname.endsWith('/golden-evidence')) return route.fulfill({contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',order:{reference:'K-GOLDEN-BROWSER',market_code:state.creates.at(-1)?.marketCode||'KM'},steps:[
       {key:'CLIENT_ORDER',passed:true,evidence:'ordered'},{key:'CLIENT_PAYMENT',passed:true,evidence:'paid'},{key:'PURCHASING',passed:true,evidence:'PO confirmed'},{key:'SUPPLIER_EXECUTION',passed:true,evidence:'matched'},{key:'FULFILLMENT',passed:true,evidence:'tracking'},
       {key:'HUB_INBOUND',passed:state.advances>0,evidence:state.advances>0?'matched':'pending'},{key:'CUSTOMS',passed:false,evidence:'pending'},{key:'RELAY_AVAILABLE',passed:false,evidence:'pending'},{key:'CUSTOMER_HANDOFF',passed:false,evidence:'pending'},{key:'FINANCIAL_CLOSE',passed:false,evidence:'pending'}]})});
@@ -235,5 +236,68 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.locator('#refForm button').click();
     await expect(page.locator('#score')).toHaveText('0 / 10');
     await expect(page.locator('.wizard-grid')).toHaveAttribute('data-phase','guide');
+  });  test('recette CJ 20/15/5 reste non certifiée sans session et sans preuve',async({page})=>{
+    await mount(page);
+    await page.locator('#extendedRecipe summary').click();
+    await page.locator('#scenarioTrack').selectOption('cj');
+    await page.locator('#scenarioRef').fill('CJ-20-15-5');
+    await page.locator('#scenarioSha').fill('c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad');
+    await page.locator('#scenarioStart').click();
+    await expect(page.locator('#scenarioCount')).toHaveText('Étape 1 / 5');
+    await page.locator('#scenarioNext').click();
+    await page.locator('#scenarioNext').click();
+    await page.locator('#scenarioNote').fill('20 produits dans le scénario');
+    await page.locator('#scenarioProof').fill('capture-test-001');
+    await expect(page.locator('#scenarioObserved')).toBeDisabled();
+    await page.locator('#scenarioBlocked').click();
+    await expect(page.locator('#scenarioState')).toContainText('BLOQUÉ');
+    await expect(page.locator('#scenarioProgress')).toContainText('0 observation');
+    await expect(page.locator('#scenarioNext')).toBeDisabled();
+    await page.reload();
+    await expect(page.locator('#scenarioState')).toContainText('BLOQUÉ');
   });
+
+  test('lots L1–L10 : preuve, session et constat restent distincts',async({page})=>{
+    await mount(page);
+    await page.locator('#extendedRecipe summary').click();
+    await page.locator('#scenarioTrack').selectOption('l1l10');
+    await page.locator('#scenarioMarket').selectOption('CM');
+    await page.locator('#scenarioRef').fill('F02');
+    await page.locator('#scenarioSha').fill('c2f3c1d');
+    await page.locator('#scenarioStart').click();
+    await expect(page.locator('#scenarioCount')).toHaveText('Étape 1 / 10');
+    await expect(page.locator('#scenarioTitle')).toContainText('L1');
+    await expect(page.locator('#scenarioOpen')).toHaveAttribute('href','/admin/pilotage');
+    await page.locator('#scenarioNext').click();
+    await page.locator('#scenarioNext').click();
+    await page.locator('#scenarioNote').fill('Capture et JSON comparés pour CM.');
+    await page.locator('#scenarioProof').fill('capture-cm-l1');
+    await page.route(ORIGIN+'/api/admin/entities/golden-upstream?market=CM',async route=>route.fulfill({status:200,contentType:'application/json',body:'{}'}));
+    await page.locator('#scenarioAuthButton').click();
+    await expect(page.locator('#scenarioAuth')).toContainText('autorisé');
+    await page.locator('#scenarioObserved').click();
+    await expect(page.locator('#scenarioState')).toContainText('OBSERVÉ');
+    await expect(page.locator('#scenarioState')).toContainText('NON PROUVÉ');
+    await page.locator('#scenarioNext').click();
+    await expect(page.locator('#scenarioTitle')).toContainText('L2');
+    await page.reload();
+    await expect(page.locator('#scenarioProgress')).toContainText('1 observation');
+    await expect(page.locator('#scenarioAuth')).toContainText('NON VÉRIFIÉ');
+  });
+
+  test('projection de commande vide ou incomplète ne permet aucun Conforme',async({page})=>{
+    const state=await mount(page);
+    await page.locator('#createGolden').click();
+    await expect(page.locator('#backendEvidence')).toContainText('ordered');
+    await page.locator('#wizardNext').click();
+    await page.locator('#wizardNext').click();
+    state.malformedEvidence=true;
+    await page.locator('#wizardTechnical summary').click();
+    await page.locator('#refresh').click();
+    await expect(page.locator('#liveState')).toContainText('Projection backend incomplète');
+    await expect(page.locator('#pass')).toBeDisabled();
+    await expect(page.locator('#backendEvidence')).toHaveText('—');
+    await expect(page.locator('#wizardNext')).toBeDisabled();
+  });
+
 });
