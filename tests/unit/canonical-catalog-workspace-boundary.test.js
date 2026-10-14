@@ -708,3 +708,11 @@ test('Catalogue affiche les raisons de certification lisibles au lieu du seul 42
   expect(workspace).toContain("media_missing: 'média Catalogue absent'");
   expect(workspace).toContain('actionErrorMessage(error)');
 });
+
+test('Raffinerie et Catalogue ont des files actives distinctes', () => {
+  const source = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(source).toContain("get('view') === 'refinery'");
+  expect(source).toContain('if (refinery) {');
+  expect(source).toContain('renderApproval(rootNode, ui, doc, payload, context)');
+  expect(source).toContain('renderProducts(rootNode, ui, doc, payload, context)');
+});
