@@ -4,16 +4,16 @@
  * @domain        customs
  * @layer         service
  * @criticality   high
- * @inputs        normalized supplier signals, active customs_categories, optional active boutique subcategory customs affinities
+ * @inputs        normalized supplier object, supplier-category path, active customs_categories, optional active boutique subcategory customs affinities
  * @outputs       resolved customs category key + confidence + scoring evidence
  * @depends       none
  * @used-by       services/supplier-catalog-scanner.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      dynamic_taxonomy_from_customs_categories, no_hardcoded_category_keys, supplier_identity_over_discovery_intent, boutique_subcategory_affinity_only_as_fallback
+ * @doctrine      dynamic_taxonomy_from_customs_categories, no_hardcoded_category_keys, object_first_then_provider_leaf, supplier_identity_over_discovery_intent, boutique_subcategory_affinity_only_as_fallback
  * @impact-areas  catalog, sourcing, customs, economic-engine
- * @version       2026-09-v2
+ * @version       2026-10-v3
  */
 
 'use strict';
@@ -56,18 +56,61 @@ function termsForCategory(category = {}) {
   return terms;
 }
 
+// Les taxonomies fournisseur ne sont PAS du texte plat. Un nom de rayon parent
+// (« Jewelry & Watches ») décrit un ensemble hétérogène ; il ne peut pas suffire
+// à décider que des boucles d'oreilles sont un appareil électrique.
+// Ne dépend d'aucun fournisseur, d'aucune clé douanière en dur.
+function supplierCategoryLevels(value) {
+  const parts = String(value || '').split(/\s*(?:>|\/)\s*/)
+    .map(part => part.trim()).filter(Boolean);
+  return parts;
+}
+
 function supplierSignals(product = {}) {
   const discovery = product?.raw_payload?.discovery || {};
-  // Le contenu réellement retourné par le fournisseur est l'autorité.
-  // Le contexte de découverte décrit une intention de recherche et peut être
-  // pollué par des résultats hors sujet : il reste un indice secondaire.
+  const levels = supplierCategoryLevels(product.supplier_category);
+  // Compatibilité : une catégorie fournisseur plate reste une source directe,
+  // notamment pour les connecteurs historiques sans chemin hiérarchique.
+  const categorySignals = levels.length <= 1
+    ? [{ name:'supplier_category', value:levels[0], multiplier:4 }]
+    : [
+      { name:'supplier_category_leaf', value:levels[levels.length - 1], multiplier:4 },
+      // La branche est un INDICE secondaire, pas une preuve d'identité objet.
+      // La racine est volontairement ignorée : elle est souvent multi-rayons.
+      ...(levels.length > 2 ? [{
+        name:'supplier_category_branch', value:levels[levels.length - 2], multiplier:1,
+      }] : []),
+    ];
+  // L'identité de l'objet vendu est prioritaire ; la recherche initiale et la
+  // branche fournisseur ne peuvent pas, seules, valider une catégorie douanière.
   return [
-    { name: 'product_name', value: product.product_name, multiplier: 6 },
-    { name: 'supplier_category', value: product.supplier_category, multiplier: 4 },
-    { name: 'description', value: product.description, multiplier: 2 },
-    { name: 'keyword', value: discovery.keyword, multiplier: 2 },
-    { name: 'target_subcategory', value: discovery.target_subcategory, multiplier: 1 },
+    { name:'product_name', value:product.product_name, multiplier:6 },
+    ...categorySignals,
+    { name:'description', value:product.description, multiplier:2 },
+    { name:'keyword', value:discovery.keyword, multiplier:2 },
+    { name:'target_subcategory', value:discovery.target_subcategory, multiplier:1 },
   ].filter(signal => String(signal.value || '').trim());
+}
+
+const IDENTITY_SIGNALS = new Set(['product_name', 'supplier_category', 'supplier_category_leaf']);
+
+function hasObjectEvidence(result) {
+  return result.evidence.some(row => IDENTITY_SIGNALS.has(row.signal));
+}
+
+function unresolvedCategory(fallback, reason, top = null, second = null, signals = []) {
+  return {
+    key:fallback?.key || null,
+    source:'default',
+    confidence:'low',
+    score:top?.score || 0,
+    evidence:top?.evidence || [],
+    reason,
+    top_candidate_key:top?.category?.key || null,
+    second_candidate_key:second?.category?.key || null,
+    second_score:second?.score || 0,
+    object_identified:signals.some(signal => signal.name === 'product_name'),
+  };
 }
 
 function scoreCategory(category, signals) {
@@ -159,18 +202,26 @@ function classifySupplierProduct(product, categories = [], options = {}) {
 
   if (!ranked.length) {
     if (affinity) return affinity;
-    return {
-      key: fallback?.key || null,
-      source: 'default',
-      confidence: 'low',
-      score: 0,
-      evidence: [],
-      reason: signals.length ? 'no_configured_term_match' : 'no_supplier_signals',
-    };
+    return unresolvedCategory(fallback,
+      signals.length ? 'no_configured_term_match' : 'no_supplier_signals',
+      null, null, signals);
   }
 
   const top = ranked[0];
   const second = ranked[1] || { score: 0 };
+  // L'inférence fournisseur (branche) ou une intention de recherche ne peuvent
+  // jamais être les seules preuves d'une classification douanière automatique.
+  // L'affinité boutique existante reste un fallback distinct, auditable.
+  if (!hasObjectEvidence(top)) {
+    if (affinity) return {
+      ...affinity,
+      lexical_top_candidate_key:top.category.key,
+      lexical_top_score:top.score,
+      lexical_second_candidate_key:ranked[1]?.category?.key || null,
+      lexical_second_score:second.score,
+    };
+    return unresolvedCategory(fallback, 'object_identity_unconfirmed', top, ranked[1], signals);
+  }
   const confidence = confidenceFor(top.score, second.score);
 
   if (confidence === 'low') {
@@ -183,17 +234,7 @@ function classifySupplierProduct(product, categories = [], options = {}) {
         lexical_second_score: second.score,
       };
     }
-    return {
-      key: fallback?.key || null,
-      source: 'default',
-      confidence: 'low',
-      score: top.score,
-      evidence: top.evidence,
-      reason: 'ambiguous_category_match',
-      top_candidate_key: top.category.key,
-      second_candidate_key: ranked[1]?.category?.key || null,
-      second_score: second.score,
-    };
+    return unresolvedCategory(fallback, 'ambiguous_category_match', top, ranked[1], signals);
   }
 
   return {
@@ -212,7 +253,9 @@ module.exports = {
   normalizeText,
   phrasePresent,
   termsForCategory,
+  supplierCategoryLevels,
   supplierSignals,
+  hasObjectEvidence,
   scoreCategory,
   confidenceFor,
   resolveBoutiqueAffinity,
