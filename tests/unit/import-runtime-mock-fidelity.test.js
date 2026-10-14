@@ -46,8 +46,8 @@ describe('import-runtime — fidélité visuelle au mock', () => {
   });
 
   test('les 4 résultats du cockpit (reçus, prêts, écartés, action requise) sont réels et cliquables', () => {
-    expect(css).toContain('.kmc-import-runtime .kir-run-truth-grid.is-four{grid-template-columns:repeat(4,minmax(0,1fr)) !important}');
-    for (const label of ['Produits reçus', 'Transmis à la Raffinerie', 'Écartés automatiquement', 'Action requise']) {
+    expect(css).toContain('.kmc-import-runtime .kir-run-truth-grid.is-five{grid-template-columns:repeat(5,minmax(0,1fr))}');
+    for (const label of ['Produits reçus', 'Retenus par Sourcing', 'Mis de côté', 'Écartés automatiquement', 'Action requise']) {
       expect(source).toContain(`['${label}'`);
     }
     for (const gone of ['Entrées source', "['Acceptées'", "['Doublons'", "['En quarantaine'"]) {
@@ -59,7 +59,7 @@ describe('import-runtime — fidélité visuelle au mock', () => {
   });
 
   test('le pipeline N1 a quatre étapes ; les six étapes réelles restent la source de vérité', () => {
-    for (const label of ["'Source'", "'Produits reçus'", "'Contrôle automatique'", "'Remise Raffinerie'"]) {
+    for (const label of ["'Source'", "'Produits reçus'", "'Contrôle automatique'", "'Remise au Catalogue'"]) {
       expect(source).toContain(`label:${label}`);
     }
     expect(source).toContain("const CONTROL_STAGES = Object.freeze(['REFINERY', 'TAXONOMY', 'CERTIFICATION'])");

@@ -214,7 +214,7 @@ function buildActionItems({ rows, verdicts, quarantined, certificationBlocked, a
 // Populations : « quels objets composent ce chiffre ? ». Une carte du cockpit ouvre exactement les
 // produits qui la composent ; ce qui n'existe qu'en compteur d'intake (doublons / invalides refusés à
 // la réception, jamais persistés en candidat) est restitué en groupes explicites, jamais inventé.
-const POPULATION_KINDS = Object.freeze(['received', 'ready', 'discarded']);
+const POPULATION_KINDS = Object.freeze(['received', 'ready', 'deferred', 'discarded']);
 const POPULATION_CAP = 500;
 
 function discardKind(row, verdict) {
@@ -266,6 +266,16 @@ function buildPopulation({ kind, rows = [], intake = {}, sourceTotal = 0 }) {
       issue_key: e.issue.key === 'catalogued' ? 'catalogued' : 'ready',
       issue_label: e.issue.key === 'catalogued' ? 'Remis' : 'Prêt',
     }));
+  } else if (kind === 'deferred') {
+    const held = entries.filter((entry) => entry.verdict.outcome === 'deferred');
+    total = held.length;
+    items = held.map(({ row, issue, verdict }) => ({
+      ...base({ row }),
+      issue_key: issue.key,
+      issue_label: issue.label,
+      decision: verdict.decision || null,
+      reason: typeof row.scan_result?.reason === 'string' ? row.scan_result.reason.slice(0, 1000) : null,
+    }));
   } else if (kind === 'discarded') {
     total = duplicates + rejected;
     const gone = entries.filter((e) => e.issue.key === 'discarded');
@@ -281,7 +291,19 @@ function buildPopulation({ kind, rows = [], intake = {}, sourceTotal = 0 }) {
   } else {
     return null;
   }
-  return { kind, total, listed: Math.min(items.length, POPULATION_CAP), items: items.slice(0, POPULATION_CAP), unlisted };
+  // Le connecteur peut refuser un objet avant tout INSERT candidat. Les motifs
+  // sont alors seulement disponibles sous forme de fréquences au niveau du lot.
+  // Ne jamais inventer d'identité ou associer arbitrairement un motif à un rejet.
+  const rejectReasonGroups = kind === 'discarded'
+    ? Object.entries(intake.reject_reasons || {})
+      .filter(([reason, count]) => typeof reason === 'string' && reason.trim() && Number(count) > 0)
+      .map(([reason, count]) => ({ reason: reason.slice(0, 500), count: Number(count) }))
+    : [];
+  return {
+    kind, total, listed: Math.min(items.length, POPULATION_CAP),
+    items: items.slice(0, POPULATION_CAP), unlisted,
+    reject_reason_groups: rejectReasonGroups,
+  };
 }
 
 async function getPopulation(runRef, kind, q = db) {

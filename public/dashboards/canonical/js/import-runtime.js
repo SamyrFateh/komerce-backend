@@ -25,7 +25,7 @@
   // vues secondaires du lot courant. Une vue remplace la précédente, elle ne s'empile jamais dessous.
   const VIEWS = new Set(['overview', 'exceptions', 'history', 'population', 'item', 'source', 'control', 'handoff', 'passages', 'sources']);
   const LEGACY_VIEWS = Object.freeze({ registry:'passages' });
-  const POPULATION_KINDS = Object.freeze(['received', 'ready', 'discarded']);
+  const POPULATION_KINDS = Object.freeze(['received', 'ready', 'deferred', 'discarded']);
   let timer = null;
   // Écouteurs fenêtre / document : un seul jeu actif, retiré avant chaque montage (LIVE-01).
   let detachListeners = [];
@@ -87,12 +87,12 @@
     { key:'SOURCE', label:'Source', stages:['SOURCE_CONNECTED'], drill:'SOURCE_CONNECTED' },
     { key:'RECEIVED', label:'Produits reçus', stages:['RAW_IMPORT'], drill:'RAW_IMPORT' },
     { key:'CONTROL', label:'Contrôle automatique', stages:CONTROL_STAGES, drill:'CONTROL' },
-    { key:'CATALOGUE', label:'Remise Raffinerie', stages:['CATALOGUE'], drill:'CATALOGUE' },
+    { key:'CATALOGUE', label:'Remise au Catalogue', stages:['CATALOGUE'], drill:'CATALOGUE' },
   ]);
   const USER_STAGE_LABELS = Object.freeze({
     SOURCE_CONNECTED:'Source', RAW_IMPORT:'Produits reçus',
     REFINERY:'Contrôle automatique', TAXONOMY:'Contrôle automatique', CERTIFICATION:'Contrôle automatique',
-    CATALOGUE:'Remise Raffinerie', CONTROL:'Contrôle automatique',
+    CATALOGUE:'Remise au Catalogue', CONTROL:'Contrôle automatique',
   });
   function userStageLabel(key) { return USER_STAGE_LABELS[key] || key || 'Étape'; }
   function userStageKey(key) { return CONTROL_STAGES.includes(key) ? 'CONTROL' : key; }
@@ -348,7 +348,7 @@
       : noResult
         ? 'Passage terminé sans résultat'
         : catalogueHandoffPending
-          ? 'Remise à la Raffinerie en cours'
+          ? 'Remise au Catalogue en cours'
           : automaticDone || providerGateBlocked
             ? 'Import automatique terminé'
             : activationState.done ? 'Premier passage terminé' : 'Passage en direct';
@@ -405,9 +405,9 @@
     const title = failed
       ? 'Passage interrompu'
       : automaticDone && catalogueHandoffPending
-        ? 'Remise à la Raffinerie en cours'
+        ? 'Remise au Catalogue en cours'
         : run.status === 'COMPLETED'
-          ? 'Parcours du passage terminé'
+          ? 'Traitement des produits terminé'
           : 'Passage en cours';
     const helper = failed
       ? (run.failure_reason || 'Une étape du passage est bloquée.')
@@ -459,6 +459,7 @@
     return {
       received:num(a.source_total),
       ready:h.certified,
+      deferred:num(a.deferred),
       // Issues automatiques terminales : ni erreur ni intervention. DEFERRED reste une issue
       // comptabilisée (preuve de comptage), il n'est pas présenté comme un écart à traiter.
       discarded:num(a.duplicates) + num(a.rejected),
@@ -474,8 +475,9 @@
     const open = o.actionRequired > 0;
     const tiles = [
       ['Produits reçus', o.received, 'file', populationUrl(run.run_ref, 'received'), 'is-received', 'de la source'],
-      ['Transmis à la Raffinerie', o.ready, 'accepted', populationUrl(run.run_ref, 'ready'), 'is-delivered', 'produits'],
-      ['Écartés automatiquement', o.discarded, 'reject', populationUrl(run.run_ref, 'discarded'), 'is-discarded', 'selon les règles'],
+      ['Retenus par Sourcing', o.ready, 'accepted', populationUrl(run.run_ref, 'ready'), 'is-delivered', 'qualifiés pour la suite'],
+      ['Mis de côté', o.deferred, 'box', populationUrl(run.run_ref, 'deferred'), 'is-deferred', 'non retenus pour ce passage'],
+      ['Écartés automatiquement', o.discarded, 'reject', populationUrl(run.run_ref, 'discarded'), 'is-discarded', 'au contrôle de réception'],
       ['Action requise', o.actionRequired, 'alert', urlFor(run.run_ref, 'exceptions'), open ? 'is-review is-attention' : 'is-review', open ? 'Intervenir →' : 'rien à faire'],
     ];
     const proof = !o.rawDone || o.received === 0 ? ''
@@ -484,7 +486,7 @@
         : `<p class="kir-run-proof is-ok"><b aria-hidden="true">✓</b>${o.received}/${o.received} produits comptabilisés</p>`;
     return `<section class="kir-run-truth" aria-label="Résultat du passage">
       <div class="kir-run-truth-head"><span class="kir-section-kicker">RÉSULTAT DU PASSAGE</span>${proof}</div>
-      <div class="kir-run-truth-grid is-four">${tiles.map(([label, value, icon, href, cls, sub]) =>
+      <div class="kir-run-truth-grid is-five">${tiles.map(([label, value, icon, href, cls, sub]) =>
         `<a class="${cls}" href="${href}" data-cockpit-nav aria-label="${esc(label)} — ouvrir le détail">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong><small>${esc(sub)}</small></a>`
       ).join('')}</div>
     </section>`;
@@ -495,12 +497,12 @@
     const h = sourcingOutcome(run).handoff;
     if (!h.controlDone || h.certified === 0) return '';
     const state = h.complete ? 'is-clean' : 'is-waiting';
-    const text = h.complete ? 'Remise terminée'
+    const text = h.complete ? `Remise terminée · ${h.catalogued} produit${h.catalogued > 1 ? 's' : ''} remis au Catalogue`
       : h.catalogued === 0 ? 'Remise automatique en cours'
         : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre automatiquement`;
     return `<section class="kir-handoff ${state}" aria-label="Passage au Catalogue">
       ${ico('handoff')}
-      <div><span class="kir-section-kicker">PASSAGE À LA RAFFINERIE</span><strong>${h.complete ? '<b aria-hidden="true">✓</b> ' : ''}${esc(text)}</strong></div>
+      <div><span class="kir-section-kicker">PASSAGE AU CATALOGUE</span><strong>${h.complete ? '<b aria-hidden="true">✓</b> ' : ''}${esc(text)}</strong></div>
     </section>`;
   }
 
@@ -606,7 +608,7 @@
       || (run?.status === 'FAILED' ? 'BLOCKED' : run?.status === 'COMPLETED' ? 'DONE' : 'RUNNING');
     return ({
       RUNNING:{ label:'LIVE', tone:'live' },
-      DONE:{ label:'Terminé', tone:'positive' },
+      DONE:{ label:'Traitement terminé', tone:'positive' },
       ACTION_REQUIRED:{ label:'Action requise', tone:'warning' },
       BLOCKED:{ label:'Bloqué', tone:'critical' },
     })[status] || { label:'Terminé', tone:'positive' };
@@ -675,7 +677,7 @@
     return '/admin/import-runtime?' + q.toString();
   }
 
-  // origin = 'handoff' quand le produit est ouvert depuis Remise Catalogue (le retour y revient).
+  // origin = 'handoff' quand le produit est ouvert depuis Remise au Catalogue (le retour y revient).
   function itemUrl(runRef, supplierProductId, kind = 'received', origin = null) {
     const q = new URLSearchParams();
     if (runRef) q.set('run', runRef);
@@ -755,7 +757,7 @@
     to_configure:'Configurez la connexion fournisseur pour pouvoir tester la source.',
     connection_to_test:'Testez la connexion avant de préparer la source.',
     to_certify:'Préparez et certifiez la source pour pouvoir l’activer.',
-    error:'Dernière préparation en échec.',
+    error:'Dernière capture fournisseur signalée en échec. Consultez le passage et ses preuves.',
   });
 
   // Lecture d'une source pour l'opérateur : badge, interrupteur et raison, issus de l'état backend.
@@ -777,11 +779,11 @@
     const canToggle = !busy && (enabled || source.autopilot_ready === true);
     const stateView = SOURCE_STATE_VIEW[source.state] || SOURCE_STATE_VIEW.blocked;
     let badge;
-    if (providerGateBlocked) badge = SOURCE_STATE_VIEW.error;
+    if (providerGateBlocked && source.state !== 'error') badge = { key:'proof', label:'PREUVE À VÉRIFIER' };
     else if (busy) badge = { key:'prep', label:'PRÉPARATION' };
     else badge = stateView;
     const reason = providerGateBlocked
-      ? 'Preuve runtime à corriger, puis relancer la source.'
+      ? `Passage ${selectedSourceMatches ? selectedRun.run_ref : live?.runRef || 'récent'} : preuve fournisseur non acquise. Consultez le diagnostic du passage.`
       : busy
         ? (live?.runRef ? `Passage ${live.runRef} en cours` : preparing ? 'Préparation : connexion fournisseur, premier passage, certification…' : 'Démarrage du premier import…')
         : source.state === 'blocked' || !SOURCE_STATE_VIEW[source.state]
@@ -793,7 +795,7 @@
           : null;
     const lastRun = lastRunOfSource(source, lots, selectedRun);
     return {
-      enabled, displayEnabled, canToggle, busy, badge, reason, step,
+      enabled, displayEnabled, canToggle, busy, badge, reason, step, providerGateBlocked,
       name: source.label || source.supplier_name || source.source_ref,
       lastRun,
       canFirstImport: source.state === 'ready' && !enabled && !lastRun,
@@ -943,7 +945,7 @@
   function sourceCard(source, selectedRun, lots) {
     const m = sourceCardModel(source, selectedRun, lots);
     const prepared = source.last_capture_at ? fmtDate(source.last_capture_at) : 'Jamais';
-    const cert = source.production_runtime_certified ? 'Certifiée' : 'À certifier';
+    const cert = source.production_runtime_certified ? 'Certifiée (historique)' : 'À certifier';
     const connection = source.connection?.verified ? 'Connectée ✓' : source.state === 'to_configure' ? 'À configurer' : 'À tester';
     const name = esc(m.name);
     const renaming = manageState?.kind === 'rename' && manageState.ref === source.source_ref;
@@ -994,7 +996,8 @@
         <div><dt>Connexion</dt><dd data-source-connection>${connection}</dd></div>
         <div><dt>Dernière préparation</dt><dd>${esc(prepared)}</dd></div>
         <div><dt>Dernier passage</dt><dd>${m.lastRun ? esc(m.lastRun) : 'Jamais'}</dd></div>
-        <div><dt>Certification runtime</dt><dd>${cert}</dd></div>
+        <div><dt>Certification fournisseur</dt><dd>${esc(cert)}</dd></div>
+        ${m.providerGateBlocked ? `<div class="kir-source-proof-status"><dt>Preuve du dernier passage</dt><dd>Non acquise · <a href="${urlFor(m.lastRun || selectedRun?.run_ref)}" data-cockpit-nav>Comprendre →</a></dd></div>` : ''}
       </dl>
       ${m.reason ? `<p class="kir-source-reason" data-source-reason>${esc(m.reason)}</p>` : ''}
       ${m.busy ? '' : credentialsPanel(source, { context:'card' })}
@@ -1065,13 +1068,15 @@
         <span>Ajoutez un fournisseur pour alimenter automatiquement le Sourcing.</span></section>`;
     }
     const models = sources.map(source => sourceCardModel(source, selectedRun, lots));
-    const count = key => models.filter(m => m.badge.key === key).length;
+    const count = key => sources.filter(source => source.state === key).length;
+    const proofPending = models.filter(model => model.providerGateBlocked).length;
     const chips = [
-      [sources.length, sources.length > 1 ? 'sources connectées' : 'source connectée', ''],
+      [sources.length, sources.length > 1 ? 'sources configurées' : 'source configurée', ''],
       [count('active'), count('active') > 1 ? 'actives' : 'active', 'is-active'],
       [count('ready'), count('ready') > 1 ? 'prêtes' : 'prête', 'is-ready'],
       [count('error'), 'en erreur', count('error') ? 'is-error' : ''],
     ];
+    if (proofPending) chips.push([proofPending, 'preuve fournisseur à vérifier', 'is-proof']);
     if (count('blocked')) chips.push([count('blocked'), count('blocked') > 1 ? 'bloquées' : 'bloquée', 'is-blocked']);
     return `<section class="kir-sources-board" aria-label="Sources du Sourcing">
       <p class="kir-sources-summary" data-sources-summary>${chips.map(([n, label, cls]) => `<span class="${cls}"><strong>${n}</strong> ${label}</span>`).join('')}</p>
@@ -1384,11 +1389,42 @@
     return '';
   }
 
+  // Une opération peut terminer les traitements sans produire la preuve de certification de son fournisseur.
+  function providerRuntimeVerdict(run) {
+    const d = run?.diagnostics || {};
+    if (!run || run.source_type !== 'api') return '';
+    const status = String(d.provider_runtime_status || 'PENDING');
+    const blocked = status === 'BLOCKED';
+    const pending = status === 'PENDING';
+    const title = blocked ? 'Preuve fournisseur bloquée pour ce passage'
+      : pending ? 'Preuve fournisseur non encore acquise'
+        : status === 'CERTIFIED' ? 'Preuve fournisseur certifiée' : 'Preuve fournisseur indisponible';
+    const detail = blocked
+      ? 'Le traitement des produits peut être terminé, mais la résolution canonique n’est pas certifiée. Cela ne signifie pas que les produits reçus ont échoué.'
+      : pending ? 'Le passage est enregistré, mais la preuve fournisseur attend encore sa certification.'
+        : status === 'CERTIFIED' ? 'La preuve de ce passage est certifiée indépendamment du traitement des produits.'
+          : 'Aucune preuve fournisseur applicable à ce passage.';
+    const rejects = Object.entries(d.reject_reasons || {}).filter(([,count]) => num(count) > 0);
+    return `<section class="kir-runtime-verdict ${blocked ? 'is-blocked' : pending ? 'is-pending' : 'is-certified'}" aria-label="Certification fournisseur du passage">
+      <div class="kir-runtime-verdict-head"><strong>Certification du dernier passage fournisseur</strong><span>${esc(title)}</span></div>
+      <p>${esc(detail)}</p>
+      ${blocked || pending ? `<details><summary>Comprendre la preuve de ce passage</summary>
+        <dl>
+          <div><dt>État de résolution</dt><dd>${esc(d.pipeline_status || 'Non communiqué')}</dd></div>
+          <div><dt>Résolution canonique</dt><dd>${d.canonical_resolved === true ? 'Confirmée' : 'Non confirmée'}</dd></div>
+          <div><dt>Diagnostic fournisseur</dt><dd>${esc(d.provider_runtime_reason || 'Motif non communiqué')}</dd></div>
+        </dl>
+        ${rejects.length ? `<p>Rejets enregistrés : ${rejects.map(([reason,count]) => `${num(count)} × ${esc(reason)}`).join(' · ')}</p>` : ''}
+        ${num(run.accounting?.rejected) > 0 ? `<a href="${populationUrl(run.run_ref, 'discarded')}" data-cockpit-nav>Consulter les rejets à la réception →</a>` : ''}
+      </details>` : ''}
+    </section>`;
+  }
+
   function renderOverview(run) {
     return renderLiveCore(run) + renderDecisions(run);
   }
 
-  const POPULATION_CRUMBS = Object.freeze({ received:'Produits reçus', ready:'Transmis à la Raffinerie', discarded:'Écartés automatiquement' });
+  const POPULATION_CRUMBS = Object.freeze({ received:'Produits reçus', ready:'Retenus par Sourcing', deferred:'Mis de côté', discarded:'Écartés automatiquement' });
 
   // Navigation d'une vue = fil d'Ariane + retour, calculés ensemble pour ne jamais diverger.
   // Le KIR n'est PAS un niveau : c'est le contexte du Suivi. Chaque écran a un parent unique et évident.
@@ -1399,9 +1435,9 @@
     const backToSuivi = { href:suivi.href, label:'← Retour au suivi' };
     const leaf = label => ({ label });
     const popLabel = POPULATION_CRUMBS[p.kind] || 'Produits reçus';
-    // Population d'origine d'un produit : Remise Catalogue s'il en vient, sinon sa population.
+    // Population d'origine d'un produit : Remise au Catalogue s'il en vient, sinon sa population.
     const popCrumb = p.origin === 'handoff'
-      ? { label:'Remise Raffinerie', href:urlFor(ref, 'handoff') }
+      ? { label:'Remise au Catalogue', href:urlFor(ref, 'handoff') }
       : { label:popLabel, href:populationUrl(ref, p.kind) };
     const itemCrumb = { label:'Produit', href:itemUrl(ref, p.item, p.kind, p.origin) };
     if (p.view === 'passages') return { crumbs:[domain, leaf('Passages')], back:backToSuivi };
@@ -1411,7 +1447,7 @@
       exceptions: { crumbs:[leaf('Action requise')], back:backToSuivi },
       source: { crumbs:[leaf('Source')], back:backToSuivi },
       control: { crumbs:[leaf('Contrôle automatique')], back:backToSuivi },
-      handoff: { crumbs:[leaf('Remise Raffinerie')], back:backToSuivi },
+      handoff: { crumbs:[leaf('Remise au Catalogue')], back:backToSuivi },
       item: { crumbs:[popCrumb, leaf('Produit')], back:{ href:popCrumb.href, label:`← Retour à ${popCrumb.label}` } },
     }[p.view];
     if (p.view === 'history') {
@@ -1537,7 +1573,7 @@
       return `<tr data-population-item>
         <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : '<span class="kir-action-thumb is-empty"></span>'}${titleHtml}</td>
         <td>${esc(item.supplier_product_id || '—')}</td>
-        <td><span class="kir-issue is-${esc(item.issue_key || 'control')}">${esc(item.issue_label || '—')}</span>${item.reason ? `<small>${esc(item.reason)}</small>` : ''}</td>
+        <td><span class="kir-issue is-${esc(item.issue_key || 'control')}">${esc(item.issue_key === 'deferred' && item.decision ? (ITEM_DECISION_LABELS[item.decision] || item.issue_label) : item.issue_label || '—')}</span>${item.reason ? `<small>${esc(item.reason)}</small>` : item.issue_key === 'deferred' ? '<small>Motif détaillé non renseigné</small>' : ''}</td>
       </tr>`;
     }).join('');
   }
@@ -1616,8 +1652,9 @@
 
     const POPULATION_COPY = Object.freeze({
     received: ['Produits reçus', 'Les produits envoyés par la source pour ce passage et leur situation actuelle. Consultation : aucune action n’est nécessaire.', 'Situation'],
-    ready: ['Transmis à la Raffinerie', 'Produits qualifiés par le Sourcing, encore à préparer et valider avant publication.', 'Remise'],
-    discarded: ['Écartés automatiquement', 'Issues normales et auditables : un produit correctement écarté n’est pas une erreur.', 'Motif'],
+    ready: ['Retenus par Sourcing', 'Produits validés par Sourcing pour la suite. Leur remise réelle au Catalogue est indiquée dans le suivi.', 'Remise'],
+    deferred: ['Mis de côté', 'Produits non retenus pour ce passage (WATCH, AVOID ou LOSS). Leur décision et leur motif restent consultables.', 'Décision et motif'],
+    discarded: ['Écartés automatiquement', 'Rejets dès la réception ou par règle. Le moteur distingue le rejet du blocage de certification fournisseur.', 'Motif'],
   });
 
   function renderPopulation(run, population, kind) {
@@ -1627,12 +1664,21 @@
     }
     const rows = populationRows(run, population, kind);
     const unlisted = Array.isArray(population.unlisted) ? population.unlisted : [];
-    const extra = unlisted.map(group => `<tr class="is-group" data-population-group><td colspan="2"><strong>${num(group.count)} × ${esc(group.label)}</strong></td><td><small>Comptés à la réception, sans fiche produit</small></td></tr>`).join('');
+    const extra = unlisted.map(group => `<tr class="is-group" data-population-group><td colspan="2"><strong>${num(group.count)} × ${esc(group.label)}</strong></td><td><small>Comptés à la réception, sans fiche individuelle</small></td></tr>`).join('');
+    const rejectReasons = kind === 'discarded' && num(population.total) > 0
+      ? `<section class="kir-reject-evidence" aria-label="Motifs techniques du rejet">
+          <strong>Motifs enregistrés à la réception (niveau du lot)</strong>
+          <p>Les motifs sont agrégés : un produit rejeté avant sa création ne dispose pas forcément d’une fiche individuelle.</p>
+          ${Array.isArray(population.reject_reason_groups) && population.reject_reason_groups.length
+            ? `<ul>${population.reject_reason_groups.map(entry => `<li>${num(entry.count)} × ${esc(entry.reason)}</li>`).join('')}</ul>`
+            : '<p>Le motif détaillé du rejet de réception n’a pas été enregistré.</p>'}
+        </section>` : '';
     return drillHeader(run, `${title} · ${num(population.total)}`, copy)
       + (rows || extra
         ? `<div class="kir-table-wrap"><table class="kir-table" data-population-list="${esc(kind)}">
             <thead><tr><th>Produit</th><th>Identifiant source</th><th>${esc(issueHead)}</th></tr></thead><tbody>${rows}${extra}</tbody></table></div>`
-        : '<div class="kir-empty">Aucun produit dans cette population.</div>');
+        : '<div class="kir-empty">Aucun produit dans cette population.</div>')
+      + rejectReasons;
   }
 
   // Catalogue : uniquement la frontière Sourcing → Catalogue (ni prix, ni marché, ni vente).
@@ -1647,8 +1693,8 @@
           <thead><tr><th>Produit</th><th>Identifiant source</th><th>Remise</th></tr></thead><tbody>${populationRows(run, population, 'ready', 'handoff')}</tbody></table></div>`
       : '';
     const state = h.complete ? 'completed' : h.controlDone && h.certified > 0 ? 'running' : 'pending';
-    return drillHeader(run, 'Remise Raffinerie', 'Passage Sourcing → Raffinerie : création de brouillons produits qui doivent encore être préparés et approuvés.')
-      + `<div class="kir-simple-list">${statusRow('Remise à la Raffinerie', [state, status])}</div>${list}`;
+    return drillHeader(run, 'Remise au Catalogue', 'Produits retenus par Sourcing et effectivement remis au Catalogue, où leur préparation et approbation se poursuivent.')
+      + `<div class="kir-simple-list">${statusRow('Remise au Catalogue', [state, status])}</div>${list}`;
   }
 
   // Détail technique : preuve / diagnostic. Volontairement hors du parcours métier.
@@ -1777,7 +1823,7 @@
         <input type="search" data-passage-filter="q" placeholder="Rechercher sur cette page" aria-label="Recherche" value="${esc(passageFilters.q)}">
       </div>
       ${list ? `<div class="kir-table-wrap"><table class="kir-table" data-passages-table>
-        <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Transmis Raffinerie</th><th>Écartés</th><th>Action requise</th><th>Remise Raffinerie</th></tr></thead>
+        <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Retenus Sourcing</th><th>Écartés</th><th>Action requise</th><th>Remise au Catalogue</th></tr></thead>
         <tbody data-passages-body>${passageRows(list)}</tbody></table></div>${pager}`
         : '<div class="kir-empty">Chargement des passages…</div>'}`;
   }
@@ -1885,6 +1931,7 @@
       ${commandBar(run, sourceControls)}
       ${persistentRunFlow(run, sourceControls)}
       ${runTruthStrip(run)}
+      ${providerRuntimeVerdict(run)}
       ${catalogueHandoff(run)}
       ${activationState ? '' : runProgressRow(run)}
       ${renderLiveCore(run)}

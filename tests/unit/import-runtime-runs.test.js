@@ -466,6 +466,35 @@ describe('import runtime — drill-downs : populations et compteurs cohérents',
     expect(pop.items.filter((i) => i.issue_label === 'Prêt')).toHaveLength(9);
   });
 
+  test('CJ 20/7/12/1 : la population différée révèle exactement les 12 décisions et motifs persistés', () => {
+    const held = Array.from({ length: 12 }, (_, i) => candidate(i + 101, {
+      state:'watchlist',
+      scan_result:{ sourcing_decision:'WATCH', reason:`Catégorie non résolue ${i + 1}` },
+    }));
+    const rows = [...ready(7), ...held];
+    const input = { ...intake(), accepted:19, ready_for_refinery:7, deferred:12, duplicates:0, rejected:1 };
+    const population = runs.buildPopulation({ kind:'deferred', rows, intake:input, sourceTotal:20 });
+    expect(population.total).toBe(12);
+    expect(population.items).toHaveLength(12);
+    expect(population.items[0]).toMatchObject({
+      supplier_product_id:'SP-101',
+      issue_key:'deferred',
+      decision:'WATCH',
+      reason:'Catégorie non résolue 1',
+    });
+    expect(population.items.every(item => item.issue_key === 'deferred')).toBe(true);
+    expect(population.unlisted).toEqual([]);
+  });
+
+  test('un rejet fournisseur non persisté conserve son motif au niveau agrégé sans attribuer une identité fictive', () => {
+    const input = { ...intake(), duplicates:0, rejected:1, reject_reasons:{ 'image absente':1 } };
+    const pop = runs.buildPopulation({ kind:'discarded', rows:[...ready(7), ...deferredRows(12)], intake:input, sourceTotal:20 });
+    expect(pop.total).toBe(1);
+    expect(pop.items).toEqual([]);
+    expect(pop.unlisted).toEqual([{ label:'Produit non retenu à la réception', count:1 }]);
+    expect(pop.reject_reason_groups).toEqual([{ reason:'image absente', count:1 }]);
+  });
+
   test('CAS C : « Écartés automatiquement » = produits écartés + raison lisible, sans CTA de correction', () => {
     const rows = [...ready(12), rejectedRow(1), rejectedRow(2, { rejected_reason: 'doublon' }), ...deferredRows(5)];
     const pop = runs.buildPopulation({ kind: 'discarded', rows, intake: intake({ duplicates: 1, rejected: 2 }), sourceTotal: 20 });
@@ -478,7 +507,7 @@ describe('import runtime — drill-downs : populations et compteurs cohérents',
 
   test('kind inconnu → null (la route répond 400)', () => {
     expect(runs.buildPopulation({ kind: 'history', rows: [] })).toBeNull();
-    expect(runs.POPULATION_KINDS).toEqual(['received', 'ready', 'discarded']);
+    expect(runs.POPULATION_KINDS).toEqual(['received', 'ready', 'deferred', 'discarded']);
   });
 
   test('CAS F : une étape COMPLETED conserve la mesure observée ; l’UI masque le ratio si ce n’est pas sa preuve de complétion', () => {

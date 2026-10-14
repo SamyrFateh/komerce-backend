@@ -3272,3 +3272,37 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 .kmc-import-runtime .kir-item-verdict-details dt{color:#566A80;font-size:13px;font-weight:750}
 .kmc-import-runtime .kir-item-verdict-details dd{margin:0;font-size:14px;line-height:1.5;color:#263749;overflow-wrap:anywhere}
 @media(max-width:700px){.kmc-import-runtime .kir-item-verdict{padding:14px}.kmc-import-runtime .kir-item-verdict-details>div{grid-template-columns:1fr;gap:2px}.kmc-import-runtime .kir-item-verdict-head strong{font-size:18px}}
+
+
+/* Réconciliation lisible des cinq issues d'un passage Sourcing. */
+.kmc-import-runtime .kir-run-truth-grid.is-five{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kmc-import-runtime .kir-run-truth-grid.is-five .is-deferred{border-color:#DFD6BC}
+.kmc-import-runtime .kir-run-truth-grid.is-five .is-deferred svg{color:#AE812F}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-deferred .kir-ico{background:#FFF4DE;color:#9A6C1E}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-deferred strong{color:#8D6524}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-attention{border-color:#E0A63D !important}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-attention .kir-ico{background:#FFF0D6;color:#A86D11}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-attention strong{color:#986206}
+.kmc-import-runtime .kir-runtime-verdict{border:1px solid #C8D8E8;border-left:4px solid #4077BA;border-radius:12px;background:#F6FAFE;padding:16px 20px;margin:16px 0;color:#223348}
+.kmc-import-runtime .kir-runtime-verdict.is-blocked{border-color:#E8D7B5;border-left-color:#CA8B25;background:#FFFBF1}
+.kmc-import-runtime .kir-runtime-verdict.is-certified{border-color:#C4E8D8;border-left-color:#23956A;background:#F4FCF7}
+.kmc-import-runtime .kir-runtime-verdict-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.kmc-import-runtime .kir-runtime-verdict-head strong{font-size:15px}
+.kmc-import-runtime .kir-runtime-verdict-head span{font-size:14px;font-weight:750}
+.kmc-import-runtime .kir-runtime-verdict p{margin:8px 0;font-size:13.5px;line-height:1.55}
+.kmc-import-runtime .kir-runtime-verdict details{margin-top:10px}
+.kmc-import-runtime .kir-runtime-verdict summary{cursor:pointer;font-size:13px;font-weight:750}
+.kmc-import-runtime .kir-runtime-verdict dl{display:grid;gap:8px;font-size:13px}
+.kmc-import-runtime .kir-runtime-verdict dl>div{display:grid;grid-template-columns:minmax(130px,180px) 1fr;gap:10px}
+.kmc-import-runtime .kir-runtime-verdict dt{color:#66788C;font-weight:650}
+.kmc-import-runtime .kir-runtime-verdict dd{margin:0;overflow-wrap:anywhere}
+.kmc-import-runtime .kir-source-badge.is-proof{background:#FFF5DB;border-color:#E6C985;color:#906512}
+.kmc-import-runtime .kir-source-proof-status{color:#8D6217}
+.kmc-import-runtime .kir-sources-summary .is-proof{color:#946B21}
+.kmc-import-runtime .kir-reject-evidence{margin-top:18px;padding:16px 18px;border:1px solid #D9E2EC;border-radius:12px;background:#F8FAFC}
+.kmc-import-runtime .kir-reject-evidence strong{font-size:15px}
+.kmc-import-runtime .kir-reject-evidence p,.kmc-import-runtime .kir-reject-evidence li{font-size:13.5px;line-height:1.6}
+.kmc-import-runtime .kir-reject-evidence ul{margin:10px 0 0;padding-left:22px}
+@media(max-width:1280px){.kmc-import-runtime .kir-run-truth-grid.is-five{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.kmc-import-runtime .kir-run-truth-grid.is-five{grid-template-columns:repeat(2,minmax(0,1fr))}.kmc-import-runtime .kir-runtime-verdict dl>div{grid-template-columns:1fr;gap:2px}}
+@media(max-width:450px){.kmc-import-runtime .kir-run-truth-grid.is-five{grid-template-columns:minmax(0,1fr)}}
