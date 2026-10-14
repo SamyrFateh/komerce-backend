@@ -94,3 +94,14 @@ test('sourcing UI excludes candidates already handed off or rejected from its ac
   expect(uiSource).toContain(".filter(row => !['imported_to_catalog', 'rejected'].includes(row.state))");
   expect(uiSource).toContain('Exceptions sourcing à traiter');
 });
+
+test('le chemin import manuel présente un formulaire sans dialogue prompt navigateur', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/sourcing-workspace.js'), 'utf8');
+  const importUi = source.slice(source.indexOf('function renderImports('), source.indexOf('function renderPortfolio('));
+  expect(importUi).toContain("data-sourcing-manual-panel");
+  expect(importUi).toContain("source_type: 'manual'");
+  expect(importUi).toContain("source_type: 'csv'");
+  expect(importUi).not.toContain('context.prompt(');
+});

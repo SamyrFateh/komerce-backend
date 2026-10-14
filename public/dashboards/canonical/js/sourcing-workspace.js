@@ -308,32 +308,71 @@
     bar.appendChild(cockpit);
     slot.appendChild(bar);
 
-    manual.addEventListener('click', () => {
-      const supplier = context.prompt('Nom fournisseur');
-      if (!supplier) return;
-      const raw = context.prompt('Produits JSON (tableau)', '[{"supplier_product_id":"REF-1","product_name":"Produit","purchase_price":100,"currency":"AED"}]');
-      if (!raw) return;
-      let items;
-      try { items = JSON.parse(raw); }
-      catch (_) { setFeedback(context.root, 'JSON invalide.', 'critical'); return; }
-      if (!Array.isArray(items)) { setFeedback(context.root, 'Le JSON doit être un tableau.', 'critical'); return; }
-      runAction(context, manual, {
+    // Un formulaire opérateur unique remplace les fenêtres prompt() en chaîne.
+    const panel = doc.createElement('section');
+    panel.className = 'kmc-workspace-section-actions';
+    panel.setAttribute('data-sourcing-manual-panel', '');
+    panel.hidden = true;
+    const heading = text(doc, 'h3', 'kmc-workspace-title', 'Importer des produits');
+    const supplier = doc.createElement('input');
+    supplier.type = 'text';
+    supplier.placeholder = 'Nom du fournisseur';
+    supplier.setAttribute('aria-label', 'Nom du fournisseur');
+    supplier.setAttribute('data-manual-supplier', '');
+    const editor = doc.createElement('textarea');
+    editor.rows = 8;
+    editor.setAttribute('aria-label', 'Données produit');
+    editor.setAttribute('data-manual-products', '');
+    const feedback = text(doc, 'p', 'kmc-workspace-subtitle', 'Aucun import envoyé.');
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('data-manual-feedback', '');
+    const submit = makeButton(doc, 'Vérifier et importer', 'submit-manual-import');
+    const cancel = makeButton(doc, 'Annuler', 'cancel-manual-import', true);
+    panel.appendChild(heading);
+    panel.appendChild(supplier);
+    panel.appendChild(editor);
+    panel.appendChild(feedback);
+    panel.appendChild(submit);
+    panel.appendChild(cancel);
+    slot.appendChild(panel);
+    let mode = 'manual';
+    function open(modeValue) {
+      mode = modeValue;
+      panel.hidden = false;
+      heading.textContent = mode === 'csv' ? 'Importer un CSV fournisseur' : 'Importer un JSON fournisseur';
+      editor.placeholder = mode === 'csv'
+        ? 'supplier_product_id,product_name,purchase_price,currency'
+        : '[{"supplier_product_id":"REF-1","product_name":"Produit","purchase_price":100,"currency":"AED"}]';
+      editor.value = '';
+      feedback.textContent = 'Saisissez le fournisseur et les données, puis vérifiez avant import.';
+      supplier.focus?.();
+    }
+    manual.addEventListener('click', () => open('manual'));
+    csv.addEventListener('click', () => open('csv'));
+    cancel.addEventListener('click', () => { panel.hidden = true; });
+    submit.addEventListener('click', async () => {
+      const name = String(supplier.value || '').trim();
+      const raw = String(editor.value || '').trim();
+      if (!name || !raw) { feedback.textContent = 'Renseignez le fournisseur et les données produit.'; return; }
+      let body;
+      if (mode === 'manual') {
+        let items;
+        try { items = JSON.parse(raw); }
+        catch (_) { feedback.textContent = 'JSON invalide : vérifiez la syntaxe.'; return; }
+        if (!Array.isArray(items) || !items.length) { feedback.textContent = 'Le JSON doit être un tableau non vide.'; return; }
+        body = { supplier_name: name, source_type: 'manual', items };
+      } else {
+        body = { supplier_name: name, source_type: 'csv', csv_text: raw };
+      }
+      feedback.textContent = 'Transmission en cours…';
+      const result = await runAction(context, submit, {
         url: `${ENDPOINT}/imports`,
-        body: { supplier_name: supplier.trim(), source_type: 'manual', items },
-        successMessage: `Import ${supplier.trim()} lancé. Suivez désormais son KIR dans le Cockpit.`,
+        body,
+        successMessage: `Import ${name} lancé. Suivez son passage dans le cockpit Sourcing.`,
       });
-    });
-
-    csv.addEventListener('click', () => {
-      const supplier = context.prompt('Nom fournisseur');
-      if (!supplier) return;
-      const csvText = context.prompt('Contenu CSV');
-      if (!csvText) return;
-      runAction(context, csv, {
-        url: `${ENDPOINT}/imports`,
-        body: { supplier_name: supplier.trim(), source_type: 'csv', csv_text: csvText },
-        successMessage: `Import CSV ${supplier.trim()} lancé. Suivez désormais son KIR dans le Cockpit.`,
-      });
+      // runAction recharge le panneau uniquement en cas de succès.
+      // En cas d'échec, l'import reste modifiable, sans état trompeur.
+      if (!result) feedback.textContent = 'Import non envoyé. Vérifiez les données et le message d’erreur affiché.';
     });
   }
 

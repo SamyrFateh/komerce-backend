@@ -124,3 +124,84 @@ test('candidats : état et décision affichés en français (libellés mappés, 
   expect(src).toContain("test: 'À tester'");
   expect(src).toContain('CANDIDATE_STATE_LABELS');
 });
+
+test('imports manuels et CSV : panneau guidé, validation avant écriture et sans prompt navigateur', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'sourcing-workspace.js'), 'utf8');
+  const start = source.indexOf('function renderImports(');
+  const end = source.indexOf('function renderPortfolio(', start);
+  const segment = source.slice(start, end);
+  expect(segment).toContain("data-sourcing-manual-panel");
+  expect(segment).toContain("data-manual-supplier");
+  expect(segment).toContain("data-manual-products");
+  expect(segment).toContain("JSON invalide : vérifiez la syntaxe.");
+  expect(segment).toContain("source_type: 'csv'");
+  expect(segment).toContain("source_type: 'manual'");
+  expect(segment).not.toContain('context.prompt(');
+});
+
+test('import JSON guidé : invalide bloqué, valide transmis sans mutation implicite', async () => {
+  const sourcing = require('../../public/dashboards/canonical/js/sourcing-workspace.js');
+  class Node {
+    constructor(tag) { this.tagName = tag; this.children = []; this.attrs = {}; this.listeners = {}; this.text = ''; this.value = ''; }
+    set textContent(value) { this.text = String(value || ''); this.children = []; }
+    get textContent() { return this.text + this.children.map(child => child.textContent).join(''); }
+    appendChild(child) { this.children.push(child); return child; }
+    replaceChildren(...children) { this.children = children; }
+    setAttribute(key, value) { this.attrs[key] = value; }
+    addEventListener(event, listener) { this.listeners[event] = listener; }
+    focus() {}
+    querySelector(selector) {
+      const key = selector.slice(1, -1);
+      if (Object.prototype.hasOwnProperty.call(this.attrs, key)) return this;
+      for (const child of this.children) {
+        const found = child.querySelector?.(selector);
+        if (found) return found;
+      }
+      return null;
+    }
+  }
+  const find = (node, key, value) => {
+    if (node.attrs[key] === value) return node;
+    for (const child of node.children) {
+      const found = find(child, key, value);
+      if (found) return found;
+    }
+    return null;
+  };
+  const root = new Node('root');
+  const calls = [];
+  const payload = { summary: {}, candidates: [], portfolio: { products: [] }, suppliers: [] };
+  const fetch = jest.fn(async (url, options) => {
+    calls.push({ url, options });
+    return { ok: true, json: async () => payload };
+  });
+  await sourcing.mount({
+    root, document: { createElement: tag => new Node(tag) }, fetch,
+    user: { role: 'admin' },
+    ui: {
+      Section: { create: () => {
+        const element = new Node('section'), slot = new Node('div');
+        element.appendChild(slot);
+        return { element, slot };
+      } },
+      MetricStrip: { render: () => {} },
+    },
+    prompt: () => { throw new Error('Native prompt forbidden for imports'); },
+  });
+  const action = name => find(root, 'data-workspace-action', name);
+  action('manual-import').listeners.click();
+  find(root, 'data-manual-supplier', '').value = 'CJ';
+  const editor = find(root, 'data-manual-products', '');
+  editor.value = '{wrong';
+  await action('submit-manual-import').listeners.click();
+  expect(calls.filter(call => call.options.method === 'POST')).toHaveLength(0);
+  expect(find(root, 'data-manual-feedback', '').textContent).toContain('JSON invalide');
+  editor.value = '[{"supplier_product_id":"CJ-1","product_name":"Produit test","purchase_price":100,"currency":"AED"}]';
+  await action('submit-manual-import').listeners.click();
+  const mutations = calls.filter(call => call.options.method === 'POST');
+  expect(mutations).toHaveLength(1);
+  expect(JSON.parse(mutations[0].options.body)).toEqual({
+    supplier_name: 'CJ', source_type: 'manual',
+    items: [{ supplier_product_id: 'CJ-1', product_name: 'Produit test', purchase_price: 100, currency: 'AED' }],
+  });
+});
