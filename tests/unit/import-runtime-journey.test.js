@@ -414,11 +414,11 @@ test('CAS E : au clic, la liste filtrée montre exactement les 3 éléments (pro
   const html = render(scenario({ quarantined:2, certification_blocked:1, action_required:3 },
     { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }), '?run=KIR-000004&view=exceptions');
   expect((html.match(/kir-row-action/g) || []).length).toBeGreaterThanOrEqual(3);
-  for (const expected of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Choisir', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
+  for (const expected of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
     expect(html).toContain(expected);
   }
-  expect(html).toContain('data-action-choose');
-  expect((html.match(/data-action-choose/g) || []).length).toBe(1);
+  expect(html).toContain('data-action-classify');
+  expect((html.match(/data-action-classify/g) || []).length).toBe(1);
   expect(html).toContain('data-candidate-ref="KSC-2"');
   // Ni logs, ni historique, ni vue technique.
   for (const technical of ['STAGE_', 'Raffinerie', 'Taxonomie', 'Historique du run', 'sellable_units']) expect(html).not.toContain(technical);
