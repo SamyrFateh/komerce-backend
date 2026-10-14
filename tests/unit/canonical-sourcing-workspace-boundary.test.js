@@ -221,3 +221,92 @@ test('import JSON guidé : invalide bloqué, valide transmis sans mutation impli
     csv_text: 'supplier_product_id,product_name,purchase_price,currency\nCJ-2,Produit CSV,200,AED',
   });
 });
+
+test('fournisseurs sourcing : création et modification via formulaire, validations sans POST inutile', async () => {
+  const sourcing = require('../../public/dashboards/canonical/js/sourcing-workspace.js');
+  class Node {
+    constructor(tag) { this.tagName = tag; this.children = []; this.attrs = {}; this.listeners = {}; this.text = ''; this.value = ''; }
+    set textContent(value) { this.text = String(value || ''); this.children = []; }
+    get textContent() { return this.text + this.children.map(child => child.textContent).join(''); }
+    appendChild(child) { this.children.push(child); return child; }
+    replaceChildren(...children) { this.children = children; }
+    setAttribute(key, value) { this.attrs[key] = value; }
+    addEventListener(event, listener) { this.listeners[event] = listener; }
+    focus() {}
+    querySelector(selector) {
+      const key = selector.slice(1, -1);
+      if (Object.prototype.hasOwnProperty.call(this.attrs, key)) return this;
+      for (const child of this.children) {
+        const found = child.querySelector?.(selector);
+        if (found) return found;
+      }
+      return null;
+    }
+  }
+  const find = (node, key, value) => {
+    if (node.attrs[key] === value) return node;
+    for (const child of node.children) {
+      const found = find(child, key, value);
+      if (found) return found;
+    }
+    return null;
+  };
+  const payload = {
+    summary: {}, candidates: [], imports: [],
+    portfolio: { products: [] },
+    suppliers: [{ partner_ref: 'KPT-1', name: 'CJ', country_code: 'AE', lead_time_days: 5, is_active: true }],
+  };
+  const calls = [];
+  const fetch = jest.fn(async (url, options) => {
+    calls.push({ url, options });
+    return { ok: true, json: async () => payload };
+  });
+  const root = new Node('div');
+  await sourcing.mount({
+    root, document: { createElement: tag => new Node(tag) }, fetch,
+    user: { role: 'admin' },
+    ui: {
+      Section: { create: () => {
+        const element = new Node('section'), slot = new Node('div');
+        element.appendChild(slot);
+        return { element, slot };
+      } },
+      MetricStrip: { render: () => {} },
+    },
+    prompt: () => { throw new Error('Prompt navigateur interdit'); },
+  });
+  const action = name => find(root, 'data-workspace-action', name);
+  const field = key => find(root, 'data-supplier-field', key);
+  const submit = async () => {
+    const form = find(root, 'data-sourcing-supplier-form', '');
+    await form.listeners.submit({ preventDefault() {} });
+  };
+  const mutations = () => calls.filter(c => c.options.method === 'POST');
+
+  action('create-supplier').listeners.click();
+  await submit();
+  expect(mutations()).toHaveLength(0);
+  field('name').value = 'Fournisseur Comores';
+  field('country_code').value = 'ZZZ';
+  await submit();
+  expect(mutations()).toHaveLength(0);
+  field('country_code').value = 'KM';
+  field('contact_name').value = 'Contact test';
+  await submit();
+  expect(mutations()).toHaveLength(1);
+  expect(mutations()[0].url).toBe('/api/admin/workspaces/sourcing/suppliers');
+  expect(JSON.parse(mutations()[0].options.body)).toEqual({
+    name: 'Fournisseur Comores', country_code: 'KM', contact_name: 'Contact test',
+  });
+
+  action('update-supplier').listeners.click();
+  field('name').value = 'CJ modifié';
+  field('lead_time_days').value = '-1';
+  await submit();
+  expect(mutations()).toHaveLength(1);
+  field('lead_time_days').value = '0';
+  await submit();
+  expect(mutations()).toHaveLength(2);
+  expect(mutations()[1].url).toBe('/api/admin/workspaces/sourcing/suppliers/KPT-1/update');
+  expect(JSON.parse(mutations()[1].options.body)).toEqual({ name: 'CJ modifié', lead_time_days: 0 });
+});
