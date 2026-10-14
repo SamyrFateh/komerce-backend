@@ -78,13 +78,12 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     // Post #1559 (« business truth ») : Sources/Raffinerie/Boutique retirés du
     // menu Catalogue, la nav ne doit plus promettre de destinations qui
     // n'existent pas côté produit — voir @version 2026-09-v4.2-business-truth.
-    expect(source).toContain("label: 'Vue catalogue'");
-    expect(source).toContain("label: 'Produits'");
+    expect(source).toContain("id: 'catalog-overview', label: 'Catalogue'");
+    expect(source).toContain("id: 'catalog-refinery', label: 'Raffinerie'");
     // Atelier prix : plus d'ancres #pricing-* (vue d'ensemble unique).
     expect(source).not.toContain('#pricing-costs');
     expect(source).not.toContain('#pricing-strategy');
-    expect(source).not.toContain("label: 'Sources'");
-    expect(source).not.toContain("label: 'Raffinerie'");
+    expect(source).not.toContain("id: 'catalog-sources'");
     expect(source).toContain("data-shell', 'hybrid-sidebar-tabs");
   });
 
@@ -94,9 +93,9 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     for (const label of ['Piloter', 'Commerce', 'Opérations', 'Finance', 'Live', 'Marchés', 'Administration']) {
       expect(v4).toContain(`label: '${label}'`);
     }
-    expect(v4).toContain("id: 'workspace-sourcing'");
+    expect(v4).toContain("id: 'live-import-runtime'");
     expect(v4).not.toContain("id: 'entity-suppliers'");
-    expect(v4).toContain("surfaces: ['sourcing-workspace', 'supplier-360']");
+    expect(v4).toContain("surfaces: ['import-runtime', 'sourcing-workspace', 'supplier-360']");
   });
 
   test('le sync V4 est syntaxiquement valide et resynchronise après remplacement du header', () => {

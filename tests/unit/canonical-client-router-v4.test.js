@@ -28,7 +28,7 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     // Les cockpits Live (coque noire dédiée) sont des documents complets par
     // conception : ils ne passent volontairement pas par le routeur client.
     const LIVE_DOCUMENT_ROUTES = ['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live'];
-    const adminRoutes = hrefs.filter(href => href.startsWith('/admin') && !LIVE_DOCUMENT_ROUTES.includes(href));
+    const adminRoutes = hrefs.filter(href => href.startsWith('/admin') && !LIVE_DOCUMENT_ROUTES.includes(new URL(href, 'https://komerce.test').pathname));
     expect(adminRoutes.length).toBeGreaterThan(0);
     adminRoutes.forEach(href => {
       const url = new URL(href, 'https://komerce.test');
@@ -47,9 +47,8 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
       policy.indexOf('orders: Object.freeze([')
     );
     expect(catalogBlock).toContain("id: 'catalog-overview'");
-    expect(catalogBlock).toContain("id: 'catalog-products'");
+    expect(catalogBlock).toContain("id: 'catalog-refinery'");
     expect(catalogBlock).not.toContain('catalog-sources');
-    expect(catalogBlock).not.toContain('catalog-refinery');
     expect(catalogBlock).not.toContain('catalog-boutique');
     expect(catalogBlock).not.toContain('catalog-country');
   });

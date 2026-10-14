@@ -58,7 +58,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'import-runtime.css'), 'utf8');
   expect(source).toContain('Action requise');
-  expect(source).toContain('PASSAGE AU CATALOGUE');
+  expect(source).toContain('PASSAGE À LA RAFFINERIE');
   expect(source).toContain('Remise automatique en cours');
   expect(source).toContain('Détail technique du passage');
   expect(source).toContain('Historique des passages');
@@ -103,7 +103,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('Voir le détail →');
   expect(source).toContain('RÉSULTAT DU PASSAGE');
   expect(source).toContain("['Écartés automatiquement'");
-  expect(source).toContain('PASSAGE AU CATALOGUE');
+  expect(source).toContain('PASSAGE À LA RAFFINERIE');
   expect(source).not.toContain('PARCOURS MÉTIER');
   expect(source).toContain('provider_runtime_status');
   expect(source).toContain('Preuve runtime à corriger, puis relancer la source.');

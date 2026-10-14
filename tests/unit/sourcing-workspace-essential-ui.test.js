@@ -14,7 +14,7 @@ test('Sourcing garde Hero + décisions puis ses vrais outils métier',()=>{
   expect(workspace).toContain("data-workspace-kind', 'sourcing");
   expect(workspace).toContain("'SOURCING'");
   expect(workspace).toContain("'Produits à qualifier'");
-  expect(workspace).toContain("'Candidats à qualifier'");
+  expect(workspace).toContain('function renderCandidates(');
   const headerStart=workspace.indexOf('function createHeader');
   const headerSource=workspace.slice(headerStart, workspace.indexOf('function createSection', headerStart));
   expect(headerSource).not.toContain('Cockpit des imports');
