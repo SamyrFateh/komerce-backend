@@ -273,3 +273,76 @@ body.kmc-shell-v4 .kmc-markets-decision-overview [data-dashboard-role="hero"] .k
     padding: 16px;
   }
 }
+
+
+/* The composition is shared, never the subject of the illustration.
+ * Keep the original contextual assets on overviews; restore their reach on
+ * standalone markets and on Live pages, which have their own DOM shape. */
+
+/* Market governance = territories and delegation (existing Markets scene). */
+body.kmc-shell-v4 .kmc-markets-decision-overview > .kmc-dashboard-header[data-dashboard-role="hero"] {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+body.kmc-shell-v4 .kmc-markets-decision-overview > .kmc-dashboard-header[data-dashboard-role="hero"]::before {
+  content: "";
+  display: block;
+  position: absolute;
+  z-index: -1;
+  top: 34px;
+  right: 0;
+  bottom: 0;
+  width: min(45%, 580px);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(59,130,246,.18) 0 26px, transparent 27px),
+    radial-gradient(circle at 18% 24%, #0D2A52 0 9px, transparent 10px),
+    radial-gradient(circle at 82% 24%, #3B82F6 0 9px, transparent 10px),
+    radial-gradient(circle at 20% 78%, #3B82F6 0 9px, transparent 10px),
+    radial-gradient(circle at 80% 78%, #0D2A52 0 9px, transparent 10px);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 35%);
+  mask-image: linear-gradient(90deg, transparent, #000 35%);
+  pointer-events: none;
+}
+
+/* Local country catalogue = storefront/products, not governance or logistics. */
+body.kmc-shell-v4[data-kmc-surface="market-catalog"] #market-catalog-root > .kmc-workspace-header[data-dashboard-role="hero"]::before {
+  background: url("/dashboards/canonical/assets/commerce-hero-gold.svg") right center / auto 100% no-repeat;
+}
+
+/* Live has its own .kir-hero instead of .kmc-workspace-header. Distinct,
+ * existing Komerce art: products/import, hub/logistics, relay/delivery. */
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  display: block;
+  inset: 34px 0 0 auto;
+  width: min(45%, 580px);
+  opacity: .62;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 30%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 30%);
+}
+body.kmc-shell-v4[data-kmc-surface="import-runtime"] .kmc-import-runtime .kir-hero::before {
+  background: url("/dashboards/canonical/assets/commerce-hero-gold.svg") right center / auto 100% no-repeat;
+}
+body.kmc-shell-v4[data-kmc-surface="hub-live"] .kmc-import-runtime .kir-hero::before {
+  background: url("/dashboards/canonical/assets/operations-logistics-hero-gold.svg") right center / auto 100% no-repeat;
+}
+body.kmc-shell-v4[data-kmc-surface="relais-live"] .kmc-import-runtime .kir-hero::before {
+  background: url("/dashboards/canonical/assets/orders-hero-gold.svg") right center / auto 100% no-repeat;
+}
+
+@media (max-width: 760px) {
+  /* At small widths, space belongs to controls and readable copy. */
+  body.kmc-shell-v4 .kmc-markets-decision-overview > .kmc-dashboard-header[data-dashboard-role="hero"]::before,
+  body.kmc-shell-v4 .kmc-import-runtime .kir-hero::before {
+    display: none;
+  }
+}
