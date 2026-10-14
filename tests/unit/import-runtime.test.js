@@ -21,3 +21,11 @@ describe('import-runtime.css — le menu latéral appartient à la coque standar
     expect(css).toContain('.kir-run-flow-step.is-pending{opacity:.72}');
   });
 });
+
+
+test('Sourcing conserve un seul rail Suivi / Passages / Sources lorsque le shell le porte', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
+  expect(source).toContain('function domainNav(view, run)');
+  expect(source).toContain('#canonical-admin-domain-tabs [data-tab="sourcing-suivi"]');
+  expect(source).toContain("return '';");
+});

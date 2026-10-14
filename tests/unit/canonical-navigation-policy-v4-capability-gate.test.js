@@ -304,3 +304,20 @@ describe('navigation Sourcing unique', () => {
     expect(sourcing[0].surfaces).toEqual(expect.arrayContaining(['import-runtime', 'sourcing-workspace']));
   });
 });
+
+describe('Sourcing — navigation locale du shell Canonical', () => {
+  afterEach(() => { delete global.location; });
+  test.each([
+    ['', 'sourcing-suivi'],
+    ['?run=KIR-000001&view=passages', 'sourcing-passages'],
+    ['?run=KIR-000001&view=sources', 'sourcing-sources'],
+  ])('sur %s affiche Suivi / Passages / Sources et active %s', (search, active) => {
+    global.location = { pathname: '/admin/import-runtime', search, hash: '' };
+    const nav = loadPolicy();
+    expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.label))
+      .toEqual(['Suivi', 'Passages', 'Sources']);
+    expect(nav._activeLocalTab('live', 'import-runtime')).toBe(active);
+    expect(nav._localTabsFor('live', { role: 'admin' })[1].href)
+      .toContain('view=passages');
+  });
+});
