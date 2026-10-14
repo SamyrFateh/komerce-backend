@@ -9,37 +9,15 @@
   .up{margin:18px 0}.upgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.gate{background:#fff;border:1px solid #deddd8;border-radius:14px;padding:14px}.gate h3{margin:0 0 6px;font-size:16px}.gate p{margin:4px 0;font-size:13px;color:#444}.gate .st{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;background:#eee}.gate .st.PROVED{background:#d9f2e0;color:#14532d}.gate .st.NON_PROUVE{background:#fdf0cf;color:#7a4b00}.gate .st.ANOMALIE{background:#fbd9d9;color:#8a1111}.upbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}.upbar input{padding:10px;border:1px solid #ccc;border-radius:10px;min-width:300px}.certline{font-weight:800;color:#8a1111}
 .p1steps{list-style:none;margin:10px 0;padding:0;display:grid;gap:8px}.p1step{background:#fff;border:1px solid #deddd8;border-radius:14px;padding:12px}.p1step.locked{opacity:.55}.p1step h3{margin:0 0 4px;font-size:14px}.p1step p{margin:2px 0;font-size:12px;color:#444}.p1st{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:#eee;margin-left:6px}.p1st.PROVED{background:#d9f2e0;color:#14532d}.p1st.NON_PROUVE{background:#fdf0cf;color:#7a4b00}.p1st.ANOMALIE{background:#fbd9d9;color:#8a1111}
 .evidence-list{display:grid;gap:10px;margin:14px 0}.evidence-item{border:1px solid #d9d6d0;border-radius:12px;padding:12px;background:#fff}.evidence-item strong{display:block;margin-bottom:4px}.evidence-item a{font-weight:700;text-decoration:underline}.evidence-item small{display:block;color:#666;margin-top:5px}.evidence-status{display:inline-block;margin-right:8px;padding:3px 7px;border-radius:8px;background:#f5e5c5;font-size:11px;font-weight:800}.evidence-status.verified{background:#e0efdf;color:#194b22}
-  </style>
+  
+  .journey-intro{display:flex;justify-content:space-between;align-items:center;gap:18px;margin:22px 0 8px;padding:20px 22px;border-radius:16px;background:#163338;color:#fff}.journey-intro .eyebrow{color:#c5dad7}.journey-intro h2{margin:6px 0;font-size:22px}.journey-intro p{margin:4px 0;color:#d9e7e5;font-size:14px;max-width:680px}.journey-intro .btn{white-space:nowrap;border-color:#a5c2bf;background:transparent;color:white}.rail{grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:12px 0 16px}.stepbtn{min-height:68px;padding:9px;text-align:left;display:flex;flex-direction:column;gap:6px;justify-content:center;font-size:13px}.stepbtn .step-number{font-size:11px;color:#656565}.stepbtn.active{outline:2px solid #176964;border-color:#176964;background:#eaf4f2}.detail-group{margin:16px 0;border:1px solid #ddd9d1;border-radius:16px;background:#fff;overflow:hidden}.detail-group>summary{cursor:pointer;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:800}.detail-group>summary small{font-weight:500;color:#666}.detail-group .up{margin:0 18px 18px}.proof-deck{margin-top:30px}.grid .panel:first-child{border-color:#afc8c3}.grid .panel:first-child h2{font-size:25px}.stats{margin:14px 0}.btn:focus-visible,.stepbtn:focus-visible,summary:focus-visible{outline:3px solid #176964;outline-offset:3px}@media(max-width:760px){.journey-intro{display:block}.journey-intro .btn{display:inline-block;margin-top:12px}.rail{grid-template-columns:repeat(2,minmax(0,1fr))}.stepbtn{min-height:65px}}
+</style>
 </head>
 <body>
 <main class="shell">
   <div class="top"><div><div class="eyebrow">Recette humaine · Customer → Customer</div><h1>Golden Order Cockpit</h1><div class="sub"><strong>Recette aval technique (frontières synthétiques)</strong> : elle ne prouve pas la chaîne source → client. Les étapes automatiques avancent uniquement la Golden de test ; la validation humaine reste indépendante des preuves backend.</div></div><span id="global" class="badge">PRÊT</span></div>
   <div class="stats"><div class="stat"><small>Market</small><strong id="marketStat">KM · Comores</strong></div><div class="stat"><small>Commande</small><strong id="orderRef">à renseigner</strong></div><div class="stat"><small>Validé</small><strong id="score">0 / 10</strong></div><div class="stat"><small>Verdict humain</small><strong id="verdict">En attente</strong></div></div>
-  <section class="up" aria-label="Parcours amont">
-    <div class="eyebrow">Parcours amont · Sourcing → Raffinerie → Catalogue → Boutique</div>
-    <p class="muted">Faits canoniques en lecture seule. Preuve absente, ambiguë ou inaccessible = NON PROUVÉ. Les contrôles humains restent distincts.</p>
-    <div class="upbar"><input id="productId" placeholder="Product ID canonique (uuid)" aria-label="Product ID"><button id="readUpstream" class="btn primary" type="button">Lire les preuves amont</button><a id="exportDossier" class="btn" href="#" download>Exporter le dossier (JSON + SHA-256)</a><span id="stageBadge" class="badge">NON DÉMARRÉ</span></div>
-    <div id="certLine" class="certline">GOLDEN SOURCE → CLIENT : NON CERTIFIÉE</div>
-    <div id="upstreamIds" class="muted"></div>
-    <div id="upstream" class="upgrid"></div>
-  </section>
-  <section class="up" id="p1" aria-label="Parcours client P1">
-    <div class="eyebrow">Parcours client · Boutique → OTP → Checkout → Paiement (P1)</div>
-    <p class="muted">Les preuves automatiques sont indépendantes de la validation humaine. Une étape reste verrouillée si la précédente n’est pas prouvée.</p>
-    <div id="p1Level" class="muted">NIVEAU DE PREUVE : NON LU</div>
-    <div id="p1Thread" class="muted">Renseigner produit et commande pour afficher le fil unique.</div>
-    <ol id="p1Steps" class="p1steps"></ol>
-  </section>
-  <section class="up" id="existing-e2e-evidence" aria-label="Preuves E2E existantes">
-    <div class="eyebrow">Preuves existantes · Playwright et recette FULL</div>
-    <p class="muted">La couleur verte d'un run ne valide que les tests réellement exécutés. Les liens CI sont des preuves historiques, pas une observation humaine de cette commande.</p>
-    <div class="evidence-list">
-      <div class="evidence-item"><span class="evidence-status verified">CI L4 VERT · 12/12</span><strong>Commande → encaissement → hub → relais → comptabilité et garde</strong><a href="https://github.com/SamyrFateh/komerce-backend/actions/runs/38447414712" target="_blank" rel="noopener">Voir la preuve Playwright Golden L4 ↗</a><small>Runtime localhost isolé, commit 2f601c2. Ce run n'est ni une preuve OTP boutique ni staging.</small></div>
-      <div class="evidence-item"><span class="evidence-status">RUN VERT · OTP IGNORÉ</span><strong>Préparation du navigateur boutique P2</strong><a href="https://github.com/SamyrFateh/komerce-backend/actions/runs/38448297041" target="_blank" rel="noopener">Voir le run P2 et ses étapes ignorées ↗</a><small>Infrastructure test validée ; l'authentification OTP et la commande boutique n'ont pas été exécutées dans ce run.</small></div>
-      <div class="evidence-item"><span class="evidence-status">À RAPPROCHER</span><strong>Nightly, dashboards, autres E2E et preuves historiques</strong><a href="https://github.com/SamyrFateh/komerce-backend/actions/workflows/nightly-e2e-certification.yml" target="_blank" rel="noopener">Ouvrir l'historique de certification nightly ↗</a><small>Consulter la date, le commit, le job et les artefacts avant de déclarer une étape certifiée.</small></div>
-      <div class="evidence-item"><strong>Matrice de couverture et critères de recette humaine</strong><a href="https://github.com/SamyrFateh/komerce-backend/blob/main/docs/audits/FULL_RECETTE_E2E_EVIDENCE_REGISTER.md" target="_blank" rel="noopener">Ouvrir le registre des preuves ↗</a><small>Les observations humaines de la commande courante restent distinctes des preuves CI.</small></div>
-    </div>
-  </section>
+  <section class="journey-intro" aria-label="Conduite de recette"><div><div class="eyebrow">PARCOURS GUIDÉ · 10 FRONTIÈRES AVAL</div><h2>Où en est ma commande ?</h2><p>Choisis une étape, ouvre l'écran réel, compare avec la preuve, puis indique ton constat. Les preuves techniques restent consultables séparément.</p></div><a class="btn" href="#evidence-deep-dive">Voir les preuves détaillées ↓</a></section>
   <div id="rail" class="rail" aria-label="Étapes de recette"></div>
   <div class="grid">
     <section class="panel">
@@ -58,6 +36,38 @@
       <button id="reset" class="btn" style="margin-top:18px" type="button">Réinitialiser le suivi humain</button>
     </aside>
   </div>
+  <div id="evidence-deep-dive" class="proof-deck"><div class="eyebrow">Dossier de preuves · lecture approfondie</div><h2>Preuves techniques et traçabilité</h2><p class="muted">Ces résultats n'équivalent pas à une validation humaine ni à une certification source → client.</p></div>
+  <details class="detail-group"><summary>01 · Origine du produit <small>Sourcing → Raffinerie → Catalogue → Boutique</small></summary>
+  <section class="up" aria-label="Parcours amont">
+    <div class="eyebrow">Parcours amont · Sourcing → Raffinerie → Catalogue → Boutique</div>
+    <p class="muted">Faits canoniques en lecture seule. Preuve absente, ambiguë ou inaccessible = NON PROUVÉ. Les contrôles humains restent distincts.</p>
+    <div class="upbar"><input id="productId" placeholder="Product ID canonique (uuid)" aria-label="Product ID"><button id="readUpstream" class="btn primary" type="button">Lire les preuves amont</button><a id="exportDossier" class="btn" href="#" download>Exporter le dossier (JSON + SHA-256)</a><span id="stageBadge" class="badge">NON DÉMARRÉ</span></div>
+    <div id="certLine" class="certline">GOLDEN SOURCE → CLIENT : NON CERTIFIÉE</div>
+    <div id="upstreamIds" class="muted"></div>
+    <div id="upstream" class="upgrid"></div>
+  </section>
+  </details>
+  <details class="detail-group"><summary>02 · Parcours client <small>Boutique → OTP → paiement</small></summary>
+  <section class="up" id="p1" aria-label="Parcours client P1">
+    <div class="eyebrow">Parcours client · Boutique → OTP → Checkout → Paiement (P1)</div>
+    <p class="muted">Les preuves automatiques sont indépendantes de la validation humaine. Une étape reste verrouillée si la précédente n’est pas prouvée.</p>
+    <div id="p1Level" class="muted">NIVEAU DE PREUVE : NON LU</div>
+    <div id="p1Thread" class="muted">Renseigner produit et commande pour afficher le fil unique.</div>
+    <ol id="p1Steps" class="p1steps"></ol>
+  </section>
+  </details>
+  <details class="detail-group"><summary>03 · Historique Playwright <small>CI et registre de couverture</small></summary>
+  <section class="up" id="existing-e2e-evidence" aria-label="Preuves E2E existantes">
+    <div class="eyebrow">Preuves existantes · Playwright et recette FULL</div>
+    <p class="muted">La couleur verte d'un run ne valide que les tests réellement exécutés. Les liens CI sont des preuves historiques, pas une observation humaine de cette commande.</p>
+    <div class="evidence-list">
+      <div class="evidence-item"><span class="evidence-status verified">CI L4 VERT · 12/12</span><strong>Commande → encaissement → hub → relais → comptabilité et garde</strong><a href="https://github.com/SamyrFateh/komerce-backend/actions/runs/38447414712" target="_blank" rel="noopener">Voir la preuve Playwright Golden L4 ↗</a><small>Runtime localhost isolé, commit 2f601c2. Ce run n'est ni une preuve OTP boutique ni staging.</small></div>
+      <div class="evidence-item"><span class="evidence-status">RUN VERT · OTP IGNORÉ</span><strong>Préparation du navigateur boutique P2</strong><a href="https://github.com/SamyrFateh/komerce-backend/actions/runs/38448297041" target="_blank" rel="noopener">Voir le run P2 et ses étapes ignorées ↗</a><small>Infrastructure test validée ; l'authentification OTP et la commande boutique n'ont pas été exécutées dans ce run.</small></div>
+      <div class="evidence-item"><span class="evidence-status">À RAPPROCHER</span><strong>Nightly, dashboards, autres E2E et preuves historiques</strong><a href="https://github.com/SamyrFateh/komerce-backend/actions/workflows/nightly-e2e-certification.yml" target="_blank" rel="noopener">Ouvrir l'historique de certification nightly ↗</a><small>Consulter la date, le commit, le job et les artefacts avant de déclarer une étape certifiée.</small></div>
+      <div class="evidence-item"><strong>Matrice de couverture et critères de recette humaine</strong><a href="https://github.com/SamyrFateh/komerce-backend/blob/main/docs/audits/FULL_RECETTE_E2E_EVIDENCE_REGISTER.md" target="_blank" rel="noopener">Ouvrir le registre des preuves ↗</a><small>Les observations humaines de la commande courante restent distinctes des preuves CI.</small></div>
+    </div>
+  </section>
+  </details>
 </main>
 <script defer src="/js/golden-e2e-cockpit-journey.js"></script>
 <script defer src="/js/golden-e2e-cockpit-upstream.js"></script>
