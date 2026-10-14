@@ -18,7 +18,7 @@ const EXPECTED = Object.freeze({
   admin: [
     'control-tower', 'action-center',
     'flow-commerce', 'entity-clients', 'workspace-pricing', 'workspace-catalog',
-    'flow-operations', 'workspace-operations', 'workspace-shipping', 'workspace-sourcing', 'workspace-purchasing',
+    'flow-operations', 'workspace-operations', 'workspace-shipping', 'workspace-purchasing',
     'flow-finance', 'workspace-accounting',
     'live-import-runtime', 'live-hub', 'live-relais',
     'markets-home',
@@ -35,7 +35,7 @@ const EXPECTED = Object.freeze({
   agent_relais: ['action-center', 'workspace-operations', 'workspace-accounting', 'live-relais'],
   agent_transitaire: ['action-center', 'workspace-shipping'],
   finance: ['workspace-accounting'],
-  sourcing: ['workspace-sourcing', 'live-import-runtime'],
+  sourcing: ['live-import-runtime'],
   support: [],
 });
 
