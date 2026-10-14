@@ -129,7 +129,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
     expect(labels('commerce')).toEqual(['Vue commerce', 'Clients', 'Prix & économie', 'Catalogue']);
-    expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Sourcing', 'Achats fournisseurs']);
+    expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Achats fournisseurs']);
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
       .toEqual(['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live']);
