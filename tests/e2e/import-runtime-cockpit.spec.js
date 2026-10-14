@@ -172,8 +172,8 @@ test.describe('Cockpit imports — conformité au mock clair', () => {
     expect(bar.state).toContain('Mise à jour en cours');
   });
 
-  test('quatre résultats réels, une seule étape courante, aucun débordement horizontal', async ({ page }) => {
-    await expect(page.locator('.kir-run-truth-grid > a')).toHaveCount(4);
+  test('cinq résultats réels, une seule étape courante, aucun débordement horizontal', async ({ page }) => {
+    await expect(page.locator('.kir-run-truth-grid > a')).toHaveCount(5);
     await expect(page.locator('.kir-run-flow-step.is-current')).toHaveCount(1);
     await expect(page.locator('.kir-run-flow-step.is-current')).toContainText('Contrôle automatique');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -252,7 +252,7 @@ test.describe('Cockpit imports — remise Catalogue automatique en cours', () =>
       const r = icon.getBoundingClientRect();
       return { w: r.width, h: r.height, bg: getComputedStyle(icon).backgroundColor, num: parseFloat(getComputedStyle(a.querySelector('strong')).fontSize) };
     }));
-    expect(cards).toHaveLength(4);
+    expect(cards).toHaveLength(5);
     for (const c of cards) { expect(c.w).toBeGreaterThanOrEqual(60); expect(c.h).toBeGreaterThanOrEqual(60); expect(c.num).toBeGreaterThanOrEqual(30); }
     expect(new Set(cards.map((c) => c.bg)).size).toBeGreaterThanOrEqual(3);
   });
@@ -482,7 +482,7 @@ test.describe('Cockpit imports — CAS F : mise à jour automatique 3 → 2 → 
       await expect(tile).toHaveText(String(remaining));
     }
     await expect(page.locator('.is-attention')).toHaveCount(0);
-    await expect(page.locator('.kir-status-large')).toContainText('Terminé');
+    await expect(page.locator('.kir-status-large')).toContainText('Traitement terminé');
   });
 });
 
