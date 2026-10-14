@@ -1003,6 +1003,11 @@ async function getProductTrace(runRef, supplierProductId, q = db) {
   if (!row) return null;
 
   const verdict = verdictOf(row);
+  // Le scan sauvegarde la décision ET sa justification ; ne pas déduire le motif
+  // du seul état terminal (WATCH, AVOID et LOSS conduisent tous à DEFERRED).
+  const scan = row.scan_result && typeof row.scan_result === 'object' && !Array.isArray(row.scan_result)
+    ? row.scan_result : {};
+  const scanText = (value) => typeof value === 'string' ? value.trim().slice(0, 1000) || null : null;
   return {
     run_ref: run.run_ref,
     provider: run.provider,
@@ -1021,6 +1026,9 @@ async function getProductTrace(runRef, supplierProductId, q = db) {
       outcome: verdict.outcome,
       sourcing_certified: verdict.sourcing_certified,
       reasons: verdict.reasons,
+      decision: verdict.decision,
+      reason: scanText(scan.reason),
+      recommended_action: scanText(scan.recommended_action),
     },
     catalogue_status: row.state,
   };
