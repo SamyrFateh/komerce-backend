@@ -1318,12 +1318,30 @@
   }
 
 
+  function revealActiveNavigation(doc) {
+    const sidebar = doc?.getElementById?.('canonical-admin-navigation');
+    const active = sidebar?.querySelector?.('.kmc-admin-primary-link.is-active');
+    if (!active) return;
+    // No smooth movement during boot: avoid flashing/jumping the page.
+    const scrollParent = active.closest?.('.kmc-admin-primary-nav') || sidebar;
+    if (!scrollParent || typeof scrollParent.scrollTop !== 'number') return;
+    const viewport = scrollParent.getBoundingClientRect?.();
+    const rect = active.getBoundingClientRect?.();
+    if (!viewport || !rect) return;
+    const overflow = scrollParent.scrollHeight - scrollParent.clientHeight;
+    if (overflow <= 0) return;
+    const centered = scrollParent.scrollTop + rect.top - viewport.top + rect.height / 2 - viewport.height / 2;
+    scrollParent.scrollTop = Math.max(0, Math.min(overflow, centered));
+  }
+
   function mount(options = {}) {
     const doc = options.document || global.document;
     dedupeShell(doc);
     const header = buildHeader(options);
     replaceNavigationStructure(header, options);
-    return applyHybridShell(header, options);
+    const shell = applyHybridShell(header, options);
+    revealActiveNavigation(doc);
+    return shell;
   }
 
   const api = Object.freeze({
