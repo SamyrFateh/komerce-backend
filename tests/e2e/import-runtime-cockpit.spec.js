@@ -287,7 +287,7 @@ test.describe('Cockpit imports — tout va bien', () => {
       };
     });
     expect(info.markers).toEqual(Array(4).fill('rgb(30, 215, 132)'));
-    expect(info.handoffText).toContain('PASSAGE AU CATALOGUE');
+    expect(info.handoffText).toContain('PASSAGE À LA RAFFINERIE');
     expect(info.handoffText).toContain('Remise terminée');
     expect(info.handoffText).not.toContain('12/12');
     expect(info.handoffBorder).toBe('rgb(30, 215, 132)');
@@ -295,7 +295,8 @@ test.describe('Cockpit imports — tout va bien', () => {
     expect(info.failed).toBe(0);
     expect(info.progress).toBe(false);
     expect(info.text).toContain('12/12 produits comptabilisés'.replace('12/12', '712/712'));
-    expect(info.text).not.toMatch(/Raffinerie|Taxonomie|Certification|USD|7[,.]65|Décisions commerciales|Prêts à vendre/);
+    expect(info.text).toContain('Transmis à la Raffinerie');
+    expect(info.text).not.toMatch(/Taxonomie|Certification|USD|7[,.]65|Décisions commerciales|Prêts à vendre/);
   });
 });
 
@@ -546,8 +547,8 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Source');
     await expect(page.locator('[data-population-item]')).toHaveCount(0);
     await page.locator('.kir-back').click();
-    await page.locator('.kir-run-flow-step', { hasText: 'Remise Catalogue' }).click();
-    await expect(page.locator('.kir-drill-head h2')).toHaveText('Remise Catalogue');
+    await page.locator('.kir-run-flow-step', { hasText: 'Remise Raffinerie' }).click();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Remise Raffinerie');
     await expect(page.locator('.kir-main')).toContainText('Remise terminée');
   });
 });
@@ -687,7 +688,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
 
   test('1-2-6 Suivi → Source / Contrôle / Remise Catalogue → Retour au suivi', async ({ page }) => {
     await mountLive(page, calmPayload);
-    for (const [step, title, crumbs] of [['Source', 'Source', 'Sourcing > Suivi > Source'], ['Contrôle automatique', 'Contrôle automatique', 'Sourcing > Suivi > Contrôle automatique'], ['Remise Catalogue', 'Remise Catalogue', 'Sourcing > Suivi > Remise Catalogue']]) {
+    for (const [step, title, crumbs] of [['Source', 'Source', 'Sourcing > Suivi > Source'], ['Contrôle automatique', 'Contrôle automatique', 'Sourcing > Suivi > Contrôle automatique'], ['Remise Raffinerie', 'Remise Raffinerie', 'Sourcing > Suivi > Remise Raffinerie']]) {
       await page.locator('.kir-run-flow-step', { hasText:step }).first().click();
       await expect(page.locator('.kir-drill-head h2')).toHaveText(title);
       expect(await crumb(page)).toBe(crumbs);
@@ -736,7 +737,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     state.populations = { ready:readyPop };
     state.traces = { 'SP-0':trace };
     await page.locator('.kir-run-truth-grid > a.is-delivered').click();
-    expect(await crumb(page)).toBe('Sourcing > Suivi > Prêts pour le Catalogue');
+    expect(await crumb(page)).toBe('Sourcing > Suivi > Transmis à la Raffinerie');
     await page.locator('.kir-population-item-link').click();
     const link = page.locator('a[href^="/admin/products/P-42"]');
     await expect(link).toHaveCount(1);
@@ -755,7 +756,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     await expect(page).toHaveURL(`${ORIGIN}${returnTo}`);
     await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Coque 1');
-    await expect(page.locator('.kir-back')).toHaveText('← Retour à Prêts pour le Catalogue');
+    await expect(page.locator('.kir-back')).toHaveText('← Retour à Transmis à la Raffinerie');
   });
 
   test('7 Passages → autre KIR → Suivi de ce KIR ; 10 précédent/suivant sans contexte périmé', async ({ page }) => {
