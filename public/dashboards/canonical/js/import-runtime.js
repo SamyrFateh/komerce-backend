@@ -43,6 +43,8 @@
   let activationTimer = null;
   let activationState = null;
   let commandState = null;
+  // Premier import ponctuel : distinct de l'activation de l'alimentation automatique.
+  let firstImportState = null;
   let prepareState = null;
   let wizardState = null;
   // Gestion d'une source : renommage ou confirmation d'archivage en cours (une seule à la fois).
@@ -761,7 +763,8 @@
     const enabled = source.autopilot_enabled === true;
     const live = activationState?.sourceRef === source.source_ref ? activationState : null;
     const preparing = Boolean(prepareState && prepareState.sourceRef === source.source_ref);
-    const busy = Boolean(live && !live.done && !live.error) || preparing;
+    const firstImportPending = firstImportState?.sourceRef === source.source_ref && firstImportState.pending === true;
+    const busy = Boolean(live && !live.done && !live.error) || preparing || firstImportPending;
     const selectedSourceMatches = selectedRun
       && String(selectedRun.source_ref || '') === String(source.source_ref || '');
     const providerGateBlocked = Boolean(
@@ -788,10 +791,13 @@
       : source.state === 'connection_to_test' ? { action:'test', label:'Tester la connexion' }
         : source.state === 'to_certify' ? { action:'prepare', label:'Préparer et certifier' }
           : null;
+    const lastRun = lastRunOfSource(source, lots, selectedRun);
     return {
       enabled, displayEnabled, canToggle, busy, badge, reason, step,
       name: source.label || source.supplier_name || source.source_ref,
-      lastRun: lastRunOfSource(source, lots, selectedRun),
+      lastRun,
+      canFirstImport: source.state === 'ready' && !enabled && !lastRun,
+      firstImportPending,
     };
   }
 
@@ -993,6 +999,8 @@
       ${m.reason ? `<p class="kir-source-reason" data-source-reason>${esc(m.reason)}</p>` : ''}
       ${m.busy ? '' : credentialsPanel(source, { context:'card' })}
       ${m.step ? `<button type="button" class="kir-source-step" data-source-step="${m.step.action}" data-source-ref="${esc(source.source_ref)}">${m.step.label}</button>` : ''}
+      ${m.canFirstImport ? `<button type="button" class="kir-source-first-import" data-source-first-import data-source-ref="${esc(source.source_ref)}" ${m.firstImportPending ? 'disabled aria-busy="true"' : ''}>${m.firstImportPending ? 'Lancement du passage…' : 'Lancer le premier passage'}</button>` : ''}
+      ${firstImportState?.sourceRef === source.source_ref && firstImportState.error ? `<p class="kir-source-first-error" role="alert">${esc(firstImportState.error)}</p>` : ''}
       ${m.lastRun ? `<a class="kir-source-follow" href="${urlFor(m.lastRun)}" data-cockpit-nav>Voir le suivi →</a>` : ''}
     </article>`;
   }
@@ -1147,7 +1155,7 @@
     const empty = `<div class="kir-empty-launch">
       <div class="kir-empty-launch-copy">
         <strong>Aucun passage importé</strong>
-        <span>Activez une source pour lancer un premier passage réel et suivre sa progression ici.</span>
+        <span>Lancez un premier passage ponctuel depuis une source prête, sans activer l’alimentation automatique.</span>
       </div>
     </div>`;
     return `<nav class="kir-lot-strip ${cards ? '' : 'is-empty'}" aria-label="Passages d'import récents">
@@ -1798,7 +1806,7 @@
         ${domainNav('overview', null)}
         <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span><h1>Suivi d’import — Source → Catalogue</h1><p>Aucun passage pour l’instant.</p></div></header>
         <div class="kir-empty-launch">
-          <div class="kir-empty-launch-copy"><strong>Aucun passage Sourcing</strong><span>Activez une source pour lancer le premier passage réel.</span></div>
+          <div class="kir-empty-launch-copy"><strong>Aucun passage Sourcing</strong><span>Choisissez une source prête, puis lancez son premier passage depuis « Sources ».</span></div>
           <a class="kir-subtle-link" href="${urlFor(null, 'sources')}" data-cockpit-nav>Gérer les sources →</a>
         </div>
       </section>`;
@@ -1936,6 +1944,27 @@
         const main = root.querySelector?.('.kir-main');
         if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
       }
+    }
+  }
+
+  // Premier passage après une purge : one-shot via import-now, sans activer l'autopilot.
+  // Ne navigue jamais sur un passage imaginé : le run_ref vient de la réponse métier.
+  async function startFirstImport(root, payload, sourceRef) {
+    if (firstImportState?.pending) return;
+    const source = (payload?.source_controls || []).find(item => item.source_ref === sourceRef);
+    if (!source || source.state !== 'ready' || source.autopilot_enabled ||
+        lastRunOfSource(source, payload?.lots || [], payload?.selected)) return;
+    firstImportState = { sourceRef, pending:true, error:null };
+    render(root, lastPayload || payload);
+    try {
+      const response = await api(`/api/admin/workspaces/sourcing/sources/${encodeURIComponent(sourceRef)}/import-now`, { method:'POST', body:{} });
+      const runRef = response?.result?.run_ref;
+      if (!runRef) throw new Error('Aucune référence de passage retournée. Consultez les Passages avant de relancer.');
+      firstImportState = null;
+      goto(urlFor(runRef));
+    } catch (error) {
+      firstImportState = { sourceRef, pending:false, error:error?.message || 'Import impossible.' };
+      render(root, lastPayload || payload);
     }
   }
 
@@ -2388,6 +2417,13 @@
   }
 
   function bindSourceControls(root, payload) {
+    root.querySelectorAll?.('[data-source-first-import]').forEach(button => {
+      button.addEventListener('click', () => {
+        const sourceRef = button.getAttribute('data-source-ref');
+        if (!sourceRef || button.disabled) return;
+        startFirstImport(root, payload, sourceRef);
+      });
+    });
     root.querySelectorAll?.('[data-source-toggle]').forEach(button => {
       button.addEventListener('click', () => {
         const sourceRef = button.getAttribute('data-source-ref');
@@ -2563,6 +2599,7 @@
     // Invalide toute lecture encore en vol d'un montage précédent.
     refreshEpoch += 1;
     activationState = null;
+    firstImportState = null;
     prepareState = null;
     wizardState = null;
     stopActivationPolling();

@@ -3182,6 +3182,14 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 .kmc-import-runtime .kir-add-source:focus-visible,.kmc-import-runtime .kir-source-step:focus-visible,.kmc-import-runtime .kir-wizard button:focus-visible,.kmc-import-runtime .kir-wizard input:focus-visible{outline:2px solid #2F80ED;outline-offset:2px}
 .kmc-import-runtime .kir-source-step{justify-self:start;padding:8px 14px;border:1px solid #E2D7C3;border-radius:9px;background:#FFFFFF;color:#F49200;font-size:13.5px;font-weight:700;cursor:pointer}
 .kmc-import-runtime .kir-source-step:hover{background:#F8FAFC}
+
+/* Premier passage ponctuel après purge : action distincte du switch automatique. */
+.kmc-import-runtime .kir-source-first-import{justify-self:start;min-height:42px;padding:10px 16px;border:1px solid #1D5CD6;border-radius:9px;background:#1D5CD6;color:#FFFFFF;font-size:14px;font-weight:700;cursor:pointer}
+.kmc-import-runtime .kir-source-first-import:hover:not(:disabled){background:#174AB2;border-color:#174AB2}
+.kmc-import-runtime .kir-source-first-import:focus-visible{outline:2px solid #2F80ED;outline-offset:2px}
+.kmc-import-runtime .kir-source-first-import:disabled{opacity:.7;cursor:wait}
+.kmc-import-runtime .kir-source-first-error{margin:0;color:#B42318;font-size:13px;line-height:1.5}
+
 .kmc-import-runtime .kir-wizard-backdrop{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:rgb(3 8 16 / .72)}
 .kmc-import-runtime .kir-wizard{display:grid;gap:14px;width:min(560px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:20px;border:1px solid #D0D6DC;border-radius:14px;background:#FFFFFF;color:#1D2631;box-shadow:0 24px 60px rgb(0 0 0 / .5)}
 .kmc-import-runtime .kir-wizard-head{display:flex;align-items:center;justify-content:space-between;gap:12px}

@@ -101,7 +101,7 @@ test('état vide garde une ossature Legacy claire et actionnable', () => {
   expect(node.innerHTML).toContain('Suivi d’import');
   expect(node.innerHTML).toContain('Aucun passage pour l’instant');
   expect(node.innerHTML).toContain('Aucun passage Sourcing');
-  expect(node.innerHTML).toContain('Activez une source pour lancer le premier passage réel');
+  expect(node.innerHTML).toContain('Choisissez une source prête, puis lancez son premier passage depuis « Sources ».');
   expect(node.innerHTML).toContain('Gérer les sources →');
   expect(node.innerHTML).not.toContain('kir-source-control');
   expect(node.innerHTML).not.toContain('kir-lot-strip');
