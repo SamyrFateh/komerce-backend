@@ -134,6 +134,7 @@
     'pricing-workspace', 'catalog-workspace', 'sourcing-workspace', 'purchasing-workspace',
     'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace', 'client-index',
     'users-admin', 'providers-admin', 'settings', 'demo',
+    'market-access', 'market-autonomy', 'market-catalog',
   ]);
 
   const SURFACE_TO_SPACE = Object.freeze({
