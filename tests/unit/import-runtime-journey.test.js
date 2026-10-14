@@ -296,7 +296,7 @@ test('12 mis de côté dont 3 corrigeables : sous-ensemble et non sixième popul
   const exceptions = render(p, '?run=KIR-000004&view=exceptions');
   expect(exceptions).toContain('Mis de côté · correction humaine possible');
   expect(exceptions).toContain('Classer dans Sourcing →');
-  expect(exceptions).toContain('Prix d&#39;achat manquant');
+  expect(exceptions).toContain("Prix d'achat manquant");
   expect(exceptions).toContain('Compléter dans Sourcing →');
   expect(exceptions).not.toContain('data-action-choose');
   expect((exceptions.match(/kir-row-action/g)||[])).toHaveLength(3);
