@@ -1047,6 +1047,9 @@
   }
 
   function createTabs(doc, domainId, surface, user, adminContext) {
+    // Hub et Relais Live possèdent déjà leurs onglets métier dans le cockpit.
+    // Ne jamais superposer les autres métiers Live dans le shell supérieur.
+    if (domainId === 'live' && (surface === 'hub-live' || surface === 'relais-live')) return null;
     const tabs = localTabsFor(domainId, user, adminContext);
     if (tabs.length < 2) return null;
 
