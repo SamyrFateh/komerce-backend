@@ -993,6 +993,16 @@
 
   function localTabsFor(domainId, user, adminContext) {
     const role = roleOf(user);
+    // La navigation N2 du Sourcing suit ses étapes, pas les autres métiers Live.
+    if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/import-runtime') {
+      const run = new URLSearchParams(String(global.location?.search || '')).get('run');
+      const suffix = run ? `run=${encodeURIComponent(run)}&` : '';
+      return [
+        { id: 'sourcing-suivi', label: 'Suivi', href: '/admin/import-runtime' + (run ? `?run=${encodeURIComponent(run)}` : '') },
+        { id: 'sourcing-passages', label: 'Passages', href: `/admin/import-runtime?${suffix}view=passages` },
+        { id: 'sourcing-sources', label: 'Sources', href: `/admin/import-runtime?${suffix}view=sources` },
+      ];
+    }
     const local = LOCAL_TABS[domainId];
     if (local) {
       return local.filter(tab => tab.roles.includes(role) && tabCapabilityGranted(tab, adminContext));
@@ -1013,6 +1023,10 @@
     const hash = String(global.location?.hash || '').replace(/^#/, '');
     const search = new URLSearchParams(String(global.location?.search || ''));
 
+    if (domainId === 'live' && path === '/admin/import-runtime') {
+      const view = search.get('view');
+      return view === 'passages' ? 'sourcing-passages' : view === 'sources' ? 'sourcing-sources' : 'sourcing-suivi';
+    }
     if (domainId === 'pricing') {
       if (hash && ['pricing-products', 'pricing-costs', 'pricing-strategy'].includes(hash)) return hash;
       return 'pricing-overview';
