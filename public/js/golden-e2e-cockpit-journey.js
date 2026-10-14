@@ -1,6 +1,6 @@
 'use strict';
 (()=>{const steps=[
-['Commande client','Client / Admin','/admin/operations','La commande Comores existe avec la bonne identité métier.','Référence, client, relais, montant et lignes cohérents.','La commande apparaît dans Opérations et sa fiche 360 est accessible.'],
+['Commande client','Client / Admin','/admin/operations','La commande existe sur le marché sélectionné, avec la bonne identité métier.','Référence, client, relais, montant et lignes cohérents.','La commande apparaît dans Opérations et sa fiche 360 est accessible.'],
 ['Paiement client','Client / Finance','/admin/finance','Le paiement client est confirmé sans duplication.','payment_status=paid et preuve liée à cette commande.','La commande est payée ; Finance reflète le même fait.'],
 ['Achat fournisseur','Achats','/admin/workspaces/purchasing','Le besoin client devient une PO fournisseur.','PO + ligne d’achat vers le SKU exact vendu.','Une PO existe avec fournisseur, quantité et SKU corrects.'],
 ['Exécution fournisseur','Achats','/admin/workspaces/purchasing','La commande et le paiement fournisseur ont leur preuve propre.','Supplier execution + paiement matched + débit réel vérifié.','L’exécution fournisseur est rattachée à la bonne PO.'],
