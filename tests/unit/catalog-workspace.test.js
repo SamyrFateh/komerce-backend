@@ -421,3 +421,10 @@ test('le montage rejoue afterRender après chaque rendu (le rendu vide la racine
   expect(src).toContain('afterRender: typeof options.afterRender');
   expect(src).toContain('if (context.afterRender) context.afterRender(payload);');
 });
+
+test('la Raffinerie demande un verdict serveur en lecture seule uniquement sur demande', () => {
+  const source = require('fs').readFileSync(require('path').join(__dirname, '../../services/catalog-workspace.js'), 'utf8');
+  expect(source).toContain("query.include_readiness === '1'");
+  expect(source).toContain('certifyCatalogProduct(db, row.product_id)');
+  expect(source).toContain('certification: facts?.certification || null');
+});
