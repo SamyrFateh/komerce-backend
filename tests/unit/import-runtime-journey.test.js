@@ -295,11 +295,35 @@ test('12 mis de côté dont 3 corrigeables : sous-ensemble et non sixième popul
   expect(h).toContain('Intervenir →');
   const exceptions = render(p, '?run=KIR-000004&view=exceptions');
   expect(exceptions).toContain('Mis de côté · correction humaine possible');
-  expect(exceptions).toContain('Classer dans Sourcing →');
+  expect(exceptions).toContain('data-action-classify');
+  expect(exceptions).toContain('data-candidate-ref="KSC-300"');
+  expect(exceptions).toContain('data-product-name="À classer"');
+  expect(exceptions).toContain('Classer →');
   expect(exceptions).toContain("Prix d'achat manquant");
   expect(exceptions).toContain('Compléter dans Sourcing →');
   expect(exceptions).not.toContain('data-action-choose');
   expect((exceptions.match(/kir-row-action/g)||[])).toHaveLength(3);
+});
+
+test('le classement est contextualisé au produit et ne passe plus par une saisie libre navigateur', () => {
+  const p = scenario({action_required:1},{
+    sourcing_status:'ACTION_REQUIRED',
+    action_items:[{candidate_ref:'KSC-000050', product_name:'Temporary Metal Waterproof Key Box At The Door',
+      supplier_product_id:'CJ-50', reason:'Catégorie Komerce non résolue — décision impossible.',
+      action:'choose', action_label:'Classer', action_origin:'deferred', correction_kind:'category'}],
+  });
+  const html = render(p,'?run=KIR-000004&view=exceptions');
+  expect(html).toContain('data-action-classify');
+  expect(html).toContain('data-candidate-ref="KSC-000050"');
+  expect(html).toContain('Temporary Metal Waterproof Key Box At The Door');
+  expect(html).toContain('Catégorie Komerce non résolue');
+  const source = require('fs').readFileSync(
+    require.resolve('../../public/dashboards/canonical/js/import-runtime.js'),'utf8');
+  expect(source).not.toContain("global.prompt('Catégorie Komerce");
+  expect(source).toContain('/category-options');
+  expect(source).toContain('/resolve-category');
+  expect(source).toContain("data-category-choice");
+  expect(source).not.toContain('/promote');
 });
 
 test('population et fiche différées : lien vers action humaine uniquement pour un WATCH corrigeable', () => {
