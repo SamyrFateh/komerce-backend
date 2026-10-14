@@ -163,6 +163,14 @@ async function auditRun(runRef, deps = {
     run_ref:run.run_ref, source:'CJdropshipping',
     recorded:{received:Number(run.source_total)||0,deferred:Number(asObject(run.intake).deferred)||0},
     ...projectEvidence(rows,config),
+    // Inventaire nécessaire pour distinguer « vocabulaire manquant » de
+    // « catégorie douanière absente ». Aucun prix, taux, marge ni secret.
+    active_taxonomy:Object.values(config.categories || {})
+      .filter(cat=>cat && cat.key && cat.key !== 'default' && cat.is_active !== false)
+      .slice(0,100).map(cat=>({
+        key:shorten(cat.key,80),label:shorten(cat.label || cat.key,120),
+        classification_terms:Object.keys(asObject(cat.classification_terms)).slice(0,80),
+      })),
     note:'READ ONLY. Aucun appel API CJ, aucune modification DB, aucune reclassification. Les décisions des candidats sont leur état actuel (modifiable depuis le passage). Les scores PREVIEW utilisent le référentiel actif actuellement et ne remplacent pas la preuve historique. accepted_category_drift doit être égal à zéro avant tout re-scan opérationnel.',
     provider_api_calls:0,db_writes:0,
   };
