@@ -9710,6 +9710,100 @@
         }
       }
     },
+    "/api/admin/workspaces/sourcing/candidates/{candidateRef}/category-options": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/category-options",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "candidateRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "candidate_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "categories": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "suggestions": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/candidates/{candidateRef}/resolve-category": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/resolve-category",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "candidateRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/sourcing/candidates/{candidateRef}/update": {
       "post": {
         "summary": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/update",

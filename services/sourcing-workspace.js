@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        business_references, sourcing_action_payloads, authenticated_actor
  * @outputs       global_sourcing_projection, sourcing_mutation_result
- * @depends       db.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
+ * @depends       db.js, services/pricing-engine.js, services/customs-dynamic-category-classifier.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
  * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures
  * @db-write-via:sourcing-mutations products
@@ -34,6 +34,8 @@ const sourceRegistry = require('./sourcing-source-registry');
 const providerPolicy = require('./sourcing-provider-control-policy');
 const catalogImport = require('./suppliers/catalog-import-orchestrator');
 const partnerAdmin = require('./partner-admin-service');
+const pricingEngine = require('./pricing-engine');
+const categoryClassifier = require('./customs-dynamic-category-classifier');
 
 class SourcingWorkspaceError extends Error {
   constructor(status, message, code = null, details = null) {
@@ -362,6 +364,95 @@ async function replayImport(body, actor) {
   return importCatalog({ ...(body || {}), mode: 'replay' }, actor);
 }
 
+// Remédiation guidée : réutilise STRICTEMENT les catégories actives du moteur
+// économique / douanier, et le même scoreur que le scanner fournisseur.
+async function getCandidateCategoryOptions(candidateRef) {
+  const { rows:[candidate] } = await db.query(
+    `SELECT candidate_ref, product_name, supplier_category, description,
+            image_url, komerce_category, state
+       FROM sourcing_candidates WHERE candidate_ref = $1`, [candidateRef]
+  );
+  if (!candidate) throw new SourcingWorkspaceError(404, 'Produit Sourcing introuvable', 'candidate_not_found');
+  const config = await pricingEngine.loadGlobalConfig();
+  const categories = Object.values(config.categories || {})
+    .filter(cat => cat && cat.key && cat.key !== 'default' && cat.is_active !== false);
+  if (!categories.length) {
+    throw new SourcingWorkspaceError(409,
+      'Aucune catégorie de calcul active. Compléter le référentiel douanier avant de classer ce produit.',
+      'sourcing_no_active_category');
+  }
+  const signals = categoryClassifier.supplierSignals(candidate);
+  const scored = categories.map(category => ({
+    key:String(category.key),
+    label:String(category.label || category.key),
+    sub_label:String(category.sub_label || ''),
+    score:categoryClassifier.scoreCategory(category, signals).score,
+  }));
+  const suggestions = scored.filter(item => item.score > 0)
+    .sort((a,b) => b.score-a.score || a.label.localeCompare(b.label,'fr'))
+    .slice(0,3).map(item => ({
+      key:item.key, label:item.label,
+      confidence:categoryClassifier.confidenceFor(item.score, scored.filter(cat=>cat.key!==item.key)
+        .reduce((best,cat)=>Math.max(best,cat.score),0)),
+    }));
+  return {
+    candidate_ref:candidate.candidate_ref,
+    product_name:candidate.product_name,
+    supplier_category:candidate.supplier_category,
+    image_url:candidate.image_url,
+    current_category:categories.some(cat=>cat.key===candidate.komerce_category) ? candidate.komerce_category : null,
+    categories:scored.map(({key,label,sub_label})=>({key,label,sub_label}))
+      .sort((a,b)=>a.label.localeCompare(b.label,'fr')),
+    suggestions,
+    source:'customs_categories',
+    note:'Suggestions calculées à partir des règles de classification existantes. Validation humaine obligatoire.',
+  };
+}
+
+// Un seul geste opérateur : catégorie active validée, modification tracée,
+// puis nouveau scan dans une transaction. Ne promeut jamais au Catalogue.
+async function resolveCandidateCategory(candidateRef, categoryKey, actor) {
+  if (typeof categoryKey !== 'string' || !categoryKey.trim() || categoryKey.length > 128) {
+    throw new SourcingWorkspaceError(400,'Choisissez une catégorie existante.', 'sourcing_category_required');
+  }
+  const categoryOptions = await getCandidateCategoryOptions(candidateRef);
+  const category = categoryOptions.categories.find(item=>item.key===categoryKey);
+  if (!category) {
+    throw new SourcingWorkspaceError(400,
+      'Cette catégorie n’est pas active dans le référentiel Komerce.', 'sourcing_category_invalid');
+  }
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const { rows:[candidate] } = await client.query(
+      'SELECT id, state, product_id FROM sourcing_candidates WHERE candidate_ref = $1 FOR UPDATE',
+      [candidateRef]);
+    if (!candidate) throw new SourcingWorkspaceError(404,'Produit Sourcing introuvable','candidate_not_found');
+    if (candidate.product_id || ['rejected','archived','imported_to_catalog'].includes(candidate.state)) {
+      throw new SourcingWorkspaceError(409,
+        'Ce produit est déjà remis, rejeté ou archivé. La correction Sourcing n’est plus possible.',
+        'sourcing_candidate_not_editable');
+    }
+    await candidateActions.updateCandidate(candidate.id, { komerce_category:categoryKey }, actor?.id || null, client);
+    const scanned = await candidateActions.scanCandidate(candidate.id, actor?.id || null, client);
+    await client.query('COMMIT');
+    return {
+      candidate_ref:candidateRef,
+      category:{key:category.key,label:category.label},
+      state:scanned.state,
+      scan:{
+        decision:scanned.scan_result?.sourcing_decision || null,
+        reason:scanned.scan_result?.reason || null,
+        recommended_action:scanned.scan_result?.recommended_action || null,
+      },
+      next_step:'Relire la décision du scanner. Aucune promotion Catalogue automatique.',
+    };
+  } catch (error) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* erreur d'origine conservée */ }
+    throw error;
+  } finally { client.release(); }
+}
+
 async function updateCandidate(candidateRef, body, actor) {
   const candidate = await resolveCandidateRef(candidateRef);
   const row = await candidateActions.updateCandidate(candidate.id, body || {}, actor?.id || null);
@@ -628,6 +719,8 @@ module.exports = {
   importCatalog,
   replayImport,
   updateCandidate,
+  getCandidateCategoryOptions,
+  resolveCandidateCategory,
   scanCandidate,
   watchlistCandidate,
   rejectCandidate,

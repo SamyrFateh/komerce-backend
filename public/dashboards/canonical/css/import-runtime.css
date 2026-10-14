@@ -3306,3 +3306,31 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 @media(max-width:1280px){.kmc-import-runtime .kir-run-truth-grid.is-five{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.kmc-import-runtime .kir-run-truth-grid.is-five{grid-template-columns:repeat(2,minmax(0,1fr))}.kmc-import-runtime .kir-runtime-verdict dl>div{grid-template-columns:1fr;gap:2px}}
 @media(max-width:450px){.kmc-import-runtime .kir-run-truth-grid.is-five{grid-template-columns:minmax(0,1fr)}}
+
+
+/* PROD — Remédiation guidée de la catégorie du candidat (référentiel canonique). */
+.kmc-import-runtime .kir-category-dialog{position:fixed;inset:0;margin:auto;width:min(620px,calc(100vw - 30px));max-height:min(88vh,850px);overflow:auto;padding:0;border:1px solid #D2DCE8;border-radius:16px;box-shadow:0 24px 80px rgba(18,33,52,.28);background:#FFF;color:#1C2938;z-index:10000}
+.kmc-import-runtime .kir-category-dialog::backdrop{background:rgba(18,32,51,.54)}
+.kmc-import-runtime .kir-category-dialog-inner,.kmc-import-runtime .kir-category-form{display:grid;gap:16px;padding:26px}
+.kmc-import-runtime .kir-category-head>span{font-size:11px;font-weight:800;letter-spacing:.08em;color:#98620B}
+.kmc-import-runtime .kir-category-head h2,.kmc-import-runtime .kir-category-dialog-inner h2{margin:6px 0 8px;font-size:23px}
+.kmc-import-runtime .kir-category-head p,.kmc-import-runtime .kir-category-note,.kmc-import-runtime .kir-category-no-suggestion{margin:0;font-size:13px;line-height:1.5;color:#56687B}
+.kmc-import-runtime .kir-category-product{display:flex;gap:14px;align-items:flex-start;padding:14px;border:1px solid #DFE5EC;border-radius:12px;background:#F7F9FC}
+.kmc-import-runtime .kir-category-product img{width:72px;height:72px;object-fit:contain;border-radius:8px;background:#FFF;flex-shrink:0}
+.kmc-import-runtime .kir-category-product strong{display:block;font-size:15px;line-height:1.4}
+.kmc-import-runtime .kir-category-product small{display:block;margin-top:6px;font-size:12px;color:#52647B;line-height:1.45}
+.kmc-import-runtime .kir-category-suggestions{display:grid;gap:8px}
+.kmc-import-runtime .kir-category-suggestions>strong{font-size:13px}
+.kmc-import-runtime .kir-category-suggestions>div{display:flex;flex-wrap:wrap;gap:6px}
+.kmc-import-runtime .kir-category-suggestions button{font:inherit;font-size:12px;font-weight:700;border:1px solid #BCD4F5;background:#EDF5FF;border-radius:8px;padding:9px 11px;color:#174A99;cursor:pointer}
+.kmc-import-runtime .kir-category-suggestions button:hover{border-color:#377CCD;background:#DBEAFF}
+.kmc-import-runtime .kir-category-form label{font-size:13px;font-weight:800}
+.kmc-import-runtime .kir-category-form select{display:block;width:100%;min-height:46px;max-width:100%;padding:10px 12px;border:1px solid #A9B7CA;border-radius:9px;background:#FFF;color:#203147;font:inherit;font-size:14px}
+.kmc-import-runtime .kir-category-form select:focus-visible,.kmc-import-runtime .kir-category-form button:focus-visible{outline:3px solid #69A5E8;outline-offset:2px}
+.kmc-import-runtime .kir-category-feedback{margin:0;min-height:20px;font-size:13px;color:#B42318;line-height:1.45}
+.kmc-import-runtime .kir-category-buttons{display:flex;justify-content:flex-end;gap:10px}
+.kmc-import-runtime .kir-category-buttons button,.kmc-import-runtime .kir-category-dialog-inner button{min-height:42px;padding:10px 15px;border-radius:9px;border:1px solid #CAD5E3;background:#FFF;font-size:13px;font-weight:800;cursor:pointer}
+.kmc-import-runtime .kir-category-buttons [type="submit"]{background:#1768D3;color:#FFF;border-color:#1768D3}
+.kmc-import-runtime .kir-category-buttons [type="submit"]:disabled{opacity:.5;cursor:wait}
+.kmc-import-runtime .kir-category-success{margin:0 0 18px;padding:14px 16px;border:1px solid #9BD6B8;border-left:4px solid #16865B;border-radius:9px;background:#F1FBF6;color:#13583C;font-weight:700;font-size:13.5px}
+@media(max-width:650px){.kmc-import-runtime .kir-category-form,.kmc-import-runtime .kir-category-dialog-inner{padding:18px}.kmc-import-runtime .kir-category-product img{width:56px;height:56px}.kmc-import-runtime .kir-category-buttons{flex-wrap:wrap}.kmc-import-runtime .kir-category-buttons button{flex:1 1 auto}}

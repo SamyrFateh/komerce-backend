@@ -266,6 +266,8 @@ module.exports = {
       'POST /api/admin/workspaces/sourcing/sources/:sourceRef/catalog-changes/observe',
       'POST /api/admin/workspaces/sourcing/sources/:sourceRef/capabilities/:capability',
       'POST /api/admin/workspaces/sourcing/products/:productRef/update',
+      'GET /api/admin/workspaces/sourcing/candidates/:candidateRef/category-options',
+      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/resolve-category',
       'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/update',
       'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/scan',
       'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/promote',
@@ -311,6 +313,7 @@ module.exports = {
         'et catalog-promotion.js pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/' +
         'product_skus/product_sku_media dans la transaction de POST .../import-product)',
       'economic-engine (pricing-engine.loadGlobalConfig — config de scan)',
+      'customs (customs-dynamic-category-classifier : score des catégories actives pour suggestions Sourcing, lecture uniquement ; aucune clé codée en dur)',
       'auth',
       'dashboard (registre partenaires partagé via partner-admin-service ; 4E filtre strictement partner_type=sourcing)',
     ],

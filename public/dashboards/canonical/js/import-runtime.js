@@ -43,6 +43,7 @@
   let activationTimer = null;
   let activationState = null;
   let commandState = null;
+  let categoryDialogState = null;
   // Premier import ponctuel : distinct de l'activation de l'alimentation automatique.
   let firstImportState = null;
   let prepareState = null;
@@ -1495,13 +1496,17 @@
     const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour à Action requise');
     const rows = items.map(item => {
       const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du passage' : 'Produit à examiner');
-      const control = item.action_origin !== 'deferred' && item.action === 'choose' && item.candidate_ref
-        ? `<button type="button" class="kir-row-action" data-action-choose data-candidate-ref="${esc(item.candidate_ref)}">${esc(item.action_label)}</button>`
-        : `<a class="kir-row-action" href="${workspace}">${esc(item.action_label)} →</a>`;
+      // « Classer » agit sur l'objet exact, sans quitter le cockpit ni saisie libre.
+      const control = item.action === 'choose' && item.candidate_ref
+        ? `<button type="button" class="kir-row-action kir-classify-btn" data-action-classify
+            data-candidate-ref="${esc(item.candidate_ref)}"
+            data-product-name="${esc(title)}"
+            data-action-reason="${esc(item.reason || '')}">Classer →</button>`
+        : `<a class="kir-row-action" href="${workspace}">${esc(item.action_label || 'Examiner')} dans Sourcing →</a>`;
       return `<tr>
         <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : ''}<strong>${esc(title)}</strong>${item.supplier_product_id ? `<small>${esc(item.supplier_product_id)}</small>` : ''}</td>
         <td>${esc(item.reason)}${item.action_origin === 'deferred' ? '<small>Mis de côté · correction humaine possible</small>' : ''}</td>
-        <td>${item.action_origin === 'deferred' ? `<a class="kir-row-action" href="${workspace}">${esc(item.action_label)} dans Sourcing →</a>` : control}</td>
+        <td>${control}</td>
       </tr>`;
     }).join('');
     return drillHeader(
@@ -2540,27 +2545,131 @@
       });
     });
   }
-  // « Choisir » : le classement se règle sur place avec l'endpoint candidat existant ; la projection
-  // est ensuite relue (le compteur baisse sans rafraîchir la page).
-  function bindActionList(root) {
-    root.querySelectorAll?.('[data-action-choose]').forEach(button => {
-      button.addEventListener('click', async () => {
-        const ref = button.getAttribute('data-candidate-ref');
-        if (!ref || button.disabled) return;
-        const category = global.prompt ? global.prompt('Catégorie Komerce pour ce produit', '') : null;
-        if (category == null || !String(category).trim()) return;
-        button.disabled = true;
-        button.setAttribute('aria-busy', 'true');
+
+  // Une tâche de production ne doit jamais demander une clé technique dans prompt().
+  // Un seul panneau accessible : preuve produit → suggestions canoniques → choix humain → scan audité.
+  function closeCategoryDialog() {
+    const dialog = categoryDialogState;
+    categoryDialogState = null;
+    if (!dialog) return;
+    if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+    dialog.remove?.();
+  }
+
+  async function openCategoryDialog(root, button) {
+    if (categoryDialogState || button.disabled) return;
+    const ref = button.getAttribute('data-candidate-ref');
+    if (!ref) return;
+    const dialog = global.document.createElement('dialog');
+    dialog.className = 'kir-category-dialog';
+    dialog.setAttribute('data-category-remediation', '');
+    dialog.setAttribute('aria-labelledby', 'kir-category-heading');
+    dialog.innerHTML = `<div class="kir-category-dialog-inner">
+      <h2 id="kir-category-heading">Classer ce produit</h2>
+      <p>Chargement des catégories Komerce…</p>
+      <button type="button" data-category-cancel>Fermer</button>
+    </div>`;
+    root.appendChild(dialog);
+    categoryDialogState = dialog;
+    dialog.showModal?.();
+    if (!dialog.open) dialog.setAttribute('open', '');
+    const cancel = () => { if (!dialog.hasAttribute('data-category-saving')) closeCategoryDialog(); };
+    dialog.querySelector('[data-category-cancel]')?.addEventListener('click', cancel);
+    dialog.addEventListener('cancel', event => {
+      if (dialog.hasAttribute('data-category-saving')) event.preventDefault();
+      else { event.preventDefault(); closeCategoryDialog(); }
+    });
+    try {
+      const data = await api(`/api/admin/workspaces/sourcing/candidates/${encodeURIComponent(ref)}/category-options`);
+      if (categoryDialogState !== dialog) return;
+      const categories = Array.isArray(data.categories) ? data.categories : [];
+      const suggestions = Array.isArray(data.suggestions) ? data.suggestions.filter(entry =>
+        categories.some(category=>category.key===entry.key)).slice(0,3) : [];
+      const suggestedKeys = new Set(suggestions.map(entry=>entry.key));
+      const opts = cat => `<option value="${esc(cat.key)}" ${cat.key===data.current_category ? 'selected' : ''}>${esc(cat.label)} (${esc(cat.key)})</option>`;
+      const first = suggestions.length ? `<optgroup label="Suggestions du moteur — à confirmer">${suggestions.map(entry => opts(categories.find(cat=>cat.key===entry.key))).join('')}</optgroup>` : '';
+      const remaining = categories.filter(cat=>!suggestedKeys.has(cat.key));
+      const rest = `<optgroup label="Toutes les autres catégories actives">${remaining.map(opts).join('')}</optgroup>`;
+      dialog.innerHTML = `<form class="kir-category-form" data-category-form>
+        <div class="kir-category-head">
+          <span>REMÉDIATION SOURCING · ${esc(ref)}</span>
+          <h2 id="kir-category-heading">Classer ce produit</h2>
+          <p>Choisissez sa <b>catégorie de calcul Sourcing / Douane</b>. Ce n'est pas une rubrique de navigation de la boutique.</p>
+        </div>
+        <div class="kir-category-product">
+          ${data.image_url ? `<img src="${esc(data.image_url)}" alt="" loading="lazy">` : ''}
+          <div><strong>${esc(data.product_name || button.getAttribute('data-product-name') || ref)}</strong>
+          <small>Catégorie fournisseur : ${esc(data.supplier_category || 'Non renseignée')}</small>
+          <small>Pourquoi ? ${esc(button.getAttribute('data-action-reason') || 'Catégorie non déterminée')}</small></div>
+        </div>
+        ${suggestions.length ? `<div class="kir-category-suggestions"><strong>Suggestions calculées — à vérifier</strong>
+          <div>${suggestions.map(entry=>`<button type="button" data-suggest-key="${esc(entry.key)}">${esc(entry.label)} · ${entry.confidence==='high' ? 'forte' : entry.confidence==='medium' ? 'moyenne' : 'faible'} correspondance</button>`).join('')}</div></div>` : '<p class="kir-category-no-suggestion">Aucune correspondance fiable détectée. Choisissez une catégorie dans la liste ; aucune valeur ne sera devinée.</p>'}
+        <label for="kir-category-choice">Catégorie Komerce existante</label>
+        <select id="kir-category-choice" data-category-choice required>
+          <option value="">— Choisir une catégorie —</option>
+          ${first}${rest}
+        </select>
+        <p class="kir-category-note">Le choix sera enregistré avec une trace d'audit puis le scanner réévaluera le produit. Aucune publication ni commande fournisseur automatique.</p>
+        <p class="kir-category-feedback" data-category-feedback role="status" aria-live="polite"></p>
+        <div class="kir-category-buttons"><button type="button" data-category-cancel>Annuler</button>
+        <button type="submit" data-category-confirm>Confirmer et réanalyser</button></div>
+      </form>`;
+      const form=dialog.querySelector('[data-category-form]');
+      const select=dialog.querySelector('[data-category-choice]');
+      const feedback=dialog.querySelector('[data-category-feedback]');
+      const submit=dialog.querySelector('[data-category-confirm]');
+      dialog.querySelector('[data-category-cancel]')?.addEventListener('click', cancel);
+      dialog.querySelectorAll('[data-suggest-key]').forEach(suggestion=>{
+        suggestion.addEventListener('click',()=>{
+          select.value=suggestion.getAttribute('data-suggest-key');
+          select.focus();
+        });
+      });
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();
+        const categoryKey=select.value;
+        if (!categoryKey || !categories.some(category=>category.key===categoryKey)) {
+          feedback.textContent='Sélectionnez une catégorie existante pour continuer.';
+          select.focus();
+          return;
+        }
+        if (dialog.hasAttribute('data-category-saving')) return;
+        dialog.setAttribute('data-category-saving','');
+        submit.disabled=true;
+        select.disabled=true;
+        feedback.textContent='Enregistrement et nouveau scan en cours…';
         try {
-          await api(`/api/admin/workspaces/sourcing/candidates/${encodeURIComponent(ref)}/update`, { method:'POST', body:{ komerce_category:String(category).trim() } });
-          await refresh({ preserve:true });
-        } catch (error) {
-          button.disabled = false;
-          button.removeAttribute('aria-busy');
-          const main = root.querySelector?.('.kir-main');
-          if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Action · ${esc(error.message)}</div>`);
+          const result=await api(`/api/admin/workspaces/sourcing/candidates/${encodeURIComponent(ref)}/resolve-category`,
+            {method:'POST',body:{category_key:categoryKey}});
+          if (categoryDialogState !== dialog) return;
+          const saved=result.result || {};
+          const success=`Catégorie « ${saved.category?.label || categoryKey} » enregistrée et produit réanalysé. Décision : ${saved.scan?.decision || 'à vérifier'}.`;
+          closeCategoryDialog();
+          await refresh({preserve:true});
+          const main=mountedRoot?.querySelector?.('.kir-main');
+          if(main) main.insertAdjacentHTML('afterbegin',`<div class="kir-category-success" role="status">${esc(success)} Aucun produit n'a été publié automatiquement.</div>`);
+        } catch(error) {
+          if (categoryDialogState !== dialog) return;
+          feedback.textContent=error.message || 'La correction n’a pas pu être enregistrée.';
+          dialog.removeAttribute('data-category-saving');
+          submit.disabled=false;
+          select.disabled=false;
         }
       });
+      select.focus();
+    } catch(error) {
+      if (categoryDialogState !== dialog) return;
+      const body=dialog.querySelector('.kir-category-dialog-inner');
+      if (body) body.innerHTML=`<h2 id="kir-category-heading">Classement indisponible</h2>
+        <p role="alert">${esc(error.message || 'Le référentiel ne peut pas être chargé.')}</p>
+        <button type="button" data-category-cancel>Fermer</button>`;
+      dialog.querySelector('[data-category-cancel]')?.addEventListener('click',cancel);
+    }
+  }
+
+  function bindActionList(root) {
+    root.querySelectorAll?.('[data-action-classify]').forEach(button => {
+      button.addEventListener('click', () => openCategoryDialog(root, button));
     });
   }
 
@@ -2669,7 +2778,7 @@
       const wizardTyping = Boolean(wizardState)
         && /^(INPUT|TEXTAREA)$/.test(String(global.document?.activeElement?.tagName || ''))
         && Boolean(global.document?.activeElement?.closest?.('[data-source-wizard]'));
-      if (!(typing && view === 'passages') && !wizardTyping) render(mountedRoot, payload);
+      if (!(typing && view === 'passages') && !wizardTyping && !categoryDialogState) render(mountedRoot, payload);
     } catch (error) {
       // Une erreur issue d'une lecture devenue obsolète ne doit ni repeindre l'écran ni afficher une alerte.
       if (!refreshStillCurrent(token)) return;
@@ -2693,6 +2802,7 @@
     refreshEpoch += 1;
     activationState = null;
     firstImportState = null;
+    closeCategoryDialog();
     prepareState = null;
     wizardState = null;
     stopActivationPolling();

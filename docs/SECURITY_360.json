@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-13T12:09:14.819Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 729,
-    "protected": 674,
+    "total": 731,
+    "protected": 676,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2368,6 +2368,14 @@
       ]
     },
     {
+      "key": "GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/category-options",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/promote",
       "level": "PROTECTED",
       "roles": [
@@ -2377,6 +2385,14 @@
     },
     {
       "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/reject",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/resolve-category",
       "level": "PROTECTED",
       "roles": [
         "admin",
