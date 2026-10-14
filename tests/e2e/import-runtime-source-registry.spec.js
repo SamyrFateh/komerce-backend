@@ -162,6 +162,13 @@ async function mount(page, backend) {
       backend.runs.push(emptyRun('KIR-000010', 'CJdropshipping'));
       return json(route, { ok: true, result: { prepared: true, autopilot_enabled: false, certification_run: { status: 'certified', run_ref: 'KIR-000010' } } });
     }
+    if (req.method() === 'POST' && p === `${base}/api:cj/import-now`) {
+      backend.calls.push('import-now');
+      await new Promise(resolve => setTimeout(resolve, 350));
+      if (backend.importError) return json(route, { error:'Test fournisseur indisponible', code:'provider_unavailable' }, 409);
+      backend.runs.push(emptyRun('KIR-000012', 'CJdropshipping'));
+      return json(route, { ok:true, result:{ run_ref:'KIR-000012', status:'completed', source_ref:'api:cj' } });
+    }
     if (req.method() === 'POST' && p === `${base}/api:cj/activate`) {
       backend.calls.push('activate');
       if (!backend.source.certified) return json(route, { error: 'Source non certifiée', code: 'sourcing_source_activation_blocked' }, 409);
@@ -246,6 +253,58 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
     expect(backend.runs.map((r) => r.run_ref)).toEqual(['KIR-000010', 'KIR-000011']);
     await page.screenshot({ path: 'test-results/import-runtime-source-registry-active.png' });
+  });
+
+  test('premier passage CJ après purge : bouton dédié, import-now une fois, suivi KIR et autopilot OFF', async ({ page }) => {
+    const backend = createBackend();
+    backend.source = { connected:true, certified:true, enabled:false };
+    await mount(page, backend);
+    await boot(page);
+    const first = card(page).locator('[data-source-first-import]');
+    await expect(first).toHaveText('Lancer le premier passage');
+    await expect(card(page).locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'false');
+    await first.click();
+    await expect(first).toBeDisabled();
+    await expect(first).toHaveAttribute('aria-busy', 'true');
+    await expect(page).toHaveURL(/run=KIR-000012/);
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    expect(backend.calls.filter(call => call === 'import-now')).toHaveLength(1);
+    expect(backend.calls).not.toContain('activate');
+    expect(backend.source.enabled).toBe(false);
+    await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
+    await expect(card(page).locator('[data-source-first-import]')).toHaveCount(0);
+    await expect(card(page).locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'false');
+    await expect(card(page).locator('.kir-source-follow')).toContainText('Voir le suivi');
+  });
+
+  test('premier passage : refus fournisseur affiché, pas de KIR fictif, action réessayable, autopilot OFF', async ({ page }) => {
+    const backend = createBackend();
+    backend.source = { connected:true, certified:true, enabled:false };
+    backend.importError = true;
+    await mount(page, backend);
+    await boot(page);
+    const first = card(page).locator('[data-source-first-import]');
+    await first.click();
+    await expect(card(page).locator('[role="alert"]')).toContainText('Test fournisseur indisponible');
+    await expect(first).toBeEnabled();
+    await expect(page).toHaveURL(/view=sources/);
+    expect(backend.runs).toHaveLength(0);
+    expect(backend.calls.filter(call => call === 'import-now')).toHaveLength(1);
+    expect(backend.calls).not.toContain('activate');
+    expect(backend.source.enabled).toBe(false);
+  });
+
+  test('premier passage absent pour une source non certifiée ou déjà alimentée', async ({ page }) => {
+    const backend = createBackend();
+    backend.source = { connected:true, certified:false, enabled:false };
+    await mount(page, backend);
+    await boot(page);
+    await expect(card(page).locator('[data-source-first-import]')).toHaveCount(0);
+    backend.source.certified = true;
+    backend.runs.push(emptyRun('KIR-000010', 'CJdropshipping'));
+    await page.reload();
+    await boot(page);
+    await expect(card(page).locator('[data-source-first-import]')).toHaveCount(0);
   });
 
   test('B bis : connexion refusée → message métier, source toujours verrouillée, aucun secret affiché', async ({ page }) => {
