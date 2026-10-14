@@ -52,8 +52,11 @@ test('Golden: backend manquant ou indisponible invalide le cache de preuve',()=>
   expect(js).toContain("backend=Array(steps.length).fill(null);$('liveState').textContent='Preuves indisponibles");
   expect(js).toContain('if(ref!==requestedRef)return');
   expect(js).toContain('if(readId!==evidenceRead)return');
+  expect(js).toContain('function validGoldenProjection(p,requestedRef)');
+  expect(js).toContain('p.steps.length===steps.length');
+  expect(js).toContain('s.key===goldenKeys[i]');
   expect(js).toContain("$('pass').disabled=!proofReady");
-  expect(js).toContain('backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)');
+  expect(js).toContain('proofReady=validGoldenProjection(body.projection,requestedRef)');
 });
 
 test('Golden: constats locaux indexés par market, référence et version du guide',()=>{

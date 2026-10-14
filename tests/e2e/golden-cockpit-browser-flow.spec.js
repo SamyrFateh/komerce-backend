@@ -11,7 +11,7 @@ const ORIGIN='http://komerce.test';
 const html=fs.readFileSync(path.join(__dirname,'..','..','public','golden-e2e-cockpit.html'),'utf8');
 
 async function mount(page){
-  const state={creates:[],advances:0,evidenceUnavailable:false};
+  const state={creates:[],advances:0,evidenceUnavailable:false,malformedEvidence:false};
   await page.route(ORIGIN+'/**',async route=>{
     const req=route.request(), url=new URL(req.url());
     if(url.pathname==='/admin/golden-e2e') return route.fulfill({
@@ -28,7 +28,8 @@ async function mount(page){
       return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',marketCode:state.creates.at(-1).marketCode})});
     }
     if(url.pathname.endsWith('/golden-evidence')&&state.evidenceUnavailable) return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Backend indisponible'})});
-    if(url.pathname.endsWith('/golden-evidence')) return route.fulfill({contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',steps:[
+    if(url.pathname.endsWith('/golden-evidence')&&state.malformedEvidence)return route.fulfill({contentType:'application/json',body:JSON.stringify({order:{reference:'K-GOLDEN-BROWSER'},steps:[]})});
+    if(url.pathname.endsWith('/golden-evidence')) return route.fulfill({contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',order:{reference:'K-GOLDEN-BROWSER'},steps:[
       {key:'CLIENT_ORDER',passed:true,evidence:'ordered'},{key:'CLIENT_PAYMENT',passed:true,evidence:'paid'},{key:'PURCHASING',passed:true,evidence:'PO confirmed'},{key:'SUPPLIER_EXECUTION',passed:true,evidence:'matched'},{key:'FULFILLMENT',passed:true,evidence:'tracking'},
       {key:'HUB_INBOUND',passed:state.advances>0,evidence:state.advances>0?'matched':'pending'},{key:'CUSTOMS',passed:false,evidence:'pending'},{key:'RELAY_AVAILABLE',passed:false,evidence:'pending'},{key:'CUSTOMER_HANDOFF',passed:false,evidence:'pending'},{key:'FINANCIAL_CLOSE',passed:false,evidence:'pending'}]})});
     if(url.pathname.endsWith('/golden-advance')&&req.method()==='POST'){
@@ -273,6 +274,21 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.reload();
     await expect(page.locator('#scenarioProgress')).toContainText('1 observation');
     await expect(page.locator('#scenarioAuth')).toContainText('NON VÉRIFIÉ');
+  });
+
+  test('projection de commande vide ou incomplète ne permet aucun Conforme',async({page})=>{
+    const state=await mount(page);
+    await page.locator('#createGolden').click();
+    await expect(page.locator('#backendEvidence')).toContainText('ordered');
+    await page.locator('#wizardNext').click();
+    await page.locator('#wizardNext').click();
+    state.malformedEvidence=true;
+    await page.locator('#wizardTechnical summary').click();
+    await page.locator('#refresh').click();
+    await expect(page.locator('#liveState')).toContainText('Projection backend incomplète');
+    await expect(page.locator('#pass')).toBeDisabled();
+    await expect(page.locator('#backendEvidence')).toHaveText('—');
+    await expect(page.locator('#wizardNext')).toBeDisabled();
   });
 
 });
