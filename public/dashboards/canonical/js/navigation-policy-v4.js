@@ -901,9 +901,14 @@
   }
 
   function sidebarItemActive(item, surface) {
-    if ((item.surfaces || []).includes(surface)) return true;
     const current = String(global.location?.pathname || '');
-    return current && current === String(item.href || '').split('?')[0];
+    const search = new URLSearchParams(String(global.location?.search || ''));
+    // Raffinerie et Catalogue partagent un endpoint sans partager la sélection de menu.
+    if (current === '/admin/workspaces/catalog' && ['workspace-refinery', 'workspace-catalog'].includes(item.id)) {
+      return item.id === (search.get('view') === 'refinery' ? 'workspace-refinery' : 'workspace-catalog');
+    }
+    if ((item.surfaces || []).includes(surface)) return true;
+    return Boolean(current && current === String(item.href || '').split('?')[0]);
   }
 
   function renderGroupedSidebar(doc, header, user, adminContext, surface) {
