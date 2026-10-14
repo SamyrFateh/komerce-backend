@@ -450,7 +450,8 @@
     </section>`;
   }
 
-  // Résultat du passage : quatre chiffres, chacun lu tel quel dans la comptabilité serveur.
+  // Résultat du passage : cinq mesures serveur. Les actions sont un sous-ensemble
+  // des populations, jamais un sixième groupe à additionner.
   function sourcingOutcome(run) {
     const a = run?.accounting || {};
     const stages = Array.isArray(run?.stages) ? run.stages : [];
@@ -460,8 +461,9 @@
       received:num(a.source_total),
       ready:h.certified,
       deferred:num(a.deferred),
-      // Issues automatiques terminales : ni erreur ni intervention. DEFERRED reste une issue
-      // comptabilisée (preuve de comptage), il n'est pas présenté comme un écart à traiter.
+      deferredActionable:num(a.deferred_actionable),
+      // Les décisions terminales DEFERRED restent dans leur population d'origine,
+      // mais une décision WATCH à corriger peut aussi figurer dans « Action requise ».
       discarded:num(a.duplicates) + num(a.rejected),
       actionRequired:num(a.action_required),
       unaccounted:num(a.unaccounted) + num(a.overflow),
@@ -476,7 +478,7 @@
     const tiles = [
       ['Produits reçus', o.received, 'file', populationUrl(run.run_ref, 'received'), 'is-received', 'de la source'],
       ['Retenus par Sourcing', o.ready, 'accepted', populationUrl(run.run_ref, 'ready'), 'is-delivered', 'qualifiés pour la suite'],
-      ['Mis de côté', o.deferred, 'box', populationUrl(run.run_ref, 'deferred'), 'is-deferred', 'non retenus pour ce passage'],
+      ['Mis de côté', o.deferred, 'box', populationUrl(run.run_ref, 'deferred'), 'is-deferred', o.deferredActionable ? `dont ${o.deferredActionable} à corriger` : 'non retenus pour ce passage'],
       ['Écartés automatiquement', o.discarded, 'reject', populationUrl(run.run_ref, 'discarded'), 'is-discarded', 'au contrôle de réception'],
       ['Action requise', o.actionRequired, 'alert', urlFor(run.run_ref, 'exceptions'), open ? 'is-review is-attention' : 'is-review', open ? 'Intervenir →' : 'rien à faire'],
     ];
@@ -1492,21 +1494,21 @@
     const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour à Action requise');
     const rows = items.map(item => {
       const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du passage' : 'Produit à examiner');
-      const control = item.action === 'choose' && item.candidate_ref
+      const control = item.action_origin !== 'deferred' && item.action === 'choose' && item.candidate_ref
         ? `<button type="button" class="kir-row-action" data-action-choose data-candidate-ref="${esc(item.candidate_ref)}">${esc(item.action_label)}</button>`
         : `<a class="kir-row-action" href="${workspace}">${esc(item.action_label)} →</a>`;
       return `<tr>
         <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : ''}<strong>${esc(title)}</strong>${item.supplier_product_id ? `<small>${esc(item.supplier_product_id)}</small>` : ''}</td>
-        <td>${esc(item.reason)}</td>
-        <td>${control}</td>
+        <td>${esc(item.reason)}${item.action_origin === 'deferred' ? '<small>Mis de côté · correction humaine possible</small>' : ''}</td>
+        <td>${item.action_origin === 'deferred' ? `<a class="kir-row-action" href="${workspace}">${esc(item.action_label)} dans Sourcing →</a>` : control}</td>
       </tr>`;
     }).join('');
     return drillHeader(
       run,
       count > 0 ? `Action requise · ${count}` : 'Action requise',
       count > 0
-        ? 'Uniquement ce que Komerce ne peut pas résoudre seul. Le cockpit se met à jour dès que la vérité change.'
-        : 'Komerce travaille seul. Aucune intervention n’est nécessaire.'
+        ? 'Cette liste peut inclure des produits mis de côté pour une donnée corrigeable. Corrigez dans Sourcing puis relancez une analyse ; le lot source reste une preuve historique.'
+        : 'Komerce ne signale aucune correction humaine nécessaire pour ce passage.'
     ) + (rows
       ? `<div class="kir-table-wrap"><table class="kir-table" data-action-list>
           <thead><tr><th>Produit</th><th>Pourquoi</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`
@@ -1573,7 +1575,7 @@
       return `<tr data-population-item>
         <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : '<span class="kir-action-thumb is-empty"></span>'}${titleHtml}</td>
         <td>${esc(item.supplier_product_id || '—')}</td>
-        <td><span class="kir-issue is-${esc(item.issue_key || 'control')}">${esc(item.issue_key === 'deferred' && item.decision ? (ITEM_DECISION_LABELS[item.decision] || item.issue_label) : item.issue_label || '—')}</span>${item.reason ? `<small>${esc(item.reason)}</small>` : item.issue_key === 'deferred' ? '<small>Motif détaillé non renseigné</small>' : ''}</td>
+        <td><span class="kir-issue is-${esc(item.issue_key || 'control')}">${esc(item.issue_key === 'deferred' && item.decision ? (ITEM_DECISION_LABELS[item.decision] || item.issue_label) : item.issue_label || '—')}</span>${item.reason ? `<small>${esc(item.reason)}</small>` : item.issue_key === 'deferred' ? '<small>Motif détaillé non renseigné</small>' : ''}${item.needs_human_action ? `<small>À corriger · <a href="${urlFor(run.run_ref, 'exceptions')}" data-cockpit-nav>Voir l’action →</a></small>` : ''}</td>
       </tr>`;
     }).join('');
   }
@@ -1609,6 +1611,7 @@
     const decision = ITEM_DECISION_LABELS[code] || null;
     const reason = trace?.certification?.reason;
     const next = trace?.certification?.recommended_action;
+    const humanAction = trace?.certification?.human_action;
     const showDecision = deferred || discarded || review;
     return `<section class="kir-item-verdict is-${esc(situation[0])}" aria-label="Statut du produit">
       <div class="kir-item-verdict-head"><span>STATUT DU PRODUIT</span><strong>${esc(situation[1])}</strong></div>
@@ -1617,6 +1620,7 @@
         <div><dt>Décision Sourcing</dt><dd>${esc(decision || 'Non renseignée')}</dd></div>
         <div><dt>Pourquoi ?</dt><dd>${esc(reason || 'Le motif détaillé n’est pas renseigné pour ce produit.')}</dd></div>
         ${next ? `<div><dt>Suite recommandée</dt><dd>${esc(next)}</dd></div>` : ''}
+        ${humanAction ? `<div><dt>Intervention humaine</dt><dd>Correction à effectuer dans Sourcing, puis nouvelle analyse · <a href="${urlFor(trace.run_ref, 'exceptions')}" data-cockpit-nav>Voir Action requise →</a></dd></div>` : ''}
       </dl>` : ''}
     </section>`;
   }
@@ -1653,7 +1657,7 @@
     const POPULATION_COPY = Object.freeze({
     received: ['Produits reçus', 'Les produits envoyés par la source pour ce passage et leur situation actuelle. Consultation : aucune action n’est nécessaire.', 'Situation'],
     ready: ['Retenus par Sourcing', 'Produits validés par Sourcing pour la suite. Leur remise réelle au Catalogue est indiquée dans le suivi.', 'Remise'],
-    deferred: ['Mis de côté', 'Produits non retenus pour ce passage (WATCH, AVOID ou LOSS). Leur décision et leur motif restent consultables.', 'Décision et motif'],
+    deferred: ['Mis de côté', 'Produits non retenus pour ce passage. Certains WATCH peuvent exiger une correction ; les autres sont simplement surveillés ou non retenus.', 'Décision et motif'],
     discarded: ['Écartés automatiquement', 'Rejets dès la réception ou par règle. Le moteur distingue le rejet du blocage de certification fournisseur.', 'Motif'],
   });
 

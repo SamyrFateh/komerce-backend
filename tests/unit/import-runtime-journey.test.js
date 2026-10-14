@@ -276,6 +276,59 @@ const ITEMS = [
   { candidate_ref:'KSC-3', product_name:'Coque C', supplier_product_id:'SP-3', reason:'Donnée obligatoire manquante', action:'complete', action_label:'Compléter' },
 ];
 
+test('12 mis de côté dont 3 corrigeables : sous-ensemble et non sixième population', () => {
+  const rows = [
+    { candidate_ref:'KSC-300', product_name:'À classer', supplier_product_id:'SP-300', reason:'Catégorie Komerce non résolue', action:'choose', action_label:'Classer', action_origin:'deferred', correction_kind:'category' },
+    { candidate_ref:'KSC-301', product_name:'Prix absent', supplier_product_id:'SP-301', reason:"Prix d'achat manquant", action:'complete', action_label:'Compléter', action_origin:'deferred', correction_kind:'purchase_price' },
+    { candidate_ref:'KSC-302', product_name:'Données absentes', supplier_product_id:'SP-302', reason:'Données économiques insuffisantes', action:'complete', action_label:'Compléter', action_origin:'deferred', correction_kind:'economic_data' },
+  ];
+  const p = scenario({
+    source_total:20,certified:8,catalogued:8,deferred:12, deferred_actionable:3,
+    rejected:0,action_required:3,
+  }, {sourcing_status:'ACTION_REQUIRED',action_items:rows});
+  const h = render(p);
+  expect(tile(h, 'Produits reçus')).toBe('20');
+  expect(tile(h, 'Retenus par Sourcing')).toBe('8');
+  expect(tile(h, 'Mis de côté')).toBe('12');
+  expect(tile(h, 'Action requise')).toBe('3');
+  expect(h).toContain('dont 3 à corriger');
+  expect(h).toContain('Intervenir →');
+  const exceptions = render(p, '?run=KIR-000004&view=exceptions');
+  expect(exceptions).toContain('Mis de côté · correction humaine possible');
+  expect(exceptions).toContain('Classer dans Sourcing →');
+  expect(exceptions).toContain("Prix d'achat manquant");
+  expect(exceptions).toContain('Compléter dans Sourcing →');
+  expect(exceptions).not.toContain('data-action-choose');
+  expect((exceptions.match(/kir-row-action/g)||[])).toHaveLength(3);
+});
+
+test('population et fiche différées : lien vers action humaine uniquement pour un WATCH corrigeable', () => {
+  const population = {
+    kind:'deferred', total:12, unlisted:[], items:[
+      popItem(47, {issue_key:'deferred', issue_label:'Mis de côté', decision:'WATCH',
+        reason:'Catégorie Komerce non résolue', needs_human_action:true}),
+      popItem(48, {issue_key:'deferred', issue_label:'Mis de côté', decision:'WATCH',
+        reason:'Contribution fragile', needs_human_action:false}),
+    ],
+  };
+  const html = drill('population','kind=deferred',null,population);
+  expect(html).toContain('À corriger ·');
+  expect(html).toContain('Voir l’action →');
+  expect((html.match(/À corriger ·/g)||[])).toHaveLength(1);
+  const item = scenario();
+  item.item_trace = {
+    run_ref:RUN, supplier_product_id:'SP-47', product_name:'À classer', product_ref:null,
+    refinery:{done:true},canonical_category:null,
+    certification:{outcome:'deferred',sourcing_certified:false,decision:'WATCH',
+      reason:'Catégorie Komerce non résolue',recommended_action:'Compléter ou corriger la catégorie avant promotion.',
+      human_action:{kind:'category',action:'choose',action_label:'Classer'}},
+  };
+  const detail = render(item, '?run=KIR-000004&view=item&kind=deferred&item=SP-47');
+  expect(detail).toContain('Intervention humaine');
+  expect(detail).toContain('Correction à effectuer dans Sourcing');
+  expect(detail).toContain('Voir Action requise →');
+});
+
 test('CAS E : 3 vraies exceptions → « Action requise 3 » orange cliquable, header « Action requise »', () => {
   const html = render(scenario({ quarantined:2, certification_blocked:1, deferred:4, action_required:3 },
     { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }));
