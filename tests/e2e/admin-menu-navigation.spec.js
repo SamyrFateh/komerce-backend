@@ -51,6 +51,10 @@ test.describe('Menu latéral — une entrée active, accès administration', () 
     await page.waitForSelector('.kmc-admin-primary-link.is-active');
     expect(await activeLabels(page)).toEqual(['Catalogue']);
 
+    await page.goto(`${ORIGIN}/admin/workspaces/catalog?view=refinery`);
+    await page.waitForSelector('.kmc-admin-primary-link.is-active');
+    expect(await activeLabels(page)).toEqual(['Raffinerie']);
+
     // « Produits » n'est plus une entrée de menu : la vue avancée reste dans le Catalogue.
     await page.goto(`${ORIGIN}/admin/workspaces/catalog?view=advanced`);
     await page.waitForSelector('.kmc-admin-primary-link.is-active');

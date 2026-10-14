@@ -170,13 +170,13 @@
     target.textContent = message || '';
   }
 
-  function createHeader(doc) {
+  function createHeader(doc, refinery = false) {
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Catalogue global'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Assortiment commercial approuvé · uniquement les produits issus de KIR clos et réellement mis en vente'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', refinery ? 'WORKSPACE · RAFFINERIE' : 'WORKSPACE · CATALOGUE'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', refinery ? 'Raffinerie produits' : 'Catalogue global'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', refinery ? 'Corriger, enrichir, tarifer et valider avant toute mise au catalogue.' : 'Produits finis et approuvés · exposition et disponibilité commerciale.'));
     header.appendChild(copy);
 
     const nav = doc.createElement('nav');
@@ -187,9 +187,9 @@
     const cockpit = text(doc, 'a', 'kmc-workspace-nav-link', 'Cockpit des imports');
     cockpit.href = '/admin/import-runtime';
     nav.appendChild(cockpit);
-    const sourcing = text(doc, 'a', 'kmc-workspace-nav-link', 'Sourcing');
-    sourcing.href = '/admin/workspaces/sourcing';
-    nav.appendChild(sourcing);
+    const next = text(doc, 'a', 'kmc-workspace-nav-link', refinery ? 'Catalogue →' : '← Raffinerie');
+    next.href = refinery ? '/admin/workspaces/catalog' : '/admin/workspaces/catalog?view=refinery';
+    nav.appendChild(next);
     header.appendChild(nav);
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
@@ -1264,15 +1264,19 @@
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.replaceChildren();
-    rootNode.appendChild(createHeader(doc));
+    const refinery = context.workspaceView === 'refinery';
+    rootNode.appendChild(createHeader(doc, refinery));
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
-    ui.MetricStrip.render(metrics, { items: metricItems(payload.summary, payload.curation) });
-    renderFocusedHandoff(rootNode, ui, doc, payload);
-    renderApproval(rootNode, ui, doc, payload, context);
-    renderProducts(rootNode, ui, doc, payload, context);
-    renderTaxonomy(rootNode, ui, doc, payload, context);
+    ui.MetricStrip.render(metrics, { items: metricItems(payload.summary, payload.curation).filter(item => refinery ? ['approval', 'review'].includes(item.key) : !['approval', 'review'].includes(item.key)) });
+    if (refinery) {
+      renderApproval(rootNode, ui, doc, payload, context);
+    } else {
+      renderFocusedHandoff(rootNode, ui, doc, payload);
+      renderProducts(rootNode, ui, doc, payload, context);
+      renderTaxonomy(rootNode, ui, doc, payload, context);
+    }
   }
 
   async function mount(options = {}) {
@@ -1293,6 +1297,7 @@
       focusedProductRef = null;
     }
     const context = {
+      workspaceView: new URLSearchParams(locationSearch || '').get('view') === 'refinery' ? 'refinery' : 'catalog',
       root: rootNode,
       document: doc,
       user: options.user || {},
