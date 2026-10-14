@@ -104,3 +104,10 @@ describe('canonical-legacy-theme-v1 — canon visuel validé (parité mocks)', (
 test('canonical-legacy-theme-v1.css : plancher typographique (aucun texte sous 10 px)', () => {
   expect(require('../helpers/fontFloor').tinyFonts('canonical-legacy-theme-v1.css')).toEqual([]);
 });
+
+test('la recherche globale conserve un seul indicateur de focus accessible', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/canonical-legacy-theme-v1.css'), 'utf8');
+  expect(css).toContain('.kmc-admin-search:focus-within{');
+  expect(css).toContain('.kmc-admin-search:focus-within .kmc-admin-search-input:focus-visible{');
+  expect(css).toMatch(/\.kmc-admin-search:focus-within \.kmc-admin-search-input:focus-visible\{\s*outline:none;/);
+});
