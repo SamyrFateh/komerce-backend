@@ -25,8 +25,9 @@ test('projette 10 preuves réelles sans mutation DB', async () => {
     .mockResolvedValueOnce({ rows:[{ id:'fulfillment-1', tracking_number:'TRK-1' }] })
     .mockResolvedValueOnce({ rows:[{ order_item_id:'oi-1', ordered_qty:1, parcel_id:'p-1', line_qty:1, qty_received:0, qty_collected:0, parcel_ref:'P1', parcel_status:'collected', customs_ok:true }] }) };
   const result = await projectGoldenEvidence(db, {
-    id:'order-1', reference:'K-GOLDEN-TEST', status:'collected', payment_status:'paid',
+    id:'order-1', reference:'K-GOLDEN-TEST', market_code:'KM', status:'collected', payment_status:'paid',
   });
+  expect(result.order).toMatchObject({ reference:'K-GOLDEN-TEST', market_code:'KM' });
   expect(result.steps).toHaveLength(10);
   expect(result.steps.every(step => step.passed)).toBe(true);
   expect(result.verdict).toBe('FINANCIAL_CLOSE_MATCHED');
