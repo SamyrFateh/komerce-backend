@@ -445,3 +445,47 @@ test('file Raffinerie transmet l identifiant DB en interne pour la certification
   const rows = await workspace._test.queryApprovalQueue({ limit: 1 });
   expect(rows[0].product_id).toBe(42);
 });
+
+test('Raffinerie: vrai moteur de certification côté serveur, sans publication ni fuite d’ID', async () => {
+  const baseline = mockQuery.getMockImplementation();
+  let certificationFactsReads = 0;
+  mockQuery.mockImplementation(async (sql, params) => {
+    const text = String(sql);
+    if (text.includes('WITH media AS (') && text.includes('product_market_exposure')) {
+      certificationFactsReads += 1;
+      expect(params).toEqual([42]);
+      return { rows: [{
+        product_id: 42, product_ref: 'KPR-CJ-TEST',
+        has_sourcing_candidate: true, supplier_name: 'CJdropshipping',
+        supplier_product_id: 'CJ-TEST-1', normalized_source_contract: { schema_version: '2' },
+        sourcing_decision: 'TEST', name: 'Produit de test',
+        description: 'Description en français', source_locale: 'fr',
+        content_source: 'manual', needs_review: false,
+        category: 'general', boutique_category_key: 'maison', boutique_subcategory_key: 'deco',
+        taxonomy_active: true, lifecycle_status: 'candidate',
+        is_active: false, is_available: false, price_kmf: 5000, stock: 0,
+        active_media: 0, active_supplier_skus: 0, complete_supplier_skus: 0, enabled_markets: 0,
+      }] };
+    }
+    if (text.includes("p.lifecycle_status = 'candidate'") && text.includes('LEFT JOIN LATERAL')) {
+      const result = await baseline(sql, params);
+      return { rows: result.rows.map(row => ({ ...row, product_id: 42 })) };
+    }
+    return baseline(sql, params);
+  });
+  const refinery = await workspace.buildWorkspace({ include_readiness: '1', approval_limit: '1' });
+  expect(refinery.approval).toHaveLength(1);
+  expect(certificationFactsReads).toBe(1);
+  expect(refinery.approval[0]).not.toHaveProperty('product_id');
+  expect(refinery.approval[0].certification).toMatchObject({
+    certification_version: 'catalog-certification-v1',
+    certified: false,
+    reasons: expect.arrayContaining(['media_missing', 'active_supplier_sku_missing']),
+  });
+  // Même produit mais Vue Catalogue: zéro lecture de certification supplémentaire.
+  const commercial = await workspace.buildWorkspace({ approval_limit: '1' });
+  expect(certificationFactsReads).toBe(1);
+  expect(commercial.approval[0]).not.toHaveProperty('certification');
+  expect(commercial.approval[0]).not.toHaveProperty('product_id');
+  expect(mockApprove).not.toHaveBeenCalled();
+});

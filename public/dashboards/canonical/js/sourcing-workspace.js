@@ -438,21 +438,96 @@
     bar.appendChild(create);
     slot.appendChild(bar);
 
-    create.addEventListener('click', () => {
-      const name = context.prompt('Nom fournisseur');
-      if (!name) return;
-      const country = context.prompt('Code pays', 'AE');
-      if (country == null) return;
-      const contact = context.prompt('Contact', '');
-      runAction(context, create, {
-        url: `${ENDPOINT}/suppliers`,
-        body: {
-          name: name.trim(),
-          ...(country.trim() ? { country_code: country.trim().toUpperCase() } : {}),
-          ...(contact && contact.trim() ? { contact_name: contact.trim() } : {}),
-        },
-        successMessage: `${name.trim()} ajouté aux fournisseurs sourcing.`,
+    // Un seul éditeur intégré pour création et mise à jour : les routes
+    // fournisseurs sourcing restent les seules autorités d'écriture.
+    const panel = doc.createElement('section');
+    panel.className = 'kmc-workspace-section-actions';
+    panel.setAttribute('data-sourcing-supplier-panel', '');
+    panel.hidden = true;
+    const form = doc.createElement('form');
+    form.className = 'kmc-workspace-section-actions';
+    form.setAttribute('data-sourcing-supplier-form', '');
+    const heading = text(doc, 'h3', 'kmc-workspace-subtitle', '');
+    form.appendChild(heading);
+    function supplierField(title, key, type = 'text') {
+      const wrapper = doc.createElement('label');
+      wrapper.className = 'kmc-catalog-fr-field';
+      wrapper.appendChild(text(doc, 'span', 'kmc-catalog-fr-label', title));
+      const input = doc.createElement('input');
+      input.type = type;
+      input.setAttribute('data-supplier-field', key);
+      wrapper.appendChild(input);
+      form.appendChild(wrapper);
+      return { wrapper, input };
+    }
+    const nameField = supplierField('Nom du fournisseur', 'name');
+    const countryField = supplierField('Code pays (2 lettres)', 'country_code');
+    const contactField = supplierField('Contact (facultatif)', 'contact_name');
+    const delayField = supplierField('Délai fournisseur (jours)', 'lead_time_days', 'number');
+    delayField.input.min = '0';
+    delayField.input.step = '1';
+    const feedback = text(doc, 'p', 'kmc-workspace-subtitle', '');
+    feedback.setAttribute('data-supplier-feedback', '');
+    feedback.setAttribute('role', 'status');
+    form.appendChild(feedback);
+    const save = makeButton(doc, 'Enregistrer', 'submit-supplier');
+    save.type = 'submit';
+    const cancel = makeButton(doc, 'Annuler', 'cancel-supplier', true);
+    cancel.addEventListener('click', () => { panel.hidden = true; });
+    form.appendChild(save);
+    form.appendChild(cancel);
+    panel.appendChild(form);
+    slot.appendChild(panel);
+
+    let editing = null;
+    function openSupplierForm(row = null) {
+      editing = row;
+      heading.textContent = row ? 'Modifier · ' + row.partner_ref : 'Nouveau fournisseur sourcing';
+      nameField.input.value = row?.name || '';
+      countryField.input.value = row?.country_code || 'AE';
+      contactField.input.value = row?.contact_name || '';
+      delayField.input.value = row?.lead_time_days == null ? '' : String(row.lead_time_days);
+      countryField.wrapper.hidden = Boolean(row);
+      contactField.wrapper.hidden = Boolean(row);
+      delayField.wrapper.hidden = !row;
+      feedback.textContent = 'Vérifiez les champs avant enregistrement.';
+      panel.hidden = false;
+      nameField.input.focus?.();
+      panel.scrollIntoView?.({ block: 'nearest' });
+    }
+    create.addEventListener('click', () => openSupplierForm());
+    form.addEventListener('submit', async (event) => {
+      event?.preventDefault?.();
+      const name = String(nameField.input.value || '').trim();
+      if (!name) {
+        feedback.textContent = 'Le nom du fournisseur est obligatoire.';
+        return;
+      }
+      let url = ENDPOINT + '/suppliers';
+      let body;
+      if (editing) {
+        const delay = String(delayField.input.value || '').trim();
+        if (delay && (!/^(0|[1-9][0-9]*)$/.test(delay) || Number(delay) > 3650)) {
+          feedback.textContent = 'Délai invalide : nombre entier de 0 à 3650 jours.';
+          return;
+        }
+        url += '/' + encodeURIComponent(editing.partner_ref) + '/update';
+        body = { name, ...(delay ? { lead_time_days: Number(delay) } : {}) };
+      } else {
+        const country = String(countryField.input.value || '').trim().toUpperCase();
+        if (country && !/^[A-Z]{2}$/.test(country)) {
+          feedback.textContent = 'Code pays invalide : deux lettres sont attendues.';
+          return;
+        }
+        const contact = String(contactField.input.value || '').trim();
+        body = { name, ...(country ? { country_code: country } : {}), ...(contact ? { contact_name: contact } : {}) };
+      }
+      feedback.textContent = 'Enregistrement en cours…';
+      const result = await runAction(context, save, {
+        url, body,
+        successMessage: editing ? editing.partner_ref + ' mis à jour.' : name + ' ajouté aux fournisseurs sourcing.',
       });
+      if (!result) feedback.textContent = 'Enregistrement refusé. Vérifiez le message d’erreur affiché.';
     });
 
     const rows = payload.suppliers || [];
@@ -474,20 +549,7 @@
       tr.appendChild(td(doc, row.is_active ? 'Actif' : 'Inactif'));
       const actions = doc.createElement('td');
       const edit = makeButton(doc, 'Modifier', 'update-supplier', true);
-      edit.addEventListener('click', () => {
-        const name = context.prompt(`Nom · ${row.partner_ref}`, row.name || '');
-        if (name == null) return;
-        const delay = context.prompt('Délai fournisseur (jours)', row.lead_time_days == null ? '' : String(row.lead_time_days));
-        if (delay == null) return;
-        runAction(context, edit, {
-          url: `${ENDPOINT}/suppliers/${encodeURIComponent(row.partner_ref)}/update`,
-          body: {
-            ...(name.trim() ? { name: name.trim() } : {}),
-            ...(delay.trim() ? { lead_time_days: Number(delay) } : {}),
-          },
-          successMessage: `${row.partner_ref} mis à jour.`,
-        });
-      });
+      edit.addEventListener('click', () => openSupplierForm(row));
       actions.appendChild(edit);
       const toggle = makeButton(doc, row.is_active ? 'Désactiver' : 'Réactiver', 'toggle-supplier', true);
       toggle.addEventListener('click', () => {
