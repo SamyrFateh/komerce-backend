@@ -113,20 +113,20 @@ test('niveau 1 : quatre étapes sans compteur, quatre résultats, aucun jargon i
   ui.render(node, payload);
   const html = node.innerHTML;
   expect(html).toContain('FLUX DU PASSAGE');
-  for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Remise Raffinerie']) expect(html).toContain(`<strong>${label}</strong>`);
+  for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Remise au Catalogue']) expect(html).toContain(`<strong>${label}</strong>`);
   for (const jargon of ['Taxonomie', 'Certification', 'certifié(s) sourcing', 'preuve runtime']) expect(html).not.toContain(jargon);
   // Le pipeline ne répète aucun compteur : uniquement des états.
   const flow = html.slice(html.indexOf('kir-run-flow-track'), html.indexOf('RÉSULTAT DU PASSAGE'));
   expect(flow).not.toMatch(/\d+\s*\/\s*\d+/);
   expect(html).toContain('RÉSULTAT DU PASSAGE');
-  for (const label of ['Produits reçus', 'Transmis à la Raffinerie', 'Écartés automatiquement', 'Action requise']) expect(html).toContain(`<span>${label}</span>`);
+  for (const label of ['Produits reçus', 'Retenus par Sourcing', 'Écartés automatiquement', 'Action requise']) expect(html).toContain(`<span>${label}</span>`);
   for (const gone of ['Remis au Catalogue', 'À examiner', 'Entrées source', 'Acceptées', 'Doublons', 'En quarantaine', 'Rejetées']) expect(html).not.toContain(`<span>${gone}</span>`);
   for (const commercial of ['PARCOURS MÉTIER', 'Prêts à vendre', 'En vente', 'Décisions de mise en vente', 'Décisions commerciales', 'Clôture', 'Prix source', 'Décisions attendues']) {
     expect(html).not.toContain(commercial);
   }
   expect(html).toContain('KIR-000003');
   expect(html).not.toContain('&lt;Produit&gt;');
-  expect(html).not.toContain('PASSAGE À LA RAFFINERIE');
+  expect(html).not.toContain('PASSAGE AU CATALOGUE');
 });
 
 test('commandes : source arrêtée → Redémarrer puis Mettre à jour ; source active → Mettre à jour puis Arrêter', () => {
@@ -211,11 +211,12 @@ const stepClass = (html, label) => (html.match(new RegExp(`class="([^"]*)"[^>]*>
 test('CAS A : 20 reçus / 12 prêts / 1 écarté / 0 action ; remise en attente, jamais « transmis » ni « Terminé »', () => {
   const html = render(scenario());
   expect(tile(html, 'Produits reçus')).toBe('20');
-  expect(tile(html, 'Transmis à la Raffinerie')).toBe('12');
+  expect(tile(html, 'Retenus par Sourcing')).toBe('12');
   expect(tile(html, 'Écartés automatiquement')).toBe('1');
+  expect(tile(html, 'Mis de côté')).toBe('7');
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).toContain('20/20 produits comptabilisés');
-  expect(html).toContain('PASSAGE À LA RAFFINERIE');
+  expect(html).toContain('PASSAGE AU CATALOGUE');
   expect(html).toContain('Remise automatique en cours');
   expect(html).toContain('kir-handoff is-waiting');
   for (const forbidden of ['12 transmis', '7 à examiner', 'Décisions attendues', 'kir-handoff is-clean', 'Remise terminée', 'remis au Catalogue']) {
@@ -225,9 +226,9 @@ test('CAS A : 20 reçus / 12 prêts / 1 écarté / 0 action ; remise en attente,
   // parce que la remise Catalogue automatique travaille encore réellement.
   for (const noise of ['is-attention', 'is-failed', 'kir-runtime-alert', 'Ce qui vous attend']) expect(html).not.toContain(noise);
   expect(html).toContain('Progression globale');
-  expect(html).toContain('Remise Raffinerie · 0 / 12');
-  expect(html).toContain('Terminé</span>');
-  expect(stepClass(html, 'Remise Raffinerie')).toContain('is-running');
+  expect(html).toContain('Remise au Catalogue · 0 / 12');
+  expect(html).toContain('Traitement terminé</span>');
+  expect(stepClass(html, 'Remise au Catalogue')).toContain('is-running');
   expect(stepClass(html, 'Contrôle automatique')).toContain('is-completed');
 });
 
@@ -235,7 +236,7 @@ test('CAS B : certified = catalogued = 12 → « ✓ Remise terminée », étape
   const html = render(scenario({ catalogued:12, awaiting_catalogue_promotion:0 }));
   expect(html).toContain('kir-handoff is-clean');
   expect(html).toContain('Remise terminée');
-  expect(stepClass(html, 'Remise Raffinerie')).toContain('is-completed');
+  expect(stepClass(html, 'Remise au Catalogue')).toContain('is-completed');
   expect(html).not.toContain('12/12');
   expect(html).not.toContain('Remise automatique en cours');
 });
@@ -246,7 +247,7 @@ test('CAS C : 12 prêts, 9 au Catalogue, aucune intervention → « 3 restent à
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).not.toContain('is-attention');
   expect(html).not.toContain('Remise terminée');
-  expect(stepClass(html, 'Remise Raffinerie')).toContain('is-running');
+  expect(stepClass(html, 'Remise au Catalogue')).toContain('is-running');
 });
 
 test('CAS D : 7 DEFERRED sans revue humaine → Action requise = 0, aucune carte orange', () => {
@@ -254,17 +255,17 @@ test('CAS D : 7 DEFERRED sans revue humaine → Action requise = 0, aucune carte
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).toContain('rien à faire');
   expect(html).not.toContain('is-attention');
-  expect(html).not.toContain('deferred');
+  expect(html).not.toContain('>deferred<');
   expect(html).not.toContain('différé');
 });
 
 test('CAS A bis : 20 reçus, 0 prêt, 8 deferred normaux → 0 action, pas de handoff, aucun orange', () => {
   const html = render(scenario({ certified:0, catalogued:0, awaiting_catalogue_promotion:0, accepted:12, rejected:0, deferred:8, action_required:0 }));
   expect(tile(html, 'Produits reçus')).toBe('20');
-  expect(tile(html, 'Transmis à la Raffinerie')).toBe('0');
+  expect(tile(html, 'Retenus par Sourcing')).toBe('0');
   expect(tile(html, 'Écartés automatiquement')).toBe('0');
   expect(tile(html, 'Action requise')).toBe('0');
-  expect(html).not.toContain('PASSAGE À LA RAFFINERIE');
+  expect(html).not.toContain('PASSAGE AU CATALOGUE');
   expect(html).not.toContain('Décisions attendues');
   expect(html).not.toContain('is-attention');
 });
@@ -415,7 +416,7 @@ test('les grandes cartes et les étapes ouvrent des vues métier, jamais la gril
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=source"`);
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=control"`);
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=handoff"`);
-  const tiles = html.slice(html.indexOf('kir-run-truth-grid'), html.indexOf('PASSAGE À LA RAFFINERIE') > 0 ? html.indexOf('PASSAGE À LA RAFFINERIE') : undefined);
+  const tiles = html.slice(html.indexOf('kir-run-truth-grid'), html.indexOf('PASSAGE AU CATALOGUE') > 0 ? html.indexOf('PASSAGE AU CATALOGUE') : undefined);
   expect(tiles).not.toContain('view=history');
 });
 
@@ -520,7 +521,7 @@ test('produit différé : motif absent signalé, pas de diagnostic inventé ni r
   expect(html).toContain('Produit &lt;br/&gt;');
 });
 
-test('CAS B : « Transmis à la Raffinerie 12 » = exactement les 12 certified avec l’état de remise, sans action', () => {
+test('CAS B : « Retenus par Sourcing 12 » = exactement les 12 certified avec l’état de remise, sans action', () => {
   const items = [...Array.from({ length: 9 }, (_, i) => popItem(i + 1)), ...Array.from({ length: 3 }, (_, i) => popItem(20 + i, { issue_key:'catalogued', issue_label:'Remis' }))];
   const html = drill('population', 'kind=ready', null, { kind:'ready', total:12, items, unlisted:[] });
   expect((html.match(/data-population-item/g) || []).length).toBe(12);
@@ -628,7 +629,7 @@ test('CAS B : « Tous les passages » remplace le cockpit par la vue Passages (S
   expect(html).toContain('Historique des passages');
   expect(html).toContain('<span class="kir-crumb-domain">Sourcing</span><i aria-hidden="true">›</i><span aria-current="page">Passages');
   expect(html).toContain('← Retour au suivi');
-  for (const col of ['Passage', 'Source', 'Date / heure', 'État Sourcing', 'Produits reçus', 'Transmis Raffinerie', 'Écartés', 'Action requise', 'Remise Raffinerie']) expect(html).toContain(`<th>${col}</th>`);
+  for (const col of ['Passage', 'Source', 'Date / heure', 'État Sourcing', 'Produits reçus', 'Retenus Sourcing', 'Écartés', 'Action requise', 'Remise au Catalogue']) expect(html).toContain(`<th>${col}</th>`);
   for (const gone of ['Décisions finales', 'Approuvés vente', 'Reste']) expect(html).not.toContain(gone);
   expect((html.match(/data-row-href/g) || []).length).toBe(3);
   expect(html).toContain('KIR-000004');
@@ -711,10 +712,10 @@ test('audit : chaque vue du Suivi a pour parent « Suivi » (breadcrumb Sourcing
   const cases = [
     ['source', '', 'Sourcing > Suivi > Source'],
     ['control', '', 'Sourcing > Suivi > Contrôle automatique'],
-    ['handoff', '', 'Sourcing > Suivi > Remise Raffinerie'],
+    ['handoff', '', 'Sourcing > Suivi > Remise au Catalogue'],
     ['exceptions', '', 'Sourcing > Suivi > Action requise'],
     ['population', 'kind=received', 'Sourcing > Suivi > Produits reçus'],
-    ['population', 'kind=ready', 'Sourcing > Suivi > Transmis à la Raffinerie'],
+    ['population', 'kind=ready', 'Sourcing > Suivi > Retenus par Sourcing'],
     ['population', 'kind=discarded', 'Sourcing > Suivi > Écartés automatiquement'],
     ['history', '', 'Sourcing > Suivi > Détail technique'],
   ];
@@ -747,20 +748,20 @@ test('audit : Passages et Sources sont des vues de 1er niveau — onglet actif e
 });
 
 test('audit : produit = Sourcing > Suivi > population > Produit, retour à sa population (jamais au passage)', () => {
-  for (const [kind, label] of [['received', 'Produits reçus'], ['ready', 'Transmis à la Raffinerie'], ['discarded', 'Écartés automatiquement']]) {
+  for (const [kind, label] of [['received', 'Produits reçus'], ['ready', 'Retenus par Sourcing'], ['discarded', 'Écartés automatiquement']]) {
     const html = render(withTrace(), `?run=${RUN}&view=item&kind=${kind}&item=SP-1`);
     expect(crumbText(html)).toBe(`Sourcing > Suivi > ${label} > Produit`);
     expect(backOf(html)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=population&kind=${kind}`, label:`← Retour à ${label}` });
   }
 });
 
-test('audit : produit ouvert depuis Remise Raffinerie revient à Remise Raffinerie', () => {
+test('audit : produit ouvert depuis Remise au Catalogue revient à Remise au Catalogue', () => {
   const population = { kind:'ready', total:1, items:[popItem(1)], unlisted:[] };
   const list = drill('handoff', '', null, population);
   expect(list).toContain(`href="/admin/import-runtime?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff"`);
   const html = render(withTrace(), `?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff`);
-  expect(crumbText(html)).toBe('Sourcing > Suivi > Remise Raffinerie > Produit');
-  expect(backOf(html)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=handoff`, label:'← Retour à Remise Raffinerie' });
+  expect(crumbText(html)).toBe('Sourcing > Suivi > Remise au Catalogue > Produit');
+  expect(backOf(html)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=handoff`, label:'← Retour à Remise au Catalogue' });
 });
 
 test('audit : sortie Catalogue = return_to exact vers l’objet Sourcing d’origine, label contextuel', () => {
@@ -785,7 +786,7 @@ test('audit : détail technique — contrôle, produit ou suivi selon l’origin
   expect(control).toContain(`view=history&stage=TAXONOMY&from=control`);
 
   const fromItem = render(scenario(), `?run=${RUN}&view=history&from=item&item=SP-1&kind=ready&origin=handoff`);
-  expect(crumbText(fromItem)).toBe('Sourcing > Suivi > Remise Raffinerie > Produit > Détail technique');
+  expect(crumbText(fromItem)).toBe('Sourcing > Suivi > Remise au Catalogue > Produit > Détail technique');
   expect(backOf(fromItem)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff`, label:'← Retour au produit' });
   expect(fromItem).toContain('from=item&item=SP-1&kind=ready&origin=handoff');
 
@@ -841,7 +842,7 @@ const sourcesView = (search = '') => { const p = scenario(); p.source_controls =
 test('Sources : synthèse compacte calculée depuis source_controls, une carte par fournisseur', () => {
   const html = sourcesView(`run=${RUN}&`);
   const summary = (html.match(/data-sources-summary>([\s\S]*?)<\/p>/) || [])[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  expect(summary).toBe('3 sources connectées 1 active 1 prête 0 en erreur 1 bloquée');
+  expect(summary).toBe('3 sources configurées 1 active 1 prête 0 en erreur 1 bloquée');
   expect((html.match(/data-source-card=/g) || []).length).toBe(3);
   expect(html).toContain('ACTIVE'); expect(html).toContain('PRÊTE'); expect(html).toContain('BLOQUÉE');
 });
@@ -891,7 +892,7 @@ test('Sources : état d’erreur (preuve runtime) et liste vide sans carte fant�
   const html = render(p, `?run=${RUN}&view=sources`);
   expect((html.match(/data-sources-summary>([\s\S]*?)<\/p>/) || [])[1]).toContain('<strong>1</strong> en erreur');
   expect(html).toContain('ERREUR');
-  expect(html).toContain('Dernière préparation en échec.');
+  expect(html).toContain('Dernière capture fournisseur signalée en échec. Consultez le passage et ses preuves.');
   const empty = scenario(); empty.source_controls = [];
   const none = render(empty, `?run=${RUN}&view=sources`);
   expect(none).toContain('Aucune source récurrente configurée');
