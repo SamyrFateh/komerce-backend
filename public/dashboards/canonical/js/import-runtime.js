@@ -1557,7 +1557,7 @@
       let hint = def.hint;
       if (stage.status === 'RUNNING' && stage.total > 0 && stage.processed < stage.total) hint = `${def.hint} · ${num(stage.processed)} / ${num(stage.total)}`;
       if ((stage.status || 'PENDING') === 'PENDING' && prev && prev.status !== 'COMPLETED') hint = 'Attend la fin de l’étape précédente';
-      if (num(run.accounting?.action_required) > 0 && stage.status === 'FAILED') words = ['attention', 'Action requise'];
+      // Un véritable échec technique reste « Bloqué », même si des corrections humaines existent.
       return statusRow(def.label, words, hint);
     }).join('');
     return drillHeader(run, 'Contrôle automatique', 'Ce que Komerce vérifie seul avant de proposer les produits au Catalogue.')
