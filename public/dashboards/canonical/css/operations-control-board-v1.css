@@ -585,3 +585,22 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Empty operational chain: retain the nine stage identities, remove large
+ * empty columns. Structural alerts are never classified as empty. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain.is-empty .kmc-control-order-list {
+  display: none;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain.is-empty .kmc-control-stage {
+  min-height: 0;
+  height: auto;
+  padding-bottom: 8px;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain-card[data-chain-state="empty"] {
+  min-height: 0;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain-empty-notice {
+  margin: 8px 14px 10px;
+  font-size: 13px;
+  color: #64748b;
+}
