@@ -272,7 +272,7 @@ test.describe('Cockpit imports — remise Catalogue automatique en cours', () =>
 test.describe('Cockpit imports — tout va bien', () => {
   test.beforeEach(async ({ page }) => { await mountCockpit(page, calmPayload); });
 
-  test('écran calme : étapes vertes, remise propre au Catalogue, rien d’orange ni de rouge', async ({ page }) => {
+  test('écran calme : étapes vertes, passage vers la Raffinerie, rien d’orange ni de rouge', async ({ page }) => {
     const info = await page.evaluate(() => {
       const color = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
       const h = document.querySelector('.kir-handoff');
@@ -295,7 +295,7 @@ test.describe('Cockpit imports — tout va bien', () => {
     expect(info.failed).toBe(0);
     expect(info.progress).toBe(false);
     expect(info.text).toContain('12/12 produits comptabilisés'.replace('12/12', '712/712'));
-    expect(info.text).toContain('Transmis à la Raffinerie');
+    expect(info.text).toContain('PASSAGE À LA RAFFINERIE');
     expect(info.text).not.toMatch(/Taxonomie|Certification|USD|7[,.]65|Décisions commerciales|Prêts à vendre/);
   });
 });
