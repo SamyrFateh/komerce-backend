@@ -144,7 +144,7 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
 
   test('les preuves amont restent consultables et non certifiées si l’API est indisponible',async({page})=>{
     await mount(page);
-    await page.locator('.detail-group').first().locator('summary').click();
+    await page.locator('#productId').evaluate(input => { input.closest('details').open = true; });
     await expect(page.locator('#upstream [data-gate]')).toHaveCount(5);
     await page.locator('#productId').fill('11111111-1111-4111-8111-111111111111');
     await page.locator('#readUpstream').click();
@@ -159,6 +159,7 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.locator('#createGolden').click();
     await expect(page.locator('#backendEvidence')).toContainText('ordered');
     state.evidenceUnavailable=true;
+    await page.locator('#wizardNext').click(); // Guide → Visualisation : options avancées visibles
     await page.locator('#wizardTechnical summary').click();
     await page.locator('#refresh').click();
     await expect(page.locator('#liveState')).toContainText('Preuves indisponibles');
@@ -275,6 +276,9 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.route(ORIGIN+'/api/admin/entities/golden-upstream?market=CM',async route=>route.fulfill({status:200,contentType:'application/json',body:'{}'}));
     await page.locator('#scenarioAuthButton').click();
     await expect(page.locator('#scenarioAuth')).toContainText('autorisé');
+    // La vérification de session recharge la projection du guide : saisir le constat ensuite.
+    await page.locator('#scenarioNote').fill('Capture et JSON comparés pour CM.');
+    await page.locator('#scenarioProof').fill('capture-cm-l1');
     await page.locator('#scenarioObserved').click();
     await expect(page.locator('#scenarioState')).toContainText('OBSERVÉ');
     await expect(page.locator('#scenarioState')).toContainText('NON PROUVÉ');
