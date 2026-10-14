@@ -102,3 +102,11 @@ test('Marchés reste hero-first avec une illustration contextuelle propre à la 
   }
   expect(__src).toContain("classList?.toggle?.('kmc-hero-first', HERO_FIRST_SURFACES.has(surface))");
 });
+
+test('le lien actif est recentré dans le menu sans mouvement du document', () => {
+  expect(__src).toContain('function revealActiveNavigation(doc)');
+  expect(__src).toContain(".kmc-admin-primary-link.is-active");
+  expect(__src).toContain('scrollParent.scrollTop = Math.max(0, Math.min(overflow, centered))');
+  expect(__src).toContain('revealActiveNavigation(doc)');
+  expect(__src).not.toContain("active.scrollIntoView(");
+});
