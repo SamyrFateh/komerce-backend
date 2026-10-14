@@ -1,0 +1,95 @@
+'use strict';
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+jest.mock('../../db', () => ({ query:jest.fn(), pool:{end:jest.fn()} }));
+jest.mock('../../services/pricing-engine', () => ({loadGlobalConfig:jest.fn()}));
+const audit = require('../../scripts/audit-cj-kir-category-evidence');
+
+const config = {
+  categories: {
+    default:{key:'default',label:'Par défaut',is_active:true},
+    home:{key:'home',label:'Maison & bricolage',is_active:true,
+      classification_terms:{'key box':5,'key':1,'hardware':2}},
+    clothes:{key:'clothes',label:'Vêtements',is_active:true,
+      classification_terms:{'shirt':4}},
+    inactive:{key:'inactive',label:'Never',is_active:false,
+      classification_terms:{'key box':100}},
+  },
+  boutique_customs_affinities:[],
+};
+const row = (name,over={}) => ({
+  candidate_ref:'KSC-000100',supplier_product_id:'CJ-001',
+  product_name:name,supplier_category:'Home & Garden > Hardware > Key Boxes',
+  description:'metal key box',komerce_category:'default',state:'watchlist',
+  scan_result:{sourcing_decision:'WATCH',reason:'Catégorie Komerce non résolue — décision impossible.'},
+  data_sources:{category:'default'},
+  raw_payload:{source:'cj_api_v2',cj:{
+    id:'CJ-001',nameEn:name,oneCategoryName:'Home & Garden',
+    twoCategoryName:'Hardware',threeCategoryName:'Key Boxes',
+    oneCategoryId:'123',description:'Details',
+  }},
+  ...over,
+});
+describe('audit CJ KIR : preuve brute et comparaison taxonomie en lecture seule', () => {
+  test('récupère niveaux et identifiants réellement fournis, sans inventer un ID', () => {
+    expect(audit.sourceCategories(row('Key Box').raw_payload)).toMatchObject({
+      path:['Home & Garden','Hardware','Key Boxes'],
+      ids:{oneCategoryId:'123'},payload_present:true,title_present:true,
+    });
+    expect(audit.sourceCategories({cj:{categoryName:'Home > Outdoor'}}).path).toEqual(['Home > Outdoor']);
+    expect(audit.sourceCategories({}).payload_present).toBe(false);
+  });
+  test('rapproche catégories fournisseur / candidat / rang lexical, sans recopier raw_payload complet', () => {
+    const input=[
+      row('Temporary Metal Waterproof Key Box At The Door'),
+      row('No details product',{candidate_ref:'KSC-000101',supplier_product_id:'CJ-002',
+        supplier_category:null,description:null,raw_payload:{cj:{nameEn:'No details product'}},
+        scan_result:{sourcing_decision:'WATCH',reason:'Catégorie Komerce non résolue'}}),
+      row('Ready product',{candidate_ref:'KSC-000102',
+        scan_result:{sourcing_decision:'TEST'}}),
+    ];
+    const p=audit.projectEvidence(input,config);
+    expect(p.summary).toMatchObject({
+      candidates_present:3,deferred_current:2,
+      decisions:{WATCH:2,TEST:1},with_cj_raw:2,
+      with_supplier_category:1,
+    });
+    expect(p.items).toHaveLength(2);
+    expect(p.items[0].cj.path).toEqual(['Home & Garden','Hardware','Key Boxes']);
+    expect(p.items[0].scored_categories[0].key).toBe('home');
+    expect(p.items[0].scored_categories.every(x=>x.key!=='inactive')).toBe(true);
+    expect(p.items[0].preview_using_current_config.category).toBe('home');
+    expect(p.items[0]).not.toHaveProperty('raw_payload');
+    expect(p.items[1].possible_gap).toBe('CJ_CATEGORY_NOT_PRESENT');
+  });
+  test('charge le KIR exact et sa population historique, jamais les autres imports, sans mutation', async () => {
+    const query=jest.fn()
+      .mockResolvedValueOnce({rows:[{
+        id:'d66126e2-9f0a-4a9f-b74f-f5956de3d719',run_ref:'KIR-000003',
+        provider:'CJdropshipping',source_total:20,intake:{deferred:12},
+      }]})
+      .mockResolvedValueOnce({rows:[row('Key Box')]});
+    const loadConfig=jest.fn().mockResolvedValue(config);
+    const result=await audit.auditRun('KIR-000003',{query,loadConfig});
+    expect(result.recorded).toEqual({received:20,deferred:12});
+    expect(result.summary.deferred_current).toBe(1);
+    expect(result.provider_api_calls).toBe(0);
+    expect(result.db_writes).toBe(0);
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(query.mock.calls[1][0]).toContain('import_runtime_item_events');
+    expect(query.mock.calls[1][0]).toContain('WHERE r.id=$1');
+    expect(query.mock.calls[1][0]).not.toMatch(/\bUPDATE\b|\bDELETE\b|\bINSERT\b/i);
+    expect(loadConfig).toHaveBeenCalledTimes(1);
+  });
+  test('fail closed sur KIR invalide et sur fournisseur autre que CJ', async () => {
+    await expect(audit.auditRun('KIR-000003; DROP TABLE',{})).rejects.toThrow('KIR_REF_INVALID');
+    const query=jest.fn().mockResolvedValueOnce({rows:[{
+      id:'uuid',run_ref:'KIR-000003',provider:'Allegro',source_total:5,
+    }]});
+    await expect(audit.auditRun('KIR-000003',{query})).rejects.toThrow('KIR_NOT_CJ');
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+});
