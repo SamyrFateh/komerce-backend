@@ -99,6 +99,7 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.locator('#wizardTechnical summary').click();
     await page.locator('#advance').click();
     expect(state.advances).toBe(1);
+    await page.locator('#refresh').click();
     await page.locator('#wizardProofDetails summary').click();
     await expect(page.locator('#backendEvidence')).toContainText(/matched/i);
     await expect(page.locator('#score')).toHaveText('0 / 10');
