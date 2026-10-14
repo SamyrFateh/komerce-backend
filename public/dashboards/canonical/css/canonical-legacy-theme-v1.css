@@ -889,6 +889,11 @@ body.kmc-shell-v4 .kmc-admin-logout{
   border-color:#F59E0B;
   box-shadow:0 0 0 2px rgb(245 158 11 / .10);
 }
+/* Single accessible focus indicator on the search form, not a nested second ring. */
+body.kmc-shell-v4 .kmc-admin-search:focus-within .kmc-admin-search-input:focus-visible{
+  outline:none;
+}
+
 .kmc-admin-search-input{
   color:#475569;
   font-size:13.5px;
