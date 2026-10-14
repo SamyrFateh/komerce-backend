@@ -57,4 +57,25 @@ describe('canonical unified admin chrome', () => {
     expect(css).toContain('order: -1');
     expect(css).toContain('.kmc-markets-decision-overview > .kmc-dashboard-header[data-dashboard-role="hero"]');
   });
+
+  test('contextual illustrations remain different across Live and market rubrics', () => {
+    const scenes = {
+      'import-runtime': 'commerce-hero-gold.svg',
+      'hub-live': 'operations-logistics-hero-gold.svg',
+      'relais-live': 'orders-hero-gold.svg',
+    };
+    expect(new Set(Object.values(scenes)).size).toBe(3);
+    for (const [surface, asset] of Object.entries(scenes)) {
+      expect(css).toContain(`[data-kmc-surface="${surface}"] .kmc-import-runtime .kir-hero::before`);
+      expect(fs.existsSync(path.join(canonical, 'assets', asset))).toBe(true);
+    }
+    expect(css).toContain('.kmc-markets-decision-overview > .kmc-dashboard-header[data-dashboard-role="hero"]::before');
+    expect(css).toContain('[data-kmc-surface="market-catalog"] #market-catalog-root > .kmc-workspace-header[data-dashboard-role="hero"]::before');
+
+    // All existing overview subjects stay owned by contextual-heroes-v2.css.
+    const themes = fs.readFileSync(path.join(canonical, 'css', 'contextual-heroes-v2.css'), 'utf8');
+    for (const id of ['pilotage', 'commerce', 'orders', 'operations', 'finance', 'markets']) {
+      expect(themes).toContain(`data-dashboard-id="${id}"`);
+    }
+  });
 });
