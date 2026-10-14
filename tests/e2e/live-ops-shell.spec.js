@@ -125,6 +125,6 @@ test.describe('Coque Live — rôle sourcing', () => {
   test('ne voit que son workspace Sourcing et le cockpit Live (aucun faux Dashboard, pas d’Opérations)', async ({ page }) => {
     await mountShell(page, { role: 'sourcing' });
     const ids = await page.$$eval('.kmc-admin-primary-link', (els) => els.map((el) => el.getAttribute('data-dashboard')));
-    expect(ids).toEqual(['workspace-sourcing', 'live-import-runtime']);
+    expect(ids).toEqual(['live-import-runtime']);
   });
 });

@@ -129,7 +129,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
     expect(labels('commerce')).toEqual(['Vue commerce', 'Clients', 'Prix & économie', 'Catalogue']);
-    expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Sourcing', 'Achats fournisseurs']);
+    expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Achats fournisseurs']);
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
       .toEqual(['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live']);
@@ -291,5 +291,16 @@ describe('navigation-policy-v4 — canonical reference search', () => {
     });
     expect(host.children[0].tagName).toBe('DIV');
     expect(host.children[0].attributes.href).toBeUndefined();
+  });
+});
+
+describe('navigation Sourcing unique', () => {
+  test('expose une seule entree Sourcing, correspondant au cockpit LIVE', () => {
+    const nav = loadPolicy();
+    const items = nav.sidebarGroupsFor({ role: 'admin' }).flatMap(group => group.items);
+    const sourcing = items.filter(item => item.label === 'Sourcing' || item.label === 'Sourcing live');
+    expect(sourcing).toHaveLength(1);
+    expect(sourcing[0].href).toBe('/admin/import-runtime');
+    expect(sourcing[0].surfaces).toEqual(expect.arrayContaining(['import-runtime', 'sourcing-workspace']));
   });
 });
