@@ -742,3 +742,13 @@ test('la Raffinerie affiche les manquants certifies par le serveur et laisse le 
   expect(source).toContain('reasons.map(certificationReasonLabel)');
   expect(source).toContain('/admin/workspaces/catalog?view=refinery&product_ref=');
 });
+
+test('la Raffinerie ne duplique pas ses compteurs en bas et préserve les métriques du Catalogue', () => {
+  const source = read('public/dashboards/canonical/js/catalog-workspace.js');
+  const render = source.slice(source.indexOf('function renderPayload('), source.indexOf('async function mount(', source.indexOf('function renderPayload(')));
+  expect(render).toContain('if (!refinery) {');
+  expect(render.indexOf('if (!refinery) {')).toBeLessThan(render.indexOf("ui.MetricStrip.render(metrics"));
+  expect(render).toContain("!['approval', 'review'].includes(item.key)");
+  expect(render).toContain('renderApproval(rootNode, ui, doc, payload, context)');
+  expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
+});
