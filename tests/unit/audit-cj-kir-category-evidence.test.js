@@ -105,6 +105,62 @@ describe('audit CJ KIR : preuve brute et comparaison taxonomie en lecture seule'
     expect(result.items).toHaveLength(1);
   });
 
+  test('distingue une dérive induite par le retrait de la racine fournisseur d’une classification conservée', () => {
+    const cfg={
+      ...config,categories:{...config.categories,
+        clothes:{...config.categories.clothes,classification_terms:{clothing:8,shirt:8}},
+      },
+    };
+    const losing=row('Generic cotton item', {
+      candidate_ref:'KSC-000048',description:null,komerce_category:'clothes',
+      supplier_category:'Clothing > Jackets > Outerwear',
+      data_sources:{category:'mapped'},scan_result:{sourcing_decision:'TEST'},
+      raw_payload:{cj:{oneCategoryName:'Clothing',twoCategoryName:'Jackets',
+        threeCategoryName:'Outerwear'}},
+    });
+    const stable=row('Cotton Shirt', {
+      candidate_ref:'KSC-000049',description:null,komerce_category:'clothes',
+      supplier_category:'Clothing > Tops > Shirts',
+      data_sources:{category:'mapped'},scan_result:{sourcing_decision:'TEST'},
+    });
+    const report=audit.projectEvidence([losing,stable],cfg);
+    expect(report.summary).toMatchObject({
+      accepted_baseline:2,accepted_category_drift:1,
+      accepted_legacy_flat_matches:2,accepted_legacy_flat_not_reproduced:0,
+      accepted_source_distribution:{mapped:2},
+    });
+    expect(report.accepted_shadow).toHaveLength(2);
+    expect(report.accepted_shadow[0]).toMatchObject({
+      candidate_ref:'KSC-000048',object_name:'Generic cotton item',
+      supplier_category_saved:'Clothing > Jackets > Outerwear',
+      stored:{category:'clothes',origin:'mapped',decision:'TEST'},
+      previous_flat_scoring:{candidate_key:'clothes',confidence:'high',would_map:true},
+      current_preview:{category:null,reason:'no_configured_term_match'},
+      category_drift:true,
+      historical_comparison:'PREVIOUS_FLAT_SCORING_REPRODUCES_STORED',
+    });
+    expect(report.accepted_shadow[1].category_drift).toBe(false);
+    expect(report.accepted_shadow[1].current_preview.category).toBe('clothes');
+    expect(JSON.stringify(report.accepted_shadow)).not.toContain('raw_payload');
+    expect(JSON.stringify(report.accepted_shadow)).not.toContain('purchase_price');
+  });
+
+  test('un classement historiquement stocké mais impossible à reproduire est signalé distinctement', () => {
+    const accepted=row('Unrecognized Object', {
+      candidate_ref:'KSC-000051',description:null,komerce_category:'clothes',
+      supplier_category:'Random > Other > Generic',
+      data_sources:{category:'manual'},scan_result:{sourcing_decision:'TEST'},
+    });
+    const report=audit.projectEvidence([accepted],config);
+    expect(report.summary).toMatchObject({
+      accepted_baseline:1,accepted_category_drift:1,
+      accepted_legacy_flat_matches:0,accepted_legacy_flat_not_reproduced:1,
+      accepted_source_distribution:{manual:1},
+    });
+    expect(report.accepted_shadow[0].historical_comparison)
+      .toBe('STORED_NOT_REPRODUCED_BY_PREVIOUS_FLAT_SCORING');
+  });
+
   test('fail closed sur KIR invalide et sur fournisseur autre que CJ', async () => {
     await expect(audit.auditRun('KIR-000003; DROP TABLE',{})).rejects.toThrow('KIR_REF_INVALID');
     const query=jest.fn().mockResolvedValueOnce({rows:[{
