@@ -437,6 +437,7 @@ module.exports = {
       'services/golden-gate-kit.js',
       'services/golden-checkout-thread.js',
       'public/golden-e2e-cockpit.html',
+      'public/js/golden-recipe-scenarios.js',
       'public/js/golden-e2e-cockpit-journey.js',
       'services/product-360.js',
       'services/supplier-360.js',

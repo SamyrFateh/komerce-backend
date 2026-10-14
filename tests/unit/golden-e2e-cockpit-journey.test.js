@@ -65,3 +65,17 @@ test('Golden: constats locaux indexés par market, référence et version du gui
   expect(js).toContain('function restoreHuman()');
   expect(js).toContain("if(!proofReady)return");
 });
+
+test('guides CJ, collectif et L1–L10 : aucune certification automatique',()=>{
+  const html=fs.readFileSync(path.join(ROOT,'public/golden-e2e-cockpit.html'),'utf8');
+  const js=fs.readFileSync(path.join(ROOT,'public/js/golden-recipe-scenarios.js'),'utf8');
+  expect(html).toContain('<script defer src="/js/golden-recipe-scenarios.js"></script>');
+  expect(html).toContain('id="scenarioStage" hidden');
+  expect(js).toContain("cj:{label:'CJ · lot 20 / 15 / 5'");
+  expect(js).toContain("collective:{label:'Partage et financement");
+  expect(js).toContain("l1l10:{label:'Backoffice");
+  expect(js).toContain("authReady=false");
+  expect(js).toContain("automatique : NON PROUVÉ");
+  expect(js).toContain("status==='observed'&&(!authReady||proof.length<8)");
+  expect(js).toContain("run.track,run.market,run.ref,run.sha");
+});

@@ -23,6 +23,8 @@ body{background:#fbf9f5}.shell{max-width:1160px}.top .sub{max-width:760px;font-s
 .wizard-grid h2{color:#1e4972}.wizard-lead{padding:12px;border-radius:11px;background:#e9f4ff;color:#1f5685;margin:14px 0;font-weight:700}.wizard-guide-content{background:#eff7ff}.wizard-evidence{border:1px solid #e0eff4;padding:14px;border-radius:12px;background:#f9fdff}.wizard-next{background:#edfaf7}.wizard-actions{margin:20px 0}.wizard-actions .btn{min-height:45px}.wizard-navigation{display:flex;justify-content:space-between;gap:10px;margin-top:16px}.wizard-navigation .btn{min-width:140px}.wizard-grid[data-phase="guide"] .wizard-evidence,.wizard-grid[data-phase="guide"] .wizard-next,.wizard-grid[data-phase="guide"] .wizard-actions,.wizard-grid[data-phase="guide"] .blocked{display:none}.wizard-grid[data-phase="view"] .wizard-evidence,.wizard-grid[data-phase="view"] #advance,.wizard-grid[data-phase="view"] #pass,.wizard-grid[data-phase="view"] #fail{display:none}.wizard-grid[data-phase="validate"] .wizard-next,.wizard-grid[data-phase="validate"] #openReal,.wizard-grid[data-phase="validate"] #advance{display:none}.wizard-grid[data-phase="guide"] #wizardBack{visibility:hidden}
 @media(max-width:760px){.wizard-setup{display:block}#wizardSetupControls{margin-top:12px}.wizard-grid>.panel:first-child{padding:16px}.wizard-phases span{font-size:11px;padding:9px 4px}.wizard-progress{flex-wrap:wrap}.wizard-track{min-width:110px}.wizard-navigation .btn{min-width:0}}
 
+/* Additional human test guides: independent from Golden automatic authority */
+.scenario-inner{padding:2px 20px 20px}.scenario-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.scenario-fields label,.scenario-validate label{display:grid;gap:5px;font-size:12px;font-weight:750}.scenario-fields input,.scenario-fields select,.scenario-validate input,.scenario-validate textarea{font:inherit;font-size:13px;width:100%;border:1px solid #c5d9e8;border-radius:9px;padding:10px;background:white;color:#25364c}.scenario-inner h3{font-size:20px;margin:14px 0 7px}.scenario-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 0;flex-wrap:wrap}.scenario-head span{font-size:12px}.scenario-phase{font-weight:800;color:#235886;background:#e7f3ff;padding:10px;border-radius:9px;margin:12px 0}.scenario-view,.scenario-validate{padding:13px 0}.scenario-validate label{margin-top:12px}.scenario-inner #scenarioStage{margin-top:18px;border:1px solid #dce8f3;background:white;border-radius:13px;padding:18px}.scenario-inner #scenarioStage[data-phase="guide"] .scenario-view,.scenario-inner #scenarioStage[data-phase="guide"] .scenario-validate,.scenario-inner #scenarioStage[data-phase="view"] .scenario-validate,.scenario-inner #scenarioStage[data-phase="validate"] .scenario-view{display:none}.scenario-hub .scenario-inner .muted{font-size:12px}@media(max-width:760px){.scenario-fields{grid-template-columns:1fr}.scenario-inner{padding:2px 13px 13px}}
 /* V4 : priorité au seul écran utile, puis détails à la demande */
 .human-observation{margin:14px 0}.human-observation label{display:block;font-size:12px;font-weight:800;color:#3b5b7c;margin-bottom:7px}.human-observation textarea{display:block;width:100%;font:inherit;font-size:13px;border:1px solid #bcd0e3;border-radius:10px;padding:10px;resize:vertical}.human-observation .muted{font-size:11px;margin:6px 0}
 .wizard-grid[data-phase="guide"] .human-observation,.wizard-grid[data-phase="view"] .human-observation{display:none}
@@ -76,7 +78,45 @@ body{background:#fafcff;color:#25364c}.shell{max-width:980px;padding:20px 22px}.
     </aside>
   </div>
   </section>
-  <div id="evidence-deep-dive" class="proof-deck"><div class="eyebrow">EN SAVOIR PLUS</div><h2>Détails et preuves (facultatif)</h2><p class="muted">Les preuves techniques restent distinctes de ton verdict humain.</p></div>
+  <details id="extendedRecipe" class="detail-group scenario-hub">
+  <summary>04 · Autres recettes guidées <small>CJ 20/15/5 · collectif · contrôles L1–L10</small></summary>
+  <div class="scenario-inner">
+    <p class="muted">Parcours distincts des Golden : aucune preuve backend n'est déduite de ton constat. Le moteur collectif historique 48 h / 72 h peut différer du contrat Liste actuellement actif.</p>
+    <div class="scenario-fields">
+      <label>Parcours<select id="scenarioTrack"><option value="cj">CJ · 20 / 15 / 5</option><option value="collective">Partage / financement collectif</option><option value="l1l10">Backoffice · L1 à L10</option></select></label>
+      <label>Market<select id="scenarioMarket"><option value="KM">KM · Comores</option><option value="CM">CM · Cameroun</option><option value="CG">CG · Congo</option></select></label>
+      <label>Fixture / commande<input id="scenarioRef" maxlength="80" placeholder="ID de fixture / commande"></label>
+      <label>SHA staging vérifié<input id="scenarioSha" maxlength="40" placeholder="Commit déployé (7–40 hex)"></label>
+    </div>
+    <div class="actions"><button type="button" class="btn primary" id="scenarioStart">Ouvrir ce guide</button></div>
+    <p id="scenarioMessage" class="muted" aria-live="polite">Choisis un scénario puis sa version cible, sans modifier les données métier.</p>
+    <section id="scenarioStage" hidden aria-label="Parcours de recette complémentaire">
+      <div class="scenario-head"><strong id="scenarioHeading"></strong><span id="scenarioVersion" class="muted"></span></div>
+      <div class="scenario-head"><span id="scenarioCount"></span><span id="scenarioProgress"></span></div>
+      <nav id="scenarioPhases" class="scenario-phase" aria-label="Phase en cours">1 · Comprendre</nav>
+      <h3 id="scenarioTitle"></h3>
+      <p id="scenarioExpected"></p>
+      <div class="scenario-view">
+        <p id="scenarioActor" class="muted"></p>
+        <p><strong>Preuve attendue :</strong> <span id="scenarioProofExpected"></span></p>
+        <p><a id="scenarioOpen" class="btn" target="_blank" rel="noopener">Ouvrir l'écran réel ↗</a> <a id="scenarioSource" target="_blank" rel="noopener">Source du contrôle ↗</a></p>
+      </div>
+      <div class="scenario-validate">
+        <p id="scenarioState" class="muted"></p>
+        <p id="scenarioAuth" class="muted">Accès authentifié : NON VÉRIFIÉ</p>
+        <button id="scenarioAuthButton" class="btn" type="button">Vérifier la lecture admin</button>
+        <label>Ce que j'ai réellement observé<textarea id="scenarioNote" rows="3" maxlength="1600" placeholder="Comportement vu, attendu / observé, rôle et écart éventuel"></textarea></label>
+        <label>Référence de preuve (URL capture, HAR, JSON, ID)<input id="scenarioProof" maxlength="300" placeholder="Lien ou identifiant vérifiable"></label>
+        <div class="actions"><button id="scenarioObserved" class="btn wizard-pass" type="button">Enregistrer observation humaine</button><button id="scenarioBlocked" class="btn danger" type="button">Signaler blocage</button></div>
+        <p id="scenarioSaved" class="muted">Sauvegarde locale par market, référence, SHA et guide. Ne colle ni OTP ni secret.</p>
+        <p class="muted">« Observé » ne signifie jamais « preuve backend validée » ni « recette certifiée ».</p>
+      </div>
+      <div class="wizard-navigation"><button id="scenarioBack" class="btn" type="button">← Précédent</button><button id="scenarioNext" class="btn primary" type="button">Voir l'écran →</button></div>
+      <p><button id="scenarioRestart" class="btn" type="button">Effacer le suivi local de ce scénario</button></p>
+    </section>
+  </div>
+</details>
+<div id="evidence-deep-dive" class="proof-deck"><div class="eyebrow">EN SAVOIR PLUS</div><h2>Détails et preuves (facultatif)</h2><p class="muted">Les preuves techniques restent distinctes de ton verdict humain.</p></div>
   <details class="detail-group"><summary>01 · Origine du produit <small>Sourcing → Raffinerie → Catalogue → Boutique</small></summary>
   <section class="up" aria-label="Parcours amont">
     <div class="eyebrow">Parcours amont · Sourcing → Raffinerie → Catalogue → Boutique</div>
@@ -111,4 +151,5 @@ body{background:#fafcff;color:#25364c}.shell{max-width:980px;padding:20px 22px}.
 </main>
 <script defer src="/js/golden-e2e-cockpit-journey.js"></script>
 <script defer src="/js/golden-e2e-cockpit-upstream.js"></script>
+<script defer src="/js/golden-recipe-scenarios.js"></script>
 </body></html>
