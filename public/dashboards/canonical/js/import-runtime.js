@@ -346,7 +346,7 @@
       : noResult
         ? 'Passage terminé sans résultat'
         : catalogueHandoffPending
-          ? 'Remise au Catalogue en cours'
+          ? 'Remise à la Raffinerie en cours'
           : automaticDone || providerGateBlocked
             ? 'Import automatique terminé'
             : activationState.done ? 'Premier passage terminé' : 'Passage en direct';
@@ -403,7 +403,7 @@
     const title = failed
       ? 'Passage interrompu'
       : automaticDone && catalogueHandoffPending
-        ? 'Remise au Catalogue en cours'
+        ? 'Remise à la Raffinerie en cours'
         : run.status === 'COMPLETED'
           ? 'Parcours du passage terminé'
           : 'Passage en cours';
@@ -498,7 +498,7 @@
         : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre automatiquement`;
     return `<section class="kir-handoff ${state}" aria-label="Passage au Catalogue">
       ${ico('handoff')}
-      <div><span class="kir-section-kicker">PASSAGE AU CATALOGUE</span><strong>${h.complete ? '<b aria-hidden="true">✓</b> ' : ''}${esc(text)}</strong></div>
+      <div><span class="kir-section-kicker">PASSAGE À LA RAFFINERIE</span><strong>${h.complete ? '<b aria-hidden="true">✓</b> ' : ''}${esc(text)}</strong></div>
     </section>`;
   }
 
@@ -1393,7 +1393,7 @@
     const popLabel = POPULATION_CRUMBS[p.kind] || 'Produits reçus';
     // Population d'origine d'un produit : Remise Catalogue s'il en vient, sinon sa population.
     const popCrumb = p.origin === 'handoff'
-      ? { label:'Remise Catalogue', href:urlFor(ref, 'handoff') }
+      ? { label:'Remise Raffinerie', href:urlFor(ref, 'handoff') }
       : { label:popLabel, href:populationUrl(ref, p.kind) };
     const itemCrumb = { label:'Produit', href:itemUrl(ref, p.item, p.kind, p.origin) };
     if (p.view === 'passages') return { crumbs:[domain, leaf('Passages')], back:backToSuivi };
@@ -1403,7 +1403,7 @@
       exceptions: { crumbs:[leaf('Action requise')], back:backToSuivi },
       source: { crumbs:[leaf('Source')], back:backToSuivi },
       control: { crumbs:[leaf('Contrôle automatique')], back:backToSuivi },
-      handoff: { crumbs:[leaf('Remise Catalogue')], back:backToSuivi },
+      handoff: { crumbs:[leaf('Remise Raffinerie')], back:backToSuivi },
       item: { crumbs:[popCrumb, leaf('Produit')], back:{ href:popCrumb.href, label:`← Retour à ${popCrumb.label}` } },
     }[p.view];
     if (p.view === 'history') {
@@ -1598,8 +1598,8 @@
           <thead><tr><th>Produit</th><th>Identifiant source</th><th>Remise</th></tr></thead><tbody>${populationRows(run, population, 'ready', 'handoff')}</tbody></table></div>`
       : '';
     const state = h.complete ? 'completed' : h.controlDone && h.certified > 0 ? 'running' : 'pending';
-    return drillHeader(run, 'Remise Catalogue', 'Passage Sourcing → Raffinerie : création de brouillons produits qui doivent encore être préparés et approuvés.')
-      + `<div class="kir-simple-list">${statusRow('Remise au Catalogue', [state, status])}</div>${list}`;
+    return drillHeader(run, 'Remise Raffinerie', 'Passage Sourcing → Raffinerie : création de brouillons produits qui doivent encore être préparés et approuvés.')
+      + `<div class="kir-simple-list">${statusRow('Remise à la Raffinerie', [state, status])}</div>${list}`;
   }
 
   // Détail technique : preuve / diagnostic. Volontairement hors du parcours métier.
@@ -1728,7 +1728,7 @@
         <input type="search" data-passage-filter="q" placeholder="Rechercher sur cette page" aria-label="Recherche" value="${esc(passageFilters.q)}">
       </div>
       ${list ? `<div class="kir-table-wrap"><table class="kir-table" data-passages-table>
-        <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Transmis Raffinerie</th><th>Écartés</th><th>Action requise</th><th>Remise Catalogue</th></tr></thead>
+        <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Transmis Raffinerie</th><th>Écartés</th><th>Action requise</th><th>Remise Raffinerie</th></tr></thead>
         <tbody data-passages-body>${passageRows(list)}</tbody></table></div>${pager}`
         : '<div class="kir-empty">Chargement des passages…</div>'}`;
   }
