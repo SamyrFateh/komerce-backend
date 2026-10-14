@@ -428,3 +428,9 @@ test('la Raffinerie demande un verdict serveur en lecture seule uniquement sur d
   expect(source).toContain('certifyCatalogProduct(db, row.product_id)');
   expect(source).toContain('certification: facts?.certification || null');
 });
+
+test('identifiant DB privé : jamais exposé par la projection publique Produit', () => {
+  const projected = workspace._test.publicProduct({ product_id: 9876, product_ref: 'KPR-000001', is_active: false });
+  expect(projected.product_ref).toBe('KPR-000001');
+  expect(projected).not.toHaveProperty('product_id');
+});
