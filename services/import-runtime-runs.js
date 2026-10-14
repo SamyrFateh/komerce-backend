@@ -161,10 +161,10 @@ function verdictOf(row = {}) {
   });
 }
 
-// « Action requise » = ce que Komerce ne peut pas résoudre seul (quarantaine, contrat de certification
-// bloqué, anomalie de comptage). DEFERRED (WATCH / AVOID / LOSS), les rejets conformes et les doublons
-// sont des issues comptabilisées, jamais une intervention humaine. Dérivation serveur : le navigateur
-// n'interprète aucun compteur.
+// « Action requise » est une file de travail, et non une partition exclusive des 20
+// produits du passage. Une partie des DEFERRED/WATCH peut y figurer (problème
+// explicite et corrigeable) ; AVOID/LOSS et WATCH purement économiques n'y figurent
+// jamais. Aucun impact sur la décision de certification ni le total des issues.
 const ACTION_ITEM_CAP = 50;
 
 function reasonText(row, verdict) {
@@ -181,6 +181,25 @@ function actionKindFor(text) {
   if (/cat[eé]gor|taxonom|classement|ambigu/.test(text)) return { reason: 'Classement ambigu', action: 'choose', action_label: 'Choisir' };
   if (/manquant|missing|obligatoire|required/.test(text)) return { reason: 'Donnée obligatoire manquante', action: 'complete', action_label: 'Compléter' };
   return { reason: 'Produit à examiner', action: 'examine', action_label: 'Examiner' };
+}
+
+// Seuls les motifs persistés du scanner qui demandent explicitement une correction
+// habilitent une action sur un WATCH ; une simple recommandation watchlist ne suffit
+// pas. Les informations de source ne sont jamais modifiées ici.
+function deferredHumanAction(row, verdict) {
+  if (verdict?.outcome !== 'deferred' || verdict.decision !== 'WATCH') return null;
+  const sourceReason = typeof row.scan_result?.reason === 'string' ? row.scan_result.reason.trim() : '';
+  const reason = sourceReason.toLocaleLowerCase('fr');
+  if (/cat[ée]gorie komerce non r[ée]solue|cat[ée]gorie (?:manquante|ambigu[eë]?|non r[ée]solue)/i.test(reason)) {
+    return { reason: sourceReason, action:'choose', action_label:'Classer', kind:'category' };
+  }
+  if (/prix d['’]achat manquant|purchase price missing/i.test(reason)) {
+    return { reason: sourceReason, action:'complete', action_label:'Compléter', kind:'purchase_price' };
+  }
+  if (/donn[ée]es [ée]conomiques insuffisantes|economic data (?:insufficient|missing)/i.test(reason)) {
+    return { reason: sourceReason, action:'complete', action_label:'Compléter', kind:'economic_data' };
+  }
+  return null;
 }
 
 function buildActionItems({ rows, verdicts, quarantined, certificationBlocked, anomaly }) {
@@ -208,7 +227,24 @@ function buildActionItems({ rows, verdicts, quarantined, certificationBlocked, a
       reason: 'Anomalie de comptage', action: 'examine', action_label: 'Examiner',
     });
   }
-  return { count: listed.length, items: listed.slice(0, ACTION_ITEM_CAP) };
+  const deferredActions = rows.flatMap((row, index) => {
+    const action = deferredHumanAction(row, verdicts[index]);
+    return action ? [{
+      candidate_ref: row.candidate_ref || null,
+      supplier_product_id: row.supplier_product_id || null,
+      product_name: row.product_name || null,
+      image_url: row.image_url || null,
+      reason: action.reason,
+      action: action.action,
+      // Les WATCH ne disposent pas de correction en un clic dans le cockpit :
+      // passage par l'atelier, puis nouvelle analyse, sans altérer la preuve KIR.
+      action_label: action.action_label,
+      action_origin: 'deferred',
+      correction_kind: action.kind,
+    }] : [];
+  });
+  listed.push(...deferredActions);
+  return { count: listed.length, deferred_actionable: deferredActions.length, items: listed.slice(0, ACTION_ITEM_CAP) };
 }
 
 // Populations : « quels objets composent ce chiffre ? ». Une carte du cockpit ouvre exactement les
@@ -275,6 +311,7 @@ function buildPopulation({ kind, rows = [], intake = {}, sourceTotal = 0 }) {
       issue_label: issue.label,
       decision: verdict.decision || null,
       reason: typeof row.scan_result?.reason === 'string' ? row.scan_result.reason.slice(0, 1000) : null,
+      needs_human_action: Boolean(deferredHumanAction(row, verdict)),
     }));
   } else if (kind === 'discarded') {
     total = duplicates + rejected;
@@ -558,6 +595,8 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     anomaly: intakeRecorded ? rec.unaccounted + rec.overflow : 0,
   });
   accounting.action_required = actionRequired.count;
+  // Sous-ensemble de "Mis de côté", PAS un sixième type de produit à additionner.
+  accounting.deferred_actionable = actionRequired.deferred_actionable;
   // sourcing_status décrit uniquement l'autorité Sourcing : une remise Catalogue
   // automatique encore en cours ne transforme pas un Sourcing terminé en LIVE,
   // et une vraie exception humaine reste visible même si le run global poursuit
@@ -1051,6 +1090,7 @@ async function getProductTrace(runRef, supplierProductId, q = db) {
       decision: verdict.decision,
       reason: scanText(scan.reason),
       recommended_action: scanText(scan.recommended_action),
+      human_action: deferredHumanAction(row, verdict),
     },
     catalogue_status: row.state,
   };
