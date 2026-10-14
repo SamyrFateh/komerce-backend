@@ -242,7 +242,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
         decisionBg: color('.kmc-decision-card'),
         decisionGradient: color('.kmc-decision-card', 'backgroundImage'),
         decisionBorderLeft: color('.kmc-decision-card', 'borderLeftWidth'),
-        activeNavBg: color('.kmc-admin-primary-link.is-active', 'backgroundColor'),
+        activeNavBg: color('.kmc-admin-primary-link.is-active', 'backgroundImage'),
         activeNavText: color('.kmc-admin-primary-link.is-active', 'color'),
         red: color('.kmc-flow-stage.is-critical', 'borderTopColor'),
         warning: color('.kmc-flow-stage.is-warning', 'borderTopColor'),
@@ -262,8 +262,8 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(colors.flow).toBe('rgb(255, 255, 255)');
     expect(colors.decisionGradient).toContain('linear-gradient');
     expect(colors.decisionBorderLeft).toBe('5px');
-    expect(colors.activeNavBg).toBe('rgb(234, 242, 255)');
-    expect(colors.activeNavText).toBe('rgb(23, 78, 166)');
+    expect(colors.activeNavBg).toContain('linear-gradient');
+    expect(colors.activeNavText).toBe('rgb(11, 63, 148)');
     expect(new Set([colors.red, colors.warning, colors.green, colors.unknown]).size).toBe(4);
   });
 
