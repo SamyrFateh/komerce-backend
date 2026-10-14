@@ -29,7 +29,7 @@ async function mount(page){
       return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',marketCode:state.creates.at(-1).marketCode})});
     }
     if(url.pathname.endsWith('/golden-evidence')&&state.evidenceUnavailable) return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Backend indisponible'})});
-    if(url.pathname.endsWith('/golden-evidence')) return route.fulfill({contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',steps:[
+    if(url.pathname.endsWith('/golden-evidence')) return route.fulfill({contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',order:{reference:'K-GOLDEN-BROWSER',market_code:state.creates.at(-1)?.marketCode||'KM'},steps:[
       {key:'CLIENT_ORDER',passed:true,evidence:'ordered'},{key:'CLIENT_PAYMENT',passed:true,evidence:'paid'},{key:'PURCHASING',passed:true,evidence:'PO confirmed'},{key:'SUPPLIER_EXECUTION',passed:true,evidence:'matched'},{key:'FULFILLMENT',passed:true,evidence:'tracking'},
       {key:'HUB_INBOUND',passed:state.advances>0,evidence:state.advances>0?'matched':'pending'},{key:'CUSTOMS',passed:false,evidence:'pending'},{key:'RELAY_AVAILABLE',passed:false,evidence:'pending'},{key:'CUSTOMER_HANDOFF',passed:false,evidence:'pending'},{key:'FINANCIAL_CLOSE',passed:false,evidence:'pending'}]})});
     if(url.pathname.endsWith('/golden-advance')&&req.method()==='POST'){
@@ -231,7 +231,7 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.locator('#wizardChange').click();
     await expect(page.locator('#wizardSetup')).toBeVisible();
     await expect(page.locator('#wizardStage')).toBeHidden();
-    await page.locator('#refInput').fill('K-GOLDEN-BROWSER');
+    await page.locator('#refInput').fill('K-GOLDEN-OTHER');
     await page.locator('#refForm button').click();
     await expect(page.locator('#score')).toHaveText('0 / 10');
     await expect(page.locator('.wizard-grid')).toHaveAttribute('data-phase','guide');
