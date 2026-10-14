@@ -85,12 +85,12 @@
     { key:'SOURCE', label:'Source', stages:['SOURCE_CONNECTED'], drill:'SOURCE_CONNECTED' },
     { key:'RECEIVED', label:'Produits reçus', stages:['RAW_IMPORT'], drill:'RAW_IMPORT' },
     { key:'CONTROL', label:'Contrôle automatique', stages:CONTROL_STAGES, drill:'CONTROL' },
-    { key:'CATALOGUE', label:'Remise Catalogue', stages:['CATALOGUE'], drill:'CATALOGUE' },
+    { key:'CATALOGUE', label:'Remise Raffinerie', stages:['CATALOGUE'], drill:'CATALOGUE' },
   ]);
   const USER_STAGE_LABELS = Object.freeze({
     SOURCE_CONNECTED:'Source', RAW_IMPORT:'Produits reçus',
     REFINERY:'Contrôle automatique', TAXONOMY:'Contrôle automatique', CERTIFICATION:'Contrôle automatique',
-    CATALOGUE:'Remise Catalogue', CONTROL:'Contrôle automatique',
+    CATALOGUE:'Remise Raffinerie', CONTROL:'Contrôle automatique',
   });
   function userStageLabel(key) { return USER_STAGE_LABELS[key] || key || 'Étape'; }
   function userStageKey(key) { return CONTROL_STAGES.includes(key) ? 'CONTROL' : key; }
@@ -472,7 +472,7 @@
     const open = o.actionRequired > 0;
     const tiles = [
       ['Produits reçus', o.received, 'file', populationUrl(run.run_ref, 'received'), 'is-received', 'de la source'],
-      ['Prêts pour le Catalogue', o.ready, 'accepted', populationUrl(run.run_ref, 'ready'), 'is-delivered', 'produits'],
+      ['Transmis à la Raffinerie', o.ready, 'accepted', populationUrl(run.run_ref, 'ready'), 'is-delivered', 'produits'],
       ['Écartés automatiquement', o.discarded, 'reject', populationUrl(run.run_ref, 'discarded'), 'is-discarded', 'selon les règles'],
       ['Action requise', o.actionRequired, 'alert', urlFor(run.run_ref, 'exceptions'), open ? 'is-review is-attention' : 'is-review', open ? 'Intervenir →' : 'rien à faire'],
     ];
@@ -1380,7 +1380,7 @@
     return renderLiveCore(run) + renderDecisions(run);
   }
 
-  const POPULATION_CRUMBS = Object.freeze({ received:'Produits reçus', ready:'Prêts pour le Catalogue', discarded:'Écartés automatiquement' });
+  const POPULATION_CRUMBS = Object.freeze({ received:'Produits reçus', ready:'Transmis à la Raffinerie', discarded:'Écartés automatiquement' });
 
   // Navigation d'une vue = fil d'Ariane + retour, calculés ensemble pour ne jamais diverger.
   // Le KIR n'est PAS un niveau : c'est le contexte du Suivi. Chaque écran a un parent unique et évident.
@@ -1567,7 +1567,7 @@
 
     const POPULATION_COPY = Object.freeze({
     received: ['Produits reçus', 'Les produits envoyés par la source pour ce passage et leur situation actuelle. Consultation : aucune action n’est nécessaire.', 'Situation'],
-    ready: ['Prêts pour le Catalogue', 'Exactement les produits validés côté Sourcing et leur état de remise au Catalogue.', 'Remise'],
+    ready: ['Transmis à la Raffinerie', 'Produits qualifiés par le Sourcing, encore à préparer et valider avant publication.', 'Remise'],
     discarded: ['Écartés automatiquement', 'Issues normales et auditables : un produit correctement écarté n’est pas une erreur.', 'Motif'],
   });
 
@@ -1598,7 +1598,7 @@
           <thead><tr><th>Produit</th><th>Identifiant source</th><th>Remise</th></tr></thead><tbody>${populationRows(run, population, 'ready', 'handoff')}</tbody></table></div>`
       : '';
     const state = h.complete ? 'completed' : h.controlDone && h.certified > 0 ? 'running' : 'pending';
-    return drillHeader(run, 'Remise Catalogue', 'La frontière Sourcing → Catalogue : matérialisation automatique des produits certifiés en brouillons Catalogue.')
+    return drillHeader(run, 'Remise Catalogue', 'Passage Sourcing → Raffinerie : création de brouillons produits qui doivent encore être préparés et approuvés.')
       + `<div class="kir-simple-list">${statusRow('Remise au Catalogue', [state, status])}</div>${list}`;
   }
 
@@ -1728,7 +1728,7 @@
         <input type="search" data-passage-filter="q" placeholder="Rechercher sur cette page" aria-label="Recherche" value="${esc(passageFilters.q)}">
       </div>
       ${list ? `<div class="kir-table-wrap"><table class="kir-table" data-passages-table>
-        <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Prêts Catalogue</th><th>Écartés</th><th>Action requise</th><th>Remise Catalogue</th></tr></thead>
+        <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Transmis Raffinerie</th><th>Écartés</th><th>Action requise</th><th>Remise Catalogue</th></tr></thead>
         <tbody data-passages-body>${passageRows(list)}</tbody></table></div>${pager}`
         : '<div class="kir-empty">Chargement des passages…</div>'}`;
   }
@@ -1829,7 +1829,7 @@
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
-          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue →</a>
+          <a href="${withReturnTo('/admin/workspaces/catalog?view=refinery', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Raffinerie →</a>
         </div>
       </header>
 
