@@ -156,7 +156,11 @@
 
   function renderControlChain(doc, host, payload) {
     const columns = controlChainColumns(payload);
-    host.className = 'kmc-control-chain';
+    const hasOrders = columns.some(column => column.orders.length > 0);
+    const hasAlerts = columns.some(column => column.alerts.length > 0);
+    const isEmpty = !hasOrders && !hasAlerts;
+    host.className = isEmpty ? 'kmc-control-chain is-empty' : 'kmc-control-chain is-active';
+    host.setAttribute('data-chain-state', isEmpty ? 'empty' : 'active');
 
     columns.forEach(column => {
       const stage = doc.createElement('section');
@@ -179,7 +183,7 @@
       const list = doc.createElement('div');
       list.className = 'kmc-control-order-list';
 
-      if (!column.orders.length) {
+      if (!column.orders.length && !isEmpty) {
         list.appendChild(text(doc, 'div', 'kmc-control-order-empty', '—'));
       } else {
         column.orders.forEach(order => {
@@ -595,6 +599,10 @@
       chain.section.setAttribute('data-dashboard-role', 'primary');
       chain.section.insertBefore(renderControlLegend(doc), chain.body);
       renderControlChain(doc, chain.body, payload);
+      if (chain.body.getAttribute('data-chain-state') === 'empty') {
+        chain.section.setAttribute('data-chain-state', 'empty');
+        chain.section.appendChild(text(doc, 'p', 'kmc-control-chain-empty-notice', 'Aucune commande dans la chaîne pour le périmètre sélectionné.'));
+      }
       dashboard.appendChild(chain.section);
     }
 
