@@ -421,3 +421,27 @@ test('le montage rejoue afterRender après chaque rendu (le rendu vide la racine
   expect(src).toContain('afterRender: typeof options.afterRender');
   expect(src).toContain('if (context.afterRender) context.afterRender(payload);');
 });
+
+test('la Raffinerie demande un verdict serveur en lecture seule uniquement sur demande', () => {
+  const source = require('fs').readFileSync(require('path').join(__dirname, '../../services/catalog-workspace.js'), 'utf8');
+  expect(source).toContain("query.include_readiness === '1'");
+  expect(source).toContain('certifyCatalogProduct(db, row.product_id)');
+  expect(source).toContain('certification: facts?.certification || null');
+});
+
+test('identifiant DB privé : jamais exposé par la projection publique Produit', () => {
+  const projected = workspace._test.publicProduct({ product_id: 9876, product_ref: 'KPR-000001', is_active: false });
+  expect(projected.product_ref).toBe('KPR-000001');
+  expect(projected).not.toHaveProperty('product_id');
+});
+
+test('file Raffinerie transmet l identifiant DB en interne pour la certification', async () => {
+  mockQuery.mockImplementation(async sql => {
+    if (String(sql).includes('FROM products p') && String(sql).includes('sourcing_candidates candidate')) {
+      return { rows: [{ product_id: 42, product_ref: 'KPR-42', sourcing_decision: 'TEST' }] };
+    }
+    return { rows: [] };
+  });
+  const rows = await workspace._test.queryApprovalQueue({ limit: 1 });
+  expect(rows[0].product_id).toBe(42);
+});

@@ -876,7 +876,7 @@
       const productCell = doc.createElement('td');
       productCell.className = 'kmc-catalog-product-cell';
       const returnTo = row.product_ref
-        ? `/admin/workspaces/catalog?product_ref=${encodeURIComponent(row.product_ref)}`
+        ? `/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(row.product_ref)}`
         : '/admin/workspaces/catalog';
       const productTitle = text(doc, 'a', 'kmc-catalog-product-title', row.name || row.product_ref);
       productTitle.href = contextualHref(
@@ -924,6 +924,16 @@
       const stateContent = doc.createElement('div');
       stateContent.className = 'kmc-catalog-cell-stack';
       stateContent.appendChild(text(doc, 'strong', state.tone, state.label));
+      if (row.certification) {
+        const reasons = Array.isArray(row.certification.reasons) ? row.certification.reasons : [];
+        const next = reasons.length
+          ? reasons.map(certificationReasonLabel).join(' · ')
+          : 'Contrôles de certification satisfaits · validation humaine requise';
+        const details = text(doc, 'small', 'kmc-workspace-subtitle', next);
+        details.setAttribute('data-refinery-readiness', row.certification.certified ? 'ready' : 'blocked');
+        stateContent.appendChild(details);
+      }
+
       stateContent.appendChild(text(
         doc,
         'small',
@@ -1319,6 +1329,7 @@
     context.reload = async (reloadOptions = {}) => {
       try {
         const params = new URLSearchParams({
+          ...(context.workspaceView === 'refinery' ? { include_readiness: '1' } : {}),
           approval_limit: String(context.approvalLimit),
           approval_offset: String(context.approvalOffset),
         });

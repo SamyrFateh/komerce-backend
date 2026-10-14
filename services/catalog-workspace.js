@@ -23,6 +23,7 @@ const db = require('../db');
 const { getRuleNumber } = require('../utils/rules');
 const productAdmin = require('./product-admin-service');
 const catalogApproval = require('./catalog-approval');
+const { certifyCatalogProduct } = require('./catalog-certification');
 const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
@@ -164,7 +165,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
   const offsetParam = sqlParam(params.length);
   const decisionOrder = sourcingDecisionOrderSql('sc');
   const { rows } = await db.query(`
-    SELECT p.product_ref, p.name, p.description, p.name_source, p.description_source,
+    SELECT p.id AS product_id, p.product_ref, p.name, p.description, p.name_source, p.description_source,
            p.category, p.fragility, p.emoji,
            p.price_kmf, p.stock, p.content_source, p.source_locale, p.needs_review,
            p.enrichment_confidence, p.created_at,
@@ -208,6 +209,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
      LIMIT ${limitParam} OFFSET ${offsetParam}
   `, params);
   return rows.map(row => ({
+    product_id: row.product_id,
     product_ref: row.product_ref,
     name: row.name,
     description: row.description || null,
@@ -336,6 +338,18 @@ async function buildWorkspace(query = {}) {
     queryApprovalBreakdown(),
     queryFocusedMarketHandoff(approvalProductRef),
   ]);
+  // La projection Raffinerie expose le vrai verdict du moteur de certification,
+  // sans déclencher de validation, publication ni mutation.
+  const approvalWithReadiness = query.include_readiness === '1'
+    ? await Promise.all(approval.map(async row => {
+        const facts = await certifyCatalogProduct(db, row.product_id);
+        const { product_id, ...publicRow } = row;
+        return {
+          ...publicRow,
+          certification: facts?.certification || null,
+        };
+      }))
+    : approval.map(({ product_id, ...row }) => row);
   const approvalTotal = Number(summary.approval_pending) || 0;
   const commercialSummary = {
     approved_products: products.length,
@@ -356,7 +370,7 @@ async function buildWorkspace(query = {}) {
     curation: buildCurationState(commercialCurationSummary, catalogCap),
     categories,
     products,
-    approval,
+    approval: approvalWithReadiness,
     focused_handoff: focusedHandoff,
     approval_breakdown: approvalBreakdown,
     approval_strategy: {

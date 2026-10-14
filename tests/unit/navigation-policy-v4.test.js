@@ -12,6 +12,7 @@ test('navigation policy V4 porte la taxonomie métier cible complète', () => {
     expect(source).toContain(`label: '${label}'`);
   });
   expect(source).toContain("id: 'import-runtime', label: 'Sourcing live'");
+  expect(source).toContain("id: 'live-import-runtime'");
   // Pas d'écran liste « Fournisseurs » : la fiche /admin/suppliers/:id s'atteint depuis les achats, les produits et le sourcing.
   expect(source).not.toContain("id: 'entity-suppliers'");
   expect(source).not.toContain("href: '/admin/suppliers'");

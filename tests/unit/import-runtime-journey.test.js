@@ -113,20 +113,20 @@ test('niveau 1 : quatre étapes sans compteur, quatre résultats, aucun jargon i
   ui.render(node, payload);
   const html = node.innerHTML;
   expect(html).toContain('FLUX DU PASSAGE');
-  for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Remise Catalogue']) expect(html).toContain(`<strong>${label}</strong>`);
-  for (const jargon of ['Raffinerie', 'Taxonomie', 'Certification', 'certifié(s) sourcing', 'preuve runtime']) expect(html).not.toContain(jargon);
+  for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Remise Raffinerie']) expect(html).toContain(`<strong>${label}</strong>`);
+  for (const jargon of ['Taxonomie', 'Certification', 'certifié(s) sourcing', 'preuve runtime']) expect(html).not.toContain(jargon);
   // Le pipeline ne répète aucun compteur : uniquement des états.
   const flow = html.slice(html.indexOf('kir-run-flow-track'), html.indexOf('RÉSULTAT DU PASSAGE'));
   expect(flow).not.toMatch(/\d+\s*\/\s*\d+/);
   expect(html).toContain('RÉSULTAT DU PASSAGE');
-  for (const label of ['Produits reçus', 'Prêts pour le Catalogue', 'Écartés automatiquement', 'Action requise']) expect(html).toContain(`<span>${label}</span>`);
+  for (const label of ['Produits reçus', 'Transmis à la Raffinerie', 'Écartés automatiquement', 'Action requise']) expect(html).toContain(`<span>${label}</span>`);
   for (const gone of ['Remis au Catalogue', 'À examiner', 'Entrées source', 'Acceptées', 'Doublons', 'En quarantaine', 'Rejetées']) expect(html).not.toContain(`<span>${gone}</span>`);
   for (const commercial of ['PARCOURS MÉTIER', 'Prêts à vendre', 'En vente', 'Décisions de mise en vente', 'Décisions commerciales', 'Clôture', 'Prix source', 'Décisions attendues']) {
     expect(html).not.toContain(commercial);
   }
   expect(html).toContain('KIR-000003');
   expect(html).not.toContain('&lt;Produit&gt;');
-  expect(html).not.toContain('PASSAGE AU CATALOGUE');
+  expect(html).not.toContain('PASSAGE À LA RAFFINERIE');
 });
 
 test('commandes : source arrêtée → Redémarrer puis Mettre à jour ; source active → Mettre à jour puis Arrêter', () => {
@@ -211,11 +211,11 @@ const stepClass = (html, label) => (html.match(new RegExp(`class="([^"]*)"[^>]*>
 test('CAS A : 20 reçus / 12 prêts / 1 écarté / 0 action ; remise en attente, jamais « transmis » ni « Terminé »', () => {
   const html = render(scenario());
   expect(tile(html, 'Produits reçus')).toBe('20');
-  expect(tile(html, 'Prêts pour le Catalogue')).toBe('12');
+  expect(tile(html, 'Transmis à la Raffinerie')).toBe('12');
   expect(tile(html, 'Écartés automatiquement')).toBe('1');
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).toContain('20/20 produits comptabilisés');
-  expect(html).toContain('PASSAGE AU CATALOGUE');
+  expect(html).toContain('PASSAGE À LA RAFFINERIE');
   expect(html).toContain('Remise automatique en cours');
   expect(html).toContain('kir-handoff is-waiting');
   for (const forbidden of ['12 transmis', '7 à examiner', 'Décisions attendues', 'kir-handoff is-clean', 'Remise terminée', 'remis au Catalogue']) {
@@ -225,9 +225,9 @@ test('CAS A : 20 reçus / 12 prêts / 1 écarté / 0 action ; remise en attente,
   // parce que la remise Catalogue automatique travaille encore réellement.
   for (const noise of ['is-attention', 'is-failed', 'kir-runtime-alert', 'Ce qui vous attend']) expect(html).not.toContain(noise);
   expect(html).toContain('Progression globale');
-  expect(html).toContain('Remise Catalogue · 0 / 12');
+  expect(html).toContain('Remise Raffinerie · 0 / 12');
   expect(html).toContain('Terminé</span>');
-  expect(stepClass(html, 'Remise Catalogue')).toContain('is-running');
+  expect(stepClass(html, 'Remise Raffinerie')).toContain('is-running');
   expect(stepClass(html, 'Contrôle automatique')).toContain('is-completed');
 });
 
@@ -235,7 +235,7 @@ test('CAS B : certified = catalogued = 12 → « ✓ Remise terminée », étape
   const html = render(scenario({ catalogued:12, awaiting_catalogue_promotion:0 }));
   expect(html).toContain('kir-handoff is-clean');
   expect(html).toContain('Remise terminée');
-  expect(stepClass(html, 'Remise Catalogue')).toContain('is-completed');
+  expect(stepClass(html, 'Remise Raffinerie')).toContain('is-completed');
   expect(html).not.toContain('12/12');
   expect(html).not.toContain('Remise automatique en cours');
 });
@@ -246,7 +246,7 @@ test('CAS C : 12 prêts, 9 au Catalogue, aucune intervention → « 3 restent à
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).not.toContain('is-attention');
   expect(html).not.toContain('Remise terminée');
-  expect(stepClass(html, 'Remise Catalogue')).toContain('is-running');
+  expect(stepClass(html, 'Remise Raffinerie')).toContain('is-running');
 });
 
 test('CAS D : 7 DEFERRED sans revue humaine → Action requise = 0, aucune carte orange', () => {
@@ -261,10 +261,10 @@ test('CAS D : 7 DEFERRED sans revue humaine → Action requise = 0, aucune carte
 test('CAS A bis : 20 reçus, 0 prêt, 8 deferred normaux → 0 action, pas de handoff, aucun orange', () => {
   const html = render(scenario({ certified:0, catalogued:0, awaiting_catalogue_promotion:0, accepted:12, rejected:0, deferred:8, action_required:0 }));
   expect(tile(html, 'Produits reçus')).toBe('20');
-  expect(tile(html, 'Prêts pour le Catalogue')).toBe('0');
+  expect(tile(html, 'Transmis à la Raffinerie')).toBe('0');
   expect(tile(html, 'Écartés automatiquement')).toBe('0');
   expect(tile(html, 'Action requise')).toBe('0');
-  expect(html).not.toContain('PASSAGE AU CATALOGUE');
+  expect(html).not.toContain('PASSAGE À LA RAFFINERIE');
   expect(html).not.toContain('Décisions attendues');
   expect(html).not.toContain('is-attention');
 });
@@ -374,7 +374,6 @@ test('activité humaine : étapes internes silencieuses, phrases lisibles', () =
     expect(html).not.toContain(raw + '</strong>');
   }
   expect(html).not.toContain('Taxonomie');
-  expect(html).not.toContain('Raffinerie');
 });
 
 test('drill-down Catalogue montre seulement les produits qui exigent cette décision', () => {
@@ -416,7 +415,7 @@ test('les grandes cartes et les étapes ouvrent des vues métier, jamais la gril
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=source"`);
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=control"`);
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=handoff"`);
-  const tiles = html.slice(html.indexOf('kir-run-truth-grid'), html.indexOf('PASSAGE AU CATALOGUE') > 0 ? html.indexOf('PASSAGE AU CATALOGUE') : undefined);
+  const tiles = html.slice(html.indexOf('kir-run-truth-grid'), html.indexOf('PASSAGE À LA RAFFINERIE') > 0 ? html.indexOf('PASSAGE À LA RAFFINERIE') : undefined);
   expect(tiles).not.toContain('view=history');
 });
 
@@ -478,7 +477,7 @@ test('OBJET remis au Catalogue : ouvre la fiche Catalogue avec retour exact vers
   expect(html).toContain('return_label=Retour+au+produit+Sourcing');
 });
 
-test('CAS B : « Prêts pour le Catalogue 12 » = exactement les 12 certified avec l’état de remise, sans action', () => {
+test('CAS B : « Transmis à la Raffinerie 12 » = exactement les 12 certified avec l’état de remise, sans action', () => {
   const items = [...Array.from({ length: 9 }, (_, i) => popItem(i + 1)), ...Array.from({ length: 3 }, (_, i) => popItem(20 + i, { issue_key:'catalogued', issue_label:'Remis' }))];
   const html = drill('population', 'kind=ready', null, { kind:'ready', total:12, items, unlisted:[] });
   expect((html.match(/data-population-item/g) || []).length).toBe(12);
@@ -514,7 +513,7 @@ test('CAS E : « Contrôle automatique » = Préparation / Classement / Validati
   expect(html).toContain('Voir le détail technique →');
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=history&from=control"`);
   const body = html.slice(html.indexOf('kir-drill-head'));
-  for (const tech of ['Raffinerie', 'Taxonomie', 'Certification', 'REFINERY', 'COMPLETED']) expect(body).not.toContain(tech);
+  for (const tech of ['Taxonomie', 'Certification', 'REFINERY', 'COMPLETED']) expect(body).not.toContain(tech);
   expect((body.match(/✓ Terminé/g) || []).length).toBe(3);
 });
 
@@ -586,7 +585,7 @@ test('CAS B : « Tous les passages » remplace le cockpit par la vue Passages (S
   expect(html).toContain('Historique des passages');
   expect(html).toContain('<span class="kir-crumb-domain">Sourcing</span><i aria-hidden="true">›</i><span aria-current="page">Passages');
   expect(html).toContain('← Retour au suivi');
-  for (const col of ['Passage', 'Source', 'Date / heure', 'État Sourcing', 'Produits reçus', 'Prêts Catalogue', 'Écartés', 'Action requise', 'Remise Catalogue']) expect(html).toContain(`<th>${col}</th>`);
+  for (const col of ['Passage', 'Source', 'Date / heure', 'État Sourcing', 'Produits reçus', 'Transmis Raffinerie', 'Écartés', 'Action requise', 'Remise Raffinerie']) expect(html).toContain(`<th>${col}</th>`);
   for (const gone of ['Décisions finales', 'Approuvés vente', 'Reste']) expect(html).not.toContain(gone);
   expect((html.match(/data-row-href/g) || []).length).toBe(3);
   expect(html).toContain('KIR-000004');
@@ -669,10 +668,10 @@ test('audit : chaque vue du Suivi a pour parent « Suivi » (breadcrumb Sourcing
   const cases = [
     ['source', '', 'Sourcing > Suivi > Source'],
     ['control', '', 'Sourcing > Suivi > Contrôle automatique'],
-    ['handoff', '', 'Sourcing > Suivi > Remise Catalogue'],
+    ['handoff', '', 'Sourcing > Suivi > Remise Raffinerie'],
     ['exceptions', '', 'Sourcing > Suivi > Action requise'],
     ['population', 'kind=received', 'Sourcing > Suivi > Produits reçus'],
-    ['population', 'kind=ready', 'Sourcing > Suivi > Prêts pour le Catalogue'],
+    ['population', 'kind=ready', 'Sourcing > Suivi > Transmis à la Raffinerie'],
     ['population', 'kind=discarded', 'Sourcing > Suivi > Écartés automatiquement'],
     ['history', '', 'Sourcing > Suivi > Détail technique'],
   ];
@@ -705,20 +704,20 @@ test('audit : Passages et Sources sont des vues de 1er niveau — onglet actif e
 });
 
 test('audit : produit = Sourcing > Suivi > population > Produit, retour à sa population (jamais au passage)', () => {
-  for (const [kind, label] of [['received', 'Produits reçus'], ['ready', 'Prêts pour le Catalogue'], ['discarded', 'Écartés automatiquement']]) {
+  for (const [kind, label] of [['received', 'Produits reçus'], ['ready', 'Transmis à la Raffinerie'], ['discarded', 'Écartés automatiquement']]) {
     const html = render(withTrace(), `?run=${RUN}&view=item&kind=${kind}&item=SP-1`);
     expect(crumbText(html)).toBe(`Sourcing > Suivi > ${label} > Produit`);
     expect(backOf(html)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=population&kind=${kind}`, label:`← Retour à ${label}` });
   }
 });
 
-test('audit : produit ouvert depuis Remise Catalogue revient à Remise Catalogue', () => {
+test('audit : produit ouvert depuis Remise Raffinerie revient à Remise Raffinerie', () => {
   const population = { kind:'ready', total:1, items:[popItem(1)], unlisted:[] };
   const list = drill('handoff', '', null, population);
   expect(list).toContain(`href="/admin/import-runtime?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff"`);
   const html = render(withTrace(), `?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff`);
-  expect(crumbText(html)).toBe('Sourcing > Suivi > Remise Catalogue > Produit');
-  expect(backOf(html)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=handoff`, label:'← Retour à Remise Catalogue' });
+  expect(crumbText(html)).toBe('Sourcing > Suivi > Remise Raffinerie > Produit');
+  expect(backOf(html)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=handoff`, label:'← Retour à Remise Raffinerie' });
 });
 
 test('audit : sortie Catalogue = return_to exact vers l’objet Sourcing d’origine, label contextuel', () => {
@@ -743,7 +742,7 @@ test('audit : détail technique — contrôle, produit ou suivi selon l’origin
   expect(control).toContain(`view=history&stage=TAXONOMY&from=control`);
 
   const fromItem = render(scenario(), `?run=${RUN}&view=history&from=item&item=SP-1&kind=ready&origin=handoff`);
-  expect(crumbText(fromItem)).toBe('Sourcing > Suivi > Remise Catalogue > Produit > Détail technique');
+  expect(crumbText(fromItem)).toBe('Sourcing > Suivi > Remise Raffinerie > Produit > Détail technique');
   expect(backOf(fromItem)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff`, label:'← Retour au produit' });
   expect(fromItem).toContain('from=item&item=SP-1&kind=ready&origin=handoff');
 
