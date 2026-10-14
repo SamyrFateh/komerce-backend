@@ -40,18 +40,18 @@ test('Golden V4 sépare constat humain, backend et changement de référence',()
   const js=fs.readFileSync(path.join(ROOT,'public/js/golden-e2e-cockpit-journey.js'),'utf8');
   expect(js).toContain("states[cur]='pass';render();saveHuman()");
   expect(js).toContain("states[cur]='fail';render();saveHuman()");
-  expect(js).toContain("ref='';cur=0;phase=0;states.fill('pending');notes.fill('');backend.fill(null);proofNonce++");
+  expect(js).toContain("ref='';cur=0;phase=0;states.fill('pending');notes.fill('');backend.fill(null);proofReady=false;proofNonce++");
   expect(js).toContain("'/admin/orders/'+encodeURIComponent(ref)");
-  expect(js).toContain("backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)");
+  expect(js).toContain('if(!validGoldenProjection(body.projection,requestedRef,requestedMarket))');
 });
 
 
 test('Golden: backend manquant ou indisponible invalide le cache de preuve',()=>{
   const js=fs.readFileSync(path.join(ROOT,'public/js/golden-e2e-cockpit-journey.js'),'utf8');
   expect(js).toContain("if(!Array.isArray(body.steps))throw new Error('Projection backend absente')");
-  expect(js).toContain("backend=Array(steps.length).fill(null);$('liveState').textContent='Preuves indisponibles");
+  expect(js).toContain("proofReady=false;backend=Array(steps.length).fill(null);$('liveState').textContent='Preuves indisponibles");
   expect(js).toContain('nonce!==proofNonce');
-  expect(js).toContain('backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)');
+  expect(js).toContain('if(!validGoldenProjection(body.projection,requestedRef,requestedMarket))');
 });
 
 
@@ -63,7 +63,17 @@ test('Golden: reprise des constats humains indexée par SHA + market + commande,
   expect(html).toContain('id="exportHuman"');
   expect(js).toContain("RECORD_PREFIX+version+':'+market+':'+reference");
   expect(js).toContain("record.states.every(s=>['pending','pass','fail'].includes(s))");
-  expect(js).toContain("backend=Array(steps.length).fill(null);proofNonce++");
+  expect(js).toContain("backend=Array(steps.length).fill(null);proofReady=false;proofNonce++");
   expect(js).toContain("non_certifying:true");
   expect(js).toContain("versionReady=fetch('/health/version'");
+});
+
+test('Golden: preuve strictement limitée à la bonne commande, au bon marché et aux dix étapes',()=>{
+  const js=fs.readFileSync(path.join(ROOT,'public/js/golden-e2e-cockpit-journey.js'),'utf8');
+  expect(js).toContain('function validGoldenProjection(p,requestedRef,requestedMarket)');
+  expect(js).toContain('p.steps.length===steps.length');
+  expect(js).toContain('s.key===goldenKeys[i]');
+  expect(js).toContain("if(!proofReady)return");
+  expect(js).toContain("$('pass').disabled=!proofReady");
+  expect(js).toContain('if(phase===2&&!proofReady)next.disabled=true');
 });
