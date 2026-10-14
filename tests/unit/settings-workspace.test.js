@@ -32,3 +32,15 @@ test('UX-03 — Paramètres ouvre sur un Hero canon (kicker + h1), plus sur l’
   expect(source).toContain('<h1 class="kmc-workspace-title">Paramètres business</h1>');
   expect(source).not.toContain('class="sv-header"');
 });
+
+test('Paramètres respecte la mise en page canonique et ne contient plus de mojibake', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/settings-workspace.js'), 'utf8');
+  expect(src).toContain("root.classList.add('kmc-settings-workspace')");
+  expect(src).toContain('.kmc-settings-workspace>#sv-tab-body');
+  expect(src).toContain('.kmc-settings-workspace>.kmc-workspace-header');
+  expect(src).not.toContain('â–');
+  expect(src).toContain("content:'▾'");
+  expect(src).toContain('Valider ▶');
+});

@@ -78,6 +78,14 @@
     const s = document.createElement('style');
     s.id = 'sv-styles';
     s.textContent = `
+      /* Settings is a canonical workspace, not a full-bleed legacy panel. */
+      .kmc-settings-workspace{width:100%;max-width:1480px;margin:0 auto;padding:20px 24px 40px;box-sizing:border-box;min-width:0}
+      .kmc-settings-workspace>.kmc-workspace-header{margin-bottom:16px;min-height:132px;border-radius:16px}
+      .kmc-settings-workspace>.sv-tabs{border:1px solid var(--kmc-line,#e2e8f0);border-radius:12px 12px 0 0;padding:0 12px;margin-bottom:0;background:#fff;flex-wrap:wrap}
+      .kmc-settings-workspace>#sv-tab-body{border:1px solid var(--kmc-line,#e2e8f0);border-top:0;border-radius:0 0 12px 12px;background:#fff;padding:18px 20px 24px;min-width:0}
+      .kmc-settings-workspace .sv-category{border:1px solid var(--kmc-line,#e2e8f0);box-shadow:none}
+      .kmc-settings-workspace .sv-search{max-width:100%}
+      @media(max-width:760px){.kmc-settings-workspace{padding:12px 12px 24px}.kmc-settings-workspace>#sv-tab-body{padding:12px}.kmc-settings-workspace>.sv-tabs{padding:0 4px}.kmc-settings-workspace .sv-tab{padding:10px 9px}}
       .sv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
       .sv-header h2{font-size:22px;font-weight:800;color:var(--text-primary)}
       .sv-subtitle{color:var(--text-secondary);font-size:13px;margin-top:2px}
@@ -93,8 +101,8 @@
       .sv-cat-count{background:var(--bg-secondary);color:var(--text-secondary);padding:2px 10px;border-radius:20px;font-size:var(--fs-sm);font-weight:600}
       .sv-cat-rules{margin-top:10px;display:none}
       .sv-category.expanded .sv-cat-rules{display:block}
-      .sv-caret::before{content:'â–¸';display:inline-block;margin-right:6px;transition:transform .15s}
-      .sv-category.expanded .sv-caret::before{content:'â–¾'}
+      .sv-caret::before{content:'▸';display:inline-block;margin-right:6px;transition:transform .15s}
+      .sv-category.expanded .sv-caret::before{content:'▾'}
       .sv-rule{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px solid var(--border);cursor:pointer;transition:background .1s}
       .sv-rule:hover{background:var(--bg-secondary);border-radius:6px}
       .sv-rule-info{flex:1;min-width:0}
@@ -215,6 +223,7 @@
 
   /* ── Rendu principal ────────────────────────────────────────────────── */
   function _render(root) {
+    root.classList.add('kmc-settings-workspace');
     root.innerHTML = `
       <header class="kmc-workspace-header" data-dashboard-role="hero">
         <div>
@@ -385,7 +394,7 @@
       <div class="sv-panel-foot">
         <button class="sv-btn sv-btn-danger" id="sv-reset" ${history.length===0?'disabled':''}>🔄 Réinitialiser</button>
         <button class="sv-btn sv-btn-secondary" id="sv-cancel">Annuler</button>
-        <button class="sv-btn sv-btn-primary" id="sv-save">Valider â–¶</button>
+        <button class="sv-btn sv-btn-primary" id="sv-save">Valider ▶</button>
       </div>
     `;
 
@@ -436,7 +445,7 @@
     } catch (err) {
       errEl.textContent = err.message;
       errEl.style.display = 'block';
-      btn.disabled = false; btn.textContent = 'Valider â–¶';
+      btn.disabled = false; btn.textContent = 'Valider ▶';
     }
   }
 
