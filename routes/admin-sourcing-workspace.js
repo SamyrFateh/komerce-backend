@@ -351,6 +351,22 @@ router.post('/products/:productRef/update', async (req, res, next) => {
   catch (err) { handleError(err, res, next); }
 });
 
+// Production remediation : liste dynamique et suggestions du classificateur canonique.
+// Ne pas confondre les catégories douanières/économiques avec la navigation boutique.
+router.get('/candidates/:candidateRef/category-options', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    res.json(await workspace.getCandidateCategoryOptions(req.params.candidateRef));
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.post('/candidates/:candidateRef/resolve-category', async (req, res, next) => {
+  try {
+    sendAction(res, 'resolve_candidate_category', await workspace.resolveCandidateCategory(
+      req.params.candidateRef, req.body?.category_key, req.user));
+  } catch (err) { handleError(err, res, next); }
+});
+
 router.post('/candidates/:candidateRef/update', async (req, res, next) => {
   try { sendAction(res, 'update_candidate', await workspace.updateCandidate(req.params.candidateRef, req.body, req.user)); }
   catch (err) { handleError(err, res, next); }
