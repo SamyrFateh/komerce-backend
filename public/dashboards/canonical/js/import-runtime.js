@@ -196,7 +196,8 @@
   function userSteps(stages, { runStatus = null, accounting = null } = {}) {
     const byKey = new Map((stages || []).map(stage => [stage.key, stage]));
     const handoff = handoffFacts(stages, accounting);
-    const actionRequired = num(accounting?.action_required);
+    // Une tâche humaine ouverte ne réécrit pas l'état d'un contrôle automatique.
+    // Les corrections restent dans le compteur « Action requise » (hors des 4 étapes).
     return USER_STEPS.map((def, index) => {
       const subs = def.stages.map(key => byKey.get(key)).filter(Boolean);
       const metas = subs.map(flowStageMeta);
@@ -212,13 +213,13 @@
             : anyRunning ? 'running'
               : 'pending';
       } else if (def.key === 'CONTROL') {
-        // Une action humaine attendue prime sur « bloqué » : Komerce n'est pas coincé, il attend.
-        state = anyFailed && actionRequired === 0 ? 'failed'
+        // Le parcours technique a sa propre vérité : les tâches humaines peuvent
+        // rester ouvertes APRÈS la fin de ce contrôle et du handoff Catalogue.
+        state = anyFailed ? 'failed'
           : anyRunning ? 'running'
-            : actionRequired > 0 && (anyFailed || allDone || someDone) ? 'attention'
-              : allDone ? 'completed'
-                : someDone && live ? 'running'
-                  : 'pending';
+            : allDone ? 'completed'
+              : someDone && live ? 'running'
+                : 'pending';
       } else {
         state = anyFailed ? 'failed' : allDone ? 'completed' : anyRunning || (someDone && live) ? 'running' : 'pending';
       }
@@ -1556,7 +1557,7 @@
       let hint = def.hint;
       if (stage.status === 'RUNNING' && stage.total > 0 && stage.processed < stage.total) hint = `${def.hint} · ${num(stage.processed)} / ${num(stage.total)}`;
       if ((stage.status || 'PENDING') === 'PENDING' && prev && prev.status !== 'COMPLETED') hint = 'Attend la fin de l’étape précédente';
-      if (num(run.accounting?.action_required) > 0 && stage.status === 'FAILED') words = ['attention', 'Action requise'];
+      // Un véritable échec technique reste « Bloqué », même si des corrections humaines existent.
       return statusRow(def.label, words, hint);
     }).join('');
     return drillHeader(run, 'Contrôle automatique', 'Ce que Komerce vérifie seul avant de proposer les produits au Catalogue.')

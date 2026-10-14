@@ -324,7 +324,8 @@ test.describe('Cockpit imports — Action requise', () => {
     expect(r - b).toBeGreaterThan(90);
     await expect(page.locator('.kir-status-large')).toContainText('Action requise');
     await expect(page.locator('body')).not.toContainText('Décisions attendues');
-    await expect(page.locator('.kir-run-flow-step.is-attention')).toHaveCount(1);
+    await expect(page.locator('.kir-run-flow-step.is-attention')).toHaveCount(0);
+    await expect(page.locator('.kir-run-flow-step.is-completed').filter({ hasText:'Contrôle automatique' })).toHaveCount(1);
   });
 
   test('CAS A calme : 0 action, aucune carte orange', async ({ page }) => {

@@ -338,7 +338,52 @@ test('CAS E : 3 vraies exceptions → « Action requise 3 » orange cliquable, h
   expect(html).toContain('href="/admin/import-runtime?run=KIR-000004&view=exceptions"');
   expect(html).toContain('Action requise</span>');
   expect(html).not.toContain('Décisions attendues');
-  expect(stepClass(html, 'Contrôle automatique')).toContain('is-attention');
+  expect(stepClass(html, 'Contrôle automatique')).toContain('is-completed');
+});
+
+test('KIR réel terminé avec 12 corrections : les 4 étapes restent vertes et les 12 tâches restent visibles', () => {
+  const stages = CALM_STAGES.map(stage => ({
+    ...stage, status:'COMPLETED', reason:null,
+    processed:stage.key === 'CATALOGUE' ? 8 : stage.processed,
+    total:stage.key === 'CATALOGUE' ? 8 : stage.total,
+  }));
+  const items = Array.from({length:12}, (_, i) => ({
+    candidate_ref:`KSC-W-${i + 1}`,
+    supplier_product_id:`SP-W-${i + 1}`,
+    product_name:`Produit à classer ${i + 1}`,
+    reason:'Catégorie Komerce non résolue', action:'choose', action_label:'Classer',
+    action_origin:'deferred',
+  }));
+  const p = scenario({
+    source_total:20, accepted:20, certified:8, catalogued:8,
+    awaiting_catalogue_promotion:0, deferred:12, deferred_actionable:12,
+    rejected:0, action_required:12,
+  }, { status:'COMPLETED', sourcing_status:'ACTION_REQUIRED', stages, action_items:items });
+  const html = render(p);
+  for (const name of ['Source', 'Produits reçus', 'Contrôle automatique', 'Remise au Catalogue']) {
+    expect(stepClass(html, name)).toContain('is-completed');
+  }
+  expect(html).not.toContain('kir-run-flow-step is-attention');
+  expect(tile(html, 'Mis de côté')).toBe('12');
+  expect(tile(html, 'Action requise')).toBe('12');
+  expect(html).toContain('dont 12 à corriger');
+  expect(html).toContain('Intervenir →');
+  const exceptions = render(p, '?run=KIR-000004&view=exceptions');
+  expect(exceptions).toContain('Action requise · 12');
+  expect(exceptions).toContain('Produit à classer 1');
+});
+
+test('échec technique réel : le contrôle reste bloqué même avec une liste d’actions humaines', () => {
+  const p = scenario({ action_required:2 }, {
+    status:'FAILED', sourcing_status:'ACTION_REQUIRED', action_items:ITEMS.slice(0,2),
+    stages:CALM_STAGES.map(stage => stage.key === 'CERTIFICATION'
+      ? { ...stage, status:'FAILED' } : stage),
+  });
+  const html = render(p);
+  expect(stepClass(html, 'Contrôle automatique')).toContain('is-failed');
+  const drillHtml = render(p, '?run=KIR-000004&view=control');
+  expect(drillHtml).toContain('Bloqué');
+  expect(tile(html, 'Action requise')).toBe('2');
 });
 
 test('CAS E : au clic, la liste filtrée montre exactement les 3 éléments (produit · raison · action)', () => {
