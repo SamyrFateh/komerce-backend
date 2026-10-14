@@ -3278,6 +3278,11 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 .kmc-import-runtime .kir-run-truth-grid.is-five{grid-template-columns:repeat(5,minmax(0,1fr))}
 .kmc-import-runtime .kir-run-truth-grid.is-five .is-deferred{border-color:#DFD6BC}
 .kmc-import-runtime .kir-run-truth-grid.is-five .is-deferred svg{color:#AE812F}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-deferred .kir-ico{background:#FFF4DE;color:#9A6C1E}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-deferred strong{color:#8D6524}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-attention{border-color:#E0A63D !important}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-attention .kir-ico{background:#FFF0D6;color:#A86D11}
+.kmc-import-runtime .kir-run-truth-grid.is-five>a.is-attention strong{color:#986206}
 .kmc-import-runtime .kir-runtime-verdict{border:1px solid #C8D8E8;border-left:4px solid #4077BA;border-radius:12px;background:#F6FAFE;padding:16px 20px;margin:16px 0;color:#223348}
 .kmc-import-runtime .kir-runtime-verdict.is-blocked{border-color:#E8D7B5;border-left-color:#CA8B25;background:#FFFBF1}
 .kmc-import-runtime .kir-runtime-verdict.is-certified{border-color:#C4E8D8;border-left-color:#23956A;background:#F4FCF7}
