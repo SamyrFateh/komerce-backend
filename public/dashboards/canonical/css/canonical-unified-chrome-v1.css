@@ -347,8 +347,8 @@ body.kmc-shell-v4[data-kmc-surface="relais-live"] .kmc-import-runtime .kir-hero:
   }
 }
 
-/* Canon Live: identical hero-first composition as the other domain workspaces.
- * Preserve existing illustrations, states and canonical navigation. */
+/* Canon Live compact: same visual grammar, operational flow stays above the fold.
+ * No fixed hero height: long lot names and mobile controls must remain usable. */
 body.kmc-shell-v4 .kmc-import-runtime .kir-page {
   display: flex;
   flex-direction: column;
@@ -357,9 +357,12 @@ body.kmc-shell-v4 .kmc-import-runtime .kir-page {
 body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-hero {
   order: -1;
   width: 100%;
-  min-height: 152px;
+  min-height: 0;
   margin: 0 0 10px;
-  padding: 22px 35% 22px 24px;
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 18px;
   align-items: center;
 }
 body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-domain-nav {
@@ -372,31 +375,54 @@ body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-main {
 }
 body.kmc-shell-v4 .kmc-import-runtime .kir-hero > div:first-child {
   min-width: 0;
-  max-width: 790px;
+  max-width: none;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero h1 {
+  font-size: clamp(20px, 1.65vw, 26px);
+  line-height: 1.15;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero .kir-eyebrow {
+  margin-bottom: 5px;
 }
 body.kmc-shell-v4 .kmc-import-runtime .kir-hero .kir-live-titlerow {
   flex-wrap: wrap;
+  gap: 8px;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero .kir-live-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero .kir-live-time {
+  min-width: 0;
 }
 body.kmc-shell-v4 .kmc-import-runtime .kir-hero::before {
-  top: 0;
-  bottom: 0;
   inset: 0 0 0 auto;
   z-index: 0;
-  opacity: .58;
+  opacity: .42;
+  width: min(27%, 320px);
 }
 body.kmc-shell-v4 .kmc-import-runtime .kir-hero > * {
   position: relative;
   z-index: 1;
 }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-hero {
-    padding: 18px 32% 18px 18px;
-    min-height: 138px;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px 16px;
+  }
+  body.kmc-shell-v4 .kmc-import-runtime .kir-hero .kir-live-hero-actions {
+    justify-content: flex-start;
   }
 }
 @media (max-width: 760px) {
   body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-hero {
-    padding: 16px;
-    min-height: 0;
+    padding: 12px;
+    gap: 8px;
+  }
+  body.kmc-shell-v4 .kmc-import-runtime .kir-hero h1 {
+    font-size: 21px;
   }
 }
