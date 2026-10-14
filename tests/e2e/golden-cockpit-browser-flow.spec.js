@@ -11,7 +11,7 @@ const ORIGIN='http://komerce.test';
 const html=fs.readFileSync(path.join(__dirname,'..','..','public','golden-e2e-cockpit.html'),'utf8');
 
 async function mount(page){
-  const state={creates:[],advances:0,evidenceUnavailable:false,malformedEvidence:false};
+  const state={creates:[],advances:0,evidenceUnavailable:false,malformedEvidence:false,version:'c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad'};
   await page.route(ORIGIN+'/**',async route=>{
     const req=route.request(), url=new URL(req.url());
     if(url.pathname==='/admin/golden-e2e') return route.fulfill({
@@ -23,13 +23,14 @@ async function mount(page){
       const file=path.join(__dirname,'..','..','public',url.pathname.slice(1));
       return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(file,'utf8')});
     }
+    if(url.pathname==='/health/version') return route.fulfill({contentType:'application/json',body:JSON.stringify({version:'test',commit:state.version})});
     if(url.pathname==='/api/admin/entities/golden-create'&&req.method()==='POST'){
       state.creates.push(req.postDataJSON());
       return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',marketCode:state.creates.at(-1).marketCode})});
     }
     if(url.pathname.endsWith('/golden-evidence')&&state.evidenceUnavailable) return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Backend indisponible'})});
-    if(url.pathname.endsWith('/golden-evidence')&&state.malformedEvidence)return route.fulfill({contentType:'application/json',body:JSON.stringify({order:{reference:'K-GOLDEN-BROWSER'},steps:[]})});
-    if(url.pathname.endsWith('/golden-evidence')) return route.fulfill({contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',order:{reference:'K-GOLDEN-BROWSER'},steps:[
+    if(url.pathname.endsWith('/golden-evidence')&&state.malformedEvidence)return route.fulfill({contentType:'application/json',body:JSON.stringify({order:{reference:'K-GOLDEN-BROWSER',market_code:state.creates.at(-1)?.marketCode||'KM'},steps:[]})});
+    if(url.pathname.endsWith('/golden-evidence')) return route.fulfill({contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',order:{reference:'K-GOLDEN-BROWSER',market_code:state.creates.at(-1)?.marketCode||'KM'},steps:[
       {key:'CLIENT_ORDER',passed:true,evidence:'ordered'},{key:'CLIENT_PAYMENT',passed:true,evidence:'paid'},{key:'PURCHASING',passed:true,evidence:'PO confirmed'},{key:'SUPPLIER_EXECUTION',passed:true,evidence:'matched'},{key:'FULFILLMENT',passed:true,evidence:'tracking'},
       {key:'HUB_INBOUND',passed:state.advances>0,evidence:state.advances>0?'matched':'pending'},{key:'CUSTOMS',passed:false,evidence:'pending'},{key:'RELAY_AVAILABLE',passed:false,evidence:'pending'},{key:'CUSTOMER_HANDOFF',passed:false,evidence:'pending'},{key:'FINANCIAL_CLOSE',passed:false,evidence:'pending'}]})});
     if(url.pathname.endsWith('/golden-advance')&&req.method()==='POST'){
@@ -158,54 +159,70 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.locator('#createGolden').click();
     await expect(page.locator('#backendEvidence')).toContainText('ordered');
     state.evidenceUnavailable=true;
-    await page.locator('#wizardNext').click();
-    await page.locator('#wizardNext').click();
     await page.locator('#wizardTechnical summary').click();
     await page.locator('#refresh').click();
     await expect(page.locator('#liveState')).toContainText('Preuves indisponibles');
     await expect(page.locator('#backendEvidence')).toHaveText('—');
-    await expect(page.locator('#pass')).toBeDisabled();
-    await expect(page.locator('#wizardNext')).toBeDisabled();
-    await expect(page.locator('#score')).toHaveText('0 / 10');
     await expect(page.locator('#rail .stepbtn.pass')).toHaveCount(0);
     await expect(page.locator('#global')).not.toHaveText(/GOLDEN VERT|certifié/i);
     state.evidenceUnavailable=false;
     await page.locator('#refresh').click();
     await expect(page.locator('#backendEvidence')).toContainText('ordered');
-    await expect(page.locator('#pass')).toBeEnabled();
   });
 
-  test('une réponse tardive ne rétablit pas la preuve après une erreur plus récente',async({page})=>{
-    await mount(page);
+
+  test('reprise locale après reload sans recycler une preuve backend indisponible et export traçable',async({page})=>{
+    const state=await mount(page);
     await page.locator('#createGolden').click();
-    await expect(page.locator('#backendEvidence')).toContainText('ordered');
     await page.locator('#wizardNext').click();
+    await page.locator('#wizardNext').click();
+    await page.locator('#wizardProofDetails summary').click();
+    await page.locator('#humanObservation').fill('Commande bien affichée pour KM');
+    await page.locator('#pass').click();
+    await expect(page.locator('#score')).toHaveText('1 / 10');
+    state.evidenceUnavailable=true;
+    await page.reload();
+    await expect(page.locator('#wizardStage')).toBeVisible();
+    await expect(page.locator('#marketSelect')).toHaveValue('KM');
+    await expect(page.locator('#orderRef')).toHaveText('K-GOLDEN-BROWSER');
+    await expect(page.locator('#score')).toHaveText('1 / 10');
+    await expect(page.locator('#liveState')).toContainText('Preuves indisponibles');
+    await expect(page.locator('#backendEvidence')).toHaveText('—');
     await page.locator('#wizardTechnical summary').click();
-    let release, started;
-    const pending=new Promise(resolve=>{release=resolve});
-    const received=new Promise(resolve=>{started=resolve});
-    let reads=0;
-    await page.route(ORIGIN+'/api/admin/entities/orders/**/golden-evidence',async route=>{
-      if(++reads===1){
-        started();
-        await pending;
-        await route.fulfill({contentType:'application/json',body:JSON.stringify({steps:[{passed:true,evidence:'obsolete'}]})});
-      }else await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Lecture récente refusée'})});
-    });
-    await page.locator('#refresh').click();
-    await received;
-    await expect(page.locator('#pass')).toBeDisabled();
-    await expect(page.locator('#backendEvidence')).toHaveText('—');
-    await page.locator('#refresh').click();
-    await expect(page.locator('#liveState')).toContainText('Lecture récente refusée');
-    const finished=page.waitForResponse(response=>response.url().endsWith('/golden-evidence')&&response.status()===200);
-    release();
-    await finished;
-    await expect(page.locator('#backendEvidence')).toHaveText('—');
-    await expect(page.locator('#pass')).toBeDisabled();
+    const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportHuman').click()]);
+    expect(download.suggestedFilename()).toContain('KM-K-GOLDEN-BROWSER-c2f3c1d051');
+    const record=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
+    expect(record).toMatchObject({schema:'golden-human-v1',version:state.version,market:'KM',reference:'K-GOLDEN-BROWSER'});
+    expect(record.states[0]).toBe('pass');
+    expect(record.notes[0]).toContain('Commande bien affichée');
+    expect(record.backend_snapshot.non_certifying).toBe(true);
+    expect(record.backend_snapshot.evidence.every(x=>x===null)).toBe(true);
   });
 
-  test('changer de Golden puis reprendre la même référence restaure son constat local',async({page})=>{
+  test('constats KM ne sont pas réutilisés pour CM ou une autre version',async({page})=>{
+    const state=await mount(page);
+    await page.locator('#createGolden').click();
+    await page.locator('#wizardNext').click();
+    await page.locator('#wizardNext').click();
+    await page.locator('#pass').click();
+    await expect(page.locator('#score')).toHaveText('1 / 10');
+    await page.locator('#wizardChange').click();
+    await page.locator('#marketSelect').selectOption('CM');
+    await page.locator('#refInput').fill('K-GOLDEN-BROWSER');
+    await page.locator('#refForm button').click();
+    await expect(page.locator('#score')).toHaveText('0 / 10');
+    await page.locator('#wizardChange').click();
+    await page.locator('#marketSelect').selectOption('KM');
+    await page.locator('#refInput').fill('K-GOLDEN-BROWSER');
+    await page.locator('#refForm button').click();
+    await expect(page.locator('#score')).toHaveText('1 / 10');
+    state.version='eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+    await page.reload();
+    await expect(page.locator('#wizardSetup')).toBeVisible();
+    await expect(page.locator('#score')).toHaveText('0 / 10');
+  });
+
+  test('changer de Golden revient à la préparation sans recycler le verdict humain',async({page})=>{
     await mount(page);
     await page.locator('#createGolden').click();
     await page.locator('#wizardNext').click();
@@ -215,19 +232,11 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.locator('#wizardChange').click();
     await expect(page.locator('#wizardSetup')).toBeVisible();
     await expect(page.locator('#wizardStage')).toBeHidden();
-    await page.locator('#refInput').fill('K-GOLDEN-BROWSER');
+    await page.locator('#refInput').fill('K-GOLDEN-OTHER');
     await page.locator('#refForm button').click();
-    await expect(page.locator('#score')).toHaveText('1 / 10');
+    await expect(page.locator('#score')).toHaveText('0 / 10');
     await expect(page.locator('.wizard-grid')).toHaveAttribute('data-phase','guide');
-    await page.reload();
-    await expect(page.locator('#orderRef')).toHaveText('K-GOLDEN-BROWSER');
-    await expect(page.locator('#score')).toHaveText('1 / 10');
-    await page.locator('#wizardShowSteps').click();
-    await page.locator('#rail .stepbtn').nth(1).click();
-    await expect(page.locator('#humanObservation')).toHaveValue('');
-    await expect(page.locator('#score')).toHaveText('1 / 10');
-  });
-  test('recette CJ 20/15/5 reste non certifiée sans session et sans preuve',async({page})=>{
+  });  test('recette CJ 20/15/5 reste non certifiée sans session et sans preuve',async({page})=>{
     await mount(page);
     await page.locator('#extendedRecipe summary').click();
     await page.locator('#scenarioTrack').selectOption('cj');

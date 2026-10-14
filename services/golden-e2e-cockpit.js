@@ -131,7 +131,7 @@ async function projectGoldenEvidence(db, order) {
     ['FINANCIAL_CLOSE', close.verdict === 'FINANCIAL_CLOSE_MATCHED', close.verdict],
   ];
   return {
-    order: { id:order.id, reference:order.reference, status:order.status, payment_status:order.payment_status },
+    order: { id:order.id, reference:order.reference, market_code:order.market_code || null, status:order.status, payment_status:order.payment_status },
     steps: raw.map(([key, passed, evidence], i) => ({ index:i+1, key, passed:Boolean(passed), evidence })),
     verdict: close.verdict,
     observed_at: new Date().toISOString(),
