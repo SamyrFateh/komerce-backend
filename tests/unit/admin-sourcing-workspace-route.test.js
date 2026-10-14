@@ -33,6 +33,8 @@ const mockCalls = {
   importCatalog: jest.fn(),
   updatePortfolioProduct: jest.fn(),
   updateCandidate: jest.fn(),
+  getCandidateCategoryOptions: jest.fn(),
+  resolveCandidateCategory: jest.fn(),
   scanCandidate: jest.fn(),
   watchlistCandidate: jest.fn(),
   rejectCandidate: jest.fn(),
@@ -63,6 +65,8 @@ jest.mock('../../services/sourcing-workspace', () => ({
   importCatalog: (...args) => mockCalls.importCatalog(...args),
   updatePortfolioProduct: (...args) => mockCalls.updatePortfolioProduct(...args),
   updateCandidate: (...args) => mockCalls.updateCandidate(...args),
+  getCandidateCategoryOptions: (...args) => mockCalls.getCandidateCategoryOptions(...args),
+  resolveCandidateCategory: (...args) => mockCalls.resolveCandidateCategory(...args),
   scanCandidate: (...args) => mockCalls.scanCandidate(...args),
   watchlistCandidate: (...args) => mockCalls.watchlistCandidate(...args),
   rejectCandidate: (...args) => mockCalls.rejectCandidate(...args),
@@ -171,6 +175,41 @@ test('mutation candidat délègue candidate_ref et jamais UUID', async () => {
     .send({});
   expect(res.status).toBe(200);
   expect(mockCalls.scanCandidate).toHaveBeenCalledWith('KSC-000001', expect.objectContaining({ id: 'central-sourcing' }));
+});
+
+test('remédiation catégorie : uniquement les choix actifs sur la référence métier demandée', async () => {
+  mockCalls.getCandidateCategoryOptions.mockResolvedValue({
+    candidate_ref:'KSC-000050', categories:[{key:'home',label:'Maison'}],
+    suggestions:[{key:'home',label:'Maison',confidence:'medium'}],
+  });
+  const res = await request(app()).get('/api/admin/workspaces/sourcing/candidates/KSC-000050/category-options');
+  expect(res.status).toBe(200);
+  expect(res.headers['cache-control']).toContain('no-store');
+  expect(mockCalls.getCandidateCategoryOptions).toHaveBeenCalledWith('KSC-000050');
+  expect(res.body.suggestions[0]).toMatchObject({key:'home',confidence:'medium'});
+  expect(res.body).not.toHaveProperty('id');
+});
+
+test('remédiation catégorie : l’opérateur choisit une clé puis le service enregistre et re-scanne', async () => {
+  mockCalls.resolveCandidateCategory.mockResolvedValue({
+    candidate_ref:'KSC-000050',category:{key:'home',label:'Maison'},
+    state:'scanned',scan:{decision:'TEST'},
+  });
+  const res = await request(app()).post('/api/admin/workspaces/sourcing/candidates/KSC-000050/resolve-category')
+    .send({category_key:'home'});
+  expect(res.status).toBe(200);
+  expect(res.body.action).toBe('resolve_candidate_category');
+  expect(mockCalls.resolveCandidateCategory).toHaveBeenCalledWith('KSC-000050','home',
+    expect.objectContaining({id:'central-sourcing',role:'admin'}));
+  expect(res.body.result.scan.decision).toBe('TEST');
+});
+
+test('remédiation catégorie refusée hors grant sourcing avant toute écriture', async () => {
+  mockSourcingAllowed=false;
+  const res = await request(app()).post('/api/admin/workspaces/sourcing/candidates/KSC-000050/resolve-category')
+    .send({category_key:'home'});
+  expect(res.status).toBe(403);
+  expect(mockCalls.resolveCandidateCategory).not.toHaveBeenCalled();
 });
 
 test('import-now délègue la source métier et l’acteur authentifié', async () => {
