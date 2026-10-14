@@ -83,7 +83,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('Passage en direct');
   expect(source).toContain('le même passage avance de bout en bout');
   expect(source).toContain('persistentRunFlow');
-  expect(source).toContain('Remise au Catalogue en cours');
+  expect(source).toContain('Remise à la Raffinerie en cours');
   expect(source).toContain('Import automatique terminé');
   expect(source).toContain('parcours conservé à l’écran');
   expect(source).toContain('automatic_catalogue_handoff_pending');
