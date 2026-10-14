@@ -11,7 +11,7 @@ const ORIGIN='http://komerce.test';
 const html=fs.readFileSync(path.join(__dirname,'..','..','public','golden-e2e-cockpit.html'),'utf8');
 
 async function mount(page){
-  const state={creates:[],advances:0};
+  const state={creates:[],advances:0,evidenceUnavailable:false};
   await page.route(ORIGIN+'/**',async route=>{
     const req=route.request(), url=new URL(req.url());
     if(url.pathname==='/admin/golden-e2e') return route.fulfill({
@@ -27,6 +27,7 @@ async function mount(page){
       state.creates.push(req.postDataJSON());
       return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',marketCode:state.creates.at(-1).marketCode})});
     }
+    if(url.pathname.endsWith('/golden-evidence')&&state.evidenceUnavailable) return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Backend indisponible'})});
     if(url.pathname.endsWith('/golden-evidence')) return route.fulfill({contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',steps:[
       {key:'CLIENT_ORDER',passed:true,evidence:'ordered'},{key:'CLIENT_PAYMENT',passed:true,evidence:'paid'},{key:'PURCHASING',passed:true,evidence:'PO confirmed'},{key:'SUPPLIER_EXECUTION',passed:true,evidence:'matched'},{key:'FULFILLMENT',passed:true,evidence:'tracking'},
       {key:'HUB_INBOUND',passed:state.advances>0,evidence:state.advances>0?'matched':'pending'},{key:'CUSTOMS',passed:false,evidence:'pending'},{key:'RELAY_AVAILABLE',passed:false,evidence:'pending'},{key:'CUSTOMER_HANDOFF',passed:false,evidence:'pending'},{key:'FINANCIAL_CLOSE',passed:false,evidence:'pending'}]})});
@@ -148,6 +149,23 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await expect(page.locator('#upstream [data-gate="SOURCE_PROVED"]')).toContainText('NON PROUVÉ');
     await expect(page.locator('#upstream .st.PROVED')).toHaveCount(0);
     await expect(page.locator('#certLine')).toContainText('NON CERTIFIÉE');
+  });
+
+
+  test('preuve backend périmée effacée dès qu’une lecture échoue, sans faux vert',async({page})=>{
+    const state=await mount(page);
+    await page.locator('#createGolden').click();
+    await expect(page.locator('#backendEvidence')).toContainText('ordered');
+    state.evidenceUnavailable=true;
+    await page.locator('#wizardTechnical summary').click();
+    await page.locator('#refresh').click();
+    await expect(page.locator('#liveState')).toContainText('Preuves indisponibles');
+    await expect(page.locator('#backendEvidence')).toHaveText('—');
+    await expect(page.locator('#rail .stepbtn.pass')).toHaveCount(0);
+    await expect(page.locator('#global')).not.toHaveText(/GOLDEN VERT|certifié/i);
+    state.evidenceUnavailable=false;
+    await page.locator('#refresh').click();
+    await expect(page.locator('#backendEvidence')).toContainText('ordered');
   });
 
   test('changer de Golden revient à la préparation sans recycler le verdict humain',async({page})=>{
