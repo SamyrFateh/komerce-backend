@@ -42,10 +42,13 @@ describe('canonical unified admin chrome', () => {
     expect(css).toContain('.kmc-import-runtime .kir-hero');
     expect(css).toContain('.kmc-import-runtime .kir-hero .kir-eyebrow');
     expect(css).toContain('height: auto');
-    expect(css).toContain('Canon Live: identical hero-first composition');
+    expect(css).toContain('Canon Live compact: same visual grammar');
     expect(css).toContain('.kir-page > .kir-hero');
     expect(css).toContain('order: -1');
     expect(css).toContain('.kir-page > .kir-domain-nav');
+    expect(css).toContain('grid-template-columns: minmax(0, 1fr) auto');
+    expect(css).toContain('min-height: 0');
+    expect(css).toContain('font-size: clamp(20px, 1.65vw, 26px)');
     expect(css).toContain('@media (max-width: 900px)');
     expect(css).toContain('@media (max-width: 680px)');
   });
