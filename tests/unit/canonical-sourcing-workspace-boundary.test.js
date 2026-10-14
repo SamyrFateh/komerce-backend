@@ -124,3 +124,17 @@ test('candidats : état et décision affichés en français (libellés mappés, 
   expect(src).toContain("test: 'À tester'");
   expect(src).toContain('CANDIDATE_STATE_LABELS');
 });
+
+test('imports manuels et CSV : panneau guidé, validation avant écriture et sans prompt navigateur', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'sourcing-workspace.js'), 'utf8');
+  const start = source.indexOf('function renderImports(');
+  const end = source.indexOf('function renderPortfolio(', start);
+  const segment = source.slice(start, end);
+  expect(segment).toContain("data-sourcing-manual-panel");
+  expect(segment).toContain("data-manual-supplier");
+  expect(segment).toContain("data-manual-products");
+  expect(segment).toContain("JSON invalide : vérifiez la syntaxe.");
+  expect(segment).toContain("source_type: 'csv'");
+  expect(segment).toContain("source_type: 'manual'");
+  expect(segment).not.toContain('context.prompt(');
+});
