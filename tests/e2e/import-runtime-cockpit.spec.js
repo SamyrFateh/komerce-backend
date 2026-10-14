@@ -339,7 +339,7 @@ test.describe('Cockpit imports — Action requise', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('Coque B');
     await expect(dialog).toContainText('Classement ambigu');
-    await expect(dialog).toContainText('Catégorie de calcul Sourcing / Douane');
+    await expect(dialog).toContainText('catégorie de calcul Sourcing / Douane');
     await expect(dialog.locator('select option[value="jewelry"]')).toContainText('Bijoux');
     await expect(dialog.locator('select option[value="home"]')).toContainText('Maison & déco');
     expect(state.categoryWrites).toHaveLength(0);
