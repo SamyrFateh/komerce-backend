@@ -838,7 +838,7 @@
   }
 
   function renderApproval(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Produits à valider', 'Relisez, corrigez ou ajoutez les produits proposés.');
+    const slot = createSection(rootNode, ui, 'Produits à finaliser', 'Préparez les fiches, définissez les prix et validez les produits proposés.');
     const rows = payload.approval || [];
     const breakdown = payload.approval_breakdown || {};
     const strategy = payload.approval_strategy || {};
@@ -1334,8 +1334,8 @@
         rootNode.replaceChildren();
         const panel = doc.createElement('section');
         panel.className = 'kmc-workspace-header';
-        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · CATALOGUE'));
-        panel.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Accès Catalogue indisponible'));
+        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', context.workspaceView === 'refinery' ? 'WORKSPACE · RAFFINERIE' : 'WORKSPACE · CATALOGUE'));
+        panel.appendChild(text(doc, 'h1', 'kmc-workspace-title', context.workspaceView === 'refinery' ? 'Raffinerie indisponible' : 'Catalogue indisponible'));
         panel.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', error.message));
         rootNode.appendChild(panel);
         throw error;

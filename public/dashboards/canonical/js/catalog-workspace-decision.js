@@ -146,21 +146,23 @@
   function prependDecisionView(rootNode, payload, options, base, decisionUi) {
     const doc = options.document;
     const ui = options.ui;
+    const search = options.location?.search ?? globalThis.location?.search ?? '';
+    const refinery = new URLSearchParams(search).get('view') === 'refinery';
     const host = doc.createElement('section');
     host.className = 'kmc-dashboard kmc-decision-dashboard kmc-catalog-decision-overview';
-    host.setAttribute('data-dashboard-id', 'catalog');
+    host.setAttribute('data-dashboard-id', refinery ? 'refinery' : 'catalog');
     host.setAttribute('data-dashboard-visual', 'decision-first-v1');
     host.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary');
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
     header.setAttribute('data-dashboard-role', 'hero');
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'CATALOGUE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Produits à valider'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui doit être relu, corrigé ou ajouté au catalogue.'));
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', refinery ? 'RAFFINERIE' : 'CATALOGUE'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', refinery ? 'Produits à finaliser' : 'Catalogue commercial'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', refinery ? 'Préparer les fiches, définir les prix et valider avant publication.' : 'Produits approuvés, catégories et disponibilité commerciale.'));
     host.appendChild(header);
 
-    const decisions = decisionItems(payload);
+    const decisions = refinery ? [] : decisionItems(payload);
     if (decisions.length) {
       const decisionHost = doc.createElement('div');
       decisionHost.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
@@ -177,18 +179,18 @@
     const approvalTable = rootNode.querySelector && rootNode.querySelector('.kmc-workspace-table');
     const approvalBody = approvalTable && approvalTable.parentNode && approvalTable.parentNode.parentNode;
     const approvalSection = approvalBody && approvalBody.parentNode;
-    if (approvalBody) approvalBody.setAttribute('id', 'catalog-curation');
+    if (approvalBody && refinery) approvalBody.setAttribute('id', 'catalog-curation');
 
     // La liste de curation est le travail principal : elle vient immédiatement
     // sous le titre Catalogue, avant les KPI et l'assortiment déjà approuvé.
-    if (approvalSection && approvalSection.classList && approvalSection.classList.contains('kmc-section')) {
+    if (refinery && approvalSection && approvalSection.classList && approvalSection.classList.contains('kmc-section')) {
       approvalSection.setAttribute('data-dashboard-role', 'primary');
       const attention = host.querySelector('[data-dashboard-role="attention"]');
       if (attention && attention.nextSibling) host.insertBefore(approvalSection, attention.nextSibling);
       else host.appendChild(approvalSection);
     }
 
-    const focusedRef = requestedProductRef(options);
+    const focusedRef = refinery ? requestedProductRef(options) : null;
     if (focusedRef && approvalTable) {
       const rows = approvalTable.querySelectorAll ? approvalTable.querySelectorAll('[data-product-ref]') : [];
       const focusedRow = Array.from(rows || []).find(row => row.getAttribute('data-product-ref') === focusedRef);
@@ -216,7 +218,8 @@
         let first = true;
         const afterRender = payload => {
           // Le focus produit (scroll) ne vaut que pour le premier rendu.
-          const renderOptions = first ? options : { ...options, location: { search: '' } };
+          const search = options.location?.search ?? globalThis.location?.search ?? '';
+          const renderOptions = first ? options : { ...options, location: { search: new URLSearchParams(search).get('view') === 'refinery' ? '?view=refinery' : '' } };
           first = false;
           prependDecisionView(options.root, payload, renderOptions, base, decisionUi);
         };
