@@ -758,6 +758,7 @@
         Object.freeze({ id: 'flow-commerce', label: 'Vue commerce', href: '/admin/commerce', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['commerce'] }),
         Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
         Object.freeze({ id: 'workspace-pricing', label: 'Prix & économie', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read', surfaces: ['pricing-workspace'] }),
+        Object.freeze({ id: 'workspace-refinery', label: 'Raffinerie', href: '/admin/workspaces/catalog?view=refinery', roles: ['admin'], surfaces: [] }),
         Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
       ]),
     }),
@@ -815,8 +816,9 @@
       Object.freeze({ id: 'pricing-overview', label: 'Vue d’ensemble', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'] }),
     ]),
     catalog: Object.freeze([
-      Object.freeze({ id: 'catalog-overview', label: 'Vue catalogue', href: '/admin/workspaces/catalog', roles: ['admin'] }),
-      Object.freeze({ id: 'catalog-products', label: 'Produits', href: '/admin/workspaces/catalog?view=advanced', roles: ['admin'] }),
+      Object.freeze({ id: 'catalog-refinery', label: 'Raffinerie', href: '/admin/workspaces/catalog?view=refinery', roles: ['admin'] }),
+      Object.freeze({ id: 'catalog-overview', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'] }),
+
     ]),
     orders: Object.freeze([
       Object.freeze({ id: 'commerce', label: 'Vue d’ensemble', href: '/admin/commerce', roles: ['admin', 'market_operator'] }),
@@ -1011,7 +1013,7 @@
       return 'pricing-overview';
     }
     if (domainId === 'catalog') {
-      if (search.get('view') === 'advanced') return 'catalog-products';
+      if (search.get('view') === 'refinery') return 'catalog-refinery';
       return 'catalog-overview';
     }
     if (domainId === 'orders') {
