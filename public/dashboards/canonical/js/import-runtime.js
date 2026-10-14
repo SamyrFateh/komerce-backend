@@ -87,12 +87,12 @@
     { key:'SOURCE', label:'Source', stages:['SOURCE_CONNECTED'], drill:'SOURCE_CONNECTED' },
     { key:'RECEIVED', label:'Produits reçus', stages:['RAW_IMPORT'], drill:'RAW_IMPORT' },
     { key:'CONTROL', label:'Contrôle automatique', stages:CONTROL_STAGES, drill:'CONTROL' },
-    { key:'CATALOGUE', label:'Remise Catalogue', stages:['CATALOGUE'], drill:'CATALOGUE' },
+    { key:'CATALOGUE', label:'Remise au Catalogue', stages:['CATALOGUE'], drill:'CATALOGUE' },
   ]);
   const USER_STAGE_LABELS = Object.freeze({
     SOURCE_CONNECTED:'Source', RAW_IMPORT:'Produits reçus',
     REFINERY:'Contrôle automatique', TAXONOMY:'Contrôle automatique', CERTIFICATION:'Contrôle automatique',
-    CATALOGUE:'Remise Catalogue', CONTROL:'Contrôle automatique',
+    CATALOGUE:'Remise au Catalogue', CONTROL:'Contrôle automatique',
   });
   function userStageLabel(key) { return USER_STAGE_LABELS[key] || key || 'Étape'; }
   function userStageKey(key) { return CONTROL_STAGES.includes(key) ? 'CONTROL' : key; }
@@ -497,7 +497,7 @@
     const h = sourcingOutcome(run).handoff;
     if (!h.controlDone || h.certified === 0) return '';
     const state = h.complete ? 'is-clean' : 'is-waiting';
-    const text = h.complete ? 'Remise terminée'
+    const text = h.complete ? `Remise terminée · ${h.catalogued} produit${h.catalogued > 1 ? 's' : ''} remis au Catalogue`
       : h.catalogued === 0 ? 'Remise automatique en cours'
         : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre automatiquement`;
     return `<section class="kir-handoff ${state}" aria-label="Passage au Catalogue">
@@ -608,7 +608,7 @@
       || (run?.status === 'FAILED' ? 'BLOCKED' : run?.status === 'COMPLETED' ? 'DONE' : 'RUNNING');
     return ({
       RUNNING:{ label:'LIVE', tone:'live' },
-      DONE:{ label:'Terminé', tone:'positive' },
+      DONE:{ label:'Traitement terminé', tone:'positive' },
       ACTION_REQUIRED:{ label:'Action requise', tone:'warning' },
       BLOCKED:{ label:'Bloqué', tone:'critical' },
     })[status] || { label:'Terminé', tone:'positive' };
@@ -677,7 +677,7 @@
     return '/admin/import-runtime?' + q.toString();
   }
 
-  // origin = 'handoff' quand le produit est ouvert depuis Remise Catalogue (le retour y revient).
+  // origin = 'handoff' quand le produit est ouvert depuis Remise au Catalogue (le retour y revient).
   function itemUrl(runRef, supplierProductId, kind = 'received', origin = null) {
     const q = new URLSearchParams();
     if (runRef) q.set('run', runRef);
@@ -1071,7 +1071,7 @@
     const count = key => sources.filter(source => source.state === key).length;
     const proofPending = models.filter(model => model.providerGateBlocked).length;
     const chips = [
-      [sources.length, sources.length > 1 ? 'sources connectées' : 'source connectée', ''],
+      [sources.length, sources.length > 1 ? 'sources configurées' : 'source configurée', ''],
       [count('active'), count('active') > 1 ? 'actives' : 'active', 'is-active'],
       [count('ready'), count('ready') > 1 ? 'prêtes' : 'prête', 'is-ready'],
       [count('error'), 'en erreur', count('error') ? 'is-error' : ''],
@@ -1435,9 +1435,9 @@
     const backToSuivi = { href:suivi.href, label:'← Retour au suivi' };
     const leaf = label => ({ label });
     const popLabel = POPULATION_CRUMBS[p.kind] || 'Produits reçus';
-    // Population d'origine d'un produit : Remise Catalogue s'il en vient, sinon sa population.
+    // Population d'origine d'un produit : Remise au Catalogue s'il en vient, sinon sa population.
     const popCrumb = p.origin === 'handoff'
-      ? { label:'Remise Catalogue', href:urlFor(ref, 'handoff') }
+      ? { label:'Remise au Catalogue', href:urlFor(ref, 'handoff') }
       : { label:popLabel, href:populationUrl(ref, p.kind) };
     const itemCrumb = { label:'Produit', href:itemUrl(ref, p.item, p.kind, p.origin) };
     if (p.view === 'passages') return { crumbs:[domain, leaf('Passages')], back:backToSuivi };
@@ -1447,7 +1447,7 @@
       exceptions: { crumbs:[leaf('Action requise')], back:backToSuivi },
       source: { crumbs:[leaf('Source')], back:backToSuivi },
       control: { crumbs:[leaf('Contrôle automatique')], back:backToSuivi },
-      handoff: { crumbs:[leaf('Remise Catalogue')], back:backToSuivi },
+      handoff: { crumbs:[leaf('Remise au Catalogue')], back:backToSuivi },
       item: { crumbs:[popCrumb, leaf('Produit')], back:{ href:popCrumb.href, label:`← Retour à ${popCrumb.label}` } },
     }[p.view];
     if (p.view === 'history') {
@@ -1823,7 +1823,7 @@
         <input type="search" data-passage-filter="q" placeholder="Rechercher sur cette page" aria-label="Recherche" value="${esc(passageFilters.q)}">
       </div>
       ${list ? `<div class="kir-table-wrap"><table class="kir-table" data-passages-table>
-        <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Retenus Sourcing</th><th>Écartés</th><th>Action requise</th><th>Remise Catalogue</th></tr></thead>
+        <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Retenus Sourcing</th><th>Écartés</th><th>Action requise</th><th>Remise au Catalogue</th></tr></thead>
         <tbody data-passages-body>${passageRows(list)}</tbody></table></div>${pager}`
         : '<div class="kir-empty">Chargement des passages…</div>'}`;
   }
