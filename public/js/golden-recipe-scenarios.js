@@ -6,8 +6,12 @@
  * @criticality medium
  * @inputs human_test_scope
  * @outputs browser_local_human_observations
+ * @depends none
+ * @used-by public/golden-e2e-cockpit.html
  * @db-read none
  * @db-write none
+ * @db-txn none
+ * @impact-areas dashboard, e2e-certification
  * @doctrine human_observation_is_not_backend_evidence,fail_closed_auth_and_scope
  * @version 2026-10
  */
@@ -47,7 +51,7 @@ const TRACKS=Object.freeze({
   e('L10 · parité visuelle','UX / métier','/admin/commerce','U-01, U-02, C-06, C-11 : cinq références et 30 secondes métier ; Live inchangé visuellement.','Captures 1280/1440/1672, écarts, 4/4 réponses ≤30 s.','docs/audits/BACKOFFICE_CANONICAL_GAP.md')
  ]}
 });
-let run=null,stepIndex=0,phase=0,authReady=false,records=[];
+let run=null,stepIndex=0,phase=0,authReady=false,probeId=0,records=[];
 function key(){return PREFIX+JSON.stringify([RECIPE_VERSION,run.track,run.market,run.ref,run.sha]);}
 function save(){
  if(!run)return;
@@ -110,9 +114,11 @@ function render(){
 }
 async function checkAuth(){
  if(!run)return;
+ const expectedKey=key(),currentProbe=++probeId;
  authReady=false;$('scenarioAuth').textContent='Vérification de lecture en cours…';
  try{
   const r=await fetch('/api/admin/entities/golden-upstream?market='+encodeURIComponent(run.market),{credentials:'include',headers:{Accept:'application/json'}});
+  if(!run||key()!==expectedKey||currentProbe!==probeId)return;
   if(!r.ok){
    const b=await r.json().catch(()=>({}));
    $('scenarioAuth').textContent=(r.status===401||r.status===403?'Session ou autorité refusée : ':'Lecture non disponible : ')+(b.error||'HTTP '+r.status);
@@ -121,7 +127,7 @@ async function checkAuth(){
    authReady=true;
    $('scenarioAuth').textContent='Accès de lecture des preuves amont : autorisé. Accès aux autres marchés/surfaces NON prouvé.';
   }
- }catch(_){$('scenarioAuth').textContent='Accès de lecture NON PROUVÉ : erreur réseau.';}
+ }catch(_){if(!run||key()!==expectedKey||currentProbe!==probeId)return;$('scenarioAuth').textContent='Accès de lecture NON PROUVÉ : erreur réseau.';}
  render();
 }
 function begin(){
@@ -133,7 +139,8 @@ function begin(){
   return;
  }
  run={track,market,ref,sha};
- stepIndex=0;phase=0;authReady=false;
+ stepIndex=0;phase=0;authReady=false;++probeId;
+ $('extendedRecipe').open=true;
  restore();save();showMessage('Guide ouvert. Vérifie l’accès authentifié ; chaque observation exige une preuve datée.');
  $('scenarioAuth').textContent='Accès authentifié : NON VÉRIFIÉ';
  render();
@@ -154,7 +161,7 @@ $('scenarioBack').addEventListener('click',()=>{
 $('scenarioRestart').addEventListener('click',()=>{
  if(!run)return;
  try{localStorage.removeItem(key());localStorage.removeItem(PREFIX+'last')}catch(_){}
- run=null;authReady=false;$('scenarioStage').hidden=true;
+ run=null;authReady=false;++probeId;$('scenarioStage').hidden=true;
  showMessage('Guide fermé ; les constats locaux de ce périmètre ont été effacés.');
 });
 try{

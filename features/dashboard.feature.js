@@ -730,6 +730,7 @@ module.exports = {
       'tests/e2e-api/dashboard.control-chain-golden.e2e.test.js',
       'tests/e2e/golden-cockpit-browser-flow.spec.js',
       'tests/unit/golden-e2e-cockpit-journey.test.js',
+      'tests/unit/golden-recipe-scenarios.test.js',
       'tests/unit/canonical-order-360-app.test.js',
       'tests/unit/canonical-order-360-boundary.test.js',
       'tests/unit/canonical-order-360.test.js',

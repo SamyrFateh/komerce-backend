@@ -53,7 +53,7 @@ body{background:#fafcff;color:#25364c}.shell{max-width:980px;padding:20px 22px}.
   <div class="top"><div><div class="eyebrow">KOMERCE · RECETTE GUIDÉE</div><h1>Suivre une commande de A à Z</h1><div class="sub">Une seule vérification à la fois, de la commande jusqu'à la clôture.</div></div><span id="global" class="badge">NON DÉMARRÉ</span></div>
   <div class="stats" id="goldenStats" hidden><div class="stat"><small>Market</small><strong id="marketStat">KM · Comores</strong></div><div class="stat"><small>Commande</small><strong id="orderRef">à renseigner</strong></div><div class="stat"><small>Validé</small><strong id="score">0 / 10</strong></div><div class="stat"><small>Verdict humain</small><strong id="verdict">En attente</strong></div></div>
   <section class="wizard-setup" id="wizardSetup" aria-label="Préparer la recette"><div><div class="eyebrow">ÉTAPE 0 · PRÉPARER</div><h2>Quelle commande veux-tu tester ?</h2><p>Crée une Golden de test ou reprends une commande existante.</p></div><div id="wizardSetupControls"></div><p class="setup-note">Une Golden de test ne certifie pas un véritable achat client. Les observations humaines et les preuves automatiques restent distinctes. Les constats sont sauvegardés sur ce navigateur, et non dans la base serveur.</p></section>
-  <div id="wizardStatus" aria-live="polite" role="status"></div>
+  <div id="wizardStatus" aria-live="polite" role="status"><a id="goldenLogin" class="btn" target="_blank" rel="noopener" href="/login.html" hidden>Se connecter au Backoffice ↗</a></div>
   <section id="wizardStage" hidden aria-label="Recette en cours">
   <div class="wizard-progress"><span id="wizardProgressText">Étape 1 sur 10</span><div class="wizard-track"><div id="wizardProgressFill"></div></div><button id="wizardShowSteps" type="button" class="btn" aria-expanded="false">Toutes les étapes ▾</button><button id="wizardChange" type="button" class="btn">Changer de commande</button></div>
   <div id="rail" class="rail wizard-rail" aria-label="Étapes de recette" hidden></div>
@@ -104,7 +104,7 @@ body{background:#fafcff;color:#25364c}.shell{max-width:980px;padding:20px 22px}.
       <div class="scenario-validate">
         <p id="scenarioState" class="muted"></p>
         <p id="scenarioAuth" class="muted">Accès authentifié : NON VÉRIFIÉ</p>
-        <button id="scenarioAuthButton" class="btn" type="button">Vérifier la lecture admin</button>
+        <button id="scenarioAuthButton" class="btn" type="button">Vérifier la lecture admin</button> <a href="/login.html" class="btn" target="_blank" rel="noopener">Ouvrir la connexion Backoffice ↗</a>
         <label>Ce que j'ai réellement observé<textarea id="scenarioNote" rows="3" maxlength="1600" placeholder="Comportement vu, attendu / observé, rôle et écart éventuel"></textarea></label>
         <label>Référence de preuve (URL capture, HAR, JSON, ID)<input id="scenarioProof" maxlength="300" placeholder="Lien ou identifiant vérifiable"></label>
         <div class="actions"><button id="scenarioObserved" class="btn wizard-pass" type="button">Enregistrer observation humaine</button><button id="scenarioBlocked" class="btn danger" type="button">Signaler blocage</button></div>
