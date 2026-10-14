@@ -293,3 +293,14 @@ describe('navigation-policy-v4 — canonical reference search', () => {
     expect(host.children[0].attributes.href).toBeUndefined();
   });
 });
+
+describe('navigation Sourcing unique', () => {
+  test('expose une seule entree Sourcing, correspondant au cockpit LIVE', () => {
+    const nav = loadPolicy();
+    const items = nav.sidebarGroupsFor({ role: 'admin' }).flatMap(group => group.items);
+    const sourcing = items.filter(item => item.label === 'Sourcing' || item.label === 'Sourcing live');
+    expect(sourcing).toHaveLength(1);
+    expect(sourcing[0].href).toBe('/admin/import-runtime');
+    expect(sourcing[0].surfaces).toEqual(expect.arrayContaining(['import-runtime', 'sourcing-workspace']));
+  });
+});
