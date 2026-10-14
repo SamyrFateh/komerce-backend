@@ -42,6 +42,10 @@ describe('canonical unified admin chrome', () => {
     expect(css).toContain('.kmc-import-runtime .kir-hero');
     expect(css).toContain('.kmc-import-runtime .kir-hero .kir-eyebrow');
     expect(css).toContain('height: auto');
+    expect(css).toContain('Canon Live: identical hero-first composition');
+    expect(css).toContain('.kir-page > .kir-hero');
+    expect(css).toContain('order: -1');
+    expect(css).toContain('.kir-page > .kir-domain-nav');
     expect(css).toContain('@media (max-width: 900px)');
     expect(css).toContain('@media (max-width: 680px)');
   });
