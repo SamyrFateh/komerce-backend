@@ -383,7 +383,7 @@ test.describe('Cockpit imports — Action requise', () => {
       window.KomerceCanonicalImportRuntime.render(document.getElementById('canonical-admin-root'), data);
     }, problemPayload);
     const body = page.locator('.kir-main');
-    for (const s of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Choisir', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
+    for (const s of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
       await expect(body).toContainText(s);
     }
     await expect(page.locator('.kir-row-action')).toHaveCount(3);
