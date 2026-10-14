@@ -321,3 +321,13 @@ describe('Sourcing — navigation locale du shell Canonical', () => {
       .toContain('view=passages');
   });
 });
+
+test('Hub et Relais Live utilisent leur navigation locale sans onglets concurrents du shell', () => {
+  const fs = require('node:fs');
+  const source = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
+  expect(source).toContain("if (domainId === 'live' && (surface === 'hub-live' || surface === 'relais-live')) return null;");
+  const hub = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/hub-live.js'), 'utf8');
+  const relay = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/relay-live.js'), 'utf8');
+  expect(hub).toContain("label:'Commandes'");
+  expect(relay).toContain("label:'Colis'");
+});
