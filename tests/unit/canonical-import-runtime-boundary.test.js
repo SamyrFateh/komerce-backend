@@ -106,7 +106,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('PASSAGE AU CATALOGUE');
   expect(source).not.toContain('PARCOURS MÉTIER');
   expect(source).toContain('provider_runtime_status');
-  expect(source).toContain('Preuve runtime à corriger, puis relancer la source.');
+  expect(source).toContain('preuve fournisseur non acquise. Consultez le diagnostic du passage.');
   expect(css).toContain('Legacy Admin visual parity');
   expect(css).toContain('--kir-orange:var(--kmc-legacy-orange');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-runs/');
