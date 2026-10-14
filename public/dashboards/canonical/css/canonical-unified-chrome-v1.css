@@ -346,3 +346,57 @@ body.kmc-shell-v4[data-kmc-surface="relais-live"] .kmc-import-runtime .kir-hero:
     display: none;
   }
 }
+
+/* Canon Live: identical hero-first composition as the other domain workspaces.
+ * Preserve existing illustrations, states and canonical navigation. */
+body.kmc-shell-v4 .kmc-import-runtime .kir-page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-hero {
+  order: -1;
+  width: 100%;
+  min-height: 152px;
+  margin: 0 0 10px;
+  padding: 22px 35% 22px 24px;
+  align-items: center;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-domain-nav {
+  order: 0;
+  width: 100%;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-main {
+  order: 1;
+  width: 100%;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero > div:first-child {
+  min-width: 0;
+  max-width: 790px;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero .kir-live-titlerow {
+  flex-wrap: wrap;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero::before {
+  top: 0;
+  bottom: 0;
+  inset: 0 0 0 auto;
+  z-index: 0;
+  opacity: .58;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero > * {
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 900px) {
+  body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-hero {
+    padding: 18px 32% 18px 18px;
+    min-height: 138px;
+  }
+}
+@media (max-width: 760px) {
+  body.kmc-shell-v4 .kmc-import-runtime .kir-page > .kir-hero {
+    padding: 16px;
+    min-height: 0;
+  }
+}
