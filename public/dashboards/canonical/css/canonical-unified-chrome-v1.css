@@ -1,0 +1,211 @@
+/*
+ * KOMERCE — UNIFIED ADMIN CHROME V1 (presentation only)
+ * Final authority for the shared sidebar and page header grammar.
+ * Loaded LAST on all Canonical entrypoints, including standalone market pages.
+ * No navigation, authorization, business data or lifecycle mutations.
+ */
+
+/* Navigation: a light navigation rail that belongs to the same visual canvas
+ * as the white/blue canonical dashboards. Keep the N1 taxonomy unchanged. */
+body.kmc-shell-v4 > .kmc-admin-navigation {
+  background: #FFFFFF;
+  background-image: none;
+  color: #0F172A;
+  border-right: 1px solid #D5DCE6;
+  box-shadow: 2px 0 14px rgb(7 26 61 / .035);
+}
+body.kmc-shell-v4 .kmc-admin-navigation-identity {
+  border-bottom: 1px solid #E2E8F0;
+}
+body.kmc-shell-v4 .kmc-admin-home-label {
+  width: max-content;
+  max-width: 100%;
+  overflow: visible;
+  color: #071A3D;
+  background: linear-gradient(90deg, #071A3D 0 44%, #2563EB 44% 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  text-indent: 0;
+}
+body.kmc-shell-v4 .kmc-admin-home::after {
+  color: #52627A;
+}
+body.kmc-shell-v4 .kmc-admin-sidebar-group + .kmc-admin-sidebar-group {
+  border-top: 1px solid #E9EEF5;
+}
+body.kmc-shell-v4 .kmc-admin-sidebar-group-label {
+  color: #526681;
+  font-weight: 800;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link {
+  color: #40536D;
+  font-weight: 550;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link:hover,
+body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible {
+  color: #071A3D;
+  background: #EFF6FF;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible,
+body.kmc-shell-v4 .kmc-admin-logout:focus-visible,
+body.kmc-shell-v4 .kmc-admin-home:focus-visible {
+  outline: 2px solid #3B82F6;
+  outline-offset: -2px;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active:hover {
+  color: #174EA6;
+  background: #EAF2FF;
+  font-weight: 750;
+  box-shadow: inset 3px 0 0 #3B82F6;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after {
+  display: none;
+}
+body.kmc-shell-v4 .kmc-admin-primary-icon {
+  color: currentColor;
+}
+body.kmc-shell-v4 .kmc-admin-utility-nav {
+  border-top: 1px solid #E2E8F0;
+}
+body.kmc-shell-v4 .kmc-admin-settings-link,
+body.kmc-shell-v4 .kmc-admin-logout {
+  color: #40536D;
+}
+body.kmc-shell-v4 .kmc-admin-settings-link:hover,
+body.kmc-shell-v4 .kmc-admin-logout:hover {
+  color: #071A3D;
+  background: #EFF6FF;
+}
+
+/* One hero language for all Overview + Workspace headers. Keep the specific
+ * scenes already provided by contextual-heroes-v2.css on ::before/::after. */
+body.kmc-shell-v4 :is(.kmc-dashboard-header, .kmc-workspace-header)[data-dashboard-role="hero"] {
+  border: 1px solid #C8DCF8;
+  border-radius: 16px;
+  background: linear-gradient(105deg, #FFFFFF 0%, #FFFFFF 58%, #F1F7FF 100%);
+  box-shadow: 0 5px 16px rgb(7 26 61 / .045);
+}
+body.kmc-shell-v4 [data-dashboard-role="hero"] :is(.canonical-eyebrow, .kmc-workspace-kicker) {
+  color: #071A3D;
+  background: #DBE8FD;
+  border: 1px solid #A9C9F8;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+body.kmc-shell-v4 [data-dashboard-role="hero"] :is(.kmc-dashboard-title, .kmc-workspace-title) {
+  color: #071A3D;
+  font-size: clamp(26px, 2.1vw, 34px);
+  font-weight: 800;
+  line-height: 1.12;
+}
+body.kmc-shell-v4 [data-dashboard-role="hero"] :is(.kmc-dashboard-description, .kmc-workspace-subtitle) {
+  color: #526681;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+/* Headers not promoted to a Hero remain smaller, but with shared type/ink. */
+body.kmc-shell-v4 :is(.kmc-dashboard-header, .kmc-workspace-header):not([data-dashboard-role="hero"]) {
+  color: #071A3D;
+}
+body.kmc-shell-v4 :is(.kmc-dashboard-header, .kmc-workspace-header):not([data-dashboard-role="hero"]) :is(.kmc-dashboard-title, .kmc-workspace-title) {
+  color: #071A3D;
+  font-weight: 800;
+}
+
+/* Live cockpits (Sourcing, Hub, Relais) render their own .kir-hero; provide the
+ * same bordered hero, eyebrow, typography and rhythm as other domains.
+ * Do not impose a fixed height: the sourcing lot picker may wrap. */
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero {
+  box-sizing: border-box;
+  min-height: 126px;
+  height: auto;
+  padding: 20px 24px;
+  margin: 0 0 14px;
+  border: 1px solid #C8DCF8;
+  border-radius: 16px;
+  background: linear-gradient(105deg, #FFFFFF 0%, #FFFFFF 58%, #F1F7FF 100%);
+  box-shadow: 0 5px 16px rgb(7 26 61 / .045);
+  align-items: center;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero::before {
+  display: none;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero .kir-eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 0 8px;
+  padding: 3px 10px;
+  border: 1px solid #A9C9F8;
+  border-radius: 6px;
+  background: #DBE8FD;
+  color: #071A3D;
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero h1 {
+  color: #071A3D;
+  font-size: clamp(26px, 2.1vw, 34px);
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -.025em;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-hero p {
+  color: #526681;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-domain-nav {
+  border-bottom-color: #D5DCE6;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-domain-nav a.is-active {
+  border-color: #A9C9F8;
+  background: #EAF2FF;
+  color: #174EA6;
+}
+body.kmc-shell-v4 .kmc-import-runtime .kir-domain-nav a:hover {
+  background: #EFF6FF;
+}
+
+@media (max-width: 980px) {
+  /* The expanded wordmark is intentionally hidden by the compact shell. Keep
+   * a visible K mark instead of leaving an empty identity block. */
+  body.kmc-shell-v4 .kmc-admin-home-mark {
+    display: inline-flex;
+    background: #EAF2FF;
+    color: #174EA6;
+    border: 1px solid #A9C9F8;
+  }
+  body.kmc-shell-v4 .kmc-admin-home::after {
+    display: none;
+  }
+  body.kmc-shell-v4 .kmc-admin-sidebar-group-label {
+    font-size: 0;
+    padding-block: 4px;
+  }
+}
+@media (max-width: 900px) {
+  body.kmc-shell-v4 .kmc-import-runtime .kir-hero {
+    display: grid;
+    gap: 12px;
+    padding: 18px;
+  }
+  body.kmc-shell-v4 .kmc-import-runtime .kir-hero-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 680px) {
+  body.kmc-shell-v4 .kmc-import-runtime .kir-hero {
+    padding: 16px;
+    min-height: auto;
+  }
+  body.kmc-shell-v4 .kmc-import-runtime .kir-hero h1 {
+    font-size: 23px;
+  }
+}
