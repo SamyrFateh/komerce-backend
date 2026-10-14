@@ -79,10 +79,10 @@
     s.id = 'sv-styles';
     s.textContent = `
       /* Settings is a canonical workspace, not a full-bleed legacy panel. */
-      .kmc-settings-workspace{width:100%;max-width:1480px;margin:0 auto;padding:20px 24px 40px;box-sizing:border-box;min-width:0}
+      .kmc-settings-workspace{position:relative;isolation:isolate;width:100%;max-width:min(1480px,100%);margin:0 auto;padding:20px 24px 40px;box-sizing:border-box;min-width:0;overflow-x:clip}
       .kmc-settings-workspace>.kmc-workspace-header{margin-bottom:16px;min-height:132px;border-radius:16px}
       .kmc-settings-workspace>.sv-tabs{border:1px solid var(--kmc-line,#e2e8f0);border-radius:12px 12px 0 0;padding:0 12px;margin-bottom:0;background:#fff;flex-wrap:wrap}
-      .kmc-settings-workspace>#sv-tab-body{border:1px solid var(--kmc-line,#e2e8f0);border-top:0;border-radius:0 0 12px 12px;background:#fff;padding:18px 20px 24px;min-width:0}
+      .kmc-settings-workspace>#sv-tab-body{width:100%;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;border:1px solid var(--kmc-line,#e2e8f0);border-top:0;border-radius:0 0 12px 12px;background:#fff;padding:18px 20px 24px;min-width:0}
       .kmc-settings-workspace .sv-category{border:1px solid var(--kmc-line,#e2e8f0);box-shadow:none}
       .kmc-settings-workspace .sv-search{max-width:100%}
       @media(max-width:760px){.kmc-settings-workspace{padding:12px 12px 24px}.kmc-settings-workspace>#sv-tab-body{padding:12px}.kmc-settings-workspace>.sv-tabs{padding:0 4px}.kmc-settings-workspace .sv-tab{padding:10px 9px}}
