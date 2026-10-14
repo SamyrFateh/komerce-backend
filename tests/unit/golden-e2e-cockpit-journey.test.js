@@ -63,7 +63,7 @@ test('Golden: reprise des constats humains indexée par SHA + market + commande,
   expect(html).toContain('id="exportHuman"');
   expect(js).toContain("RECORD_PREFIX+version+':'+market+':'+reference");
   expect(js).toContain("record.states.every(s=>['pending','pass','fail'].includes(s))");
-  expect(js).toContain("backend=Array(steps.length).fill(null);proofNonce++");
+  expect(js).toContain("backend=Array(steps.length).fill(null);proofReady=false;proofNonce++");
   expect(js).toContain("non_certifying:true");
   expect(js).toContain("versionReady=fetch('/health/version'");
 });
