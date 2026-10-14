@@ -152,3 +152,12 @@ test('market-access.css style la section Gestion des marchés', () => {
   expect(css).toContain('.kmc-markets-mgmt-table');
   expect(css).toContain('.kmc-markets-mgmt-actions');
 });
+
+test('access.html ne montre pas un ancien écran avant le montage de Responsable pays', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/access.html'), 'utf8');
+  const initialRoot = html.match(/<main id="canonical-admin-root"[\s\S]*?<\/main>/)?.[0] || '';
+  expect(initialRoot).toContain('aria-busy="true"');
+  expect(initialRoot).not.toContain('KOMERCE · ADMIN CANONICAL');
+  expect(initialRoot).not.toContain('<h1>Accès pays</h1>');
+  expect(initialRoot).toContain('Chargement de l’accès pays');
+});
