@@ -78,12 +78,33 @@ describe('audit CJ KIR : preuve brute et comparaison taxonomie en lecture seule'
     expect(result.summary.deferred_current).toBe(1);
     expect(result.provider_api_calls).toBe(0);
     expect(result.db_writes).toBe(0);
+    expect(result.active_taxonomy.map(item=>item.key)).toEqual(['home','clothes']);
+    expect(result.active_taxonomy[0]).toMatchObject({
+      key:config.categories.home.key,
+      label:config.categories.home.label,
+      classification_terms:Object.keys(config.categories.home.classification_terms),
+    });
+    expect(JSON.stringify(result.active_taxonomy)).not.toMatch(/target_margin|default_weight|currency|price/i);
     expect(query).toHaveBeenCalledTimes(2);
     expect(query.mock.calls[1][0]).toContain('import_runtime_item_events');
     expect(query.mock.calls[1][0]).toContain('WHERE r.id=$1');
     expect(query.mock.calls[1][0]).not.toMatch(/\bUPDATE\b|\bDELETE\b|\bINSERT\b/i);
     expect(loadConfig).toHaveBeenCalledTimes(1);
   });
+  test('compare la classification des produits TEST sans aucune mutation', () => {
+    const accepted=row('Wireless Headphones', {
+      candidate_ref:'KSC-000010',komerce_category:'home',
+      supplier_category:'Consumer Electronics > Audio > Headphones',
+      scan_result:{sourcing_decision:'TEST'},
+    });
+    const result=audit.projectEvidence([accepted,row('Key Box')],config);
+    expect(result.summary.accepted_baseline).toBe(1);
+    expect(result.summary.accepted_category_drift).toBe(1);
+    expect(result.summary.accepted_category_drift_examples[0])
+      .toMatchObject({candidate_ref:'KSC-000010',before:'home',preview:null});
+    expect(result.items).toHaveLength(1);
+  });
+
   test('fail closed sur KIR invalide et sur fournisseur autre que CJ', async () => {
     await expect(audit.auditRun('KIR-000003; DROP TABLE',{})).rejects.toThrow('KIR_REF_INVALID');
     const query=jest.fn().mockResolvedValueOnce({rows:[{
