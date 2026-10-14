@@ -213,7 +213,7 @@ test('Catalogue garde une seule surface Canonical et délègue provenance/import
   expect(tower).toContain('Compatibility shell only');
   expect(tower).not.toContain("view=advanced");
   expect(workspace).toContain("cockpit.href = '/admin/import-runtime'");
-  expect(workspace).toContain("sourcing.href = '/admin/workspaces/sourcing'");
+  expect(workspace).toContain("next.href = refinery ? '/admin/workspaces/catalog' : '/admin/workspaces/catalog?view=refinery'");
 });
 
 test('la curation guide explicitement la préparation française avant publication', () => {
@@ -319,6 +319,7 @@ test('Avant / après ouvre une fenêtre hors du tableau sans muter la ligne', as
   }));
 
   await workspace.mount({
+    location: { search: '?view=refinery' },
     root,
     document: doc,
     ui,
@@ -367,6 +368,7 @@ test('une fiche FR sans prix route vers Atelier économique avant toute validati
   }));
 
   await workspace.mount({
+    location: { search: '?view=refinery' },
     root,
     document: doc,
     ui,
@@ -403,6 +405,7 @@ test('une fiche FR tarifée retrouve ensuite la validation humaine', async () =>
   }));
 
   await workspace.mount({
+    location: { search: '?view=refinery' },
     root,
     document: doc,
     ui,
@@ -451,6 +454,7 @@ test('un refus de certification reste visible dans la ligne du produit cliqué',
   });
 
   await workspace.mount({
+    location: { search: '?view=refinery' },
     root,
     document: doc,
     ui,
@@ -535,6 +539,7 @@ test('l’entrée Catalogue préchauffée prépare le FR sans clic produit puis 
   });
 
   await workspace.mount({
+    location: { search: '?view=refinery' },
     root,
     document: doc,
     ui,
@@ -622,6 +627,7 @@ test('le parcours FR intégré conserve toute la file et rend le avant/après ap
   });
 
   await workspace.mount({
+    location: { search: '?view=refinery' },
     root,
     document: doc,
     ui,
