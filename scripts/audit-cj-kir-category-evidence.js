@@ -56,6 +56,7 @@ function projectEvidence(rows, config, classify = classifier) {
     candidates_present:rows.length, deferred_current:0, decisions:{}, reasons:{},
     provider_category_paths:{}, possible_gaps:{},
     with_cj_raw:0, with_supplier_category:0, with_lexical_candidate:0,
+    accepted_baseline:0, accepted_category_drift:0, accepted_category_drift_examples:[],
   };
   const items = [];
   for (const row of rows) {
@@ -63,7 +64,29 @@ function projectEvidence(rows, config, classify = classifier) {
     const scan = asObject(row.scan_result);
     const decision = shorten(scan.sourcing_decision || 'UNKNOWN').toUpperCase();
     tally(summary.decisions, decision);
-    if (!DEFERRED.has(decision)) continue;
+    if (!DEFERRED.has(decision)) {
+      // Vérifie que les candidats déjà TEST/PRIORITY gardent leur catégorie
+      // dans une simulation pure, AVANT toute adoption du moteur amélioré.
+      if (decision === 'TEST' || decision === 'PRIORITY') {
+        summary.accepted_baseline++;
+        const preview=classify.classifySupplierProduct({
+          product_name:row.product_name,supplier_category:row.supplier_category,
+          description:row.description,raw_payload:asObject(row.raw_payload),
+        }, categories, {
+          boutique_customs_affinities:config.boutique_customs_affinities || [],
+        });
+        if (preview.key !== row.komerce_category || preview.source === 'default') {
+          summary.accepted_category_drift++;
+          summary.accepted_category_drift_examples.push({
+            candidate_ref:shorten(row.candidate_ref,80),
+            before:shorten(row.komerce_category,80) || null,
+            preview:preview.key || null,
+            reason:preview.reason,
+          });
+        }
+      }
+      continue;
+    }
     summary.deferred_current++;
     const cj = sourceCategories(raw);
     if (cj.payload_present) summary.with_cj_raw++;
@@ -82,8 +105,9 @@ function projectEvidence(rows, config, classify = classifier) {
     const gap = !cj.payload_present ? 'CJ_RAW_NOT_PRESENT'
       : !cj.path.length ? 'CJ_CATEGORY_NOT_PRESENT'
         : !ranked.length ? 'NO_TAXONOMY_TERM_MATCH'
-          : preview.source === 'default' ? 'AMBIGUOUS_OR_LOW_CONFIDENCE'
-            : 'MAPPING_AVAILABLE_ON_CURRENT_RULES';
+          : preview.reason === 'object_identity_unconfirmed' ? 'OBJECT_IDENTITY_UNCONFIRMED'
+            : preview.source === 'default' ? 'AMBIGUOUS_OR_LOW_CONFIDENCE'
+              : 'MAPPING_AVAILABLE_ON_CURRENT_RULES';
     tally(summary.possible_gaps, gap);
     tally(summary.reasons, scan.reason);
     tally(summary.provider_category_paths, cj.path.join(' > '));
@@ -139,7 +163,7 @@ async function auditRun(runRef, deps = {
     run_ref:run.run_ref, source:'CJdropshipping',
     recorded:{received:Number(run.source_total)||0,deferred:Number(asObject(run.intake).deferred)||0},
     ...projectEvidence(rows,config),
-    note:'READ ONLY. Aucun appel API CJ, aucune modification DB, aucune reclassification. Les décisions des candidats sont leur état actuel (modifiable depuis le passage). Les scores PREVIEW utilisent le référentiel actif actuellement et ne remplacent pas la preuve historique.',
+    note:'READ ONLY. Aucun appel API CJ, aucune modification DB, aucune reclassification. Les décisions des candidats sont leur état actuel (modifiable depuis le passage). Les scores PREVIEW utilisent le référentiel actif actuellement et ne remplacent pas la preuve historique. accepted_category_drift doit être égal à zéro avant tout re-scan opérationnel.',
     provider_api_calls:0,db_writes:0,
   };
 }
