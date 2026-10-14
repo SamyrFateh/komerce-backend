@@ -574,3 +574,42 @@ describe('import runtime — passages (historique Sourcing)', () => {
     expect(action.state_label).toBe('Action requise');
   });
 });
+
+
+describe('trace produit : justification de la décision Sourcing', () => {
+  test('expose la décision WATCH, le motif et la recommandation sauvegardés, sans interprétation UI', async () => {
+    const row = candidate(1, {
+      state:'watchlist', komerce_category:null,
+      scan_result:{
+        sourcing_decision:'WATCH',
+        reason:'Catégorie Komerce non résolue — décision impossible.',
+        recommended_action:'Compléter ou corriger la catégorie avant promotion.',
+      },
+    });
+    const q = { query: jest.fn()
+      .mockResolvedValueOnce({ rows:[{ ...baseRun(), id:'run-id' }] })
+      .mockResolvedValueOnce({ rows:[row] }) };
+    const trace = await runs.getProductTrace('KIR-000001', 'SP-1', q);
+    expect(trace.certification).toMatchObject({
+      outcome:'deferred',
+      sourcing_certified:false,
+      decision:'WATCH',
+      reason:'Catégorie Komerce non résolue — décision impossible.',
+      recommended_action:'Compléter ou corriger la catégorie avant promotion.',
+    });
+    expect(trace.product_ref).toBeNull();
+    expect(q.query).toHaveBeenCalledTimes(2);
+    expect(q.query.mock.calls[1][0]).toContain('sc.scan_result');
+  });
+
+  test('motif absent : renvoie null, jamais une explication métier inventée', async () => {
+    const row = candidate(1, { state:'watchlist', scan_result:{ sourcing_decision:'WATCH' } });
+    const q = { query: jest.fn()
+      .mockResolvedValueOnce({ rows:[{ ...baseRun(), id:'run-id' }] })
+      .mockResolvedValueOnce({ rows:[row] }) };
+    const trace = await runs.getProductTrace('KIR-000001', 'SP-1', q);
+    expect(trace.certification.decision).toBe('WATCH');
+    expect(trace.certification.reason).toBeNull();
+    expect(trace.certification.recommended_action).toBeNull();
+  });
+});

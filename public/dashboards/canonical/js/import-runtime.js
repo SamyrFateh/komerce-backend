@@ -1545,11 +1545,44 @@
   function traceSituation(trace) {
     const outcome = trace?.certification?.outcome;
     if (trace?.product_ref || trace?.catalogue_status === 'imported_to_catalog') return ['completed', 'Remis au Catalogue'];
-    if (outcome === 'quarantined') return ['attention', 'Action requise'];
-    if (outcome === 'rejected' || outcome === 'archived') return ['completed', 'Écarté'];
-    if (outcome === 'deferred') return ['pending', 'Mis de côté'];
+    if (outcome === 'quarantined') return ['attention', 'À examiner'];
+    if (outcome === 'rejected' || outcome === 'archived') return ['neutral', 'Écarté'];
+    if (outcome === 'deferred') return ['deferred', 'Mis de côté'];
     if (trace?.certification?.sourcing_certified) return ['completed', 'Prêt pour le Catalogue'];
-    return ['pending', 'En contrôle'];
+    return ['pending', 'En cours de traitement'];
+  }
+
+  // Libellés opérateur, sans jargon WATCH/DEFERRED ni motif déduit du seul statut.
+  const ITEM_DECISION_LABELS = Object.freeze({
+    WATCH:'À surveiller', AVOID:'À éviter', LOSS:'Non rentable',
+    TEST:'À tester', PRIORITY:'Prioritaire', EXCLUDED:'Exclu',
+  });
+  function itemVerdict(trace, situation) {
+    const outcome = trace?.certification?.outcome;
+    const deferred = outcome === 'deferred';
+    const discarded = outcome === 'rejected' || outcome === 'archived';
+    const review = outcome === 'quarantined';
+    const explanation = deferred
+      ? 'Ce produit n’est pas retenu pour la suite de ce passage. Il reste consultable dans le Sourcing et n’a pas été transmis au Catalogue.'
+      : discarded ? 'Ce produit a été écarté de ce passage et n’a pas été transmis au Catalogue.'
+        : review ? 'Une vérification est nécessaire avant de poursuivre son traitement.'
+          : trace?.product_ref ? 'Le produit a été transmis au Catalogue.'
+            : trace?.certification?.sourcing_certified ? 'Le produit a été retenu pour la suite ; sa remise au Catalogue reste à confirmer.'
+              : 'Le traitement de ce produit n’est pas encore terminé.';
+    const code = trace?.certification?.decision;
+    const decision = ITEM_DECISION_LABELS[code] || null;
+    const reason = trace?.certification?.reason;
+    const next = trace?.certification?.recommended_action;
+    const showDecision = deferred || discarded || review;
+    return `<section class="kir-item-verdict is-${esc(situation[0])}" aria-label="Statut du produit">
+      <div class="kir-item-verdict-head"><span>STATUT DU PRODUIT</span><strong>${esc(situation[1])}</strong></div>
+      <p>${esc(explanation)}</p>
+      ${showDecision ? `<dl class="kir-item-verdict-details">
+        <div><dt>Décision Sourcing</dt><dd>${esc(decision || 'Non renseignée')}</dd></div>
+        <div><dt>Pourquoi ?</dt><dd>${esc(reason || 'Le motif détaillé n’est pas renseigné pour ce produit.')}</dd></div>
+        ${next ? `<div><dt>Suite recommandée</dt><dd>${esc(next)}</dd></div>` : ''}
+      </dl>` : ''}
+    </section>`;
   }
 
   function renderItemView(run, trace, kind) {
@@ -1557,17 +1590,25 @@
     if (!trace) return drillHeader(run, 'Produit', 'Détail de l’objet sélectionné.') + '<div class="kir-empty">Produit introuvable dans ce passage.</div>';
     const title = trace.product_name || trace.supplier_product_id || 'Produit';
     const situation = traceSituation(trace);
+    const deferred = trace?.certification?.outcome === 'deferred';
+    const discarded = ['rejected', 'archived'].includes(trace?.certification?.outcome);
+    const halted = deferred || discarded;
+    const reviewed = trace?.certification?.outcome === 'quarantined';
+    const certificationText = trace?.certification?.sourcing_certified ? '✓ Validée'
+      : deferred ? 'Décision : mis de côté'
+        : discarded ? 'Décision : écarté'
+          : reviewed ? 'À examiner' : 'En cours ou en attente';
     const catalogue = trace.product_ref
       ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>`
-      : '<span class="kir-item-note">Aucune fiche Catalogue créée à ce stade.</span>';
+      : `<span class="kir-item-note">${halted ? 'Aucune fiche Catalogue créée pour ce passage.' : 'Aucune fiche Catalogue créée à ce stade.'}</span>`;
     return drillHeader(run, title, 'Détail métier de ce produit dans le passage sélectionné.')
+      + itemVerdict(trace, situation)
       + `<div class="kir-simple-list">
-          ${statusRow('Situation', situation)}
           ${statusRow('Identifiant source', ['completed', trace.supplier_product_id || '—'])}
-          ${statusRow('Préparation', [trace.refinery?.done ? 'completed' : 'pending', trace.refinery?.done ? '✓ Terminée' : 'En attente'])}
-          ${statusRow('Classement', [trace.canonical_category ? 'completed' : 'pending', trace.canonical_category || 'En attente'])}
-          ${statusRow('Validation Sourcing', [trace.certification?.sourcing_certified ? 'completed' : 'pending', trace.certification?.sourcing_certified ? '✓ Validée' : (trace.certification?.outcome || 'En attente')])}
-          ${statusRow('Catalogue', [trace.product_ref ? 'completed' : 'pending', trace.product_ref ? 'Remis' : 'Pas encore remis'])}
+          ${statusRow('Préparation', [trace.refinery?.done ? 'completed' : 'pending', trace.refinery?.done ? '✓ Terminée' : 'Non terminée'])}
+          ${statusRow('Classement', [trace.canonical_category ? 'completed' : 'pending', trace.canonical_category || (halted ? 'Non déterminé pour ce passage' : 'En attente')])}
+          ${statusRow('Validation Sourcing', [trace.certification?.sourcing_certified ? 'completed' : reviewed ? 'attention' : 'pending', certificationText])}
+          ${statusRow('Catalogue', [trace.product_ref ? 'completed' : 'pending', trace.product_ref ? '✓ Remis' : halted ? 'Non transmis pour ce passage' : reviewed ? 'En attente de vérification' : 'Pas encore remis'])}
         </div>
         <div class="kir-item-actions">${catalogue}</div>
         <p class="kir-technical-link"><a href="${technicalUrl(run.run_ref, { from:'item', item:trace.supplier_product_id, kind, origin })}" data-cockpit-nav>Voir la preuve technique →</a></p>`;
