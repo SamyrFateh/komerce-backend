@@ -20,8 +20,8 @@
 const $=id=>document.getElementById(id);
 const RECIPE_VERSION='HUMAN-RECETTE-V1-2026-10-14';
 const PREFIX='komerce.recipe.scenarios.';
-const GITHUB='https://github.com/SamyrFateh/komerce-backend/blob/main/';
-const e=(title,actor,path,expected,proof,source)=>({title,actor,path,expected,proof,source:GITHUB+source});
+const GITHUB='https://github.com/SamyrFateh/komerce-backend/blob/';
+const e=(title,actor,path,expected,proof,source)=>({title,actor,path,expected,proof,source});
 const TRACKS=Object.freeze({
  cj:{label:'CJ · lot 20 / 15 / 5',steps:[
   e('Identifier la source CJ','Sourcing','/admin/workspaces/sourcing','Identifier le run CJ exact, le Market et les références fournisseur ; ne pas réutiliser un seed comme preuve réelle.','Run ID, fournisseur, SKU, Market, date UTC, état de lecture réel.','docs/audits/FULL_RECETTE_E2E_EVIDENCE_REGISTER.md'),
@@ -99,7 +99,7 @@ function render(){
  $('scenarioActor').textContent='Acteur : '+s.actor;
  $('scenarioProofExpected').textContent=s.proof;
  $('scenarioOpen').href=s.path;
- $('scenarioSource').href=s.source;
+ $('scenarioSource').href=GITHUB+encodeURIComponent(run.sha)+'/'+s.source;
  $('scenarioState').textContent='Constat humain : '+(v.status==='observed'?'OBSERVÉ':v.status==='blocked'?'BLOQUÉ':'NON EXÉCUTÉ')+' · automatique : NON PROUVÉ';
  $('scenarioNote').value=v.note;
  $('scenarioProof').value=v.proof;
