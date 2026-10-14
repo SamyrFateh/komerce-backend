@@ -616,6 +616,8 @@
   }
 
   function scheduleAutoFrenchPreparation(context, payload = {}) {
+    // La préparation FR appartient exclusivement à la Raffinerie.
+    if (context.workspaceView !== 'refinery') return false;
     if (context.autoFrenchRunning) return false;
     const rows = Array.isArray(payload.approval) ? payload.approval : [];
     const eligible = rows.some(row => (
@@ -1326,7 +1328,7 @@
         if (context.afterRender) context.afterRender(payload);
         activeContext = context;
         activePayload = payload;
-        if (!reloadOptions.skipAutoFrenchSchedule) scheduleAutoFrenchPreparation(context, payload);
+        if (context.workspaceView === 'refinery' && !reloadOptions.skipAutoFrenchSchedule) scheduleAutoFrenchPreparation(context, payload);
         return payload;
       } catch (error) {
         rootNode.replaceChildren();

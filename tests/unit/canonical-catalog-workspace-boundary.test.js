@@ -722,3 +722,15 @@ test('Raffinerie et Catalogue ont des files actives distinctes', () => {
   expect(source).toContain('renderApproval(rootNode, ui, doc, payload, context)');
   expect(source).toContain('renderProducts(rootNode, ui, doc, payload, context)');
 });
+
+test('Catalogue fini ne declenche jamais une preparation FR automatique', () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const candidateRow = candidate({ source_locale: 'en', content_source: 'connector_raw' });
+  expect(workspace.scheduleAutoFrenchPreparation(
+    { workspaceView: 'catalog', autoFrenchRunning: false, autoFrenchAttempted: new Set(), autoFrenchFailed: new Set() },
+    { approval: [candidateRow] },
+  )).toBe(false);
+  const source = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(source).toContain("if (context.workspaceView !== 'refinery') return false;");
+  expect(source).toContain("if (context.workspaceView === 'refinery' && !reloadOptions.skipAutoFrenchSchedule)");
+});
