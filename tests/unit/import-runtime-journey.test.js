@@ -477,6 +477,49 @@ test('OBJET remis au Catalogue : ouvre la fiche Catalogue avec retour exact vers
   expect(html).toContain('return_label=Retour+au+produit+Sourcing');
 });
 
+test('produit différé : statut explicite, motif et recommandation du moteur, aucune fausse attente', () => {
+  const p = scenario();
+  p.item_trace = {
+    run_ref:RUN, provider:'CJdropshipping', supplier_product_id:'SP-1', product_name:'Boîte étanche',
+    refinery:{ done:true }, canonical_category:null, product_ref:null,
+    certification:{
+      outcome:'deferred', sourcing_certified:false, decision:'WATCH', reasons:[],
+      reason:'Catégorie Komerce non résolue — décision impossible.',
+      recommended_action:'Compléter la catégorie avant promotion.',
+    },
+    catalogue_status:'scanned',
+  };
+  const html = render(p, `?run=${RUN}&view=item&kind=received&item=SP-1`);
+  expect(html).toContain('STATUT DU PRODUIT');
+  expect(html).toContain('Mis de côté');
+  expect(html).toContain('Ce produit n’est pas retenu pour la suite de ce passage');
+  expect(html).toContain('À surveiller');
+  expect(html).toContain('Catégorie Komerce non résolue');
+  expect(html).toContain('Compléter la catégorie avant promotion.');
+  expect(html).toContain('Non déterminé pour ce passage');
+  expect(html).toContain('Décision : mis de côté');
+  expect(html).toContain('Non transmis pour ce passage');
+  expect(html).not.toContain('deferred</em>');
+  expect(html).not.toContain('Pas encore remis</em>');
+  expect(html).not.toContain('Action requise');
+  expect(html).toContain('← Retour à Produits reçus');
+});
+
+test('produit différé : motif absent signalé, pas de diagnostic inventé ni rendu HTML non échappé', () => {
+  const p = scenario();
+  p.item_trace = {
+    run_ref:RUN, supplier_product_id:'SP-2', product_name:'Produit <br/>',
+    refinery:{ done:true }, canonical_category:null, product_ref:null,
+    certification:{ outcome:'deferred', sourcing_certified:false, decision:'AVOID', reason:null, recommended_action:null },
+    catalogue_status:'scanned',
+  };
+  const html = render(p, `?run=${RUN}&view=item&kind=received&item=SP-2`);
+  expect(html).toContain('À éviter');
+  expect(html).toContain('Le motif détaillé n’est pas renseigné pour ce produit.');
+  expect(html).not.toContain('Produit <br/>');
+  expect(html).toContain('Produit &lt;br/&gt;');
+});
+
 test('CAS B : « Transmis à la Raffinerie 12 » = exactement les 12 certified avec l’état de remise, sans action', () => {
   const items = [...Array.from({ length: 9 }, (_, i) => popItem(i + 1)), ...Array.from({ length: 3 }, (_, i) => popItem(20 + i, { issue_key:'catalogued', issue_label:'Remis' }))];
   const html = drill('population', 'kind=ready', null, { kind:'ready', total:12, items, unlisted:[] });
