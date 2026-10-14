@@ -44,3 +44,11 @@ test('Paramètres respecte la mise en page canonique et ne contient plus de moji
   expect(src).toContain("content:'▾'");
   expect(src).toContain('Valider ▶');
 });
+
+test('settings reste dans sa colonne canonique sans débordement latéral', () => {
+ const fs=require('fs'),path=require('path');
+ const src=fs.readFileSync(path.join(__dirname,'..','..','public/dashboards/canonical/js/settings-workspace.js'),'utf8');
+ expect(src).toContain('overflow-x:clip');
+ expect(src).toContain('max-width:min(1480px,100%)');
+ expect(src).toContain('box-sizing:border-box;overflow-wrap:anywhere');
+});
