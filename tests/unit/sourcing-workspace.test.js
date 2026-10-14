@@ -84,3 +84,13 @@ test('timed mesure la durée de chaque lecture pour Server-Timing', async () => 
   expect(typeof timings.lecture).toBe('number');
   await expect(workspace.timed(null, 'sans-mesure', Promise.resolve(1))).resolves.toBe(1);
 });
+
+// Frontière de responsabilité : après transmission, une ligne ne reste plus
+// actionnable dans le Sourcing. Le produit continue en Raffinerie.
+test('sourcing UI excludes candidates already handed off or rejected from its active queue', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const uiSource = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/sourcing-workspace.js'), 'utf8');
+  expect(uiSource).toContain(".filter(row => !['imported_to_catalog', 'rejected'].includes(row.state))");
+  expect(uiSource).toContain('Exceptions sourcing à traiter');
+});
