@@ -1003,6 +1003,18 @@
         { id: 'sourcing-sources', label: 'Sources', href: `/admin/import-runtime?${suffix}view=sources` },
       ];
     }
+    if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub-live') {
+      return [
+        { id: 'hub-suivi', label: 'Suivi', href: '/admin/hub-live' },
+        { id: 'hub-commandes', label: 'Commandes', href: '/admin/hub-live?view=queue&tab=all' },
+      ];
+    }
+    if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/relais-live') {
+      return [
+        { id: 'relais-suivi', label: 'Suivi', href: '/admin/relais-live' },
+        { id: 'relais-colis', label: 'Colis', href: '/admin/relais-live?view=orders&list=all' },
+      ];
+    }
     const local = LOCAL_TABS[domainId];
     if (local) {
       return local.filter(tab => tab.roles.includes(role) && tabCapabilityGranted(tab, adminContext));
@@ -1027,6 +1039,12 @@
       const view = search.get('view');
       return view === 'passages' ? 'sourcing-passages' : view === 'sources' ? 'sourcing-sources' : 'sourcing-suivi';
     }
+    if (domainId === 'live' && path === '/admin/hub-live') {
+      return search.get('view') === 'queue' && search.get('tab') === 'all' || search.get('view') === 'order' && search.get('from') === 'all' ? 'hub-commandes' : 'hub-suivi';
+    }
+    if (domainId === 'live' && path === '/admin/relais-live') {
+      return search.get('view') === 'orders' && search.get('list') === 'all' || search.get('view') === 'order' && search.get('from') === 'all' ? 'relais-colis' : 'relais-suivi';
+    }
     if (domainId === 'pricing') {
       if (hash && ['pricing-products', 'pricing-costs', 'pricing-strategy'].includes(hash)) return hash;
       return 'pricing-overview';
@@ -1047,9 +1065,6 @@
   }
 
   function createTabs(doc, domainId, surface, user, adminContext) {
-    // Hub et Relais Live possèdent déjà leurs onglets métier dans le cockpit.
-    // Ne jamais superposer les autres métiers Live dans le shell supérieur.
-    if (domainId === 'live' && (surface === 'hub-live' || surface === 'relais-live')) return null;
     const tabs = localTabsFor(domainId, user, adminContext);
     if (tabs.length < 2) return null;
 

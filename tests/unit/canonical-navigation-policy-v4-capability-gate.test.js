@@ -325,9 +325,24 @@ describe('Sourcing — navigation locale du shell Canonical', () => {
 test('Hub et Relais Live utilisent leur navigation locale sans onglets concurrents du shell', () => {
   const fs = require('node:fs');
   const source = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
-  expect(source).toContain("if (domainId === 'live' && (surface === 'hub-live' || surface === 'relais-live')) return null;");
+  expect(source).not.toContain("if (domainId === 'live' && (surface === 'hub-live' || surface === 'relais-live')) return null;");
   const hub = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/hub-live.js'), 'utf8');
   const relay = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/relay-live.js'), 'utf8');
   expect(hub).toContain("label:'Commandes'");
   expect(relay).toContain("label:'Colis'");
+});
+
+describe('Navigation Live — trois métiers, onglets contextuels uniques', () => {
+  afterEach(() => { delete global.location; });
+  test.each([
+    ['/admin/hub-live', '', ['Suivi', 'Commandes'], 'hub-suivi'],
+    ['/admin/hub-live', '?view=queue&tab=all', ['Suivi', 'Commandes'], 'hub-commandes'],
+    ['/admin/relais-live', '', ['Suivi', 'Colis'], 'relais-suivi'],
+    ['/admin/relais-live', '?view=orders&list=all', ['Suivi', 'Colis'], 'relais-colis'],
+  ])('%s %s respecte ses onglets métier', (pathname, search, labels, active) => {
+    global.location = { pathname, search, hash: '' };
+    const nav = loadPolicy();
+    expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.label)).toEqual(labels);
+    expect(nav._activeLocalTab('live', pathname.includes('hub') ? 'hub-live' : 'relais-live')).toBe(active);
+  });
 });

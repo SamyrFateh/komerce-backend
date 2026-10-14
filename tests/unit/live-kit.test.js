@@ -240,3 +240,8 @@ test('live-kit.css : aucun fond jaune/crème pâle (fond blanc)', () => {
 test('live-kit.css : plancher typographique (aucun texte sous 10 px)', () => {
   expect(require('../helpers/fontFloor').tinyFonts('live-kit.css')).toEqual([]);
 });
+
+test('Le moteur Live évite un deuxième rail quand le shell canonique fournit les onglets', () => {
+  const source = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/live-kit.js'), 'utf8');
+  expect(source).toContain("if (global.document?.querySelector?.('#canonical-admin-domain-tabs')) return '';");
+});

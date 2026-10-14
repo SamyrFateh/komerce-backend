@@ -29,3 +29,10 @@ test('Sourcing conserve un seul rail Suivi / Passages / Sources lorsque le shell
   expect(source).toContain('#canonical-admin-domain-tabs [data-tab="sourcing-suivi"]');
   expect(source).toContain("return '';");
 });
+
+test('Sourcing transmet des brouillons à la Raffinerie sans promettre une publication Catalogue', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
+  expect(source).toContain('Transmis à la Raffinerie');
+  expect(source).toContain('Transmis Raffinerie');
+  expect(source).toContain('/admin/workspaces/catalog?view=refinery');
+});
