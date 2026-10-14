@@ -367,6 +367,65 @@ describe('import runtime — Action requise (interface d’exception)', () => {
     expect(projection.sourcing_status).toBe('DONE');
   });
 
+  test('WATCH corrigeable : 12 différés dont 3 actions, AVOID/LOSS et WATCH fragile sans action', () => {
+    const reasons = [
+      { sourcing_decision:'WATCH', reason:'Catégorie Komerce non résolue — décision impossible.', recommended_action:'Compléter ou corriger la catégorie avant promotion.' },
+      { sourcing_decision:'WATCH', reason:"Prix d'achat manquant — décision impossible.", recommended_action:'Mettre en watchlist, ne pas importer pour l’instant' },
+      { sourcing_decision:'WATCH', reason:'Données économiques insuffisantes pour décider. Compléter coût, poids, volume ou catégorie.' },
+      { sourcing_decision:'WATCH', reason:'Référence test à contribution fragile. Surveiller les coûts terrain avant sourcing.' },
+      { sourcing_decision:'AVOID', reason:'Référence test à contribution dangereusement faible. Renégocier ou éviter.' },
+      { sourcing_decision:'LOSS', reason:'Référence test sous le coût variable — produit non rentabilisable.' },
+      { sourcing_decision:'WATCH', reason:'Mettre en watchlist, ne pas importer pour l’instant.' },
+      { sourcing_decision:'WATCH', reason:'', recommended_action:'Mettre en watchlist, ne pas importer pour l’instant.' },
+      { sourcing_decision:'WATCH', reason:'Fragile. Surveiller.' },
+      { sourcing_decision:'AVOID', reason:'Catégorie Komerce non résolue — décision impossible.' },
+      { sourcing_decision:'LOSS', reason:'Données économiques insuffisantes pour décider.' },
+      { sourcing_decision:'WATCH' },
+    ];
+    const deferredRows = reasons.map((scan_result, i) => candidate(300+i, {
+      state:'watchlist', scan_result,
+    }));
+    const run = baseRun({
+      source_total:20,
+      intake:{
+        ...baseRun().intake, accepted:20,
+        ready_for_refinery:8, deferred:12, rejected:0, quarantined:0, certification_blocked:0,
+      },
+    });
+    const rows = [...Array.from({ length:8 }, (_, i) => candidate(i+1)), ...deferredRows];
+    const projection = runs.buildProjection({ run, rows });
+    expect(projection.accounting).toMatchObject({
+      source_total:20, certified:8, deferred:12, deferred_actionable:3,
+      action_required:3, rejected:0, unaccounted:0, overflow:0,
+    });
+    expect(projection.sourcing_status).toBe('ACTION_REQUIRED');
+    expect(projection.action_items).toHaveLength(3);
+    expect(projection.action_items.map(x=>[x.supplier_product_id,x.action,x.correction_kind])).toEqual([
+      ['SP-300','choose','category'],
+      ['SP-301','complete','purchase_price'],
+      ['SP-302','complete','economic_data'],
+    ]);
+    expect(projection.action_items.every(x=>x.action_origin==='deferred')).toBe(true);
+    const population = runs.buildPopulation({ kind:'deferred', rows, intake:run.intake, sourceTotal:20 });
+    expect(population.total).toBe(12);
+    expect(population.items.filter(x=>x.needs_human_action)).toHaveLength(3);
+    expect(population.items.filter(x=>!x.needs_human_action)).toHaveLength(9);
+    expect(population.items.find(x=>x.supplier_product_id==='SP-304').needs_human_action).toBe(false);
+  });
+
+  test('un WATCH avec seul mot-clé vague, recommandation watchlist ou motif absent ne force aucune intervention', () => {
+    const rows = [
+      candidate(41,{ state:'watchlist', scan_result:{sourcing_decision:'WATCH',reason:'Catégorie prêt-à-porter fragile.'} }),
+      candidate(42,{ state:'watchlist', scan_result:{sourcing_decision:'WATCH',recommended_action:'Compléter les données.'} }),
+      candidate(43,{ state:'watchlist', scan_result:{sourcing_decision:'WATCH',reason:null} }),
+    ];
+    const r = baseRun({ source_total:3, intake:{...baseRun().intake, accepted:3, deferred:3, ready_for_refinery:0}});
+    const p = runs.buildProjection({run:r,rows});
+    expect(p.accounting.action_required).toBe(0);
+    expect(p.accounting.deferred_actionable).toBe(0);
+    expect(p.sourcing_status).toBe('DONE');
+  });
+
   test('CAS E : quarantaine + contrat bloqué → 3 éléments avec raison humaine et action', () => {
     const rows = [
       ...twelve(),
