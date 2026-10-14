@@ -365,11 +365,14 @@
         body = { supplier_name: name, source_type: 'csv', csv_text: raw };
       }
       feedback.textContent = 'Transmission en cours…';
-      await runAction(context, submit, {
+      const result = await runAction(context, submit, {
         url: `${ENDPOINT}/imports`,
         body,
         successMessage: `Import ${name} lancé. Suivez son passage dans le cockpit Sourcing.`,
       });
+      // runAction recharge le panneau uniquement en cas de succès.
+      // En cas d'échec, l'import reste modifiable, sans état trompeur.
+      if (!result) feedback.textContent = 'Import non envoyé. Vérifiez les données et le message d’erreur affiché.';
     });
   }
 
