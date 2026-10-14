@@ -209,3 +209,67 @@ body.kmc-shell-v4 .kmc-import-runtime .kir-domain-nav a:hover {
     font-size: 23px;
   }
 }
+
+
+/* Rubriques pays: même Hero en première ligne, sans ancienne bande supérieure.
+ * Le parent standard reçoit le même cadrage que les autres vues N1. */
+body.kmc-shell-v4.kmc-hero-first[data-kmc-surface="market-access"] #canonical-admin-root,
+body.kmc-shell-v4.kmc-hero-first[data-kmc-surface="market-autonomy"] #market-autonomy-root,
+body.kmc-shell-v4.kmc-hero-first[data-kmc-surface="market-catalog"] #market-catalog-root {
+  box-sizing: border-box;
+  width: min(100%, var(--kmc-layout-max, 1680px));
+  max-width: none;
+  margin: 0 auto;
+  padding: var(--kmc-layout-page-pad-top, 18px) var(--kmc-layout-page-pad-x, 24px)
+    var(--kmc-layout-page-pad-bottom, 24px);
+}
+
+/* Autonomie: le Hero décisionnel existant devient réellement le premier bloc;
+ * la barre de liens du workspace suit, sans masquer les actions. */
+body.kmc-shell-v4[data-kmc-surface="market-autonomy"] #markets-decision-country-overview {
+  order: -1;
+}
+
+/* Les anciens styles Marchés avaient une spécificité plus forte que le
+ * gabarit commun, même chargé en dernier. Ce correctif évite ce conflit. */
+body.kmc-shell-v4 .kmc-markets-decision-overview > .kmc-dashboard-header[data-dashboard-role="hero"] {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--kmc-layout-hero-h, 150px);
+  min-height: var(--kmc-layout-hero-h, 150px);
+  max-height: var(--kmc-layout-hero-h, 150px);
+  margin: 0;
+  padding: 24px 34% 22px 24px;
+  padding-right: var(--kmc-hero-lane, 34%);
+  border: 1px solid #C8DCF8;
+  border-radius: 16px;
+  background: linear-gradient(105deg, #FFFFFF 0%, #FFFFFF 58%, #F1F7FF 100%);
+  box-shadow: 0 5px 16px rgb(7 26 61 / .045);
+}
+body.kmc-shell-v4 .kmc-markets-decision-overview [data-dashboard-role="hero"] .canonical-eyebrow {
+  color: #071A3D;
+  background: #DBE8FD;
+  border: 1px solid #A9C9F8;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+body.kmc-shell-v4 .kmc-markets-decision-overview [data-dashboard-role="hero"] .kmc-dashboard-title {
+  color: #071A3D;
+  font-size: clamp(26px, 2.1vw, 34px);
+  line-height: 1.12;
+  font-weight: 800;
+}
+body.kmc-shell-v4 .kmc-markets-decision-overview [data-dashboard-role="hero"] .kmc-dashboard-description {
+  color: #526681;
+  font-size: 13.5px;
+}
+@media (max-width: 760px) {
+  body.kmc-shell-v4 .kmc-markets-decision-overview > .kmc-dashboard-header[data-dashboard-role="hero"] {
+    height: auto;
+    min-height: 128px;
+    max-height: none;
+    padding: 16px;
+  }
+}
