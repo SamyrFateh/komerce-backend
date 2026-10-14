@@ -42,7 +42,7 @@ test('Golden V4 sépare constat humain, backend et changement de référence',()
   expect(js).toContain("states[cur]='fail';findings[cur]");
   expect(js).toContain("ref='';cur=0;phase=0;states.fill('pending');findings.fill(null);backend.fill(null)");
   expect(js).toContain("'/admin/orders/'+encodeURIComponent(ref)");
-  expect(js).toContain("backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)");
+  expect(js).toContain('proofReady=validGoldenProjection(body.projection,requestedRef)');
 });
 
 
