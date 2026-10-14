@@ -3256,3 +3256,19 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 .kmc-import-runtime .kir-onboarding-guidance p{margin:0;font-size:13px;line-height:1.45;color:#2D3B4B}
 .kmc-import-runtime .kir-onboarding-guidance ol{display:grid;gap:4px;margin:0;padding-left:20px;color:#232E3A;font-size:13px;line-height:1.45}
 .kmc-import-runtime .kir-wizard-list [data-wizard-auth-requirement]{font-size:12.5px;line-height:1.35;color:#2D3B4B}
+
+
+/* Détail produit Sourcing : décision lisible avant le détail technique. */
+.kmc-import-runtime .kir-item-verdict{border:1px solid #CBD5E1;border-left:4px solid #64748B;border-radius:12px;background:#F8FAFC;padding:18px 20px;margin:14px 0 18px;color:#1D2631}
+.kmc-import-runtime .kir-item-verdict.is-deferred{border-color:#E4D6B8;border-left-color:#C58C2A;background:#FFF9EB}
+.kmc-import-runtime .kir-item-verdict.is-completed{border-color:#B9E4D3;border-left-color:#16865B;background:#F1FBF6}
+.kmc-import-runtime .kir-item-verdict.is-attention{border-color:#F1CC9E;border-left-color:#DA860F;background:#FFFAF3}
+.kmc-import-runtime .kir-item-verdict-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.kmc-import-runtime .kir-item-verdict-head span{font-size:12px;font-weight:800;letter-spacing:.065em;color:#596D82}
+.kmc-import-runtime .kir-item-verdict-head strong{font-size:20px;font-weight:800;color:#233143}
+.kmc-import-runtime .kir-item-verdict p{margin:9px 0 0;font-size:14px;line-height:1.55;max-width:84ch;color:#34465A}
+.kmc-import-runtime .kir-item-verdict-details{display:grid;gap:10px;margin:16px 0 0;padding-top:14px;border-top:1px solid #E4DFD5}
+.kmc-import-runtime .kir-item-verdict-details>div{display:grid;grid-template-columns:minmax(140px,190px) 1fr;gap:12px}
+.kmc-import-runtime .kir-item-verdict-details dt{color:#566A80;font-size:13px;font-weight:750}
+.kmc-import-runtime .kir-item-verdict-details dd{margin:0;font-size:14px;line-height:1.5;color:#263749;overflow-wrap:anywhere}
+@media(max-width:700px){.kmc-import-runtime .kir-item-verdict{padding:14px}.kmc-import-runtime .kir-item-verdict-details>div{grid-template-columns:1fr;gap:2px}.kmc-import-runtime .kir-item-verdict-head strong{font-size:18px}}
