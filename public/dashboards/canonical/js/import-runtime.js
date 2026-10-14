@@ -1636,6 +1636,9 @@
 
   // Navigation du domaine : Suivi (passage sélectionné) / Passages / Sources.
   function domainNav(view, run) {
+    // Le shell Canonical porte les trois onglets Sourcing dans sa barre supérieure.
+    // Ne pas reproduire un second rail à l'intérieur du cockpit.
+    if (global.document?.querySelector?.('#canonical-admin-domain-tabs [data-tab="sourcing-suivi"]')) return '';
     const active = view === 'passages' ? 'passages' : view === 'sources' ? 'sources' : 'live';
     const tab = (key, label, href) => `<a class="${active === key ? 'is-active' : ''}" href="${href}" data-cockpit-nav ${active === key ? 'aria-current="page"' : ''}>${label}</a>`;
     return `<nav class="kir-domain-nav" aria-label="Domaine Sourcing"><strong>Sourcing</strong>
