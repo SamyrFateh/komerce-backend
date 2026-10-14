@@ -16,7 +16,7 @@ async function mount(page){
     const req=route.request(), url=new URL(req.url());
     if(url.pathname==='/admin/golden-e2e') return route.fulfill({
       contentType:'text/html',
-      headers:{'Content-Security-Policy':"default-src 'self'; script-src 'self'; script-src-attr 'none'; object-src 'none'"},
+      headers:{'Content-Security-Policy':"default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; object-src 'none'"},
       body:html
     });
     if(url.pathname==='/js/golden-e2e-cockpit-journey.js'||url.pathname==='/js/golden-e2e-cockpit-upstream.js'){
