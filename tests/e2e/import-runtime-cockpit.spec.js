@@ -328,6 +328,48 @@ test.describe('Cockpit imports — Action requise', () => {
     await expect(page.locator('.kir-run-flow-step.is-completed').filter({ hasText:'Contrôle automatique' })).toHaveCount(1);
   });
 
+  test('prod : Classer cible le bon candidat, suggère la taxonomie réelle, confirme et re-scanne sans prompt ni promotion', async ({ page }) => {
+    const state=await mountLive(page,problemPayload);
+    await page.evaluate((data)=>{
+      history.replaceState({},'','/admin/import-runtime?run=KIR-000009&view=exceptions');
+      window.KomerceCanonicalImportRuntime.render(document.getElementById('root'),data);
+    },problemPayload);
+    await page.locator('[data-action-classify][data-candidate-ref="KSC-2"]').click();
+    const dialog=page.locator('dialog[data-category-remediation]');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Coque B');
+    await expect(dialog).toContainText('Classement ambigu');
+    await expect(dialog).toContainText('Catégorie de calcul Sourcing / Douane');
+    await expect(dialog.locator('select option[value="jewelry"]')).toContainText('Bijoux');
+    await expect(dialog.locator('select option[value="home"]')).toContainText('Maison & déco');
+    expect(state.categoryWrites).toHaveLength(0);
+    await dialog.locator('[data-suggest-key="jewelry"]').click();
+    await expect(dialog.locator('[data-category-choice]')).toHaveValue('jewelry');
+    await dialog.locator('[data-category-confirm]').click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.locator('.kir-category-success')).toContainText('Catégorie « Bijoux » enregistrée');
+    await expect(page.locator('.kir-category-success')).toContainText('Décision : TEST');
+    expect(state.categoryWrites).toEqual([{ref:'KSC-2',category_key:'jewelry'}]);
+    expect(state.calls.filter(c=>c.startsWith('category-options'))).toEqual(['category-options:KSC-2']);
+    expect(state.calls.filter(c=>c.startsWith('resolve-category'))).toEqual(['resolve-category:KSC-2']);
+    expect(state.calls.some(c=>/promot/i.test(c))).toBe(false);
+  });
+
+  test('prod : le formulaire refuse une catégorie vide et Annuler ne crée aucune écriture', async ({ page }) => {
+    const state=await mountLive(page,problemPayload);
+    await page.evaluate((data)=>{
+      history.replaceState({},'','/admin/import-runtime?run=KIR-000009&view=exceptions');
+      window.KomerceCanonicalImportRuntime.render(document.getElementById('root'),data);
+    },problemPayload);
+    await page.locator('[data-action-classify][data-candidate-ref="KSC-2"]').click();
+    const dialog=page.locator('dialog[data-category-remediation]');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('[data-category-choice]')).toHaveValue('');
+    await dialog.locator('[data-category-cancel]').click();
+    await expect(dialog).toHaveCount(0);
+    expect(state.categoryWrites).toHaveLength(0);
+  });
+
   test('CAS A calme : 0 action, aucune carte orange', async ({ page }) => {
     await mountCockpit(page, completedPayload);
     await expect(page.locator('.is-attention')).toHaveCount(0);
@@ -360,7 +402,7 @@ async function mountLiveWhenReady(page) {
 }
 
 async function mountLive(page, data) {
-  const state = { payload: JSON.parse(JSON.stringify(data)), calls: [], cockpitDelayByRun: {} };
+  const state = { payload: JSON.parse(JSON.stringify(data)), calls: [], cockpitDelayByRun: {}, categoryWrites:[] };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -397,6 +439,32 @@ async function mountLive(page, data) {
       return trace
         ? route.fulfill({ contentType:'application/json', body:JSON.stringify(trace) })
         : route.fulfill({ status:404, contentType:'application/json', body:JSON.stringify({ error:'Produit introuvable' }) });
+    }
+    if (url.pathname.endsWith('/category-options')) {
+      const ref = decodeURIComponent(url.pathname.split('/').at(-2));
+      state.calls.push('category-options:'+ref);
+      return route.fulfill({contentType:'application/json',body:JSON.stringify({
+        candidate_ref:ref,product_name:'Coque B',supplier_category:'Accessoires fournisseur',
+        image_url:null,current_category:null,source:'customs_categories',
+        categories:[{key:'jewelry',label:'Bijoux'},{key:'home',label:'Maison & déco'}],
+        suggestions:[{key:'jewelry',label:'Bijoux',confidence:'medium'}],
+      })});
+    }
+    if(req.method()==='POST'&&url.pathname.endsWith('/resolve-category')) {
+      const ref = decodeURIComponent(url.pathname.split('/').at(-2));
+      const body=JSON.parse(req.postData()||'{}');
+      state.categoryWrites.push({ref,...body});
+      state.calls.push('resolve-category:'+ref);
+      if(body.category_key!=='jewelry' && body.category_key!=='home') {
+        return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'Catégorie inactive',code:'sourcing_category_invalid'})});
+      }
+      state.payload.selected.action_items=state.payload.selected.action_items.filter(item=>item.candidate_ref!==ref);
+      state.payload.selected.accounting.action_required=state.payload.selected.action_items.length;
+      return route.fulfill({contentType:'application/json',body:JSON.stringify({
+        ok:true,action:'resolve_candidate_category',
+        result:{candidate_ref:ref,category:{key:body.category_key,label:body.category_key==='jewelry'?'Bijoux':'Maison & déco'},
+          state:'scanned',scan:{decision:'TEST',reason:'À tester'}},
+      })});
     }
     if (url.pathname.endsWith('/import-cockpit')) {
       const requested = url.searchParams.get('run');
