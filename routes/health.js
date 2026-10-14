@@ -251,7 +251,7 @@ router.get('/detailed', authenticate, requireRole(['admin']), async (req, res, n
 router.get('/version', (req, res) => {
   res.json({
     version: process.env.npm_package_version || 'unknown',
-    commit: process.env.GIT_SHA || 'local',
+    commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || 'local',
   });
 });
 

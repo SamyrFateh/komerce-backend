@@ -33,14 +33,14 @@ test('Golden V4 impose Comprendre puis Visualiser puis Valider et conserve les p
   expect(html).toContain('id="humanDisclaimer"');
   expect(js).toContain("['guide','view','validate'][phase]");
   expect(js).toContain("next.disabled=phase===2&&(states[cur]!=='pass'||cur===steps.length-1)");
-  expect(js).toContain("if(states[cur]==='pass'&&cur<steps.length-1){cur++;phase=0;render()}");
+  expect(js).toContain("if(states[cur]==='pass'&&cur<steps.length-1){cur++;phase=0;render();saveHuman()}");
 });
 
 test('Golden V4 sépare constat humain, backend et changement de référence',()=>{
   const js=fs.readFileSync(path.join(ROOT,'public/js/golden-e2e-cockpit-journey.js'),'utf8');
-  expect(js).toContain("states[cur]='pass';render()");
-  expect(js).toContain("states[cur]='fail';render()");
-  expect(js).toContain("ref='';cur=0;phase=0;states.fill('pending');backend.fill(null)");
+  expect(js).toContain("states[cur]='pass';render();saveHuman()");
+  expect(js).toContain("states[cur]='fail';render();saveHuman()");
+  expect(js).toContain("ref='';cur=0;phase=0;states.fill('pending');notes.fill('');backend.fill(null);proofNonce++");
   expect(js).toContain("'/admin/orders/'+encodeURIComponent(ref)");
   expect(js).toContain("backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)");
 });
@@ -50,6 +50,20 @@ test('Golden: backend manquant ou indisponible invalide le cache de preuve',()=>
   const js=fs.readFileSync(path.join(ROOT,'public/js/golden-e2e-cockpit-journey.js'),'utf8');
   expect(js).toContain("if(!Array.isArray(body.steps))throw new Error('Projection backend absente')");
   expect(js).toContain("backend=Array(steps.length).fill(null);$('liveState').textContent='Preuves indisponibles");
-  expect(js).toContain('if(ref!==requestedRef)return');
+  expect(js).toContain('nonce!==proofNonce');
   expect(js).toContain('backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)');
+});
+
+
+test('Golden: reprise des constats humains indexée par SHA + market + commande, jamais la preuve backend',()=>{
+  const html=fs.readFileSync(path.join(ROOT,'public/golden-e2e-cockpit.html'),'utf8');
+  const js=fs.readFileSync(path.join(ROOT,'public/js/golden-e2e-cockpit-journey.js'),'utf8');
+  expect(html).toContain('id="caseSaveState"');
+  expect(html).toContain('id="humanObservation"');
+  expect(html).toContain('id="exportHuman"');
+  expect(js).toContain("RECORD_PREFIX+version+':'+market+':'+reference");
+  expect(js).toContain("record.states.every(s=>['pending','pass','fail'].includes(s))");
+  expect(js).toContain("backend=Array(steps.length).fill(null);proofNonce++");
+  expect(js).toContain("non_certifying:true");
+  expect(js).toContain("versionReady=fetch('/health/version'");
 });

@@ -59,7 +59,7 @@ function buildApp() {
   return app;
 }
 
-const ENV_KEYS = ['REDIS_URL', 'STRIPE_SECRET_KEY', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_ENV'];
+const ENV_KEYS = ['REDIS_URL', 'STRIPE_SECRET_KEY', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_ENV', 'RAILWAY_GIT_COMMIT_SHA'];
 let savedEnv;
 
 beforeEach(() => {
@@ -321,4 +321,12 @@ describe('GET /health/version', () => {
     expect(res.body).toHaveProperty('version');
     expect(res.body).toHaveProperty('commit');
   });
+});
+
+
+test('GET /health/version utilise le SHA du déploiement Railway pour identifier la recette',async()=>{
+  process.env.RAILWAY_GIT_COMMIT_SHA='c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad';
+  const res=await request(buildApp()).get('/health/version');
+  expect(res.status).toBe(200);
+  expect(res.body.commit).toBe('c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad');
 });
