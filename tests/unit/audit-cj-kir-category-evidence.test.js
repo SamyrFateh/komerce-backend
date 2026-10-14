@@ -78,7 +78,7 @@ describe('audit CJ KIR : preuve brute et comparaison taxonomie en lecture seule'
     expect(result.summary.deferred_current).toBe(1);
     expect(result.provider_api_calls).toBe(0);
     expect(result.db_writes).toBe(0);
-    expect(result.active_taxonomy.map(item=>item.key)).toEqual(['home','jewelry']);
+    expect(result.active_taxonomy.map(item=>item.key)).toEqual(['home','clothes']);
     expect(result.active_taxonomy[0]).toMatchObject({
       key:'home',label:'Maison',classification_terms:['waterproof key box'],
     });
