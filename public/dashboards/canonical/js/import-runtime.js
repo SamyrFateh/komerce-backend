@@ -1548,7 +1548,7 @@
     if (outcome === 'quarantined') return ['attention', 'À examiner'];
     if (outcome === 'rejected' || outcome === 'archived') return ['neutral', 'Écarté'];
     if (outcome === 'deferred') return ['deferred', 'Mis de côté'];
-    if (trace?.certification?.sourcing_certified) return ['completed', 'Retenu pour la suite'];
+    if (trace?.certification?.sourcing_certified) return ['completed', 'Prêt pour le Catalogue'];
     return ['pending', 'En cours de traitement'];
   }
 
