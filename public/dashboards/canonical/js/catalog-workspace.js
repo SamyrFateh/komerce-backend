@@ -1278,10 +1278,16 @@
     rootNode.replaceChildren();
     const refinery = context.workspaceView === 'refinery';
     rootNode.appendChild(createHeader(doc, refinery));
-    const metrics = doc.createElement('section');
-    metrics.className = 'kmc-workspace-metrics';
-    rootNode.appendChild(metrics);
-    ui.MetricStrip.render(metrics, { items: metricItems(payload.summary, payload.curation).filter(item => refinery ? ['approval', 'review'].includes(item.key) : !['approval', 'review'].includes(item.key)) });
+    // Raffinerie already exposes actionable status counts in its qualification flow.
+    // Keep the commercial catalogue KPIs only on the catalogue view.
+    if (!refinery) {
+      const metrics = doc.createElement('section');
+      metrics.className = 'kmc-workspace-metrics';
+      rootNode.appendChild(metrics);
+      ui.MetricStrip.render(metrics, {
+        items: metricItems(payload.summary, payload.curation).filter(item => !['approval', 'review'].includes(item.key)),
+      });
+    }
     if (refinery) {
       renderApproval(rootNode, ui, doc, payload, context);
     } else {
