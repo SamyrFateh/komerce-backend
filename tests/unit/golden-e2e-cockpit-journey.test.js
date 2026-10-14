@@ -44,3 +44,12 @@ test('Golden V4 sépare constat humain, backend et changement de référence',()
   expect(js).toContain("'/admin/orders/'+encodeURIComponent(ref)");
   expect(js).toContain("body.projection&&body.projection.steps||backend");
 });
+
+
+test('Golden: backend manquant ou indisponible invalide le cache de preuve',()=>{
+  const js=fs.readFileSync(path.join(ROOT,'public/js/golden-e2e-cockpit-journey.js'),'utf8');
+  expect(js).toContain("if(!Array.isArray(body.steps))throw new Error('Projection backend absente')");
+  expect(js).toContain("backend=Array(steps.length).fill(null);$('liveState').textContent='Preuves indisponibles");
+  expect(js).toContain('if(ref!==requestedRef)return');
+  expect(js).toContain('backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)');
+});
