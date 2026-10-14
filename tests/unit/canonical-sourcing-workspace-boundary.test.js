@@ -204,4 +204,20 @@ test('import JSON guidé : invalide bloqué, valide transmis sans mutation impli
     supplier_name: 'CJ', source_type: 'manual',
     items: [{ supplier_product_id: 'CJ-1', product_name: 'Produit test', purchase_price: 100, currency: 'AED' }],
   });
+
+  // CSV partage le panneau mais jamais le payload JSON; aucun import implicite.
+  action('csv-import').listeners.click();
+  const csvEditor = find(root, 'data-manual-products', '');
+  find(root, 'data-manual-supplier', '').value = 'CJ';
+  csvEditor.value = '';
+  await action('submit-manual-import').listeners.click();
+  expect(calls.filter(call => call.options.method === 'POST')).toHaveLength(1);
+  csvEditor.value = 'supplier_product_id,product_name,purchase_price,currency\nCJ-2,Produit CSV,200,AED';
+  await action('submit-manual-import').listeners.click();
+  const posts = calls.filter(call => call.options.method === 'POST');
+  expect(posts).toHaveLength(2);
+  expect(JSON.parse(posts[1].options.body)).toEqual({
+    supplier_name: 'CJ', source_type: 'csv',
+    csv_text: 'supplier_product_id,product_name,purchase_price,currency\nCJ-2,Produit CSV,200,AED',
+  });
 });
