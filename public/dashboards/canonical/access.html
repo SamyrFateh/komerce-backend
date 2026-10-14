@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/dashboards/canonical/css/canonical-unified-chrome-v1.css?v=261014-1" />
 </head>
 <body data-admin-generation="canonical">
-  <main id="canonical-admin-root" class="canonical-boot" aria-live="polite">
-    <p class="canonical-eyebrow">KOMERCE · ADMIN CANONICAL</p>
-    <h1>Accès pays</h1>
-    <p>Chargement du provisioning des responsables pays…</p>
+  <!-- Keep the initial mount neutral. The former visible legacy heading caused
+       a flash of a different page before the country access UI was mounted. -->
+  <main id="canonical-admin-root" class="canonical-boot" aria-live="polite" aria-busy="true">
+    <span class="sr-only" role="status">Chargement de l’accès pays…</span>
   </main>
 
   <noscript>JavaScript est requis pour l’admin Komerce.</noscript>
