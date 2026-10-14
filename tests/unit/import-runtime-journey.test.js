@@ -107,7 +107,7 @@ test('état vide garde une ossature Legacy claire et actionnable', () => {
   expect(node.innerHTML).not.toContain('kir-lot-strip');
 });
 
-test('niveau 1 : quatre étapes sans compteur, quatre résultats, aucun jargon interne ni sujet commercial', () => {
+test('niveau 1 : quatre étapes sans compteur, cinq issues lisibles, aucun jargon interne ni sujet commercial', () => {
   const ui = cockpit();
   const node = root();
   ui.render(node, payload);
@@ -119,7 +119,7 @@ test('niveau 1 : quatre étapes sans compteur, quatre résultats, aucun jargon i
   const flow = html.slice(html.indexOf('kir-run-flow-track'), html.indexOf('RÉSULTAT DU PASSAGE'));
   expect(flow).not.toMatch(/\d+\s*\/\s*\d+/);
   expect(html).toContain('RÉSULTAT DU PASSAGE');
-  for (const label of ['Produits reçus', 'Retenus par Sourcing', 'Écartés automatiquement', 'Action requise']) expect(html).toContain(`<span>${label}</span>`);
+  for (const label of ['Produits reçus', 'Retenus par Sourcing', 'Mis de côté', 'Écartés automatiquement', 'Action requise']) expect(html).toContain(`<span>${label}</span>`);
   for (const gone of ['Remis au Catalogue', 'À examiner', 'Entrées source', 'Acceptées', 'Doublons', 'En quarantaine', 'Rejetées']) expect(html).not.toContain(`<span>${gone}</span>`);
   for (const commercial of ['PARCOURS MÉTIER', 'Prêts à vendre', 'En vente', 'Décisions de mise en vente', 'Décisions commerciales', 'Clôture', 'Prix source', 'Décisions attendues']) {
     expect(html).not.toContain(commercial);
@@ -829,6 +829,86 @@ test('audit : aucune occurrence de « Retour au passage » ni « Retour au cockp
     expect(html).not.toContain('Retour au cockpit');
     expect(html).not.toContain('Retour au produit du passage');
   }
+});
+
+test('KIR réel 20/7/12/1 : le traitement terminé ne masque pas le blocage de preuve fournisseur', () => {
+  const p = scenario({
+    accepted:19, certified:7, catalogued:7, deferred:12, rejected:1,
+    awaiting_catalogue_promotion:0,
+  }, {
+    source_type:'api', status:'COMPLETED', sourcing_status:'DONE',
+    diagnostics:{
+      provider_runtime_status:'BLOCKED', pipeline_status:'PARTIAL_BLOCKED',
+      canonical_resolved:false, runtime_certified:false,
+      provider_runtime_reason:'pipeline_partial_blocked',
+      reject_reasons:{ 'media absent':1 },
+    },
+    stages:CALM_STAGES.map(stage => ({
+      ...stage, status:'COMPLETED', processed:stage.key === 'CATALOGUE' ? 7 : stage.processed,
+    })),
+  });
+  const html = render(p, `?run=${RUN}`);
+  expect(tile(html, 'Produits reçus')).toBe('20');
+  expect(tile(html, 'Retenus par Sourcing')).toBe('7');
+  expect(tile(html, 'Mis de côté')).toBe('12');
+  expect(tile(html, 'Écartés automatiquement')).toBe('1');
+  expect(tile(html, 'Action requise')).toBe('0');
+  expect(html).toContain('Traitement des produits terminé');
+  expect(html).toContain('Remise terminée · 7 produits remis au Catalogue');
+  expect(html).toContain('Preuve fournisseur bloquée pour ce passage');
+  expect(html).toContain('PARTIAL_BLOCKED');
+  expect(html).toContain('pipeline_partial_blocked');
+  expect(html).toContain('1 × media absent');
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=population&kind=deferred"`);
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=population&kind=discarded"`);
+});
+
+test('source : état canonique non écrasé par la preuve du passage et certification historique distinguée', () => {
+  const p = scenario({}, {
+    run_ref:RUN, provider:'CJ Dropshipping', source_ref:'api:cj', source_type:'api',
+    diagnostics:{ provider_runtime_status:'BLOCKED', pipeline_status:'PARTIAL_BLOCKED', runtime_certified:false },
+  });
+  p.source_controls = SOURCES();
+  const html = render(p, `?run=${RUN}&view=sources`);
+  const summary = (html.match(/data-sources-summary>([\s\S]*?)<\/p>/) || [])[1];
+  expect(summary).toContain('<strong>1</strong> prête');
+  expect(summary).toContain('preuve fournisseur à vérifier');
+  expect(summary).toContain('<strong>0</strong> en erreur');
+  const cj = html.split('<article').find(chunk => chunk.includes('data-source-card="api:cj"'));
+  expect(cj).toContain('PREUVE À VÉRIFIER');
+  expect(cj).toContain('Certifiée (historique)');
+  expect(cj).toContain('Preuve du dernier passage');
+  expect(cj).toContain('Non acquise');
+  expect(cj).toContain('aria-checked="false"');
+});
+
+test('produits mis de côté : population dédiée, motif individuel et lien vers la fiche', () => {
+  const pop = {
+    kind:'deferred', total:12,
+    items:[popItem(23, {
+      issue_key:'deferred', issue_label:'Mis de côté', decision:'WATCH',
+      reason:'Catégorie Komerce non résolue',
+    })],
+    unlisted:[],
+  };
+  const html = drill('population', 'kind=deferred', null, pop);
+  expect(html).toContain('Mis de côté · 12');
+  expect(html).toContain('À surveiller');
+  expect(html).toContain('Catégorie Komerce non résolue');
+  expect(html).toContain(`view=item&kind=deferred&item=SP-23`);
+});
+
+test('rejet dès la réception : motif agrégé tracé sans prétendre à un objet inexistant', () => {
+  const pop = {
+    kind:'discarded', total:1, items:[],
+    unlisted:[{ label:'Produit non retenu à la réception', count:1 }],
+    reject_reason_groups:[{ reason:'media absent', count:1 }],
+  };
+  const html = drill('population', 'kind=discarded', null, pop);
+  expect(html).toContain('1 × Produit non retenu à la réception');
+  expect(html).toContain('Motifs enregistrés à la réception');
+  expect(html).toContain('1 × media absent');
+  expect(html).not.toContain('data-population-item');
 });
 
 // ── Vue Sources : synthèse + cartes opérateur ─────────────────────────────────
