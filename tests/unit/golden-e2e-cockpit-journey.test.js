@@ -51,5 +51,7 @@ test('Golden: backend manquant ou indisponible invalide le cache de preuve',()=>
   expect(js).toContain("if(!Array.isArray(body.steps))throw new Error('Projection backend absente')");
   expect(js).toContain("backend=Array(steps.length).fill(null);$('liveState').textContent='Preuves indisponibles");
   expect(js).toContain('if(ref!==requestedRef)return');
+  expect(js).toContain('if(readId!==evidenceRead)return');
+  expect(js).toContain("$('pass').disabled=!proofReady");
   expect(js).toContain('backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)');
 });

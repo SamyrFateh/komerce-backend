@@ -157,15 +157,51 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.locator('#createGolden').click();
     await expect(page.locator('#backendEvidence')).toContainText('ordered');
     state.evidenceUnavailable=true;
+    await page.locator('#wizardNext').click();
+    await page.locator('#wizardNext').click();
     await page.locator('#wizardTechnical summary').click();
     await page.locator('#refresh').click();
     await expect(page.locator('#liveState')).toContainText('Preuves indisponibles');
     await expect(page.locator('#backendEvidence')).toHaveText('—');
+    await expect(page.locator('#pass')).toBeDisabled();
+    await expect(page.locator('#wizardNext')).toBeDisabled();
+    await expect(page.locator('#score')).toHaveText('0 / 10');
     await expect(page.locator('#rail .stepbtn.pass')).toHaveCount(0);
     await expect(page.locator('#global')).not.toHaveText(/GOLDEN VERT|certifié/i);
     state.evidenceUnavailable=false;
     await page.locator('#refresh').click();
     await expect(page.locator('#backendEvidence')).toContainText('ordered');
+    await expect(page.locator('#pass')).toBeEnabled();
+  });
+
+  test('une réponse tardive ne rétablit pas la preuve après une erreur plus récente',async({page})=>{
+    await mount(page);
+    await page.locator('#createGolden').click();
+    await expect(page.locator('#backendEvidence')).toContainText('ordered');
+    await page.locator('#wizardNext').click();
+    await page.locator('#wizardTechnical summary').click();
+    let release, started;
+    const pending=new Promise(resolve=>{release=resolve});
+    const received=new Promise(resolve=>{started=resolve});
+    let reads=0;
+    await page.route(ORIGIN+'/api/admin/entities/orders/**/golden-evidence',async route=>{
+      if(++reads===1){
+        started();
+        await pending;
+        await route.fulfill({contentType:'application/json',body:JSON.stringify({steps:[{passed:true,evidence:'obsolete'}]})});
+      }else await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Lecture récente refusée'})});
+    });
+    await page.locator('#refresh').click();
+    await received;
+    await expect(page.locator('#pass')).toBeDisabled();
+    await expect(page.locator('#backendEvidence')).toHaveText('—');
+    await page.locator('#refresh').click();
+    await expect(page.locator('#liveState')).toContainText('Lecture récente refusée');
+    const finished=page.waitForResponse(response=>response.url().endsWith('/golden-evidence')&&response.status()===200);
+    release();
+    await finished;
+    await expect(page.locator('#backendEvidence')).toHaveText('—');
+    await expect(page.locator('#pass')).toBeDisabled();
   });
 
   test('changer de Golden revient à la préparation sans recycler le verdict humain',async({page})=>{
