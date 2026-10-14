@@ -109,7 +109,7 @@ function unresolvedCategory(fallback, reason, top = null, second = null, signals
     top_candidate_key:top?.category?.key || null,
     second_candidate_key:second?.category?.key || null,
     second_score:second?.score || 0,
-    object_identified:signals.some(signal => signal.name === 'product_name'),
+    product_name_present:signals.some(signal => signal.name === 'product_name'),
   };
 }
 
