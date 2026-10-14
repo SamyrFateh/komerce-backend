@@ -734,3 +734,11 @@ test('Catalogue fini ne declenche jamais une preparation FR automatique', () => 
   expect(source).toContain("if (context.workspaceView !== 'refinery') return false;");
   expect(source).toContain("if (context.workspaceView === 'refinery' && !reloadOptions.skipAutoFrenchSchedule)");
 });
+
+test('la Raffinerie affiche les manquants certifies par le serveur et laisse le Catalogue commercial intact', () => {
+  const source = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(source).toContain("include_readiness: '1'");
+  expect(source).toContain("data-refinery-readiness");
+  expect(source).toContain('reasons.map(certificationReasonLabel)');
+  expect(source).toContain('/admin/workspaces/catalog?view=refinery&product_ref=');
+});
