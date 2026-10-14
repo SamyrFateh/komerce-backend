@@ -209,6 +209,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
      LIMIT ${limitParam} OFFSET ${offsetParam}
   `, params);
   return rows.map(row => ({
+    product_id: row.product_id,
     product_ref: row.product_ref,
     name: row.name,
     description: row.description || null,
