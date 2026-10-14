@@ -59,9 +59,38 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active:hover {
   font-weight: 750;
   box-shadow: inset 3px 0 0 #3B82F6;
 }
+/* Selected dashboard destination: restrained luminous blue, visible without motion.
+ * Current destination remains driven solely by navigation-policy's is-active state. */
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active:hover {
+  position: relative;
+  isolation: isolate;
+  color: #0B3F94;
+  background: linear-gradient(100deg, #DAE9FF 0%, #EEF5FF 64%, #FFFFFF 100%);
+  box-shadow: inset 4px 0 0 #2563EB, inset 0 0 0 1px rgb(59 130 246 / .22),
+              0 0 16px rgb(59 130 246 / .13);
+  font-weight: 800;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active::before {
+  content: "";
+  position: absolute;
+  top: 15%;
+  bottom: 15%;
+  left: 0;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: #60A5FA;
+  box-shadow: 0 0 10px 2px rgb(59 130 246 / .52);
+  pointer-events: none;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active .kmc-admin-primary-icon {
+  color: #1559C2;
+  filter: drop-shadow(0 0 3px rgb(59 130 246 / .35));
+}
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after {
   display: none;
 }
+
 body.kmc-shell-v4 .kmc-admin-primary-icon {
   color: currentColor;
 }

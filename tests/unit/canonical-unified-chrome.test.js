@@ -86,3 +86,10 @@ describe('canonical unified admin chrome', () => {
     }
   });
 });
+
+test('lien actif du menu : effet lumineux statique', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/canonical-unified-chrome-v1.css'), 'utf8');
+  expect(css).toContain('.kmc-admin-primary-link.is-active::before');
+  expect(css).toContain('filter: drop-shadow');
+  expect(css).toContain('background: linear-gradient(100deg');
+});
