@@ -434,3 +434,14 @@ test('identifiant DB privé : jamais exposé par la projection publique Produit'
   expect(projected.product_ref).toBe('KPR-000001');
   expect(projected).not.toHaveProperty('product_id');
 });
+
+test('file Raffinerie transmet l identifiant DB en interne pour la certification', async () => {
+  mockQuery.mockImplementation(async sql => {
+    if (String(sql).includes('FROM products p') && String(sql).includes('sourcing_candidates candidate')) {
+      return { rows: [{ product_id: 42, product_ref: 'KPR-42', sourcing_decision: 'TEST' }] };
+    }
+    return { rows: [] };
+  });
+  const rows = await workspace._test.queryApprovalQueue({ limit: 1 });
+  expect(rows[0].product_id).toBe(42);
+});
