@@ -1375,9 +1375,13 @@
     }
   }
 
-  if (global.document?.readyState === 'loading') {
-    global.document.addEventListener('DOMContentLoaded', autoMount, { once: true });
-  } else if (global.document) {
-    autoMount();
+  // Authenticated canonical entrypoints mount the navigation after resolving session.
+  // Anonymous automatic mounting remains opt-in only for legacy consumers.
+  if (global.KOMERCE_NAV_AUTO_MOUNT === true) {
+    if (global.document?.readyState === 'loading') {
+      global.document.addEventListener('DOMContentLoaded', autoMount, { once: true });
+    } else if (global.document) {
+      autoMount();
+    }
   }
 })(typeof window !== 'undefined' ? window : globalThis);
