@@ -204,7 +204,7 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await expect(page.locator('#pass')).toBeDisabled();
   });
 
-  test('changer de Golden revient à la préparation sans recycler le verdict humain',async({page})=>{
+  test('changer de Golden puis reprendre la même référence restaure son constat local',async({page})=>{
     await mount(page);
     await page.locator('#createGolden').click();
     await page.locator('#wizardNext').click();
@@ -216,7 +216,14 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await expect(page.locator('#wizardStage')).toBeHidden();
     await page.locator('#refInput').fill('K-GOLDEN-BROWSER');
     await page.locator('#refForm button').click();
-    await expect(page.locator('#score')).toHaveText('0 / 10');
+    await expect(page.locator('#score')).toHaveText('1 / 10');
     await expect(page.locator('.wizard-grid')).toHaveAttribute('data-phase','guide');
+    await page.reload();
+    await expect(page.locator('#orderRef')).toHaveText('K-GOLDEN-BROWSER');
+    await expect(page.locator('#score')).toHaveText('1 / 10');
+    await page.locator('#wizardShowSteps').click();
+    await page.locator('#rail .stepbtn').nth(1).click();
+    await expect(page.locator('#humanObservation')).toHaveValue('');
+    await expect(page.locator('#score')).toHaveText('1 / 10');
   });
 });

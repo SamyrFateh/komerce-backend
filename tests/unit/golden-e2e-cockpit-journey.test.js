@@ -38,9 +38,9 @@ test('Golden V4 impose Comprendre puis Visualiser puis Valider et conserve les p
 
 test('Golden V4 sépare constat humain, backend et changement de référence',()=>{
   const js=fs.readFileSync(path.join(ROOT,'public/js/golden-e2e-cockpit-journey.js'),'utf8');
-  expect(js).toContain("states[cur]='pass';render()");
-  expect(js).toContain("states[cur]='fail';render()");
-  expect(js).toContain("ref='';cur=0;phase=0;states.fill('pending');backend.fill(null)");
+  expect(js).toContain("states[cur]='pass';findings[cur]");
+  expect(js).toContain("states[cur]='fail';findings[cur]");
+  expect(js).toContain("ref='';cur=0;phase=0;states.fill('pending');findings.fill(null);backend.fill(null)");
   expect(js).toContain("'/admin/orders/'+encodeURIComponent(ref)");
   expect(js).toContain("backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)");
 });
@@ -54,4 +54,14 @@ test('Golden: backend manquant ou indisponible invalide le cache de preuve',()=>
   expect(js).toContain('if(readId!==evidenceRead)return');
   expect(js).toContain("$('pass').disabled=!proofReady");
   expect(js).toContain('backend=Array.isArray(body.projection?.steps)?body.projection.steps:Array(steps.length).fill(null)');
+});
+
+test('Golden: constats locaux indexés par market, référence et version du guide',()=>{
+  const html=fs.readFileSync(path.join(ROOT,'public/golden-e2e-cockpit.html'),'utf8');
+  const js=fs.readFileSync(path.join(ROOT,'public/js/golden-e2e-cockpit-journey.js'),'utf8');
+  expect(html).toContain('id="humanObservation"');
+  expect(js).toContain('const GUIDE_VERSION=');
+  expect(js).toContain('localStorage.setItem(stateKey()');
+  expect(js).toContain('function restoreHuman()');
+  expect(js).toContain("if(!proofReady)return");
 });
