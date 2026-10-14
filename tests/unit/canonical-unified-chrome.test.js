@@ -45,4 +45,16 @@ describe('canonical unified admin chrome', () => {
     expect(css).toContain('@media (max-width: 900px)');
     expect(css).toContain('@media (max-width: 680px)');
   });
+
+  test('all country rubrics use hero-first and preserve original actions', () => {
+    const nav = fs.readFileSync(path.join(canonical, 'js', 'navigation-policy-v4.js'), 'utf8');
+    const heroSet = nav.match(/const HERO_FIRST_SURFACES = new Set\(\[([\s\S]*?)\]\)/)[1];
+    for (const surface of ['market-access', 'market-autonomy', 'market-catalog']) {
+      expect(heroSet).toContain(`'${surface}'`);
+      expect(css).toContain(`[data-kmc-surface="${surface}"]`);
+    }
+    expect(css).toContain('#markets-decision-country-overview');
+    expect(css).toContain('order: -1');
+    expect(css).toContain('.kmc-markets-decision-overview > .kmc-dashboard-header[data-dashboard-role="hero"]');
+  });
 });
