@@ -480,7 +480,9 @@
     const tiles = [
       ['Produits reçus', o.received, 'file', populationUrl(run.run_ref, 'received'), 'is-received', 'de la source'],
       ['Retenus par Sourcing', o.ready, 'accepted', populationUrl(run.run_ref, 'ready'), 'is-delivered', 'qualifiés pour la suite'],
-      // Quand chaque produit différé correspond à une action humaine identifiée, afficher\n      // une seule liste opérateur ; conserver la population séparée dans les autres cas.\n      ['Mis de côté', o.deferred, 'box', o.deferred > 0 && o.deferredActionable === o.deferred && o.actionRequired === o.deferred && (run.action_items || []).length === o.deferred && run.action_items.every(item => item.action_origin === 'deferred') ? urlFor(run.run_ref, 'exceptions') : populationUrl(run.run_ref, 'deferred'), 'is-deferred', o.deferredActionable ? `dont ${o.deferredActionable} à corriger` : 'non retenus pour ce passage'],
+      // Quand chaque produit différé correspond à une action humaine identifiée, afficher
+      // une seule liste opérateur ; conserver la population séparée dans les autres cas.
+      ['Mis de côté', o.deferred, 'box', o.deferred > 0 && o.deferredActionable === o.deferred && o.actionRequired === o.deferred && (run.action_items || []).length === o.deferred && run.action_items.every(item => item.action_origin === 'deferred') ? urlFor(run.run_ref, 'exceptions') : populationUrl(run.run_ref, 'deferred'), 'is-deferred', o.deferredActionable ? `dont ${o.deferredActionable} à corriger` : 'non retenus pour ce passage'],
       ['Écartés automatiquement', o.discarded, 'reject', populationUrl(run.run_ref, 'discarded'), 'is-discarded', 'au contrôle de réception'],
       ['Action requise', o.actionRequired, 'alert', urlFor(run.run_ref, 'exceptions'), open ? 'is-review is-attention' : 'is-review', open ? 'Intervenir →' : 'rien à faire'],
     ];
