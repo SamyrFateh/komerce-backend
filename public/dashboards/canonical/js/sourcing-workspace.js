@@ -151,7 +151,8 @@
     try {
       const result = await jsonRequest(context.fetch, options.url, { method: 'POST', body: options.body || {} });
       setFeedback(context.root, options.successMessage || 'Action appliquée.', 'positive');
-      await context.reload();
+      if (typeof options.onSuccess === 'function') options.onSuccess(result);
+      else await context.reload();
       return result;
     } catch (error) {
       setFeedback(context.root, error.message, 'critical');
@@ -327,7 +328,12 @@
           runAction(context, button, {
             url: ENDPOINT + '/sources/' + encodeURIComponent(source.source_ref) + '/import-now',
             runningMessage: 'Découverte ' + supplierLabel + ' en cours…',
-            successMessage: 'Import ' + supplierLabel + ' terminé. Consulter les candidats et le cockpit.',
+            successMessage: 'Import ' + supplierLabel + ' terminé. Ouverture du suivi…',
+            onSuccess(result) {
+              const runRef = result?.result?.run_ref;
+              if (runRef) context.location.assign('/admin/import-runtime?run=' + encodeURIComponent(runRef));
+              else setFeedback(context.root, 'Import terminé, mais aucune référence de passage retournée. Consultez le cockpit avant toute relance.', 'critical');
+            },
           });
         });
       }
