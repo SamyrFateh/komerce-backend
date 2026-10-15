@@ -348,6 +348,23 @@ describe('aliexpress-connector', () => {
     expect(verdict.errors.join(' ')).toMatch(/product_name trop long/);
   });
 
+  test('ne tronque jamais description — un detail hors borne est rejeté par le contrat, pas mutilé', () => {
+    const longDetail = `<p>${'Détail fournisseur très long '.repeat(400)}FIN-IDENTIFIABLE</p>`;
+    const overlongDetail = JSON.parse(JSON.stringify(detailResult));
+    overlongDetail.result.ae_item_base_info_dto.detail = longDetail;
+    const product = normalizeDsProduct(overlongDetail, feedProduct);
+
+    expect(product.description.length).toBeGreaterThan(10000);
+    expect(product.description.endsWith('FIN-IDENTIFIABLE')).toBe(true);
+
+    // Le contrat pivot (description.maxLength=10000) tranche avec un rejet
+    // motivé (ING-I1/ING-I2), jamais une mutilation silencieuse — même
+    // traitement que product_name ci-dessus.
+    const verdict = validateNormalizedProduct(product);
+    expect(verdict.valid).toBe(false);
+    expect(verdict.errors.join(' ')).toMatch(/description trop long/);
+  });
+
   test('le produit AliExpress traverse la vraie normalisation de la Raffinerie', async () => {
     const product = normalizeDsProduct(detailResult, feedProduct);
     const config = {
