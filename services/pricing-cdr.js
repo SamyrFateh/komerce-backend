@@ -158,7 +158,11 @@ async function loadGlobalConfig(options = {}) {
     costBenchmarks = [];
   }
 
+  // Glossaire éditorial administrable : indice lexical, jamais catégorie imposée.
+  const glossaryRes = await db.query('SELECT term_source, term_fr FROM catalog_glossary WHERE is_active = TRUE');
+
   return {
+    catalog_glossary: glossaryRes.rows,
     finance: fcRes.rows[0] || {},
     categories,
     boutique_customs_affinities: affinityRes.rows,
