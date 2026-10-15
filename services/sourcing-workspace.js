@@ -453,6 +453,44 @@ async function resolveCandidateCategory(candidateRef, categoryKey, actor) {
   } finally { client.release(); }
 }
 
+async function confirmCommercialTaxonomy(candidateRef, category, subcategory, actor) {
+  if (typeof category !== 'string' || typeof subcategory !== 'string'
+      || !category.trim() || !subcategory.trim() || category.length > 128 || subcategory.length > 128) {
+    throw new SourcingWorkspaceError(400, 'Catégorie et sous-catégorie boutique requises.', 'commercial_taxonomy_required');
+  }
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const {rows:[candidate]} = await client.query(
+      'SELECT id, state, product_id FROM sourcing_candidates WHERE candidate_ref=$1 FOR UPDATE', [candidateRef]);
+    if (!candidate) throw new SourcingWorkspaceError(404, 'Candidat introuvable', 'candidate_not_found');
+    if (candidate.product_id || ['rejected','archived','imported_to_catalog'].includes(candidate.state)) {
+      throw new SourcingWorkspaceError(409, 'Candidat non modifiable.', 'candidate_not_editable');
+    }
+    const {rows:[active]} = await client.query(
+      `SELECT bc.key AS category, bs.key AS subcategory
+       FROM boutique_categories bc JOIN boutique_subcategories bs
+         ON bs.category_key=bc.key AND bs.is_active=TRUE
+       WHERE bc.is_active=TRUE AND bc.key=$1 AND bs.key=$2 LIMIT 1`,
+      [category,subcategory]);
+    if (!active) throw new SourcingWorkspaceError(400, 'Sous-catégorie boutique inactive ou inexistante.', 'commercial_taxonomy_invalid');
+    const review = {status:'CONFIRMED',category:active.category,subcategory:active.subcategory};
+    await client.query(
+      'UPDATE sourcing_candidates SET commercial_taxonomy_review=$1::jsonb, updated_by=$2 WHERE id=$3',
+      [JSON.stringify(review),actor?.id || null,candidate.id]);
+    await client.query(
+      `INSERT INTO sourcing_candidate_events (candidate_id,event_type,changes,triggered_by)
+       VALUES ($1,'data_correction',$2::jsonb,$3)`,
+      [candidate.id,JSON.stringify({commercial_taxonomy_review:review}),actor?.id || null]);
+    await client.query('COMMIT');
+    return {candidate_ref:candidateRef,commercial_review:review,customs_unchanged:true,
+      publication_authorized:false,next_step:'Qualifier séparément la catégorie douanière avant promotion.'};
+  } catch(e) {
+    try {await client.query('ROLLBACK');} catch (_) {}
+    throw e;
+  } finally {client.release();}
+}
+
 async function updateCandidate(candidateRef, body, actor) {
   const candidate = await resolveCandidateRef(candidateRef);
   const row = await candidateActions.updateCandidate(candidate.id, body || {}, actor?.id || null);
@@ -721,6 +759,7 @@ module.exports = {
   updateCandidate,
   getCandidateCategoryOptions,
   resolveCandidateCategory,
+  confirmCommercialTaxonomy,
   scanCandidate,
   watchlistCandidate,
   rejectCandidate,
