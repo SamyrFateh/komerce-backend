@@ -12,7 +12,22 @@ const {
   draftPurchaseCostFromCandidate,
   draftStockFromCandidate,
   resolveCommercialObjectTaxonomy,
+  objectPhraseMatch,
 } = require('../../services/catalog-candidate-product-service');
+
+describe('contextual object phrase matching', () => {
+  it('recognizes bounded intervening material descriptors', () => {
+    expect(objectPhraseMatch('Car Zinc Alloy Leather Key Case Cover','car key case')).toBe(true);
+    expect(objectPhraseMatch('Car Memory Foam Neck Pillow','car neck pillow')).toBe(true);
+    expect(objectPhraseMatch('GEELY Car Zinc Alloy Leather Key Case','car key case')).toBe(true);
+  });
+  it('rejects reversed words and excess gaps', () => {
+    expect(objectPhraseMatch('Key Case For Car','car key case')).toBe(false);
+    expect(objectPhraseMatch('Car One Two Three Four Five Six Key Case','car key case')).toBe(false);
+    expect(objectPhraseMatch('Toy Car Model','car key case')).toBe(false);
+    expect(objectPhraseMatch('Car','car')).toBe(false);
+  });
+});
 
 describe('commercial object routing — independent of customs', () => {
   const q = { query: jest.fn().mockResolvedValue({rows:[
