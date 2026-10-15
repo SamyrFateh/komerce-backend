@@ -113,6 +113,24 @@ function unresolvedCategory(fallback, reason, top = null, second = null, signals
   };
 }
 
+// Only match configured multiword phrases across up to four incidental title
+// descriptors. This is not semantic inference and does not create new terms.
+// Supplier identity only: weaker signals keep exact phrase semantics.
+function configuredObjectPhrasePresent(value, rawTerm) {
+  const term = normalizeText(rawTerm);
+  const words = term.split(' ').filter(Boolean);
+  if (words.length < 2) return false;
+  const tokens = normalizeText(value).split(' ').filter(Boolean);
+  let position = -1;
+  for (const word of words) {
+    const next = tokens.findIndex((token, index) => index > position
+      && (position < 0 || index <= position + 5) && token === word);
+    if (next < 0) return false;
+    position = next;
+  }
+  return true;
+}
+
 function scoreCategory(category, signals) {
   const terms = termsForCategory(category);
   let score = 0;
@@ -120,11 +138,15 @@ function scoreCategory(category, signals) {
 
   for (const signal of signals) {
     for (const [term, termWeight] of terms.entries()) {
-      if (!phrasePresent(signal.value, term)) continue;
+      const exact = phrasePresent(signal.value, term);
+      const contextual = !exact && signal.name === 'product_name'
+        && configuredObjectPhrasePresent(signal.value, term);
+      if (!exact && !contextual) continue;
       const contribution = termWeight * signal.multiplier;
       score += contribution;
       evidence.push({
         signal: signal.name,
+        match_mode: contextual ? 'ordered_contextual' : 'exact_phrase',
         term,
         term_weight: termWeight,
         signal_multiplier: signal.multiplier,
@@ -252,6 +274,7 @@ function classifySupplierProduct(product, categories = [], options = {}) {
 module.exports = {
   normalizeText,
   phrasePresent,
+  configuredObjectPhrasePresent,
   termsForCategory,
   supplierCategoryLevels,
   supplierSignals,

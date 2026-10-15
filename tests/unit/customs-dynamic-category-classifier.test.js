@@ -7,7 +7,35 @@ const {
   supplierCategoryLevels,
   supplierSignals,
   scoreCategory,
+  configuredObjectPhrasePresent,
 } = require('../../services/customs-dynamic-category-classifier');
+
+describe('bounded contextual matching of configured customs terms', () => {
+  test('detects a configured multiword phrase with intervening materials', () => {
+    expect(configuredObjectPhrasePresent('Car Zinc Alloy Leather Key Case Cover','car key case')).toBe(true);
+    const result = classifySupplierProduct(
+      {product_name:'Car Zinc Alloy Leather Key Case Cover'},
+      [{key:'configured_category',classification_terms:{'car key case':12},is_active:true}]
+    );
+    expect(result).toMatchObject({key:'configured_category',source:'mapped'});
+    expect(result.evidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({signal:'product_name',match_mode:'ordered_contextual',term:'car key case'})
+    ]));
+  });
+  test('does not infer an unconfigured category, reverse phrases or use discovery alone', () => {
+    const cats=[{key:'configured_category',classification_terms:{'car key case':12},is_active:true}];
+    expect(classifySupplierProduct({product_name:'Toy Car Model',raw_payload:{discovery:{keyword:'car key case'}}},cats).key).toBeNull();
+    expect(classifySupplierProduct({product_name:'Case for Car Key'},cats).key).toBeNull();
+    expect(classifySupplierProduct({product_name:'Car Zinc Alloy Leather Key Case Cover'},
+      [{key:'other',classification_terms:{wrench:12},is_active:true}]).key).toBeNull();
+  });
+  test('keeps ambiguous equal configured evidence unresolved', () => {
+    const same={ 'car key case':12 };
+    const result=classifySupplierProduct({product_name:'Car Zinc Alloy Leather Key Case'},
+      [{key:'a',classification_terms:same,is_active:true},{key:'b',classification_terms:same,is_active:true}]);
+    expect(result).toMatchObject({key:null,reason:'ambiguous_category_match'});
+  });
+});
 
 describe('dynamic customs supplier category classifier', () => {
   test('classifies into a category that does not exist anywhere in scanner code', () => {
