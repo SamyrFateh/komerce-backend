@@ -165,7 +165,12 @@ function qualifyTaxonomyDefects({summary,items}) {
     }
   }
   for (const example of (summary && summary.accepted_category_drift_examples) || []) {
-    defects.push({category:'TAXONOMY',severity:'blocking_review',
+    // editorial_review par défaut : la divergence peut venir d'une
+    // correction humaine historique légitime (override) aussi bien que
+    // d'un référentiel qui a évolué. Rien ici ne prouve lequel des deux —
+    // seule une revue humaine peut trancher, jamais blocking_review sans
+    // preuve explicite (ING-I2 : jamais deviner en silence).
+    defects.push({category:'TAXONOMY',severity:'editorial_review',
       candidate_ref:example.candidate_ref,
       evidence:`before=${example.before}; preview=${example.preview}; reason=${example.reason}`,
       cause:'classification_deja_acceptee_divergente_du_referentiel_actuel',

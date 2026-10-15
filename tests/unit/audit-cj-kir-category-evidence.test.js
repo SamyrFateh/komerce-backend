@@ -119,9 +119,11 @@ describe('audit CJ KIR : preuve brute et comparaison taxonomie en lecture seule'
     const defects=audit.qualifyTaxonomyDefects(evidence);
 
     // Candidat déjà accepté (TEST) dont le classement actuel diverge du
-    // référentiel courant : anomalie bloquante (DOCTRINE_CATALOGUE.md §3).
+    // référentiel courant : la divergence peut venir d'un override humain
+    // légitime, donc editorial_review tant qu'aucune preuve explicite ne
+    // justifie blocking_review (DOCTRINE_CATALOGUE.md §3, ING-I2).
     expect(defects).toContainEqual(expect.objectContaining({
-      category:'TAXONOMY',severity:'blocking_review',candidate_ref:'KSC-000010',
+      category:'TAXONOMY',severity:'editorial_review',candidate_ref:'KSC-000010',
       cause:'classification_deja_acceptee_divergente_du_referentiel_actuel',
     }));
     // Candidat différé avec vocabulaire fournisseur exploitable : constat
