@@ -8,6 +8,7 @@
 
 const {
   canonicalizeProductIdentity,
+  canonicalObjectName,
   SHORT_NAME_MAX,
 } = require('../../services/catalog-promotion/editorial-identity');
 
@@ -87,5 +88,54 @@ describe('catalog-promotion/editorial-identity : identité client sans invention
   test('normalise les espaces du nom sans jamais réinterpréter le contenu', () => {
     const identity = canonicalizeProductIdentity({ product_name: '  Casque   Bluetooth  ', description: null });
     expect(identity.name).toBe('Casque Bluetooth');
+  });
+});
+
+describe('canonicalObjectName : objet + type + distinction, bruit marketing retiré sans invention', () => {
+  // Titres représentatifs de chaque connecteur (CJ, AliExpress, CSV, Manual)
+  // : même traitement, le bruit retiré est le même pour tous (réutilisation
+  // de MARKETING_NOISE, pas de règle par fournisseur).
+  test.each([
+    ['CJ', 'Hot Sale Wireless Bluetooth Earbuds Free Shipping', 'Wireless Bluetooth Earbuds'],
+    ['AliExpress', 'New Arrival Waterproof Hiking Backpack 40L High Quality', 'Waterproof Hiking Backpack 40L'],
+    ['CSV', 'Factory Direct Stainless Steel Water Bottle 750ml', 'Stainless Steel Water Bottle 750ml'],
+    ['Manual', 'Best Seller - Caftan Marocain Brodé Main', 'Caftan Marocain Brodé Main'],
+  ])('%s : retire le bruit marketing connu sans perdre les caractéristiques distinctives (%s)', (_supplier, raw, expected) => {
+    const result = canonicalObjectName(raw);
+    expect(result).toEqual({ name: expected, identifiable: true });
+  });
+
+  test('objet non identifiable de façon déterministe : repli sur le nom complet, aucune invention', () => {
+    const result = canonicalObjectName('Hot Sale Free Shipping');
+    expect(result.identifiable).toBe(false);
+    expect(result.name).toBe('Hot Sale Free Shipping');
+  });
+
+  test('ambiguïté : un nom déjà propre et sans bruit connu reste inchangé (rien à identifier de plus)', () => {
+    expect(canonicalObjectName('Wireless Headphones')).toEqual({ name: 'Wireless Headphones', identifiable: true });
+    expect(canonicalObjectName('Motorcycle Riding Gloves')).toEqual({ name: 'Motorcycle Riding Gloves', identifiable: true });
+  });
+
+  test('idempotence : appliquer la fonction au résultat ne change plus rien', () => {
+    const inputs = [
+      'Hot Sale Wireless Bluetooth Earbuds Free Shipping',
+      'New Arrival Waterproof Hiking Backpack 40L High Quality',
+      'Wireless Headphones',
+    ];
+    for (const raw of inputs) {
+      const once = canonicalObjectName(raw);
+      const twice = canonicalObjectName(once.name);
+      expect(twice).toEqual(once);
+    }
+  });
+
+  test('le nom final en sortie du pipeline complet reflète aussi le nettoyage (wiring)', () => {
+    const identity = canonicalizeProductIdentity({
+      product_name: 'Hot Sale Wireless Bluetooth Earbuds Free Shipping',
+      description: null,
+    });
+    expect(identity.name).toBe('Wireless Bluetooth Earbuds');
+    // Objet identifié malgré le bruit retiré : ce n'est pas la raison de la revue.
+    expect(identity.reasons).not.toContain('OBJECT_NOT_DETERMINISTICALLY_IDENTIFIABLE');
   });
 });

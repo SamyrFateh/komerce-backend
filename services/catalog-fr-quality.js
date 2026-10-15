@@ -269,6 +269,7 @@ module.exports = {
   TITLE_MAX,
   DESCRIPTION_MIN,
   DESCRIPTION_MAX,
+  MARKETING_NOISE,
   normalizeSpace,
   sourceDocumentFromRow,
   sourceFingerprint,
