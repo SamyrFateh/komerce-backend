@@ -589,6 +589,14 @@ async function fetchProducts(options = {}) {
     feedMeta = await fetchFeed({ ...options, env });
     feedItems = flattenFeedProducts(feedMeta);
     productIds = feedItems.map((item) => extractProductId(item.product_id)).filter(Boolean);
+  } else if (options.feedName || options.feed_name) {
+    // Discovery selects IDs from this feed, but ID-only detail hydration drops
+    // category labels. Recover the same feed metadata as non-authoritative
+    // evidence; never substitute a different ID or accept feed-only products.
+    feedMeta = await fetchFeed({ ...options, env });
+    const selected = new Set(productIds);
+    feedItems = flattenFeedProducts(feedMeta).filter(item =>
+      selected.has(String(extractProductId(item.product_id))));
   }
   if (!productIds.length) {
     return { products: [], invalid: [], total: 0, page: clampPage(options.page), total_records: 0 };

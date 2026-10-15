@@ -512,6 +512,29 @@ describe('aliexpress-connector', () => {
     const detailUrls = fetchImpl.mock.calls.slice(1).map(([rawUrl]) => new URL(rawUrl));
     expect(detailUrls.every((url) => url.searchParams.get('ship_to_country') === 'AE')).toBe(true);
   });
+
+  test('discovery par IDs récupère les catégories du feed sans changer les IDs retenus', async () => {
+    const unrelated = { ...feedProduct, product_id:'4000102715996' };
+    const fetchImpl = jest.fn()
+      .mockResolvedValueOnce(response({
+        aliexpress_ds_recommend_feed_get_response: { result: {
+          products: { integer: [feedProduct, unrelated] },
+        } },
+      }))
+      .mockResolvedValueOnce(response({ aliexpress_ds_product_get_response: detailResult }));
+    const result = await fetchProducts({
+      fetchImpl, env:credentials, productIds:['4000102715995'],
+      feedName:'DS bestseller', countryCode:'AE', size:20,
+    });
+    expect(result.total).toBe(1);
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0].supplier_product_id).toBe('4000102715995');
+    expect(result.products[0].supplier_category).toContain('>');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(new URL(fetchImpl.mock.calls[0][0]).searchParams.get('method'))
+      .toBe('aliexpress.ds.recommend.feed.get');
+  });
+
 });
 
 describe('aliexpress-connected-connector credential hygiene', () => {
