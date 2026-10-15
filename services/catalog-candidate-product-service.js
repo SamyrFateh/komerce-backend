@@ -98,13 +98,18 @@ async function createDraftProductFromSourcingCandidate(q, {
   const hasVariants = hasVariantsFromCandidate(candidate);
   const sourceLocale = sourceLocaleFromCandidate(candidate);
   const boutiqueTaxonomy = await resolveActiveBoutiqueTaxonomy(q, candidate);
-  // Identité client (nom court, description factuelle) dérivée mécaniquement
+  // Identité client (nom court, description proposée) dérivée mécaniquement
   // du fournisseur — jamais d'invention, jamais d'IA (DOCTRINE_CATALOGUE.md
-  // §2/§4). name_source/description_source ci-dessous restent l'original
-  // fournisseur intact, quelle que soit l'identité publiée.
+  // §2/§4). La phrase extraite reste une proposition : needs_review signale
+  // la revue tant que la qualité FR n'est pas démontrée ou que la source
+  // n'est pas française. name_source/description_source ci-dessous restent
+  // l'original fournisseur intact, quelle que soit l'identité publiée.
   const identity = canonicalizeProductIdentity({
     product_name: candidate.product_name,
     description: candidate.description,
+    // Même source que la colonne products.source_locale ci-dessous : pas de
+    // second calcul parallèle de la langue (DOCTRINE_CATALOGUE.md §4).
+    source_locale: sourceLocale,
   });
 
   const prodRes = await q.query(

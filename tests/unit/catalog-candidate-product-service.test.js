@@ -94,7 +94,7 @@ describe('catalog-candidate-product-service', () => {
     ]);
   });
 
-  it('publie un nom court et une description factuelle quand les faits fournisseur suffisent, sans revue éditoriale', async () => {
+  it('publie un nom court et une description proposée sans revue quand la source est française et démontrée', async () => {
     const q = {
       query: jest.fn().mockResolvedValue({ rows: [{ id: 'product-4' }] }),
     };
@@ -102,18 +102,45 @@ describe('catalog-candidate-product-service', () => {
     await createDraftProductFromSourcingCandidate(q, {
       candidate: {
         product_name: 'Casque Bluetooth',
-        description: 'Casque sans fil confortable. Autonomie 20 heures.',
+        description: 'Casque sans fil confortable avec réduction de bruit. Autonomie de 20 heures.',
+        // source_locale='fr' : seule voie doctrinale (§4) où connector_raw
+        // peut être déclaré prêt sans revue humaine.
+        normalized_source_contract: { source_locale: 'fr' },
       },
       initialPrice: 5000,
     });
 
     const params = q.query.mock.calls[0][1];
     expect(params[0]).toBe('Casque Bluetooth');
-    // Première phrase factuelle extraite telle quelle (rien d'inventé) ;
+    // Première phrase extraite telle quelle (rien d'inventé), démontrée FR
+    // par looksFrench/englishResidues (pas par la seule ponctuation) ;
     // la description fournisseur complète reste intacte dans description_source.
-    expect(params[12]).toBe('Casque sans fil confortable.');
+    expect(params[12]).toBe('Casque sans fil confortable avec réduction de bruit.');
     expect(params[13]).toBe(false);
-    expect(params[10]).toBe('Casque sans fil confortable. Autonomie 20 heures.');
+    expect(params[10]).toBe('Casque sans fil confortable avec réduction de bruit. Autonomie de 20 heures.');
+  });
+
+  it('signale une revue pour une source non française même si une phrase s\'extrait proprement (DOCTRINE_CATALOGUE §4)', async () => {
+    const q = {
+      query: jest.fn().mockResolvedValue({ rows: [{ id: 'product-5' }] }),
+    };
+
+    await createDraftProductFromSourcingCandidate(q, {
+      candidate: {
+        product_name: 'Bluetooth Headset',
+        description: 'Comfortable wireless headset. 20h battery.',
+        // source_locale par défaut ('en') : connector_raw non français ne
+        // peut jamais être déclaré prêt (doctrine §4), quelle que soit la
+        // qualité apparente de l'extraction.
+      },
+      initialPrice: 3000,
+    });
+
+    const params = q.query.mock.calls[0][1];
+    // La proposition reste disponible (rien n'est perdu)...
+    expect(params[12]).toBe('Comfortable wireless headset.');
+    // ...mais jamais déclarée prête sans revue.
+    expect(params[13]).toBe(true);
   });
 });
 
