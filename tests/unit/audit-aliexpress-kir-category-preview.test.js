@@ -32,6 +32,6 @@ describe('AliExpress KIR category preview (read only)',()=>{
     const out=await audit('KIR-000007',['42'],{query,loadConfig:async()=>config});
     expect(out).toMatchObject({db_writes:0,provider_api_calls:0});
     expect(out.items[0].prediction.key).toBeNull();
-    expect(query.mock.calls.map(c=>c[0].trim().split(/\\s+/)[0])).toEqual(['SELECT','WITH']);
+    expect(query.mock.calls.map(c=>c[0].trim().split(/\s+/)[0])).toEqual(['SELECT','WITH']);
   });
 });
