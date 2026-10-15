@@ -39,6 +39,15 @@ const config = {
 const cats = Object.values(config.categories);
 
 describe('supplier-catalog-scanner', () => {
+  it('forwards curated glossary into actual supplier classification', async () => {
+    const cfg = { ...config, catalog_glossary:[{term_source:'key case', term_fr:'étui de clé automobile'}], categories:{
+      cases:{key:'cases', classification_terms:{'etui de cle automobile':10}, default_weight_kg:0.2},
+    }};
+    const candidate = await normalizeCandidate({ supplier_name:'AliExpress', product_name:'Car Key Case Cover', purchase_price:3, currency:'USD' }, {config:cfg});
+    expect(candidate.komerce_category).toBe('cases');
+    expect(candidate.category_resolution.evidence).toEqual(expect.arrayContaining([expect.objectContaining({signal:'glossary_product_name'})]));
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     pricingEngine.loadGlobalConfig.mockResolvedValue(config);
