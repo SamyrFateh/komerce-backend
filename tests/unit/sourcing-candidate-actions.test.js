@@ -94,9 +94,9 @@ describe('catalog candidate draft source locale', () => {
       initialPrice: null,
     })).resolves.toBe('product-1');
 
-    expect(q.query.mock.calls[0][0]).toContain("FALSE, FALSE, 'candidate'");
-    expect(q.query.mock.calls[0][1][5]).toBeNull();
-    expect(q.query.mock.calls[0][1][11]).toBe('pl-PL');
+    expect(q.query.mock.calls.find(call => call[0].includes('INSERT INTO products'))[0]).toContain("FALSE, FALSE, 'candidate'");
+    expect(q.query.mock.calls.find(call => call[0].includes('INSERT INTO products'))[1][5]).toBeNull();
+    expect(q.query.mock.calls.find(call => call[0].includes('INSERT INTO products'))[1][11]).toBe('pl-PL');
     expect(candidateProductService.sourceLocaleFromCandidate(candidate)).toBe('pl-PL');
     expect(candidateProductService.sourceLocaleFromCandidate({})).toBe('en');
   });
