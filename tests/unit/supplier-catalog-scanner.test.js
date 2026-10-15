@@ -255,3 +255,21 @@ describe('supplier-catalog-scanner', () => {
     });
   });
 });
+
+describe('unresolved customs stays in commercial review', () => {
+  test('preserves candidate review without calculating economic prices', async () => {
+    pricingEngine.recommend.mockClear();
+    const result=await scanCandidate({
+      product_name:'Car Neck Pillow',purchase_price_kmf:1200,
+      komerce_category:null,data_sources:{category:'default'},
+    },{config});
+    expect(result).toMatchObject({
+      sourcing_decision:'WATCH',
+      scan_result:{
+        commercial_review:{status:'PENDING_CLASSIFICATION'},
+        customs_review:{status:'REQUIRED',category_key:null,calculation_allowed:false,publication_allowed:false},
+      },
+    });
+    expect(pricingEngine.recommend).not.toHaveBeenCalled();
+  });
+});

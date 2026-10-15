@@ -101,3 +101,23 @@ describe('catalog candidate draft source locale', () => {
     expect(candidateProductService.sourceLocaleFromCandidate({})).toBe('en');
   });
 });
+
+describe('customs gate before catalogue promotion', () => {
+  test('rejects a candidate with unresolved customs before draft creation', async () => {
+    const db=require('../../db');
+    const create=require('../../services/catalog-candidate-product-service').createDraftProductFromSourcingCandidate;
+    const {promoteCandidate}=require('../../services/sourcing-candidate-actions');
+    const client={query:jest.fn()
+      .mockResolvedValueOnce({rows:[]}) // BEGIN
+      .mockResolvedValueOnce({rows:[{
+        id:'candidate-1',state:'scanned',komerce_category:null,
+        data_sources:{category:'default'},scan_result:{customs_review:{status:'REQUIRED'}},
+      }]})
+      .mockResolvedValueOnce({rows:[]})}; // ROLLBACK
+    db.getClient.mockResolvedValueOnce({...client,release:jest.fn()});
+    await expect(promoteCandidate('candidate-1',{},'admin-1')).rejects.toMatchObject({
+      code:'candidate_customs_classification_required',status:409,
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+});

@@ -311,7 +311,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
 
   it('crée le produit toujours en is_active=FALSE même avec un prix fourni explicitement', async () => {
     const client = makeClient([
-      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'X', description: 'desc EN', komerce_category: 'mode', purchase_price_kmf: 1000, normalized_source_contract: null }] },
+      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'X', komerce_category: 'vetements', description: 'desc EN', komerce_category: 'mode', purchase_price_kmf: 1000, normalized_source_contract: null }] },
       { rows: [] }, // SELECT boutique commercial object terms
       { rows: [{ id: 'prod-1' }] }, // INSERT products
       { rows: [] },                 // UPDATE candidate
@@ -373,7 +373,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     delete contract.sellable_units;
 
     const client = makeClient([
-      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Robe', purchase_price_kmf: 1000, normalized_source_contract: contract }] },
+      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Robe', komerce_category: 'vetements', purchase_price_kmf: 1000, normalized_source_contract: contract }] },
       { rows: [] }, // SELECT boutique commercial object terms
       { rows: [{ id: 'prod-5' }] }, // INSERT products
       { rows: [] },                  // SELECT product_skus existants (Lot 6, aucun)
@@ -408,7 +408,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
   it('rollback si la promotion catalogue échoue (contrat invalide) — produit non commité', async () => {
     const contract = { schema_version: '2', media: [], option_axes: [], sellable_units: [] }; // rejeté : vide explicite
     const client = makeClient([
-      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Robe', purchase_price_kmf: 1000, normalized_source_contract: contract }] },
+      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Robe', komerce_category: 'vetements', purchase_price_kmf: 1000, normalized_source_contract: contract }] },
       { rows: [] }, // SELECT boutique commercial object terms
       { rows: [{ id: 'prod-6' }] }, // INSERT products
     ]);
@@ -953,7 +953,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
 
   it('POST /candidates/:id/import-product : un brouillon sans prix reste autorisé ; le prix n’est pas un gate Sourcing → Catalogue', async () => {
     const client = makeClient([
-      { rows: [{ state:'scanned', scan_result:{}, product_name:'X', normalized_source_contract:null }] },
+      { rows: [{ state:'scanned', scan_result:{}, product_name:'X', komerce_category:'vetements', normalized_source_contract:null }] },
       { rows: [] }, // SELECT commercial object taxonomy
       { rows: [{ id:'prod-no-price-fallback' }] },
       { rows: [] },
@@ -967,7 +967,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
 
   it('POST /candidates/:id/import-product : price_kmf absent ne reprend jamais un prix du scan', async () => {
     const client = makeClient([
-      { rows: [{ state:'scanned', scan_result:{ test_price_kmf:7000, recommended_price_kmf:3000 }, product_name:'X', normalized_source_contract:null }] },
+      { rows: [{ state:'scanned', scan_result:{ test_price_kmf:7000, recommended_price_kmf:3000 }, product_name:'X', komerce_category:'vetements', normalized_source_contract:null }] },
       { rows: [] }, // SELECT commercial object taxonomy
       { rows: [{ id:'prod-no-price-scan' }] },
       { rows: [] },
@@ -987,7 +987,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
 
   it('POST /candidates/:id/import-product : price_kmf fourni explicitement dans le body → utilisé tel quel (jamais le scan)', async () => {
     const client = makeClient([
-      { rows: [{ state: 'scanned', scan_result: { test_price_kmf: 7000, recommended_price_kmf: 3000 }, product_name: 'X', normalized_source_contract: null }] },
+      { rows: [{ state: 'scanned', scan_result: { test_price_kmf: 7000, recommended_price_kmf: 3000 }, product_name: 'X', komerce_category: 'vetements', normalized_source_contract: null }] },
       { rows: [] }, // SELECT commercial object taxonomy
       { rows: [{ id: 'prod-3' }] },
       { rows: [] },
@@ -1005,31 +1005,15 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
     expect(insertParams).not.toContain(3000);
   });
 
-  it('POST /candidates/:id/import-product : komerce_category/purchase_price_kmf/description/weight absents → replis appliqués', async () => {
-    currentUser = { role: 'admin' }; // pas d'id non plus, pour couvrir le fallback updated_by/triggered_by
+  it('POST /candidates/:id/import-product : catégorie économique absente interdit le fallback', async () => {
     const client = makeClient([
-      { rows: [{ state: 'scanned', scan_result: { recommended_price_kmf: 3000 }, product_name: 'X', normalized_source_contract: null }] }, // pas de category/prix/description/weight
-      { rows: [] }, // SELECT commercial object taxonomy
-      { rows: [{ id: 'prod-4' }] },
-      { rows: [] },
-      { rows: [] },
+      { rows: [{ state:'scanned', scan_result:{}, product_name:'X', komerce_category:null }] },
     ]);
     mockGetClient.mockResolvedValue(client);
-    mockEnrichAndApply.mockResolvedValue({ status: 'ok' });
-
-    // price_kmf reste obligatoire (doctrine prix explicite) : seuls
-    // komerce_category/purchase_price_kmf/description/weight ont un repli.
-    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({ price_kmf: 4200 });
-
-    expect(res.status).toBe(200);
-    const insertParams = client.calls.find((c) => /INSERT INTO products/.test(c.sql)).params;
-    expect(insertParams).toContain(4200);     // initialPrice = prix opérateur explicite
-    expect(insertParams).not.toContain(3000); // jamais recommended_price_kmf du scan
-    expect(insertParams).toContain('autre');  // komerce_category fallback
-    expect(insertParams).toContain(0);        // purchase_price_kmf fallback
-    expect(insertParams).toContain(null);     // description / weightKg fallback
-    const updateCandParams = client.calls.find((c) => /UPDATE sourcing_candidates/.test(c.sql)).params;
-    expect(updateCandParams).toContain(null); // updated_by fallback
+    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({ price_kmf:4200 });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toContain('Catégorie douanière non qualifiée');
+    expect(client.calls.some(c => /INSERT INTO products/.test(c.sql))).toBe(false);
   });
 
   it('POST /candidates/:id/reject : reason absente du body → rejected_reason=null, notes vide dans l\'event ; req.user sans id', async () => {

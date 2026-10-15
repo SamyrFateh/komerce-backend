@@ -222,8 +222,22 @@ async function scanCandidate(candidate, options = {}) {
   if (!candidate.purchase_price_kmf) {
     return { scan_result: null, sourcing_decision: 'WATCH', reason: 'Prix d\'achat manquant — décision impossible.', recommended_action: 'Mettre en watchlist, ne pas importer pour l\'instant', market_confidence: 'unknown', confidence: candidate.confidence || 'low' };
   }
-  if (candidate.data_sources?.category === 'default') {
-    return { scan_result: null, sourcing_decision: 'WATCH', reason: 'Catégorie Komerce non résolue — décision impossible.', recommended_action: 'Compléter ou corriger la catégorie avant promotion.', market_confidence: 'unknown', confidence: candidate.confidence || 'low' };
+  if (candidate.data_sources?.category === 'default' || !candidate.komerce_category) {
+    // Retain the supplier candidate for commercial review, but do not invent
+    // a customs category or perform an economic calculation/publication.
+    // This is an auditable independent review gate, NOT an accepted sourcing
+    // decision or permission to publish.
+    return {
+      scan_result: {
+        commercial_review: { status:'PENDING_CLASSIFICATION', action:'REVIEW_BOUTIQUE_TAXONOMY' },
+        customs_review: { status:'REQUIRED', category_key:null, calculation_allowed:false, publication_allowed:false },
+        economic_test_health_status:'unknown',
+      },
+      sourcing_decision:'WATCH',
+      reason:'Catégorie Komerce non résolue — décision impossible.',
+      recommended_action:'Conserver le candidat pour classement commercial ; qualifier la douane avant toute promotion ou vente.',
+      market_confidence:'unknown',confidence:candidate.confidence || 'low',
+    };
   }
   const input = { product_id: null, category: candidate.komerce_category, cost_kmf: candidate.purchase_price_kmf || 0, weight_kg: candidate.estimated_weight_kg || 0.5, volume_m3: candidate.estimated_volume_m3 || 0.005, current_price_kmf: 0, channel: candidate.channel || 'cash_relais' };
   const reco = await pricingEngine.recommend(input, { config });

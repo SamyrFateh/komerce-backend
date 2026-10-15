@@ -219,6 +219,15 @@ async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
     if (candidate.state === 'rejected' || candidate.scan_result?.sourcing_decision === 'EXCLUDED') {
       throw new SourcingCandidateActionError(409, 'Candidat exclu (douane/légal) — import interdit, non ré-évaluable.', 'candidate_excluded');
     }
+    // A commercial review is allowed while customs is unresolved, but never
+    // promote a draft with missing economic category or untrusted fallback.
+    if (!candidate.komerce_category || candidate.data_sources?.category === 'default'
+        || candidate.scan_result?.customs_review?.status === 'REQUIRED') {
+      throw new SourcingCandidateActionError(
+        409, 'Catégorie douanière non qualifiée — conservation en Raffinerie uniquement.',
+        'candidate_customs_classification_required'
+      );
+    }
     if (candidate.state === 'quarantined') {
       throw new SourcingCandidateActionError(409, 'Candidat en quarantaine — non promouvable en l’état.', 'candidate_quarantined');
     }
