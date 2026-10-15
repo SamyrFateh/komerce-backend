@@ -67,23 +67,32 @@ function stripKnownMarketingNoise(value) {
 }
 
 /**
- * Nom canonique = objet identifié, pas un titre raccourci arbitrairement.
- * Seule transformation appliquée : retrait du bruit marketing déjà
- * répertorié (stripKnownMarketingNoise). Si ce retrait démolit l'essentiel
- * (il ne reste quasiment rien), l'objet n'est pas identifiable de façon
- * déterministe à partir des seuls motifs connus : on revient au nom complet
- * fournisseur (aucune invention) et on le signale.
+ * Nettoyage lexical du nom fournisseur — jamais une identification de
+ * l'objet. Seule transformation appliquée : retrait du bruit marketing déjà
+ * répertorié (stripKnownMarketingNoise). Ce retrait prouve uniquement que du
+ * texte commercial connu a disparu ; il ne prouve PAS que ce qui reste
+ * identifie correctement l'objet — IMPORTANT : `cleaned.length` suffisant
+ * n'est jamais traité comme une preuve d'identification (c'est précisément
+ * la fausse équivalence à éviter). L'appelant doit donc toujours signaler
+ * une revue dès qu'un retrait a eu lieu (`noise_removed`), sauf s'il dispose
+ * d'une preuve canonique plus forte.
+ *
+ * Seul cas distinct : si le retrait démolit l'essentiel (il ne reste
+ * quasiment rien), le nom complet fournisseur est restauré (aucune
+ * invention) et `destroyed=true` le signale explicitement.
  *
  * Idempotent : appliquer la fonction au résultat ne change plus rien, les
- * motifs retirés ne réapparaissent pas.
+ * motifs retirés ne réapparaissent pas (mais `noise_removed` devient alors
+ * `false`, puisqu'il ne reste plus rien à retirer).
  */
 function canonicalObjectName(rawName) {
   const normalized = normalizeSpace(rawName);
   const cleaned = stripKnownMarketingNoise(normalized);
-  const identifiable = cleaned.length >= MIN_IDENTIFIABLE_NAME_LENGTH;
+  const destroyed = cleaned.length < MIN_IDENTIFIABLE_NAME_LENGTH;
   return {
-    name: identifiable ? cleaned : normalized,
-    identifiable,
+    name: destroyed ? normalized : cleaned,
+    noise_removed: cleaned !== normalized,
+    destroyed,
   };
 }
 
@@ -102,13 +111,16 @@ function canonicalObjectName(rawName) {
  * services/catalog-fr-quality.js) — jamais par la seule présence d'une
  * ponctuation.
  *
- * - name : objet + type + distinction indispensable — le nom fournisseur
- *   avec le seul bruit marketing déjà répertorié retiré (canonicalObjectName).
- *   Aucune caractéristique distinctive n'est jamais ciblée par ce retrait.
- *   S'il dépasse SHORT_NAME_MAX, ou si l'objet n'est pas identifiable de
- *   façon déterministe, il n'est JAMAIS tronqué ni deviné
- *   (DOCTRINE_CATALOGUE.md §2) — le nom complet reste publié et une revue
- *   éditoriale est signalée.
+ * - name : nom fournisseur avec le seul bruit marketing déjà répertorié
+ *   retiré (canonicalObjectName) — un nettoyage lexical, jamais une
+ *   identification certaine de l'objet. Aucune caractéristique distinctive
+ *   n'est jamais ciblée par ce retrait, mais le retrait lui-même n'est
+ *   jamais présenté comme une preuve d'identification : dès qu'il a eu
+ *   lieu, une revue est signalée (le nom candidat reste néanmoins publié,
+ *   rien n'est perdu). S'il dépasse SHORT_NAME_MAX, ou si le nettoyage
+ *   démolit l'essentiel, il n'est JAMAIS tronqué ni deviné
+ *   (DOCTRINE_CATALOGUE.md §2) — le nom complet fournisseur reste publié et
+ *   une revue éditoriale est signalée.
  * - description : la proposition reste préservée dans le champ (rien n'est
  *   perdu, même sous revue — DOCTRINE_CATALOGUE.md §5) ; seul le marquage
  *   needs_review distingue une proposition démontrée d'une proposition à
@@ -129,8 +141,13 @@ function canonicalizeProductIdentity({ product_name, description, source_locale 
 
   const objectName = canonicalObjectName(product_name);
   const name = objectName.name;
-  if (!objectName.identifiable) {
+  if (objectName.destroyed) {
     reasons.push('OBJECT_NOT_DETERMINISTICALLY_IDENTIFIABLE');
+  } else if (objectName.noise_removed) {
+    // Un retrait de bruit marketing prouve un nettoyage lexical, jamais une
+    // identification certaine de l'objet (pas de preuve canonique plus
+    // forte disponible ici) : le candidat est conservé, la revue signalée.
+    reasons.push('OBJECT_IDENTIFICATION_NOT_CANONICALLY_DEMONSTRATED');
   }
   if (name.length > SHORT_NAME_MAX) {
     reasons.push('NAME_TOO_LONG_FOR_SHORT_IDENTITY');

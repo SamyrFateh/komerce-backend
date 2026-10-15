@@ -95,28 +95,35 @@ describe('canonicalObjectName : objet + type + distinction, bruit marketing reti
   // Titres représentatifs de chaque connecteur (CJ, AliExpress, CSV, Manual)
   // : même traitement, le bruit retiré est le même pour tous (réutilisation
   // de MARKETING_NOISE, pas de règle par fournisseur).
+  // Retirer du bruit marketing connu est un nettoyage lexical, jamais une
+  // preuve d'identification (fausse équivalence corrigée) : noise_removed
+  // reste vrai, destroyed reste faux — l'appelant signale la revue lui-même.
   test.each([
     ['CJ', 'Hot Sale Wireless Bluetooth Earbuds Free Shipping', 'Wireless Bluetooth Earbuds'],
     ['AliExpress', 'New Arrival Waterproof Hiking Backpack 40L High Quality', 'Waterproof Hiking Backpack 40L'],
     ['CSV', 'Factory Direct Stainless Steel Water Bottle 750ml', 'Stainless Steel Water Bottle 750ml'],
     ['Manual', 'Best Seller - Caftan Marocain Brodé Main', 'Caftan Marocain Brodé Main'],
-  ])('%s : retire le bruit marketing connu sans perdre les caractéristiques distinctives (%s)', (_supplier, raw, expected) => {
+  ])('%s : retire le bruit marketing connu sans perdre les caractéristiques distinctives, sans se déclarer certain (%s)', (_supplier, raw, expected) => {
     const result = canonicalObjectName(raw);
-    expect(result).toEqual({ name: expected, identifiable: true });
+    expect(result).toEqual({ name: expected, noise_removed: true, destroyed: false });
   });
 
-  test('objet non identifiable de façon déterministe : repli sur le nom complet, aucune invention', () => {
+  test('retrait destructeur : repli sur le nom complet, aucune invention, signalé distinctement', () => {
     const result = canonicalObjectName('Hot Sale Free Shipping');
-    expect(result.identifiable).toBe(false);
+    expect(result.destroyed).toBe(true);
     expect(result.name).toBe('Hot Sale Free Shipping');
   });
 
-  test('ambiguïté : un nom déjà propre et sans bruit connu reste inchangé (rien à identifier de plus)', () => {
-    expect(canonicalObjectName('Wireless Headphones')).toEqual({ name: 'Wireless Headphones', identifiable: true });
-    expect(canonicalObjectName('Motorcycle Riding Gloves')).toEqual({ name: 'Motorcycle Riding Gloves', identifiable: true });
+  test('ambiguïté : un nom déjà propre et sans bruit connu reste inchangé, aucun retrait donc aucune revue sur ce seul critère', () => {
+    expect(canonicalObjectName('Wireless Headphones')).toEqual({
+      name: 'Wireless Headphones', noise_removed: false, destroyed: false,
+    });
+    expect(canonicalObjectName('Motorcycle Riding Gloves')).toEqual({
+      name: 'Motorcycle Riding Gloves', noise_removed: false, destroyed: false,
+    });
   });
 
-  test('idempotence : appliquer la fonction au résultat ne change plus rien', () => {
+  test('idempotence : le nom se stabilise ; plus rien à retirer au second passage', () => {
     const inputs = [
       'Hot Sale Wireless Bluetooth Earbuds Free Shipping',
       'New Arrival Waterproof Hiking Backpack 40L High Quality',
@@ -125,17 +132,32 @@ describe('canonicalObjectName : objet + type + distinction, bruit marketing reti
     for (const raw of inputs) {
       const once = canonicalObjectName(raw);
       const twice = canonicalObjectName(once.name);
-      expect(twice).toEqual(once);
+      expect(twice.name).toBe(once.name);
+      // Plus aucun bruit connu à retirer une fois le nom déjà nettoyé.
+      expect(twice.noise_removed).toBe(false);
     }
   });
 
-  test('le nom final en sortie du pipeline complet reflète aussi le nettoyage (wiring)', () => {
+  test('le pipeline complet signale la revue dès qu\'un retrait a eu lieu : candidat conservé, jamais déclaré certain', () => {
     const identity = canonicalizeProductIdentity({
       product_name: 'Hot Sale Wireless Bluetooth Earbuds Free Shipping',
       description: null,
     });
+    // Le candidat nettoyé reste publié (rien n'est perdu)...
     expect(identity.name).toBe('Wireless Bluetooth Earbuds');
-    // Objet identifié malgré le bruit retiré : ce n'est pas la raison de la revue.
+    // ...mais le retrait de bruit n'est jamais présenté comme une preuve
+    // d'identification : la revue est signalée pour cette raison précise.
+    expect(identity.reasons).toContain('OBJECT_IDENTIFICATION_NOT_CANONICALLY_DEMONSTRATED');
+    expect(identity.needs_editorial_review).toBe(true);
+  });
+
+  test('aucun retrait nécessaire : pas de revue signalée sur ce critère (le nom était déjà le candidat)', () => {
+    const identity = canonicalizeProductIdentity({
+      product_name: 'Casque Bluetooth',
+      description: 'Casque sans fil confortable avec réduction de bruit.',
+      source_locale: 'fr',
+    });
+    expect(identity.reasons).not.toContain('OBJECT_IDENTIFICATION_NOT_CANONICALLY_DEMONSTRATED');
     expect(identity.reasons).not.toContain('OBJECT_NOT_DETERMINISTICALLY_IDENTIFIABLE');
   });
 });
