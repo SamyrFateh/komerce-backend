@@ -859,3 +859,8 @@ section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
 role: Journal append-only d'attribution des charges de structure mutualisées (economic_structure_cost_events scope_kind GROUP) aux marchés. Événements ATTRIBUTION/REVERSAL, FK source_event_id, gardes immutabilité et validation reversal.
 -->
 
+
+
+### Boutique commercial object matching (migration 290)
+
+`boutique_subcategories.object_classification_terms` (`jsonb`, non-null, default `{}`) stores administrator-editable weighted object phrases for boutique routing, independent from `customs_categories.classification_terms`. Active boutique categories/subcategories are eligible; only product-title evidence may be used. A unique match can propose a boutique subcategory; ambiguous/no matches remain unresolved. Migration 290 also adds `Auto / Accessoires` when `Auto` is active, without customs affinity. No supplier import, catalogue publication or customs reclassification is performed by this migration.
