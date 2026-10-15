@@ -58,7 +58,10 @@ async function resolveCommercialObjectTaxonomy(q, candidate) {
     score: Math.max(0, ...Object.entries(row.terms || {})
       .filter(([term, weight]) => Number(weight) > 0
         && normalizedObjectWords(term).split(' ').length >= 2
-        && title.includes(' ' + normalizedObjectWords(term) + ' '))
+        && (title.includes(' ' + normalizedObjectWords(term) + ' ')
+          || (normalizedObjectWords(term).startsWith('car ') &&
+            title.includes(' car ') &&
+            title.includes(' ' + normalizedObjectWords(term).slice(4) + ' '))))
       .map(([term, weight]) => Number(weight) + normalizedObjectWords(term).length / 1000)),
   })).filter(hit => hit.score > 0).sort((a, b) => b.score - a.score);
   if (!ranked.length || (ranked[1] && ranked[0].score === ranked[1].score)) {
