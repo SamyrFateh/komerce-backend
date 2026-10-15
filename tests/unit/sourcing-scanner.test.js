@@ -292,6 +292,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
   it('sans prix crée un brouillon Catalogue inactif/non disponible et diffère le prix à la publication', async () => {
     const client = makeClient([
       { rows: [{ state:'scanned', scan_result:{}, product_name:'X', description:'desc EN', komerce_category:'mode', purchase_price_kmf:1000, normalized_source_contract:null }] },
+      { rows: [] }, // SELECT boutique commercial object terms
       { rows: [{ id:'prod-no-price' }] },
       { rows: [] },
       { rows: [] },
@@ -311,6 +312,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
   it('crée le produit toujours en is_active=FALSE même avec un prix fourni explicitement', async () => {
     const client = makeClient([
       { rows: [{ state: 'scanned', scan_result: {}, product_name: 'X', description: 'desc EN', komerce_category: 'mode', purchase_price_kmf: 1000, normalized_source_contract: null }] },
+      { rows: [] }, // SELECT boutique commercial object terms
       { rows: [{ id: 'prod-1' }] }, // INSERT products
       { rows: [] },                 // UPDATE candidate
       { rows: [] },                 // INSERT event
@@ -334,6 +336,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
   it('persiste la donnée source et reste source_only sans appel IA implicite', async () => {
     const client = makeClient([
       { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Power Bank EN', description: 'desc EN', komerce_category: 'tech', purchase_price_kmf: 1000, normalized_source_contract: null }] },
+      { rows: [] }, // SELECT boutique commercial object terms
       { rows: [{ id: 'prod-2' }] },
       { rows: [] },
       { rows: [] },
@@ -371,6 +374,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
 
     const client = makeClient([
       { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Robe', purchase_price_kmf: 1000, normalized_source_contract: contract }] },
+      { rows: [] }, // SELECT boutique commercial object terms
       { rows: [{ id: 'prod-5' }] }, // INSERT products
       { rows: [] },                  // SELECT product_skus existants (Lot 6, aucun)
       { rows: [{ id: 'content-profile-5' }] }, // INSERT product_content_profile (contrat sans champ éditorial)
@@ -405,6 +409,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     const contract = { schema_version: '2', media: [], option_axes: [], sellable_units: [] }; // rejeté : vide explicite
     const client = makeClient([
       { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Robe', purchase_price_kmf: 1000, normalized_source_contract: contract }] },
+      { rows: [] }, // SELECT boutique commercial object terms
       { rows: [{ id: 'prod-6' }] }, // INSERT products
     ]);
     mockGetClient.mockResolvedValue(client);
