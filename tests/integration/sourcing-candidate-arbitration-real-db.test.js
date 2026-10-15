@@ -81,10 +81,8 @@ if (!hasIntegrationEnv) {
       importId = null,
     } = overrides;
 
-    const { rows:[activeCategory] } = await db.query(
-      'SELECT key FROM customs_categories WHERE is_active = TRUE ORDER BY key LIMIT 1'
-    );
-    if (!activeCategory) throw new Error('NO_ACTIVE_CUSTOMS_CATEGORY_FOR_TEST');
+    // Isolated REAL_DB fixture has no seeded customs_categories; the category
+    // key is a test sentinel, not a regulatory rate or product classification.
     await db.query(
       `INSERT INTO sourcing_candidates
          (id, supplier_name, product_name, purchase_price, currency, state, scan_result, import_id, komerce_category)
@@ -96,7 +94,7 @@ if (!hasIntegrationEnv) {
         state,
         scanResult ? JSON.stringify(scanResult) : null,
         importId,
-        activeCategory.key,
+        'integration_test_category',
       ]
     );
     return id;
