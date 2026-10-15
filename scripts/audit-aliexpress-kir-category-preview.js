@@ -60,7 +60,7 @@ async function audit(runRef, productIds = [], deps = {
   query:(...args) => db.query(...args),
   loadConfig:() => pricing.loadGlobalConfig(),
 }) {
-  if (!/^KIR-\\d{6}$/.test(runRef)) throw new Error('KIR_REF_INVALID');
+  if (!/^KIR-\d{6}$/.test(runRef)) throw new Error('KIR_REF_INVALID');
   const {rows:[run]} = await deps.query(
     'SELECT id,run_ref,provider,source_total FROM import_runtime_runs WHERE run_ref=$1',[runRef]);
   if (!run) throw new Error('KIR_NOT_FOUND');
