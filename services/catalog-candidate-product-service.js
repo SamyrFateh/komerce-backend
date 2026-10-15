@@ -37,9 +37,42 @@ function boutiqueTaxonomyFromCandidate(candidate = {}) {
   };
 }
 
+function normalizedObjectWords(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Commercial taxonomy only. Product title is evidence; search keywords and
+// customs scores never nominate a boutique subcategory.
+async function resolveCommercialObjectTaxonomy(q, candidate) {
+  const title = ' ' + normalizedObjectWords(candidate.product_name) + ' ';
+  if (!title.trim()) return { category:null, subcategory:null };
+  const { rows } = await q.query(
+    "SELECT bs.category_key AS category, bs.key AS subcategory, bs.object_classification_terms AS terms " +
+    "FROM boutique_subcategories bs JOIN boutique_categories bc ON bc.key=bs.category_key " +
+    "WHERE bs.is_active=TRUE AND bc.is_active=TRUE " +
+    "AND bs.object_classification_terms <> '{}'::jsonb"
+  );
+  const ranked = rows.map(row => ({
+    row,
+    score: Math.max(0, ...Object.entries(row.terms || {})
+      .filter(([term, weight]) => Number(weight) > 0
+        && normalizedObjectWords(term).split(' ').length >= 2
+        && (title.includes(' ' + normalizedObjectWords(term) + ' ')
+          || (normalizedObjectWords(term).startsWith('car ') &&
+            title.includes(' car ') &&
+            title.includes(' ' + normalizedObjectWords(term).slice(4) + ' '))))
+      .map(([term, weight]) => Number(weight) + normalizedObjectWords(term).length / 1000)),
+  })).filter(hit => hit.score > 0).sort((a, b) => b.score - a.score);
+  if (!ranked.length || (ranked[1] && ranked[0].score === ranked[1].score)) {
+    return { category:null, subcategory:null };
+  }
+  return { category:ranked[0].row.category, subcategory:ranked[0].row.subcategory };
+}
+
 async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
   const requested = boutiqueTaxonomyFromCandidate(candidate);
-  if (!requested.category && !requested.subcategory) return requested;
+  if (!requested.category && !requested.subcategory) return resolveCommercialObjectTaxonomy(q, candidate);
   if (!requested.category || !requested.subcategory) {
     throw new Error('BOUTIQUE_TAXONOMY_INCOMPLETE: target_category + target_subcategory requis ensemble');
   }
@@ -155,4 +188,5 @@ module.exports = {
   sourceLocaleFromCandidate,
   boutiqueTaxonomyFromCandidate,
   resolveActiveBoutiqueTaxonomy,
+  resolveCommercialObjectTaxonomy,
 };

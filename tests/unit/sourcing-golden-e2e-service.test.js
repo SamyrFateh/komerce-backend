@@ -130,7 +130,8 @@ test('Golden traverse ingestion, Resolution, Product/Offer/Unit, catalog SKU et 
   expect(adapter.evaluate).toHaveBeenCalledTimes(1);
 
   const catalogQuery = jest.fn(async (sql) => {
-    expect(sql).toContain("FALSE, 'candidate'");
+    if (sql.includes('INSERT INTO products')) expect(sql).toContain("FALSE, 'candidate'");
+    else expect(sql).toContain('object_classification_terms');
     return { rows: [{ id: 'catalog-draft' }] };
   });
   await expect(createDraftProductFromSourcingCandidate({ query: catalogQuery }, {
