@@ -57,6 +57,11 @@ describe('catalog-candidate-product-service', () => {
       'Chemise',
       'Raw supplier description',
       'en',
+      // 'Raw supplier description' ne porte aucun point final : aucune
+      // phrase factuelle fiable n'est extraite, donc aucune invention —
+      // description publiée nulle, revue éditoriale signalée.
+      null,
+      true,
     ]);
   });
 
@@ -83,7 +88,32 @@ describe('catalog-candidate-product-service', () => {
       'Produit brut',
       null,
       'en',
+      // Aucune description fournisseur : rien n'est fabriqué, revue signalée.
+      null,
+      true,
     ]);
+  });
+
+  it('publie un nom court et une description factuelle quand les faits fournisseur suffisent, sans revue éditoriale', async () => {
+    const q = {
+      query: jest.fn().mockResolvedValue({ rows: [{ id: 'product-4' }] }),
+    };
+
+    await createDraftProductFromSourcingCandidate(q, {
+      candidate: {
+        product_name: 'Casque Bluetooth',
+        description: 'Casque sans fil confortable. Autonomie 20 heures.',
+      },
+      initialPrice: 5000,
+    });
+
+    const params = q.query.mock.calls[0][1];
+    expect(params[0]).toBe('Casque Bluetooth');
+    // Première phrase factuelle extraite telle quelle (rien d'inventé) ;
+    // la description fournisseur complète reste intacte dans description_source.
+    expect(params[12]).toBe('Casque sans fil confortable.');
+    expect(params[13]).toBe(false);
+    expect(params[10]).toBe('Casque sans fil confortable. Autonomie 20 heures.');
   });
 });
 
