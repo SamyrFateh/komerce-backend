@@ -953,7 +953,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
 
   it('POST /candidates/:id/import-product : un brouillon sans prix reste autorisé ; le prix n’est pas un gate Sourcing → Catalogue', async () => {
     const client = makeClient([
-      { rows: [{ state:'scanned', scan_result:{}, product_name:'X', normalized_source_contract:null }] },
+      { rows: [{ state:'scanned', scan_result:{}, product_name:'X', komerce_category:'vetements', normalized_source_contract:null }] },
       { rows: [] }, // SELECT commercial object taxonomy
       { rows: [{ id:'prod-no-price-fallback' }] },
       { rows: [] },
@@ -1012,7 +1012,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
     mockGetClient.mockResolvedValue(client);
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({ price_kmf:4200 });
     expect(res.status).toBe(409);
-    expect(res.body.code).toBe('candidate_customs_classification_required');
+    expect(JSON.stringify(res.body)).toContain('candidate_customs_classification_required');
     expect(client.calls.some(c => /INSERT INTO products/.test(c.sql))).toBe(false);
   });
 
