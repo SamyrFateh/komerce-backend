@@ -18,6 +18,8 @@
 
 'use strict';
 
+const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
+
 function sourceLocaleFromCandidate(candidate = {}) {
   const locale = candidate?.normalized_source_contract?.source_locale;
   if (typeof locale !== 'string') return 'en';
@@ -96,6 +98,19 @@ async function createDraftProductFromSourcingCandidate(q, {
   const hasVariants = hasVariantsFromCandidate(candidate);
   const sourceLocale = sourceLocaleFromCandidate(candidate);
   const boutiqueTaxonomy = await resolveActiveBoutiqueTaxonomy(q, candidate);
+  // Identité client (nom court, description proposée) dérivée mécaniquement
+  // du fournisseur — jamais d'invention, jamais d'IA (DOCTRINE_CATALOGUE.md
+  // §2/§4). La phrase extraite reste une proposition : needs_review signale
+  // la revue tant que la qualité FR n'est pas démontrée ou que la source
+  // n'est pas française. name_source/description_source ci-dessous restent
+  // l'original fournisseur intact, quelle que soit l'identité publiée.
+  const identity = canonicalizeProductIdentity({
+    product_name: candidate.product_name,
+    description: candidate.description,
+    // Même source que la colonne products.source_locale ci-dessous : pas de
+    // second calcul parallèle de la langue (DOCTRINE_CATALOGUE.md §4).
+    source_locale: sourceLocale,
+  });
 
   const prodRes = await q.query(
     `INSERT INTO products (
@@ -107,11 +122,12 @@ async function createDraftProductFromSourcingCandidate(q, {
        weight_kg,
        has_variants,
        is_active, is_available, lifecycle_status,
-       name_source, description_source, source_locale, content_source
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, FALSE, FALSE, 'candidate', $10, $11, $12, 'connector_raw')
+       name_source, description_source, source_locale, content_source,
+       description, needs_review
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, FALSE, FALSE, 'candidate', $10, $11, $12, 'connector_raw', $13, $14)
      RETURNING id`,
     [
-      candidate.product_name,
+      identity.name,
       candidate.komerce_category || 'autre',
       boutiqueTaxonomy.category,
       boutiqueTaxonomy.subcategory,
@@ -123,6 +139,8 @@ async function createDraftProductFromSourcingCandidate(q, {
       candidate.product_name,
       candidate.description || null,
       sourceLocale,
+      identity.description,
+      identity.needs_editorial_review,
     ]
   );
 
