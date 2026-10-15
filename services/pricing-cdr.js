@@ -159,10 +159,16 @@ async function loadGlobalConfig(options = {}) {
   }
 
   // Glossaire éditorial administrable : indice lexical, jamais catégorie imposée.
-  const glossaryRes = await db.query('SELECT term_source, term_fr FROM catalog_glossary WHERE is_active = TRUE');
+  let glossaryRows = [];
+  try {
+    glossaryRows = (await db.query('SELECT term_source, term_fr FROM catalog_glossary WHERE is_active = TRUE')).rows;
+  } catch (_) {
+    // Le glossaire enrichit le classement, mais ne doit jamais empêcher le
+    // calcul des tarifs ou l'import sur une base encore non migrée.
+  }
 
   return {
-    catalog_glossary: glossaryRes.rows,
+    catalog_glossary: glossaryRows,
     finance: fcRes.rows[0] || {},
     categories,
     boutique_customs_affinities: affinityRes.rows,
