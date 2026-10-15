@@ -268,3 +268,24 @@ describe('catalog candidate boutique taxonomy guard', () => {
     expect(q.query).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('human commercial taxonomy confirmation', () => {
+  test('confirmed boutique category wins over title suggestion and does not set customs', async () => {
+    const { resolveActiveBoutiqueTaxonomy } = require('../../services/catalog-candidate-product-service');
+    const q = {query:jest.fn().mockResolvedValue({rows:[{category:'Auto',subcategory:'Accessoires'}]})};
+    const result = await resolveActiveBoutiqueTaxonomy(q,{
+      product_name:'Car Neck Pillow',
+      komerce_category:null,
+      commercial_taxonomy_review:{status:'CONFIRMED',category:'Auto',subcategory:'Accessoires'},
+    });
+    expect(result).toEqual({category:'Auto',subcategory:'Accessoires'});
+    expect(q.query).toHaveBeenCalledTimes(1);
+    expect(q.query.mock.calls[0][1]).toEqual(['Auto','Accessoires']);
+  });
+  test('unconfirmed review never overrides configured matching', async () => {
+    const {boutiqueTaxonomyFromCandidate}=require('../../services/catalog-candidate-product-service');
+    expect(boutiqueTaxonomyFromCandidate({
+      commercial_taxonomy_review:{status:'PROPOSED',category:'Auto',subcategory:'Accessoires'}
+    })).toEqual({category:null,subcategory:null});
+  });
+});
