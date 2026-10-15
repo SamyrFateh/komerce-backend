@@ -42,6 +42,22 @@ function normalizedObjectWords(value) {
     .toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// Match a configured multiword object phrase with up to four intervening
+// descriptors, preserving order (e.g. "car zinc alloy leather key case").
+// A generic word alone never qualifies as an object identity.
+function objectPhraseMatch(title, rawTerm) {
+  const words = normalizedObjectWords(rawTerm).split(' ').filter(Boolean);
+  if (words.length < 2) return false;
+  const tokens = normalizedObjectWords(title).split(' ').filter(Boolean);
+  let position = -1;
+  for (const word of words) {
+    const next = tokens.findIndex((token, index) => index > position && (position < 0 || index <= position + 5) && token === word);
+    if (next < 0) return false;
+    position = next;
+  }
+  return true;
+}
+
 // Commercial taxonomy only. Product title is evidence; search keywords and
 // customs scores never nominate a boutique subcategory.
 async function resolveCommercialObjectTaxonomy(q, candidate) {
@@ -58,10 +74,7 @@ async function resolveCommercialObjectTaxonomy(q, candidate) {
     score: Math.max(0, ...Object.entries(row.terms || {})
       .filter(([term, weight]) => Number(weight) > 0
         && normalizedObjectWords(term).split(' ').length >= 2
-        && (title.includes(' ' + normalizedObjectWords(term) + ' ')
-          || (normalizedObjectWords(term).startsWith('car ') &&
-            title.includes(' car ') &&
-            title.includes(' ' + normalizedObjectWords(term).slice(4) + ' '))))
+        && objectPhraseMatch(title, term))
       .map(([term, weight]) => Number(weight) + normalizedObjectWords(term).length / 1000)),
   })).filter(hit => hit.score > 0).sort((a, b) => b.score - a.score);
   if (!ranked.length || (ranked[1] && ranked[0].score === ranked[1].score)) {
@@ -189,4 +202,5 @@ module.exports = {
   boutiqueTaxonomyFromCandidate,
   resolveActiveBoutiqueTaxonomy,
   resolveCommercialObjectTaxonomy,
+  objectPhraseMatch,
 };
