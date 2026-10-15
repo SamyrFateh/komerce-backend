@@ -18,6 +18,13 @@ const {
 } = require('../../services/pricing-cdr');
 
 describe('pricing-cdr', () => {
+  it('keeps glossary optional on databases without catalog_glossary', async () => {
+    // Guard against a regression in global economic configuration loading.
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/pricing-cdr.js'), 'utf8');
+    expect(src).toContain('catalog_glossary: glossaryRows');
+    expect(src).toContain('SELECT term_source, term_fr FROM catalog_glossary WHERE is_active = TRUE');
+  });
+
   beforeEach(() => jest.clearAllMocks());
 
   it('mappe les categories legacy vers familles/cost types modernes', () => {
