@@ -125,6 +125,12 @@ function nonNegativeIntegerOrNull(value) {
 
 function stripHtml(value) {
   if (!value) return null;
+  // Pas de troncature ici : DOCTRINE_CATALOGUE.md §2 interdit toute
+  // troncature aveugle détruisant l'identification, y compris pour la
+  // description. Le contrat pivot (description.maxLength=10000,
+  // schemas/catalog/normalized-supplier-product.v{1,2}.schema.json) porte
+  // déjà cette borne comme rejet motivé (ING-I1/ING-I2) — même traitement
+  // que product_name ci-dessous.
   return String(value)
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
@@ -134,8 +140,7 @@ function stripHtml(value) {
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 10000) || null;
+    .trim() || null;
 }
 
 function normalizeHttpUrl(value) {
@@ -414,7 +419,13 @@ function normalizeDsProduct(detailResult = {}, feed = {}) {
   const detail = detailResult?.result || detailResult || {};
   const base = detail.ae_item_base_info_dto || {};
   const productId = String(base.product_id || feed.product_id || '').trim() || null;
-  const name = String(base.subject || feed.product_title || '').trim().slice(0, 300);
+  // Pas de troncature ici : DOCTRINE_CATALOGUE.md §2 interdit toute
+  // troncature aveugle détruisant l'identification. Le contrat pivot V2
+  // (schemas/catalog/normalized-supplier-product.v2.schema.json) porte déjà
+  // product_name.maxLength=300 comme borne de rejet motivé (ING-I1/ING-I2,
+  // DOCTRINE_INGESTION_CATALOGUE.md §6/§8) — même contrat que CJ
+  // (cj-connector.js), qui ne tronque pas non plus.
+  const name = String(base.subject || feed.product_title || '').trim();
   const rich = buildRichStructure(productId || 'unknown', detail, feed);
   const skuList = toArray(detail?.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o);
   const skuPrices = skuList.map((sku) => positiveNumberOrNull(sku.offer_sale_price ?? sku.sku_price)).filter(Boolean);

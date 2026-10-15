@@ -307,6 +307,33 @@
     bar.appendChild(csv);
     bar.appendChild(cockpit);
     slot.appendChild(bar);
+    const discoveryBar = doc.createElement('div');
+    discoveryBar.className = 'kmc-workspace-section-actions';
+    const sources = Array.isArray(payload.sources) ? payload.sources : [];
+    for (const [adapter, supplierLabel] of [['cj', 'CJ'], ['aliexpress', 'AliExpress']]) {
+      const source = sources.find(item => item.adapter_type === adapter);
+      const button = makeButton(doc, 'Découvrir 20 ' + supplierLabel, 'discover-' + adapter, true);
+      const ready = Boolean(source && source.status === 'active'
+        && source.connector_ready && source.discovery_ready
+        && source.discovery_enabled && source.sync_enabled && source.import_enabled
+        && !['missing', 'invalid'].includes(source.credential_status));
+      button.disabled = !ready;
+      if (!ready) {
+        button.title = 'Source non prête : vérifier les capacités et identifiants';
+      } else {
+        button.addEventListener('click', () => {
+          if (!context.confirm('Lancer la découverte fournisseur ' + supplierLabel
+            + ' ? Aucun produit ne sera publié automatiquement.')) return;
+          runAction(context, button, {
+            url: ENDPOINT + '/sources/' + encodeURIComponent(source.source_ref) + '/import-now',
+            runningMessage: 'Découverte ' + supplierLabel + ' en cours…',
+            successMessage: 'Import ' + supplierLabel + ' terminé. Consulter les candidats et le cockpit.',
+          });
+        });
+      }
+      discoveryBar.appendChild(button);
+    }
+    slot.appendChild(discoveryBar);
 
     // Un formulaire opérateur unique remplace les fenêtres prompt() en chaîne.
     const panel = doc.createElement('section');

@@ -19,6 +19,7 @@ const {
   resetTokenCacheForTests,
   DEFAULT_DETAIL_DELAY_MS,
 } = require('../../services/suppliers/connectors/cj-connector');
+const { validateNormalizedProduct } = require('../../services/suppliers/normalized-product');
 
 function response(body, status = 200) {
   return {
@@ -117,6 +118,22 @@ describe('cj-connector', () => {
     ]);
     expect(product.raw_payload.cj).toEqual(rawProduct);
     expect(product.raw_payload.source_title).toBe(rawProduct.nameEn);
+  });
+
+  test('ne tronque jamais description — un detail hors borne est rejeté par le contrat, pas mutilé', () => {
+    const longDescription = `<p>${'Détail fournisseur très long '.repeat(400)}FIN-IDENTIFIABLE</p>`;
+    const product = normalizeCjProduct({ ...rawProduct, description: longDescription });
+
+    // Pas de troncature aveugle (DOCTRINE_CATALOGUE.md §2) : la chaîne sort
+    // intacte du connecteur, identique à ce que fait AliExpress.
+    expect(product.description.length).toBeGreaterThan(10000);
+    expect(product.description.endsWith('FIN-IDENTIFIABLE')).toBe(true);
+
+    // Le contrat pivot (description.maxLength=10000) tranche ensuite avec un
+    // rejet motivé (ING-I1/ING-I2), jamais une mutilation silencieuse.
+    const verdict = validateNormalizedProduct(product);
+    expect(verdict.valid).toBe(false);
+    expect(verdict.errors.join(' ')).toMatch(/description trop long/);
   });
 
   test('produit une unité commandable déterministe par VID sans heuristique', () => {

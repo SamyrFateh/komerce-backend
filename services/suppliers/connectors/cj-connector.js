@@ -95,6 +95,12 @@ function parseDeliveryDays(value) {
 
 function stripHtml(value) {
   if (!value) return null;
+  // Pas de troncature ici : DOCTRINE_CATALOGUE.md §2 interdit toute
+  // troncature aveugle détruisant l'identification, y compris pour la
+  // description. Le contrat pivot (description.maxLength=10000,
+  // schemas/catalog/normalized-supplier-product.v{1,2}.schema.json) porte
+  // déjà cette borne comme rejet motivé (ING-I1/ING-I2) — même traitement
+  // que product_name (aliexpress-connector.js).
   return String(value)
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
@@ -104,8 +110,7 @@ function stripHtml(value) {
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 10000) || null;
+    .trim() || null;
 }
 
 function categoryLabel(raw = {}) {

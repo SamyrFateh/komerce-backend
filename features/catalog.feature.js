@@ -184,6 +184,7 @@ module.exports = {
       'services/catalog-promotion/sku.js',
       'services/catalog-promotion/sku-media.js',
       'services/catalog-promotion/content.js',
+      'services/catalog-promotion/editorial-identity.js',
       'services/suppliers/normalized-product.js',
       'services/suppliers/managed-file-contract.js',
       'services/suppliers/internal-managed-template-model.js',

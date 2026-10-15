@@ -14,6 +14,7 @@ const {
   looksFrench,
   controlledClaims,
   evaluateFrenchCopy,
+  MARKETING_NOISE,
 } = require('../../services/catalog-fr-quality');
 
 describe('catalog FR quality contract', () => {
@@ -101,5 +102,15 @@ describe('catalog FR quality contract', () => {
     });
     expect(result.ok).toBe(false);
     expect(result.blocking).toContain('critical_source_claim_omitted');
+  });
+
+  // MARKETING_NOISE est désormais exportée pour réutilisation hors module
+  // (services/catalog-promotion/editorial-identity.js) : même liste, pas de
+  // seconde définition parallèle du bruit commercial.
+  test('exporte MARKETING_NOISE pour réutilisation hors module, sans changer evaluateFrenchCopy', () => {
+    expect(Array.isArray(MARKETING_NOISE)).toBe(true);
+    expect(MARKETING_NOISE.every((pattern) => pattern instanceof RegExp)).toBe(true);
+    expect(MARKETING_NOISE.some((pattern) => pattern.test('Hot Sale'))).toBe(true);
+    expect(MARKETING_NOISE.some((pattern) => pattern.test('Free Shipping'))).toBe(true);
   });
 });
