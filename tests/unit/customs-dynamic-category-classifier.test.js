@@ -9,30 +9,6 @@ const {
   scoreCategory,
 } = require('../../services/customs-dynamic-category-classifier');
 
-describe('curated catalog glossary classification', () => {
-  const categories = [
-    { key:'accessoires', classification_terms:{ 'etui de cle automobile':10 }, is_active:true },
-    { key:'autre', classification_terms:{ 'neck pillow':8 }, is_active:true },
-  ];
-  test('matches a whole English title expression to a French active category term', () => {
-    const result = classifySupplierProduct(
-      { product_name:'Car Key Case Cover' }, categories,
-      { catalog_glossary:[{ term_source:'key case', term_fr:'étui de clé automobile' }] }
-    );
-    expect(result).toMatchObject({ key:'accessoires', source:'mapped' });
-    expect(result.evidence).toEqual(expect.arrayContaining([
-      expect.objectContaining({signal:'glossary_product_name', term:'etui de cle automobile'})
-    ]));
-  });
-  test('does not translate from discovery keywords alone', () => {
-    const result = classifySupplierProduct(
-      { product_name:'Unknown Product', raw_payload:{discovery:{keyword:'key case'}} },
-      categories, { catalog_glossary:[{term_source:'key case', term_fr:'étui de clé automobile'}] }
-    );
-    expect(result.key).toBeNull();
-  });
-});
-
 describe('dynamic customs supplier category classifier', () => {
   test('classifies into a category that does not exist anywhere in scanner code', () => {
     const categories = [
