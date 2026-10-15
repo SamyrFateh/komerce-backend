@@ -580,6 +580,24 @@ test('AGRÉGAT → POPULATION → OBJET : une ligne produit ouvre son détail da
   expect(html).toContain('Aucune fiche Catalogue créée à ce stade.');
 });
 
+test('fiche Raffinerie affiche les deux revues sans inventer une validation', () => {
+  const p = scenario();
+  p.item_trace = {
+    run_ref:RUN,supplier_product_id:'SP-1',product_name:'Coussin voiture',
+    refinery:{done:true},canonical_category:null,product_ref:null,
+    certification:{outcome:'deferred',sourcing_certified:false,decision:'WATCH'},
+    commercial_review:{status:'PENDING_CLASSIFICATION',action:'REVIEW_BOUTIQUE_TAXONOMY'},
+    customs_review:{status:'REQUIRED',category_key:null,calculation_allowed:false,publication_allowed:false},
+    catalogue_status:'scanned',
+  };
+  const html = render(p, `?run=${RUN}&view=item&kind=deferred&item=SP-1`);
+  expect(html).toContain('Classement commercial');
+  expect(html).toContain('À confirmer dans Sourcing');
+  expect(html).toContain('Douane et calcul');
+  expect(html).toContain('À qualifier — calcul et publication interdits');
+  expect(html).toContain('Aucune fiche Catalogue créée');
+});
+
 test('OBJET remis au Catalogue : ouvre la fiche Catalogue avec retour exact vers l’objet du passage', () => {
   const p = scenario({ catalogued:1 });
   p.item_trace = {
