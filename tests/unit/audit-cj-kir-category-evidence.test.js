@@ -105,6 +105,57 @@ describe('audit CJ KIR : preuve brute et comparaison taxonomie en lecture seule'
     expect(result.items).toHaveLength(1);
   });
 
+  test('qualifie les écarts déjà calculés en défauts TAXONOMY, sans nouveau moteur ni rejet', () => {
+    const accepted=row('Wireless Headphones', {
+      candidate_ref:'KSC-000010',komerce_category:'home',
+      supplier_category:'Consumer Electronics > Audio > Headphones',
+      scan_result:{sourcing_decision:'TEST'},
+    });
+    const noDetails=row('No details product',{candidate_ref:'KSC-000101',
+      supplier_product_id:'CJ-002',supplier_category:null,description:null,
+      raw_payload:{cj:{nameEn:'No details product'}},
+      scan_result:{sourcing_decision:'WATCH',reason:'Catégorie Komerce non résolue'}});
+    const evidence=audit.projectEvidence([accepted,row('Key Box'),noDetails],config);
+    const defects=audit.qualifyTaxonomyDefects(evidence);
+
+    // Candidat déjà accepté (TEST) dont le classement actuel diverge du
+    // référentiel courant : la divergence peut venir d'un override humain
+    // légitime, donc editorial_review tant qu'aucune preuve explicite ne
+    // justifie blocking_review (DOCTRINE_CATALOGUE.md §3, ING-I2).
+    expect(defects).toContainEqual(expect.objectContaining({
+      category:'TAXONOMY',severity:'editorial_review',candidate_ref:'KSC-000010',
+      cause:'classification_deja_acceptee_divergente_du_referentiel_actuel',
+    }));
+    // Candidat différé avec vocabulaire fournisseur exploitable : constat
+    // informatif, pas un rejet.
+    expect(defects).toContainEqual(expect.objectContaining({
+      category:'TAXONOMY',severity:'informational',candidate_ref:'KSC-000100',
+      cause:'referentiel_actif_desormais_suffisant',
+    }));
+    // Candidat sans aucune donnée fournisseur de catégorie : défaut
+    // éditorial à revoir, pas une anomalie bloquante.
+    expect(defects).toContainEqual(expect.objectContaining({
+      category:'TAXONOMY',severity:'editorial_review',candidate_ref:'KSC-000101',
+      cause:'categorie_fournisseur_absente',
+    }));
+    expect(defects).toHaveLength(3);
+  });
+
+  test('auditRun expose taxonomy_defects issu du même diagnostic, en lecture seule', async () => {
+    const query=jest.fn()
+      .mockResolvedValueOnce({rows:[{
+        id:'d66126e2-9f0a-4a9f-b74f-f5956de3d719',run_ref:'KIR-000003',
+        provider:'CJdropshipping',source_total:20,intake:{deferred:12},
+      }]})
+      .mockResolvedValueOnce({rows:[row('Key Box')]});
+    const loadConfig=jest.fn().mockResolvedValue(config);
+    const result=await audit.auditRun('KIR-000003',{query,loadConfig});
+    expect(result.taxonomy_defects).toEqual([expect.objectContaining({
+      category:'TAXONOMY',candidate_ref:'KSC-000100',
+    })]);
+    expect(result.db_writes).toBe(0);
+  });
+
   test('fail closed sur KIR invalide et sur fournisseur autre que CJ', async () => {
     await expect(audit.auditRun('KIR-000003; DROP TABLE',{})).rejects.toThrow('KIR_REF_INVALID');
     const query=jest.fn().mockResolvedValueOnce({rows:[{
