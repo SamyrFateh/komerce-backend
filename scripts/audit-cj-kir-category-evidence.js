@@ -49,6 +49,36 @@ function sourceCategories(rawPayload) {
   };
 }
 
+// Contre-épreuve historique V2 : l'ancien moteur utilisait toute la catégorie
+// fournisseur à plat. Ce calcul n'est JAMAIS une décision opérationnelle et
+// ne restaure pas l'ancienne classification ; il mesure uniquement la source
+// probable d'une divergence à configuration actuelle identique.
+function flatSupplierRanking(row, categories, classify = classifier) {
+  const raw=asObject(row.raw_payload);
+  const discovery=asObject(raw.discovery);
+  const signals=[
+    {name:'product_name',value:row.product_name,multiplier:6},
+    {name:'supplier_category',value:row.supplier_category,multiplier:4},
+    {name:'description',value:row.description,multiplier:2},
+    {name:'keyword',value:discovery.keyword,multiplier:2},
+    {name:'target_subcategory',value:discovery.target_subcategory,multiplier:1},
+  ].filter(x=>String(x.value || '').trim());
+  const ranking=categories.map(category=>classify.scoreCategory(category,signals))
+    .filter(x=>x.score>0)
+    .sort((a,b)=>b.score-a.score || (Number(a.category.display_order||999)-Number(b.category.display_order||999)));
+  const top=ranking[0],second=ranking[1];
+  const confidence=classify.confidenceFor(top?.score||0,second?.score||0);
+  return {
+    candidate_key:top?.category?.key||null,score:top?.score||0,confidence,
+    would_map:confidence!=='low',
+    evidence:(top?.evidence||[]).slice(0,6).map(x=>({
+      signal:x.signal,term:shorten(x.term,100),contribution:x.contribution,
+    })),
+    runner_up_key:second?.category?.key||null,
+    runner_up_score:second?.score||0,
+  };
+}
+
 function projectEvidence(rows, config, classify = classifier) {
   const categories = Object.values(config.categories || {})
     .filter(c => c && c.key !== 'default' && c.is_active !== false);
@@ -57,8 +87,11 @@ function projectEvidence(rows, config, classify = classifier) {
     provider_category_paths:{}, possible_gaps:{},
     with_cj_raw:0, with_supplier_category:0, with_lexical_candidate:0,
     accepted_baseline:0, accepted_category_drift:0, accepted_category_drift_examples:[],
+    accepted_legacy_flat_matches:0, accepted_legacy_flat_not_reproduced:0,
+    accepted_source_distribution:{},
   };
   const items = [];
+  const accepted_shadow=[];
   for (const row of rows) {
     const raw = asObject(row.raw_payload);
     const scan = asObject(row.scan_result);
@@ -69,19 +102,49 @@ function projectEvidence(rows, config, classify = classifier) {
       // dans une simulation pure, AVANT toute adoption du moteur amélioré.
       if (decision === 'TEST' || decision === 'PRIORITY') {
         summary.accepted_baseline++;
-        const preview=classify.classifySupplierProduct({
+        const original = {
           product_name:row.product_name,supplier_category:row.supplier_category,
-          description:row.description,raw_payload:asObject(row.raw_payload),
-        }, categories, {
+          description:row.description,raw_payload:raw,
+        };
+        const preview=classify.classifySupplierProduct(original, categories, {
           boutique_customs_affinities:config.boutique_customs_affinities || [],
         });
-        if (preview.key !== row.komerce_category || preview.source === 'default') {
+        const flat=flatSupplierRanking(row,categories,classify);
+        const persisted=shorten(row.komerce_category,80)||null;
+        const origin=shorten(asObject(row.data_sources).category,60)||'unknown';
+        tally(summary.accepted_source_distribution,origin);
+        if (flat.would_map && flat.candidate_key===persisted) summary.accepted_legacy_flat_matches++;
+        else summary.accepted_legacy_flat_not_reproduced++;
+        const differs=preview.key!==persisted || preview.source==='default';
+        const entry={
+          candidate_ref:shorten(row.candidate_ref,80),
+          supplier_product_id:shorten(row.supplier_product_id,120),
+          object_name:shorten(row.product_name,220),
+          supplier_category_saved:shorten(row.supplier_category,260)||null,
+          cj:sourceCategories(raw),
+          stored:{category:persisted,origin,decision,
+            state:shorten(row.state,48)},
+          previous_flat_scoring:flat,
+          current_preview:{category:preview.key||null,source:preview.source,
+            confidence:preview.confidence,reason:preview.reason,
+            score:preview.score,
+            evidence:(preview.evidence||[]).slice(0,6).map(x=>({
+              signal:x.signal||null,term:shorten(x.term,100),
+              contribution:x.contribution??null,
+            }))},
+          category_drift:differs,
+          historical_comparison:flat.would_map && flat.candidate_key===persisted
+            ? 'PREVIOUS_FLAT_SCORING_REPRODUCES_STORED'
+            : 'STORED_NOT_REPRODUCED_BY_PREVIOUS_FLAT_SCORING',
+        };
+        accepted_shadow.push(entry);
+        if (differs) {
           summary.accepted_category_drift++;
           summary.accepted_category_drift_examples.push({
-            candidate_ref:shorten(row.candidate_ref,80),
-            before:shorten(row.komerce_category,80) || null,
-            preview:preview.key || null,
-            reason:preview.reason,
+            candidate_ref:entry.candidate_ref,before:persisted,
+            preview:entry.current_preview.category,reason:preview.reason,
+            object_name:entry.object_name,category_origin:origin,
+            historical_comparison:entry.historical_comparison,
           });
         }
       }
@@ -131,7 +194,7 @@ function projectEvidence(rows, config, classify = classifier) {
       })),
     });
   }
-  return {summary,items};
+  return {summary,items,accepted_shadow};
 }
 
 // Qualifie en TAXONOMY (seule catégorie Raffinerie que ce diagnostic peut
@@ -218,7 +281,7 @@ async function auditRun(runRef, deps = {
         key:shorten(cat.key,80),label:shorten(cat.label || cat.key,120),
         classification_terms:Object.keys(asObject(cat.classification_terms)).slice(0,80),
       })),
-    note:'READ ONLY. Aucun appel API CJ, aucune modification DB, aucune reclassification. Les décisions des candidats sont leur état actuel (modifiable depuis le passage). Les scores PREVIEW utilisent le référentiel actif actuellement et ne remplacent pas la preuve historique. accepted_category_drift doit être égal à zéro avant tout re-scan opérationnel.',
+    note:'READ ONLY. Aucun appel API CJ, aucune modification DB, aucune reclassification. Toutes les simulations utilisent le référentiel actuel ; previous_flat_scoring reproduit le mode de pondération fournisseur à plat du moteur V2, pas un ancien snapshot du référentiel. Les candidats sont mutables depuis le passage. category_drift non nul bloque toute reclassification automatique jusqu’à validation de ses causes.',
     provider_api_calls:0,db_writes:0,
   };
 }
@@ -229,4 +292,4 @@ if (require.main===module) {
     .catch(error=>{console.error('[AUDIT-CJ-KIR] '+error.message);process.exitCode=1;})
     .finally(()=>db.pool.end());
 }
-module.exports={sourceCategories,projectEvidence,qualifyTaxonomyDefects,auditRun};
+module.exports={sourceCategories,flatSupplierRanking,projectEvidence,qualifyTaxonomyDefects,auditRun};
