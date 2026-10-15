@@ -11,7 +11,35 @@ const {
   hasVariantsFromCandidate,
   draftPurchaseCostFromCandidate,
   draftStockFromCandidate,
+  resolveCommercialObjectTaxonomy,
 } = require('../../services/catalog-candidate-product-service');
+
+describe('commercial object routing — independent of customs', () => {
+  const q = { query: jest.fn().mockResolvedValue({rows:[
+    {category:'Auto',subcategory:'Accessoires',terms:{'car key case':12,'car neck pillow':12}},
+    {category:'Tech',subcategory:'Phones',terms:{'phone case':12}},
+  ]}) };
+  beforeEach(() => q.query.mockClear());
+  it('routes key cases and neck pillows to generic Auto accessories', async () => {
+    expect(await resolveCommercialObjectTaxonomy(q,{product_name:'Car Zinc Alloy Leather Key Case Cover'}))
+      .toEqual({category:'Auto',subcategory:'Accessoires'});
+    expect(await resolveCommercialObjectTaxonomy(q,{product_name:'Car Neck Pillow Memory Foam'}))
+      .toEqual({category:'Auto',subcategory:'Accessoires'});
+  });
+  it('does not invent a category from car alone or discovery search terms', async () => {
+    expect(await resolveCommercialObjectTaxonomy(q,{product_name:'Toy Car Model',
+      raw_payload:{discovery:{keyword:'car key case'}}}))
+      .toEqual({category:null,subcategory:null});
+  });
+  it('fails closed on ambiguous identical scores', async () => {
+    const ambiguous = {query:jest.fn().mockResolvedValue({rows:[
+      {category:'Auto',subcategory:'Accessoires',terms:{'car key case':12}},
+      {category:'Tech',subcategory:'Phones',terms:{'car key case':12}},
+    ]})};
+    expect(await resolveCommercialObjectTaxonomy(ambiguous,{product_name:'Car Key Case'}))
+      .toEqual({category:null,subcategory:null});
+  });
+});
 
 describe('catalog-candidate-product-service', () => {
   it('creates the inactive candidate product through the injected transaction client', async () => {
@@ -67,7 +95,7 @@ describe('catalog-candidate-product-service', () => {
 
   it('preserves historical catalog fallbacks', async () => {
     const q = {
-      query: jest.fn().mockResolvedValue({ rows: [{ id: 'product-2' }] }),
+      query: jest.fn().mockImplementation(sql => Promise.resolve(sql.includes('INSERT INTO products') ? { rows:[{id:'product-2'}] } : {rows:[]})),
     };
 
     await createDraftProductFromSourcingCandidate(q, {
@@ -75,7 +103,7 @@ describe('catalog-candidate-product-service', () => {
       initialPrice: 900,
     });
 
-    expect(q.query.mock.calls[0][1]).toEqual([
+    expect(q.query.mock.calls[1][1]).toEqual([
       'Produit brut',
       'autre',
       null,
@@ -96,7 +124,7 @@ describe('catalog-candidate-product-service', () => {
 
   it('publie un nom court et une description proposée sans revue quand la source est française et démontrée', async () => {
     const q = {
-      query: jest.fn().mockResolvedValue({ rows: [{ id: 'product-4' }] }),
+      query: jest.fn().mockImplementation(sql => Promise.resolve(sql.includes('INSERT INTO products') ? { rows:[{id:'product-4'}] } : {rows:[]})),
     };
 
     await createDraftProductFromSourcingCandidate(q, {
@@ -110,7 +138,7 @@ describe('catalog-candidate-product-service', () => {
       initialPrice: 5000,
     });
 
-    const params = q.query.mock.calls[0][1];
+    const params = q.query.mock.calls[1][1];
     expect(params[0]).toBe('Casque Bluetooth');
     // Première phrase extraite telle quelle (rien d'inventé), démontrée FR
     // par looksFrench/englishResidues (pas par la seule ponctuation) ;
@@ -122,7 +150,7 @@ describe('catalog-candidate-product-service', () => {
 
   it('signale une revue pour une source non française même si une phrase s\'extrait proprement (DOCTRINE_CATALOGUE §4)', async () => {
     const q = {
-      query: jest.fn().mockResolvedValue({ rows: [{ id: 'product-5' }] }),
+      query: jest.fn().mockImplementation(sql => Promise.resolve(sql.includes('INSERT INTO products') ? { rows:[{id:'product-5'}] } : {rows:[]})),
     };
 
     await createDraftProductFromSourcingCandidate(q, {
@@ -136,7 +164,7 @@ describe('catalog-candidate-product-service', () => {
       initialPrice: 3000,
     });
 
-    const params = q.query.mock.calls[0][1];
+    const params = q.query.mock.calls[1][1];
     // La proposition reste disponible (rien n'est perdu)...
     expect(params[12]).toBe('Comfortable wireless headset.');
     // ...mais jamais déclarée prête sans revue.
