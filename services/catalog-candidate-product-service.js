@@ -28,6 +28,10 @@ function sourceLocaleFromCandidate(candidate = {}) {
 }
 
 function boutiqueTaxonomyFromCandidate(candidate = {}) {
+  const confirmed = candidate?.commercial_taxonomy_review;
+  if (confirmed?.status === 'CONFIRMED' && confirmed.category && confirmed.subcategory) {
+    return { category: confirmed.category, subcategory: confirmed.subcategory };
+  }
   const discovery = candidate?.raw_payload?.discovery || {};
   const category = String(discovery.target_category || '').trim() || null;
   const subcategory = String(discovery.target_subcategory || '').trim() || null;
