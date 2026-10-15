@@ -81,10 +81,14 @@ if (!hasIntegrationEnv) {
       importId = null,
     } = overrides;
 
+    const { rows:[activeCategory] } = await db.query(
+      'SELECT key FROM customs_categories WHERE is_active = TRUE ORDER BY key LIMIT 1'
+    );
+    if (!activeCategory) throw new Error('NO_ACTIVE_CUSTOMS_CATEGORY_FOR_TEST');
     await db.query(
       `INSERT INTO sourcing_candidates
-         (id, supplier_name, product_name, purchase_price, currency, state, scan_result, import_id)
-       VALUES ($1, $2, $3, 100, 'AED', $4, $5::jsonb, $6)`,
+         (id, supplier_name, product_name, purchase_price, currency, state, scan_result, import_id, komerce_category)
+       VALUES ($1, $2, $3, 100, 'AED', $4, $5::jsonb, $6, $7)`,
       [
         id,
         `E2E Sourcing Fournisseur ${RUN_TAG}-${seedCounter}`,
@@ -92,6 +96,7 @@ if (!hasIntegrationEnv) {
         state,
         scanResult ? JSON.stringify(scanResult) : null,
         importId,
+        activeCategory.key,
       ]
     );
     return id;
