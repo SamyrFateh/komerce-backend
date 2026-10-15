@@ -690,6 +690,29 @@ describe('trace produit : justification de la décision Sourcing', () => {
     expect(q.query.mock.calls[1][0]).toContain('sc.scan_result');
   });
 
+  test('trace produit sépare les revues commerciale et douanière persistées', async () => {
+    const row = candidate(1, {
+      state:'scanned',
+      scan_result:{
+        sourcing_decision:'WATCH',
+        reason:'Catégorie Komerce non résolue — décision impossible.',
+        commercial_review:{status:'PENDING_CLASSIFICATION',action:'REVIEW_BOUTIQUE_TAXONOMY'},
+        customs_review:{status:'REQUIRED',category_key:null,calculation_allowed:false,publication_allowed:false},
+      },
+    });
+    const q = { query:jest.fn()
+      .mockResolvedValueOnce({rows:[{...baseRun(),id:'run-id'}]})
+      .mockResolvedValueOnce({rows:[row]}) };
+    const trace = await runs.getProductTrace('KIR-000001','SP-1',q);
+    expect(trace.commercial_review).toEqual({
+      status:'PENDING_CLASSIFICATION',action:'REVIEW_BOUTIQUE_TAXONOMY',
+    });
+    expect(trace.customs_review).toEqual({
+      status:'REQUIRED',category_key:null,calculation_allowed:false,publication_allowed:false,
+    });
+    expect(trace.certification.outcome).toBe('deferred');
+  });
+
   test('motif absent : renvoie null, jamais une explication métier inventée', async () => {
     const row = candidate(1, { state:'watchlist', scan_result:{ sourcing_decision:'WATCH' } });
     const q = { query: jest.fn()

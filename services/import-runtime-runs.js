@@ -1092,6 +1092,20 @@ async function getProductTrace(runRef, supplierProductId, q = db) {
       recommended_action: scanText(scan.recommended_action),
       human_action: deferredHumanAction(row, verdict),
     },
+    commercial_review: scan.commercial_review && typeof scan.commercial_review === 'object'
+      ? {
+        status: scanText(scan.commercial_review.status),
+        action: scanText(scan.commercial_review.action),
+      }
+      : null,
+    customs_review: scan.customs_review && typeof scan.customs_review === 'object'
+      ? {
+        status: scanText(scan.customs_review.status),
+        category_key: scanText(scan.customs_review.category_key),
+        calculation_allowed: scan.customs_review.calculation_allowed === true,
+        publication_allowed: scan.customs_review.publication_allowed === true,
+      }
+      : null,
     catalogue_status: row.state,
   };
 }
