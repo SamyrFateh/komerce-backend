@@ -100,11 +100,11 @@ function mapCategory(supplierCat, komerceCats, boutiqueCustomsAffinities = []) {
   );
 }
 
-function mapProductCategory(product, komerceCats, boutiqueCustomsAffinities = [], catalogGlossary = []) {
+function mapProductCategory(product, komerceCats, boutiqueCustomsAffinities = []) {
   return classifySupplierProduct(
     product,
     komerceCats,
-    { boutique_customs_affinities: boutiqueCustomsAffinities, catalog_glossary: catalogGlossary }
+    { boutique_customs_affinities: boutiqueCustomsAffinities }
   );
 }
 
@@ -155,7 +155,7 @@ async function normalizeCandidate(product, options = {}) {
   const config = options.config || (await pricingEngine.loadGlobalConfig());
   const komerceCats = Object.values(config.categories || {});
   const dataSources = {};
-  const catMap = mapProductCategory(product, komerceCats, config.boutique_customs_affinities || [], config.catalog_glossary || []);
+  const catMap = mapProductCategory(product, komerceCats, config.boutique_customs_affinities || []);
   const komerceCategory = catMap.key;
   dataSources.category = catMap.source;
   const purchasePriceKmf = convertToKMF(product.purchase_price, product.currency, config.finance);
