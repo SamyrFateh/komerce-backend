@@ -197,6 +197,51 @@ function projectEvidence(rows, config, classify = classifier) {
   return {summary,items,accepted_shadow};
 }
 
+// Qualifie en TAXONOMY (seule catégorie Raffinerie que ce diagnostic peut
+// prouver) les écarts déjà calculés par projectEvidence — aucune nouvelle
+// lecture, aucun nouveau moteur de classement, aucun rejet. IDENTITY/
+// CONTENT/MEDIA/STRUCTURE ne sont pas qualifiés ici faute de preuve
+// disponible dans ce diagnostic (DOCTRINE_CATALOGUE.md §3 : ne qualifier
+// que les défauts démontrables).
+const GAP_CAUSE = Object.freeze({
+  CJ_RAW_NOT_PRESENT:'donnee_source_cj_absente',
+  CJ_CATEGORY_NOT_PRESENT:'categorie_fournisseur_absente',
+  NO_TAXONOMY_TERM_MATCH:'vocabulaire_taxonomie_insuffisant',
+  OBJECT_IDENTITY_UNCONFIRMED:'identite_objet_non_confirmee',
+  AMBIGUOUS_OR_LOW_CONFIDENCE:'classement_ambigu_ou_peu_confiant',
+});
+function qualifyTaxonomyDefects({summary,items}) {
+  const defects=[];
+  for (const item of items || []) {
+    if (item.possible_gap === 'MAPPING_AVAILABLE_ON_CURRENT_RULES') {
+      defects.push({category:'TAXONOMY',severity:'informational',
+        candidate_ref:item.candidate_ref,
+        evidence:`gap=${item.possible_gap}; preview=${item.preview_using_current_config.category}`,
+        cause:'referentiel_actif_desormais_suffisant',
+        recommended_action:'proposer_reclassement_pour_validation_humaine'});
+    } else if (item.possible_gap) {
+      defects.push({category:'TAXONOMY',severity:'editorial_review',
+        candidate_ref:item.candidate_ref,
+        evidence:`gap=${item.possible_gap}`,
+        cause:GAP_CAUSE[item.possible_gap] || item.possible_gap.toLowerCase(),
+        recommended_action:'classification_manuelle_requise_avant_scan'});
+    }
+  }
+  for (const example of (summary && summary.accepted_category_drift_examples) || []) {
+    // editorial_review par défaut : la divergence peut venir d'une
+    // correction humaine historique légitime (override) aussi bien que
+    // d'un référentiel qui a évolué. Rien ici ne prouve lequel des deux —
+    // seule une revue humaine peut trancher, jamais blocking_review sans
+    // preuve explicite (ING-I2 : jamais deviner en silence).
+    defects.push({category:'TAXONOMY',severity:'editorial_review',
+      candidate_ref:example.candidate_ref,
+      evidence:`before=${example.before}; preview=${example.preview}; reason=${example.reason}`,
+      cause:'classification_deja_acceptee_divergente_du_referentiel_actuel',
+      recommended_action:'revalider_categorie_avant_promotion_catalogue'});
+  }
+  return defects;
+}
+
 async function auditRun(runRef, deps = {
   query:(...args)=>db.query(...args),loadConfig:()=>pricing.loadGlobalConfig(),
 }) {
@@ -222,10 +267,12 @@ async function auditRun(runRef, deps = {
      WHERE r.id=$1 ORDER BY sc.candidate_ref LIMIT 101`, [run.id]);
   if (rows.length>100) throw new Error('AUDIT_LIMIT_100');
   const config=await deps.loadConfig();
+  const evidence=projectEvidence(rows,config);
   return {
     run_ref:run.run_ref, source:'CJdropshipping',
     recorded:{received:Number(run.source_total)||0,deferred:Number(asObject(run.intake).deferred)||0},
-    ...projectEvidence(rows,config),
+    ...evidence,
+    taxonomy_defects:qualifyTaxonomyDefects(evidence),
     // Inventaire nécessaire pour distinguer « vocabulaire manquant » de
     // « catégorie douanière absente ». Aucun prix, taux, marge ni secret.
     active_taxonomy:Object.values(config.categories || {})
@@ -245,4 +292,4 @@ if (require.main===module) {
     .catch(error=>{console.error('[AUDIT-CJ-KIR] '+error.message);process.exitCode=1;})
     .finally(()=>db.pool.end());
 }
-module.exports={sourceCategories,flatSupplierRanking,projectEvidence,auditRun};
+module.exports={sourceCategories,flatSupplierRanking,projectEvidence,qualifyTaxonomyDefects,auditRun};
