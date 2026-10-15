@@ -92,9 +92,7 @@ function supplierSignals(product = {}) {
   ].filter(signal => String(signal.value || '').trim());
 }
 
-// Une traduction attestée du titre fournisseur est une preuve d'identité objet,
-// contrairement au mot-clé de recherche ou à la catégorie racine.
-const IDENTITY_SIGNALS = new Set(['product_name', 'supplier_category', 'supplier_category_leaf', 'glossary_product_name']);
+const IDENTITY_SIGNALS = new Set(['product_name', 'supplier_category', 'supplier_category_leaf']);
 
 function hasObjectEvidence(result) {
   return result.evidence.some(row => IDENTITY_SIGNALS.has(row.signal));
@@ -181,14 +179,6 @@ function classifySupplierProduct(product, categories = [], options = {}) {
   const activeKeys = new Set(active.map(category => String(category.key || '')).filter(Boolean));
   const affinity = resolveBoutiqueAffinity(product, options.boutique_customs_affinities, activeKeys);
   const signals = supplierSignals(product);
-  // Extension par expressions complètes du glossaire actif : aucun dictionnaire parallèle.
-  // Ne jamais traduire à partir d'un simple keyword de découverte.
-  const title = String(product?.product_name || '');
-  const glossary = Array.isArray(options.catalog_glossary) ? options.catalog_glossary : [];
-  const translated = [...new Set(glossary.filter(row =>
-    row && phrasePresent(title, row.term_source) && String(row.term_fr || '').trim()
-  ).map(row => String(row.term_fr).trim()))];
-  if (translated.length) signals.push({ name:'glossary_product_name', value:translated.join(' ; '), multiplier:4 });
 
   if (!active.length) {
     return {
