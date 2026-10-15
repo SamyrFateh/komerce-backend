@@ -802,7 +802,7 @@
       enabled, displayEnabled, canToggle, busy, badge, reason, step, providerGateBlocked,
       name: source.label || source.supplier_name || source.source_ref,
       lastRun,
-      canFirstImport: source.state === 'ready' && !enabled && !lastRun,
+      canFirstImport: source.state === 'ready' && !enabled && !busy,
       firstImportPending,
     };
   }
@@ -1006,7 +1006,7 @@
       ${m.reason ? `<p class="kir-source-reason" data-source-reason>${esc(m.reason)}</p>` : ''}
       ${m.busy ? '' : credentialsPanel(source, { context:'card' })}
       ${m.step ? `<button type="button" class="kir-source-step" data-source-step="${m.step.action}" data-source-ref="${esc(source.source_ref)}">${m.step.label}</button>` : ''}
-      ${m.canFirstImport ? `<button type="button" class="kir-source-first-import" data-source-first-import data-source-ref="${esc(source.source_ref)}" ${m.firstImportPending ? 'disabled aria-busy="true"' : ''}>${m.firstImportPending ? 'Lancement du passage…' : 'Lancer le premier passage'}</button>` : ''}
+      ${m.canFirstImport ? `<button type="button" class="kir-source-first-import" data-source-first-import data-source-ref="${esc(source.source_ref)}">${m.lastRun ? 'Lancer un nouveau passage' : 'Lancer le premier passage'}</button>` : ''}
       ${firstImportState?.sourceRef === source.source_ref && firstImportState.error ? `<p class="kir-source-first-error" role="alert">${esc(firstImportState.error)}</p>` : ''}
       ${m.lastRun ? `<a class="kir-source-follow" href="${urlFor(m.lastRun)}" data-cockpit-nav>Voir le suivi →</a>` : ''}
     </article>`;
