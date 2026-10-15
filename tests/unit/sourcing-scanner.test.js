@@ -954,6 +954,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
   it('POST /candidates/:id/import-product : un brouillon sans prix reste autorisé ; le prix n’est pas un gate Sourcing → Catalogue', async () => {
     const client = makeClient([
       { rows: [{ state:'scanned', scan_result:{}, product_name:'X', normalized_source_contract:null }] },
+      { rows: [] }, // SELECT commercial object taxonomy
       { rows: [{ id:'prod-no-price-fallback' }] },
       { rows: [] },
       { rows: [] },
@@ -967,6 +968,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
   it('POST /candidates/:id/import-product : price_kmf absent ne reprend jamais un prix du scan', async () => {
     const client = makeClient([
       { rows: [{ state:'scanned', scan_result:{ test_price_kmf:7000, recommended_price_kmf:3000 }, product_name:'X', normalized_source_contract:null }] },
+      { rows: [] }, // SELECT commercial object taxonomy
       { rows: [{ id:'prod-no-price-scan' }] },
       { rows: [] },
       { rows: [] },
@@ -986,6 +988,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
   it('POST /candidates/:id/import-product : price_kmf fourni explicitement dans le body → utilisé tel quel (jamais le scan)', async () => {
     const client = makeClient([
       { rows: [{ state: 'scanned', scan_result: { test_price_kmf: 7000, recommended_price_kmf: 3000 }, product_name: 'X', normalized_source_contract: null }] },
+      { rows: [] }, // SELECT commercial object taxonomy
       { rows: [{ id: 'prod-3' }] },
       { rows: [] },
       { rows: [] },
@@ -1006,6 +1009,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
     currentUser = { role: 'admin' }; // pas d'id non plus, pour couvrir le fallback updated_by/triggered_by
     const client = makeClient([
       { rows: [{ state: 'scanned', scan_result: { recommended_price_kmf: 3000 }, product_name: 'X', normalized_source_contract: null }] }, // pas de category/prix/description/weight
+      { rows: [] }, // SELECT commercial object taxonomy
       { rows: [{ id: 'prod-4' }] },
       { rows: [] },
       { rows: [] },
