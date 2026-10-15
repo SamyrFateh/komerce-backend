@@ -967,7 +967,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
 
   it('POST /candidates/:id/import-product : price_kmf absent ne reprend jamais un prix du scan', async () => {
     const client = makeClient([
-      { rows: [{ state:'scanned', scan_result:{ test_price_kmf:7000, recommended_price_kmf:3000 }, product_name:'X', normalized_source_contract:null }] },
+      { rows: [{ state:'scanned', scan_result:{ test_price_kmf:7000, recommended_price_kmf:3000 }, product_name:'X', komerce_category:'vetements', normalized_source_contract:null }] },
       { rows: [] }, // SELECT commercial object taxonomy
       { rows: [{ id:'prod-no-price-scan' }] },
       { rows: [] },
@@ -1012,7 +1012,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
     mockGetClient.mockResolvedValue(client);
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({ price_kmf:4200 });
     expect(res.status).toBe(409);
-    expect(JSON.stringify(res.body)).toContain('candidate_customs_classification_required');
+    expect(res.body.error).toContain('Catégorie douanière non qualifiée');
     expect(client.calls.some(c => /INSERT INTO products/.test(c.sql))).toBe(false);
   });
 
