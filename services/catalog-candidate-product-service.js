@@ -51,7 +51,7 @@ function objectPhraseMatch(title, rawTerm) {
   const tokens = normalizedObjectWords(title).split(' ').filter(Boolean);
   let position = -1;
   for (const word of words) {
-    const next = tokens.findIndex((token, index) => index > position && index <= position + 5 && token === word);
+    const next = tokens.findIndex((token, index) => index > position && (position < 0 || index <= position + 5) && token === word);
     if (next < 0) return false;
     position = next;
   }
