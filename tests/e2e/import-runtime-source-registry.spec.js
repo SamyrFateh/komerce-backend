@@ -272,7 +272,7 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     expect(backend.calls).not.toContain('activate');
     expect(backend.source.enabled).toBe(false);
     await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
-    await expect(card(page).locator('[data-source-first-import]')).toHaveCount(0);
+    await expect(card(page).locator('[data-source-first-import]')).toHaveText('Lancer un nouveau passage');
     await expect(card(page).locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'false');
     await expect(card(page).locator('.kir-source-follow')).toContainText('Voir le suivi');
   });
@@ -294,7 +294,7 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     expect(backend.source.enabled).toBe(false);
   });
 
-  test('premier passage absent pour une source non certifiée ou déjà alimentée', async ({ page }) => {
+  test('passage absent si source non certifiée, relançable avec historique', async ({ page }) => {
     const backend = createBackend();
     backend.source = { connected:true, certified:false, enabled:false };
     await mount(page, backend);
@@ -304,7 +304,7 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     backend.runs.push(emptyRun('KIR-000010', 'CJdropshipping'));
     await page.reload();
     await boot(page);
-    await expect(card(page).locator('[data-source-first-import]')).toHaveCount(0);
+    await expect(card(page).locator('[data-source-first-import]')).toHaveText('Lancer un nouveau passage');
   });
 
   test('B bis : connexion refusée → message métier, source toujours verrouillée, aucun secret affiché', async ({ page }) => {

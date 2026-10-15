@@ -802,7 +802,7 @@
       enabled, displayEnabled, canToggle, busy, badge, reason, step, providerGateBlocked,
       name: source.label || source.supplier_name || source.source_ref,
       lastRun,
-      canFirstImport: source.state === 'ready' && !enabled && !lastRun,
+      canFirstImport: source.state === 'ready' && !enabled && (!busy || firstImportPending),
       firstImportPending,
     };
   }
@@ -1006,7 +1006,7 @@
       ${m.reason ? `<p class="kir-source-reason" data-source-reason>${esc(m.reason)}</p>` : ''}
       ${m.busy ? '' : credentialsPanel(source, { context:'card' })}
       ${m.step ? `<button type="button" class="kir-source-step" data-source-step="${m.step.action}" data-source-ref="${esc(source.source_ref)}">${m.step.label}</button>` : ''}
-      ${m.canFirstImport ? `<button type="button" class="kir-source-first-import" data-source-first-import data-source-ref="${esc(source.source_ref)}" ${m.firstImportPending ? 'disabled aria-busy="true"' : ''}>${m.firstImportPending ? 'Lancement du passage…' : 'Lancer le premier passage'}</button>` : ''}
+      ${m.canFirstImport ? `<button type="button" class="kir-source-first-import" data-source-first-import data-source-ref="${esc(source.source_ref)}" ${m.firstImportPending ? 'disabled aria-busy="true"' : ''}>${m.firstImportPending ? 'Lancement du passage…' : m.lastRun ? 'Lancer un nouveau passage' : 'Lancer le premier passage'}</button>` : ''}
       ${firstImportState?.sourceRef === source.source_ref && firstImportState.error ? `<p class="kir-source-first-error" role="alert">${esc(firstImportState.error)}</p>` : ''}
       ${m.lastRun ? `<a class="kir-source-follow" href="${urlFor(m.lastRun)}" data-cockpit-nav>Voir le suivi →</a>` : ''}
     </article>`;
@@ -2045,13 +2045,12 @@
     }
   }
 
-  // Premier passage après une purge : one-shot via import-now, sans activer l'autopilot.
+  // Passage manuel depuis une source prête, historique conservé et autopilot OFF.
   // Ne navigue jamais sur un passage imaginé : le run_ref vient de la réponse métier.
   async function startFirstImport(root, payload, sourceRef) {
     if (firstImportState?.pending) return;
     const source = (payload?.source_controls || []).find(item => item.source_ref === sourceRef);
-    if (!source || source.state !== 'ready' || source.autopilot_enabled ||
-        lastRunOfSource(source, payload?.lots || [], payload?.selected)) return;
+    if (!source || source.state !== 'ready' || source.autopilot_enabled) return;
     firstImportState = { sourceRef, pending:true, error:null };
     render(root, lastPayload || payload);
     try {
