@@ -1655,6 +1655,12 @@
           ${statusRow('Identifiant source', ['completed', trace.supplier_product_id || '—'])}
           ${statusRow('Préparation', [trace.refinery?.done ? 'completed' : 'pending', trace.refinery?.done ? '✓ Terminée' : 'Non terminée'])}
           ${statusRow('Classement', [trace.canonical_category ? 'completed' : 'pending', trace.canonical_category || (halted ? 'Non déterminé pour ce passage' : 'En attente')])}
+          ${statusRow('Classement commercial', [trace.commercial_review?.status === 'PENDING_CLASSIFICATION' ? 'attention' : 'pending',
+            trace.commercial_review?.status === 'PENDING_CLASSIFICATION' ? 'À confirmer dans Sourcing'
+              : trace.commercial_review?.status ? trace.commercial_review.status : 'Non documenté pour ce passage'])}
+          ${statusRow('Douane et calcul', [trace.customs_review?.status === 'REQUIRED' ? 'attention' : 'pending',
+            trace.customs_review?.status === 'REQUIRED' ? 'À qualifier — calcul et publication interdits'
+              : trace.customs_review?.status ? trace.customs_review.status : 'Non documenté pour ce passage'])}
           ${statusRow('Validation Sourcing', [trace.certification?.sourcing_certified ? 'completed' : reviewed ? 'attention' : 'pending', certificationText])}
           ${statusRow('Catalogue', [trace.product_ref ? 'completed' : 'pending', trace.product_ref ? '✓ Remis' : halted ? 'Non transmis pour ce passage' : reviewed ? 'En attente de vérification' : 'Pas encore remis'])}
         </div>
