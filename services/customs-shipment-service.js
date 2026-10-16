@@ -9,7 +9,7 @@
  * @depends       services/cost-allocation/index.js, services/cost-allocation/_helpers.js, services/documents/customs-invoice.js, services/parcel-mutation-service.js
  * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js, services/shipping-customs-workspace.js
  * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
- * @db-write      customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, orders
+ * @db-write      customs_shipment_parcel_events, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, orders
  * @db-write-via:parcel-mutation-service parcels
  * @db-write-via:cost-allocation order_item_real_cost_allocations
  * @db-txn        createShipment_owns_full_transaction, declaration_allocation_atomic
@@ -23,6 +23,7 @@
 const { markCustomsCleared } = require('./parcel-mutation-service');
 const { recomputeCustomsCosts } = require('./order-mutation-service');
 const { shareByWeight } = require('./cost-allocation/_helpers');
+const { normalizeFeeAllocation } = require('./transport-cost-allocation');
 
 // ── Intégrité financière des coûts douaniers ─────────────────────────────────
 //   - NULL = montant inconnu (expédition pending) ; 0 explicite = aucun frais
@@ -139,6 +140,42 @@ function defaultAllocationMethod(allocationMethod, transportMode) {
 }
 
 /**
+ * Répartition manuelle (A4) : une part colis par colis, saisie contrôlée.
+ * Entrée : tableau [{ parcel_id, customs_share_kmf }] ou objet { parcel_id: montant }.
+ * Sortie : objet { parcel_id: "123.45" } (chaînes à 2 décimales, jamais de flottant persisté).
+ * Les parts sont persistées dans allocation_config.manual_shares : colonne déjà auditée
+ * (acteur, raison, avant / après) par le trigger d'audit financier.
+ */
+function normalizeManualShares(raw) {
+  if (raw === undefined || raw === null) return null;
+  const entries = Array.isArray(raw)
+    ? raw.map(item => [item && item.parcel_id, item && item.customs_share_kmf])
+    : (typeof raw === 'object' ? Object.entries(raw) : null);
+  if (!entries || !entries.length) {
+    throw httpError(400, 'parcel_shares : liste de parts colis requise', 'CUSTOMS_SHARES_INVALID');
+  }
+  const out = {};
+  for (const [parcelId, amount] of entries) {
+    const id = parcelId == null ? '' : String(parcelId).trim();
+    const n = typeof amount === 'string' ? Number(amount.replace(',', '.')) : Number(amount);
+    if (!id || amount === null || amount === '' || !Number.isFinite(n) || n < 0
+        || Math.abs(n * 100 - Math.round(n * 100)) > 1e-6) {
+      throw httpError(400, 'parcel_shares : colis et montant ≥ 0 (2 décimales max) requis', 'CUSTOMS_SHARES_INVALID');
+    }
+    if (Object.prototype.hasOwnProperty.call(out, id)) {
+      throw httpError(400, 'parcel_shares : colis en double', 'CUSTOMS_SHARES_INVALID');
+    }
+    out[id] = (Math.round(n * 100) / 100).toFixed(2);
+  }
+  return out;
+}
+
+function withManualShares(allocationConfig, shares) {
+  const base = allocationConfig && typeof allocationConfig === 'object' ? allocationConfig : {};
+  return { ...base, manual_shares: shares };
+}
+
+/**
  * Calcule la part de douane de chaque colis selon la méthode choisie.
  *
  * @param {{ customs_paid_kmf, allocation_method?, allocation_config? }} shipment
@@ -159,7 +196,7 @@ function allocateCustoms(shipment, parcels) {
   if (method === 'manual') {
     return parcels.map(p => ({
       ...p,
-      customs_share_kmf: 0,
+      customs_share_kmf: p.manual_share_kmf != null ? Number(p.manual_share_kmf) : 0,
       allocation_basis:  'manual',
     }));
   }
@@ -355,23 +392,29 @@ async function assertShipmentParcelMarket(client, shipmentId, parcelIds) {
 }
 
 /**
- * Éligibilité d'un NOUVEAU rattachement : ni colis annulé, ni commande annulée/remboursée
- * (sinon des droits et du fret seraient imputés à une vente qui n'aura pas lieu).
- * Ne s'applique qu'aux rattachements (création, réactivation) : une annulation survenue après
- * le groupage ne bloque pas la déclaration — la part de la commande annulée reste tracée.
+ * Éligibilité d'un NOUVEAU rattachement (groupage expédié) : colis `shipped` ou `in_transit`,
+ * commande ni annulée ni remboursée. Préparation et expédition ne se mélangent pas. Ne s'applique
+ * qu'aux colis pas encore liés à cette expédition : une annulation ou une arrivée survenue après
+ * le groupage ne bloque ni la déclaration, ni la réactivation, ni une correction.
  */
-async function assertParcelsEligibleForGrouping(client, parcelIds) {
+const GROUPABLE_PARCEL_STATUSES = Object.freeze(['shipped', 'in_transit']);
+
+async function assertParcelsEligibleForGrouping(client, parcelIds, shipmentId = null) {
   const ids = Array.isArray(parcelIds) ? parcelIds : [];
   if (!ids.length) return;
   const { rows } = await client.query(
     `SELECT p.id
        FROM orders o JOIN parcels p ON p.order_id = o.id
       WHERE p.id = ANY($1::uuid[])
-        AND (p.status = 'cancelled' OR o.status IN ('cancelled', 'refunded'))
-      LIMIT 1`, [ids]
+        AND ($2::uuid IS NULL OR NOT EXISTS (
+              SELECT 1 FROM customs_shipment_parcels l WHERE l.shipment_id = $2 AND l.parcel_id = p.id))
+        AND (NOT (p.status::text = ANY($3::text[])) OR o.status IN ('cancelled', 'refunded'))
+      LIMIT 1`, [ids, shipmentId, GROUPABLE_PARCEL_STATUSES]
   );
   if (rows.length) {
-    throw httpError(409, 'Colis annulé ou commande annulée/remboursée : rattachement refusé', 'CUSTOMS_PARCEL_NOT_ELIGIBLE');
+    throw httpError(409,
+      'Colis non groupable : seuls les colis expédiés (shipped / in_transit) de commandes non annulées sont rattachables',
+      'CUSTOMS_PARCEL_NOT_ELIGIBLE');
   }
 }
 
@@ -426,6 +469,24 @@ async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
 
   // volume_m3 : requis par allocateCustoms (méthode 'by_volume', doctrine fret
   // maritime au m³ — cf. migration 095). cm3 → m3.
+  let manualShares = null;
+  if ((shipmentMeta.allocation_method || 'by_cif_value') === 'manual') {
+    const stored = shipmentMeta.allocation_config && shipmentMeta.allocation_config.manual_shares;
+    const zeroTotal = toCents(shipmentMeta.customs_paid_kmf) === 0;
+    if (stored) {
+      const keys = Object.keys(stored);
+      if (keys.length !== parcelIds.length || parcelIds.some(id => !Object.prototype.hasOwnProperty.call(stored, String(id)))) {
+        throw httpError(422,
+          'Répartition manuelle : une part par colis rattaché est requise (parcel_shares à jour après tout ajout / retrait)',
+          'COST_ALLOCATION_INCOMPLETE');
+      }
+      manualShares = stored;
+    } else if (!zeroTotal) {
+      throw httpError(422,
+        'Répartition manuelle : parcel_shares requis (une part par colis, somme = montant déclaré)',
+        'COST_ALLOCATION_INCOMPLETE');
+    }
+  }
   const allocations = allocateCustoms(
     shipmentMeta,
     parcelData.map(p => ({
@@ -433,6 +494,7 @@ async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
       cif_kmf:    Number(p.cif_kmf)    || 0,
       weight_kg:  Number(p.weight_kg)  || 0,
       volume_m3:  (Number(p.volume_cm3) || 0) / 1e6,
+      manual_share_kmf: manualShares ? manualShares[String(p.id)] : null,
     }))
   );
   const volumeByParcelId = new Map(parcelData.map(p => [p.id, Number(p.volume_cm3) || 0]));
@@ -441,11 +503,12 @@ async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
     await client.query(
       `INSERT INTO customs_shipment_parcels
          (shipment_id, parcel_id, parcel_cif_kmf, parcel_weight_kg, parcel_volume_cm3,
-          customs_share_kmf, allocation_basis)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+          customs_share_kmf, allocation_basis, manual_override)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,($7 = 'manual'))
        ON CONFLICT (shipment_id, parcel_id) DO UPDATE
          SET customs_share_kmf = EXCLUDED.customs_share_kmf,
              allocation_basis  = EXCLUDED.allocation_basis,
+             manual_override   = EXCLUDED.manual_override,
              parcel_volume_cm3 = EXCLUDED.parcel_volume_cm3,
              updated_at        = NOW()`,
       [
@@ -507,6 +570,15 @@ async function createShipment(db, body, userId, options = {}) {
   } = body;
   const marketId = options.marketId || null;
   const effectiveMethod = defaultAllocationMethod(allocation_method, transport_mode);
+  const manualShares = normalizeManualShares(body.parcel_shares);
+  if (allocation_config != null) {
+    const cfgObj = typeof allocation_config === 'string' ? JSON.parse(allocation_config) : allocation_config;
+    normalizeFeeAllocation(cfgObj && cfgObj.fee_allocation);
+  }
+  if (manualShares && effectiveMethod !== 'manual') {
+    throw httpError(400, 'parcel_shares exige allocation_method = manual', 'CUSTOMS_SHARES_REQUIRE_MANUAL');
+  }
+  const effectiveConfig = manualShares ? withManualShares(allocation_config, manualShares) : allocation_config;
 
   // customs_paid_kmf n'est plus requis à la création (workflow en deux étapes)
   // Il est saisi lors de la déclaration (declareCustomsPayment).
@@ -544,13 +616,13 @@ async function createShipment(db, body, userId, options = {}) {
         amount,
         freight == null ? null : freight, total_weight_kg || null,
         nb_parcels || null, effectiveMethod,
-        allocation_config ? JSON.stringify(allocation_config) : null,
+        effectiveConfig ? JSON.stringify(effectiveConfig) : null,
         notes || null, supplier_id || null, userId, marketId,
       ]
     );
 
     if (parcel_ids?.length) await assertShipmentParcelMarket(client, shipment.id, parcel_ids);
-    if (parcel_ids?.length) await assertParcelsEligibleForGrouping(client, parcel_ids);
+    if (parcel_ids?.length) await assertParcelsEligibleForGrouping(client, parcel_ids, shipment.id);
 
     // Ventilation immédiate uniquement si le montant est déjà fourni
     // (rétrocompatibilité : ancien flow où tout était saisi d'un coup).
@@ -567,7 +639,7 @@ async function createShipment(db, body, userId, options = {}) {
       ({ allocations } = await _reallocateDeclared(
         client,
         shipment.id,
-        { customs_paid_kmf: amount, allocation_method: effectiveMethod, allocation_config },
+        { customs_paid_kmf: amount, allocation_method: effectiveMethod, allocation_config: effectiveConfig },
         parcel_ids
       ));
     } else if (parcel_ids?.length) {
@@ -624,11 +696,16 @@ async function updateShipment(db, id, body, actor = {}) {
   for (const k of allowed) {
     if (body[k] !== undefined) values[k] = body[k];
   }
-  if (!Object.keys(values).length) {
+  const manualShares = normalizeManualShares(body.parcel_shares);
+  if (values.allocation_config != null) {
+    const cfgObj = typeof values.allocation_config === 'string' ? JSON.parse(values.allocation_config) : values.allocation_config;
+    normalizeFeeAllocation(cfgObj && cfgObj.fee_allocation);
+  }
+  if (!Object.keys(values).length && !manualShares) {
     const e = new Error('Aucun champ à modifier'); e.status = 400; throw e;
   }
 
-  const touchesFinancial = FINANCIAL_FIELDS.some(k => values[k] !== undefined);
+  const touchesFinancial = manualShares ? true : FINANCIAL_FIELDS.some(k => values[k] !== undefined);
   if (values.customs_paid_kmf !== undefined) {
     values.customs_paid_kmf = parseConfirmedAmount(values.customs_paid_kmf, 'customs_paid_kmf');
   }
@@ -636,10 +713,15 @@ async function updateShipment(db, id, body, actor = {}) {
     values.freight_kmf = parseOptionalAmount(values.freight_kmf, 'freight_kmf');
   }
 
-  const keys = Object.keys(values);
-  const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
-  const params = [...keys.map(k => values[k]), id];
-  const updateSql = `UPDATE customs_shipments SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`;
+  const buildUpdate = () => {
+    const keys = Object.keys(values);
+    const setClause = keys.length ? keys.map((k, i) => `${k} = $${i + 1}`).join(', ') : 'reference = reference';
+    return {
+      params: [...keys.map(k => values[k]), id],
+      updateSql: `UPDATE customs_shipments SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`,
+    };
+  };
+  let { updateSql, params } = buildUpdate();
 
   if (!touchesFinancial) {
     const { rows: [shipment] } = await db.query(updateSql, params);
@@ -666,6 +748,16 @@ async function updateShipment(db, id, body, actor = {}) {
         'Expédition pending : le montant douane se saisit par la déclaration (POST /:id/declare)');
     }
 
+    if (manualShares) {
+      const method = values.allocation_method !== undefined ? values.allocation_method : current.allocation_method;
+      if ((method || 'by_cif_value') !== 'manual') {
+        throw httpError(400, 'parcel_shares exige allocation_method = manual', 'CUSTOMS_SHARES_REQUIRE_MANUAL');
+      }
+      const baseConfig = values.allocation_config !== undefined ? values.allocation_config : current.allocation_config;
+      values.allocation_config = JSON.stringify(withManualShares(
+        typeof baseConfig === 'string' ? JSON.parse(baseConfig) : baseConfig, manualShares));
+      ({ updateSql, params } = buildUpdate());
+    }
     const { rows: [shipment] } = await client.query(updateSql, params);
 
     let reallocated = false;
@@ -751,12 +843,12 @@ async function deactivateShipment(db, id, reason) {
  * @param {string[]} parcelIds
  * ✗ throws err.status=404
  */
-async function activateShipment(db, id, parcelIds) {
+async function activateShipment(db, id, parcelIds, rawShares) {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
 
-    const { rows: [shipment] } = await client.query(
+    let { rows: [shipment] } = await client.query(
       `UPDATE customs_shipments
           SET is_active = TRUE,
               deactivated_at = NULL,
@@ -770,9 +862,13 @@ async function activateShipment(db, id, parcelIds) {
       const e = new Error('Shipment not found'); e.status = 404; throw e;
     }
 
+    if (rawShares !== undefined && rawShares !== null) {
+      await setLocalCustomsAuditContext(client, null, 'réactivation avec parts manuelles');
+      shipment = await _applyManualSharesInTx(client, shipment, rawShares);
+    }
     const ids = Array.isArray(parcelIds) ? parcelIds : [];
     await assertShipmentParcelMarket(client, shipment.id, ids);
-    await assertParcelsEligibleForGrouping(client, ids);
+    await assertParcelsEligibleForGrouping(client, ids, shipment.id);
     let allocations = [];
     if (shipment.status === 'pending' || isBlankAmount(shipment.customs_paid_kmf)) {
       // Montant encore inconnu : rattacher les colis sans fabriquer de part
@@ -877,6 +973,8 @@ module.exports = {
   propagateCostDouane,
   listShipments,
   getEffectiveRates,
+  addParcelsToShipment,
+  removeParcelsFromShipment,
   getShipment,
   createShipment,
   updateShipment,
@@ -946,6 +1044,13 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
         'CUSTOMS_SHIPMENT_WITHOUT_PARCELS');
     }
 
+    // 2b. Parts manuelles (A4) : persistées dans allocation_config (colonne auditée) avant ventilation
+    const declaredShares = normalizeManualShares(payload && payload.parcel_shares);
+    if (declaredShares && (ship.allocation_method || 'by_cif_value') !== 'manual') {
+      throw httpError(400, 'parcel_shares exige allocation_method = manual', 'CUSTOMS_SHARES_REQUIRE_MANUAL');
+    }
+    const effectiveConfig = declaredShares ? withManualShares(ship.allocation_config, declaredShares) : ship.allocation_config;
+
     // 3. Mettre à jour le montant + statut
     const updates = {
       customs_paid_kmf,
@@ -955,6 +1060,7 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
     };
     if (freight_kmf !== undefined) updates.freight_kmf = freight_kmf;
     if (notes != null) updates.notes = notes;
+    if (declaredShares) updates.allocation_config = JSON.stringify(effectiveConfig);
 
     const fields = Object.keys(updates);
     const vals   = Object.values(updates);
@@ -972,7 +1078,7 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
       {
         customs_paid_kmf,
         allocation_method: ship.allocation_method || 'by_cif_value',
-        allocation_config: ship.allocation_config,
+        allocation_config: effectiveConfig,
       },
       parcelIds
     );
@@ -1007,6 +1113,140 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
       invoice_issued: invoiceIssued,
       ...(invoiceIssued ? {} : { invoice_error: invoiceError }),
     };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+// ── Groupage : ajout / retrait direct de colis (avant clôture) ───────────────
+
+function _membershipInput(parcelIds, reason) {
+  const ids = [...new Set((Array.isArray(parcelIds) ? parcelIds : []).map(String))];
+  if (!ids.length) throw httpError(400, 'parcel_ids requis', 'CUSTOMS_PARCEL_IDS_REQUIRED');
+  const why = reason == null ? '' : String(reason).trim();
+  if (!why) throw httpError(400, 'reason obligatoire pour modifier la composition d\u2019un groupage', 'CUSTOMS_MEMBERSHIP_REASON_REQUIRED');
+  return { ids, why };
+}
+
+async function _lockOpenShipment(client, shipmentId) {
+  const { rows: [ship] } = await client.query(
+    'SELECT * FROM customs_shipments WHERE id = $1 FOR UPDATE', [shipmentId]);
+  if (!ship) throw httpError(404, 'Expédition introuvable', 'CUSTOMS_SHIPMENT_NOT_FOUND');
+  if (ship.is_active === false) throw httpError(409, 'Expédition désactivée — la réactiver avant de modifier sa composition', 'CUSTOMS_SHIPMENT_INACTIVE');
+  if (ship.status === 'confirmed') throw httpError(409, 'Expédition clôturée — composition verrouillée', 'CUSTOMS_SHIPMENT_CLOSED');
+  return ship;
+}
+
+/** Persiste les parts manuelles (A4) dans allocation_config (audité) ; retourne l'expédition à jour. */
+async function _applyManualSharesInTx(client, ship, rawShares) {
+  const shares = normalizeManualShares(rawShares);
+  if (!shares) return ship;
+  if ((ship.allocation_method || 'by_cif_value') !== 'manual') {
+    throw httpError(400, 'parcel_shares exige allocation_method = manual', 'CUSTOMS_SHARES_REQUIRE_MANUAL');
+  }
+  const { rows: [updated] } = await client.query(
+    'UPDATE customs_shipments SET allocation_config = $2 WHERE id = $1 RETURNING *',
+    [ship.id, JSON.stringify(withManualShares(ship.allocation_config, shares))]
+  );
+  return updated;
+}
+
+async function _recordMembershipEvents(client, shipmentId, parcelIds, event, actorId, reason) {
+  for (const parcelId of parcelIds) {
+    await client.query(
+      `INSERT INTO customs_shipment_parcel_events (shipment_id, parcel_id, event, actor_id, reason)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [shipmentId, parcelId, event, actorId == null ? null : String(actorId), reason]
+    );
+  }
+}
+
+/**
+ * Ajoute des colis à une expédition ouverte (pending ou déclarée). Atomique : verrou expédition +
+ * colis, contrôles marché / unicité / éligibilité, journal immuable, puis reventilation complète
+ * (colis → commandes → articles) si le montant douane est connu.
+ *
+ * @param {{ id?: string, reason?: string }} actor
+ * ✗ throws 400 | 404 | 409 | 422
+ */
+async function addParcelsToShipment(db, shipmentId, parcelIds, actor = {}) {
+  const { ids, why } = _membershipInput(parcelIds, actor.reason);
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    await setLocalCustomsAuditContext(client, actor.id, why);
+    let ship = await _lockOpenShipment(client, shipmentId);
+
+    const linked = new Set((await _linkedParcelIds(client, shipmentId)).map(String));
+    const fresh = ids.filter(id => !linked.has(id));
+    if (!fresh.length) {
+      await client.query('COMMIT');
+      return { shipment_id: shipmentId, added: [], idempotent: true, parcels_total: linked.size };
+    }
+    await assertShipmentParcelMarket(client, shipmentId, fresh);
+    await assertParcelsEligibleForGrouping(client, fresh, shipmentId);
+
+    for (const pid of fresh) {
+      await client.query(
+        `INSERT INTO customs_shipment_parcels (shipment_id, parcel_id) VALUES ($1, $2)`, [shipmentId, pid]);
+    }
+    await _recordMembershipEvents(client, shipmentId, fresh, 'attach', actor.id, why);
+    ship = await _applyManualSharesInTx(client, ship, actor.parcel_shares);
+
+    const all = await _linkedParcelIds(client, shipmentId);
+    let reallocated = false;
+    if (!isBlankAmount(ship.customs_paid_kmf) && ship.status === 'declared') {
+      await _reallocateDeclared(client, shipmentId, ship, all);
+      await markCustomsCleared(client, { parcelIds: fresh, notes: why });
+      reallocated = true;
+    } else {
+      await propagateCostDouane(client, fresh);
+    }
+    await client.query('COMMIT');
+    return { shipment_id: shipmentId, added: fresh, reallocated, parcels_total: all.length };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Retire des colis d'une expédition ouverte. Mêmes garanties que l'ajout ; une expédition au
+ * montant connu ne peut pas être vidée (la désactiver à la place).
+ */
+async function removeParcelsFromShipment(db, shipmentId, parcelIds, actor = {}) {
+  const { ids, why } = _membershipInput(parcelIds, actor.reason);
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    await setLocalCustomsAuditContext(client, actor.id, why);
+    let ship = await _lockOpenShipment(client, shipmentId);
+
+    const linked = (await _linkedParcelIds(client, shipmentId)).map(String);
+    if (ids.some(id => !linked.includes(id))) {
+      throw httpError(409, 'Colis non rattaché à cette expédition', 'CUSTOMS_PARCEL_NOT_IN_SHIPMENT');
+    }
+    const remaining = linked.filter(id => !ids.includes(id));
+    const amountKnown = !isBlankAmount(ship.customs_paid_kmf) && ship.status === 'declared';
+    if (amountKnown && !remaining.length) {
+      throw httpError(409, 'Retrait impossible : une expédition déclarée doit garder au moins un colis (la désactiver sinon)', 'CUSTOMS_SHIPMENT_WITHOUT_PARCELS');
+    }
+    await client.query(
+      `DELETE FROM customs_shipment_parcels WHERE shipment_id = $1 AND parcel_id = ANY($2::uuid[])`, [shipmentId, ids]);
+    await _recordMembershipEvents(client, shipmentId, ids, 'detach', actor.id, why);
+    ship = await _applyManualSharesInTx(client, ship, actor.parcel_shares);
+
+    if (amountKnown) {
+      await _reallocateDeclared(client, shipmentId, ship, remaining);
+    }
+    await propagateCostDouane(client, ids);
+    await client.query('COMMIT');
+    return { shipment_id: shipmentId, removed: ids, reallocated: amountKnown, parcels_total: remaining.length };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     throw err;

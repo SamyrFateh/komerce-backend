@@ -88,7 +88,7 @@ function sameContent(row, n) {
 const shape = (r) => ({
   id: r.id, shipment_id: r.shipment_id, fee_type: r.fee_type, kind: r.kind,
   amount_currency: String(r.amount_currency), currency: r.currency, amount_kmf: String(r.amount_kmf),
-  proof_ref: r.proof_ref, idempotency_key: r.idempotency_key, notes: r.notes,
+  proof_ref: r.proof_ref, idempotency_key: r.idempotency_key, notes: r.notes, post_closure: r.post_closure === true,
   recorded_by: r.recorded_by, recorded_at: r.recorded_at,
 });
 
@@ -140,6 +140,11 @@ async function recordFee(database, shipmentId, payload, userId) {
 
     if (ship.is_active === false) throw fail(409, 'CUSTOMS_SHIPMENT_INACTIVE', 'expédition désactivée : aucun frais ne peut être ajouté');
     if (ship.status === 'pending') throw fail(409, 'CUSTOMS_SHIPMENT_NOT_DECLARED', 'déclarer l\'expédition avant d\'enregistrer des frais');
+    // A6 : expédition clôturée → correction tracée (nouvelle ligne marquée post_closure, motif obligatoire).
+    const postClosure = ship.status === 'confirmed';
+    if (postClosure && !n.notes) {
+      throw fail(400, 'CUSTOMS_FEE_POST_CLOSURE_REASON_REQUIRED', 'expédition clôturée : notes (motif de la correction) obligatoires');
+    }
     const { rows: [pc] } = await client.query(
       'SELECT COUNT(*)::int AS n FROM customs_shipment_parcels WHERE shipment_id = $1', [shipmentId]);
     if (!pc.n) throw fail(409, 'CUSTOMS_SHIPMENT_WITHOUT_PARCELS', 'aucun colis rattaché : un frais ne peut être ventilé nulle part');
@@ -156,10 +161,10 @@ async function recordFee(database, shipmentId, payload, userId) {
 
     const { rows: [row] } = await client.query(
       `INSERT INTO customs_shipment_fees
-         (shipment_id, fee_type, kind, amount_currency, currency, amount_kmf, proof_ref, idempotency_key, notes, recorded_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+         (shipment_id, fee_type, kind, amount_currency, currency, amount_kmf, proof_ref, idempotency_key, notes, recorded_by, post_closure)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [shipmentId, n.feeType, n.kind, fmt(n.amountCurrency, 4), n.currency, fmt(n.amountKmf, 2),
-        n.proofRef, n.key, n.notes, userId || null]);
+        n.proofRef, n.key, n.notes, userId || null, postClosure]);
 
     // Même transaction : la ventilation article échoue → le frais n'est pas écrit.
     const reallocation = await require('./cost-allocation').allocateShipmentRealCosts(shipmentId, client);

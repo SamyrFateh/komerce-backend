@@ -295,6 +295,67 @@ function allocateFreightConserving({ total, transportRail, entries, options }) {
   };
 }
 
+const FEE_METHODS = Object.freeze(['by_cif_value', 'by_weight', 'by_volume', 'mixed', 'manual']);
+const FEE_TYPES = Object.freeze(['handling', 'storage', 'forwarder', 'local_tax', 'exceptional', 'other']);
+
+/** Valide allocation_config.fee_allocation ({ default?|<fee_type>: {method, cif?, weight?, shares?} }). */
+function normalizeFeeAllocation(raw) {
+  if (raw == null) return {};
+  const bad = msg => Object.assign(new Error(msg), { status: 400, code: 'CUSTOMS_FEE_ALLOCATION_INVALID' });
+  if (typeof raw !== 'object' || Array.isArray(raw)) throw bad('fee_allocation doit être un objet');
+  const out = {};
+  for (const [key, spec] of Object.entries(raw)) {
+    if (key !== 'default' && !FEE_TYPES.includes(key)) throw bad(`nature de frais inconnue: ${key}`);
+    if (!spec || !FEE_METHODS.includes(spec.method)) throw bad(`méthode invalide pour ${key}`);
+    const norm = { method: spec.method };
+    if (spec.method === 'mixed') {
+      norm.cif = spec.cif == null ? 0.5 : Number(spec.cif);
+      norm.weight = spec.weight == null ? 0.5 : Number(spec.weight);
+      if (!(norm.cif >= 0) || !(norm.weight >= 0) || norm.cif + norm.weight <= 0) throw bad(`poids mixed invalides pour ${key}`);
+    }
+    if (spec.method === 'manual') {
+      const shares = spec.shares;
+      if (!shares || typeof shares !== 'object' || Array.isArray(shares) || !Object.keys(shares).length) {
+        throw bad(`shares requis pour ${key} (manual)`);
+      }
+      norm.shares = {};
+      for (const [pid, v] of Object.entries(shares)) {
+        const n = Number(v);
+        if (!Number.isFinite(n) || n < 0) throw bad(`part invalide pour le colis ${pid}`);
+        norm.shares[pid] = n;
+      }
+      if (Object.values(norm.shares).reduce((a, b) => a + b, 0) <= 0) throw bad(`parts nulles pour ${key}`);
+    }
+    out[key] = norm;
+  }
+  return out;
+}
+
+/** Poids de répartition d'une nature de frais ; spec null = clé de la douane (comportement historique). */
+function feeWeightsFor(spec, parcels, shipmentMethod) {
+  const metric = (parcel, m) => (m === 'by_weight' ? Number(parcel.parcel_weight_kg)
+    : m === 'by_volume' ? Number(parcel.parcel_volume_cm3) : Number(parcel.parcel_cif_kmf)) || 0;
+  const method = spec ? spec.method : (shipmentMethod === 'by_weight' ? 'by_weight' : 'by_cif_value');
+  if (method === 'manual') {
+    const ids = parcels.map(parcel => String(parcel.parcel_id)).sort();
+    const keys = Object.keys(spec.shares).sort();
+    if (ids.length !== keys.length || ids.some((id, i) => id !== keys[i])) {
+      throw allocationIncomplete('port_transitaire', 'fee_allocation.manual : parts ≠ colis liés (à mettre à jour après ajout/retrait)');
+    }
+    return parcels.map(parcel => ({ id: parcel.parcel_id, weight: spec.shares[String(parcel.parcel_id)] }));
+  }
+  if (method === 'mixed') {
+    const cifSum = parcels.reduce((a, parcel) => a + metric(parcel, 'by_cif_value'), 0);
+    const wSum = parcels.reduce((a, parcel) => a + metric(parcel, 'by_weight'), 0);
+    return parcels.map(parcel => ({
+      id: parcel.parcel_id,
+      weight: (cifSum > 0 ? metric(parcel, 'by_cif_value') / cifSum : 0) * spec.cif
+        + (wSum > 0 ? metric(parcel, 'by_weight') / wSum : 0) * spec.weight,
+    }));
+  }
+  return parcels.map(parcel => ({ id: parcel.parcel_id, weight: metric(parcel, method) }));
+}
+
 /**
  * Allocation réelle d'un shipment vers parcels puis order_items.
  *
@@ -317,7 +378,10 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
     const shipRes = await client.query(
       `SELECT cs.*,
               COALESCE((SELECT SUM(CASE WHEN f.kind = 'credit' THEN -f.amount_kmf ELSE f.amount_kmf END)
-                          FROM customs_shipment_fees f WHERE f.shipment_id = cs.id), 0) AS fees_net_kmf
+                          FROM customs_shipment_fees f WHERE f.shipment_id = cs.id), 0) AS fees_net_kmf,
+              COALESCE((SELECT json_agg(json_build_object('fee_type', t.fee_type, 'net_kmf', t.net) ORDER BY t.fee_type)
+                          FROM (SELECT f.fee_type, SUM(CASE WHEN f.kind = 'credit' THEN -f.amount_kmf ELSE f.amount_kmf END) AS net
+                                  FROM customs_shipment_fees f WHERE f.shipment_id = cs.id GROUP BY f.fee_type) t), '[]'::json) AS fees_by_type
          FROM customs_shipments cs WHERE cs.id = $1`,
       [shipmentId]
     );
@@ -443,16 +507,24 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
       freight_share: share.share,
     }));
 
-    // Frais typés : même clé de répartition que la douane (valeur CIF / poids), conservée au centime.
-    const { entries: feeWeights } = weightsOrFallback(parcels.map(parcel => ({
-      id: parcel.parcel_id,
-      weight: allocMethod === 'by_weight'
-        ? Number(parcel.parcel_weight_kg) || 0
-        : Number(parcel.parcel_cif_kmf) || 0,
-    })), () => 1);
-    const feeShares = toCents(totalFees) > 0
-      ? splitConserving(totalFees, feeWeights)
-      : feeWeights.map(entry => ({ id: entry.id, share: 0 }));
+    // Frais typés (A3) : méthode configurable par nature (allocation_config.fee_allocation),
+    // défaut = clé de la douane. Chaque nature est conservée au centime séparément.
+    const feeCfg = normalizeFeeAllocation(ship.allocation_config && ship.allocation_config.fee_allocation);
+    const feeCentsByParcel = new Map(parcels.map(parcel => [parcel.parcel_id, 0]));
+    const feeRows = Array.isArray(ship.fees_by_type)
+      ? ship.fees_by_type
+      : [{ fee_type: null, net_kmf: ship.fees_net_kmf }];
+    for (const row of feeRows) {
+      const net = Number(row.net_kmf) || 0;
+      if (toCents(net) < 0) throw allocationIncomplete('port_transitaire', `frais ${row.fee_type} nets négatifs (${net})`);
+      if (toCents(net) === 0) continue;
+      const spec = feeCfg[row.fee_type] || feeCfg.default || null;
+      const { entries } = weightsOrFallback(feeWeightsFor(spec, parcels, allocMethod), () => 1);
+      for (const part of splitConserving(net, entries)) {
+        feeCentsByParcel.set(part.id, (feeCentsByParcel.get(part.id) || 0) + toCents(part.share));
+      }
+    }
+    const feeShares = parcels.map(parcel => ({ id: parcel.parcel_id, share: (feeCentsByParcel.get(parcel.parcel_id) || 0) / 100 }));
 
     let totalAllocations = 0;
     let insertedCustomsCents = 0;
@@ -658,6 +730,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
 }
 
 module.exports = {
+  normalizeFeeAllocation,
   COST_COMPONENTS,
   ALLOCATION_KEYS,
   CALIBRATION_STATUS,

@@ -109,7 +109,7 @@ if (!hasIntegrationEnv) {
       );
 
       await db.query(
-        `INSERT INTO parcels (id, order_id, reference) VALUES ($1, $2, $3)`,
+        `INSERT INTO parcels (id, order_id, reference, status) VALUES ($1, $2, $3, 'in_transit')`,
         [parcelId, orderId, `${RUN_TAG}-parcel-${seedCounter}-${i}`]
       );
 
