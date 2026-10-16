@@ -102,6 +102,7 @@ module.exports = {
       'migrations/258_import_runtime_item_events.sql',
       'migrations/260_sourcing_source_registry.sql',
       'migrations/261_sourcing_source_lifecycle_update.sql',
+      'migrations/292_supplier_commercial_category_mappings.sql',
     ],
     scripts: [
       'scripts/sourcing-shadow-proof-staging.js',
@@ -114,6 +115,7 @@ module.exports = {
       'scripts/sourcing-source-autopilot.js',
     ],
     services: [
+      'services/supplier-commercial-category-mapping.js',
       'services/sourcing-candidate-import-service.js',
       'services/sourcing-observation-shadow-plan.js',
       'services/sourcing-observation-shadow-service.js',
