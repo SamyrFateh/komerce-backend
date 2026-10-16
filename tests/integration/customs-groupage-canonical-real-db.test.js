@@ -27,6 +27,7 @@ if (!hasIntegrationEnv) {
   const crypto = require('crypto');
   const db = require('../../db');
   const svc = require('../../services/customs-shipment-service');
+  const feeSvc = require('../../services/customs-shipment-fee-service');
 
   jest.setTimeout(40000);
 
@@ -351,6 +352,73 @@ if (!hasIntegrationEnv) {
       expect(u.status).toBe('pending');
       expect(u.customs_paid_kmf).toBeNull();
       expect((await db.query('SELECT COUNT(*)::int n FROM order_item_real_cost_allocations WHERE shipment_id = $1', [u.id])).rows[0].n).toBe(0);
+    });
+  });
+
+
+  describe('A3 — frais typés : méthode de répartition par nature', () => {
+    const SPECS = [
+      { order: 'A', cif: 3333, weight: 2.5, vol: 40000 },
+      { order: 'A', cif: 6667, weight: 1.25, vol: 10000 },
+      { order: 'B', cif: 1, weight: 7, vol: 90000 },
+    ];
+    const fee = (sid, feeType, amount, key, kind = 'charge') => feeSvc.recordFee(db, sid, {
+      fee_type: feeType, kind, amount_kmf: amount, proof_ref: `proof-${key}`, idempotency_key: `${RUN_TAG}-${key}`,
+    }, null);
+    const feeCents = async (sid) => Math.round((await allocTotal(sid, 'port_transitaire')) * 100);
+    const feeByParcelOrder = async (sid) => allocByOrder(sid, 'port_transitaire');
+
+    it('A3 — défaut inchangé ; une nature par volume et une par poids sont chacune conservées au centime', async () => {
+      const ps = await seedParcels(SPECS);
+      const s = await makeShipment(ps, { allocation_method: 'by_cif_value', customs_paid_kmf: '1000.00',
+        allocation_config: { fee_allocation: { storage: { method: 'by_volume' }, handling: { method: 'by_weight' } } } });
+      await fee(s.id, 'storage', '100.01', 'st');
+      await fee(s.id, 'handling', '50.03', 'ha');
+      await fee(s.id, 'forwarder', '10.01', 'fw'); // sans règle : clé de la douane (CIF)
+      expect(await feeCents(s.id)).toBe(10001 + 5003 + 1001);
+      const byOrder = await feeByParcelOrder(s.id);
+      // B porte 90000/140000 du volume, 7/10.75 du poids, ~0 du CIF : sa part prouve que les clés diffèrent par nature
+      expect(byOrder[ps[2].orderId]).toBeGreaterThan(64);
+    });
+
+    it('A3 — mixed et manual (proportions) : conservation exacte, parts manuelles respectées', async () => {
+      const ps = await seedParcels(SPECS);
+      const shares = { [ps[0].parcelId]: 1, [ps[1].parcelId]: 1, [ps[2].parcelId]: 2 };
+      const s = await makeShipment(ps, { allocation_method: 'by_cif_value', customs_paid_kmf: '1000.00',
+        allocation_config: { fee_allocation: { other: { method: 'manual', shares }, exceptional: { method: 'mixed', cif: 0.3, weight: 0.7 } } } });
+      await fee(s.id, 'other', '100.00', 'o1');
+      await fee(s.id, 'exceptional', '33.33', 'e1');
+      expect(await feeCents(s.id)).toBe(13333);
+      const { rows } = await db.query(
+        `SELECT order_id, SUM(amount_kmf) FILTER (WHERE source = 'customs_shipment_fees') AS t FROM order_item_real_cost_allocations
+          WHERE shipment_id = $1 AND cost_type = 'port_transitaire' GROUP BY order_id`, [s.id]);
+      expect(rows).toHaveLength(2);
+    });
+
+    it('A3 — config invalide refusée (nature inconnue, méthode inconnue, manual sans parts) ; manual périmé après retrait = 422', async () => {
+      const ps = await seedParcels(SPECS);
+      await expect(makeShipment(ps, { allocation_config: { fee_allocation: { nope: { method: 'by_weight' } } } }))
+        .rejects.toMatchObject({ code: 'CUSTOMS_FEE_ALLOCATION_INVALID' });
+      await expect(makeShipment(ps, { allocation_config: { fee_allocation: { storage: { method: 'x' } } } }))
+        .rejects.toMatchObject({ code: 'CUSTOMS_FEE_ALLOCATION_INVALID' });
+      await expect(makeShipment(ps, { allocation_config: { fee_allocation: { storage: { method: 'manual' } } } }))
+        .rejects.toMatchObject({ code: 'CUSTOMS_FEE_ALLOCATION_INVALID' });
+      const stale = { [ps[0].parcelId]: 1 };
+      const s = await makeShipment(ps, { allocation_method: 'by_cif_value', customs_paid_kmf: '100.00',
+        allocation_config: { fee_allocation: { storage: { method: 'manual', shares: stale } } } });
+      await expect(fee(s.id, 'storage', '10.00', 'bad')).rejects.toMatchObject({ status: 422 });
+      const { rows } = await db.query('SELECT 1 FROM customs_shipment_fees WHERE shipment_id = $1', [s.id]);
+      expect(rows).toHaveLength(0);
+    });
+
+    it('A3 — la configuration par nature est auditée (journal financier)', async () => {
+      const ps = await seedParcels(SPECS);
+      const s = await makeShipment(ps, { customs_paid_kmf: '100.00' });
+      await svc.updateShipment(db, s.id, { allocation_config: { fee_allocation: { storage: { method: 'by_weight' } } } },
+        { id: null, reason: 'A3 test' });
+      const { rows } = await db.query(
+        `SELECT 1 FROM customs_shipment_financial_audit WHERE shipment_id = $1 AND new_values->'allocation_config'->'fee_allocation' IS NOT NULL`, [s.id]);
+      expect(rows.length).toBeGreaterThan(0);
     });
   });
 

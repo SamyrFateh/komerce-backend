@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-13T11:32:54.452Z",
+  "generatedAt": "2026-10-16T19:02:42.918Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 722,
+  "count": 731,
   "routes": [
     {
       "method": "GET",
@@ -238,6 +238,16 @@
       "fullPath": "/api/admin/catalog/approval-queue/:id/reject",
       "mountPrefix": "/api/admin",
       "localPath": "/catalog/approval-queue/:id/reject",
+      "routeFile": "routes/admin/catalog-approval.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/catalog/approval-queue/:id/visual-fr-proof",
+      "mountPrefix": "/api/admin",
+      "localPath": "/catalog/approval-queue/:id/visual-fr-proof",
       "routeFile": "routes/admin/catalog-approval.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -482,6 +492,46 @@
       "fullPath": "/api/admin/customs-shipments/:id/declare",
       "mountPrefix": "/api/admin/customs-shipments",
       "localPath": "/:id/declare",
+      "routeFile": "routes/admin-customs-shipments.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/customs-shipments/:id/fees",
+      "mountPrefix": "/api/admin/customs-shipments",
+      "localPath": "/:id/fees",
+      "routeFile": "routes/admin-customs-shipments.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/customs-shipments/:id/fees",
+      "mountPrefix": "/api/admin/customs-shipments",
+      "localPath": "/:id/fees",
+      "routeFile": "routes/admin-customs-shipments.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/customs-shipments/:id/parcels",
+      "mountPrefix": "/api/admin/customs-shipments",
+      "localPath": "/:id/parcels",
+      "routeFile": "routes/admin-customs-shipments.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/customs-shipments/:id/parcels/remove",
+      "mountPrefix": "/api/admin/customs-shipments",
+      "localPath": "/:id/parcels/remove",
       "routeFile": "routes/admin-customs-shipments.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -2882,6 +2932,16 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/category-options",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/category-options",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/promote",
       "mountPrefix": "/api/admin/workspaces/sourcing",
@@ -2896,6 +2956,16 @@
       "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/reject",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/candidates/:candidateRef/reject",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/resolve-category",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/resolve-category",
       "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -6310,6 +6380,26 @@
       "fullPath": "/api/purchasing/po/prepare",
       "mountPrefix": "/api/purchasing",
       "localPath": "/po/prepare",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/purchasing/supplier-payments/:payment_id/settlements",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/supplier-payments/:payment_id/settlements",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/supplier-payments/:payment_id/settlements",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/supplier-payments/:payment_id/settlements",
       "routeFile": "routes/purchasing.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
