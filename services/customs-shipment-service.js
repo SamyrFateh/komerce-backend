@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       services/cost-allocation/index.js, services/cost-allocation/_helpers.js, services/documents/customs-invoice.js, services/parcel-mutation-service.js
  * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js, services/shipping-customs-workspace.js
- * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, order_items, orders, parcels, products
+ * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
  * @db-write      customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, orders
  * @db-write-via:parcel-mutation-service parcels
  * @db-write-via:cost-allocation order_item_real_cost_allocations
@@ -120,6 +120,17 @@ function parseOptionalAmount(value, field) {
 // ── Helpers purs ──────────────────────────────────────────────────────────────
 
 /**
+ * Méthode de ventilation à la CRÉATION d'une expédition : une méthode fournie
+ * est toujours respectée ; à défaut, le maritime se ventile au volume (m³,
+ * doctrine fret — migration 095), le reste par valeur CIF. Ne s'applique jamais
+ * aux expéditions existantes (colonne NOT NULL, relectures inchangées).
+ */
+function defaultAllocationMethod(allocationMethod, transportMode) {
+  if (allocationMethod) return allocationMethod;
+  return transportMode === 'sea' ? 'by_volume' : 'by_cif_value';
+}
+
+/**
  * Calcule la part de douane de chaque colis selon la méthode choisie.
  *
  * @param {{ customs_paid_kmf, allocation_method?, allocation_config? }} shipment
@@ -153,6 +164,7 @@ function allocateCustoms(shipment, parcels) {
   }
 
   let weights;
+  let basis = method;
   if (method === 'mixed') {
     const cifW   = Number(cfg.cif)    || 0.5;
     const wgtW   = Number(cfg.weight) || 0.5;
@@ -166,7 +178,14 @@ function allocateCustoms(shipment, parcels) {
   } else {
     const values = parcels.map(p => pickMetric(p, method));
     const sum    = values.reduce((s, v) => s + v, 0);
-    weights = sum > 0 ? values.map(v => v / sum) : parcels.map(() => 1 / parcels.length);
+    if (sum > 0) {
+      weights = values.map(v => v / sum);
+    } else {
+      // Métrique absente sur tous les colis : parts égales, conservées au
+      // centime, et tracées dans allocation_basis (jamais silencieux).
+      weights = parcels.map(() => 1 / parcels.length);
+      basis = `${method}:equal_fallback`;
+    }
   }
 
   // Aucun signal exploitable (ex. mixed sans CIF ni poids) : répartition égale
@@ -179,7 +198,7 @@ function allocateCustoms(shipment, parcels) {
   return parcels.map((p, i) => ({
     ...p,
     customs_share_kmf: centShares[i].share / 100,
-    allocation_basis:  method,
+    allocation_basis:  basis,
   }));
 }
 
@@ -290,21 +309,46 @@ async function getShipment(db, id) {
 async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
   if (!Array.isArray(parcelIds) || parcelIds.length === 0) return [];
 
+  // Métriques physiques par colis. Priorité : valeur propre du colis, puis ses
+  // parcel_items (quantité × prix/poids/volume), puis — colis sans item d'une
+  // commande multi-colis — part égale de la commande (jamais N fois le total).
+  // Commande à un seul colis : comportement historique (métriques commande).
   const { rows: parcelData } = await client.query(
     `SELECT p.id, p.reference,
-            COALESCE(p.customs_value_kmf, o.total_kmf) AS cif_kmf,
-            COALESCE(p.customs_weight_kg,
-              (SELECT SUM(COALESCE(pr.weight_kg,0) * oi.quantity)
-                 FROM order_items oi
-                 JOIN products pr ON pr.id = oi.product_id
-                WHERE oi.order_id = p.order_id)) AS weight_kg,
-            COALESCE(p.volume_cm3,
-              (SELECT SUM(COALESCE(pr.volume_cm3,0) * oi.quantity)
-                 FROM order_items oi
-                 JOIN products pr ON pr.id = oi.product_id
-                WHERE oi.order_id = p.order_id)) AS volume_cm3
+            COALESCE(p.customs_value_kmf, CASE
+              WHEN COALESCE(pc.n, 0) <= 1 THEN o.total_kmf
+              WHEN pit.n_items > 0 THEN pit.cif
+              ELSE o.total_kmf / pc.n END) AS cif_kmf,
+            COALESCE(p.customs_weight_kg, CASE
+              WHEN COALESCE(pc.n, 0) <= 1 THEN ord.weight_kg
+              WHEN pit.n_items > 0 THEN pit.weight_kg
+              ELSE ord.weight_kg / pc.n END) AS weight_kg,
+            COALESCE(p.volume_cm3, CASE
+              WHEN COALESCE(pc.n, 0) <= 1 THEN ord.volume_cm3
+              WHEN pit.n_items > 0 THEN pit.volume_cm3
+              ELSE ord.volume_cm3 / pc.n END) AS volume_cm3
        FROM parcels p
        LEFT JOIN orders o ON o.id = p.order_id
+       LEFT JOIN LATERAL (
+         SELECT COUNT(*) AS n FROM parcels p2 WHERE p2.order_id = p.order_id
+       ) pc ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT COUNT(*) AS n_items,
+                SUM(pi.quantity * oi.price_kmf)                AS cif,
+                SUM(COALESCE(pr.weight_kg, 0) * pi.quantity)   AS weight_kg,
+                SUM(COALESCE(pr.volume_cm3, 0) * pi.quantity)  AS volume_cm3
+           FROM parcel_items pi
+           JOIN order_items oi ON oi.id = pi.order_item_id
+           LEFT JOIN products pr ON pr.id = pi.product_id
+          WHERE pi.parcel_id = p.id
+       ) pit ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT SUM(COALESCE(pr.weight_kg, 0) * oi.quantity)  AS weight_kg,
+                SUM(COALESCE(pr.volume_cm3, 0) * oi.quantity) AS volume_cm3
+           FROM order_items oi
+           JOIN products pr ON pr.id = oi.product_id
+          WHERE oi.order_id = p.order_id
+       ) ord ON TRUE
       WHERE p.id = ANY($1::uuid[])`,
     [parcelIds]
   );
@@ -391,6 +435,7 @@ async function createShipment(db, body, userId, options = {}) {
     supplier_id, parcel_ids,
   } = body;
   const marketId = options.marketId || null;
+  const effectiveMethod = defaultAllocationMethod(allocation_method, transport_mode);
 
   // customs_paid_kmf n'est plus requis à la création (workflow en deux étapes)
   // Il est saisi lors de la déclaration (declareCustomsPayment).
@@ -427,7 +472,7 @@ async function createShipment(db, body, userId, options = {}) {
         cif_value_kmf,
         amount,
         freight == null ? null : freight, total_weight_kg || null,
-        nb_parcels || null, allocation_method || 'by_cif_value',
+        nb_parcels || null, effectiveMethod,
         allocation_config ? JSON.stringify(allocation_config) : null,
         notes || null, supplier_id || null, userId, marketId,
       ]
@@ -448,7 +493,7 @@ async function createShipment(db, body, userId, options = {}) {
       ({ allocations } = await _reallocateDeclared(
         client,
         shipment.id,
-        { customs_paid_kmf: amount, allocation_method: allocation_method || 'by_cif_value', allocation_config },
+        { customs_paid_kmf: amount, allocation_method: effectiveMethod, allocation_config },
         parcel_ids
       ));
     } else if (parcel_ids?.length) {
@@ -750,6 +795,7 @@ module.exports = {
   isCustomsDeclaredForOrder,
   confirmCustomsShipmentsForOrder,
   allocateCustoms,
+  defaultAllocationMethod,
   propagateCostDouane,
   listShipments,
   getEffectiveRates,
