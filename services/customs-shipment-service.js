@@ -43,6 +43,14 @@ function httpError(status, message, code) {
   return e;
 }
 
+async function setLocalCustomsAuditContext(client, actorId, reason) {
+  // Session-local values scoped to the ongoing transaction; no pool leakage.
+  await client.query(
+    "SELECT set_config('komerce.actor_id', $1, true), set_config('komerce.change_reason', $2, true)",
+    [actorId == null ? '' : String(actorId), reason == null ? '' : String(reason)]
+  );
+}
+
 function toCents(value) {
   return Math.round(Number(value) * 100);
 }
@@ -572,7 +580,7 @@ async function createShipment(db, body, userId, options = {}) {
  * @returns {{ shipment, reallocated? }}
  * ✗ throws err.status=400 | 404 | 409 | 422
  */
-async function updateShipment(db, id, body) {
+async function updateShipment(db, id, body, actor = {}) {
   const allowed = [
     'reference', 'shipment_date', 'transitaire_name', 'transport_mode',
     'cif_value_kmf', 'customs_paid_kmf', 'freight_kmf', 'total_weight_kg',
@@ -610,6 +618,7 @@ async function updateShipment(db, id, body) {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
+    await setLocalCustomsAuditContext(client, actor.id, body && body.reason);
     const { rows: [current] } = await client.query(
       `SELECT * FROM customs_shipments WHERE id = $1 FOR UPDATE`,
       [id]
@@ -875,6 +884,7 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
+    await setLocalCustomsAuditContext(client, userId, payload && payload.reason);
 
     // 1. Charger et verrouiller le shipment
     const { rows: [ship] } = await client.query(

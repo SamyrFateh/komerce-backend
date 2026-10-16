@@ -165,7 +165,7 @@ router.post('/market/:marketCode/customs/shipments', requireCustomsAction, async
 
 router.post('/market/:marketCode/customs/shipments/:reference/update', requireCustomsAction, async (req, res, next) => {
   try {
-    const result = await workspace.updateCustomsShipment(req.params.reference, req.body || {}, req.workspaceMarket);
+    const result = await workspace.updateCustomsShipment(req.params.reference, req.body || {}, req.workspaceMarket, actionActor(req));
     return res.json({ ok: true, action: 'update_customs_shipment', result });
   } catch (err) {
     return sendWorkspaceError(err, res, next);
