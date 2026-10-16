@@ -97,6 +97,7 @@ module.exports = {
       'tests/unit/admin-customs-shipment-fees-route.test.js',
       'tests/integration/customs-shipment-fees-real-db.test.js',
       'tests/integration/customs-effective-rates-real-db.test.js',
+      'tests/integration/customs-certification-real-db.test.js',
       'tests/unit/customs-shipment-service-market-atomicity.test.js',
       'tests/integration/customs-shipments-contract.test.js',
       // E2E fonctionnel — chantier currency debt, LOT 8 (clôture). Vérifie
