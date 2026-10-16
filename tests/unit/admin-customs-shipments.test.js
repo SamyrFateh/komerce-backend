@@ -140,7 +140,7 @@ describe('admin-customs-shipments — activate/deactivate/delete', () => {
   it('POST /:id/activate transmet les parcel_ids', async () => {
     mockSvc.activateShipment.mockResolvedValue({ ok: true });
     await request(app).post('/api/admin/customs-shipments/s1/activate').send({ parcel_ids: ['p1', 'p2'] });
-    expect(mockSvc.activateShipment).toHaveBeenCalledWith(expect.anything(), 's1', ['p1', 'p2']);
+    expect(mockSvc.activateShipment).toHaveBeenCalledWith(expect.anything(), 's1', ['p1', 'p2'], undefined);
   });
 
   it('DELETE /:id → 200', async () => {

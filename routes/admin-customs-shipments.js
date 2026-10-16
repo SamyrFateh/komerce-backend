@@ -92,7 +92,7 @@ router.post('/:id/deactivate', ...guard, async (req, res, next) => {
 // POST /api/admin/customs-shipments/:id/activate
 router.post('/:id/activate', ...guard, async (req, res, next) => {
   try {
-    res.json(await svc.activateShipment(db, req.params.id, req.body.parcel_ids));
+    res.json(await svc.activateShipment(db, req.params.id, req.body.parcel_ids, req.body.parcel_shares));
   } catch (err) { next(err); }
 });
 
@@ -101,7 +101,7 @@ router.post('/:id/activate', ...guard, async (req, res, next) => {
 router.post('/:id/parcels', ...guard, async (req, res, next) => {
   try {
     const body = req.body || {};
-    res.json(await svc.addParcelsToShipment(db, req.params.id, body.parcel_ids, { id: req.user.id, reason: body.reason }));
+    res.json(await svc.addParcelsToShipment(db, req.params.id, body.parcel_ids, { id: req.user.id, reason: body.reason, parcel_shares: body.parcel_shares }));
   } catch (err) { next(err); }
 });
 
@@ -109,7 +109,7 @@ router.post('/:id/parcels', ...guard, async (req, res, next) => {
 router.post('/:id/parcels/remove', ...guard, async (req, res, next) => {
   try {
     const body = req.body || {};
-    res.json(await svc.removeParcelsFromShipment(db, req.params.id, body.parcel_ids, { id: req.user.id, reason: body.reason }));
+    res.json(await svc.removeParcelsFromShipment(db, req.params.id, body.parcel_ids, { id: req.user.id, reason: body.reason, parcel_shares: body.parcel_shares }));
   } catch (err) { next(err); }
 });
 

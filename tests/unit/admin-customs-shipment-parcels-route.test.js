@@ -49,7 +49,7 @@ describe('POST /:id/parcels et /:id/parcels/remove', () => {
     mockAdd.mockResolvedValue({ shipment_id: SHIP, added: [P1] });
     const res = await request(app).post(`/api/admin/customs-shipments/${SHIP}/parcels`).send({ parcel_ids: [P1], reason: 'arrivé', market_id: 'ignored' });
     expect(res.status).toBe(200);
-    expect(mockAdd).toHaveBeenCalledWith(expect.anything(), SHIP, [P1], { id: 'admin-1', reason: 'arrivé' });
+    expect(mockAdd).toHaveBeenCalledWith(expect.anything(), SHIP, [P1], { id: 'admin-1', reason: 'arrivé', parcel_shares: undefined });
   });
 
   it('retrait : transmet parcel_ids, acteur serveur et reason ; propage l\'erreur métier', async () => {
@@ -57,6 +57,6 @@ describe('POST /:id/parcels et /:id/parcels/remove', () => {
     const res = await request(app).post(`/api/admin/customs-shipments/${SHIP}/parcels/remove`).send({ parcel_ids: [P1], reason: 'erreur' });
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('CUSTOMS_SHIPMENT_CLOSED');
-    expect(mockRemove).toHaveBeenCalledWith(expect.anything(), SHIP, [P1], { id: 'admin-1', reason: 'erreur' });
+    expect(mockRemove).toHaveBeenCalledWith(expect.anything(), SHIP, [P1], { id: 'admin-1', reason: 'erreur', parcel_shares: undefined });
   });
 });
