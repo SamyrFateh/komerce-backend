@@ -1,6 +1,6 @@
 'use strict';
 
-const { insertRowUnderSection } = require('../../scripts/schema-promote');
+const { insertRowUnderSection, finalizeMarkdown } = require('../../scripts/schema-promote');
 
 describe('schema-promote empty section bootstrap', () => {
   test('creates a two-column table when the target section has none', () => {
@@ -39,5 +39,12 @@ describe('schema-promote empty section bootstrap', () => {
   test('still fails loudly when the target heading does not exist', () => {
     expect(() => insertRowUnderSection('# Schema\n', '### Missing', '| `x` | y |'))
       .toThrow('Heading introuvable');
+  });
+});
+
+describe('schema-promote fin de fichier', () => {
+  test('supprime la ligne vide finale laissée par le retrait d\'un bloc en fin de fichier', () => {
+    expect(finalizeMarkdown('# S\n\ntexte\n\n')).toBe('# S\n\ntexte\n');
+    expect(finalizeMarkdown('# S\n')).toBe('# S\n');
   });
 });
