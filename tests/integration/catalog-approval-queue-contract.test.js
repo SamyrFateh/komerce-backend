@@ -143,6 +143,22 @@ if (!hasIntegrationEnv) {
     });
   });
 
+  describe('GET /:id/visual-fr-proof (read only)', () => {
+    test('401 without auth and 403 for client', async () => {
+      expect((await request(app).get(`${BASE}/${nilUuid}/visual-fr-proof`)).status).toBe(401);
+      const client = await request(app).get(`${BASE}/${nilUuid}/visual-fr-proof`).set(...bearer(clientUser.token));
+      expect([401,403]).toContain(client.status);
+    });
+    test('400 malformed id, 404 nonexistent product for admin', async () => {
+      const malformed = await request(app).get(`${BASE}/not-uuid/visual-fr-proof`).set(...bearer(adminUser.token));
+      expect(malformed.status).toBe(400);
+      expect(malformed.body.code).toBe('INVALID_PRODUCT_ID');
+      const missing = await request(app).get(`${BASE}/${nilUuid}/visual-fr-proof`).set(...bearer(adminUser.token));
+      expect(missing.status).toBe(404);
+      expect(missing.body.code).toBe('PRODUCT_NOT_FOUND');
+    });
+  });
+
   describe('POST /:id/approve', () => {
     test('404 produit introuvable', async () => {
       const res = await request(app)
