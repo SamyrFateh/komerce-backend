@@ -35,6 +35,8 @@ const express = require('express');
 const router  = express.Router();
 const { authenticate, requireRole } = require('../../middleware/auth');
 const catalogApproval = require('../../services/catalog-approval');
+const db = require('../../db');
+const { certifyCatalogProductWithVisualEvidence } = require('../../services/catalog-refinery-combined-proof');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -44,6 +46,18 @@ router.get('/catalog/approval-queue', ...guard, async (req, res, next) => {
     const offset = Number(req.query.offset) || 0;
     const result = await catalogApproval.getApprovalQueue(undefined, { limit, offset });
     res.json(result);
+  } catch (err) { next(err); }
+});
+
+// Read-only evidence for the refinery review UI; never publishes a candidate.
+router.get('/catalog/approval-queue/:id/visual-fr-proof', ...guard, async (req, res, next) => {
+  try {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.params.id)) {
+      return res.status(400).json({ code: 'INVALID_PRODUCT_ID' });
+    }
+    const verdict = await certifyCatalogProductWithVisualEvidence(db, req.params.id);
+    if (!verdict) return res.status(404).json({ code: 'PRODUCT_NOT_FOUND' });
+    return res.json(verdict);
   } catch (err) { next(err); }
 });
 
