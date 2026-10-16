@@ -299,11 +299,11 @@ test('admin crée la douane avec parcel_refs sans identifiant marché client', a
 });
 
 // DOUANE-2A: audit actor must be wired by the authenticated mutation boundary.
-describe('DOUANE-2A actor audit wiring: routes/admin-shipping-customs-workspace-route.js', () => {
+describe('DOUANE-2A actor audit wiring: routes/admin-shipping-customs-workspace.js', () => {
   test('keeps authenticated actor propagation explicit', () => {
     const fs = require('fs');
     const path = require('path');
-    const src = fs.readFileSync(path.join(__dirname, '../../routes/admin-shipping-customs-workspace-route.js'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '../../routes/admin-shipping-customs-workspace.js'), 'utf8');
     expect(src).toMatch(/updateCustomsShipment\([\s\S]*?actionActor\(req\)/);
   });
 });
