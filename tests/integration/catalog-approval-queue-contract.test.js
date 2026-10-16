@@ -159,6 +159,23 @@ if (!hasIntegrationEnv) {
     });
   });
 
+  describe('POST /:id/media/:mediaId/visual-fr-review', () => {
+    const mediaId = '00000000-0000-0000-0000-000000000002';
+    test('401 without authentication and 403 for ordinary client', async () => {
+      const url = `${BASE}/${nilUuid}/media/${mediaId}/visual-fr-review`;
+      expect((await request(app).post(url).send({text_presence:'NONE'})).status).toBe(401);
+      expect([401,403]).toContain((await request(app).post(url).set(...bearer(clientUser.token)).send({text_presence:'NONE'})).status);
+    });
+    test('admin cannot create review for malformed or absent media', async () => {
+      const bad = await request(app).post(`${BASE}/${nilUuid}/media/not-uuid/visual-fr-review`)
+        .set(...bearer(adminUser.token)).send({text_presence:'NONE'});
+      expect(bad.status).toBe(400);
+      const absent = await request(app).post(`${BASE}/${nilUuid}/media/${mediaId}/visual-fr-review`)
+        .set(...bearer(adminUser.token)).send({text_presence:'NONE'});
+      expect(absent.status).toBe(404);
+    });
+  });
+
   describe('POST /:id/approve', () => {
     test('404 produit introuvable', async () => {
       const res = await request(app)
