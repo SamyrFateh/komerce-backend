@@ -8,8 +8,9 @@
  * @outputs       global_sourcing_projection, sourcing_mutation_result
  * @depends       db.js, services/pricing-engine.js, services/customs-dynamic-category-classifier.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
- * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures
+ * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures, boutique_categories, boutique_subcategories
  * @db-write-via:sourcing-mutations products
+ * @db-write       sourcing_candidates, sourcing_candidate_events
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates
  * @db-write-via:sourcing-source-autopilot sourcing_sources, sourcing_captures
