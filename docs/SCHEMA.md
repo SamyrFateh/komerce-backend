@@ -900,3 +900,16 @@ migration: 295
 section: ### Customs financial correction audit (migration 295)
 role: Append-only evidence of customs shipment financial corrections with old/new JSONB snapshots, optional actor and reason, and same-transaction trigger.
 -->
+
+
+### Visual French media review evidence (migration 296)
+
+`catalog_media_visual_fr_reviews` records human review of source image text linked to `catalog_media`, keeping source URL, variant, author and review date. An image or variant change invalidates its review at reading time. No automatic backfill or publication authority.
+
+<!-- schema-pending
+object: catalog_media_visual_fr_reviews
+kind: table
+migration: 296
+section: ### Visual French media review evidence (migration 296)
+role: Preuve de relecture visuelle francaise associee a une image, sa variante, son auteur et sa date ; aucune publication automatique.
+-->
