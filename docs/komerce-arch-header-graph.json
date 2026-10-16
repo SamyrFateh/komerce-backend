@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1764,
-    "edges": 8895,
+    "edges": 8901,
     "dbTables": 205,
     "doctrines": 637,
     "impactAreas": 199,
@@ -15214,7 +15214,8 @@
         "purchase_orders",
         "product_skus",
         "sourcing_captures",
-        "sourcing_observations"
+        "sourcing_observations",
+        "purchase_lines"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -18667,7 +18668,8 @@
         "hub_purchase_allocations",
         "hub_physical_units",
         "hub_physical_unit_placements",
-        "hub_custody_events"
+        "hub_custody_events",
+        "purchase_lines"
       ],
       "dbWrite": [
         "hub_purchase_allocations",
@@ -18881,7 +18883,8 @@
         "sourcing_candidates",
         "supplier_catalog_imports",
         "sourcing_sources",
-        "products"
+        "products",
+        "import_runtime_item_events"
       ],
       "dbWrite": [
         "import_runtime_runs"
@@ -28215,7 +28218,9 @@
         "parcels",
         "purchase_orders",
         "v_purchase_line_progress",
-        "supplier_execution_payments"
+        "supplier_execution_payments",
+        "purchase_lines",
+        "supplier_execution_events"
       ],
       "dbWrite": [
         "signals"
@@ -29835,7 +29840,8 @@
       ],
       "dbRead": [
         "sourcing_sources",
-        "sourcing_captures"
+        "sourcing_captures",
+        "provider_credentials"
       ],
       "dbWrite": [
         "sourcing_sources",
@@ -62744,6 +62750,12 @@
     },
     {
       "from": "services/catalog-stock-sync-decision.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
       "to": "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
       "type": "doctrine",
       "label": "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md"
@@ -68731,6 +68743,12 @@
     },
     {
       "from": "services/hub-physical-identity.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
       "to": "db:hub_purchase_allocations",
       "type": "db-write",
       "label": "hub_purchase_allocations"
@@ -69084,6 +69102,12 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/import-runtime-runs.js",
+      "to": "db:import_runtime_item_events",
+      "type": "db-read",
+      "label": "import_runtime_item_events"
     },
     {
       "from": "services/import-runtime-runs.js",
@@ -84146,6 +84170,18 @@
     },
     {
       "from": "services/signal-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "db:supplier_execution_events",
+      "type": "db-read",
+      "label": "supplier_execution_events"
+    },
+    {
+      "from": "services/signal-service.js",
       "to": "db:signals",
       "type": "db-write",
       "label": "signals"
@@ -86581,6 +86617,12 @@
       "to": "db:sourcing_captures",
       "type": "db-read",
       "label": "sourcing_captures"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:provider_credentials",
+      "type": "db-read",
+      "label": "provider_credentials"
     },
     {
       "from": "services/sourcing-source-autopilot.js",
@@ -108975,7 +109017,8 @@
         "purchase_orders",
         "product_skus",
         "sourcing_captures",
-        "sourcing_observations"
+        "sourcing_observations",
+        "purchase_lines"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -108993,6 +109036,7 @@
       "mustCheck": [
         "db:catalog_stock_sync_state",
         "db:product_skus",
+        "db:purchase_lines",
         "db:purchase_orders",
         "db:sourcing_captures",
         "db:sourcing_observations",
@@ -112492,7 +112536,8 @@
         "hub_purchase_allocations",
         "hub_physical_units",
         "hub_physical_unit_placements",
-        "hub_custody_events"
+        "hub_custody_events",
+        "purchase_lines"
       ],
       "dbWrite": [
         "hub_purchase_allocations",
@@ -112533,6 +112578,7 @@
         "db:order_items",
         "db:orders",
         "db:outbox_events",
+        "db:purchase_lines",
         "db:purchase_orders",
         "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
         "doctrine:HUB-001 Physical Identity",
@@ -112706,7 +112752,8 @@
         "sourcing_candidates",
         "supplier_catalog_imports",
         "sourcing_sources",
-        "products"
+        "products",
+        "import_runtime_item_events"
       ],
       "dbWrite": [
         "import_runtime_runs"
@@ -112726,6 +112773,7 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:import_runtime_item_events",
         "db:import_runtime_runs",
         "db:products",
         "db:sourcing_candidates",
@@ -122042,7 +122090,9 @@
         "parcels",
         "purchase_orders",
         "v_purchase_line_progress",
-        "supplier_execution_payments"
+        "supplier_execution_payments",
+        "purchase_lines",
+        "supplier_execution_events"
       ],
       "dbWrite": [
         "signals"
@@ -122072,8 +122122,10 @@
         "db:order_items",
         "db:orders",
         "db:parcels",
+        "db:purchase_lines",
         "db:purchase_orders",
         "db:signals",
+        "db:supplier_execution_events",
         "db:supplier_execution_payments",
         "db:v_purchase_line_progress",
         "doctrine:market_scope_is_server_authority",
@@ -123639,7 +123691,8 @@
       "ownedFiles": [],
       "dbRead": [
         "sourcing_sources",
-        "sourcing_captures"
+        "sourcing_captures",
+        "provider_credentials"
       ],
       "dbWrite": [
         "sourcing_sources",
@@ -123691,6 +123744,7 @@
         "db:product_skus",
         "db:product_variants",
         "db:products",
+        "db:provider_credentials",
         "db:sourcing_candidate_events",
         "db:sourcing_candidates",
         "db:sourcing_captures",

@@ -8,7 +8,7 @@
  * @outputs       immutable_purchase_allocation, physical_unit, custody_events, governed_incident, transactional_outbox_event
  * @depends       services/outbox-producer.js, services/incident-write-service.js
  * @used-by       HUB-001 internal logistics boundary
- * @db-read       purchase_orders, orders, order_items, incidents, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events
+ * @db-read       purchase_orders, orders, order_items, incidents, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events, purchase_lines
  * @db-write      hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events
  * @db-write-via:incident-write-service incidents
  * @db-write-via:outbox-producer outbox_events
