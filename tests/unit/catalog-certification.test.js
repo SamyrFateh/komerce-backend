@@ -119,7 +119,8 @@ describe('catalog canonical certification', () => {
     await certifyCatalogProduct(q, 'p-1', {publicationGuard:PASS_GUARD});
     const sql = q.query.mock.calls[0][0];
     expect(sql).toContain("NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL");
-    expect(sql).toContain("NULLIF(BTRIM(supplier_order_identity), '') IS NOT NULL");
+    expect(sql).toContain("supplier_order_identity IS NOT NULL");
+    expect(sql).not.toContain("BTRIM(supplier_order_identity)");
   });
 
   test('combined refinery certification requires explicit source-linked visual FR review', () => {
