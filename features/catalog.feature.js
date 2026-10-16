@@ -466,6 +466,7 @@ module.exports = {
       'tests/unit/product-publication-guard.test.js',
       'tests/unit/catalog-media-visual-fr-proof.test.js',
       'tests/unit/catalog-visual-fr-evidence-read.test.js',
+      'tests/unit/catalog-visual-fr-human-review-write.test.js',
       'tests/unit/catalog-refinery-combined-proof.test.js',
       'tests/unit/products.test.js',
       // E2E fonctionnel — chantier currency debt (audit 09-2026), LOT 2.
