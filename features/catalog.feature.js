@@ -167,6 +167,7 @@ module.exports = {
       'services/pipeline-certification-gate-c.js',
       'services/catalog-media-visual-fr-proof.js',
       'services/catalog-visual-fr-evidence-read.js',
+      'services/catalog-refinery-combined-proof.js',
       'services/catalog-fr-quality.js',
       'services/catalog-terminology-memory.js',
       'services/product-admin-service.js',
@@ -464,6 +465,7 @@ module.exports = {
       'tests/unit/product-publication-guard.test.js',
       'tests/unit/catalog-media-visual-fr-proof.test.js',
       'tests/unit/catalog-visual-fr-evidence-read.test.js',
+      'tests/unit/catalog-refinery-combined-proof.test.js',
       'tests/unit/products.test.js',
       // E2E fonctionnel — chantier currency debt (audit 09-2026), LOT 2.
       // products.price_kmf/cost_kmf/unsold_price_kmf (migration 215,
