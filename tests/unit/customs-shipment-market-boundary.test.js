@@ -5,8 +5,9 @@ jest.mock('../../services/documents/customs-invoice', () => ({issueForShipment:j
 const {assertShipmentParcelMarket} = require('../../services/customs-shipment-service');
 const id1='11111111-1111-4111-8111-111111111111';
 const id2='22222222-2222-4222-8222-222222222222';
-function client(shipmentMarket, parcels) {
+function client(shipmentMarket, parcels, grouped = []) {
   return {query:jest.fn(async (sql) => {
+    if(sql.includes('FROM customs_shipment_parcels csp')) return {rows:grouped};
     if(sql.includes('FROM customs_shipments')) return {rows:[{market_id:shipmentMarket}]};
     if(sql.includes('FROM parcels p')) return {rows:parcels};
     throw new Error('Unexpected SQL');
@@ -30,4 +31,10 @@ test('rejects missing parcel, duplicate refs, and shipment without market',async
     .rejects.toMatchObject({code:'CUSTOMS_DUPLICATE_PARCEL'});
   await expect(assertShipmentParcelMarket(client(null,[]),'s',[id1]))
     .rejects.toMatchObject({code:'CUSTOMS_SHIPMENT_MARKET_REQUIRED'});
+});
+test('rejects a parcel already grouped in another active shipment',async()=>{
+  const q=client('KM',[{id:id1,market_id:'KM'}],[{parcel_id:id1}]);
+  await expect(assertShipmentParcelMarket(q,'shipment',[id1])).rejects.toMatchObject({
+    status:409, code:'CUSTOMS_PARCEL_ALREADY_GROUPED'
+  });
 });

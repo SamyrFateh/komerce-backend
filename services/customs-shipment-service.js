@@ -340,6 +340,18 @@ async function assertShipmentParcelMarket(client, shipmentId, parcelIds) {
   if (rows.length !== ids.length || rows.some(row => String(row.market_id) !== String(shipment.market_id))) {
     throw httpError(409, 'Colis absent ou relevant d’un autre marché', 'CUSTOMS_PARCEL_MARKET_MISMATCH');
   }
+  // Un colis ne porte qu'UNE expédition active : sinon ses droits/fret seraient comptés deux fois.
+  // Les lignes colis sont verrouillées ci-dessus : le contrôle tient face à un rattachement concurrent.
+  const { rows: grouped } = await client.query(
+    `SELECT csp.parcel_id
+       FROM customs_shipment_parcels csp
+       JOIN customs_shipments cs ON cs.id = csp.shipment_id
+      WHERE csp.parcel_id = ANY($1::uuid[]) AND csp.shipment_id <> $2 AND cs.is_active = TRUE
+      LIMIT 1`, [ids, shipmentId]
+  );
+  if (grouped.length) {
+    throw httpError(409, 'Colis déjà rattaché à une autre expédition active', 'CUSTOMS_PARCEL_ALREADY_GROUPED');
+  }
 }
 
 /** Insère les lignes de ventilation et propage vers orders (dans tx). */
