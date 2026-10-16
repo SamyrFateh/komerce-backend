@@ -25,7 +25,7 @@ const PROPOSALS={
 };
 function fold(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
 function suggest(group,categories,subcategories){
- const destination=PROPOSALS[fold(group.source_path).replace(/\s*>\s*/g,' > ')]||null;
+ const destination=PROPOSALS[String(group.source_path||'').normalize('NFKC').trim().toLowerCase().replace(/\s*>\s*/g,' > ').replace(/\s+/g,' ')]||null;
  if(!destination)return {status:'REVIEW_REQUIRED',reason:'NO_FR_PROPOSAL'};
  const [parent,child]=destination;
  const parentRow=categories.find(x=>x.is_active&&[x.key,x.label].some(v=>fold(v)===fold(parent)));
