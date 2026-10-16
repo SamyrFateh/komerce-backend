@@ -883,3 +883,7 @@ migration: 292
 section: ### Supplier commercial category correspondence (migration 292)
 role: Mapping commercial fournisseur + chemin source normalisé vers paire boutique active, statut de validation et proposition de libellé français ; aucune autorité douanière ou publication.
 -->
+
+## Sourcing candidate independent boutique attachment (migration 293)
+
+`sourcing_candidates.commercial_taxonomy_review` (`jsonb`, nullable, `intended_migration_schema`) stores a confirmed active boutique category/subcategory from supplier-path mapping independently of `komerce_category`, scan outcome and customs qualification. Existing candidate rows remain unchanged until the explicit audited batch attachment; journal entries are added to `sourcing_candidate_events` only for newly attached candidates. No KIR historical mutation or catalogue publication is implied.
