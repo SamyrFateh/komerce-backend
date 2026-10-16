@@ -385,10 +385,10 @@ function sanitizeUpdateBody(body) {
   }, {});
 }
 
-async function updateCustomsShipment(reference, body, market) {
+async function updateCustomsShipment(reference, body, market, actor = {}) {
   const resolved = requireMarket(market);
   const shipment = await resolveShipment(reference, resolved.id);
-  const result = await customs.updateShipment(db, shipment.id, sanitizeUpdateBody(body));
+  const result = await customs.updateShipment(db, shipment.id, {...sanitizeUpdateBody(body), reason: body && body.reason}, actor);
   return {
     shipment: {
       reference: result.shipment.reference,
@@ -406,6 +406,7 @@ async function declareCustomsShipment(reference, body, market, actor = {}) {
     customs_paid_kmf: body && body.customs_paid_kmf,
     freight_kmf: body && body.freight_kmf,
     notes: body && body.notes,
+    reason: body && body.reason,
   }, actor.id || null);
 }
 
