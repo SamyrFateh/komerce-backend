@@ -77,6 +77,19 @@ describe('audit CJ KIR : preuve brute et comparaison taxonomie en lecture seule'
     expect(result.recorded).toEqual({received:20,deferred:12});
     expect(result.summary.deferred_current).toBe(1);
     expect(result.provider_api_calls).toBe(0);
+    expect(result.classification_domains).toEqual({
+      regulatory_estimate: {
+        source:'customs_categories',
+        authority:'DIAGNOSTIC_ONLY',
+        may_set_actual_customs:false,
+      },
+      boutique_commercial: {
+        source:'NOT_EVALUATED',
+        authority:'NO_COMMERCIAL_DECISION',
+        requires_separate_review:true,
+      },
+    });
+    expect(result.note).toContain('ni taxonomie boutique confirmée');
     expect(result.db_writes).toBe(0);
     expect(result.active_taxonomy.map(item=>item.key)).toEqual(['home','clothes']);
     expect(result.active_taxonomy[0]).toMatchObject({

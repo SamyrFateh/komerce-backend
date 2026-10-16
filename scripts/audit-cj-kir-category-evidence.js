@@ -272,6 +272,20 @@ async function auditRun(runRef, deps = {
     run_ref:run.run_ref, source:'CJdropshipping',
     recorded:{received:Number(run.source_total)||0,deferred:Number(asObject(run.intake).deferred)||0},
     ...evidence,
+    // Never promote legacy customs-category evidence into a boutique decision.
+    // This audit does not join the boutique taxonomy nor prove catalog readiness.
+    classification_domains: {
+      regulatory_estimate: {
+        source: 'customs_categories',
+        authority: 'DIAGNOSTIC_ONLY',
+        may_set_actual_customs: false,
+      },
+      boutique_commercial: {
+        source: 'NOT_EVALUATED',
+        authority: 'NO_COMMERCIAL_DECISION',
+        requires_separate_review: true,
+      },
+    },
     taxonomy_defects:qualifyTaxonomyDefects(evidence),
     // Inventaire nécessaire pour distinguer « vocabulaire manquant » de
     // « catégorie douanière absente ». Aucun prix, taux, marge ni secret.
@@ -281,7 +295,7 @@ async function auditRun(runRef, deps = {
         key:shorten(cat.key,80),label:shorten(cat.label || cat.key,120),
         classification_terms:Object.keys(asObject(cat.classification_terms)).slice(0,80),
       })),
-    note:'READ ONLY. Aucun appel API CJ, aucune modification DB, aucune reclassification. Toutes les simulations utilisent le référentiel actuel ; previous_flat_scoring reproduit le mode de pondération fournisseur à plat du moteur V2, pas un ancien snapshot du référentiel. Les candidats sont mutables depuis le passage. category_drift non nul bloque toute reclassification automatique jusqu’à validation de ses causes.',
+    note:'READ ONLY. Diagnostic de classification douanière pour estimation seulement : ni taxonomie boutique confirmée, ni code HS vérifié, ni montant réel payé. Aucun appel API CJ, aucune modification DB, aucune reclassification. Toutes les simulations utilisent le référentiel actuel ; previous_flat_scoring reproduit le mode de pondération fournisseur à plat du moteur V2, pas un ancien snapshot du référentiel. Les candidats sont mutables depuis le passage. category_drift non nul bloque toute reclassification automatique jusqu’à validation de ses causes.',
     provider_api_calls:0,db_writes:0,
   };
 }
