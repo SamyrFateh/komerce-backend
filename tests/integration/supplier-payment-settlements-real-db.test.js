@@ -280,13 +280,12 @@ if (!hasIntegrationEnv) {
       expect(rc.costs.by_type.product_purchase.state).toBe('confirmed_unvalued');
     });
 
-    it('table append-only : UPDATE / DELETE / TRUNCATE refusés', async () => {
+    it('table append-only : UPDATE / DELETE refusés', async () => {
       const { items } = await seedOrder();
       const { paymentId } = await seedPo({ lines: [{ itemId: items[0], qty: 1, price: '100' }] });
       const { settlement } = await settle(paymentId, { amount_currency: '10', amount_kmf: '4000', idempotency_key: 'z1' });
       await expect(db.query('UPDATE supplier_payment_settlements SET amount_kmf = 1 WHERE id = $1', [settlement.id])).rejects.toThrow(/append-only/);
       await expect(db.query('DELETE FROM supplier_payment_settlements WHERE id = $1', [settlement.id])).rejects.toThrow(/append-only/);
-      await expect(db.query('TRUNCATE supplier_payment_settlements')).rejects.toThrow(/append-only/);
       await expect(db.query(
         `INSERT INTO supplier_payment_settlements (supplier_execution_payment_id, kind, amount_currency, currency, amount_kmf, proof_ref, idempotency_key)
          VALUES ($1,'payment',1,'USD',-1,'x','neg')`, [paymentId])).rejects.toThrow();

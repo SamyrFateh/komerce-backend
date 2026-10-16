@@ -11,7 +11,7 @@
 --   other_refund  journalisé sans effet sur l'achat ni sur les frais
 -- Le signe est porté par kind (montants toujours > 0). Le taux effectif n'est jamais stocké :
 -- il se calcule (Σ KMF / Σ devise). Aucun taux de référence n'est utilisé.
--- Append-only : correction = nouvelle ligne de compensation (un refund typé), pas de kind
+-- Append-only (UPDATE/DELETE refusés) : correction = nouvelle ligne de compensation (un refund typé), pas de kind
 -- 'correction' (il rouvrirait un signe libre et contournerait les plafonds de remboursement).
 --
 -- Additive, aucun backfill, aucun débit, aucune écriture dans les allocations de coût.
@@ -69,9 +69,8 @@ CREATE TRIGGER trg_sps_immutable
   BEFORE UPDATE OR DELETE ON public.supplier_payment_settlements
   FOR EACH ROW EXECUTE FUNCTION public.supplier_payment_settlements_immutable();
 
-CREATE TRIGGER trg_sps_no_truncate
-  BEFORE TRUNCATE ON public.supplier_payment_settlements
-  FOR EACH STATEMENT EXECUTE FUNCTION public.supplier_payment_settlements_immutable();
+-- Pas de garde TRUNCATE : le reset admin et la purge contrôlée tronquent par cascade FK
+-- (opérations d'exploitation distinctes, gouvernées à part) ; seules les écritures ligne sont figées.
 
 COMMENT ON TABLE public.supplier_payment_settlements IS
   'Règlements fournisseur réellement débités en KMF (append-only) : payment / goods_refund / fee_refund / other_refund ; taux effectif calculé, jamais stocké.';
