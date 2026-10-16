@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-13T11:32:54.452Z",
+  "generatedAt": "2026-10-16T08:49:09.156Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 722,
+  "count": 724,
   "routes": [
     {
       "method": "GET",
@@ -2882,6 +2882,16 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/category-options",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/category-options",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/promote",
       "mountPrefix": "/api/admin/workspaces/sourcing",
@@ -2896,6 +2906,16 @@
       "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/reject",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/candidates/:candidateRef/reject",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/resolve-category",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/resolve-category",
       "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

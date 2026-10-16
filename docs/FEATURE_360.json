@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 306,
+    "businessDependencies": 307,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -3251,7 +3251,7 @@
             ]
           },
           "services": {
-            "count": 73,
+            "count": 74,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -3361,6 +3361,11 @@
               {
                 "declared": "services/catalog-promotion/content.js",
                 "resolvedPath": "services/catalog-promotion/content.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-promotion/editorial-identity.js",
+                "resolvedPath": "services/catalog-promotion/editorial-identity.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -4631,7 +4636,7 @@
             ]
           }
         },
-        "totalFiles": 426,
+        "totalFiles": 427,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -6156,6 +6161,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "consumer": "sourcing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "projections": {
@@ -6334,7 +6346,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 151,
+            "count": 152,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6699,6 +6711,11 @@
               {
                 "declared": "dashboards/canonical/css/canonical-theme-v2.css",
                 "resolvedPath": "public/dashboards/canonical/css/canonical-theme-v2.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/canonical-unified-chrome-v1.css",
+                "resolvedPath": "public/dashboards/canonical/css/canonical-unified-chrome-v1.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7264,8 +7281,23 @@
             ]
           },
           "services": {
-            "count": 33,
+            "count": 40,
             "files": [
+              {
+                "declared": "public/golden-e2e-cockpit.html",
+                "resolvedPath": "public/golden-e2e-cockpit.html",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "public/js/golden-e2e-cockpit-journey.js",
+                "resolvedPath": "public/js/golden-e2e-cockpit-journey.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "public/js/golden-recipe-scenarios.js",
+                "resolvedPath": "public/js/golden-recipe-scenarios.js",
+                "status": "resolved-on-disk-no-header"
+              },
               {
                 "declared": "services/canonical-reference-resolver.js",
                 "resolvedPath": "services/canonical-reference-resolver.js",
@@ -7367,6 +7399,26 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/golden-checkout-thread.js",
+                "resolvedPath": "services/golden-checkout-thread.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/golden-e2e-cockpit.js",
+                "resolvedPath": "services/golden-e2e-cockpit.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/golden-gate-kit.js",
+                "resolvedPath": "services/golden-gate-kit.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/golden-upstream-evidence.js",
+                "resolvedPath": "services/golden-upstream-evidence.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/hub-dashboard-queries.js",
                 "resolvedPath": "services/hub-dashboard-queries.js",
                 "status": "resolved-in-technical-graph"
@@ -7434,7 +7486,7 @@
             ]
           },
           "tests": {
-            "count": 181,
+            "count": 185,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -7469,6 +7521,11 @@
               {
                 "declared": "tests/e2e/dashboard-role-matrix.spec.js",
                 "resolvedPath": "tests/e2e/dashboard-role-matrix.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/golden-cockpit-browser-flow.spec.js",
+                "resolvedPath": "tests/e2e/golden-cockpit-browser-flow.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8127,6 +8184,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/golden-e2e-cockpit-journey.test.js",
+                "resolvedPath": "tests/unit/golden-e2e-cockpit-journey.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/golden-recipe-scenarios.test.js",
+                "resolvedPath": "tests/unit/golden-recipe-scenarios.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/html-routes.test.js",
                 "resolvedPath": "tests/unit/html-routes.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8312,6 +8379,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-handoff-clean-queue.test.js",
+                "resolvedPath": "tests/unit/sourcing-handoff-clean-queue.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/supplier-360-service.test.js",
                 "resolvedPath": "tests/unit/supplier-360-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8344,7 +8416,7 @@
             ]
           }
         },
-        "totalFiles": 396,
+        "totalFiles": 408,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -15511,16 +15583,11 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 3,
             "files": [
               {
                 "declared": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/integration/parcel-auto-create-cash-payment.test.js",
-                "resolvedPath": "tests/integration/parcel-auto-create-cash-payment.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15536,7 +15603,7 @@
             ]
           }
         },
-        "totalFiles": 7,
+        "totalFiles": 6,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -16435,6 +16502,7 @@
       },
       "authority": "backend-core — logistics possède la vérité physique et la custody ; scan-engine.js reste autorité de la machine de scan colis legacy, hub-physical-identity.js possède HUB-001 sans jamais réassigner les vérités Purchasing/Orders/Market",
       "invariants": [
+        "HUB-A : le Hub organise librement ses colis — un colis représente une commande s'il porte une ligne (order_items) de cette commande, ou si sa commande porteuse (parcels.order_id) n'a aucune ligne rattachée ; parcels.order_id n'est jamais réécrit. Tout ajout/retrait/réaffectation de ligne passe par parcel-item-mutation-service, exige un colis draft/preparation de même destination, conserve identité, quantité et compteurs qty_* (UNIQUE(order_item_id) inchangé) et laisse une trace parcel_events (item_assigned / item_removed / item_reassigned_in|out) dans la même transaction. La règle de paiement à l'expédition s'applique à chaque commande représentée ; aucune règle de facturation ni d'encaissement ne change",
         "le HUB est une primitive logistics Komerce, jamais la propriété d un Market, d une source ou d un fournisseur ; Supplier Leg et Market Leg restent deux jambes distinctes",
         "split/merge/repack changent les enveloppes physiques sans casser la filiation order item → purchase line/PO → allocation/unité Hub → parcel/shipment → relais",
         "le fret maritime ne se ventile jamais au poids : volume si snapshot, repartition egale confidence low sinon",
@@ -16675,7 +16743,7 @@
             ]
           },
           "services": {
-            "count": 28,
+            "count": 29,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -16730,6 +16798,11 @@
               {
                 "declared": "services/parcel-operations.js",
                 "resolvedPath": "services/parcel-operations.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/parcel-order-membership.js",
+                "resolvedPath": "services/parcel-order-membership.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -16820,8 +16893,18 @@
             ]
           },
           "tests": {
-            "count": 57,
+            "count": 59,
             "files": [
+              {
+                "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/hub-membership-readers.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/hub-multi-order-parcels.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/hub-multi-order-parcels.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
@@ -16933,11 +17016,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/parcel-auto-create-cash-payment.test.js",
-                "resolvedPath": "tests/unit/parcel-auto-create-cash-payment.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/parcel-auto-create-service.test.js",
                 "resolvedPath": "tests/unit/parcel-auto-create-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -16965,6 +17043,11 @@
               {
                 "declared": "tests/unit/parcel-operations.test.js",
                 "resolvedPath": "tests/unit/parcel-operations.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/parcel-order-membership.test.js",
+                "resolvedPath": "tests/unit/parcel-order-membership.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17130,7 +17213,7 @@
             ]
           }
         },
-        "totalFiles": 119,
+        "totalFiles": 122,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -17549,6 +17632,11 @@
             "status": "resolved"
           },
           {
+            "fn": "addParcelItemTraced",
+            "file": "services/parcel-item-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "appendParcelShipmentInfo",
             "file": "services/parcel-mutation-service.js",
             "status": "resolved"
@@ -17599,6 +17687,16 @@
             "status": "resolved"
           },
           {
+            "fn": "listOrdersRepresentedByParcels",
+            "file": "services/parcel-order-membership.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "listParcelsRepresentingOrder",
+            "file": "services/parcel-order-membership.js",
+            "status": "resolved"
+          },
+          {
             "fn": "listRelais",
             "file": "services/relais-mutation-service.js",
             "status": "resolved"
@@ -17616,6 +17714,11 @@
           {
             "fn": "moveAllocationQuantity",
             "file": "services/hub-physical-identity.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "reassignParcelItem",
+            "file": "services/parcel-item-mutation-service.js",
             "status": "resolved"
           },
           {
@@ -17640,6 +17743,11 @@
           },
           {
             "fn": "removeParcelItem",
+            "file": "services/parcel-item-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "removeParcelItemTraced",
             "file": "services/parcel-item-mutation-service.js",
             "status": "resolved"
           },
@@ -18383,7 +18491,7 @@
         "scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI",
         "utils/currency.js#getMarketCurrency throw si le marché n'existe pas — jamais de devise par défaut silencieuse",
         "utils/currency.js#formatAmount suppose un montant déjà dans l'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel",
-        "M10 (ouverture Mayotte) est un INSERT seul — vérifié réellement : 0 fichier de M1/M1b/M1c/M2/M5 modifié pour ouvrir ce marché, cf. tests/integration/market-open-mayotte.test.js",
+        "M10 (ouverture Mayotte) est un INSERT seul — vérifié réellement : 0 fichier de M1/M1b/M1c/M2/M5 modifié pour ouvrir ce marché, cf. tests/integration/market-open-matrix.test.js",
         "reference_currency = EUR (canonique de la Currency Boundary), structurellement distinct de economic_engine_base_currency = KMF (economic-engine, inchangé) — ne jamais confondre les deux (freeze P1, 22-08-2026)",
         "invariant 9 : aucune paire directe entre deux devises Zone franc (KMF↔XAF) n'est jamais stockée ni calculée comme telle — toute conversion se dérive de deux parités vers EUR au moment du calcul, cf. currency_parities et projectAmount()",
         "currency_parities est la SEULE source de parités — aucune parité ne peut être maintenue manuellement dans un second artefact applicatif (server.js et b-utils.js consomment via adapter, ne portent jamais leur propre valeur)",
@@ -18502,7 +18610,7 @@
             ]
           },
           "tests": {
-            "count": 20,
+            "count": 18,
             "files": [
               {
                 "declared": "tests/integration/currency-boundary.test.js",
@@ -18520,18 +18628,8 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/integration/market-open-cameroon.test.js",
-                "resolvedPath": "tests/integration/market-open-cameroon.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/integration/market-open-congo.test.js",
-                "resolvedPath": "tests/integration/market-open-congo.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/integration/market-open-mayotte.test.js",
-                "resolvedPath": "tests/integration/market-open-mayotte.test.js",
+                "declared": "tests/integration/market-open-matrix.test.js",
+                "resolvedPath": "tests/integration/market-open-matrix.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18607,7 +18705,7 @@
             ]
           }
         },
-        "totalFiles": 37,
+        "totalFiles": 35,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -29581,7 +29679,7 @@
             ]
           },
           "migrations": {
-            "count": 14,
+            "count": 15,
             "files": [
               {
                 "declared": "migrations/041_sourcing_candidates.sql",
@@ -29652,6 +29750,11 @@
                 "declared": "migrations/261_sourcing_source_lifecycle_update.sql",
                 "resolvedPath": "migrations/261_sourcing_source_lifecycle_update.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/292_supplier_commercial_category_mappings.sql",
+                "resolvedPath": "migrations/292_supplier_commercial_category_mappings.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -29671,8 +29774,13 @@
             ]
           },
           "scripts": {
-            "count": 7,
+            "count": 8,
             "files": [
+              {
+                "declared": "scripts/audit-cj-kir-category-evidence.js",
+                "resolvedPath": "scripts/audit-cj-kir-category-evidence.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "scripts/catalog-product-read-cutover-trial-staging.js",
                 "resolvedPath": "scripts/catalog-product-read-cutover-trial-staging.js",
@@ -29711,7 +29819,7 @@
             ]
           },
           "services": {
-            "count": 33,
+            "count": 34,
             "files": [
               {
                 "declared": "services/catalog-product-read-cutover-trial.js",
@@ -29874,6 +29982,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/supplier-commercial-category-mapping.js",
+                "resolvedPath": "services/supplier-commercial-category-mapping.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/suppliers/aliexpress-discovery.js",
                 "resolvedPath": "services/suppliers/aliexpress-discovery.js",
                 "status": "resolved-in-technical-graph"
@@ -29881,7 +29994,7 @@
             ]
           },
           "tests": {
-            "count": 55,
+            "count": 56,
             "files": [
               {
                 "declared": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
@@ -29941,6 +30054,11 @@
               {
                 "declared": "tests/unit/aliexpress-discovery.test.js",
                 "resolvedPath": "tests/unit/aliexpress-discovery.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/audit-cj-kir-category-evidence.test.js",
+                "resolvedPath": "tests/unit/audit-cj-kir-category-evidence.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -30161,7 +30279,7 @@
             ]
           }
         },
-        "totalFiles": 112,
+        "totalFiles": 116,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -30636,7 +30754,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 28
+          "count": 30
         }
       },
       "businessDependencies": [
@@ -30653,6 +30771,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {

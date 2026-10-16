@@ -73,4 +73,27 @@ describe('finance-metrics/finance-summary', () => {
     expect(result.marges.taux_marge_pct).toBeNull();
     expect(result.marges.alertes_perte).toBeNull();
   });
+
+  it('douane inconnue : prédicat #2554 dans les requêtes de coûts/marges + compteur exposé', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ ca_kmf: '100', ca_prev_kmf: '0', nb_commandes: '1', nb_prev: '0', nb_livrees: '0', nb_annulees: '0', panier_moyen_kmf: '100', nb_cash: '0', nb_stripe: '0', ca_cash_kmf: '0', ca_stripe_eur: '0', cout_logistique_kmf: '0', marge_reelle_kmf: '0', nb_avec_cost: '0', nb_sans_cost: '0', nb_douane_inconnue: '3' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await getFinanceSummary({ period: '30' });
+
+    expect(result.marges.nb_douane_inconnue).toBe(3);
+    const predicate = /cs\.is_active\s+AND \(cs\.status = 'pending' OR cs\.customs_paid_kmf IS NULL\)/;
+    for (const i of [0, 1, 2]) expect(db.query.mock.calls[i][0]).toMatch(predicate);
+    expect(db.query.mock.calls[0][0]).toMatch(/AS nb_douane_inconnue/);
+    expect(db.query.mock.calls[0][0]).toMatch(/NOT EXISTS|NOT \s*EXISTS/);
+  });
+
+  it('nb_douane_inconnue absent du résultat SQL -> 0 (rétrocompatible)', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ ca_kmf: '0', ca_prev_kmf: '0', nb_commandes: '0', nb_prev: '0', nb_livrees: '0', nb_annulees: '0', panier_moyen_kmf: '0', nb_cash: '0', nb_stripe: '0', ca_cash_kmf: '0', ca_stripe_eur: '0', cout_logistique_kmf: '0', marge_reelle_kmf: '0', nb_avec_cost: '0', nb_sans_cost: '0' }] })
+      .mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+    expect((await getFinanceSummary({})).marges.nb_douane_inconnue).toBe(0);
+  });
 });

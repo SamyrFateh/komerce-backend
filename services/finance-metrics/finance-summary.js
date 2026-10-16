@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result
  * @depends       db.js, routes/dashboard-shared.js
  * @used-by       services/finance-metrics/index.js
- * @db-read       finance_config, order_items, orders, products, refunds
+ * @db-read       customs_shipment_parcels, customs_shipments, finance_config, order_items, orders, parcels, products, refunds
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -19,6 +19,17 @@
 const db = require('../../db');
 const { cached, setCache, getEurKmf, loadDashConfig } = require('../../routes/dashboard-shared');
 const log = require('../../utils/logger').child({ module: 'dashboard-finance-metrics' });
+
+// Douane inconnue : expédition douane active encore pending ou sans montant payé
+// (même prédicat que recomputeCustomsCosts / #2554). cost_douane_kmf étant
+// NOT NULL DEFAULT 0, il n'exprime pas l'inconnu : ces commandes sont exclues
+// des coûts/marges et comptées à part (nb_douane_inconnue).
+const customsUnknownSql = (alias) => `EXISTS (
+        SELECT 1 FROM parcels p
+          JOIN customs_shipment_parcels csp ON csp.parcel_id = p.id
+          JOIN customs_shipments cs ON cs.id = csp.shipment_id
+         WHERE p.order_id = ${alias}.id AND cs.is_active
+           AND (cs.status = 'pending' OR cs.customs_paid_kmf IS NULL))`;
 
 async function getFinanceSummary(query) {
   const period = Math.max(1, Math.min(365, parseInt(query.period) || 30));
@@ -38,13 +49,14 @@ async function getFinanceSummary(query) {
       COALESCE(SUM(total_eur) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND payment_mode = 'stripe_eur' AND status != 'cancelled'), 0)  AS ca_stripe_eur,
       -- Coûts & marges (colonnes renseignées après groupage)
       COALESCE(SUM(cost_transport_kmf + cost_douane_kmf) FILTER (
-        WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
+        WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled' AND NOT ${customsUnknownSql('orders')}
       ), 0) AS cout_logistique_kmf,
       COALESCE(SUM(total_kmf - cost_transport_kmf - cost_douane_kmf) FILTER (
-        WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
+        WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled' AND NOT ${customsUnknownSql('orders')}
       ), 0) AS marge_reelle_kmf,
-      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled') AS nb_avec_cost,
-      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND cost_transport_kmf = 0 AND cost_douane_kmf = 0 AND status != 'cancelled') AS nb_sans_cost,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled' AND NOT ${customsUnknownSql('orders')}) AS nb_avec_cost,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND cost_transport_kmf = 0 AND cost_douane_kmf = 0 AND status != 'cancelled' AND NOT ${customsUnknownSql('orders')}) AS nb_sans_cost,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled' AND ${customsUnknownSql('orders')}) AS nb_douane_inconnue,
       -- Période précédente
       COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $2 AND created_at < NOW() - INTERVAL '1 day' * $1), 0) AS ca_prev_kmf,
       COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $2 AND created_at < NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled') AS nb_prev,
@@ -68,6 +80,7 @@ async function getFinanceSummary(query) {
       AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0)
       AND total_kmf < (cost_transport_kmf + cost_douane_kmf)
       AND status != 'cancelled'
+      AND NOT ${customsUnknownSql('orders')}
     LIMIT 10
   `, [period]);
 
@@ -76,9 +89,12 @@ async function getFinanceSummary(query) {
     SELECT p.category,
       COUNT(o.id) AS nb_commandes,
       COALESCE(SUM(o.total_kmf), 0) AS ca_kmf,
-      COALESCE(SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf), 0) AS marge_kmf,
-      ROUND(CASE WHEN SUM(o.total_kmf) > 0
-        THEN 100.0 * SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf)::numeric / SUM(o.total_kmf)
+      COALESCE(SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf)
+        FILTER (WHERE NOT ${customsUnknownSql('o')}), 0) AS marge_kmf,
+      ROUND(CASE WHEN SUM(o.total_kmf) FILTER (WHERE NOT ${customsUnknownSql('o')}) > 0
+        THEN 100.0 * SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf)
+               FILTER (WHERE NOT ${customsUnknownSql('o')})::numeric
+             / SUM(o.total_kmf) FILTER (WHERE NOT ${customsUnknownSql('o')})
         ELSE 0 END, 1) AS taux_marge_pct
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -125,6 +141,7 @@ async function getFinanceSummary(query) {
       taux_marge_pct:      ca > 0 && Number(kpi.nb_avec_cost) > 0 ? +(marge / ca * 100).toFixed(1) : null,
       nb_avec_cost:        Number(kpi.nb_avec_cost),
       nb_sans_cost:        Number(kpi.nb_sans_cost),
+      nb_douane_inconnue:  Number(kpi.nb_douane_inconnue || 0),
       alertes_perte:       perteRows.length > 0 ? { count: perteRows.length, refs: perteRows.map(r => r.reference) } : null,
     },
     par_categorie: catRows.map(r => ({

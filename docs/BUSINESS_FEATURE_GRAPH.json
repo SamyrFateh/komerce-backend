@@ -1972,6 +1972,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/catalog-promotion/editorial-identity.js",
+        "resolvedPath": "services/catalog-promotion/editorial-identity.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/suppliers/normalized-product.js",
         "resolvedPath": "services/suppliers/normalized-product.js",
         "status": "resolved-in-technical-graph"
@@ -4723,6 +4730,55 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/golden-e2e-cockpit.js",
+        "resolvedPath": "services/golden-e2e-cockpit.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/golden-upstream-evidence.js",
+        "resolvedPath": "services/golden-upstream-evidence.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/golden-gate-kit.js",
+        "resolvedPath": "services/golden-gate-kit.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/golden-checkout-thread.js",
+        "resolvedPath": "services/golden-checkout-thread.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "public/golden-e2e-cockpit.html",
+        "resolvedPath": "public/golden-e2e-cockpit.html",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "public/js/golden-e2e-cockpit-journey.js",
+        "resolvedPath": "public/js/golden-e2e-cockpit-journey.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "public/js/golden-recipe-scenarios.js",
+        "resolvedPath": "public/js/golden-recipe-scenarios.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/product-360.js",
         "resolvedPath": "services/product-360.js",
         "status": "resolved-in-technical-graph"
@@ -5075,6 +5131,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/css/komerce-visual-canon-v1.css",
         "resolvedPath": "public/dashboards/canonical/css/komerce-visual-canon-v1.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/canonical-unified-chrome-v1.css",
+        "resolvedPath": "public/dashboards/canonical/css/canonical-unified-chrome-v1.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6571,6 +6634,27 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/e2e/golden-cockpit-browser-flow.spec.js",
+        "resolvedPath": "tests/e2e/golden-cockpit-browser-flow.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/golden-e2e-cockpit-journey.test.js",
+        "resolvedPath": "tests/unit/golden-e2e-cockpit-journey.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/golden-recipe-scenarios.test.js",
+        "resolvedPath": "tests/unit/golden-recipe-scenarios.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/canonical-order-360-app.test.js",
         "resolvedPath": "tests/unit/canonical-order-360-app.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6930,6 +7014,13 @@
         "category": "tests",
         "declared": "tests/unit/canonical-sourcing-workspace-boundary.test.js",
         "resolvedPath": "tests/unit/canonical-sourcing-workspace-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-handoff-clean-queue.test.js",
+        "resolvedPath": "tests/unit/sourcing-handoff-clean-queue.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11807,13 +11898,6 @@
       {
         "feature": "inventory",
         "category": "tests",
-        "declared": "tests/integration/parcel-auto-create-cash-payment.test.js",
-        "resolvedPath": "tests/integration/parcel-auto-create-cash-payment.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "inventory",
-        "category": "tests",
         "declared": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
         "resolvedPath": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11991,6 +12075,13 @@
         "category": "services",
         "declared": "services/parcel-mutation-service.js",
         "resolvedPath": "services/parcel-mutation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/parcel-order-membership.js",
+        "resolvedPath": "services/parcel-order-membership.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -12381,13 +12472,6 @@
       {
         "feature": "logistics",
         "category": "tests",
-        "declared": "tests/unit/parcel-auto-create-cash-payment.test.js",
-        "resolvedPath": "tests/unit/parcel-auto-create-cash-payment.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "logistics",
-        "category": "tests",
         "declared": "tests/unit/upload-hub.test.js",
         "resolvedPath": "tests/unit/upload-hub.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12607,6 +12691,27 @@
         "category": "tests",
         "declared": "tests/unit/parcel-mutation-service.test.js",
         "resolvedPath": "tests/unit/parcel-mutation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/parcel-order-membership.test.js",
+        "resolvedPath": "tests/unit/parcel-order-membership.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/e2e-api/hub-multi-order-parcels.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/hub-multi-order-parcels.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/hub-membership-readers.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12948,22 +13053,8 @@
       {
         "feature": "market",
         "category": "tests",
-        "declared": "tests/integration/market-open-mayotte.test.js",
-        "resolvedPath": "tests/integration/market-open-mayotte.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "market",
-        "category": "tests",
-        "declared": "tests/integration/market-open-cameroon.test.js",
-        "resolvedPath": "tests/integration/market-open-cameroon.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "market",
-        "category": "tests",
-        "declared": "tests/integration/market-open-congo.test.js",
-        "resolvedPath": "tests/integration/market-open-congo.test.js",
+        "declared": "tests/integration/market-open-matrix.test.js",
+        "resolvedPath": "tests/integration/market-open-matrix.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -17791,6 +17882,13 @@
       },
       {
         "feature": "sourcing",
+        "category": "migrations",
+        "declared": "migrations/292_supplier_commercial_category_mappings.sql",
+        "resolvedPath": "migrations/292_supplier_commercial_category_mappings.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
         "category": "scripts",
         "declared": "scripts/sourcing-shadow-proof-staging.js",
         "resolvedPath": "scripts/sourcing-shadow-proof-staging.js",
@@ -17834,9 +17932,23 @@
       {
         "feature": "sourcing",
         "category": "scripts",
+        "declared": "scripts/audit-cj-kir-category-evidence.js",
+        "resolvedPath": "scripts/audit-cj-kir-category-evidence.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "scripts",
         "declared": "scripts/sourcing-source-autopilot.js",
         "resolvedPath": "scripts/sourcing-source-autopilot.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/supplier-commercial-category-mapping.js",
+        "resolvedPath": "services/supplier-commercial-category-mapping.js",
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "sourcing",
@@ -18214,6 +18326,13 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-integrity-audit.test.js",
         "resolvedPath": "tests/unit/sourcing-integrity-audit.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/audit-cj-kir-category-evidence.test.js",
+        "resolvedPath": "tests/unit/audit-cj-kir-category-evidence.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -24267,6 +24386,22 @@
       },
       {
         "feature": "sourcing",
+        "entry": "GET /api/admin/workspaces/sourcing/candidates/:candidateRef/category-options",
+        "method": "GET",
+        "path": "/api/admin/workspaces/sourcing/candidates/{id}/category-options",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/candidates/:candidateRef/resolve-category",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/candidates/{id}/resolve-category",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
         "entry": "POST /api/admin/workspaces/sourcing/candidates/:candidateRef/update",
         "method": "POST",
         "path": "/api/admin/workspaces/sourcing/candidates/{id}/update",
@@ -25111,6 +25246,36 @@
         "feature": "logistics",
         "fn": "assignSingleOrderItemToParcel",
         "file": "services/parcel-item-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "addParcelItemTraced",
+        "file": "services/parcel-item-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "removeParcelItemTraced",
+        "file": "services/parcel-item-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "reassignParcelItem",
+        "file": "services/parcel-item-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "listParcelsRepresentingOrder",
+        "file": "services/parcel-order-membership.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "listOrdersRepresentedByParcels",
+        "file": "services/parcel-order-membership.js",
         "status": "resolved"
       },
       {
@@ -27759,6 +27924,12 @@
         "from": "sourcing",
         "to": "economic-engine",
         "raw": "economic-engine (pricing-engine.loadGlobalConfig — config de scan)",
+        "resolved": true
+      },
+      {
+        "from": "sourcing",
+        "to": "customs",
+        "raw": "customs (customs-dynamic-category-classifier : score des catégories actives pour suggestions Sourcing, lecture uniquement ; aucune clé codée en dur)",
         "resolved": true
       },
       {
@@ -31002,6 +31173,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "routes/client-auth.js",
+                "targetFile": "services/parcel-order-membership.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
                 "targetFile": "services/pickup-secret-service.js"
               },
@@ -32618,6 +32793,10 @@
                 "targetFile": "services/sourcing-catalog-change-sku-identity-proof.js"
               },
               {
+                "sourceFileId": "services/catalog-candidate-product-service.js",
+                "targetFile": "services/supplier-commercial-category-mapping.js"
+              },
+              {
                 "sourceFileId": "services/suppliers/connectors/aliexpress-connected-connector.js",
                 "targetFile": "services/suppliers/aliexpress-discovery.js"
               },
@@ -32842,6 +33021,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/customs-shipment-service.js",
+                "targetFile": "services/cost-allocation/_helpers.js"
+              },
               {
                 "sourceFileId": "services/customs-shipment-service.js",
                 "targetFile": "services/cost-allocation/index.js"
@@ -33218,10 +33401,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/operations-workspace.js",
-                "targetFile": "services/invoice-service.js"
-              },
-              {
                 "sourceFileId": "routes/admin/index.js",
                 "targetFile": "routes/admin/documents.js"
               }
@@ -33567,6 +33746,10 @@
               },
               {
                 "sourceFileId": "routes/admin-order-360.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/admin-order-360.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -33835,11 +34018,19 @@
               },
               {
                 "sourceFileId": "services/operations-workspace.js",
-                "targetFile": "services/parcel-auto-create-service.js"
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
-                "sourceFileId": "services/operations-workspace.js",
-                "targetFile": "services/pickup-secret-service.js"
+                "sourceFileId": "services/golden-e2e-cockpit.js",
+                "targetFile": "services/hub-inbound-reconciliation.js"
+              },
+              {
+                "sourceFileId": "services/golden-e2e-cockpit.js",
+                "targetFile": "services/customer-handoff-reconciliation.js"
+              },
+              {
+                "sourceFileId": "services/golden-checkout-thread.js",
+                "targetFile": "services/parcel-order-membership.js"
               },
               {
                 "sourceFileId": "services/shipping-customs-workspace.js",
@@ -33854,6 +34045,10 @@
                 "targetFile": "services/scan-write-service.js"
               },
               {
+                "sourceFileId": "routes/dashboard-hub.js",
+                "targetFile": "services/parcel-order-membership.js"
+              },
+              {
                 "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "utils/parcelSync.js"
               },
@@ -33864,6 +34059,10 @@
               {
                 "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "services/parcel-item-mutation-service.js"
+              },
+              {
+                "sourceFileId": "routes/hub-dashboard.js",
+                "targetFile": "services/parcel-order-membership.js"
               },
               {
                 "sourceFileId": "routes/hub-dashboard.js",
@@ -34133,10 +34332,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/operations-workspace.js",
-                "targetFile": "services/notification-service.js"
-              },
-              {
                 "sourceFileId": "routes/admin/demo-order-flow.js",
                 "targetFile": "services/client-notification-service.js"
               }
@@ -34164,6 +34359,10 @@
               {
                 "sourceFileId": "services/operations-workspace.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "services/golden-e2e-cockpit.js",
+                "targetFile": "services/order-financial-closure-reconciliation.js"
               },
               {
                 "sourceFileId": "routes/admin/index.js",
@@ -34240,6 +34439,10 @@
                 "targetFile": "services/cash-custody-service.js"
               },
               {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/payment-cash-confirm.js"
+              },
+              {
                 "sourceFileId": "tests/unit/finance-accounting-workspace.test.js",
                 "targetFile": "services/cash-deposit-service.js"
               },
@@ -34278,6 +34481,10 @@
               {
                 "sourceFileId": "services/dashboard-finance-canonical.js",
                 "targetFile": "services/supplier-payment-review.js"
+              },
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/purchasing-trigger-service.js"
               },
               {
                 "sourceFileId": "services/provider-certification-overview.js",
@@ -34328,6 +34535,14 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/golden-upstream-evidence.js",
+                "targetFile": "services/sourcing-certification.js"
+              },
+              {
+                "sourceFileId": "services/golden-upstream-evidence.js",
+                "targetFile": "services/sourcing-canonical-unit-product-sku-resolution.js"
+              },
               {
                 "sourceFileId": "tests/unit/import-runtime-journey.test.js",
                 "targetFile": "services/import-runtime-runs.js"
@@ -35754,6 +35969,10 @@
                 "targetFile": "services/parcel-operations.js"
               },
               {
+                "sourceFileId": "tests/integration/incident-f3-postgres.test.js",
+                "targetFile": "services/scan-engine.js"
+              },
+              {
                 "sourceFileId": "tests/integration/parcel-transition-guard-real-db.test.js",
                 "targetFile": "services/parcel-operations.js"
               }
@@ -36757,10 +36976,6 @@
               {
                 "sourceFileId": "services/inventory-service.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/integration/parcel-auto-create-cash-payment.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
               }
             ]
           }
@@ -36777,10 +36992,6 @@
               {
                 "sourceFileId": "services/inventory-service.js",
                 "targetFile": "services/parcel-item-mutation-service.js"
-              },
-              {
-                "sourceFileId": "tests/integration/parcel-auto-create-cash-payment.test.js",
-                "targetFile": "services/parcel-auto-create-service.js"
               }
             ]
           },
@@ -37461,10 +37672,6 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "tests/unit/parcel-auto-create-cash-payment.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
                 "sourceFileId": "tests/unit/upload-hub.test.js",
                 "targetFile": "middleware/upload.js"
               },
@@ -37518,6 +37725,14 @@
               },
               {
                 "sourceFileId": "tests/unit/parcel-operations.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/hub-multi-order-parcels.e2e.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/hub-membership-readers.e2e.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -37709,10 +37924,6 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
-                "sourceFileId": "services/parcel-auto-create-service.js",
-                "targetFile": "services/payment-service.js"
-              },
-              {
                 "sourceFileId": "services/parcelOptimizationService.js",
                 "targetFile": "services/order-mutation-service.js"
               },
@@ -37761,6 +37972,10 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
+                "sourceFileId": "tests/e2e-api/hub-membership-readers.e2e.test.js",
+                "targetFile": "utils/orderParcelLinkRules.js"
+              },
+              {
                 "sourceFileId": "tests/unit/parcels-route.test.js",
                 "targetFile": "utils/orderParcelLinkRules.js"
               }
@@ -37794,6 +38009,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/parcel-auto-create-service.js",
+                "targetFile": "services/payment-cash-confirm.js"
+              },
+              {
                 "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "services/confirm-pickup-cash-payment.js"
               }
@@ -37809,6 +38028,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/parcel-auto-create-service.js",
+                "targetFile": "services/purchasing-trigger-service.js"
+              },
               {
                 "sourceFileId": "services/hub-operations.js",
                 "targetFile": "services/purchasing-completion-service.js"
@@ -38072,15 +38295,7 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "tests/integration/market-open-mayotte.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/integration/market-open-cameroon.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/integration/market-open-congo.test.js",
+                "sourceFileId": "tests/integration/market-open-matrix.test.js",
                 "targetFile": "db.js"
               }
             ]
@@ -38100,15 +38315,7 @@
                 "targetFile": "services/market-operator-provisioning.js"
               },
               {
-                "sourceFileId": "tests/integration/market-open-mayotte.test.js",
-                "targetFile": "services/market-operator-provisioning.js"
-              },
-              {
-                "sourceFileId": "tests/integration/market-open-cameroon.test.js",
-                "targetFile": "services/market-operator-provisioning.js"
-              },
-              {
-                "sourceFileId": "tests/integration/market-open-congo.test.js",
+                "sourceFileId": "tests/integration/market-open-matrix.test.js",
                 "targetFile": "services/market-operator-provisioning.js"
               }
             ]
@@ -39632,10 +39839,6 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
-                "sourceFileId": "routes/order-api-v2.js",
-                "targetFile": "services/invoice-service.js"
-              },
-              {
                 "sourceFileId": "tests/unit/admin-order-refund.test.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
@@ -39992,6 +40195,10 @@
                 "targetFile": "utils/parcels.js"
               },
               {
+                "sourceFileId": "utils/orderParcelLinkRules.js",
+                "targetFile": "services/parcel-order-membership.js"
+              },
+              {
                 "sourceFileId": "services/qr-collection-core.js",
                 "targetFile": "services/scan-write-service.js"
               },
@@ -40021,6 +40228,10 @@
               },
               {
                 "sourceFileId": "routes/orders/detail.js",
+                "targetFile": "services/parcel-order-membership.js"
+              },
+              {
+                "sourceFileId": "routes/orders/detail.js",
                 "targetFile": "services/pickup-secret-service.js"
               },
               {
@@ -40034,10 +40245,6 @@
               {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "services/parcel-auto-create-service.js"
-              },
-              {
-                "sourceFileId": "routes/order-api-v2.js",
-                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "tests/e2e-api/orders.single-collect.e2e.test.js",
@@ -41062,6 +41269,10 @@
               },
               {
                 "sourceFileId": "services/reconciliation-service.js",
+                "targetFile": "services/parcel-order-membership.js"
+              },
+              {
+                "sourceFileId": "services/reconciliation-service.js",
                 "targetFile": "utils/parcels.js"
               },
               {
@@ -41309,6 +41520,10 @@
               {
                 "sourceFileId": "tests/unit/cash-route.test.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/payment-mobile-money.test.js",
+                "targetFile": "utils/alerts.js"
               }
             ]
           }
@@ -41408,6 +41623,10 @@
               },
               {
                 "sourceFileId": "tests/unit/confirm-pickup-cash-payment.test.js",
+                "targetFile": "services/order-payment-confirmation.js"
+              },
+              {
+                "sourceFileId": "tests/unit/payment-mobile-money.test.js",
                 "targetFile": "services/order-payment-confirmation.js"
               },
               {
@@ -44213,6 +44432,10 @@
                 "targetFile": "services/catalog-product-route-canary.js"
               },
               {
+                "sourceFileId": "tests/unit/sourcing-candidate-actions.test.js",
+                "targetFile": "services/catalog-candidate-product-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/sourcing-import-dispatch-connection.test.js",
                 "targetFile": "services/sourcing-import-dispatch.js"
               },
@@ -44256,6 +44479,26 @@
       },
       {
         "from": "sourcing",
+        "to": "customs",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/audit-cj-kir-category-evidence.js",
+                "targetFile": "services/customs-dynamic-category-classifier.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/customs-dynamic-category-classifier.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "sourcing",
         "to": "dashboard",
         "channels": [
           {
@@ -44282,6 +44525,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "scripts/audit-cj-kir-category-evidence.js",
+                "targetFile": "services/pricing-engine.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-candidate-actions.js",
                 "targetFile": "services/pricing-engine.js"
               },
@@ -44292,6 +44539,10 @@
               {
                 "sourceFileId": "services/sourcing-workspace.js",
                 "targetFile": "services/sourcing-mutations.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/pricing-engine.js"
               },
               {
                 "sourceFileId": "routes/sourcing-scanner.js",
@@ -44338,7 +44589,15 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "scripts/audit-cj-kir-category-evidence.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "scripts/sourcing-source-autopilot.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/supplier-commercial-category-mapping.js",
                 "targetFile": "db.js"
               },
               {
@@ -44483,6 +44742,10 @@
               },
               {
                 "sourceFileId": "tests/unit/sourcing-provider-control-policy.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sourcing-candidate-actions.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -45065,7 +45328,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2020
+        "filesObserved": 2034
       },
       "boutique": {
         "filesObserved": 214,
@@ -48240,8 +48503,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 605,
-        "technicalNodesOwned": 605,
+        "technicalNodesTotal": 612,
+        "technicalNodesOwned": 612,
         "technicalOrphans": 0
       },
       "dash": {
@@ -48461,7 +48724,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "market -> market-delegation",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"market\" vers \"market-delegation\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"market\" vers \"market-delegation\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
