@@ -23,6 +23,7 @@
 const { markCustomsCleared } = require('./parcel-mutation-service');
 const { recomputeCustomsCosts } = require('./order-mutation-service');
 const { shareByWeight } = require('./cost-allocation/_helpers');
+const { normalizeFeeAllocation } = require('./transport-cost-allocation');
 
 // ── Intégrité financière des coûts douaniers ─────────────────────────────────
 //   - NULL = montant inconnu (expédition pending) ; 0 explicite = aucun frais
@@ -570,6 +571,10 @@ async function createShipment(db, body, userId, options = {}) {
   const marketId = options.marketId || null;
   const effectiveMethod = defaultAllocationMethod(allocation_method, transport_mode);
   const manualShares = normalizeManualShares(body.parcel_shares);
+  if (allocation_config != null) {
+    const cfgObj = typeof allocation_config === 'string' ? JSON.parse(allocation_config) : allocation_config;
+    normalizeFeeAllocation(cfgObj && cfgObj.fee_allocation);
+  }
   if (manualShares && effectiveMethod !== 'manual') {
     throw httpError(400, 'parcel_shares exige allocation_method = manual', 'CUSTOMS_SHARES_REQUIRE_MANUAL');
   }
@@ -692,6 +697,10 @@ async function updateShipment(db, id, body, actor = {}) {
     if (body[k] !== undefined) values[k] = body[k];
   }
   const manualShares = normalizeManualShares(body.parcel_shares);
+  if (values.allocation_config != null) {
+    const cfgObj = typeof values.allocation_config === 'string' ? JSON.parse(values.allocation_config) : values.allocation_config;
+    normalizeFeeAllocation(cfgObj && cfgObj.fee_allocation);
+  }
   if (!Object.keys(values).length && !manualShares) {
     const e = new Error('Aucun champ à modifier'); e.status = 400; throw e;
   }
