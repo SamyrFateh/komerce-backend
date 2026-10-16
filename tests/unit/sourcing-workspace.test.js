@@ -188,3 +188,32 @@ test('le chemin import manuel présente un formulaire sans dialogue prompt navig
   expect(importUi).toContain("source_type: 'csv'");
   expect(importUi).not.toContain('context.prompt(');
 });
+
+describe('confirmCommercialTaxonomy', () => {
+  test('refuses absent category without database writes', async () => {
+    const {confirmCommercialTaxonomy}=require('../../services/sourcing-workspace');
+    await expect(confirmCommercialTaxonomy('KSC-000128','','Accessoires',{id:'admin'}))
+      .rejects.toMatchObject({status:400,code:'commercial_taxonomy_required'});
+    expect(mockGetClient).not.toHaveBeenCalled();
+  });
+
+  test('confirms an active boutique pair without changing customs or running scanner', async () => {
+    const {confirmCommercialTaxonomy}=require('../../services/sourcing-workspace');
+    const client={query:jest.fn()
+      .mockResolvedValueOnce({rows:[]})
+      .mockResolvedValueOnce({rows:[{id:'candidate-1',state:'scanned',product_id:null}]})
+      .mockResolvedValueOnce({rows:[{category:'Auto',subcategory:'Accessoires'}]})
+      .mockResolvedValueOnce({rowCount:1})
+      .mockResolvedValueOnce({rowCount:1})
+      .mockResolvedValueOnce({rows:[]}),release:jest.fn()};
+    mockGetClient.mockResolvedValueOnce(client);
+    const result=await confirmCommercialTaxonomy('KSC-000128','Auto','Accessoires',{id:'admin'});
+    expect(result.commercial_review.status).toBe('CONFIRMED');
+    expect(result.customs_unchanged).toBe(true);
+    expect(result.publication_authorized).toBe(false);
+    expect(client.query.mock.calls.map(c=>c[0]).join(' ')).not.toContain('komerce_category');
+    expect(client.query.mock.calls.map(c=>c[0]).join(' ')).not.toContain('scanCandidate');
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+    expect(client.release).toHaveBeenCalled();
+  });
+});
