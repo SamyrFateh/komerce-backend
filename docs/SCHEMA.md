@@ -864,3 +864,7 @@ role: Journal append-only d'attribution des charges de structure mutualisées (e
 ### Boutique commercial object matching (migration 290)
 
 `boutique_subcategories.object_classification_terms` (`jsonb`, non-null, default `{}`) stores administrator-editable weighted object phrases for boutique routing, independent from `customs_categories.classification_terms`. Active boutique categories/subcategories are eligible; only product-title evidence may be used. A unique match can propose a boutique subcategory; ambiguous/no matches remain unresolved. Migration 290 also adds `Auto / Accessoires` when `Auto` is active, without customs affinity. No supplier import, catalogue publication or customs reclassification is performed by this migration.
+
+## Supplier commercial category correspondence (migration 292)
+
+`supplier_commercial_category_mappings` records source provider and normalized original path, optional source ID, source locale, optional French proposal label, and an active Komerce boutique category/subcategory pair. `status` is `PROPOSED`, `REVIEW_REQUIRED` or `CONFIRMED`; only confirmed mappings targeting active boutique taxonomy are eligible for automatic routing. This mapping is independent from customs, tax, economic margins, publication and supplier KIR certification. Missing categories must be kept for review rather than rejected.
