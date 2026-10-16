@@ -37,6 +37,7 @@ const { authenticate, requireRole } = require('../../middleware/auth');
 const catalogApproval = require('../../services/catalog-approval');
 const db = require('../../db');
 const { certifyCatalogProductWithVisualEvidence } = require('../../services/catalog-refinery-combined-proof');
+const { recordVisualFrReview } = require('../../services/catalog-visual-fr-human-review-write');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -58,6 +59,19 @@ router.get('/catalog/approval-queue/:id/visual-fr-proof', ...guard, async (req, 
     const verdict = await certifyCatalogProductWithVisualEvidence(db, req.params.id);
     if (!verdict) return res.status(404).json({ code: 'PRODUCT_NOT_FOUND' });
     return res.json(verdict);
+  } catch (err) { next(err); }
+});
+
+// Separate explicit human review action; never changes product publication state.
+router.post('/catalog/approval-queue/:id/media/:mediaId/visual-fr-review', ...guard, async (req, res, next) => {
+  try {
+    const result = await recordVisualFrReview(db, {
+      productId: req.params.id,
+      mediaId: req.params.mediaId,
+      review: req.body,
+      reviewerId: String(req.user?.id || ''),
+    });
+    return res.status(result.status).json(result);
   } catch (err) { next(err); }
 });
 
