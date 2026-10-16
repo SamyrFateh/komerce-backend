@@ -6,9 +6,9 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result
- * @depends       db, services/cost-allocation/cost-types.js, services/finance-metrics/customs-unknown.js
+ * @depends       db, services/cost-allocation/cost-types.js, services/cost-allocation/_helpers.js, services/finance-metrics/customs-unknown.js
  * @used-by       routes/admin-costing.js
- * @db-read       orders, order_items, order_item_cost_imputations, order_item_real_cost_allocations, refunds, purchase_lines, purchase_orders, supplier_execution_payments, customs_shipments, customs_shipment_parcels, parcels
+ * @db-read       orders, order_items, order_item_cost_imputations, order_item_real_cost_allocations, refunds, purchase_lines, purchase_orders, supplier_execution_payments, supplier_payment_settlements, customs_shipments, customs_shipment_parcels, parcels
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      pricing_market_viability_cost_scope
@@ -31,8 +31,19 @@
  *
  * Achat : `products.cost_kmf` (allocate.js, is_actual=TRUE) est un coût
  * catalogue du jour, JAMAIS un achat réel. Un achat confirmé
- * (purchase_lines) n'est valorisable en KMF réel qu'avec le taux réellement
- * supporté, qui n'existe nulle part → `confirmed_unvalued`.
+ * (purchase_lines) n'est valorisable en KMF réel que par les KMF réellement
+ * débités (supplier_payment_settlements, migration 294, saisis avec preuve) ;
+ * sans cela → `confirmed_unvalued`. Le taux effectif est CALCULÉ
+ * (Σ KMF / Σ devise), jamais un taux de référence.
+ *   - Réel seulement si : toutes les lignes actives de la commande confirmées ;
+ *     tous les paiements de la/des PO succeeded + real_debit_verified + matched ;
+ *     devise réglée = devise des lignes ; Σ réglé net des remboursements de
+ *     marchandises = valeur confirmée de la PO (au centime de devise). Sinon
+ *     provisoire (flags underpaid/overpaid/…).
+ *   - PO regroupée : ventilation au prorata de la valeur confirmée des lignes,
+ *     plus grand reste en centimes (conservation exacte).
+ *   - Frais de paiement/conversion : coût `payment` réel (net des remboursements
+ *     de frais) qui REMPLACE l'estimé du même type (jamais additionné).
  *
  * Douane : uniquement depuis les allocations (jamais cost_douane_kmf, pour
  * éviter le double comptage avec recomputeCustomsCosts).
@@ -46,6 +57,7 @@
 const db = require('../../db');
 const { SNAPSHOT_LANDED_TO_REAL_COST_TYPE } = require('./cost-types');
 const { customsUnknownSql } = require('../finance-metrics/customs-unknown');
+const { shareByWeight } = require('./_helpers');
 
 const N1_TYPES = Object.values(SNAPSHOT_LANDED_TO_REAL_COST_TYPE);
 const PAYMENT = 'payment';
@@ -132,6 +144,128 @@ async function _loadPurchase(orderId) {
   return { lines: rows[0], pay: pay[0] };
 }
 
+// ─── Coût d'achat réel (règlements KMF) ──────────────────────────────────────
+
+async function _loadSettlementFacts(orderId) {
+  const { rows: lines } = await db.query(
+    `SELECT /* settle:lines */ pl.id, pl.purchase_order_id, pl.confirmed_at, pl.confirmed_quantity,
+            pl.confirmed_unit_price::text AS confirmed_unit_price, pl.supplier_currency,
+            (oi.order_id = $1) AS in_order
+       FROM purchase_lines pl
+       JOIN order_items oi ON oi.id = pl.order_item_id
+      WHERE pl.cancelled_at IS NULL
+        AND (oi.order_id = $1 OR pl.purchase_order_id IN (
+              SELECT pl2.purchase_order_id FROM purchase_lines pl2
+                JOIN order_items oi2 ON oi2.id = pl2.order_item_id
+               WHERE oi2.order_id = $1 AND pl2.cancelled_at IS NULL AND pl2.purchase_order_id IS NOT NULL))`,
+    [orderId]
+  );
+  const poIds = [...new Set(lines.map((l) => l.purchase_order_id).filter(Boolean))];
+  if (!poIds.length) return { lines, payments: [], settlements: [] };
+  const { rows: payments } = await db.query(
+    `SELECT /* settle:payments */ id, purchase_order_id, status, real_debit_verified, reconciliation_status, currency
+       FROM supplier_execution_payments WHERE purchase_order_id = ANY($1::uuid[])`,
+    [poIds]
+  );
+  const payIds = payments.map((p) => p.id);
+  const { rows: settlements } = payIds.length ? await db.query(
+    `SELECT /* settle:settlements */ supplier_execution_payment_id, kind, amount_currency::text AS amount_currency, currency,
+            amount_kmf::text AS amount_kmf, fees_kmf::text AS fees_kmf
+       FROM supplier_payment_settlements WHERE supplier_execution_payment_id = ANY($1::uuid[])`,
+    [payIds]
+  ) : { rows: [] };
+  return { lines, payments, settlements };
+}
+
+/** "12.3400" -> unités entières (BigInt) à `scale` décimales. */
+function _units(v, scale) {
+  const m = /^(\d+)(?:\.(\d+))?$/.exec(String(v == null ? '0' : v));
+  if (!m) return 0n;
+  return BigInt(m[1]) * 10n ** BigInt(scale) + BigInt(((m[2] || '') + '0'.repeat(scale)).slice(0, scale) || '0');
+}
+const _roundCents = (u4) => (u4 + 50n) / 100n; // 1e-4 -> 1e-2, arrondi au plus proche
+const _confirmed = (l) => l.confirmed_at != null && l.confirmed_unit_price != null && l.confirmed_quantity != null;
+
+/**
+ * Part de la commande dans le règlement réel de ses PO. Fonction pure (testable).
+ * Ventilation par PO au prorata de la valeur confirmée des lignes actives de la PO
+ * (plus grand reste, centimes KMF / 1e-4 devise), puis somme des lignes de la commande.
+ * `real_kmf` n'est non-null que si TOUTES les conditions de preuve sont réunies.
+ */
+function computePurchaseReal({ lines, payments, settlements }) {
+  const flags = new Set();
+  const own = lines.filter((l) => l.in_order);
+  const out = {
+    complete: false, flags: [], settlements_count: settlements.length,
+    paid: { amount_currency: null, currency: null, amount_kmf: 0 },
+    refunds_goods_kmf: 0, fees_kmf: 0, effective_fx_rate: null, real_kmf: null,
+  };
+  if (!own.length) return out;
+  if (own.some((l) => !l.purchase_order_id)) flags.add('line_without_purchase_order');
+  if (own.some((l) => !_confirmed(l))) flags.add('unconfirmed_lines');
+
+  const poIds = [...new Set(own.map((l) => l.purchase_order_id).filter(Boolean))];
+  const acc = { payC: 0n, payK: 0n, goodsK: 0n, feesK: 0n }; // payC en 1e-4, K en centimes
+  const currencies = new Set();
+  let complete = !flags.size;
+
+  for (const po of poIds) {
+    const poLines = lines.filter((l) => l.purchase_order_id === po);
+    if (poLines.some((l) => !_confirmed(l))) { flags.add('po_has_unconfirmed_lines'); complete = false; continue; }
+    const poPays = payments.filter((p) => p.purchase_order_id === po);
+    if (!poPays.length) { flags.add('no_supplier_payment'); complete = false; continue; }
+    if (poPays.some((p) => !(p.status === 'succeeded' && p.real_debit_verified === true && p.reconciliation_status === 'matched'))) {
+      flags.add('payment_not_verified_matched'); complete = false;
+    }
+    const payIds = new Set(poPays.map((p) => p.id));
+    const sets = settlements.filter((x) => payIds.has(x.supplier_execution_payment_id));
+    const lineCurrencies = new Set(poLines.map((l) => l.supplier_currency));
+    const cc = lineCurrencies.size === 1 ? [...lineCurrencies][0] : null;
+    if (!cc || sets.some((x) => x.currency !== cc)) { flags.add('currency_mismatch'); complete = false; }
+    currencies.add(cc || 'MIXED');
+
+    const sum = (kind, field, scale) => sets.filter((x) => x.kind === kind).reduce((a, x) => a + _units(x[field], scale), 0n);
+    const payC = sum('payment', 'amount_currency', 4);
+    const payK = sum('payment', 'amount_kmf', 2);
+    const goodsC = sum('goods_refund', 'amount_currency', 4);
+    const goodsK = sum('goods_refund', 'amount_kmf', 2);
+    const feesK = sum('payment', 'fees_kmf', 2) - sum('fee_refund', 'amount_kmf', 2);
+    if (payC === 0n) { flags.add('no_settlement_recorded'); complete = false; }
+
+    // Couverture : valeur confirmée de toute la PO (1e-4) vs réglé net des remboursements de marchandises.
+    const weights = poLines.map((l) => ({
+      id: l.id, weight: Number(BigInt(l.confirmed_quantity) * _units(l.confirmed_unit_price, 4)),
+    }));
+    const value = poLines.reduce((a, l) => a + BigInt(l.confirmed_quantity) * _units(l.confirmed_unit_price, 4), 0n);
+    if (value === 0n) { flags.add('zero_value_purchase_order'); complete = false; }
+    const netC = _roundCents(payC - goodsC);
+    const valC = _roundCents(value);
+    if (payC > 0n && netC < valC) { flags.add('underpaid'); complete = false; }
+    if (payC > 0n && netC > valC) { flags.add('overpaid'); complete = false; }
+
+    const mine = new Set(own.filter((l) => l.purchase_order_id === po).map((l) => l.id));
+    const share = (total) => shareByWeight(Number(total), weights)
+      .filter((x) => mine.has(x.id)).reduce((a, x) => a + BigInt(x.share), 0n);
+    acc.payC += share(payC); acc.payK += share(payK); acc.goodsK += share(goodsK); acc.feesK += share(feesK);
+  }
+
+  const cents = (b) => Number(b) / 100;
+  out.flags = [...flags];
+  out.complete = complete && poIds.length > 0;
+  const single = currencies.size === 1 ? [...currencies][0] : null;
+  out.paid = {
+    amount_currency: single && single !== 'MIXED' ? Number(acc.payC) / 10000 : null,
+    currency: currencies.size > 1 ? 'MIXED' : single,
+    amount_kmf: cents(acc.payK),
+  };
+  out.refunds_goods_kmf = cents(acc.goodsK);
+  out.fees_kmf = cents(acc.feesK);
+  out.effective_fx_rate = single && single !== 'MIXED' && acc.payC > 0n
+    ? Number((Number(acc.payK) / 100 / (Number(acc.payC) / 10000)).toFixed(6)) : null;
+  out.real_kmf = out.complete ? cents(acc.payK - acc.goodsK) : null;
+  return out;
+}
+
 /**
  * Classe une allocation réelle : traçable ('real'), catalogue, ou non actuelle.
  * Seules les lignes is_actual et non catalogue sont réelles.
@@ -185,7 +319,7 @@ function _revenue(o, refunds) {
   };
 }
 
-function _classifyTypes({ est, realSplit, customsUnknown, purchaseInfo }) {
+function _classifyTypes({ est, realSplit, customsUnknown, purchaseInfo, purchaseReal }) {
   const by = {};
   const unknown = [];
   const unvalued = [];
@@ -196,7 +330,11 @@ function _classifyTypes({ est, realSplit, customsUnknown, purchaseInfo }) {
     const slot = realSplit.byType[t];
     const entry = { estimated_kmf: kmf(estimated), real_kmf: null, real_source: null, state: 'not_expected' };
     if (t === 'product_purchase') {
-      if (purchaseInfo.confirmedLines > 0 && estimated > 0) {
+      if (purchaseReal.complete && purchaseReal.real_kmf != null) {
+        entry.state = 'real';
+        entry.real_kmf = kmf(purchaseReal.real_kmf);
+        entry.real_source = 'supplier_payment_settlements';
+      } else if (purchaseInfo.confirmedLines > 0 && estimated > 0) {
         entry.state = 'confirmed_unvalued'; // prix confirmé, taux supporté absent
         unvalued.push(t);
       } else if (estimated > 0 || realSplit.catalog.amount > 0) {
@@ -206,6 +344,11 @@ function _classifyTypes({ est, realSplit, customsUnknown, purchaseInfo }) {
     } else if (t === 'customs' && customsUnknown) {
       entry.state = 'unknown';
       unknown.push(t);
+    } else if (t === PAYMENT && !(slot && slot.real > 0) && purchaseReal.complete && purchaseReal.fees_kmf > 0) {
+      // Frais réels (net des remboursements de frais) : REMPLACENT l'estimé, jamais additionnés.
+      entry.state = 'real';
+      entry.real_kmf = kmf(purchaseReal.fees_kmf);
+      entry.real_source = 'supplier_payment_settlements:fees';
     } else if (slot && slot.real > 0) {
       entry.state = 'real';
       entry.real_kmf = kmf(slot.real);
@@ -254,16 +397,18 @@ async function computeOrderRealMarginShadow(orderId, opts = {}) {
   if (!o) return null;
   if (opts.marketId && o.market_id !== opts.marketId) return null;
 
-  const [est, realRows, refunds, purchase] = await Promise.all([
+  const [est, realRows, refunds, purchase, settleFacts] = await Promise.all([
     _loadEstimated(orderId), _loadReal(orderId), _loadRefundsKmf(orderId), _loadPurchase(orderId),
+    _loadSettlementFacts(orderId),
   ]);
+  const purchaseReal = computePurchaseReal(settleFacts);
 
   const revenue = _revenue(o, refunds);
   const realSplit = _splitReal(realRows);
   const confirmedLines = purchase.lines.lines;
   const { by, unknown, unvalued } = _classifyTypes({
     est, realSplit, customsUnknown: o.customs_unknown === true,
-    purchaseInfo: { confirmedLines },
+    purchaseInfo: { confirmedLines }, purchaseReal,
   });
   if (realSplit.ignored.length) revenue.flags.push(`real_cost_types_ignored:${realSplit.ignored.join('|')}`);
 
@@ -311,7 +456,13 @@ async function computeOrderRealMarginShadow(orderId, opts = {}) {
         amount: pl.currencies > 1 ? null : num(pl.amount),
         currency: pl.currencies > 1 ? 'MIXED' : pl.currency,
       },
-      fx_borne: null, // aucun taux réellement supporté n'est tracé (cf. PR)
+      paid: purchaseReal.paid,
+      refunds_goods_kmf: purchaseReal.refunds_goods_kmf,
+      fees_kmf: purchaseReal.fees_kmf,
+      effective_fx_rate: purchaseReal.effective_fx_rate, // calculé Σ KMF / Σ devise ; null si rien réglé
+      fx_borne: purchaseReal.effective_fx_rate,
+      real_kmf: purchaseReal.complete ? purchaseReal.real_kmf : null, // centimes ; by_type est arrondi au KMF
+      flags: purchaseReal.flags,
       supplier_payments: { count: purchase.pay.payments, debit_verified: purchase.pay.verified },
       state: purchaseState,
     },
@@ -379,4 +530,4 @@ async function listRealMarginShadow({ marketId, limit = 50, offset = 0, sinceDay
   };
 }
 
-module.exports = { computeOrderRealMarginShadow, listRealMarginShadow };
+module.exports = { computeOrderRealMarginShadow, listRealMarginShadow, computePurchaseReal };

@@ -19,7 +19,7 @@ const { computeOrderRealMarginShadow, listRealMarginShadow } = require('../../se
 const MARKET = '11111111-1111-4111-8111-111111111111';
 
 function setup({
-  order = {}, est = {}, real = [], refunds = {}, purchase = {}, pay = {},
+  order = {}, est = {}, real = [], refunds = {}, purchase = {}, pay = {}, settle = {},
 } = {}) {
   const o = {
     id: 'o1', market_id: MARKET, status: 'confirmed', payment_status: 'paid',
@@ -35,6 +35,9 @@ function setup({
     e_payment: '0', e_risk: '0', ...est,
   };
   mockQuery.mockImplementation(async (sql) => {
+    if (/settle:lines/.test(sql)) return { rows: settle.lines || [] };
+    if (/settle:payments/.test(sql)) return { rows: settle.payments || [] };
+    if (/settle:settlements/.test(sql)) return { rows: settle.settlements || [] };
     if (/FROM orders o WHERE o\.id/.test(sql)) return { rows: [o] };
     if (/FROM order_item_cost_imputations/.test(sql)) return { rows: [e] };
     if (/FROM order_item_real_cost_allocations/.test(sql)) return { rows: real };

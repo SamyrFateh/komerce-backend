@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-16T09:31:15.099Z",
+  "generatedAt": "2026-10-16T10:01:20.656Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 733,
-    "protected": 678,
+    "total": 735,
+    "protected": 680,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4586,6 +4586,20 @@
     },
     {
       "key": "POST /api/purchasing/po/prepare",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/purchasing/supplier-payments/{payment_id}/settlements",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/supplier-payments/{payment_id}/settlements",
       "level": "PROTECTED",
       "roles": [
         "admin"
