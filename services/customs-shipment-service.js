@@ -305,9 +305,39 @@ async function getShipment(db, id) {
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
+/**
+ * Defence in depth: a parcel may only join a shipment in its own market.
+ * Check inside the caller-owned transaction, locking parcel rows against
+ * concurrent reassignment. The workspace check alone is insufficient.
+ */
+async function assertShipmentParcelMarket(client, shipmentId, parcelIds) {
+  const ids = Array.isArray(parcelIds) ? parcelIds : [];
+  if (!ids.length) return;
+  if (new Set(ids.map(String)).size !== ids.length) {
+    throw httpError(409, 'Colis en double dans une expédition', 'CUSTOMS_DUPLICATE_PARCEL');
+  }
+  const { rows: [shipment] } = await client.query(
+    'SELECT market_id FROM customs_shipments WHERE id = $1', [shipmentId]
+  );
+  if (!shipment) throw httpError(404, 'Expédition introuvable', 'CUSTOMS_SHIPMENT_NOT_FOUND');
+  if (!shipment.market_id) {
+    throw httpError(409, 'Marché de l’expédition non renseigné', 'CUSTOMS_SHIPMENT_MARKET_REQUIRED');
+  }
+  const { rows } = await client.query(
+    `SELECT p.id, o.market_id
+       FROM parcels p JOIN orders o ON o.id = p.order_id
+      WHERE p.id = ANY($1::uuid[])
+      FOR UPDATE OF p`, [ids]
+  );
+  if (rows.length !== ids.length || rows.some(row => String(row.market_id) !== String(shipment.market_id))) {
+    throw httpError(409, 'Colis absent ou relevant d’un autre marché', 'CUSTOMS_PARCEL_MARKET_MISMATCH');
+  }
+}
+
 /** Insère les lignes de ventilation et propage vers orders (dans tx). */
 async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
   if (!Array.isArray(parcelIds) || parcelIds.length === 0) return [];
+  await assertShipmentParcelMarket(client, shipmentId, parcelIds);
 
   // Métriques physiques par colis. Priorité : valeur propre du colis, puis ses
   // parcel_items (quantité × prix/poids/volume), puis — colis sans item d'une
@@ -477,6 +507,8 @@ async function createShipment(db, body, userId, options = {}) {
         notes || null, supplier_id || null, userId, marketId,
       ]
     );
+
+    if (parcel_ids?.length) await assertShipmentParcelMarket(client, shipment.id, parcel_ids);
 
     // Ventilation immédiate uniquement si le montant est déjà fourni
     // (rétrocompatibilité : ancien flow où tout était saisi d'un coup).
@@ -696,6 +728,7 @@ async function activateShipment(db, id, parcelIds) {
     }
 
     const ids = Array.isArray(parcelIds) ? parcelIds : [];
+    await assertShipmentParcelMarket(client, shipment.id, ids);
     let allocations = [];
     if (shipment.status === 'pending' || isBlankAmount(shipment.customs_paid_kmf)) {
       // Montant encore inconnu : rattacher les colis sans fabriquer de part
@@ -791,6 +824,7 @@ async function deleteShipment(db, id) {
 }
 
 module.exports = {
+  assertShipmentParcelMarket,
   declareCustomsPayment,
   isCustomsDeclaredForOrder,
   confirmCustomsShipmentsForOrder,
@@ -860,6 +894,7 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
 
     // 2. Colis porteurs : aucun montant déclaré sans affectation possible
     const parcelIds = await _linkedParcelIds(client, shipmentId);
+    await assertShipmentParcelMarket(client, shipmentId, parcelIds);
     if (!parcelIds.length) {
       throw httpError(409,
         'Aucun colis rattaché : un montant douane ne peut pas être déclaré sans porteur',

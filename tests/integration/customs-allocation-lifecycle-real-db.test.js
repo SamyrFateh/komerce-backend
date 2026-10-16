@@ -53,9 +53,9 @@ if (!hasIntegrationEnv) {
     shipmentIds.push(shipmentId);
     await db.query(
       `INSERT INTO customs_shipments
-         (id, reference, shipment_date, transport_mode, cif_value_kmf, customs_paid_kmf, freight_kmf, allocation_method, status)
-       VALUES ($1, $2, CURRENT_DATE, 'sea', 30000, $3, $4, 'by_cif_value', $5)`,
-      [shipmentId, `${RUN_TAG}-ship-${seedCounter}`, customsPaidKmf, freightKmf, status]
+         (id, reference, shipment_date, transport_mode, cif_value_kmf, customs_paid_kmf, freight_kmf, allocation_method, status, market_id)
+       VALUES ($1, $2, CURRENT_DATE, 'sea', 30000, $3, $4, 'by_cif_value', $5, $6)`,
+      [shipmentId, `${RUN_TAG}-ship-${seedCounter}`, customsPaidKmf, freightKmf, status, market.id]
     );
 
     for (let i = 0; i < 3; i++) {

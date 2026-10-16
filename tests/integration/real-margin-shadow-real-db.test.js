@@ -64,9 +64,9 @@ if (!hasIntegrationEnv) {
     );
     await db.query(
       `INSERT INTO customs_shipments
-         (id, reference, shipment_date, transport_mode, cif_value_kmf, customs_paid_kmf, freight_kmf, allocation_method, status)
-       VALUES ($1, $2, CURRENT_DATE, 'sea', 10000, NULL, 300, 'by_cif_value', 'pending')`,
-      [shipmentId, `${RUN_TAG}-ship-${seq}`]
+         (id, reference, shipment_date, transport_mode, cif_value_kmf, customs_paid_kmf, freight_kmf, allocation_method, status, market_id)
+       VALUES ($1, $2, CURRENT_DATE, 'sea', 10000, NULL, 300, 'by_cif_value', 'pending', $3)`,
+      [shipmentId, `${RUN_TAG}-ship-${seq}`, marketId]
     );
     await db.query(
       `INSERT INTO products (id, name, price_kmf, stock, weight_kg, cost_kmf) VALUES ($1, $2, 10000, 100, 1, 4100)`,

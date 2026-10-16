@@ -524,10 +524,12 @@ describe('getShipment', () => {
 
 describe('createShipment — happy paths', () => {
   const makeClient = (overrides = {}) => ({
-    query: jest.fn(async (sql) => {
+    query: jest.fn(async (sql, params) => {
       const s = sql.trim();
       if (s === 'BEGIN' || s === 'COMMIT' || s === 'ROLLBACK') return { rows: [] };
-      if (s.startsWith('INSERT INTO customs_shipments')) {
+      if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+       if (s.includes('FROM parcels p JOIN orders o')) return {rows:(params?.[0] || []).map(id=>({id,market_id:'KM'}))};
+       if (s.startsWith('INSERT INTO customs_shipments')) {
         return { rows: [overrides.shipment || { id: 'ship-1', reference: 'ENV-001' }] };
       }
       if (s.startsWith('SELECT p.id, p.reference')) {
@@ -548,7 +550,7 @@ describe('createShipment — happy paths', () => {
     const result = await createShipment(mockDb, {
       reference: 'ENV-001', shipment_date: '2026-01-01', cif_value_kmf: 100000,
       customs_paid_kmf: 15000, parcel_ids: ['p1'],
-    }, 'user-1');
+    }, 'user-1', {marketId:'KM'});
 
     expect(result.shipment.id).toBe('ship-1');
     expect(result.allocations).toHaveLength(1);
@@ -562,7 +564,7 @@ describe('createShipment — happy paths', () => {
     const result = await createShipment(mockDb, {
       reference: 'ENV-002', shipment_date: '2026-01-01', cif_value_kmf: 50000,
       parcel_ids: ['p1', 'p2'],
-    }, 'user-1');
+    }, 'user-1', {marketId:'KM'});
 
     expect(result.allocations).toEqual([]);
     const inserts = client.query.mock.calls.filter(c => c[0].trim().startsWith('INSERT INTO customs_shipment_parcels'));
@@ -646,7 +648,9 @@ describe('activateShipment', () => {
       query: jest.fn(async (sql) => {
         const s = sql.trim();
         if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
-        if (s.startsWith('UPDATE customs_shipments')) return { rows: [{ id: 'ship-1', customs_paid_kmf: 10000, allocation_method: 'by_cif_value' }] };
+        if (s.startsWith('UPDATE customs_shipments')) return { rows: [{ id: 'ship-1', market_id:'KM', customs_paid_kmf: 10000, allocation_method: 'by_cif_value' }] };
+        if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+        if (s.includes('FROM parcels p JOIN orders o')) return {rows:[{id:'p1',market_id:'KM'}]};
         if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
         if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };
         if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [] };
@@ -716,6 +720,8 @@ describe('declareCustomsPayment', () => {
         if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending', allocation_method: 'by_cif_value' }] };
         if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
         if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }] };
+        if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+        if (s.includes('FROM parcels p JOIN orders o')) return {rows:[{id:'p1',market_id:'KM'}]};
         if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
         if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };
         if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [] };
@@ -766,6 +772,8 @@ describe('declareCustomsPayment', () => {
         if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending' }] };
         if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
         if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }] };
+        if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+        if (s.includes('FROM parcels p JOIN orders o')) return {rows:[{id:'p1',market_id:'KM'}]};
         if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
         if (s === 'ROLLBACK') return { rows: [] };
         return { rows: [] };
@@ -790,6 +798,8 @@ describe('declareCustomsPayment', () => {
         if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending' }] };
         if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
         if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }] };
+        if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+        if (s.includes('FROM parcels p JOIN orders o')) return {rows:[{id:'p1',market_id:'KM'}]};
         if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
         if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };
         if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [] };
