@@ -371,21 +371,23 @@ jobs:
           delete-branch: true
           title: '🗄️ Sync Railway schema → SCHEMA.md'
           body: |
-            Synchronisation automatique depuis la vérité Railway effectivement observée.
+            ## Pourquoi
+            Synchronisation automatique de la documentation avec la vérité Railway effectivement observée (workflow `schema-refresh`).
 
-            Chaîne :
-            `Railway → pg_dump → schema-promote objets+colonnes → arch-reconcile → arch-gate`.
+            ## Quoi
+            Chaîne : `Railway → pg_dump → schema-promote objets+colonnes → arch-reconcile → arch-gate`.
+            Promotion fail-closed : objet = `schema-pending` confirmé live ; colonne = paire exacte table+colonne prouvée par la migration et le dump live.
+            Les migrations du repo non déployées restent en `intended_migration_schema` et une issue `schema-drift-alert` signale le retard.
 
-            La promotion est fail-closed :
-            - objet : uniquement `schema-pending` confirmé live ;
-            - colonne : paire exacte table+colonne prouvée par la migration et le dump live.
+            ## Tests
+            `schema-promote-all --check` et `arch:gate` exécutés par le workflow ; checks PR obligatoires.
 
-            Si des migrations du repo ne sont pas encore déployées, elles restent
-            volontairement en `intended_migration_schema` et une issue
-            `schema-drift-alert` signale le retard. La documentation ne prétend
-            jamais qu'elles sont live avant Railway.
+            ## Hors périmètre
+            Code applicatif, migrations, moteur douanier.
 
-            Auto-merge activé uniquement après les checks obligatoires.
+            ## Risques
+            Documentation seule. Auto-merge activé uniquement après les checks obligatoires.
+
           labels: schema,automated
 
       - name: Enable auto-merge on the PR
