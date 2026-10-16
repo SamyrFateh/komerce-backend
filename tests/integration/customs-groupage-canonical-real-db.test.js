@@ -137,6 +137,18 @@ if (!hasIntegrationEnv) {
     });
   });
 
+  describe('groupage canonique — éligibilité des colis', () => {
+    it('G9 — un colis annulé ou d\'une commande annulée ne peut pas être rattaché', async () => {
+      const ps = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }, { order: 'B', cif: 10000, weight: 1, vol: 1000 }]);
+      await db.query(`UPDATE parcels SET status = 'cancelled' WHERE id = $1`, [ps[0].parcelId]);
+      await expect(makeShipment([ps[0]], { allocation_method: 'by_cif_value', customs_paid_kmf: 500 }))
+        .rejects.toMatchObject({ status: 409, code: 'CUSTOMS_PARCEL_NOT_ELIGIBLE' });
+      await db.query(`UPDATE orders SET status = 'cancelled' WHERE id = $1`, [ps[1].orderId]);
+      await expect(makeShipment([ps[1]], { allocation_method: 'by_cif_value', customs_paid_kmf: 500 }))
+        .rejects.toMatchObject({ status: 409, code: 'CUSTOMS_PARCEL_NOT_ELIGIBLE' });
+    });
+  });
+
   describe('groupage canonique — méthodes de répartition et conservation', () => {
     const SPECS = [
       { order: 'A', cif: 3333, weight: 2.5, vol: 40000 },

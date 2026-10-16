@@ -354,6 +354,27 @@ async function assertShipmentParcelMarket(client, shipmentId, parcelIds) {
   }
 }
 
+/**
+ * Éligibilité d'un NOUVEAU rattachement : ni colis annulé, ni commande annulée/remboursée
+ * (sinon des droits et du fret seraient imputés à une vente qui n'aura pas lieu).
+ * Ne s'applique qu'aux rattachements (création, réactivation) : une annulation survenue après
+ * le groupage ne bloque pas la déclaration — la part de la commande annulée reste tracée.
+ */
+async function assertParcelsEligibleForGrouping(client, parcelIds) {
+  const ids = Array.isArray(parcelIds) ? parcelIds : [];
+  if (!ids.length) return;
+  const { rows } = await client.query(
+    `SELECT p.id
+       FROM orders o JOIN parcels p ON p.order_id = o.id
+      WHERE p.id = ANY($1::uuid[])
+        AND (p.status = 'cancelled' OR o.status IN ('cancelled', 'refunded'))
+      LIMIT 1`, [ids]
+  );
+  if (rows.length) {
+    throw httpError(409, 'Colis annulé ou commande annulée/remboursée : rattachement refusé', 'CUSTOMS_PARCEL_NOT_ELIGIBLE');
+  }
+}
+
 /** Insère les lignes de ventilation et propage vers orders (dans tx). */
 async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
   if (!Array.isArray(parcelIds) || parcelIds.length === 0) return [];
@@ -529,6 +550,7 @@ async function createShipment(db, body, userId, options = {}) {
     );
 
     if (parcel_ids?.length) await assertShipmentParcelMarket(client, shipment.id, parcel_ids);
+    if (parcel_ids?.length) await assertParcelsEligibleForGrouping(client, parcel_ids);
 
     // Ventilation immédiate uniquement si le montant est déjà fourni
     // (rétrocompatibilité : ancien flow où tout était saisi d'un coup).
@@ -750,6 +772,7 @@ async function activateShipment(db, id, parcelIds) {
 
     const ids = Array.isArray(parcelIds) ? parcelIds : [];
     await assertShipmentParcelMarket(client, shipment.id, ids);
+    await assertParcelsEligibleForGrouping(client, ids);
     let allocations = [];
     if (shipment.status === 'pending' || isBlankAmount(shipment.customs_paid_kmf)) {
       // Montant encore inconnu : rattacher les colis sans fabriquer de part
