@@ -123,6 +123,35 @@ describe('transport cost allocation', () => {
     expect(resolveShipmentTransportRail('land')).toBeNull();
   });
 
+  test('typed fees: net fees are split with cent conservation as port_transitaire (customs_shipment_fees)', async () => {
+    const shipment = { id: 'ship-fee', customs_paid_kmf: '0', freight_kmf: null, allocation_method: 'by_cif_value', fees_net_kmf: '100.01' };
+    const parcels = ['p1', 'p2', 'p3'].map((id, i) => ({
+      parcel_id: id, order_id: `o${i}`, parcel_cif_kmf: '1000', parcel_weight_kg: '1', customs_share_kmf: null,
+    }));
+    const item = (id) => ({ order_item_id: id, parcel_qty: '1', price_kmf: '1000', order_item_qty: '1', product_id: 'x', weight_kg: '1', cost_kmf: '500' });
+    const client = makeClient([
+      { rows: [shipment] }, { rows: parcels }, { rows: [], rowCount: 0 },
+      { rows: [item('a')] }, { rows: [], rowCount: 1 },
+      { rows: [item('b')] }, { rows: [], rowCount: 1 },
+      { rows: [item('c')] }, { rows: [], rowCount: 1 },
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+
+    const result = await allocateShipmentRealCosts('ship-fee');
+
+    const inserts = client.query.mock.calls.filter(c => String(c[0]).includes("'port_transitaire'"));
+    expect(inserts).toHaveLength(3);
+    expect(inserts.reduce((sum, c) => sum + Math.round(Number(c[1][4]) * 100), 0)).toBe(10001);
+    expect(result.total_fees_kmf).toBe(100.01);
+    expectTransactionCommitted(client);
+  });
+
+  test('negative net fees are refused (422) before any insert', async () => {
+    const client = makeClient([{ rows: [{ id: 's', customs_paid_kmf: '0', freight_kmf: null, fees_net_kmf: '-5' }] }]);
+    db.pool.connect.mockResolvedValue(client);
+    await expect(allocateShipmentRealCosts('s')).rejects.toMatchObject({ code: 'COST_ALLOCATION_INCOMPLETE' });
+  });
+
   test('inactive shipment: item allocations are removed, nothing is created', async () => {
     const client = makeClient([
       { rows: [{ id: 'ship-off', is_active: false, customs_paid_kmf: '5000', freight_kmf: null }] },
