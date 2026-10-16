@@ -76,7 +76,7 @@ router.post('/', ...guard, async (req, res, next) => {
 // PATCH /api/admin/customs-shipments/:id
 router.patch('/:id', ...guard, async (req, res, next) => {
   try {
-    res.json(await svc.updateShipment(db, req.params.id, req.body));
+    res.json(await svc.updateShipment(db, req.params.id, req.body, { id: req.user.id }));
   } catch (err) { next(err); }
 });
 
