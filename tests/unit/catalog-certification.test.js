@@ -118,7 +118,7 @@ describe('catalog canonical certification', () => {
     await certifyCatalogProduct(q, 'p-1', {publicationGuard:PASS_GUARD});
     const sql = q.query.mock.calls[0][0];
     expect(sql).toContain("NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL");
-    expect(sql).toContain("NULLIF(BTRIM(supplier_order_identity), '') IS NOT NULL");
+    expect(sql).toContain("jsonb_typeof(supplier_order_identity) = 'object' AND supplier_order_identity <> '{}'::jsonb");
   });
 
   test('publication guard failure is part of the same certification verdict', () => {
