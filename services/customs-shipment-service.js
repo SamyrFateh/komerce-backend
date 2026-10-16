@@ -824,6 +824,7 @@ async function deleteShipment(db, id) {
 }
 
 module.exports = {
+  assertShipmentParcelMarket,
   declareCustomsPayment,
   isCustomsDeclaredForOrder,
   confirmCustomsShipmentsForOrder,
