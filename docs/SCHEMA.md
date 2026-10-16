@@ -925,3 +925,15 @@ migration: 297
 section: ### Customs typed shipment fees (migration 297)
 role: Append-only typed customs fee journal (charge/credit, proof and idempotency required, currency traced, KMF borne is authoritative) feeding conserved port_transitaire allocations.
 -->
+
+### Customs shipment parcel membership events (migration 299)
+
+`customs_shipment_parcel_events` is an append-only journal of parcel attach/detach events on an open customs shipment (groupage). Every event carries actor, date and a mandatory reason; UPDATE/DELETE are refused. It deliberately has no foreign key (like `customs_shipment_financial_audit`) so the evidence survives deactivation. Cost lines are re-allocated by the existing conserving allocator in the same transaction; prices and margin writers are untouched.
+
+<!-- schema-pending
+object: customs_shipment_parcel_events
+kind: table
+migration: 299
+section: ### Customs shipment parcel membership events (migration 299)
+role: Append-only attach/detach journal for parcels of an open customs shipment (actor, reason required), supporting traceable groupage composition changes.
+-->

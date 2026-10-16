@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 19,
-    "total_routes": 673,
+    "total_routes": 675,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -3206,6 +3206,112 @@
                   "type": "object",
                   "properties": {
                     "shipment": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/customs-shipments/{id}/parcels": {
+      "post": {
+        "summary": "POST /api/admin/customs-shipments/{id}/parcels",
+        "x-route-file": "routes/admin-customs-shipments.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "shipment_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "added": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "idempotent": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reallocated": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "parcels_total": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/customs-shipments/{id}/parcels/remove": {
+      "post": {
+        "summary": "POST /api/admin/customs-shipments/{id}/parcels/remove",
+        "x-route-file": "routes/admin-customs-shipments.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "shipment_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "removed": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reallocated": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "parcels_total": {
                       "type": "string",
                       "x-observed": true
                     }

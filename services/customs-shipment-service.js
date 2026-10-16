@@ -9,7 +9,7 @@
  * @depends       services/cost-allocation/index.js, services/cost-allocation/_helpers.js, services/documents/customs-invoice.js, services/parcel-mutation-service.js
  * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js, services/shipping-customs-workspace.js
  * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
- * @db-write      customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, orders
+ * @db-write      customs_shipment_parcel_events, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, orders
  * @db-write-via:parcel-mutation-service parcels
  * @db-write-via:cost-allocation order_item_real_cost_allocations
  * @db-txn        createShipment_owns_full_transaction, declaration_allocation_atomic
@@ -355,23 +355,29 @@ async function assertShipmentParcelMarket(client, shipmentId, parcelIds) {
 }
 
 /**
- * Éligibilité d'un NOUVEAU rattachement : ni colis annulé, ni commande annulée/remboursée
- * (sinon des droits et du fret seraient imputés à une vente qui n'aura pas lieu).
- * Ne s'applique qu'aux rattachements (création, réactivation) : une annulation survenue après
- * le groupage ne bloque pas la déclaration — la part de la commande annulée reste tracée.
+ * Éligibilité d'un NOUVEAU rattachement (groupage expédié) : colis `shipped` ou `in_transit`,
+ * commande ni annulée ni remboursée. Préparation et expédition ne se mélangent pas. Ne s'applique
+ * qu'aux colis pas encore liés à cette expédition : une annulation ou une arrivée survenue après
+ * le groupage ne bloque ni la déclaration, ni la réactivation, ni une correction.
  */
-async function assertParcelsEligibleForGrouping(client, parcelIds) {
+const GROUPABLE_PARCEL_STATUSES = Object.freeze(['shipped', 'in_transit']);
+
+async function assertParcelsEligibleForGrouping(client, parcelIds, shipmentId = null) {
   const ids = Array.isArray(parcelIds) ? parcelIds : [];
   if (!ids.length) return;
   const { rows } = await client.query(
     `SELECT p.id
        FROM orders o JOIN parcels p ON p.order_id = o.id
       WHERE p.id = ANY($1::uuid[])
-        AND (p.status = 'cancelled' OR o.status IN ('cancelled', 'refunded'))
-      LIMIT 1`, [ids]
+        AND ($2::uuid IS NULL OR NOT EXISTS (
+              SELECT 1 FROM customs_shipment_parcels l WHERE l.shipment_id = $2 AND l.parcel_id = p.id))
+        AND (NOT (p.status::text = ANY($3::text[])) OR o.status IN ('cancelled', 'refunded'))
+      LIMIT 1`, [ids, shipmentId, GROUPABLE_PARCEL_STATUSES]
   );
   if (rows.length) {
-    throw httpError(409, 'Colis annulé ou commande annulée/remboursée : rattachement refusé', 'CUSTOMS_PARCEL_NOT_ELIGIBLE');
+    throw httpError(409,
+      'Colis non groupable : seuls les colis expédiés (shipped / in_transit) de commandes non annulées sont rattachables',
+      'CUSTOMS_PARCEL_NOT_ELIGIBLE');
   }
 }
 
@@ -550,7 +556,7 @@ async function createShipment(db, body, userId, options = {}) {
     );
 
     if (parcel_ids?.length) await assertShipmentParcelMarket(client, shipment.id, parcel_ids);
-    if (parcel_ids?.length) await assertParcelsEligibleForGrouping(client, parcel_ids);
+    if (parcel_ids?.length) await assertParcelsEligibleForGrouping(client, parcel_ids, shipment.id);
 
     // Ventilation immédiate uniquement si le montant est déjà fourni
     // (rétrocompatibilité : ancien flow où tout était saisi d'un coup).
@@ -772,7 +778,7 @@ async function activateShipment(db, id, parcelIds) {
 
     const ids = Array.isArray(parcelIds) ? parcelIds : [];
     await assertShipmentParcelMarket(client, shipment.id, ids);
-    await assertParcelsEligibleForGrouping(client, ids);
+    await assertParcelsEligibleForGrouping(client, ids, shipment.id);
     let allocations = [];
     if (shipment.status === 'pending' || isBlankAmount(shipment.customs_paid_kmf)) {
       // Montant encore inconnu : rattacher les colis sans fabriquer de part
@@ -877,6 +883,8 @@ module.exports = {
   propagateCostDouane,
   listShipments,
   getEffectiveRates,
+  addParcelsToShipment,
+  removeParcelsFromShipment,
   getShipment,
   createShipment,
   updateShipment,
@@ -1007,6 +1015,124 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
       invoice_issued: invoiceIssued,
       ...(invoiceIssued ? {} : { invoice_error: invoiceError }),
     };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+// ── Groupage : ajout / retrait direct de colis (avant clôture) ───────────────
+
+function _membershipInput(parcelIds, reason) {
+  const ids = [...new Set((Array.isArray(parcelIds) ? parcelIds : []).map(String))];
+  if (!ids.length) throw httpError(400, 'parcel_ids requis', 'CUSTOMS_PARCEL_IDS_REQUIRED');
+  const why = reason == null ? '' : String(reason).trim();
+  if (!why) throw httpError(400, 'reason obligatoire pour modifier la composition d\u2019un groupage', 'CUSTOMS_MEMBERSHIP_REASON_REQUIRED');
+  return { ids, why };
+}
+
+async function _lockOpenShipment(client, shipmentId) {
+  const { rows: [ship] } = await client.query(
+    'SELECT * FROM customs_shipments WHERE id = $1 FOR UPDATE', [shipmentId]);
+  if (!ship) throw httpError(404, 'Expédition introuvable', 'CUSTOMS_SHIPMENT_NOT_FOUND');
+  if (ship.is_active === false) throw httpError(409, 'Expédition désactivée — la réactiver avant de modifier sa composition', 'CUSTOMS_SHIPMENT_INACTIVE');
+  if (ship.status === 'confirmed') throw httpError(409, 'Expédition clôturée — composition verrouillée', 'CUSTOMS_SHIPMENT_CLOSED');
+  return ship;
+}
+
+async function _recordMembershipEvents(client, shipmentId, parcelIds, event, actorId, reason) {
+  for (const parcelId of parcelIds) {
+    await client.query(
+      `INSERT INTO customs_shipment_parcel_events (shipment_id, parcel_id, event, actor_id, reason)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [shipmentId, parcelId, event, actorId == null ? null : String(actorId), reason]
+    );
+  }
+}
+
+/**
+ * Ajoute des colis à une expédition ouverte (pending ou déclarée). Atomique : verrou expédition +
+ * colis, contrôles marché / unicité / éligibilité, journal immuable, puis reventilation complète
+ * (colis → commandes → articles) si le montant douane est connu.
+ *
+ * @param {{ id?: string, reason?: string }} actor
+ * ✗ throws 400 | 404 | 409 | 422
+ */
+async function addParcelsToShipment(db, shipmentId, parcelIds, actor = {}) {
+  const { ids, why } = _membershipInput(parcelIds, actor.reason);
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    await setLocalCustomsAuditContext(client, actor.id, why);
+    const ship = await _lockOpenShipment(client, shipmentId);
+
+    const linked = new Set((await _linkedParcelIds(client, shipmentId)).map(String));
+    const fresh = ids.filter(id => !linked.has(id));
+    if (!fresh.length) {
+      await client.query('COMMIT');
+      return { shipment_id: shipmentId, added: [], idempotent: true, parcels_total: linked.size };
+    }
+    await assertShipmentParcelMarket(client, shipmentId, fresh);
+    await assertParcelsEligibleForGrouping(client, fresh, shipmentId);
+
+    for (const pid of fresh) {
+      await client.query(
+        `INSERT INTO customs_shipment_parcels (shipment_id, parcel_id) VALUES ($1, $2)`, [shipmentId, pid]);
+    }
+    await _recordMembershipEvents(client, shipmentId, fresh, 'attach', actor.id, why);
+
+    const all = await _linkedParcelIds(client, shipmentId);
+    let reallocated = false;
+    if (!isBlankAmount(ship.customs_paid_kmf) && ship.status === 'declared') {
+      await _reallocateDeclared(client, shipmentId, ship, all);
+      await markCustomsCleared(client, { parcelIds: fresh, notes: why });
+      reallocated = true;
+    } else {
+      await propagateCostDouane(client, fresh);
+    }
+    await client.query('COMMIT');
+    return { shipment_id: shipmentId, added: fresh, reallocated, parcels_total: all.length };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Retire des colis d'une expédition ouverte. Mêmes garanties que l'ajout ; une expédition au
+ * montant connu ne peut pas être vidée (la désactiver à la place).
+ */
+async function removeParcelsFromShipment(db, shipmentId, parcelIds, actor = {}) {
+  const { ids, why } = _membershipInput(parcelIds, actor.reason);
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    await setLocalCustomsAuditContext(client, actor.id, why);
+    const ship = await _lockOpenShipment(client, shipmentId);
+
+    const linked = (await _linkedParcelIds(client, shipmentId)).map(String);
+    if (ids.some(id => !linked.includes(id))) {
+      throw httpError(409, 'Colis non rattaché à cette expédition', 'CUSTOMS_PARCEL_NOT_IN_SHIPMENT');
+    }
+    const remaining = linked.filter(id => !ids.includes(id));
+    const amountKnown = !isBlankAmount(ship.customs_paid_kmf) && ship.status === 'declared';
+    if (amountKnown && !remaining.length) {
+      throw httpError(409, 'Retrait impossible : une expédition déclarée doit garder au moins un colis (la désactiver sinon)', 'CUSTOMS_SHIPMENT_WITHOUT_PARCELS');
+    }
+    await client.query(
+      `DELETE FROM customs_shipment_parcels WHERE shipment_id = $1 AND parcel_id = ANY($2::uuid[])`, [shipmentId, ids]);
+    await _recordMembershipEvents(client, shipmentId, ids, 'detach', actor.id, why);
+
+    if (amountKnown) {
+      await _reallocateDeclared(client, shipmentId, ship, remaining);
+    }
+    await propagateCostDouane(client, ids);
+    await client.query('COMMIT');
+    return { shipment_id: shipmentId, removed: ids, reallocated: amountKnown, parcels_total: remaining.length };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     throw err;

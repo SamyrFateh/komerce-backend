@@ -109,6 +109,7 @@ if (!hasIntegrationEnv) {
     await q('SET session_replication_role = replica');
     await q('DELETE FROM customs_shipment_fees WHERE shipment_id = ANY($1::uuid[])', [ids.shipments]);
     await q('DELETE FROM customs_shipment_financial_audit WHERE shipment_id = ANY($1::uuid[])', [ids.shipments]);
+    await q('DELETE FROM customs_shipment_parcel_events WHERE shipment_id = ANY($1::uuid[])', [ids.shipments]);
     await q('DELETE FROM order_item_real_cost_allocations WHERE order_id = ANY($1::uuid[])', [ids.orders]);
     await q('DELETE FROM customs_shipment_parcels WHERE shipment_id = ANY($1::uuid[])', [ids.shipments]);
     await q('DELETE FROM customs_shipments WHERE id = ANY($1::uuid[])', [ids.shipments]);
@@ -134,6 +135,105 @@ if (!hasIntegrationEnv) {
       await makeShipment(ps, { allocation_method: 'by_cif_value' });
       await expect(makeShipment(ps, { allocation_method: 'by_cif_value' }))
         .rejects.toMatchObject({ status: 409, code: 'CUSTOMS_PARCEL_ALREADY_GROUPED' });
+    });
+  });
+
+  describe('A1/A2 — composition directe du groupage (ajout / retrait avant clôture)', () => {
+    const setStatus = (parcelId, status) => db.query(
+      'UPDATE parcels p SET status = $2, relais_id = o.relais_id FROM orders o WHERE o.id = p.order_id AND p.id = $1', [parcelId, status]);
+    const events = async (shipmentId) => (await db.query(
+      'SELECT parcel_id, event, reason, actor_id FROM customs_shipment_parcel_events WHERE shipment_id = $1 ORDER BY id', [shipmentId])).rows;
+    const legacy = async (orderIds) => (await db.query(
+      'SELECT id, margin_alert, sourcing_blocked, total_kmf FROM orders WHERE id = ANY($1::uuid[]) ORDER BY id', [orderIds])).rows;
+
+    it('A2 — seuls les colis shipped / in_transit sont groupables ; préparation et arrivé refusés', async () => {
+      const ps = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }, { order: 'B', cif: 10000, weight: 1, vol: 1000 }, { order: 'C', cif: 10000, weight: 1, vol: 1000 }]);
+      await setStatus(ps[0].parcelId, 'preparation');
+      await setStatus(ps[1].parcelId, 'arrived');
+      await setStatus(ps[2].parcelId, 'shipped');
+      for (const p of [ps[0], ps[1]]) {
+        await expect(makeShipment([p], { allocation_method: 'by_cif_value' })).rejects.toMatchObject({ status: 409, code: 'CUSTOMS_PARCEL_NOT_ELIGIBLE' });
+      }
+      const s = await makeShipment([ps[2]], { allocation_method: 'by_cif_value', customs_paid_kmf: 300 });
+      // arrivée après groupage : ne bloque ni la correction ni la réventilation
+      await setStatus(ps[2].parcelId, 'arrived');
+      await svc.updateShipment(db, s.id, { customs_paid_kmf: 400 }, {});
+      expect(await allocTotal(s.id, 'customs')).toBe(400);
+    });
+
+    it('A1 — ajout sur expédition déclarée : reventilation conservée, événement tracé, idempotent', async () => {
+      const ps = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }, { order: 'B', cif: 10000, weight: 1, vol: 1000 }, { order: 'C', cif: 10000, weight: 1, vol: 1000 }]);
+      const s = await makeShipment([ps[0], ps[1]], { allocation_method: 'by_cif_value', customs_paid_kmf: 900 });
+      const before = await legacy(ps.map((p) => p.orderId));
+      const r = await svc.addParcelsToShipment(db, s.id, [ps[2].parcelId], { id: null, reason: 'colis C arrivé au quai' });
+      expect(r.added).toEqual([ps[2].parcelId]);
+      expect(await allocTotal(s.id, 'customs')).toBe(900);
+      const byOrder = await allocByOrder(s.id, 'customs');
+      expect(byOrder[ps[2].orderId]).toBe(300);
+      expect(byOrder[ps[0].orderId]).toBe(300);
+      expect(await events(s.id)).toEqual([{ parcel_id: ps[2].parcelId, event: 'attach', reason: 'colis C arrivé au quai', actor_id: null }]);
+      // rejeu : aucun changement, aucun événement supplémentaire
+      const again = await svc.addParcelsToShipment(db, s.id, [ps[2].parcelId], { reason: 'rejeu' });
+      expect(again.idempotent).toBe(true);
+      expect((await events(s.id)).length).toBe(1);
+      expect(await allocTotal(s.id, 'customs')).toBe(900);
+      // prix, alertes, sourcing inchangés
+      expect(await legacy(ps.map((p) => p.orderId))).toEqual(before);
+    });
+
+    it('A1 — retrait sur expédition déclarée : conservation sur les colis restants, événement detach, pas de dernier colis', async () => {
+      const ps = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }, { order: 'B', cif: 20000, weight: 1, vol: 1000 }]);
+      const s = await makeShipment(ps, { allocation_method: 'by_cif_value', customs_paid_kmf: 900, freight_kmf: 90 });
+      await svc.removeParcelsFromShipment(db, s.id, [ps[0].parcelId], { id: null, reason: 'colis A retiré du conteneur' });
+      expect(await allocTotal(s.id, 'customs')).toBe(900);
+      expect(await allocTotal(s.id, 'freight')).toBe(90);
+      expect((await allocByOrder(s.id, 'customs'))[ps[0].orderId]).toBeUndefined();
+      expect((await events(s.id)).map((e) => e.event)).toEqual(['detach']);
+      await expect(svc.removeParcelsFromShipment(db, s.id, [ps[1].parcelId], { reason: 'vider' }))
+        .rejects.toMatchObject({ status: 409, code: 'CUSTOMS_SHIPMENT_WITHOUT_PARCELS' });
+      await expect(svc.removeParcelsFromShipment(db, s.id, [ps[0].parcelId], { reason: 'déjà retiré' }))
+        .rejects.toMatchObject({ status: 409, code: 'CUSTOMS_PARCEL_NOT_IN_SHIPMENT' });
+      expect(await allocTotal(s.id, 'customs')).toBe(900);
+    });
+
+    it('A1 — pending : rattachement sans ventilation fabriquée ; reason obligatoire ; clôturée et désactivée refusées', async () => {
+      const ps = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }, { order: 'B', cif: 10000, weight: 1, vol: 1000 }]);
+      const s = await makeShipment([ps[0]], { allocation_method: 'by_cif_value' });
+      await svc.addParcelsToShipment(db, s.id, [ps[1].parcelId], { reason: 'ajout pending' });
+      expect((await db.query('SELECT COUNT(*)::int n FROM order_item_real_cost_allocations WHERE shipment_id = $1', [s.id])).rows[0].n).toBe(0);
+      await expect(svc.addParcelsToShipment(db, s.id, [ps[1].parcelId], {})).rejects.toMatchObject({ status: 400, code: 'CUSTOMS_MEMBERSHIP_REASON_REQUIRED' });
+      await svc.declareCustomsPayment(db, s.id, { customs_paid_kmf: 600 }, null);
+      await db.query(`UPDATE customs_shipments SET status = 'confirmed' WHERE id = $1`, [s.id]);
+      await expect(svc.removeParcelsFromShipment(db, s.id, [ps[1].parcelId], { reason: 'après clôture' }))
+        .rejects.toMatchObject({ status: 409, code: 'CUSTOMS_SHIPMENT_CLOSED' });
+      expect(await allocTotal(s.id, 'customs')).toBe(600);
+      const ps2 = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }]);
+      const s2 = await makeShipment(ps2, { allocation_method: 'by_cif_value' });
+      await svc.deactivateShipment(db, s2.id, 'test');
+      await expect(svc.addParcelsToShipment(db, s2.id, [ps2[0].parcelId], { reason: 'x' })).rejects.toMatchObject({ status: 409, code: 'CUSTOMS_SHIPMENT_INACTIVE' });
+    });
+
+    it('A1 — concurrence : le même colis ajouté en parallèle à deux expéditions n\'est accepté qu\'une fois', async () => {
+      const ps = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }, { order: 'B', cif: 10000, weight: 1, vol: 1000 }, { order: 'C', cif: 10000, weight: 1, vol: 1000 }]);
+      const s1 = await makeShipment([ps[0]], { allocation_method: 'by_cif_value' });
+      const s2 = await makeShipment([ps[1]], { allocation_method: 'by_cif_value' });
+      const res = await Promise.allSettled([
+        svc.addParcelsToShipment(db, s1.id, [ps[2].parcelId], { reason: 'course 1' }),
+        svc.addParcelsToShipment(db, s2.id, [ps[2].parcelId], { reason: 'course 2' }),
+      ]);
+      expect(res.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const lost = res.find((r) => r.status === 'rejected');
+      expect(lost.reason).toMatchObject({ code: 'CUSTOMS_PARCEL_ALREADY_GROUPED' });
+      const { rows: [c] } = await db.query('SELECT COUNT(*)::int n FROM customs_shipment_parcels WHERE parcel_id = $1', [ps[2].parcelId]);
+      expect(c.n).toBe(1);
+    });
+
+    it('A1 — le journal des événements est immuable', async () => {
+      const ps = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }, { order: 'B', cif: 10000, weight: 1, vol: 1000 }]);
+      const s = await makeShipment([ps[0]], { allocation_method: 'by_cif_value' });
+      await svc.addParcelsToShipment(db, s.id, [ps[1].parcelId], { reason: 'preuve' });
+      await expect(db.query('UPDATE customs_shipment_parcel_events SET reason = $2 WHERE shipment_id = $1', [s.id, 'x'])).rejects.toThrow(/append-only/);
+      await expect(db.query('DELETE FROM customs_shipment_parcel_events WHERE shipment_id = $1', [s.id])).rejects.toThrow(/append-only/);
     });
   });
 

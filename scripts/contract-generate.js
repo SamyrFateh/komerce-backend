@@ -882,6 +882,13 @@ const KNOWN_RESPONSES = {
   '/api/admin/customs-shipments/{id}/declare': {
     post: { fields: ['shipment_id', 'status', 'customs_paid_kmf', 'parcels_updated'], source: 'test' },
   },
+  // Groupage canonique A1 : composition directe (journal immuable, reventilation atomique).
+  '/api/admin/customs-shipments/{id}/parcels': {
+    post: { fields: ['shipment_id', 'added', 'idempotent', 'reallocated', 'parcels_total'], source: 'route-read' },
+  },
+  '/api/admin/customs-shipments/{id}/parcels/remove': {
+    post: { fields: ['shipment_id', 'removed', 'reallocated', 'parcels_total'], source: 'route-read' },
+  },
   '/api/admin/customs-shipments/status/pending': {
     get: { fields: ['shipments', 'count'], source: 'test' },
   },
