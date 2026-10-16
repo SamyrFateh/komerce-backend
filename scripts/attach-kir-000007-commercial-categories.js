@@ -17,7 +17,8 @@ const {findConfirmed}=require('../services/supplier-commercial-category-mapping'
 async function run({apply=false,actor=null,query=db,source=sourceAudit,find=findConfirmed}={}){
  const evidence=await source('KIR-000007');
  if(evidence.provider!=='AliExpress'||evidence.inspected!==20||
-   evidence.items.length!==20||evidence.items.some(x=>!x.candidate_ref))
+   evidence.items.length!==20||evidence.items.some(x=>!x.candidate_ref)||
+   new Set(evidence.items.map(x=>x.candidate_ref)).size!==20)
    throw new Error('KIR_SOURCE_EVIDENCE_CHANGED');
  const client=apply?await query.getClient():query;
  try{
