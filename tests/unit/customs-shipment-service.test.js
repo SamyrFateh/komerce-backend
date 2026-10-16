@@ -26,6 +26,7 @@ jest.mock('../../services/documents/customs-invoice', () => ({
 
 const {
   allocateCustoms,
+  defaultAllocationMethod,
   propagateCostDouane,
   listShipments,
   getEffectiveRates,
@@ -839,5 +840,69 @@ describe('isCustomsDeclaredForOrder', () => {
     const result = await isCustomsDeclaredForOrder(mockQ, 'order-1');
 
     expect(result).toEqual({ allowed: true });
+  });
+});
+
+// ── PR2a : méthode par défaut maritime, fallback tracé, métriques par colis ──
+
+describe('defaultAllocationMethod / createShipment — by_volume par défaut au maritime', () => {
+  it('sea sans méthode -> by_volume ; air/absent -> by_cif_value', () => {
+    expect(defaultAllocationMethod(undefined, 'sea')).toBe('by_volume');
+    expect(defaultAllocationMethod(null, 'sea')).toBe('by_volume');
+    expect(defaultAllocationMethod(undefined, 'air')).toBe('by_cif_value');
+    expect(defaultAllocationMethod(undefined, undefined)).toBe('by_cif_value');
+  });
+
+  it('une méthode explicite est toujours respectée (même au maritime)', () => {
+    expect(defaultAllocationMethod('by_cif_value', 'sea')).toBe('by_cif_value');
+    expect(defaultAllocationMethod('by_weight', 'sea')).toBe('by_weight');
+    expect(defaultAllocationMethod('manual', 'air')).toBe('manual');
+  });
+
+  const run = async (body) => {
+    const client = {
+      query: jest.fn(async (sql) => (/INSERT INTO customs_shipments/.test(sql)
+        ? { rows: [{ id: 's1' }] } : { rows: [{ id: 's1' }] })),
+      release: jest.fn(),
+    };
+    await createShipment({ pool: { connect: async () => client }, query: jest.fn() },
+      { reference: 'R', shipment_date: '2026-01-01', cif_value_kmf: 100, ...body }, 'u1');
+    const ins = client.query.mock.calls.find(c => /INSERT INTO customs_shipments/.test(c[0]));
+    return ins[1][9]; // allocation_method ($10)
+  };
+
+  it('createShipment : sea sans méthode -> by_volume', async () => {
+    expect(await run({ transport_mode: 'sea' })).toBe('by_volume');
+  });
+  it('createShipment : sea avec by_cif_value explicite -> conservé', async () => {
+    expect(await run({ transport_mode: 'sea', allocation_method: 'by_cif_value' })).toBe('by_cif_value');
+  });
+  it('createShipment : air -> by_cif_value inchangé', async () => {
+    expect(await run({ transport_mode: 'air' })).toBe('by_cif_value');
+  });
+});
+
+describe('allocateCustoms — métrique absente : parts égales conservées et tracées', () => {
+  it('by_volume sans volume : somme exacte au centime + allocation_basis tracé', () => {
+    const r = allocateCustoms({ customs_paid_kmf: 100, allocation_method: 'by_volume' },
+      [{ parcel_id: 'a' }, { parcel_id: 'b' }, { parcel_id: 'c' }]);
+    expect(r.reduce((s, x) => Math.round(s + x.customs_share_kmf * 100), 0)).toBe(10000);
+    r.forEach(x => expect(x.allocation_basis).toBe('by_volume:equal_fallback'));
+  });
+  it('by_volume avec volumes : basis inchangé', () => {
+    const r = allocateCustoms({ customs_paid_kmf: 100, allocation_method: 'by_volume' },
+      [{ parcel_id: 'a', volume_m3: 1 }, { parcel_id: 'b', volume_m3: 3 }]);
+    expect(r.map(x => x.customs_share_kmf)).toEqual([25, 75]);
+    expect(r[0].allocation_basis).toBe('by_volume');
+  });
+});
+
+describe('_insertAllocations — SQL des métriques par colis (via declareCustomsPayment non requis)', () => {
+  it('le fallback ne réutilise plus la somme commande pour chaque colis', () => {
+    const src = require('fs').readFileSync(require.resolve('../../services/customs-shipment-service'), 'utf8');
+    expect(src).toMatch(/FROM parcel_items pi/);
+    expect(src).toMatch(/o\.total_kmf \/ pc\.n/);
+    expect(src).toMatch(/ord\.weight_kg \/ pc\.n/);
+    expect(src).toMatch(/ord\.volume_cm3 \/ pc\.n/);
   });
 });
