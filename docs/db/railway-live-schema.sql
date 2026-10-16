@@ -291,6 +291,537 @@ $$;
 
 
 --
+-- Name: cash_alloc_enforce(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_alloc_enforce() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  dep cash_deposits%ROWTYPE;
+  col cash_collections%ROWTYPE;
+  col_market uuid;
+  dep_total numeric;
+  col_total numeric;
+BEGIN
+  SELECT * INTO dep FROM cash_deposits WHERE id = NEW.deposit_id FOR UPDATE;
+  SELECT * INTO col FROM cash_collections WHERE id = NEW.collection_id FOR UPDATE;
+  col_market := cash_collection_market(col.relais_id, col.collected_by);
+
+  IF dep.market_id IS NULL OR col_market IS NULL
+     OR dep.market_id <> col_market OR NEW.market_id <> dep.market_id THEN
+    RAISE EXCEPTION 'cash_deposit_allocations: Market incohérent (remise %, encaissement %, ligne %)',
+      dep.market_id, col_market, NEW.market_id USING ERRCODE = 'check_violation';
+  END IF;
+  IF dep.agent_id <> col.collected_by THEN
+    RAISE EXCEPTION 'cash_deposit_allocations: la remise % n''appartient pas à l''agent de l''encaissement', dep.id
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  SELECT COALESCE(SUM(amount_kmf), 0) INTO dep_total
+    FROM cash_deposit_allocations WHERE deposit_id = NEW.deposit_id;
+  IF dep_total > dep.amount_kmf THEN
+    RAISE EXCEPTION 'cash_deposit_allocations: Σ allocations (%) > montant de la remise (%)', dep_total, dep.amount_kmf
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF dep.status IN ('pending', 'verified') THEN
+    SELECT COALESCE(SUM(a.amount_kmf), 0) INTO col_total
+      FROM cash_deposit_allocations a
+      JOIN cash_deposits d ON d.id = a.deposit_id
+     WHERE a.collection_id = NEW.collection_id AND d.status IN ('pending', 'verified');
+    IF col_total > col.amount_kmf THEN
+      RAISE EXCEPTION 'cash_deposit_allocations: Σ allocations vivantes (%) > encaissement (%) — double comptage', col_total, col.amount_kmf
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+
+--
+-- Name: cash_allocate_fifo(uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_allocate_fifo(p_deposit_id uuid, p_source text) RETURNS numeric
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  dep cash_deposits%ROWTYPE;
+  c record;
+  left_kmf numeric;
+  take numeric;
+  allocated numeric := 0;
+BEGIN
+  SELECT * INTO dep FROM cash_deposits WHERE id = p_deposit_id FOR UPDATE;
+  IF NOT FOUND OR dep.market_id IS NULL THEN
+    RETURN 0;
+  END IF;
+  IF EXISTS (SELECT 1 FROM cash_deposit_allocations WHERE deposit_id = dep.id) THEN
+    RETURN 0;
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('cash_alloc:' || dep.agent_id::text));
+  left_kmf := dep.amount_kmf;
+
+  FOR c IN
+    SELECT cc.id, cc.amount_kmf - COALESCE((
+             SELECT SUM(a.amount_kmf)
+               FROM cash_deposit_allocations a JOIN cash_deposits d ON d.id = a.deposit_id
+              WHERE a.collection_id = cc.id AND d.status IN ('pending', 'verified')), 0) AS remaining
+      FROM cash_collections cc
+     WHERE cc.collected_by = dep.agent_id
+       AND cash_collection_market(cc.relais_id, cc.collected_by) = dep.market_id
+     ORDER BY cc.confirmed_at, cc.id
+       FOR UPDATE OF cc
+  LOOP
+    EXIT WHEN left_kmf <= 0;
+    CONTINUE WHEN c.remaining <= 0;
+    take := LEAST(c.remaining, left_kmf);
+    INSERT INTO cash_deposit_allocations
+      (deposit_id, collection_id, market_id, amount_kmf, allocation_basis, allocation_source)
+    VALUES (dep.id, c.id, dep.market_id, take, 'RECONSTRUCTED', p_source);
+    left_kmf := left_kmf - take;
+    allocated := allocated + take;
+  END LOOP;
+  RETURN allocated;
+END
+$$;
+
+
+--
+-- Name: cash_collection_market(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_collection_market(p_relais_id uuid, p_collected_by uuid) RETURNS uuid
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT COALESCE(
+    (SELECT r.market_id FROM relais r WHERE r.id = p_relais_id),
+    (SELECT r.market_id FROM users u JOIN relais r ON r.id = u.relais_id WHERE u.id = p_collected_by)
+  )
+$$;
+
+
+--
+-- Name: cash_custody_assert_nonnegative(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_custody_assert_nonnegative(p_holder uuid, p_market uuid) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  bal numeric;
+BEGIN
+  IF p_holder IS NULL THEN RETURN; END IF;
+  SELECT COALESCE(SUM(delta_kmf), 0) INTO bal
+    FROM cash_custody_movements WHERE holder_id = p_holder AND market_id IS NOT DISTINCT FROM p_market;
+  IF bal < 0 THEN
+    RAISE EXCEPTION 'cash_custody: solde négatif interdit pour % (Market %) : %', p_holder, p_market, bal
+      USING ERRCODE = 'check_violation';
+  END IF;
+END
+$$;
+
+
+--
+-- Name: cash_custody_authorized(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_custody_authorized(p_user uuid, p_market uuid) RETURNS boolean
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT EXISTS (
+    SELECT 1
+      FROM market_operating_assignments a
+      JOIN assignment_memberships am ON am.assignment_id = a.id AND am.status = 'ACTIVE'
+      JOIN membership_capabilities mc ON mc.membership_id = am.id
+           AND mc.capability = 'cash.custody.receive' AND mc.revoked_at IS NULL
+     WHERE a.market_id = p_market AND a.status = 'ACTIVE' AND am.user_id = p_user)
+$$;
+
+
+--
+-- Name: cash_custody_expected_status(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_custody_expected_status(p_deposit_id uuid) RETURNS text
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT CASE
+    WHEN EXISTS (SELECT 1 FROM cash_custody_receipts r WHERE r.deposit_id = d.id AND r.kind = 'REFUSED') THEN 'disputed'
+    WHEN d.movement_kind = 'TRANSFER' THEN
+      CASE WHEN EXISTS (SELECT 1 FROM cash_custody_receipts r WHERE r.deposit_id = d.id AND r.kind = 'RECEIVED') THEN 'verified' ELSE 'pending' END
+    ELSE
+      COALESCE((SELECT CASE WHEN r.amount_kmf > 0 THEN 'verified' ELSE 'disputed' END
+                  FROM cash_custody_receipts r WHERE r.deposit_id = d.id AND r.kind = 'CONTROL'), 'pending')
+  END
+  FROM cash_deposits d WHERE d.id = p_deposit_id
+$$;
+
+
+--
+-- Name: cash_custody_lock(uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_custody_lock(p_a uuid, p_b uuid) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  k text;
+BEGIN
+  FOR k IN SELECT DISTINCT x FROM unnest(ARRAY[p_a::text, p_b::text]) AS x WHERE x IS NOT NULL ORDER BY x LOOP
+    PERFORM pg_advisory_xact_lock(hashtext('cash_hold:' || k));
+  END LOOP;
+END
+$$;
+
+
+--
+-- Name: cash_custody_losses_after(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_custody_losses_after() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  PERFORM cash_custody_assert_nonnegative(NEW.holder_id, NEW.market_id);
+  RETURN NEW;
+END
+$$;
+
+
+--
+-- Name: cash_custody_losses_enforce(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_custody_losses_enforce() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  tgt cash_custody_losses%ROWTYPE;
+  reversed numeric;
+BEGIN
+  PERFORM cash_custody_lock(NEW.holder_id, NULL);
+  IF NEW.kind = 'LOSS_REVERSAL' THEN
+    SELECT * INTO tgt FROM cash_custody_losses WHERE id = NEW.reverses_id FOR UPDATE;
+    IF NOT FOUND OR tgt.kind <> 'LOSS' OR tgt.holder_id <> NEW.holder_id OR tgt.market_id <> NEW.market_id THEN
+      RAISE EXCEPTION 'cash_custody_losses: contre-écriture d''une perte du même détenteur et Market uniquement' USING ERRCODE = 'check_violation';
+    END IF;
+    SELECT COALESCE(SUM(x.amount_kmf), 0) INTO reversed FROM cash_custody_losses x WHERE x.reverses_id = tgt.id;
+    IF NEW.amount_kmf > tgt.amount_kmf - reversed THEN
+      RAISE EXCEPTION 'cash_custody_losses: contre-écriture (%) > reste de la perte (%)', NEW.amount_kmf, tgt.amount_kmf - reversed USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+
+--
+-- Name: cash_custody_receipts_after(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_custody_receipts_after() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  dep cash_deposits%ROWTYPE;
+  expected text;
+BEGIN
+  SELECT * INTO dep FROM cash_deposits WHERE id = NEW.deposit_id;
+  expected := cash_custody_expected_status(dep.id);
+  IF expected IS DISTINCT FROM dep.status THEN
+    UPDATE cash_deposits SET status = expected, verified_by = NEW.actor_id, verified_at = now() WHERE id = dep.id;
+  END IF;
+  PERFORM cash_custody_assert_nonnegative(dep.agent_id, dep.market_id);
+  PERFORM cash_custody_assert_nonnegative(dep.recipient_user_id, dep.market_id);
+  RETURN NEW;
+END
+$$;
+
+
+--
+-- Name: cash_custody_receipts_enforce(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_custody_receipts_enforce() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  dep cash_deposits%ROWTYPE;
+  rec cash_custody_receipts%ROWTYPE;
+  tgt cash_custody_receipts%ROWTYPE;
+  ctl cash_custody_receipts%ROWTYPE;
+  reversed numeric;
+  net_recv numeric;
+  ctl_net numeric;
+BEGIN
+  SELECT * INTO dep FROM cash_deposits WHERE id = NEW.deposit_id FOR UPDATE;
+  IF NOT FOUND OR dep.movement_kind = 'LEGACY' THEN
+    RAISE EXCEPTION 'cash_custody_receipts: remise inconnue ou historique (aucune réception possible)' USING ERRCODE = 'check_violation';
+  END IF;
+  PERFORM cash_custody_lock(dep.agent_id, dep.recipient_user_id);
+  NEW.market_id := dep.market_id;
+
+  IF NEW.kind IN ('RECEIVED', 'REFUSED') THEN
+    IF dep.status <> 'pending' THEN
+      RAISE EXCEPTION 'cash_custody_receipts: remise déjà résolue (%)', dep.status USING ERRCODE = 'check_violation';
+    END IF;
+    IF dep.movement_kind = 'TRANSFER' THEN
+      IF NEW.actor_id <> dep.recipient_user_id THEN
+        RAISE EXCEPTION 'cash_custody_receipts: seul le destinataire désigné reçoit ou refuse' USING ERRCODE = 'check_violation';
+      END IF;
+    ELSIF NEW.actor_id = dep.agent_id OR NOT cash_custody_authorized(NEW.actor_id, dep.market_id) THEN
+      RAISE EXCEPTION 'cash_custody_receipts: réception finale par un tiers habilité, distinct du remettant' USING ERRCODE = 'check_violation';
+    END IF;
+    IF NEW.kind = 'RECEIVED' THEN
+      IF NEW.received_currency IS NOT NULL AND NEW.received_currency <> dep.declared_currency THEN
+        RAISE EXCEPTION 'cash_custody_receipts: devise figée % (reçu en %)', dep.declared_currency, NEW.received_currency USING ERRCODE = 'check_violation';
+      END IF;
+      IF NEW.received_amount > dep.declared_amount THEN
+        RAISE EXCEPTION 'cash_custody_receipts: reçu (%) > annoncé (%)', NEW.received_amount, dep.declared_amount USING ERRCODE = 'check_violation';
+      END IF;
+      NEW.received_currency := dep.declared_currency;
+      NEW.fx_rate_to_kmf := dep.fx_rate_to_kmf;
+      NEW.amount_kmf := CASE WHEN NEW.received_amount = dep.declared_amount THEN dep.amount_kmf
+                             ELSE round(NEW.received_amount * dep.fx_rate_to_kmf, 2) END;
+      IF NEW.amount_kmf > dep.amount_kmf OR NEW.amount_kmf <= 0 THEN
+        RAISE EXCEPTION 'cash_custody_receipts: montant reçu en KMF hors bornes' USING ERRCODE = 'check_violation';
+      END IF;
+      IF dep.movement_kind = 'FINAL' AND char_length(btrim(COALESCE(NEW.proof_ref, ''))) < 3 THEN
+        RAISE EXCEPTION 'cash_custody_receipts: preuve (référence) requise pour une réception finale' USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+  ELSIF NEW.kind = 'CONTROL' THEN
+    IF dep.movement_kind <> 'FINAL' THEN
+      RAISE EXCEPTION 'cash_custody_receipts: seul un transfert final se contrôle' USING ERRCODE = 'check_violation';
+    END IF;
+    SELECT * INTO rec FROM cash_custody_receipts WHERE deposit_id = dep.id AND kind = 'RECEIVED';
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'cash_custody_receipts: aucune réception finale à contrôler' USING ERRCODE = 'check_violation';
+    END IF;
+    IF NEW.actor_id = dep.agent_id OR NEW.actor_id = rec.actor_id THEN
+      RAISE EXCEPTION 'cash_custody_receipts: le contrôle exige un acteur distinct du remettant et du receveur' USING ERRCODE = 'check_violation';
+    END IF;
+    SELECT COALESCE(SUM(x.amount_kmf), 0) INTO reversed FROM cash_custody_receipts x WHERE x.reverses_id = rec.id;
+    net_recv := rec.amount_kmf - reversed;
+    IF NEW.amount_kmf > net_recv THEN
+      RAISE EXCEPTION 'cash_custody_receipts: contrôlé (%) > reçu net (%)', NEW.amount_kmf, net_recv USING ERRCODE = 'check_violation';
+    END IF;
+  ELSE -- REVERSAL
+    SELECT * INTO tgt FROM cash_custody_receipts WHERE id = NEW.reverses_id FOR UPDATE;
+    IF NOT FOUND OR tgt.deposit_id <> dep.id OR tgt.kind NOT IN ('RECEIVED', 'CONTROL') THEN
+      RAISE EXCEPTION 'cash_custody_receipts: contre-écriture d''une réception ou d''un contrôle de la même remise uniquement' USING ERRCODE = 'check_violation';
+    END IF;
+    SELECT COALESCE(SUM(x.amount_kmf), 0) INTO reversed FROM cash_custody_receipts x WHERE x.reverses_id = tgt.id;
+    IF NEW.amount_kmf > tgt.amount_kmf - reversed THEN
+      RAISE EXCEPTION 'cash_custody_receipts: contre-écriture (%) > reste de la cible (%)', NEW.amount_kmf, tgt.amount_kmf - reversed USING ERRCODE = 'check_violation';
+    END IF;
+    IF tgt.kind = 'RECEIVED' AND dep.movement_kind = 'FINAL' THEN
+      SELECT * INTO ctl FROM cash_custody_receipts WHERE deposit_id = dep.id AND kind = 'CONTROL';
+      IF FOUND THEN
+        SELECT ctl.amount_kmf - COALESCE(SUM(x.amount_kmf), 0) INTO ctl_net FROM cash_custody_receipts x WHERE x.reverses_id = ctl.id;
+        IF tgt.amount_kmf - reversed - NEW.amount_kmf < ctl_net THEN
+          RAISE EXCEPTION 'cash_custody_receipts: contre-passer d''abord le contrôle (reçu net < contrôlé)' USING ERRCODE = 'check_violation';
+        END IF;
+      END IF;
+    END IF;
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+
+--
+-- Name: cash_deposits_custody_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_deposits_custody_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  rel_market uuid;
+  dest market_cash_destinations%ROWTYPE;
+  legacy cash_deposits%ROWTYPE;
+  regularized numeric;
+BEGIN
+  IF NEW.movement_kind = 'LEGACY' THEN RETURN NEW; END IF;
+  IF NEW.market_id IS NULL THEN
+    RAISE EXCEPTION 'cash_deposits: Market requis pour un transfert de garde' USING ERRCODE = 'check_violation';
+  END IF;
+  SELECT r.market_id INTO rel_market FROM users u JOIN relais r ON r.id = u.relais_id WHERE u.id = NEW.agent_id;
+  IF rel_market IS NULL THEN
+    IF NOT cash_custody_authorized(NEW.agent_id, NEW.market_id) THEN
+      RAISE EXCEPTION 'cash_deposits: le remettant n''appartient pas à ce Market (ni relais, ni habilité)' USING ERRCODE = 'check_violation';
+    END IF;
+    NEW.market_id_source := 'DERIVED_MEMBERSHIP';
+  END IF;
+  IF NEW.movement_kind = 'TRANSFER' THEN
+    IF NOT cash_custody_authorized(NEW.recipient_user_id, NEW.market_id) THEN
+      RAISE EXCEPTION 'cash_deposits: destinataire non habilité à recevoir des fonds dans ce Market' USING ERRCODE = 'check_violation';
+    END IF;
+  ELSE
+    SELECT * INTO dest FROM market_cash_destinations WHERE id = NEW.destination_id;
+    IF NOT FOUND OR dest.market_id <> NEW.market_id OR dest.status <> 'ACTIVE' OR dest.currency <> NEW.declared_currency THEN
+      RAISE EXCEPTION 'cash_deposits: destination finale absente, inactive, hors Market ou de devise différente' USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  IF NEW.regularizes_deposit_id IS NOT NULL THEN
+    SELECT * INTO legacy FROM cash_deposits WHERE id = NEW.regularizes_deposit_id FOR UPDATE;
+    IF NOT FOUND OR legacy.movement_kind <> 'LEGACY' OR legacy.status <> 'verified'
+       OR legacy.agent_id <> NEW.agent_id OR legacy.market_id IS DISTINCT FROM NEW.market_id THEN
+      RAISE EXCEPTION 'cash_deposits: régularisation possible seulement d''une remise historique vérifiée du même agent et Market' USING ERRCODE = 'check_violation';
+    END IF;
+    SELECT COALESCE(SUM(amount_kmf), 0) INTO regularized
+      FROM cash_deposits WHERE regularizes_deposit_id = legacy.id AND status <> 'disputed';
+    IF regularized + NEW.amount_kmf > legacy.amount_kmf THEN
+      RAISE EXCEPTION 'cash_deposits: Σ régularisations (% + %) > remise historique (%)', regularized, NEW.amount_kmf, legacy.amount_kmf
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+
+--
+-- Name: cash_deposits_derive_market(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_deposits_derive_market() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  derived uuid;
+BEGIN
+  SELECT r.market_id INTO derived
+    FROM users u JOIN relais r ON r.id = u.relais_id
+   WHERE u.id = NEW.agent_id;
+  IF NEW.market_id IS NOT NULL AND derived IS NOT NULL AND NEW.market_id <> derived THEN
+    RAISE EXCEPTION 'cash_deposits: market_id % incohérent avec le Market de l''agent %', NEW.market_id, derived
+      USING ERRCODE = 'check_violation';
+  END IF;
+  NEW.market_id := COALESCE(derived, NEW.market_id);
+  NEW.market_id_source := CASE WHEN NEW.market_id IS NULL THEN 'NONE' ELSE 'DERIVED_RELAIS' END;
+  RETURN NEW;
+END
+$$;
+
+
+--
+-- Name: cash_deposits_guard_update(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_deposits_guard_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  r record;
+  col_amount numeric;
+  live_total numeric;
+BEGIN
+  IF NEW.agent_id IS DISTINCT FROM OLD.agent_id
+     OR NEW.amount_kmf IS DISTINCT FROM OLD.amount_kmf
+     OR NEW.deposit_ref IS DISTINCT FROM OLD.deposit_ref
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR NEW.movement_kind IS DISTINCT FROM OLD.movement_kind
+     OR NEW.declared_amount IS DISTINCT FROM OLD.declared_amount
+     OR NEW.declared_currency IS DISTINCT FROM OLD.declared_currency
+     OR NEW.fx_rate_to_kmf IS DISTINCT FROM OLD.fx_rate_to_kmf
+     OR NEW.fx_source IS DISTINCT FROM OLD.fx_source
+     OR NEW.recipient_user_id IS DISTINCT FROM OLD.recipient_user_id
+     OR NEW.destination_id IS DISTINCT FROM OLD.destination_id
+     OR NEW.regularizes_deposit_id IS DISTINCT FROM OLD.regularizes_deposit_id
+     OR (OLD.market_id IS NOT NULL AND NEW.market_id IS DISTINCT FROM OLD.market_id) THEN
+    RAISE EXCEPTION 'cash_deposits: champs d''origine immuables (agent, montant, devise, référence, Market, cible)'
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF NEW.status IS DISTINCT FROM OLD.status THEN
+    IF NEW.status = 'pending' THEN
+      RAISE EXCEPTION 'cash_deposits: retour à pending interdit (%→pending)', OLD.status
+        USING ERRCODE = 'check_violation';
+    END IF;
+    IF OLD.movement_kind <> 'LEGACY' AND NEW.status IS DISTINCT FROM cash_custody_expected_status(OLD.id) THEN
+      RAISE EXCEPTION 'cash_deposits: le statut d''un transfert de garde découle des seules réceptions (attendu %)',
+        cash_custody_expected_status(OLD.id) USING ERRCODE = 'check_violation';
+    END IF;
+    IF OLD.status = 'disputed' AND NEW.status IN ('pending', 'verified') THEN
+      FOR r IN SELECT collection_id, amount_kmf FROM cash_deposit_allocations WHERE deposit_id = OLD.id LOOP
+        SELECT amount_kmf INTO col_amount FROM cash_collections WHERE id = r.collection_id FOR UPDATE;
+        SELECT COALESCE(SUM(a.amount_kmf), 0) INTO live_total
+          FROM cash_deposit_allocations a
+          JOIN cash_deposits d ON d.id = a.deposit_id
+         WHERE a.collection_id = r.collection_id AND d.status IN ('pending', 'verified') AND d.id <> OLD.id;
+        IF live_total + r.amount_kmf > col_amount THEN
+          RAISE EXCEPTION 'cash_deposits: réactivation de % refusée — double comptage sur l''encaissement % (% + % > %)',
+            OLD.id, r.collection_id, live_total, r.amount_kmf, col_amount
+            USING ERRCODE = 'check_violation';
+        END IF;
+      END LOOP;
+    END IF;
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+
+--
+-- Name: cash_ledger_backfill_legacy(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_ledger_backfill_legacy() RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  d record;
+  lines bigint := 0;
+  before_n bigint;
+  after_n bigint;
+  legacy_ids uuid[];
+BEGIN
+  -- Idempotence réelle : seules les remises jamais traitées (market_id_source NULL, donc
+  -- antérieures à 287) sont reconstruites ; une remise créée ensuite passe par le service.
+  SELECT COALESCE(array_agg(id), ARRAY[]::uuid[]) INTO legacy_ids
+    FROM cash_deposits WHERE market_id_source IS NULL;
+
+  UPDATE cash_deposits cd
+     SET market_id = r.market_id, market_id_source = 'DERIVED_RELAIS'
+    FROM users u JOIN relais r ON r.id = u.relais_id
+   WHERE u.id = cd.agent_id AND cd.market_id IS NULL AND r.market_id IS NOT NULL;
+  UPDATE cash_deposits SET market_id_source = 'NONE'
+   WHERE market_id IS NULL AND market_id_source IS NULL;
+
+  FOR d IN
+    SELECT id FROM cash_deposits
+     WHERE id = ANY(legacy_ids) AND movement_kind = 'LEGACY' AND market_id IS NOT NULL
+     ORDER BY (status = 'disputed'), deposited_at, id
+  LOOP
+    SELECT count(*) INTO before_n FROM cash_deposit_allocations;
+    PERFORM cash_allocate_fifo(d.id, 'LEGACY_BACKFILL');
+    SELECT count(*) INTO after_n FROM cash_deposit_allocations;
+    lines := lines + (after_n - before_n);
+  END LOOP;
+  RETURN lines;
+END
+$$;
+
+
+--
+-- Name: cash_ledger_prevent_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_ledger_prevent_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION '% est append-only : % interdit (contre-passer, ne pas supprimer)', TG_TABLE_NAME, TG_OP
+    USING ERRCODE = 'restrict_violation';
+END
+$$;
+
+
+--
 -- Name: check_parcel_item_quantities(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -398,6 +929,34 @@ $$;
 
 
 --
+-- Name: enforce_assignment_ceiling_amount_limit(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_assignment_ceiling_amount_limit() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_amount_bearing BOOLEAN;
+BEGIN
+  IF NEW.limit_amount IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT amount_bearing
+    INTO v_amount_bearing
+    FROM capability_registry
+   WHERE capability = NEW.capability;
+
+  IF v_amount_bearing IS DISTINCT FROM TRUE THEN
+    RAISE EXCEPTION 'capability % is not amount-bearing', NEW.capability;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: enforce_assignment_ceiling_capability(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -446,6 +1005,66 @@ BEGIN
   IF v_market_id IS DISTINCT FROM NEW.market_id THEN
     RAISE EXCEPTION 'cash policy market % does not match assignment market %', NEW.market_id, v_market_id;
   END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: enforce_market_delegation_audit_market(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_market_delegation_audit_market() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_assignment_market UUID;
+  v_membership_assignment UUID;
+  v_membership_market UUID;
+BEGIN
+  IF NEW.assignment_id IS NOT NULL THEN
+    SELECT market_id
+      INTO v_assignment_market
+      FROM market_operating_assignments
+     WHERE id = NEW.assignment_id;
+
+    IF v_assignment_market IS NULL THEN
+      RAISE EXCEPTION 'market delegation audit assignment % not found', NEW.assignment_id;
+    END IF;
+
+    IF NEW.market_id IS NULL THEN
+      NEW.market_id := v_assignment_market;
+    ELSIF NEW.market_id IS DISTINCT FROM v_assignment_market THEN
+      RAISE EXCEPTION 'market delegation audit market % conflicts with assignment market %',
+        NEW.market_id, v_assignment_market;
+    END IF;
+  END IF;
+
+  IF NEW.membership_id IS NOT NULL THEN
+    SELECT am.assignment_id, assignment.market_id
+      INTO v_membership_assignment, v_membership_market
+      FROM assignment_memberships am
+      JOIN market_operating_assignments assignment ON assignment.id = am.assignment_id
+     WHERE am.id = NEW.membership_id;
+
+    IF v_membership_assignment IS NULL THEN
+      RAISE EXCEPTION 'market delegation audit membership % not found', NEW.membership_id;
+    END IF;
+
+    IF NEW.assignment_id IS NOT NULL
+       AND NEW.assignment_id IS DISTINCT FROM v_membership_assignment THEN
+      RAISE EXCEPTION 'market delegation audit membership assignment % conflicts with assignment %',
+        v_membership_assignment, NEW.assignment_id;
+    END IF;
+
+    IF NEW.market_id IS NULL THEN
+      NEW.market_id := v_membership_market;
+    ELSIF NEW.market_id IS DISTINCT FROM v_membership_market THEN
+      RAISE EXCEPTION 'market delegation audit market % conflicts with membership market %',
+        NEW.market_id, v_membership_market;
+    END IF;
+  END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -532,6 +1151,59 @@ $$;
 
 
 --
+-- Name: enforce_membership_capability_amount_limit(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_membership_capability_amount_limit() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_assignment_id UUID;
+  v_amount_bearing BOOLEAN;
+  v_ceiling_limit NUMERIC(20,6);
+BEGIN
+  SELECT am.assignment_id
+    INTO v_assignment_id
+    FROM assignment_memberships am
+   WHERE am.id = NEW.membership_id;
+
+  IF v_assignment_id IS NULL THEN
+    RAISE EXCEPTION 'membership % not found', NEW.membership_id;
+  END IF;
+
+  SELECT cr.amount_bearing, acc.limit_amount
+    INTO v_amount_bearing, v_ceiling_limit
+    FROM assignment_capability_ceiling acc
+    JOIN capability_registry cr ON cr.capability = acc.capability
+   WHERE acc.assignment_id = v_assignment_id
+     AND acc.capability = NEW.capability
+     AND acc.revoked_at IS NULL
+   LIMIT 1;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'capability % exceeds assignment ceiling', NEW.capability;
+  END IF;
+
+  IF v_amount_bearing IS DISTINCT FROM TRUE AND NEW.limit_amount IS NOT NULL THEN
+    RAISE EXCEPTION 'capability % is not amount-bearing', NEW.capability;
+  END IF;
+
+  IF v_ceiling_limit IS NOT NULL THEN
+    IF NEW.limit_amount IS NULL THEN
+      RAISE EXCEPTION 'membership limit required when ceiling limit is finite for %', NEW.capability;
+    END IF;
+    IF NEW.limit_amount > v_ceiling_limit THEN
+      RAISE EXCEPTION 'membership limit % exceeds ceiling limit % for %',
+        NEW.limit_amount, v_ceiling_limit, NEW.capability;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: enforce_membership_capability_within_ceiling(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -580,6 +1252,336 @@ $$;
 
 
 --
+-- Name: hub_guard_allocation_purchase_line(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_guard_allocation_purchase_line() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_line public.purchase_lines%ROWTYPE;
+  v_po_order_id uuid;
+BEGIN
+  IF NEW.purchase_line_id IS NULL THEN
+    SELECT order_id INTO v_po_order_id FROM public.purchase_orders WHERE id = NEW.purchase_order_id;
+    IF FOUND AND v_po_order_id IS NULL THEN
+      RAISE EXCEPTION 'hub_allocation_grouped_requires_line: une PO regroupée ne s''alloue que par ligne d''achat'
+        USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  SELECT * INTO v_line FROM public.purchase_lines WHERE id = NEW.purchase_line_id;
+  IF NOT FOUND
+     OR v_line.purchase_order_id IS DISTINCT FROM NEW.purchase_order_id
+     OR v_line.order_item_id IS DISTINCT FROM NEW.order_item_id
+     OR v_line.product_sku_id IS DISTINCT FROM NEW.product_sku_id
+     OR v_line.supplier_id IS DISTINCT FROM NEW.supplier_id THEN
+    RAISE EXCEPTION 'hub_allocation_line_mismatch: l''allocation ne décrit pas la ligne d''achat référencée'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: hub_guard_physical_unit_insert(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_guard_physical_unit_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.market_id IS NOT NULL THEN
+    RAISE EXCEPTION 'hub_market_only_derived_at_outbound';
+  END IF;
+
+  IF NEW.outcome_type IS NOT NULL OR NEW.outcome_recorded_at IS NOT NULL THEN
+    RAISE EXCEPTION 'hub_physical_outcome_requires_recording_boundary';
+  END IF;
+
+  IF NEW.state NOT IN ('RECEIVED', 'QUARANTINED') THEN
+    RAISE EXCEPTION 'hub_physical_initial_state_invalid:%', NEW.state;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: hub_guard_physical_unit_update(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_guard_physical_unit_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  active_count integer;
+  market_count integer;
+  destination_count integer;
+  resolved_market_id uuid;
+  resolved_destination_ref text;
+  transition_ok boolean;
+  resume_state text;
+BEGIN
+  IF OLD.market_id IS NOT NULL AND NEW.market_id IS DISTINCT FROM OLD.market_id THEN
+    RAISE EXCEPTION 'hub_physical_unit_market_immutable';
+  END IF;
+
+  IF OLD.outcome_type IS NOT NULL AND NEW.outcome_type IS DISTINCT FROM OLD.outcome_type THEN
+    RAISE EXCEPTION 'hub_physical_outcome_immutable';
+  END IF;
+
+  IF NEW.market_id IS DISTINCT FROM OLD.market_id
+     AND NEW.state NOT IN ('PACKED', 'DISPATCHED') THEN
+    RAISE EXCEPTION 'hub_market_only_derived_at_outbound';
+  END IF;
+
+  IF NEW.state IS DISTINCT FROM OLD.state THEN
+    IF OLD.state = 'QUARANTINED' THEN
+      IF OLD.outcome_type IS NOT NULL THEN
+        RAISE EXCEPTION 'hub_destructive_outcome_quarantine_terminal';
+      END IF;
+
+      IF EXISTS (
+        SELECT 1
+          FROM incidents i
+         WHERE i.status IN ('open', 'investigating')
+           AND i.details->>'physical_unit_id' = OLD.id::text
+      ) THEN
+        RAISE EXCEPTION 'hub_quarantine_incident_active';
+      END IF;
+
+      SELECT COALESCE(NULLIF(e.from_state, 'QUARANTINED'), 'RECEIVED')
+        INTO resume_state
+        FROM hub_custody_events e
+       WHERE e.physical_unit_id = OLD.id
+         AND e.event_type = 'QUARANTINE'
+       ORDER BY e.created_at DESC, e.id DESC
+       LIMIT 1;
+
+      resume_state := COALESCE(resume_state, 'RECEIVED');
+      transition_ok := NEW.state = resume_state;
+    ELSE
+      transition_ok := CASE OLD.state
+        WHEN 'RECEIVED'        THEN NEW.state IN ('IDENTIFIED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'IDENTIFIED'      THEN NEW.state IN ('QUALITY_CHECKED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'QUALITY_CHECKED' THEN NEW.state IN ('LOCATED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'LOCATED'         THEN NEW.state IN ('ALLOCATED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'ALLOCATED'       THEN NEW.state IN ('PICKED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'PICKED'          THEN NEW.state IN ('PACKED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'PACKED'          THEN NEW.state IN ('DISPATCHED', 'QUARANTINED')
+        WHEN 'DISPATCHED'      THEN NEW.state = 'QUARANTINED'
+        ELSE false
+      END;
+    END IF;
+
+    IF NOT transition_ok THEN
+      RAISE EXCEPTION 'hub_physical_state_transition_invalid:%->%', OLD.state, NEW.state;
+    END IF;
+  END IF;
+
+  IF NEW.state IN ('PACKED', 'DISPATCHED') THEN
+    SELECT COUNT(*)::integer,
+           COUNT(DISTINCT a.market_id)::integer,
+           COUNT(DISTINCT a.destination_ref)::integer,
+           MIN(a.market_id::text)::uuid,
+           MIN(a.destination_ref)
+      INTO active_count, market_count, destination_count, resolved_market_id, resolved_destination_ref
+      FROM hub_physical_unit_placements p
+      JOIN hub_purchase_allocations a ON a.id = p.allocation_id
+     WHERE p.physical_unit_id = NEW.id
+       AND p.removed_at IS NULL;
+
+    IF active_count = 0 THEN
+      RAISE EXCEPTION 'hub_outbound_unit_empty';
+    END IF;
+    IF market_count <> 1 THEN
+      RAISE EXCEPTION 'hub_outbound_market_not_homogeneous';
+    END IF;
+    IF destination_count <> 1 OR resolved_destination_ref IS NULL THEN
+      RAISE EXCEPTION 'hub_outbound_destination_not_homogeneous';
+    END IF;
+    IF NEW.market_id IS NOT NULL AND NEW.market_id IS DISTINCT FROM resolved_market_id THEN
+      RAISE EXCEPTION 'hub_outbound_market_snapshot_mismatch';
+    END IF;
+
+    NEW.market_id := resolved_market_id;
+  END IF;
+
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION hub_guard_physical_unit_update(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.hub_guard_physical_unit_update() IS 'HUB-001 hardening — outbound mono-Market + mono-destination ; sortie de QUARANTINED seulement après incident résolu et vers état pré-quarantaine.';
+
+
+--
+-- Name: hub_guard_placement_insert(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_guard_placement_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  allocation_qty integer;
+  already_placed integer;
+  unit_state text;
+BEGIN
+  SELECT state INTO unit_state
+    FROM hub_physical_units
+   WHERE id = NEW.physical_unit_id
+   FOR UPDATE;
+
+  IF unit_state IS NULL THEN
+    RAISE EXCEPTION 'hub_physical_unit_unresolvable';
+  END IF;
+  IF unit_state IN ('PACKED', 'DISPATCHED', 'QUARANTINED', 'SUPERSEDED') THEN
+    RAISE EXCEPTION 'hub_physical_unit_content_frozen';
+  END IF;
+
+  SELECT quantity INTO allocation_qty
+    FROM hub_purchase_allocations
+   WHERE id = NEW.allocation_id
+   FOR UPDATE;
+
+  IF allocation_qty IS NULL THEN
+    RAISE EXCEPTION 'hub_purchase_allocation_unresolvable';
+  END IF;
+
+  SELECT COALESCE(SUM(quantity), 0)::integer INTO already_placed
+    FROM hub_physical_unit_placements
+   WHERE allocation_id = NEW.allocation_id
+     AND removed_at IS NULL;
+
+  IF already_placed + NEW.quantity > allocation_qty THEN
+    RAISE EXCEPTION 'hub_allocation_overplaced';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: hub_guard_placement_update(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_guard_placement_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  unit_state text;
+BEGIN
+  IF NEW.physical_unit_id IS DISTINCT FROM OLD.physical_unit_id
+     OR NEW.allocation_id IS DISTINCT FROM OLD.allocation_id
+     OR NEW.quantity IS DISTINCT FROM OLD.quantity
+     OR NEW.operation_id IS DISTINCT FROM OLD.operation_id
+     OR NEW.operation_type IS DISTINCT FROM OLD.operation_type
+     OR NEW.created_by IS DISTINCT FROM OLD.created_by
+     OR NEW.placed_at IS DISTINCT FROM OLD.placed_at THEN
+    RAISE EXCEPTION 'hub_placement_identity_immutable';
+  END IF;
+
+  IF OLD.removed_at IS NOT NULL OR NEW.removed_at IS NULL THEN
+    RAISE EXCEPTION 'hub_placement_close_once';
+  END IF;
+
+  IF NEW.removed_at <= OLD.placed_at THEN
+    RAISE EXCEPTION 'hub_placement_removed_at_invalid';
+  END IF;
+
+  SELECT state INTO unit_state
+    FROM hub_physical_units
+   WHERE id = OLD.physical_unit_id
+   FOR UPDATE;
+
+  IF unit_state IN ('PACKED', 'DISPATCHED', 'QUARANTINED', 'SUPERSEDED') THEN
+    RAISE EXCEPTION 'hub_physical_unit_content_frozen';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: hub_reject_custody_event_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_reject_custody_event_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'hub_custody_event_append_only';
+END;
+$$;
+
+
+--
+-- Name: hub_reject_placement_delete(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_reject_placement_delete() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'hub_placement_history_no_delete';
+END;
+$$;
+
+
+--
+-- Name: hub_reject_purchase_allocation_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_reject_purchase_allocation_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'hub_purchase_allocation_immutable';
+END;
+$$;
+
+
+--
+-- Name: hub_require_quarantine_incident(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_require_quarantine_incident() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.state = 'QUARANTINED' AND NEW.outcome_type IS NULL THEN
+    IF NOT EXISTS (
+      SELECT 1
+        FROM incidents i
+       WHERE i.status IN ('open', 'investigating')
+         AND i.details->>'physical_unit_id' = NEW.id::text
+    ) THEN
+      RAISE EXCEPTION 'hub_quarantine_incident_required';
+    END IF;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION hub_require_quarantine_incident(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.hub_require_quarantine_incident() IS 'HUB-001 — toute quarantaine non destructive doit avoir un incident actif au COMMIT ; empêche les quarantaines orphelines même par SQL direct.';
+
+
+--
 -- Name: is_order_complete(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -588,10 +1590,10 @@ CREATE FUNCTION public.is_order_complete(p_order_id uuid) RETURNS boolean
     AS $$
   SELECT NOT EXISTS (
     SELECT 1
-    FROM purchase_orders
-    WHERE order_id = p_order_id
-      AND status != 'cancelled'
-      AND received_qty < qty
+      FROM public.v_purchase_line_progress v
+     WHERE v.order_id = p_order_id
+       AND NOT v.cancelled
+       AND v.received_quantity < v.effective_quantity
   );
 $$;
 
@@ -601,6 +1603,152 @@ $$;
 --
 
 COMMENT ON FUNCTION public.is_order_complete(p_order_id uuid) IS 'Retourne TRUE si tous les POs non annulÃ©s ont received_qty >= qty.';
+
+
+--
+-- Name: market_cash_destinations_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.market_cash_destinations_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  acct market_payment_accounts%ROWTYPE;
+BEGIN
+  IF NEW.payment_account_id IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.payment_account_id IS DISTINCT FROM OLD.payment_account_id) THEN
+    SELECT * INTO acct FROM market_payment_accounts WHERE id = NEW.payment_account_id;
+    IF NOT FOUND OR acct.market_id <> NEW.market_id OR acct.currency <> NEW.currency THEN
+      RAISE EXCEPTION 'market_cash_destinations: compte de paiement hors Market ou devise différente'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.status <> 'PROPOSED' THEN
+      RAISE EXCEPTION 'market_cash_destinations: création uniquement en PROPOSED (activation par un second acteur)'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.market_id IS DISTINCT FROM OLD.market_id OR NEW.kind IS DISTINCT FROM OLD.kind
+     OR NEW.currency IS DISTINCT FROM OLD.currency OR NEW.account_ref IS DISTINCT FROM OLD.account_ref
+     OR NEW.proposed_by IS DISTINCT FROM OLD.proposed_by OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'market_cash_destinations: Market, type, devise, référence et proposant sont immuables'
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF NEW.status IS DISTINCT FROM OLD.status AND NOT (
+       (OLD.status = 'PROPOSED' AND NEW.status IN ('ACTIVE', 'CLOSED'))
+    OR (OLD.status = 'ACTIVE' AND NEW.status IN ('SUSPENDED', 'CLOSED'))
+    OR (OLD.status = 'SUSPENDED' AND NEW.status IN ('ACTIVE', 'CLOSED'))
+  ) THEN
+    RAISE EXCEPTION 'market_cash_destinations: transition % → % interdite', OLD.status, NEW.status
+      USING ERRCODE = 'check_violation';
+  END IF;
+  NEW.updated_at := now();
+  RETURN NEW;
+END
+$$;
+
+
+--
+-- Name: market_cost_attributions_check_conservation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.market_cost_attributions_check_conservation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_event_amount numeric(18,2);
+  v_scope        text;
+  v_kind         text;
+  v_active       numeric(18,2);
+BEGIN
+  SELECT e.amount_kmf, e.scope_kind, e.event_kind
+    INTO v_event_amount, v_scope, v_kind
+    FROM public.economic_structure_cost_events e
+   WHERE e.id = NEW.source_event_id;
+
+  IF NEW.event_kind = 'ATTRIBUTION' AND (v_scope IS DISTINCT FROM 'GROUP' OR v_kind IS DISTINCT FROM 'ACCRUAL') THEN
+    RAISE EXCEPTION 'market_cost_attribution_event_not_attributable: le fait % est % / %, seul un fait GROUP ACCRUAL est attribuable',
+      NEW.source_event_id, v_scope, v_kind
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT COALESCE(SUM(a.amount_kmf), 0)
+    INTO v_active
+    FROM public.market_cost_attributions a
+   WHERE a.source_event_id = NEW.source_event_id
+     AND a.event_kind = 'ATTRIBUTION'
+     AND NOT EXISTS (
+       SELECT 1 FROM public.market_cost_attributions r WHERE r.reverses_id = a.id
+     );
+
+  IF v_active <> 0 AND v_active IS DISTINCT FROM v_event_amount THEN
+    RAISE EXCEPTION 'market_cost_attribution_not_conserved: attributions actives % <> montant du fait % (source_event_id %)',
+      v_active, v_event_amount, NEW.source_event_id
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: market_cost_attributions_guard_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.market_cost_attributions_guard_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    RAISE EXCEPTION 'market_cost_attribution_immutable: UPDATE interdit — utiliser REVERSAL + nouvelle ATTRIBUTION'
+      USING ERRCODE = '23514';
+  END IF;
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() <= 1 THEN
+    RAISE EXCEPTION 'market_cost_attribution_immutable: DELETE interdit — journal append-only'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END $$;
+
+
+--
+-- Name: market_cost_attributions_guard_reversal_target(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.market_cost_attributions_guard_reversal_target() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_target_kind text;
+  v_target_source uuid;
+BEGIN
+  IF NEW.event_kind <> 'REVERSAL' OR NEW.reverses_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT event_kind, source_event_id INTO v_target_kind, v_target_source
+  FROM public.market_cost_attributions
+  WHERE id = NEW.reverses_id;
+
+  IF v_target_kind IS NULL THEN
+    RAISE EXCEPTION 'market_cost_attribution_reversal_target_missing: l''attribution cible % n''existe pas', NEW.reverses_id
+      USING ERRCODE = '23503';
+  END IF;
+
+  IF v_target_kind <> 'ATTRIBUTION' THEN
+    RAISE EXCEPTION 'market_cost_attribution_reversal_target_invalid: la cible % est un %, pas une ATTRIBUTION', NEW.reverses_id, v_target_kind
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF v_target_source IS DISTINCT FROM NEW.source_event_id THEN
+    RAISE EXCEPTION 'market_cost_attribution_reversal_source_mismatch: le REVERSAL pointe source_event_id % mais l''ATTRIBUTION cible pointe %', NEW.source_event_id, v_target_source
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END $$;
 
 
 --
@@ -736,6 +1884,79 @@ $$;
 
 
 --
+-- Name: prevent_orders_market_id_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_orders_market_id_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.market_id IS DISTINCT FROM OLD.market_id THEN
+    RAISE EXCEPTION 'orders_market_id_immutable';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION prevent_orders_market_id_mutation(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.prevent_orders_market_id_mutation() IS 'F1.1 — orders.market_id est un snapshot commercial historique, jamais resynchronisé.';
+
+
+--
+-- Name: prevent_orders_relais_market_mismatch(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_orders_relais_market_mismatch() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  new_relais_market_id uuid;
+BEGIN
+  IF TG_OP = 'INSERT' OR NEW.relais_id IS DISTINCT FROM OLD.relais_id THEN
+    SELECT market_id INTO new_relais_market_id
+    FROM relais
+    WHERE id = NEW.relais_id
+    FOR SHARE;
+
+    IF new_relais_market_id IS NULL THEN
+      RAISE EXCEPTION 'orders_relais_id_unresolvable';
+    END IF;
+
+    IF new_relais_market_id IS DISTINCT FROM NEW.market_id THEN
+      RAISE EXCEPTION 'orders_relais_reassignment_cross_market';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION prevent_orders_relais_market_mismatch(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.prevent_orders_relais_market_mismatch() IS 'F1.2 — INSERT/réassignation order.relais_id uniquement vers un relais du même Market que la commande.';
+
+
+--
+-- Name: prevent_outbox_event_delete(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_outbox_event_delete() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'La suppression de outbox_events est interdite (append-only).';
+  RETURN NULL;
+END;
+$$;
+
+
+--
 -- Name: prevent_pricing_market_decision_policy_mutation(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -746,6 +1967,33 @@ BEGIN
   RAISE EXCEPTION 'pricing_market_decision_policy_events is append-only; record a new policy event instead';
 END;
 $$;
+
+
+--
+-- Name: prevent_referenced_relais_market_drift(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_referenced_relais_market_drift() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.market_id IS DISTINCT FROM OLD.market_id THEN
+    IF EXISTS (
+      SELECT 1 FROM orders WHERE relais_id = OLD.id LIMIT 1
+    ) THEN
+      RAISE EXCEPTION 'relais_market_id_immutable_once_referenced';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION prevent_referenced_relais_market_drift(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.prevent_referenced_relais_market_drift() IS 'F1.3 — un relais déjà référencé par une commande ne peut plus changer de Market.';
 
 
 --
@@ -760,6 +2008,259 @@ BEGIN
   RETURN NULL;
 END;
 $$;
+
+
+--
+-- Name: purchase_line_effective_quantity(timestamp with time zone, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_line_effective_quantity(p_cancelled_at timestamp with time zone, p_settled integer, p_confirmed integer, p_quantity integer) RETURNS integer
+    LANGUAGE sql IMMUTABLE
+    AS $$
+  SELECT CASE WHEN p_cancelled_at IS NOT NULL THEN 0
+              ELSE COALESCE(p_settled, p_confirmed, p_quantity) END
+$$;
+
+
+--
+-- Name: purchase_lines_guard_attachment(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_lines_guard_attachment() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_status text;
+  v_order_id uuid;
+  v_order_item uuid;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.purchase_order_id IS NULL THEN
+      RETURN NEW;
+    END IF;
+    SELECT status, order_id, order_item_id INTO v_status, v_order_id, v_order_item
+      FROM public.purchase_orders WHERE id = NEW.purchase_order_id FOR SHARE;
+    IF v_status IS NULL THEN
+      RAISE EXCEPTION 'purchase_line_po_missing' USING ERRCODE = '23503';
+    END IF;
+    IF v_order_id IS NULL OR v_order_item IS DISTINCT FROM NEW.order_item_id THEN
+      RAISE EXCEPTION 'purchase_line_attach_forbidden: insertion rattachée réservée à une PO historique du même order_item'
+        USING ERRCODE = '23514';
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.purchase_lines WHERE purchase_order_id = NEW.purchase_order_id) THEN
+      RAISE EXCEPTION 'purchase_line_historical_po_already_has_line' USING ERRCODE = '23505';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.purchase_order_id IS NOT DISTINCT FROM OLD.purchase_order_id THEN
+    RETURN NEW;
+  END IF;
+
+  IF OLD.purchase_order_id IS NOT NULL THEN
+    SELECT status INTO v_status FROM public.purchase_orders WHERE id = OLD.purchase_order_id FOR SHARE;
+    IF v_status IS DISTINCT FROM 'draft' THEN
+      RAISE EXCEPTION 'purchase_line_detach_forbidden: la PO d''origine n''est pas en brouillon' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW.purchase_order_id IS NOT NULL THEN
+    SELECT status INTO v_status FROM public.purchase_orders WHERE id = NEW.purchase_order_id FOR SHARE;
+    IF v_status IS DISTINCT FROM 'draft' THEN
+      RAISE EXCEPTION 'purchase_line_attach_forbidden: la PO cible n''est pas en brouillon' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: purchase_lines_guard_commitment(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_lines_guard_commitment() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_need integer;
+  v_others integer;
+  v_self integer;
+BEGIN
+  IF TG_OP = 'UPDATE'
+     AND NEW.order_item_id = OLD.order_item_id
+     AND NEW.quantity = OLD.quantity
+     AND NEW.confirmed_quantity IS NOT DISTINCT FROM OLD.confirmed_quantity
+     AND NEW.settled_quantity IS NOT DISTINCT FROM OLD.settled_quantity
+     AND NEW.cancelled_at IS NOT DISTINCT FROM OLD.cancelled_at THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT quantity INTO v_need FROM public.order_items WHERE id = NEW.order_item_id FOR UPDATE;
+  IF v_need IS NULL THEN
+    RAISE EXCEPTION 'purchase_line_order_item_missing' USING ERRCODE = '23503';
+  END IF;
+
+  SELECT COALESCE(SUM(public.purchase_line_effective_quantity(cancelled_at, settled_quantity, confirmed_quantity, quantity)), 0)
+    INTO v_others
+  FROM public.purchase_lines
+  WHERE order_item_id = NEW.order_item_id AND id <> NEW.id;
+
+  v_self := public.purchase_line_effective_quantity(NEW.cancelled_at, NEW.settled_quantity, NEW.confirmed_quantity, NEW.quantity);
+
+  IF v_others + v_self > v_need THEN
+    RAISE EXCEPTION 'purchase_line_overcommitted: order_item % besoin % engagé %', NEW.order_item_id, v_need, v_others + v_self
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: purchase_lines_guard_delete(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_lines_guard_delete() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF pg_trigger_depth() <= 1 THEN
+    RAISE EXCEPTION 'purchase_line_delete_forbidden: annuler la ligne (cancelled_at) plutôt que la supprimer' USING ERRCODE = '23514';
+  END IF;
+  RETURN OLD;
+END $$;
+
+
+--
+-- Name: purchase_lines_guard_freeze(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_lines_guard_freeze() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_po_status text;
+BEGIN
+  IF NEW.order_item_id IS DISTINCT FROM OLD.order_item_id
+     OR NEW.supplier_id IS DISTINCT FROM OLD.supplier_id
+     OR NEW.product_supplier_id IS DISTINCT FROM OLD.product_supplier_id
+     OR NEW.product_sku_id IS DISTINCT FROM OLD.product_sku_id
+     OR NEW.supplier_sku IS DISTINCT FROM OLD.supplier_sku
+     OR NEW.supplier_unit_ref IS DISTINCT FROM OLD.supplier_unit_ref
+     OR NEW.supplier_order_identity IS DISTINCT FROM OLD.supplier_order_identity
+     OR NEW.quantity IS DISTINCT FROM OLD.quantity
+     OR NEW.supplier_unit_price IS DISTINCT FROM OLD.supplier_unit_price
+     OR NEW.supplier_currency IS DISTINCT FROM OLD.supplier_currency
+     OR NEW.procurement_hub_ref IS DISTINCT FROM OLD.procurement_hub_ref
+     OR NEW.parent_line_id IS DISTINCT FROM OLD.parent_line_id THEN
+    RAISE EXCEPTION 'purchase_line_frozen: champ d''identité ou de quantité immuable' USING ERRCODE = '23514';
+  END IF;
+
+  -- Ligne ouverte ou en brouillon : ni confirmation ni clôture (rien n'est parti chez le fournisseur).
+  IF OLD.purchase_order_id IS NOT NULL THEN
+    SELECT status INTO v_po_status FROM public.purchase_orders WHERE id = OLD.purchase_order_id;
+  END IF;
+  IF (OLD.purchase_order_id IS NULL OR v_po_status = 'draft')
+     AND (NEW.confirmed_quantity IS DISTINCT FROM OLD.confirmed_quantity
+          OR NEW.confirmed_unit_price IS DISTINCT FROM OLD.confirmed_unit_price
+          OR NEW.confirmed_at IS DISTINCT FROM OLD.confirmed_at
+          OR NEW.settled_quantity IS DISTINCT FROM OLD.settled_quantity
+          OR NEW.settled_at IS DISTINCT FROM OLD.settled_at
+          OR NEW.settle_reason IS DISTINCT FROM OLD.settle_reason) THEN
+    RAISE EXCEPTION 'purchase_line_frozen: pas de confirmation ni de clôture avant soumission' USING ERRCODE = '23514';
+  END IF;
+
+  -- Écritures uniques : une valeur posée ne change plus.
+  IF OLD.confirmed_quantity IS NOT NULL
+     AND (NEW.confirmed_quantity IS DISTINCT FROM OLD.confirmed_quantity
+          OR NEW.confirmed_unit_price IS DISTINCT FROM OLD.confirmed_unit_price
+          OR NEW.confirmed_at IS DISTINCT FROM OLD.confirmed_at) THEN
+    RAISE EXCEPTION 'purchase_line_frozen: confirmation déjà enregistrée' USING ERRCODE = '23514';
+  END IF;
+  IF OLD.settled_at IS NOT NULL
+     AND (NEW.settled_quantity IS DISTINCT FROM OLD.settled_quantity
+          OR NEW.settled_at IS DISTINCT FROM OLD.settled_at
+          OR NEW.settle_reason IS DISTINCT FROM OLD.settle_reason) THEN
+    RAISE EXCEPTION 'purchase_line_frozen: clôture déjà enregistrée' USING ERRCODE = '23514';
+  END IF;
+  IF OLD.cancelled_at IS NOT NULL
+     AND (NEW.cancelled_at IS DISTINCT FROM OLD.cancelled_at
+          OR NEW.cancel_reason IS DISTINCT FROM OLD.cancel_reason) THEN
+    RAISE EXCEPTION 'purchase_line_frozen: annulation déjà enregistrée' USING ERRCODE = '23514';
+  END IF;
+  -- Confirmation et prix confirmé s'écrivent ensemble.
+  IF (NEW.confirmed_quantity IS NULL) <> (NEW.confirmed_at IS NULL) THEN
+    RAISE EXCEPTION 'purchase_line_frozen: confirmed_quantity et confirmed_at s''écrivent ensemble' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: purchase_lines_guard_groupable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_lines_guard_groupable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_po public.purchase_orders%ROWTYPE;
+  v_other_currency text;
+BEGIN
+  IF NEW.purchase_order_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+  IF TG_OP = 'UPDATE' AND NEW.purchase_order_id IS NOT DISTINCT FROM OLD.purchase_order_id THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT * INTO v_po FROM public.purchase_orders WHERE id = NEW.purchase_order_id FOR UPDATE;
+  IF NOT FOUND OR v_po.order_id IS NOT NULL THEN
+    RETURN NEW; -- PO historique : écriture double 1:1, gardée par I3
+  END IF;
+
+  IF NEW.product_sku_id IS NULL
+     OR NEW.supplier_unit_ref IS NULL
+     OR NEW.supplier_order_identity IS NULL
+     OR NEW.supplier_unit_price IS NULL
+     OR NEW.supplier_currency IS NULL THEN
+    RAISE EXCEPTION 'purchase_line_not_groupable: seule une ligne à identité fournisseur exacte et prix connu est regroupable'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF NEW.supplier_id IS DISTINCT FROM v_po.supplier_id
+     OR NEW.procurement_hub_ref IS DISTINCT FROM v_po.procurement_hub_ref THEN
+    RAISE EXCEPTION 'purchase_line_not_homogeneous: fournisseur ou hub différent de l''en-tête de la PO'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT pl.supplier_currency INTO v_other_currency
+    FROM public.purchase_lines pl
+   WHERE pl.purchase_order_id = NEW.purchase_order_id
+     AND pl.cancelled_at IS NULL
+     AND pl.id IS DISTINCT FROM NEW.id
+     AND pl.supplier_currency IS DISTINCT FROM NEW.supplier_currency
+   LIMIT 1;
+  IF FOUND THEN
+    RAISE EXCEPTION 'purchase_line_not_homogeneous: devise différente des lignes déjà rattachées (%)', v_other_currency
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: purchase_orders_cancel_lines(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_orders_cancel_lines() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  UPDATE public.purchase_lines
+     SET cancelled_at = now(), cancel_reason = 'purchase_order_cancelled', updated_at = now()
+   WHERE purchase_order_id = NEW.id AND cancelled_at IS NULL;
+  RETURN NULL;
+END $$;
 
 
 --
@@ -855,6 +2356,149 @@ $$;
 
 
 --
+-- Name: sourcing_check_binding_grain(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sourcing_check_binding_grain() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  observed_grain public.sourcing_observation_grain;
+BEGIN
+  SELECT grain
+    INTO observed_grain
+    FROM public.sourcing_observations
+   WHERE observation_id = NEW.observation_id;
+
+  IF observed_grain IS DISTINCT FROM NEW.grain THEN
+    RAISE EXCEPTION 'resolution grain mismatch: observation % is %, binding is %',
+      NEW.observation_id, observed_grain, NEW.grain
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: sourcing_check_canonical_hierarchy(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sourcing_check_canonical_hierarchy() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  parent_grain public.sourcing_observation_grain;
+BEGIN
+  IF NEW.grain = 'product' THEN
+    IF NEW.parent_entity_id IS NOT NULL THEN
+      RAISE EXCEPTION 'canonical hierarchy: product % cannot have parent', NEW.canonical_entity_id
+        USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NULL;
+  END IF;
+
+  IF NEW.parent_entity_id IS NULL THEN
+    RAISE EXCEPTION 'canonical hierarchy: % % requires parent', NEW.grain, NEW.canonical_entity_id
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  SELECT grain
+    INTO parent_grain
+    FROM public.sourcing_canonical_entities
+   WHERE canonical_entity_id = NEW.parent_entity_id;
+
+  IF NEW.grain = 'offer' AND parent_grain IS DISTINCT FROM 'product'::public.sourcing_observation_grain THEN
+    RAISE EXCEPTION 'canonical hierarchy: offer % parent must be product', NEW.canonical_entity_id
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF NEW.grain = 'unit' AND parent_grain IS DISTINCT FROM 'offer'::public.sourcing_observation_grain THEN
+    RAISE EXCEPTION 'canonical hierarchy: unit % parent must be offer', NEW.canonical_entity_id
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: sourcing_check_decision_grain(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sourcing_check_decision_grain() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  observed_grain public.sourcing_observation_grain;
+  proposal_observation uuid;
+  proposal_candidate uuid;
+BEGIN
+  IF NEW.observation_id IS NOT NULL THEN
+    SELECT grain
+      INTO observed_grain
+      FROM public.sourcing_observations
+     WHERE observation_id = NEW.observation_id;
+
+    IF observed_grain IS DISTINCT FROM NEW.grain THEN
+      RAISE EXCEPTION 'resolution grain mismatch: observation % is %, decision is %',
+        NEW.observation_id, observed_grain, NEW.grain
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  IF NEW.proposal_id IS NOT NULL THEN
+    SELECT observation_id, candidate_entity_id
+      INTO proposal_observation, proposal_candidate
+      FROM public.sourcing_match_proposals
+     WHERE proposal_id = NEW.proposal_id;
+
+    IF NEW.observation_id IS DISTINCT FROM proposal_observation THEN
+      RAISE EXCEPTION 'resolution decision proposal observation mismatch'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF NEW.canonical_entity_id IS NOT NULL
+       AND NEW.canonical_entity_id IS DISTINCT FROM proposal_candidate THEN
+      RAISE EXCEPTION 'resolution decision proposal candidate mismatch'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: sourcing_check_proposal_grain(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sourcing_check_proposal_grain() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  observed_grain public.sourcing_observation_grain;
+BEGIN
+  SELECT grain
+    INTO observed_grain
+    FROM public.sourcing_observations
+   WHERE observation_id = NEW.observation_id;
+
+  IF observed_grain IS DISTINCT FROM NEW.grain THEN
+    RAISE EXCEPTION 'resolution grain mismatch: observation % is %, proposal is %',
+      NEW.observation_id, observed_grain, NEW.grain
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+
+--
 -- Name: sourcing_forbid_observation_mutation(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -866,6 +2510,112 @@ BEGIN
     'append-only violation: % interdit sur %', TG_OP, TG_TABLE_NAME
     USING ERRCODE = 'restrict_violation';
 END;
+$$;
+
+
+--
+-- Name: sourcing_forbid_resolution_audit_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sourcing_forbid_resolution_audit_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION
+    'append-only violation: % interdit sur %', TG_OP, TG_TABLE_NAME
+    USING ERRCODE = 'restrict_violation';
+END;
+$$;
+
+
+--
+-- Name: supplier_execution_group_members_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.supplier_execution_group_members_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_group_po uuid;
+  v_group_provider text;
+  v_order_po uuid;
+  v_order_provider text;
+BEGIN
+  SELECT purchase_order_id, provider
+    INTO v_group_po, v_group_provider
+    FROM public.supplier_execution_groups
+   WHERE id = NEW.supplier_execution_group_id
+   FOR SHARE;
+
+  SELECT purchase_order_id, provider
+    INTO v_order_po, v_order_provider
+    FROM public.supplier_execution_orders
+   WHERE id = NEW.supplier_execution_order_id
+   FOR SHARE;
+
+  IF v_group_po IS DISTINCT FROM v_order_po
+     OR v_group_provider IS DISTINCT FROM v_order_provider THEN
+    RAISE EXCEPTION
+      'supplier_execution_group_member_mismatch: parent et sous-ordre doivent partager purchase_order_id et provider'
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: supplier_execution_payments_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.supplier_execution_payments_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_po uuid;
+  v_provider text;
+BEGIN
+  IF NEW.supplier_execution_group_id IS NOT NULL THEN
+    SELECT purchase_order_id, provider
+      INTO v_po, v_provider
+      FROM public.supplier_execution_groups
+     WHERE id = NEW.supplier_execution_group_id
+     FOR SHARE;
+  ELSE
+    SELECT purchase_order_id, provider
+      INTO v_po, v_provider
+      FROM public.supplier_execution_orders
+     WHERE id = NEW.supplier_execution_order_id
+     FOR SHARE;
+  END IF;
+
+  IF v_po IS NULL THEN
+    RAISE EXCEPTION 'supplier_execution_payment_target_missing'
+      USING ERRCODE = '23503';
+  END IF;
+
+  IF v_po IS DISTINCT FROM NEW.purchase_order_id
+     OR v_provider IS DISTINCT FROM NEW.provider THEN
+    RAISE EXCEPTION
+      'supplier_execution_payment_target_mismatch: payment, target, purchase_order_id et provider doivent etre coherents'
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: supplier_payment_settlements_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.supplier_payment_settlements_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'supplier_payment_settlements est append-only (% interdit) : corriger par une ligne de compensation', TG_OP
+    USING ERRCODE = 'restrict_violation';
+END
 $$;
 
 
@@ -945,7 +2695,9 @@ CREATE TABLE public.assignment_capability_ceiling (
     granted_by uuid,
     granted_at timestamp with time zone DEFAULT now() NOT NULL,
     revoked_at timestamp with time zone,
-    revoked_by uuid
+    revoked_by uuid,
+    limit_amount numeric(20,6),
+    CONSTRAINT assignment_ceiling_limit_nonnegative_check CHECK (((limit_amount IS NULL) OR (limit_amount >= (0)::numeric)))
 );
 
 
@@ -954,6 +2706,13 @@ CREATE TABLE public.assignment_capability_ceiling (
 --
 
 COMMENT ON TABLE public.assignment_capability_ceiling IS 'Maximum MARKET/DELEGABLE authority granted by central to one operating assignment.';
+
+
+--
+-- Name: COLUMN assignment_capability_ceiling.limit_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assignment_capability_ceiling.limit_amount IS 'Optional per-operation maximum for amount-bearing capability; NULL means unlimited ceiling.';
 
 
 --
@@ -969,6 +2728,9 @@ CREATE TABLE public.assignment_memberships (
     granted_at timestamp with time zone DEFAULT now() NOT NULL,
     revoked_at timestamp with time zone,
     revoked_by uuid,
+    is_operating_lead boolean DEFAULT false NOT NULL,
+    effective_until timestamp with time zone,
+    CONSTRAINT assignment_membership_effective_until_check CHECK (((effective_until IS NULL) OR (effective_until > granted_at))),
     CONSTRAINT assignment_membership_revocation_state_check CHECK ((((status = 'ACTIVE'::text) AND (revoked_at IS NULL)) OR ((status = 'REVOKED'::text) AND (revoked_at IS NOT NULL)))),
     CONSTRAINT assignment_memberships_status_check CHECK ((status = ANY (ARRAY['ACTIVE'::text, 'REVOKED'::text])))
 );
@@ -979,6 +2741,20 @@ CREATE TABLE public.assignment_memberships (
 --
 
 COMMENT ON TABLE public.assignment_memberships IS 'Users acting under one Market Operating Assignment; capabilities are granted separately.';
+
+
+--
+-- Name: COLUMN assignment_memberships.is_operating_lead; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assignment_memberships.is_operating_lead IS 'Operating lead designation only. Grants no capability by itself.';
+
+
+--
+-- Name: COLUMN assignment_memberships.effective_until; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assignment_memberships.effective_until IS 'Optional membership expiry. Runtime enforcement is added by the owning service lot.';
 
 
 --
@@ -1049,8 +2825,27 @@ CREATE TABLE public.boutique_subcategories (
     short_label text,
     icon text DEFAULT 'âœ¨'::text NOT NULL,
     display_order integer DEFAULT 99 NOT NULL,
-    is_active boolean DEFAULT true NOT NULL
+    is_active boolean DEFAULT true NOT NULL,
+    customs_category_key text,
+    image_url text,
+    image_alt text,
+    object_classification_terms jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT boutique_subcategories_object_classification_terms_object CHECK ((jsonb_typeof(object_classification_terms) = 'object'::text))
 );
+
+
+--
+-- Name: COLUMN boutique_subcategories.customs_category_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.boutique_subcategories.customs_category_key IS 'Catégorie douanière/Komerce de proximité utilisée uniquement en fallback lorsque les signaux produit réels ne permettent pas un mapping lexical suffisamment fiable.';
+
+
+--
+-- Name: COLUMN boutique_subcategories.object_classification_terms; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.boutique_subcategories.object_classification_terms IS 'Indices stricts d objet pour la taxonomie commerciale, configurables en base; sans autorite de classement douanier.';
 
 
 --
@@ -1122,10 +2917,13 @@ CREATE TABLE public.capability_registry (
     status text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    effect text DEFAULT 'ACT'::text NOT NULL,
+    amount_bearing boolean DEFAULT false NOT NULL,
     CONSTRAINT capability_registry_authority_scope_check CHECK ((authority_scope = ANY (ARRAY['MARKET'::text, 'GROUP'::text]))),
     CONSTRAINT capability_registry_class_check CHECK ((class = ANY (ARRAY['DELEGATION'::text, 'EXECUTION'::text, 'BOUNDARY'::text]))),
     CONSTRAINT capability_registry_delegation_mode_check CHECK ((delegation_mode = ANY (ARRAY['DELEGABLE'::text, 'CENTRAL_ONLY'::text]))),
     CONSTRAINT capability_registry_domain_check CHECK ((char_length(btrim(domain)) > 0)),
+    CONSTRAINT capability_registry_effect_check CHECK ((effect = ANY (ARRAY['READ'::text, 'ACT'::text]))),
     CONSTRAINT capability_registry_group_central_only CHECK (((authority_scope <> 'GROUP'::text) OR (delegation_mode = 'CENTRAL_ONLY'::text))),
     CONSTRAINT capability_registry_status_check CHECK ((status = ANY (ARRAY['LIVE'::text, 'IMPLEMENTED_PENDING_MERGE'::text, 'CENTRAL_HELD'::text, 'READ_ONLY'::text, 'MISSING'::text])))
 );
@@ -1135,7 +2933,7 @@ CREATE TABLE public.capability_registry (
 -- Name: TABLE capability_registry; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.capability_registry IS 'Executable market-delegation registry. Only class DELEGATION belongs to the autonomy KPI denominator.';
+COMMENT ON TABLE public.capability_registry IS 'Executable market-delegation registry. Only rows where class = DELEGATION AND authority_scope = MARKET AND delegation_mode = DELEGABLE belong to the autonomy KPI denominator. market_config.update: CENTRAL_HELD by design, no local field to delegate (see migration 246) — excluded from the denominator despite class = DELEGATION.';
 
 
 --
@@ -1237,6 +3035,69 @@ COMMENT ON TABLE public.cash_confirmation_controls IS 'Payment-owned control rec
 
 
 --
+-- Name: cash_custody_losses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cash_custody_losses (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    holder_id uuid NOT NULL,
+    kind text NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    reason text NOT NULL,
+    decided_by uuid NOT NULL,
+    deposit_id uuid,
+    reverses_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT cash_custody_losses_amount_chk CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT cash_custody_losses_decider_chk CHECK ((decided_by <> holder_id)),
+    CONSTRAINT cash_custody_losses_kind_chk CHECK ((kind = ANY (ARRAY['LOSS'::text, 'LOSS_REVERSAL'::text]))),
+    CONSTRAINT cash_custody_losses_reason_chk CHECK ((char_length(btrim(reason)) >= 10)),
+    CONSTRAINT cash_custody_losses_reversal_chk CHECK ((((kind = 'LOSS'::text) AND (reverses_id IS NULL)) OR ((kind = 'LOSS_REVERSAL'::text) AND (reverses_id IS NOT NULL))))
+);
+
+
+--
+-- Name: TABLE cash_custody_losses; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.cash_custody_losses IS 'Décisions centrales de perte (append-only, motivées, distinctes des montants reçus) ; correction par LOSS_REVERSAL.';
+
+
+--
+-- Name: cash_custody_receipts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cash_custody_receipts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    deposit_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    kind text NOT NULL,
+    actor_id uuid NOT NULL,
+    amount_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    received_amount numeric(18,2),
+    received_currency text,
+    fx_rate_to_kmf numeric(18,6),
+    proof_ref text,
+    proof_url text,
+    reason text,
+    reverses_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT cash_custody_receipts_amount_chk CHECK ((amount_kmf >= (0)::numeric)),
+    CONSTRAINT cash_custody_receipts_kind_chk CHECK ((kind = ANY (ARRAY['RECEIVED'::text, 'REFUSED'::text, 'CONTROL'::text, 'REVERSAL'::text]))),
+    CONSTRAINT cash_custody_receipts_proof_chk CHECK (((proof_ref IS NULL) OR (((char_length(btrim(proof_ref)) >= 3) AND (char_length(btrim(proof_ref)) <= 200)) AND (proof_ref !~* '(^|[^a-z])(sk|rk|pk|whsec)_'::text)))),
+    CONSTRAINT cash_custody_receipts_shape_chk CHECK ((((kind = 'RECEIVED'::text) AND (amount_kmf > (0)::numeric) AND (received_amount > (0)::numeric) AND (reverses_id IS NULL)) OR ((kind = 'REFUSED'::text) AND (amount_kmf = (0)::numeric) AND (char_length(btrim(COALESCE(reason, ''::text))) >= 3) AND (reverses_id IS NULL)) OR ((kind = 'CONTROL'::text) AND (reverses_id IS NULL) AND ((amount_kmf > (0)::numeric) OR (char_length(btrim(COALESCE(reason, ''::text))) >= 3))) OR ((kind = 'REVERSAL'::text) AND (amount_kmf > (0)::numeric) AND (reverses_id IS NOT NULL) AND (char_length(btrim(COALESCE(reason, ''::text))) >= 3))))
+);
+
+
+--
+-- Name: TABLE cash_custody_receipts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.cash_custody_receipts IS 'Faits de réception d''une remise de garde (append-only) : RECEIVED (montant et devise/taux figés), REFUSED, CONTROL (final, acteur indépendant), REVERSAL (contre-écriture motivée).';
+
+
+--
 -- Name: cash_deposit_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1267,7 +3128,23 @@ CREATE TABLE public.cash_deposits (
     status text DEFAULT 'pending'::text NOT NULL,
     notes text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    deposit_ref text DEFAULT ('KDP-'::text || lpad((nextval('public.cash_deposit_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL
+    deposit_ref text DEFAULT ('KDP-'::text || lpad((nextval('public.cash_deposit_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL,
+    declared_amount numeric(18,2),
+    declared_currency text,
+    fx_rate_to_kmf numeric(18,6),
+    fx_source text,
+    market_id uuid,
+    market_id_source text,
+    movement_kind text DEFAULT 'LEGACY'::text NOT NULL,
+    recipient_user_id uuid,
+    destination_id uuid,
+    regularizes_deposit_id uuid,
+    CONSTRAINT cash_deposits_amount_positive_chk CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT cash_deposits_custody_target_chk CHECK ((((movement_kind = 'LEGACY'::text) AND (recipient_user_id IS NULL) AND (destination_id IS NULL) AND (regularizes_deposit_id IS NULL)) OR ((movement_kind = 'TRANSFER'::text) AND (recipient_user_id IS NOT NULL) AND (destination_id IS NULL) AND (recipient_user_id <> agent_id) AND (declared_currency IS NOT NULL) AND (market_id IS NOT NULL)) OR ((movement_kind = 'FINAL'::text) AND (destination_id IS NOT NULL) AND (recipient_user_id IS NULL) AND (declared_currency IS NOT NULL) AND (market_id IS NOT NULL)))),
+    CONSTRAINT cash_deposits_declared_snapshot_chk CHECK ((((declared_amount IS NULL) AND (declared_currency IS NULL) AND (fx_rate_to_kmf IS NULL) AND (fx_source IS NULL)) OR ((declared_amount > (0)::numeric) AND (declared_currency ~ '^[A-Z]{3}$'::text) AND (fx_rate_to_kmf > (0)::numeric) AND ((char_length(btrim(fx_source)) >= 2) AND (char_length(btrim(fx_source)) <= 200)) AND ((declared_currency <> 'KMF'::text) OR (fx_rate_to_kmf = (1)::numeric))))),
+    CONSTRAINT cash_deposits_market_source_chk CHECK (((market_id_source IS NULL) OR (market_id_source = ANY (ARRAY['DERIVED_RELAIS'::text, 'DERIVED_MEMBERSHIP'::text, 'NONE'::text])))),
+    CONSTRAINT cash_deposits_movement_kind_chk CHECK ((movement_kind = ANY (ARRAY['LEGACY'::text, 'TRANSFER'::text, 'FINAL'::text]))),
+    CONSTRAINT cash_deposits_status_domain_chk CHECK ((status = ANY (ARRAY['pending'::text, 'verified'::text, 'disputed'::text])))
 );
 
 
@@ -1276,6 +3153,162 @@ CREATE TABLE public.cash_deposits (
 --
 
 COMMENT ON COLUMN public.cash_deposits.deposit_ref IS 'Référence métier stable du dépôt cash exposable au navigateur (KDP-xxxxxx). L UUID interne reste serveur-only.';
+
+
+--
+-- Name: COLUMN cash_deposits.declared_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cash_deposits.declared_amount IS 'Montant tel que déclaré par le relais, dans declared_currency. NULL = saisie historique en KMF (amount_kmf seul).';
+
+
+--
+-- Name: COLUMN cash_deposits.fx_rate_to_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cash_deposits.fx_rate_to_kmf IS 'KMF pour 1 unité de declared_currency, figé à la déclaration depuis currency_parities (jamais saisi).';
+
+
+--
+-- Name: COLUMN cash_deposits.market_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cash_deposits.market_id IS 'Market dérivé du relais de l''agent (trigger), jamais fourni librement ; NULL = agent sans relais (aucune allocation).';
+
+
+--
+-- Name: COLUMN cash_deposits.movement_kind; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cash_deposits.movement_kind IS 'LEGACY = remise historique ; TRANSFER/FINAL/LOSS réservés PR 4 (contrainte PR3-only à lever alors).';
+
+
+--
+-- Name: COLUMN cash_deposits.recipient_user_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cash_deposits.recipient_user_id IS 'TRANSFER : personne habilitée désignée ; le solde ne bouge qu''à son acceptation.';
+
+
+--
+-- Name: COLUMN cash_deposits.destination_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cash_deposits.destination_id IS 'FINAL : destination finale ACTIVE ; la clôture exige réception prouvée + contrôle indépendant.';
+
+
+--
+-- Name: COLUMN cash_deposits.regularizes_deposit_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cash_deposits.regularizes_deposit_id IS 'Remise historique vérifiée que ce transfert régularise (jamais clôturée automatiquement).';
+
+
+--
+-- Name: cash_custody_movements; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.cash_custody_movements AS
+ SELECT 'COLLECTION'::text AS source,
+    cc.id AS ref_id,
+    NULL::uuid AS deposit_id,
+    cc.collected_by AS holder_id,
+    public.cash_collection_market(cc.relais_id, cc.collected_by) AS market_id,
+    (cc.amount_kmf)::numeric AS delta_kmf,
+    cc.confirmed_at AS occurred_at
+   FROM public.cash_collections cc
+UNION ALL
+ SELECT 'TRANSFER_OUT'::text AS source,
+    r.id AS ref_id,
+    d.id AS deposit_id,
+    d.agent_id AS holder_id,
+    d.market_id,
+    (-
+        CASE
+            WHEN (r.kind = 'REVERSAL'::text) THEN (- r.amount_kmf)
+            ELSE r.amount_kmf
+        END) AS delta_kmf,
+    r.created_at AS occurred_at
+   FROM ((public.cash_custody_receipts r
+     JOIN public.cash_deposits d ON ((d.id = r.deposit_id)))
+     LEFT JOIN public.cash_custody_receipts t ON ((t.id = r.reverses_id)))
+  WHERE ((d.movement_kind = 'TRANSFER'::text) AND (COALESCE(t.kind, r.kind) = 'RECEIVED'::text))
+UNION ALL
+ SELECT 'TRANSFER_IN'::text AS source,
+    r.id AS ref_id,
+    d.id AS deposit_id,
+    d.recipient_user_id AS holder_id,
+    d.market_id,
+        CASE
+            WHEN (r.kind = 'REVERSAL'::text) THEN (- r.amount_kmf)
+            ELSE r.amount_kmf
+        END AS delta_kmf,
+    r.created_at AS occurred_at
+   FROM ((public.cash_custody_receipts r
+     JOIN public.cash_deposits d ON ((d.id = r.deposit_id)))
+     LEFT JOIN public.cash_custody_receipts t ON ((t.id = r.reverses_id)))
+  WHERE ((d.movement_kind = 'TRANSFER'::text) AND (COALESCE(t.kind, r.kind) = 'RECEIVED'::text))
+UNION ALL
+ SELECT 'FINAL_CLOSURE'::text AS source,
+    r.id AS ref_id,
+    d.id AS deposit_id,
+    d.agent_id AS holder_id,
+    d.market_id,
+    (-
+        CASE
+            WHEN (r.kind = 'REVERSAL'::text) THEN (- r.amount_kmf)
+            ELSE r.amount_kmf
+        END) AS delta_kmf,
+    r.created_at AS occurred_at
+   FROM ((public.cash_custody_receipts r
+     JOIN public.cash_deposits d ON ((d.id = r.deposit_id)))
+     LEFT JOIN public.cash_custody_receipts t ON ((t.id = r.reverses_id)))
+  WHERE ((d.movement_kind = 'FINAL'::text) AND (COALESCE(t.kind, r.kind) = 'CONTROL'::text))
+UNION ALL
+ SELECT 'LOSS'::text AS source,
+    l.id AS ref_id,
+    l.deposit_id,
+    l.holder_id,
+    l.market_id,
+        CASE
+            WHEN (l.kind = 'LOSS'::text) THEN (- l.amount_kmf)
+            ELSE l.amount_kmf
+        END AS delta_kmf,
+    l.created_at AS occurred_at
+   FROM public.cash_custody_losses l;
+
+
+--
+-- Name: VIEW cash_custody_movements; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.cash_custody_movements IS 'Autorité unique des soldes de garde : encaissements (+), transferts acceptés (−/+), clôtures finales contrôlées (−), pertes décidées (−), contre-écritures. Une déclaration seule ne bouge rien.';
+
+
+--
+-- Name: cash_deposit_allocations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cash_deposit_allocations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    deposit_id uuid NOT NULL,
+    collection_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    allocation_basis text DEFAULT 'RECONSTRUCTED'::text NOT NULL,
+    allocation_source text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT cash_deposit_allocations_amount_chk CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT cash_deposit_allocations_basis_chk CHECK ((allocation_basis = ANY (ARRAY['RECONSTRUCTED'::text, 'CONFIRMED'::text]))),
+    CONSTRAINT cash_deposit_allocations_source_chk CHECK ((allocation_source = ANY (ARRAY['SERVER_FIFO'::text, 'LEGACY_BACKFILL'::text, 'AGENT_DESIGNATED'::text])))
+);
+
+
+--
+-- Name: TABLE cash_deposit_allocations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.cash_deposit_allocations IS 'Grand livre de garde: part de chaque encaissement couverte par une remise (append-only). RECONSTRUCTED = FIFO serveur/historique, non confirmé; ne décharge jamais l''agent.';
 
 
 --
@@ -1377,6 +3410,39 @@ COMMENT ON TABLE public.catalog_field_overrides IS 'Retouches manuelles par cham
 
 
 --
+-- Name: catalog_field_sync_state; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_field_sync_state (
+    subject_type text NOT NULL,
+    subject_id uuid NOT NULL,
+    field_name text NOT NULL,
+    source_id text NOT NULL,
+    last_observation_id uuid NOT NULL,
+    last_event_id text NOT NULL,
+    last_observed_at timestamp with time zone NOT NULL,
+    applied_value jsonb NOT NULL,
+    applied_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_field_sync_state_subject_type_check CHECK ((subject_type = ANY (ARRAY['product'::text, 'sku'::text])))
+);
+
+
+--
+-- Name: TABLE catalog_field_sync_state; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_field_sync_state IS 'Owner: catalog. État courant (non-journal) de la dernière observation de changement de catalogue appliquée, par (subject_type, subject_id, field_name). Alimenté exclusivement par services/catalog-field-sync-application.js (Mission 2, DOCTRINE_CATALOG_CHANGE_INTAKE.md). N''écrit jamais products.cost_kmf (alimente le moteur économique actif, cf. services/pricing-output.js) ni offer_status/is_active/option_axes/sellable_units (lié à la publication, services/catalog-promotion/*) — decision-only pour ces champs, cette table n''en porte donc jamais de ligne applied.';
+
+
+--
+-- Name: COLUMN catalog_field_sync_state.applied_value; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.catalog_field_sync_state.applied_value IS 'Valeur appliquée, typée selon le champ (texte, tableau de médias, prix+devise) — preuve de lecture après écriture, jamais recalculée après coup.';
+
+
+--
 -- Name: catalog_global_access_grants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1465,6 +3531,138 @@ COMMENT ON TABLE public.catalog_media IS 'Média canonique catalogue (PDC-8 Lot 
 --
 
 COMMENT ON COLUMN public.catalog_media.source_media_id IS 'supplier_media_id V2 tel quel. NULL = source pauvre, aucune identité fournisseur fabriquée : pas d''unicité applicable, ré-promotion peut dupliquer honnêtement.';
+
+
+--
+-- Name: catalog_publication_decision_audit; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_publication_decision_audit (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    action text NOT NULL,
+    product_id uuid,
+    product_ref text NOT NULL,
+    actor_user_id uuid,
+    actor_role text,
+    source_surface text DEFAULT 'catalog_approval'::text NOT NULL,
+    reason text,
+    overridden_fields text[] DEFAULT '{}'::text[] NOT NULL,
+    before_snapshot jsonb NOT NULL,
+    after_snapshot jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_publication_decision_audit_action_chk CHECK ((action = ANY (ARRAY['CATALOG_PRODUCT_APPROVED'::text, 'CATALOG_PRODUCT_REJECTED'::text, 'CATALOG_PRODUCT_OVERRIDDEN_AND_APPROVED'::text])))
+);
+
+
+--
+-- Name: catalog_stock_sync_state; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_stock_sync_state (
+    product_sku_id uuid NOT NULL,
+    source_id text NOT NULL,
+    last_observation_id uuid NOT NULL,
+    last_event_id text NOT NULL,
+    last_observed_at timestamp with time zone NOT NULL,
+    applied_stock_value integer NOT NULL,
+    applied_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_stock_sync_state_applied_stock_value_check CHECK ((applied_stock_value >= 0))
+);
+
+
+--
+-- Name: TABLE catalog_stock_sync_state; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_stock_sync_state IS 'Owner: catalog. État courant (non-journal) de la dernière observation de stock fournisseur appliquée par SKU. Alimenté exclusivement par le décideur de synchronisation de stock catalogue (Mission 1, DOCTRINE_CATALOG_CHANGE_INTAKE.md) — jamais par order-payment-confirmation.js ni order-status-machine.js, qui continuent de n''écrire que via product-stock-service.js#adjustStock.';
+
+
+--
+-- Name: COLUMN catalog_stock_sync_state.source_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.catalog_stock_sync_state.source_id IS 'sourcing_sources.source_id de la source ayant produit la dernière observation appliquée. Une observation d''une AUTRE source pour le même SKU est un cas explicitement hors périmètre de la première tranche (cf. doctrine SOURCE_LINEAGE_AMBIGUOUS déjà appliquée en amont par la preuve d''identité SKU).';
+
+
+--
+-- Name: COLUMN catalog_stock_sync_state.applied_stock_value; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.catalog_stock_sync_state.applied_stock_value IS 'Valeur de product_skus.stock immédiatement après cette application — preuve de lecture après écriture, jamais recalculée après coup.';
+
+
+--
+-- Name: catalog_taxonomy_audit; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_taxonomy_audit (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    action text NOT NULL,
+    entity_type text NOT NULL,
+    category_key text NOT NULL,
+    subcategory_key text,
+    actor_user_id uuid,
+    actor_role text,
+    source_surface text DEFAULT 'catalog'::text NOT NULL,
+    before_snapshot jsonb,
+    after_snapshot jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_taxonomy_audit_action_chk CHECK ((action = ANY (ARRAY['CATEGORY_CREATED'::text, 'CATEGORY_UPDATED'::text, 'CATEGORY_DEACTIVATED'::text, 'SUBCATEGORY_CREATED'::text, 'SUBCATEGORY_UPDATED'::text, 'SUBCATEGORY_DEACTIVATED'::text, 'SUBCATEGORY_DELETED'::text]))),
+    CONSTRAINT catalog_taxonomy_audit_entity_chk CHECK ((entity_type = ANY (ARRAY['category'::text, 'subcategory'::text])))
+);
+
+
+--
+-- Name: catalog_terminology_reference; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_terminology_reference (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    reference_key text NOT NULL,
+    source text NOT NULL,
+    source_record_id text,
+    dataset_domain text,
+    subject_en text,
+    subject_fr text,
+    term_en text NOT NULL,
+    term_en_normalized text NOT NULL,
+    term_fr text NOT NULL,
+    term_fr_normalized text NOT NULL,
+    term_en_parameter text,
+    term_fr_parameter text,
+    abbreviation_en text,
+    abbreviation_fr text,
+    source_url text,
+    source_license text NOT NULL,
+    source_data_date date,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_terminology_reference_source_check CHECK ((source = ANY (ARRAY['termium_plus'::text, 'franceterme'::text, 'iate'::text, 'other'::text])))
+);
+
+
+--
+-- Name: TABLE catalog_terminology_reference; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_terminology_reference IS 'External EN→FR terminology references. catalog_glossary remains the curated Komerce authority; this table provides sourced contextual candidates only.';
+
+
+--
+-- Name: COLUMN catalog_terminology_reference.reference_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.catalog_terminology_reference.reference_key IS 'Stable SHA-256 identity of source + record + EN/FR term + context, used for idempotent imports.';
+
+
+--
+-- Name: COLUMN catalog_terminology_reference.source_license; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.catalog_terminology_reference.source_license IS 'Licence provenance carried with every imported reference; TERMIUM Plus uses Open Government Licence – Canada.';
 
 
 --
@@ -1800,8 +3998,26 @@ CREATE TABLE public.customs_categories (
     display_order integer DEFAULT 0,
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    classification_terms jsonb DEFAULT '{}'::jsonb NOT NULL,
+    default_weight_kg numeric(8,3),
+    CONSTRAINT customs_categories_classification_terms_object CHECK ((jsonb_typeof(classification_terms) = 'object'::text)),
+    CONSTRAINT customs_categories_default_weight_positive CHECK (((default_weight_kg IS NULL) OR (default_weight_kg > (0)::numeric)))
 );
+
+
+--
+-- Name: COLUMN customs_categories.classification_terms; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.customs_categories.classification_terms IS 'Termes/phrases pondérés de classification fournisseur. Donnée administrable ; le produit réellement retourné fait autorité sur l intention de découverte.';
+
+
+--
+-- Name: COLUMN customs_categories.default_weight_kg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.customs_categories.default_weight_kg IS 'Poids logistique par défaut de la catégorie lorsque le fournisseur ne fournit pas de poids fiable.';
 
 
 --
@@ -2468,8 +4684,10 @@ CREATE TABLE public.finance_config (
     margin_rail_b numeric(5,2) DEFAULT 18 NOT NULL,
     margin_rail_c numeric(5,2) DEFAULT 35 NOT NULL,
     margin_rail_d numeric(5,2) DEFAULT 70 NOT NULL,
+    taux_pln_kmf numeric(18,6),
     CONSTRAINT finance_config_allocation_confidence_check CHECK ((allocation_confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
-    CONSTRAINT finance_config_id_check CHECK ((id = 1))
+    CONSTRAINT finance_config_id_check CHECK ((id = 1)),
+    CONSTRAINT finance_config_taux_pln_kmf_check CHECK ((taux_pln_kmf > (0)::numeric))
 );
 
 
@@ -2572,6 +4790,13 @@ COMMENT ON COLUMN public.finance_config.margin_rail_d IS 'Marge Rail D — sourc
 
 
 --
+-- Name: COLUMN finance_config.taux_pln_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.taux_pln_kmf IS 'KMF per PLN, explicitly maintained in Finance sourcing configuration. NULL blocks PLN sourcing valuation; native provider amounts remain PLN.';
+
+
+--
 -- Name: garment_models; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2585,6 +4810,192 @@ CREATE TABLE public.garment_models (
     image_url text,
     active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: hub_custody_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_custody_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    physical_unit_id uuid NOT NULL,
+    event_type text NOT NULL,
+    from_state text,
+    to_state text,
+    allocation_id uuid,
+    quantity integer,
+    operation_id uuid,
+    operation_type text,
+    actor_id uuid,
+    location_ref text,
+    details jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT hub_custody_events_event_type_check CHECK ((event_type = ANY (ARRAY['STATE_TRANSITION'::text, 'PLACEMENT_IN'::text, 'PLACEMENT_OUT'::text, 'OUTCOME_REPORTED'::text, 'QUARANTINE'::text]))),
+    CONSTRAINT hub_custody_events_operation_type_check CHECK (((operation_type IS NULL) OR (operation_type = ANY (ARRAY['RECEIVE'::text, 'SPLIT'::text, 'MERGE'::text, 'REPACK'::text])))),
+    CONSTRAINT hub_custody_events_quantity_check CHECK (((quantity IS NULL) OR (quantity > 0)))
+);
+
+
+--
+-- Name: TABLE hub_custody_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_custody_events IS 'HUB-001 append-only custody/lineage history for physical state and placement operations.';
+
+
+--
+-- Name: hub_physical_unit_placements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_physical_unit_placements (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    physical_unit_id uuid NOT NULL,
+    allocation_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    operation_id uuid,
+    operation_type text,
+    created_by uuid,
+    placed_at timestamp with time zone DEFAULT now() NOT NULL,
+    removed_at timestamp with time zone,
+    CONSTRAINT chk_hub_placement_time_order CHECK (((removed_at IS NULL) OR (removed_at > placed_at))),
+    CONSTRAINT hub_physical_unit_placements_operation_type_check CHECK (((operation_type IS NULL) OR (operation_type = ANY (ARRAY['RECEIVE'::text, 'SPLIT'::text, 'MERGE'::text, 'REPACK'::text])))),
+    CONSTRAINT hub_physical_unit_placements_quantity_check CHECK ((quantity > 0))
+);
+
+
+--
+-- Name: TABLE hub_physical_unit_placements; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_physical_unit_placements IS 'HUB-001 physical placement history. SPLIT/MERGE/REPACK close old placements and append new ones; allocation remains immutable.';
+
+
+--
+-- Name: hub_physical_units; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_physical_units (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    reference text NOT NULL,
+    unit_type text NOT NULL,
+    state text DEFAULT 'RECEIVED'::text NOT NULL,
+    external_ref text,
+    market_id uuid,
+    current_location_ref text,
+    outcome_type text,
+    outcome_recorded_at timestamp with time zone,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_hub_physical_outcome_timestamp CHECK ((((outcome_type IS NULL) AND (outcome_recorded_at IS NULL)) OR ((outcome_type IS NOT NULL) AND (outcome_recorded_at IS NOT NULL)))),
+    CONSTRAINT hub_physical_units_outcome_type_check CHECK (((outcome_type IS NULL) OR (outcome_type = ANY (ARRAY['LOST'::text, 'STOLEN'::text, 'DESTROYED'::text, 'DAMAGED_UNUSABLE'::text])))),
+    CONSTRAINT hub_physical_units_reference_check CHECK ((btrim(reference) <> ''::text)),
+    CONSTRAINT hub_physical_units_state_check CHECK ((state = ANY (ARRAY['RECEIVED'::text, 'IDENTIFIED'::text, 'QUALITY_CHECKED'::text, 'LOCATED'::text, 'ALLOCATED'::text, 'PICKED'::text, 'PACKED'::text, 'DISPATCHED'::text, 'QUARANTINED'::text, 'SUPERSEDED'::text]))),
+    CONSTRAINT hub_physical_units_unit_type_check CHECK ((unit_type = ANY (ARRAY['SUPPLIER_PACKAGE'::text, 'HANDLING_UNIT'::text, 'MARKET_PARCEL'::text])))
+);
+
+
+--
+-- Name: TABLE hub_physical_units; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_physical_units IS 'HUB-001 physical identity. Inbound may be multi-market; PACKED/DISPATCHED is forced mono-market from active allocations.';
+
+
+--
+-- Name: hub_purchase_allocations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_purchase_allocations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    purchase_order_id uuid NOT NULL,
+    order_id uuid NOT NULL,
+    order_item_id uuid NOT NULL,
+    product_sku_id uuid NOT NULL,
+    supplier_id uuid NOT NULL,
+    supplier_unit_ref text NOT NULL,
+    supplier_order_identity jsonb NOT NULL,
+    quantity integer NOT NULL,
+    market_id uuid NOT NULL,
+    destination_ref text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    purchase_line_id uuid,
+    CONSTRAINT chk_hub_purchase_allocation_soi_shape CHECK (((jsonb_typeof(supplier_order_identity) = 'object'::text) AND (jsonb_typeof((supplier_order_identity -> 'provider'::text)) = 'string'::text) AND (btrim((supplier_order_identity ->> 'provider'::text)) <> ''::text) AND (jsonb_typeof((supplier_order_identity -> 'version'::text)) = 'number'::text) AND ((supplier_order_identity ->> 'version'::text) ~ '^[0-9]+$'::text) AND (((supplier_order_identity ->> 'version'::text))::integer >= 1) AND (jsonb_typeof((supplier_order_identity -> 'payload'::text)) = 'object'::text) AND ((supplier_order_identity -> 'payload'::text) <> '{}'::jsonb))),
+    CONSTRAINT hub_purchase_allocations_destination_ref_check CHECK ((btrim(destination_ref) <> ''::text)),
+    CONSTRAINT hub_purchase_allocations_quantity_check CHECK ((quantity > 0)),
+    CONSTRAINT hub_purchase_allocations_supplier_unit_ref_check CHECK ((btrim(supplier_unit_ref) <> ''::text))
+);
+
+
+--
+-- Name: TABLE hub_purchase_allocations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_purchase_allocations IS 'HUB-001 immutable economic snapshot: exact Purchase Order identity + order Market/destination. Hub cannot reassign it.';
+
+
+--
+-- Name: import_runtime_item_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.import_runtime_item_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    run_id uuid NOT NULL,
+    seq integer NOT NULL,
+    candidate_id uuid,
+    supplier_product_id text,
+    product_name text,
+    image_url text,
+    purchase_price numeric(12,2),
+    currency text,
+    stage text DEFAULT 'REFINERY'::text NOT NULL,
+    outcome text,
+    change_kind text,
+    started_at timestamp with time zone DEFAULT now() NOT NULL,
+    finished_at timestamp with time zone,
+    CONSTRAINT chk_import_runtime_item_events_finish CHECK (((finished_at IS NULL) OR (finished_at >= started_at))),
+    CONSTRAINT import_runtime_item_events_change_kind_check CHECK (((change_kind IS NULL) OR (change_kind = ANY (ARRAY['created'::text, 'updated'::text])))),
+    CONSTRAINT import_runtime_item_events_seq_check CHECK ((seq > 0))
+);
+
+
+--
+-- Name: import_runtime_run_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.import_runtime_run_ref_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: import_runtime_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.import_runtime_runs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    run_ref text DEFAULT ('KIR-'::text || lpad((nextval('public.import_runtime_run_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL,
+    provider text NOT NULL,
+    source_type text NOT NULL,
+    source_ref text,
+    import_id uuid,
+    mode text DEFAULT 'normal'::text NOT NULL,
+    status text DEFAULT 'RUNNING'::text NOT NULL,
+    source_total integer DEFAULT 0 NOT NULL,
+    stages jsonb DEFAULT '{}'::jsonb NOT NULL,
+    intake jsonb DEFAULT '{}'::jsonb NOT NULL,
+    failure_reason text,
+    started_by uuid,
+    started_at timestamp with time zone DEFAULT now() NOT NULL,
+    finished_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT import_runtime_runs_mode_check CHECK ((mode = ANY (ARRAY['normal'::text, 'replay'::text, 'reconstruction'::text]))),
+    CONSTRAINT import_runtime_runs_source_total_check CHECK ((source_total >= 0)),
+    CONSTRAINT import_runtime_runs_status_check CHECK ((status = ANY (ARRAY['RUNNING'::text, 'COMPLETED'::text, 'FAILED'::text])))
 );
 
 
@@ -2616,10 +5027,19 @@ CREATE TABLE public.incidents (
     parent_incident_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    origin_domain text NOT NULL,
+    resolver_domain text NOT NULL,
+    resolution_class text NOT NULL,
+    due_at timestamp with time zone,
+    escalation_level integer DEFAULT 0 NOT NULL,
     CONSTRAINT incidents_client_impact_check CHECK ((client_impact = ANY (ARRAY['none'::text, 'delayed'::text, 'partial_delivery'::text, 'wrong_item'::text, 'blocked'::text]))),
     CONSTRAINT incidents_detected_source_check CHECK ((detected_source = ANY (ARRAY['system'::text, 'hub_agent'::text, 'relay_agent'::text, 'driver'::text, 'customer'::text, 'admin'::text, 'reconciliation'::text]))),
+    CONSTRAINT incidents_escalation_level_check CHECK ((escalation_level >= 0)),
     CONSTRAINT incidents_incident_type_check CHECK ((incident_type = ANY (ARRAY['content_mismatch'::text, 'missing_item'::text, 'unexpected_item'::text, 'damaged_item'::text, 'weight_mismatch'::text, 'quantity_mismatch'::text, 'scan_anomaly'::text, 'sequence_violation'::text, 'delay'::text, 'blocked'::text, 'payment_issue'::text, 'reconciliation_error'::text]))),
+    CONSTRAINT incidents_origin_domain_check CHECK ((origin_domain = ANY (ARRAY['LOGISTICS'::text, 'PAYMENTS'::text, 'ORDERS'::text, 'PURCHASING'::text, 'MARKET'::text, 'UNCLASSIFIED'::text]))),
+    CONSTRAINT incidents_resolution_class_check CHECK ((resolution_class = ANY (ARRAY['PHYSICAL_PROOF'::text, 'UPSTREAM_TRUTH'::text, 'UNCLASSIFIED'::text]))),
     CONSTRAINT incidents_resolution_type_check CHECK ((resolution_type = ANY (ARRAY['reship'::text, 'refund'::text, 'manual_fix'::text, 'dismissed'::text, 'auto_resolved'::text, NULL::text]))),
+    CONSTRAINT incidents_resolver_domain_check CHECK ((resolver_domain = ANY (ARRAY['LOGISTICS'::text, 'PAYMENTS'::text, 'ORDERS'::text, 'PURCHASING'::text, 'MARKET'::text, 'UNCLASSIFIED'::text]))),
     CONSTRAINT incidents_severity_check CHECK ((severity = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text, 'critical'::text]))),
     CONSTRAINT incidents_status_check CHECK ((status = ANY (ARRAY['open'::text, 'investigating'::text, 'resolved'::text, 'dismissed'::text])))
 );
@@ -2913,7 +5333,9 @@ CREATE TABLE public.market_cash_control_policies (
     updated_by_membership_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT market_cash_control_policies_confirmation_mode_check CHECK ((confirmation_mode = ANY (ARRAY['SINGLE'::text, 'DUAL_ALWAYS'::text])))
+    custody_max_days integer,
+    CONSTRAINT market_cash_control_policies_confirmation_mode_check CHECK ((confirmation_mode = ANY (ARRAY['SINGLE'::text, 'DUAL_ALWAYS'::text]))),
+    CONSTRAINT market_cash_control_policies_custody_days_chk CHECK (((custody_max_days IS NULL) OR ((custody_max_days >= 1) AND (custody_max_days <= 365))))
 );
 
 
@@ -2922,6 +5344,72 @@ CREATE TABLE public.market_cash_control_policies (
 --
 
 COMMENT ON TABLE public.market_cash_control_policies IS 'Partner-owned Market cash policy. Komerce enforces the non-bypassable safety floor; partner may require dual confirmation.';
+
+
+--
+-- Name: COLUMN market_cash_control_policies.custody_max_days; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.market_cash_control_policies.custody_max_days IS 'Délai de garde maximal des espèces dans ce Market (jours) ; NULL = défaut central ; borné par la limite centrale côté service.';
+
+
+--
+-- Name: market_cash_destinations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_cash_destinations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    kind text NOT NULL,
+    label text NOT NULL,
+    currency text NOT NULL,
+    account_ref text NOT NULL,
+    payment_account_id uuid,
+    status text DEFAULT 'PROPOSED'::text NOT NULL,
+    proposed_by uuid NOT NULL,
+    activated_by uuid,
+    activated_at timestamp with time zone,
+    status_reason text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_cash_destinations_account_ref_chk CHECK ((((char_length(btrim(account_ref)) >= 3) AND (char_length(btrim(account_ref)) <= 120)) AND (account_ref !~* '(^|[^a-z])(sk|rk|pk|whsec)_'::text))),
+    CONSTRAINT market_cash_destinations_currency_chk CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT market_cash_destinations_kind_chk CHECK ((kind = ANY (ARRAY['BANK'::text, 'MOBILE_MONEY'::text]))),
+    CONSTRAINT market_cash_destinations_label_chk CHECK (((char_length(btrim(label)) >= 2) AND (char_length(btrim(label)) <= 120))),
+    CONSTRAINT market_cash_destinations_reason_chk CHECK (((status <> ALL (ARRAY['SUSPENDED'::text, 'CLOSED'::text])) OR ((status_reason IS NOT NULL) AND (char_length(btrim(status_reason)) >= 3)))),
+    CONSTRAINT market_cash_destinations_status_chk CHECK ((status = ANY (ARRAY['PROPOSED'::text, 'ACTIVE'::text, 'SUSPENDED'::text, 'CLOSED'::text]))),
+    CONSTRAINT market_cash_destinations_two_actors_chk CHECK ((((activated_by IS NULL) AND (activated_at IS NULL) AND (status = ANY (ARRAY['PROPOSED'::text, 'CLOSED'::text]))) OR ((activated_by IS NOT NULL) AND (activated_at IS NOT NULL) AND (activated_by <> proposed_by))))
+);
+
+
+--
+-- Name: TABLE market_cash_destinations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_cash_destinations IS 'Destinations finales autorisées (banque, Mobile Money) par Market : proposée par un acteur, activée par un autre, jamais supprimée. Peut référencer un compte de paiement sans le modifier.';
+
+
+--
+-- Name: market_cost_attributions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_cost_attributions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    source_event_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    event_kind text NOT NULL,
+    amount_kmf numeric(18,2) NOT NULL,
+    allocation_key text NOT NULL,
+    allocation_basis jsonb NOT NULL,
+    policy_version text NOT NULL,
+    reverses_id uuid,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_mca_amount_nonzero CHECK ((amount_kmf <> (0)::numeric)),
+    CONSTRAINT chk_mca_event_kind CHECK ((event_kind = ANY (ARRAY['ATTRIBUTION'::text, 'REVERSAL'::text]))),
+    CONSTRAINT chk_mca_reversal_link CHECK ((((event_kind = 'ATTRIBUTION'::text) AND (reverses_id IS NULL)) OR ((event_kind = 'REVERSAL'::text) AND (reverses_id IS NOT NULL)))),
+    CONSTRAINT chk_mca_sign CHECK ((((event_kind = 'ATTRIBUTION'::text) AND (amount_kmf > (0)::numeric)) OR ((event_kind = 'REVERSAL'::text) AND (amount_kmf < (0)::numeric))))
+);
 
 
 --
@@ -2939,6 +5427,7 @@ CREATE TABLE public.market_delegation_audit (
     payload_after jsonb,
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     correlation_id text,
+    market_id uuid,
     CONSTRAINT market_delegation_audit_action_check CHECK ((char_length(btrim(action)) > 0))
 );
 
@@ -2948,6 +5437,13 @@ CREATE TABLE public.market_delegation_audit (
 --
 
 COMMENT ON TABLE public.market_delegation_audit IS 'Append-only audit trail for market delegation mutations; distinct from economic facts.';
+
+
+--
+-- Name: COLUMN market_delegation_audit.market_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.market_delegation_audit.market_id IS 'Market ID audité directement. Permet de tracer le provisioning avant création complète de l assignment ; cohérent avec assignment/membership quand présents.';
 
 
 --
@@ -2964,6 +5460,7 @@ CREATE TABLE public.market_operating_assignments (
     granted_at timestamp with time zone DEFAULT now() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    central_referent_user_id uuid,
     CONSTRAINT market_operating_assignment_period_check CHECK (((effective_until IS NULL) OR (effective_until > effective_from))),
     CONSTRAINT market_operating_assignments_status_check CHECK ((status = ANY (ARRAY['DRAFT'::text, 'ACTIVE'::text, 'SUSPENDED'::text, 'ENDED'::text])))
 );
@@ -2974,6 +5471,54 @@ CREATE TABLE public.market_operating_assignments (
 --
 
 COMMENT ON TABLE public.market_operating_assignments IS 'Sole active economic operating mandate for a Market ID; at most one ACTIVE row per market.';
+
+
+--
+-- Name: COLUMN market_operating_assignments.central_referent_user_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.market_operating_assignments.central_referent_user_id IS 'Central referent designation only. Grants no authority by itself.';
+
+
+--
+-- Name: market_payment_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_payment_accounts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    provider text NOT NULL,
+    adapter text,
+    currency text NOT NULL,
+    account_holder text NOT NULL,
+    legal_seller text NOT NULL,
+    market_operator_entity text,
+    refund_bearer text NOT NULL,
+    external_account_id text,
+    credentials_ref text,
+    legal_basis_ref text,
+    status text DEFAULT 'DRAFT'::text NOT NULL,
+    verification_ref text,
+    verified_at timestamp with time zone,
+    verified_by uuid,
+    created_by uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_payment_accounts_account_holder_check CHECK (((char_length(btrim(account_holder)) >= 2) AND (char_length(btrim(account_holder)) <= 200))),
+    CONSTRAINT market_payment_accounts_active_complete_chk CHECK (((status <> 'ACTIVE'::text) OR ((credentials_ref IS NOT NULL) AND (legal_basis_ref IS NOT NULL) AND (verified_at IS NOT NULL) AND (verified_by IS NOT NULL) AND (verification_ref IS NOT NULL)))),
+    CONSTRAINT market_payment_accounts_adapter_check CHECK (((adapter IS NULL) OR (adapter ~ '^[a-z][a-z0-9_]{1,40}$'::text))),
+    CONSTRAINT market_payment_accounts_credentials_ref_check CHECK (((credentials_ref IS NULL) OR ((credentials_ref ~ '^[a-z0-9][a-z0-9:_./-]{2,200}$'::text) AND (credentials_ref !~* '(^|[^a-z])(sk|rk|pk|whsec)_'::text)))),
+    CONSTRAINT market_payment_accounts_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT market_payment_accounts_external_account_id_check CHECK (((external_account_id IS NULL) OR ((char_length(btrim(external_account_id)) >= 2) AND (char_length(btrim(external_account_id)) <= 200)))),
+    CONSTRAINT market_payment_accounts_legal_basis_ref_check CHECK (((legal_basis_ref IS NULL) OR ((char_length(btrim(legal_basis_ref)) >= 3) AND (char_length(btrim(legal_basis_ref)) <= 300)))),
+    CONSTRAINT market_payment_accounts_legal_seller_check CHECK (((char_length(btrim(legal_seller)) >= 2) AND (char_length(btrim(legal_seller)) <= 200))),
+    CONSTRAINT market_payment_accounts_market_operator_entity_check CHECK (((market_operator_entity IS NULL) OR ((char_length(btrim(market_operator_entity)) >= 2) AND (char_length(btrim(market_operator_entity)) <= 200)))),
+    CONSTRAINT market_payment_accounts_provider_check CHECK ((provider ~ '^[a-z][a-z0-9_]{1,40}$'::text)),
+    CONSTRAINT market_payment_accounts_refund_bearer_check CHECK ((refund_bearer = ANY (ARRAY['MARKET'::text, 'PLATFORM'::text]))),
+    CONSTRAINT market_payment_accounts_status_check CHECK ((status = ANY (ARRAY['DRAFT'::text, 'ACTIVE'::text, 'SUSPENDED'::text, 'CLOSED'::text]))),
+    CONSTRAINT market_payment_accounts_verification_chk CHECK ((((verified_at IS NULL) AND (verified_by IS NULL) AND (verification_ref IS NULL)) OR ((verified_at IS NOT NULL) AND (verified_by IS NOT NULL) AND (verification_ref IS NOT NULL)))),
+    CONSTRAINT market_payment_accounts_verification_ref_check CHECK (((verification_ref IS NULL) OR ((char_length(btrim(verification_ref)) >= 3) AND (char_length(btrim(verification_ref)) <= 300))))
+);
 
 
 --
@@ -3135,10 +5680,10 @@ COMMENT ON TABLE public.market_settlements IS 'Vérité de settlement du Market 
 CREATE TABLE public.market_team_invitations (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     assignment_id uuid NOT NULL,
-    email_normalized text NOT NULL,
+    email_normalized text,
     token_hash text NOT NULL,
     requested_capabilities jsonb DEFAULT '[]'::jsonb NOT NULL,
-    invited_by_membership_id uuid NOT NULL,
+    invited_by_membership_id uuid,
     status text DEFAULT 'PENDING'::text NOT NULL,
     expires_at timestamp with time zone NOT NULL,
     accepted_at timestamp with time zone,
@@ -3147,7 +5692,15 @@ CREATE TABLE public.market_team_invitations (
     revoked_by_membership_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    phone_e164 text,
+    channel text DEFAULT 'EMAIL'::text NOT NULL,
+    invited_by_user_id uuid NOT NULL,
+    grants_operating_lead boolean DEFAULT false NOT NULL,
+    CONSTRAINT market_team_invitation_channel_check CHECK ((channel = ANY (ARRAY['EMAIL'::text, 'WHATSAPP'::text]))),
     CONSTRAINT market_team_invitation_expiry_check CHECK ((expires_at > created_at)),
+    CONSTRAINT market_team_invitation_lead_requires_central_check CHECK (((grants_operating_lead = false) OR (invited_by_membership_id IS NULL))),
+    CONSTRAINT market_team_invitation_phone_e164_check CHECK (((phone_e164 IS NULL) OR (phone_e164 ~ '^\\+[1-9][0-9]{7,14}$'::text))),
+    CONSTRAINT market_team_invitation_recipient_check CHECK ((((channel = 'EMAIL'::text) AND (email_normalized IS NOT NULL)) OR ((channel = 'WHATSAPP'::text) AND (phone_e164 IS NOT NULL)))),
     CONSTRAINT market_team_invitation_state_check CHECK ((((status = 'PENDING'::text) AND (accepted_at IS NULL) AND (revoked_at IS NULL)) OR ((status = 'ACCEPTED'::text) AND (accepted_at IS NOT NULL) AND (accepted_by_user_id IS NOT NULL) AND (revoked_at IS NULL)) OR ((status = 'REVOKED'::text) AND (revoked_at IS NOT NULL) AND (accepted_at IS NULL)) OR ((status = 'EXPIRED'::text) AND (accepted_at IS NULL) AND (revoked_at IS NULL)))),
     CONSTRAINT market_team_invitations_email_normalized_check CHECK (((email_normalized = lower(btrim(email_normalized))) AND (POSITION(('@'::text) IN (email_normalized)) > 1))),
     CONSTRAINT market_team_invitations_requested_capabilities_check CHECK ((jsonb_typeof(requested_capabilities) = 'array'::text)),
@@ -3164,6 +5717,34 @@ COMMENT ON TABLE public.market_team_invitations IS 'Expiring invitation intent f
 
 
 --
+-- Name: COLUMN market_team_invitations.phone_e164; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.market_team_invitations.phone_e164 IS 'E.164 recipient used when channel=WHATSAPP. No local-number guessing.';
+
+
+--
+-- Name: COLUMN market_team_invitations.channel; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.market_team_invitations.channel IS 'Invitation delivery intent: EMAIL or WHATSAPP. Delivery itself belongs to the notification layer.';
+
+
+--
+-- Name: COLUMN market_team_invitations.invited_by_user_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.market_team_invitations.invited_by_user_id IS 'Canonical inviter identity. invited_by_membership_id remains optional for delegated team invites.';
+
+
+--
+-- Name: COLUMN market_team_invitations.grants_operating_lead; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.market_team_invitations.grants_operating_lead IS 'When true, acceptance designates the resulting ACTIVE membership as operating lead; only central invitations may request it.';
+
+
+--
 -- Name: markets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3175,7 +5756,12 @@ CREATE TABLE public.markets (
     minor_unit smallint DEFAULT 0 NOT NULL,
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT markets_minor_unit_check CHECK (((minor_unit >= 0) AND (minor_unit <= 4)))
+    lifecycle_status text DEFAULT 'PROVISIONING'::text NOT NULL,
+    storefront_texts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT markets_lifecycle_is_active_check CHECK ((is_active = (lifecycle_status = ANY (ARRAY['ACTIVE'::text, 'SUSPENDED'::text])))),
+    CONSTRAINT markets_lifecycle_status_check CHECK ((lifecycle_status = ANY (ARRAY['PROVISIONING'::text, 'ACTIVE'::text, 'SUSPENDED'::text, 'CLOSED'::text]))),
+    CONSTRAINT markets_minor_unit_check CHECK (((minor_unit >= 0) AND (minor_unit <= 4))),
+    CONSTRAINT markets_storefront_texts_object_check CHECK ((jsonb_typeof(storefront_texts) = 'object'::text))
 );
 
 
@@ -3201,6 +5787,20 @@ COMMENT ON COLUMN public.markets.minor_unit IS 'Décimales de la devise : 0 pour
 
 
 --
+-- Name: COLUMN markets.lifecycle_status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.markets.lifecycle_status IS 'Canonical lifecycle: PROVISIONING, ACTIVE, SUSPENDED, CLOSED. is_active is a compatibility projection constrained by this value.';
+
+
+--
+-- Name: COLUMN markets.storefront_texts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.markets.storefront_texts IS 'Market-owned storefront copy/settings as JSON object. No authorization is derived from this payload.';
+
+
+--
 -- Name: membership_capabilities; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3211,8 +5811,17 @@ CREATE TABLE public.membership_capabilities (
     granted_by uuid,
     granted_at timestamp with time zone DEFAULT now() NOT NULL,
     revoked_at timestamp with time zone,
-    revoked_by uuid
+    revoked_by uuid,
+    limit_amount numeric(20,6),
+    CONSTRAINT membership_capability_limit_nonnegative_check CHECK (((limit_amount IS NULL) OR (limit_amount >= (0)::numeric)))
 );
+
+
+--
+-- Name: COLUMN membership_capabilities.limit_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.membership_capabilities.limit_amount IS 'Optional member per-operation maximum. Must not exceed a finite assignment ceiling.';
 
 
 --
@@ -4054,6 +6663,47 @@ ALTER SEQUENCE public.otp_codes_id_seq OWNED BY public.otp_codes.id;
 
 
 --
+-- Name: outbox_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.outbox_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    aggregate_type text NOT NULL,
+    aggregate_id text NOT NULL,
+    aggregate_sequence bigint NOT NULL,
+    event_type text NOT NULL,
+    payload jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    processed_at timestamp with time zone,
+    attempts integer DEFAULT 0 NOT NULL,
+    last_error text,
+    CONSTRAINT chk_outbox_events_payload_shape CHECK (((jsonb_typeof(payload) = 'object'::text) AND ((payload ->> 'outcome_type'::text) = ANY (ARRAY['LOST'::text, 'STOLEN'::text, 'DESTROYED'::text, 'DAMAGED_UNUSABLE'::text])))),
+    CONSTRAINT outbox_events_event_type_check CHECK ((event_type = 'physical_outcome_reported'::text))
+);
+
+
+--
+-- Name: TABLE outbox_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.outbox_events IS 'Primitive outbox transactionnelle (HUB-000/F0). Un seul event_type aujourd''hui : physical_outcome_reported. Toute nouvelle famille nécessite une migration ajoutant sa valeur au CHECK — jamais un ajout silencieux côté code.';
+
+
+--
+-- Name: COLUMN outbox_events.aggregate_sequence; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.outbox_events.aggregate_sequence IS 'Autorité d''ordre par agrégat, attribuée par le producer sous pg_advisory_xact_lock (bloquant, tenu jusqu''au commit appelant). Jamais calculée hors de ce verrou.';
+
+
+--
+-- Name: COLUMN outbox_events.created_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.outbox_events.created_at IS 'Audit/observabilité uniquement — PAS l''autorité d''ordre. Voir aggregate_sequence pour l''ordre causal garanti par agrégat.';
+
+
+--
 -- Name: parcel_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4319,6 +6969,29 @@ COMMENT ON COLUMN public.physical_offers.image_ref IS 'Référence média publiq
 --
 
 COMMENT ON COLUMN public.physical_offers.actions_enabled IS 'Capacités cumulatives de la fiche Komerce : request, quote, callback, call, whatsapp. Le kind ne choisit jamais seul l interaction.';
+
+
+--
+-- Name: physical_outcome_receipts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.physical_outcome_receipts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    event_id uuid NOT NULL,
+    consumer_key text NOT NULL,
+    aggregate_type text NOT NULL,
+    aggregate_id text NOT NULL,
+    outcome_type text NOT NULL,
+    payload jsonb NOT NULL,
+    received_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE physical_outcome_receipts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.physical_outcome_receipts IS 'Consumer minimal réel de physical_outcome_reported (F0). Preuve d''idempotence via UNIQUE(event_id, consumer_key), pas de conséquence métier — HUB-001 branchera les vrais consumers (Purchasing/Orders) plus tard, chacun avec son propre consumer_key.';
 
 
 --
@@ -5001,7 +7674,7 @@ CREATE TABLE public.product_suppliers (
     supplier_id uuid NOT NULL,
     supplier_sku text NOT NULL,
     supplier_url text,
-    supplier_price_aed numeric(10,2) NOT NULL,
+    supplier_price_aed numeric(10,2),
     min_order_qty integer DEFAULT 1 NOT NULL,
     priority integer DEFAULT 1 NOT NULL,
     is_active boolean DEFAULT true NOT NULL,
@@ -5025,7 +7698,7 @@ COMMENT ON TABLE public.product_suppliers IS 'Mapping produit â†’ fournisse
 -- Name: COLUMN product_suppliers.supplier_price_aed; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.product_suppliers.supplier_price_aed IS 'Prix achat AED â€” utilisÃ© pour calculer cost_real_kmf';
+COMMENT ON COLUMN public.product_suppliers.supplier_price_aed IS 'LEGACY uniquement. Prix AED historique du mapping. NULL autorisé pour les produits SKU/SOI dont le prix fournisseur vient de la Canonical Unit.';
 
 
 --
@@ -5097,7 +7770,7 @@ CREATE TABLE public.products (
     description text,
     category text,
     emoji text,
-    price_kmf numeric(12,2) NOT NULL,
+    price_kmf numeric(12,2),
     cost_kmf numeric(12,2),
     promo_pct integer,
     promo_until date,
@@ -5159,13 +7832,24 @@ CREATE TABLE public.products (
     air_excluded boolean DEFAULT false NOT NULL,
     air_eligibility_status public.air_eligibility_status DEFAULT 'PENDING_REVIEW'::public.air_eligibility_status NOT NULL,
     air_exclusion_reason text,
+    boutique_category_key text,
+    boutique_subcategory_key text,
     CONSTRAINT chk_products_inventory_model CHECK ((inventory_model = ANY (ARRAY['LEGACY_VARIANTS'::text, 'SKU'::text]))),
     CONSTRAINT chk_products_price CHECK ((price_kmf > (0)::numeric)),
     CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
     CONSTRAINT chk_products_stock CHECK ((stock >= 0)),
+    CONSTRAINT chk_products_unpriced_draft_only CHECK (((price_kmf IS NOT NULL) OR ((COALESCE(is_active, false) = false) AND (COALESCE(is_available, false) = false) AND (COALESCE(lifecycle_status, 'candidate'::text) <> 'active'::text)))),
     CONSTRAINT chk_stock_nonneg CHECK (((stock >= 0) OR (stock IS NULL))),
-    CONSTRAINT price_eur_positive CHECK (((price_eur IS NULL) OR (price_eur >= (0)::numeric)))
+    CONSTRAINT price_eur_positive CHECK (((price_eur IS NULL) OR (price_eur >= (0)::numeric))),
+    CONSTRAINT products_boutique_subcategory_requires_category CHECK (((boutique_subcategory_key IS NULL) OR (boutique_category_key IS NOT NULL)))
 );
+
+
+--
+-- Name: COLUMN products.price_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.price_kmf IS 'Prix de vente KMF. Nullable uniquement pour un brouillon Catalogue inactif/non disponible ; obligatoire avant publication/exposition.';
 
 
 --
@@ -5295,6 +7979,72 @@ COMMENT ON COLUMN public.products.air_exclusion_reason IS 'Raison de l''exclusio
 
 
 --
+-- Name: COLUMN products.boutique_category_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.boutique_category_key IS 'Univers boutique canonique (ex. Mode & Beauté, Tech). Distinct de products.category, qui reste la classification économique/douanière.';
+
+
+--
+-- Name: COLUMN products.boutique_subcategory_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.boutique_subcategory_key IS 'Sous-catégorie boutique canonique, scoped par boutique_category_key.';
+
+
+--
+-- Name: provider_credentials; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.provider_credentials (
+    credential_ref text NOT NULL,
+    provider_key text NOT NULL,
+    auth_type text NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    envelope_ciphertext text,
+    envelope_iv text,
+    envelope_tag text,
+    key_version integer,
+    oauth_session_key text,
+    provider_account_label text,
+    access_expires_at timestamp with time zone,
+    refresh_expires_at timestamp with time zone,
+    replaces_ref text,
+    created_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    activated_at timestamp with time zone,
+    rotated_at timestamp with time zone,
+    revoked_at timestamp with time zone,
+    last_tested_at timestamp with time zone,
+    last_test_status text,
+    last_test_code text,
+    CONSTRAINT provider_credentials_auth_type_chk CHECK ((auth_type = ANY (ARRAY['api_key'::text, 'client_credentials'::text, 'oauth'::text]))),
+    CONSTRAINT provider_credentials_envelope_triplet_chk CHECK ((((envelope_ciphertext IS NULL) AND (envelope_iv IS NULL) AND (envelope_tag IS NULL) AND (key_version IS NULL)) OR ((envelope_ciphertext IS NOT NULL) AND (envelope_iv IS NOT NULL) AND (envelope_tag IS NOT NULL) AND (key_version IS NOT NULL)))),
+    CONSTRAINT provider_credentials_oauth_shape_chk CHECK ((((auth_type = 'oauth'::text) AND (envelope_ciphertext IS NULL) AND (oauth_session_key IS NOT NULL)) OR ((auth_type <> 'oauth'::text) AND (oauth_session_key IS NULL)))),
+    CONSTRAINT provider_credentials_provider_chk CHECK ((provider_key ~ '^[a-z0-9_-]{2,64}$'::text)),
+    CONSTRAINT provider_credentials_ref_chk CHECK ((credential_ref ~ '^cred_[a-f0-9]{32}$'::text)),
+    CONSTRAINT provider_credentials_shredded_chk CHECK (((status = ANY (ARRAY['pending'::text, 'active'::text])) OR (envelope_ciphertext IS NULL))),
+    CONSTRAINT provider_credentials_status_chk CHECK ((status = ANY (ARRAY['pending'::text, 'active'::text, 'superseded'::text, 'revoked'::text, 'failed'::text]))),
+    CONSTRAINT provider_credentials_test_status_chk CHECK (((last_test_status IS NULL) OR (last_test_status = ANY (ARRAY['ok'::text, 'failed'::text]))))
+);
+
+
+--
+-- Name: TABLE provider_credentials; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.provider_credentials IS 'Coffre des credentials fournisseurs. Enveloppe AES-256-GCM (IV aléatoire, AAD = provider + credential_ref + version + auth_type) sous clé maître serveur. Jamais relue par le navigateur. Enveloppe effacée dès que le credential est remplacé, révoqué ou en échec.';
+
+
+--
+-- Name: COLUMN provider_credentials.oauth_session_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.provider_credentials.oauth_session_key IS 'Pour auth_type=oauth : clé de la session chiffrée dans supplier_oauth_connections (aucun token ici).';
+
+
+--
 -- Name: providers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5342,17 +8092,61 @@ COMMENT ON COLUMN public.providers.public_whatsapp IS 'Coordonnée WhatsApp expl
 
 
 --
+-- Name: purchase_lines; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.purchase_lines (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    purchase_order_id uuid,
+    order_item_id uuid NOT NULL,
+    supplier_id uuid NOT NULL,
+    product_supplier_id uuid,
+    product_sku_id uuid,
+    supplier_sku text NOT NULL,
+    supplier_unit_ref text,
+    supplier_order_identity jsonb,
+    quantity integer NOT NULL,
+    supplier_unit_price numeric(18,4),
+    supplier_currency text,
+    procurement_hub_ref text NOT NULL,
+    parent_line_id uuid,
+    confirmed_quantity integer,
+    confirmed_unit_price numeric(18,4),
+    confirmed_at timestamp with time zone,
+    settled_quantity integer,
+    settled_at timestamp with time zone,
+    settle_reason text,
+    cancelled_at timestamp with time zone,
+    cancel_reason text,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_purchase_lines_cancel_pair CHECK (((cancelled_at IS NULL) = (cancel_reason IS NULL))),
+    CONSTRAINT chk_purchase_lines_confirmed_bound CHECK (((confirmed_quantity IS NULL) OR ((confirmed_quantity >= 0) AND (confirmed_quantity <= quantity)))),
+    CONSTRAINT chk_purchase_lines_confirmed_price CHECK (((confirmed_unit_price IS NULL) OR (confirmed_unit_price > (0)::numeric))),
+    CONSTRAINT chk_purchase_lines_hub_ref CHECK ((btrim(procurement_hub_ref) <> ''::text)),
+    CONSTRAINT chk_purchase_lines_quantity CHECK ((quantity > 0)),
+    CONSTRAINT chk_purchase_lines_settle_bound CHECK (((settled_quantity IS NULL) OR (settled_quantity <= COALESCE(confirmed_quantity, quantity)))),
+    CONSTRAINT chk_purchase_lines_settle_pair CHECK (((settled_at IS NULL) = (settled_quantity IS NULL))),
+    CONSTRAINT chk_purchase_lines_settled_nonneg CHECK (((settled_quantity IS NULL) OR (settled_quantity >= 0))),
+    CONSTRAINT chk_purchase_lines_supplier_money_pair CHECK ((((supplier_unit_price IS NULL) AND (supplier_currency IS NULL)) OR ((supplier_unit_price IS NOT NULL) AND (supplier_currency IS NOT NULL) AND (supplier_unit_price > (0)::numeric) AND (supplier_currency ~ '^[A-Z]{3}$'::text)))),
+    CONSTRAINT chk_purchase_lines_supplier_order_identity_shape CHECK (((supplier_order_identity IS NULL) OR ((product_sku_id IS NOT NULL) AND (supplier_unit_ref IS NOT NULL) AND (jsonb_typeof(supplier_order_identity) = 'object'::text) AND (jsonb_typeof((supplier_order_identity -> 'provider'::text)) = 'string'::text) AND (btrim((supplier_order_identity ->> 'provider'::text)) <> ''::text) AND (jsonb_typeof((supplier_order_identity -> 'version'::text)) = 'number'::text) AND ((supplier_order_identity ->> 'version'::text) ~ '^[0-9]+$'::text) AND (((supplier_order_identity ->> 'version'::text))::integer >= 1) AND (jsonb_typeof((supplier_order_identity -> 'payload'::text)) = 'object'::text) AND ((supplier_order_identity -> 'payload'::text) <> '{}'::jsonb)))),
+    CONSTRAINT chk_purchase_lines_supplier_unit_ref_nonempty CHECK (((supplier_unit_ref IS NULL) OR (btrim(supplier_unit_ref) <> ''::text)))
+);
+
+
+--
 -- Name: purchase_orders; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.purchase_orders (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    order_id uuid NOT NULL,
+    order_id uuid,
     supplier_id uuid NOT NULL,
     product_supplier_id uuid,
     supplier_order_id text,
-    supplier_sku text NOT NULL,
-    qty integer DEFAULT 1 NOT NULL,
+    supplier_sku text,
+    qty integer DEFAULT 1,
     unit_price_aed numeric(10,2),
     total_price_aed numeric(10,2) GENERATED ALWAYS AS ((unit_price_aed * (qty)::numeric)) STORED,
     status text DEFAULT 'pending'::text NOT NULL,
@@ -5373,10 +8167,17 @@ CREATE TABLE public.purchase_orders (
     product_sku_id uuid,
     supplier_unit_ref text,
     supplier_order_identity jsonb,
-    CONSTRAINT chk_purchase_orders_qty CHECK ((qty > 0)),
+    supplier_unit_price numeric(18,4),
+    supplier_currency text,
+    supplier_total_price numeric(18,4) GENERATED ALWAYS AS ((supplier_unit_price * (qty)::numeric)) STORED,
+    procurement_hub_ref text DEFAULT 'DXB'::text NOT NULL,
+    CONSTRAINT chk_purchase_orders_header_shape CHECK ((((order_id IS NOT NULL) AND (qty IS NOT NULL) AND (supplier_sku IS NOT NULL)) OR ((order_id IS NULL) AND (order_item_id IS NULL) AND (product_sku_id IS NULL) AND (supplier_unit_ref IS NULL) AND (supplier_order_identity IS NULL) AND (qty IS NULL) AND (supplier_sku IS NULL) AND (supplier_unit_price IS NULL) AND (supplier_currency IS NULL)))),
+    CONSTRAINT chk_purchase_orders_hub_ref CHECK ((btrim(procurement_hub_ref) <> ''::text)),
+    CONSTRAINT chk_purchase_orders_qty CHECK (((qty IS NULL) OR (qty > 0))),
+    CONSTRAINT chk_purchase_orders_supplier_money_pair CHECK ((((supplier_unit_price IS NULL) AND (supplier_currency IS NULL)) OR ((supplier_unit_price > (0)::numeric) AND (supplier_currency ~ '^[A-Z]{3}$'::text)))),
     CONSTRAINT chk_purchase_orders_supplier_order_identity_shape CHECK (((supplier_order_identity IS NULL) OR ((product_sku_id IS NOT NULL) AND (supplier_unit_ref IS NOT NULL) AND (jsonb_typeof(supplier_order_identity) = 'object'::text) AND (jsonb_typeof((supplier_order_identity -> 'provider'::text)) = 'string'::text) AND (btrim((supplier_order_identity ->> 'provider'::text)) <> ''::text) AND (jsonb_typeof((supplier_order_identity -> 'version'::text)) = 'number'::text) AND ((supplier_order_identity ->> 'version'::text) ~ '^[0-9]+$'::text) AND (((supplier_order_identity ->> 'version'::text))::integer >= 1) AND (jsonb_typeof((supplier_order_identity -> 'payload'::text)) = 'object'::text) AND ((supplier_order_identity -> 'payload'::text) <> '{}'::jsonb)))),
     CONSTRAINT chk_purchase_orders_supplier_unit_ref_nonempty CHECK (((supplier_unit_ref IS NULL) OR (btrim(supplier_unit_ref) <> ''::text))),
-    CONSTRAINT purchase_orders_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'notified'::text, 'confirmed'::text, 'shipped'::text, 'hub_received'::text, 'cancelled'::text]))),
+    CONSTRAINT purchase_orders_status_check CHECK ((status = ANY (ARRAY['cancelled'::text, 'confirmed'::text, 'draft'::text, 'hub_received'::text, 'notified'::text, 'pending'::text, 'shipped'::text]))),
     CONSTRAINT purchase_orders_trigger_mode_check CHECK ((trigger_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'whatsapp'::text])))
 );
 
@@ -5435,6 +8236,34 @@ COMMENT ON COLUMN public.purchase_orders.supplier_unit_ref IS 'Référence stabl
 --
 
 COMMENT ON COLUMN public.purchase_orders.supplier_order_identity IS 'Supplier Order Identity canonique {provider,version,payload} snapshotée depuis product_skus. Ne contient ni prix, ni stock, ni fret.';
+
+
+--
+-- Name: COLUMN purchase_orders.supplier_unit_price; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.supplier_unit_price IS 'Prix unitaire fournisseur snapshoté dans la monnaie native au moment de créer la PO.';
+
+
+--
+-- Name: COLUMN purchase_orders.supplier_currency; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.supplier_currency IS 'Code devise ISO 4217 à 3 lettres correspondant à supplier_unit_price.';
+
+
+--
+-- Name: COLUMN purchase_orders.supplier_total_price; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.supplier_total_price IS 'Total fournisseur natif = supplier_unit_price × qty. Généré, sans conversion implicite.';
+
+
+--
+-- Name: COLUMN purchase_orders.procurement_hub_ref; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.procurement_hub_ref IS 'Hub d''approvisionnement destinataire de la PO (référence logique, ex. DXB). Toutes les lignes d''une PO regroupée partagent cette valeur.';
 
 
 --
@@ -6100,6 +8929,7 @@ CREATE TABLE public.sourcing_candidates (
     connector_version text,
     observed_at timestamp with time zone,
     candidate_ref text DEFAULT ('KSC-'::text || lpad((nextval('public.sourcing_candidate_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL,
+    commercial_taxonomy_review jsonb,
     CONSTRAINT chk_sourcing_candidates_normalized_source_contract_object CHECK (((normalized_source_contract IS NULL) OR (jsonb_typeof(normalized_source_contract) = 'object'::text))),
     CONSTRAINT sourcing_candidates_confidence_check CHECK ((confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
     CONSTRAINT sourcing_candidates_promotion_status_check CHECK (((promotion_status IS NULL) OR (promotion_status = ANY (ARRAY['READY_FOR_PROMOTION'::text, 'QUARANTINED_UNSUPPORTED_MEDIA'::text, 'QUARANTINED_LOSSY_MAPPING'::text, 'QUARANTINED_CURRENCY_POLICY'::text])))),
@@ -6119,6 +8949,56 @@ COMMENT ON COLUMN public.sourcing_candidates.raw_payload IS 'Payload fournisseur
 --
 
 COMMENT ON COLUMN public.sourcing_candidates.normalized_source_contract IS 'Snapshot du NormalizedSupplierProduct V2 validé, sans raw_payload. Préserve les mappings media/option_axes/sellable_units du connecteur. NULL pour les contrats V1. Ne constitue pas la vérité catalogue ni stock.';
+
+
+--
+-- Name: COLUMN sourcing_candidates.commercial_taxonomy_review; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sourcing_candidates.commercial_taxonomy_review IS 'Boutique classification from confirmed supplier mapping; no customs, pricing, publication or KIR decision authority.';
+
+
+--
+-- Name: sourcing_canonical_entities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_canonical_entities (
+    canonical_entity_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    grain public.sourcing_observation_grain NOT NULL,
+    parent_entity_id uuid,
+    principal_id uuid,
+    status text DEFAULT 'active'::text NOT NULL,
+    superseded_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_canonical_entities_lifecycle_chk CHECK ((((status = 'active'::text) AND (superseded_by IS NULL)) OR ((status = 'superseded'::text) AND (superseded_by IS NOT NULL)))),
+    CONSTRAINT sourcing_canonical_entities_not_self_parent CHECK (((parent_entity_id IS NULL) OR (parent_entity_id <> canonical_entity_id))),
+    CONSTRAINT sourcing_canonical_entities_not_self_superseded CHECK (((superseded_by IS NULL) OR (superseded_by <> canonical_entity_id))),
+    CONSTRAINT sourcing_canonical_entities_principal_grain_chk CHECK (((principal_id IS NULL) OR (grain = 'offer'::public.sourcing_observation_grain))),
+    CONSTRAINT sourcing_canonical_entities_status_chk CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))
+);
+
+
+--
+-- Name: TABLE sourcing_canonical_entities; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_canonical_entities IS 'Shadow canonical identity supertype product/offer/unit; stable IDs, not catalog authority in PR 1B.';
+
+
+--
+-- Name: sourcing_canonical_entity_refs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_canonical_entity_refs (
+    canonical_entity_id uuid NOT NULL,
+    source_id text NOT NULL,
+    ref_kind text NOT NULL,
+    ref_value text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_canonical_entity_refs_kind_nonempty CHECK ((btrim(ref_kind) <> ''::text)),
+    CONSTRAINT sourcing_canonical_entity_refs_value_nonempty CHECK ((btrim(ref_value) <> ''::text))
+);
 
 
 --
@@ -6147,6 +9027,31 @@ COMMENT ON TABLE public.sourcing_captures IS 'Run ou lot d acquisition d une sou
 
 
 --
+-- Name: sourcing_commercial_principals; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_commercial_principals (
+    principal_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    display_name text,
+    status text DEFAULT 'active'::text NOT NULL,
+    superseded_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_commercial_principals_lifecycle_chk CHECK ((((status = 'active'::text) AND (superseded_by IS NULL)) OR ((status = 'superseded'::text) AND (superseded_by IS NOT NULL)))),
+    CONSTRAINT sourcing_commercial_principals_name_nonempty CHECK (((display_name IS NULL) OR (btrim(display_name) <> ''::text))),
+    CONSTRAINT sourcing_commercial_principals_not_self_superseded CHECK (((superseded_by IS NULL) OR (superseded_by <> principal_id))),
+    CONSTRAINT sourcing_commercial_principals_status_chk CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))
+);
+
+
+--
+-- Name: TABLE sourcing_commercial_principals; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_commercial_principals IS 'Shadow commercial identity. One Komerce principal may have refs in many sources.';
+
+
+--
 -- Name: sourcing_global_access_grants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6157,6 +9062,92 @@ CREATE TABLE public.sourcing_global_access_grants (
     reason text,
     revoked_at timestamp with time zone
 );
+
+
+--
+-- Name: sourcing_identity_constraints; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_identity_constraints (
+    identity_constraint_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    grain public.sourcing_observation_grain NOT NULL,
+    left_entity_id uuid NOT NULL,
+    right_entity_id uuid NOT NULL,
+    constraint_type text NOT NULL,
+    asserted_by_decision_id uuid NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    revoked_at timestamp with time zone,
+    revoked_by_decision_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_identity_constraints_pair_chk CHECK ((left_entity_id < right_entity_id)),
+    CONSTRAINT sourcing_identity_constraints_state_chk CHECK ((((active = true) AND (revoked_at IS NULL) AND (revoked_by_decision_id IS NULL)) OR ((active = false) AND (revoked_at IS NOT NULL) AND (revoked_by_decision_id IS NOT NULL)))),
+    CONSTRAINT sourcing_identity_constraints_type_chk CHECK ((constraint_type = ANY (ARRAY['MUST_LINK'::text, 'CANNOT_LINK'::text])))
+);
+
+
+--
+-- Name: TABLE sourcing_identity_constraints; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_identity_constraints IS 'Materialized MUST_LINK/CANNOT_LINK knowledge; reversible only through an audited decision.';
+
+
+--
+-- Name: sourcing_match_proposals; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_match_proposals (
+    proposal_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    proposal_run_id uuid NOT NULL,
+    observation_id uuid NOT NULL,
+    grain public.sourcing_observation_grain NOT NULL,
+    candidate_entity_id uuid NOT NULL,
+    matcher_version text NOT NULL,
+    support_score numeric(6,5) NOT NULL,
+    contradiction_score numeric(6,5) NOT NULL,
+    coverage_score numeric(6,5) NOT NULL,
+    evidence_snapshot jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_match_proposals_contradiction_chk CHECK (((contradiction_score >= (0)::numeric) AND (contradiction_score <= (1)::numeric))),
+    CONSTRAINT sourcing_match_proposals_coverage_chk CHECK (((coverage_score >= (0)::numeric) AND (coverage_score <= (1)::numeric))),
+    CONSTRAINT sourcing_match_proposals_matcher_nonempty CHECK ((btrim(matcher_version) <> ''::text)),
+    CONSTRAINT sourcing_match_proposals_support_chk CHECK (((support_score >= (0)::numeric) AND (support_score <= (1)::numeric)))
+);
+
+
+--
+-- Name: TABLE sourcing_match_proposals; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_match_proposals IS 'Candidate comparison facts: support, contradiction, coverage. Never sovereign truth.';
+
+
+--
+-- Name: sourcing_merge_policies; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_merge_policies (
+    policy_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    grain public.sourcing_observation_grain NOT NULL,
+    field_key text NOT NULL,
+    strategy text NOT NULL,
+    policy_version text NOT NULL,
+    config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    retired_at timestamp with time zone,
+    CONSTRAINT sourcing_merge_policies_field_nonempty CHECK ((btrim(field_key) <> ''::text)),
+    CONSTRAINT sourcing_merge_policies_state_chk CHECK ((((active = true) AND (retired_at IS NULL)) OR ((active = false) AND (retired_at IS NOT NULL)))),
+    CONSTRAINT sourcing_merge_policies_strategy_chk CHECK ((strategy = ANY (ARRAY['prefer_high_confidence'::text, 'latest_observation'::text, 'source_priority'::text, 'require_review'::text, 'preserve_distinct'::text]))),
+    CONSTRAINT sourcing_merge_policies_version_nonempty CHECK ((btrim(policy_version) <> ''::text))
+);
+
+
+--
+-- Name: TABLE sourcing_merge_policies; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_merge_policies IS 'Grain-scoped field projection policy. Does not select a winning supplier offer.';
 
 
 --
@@ -6233,6 +9224,81 @@ COMMENT ON TABLE public.sourcing_observations IS 'Observation immuable d une ent
 
 
 --
+-- Name: sourcing_provider_control_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_provider_control_events (
+    event_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    source_id text NOT NULL,
+    capability text NOT NULL,
+    old_value boolean NOT NULL,
+    new_value boolean NOT NULL,
+    actor_id text,
+    reason text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_provider_control_events_capability_check CHECK ((capability = ANY (ARRAY['discovery'::text, 'sync'::text, 'import'::text, 'production'::text, 'lifecycle'::text, 'credentials'::text])))
+);
+
+
+--
+-- Name: sourcing_resolution_bindings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_resolution_bindings (
+    binding_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    observation_id uuid NOT NULL,
+    grain public.sourcing_observation_grain NOT NULL,
+    canonical_entity_id uuid NOT NULL,
+    asserted_by_decision_id uuid NOT NULL,
+    ended_at timestamp with time zone,
+    ended_by_decision_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_resolution_bindings_end_state_chk CHECK ((((ended_at IS NULL) AND (ended_by_decision_id IS NULL)) OR ((ended_at IS NOT NULL) AND (ended_by_decision_id IS NOT NULL))))
+);
+
+
+--
+-- Name: TABLE sourcing_resolution_bindings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_resolution_bindings IS 'Materialized current Observation -> Canonical binding derived from decisions.';
+
+
+--
+-- Name: sourcing_resolution_decisions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_resolution_decisions (
+    decision_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    decision_type text NOT NULL,
+    grain public.sourcing_observation_grain NOT NULL,
+    proposal_id uuid,
+    observation_id uuid,
+    canonical_entity_id uuid,
+    related_entity_id uuid,
+    actor_type text NOT NULL,
+    actor_ref text,
+    rationale text NOT NULL,
+    evidence_snapshot jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_resolution_decisions_actor_chk CHECK ((actor_type = ANY (ARRAY['human'::text, 'rule'::text, 'model'::text, 'system'::text]))),
+    CONSTRAINT sourcing_resolution_decisions_actor_ref_nonempty CHECK (((actor_ref IS NULL) OR (btrim(actor_ref) <> ''::text))),
+    CONSTRAINT sourcing_resolution_decisions_distinct_entities_chk CHECK (((related_entity_id IS NULL) OR (related_entity_id <> canonical_entity_id))),
+    CONSTRAINT sourcing_resolution_decisions_human_actor_ref_chk CHECK (((actor_type <> 'human'::text) OR (actor_ref IS NOT NULL))),
+    CONSTRAINT sourcing_resolution_decisions_rationale_nonempty CHECK ((btrim(rationale) <> ''::text)),
+    CONSTRAINT sourcing_resolution_decisions_shape_chk CHECK ((((decision_type = 'LINK'::text) AND (observation_id IS NOT NULL) AND (canonical_entity_id IS NOT NULL) AND (related_entity_id IS NULL)) OR ((decision_type = 'DISTINCT'::text) AND (observation_id IS NOT NULL) AND (canonical_entity_id IS NOT NULL) AND (related_entity_id IS NULL)) OR ((decision_type = 'REVIEW_REQUIRED'::text) AND (observation_id IS NOT NULL) AND (related_entity_id IS NULL)) OR ((decision_type = ANY (ARRAY['MERGE'::text, 'SPLIT'::text])) AND (observation_id IS NULL) AND (canonical_entity_id IS NOT NULL) AND (related_entity_id IS NOT NULL)))),
+    CONSTRAINT sourcing_resolution_decisions_type_chk CHECK ((decision_type = ANY (ARRAY['LINK'::text, 'DISTINCT'::text, 'REVIEW_REQUIRED'::text, 'MERGE'::text, 'SPLIT'::text])))
+);
+
+
+--
+-- Name: TABLE sourcing_resolution_decisions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_resolution_decisions IS 'Append-only sovereign identity decisions LINK/DISTINCT/REVIEW/MERGE/SPLIT.';
+
+
+--
 -- Name: sourcing_source_execution_modes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6240,6 +9306,19 @@ CREATE TABLE public.sourcing_source_execution_modes (
     source_id text NOT NULL,
     mode text NOT NULL,
     CONSTRAINT sourcing_source_execution_mode_chk CHECK ((mode = ANY (ARRAY['human'::text, 'api'::text])))
+);
+
+
+--
+-- Name: sourcing_source_principal_refs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_source_principal_refs (
+    source_id text NOT NULL,
+    principal_ref text NOT NULL,
+    principal_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_source_principal_refs_ref_nonempty CHECK ((btrim(principal_ref) <> ''::text))
 );
 
 
@@ -6255,6 +9334,33 @@ CREATE TABLE public.sourcing_source_provides (
 
 
 --
+-- Name: sourcing_source_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_source_requests (
+    request_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    provider_name text NOT NULL,
+    requested_label text NOT NULL,
+    reference_url text,
+    status text DEFAULT 'connector_required'::text NOT NULL,
+    requested_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sourcing_source_requests_label_nonempty CHECK ((btrim(requested_label) <> ''::text)),
+    CONSTRAINT sourcing_source_requests_provider_nonempty CHECK ((btrim(provider_name) <> ''::text)),
+    CONSTRAINT sourcing_source_requests_reference_nonempty CHECK (((reference_url IS NULL) OR (btrim(reference_url) <> ''::text))),
+    CONSTRAINT sourcing_source_requests_status_chk CHECK ((status = 'connector_required'::text))
+);
+
+
+--
+-- Name: TABLE sourcing_source_requests; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sourcing_source_requests IS 'Fournisseurs demandés sans connecteur Komerce. Jamais une source : aucun autopilot, aucune capacité, aucune capture, aucun lien avec sourcing_sources.';
+
+
+--
 -- Name: sourcing_sources; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6267,10 +9373,23 @@ CREATE TABLE public.sourcing_sources (
     status text DEFAULT 'active'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    autopilot_enabled boolean DEFAULT false NOT NULL,
+    discovery_enabled boolean DEFAULT false NOT NULL,
+    sync_enabled boolean DEFAULT false NOT NULL,
+    import_enabled boolean DEFAULT false NOT NULL,
+    production_enabled boolean DEFAULT false NOT NULL,
+    production_certified_capture_id uuid,
+    production_certified_at timestamp with time zone,
+    connection_test_status text,
+    connection_test_code text,
+    connection_tested_at timestamp with time zone,
+    display_name text,
     CONSTRAINT sourcing_sources_acquisition_chk CHECK ((acquisition = ANY (ARRAY['pull'::text, 'push'::text]))),
     CONSTRAINT sourcing_sources_adapter_type_nonempty CHECK ((btrim(adapter_type) <> ''::text)),
+    CONSTRAINT sourcing_sources_connection_test_status_chk CHECK (((connection_test_status IS NULL) OR (connection_test_status = ANY (ARRAY['ok'::text, 'failed'::text])))),
     CONSTRAINT sourcing_sources_continuity_chk CHECK ((continuity = ANY (ARRAY['recurring'::text, 'one_shot'::text]))),
     CONSTRAINT sourcing_sources_credential_ref_nonempty CHECK (((credential_ref IS NULL) OR (btrim(credential_ref) <> ''::text))),
+    CONSTRAINT sourcing_sources_display_name_chk CHECK (((display_name IS NULL) OR ((btrim(display_name) <> ''::text) AND (char_length(display_name) <= 80)))),
     CONSTRAINT sourcing_sources_source_id_nonempty CHECK ((btrim(source_id) <> ''::text)),
     CONSTRAINT sourcing_sources_status_chk CHECK ((status = ANY (ARRAY['active'::text, 'disabled'::text])))
 );
@@ -6281,6 +9400,34 @@ CREATE TABLE public.sourcing_sources (
 --
 
 COMMENT ON TABLE public.sourcing_sources IS 'PR 1A shadow foundation. Source instance observable; aucune autorite prod.';
+
+
+--
+-- Name: COLUMN sourcing_sources.autopilot_enabled; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sourcing_sources.autopilot_enabled IS 'Autorisation explicite de collecte automatique récurrente. Défaut false : aucune source historique ne démarre sans action opérateur.';
+
+
+--
+-- Name: COLUMN sourcing_sources.connection_test_status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sourcing_sources.connection_test_status IS 'Résultat du dernier test de connexion opérateur (ok/failed). Informatif : ce n''est jamais une certification runtime.';
+
+
+--
+-- Name: COLUMN sourcing_sources.connection_test_code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sourcing_sources.connection_test_code IS 'Code métier court du dernier échec de test (jamais de message brut fournisseur ni de secret).';
+
+
+--
+-- Name: COLUMN sourcing_sources.display_name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sourcing_sources.display_name IS 'Libellé opérateur de la source (affichage uniquement, NULL = libellé du connecteur). Jamais un identifiant.';
 
 
 --
@@ -6403,6 +9550,282 @@ CREATE TABLE public.supplier_catalog_sync_checkpoints (
 
 
 --
+-- Name: supplier_commercial_category_mappings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_commercial_category_mappings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    provider text NOT NULL,
+    source_category_id text,
+    source_category_path text CONSTRAINT supplier_commercial_category_mapp_source_category_path_not_null NOT NULL,
+    source_locale text DEFAULT 'en'::text NOT NULL,
+    proposed_label_fr text,
+    boutique_category_key text,
+    boutique_subcategory_key text,
+    status text DEFAULT 'PROPOSED'::text NOT NULL,
+    confirmed_by text,
+    confirmed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT supplier_commercial_category_mappings_status_check CHECK ((status = ANY (ARRAY['PROPOSED'::text, 'CONFIRMED'::text, 'REVIEW_REQUIRED'::text]))),
+    CONSTRAINT supplier_commercial_mapping_confirmed CHECK (((status <> 'CONFIRMED'::text) OR ((boutique_category_key IS NOT NULL) AND (boutique_subcategory_key IS NOT NULL) AND (confirmed_at IS NOT NULL)))),
+    CONSTRAINT supplier_commercial_mapping_pair CHECK ((((boutique_category_key IS NULL) AND (boutique_subcategory_key IS NULL)) OR ((boutique_category_key IS NOT NULL) AND (boutique_subcategory_key IS NOT NULL))))
+);
+
+
+--
+-- Name: TABLE supplier_commercial_category_mappings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.supplier_commercial_category_mappings IS 'Source taxonomy mapping and FR merchandising labels; category unknown never rejects a candidate; no customs or pricing authority.';
+
+
+--
+-- Name: supplier_execution_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_execution_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    purchase_order_id uuid NOT NULL,
+    provider text NOT NULL,
+    supplier_execution_order_id uuid,
+    supplier_execution_group_id uuid,
+    operation text NOT NULL,
+    outcome text NOT NULL,
+    provider_request_id text,
+    provider_code text,
+    provider_message text,
+    facts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_supplier_execution_events_facts_object CHECK ((jsonb_typeof(facts) = 'object'::text)),
+    CONSTRAINT chk_supplier_execution_events_operation CHECK ((btrim(operation) <> ''::text)),
+    CONSTRAINT chk_supplier_execution_events_outcome CHECK ((outcome = ANY (ARRAY['requested'::text, 'succeeded'::text, 'rejected'::text, 'ambiguous'::text, 'observed'::text]))),
+    CONSTRAINT chk_supplier_execution_events_provider CHECK ((btrim(provider) <> ''::text))
+);
+
+
+--
+-- Name: TABLE supplier_execution_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.supplier_execution_events IS 'Journal append-only du dialogue provider. facts contient uniquement des faits bornés/sanitisés; jamais de secret ni payload brut.';
+
+
+--
+-- Name: supplier_execution_fulfillments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_execution_fulfillments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    supplier_execution_order_id uuid CONSTRAINT supplier_execution_fulfillm_supplier_execution_order_i_not_null NOT NULL,
+    provider text NOT NULL,
+    fulfillment_execution_key text CONSTRAINT supplier_execution_fulfillme_fulfillment_execution_key_not_null NOT NULL,
+    expected_quantity integer NOT NULL,
+    observed_quantity integer,
+    provider_status text,
+    carrier text,
+    tracking_number text,
+    tracking_url text,
+    shipped_at timestamp with time zone,
+    delivered_at timestamp with time zone,
+    reconciliation_status text DEFAULT 'pending'::text NOT NULL,
+    evidence_source text,
+    evidence_ref text,
+    facts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_supplier_execution_fulfillments_delivered_after_shipped CHECK (((delivered_at IS NULL) OR (shipped_at IS NULL) OR (delivered_at >= shipped_at))),
+    CONSTRAINT chk_supplier_execution_fulfillments_expected_qty CHECK ((expected_quantity > 0)),
+    CONSTRAINT chk_supplier_execution_fulfillments_facts_object CHECK ((jsonb_typeof(facts) = 'object'::text)),
+    CONSTRAINT chk_supplier_execution_fulfillments_key CHECK ((btrim(fulfillment_execution_key) <> ''::text)),
+    CONSTRAINT chk_supplier_execution_fulfillments_observed_qty CHECK (((observed_quantity IS NULL) OR (observed_quantity >= 0))),
+    CONSTRAINT chk_supplier_execution_fulfillments_provider CHECK ((btrim(provider) <> ''::text)),
+    CONSTRAINT chk_supplier_execution_fulfillments_status CHECK ((reconciliation_status = ANY (ARRAY['matched'::text, 'not_found'::text, 'mismatch'::text, 'ambiguous'::text, 'pending'::text]))),
+    CONSTRAINT chk_supplier_execution_fulfillments_tracking CHECK (((tracking_number IS NULL) OR (btrim(tracking_number) <> ''::text)))
+);
+
+
+--
+-- Name: TABLE supplier_execution_fulfillments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.supplier_execution_fulfillments IS 'Fait canonique provider-side de fulfillment. Ne prouve pas la réception Hub ni la remise client; celles-ci restent propriétaires de Logistics.';
+
+
+--
+-- Name: supplier_execution_group_members; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_execution_group_members (
+    supplier_execution_group_id uuid CONSTRAINT supplier_execution_group_me_supplier_execution_group_i_not_null NOT NULL,
+    supplier_execution_order_id uuid CONSTRAINT supplier_execution_group_me_supplier_execution_order_i_not_null NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: supplier_execution_groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_execution_groups (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    purchase_order_id uuid NOT NULL,
+    provider text NOT NULL,
+    supplier_parent_order_id text NOT NULL,
+    payment_ref text,
+    provider_status text,
+    payment_status text,
+    provider_facts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_supplier_execution_groups_facts_object CHECK ((jsonb_typeof(provider_facts) = 'object'::text)),
+    CONSTRAINT chk_supplier_execution_groups_parent_id CHECK ((btrim(supplier_parent_order_id) <> ''::text)),
+    CONSTRAINT chk_supplier_execution_groups_payment_ref CHECK (((payment_ref IS NULL) OR (btrim(payment_ref) <> ''::text))),
+    CONSTRAINT chk_supplier_execution_groups_provider CHECK ((btrim(provider) <> ''::text))
+);
+
+
+--
+-- Name: TABLE supplier_execution_groups; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.supplier_execution_groups IS 'Parent ou groupe natif provider pour une PO Komerce. Ex: un shipmentOrderId CJ est mappé vers supplier_parent_order_id.';
+
+
+--
+-- Name: supplier_execution_order_lines; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_execution_order_lines (
+    supplier_execution_order_id uuid CONSTRAINT supplier_execution_order_li_supplier_execution_order_i_not_null NOT NULL,
+    purchase_line_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_supplier_execution_order_lines_quantity CHECK ((quantity > 0))
+);
+
+
+--
+-- Name: supplier_execution_orders; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_execution_orders (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    purchase_order_id uuid NOT NULL,
+    provider text NOT NULL,
+    supplier_order_id text NOT NULL,
+    supplier_order_code text,
+    provider_status text,
+    provider_facts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_supplier_execution_orders_facts_object CHECK ((jsonb_typeof(provider_facts) = 'object'::text)),
+    CONSTRAINT chk_supplier_execution_orders_order_code CHECK (((supplier_order_code IS NULL) OR (btrim(supplier_order_code) <> ''::text))),
+    CONSTRAINT chk_supplier_execution_orders_provider CHECK ((btrim(provider) <> ''::text)),
+    CONSTRAINT chk_supplier_execution_orders_supplier_order_id CHECK ((btrim(supplier_order_id) <> ''::text))
+);
+
+
+--
+-- Name: TABLE supplier_execution_orders; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.supplier_execution_orders IS 'Sous-ordres natifs provider liés à une PO Komerce. Ex: CJ orderId/orderCode sont mappés vers supplier_order_id/supplier_order_code par l adapter.';
+
+
+--
+-- Name: supplier_execution_payment_proofs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_execution_payment_proofs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    supplier_payment_id uuid NOT NULL,
+    provider text NOT NULL,
+    proof_source text NOT NULL,
+    proof_ref text NOT NULL,
+    provider_order_id text,
+    payment_ref text,
+    observed_amount numeric(18,4) NOT NULL,
+    currency text NOT NULL,
+    debit_confirmed boolean DEFAULT false NOT NULL,
+    sandbox boolean DEFAULT false NOT NULL,
+    simulated boolean DEFAULT false NOT NULL,
+    occurred_at timestamp with time zone,
+    provider_facts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_supplier_payment_proofs_amount CHECK ((observed_amount > (0)::numeric)),
+    CONSTRAINT chk_supplier_payment_proofs_currency CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT chk_supplier_payment_proofs_facts_object CHECK ((jsonb_typeof(provider_facts) = 'object'::text)),
+    CONSTRAINT chk_supplier_payment_proofs_provider CHECK ((btrim(provider) <> ''::text)),
+    CONSTRAINT chk_supplier_payment_proofs_ref CHECK ((btrim(proof_ref) <> ''::text)),
+    CONSTRAINT chk_supplier_payment_proofs_source CHECK ((btrim(proof_source) <> ''::text))
+);
+
+
+--
+-- Name: TABLE supplier_execution_payment_proofs; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.supplier_execution_payment_proofs IS 'Preuves monétaires provider liées à supplier_execution_payments. Faits bornés uniquement; aucun payload brut ni secret.';
+
+
+--
+-- Name: supplier_execution_payments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_execution_payments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    purchase_order_id uuid NOT NULL,
+    provider text NOT NULL,
+    payment_execution_key text NOT NULL,
+    supplier_execution_order_id uuid,
+    supplier_execution_group_id uuid,
+    payment_ref text,
+    expected_amount numeric(18,4) NOT NULL,
+    observed_amount numeric(18,4),
+    currency text NOT NULL,
+    status text DEFAULT 'prepared'::text NOT NULL,
+    reconciliation_status text DEFAULT 'pending'::text NOT NULL,
+    real_debit_verified boolean DEFAULT false NOT NULL,
+    provider_facts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_supplier_execution_payments_currency CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT chk_supplier_execution_payments_expected_amount CHECK ((expected_amount > (0)::numeric)),
+    CONSTRAINT chk_supplier_execution_payments_facts_object CHECK ((jsonb_typeof(provider_facts) = 'object'::text)),
+    CONSTRAINT chk_supplier_execution_payments_key CHECK ((btrim(payment_execution_key) <> ''::text)),
+    CONSTRAINT chk_supplier_execution_payments_observed_amount CHECK (((observed_amount IS NULL) OR (observed_amount > (0)::numeric))),
+    CONSTRAINT chk_supplier_execution_payments_provider CHECK ((btrim(provider) <> ''::text)),
+    CONSTRAINT chk_supplier_execution_payments_real_debit CHECK (((real_debit_verified = false) OR (status = 'succeeded'::text))),
+    CONSTRAINT chk_supplier_execution_payments_reconciliation_status CHECK ((reconciliation_status = ANY (ARRAY['pending'::text, 'matched'::text, 'mismatched'::text, 'unverified'::text]))),
+    CONSTRAINT chk_supplier_execution_payments_ref CHECK (((payment_ref IS NULL) OR (btrim(payment_ref) <> ''::text))),
+    CONSTRAINT chk_supplier_execution_payments_status CHECK ((status = ANY (ARRAY['prepared'::text, 'requested'::text, 'succeeded'::text, 'ambiguous'::text, 'rejected'::text]))),
+    CONSTRAINT chk_supplier_execution_payments_target_xor CHECK ((((supplier_execution_order_id IS NOT NULL) AND (supplier_execution_group_id IS NULL)) OR ((supplier_execution_order_id IS NULL) AND (supplier_execution_group_id IS NOT NULL))))
+);
+
+
+--
+-- Name: TABLE supplier_execution_payments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.supplier_execution_payments IS 'Fait canonique de paiement fournisseur: cible provider, cle idempotente locale, montant attendu/observe, devise et rapprochement. Ne declenche aucun debit a lui seul.';
+
+
+--
+-- Name: COLUMN supplier_execution_payments.payment_execution_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.supplier_execution_payments.payment_execution_key IS 'Cle idempotente locale stable reutilisee lors des retries; unique dans le namespace du provider.';
+
+
+--
+-- Name: COLUMN supplier_execution_payments.real_debit_verified; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.supplier_execution_payments.real_debit_verified IS 'True uniquement lorsqu un debit monetaire reel a ete prouve; sandbox/simulatePay doit rester false.';
+
+
+--
 -- Name: supplier_oauth_connections; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6456,6 +9879,41 @@ COMMENT ON COLUMN public.supplier_oauth_connections.refresh_expires_at IS 'Provi
 
 
 --
+-- Name: supplier_payment_settlements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_payment_settlements (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    supplier_execution_payment_id uuid CONSTRAINT supplier_payment_settlement_supplier_execution_payment_not_null NOT NULL,
+    kind text NOT NULL,
+    amount_currency numeric(18,4) NOT NULL,
+    currency text NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    fees_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    proof_ref text NOT NULL,
+    idempotency_key text NOT NULL,
+    notes text,
+    recorded_by uuid,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_sps_amount_currency CHECK ((amount_currency > (0)::numeric)),
+    CONSTRAINT chk_sps_amount_kmf CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT chk_sps_currency CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT chk_sps_fees CHECK ((fees_kmf >= (0)::numeric)),
+    CONSTRAINT chk_sps_fees_only_on_payment CHECK (((kind = 'payment'::text) OR (fees_kmf = (0)::numeric))),
+    CONSTRAINT chk_sps_idem CHECK ((btrim(idempotency_key) <> ''::text)),
+    CONSTRAINT chk_sps_kind CHECK ((kind = ANY (ARRAY['payment'::text, 'goods_refund'::text, 'fee_refund'::text, 'other_refund'::text]))),
+    CONSTRAINT chk_sps_proof CHECK ((btrim(proof_ref) <> ''::text))
+);
+
+
+--
+-- Name: TABLE supplier_payment_settlements; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.supplier_payment_settlements IS 'Règlements fournisseur réellement débités en KMF (append-only) : payment / goods_refund / fee_refund / other_refund ; taux effectif calculé, jamais stocké.';
+
+
+--
 -- Name: suppliers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6482,7 +9940,7 @@ CREATE TABLE public.suppliers (
     secure_transport_fee_pct numeric(4,2) DEFAULT 0 NOT NULL,
     secure_transport_contact character varying(200),
     deleted_at timestamp with time zone,
-    CONSTRAINT suppliers_platform_check CHECK ((platform = ANY (ARRAY['noon'::text, 'amazon_uae'::text, 'aliexpress'::text, 'local'::text, 'whatsapp'::text])))
+    CONSTRAINT suppliers_platform_check CHECK ((platform = ANY (ARRAY['noon'::text, 'amazon_uae'::text, 'aliexpress'::text, 'local'::text, 'whatsapp'::text, 'allegro'::text, 'cj'::text])))
 );
 
 
@@ -6972,6 +10430,92 @@ CREATE VIEW public.v_parcel_trace AS
 
 
 --
+-- Name: v_purchase_line_market; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.v_purchase_line_market AS
+ SELECT pl.id AS line_id,
+    pl.purchase_order_id,
+    pl.order_item_id,
+    oi.order_id,
+    o.market_id,
+    pl.supplier_id,
+    pl.procurement_hub_ref,
+    pl.quantity,
+    public.purchase_line_effective_quantity(pl.cancelled_at, pl.settled_quantity, pl.confirmed_quantity, pl.quantity) AS effective_quantity,
+    (pl.cancelled_at IS NOT NULL) AS cancelled
+   FROM ((public.purchase_lines pl
+     JOIN public.order_items oi ON ((oi.id = pl.order_item_id)))
+     JOIN public.orders o ON ((o.id = oi.order_id)));
+
+
+--
+-- Name: VIEW v_purchase_line_market; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.v_purchase_line_market IS 'Marché d''origine de chaque ligne d''achat (order_item → order → market_id). Lecture seule : le marché ne se réassigne jamais via Purchasing et n''est pas une clé de regroupement des PO.';
+
+
+--
+-- Name: v_purchase_line_progress; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.v_purchase_line_progress AS
+ SELECT pl.id AS line_id,
+    pl.order_item_id,
+    oi.order_id,
+    pl.purchase_order_id,
+    po.status AS po_status,
+        CASE
+            WHEN (po.id IS NULL) THEN NULL::text
+            WHEN (po.order_id IS NULL) THEN 'grouped'::text
+            ELSE 'historical'::text
+        END AS po_shape,
+    public.purchase_line_effective_quantity(pl.cancelled_at, pl.settled_quantity, pl.confirmed_quantity, pl.quantity) AS effective_quantity,
+        CASE
+            WHEN (po.order_id IS NOT NULL) THEN COALESCE(po.received_qty, 0)
+            ELSE COALESCE(( SELECT (sum(p.quantity))::integer AS sum
+               FROM (public.hub_physical_unit_placements p
+                 JOIN public.hub_purchase_allocations a ON ((a.id = p.allocation_id)))
+              WHERE ((a.purchase_line_id = pl.id) AND (p.operation_type = 'RECEIVE'::text))), 0)
+        END AS received_quantity,
+    (pl.cancelled_at IS NOT NULL) AS cancelled,
+    pl.product_supplier_id,
+    po.hub_received_at,
+    pl.quantity
+   FROM ((public.purchase_lines pl
+     JOIN public.order_items oi ON ((oi.id = pl.order_item_id)))
+     LEFT JOIN public.purchase_orders po ON ((po.id = pl.purchase_order_id)))
+UNION ALL
+ SELECT NULL::uuid AS line_id,
+    po.order_item_id,
+    po.order_id,
+    po.id AS purchase_order_id,
+    po.status AS po_status,
+    'historical_no_line'::text AS po_shape,
+        CASE
+            WHEN (po.status = 'cancelled'::text) THEN 0
+            ELSE po.qty
+        END AS effective_quantity,
+    COALESCE(po.received_qty, 0) AS received_quantity,
+    (po.status = 'cancelled'::text) AS cancelled,
+    po.product_supplier_id,
+    po.hub_received_at,
+    po.qty AS quantity
+   FROM public.purchase_orders po
+  WHERE ((po.order_id IS NOT NULL) AND (NOT (EXISTS ( SELECT 1
+           FROM public.purchase_lines pl
+          WHERE (pl.purchase_order_id = po.id)))));
+
+
+--
+-- Name: VIEW v_purchase_line_progress; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.v_purchase_line_progress IS 'Progression d''achat par ligne (engagé effectif, reçu, annulé). Seule définition du reçu par ligne pour les lecteurs. Les PO historiques sans ligne (avant 225) sont exposées avec line_id NULL.';
+
+
+--
 -- Name: v_shipment_density; Type: VIEW; Schema: public; Owner: -
 --
 
@@ -7421,6 +10965,38 @@ ALTER TABLE ONLY public.cash_confirmation_controls
 
 
 --
+-- Name: cash_custody_losses cash_custody_losses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_losses
+    ADD CONSTRAINT cash_custody_losses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cash_custody_receipts cash_custody_receipts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_receipts
+    ADD CONSTRAINT cash_custody_receipts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cash_deposit_allocations cash_deposit_allocations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_deposit_allocations
+    ADD CONSTRAINT cash_deposit_allocations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cash_deposit_allocations cash_deposit_allocations_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_deposit_allocations
+    ADD CONSTRAINT cash_deposit_allocations_unique UNIQUE (deposit_id, collection_id);
+
+
+--
 -- Name: cash_deposits cash_deposits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7477,6 +11053,14 @@ ALTER TABLE ONLY public.catalog_field_overrides
 
 
 --
+-- Name: catalog_field_sync_state catalog_field_sync_state_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_field_sync_state
+    ADD CONSTRAINT catalog_field_sync_state_pkey PRIMARY KEY (subject_type, subject_id, field_name);
+
+
+--
 -- Name: catalog_global_access_grants catalog_global_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7506,6 +11090,46 @@ ALTER TABLE ONLY public.catalog_glossary
 
 ALTER TABLE ONLY public.catalog_media
     ADD CONSTRAINT catalog_media_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: catalog_publication_decision_audit catalog_publication_decision_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_publication_decision_audit
+    ADD CONSTRAINT catalog_publication_decision_audit_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: catalog_stock_sync_state catalog_stock_sync_state_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_stock_sync_state
+    ADD CONSTRAINT catalog_stock_sync_state_pkey PRIMARY KEY (product_sku_id);
+
+
+--
+-- Name: catalog_taxonomy_audit catalog_taxonomy_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_taxonomy_audit
+    ADD CONSTRAINT catalog_taxonomy_audit_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: catalog_terminology_reference catalog_terminology_reference_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_terminology_reference
+    ADD CONSTRAINT catalog_terminology_reference_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: catalog_terminology_reference catalog_terminology_reference_reference_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_terminology_reference
+    ADD CONSTRAINT catalog_terminology_reference_reference_key_key UNIQUE (reference_key);
 
 
 --
@@ -7789,6 +11413,62 @@ ALTER TABLE ONLY public.garment_models
 
 
 --
+-- Name: hub_custody_events hub_custody_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_custody_events
+    ADD CONSTRAINT hub_custody_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_physical_unit_placements hub_physical_unit_placements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_physical_unit_placements
+    ADD CONSTRAINT hub_physical_unit_placements_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_physical_units hub_physical_units_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_physical_units
+    ADD CONSTRAINT hub_physical_units_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_physical_units hub_physical_units_reference_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_physical_units
+    ADD CONSTRAINT hub_physical_units_reference_key UNIQUE (reference);
+
+
+--
+-- Name: hub_purchase_allocations hub_purchase_allocations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_purchase_allocations
+    ADD CONSTRAINT hub_purchase_allocations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: import_runtime_item_events import_runtime_item_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_runtime_item_events
+    ADD CONSTRAINT import_runtime_item_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: import_runtime_runs import_runtime_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_runtime_runs
+    ADD CONSTRAINT import_runtime_runs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: incidents incidents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7885,6 +11565,22 @@ ALTER TABLE ONLY public.market_cash_control_policies
 
 
 --
+-- Name: market_cash_destinations market_cash_destinations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_destinations
+    ADD CONSTRAINT market_cash_destinations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: market_cost_attributions market_cost_attributions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cost_attributions
+    ADD CONSTRAINT market_cost_attributions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: market_delegation_audit market_delegation_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7898,6 +11594,14 @@ ALTER TABLE ONLY public.market_delegation_audit
 
 ALTER TABLE ONLY public.market_operating_assignments
     ADD CONSTRAINT market_operating_assignments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: market_payment_accounts market_payment_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_payment_accounts
+    ADD CONSTRAINT market_payment_accounts_pkey PRIMARY KEY (id);
 
 
 --
@@ -8013,6 +11717,14 @@ ALTER TABLE ONLY public.operator_market_scopes
 
 
 --
+-- Name: operator_market_scopes operator_market_scopes_projection_or_revoked_chk; Type: CHECK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE public.operator_market_scopes
+    ADD CONSTRAINT operator_market_scopes_projection_or_revoked_chk CHECK (((projected_from_membership_id IS NOT NULL) OR (revoked_at IS NOT NULL))) NOT VALID;
+
+
+--
 -- Name: order_comments order_comments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8101,6 +11813,14 @@ ALTER TABLE ONLY public.otp_codes
 
 
 --
+-- Name: outbox_events outbox_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.outbox_events
+    ADD CONSTRAINT outbox_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: parcel_events parcel_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8154,6 +11874,14 @@ ALTER TABLE ONLY public.paypal_events_processed
 
 ALTER TABLE ONLY public.physical_offers
     ADD CONSTRAINT physical_offers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: physical_outcome_receipts physical_outcome_receipts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.physical_outcome_receipts
+    ADD CONSTRAINT physical_outcome_receipts_pkey PRIMARY KEY (id);
 
 
 --
@@ -8437,11 +12165,27 @@ ALTER TABLE ONLY public.products
 
 
 --
+-- Name: provider_credentials provider_credentials_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.provider_credentials
+    ADD CONSTRAINT provider_credentials_pkey PRIMARY KEY (credential_ref);
+
+
+--
 -- Name: providers providers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.providers
     ADD CONSTRAINT providers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: purchase_lines purchase_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_lines
+    ADD CONSTRAINT purchase_lines_pkey PRIMARY KEY (id);
 
 
 --
@@ -8669,6 +12413,30 @@ ALTER TABLE ONLY public.sourcing_candidates
 
 
 --
+-- Name: sourcing_canonical_entities sourcing_canonical_entities_id_grain_uniq; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_canonical_entities
+    ADD CONSTRAINT sourcing_canonical_entities_id_grain_uniq UNIQUE (canonical_entity_id, grain);
+
+
+--
+-- Name: sourcing_canonical_entities sourcing_canonical_entities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_canonical_entities
+    ADD CONSTRAINT sourcing_canonical_entities_pkey PRIMARY KEY (canonical_entity_id);
+
+
+--
+-- Name: sourcing_canonical_entity_refs sourcing_canonical_entity_refs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_canonical_entity_refs
+    ADD CONSTRAINT sourcing_canonical_entity_refs_pkey PRIMARY KEY (source_id, ref_kind, ref_value);
+
+
+--
 -- Name: sourcing_captures sourcing_captures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8677,11 +12445,51 @@ ALTER TABLE ONLY public.sourcing_captures
 
 
 --
+-- Name: sourcing_commercial_principals sourcing_commercial_principals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_commercial_principals
+    ADD CONSTRAINT sourcing_commercial_principals_pkey PRIMARY KEY (principal_id);
+
+
+--
 -- Name: sourcing_global_access_grants sourcing_global_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sourcing_global_access_grants
     ADD CONSTRAINT sourcing_global_access_grants_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: sourcing_identity_constraints sourcing_identity_constraints_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_identity_constraints
+    ADD CONSTRAINT sourcing_identity_constraints_pkey PRIMARY KEY (identity_constraint_id);
+
+
+--
+-- Name: sourcing_match_proposals sourcing_match_proposals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_match_proposals
+    ADD CONSTRAINT sourcing_match_proposals_pkey PRIMARY KEY (proposal_id);
+
+
+--
+-- Name: sourcing_match_proposals sourcing_match_proposals_run_candidate_uniq; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_match_proposals
+    ADD CONSTRAINT sourcing_match_proposals_run_candidate_uniq UNIQUE (proposal_run_id, observation_id, candidate_entity_id);
+
+
+--
+-- Name: sourcing_merge_policies sourcing_merge_policies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_merge_policies
+    ADD CONSTRAINT sourcing_merge_policies_pkey PRIMARY KEY (policy_id);
 
 
 --
@@ -8717,6 +12525,30 @@ ALTER TABLE ONLY public.sourcing_observations
 
 
 --
+-- Name: sourcing_provider_control_events sourcing_provider_control_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_provider_control_events
+    ADD CONSTRAINT sourcing_provider_control_events_pkey PRIMARY KEY (event_id);
+
+
+--
+-- Name: sourcing_resolution_bindings sourcing_resolution_bindings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_bindings
+    ADD CONSTRAINT sourcing_resolution_bindings_pkey PRIMARY KEY (binding_id);
+
+
+--
+-- Name: sourcing_resolution_decisions sourcing_resolution_decisions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_decisions
+    ADD CONSTRAINT sourcing_resolution_decisions_pkey PRIMARY KEY (decision_id);
+
+
+--
 -- Name: sourcing_source_execution_modes sourcing_source_execution_modes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8725,11 +12557,27 @@ ALTER TABLE ONLY public.sourcing_source_execution_modes
 
 
 --
+-- Name: sourcing_source_principal_refs sourcing_source_principal_refs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_source_principal_refs
+    ADD CONSTRAINT sourcing_source_principal_refs_pkey PRIMARY KEY (source_id, principal_ref);
+
+
+--
 -- Name: sourcing_source_provides sourcing_source_provides_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sourcing_source_provides
     ADD CONSTRAINT sourcing_source_provides_pkey PRIMARY KEY (source_id, layer);
+
+
+--
+-- Name: sourcing_source_requests sourcing_source_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_source_requests
+    ADD CONSTRAINT sourcing_source_requests_pkey PRIMARY KEY (request_id);
 
 
 --
@@ -8789,11 +12637,99 @@ ALTER TABLE ONLY public.supplier_catalog_sync_checkpoints
 
 
 --
+-- Name: supplier_commercial_category_mappings supplier_commercial_category_mappings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_commercial_category_mappings
+    ADD CONSTRAINT supplier_commercial_category_mappings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: supplier_commercial_category_mappings supplier_commercial_mapping_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_commercial_category_mappings
+    ADD CONSTRAINT supplier_commercial_mapping_unique UNIQUE (provider, source_category_path);
+
+
+--
+-- Name: supplier_execution_events supplier_execution_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_events
+    ADD CONSTRAINT supplier_execution_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: supplier_execution_fulfillments supplier_execution_fulfillments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_fulfillments
+    ADD CONSTRAINT supplier_execution_fulfillments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: supplier_execution_group_members supplier_execution_group_members_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_group_members
+    ADD CONSTRAINT supplier_execution_group_members_pkey PRIMARY KEY (supplier_execution_group_id, supplier_execution_order_id);
+
+
+--
+-- Name: supplier_execution_groups supplier_execution_groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_groups
+    ADD CONSTRAINT supplier_execution_groups_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: supplier_execution_order_lines supplier_execution_order_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_order_lines
+    ADD CONSTRAINT supplier_execution_order_lines_pkey PRIMARY KEY (supplier_execution_order_id, purchase_line_id);
+
+
+--
+-- Name: supplier_execution_orders supplier_execution_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_orders
+    ADD CONSTRAINT supplier_execution_orders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: supplier_execution_payment_proofs supplier_execution_payment_proofs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_payment_proofs
+    ADD CONSTRAINT supplier_execution_payment_proofs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: supplier_execution_payments supplier_execution_payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_payments
+    ADD CONSTRAINT supplier_execution_payments_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: supplier_oauth_connections supplier_oauth_connections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.supplier_oauth_connections
     ADD CONSTRAINT supplier_oauth_connections_pkey PRIMARY KEY (supplier_key);
+
+
+--
+-- Name: supplier_payment_settlements supplier_payment_settlements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_payment_settlements
+    ADD CONSTRAINT supplier_payment_settlements_pkey PRIMARY KEY (id);
 
 
 --
@@ -8845,11 +12781,43 @@ ALTER TABLE ONLY public.unsold_items
 
 
 --
+-- Name: import_runtime_item_events uq_import_runtime_item_events_run_seq; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_runtime_item_events
+    ADD CONSTRAINT uq_import_runtime_item_events_run_seq UNIQUE (run_id, seq);
+
+
+--
 -- Name: orders uq_orders_reference; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.orders
     ADD CONSTRAINT uq_orders_reference UNIQUE (reference);
+
+
+--
+-- Name: outbox_events uq_outbox_events_aggregate_sequence; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.outbox_events
+    ADD CONSTRAINT uq_outbox_events_aggregate_sequence UNIQUE (aggregate_type, aggregate_id, aggregate_sequence);
+
+
+--
+-- Name: physical_outcome_receipts uq_physical_outcome_receipts_event_consumer; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.physical_outcome_receipts
+    ADD CONSTRAINT uq_physical_outcome_receipts_event_consumer UNIQUE (event_id, consumer_key);
+
+
+--
+-- Name: supplier_payment_settlements uq_sps_payment_idempotency; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_payment_settlements
+    ADD CONSTRAINT uq_sps_payment_idempotency UNIQUE (supplier_execution_payment_id, idempotency_key);
 
 
 --
@@ -9006,6 +12974,13 @@ CREATE INDEX idx_benchmarks_importance ON public.pricing_benchmarks USING btree 
 
 
 --
+-- Name: idx_boutique_subcategories_customs_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_boutique_subcategories_customs_category ON public.boutique_subcategories USING btree (customs_category_key) WHERE (customs_category_key IS NOT NULL);
+
+
+--
 -- Name: idx_carriers_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9031,6 +13006,20 @@ CREATE INDEX idx_cart_shares_created ON public.cart_shares USING btree (created_
 --
 
 CREATE INDEX idx_cart_shares_token ON public.cart_shares USING btree (share_token);
+
+
+--
+-- Name: idx_cash_alloc_collection; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_alloc_collection ON public.cash_deposit_allocations USING btree (collection_id);
+
+
+--
+-- Name: idx_cash_alloc_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_alloc_market ON public.cash_deposit_allocations USING btree (market_id);
 
 
 --
@@ -9069,6 +13058,27 @@ CREATE INDEX idx_cash_confirmation_controls_relais ON public.cash_confirmation_c
 
 
 --
+-- Name: idx_cash_custody_losses_holder; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_custody_losses_holder ON public.cash_custody_losses USING btree (holder_id, market_id);
+
+
+--
+-- Name: idx_cash_custody_receipts_deposit; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_custody_receipts_deposit ON public.cash_custody_receipts USING btree (deposit_id, kind);
+
+
+--
+-- Name: idx_cash_custody_receipts_reverses; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_custody_receipts_reverses ON public.cash_custody_receipts USING btree (reverses_id) WHERE (reverses_id IS NOT NULL);
+
+
+--
 -- Name: idx_cash_dep_agent; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9076,10 +13086,31 @@ CREATE INDEX idx_cash_dep_agent ON public.cash_deposits USING btree (agent_id);
 
 
 --
+-- Name: idx_cash_dep_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_dep_market ON public.cash_deposits USING btree (market_id) WHERE (market_id IS NOT NULL);
+
+
+--
 -- Name: idx_cash_dep_period; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_cash_dep_period ON public.cash_deposits USING btree (period_start, period_end);
+
+
+--
+-- Name: idx_cash_dep_recipient; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_dep_recipient ON public.cash_deposits USING btree (recipient_user_id) WHERE (recipient_user_id IS NOT NULL);
+
+
+--
+-- Name: idx_cash_dep_regularizes; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_dep_regularizes ON public.cash_deposits USING btree (regularizes_deposit_id) WHERE (regularizes_deposit_id IS NOT NULL);
 
 
 --
@@ -9111,6 +13142,13 @@ CREATE INDEX idx_cash_recon_status ON public.cash_reconciliation USING btree (st
 
 
 --
+-- Name: idx_catalog_field_sync_state_observation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_catalog_field_sync_state_observation ON public.catalog_field_sync_state USING btree (last_observation_id, field_name);
+
+
+--
 -- Name: idx_catalog_global_access_user; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9129,6 +13167,69 @@ CREATE INDEX idx_catalog_media_product ON public.catalog_media USING btree (prod
 --
 
 CREATE INDEX idx_catalog_overrides_product ON public.catalog_field_overrides USING btree (product_id);
+
+
+--
+-- Name: idx_catalog_publication_decision_audit_actor; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_publication_decision_audit_actor ON public.catalog_publication_decision_audit USING btree (actor_user_id, created_at DESC) WHERE (actor_user_id IS NOT NULL);
+
+
+--
+-- Name: idx_catalog_publication_decision_audit_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_publication_decision_audit_product ON public.catalog_publication_decision_audit USING btree (product_id, created_at DESC);
+
+
+--
+-- Name: idx_catalog_stock_sync_state_observation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_catalog_stock_sync_state_observation ON public.catalog_stock_sync_state USING btree (last_observation_id);
+
+
+--
+-- Name: idx_catalog_taxonomy_audit_actor; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_taxonomy_audit_actor ON public.catalog_taxonomy_audit USING btree (actor_user_id, created_at DESC) WHERE (actor_user_id IS NOT NULL);
+
+
+--
+-- Name: idx_catalog_taxonomy_audit_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_taxonomy_audit_category ON public.catalog_taxonomy_audit USING btree (category_key, created_at DESC);
+
+
+--
+-- Name: idx_catalog_taxonomy_audit_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_taxonomy_audit_created ON public.catalog_taxonomy_audit USING btree (created_at DESC);
+
+
+--
+-- Name: idx_catalog_terminology_reference_domain; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_terminology_reference_domain ON public.catalog_terminology_reference USING btree (source, dataset_domain) WHERE (is_active = true);
+
+
+--
+-- Name: idx_catalog_terminology_reference_subject_en; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_terminology_reference_subject_en ON public.catalog_terminology_reference USING btree (subject_en) WHERE (is_active = true);
+
+
+--
+-- Name: idx_catalog_terminology_reference_term_en; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_terminology_reference_term_en ON public.catalog_terminology_reference USING btree (term_en_normalized) WHERE (is_active = true);
 
 
 --
@@ -9433,10 +13534,101 @@ CREATE INDEX idx_fabrics_available ON public.fabrics USING btree (fabric_type, s
 
 
 --
+-- Name: idx_hub_custody_events_operation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_custody_events_operation ON public.hub_custody_events USING btree (operation_id) WHERE (operation_id IS NOT NULL);
+
+
+--
+-- Name: idx_hub_custody_events_unit_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_custody_events_unit_time ON public.hub_custody_events USING btree (physical_unit_id, created_at, id);
+
+
+--
+-- Name: idx_hub_physical_units_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_physical_units_market ON public.hub_physical_units USING btree (market_id) WHERE (market_id IS NOT NULL);
+
+
+--
+-- Name: idx_hub_physical_units_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_physical_units_state ON public.hub_physical_units USING btree (state);
+
+
+--
+-- Name: idx_hub_placements_allocation_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_placements_allocation_active ON public.hub_physical_unit_placements USING btree (allocation_id, physical_unit_id) WHERE (removed_at IS NULL);
+
+
+--
+-- Name: idx_hub_placements_unit_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_placements_unit_active ON public.hub_physical_unit_placements USING btree (physical_unit_id, allocation_id) WHERE (removed_at IS NULL);
+
+
+--
+-- Name: idx_hub_purchase_allocations_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_purchase_allocations_market ON public.hub_purchase_allocations USING btree (market_id);
+
+
+--
+-- Name: idx_hub_purchase_allocations_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_purchase_allocations_order ON public.hub_purchase_allocations USING btree (order_id, order_item_id);
+
+
+--
+-- Name: idx_import_runtime_item_events_run_seq; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_import_runtime_item_events_run_seq ON public.import_runtime_item_events USING btree (run_id, seq DESC);
+
+
+--
+-- Name: idx_import_runtime_runs_import; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_import_runtime_runs_import ON public.import_runtime_runs USING btree (import_id);
+
+
+--
+-- Name: idx_import_runtime_runs_run_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_import_runtime_runs_run_ref ON public.import_runtime_runs USING btree (run_ref);
+
+
+--
+-- Name: idx_import_runtime_runs_started; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_import_runtime_runs_started ON public.import_runtime_runs USING btree (started_at DESC);
+
+
+--
 -- Name: idx_incidents_critical; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_incidents_critical ON public.incidents USING btree (severity, status) WHERE ((severity = ANY (ARRAY['high'::text, 'critical'::text])) AND (status = 'open'::text));
+
+
+--
+-- Name: idx_incidents_governance; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_incidents_governance ON public.incidents USING btree (origin_domain, resolution_class) WHERE (status = ANY (ARRAY['open'::text, 'investigating'::text]));
 
 
 --
@@ -9451,6 +13643,13 @@ CREATE INDEX idx_incidents_open ON public.incidents USING btree (status) WHERE (
 --
 
 CREATE INDEX idx_incidents_order ON public.order_incidents USING btree (order_id);
+
+
+--
+-- Name: idx_incidents_overdue; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_incidents_overdue ON public.incidents USING btree (due_at) WHERE ((status = ANY (ARRAY['open'::text, 'investigating'::text])) AND (due_at IS NOT NULL));
 
 
 --
@@ -9594,6 +13793,13 @@ CREATE INDEX idx_market_cash_control_policies_market ON public.market_cash_contr
 
 
 --
+-- Name: idx_market_cash_destinations_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_cash_destinations_market ON public.market_cash_destinations USING btree (market_id, status);
+
+
+--
 -- Name: idx_market_delegation_audit_assignment; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9601,10 +13807,24 @@ CREATE INDEX idx_market_delegation_audit_assignment ON public.market_delegation_
 
 
 --
+-- Name: idx_market_delegation_audit_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_delegation_audit_market ON public.market_delegation_audit USING btree (market_id, occurred_at DESC);
+
+
+--
 -- Name: idx_market_operating_assignments_market; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_market_operating_assignments_market ON public.market_operating_assignments USING btree (market_id, status, effective_from DESC);
+
+
+--
+-- Name: idx_market_payment_accounts_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_payment_accounts_market ON public.market_payment_accounts USING btree (market_id, status);
 
 
 --
@@ -9661,6 +13881,27 @@ CREATE INDEX idx_market_team_invitations_assignment ON public.market_team_invita
 --
 
 CREATE INDEX idx_market_team_invitations_expiry ON public.market_team_invitations USING btree (expires_at) WHERE (status = 'PENDING'::text);
+
+
+--
+-- Name: idx_mca_market_period; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_mca_market_period ON public.market_cost_attributions USING btree (market_id, recorded_at);
+
+
+--
+-- Name: idx_mca_reversal_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_mca_reversal_unique ON public.market_cost_attributions USING btree (reverses_id) WHERE (reverses_id IS NOT NULL);
+
+
+--
+-- Name: idx_mca_source_event; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_mca_source_event ON public.market_cost_attributions USING btree (source_event_id);
 
 
 --
@@ -10217,6 +14458,20 @@ CREATE INDEX idx_otp_phone_purpose_created ON public.otp_codes USING btree (phon
 
 
 --
+-- Name: idx_outbox_events_aggregate; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_outbox_events_aggregate ON public.outbox_events USING btree (aggregate_type, aggregate_id, created_at);
+
+
+--
+-- Name: idx_outbox_events_pending; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_outbox_events_pending ON public.outbox_events USING btree (created_at) WHERE (processed_at IS NULL);
+
+
+--
 -- Name: idx_parcel_events_created; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10630,6 +14885,13 @@ CREATE INDEX idx_product_variants_product ON public.product_variants USING btree
 
 
 --
+-- Name: idx_products_boutique_taxonomy; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_products_boutique_taxonomy ON public.products USING btree (boutique_category_key, boutique_subcategory_key) WHERE (boutique_category_key IS NOT NULL);
+
+
+--
 -- Name: idx_products_category; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -10683,6 +14945,34 @@ CREATE INDEX idx_products_sourcing_rail ON public.products USING btree (sourcing
 --
 
 CREATE INDEX idx_products_weight_kg ON public.products USING btree (weight_kg);
+
+
+--
+-- Name: idx_provider_credentials_provider; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_provider_credentials_provider ON public.provider_credentials USING btree (provider_key, status);
+
+
+--
+-- Name: idx_purchase_lines_open_group; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_purchase_lines_open_group ON public.purchase_lines USING btree (supplier_id, procurement_hub_ref) WHERE ((purchase_order_id IS NULL) AND (cancelled_at IS NULL));
+
+
+--
+-- Name: idx_purchase_lines_order_item; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_purchase_lines_order_item ON public.purchase_lines USING btree (order_item_id);
+
+
+--
+-- Name: idx_purchase_lines_purchase_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_purchase_lines_purchase_order ON public.purchase_lines USING btree (purchase_order_id) WHERE (purchase_order_id IS NOT NULL);
 
 
 --
@@ -11225,6 +15515,20 @@ CREATE INDEX idx_sourcing_global_access_active ON public.sourcing_global_access_
 
 
 --
+-- Name: idx_sourcing_sources_autopilot_enabled; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sourcing_sources_autopilot_enabled ON public.sourcing_sources USING btree (updated_at, source_id) WHERE ((autopilot_enabled = true) AND (status = 'active'::text) AND (acquisition = 'pull'::text) AND (continuity = 'recurring'::text));
+
+
+--
+-- Name: idx_sps_payment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sps_payment ON public.supplier_payment_settlements USING btree (supplier_execution_payment_id);
+
+
+--
 -- Name: idx_strategy_history_category; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11278,6 +15582,97 @@ CREATE UNIQUE INDEX idx_supplier_catalog_imports_import_ref ON public.supplier_c
 --
 
 CREATE INDEX idx_supplier_catalog_sync_pending ON public.supplier_catalog_sync_checkpoints USING btree (supplier_name, sync_key, completed, updated_at);
+
+
+--
+-- Name: idx_supplier_commercial_mapping_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_commercial_mapping_status ON public.supplier_commercial_category_mappings USING btree (provider, status);
+
+
+--
+-- Name: idx_supplier_execution_events_group; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_events_group ON public.supplier_execution_events USING btree (supplier_execution_group_id) WHERE (supplier_execution_group_id IS NOT NULL);
+
+
+--
+-- Name: idx_supplier_execution_events_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_events_order ON public.supplier_execution_events USING btree (supplier_execution_order_id) WHERE (supplier_execution_order_id IS NOT NULL);
+
+
+--
+-- Name: idx_supplier_execution_events_purchase_order_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_events_purchase_order_time ON public.supplier_execution_events USING btree (purchase_order_id, created_at);
+
+
+--
+-- Name: idx_supplier_execution_fulfillments_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_fulfillments_order ON public.supplier_execution_fulfillments USING btree (supplier_execution_order_id);
+
+
+--
+-- Name: idx_supplier_execution_group_members_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_group_members_order ON public.supplier_execution_group_members USING btree (supplier_execution_order_id);
+
+
+--
+-- Name: idx_supplier_execution_groups_purchase_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_groups_purchase_order ON public.supplier_execution_groups USING btree (purchase_order_id);
+
+
+--
+-- Name: idx_supplier_execution_order_lines_purchase_line; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_order_lines_purchase_line ON public.supplier_execution_order_lines USING btree (purchase_line_id);
+
+
+--
+-- Name: idx_supplier_execution_orders_purchase_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_orders_purchase_order ON public.supplier_execution_orders USING btree (purchase_order_id);
+
+
+--
+-- Name: idx_supplier_execution_payments_group; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_payments_group ON public.supplier_execution_payments USING btree (supplier_execution_group_id) WHERE (supplier_execution_group_id IS NOT NULL);
+
+
+--
+-- Name: idx_supplier_execution_payments_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_payments_order ON public.supplier_execution_payments USING btree (supplier_execution_order_id) WHERE (supplier_execution_order_id IS NOT NULL);
+
+
+--
+-- Name: idx_supplier_execution_payments_purchase_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_execution_payments_purchase_order ON public.supplier_execution_payments USING btree (purchase_order_id);
+
+
+--
+-- Name: idx_supplier_payment_proofs_payment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_payment_proofs_payment ON public.supplier_execution_payment_proofs USING btree (supplier_payment_id);
 
 
 --
@@ -11442,10 +15837,66 @@ CREATE UNIQUE INDEX shared_carts_one_open_per_organizer ON public.shared_carts U
 
 
 --
+-- Name: sourcing_canonical_entities_grain_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_canonical_entities_grain_status_idx ON public.sourcing_canonical_entities USING btree (grain, status);
+
+
+--
+-- Name: sourcing_canonical_entities_parent_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_canonical_entities_parent_idx ON public.sourcing_canonical_entities USING btree (parent_entity_id) WHERE (parent_entity_id IS NOT NULL);
+
+
+--
+-- Name: sourcing_canonical_entities_principal_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_canonical_entities_principal_idx ON public.sourcing_canonical_entities USING btree (principal_id) WHERE (principal_id IS NOT NULL);
+
+
+--
+-- Name: sourcing_canonical_entity_refs_entity_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_canonical_entity_refs_entity_idx ON public.sourcing_canonical_entity_refs USING btree (canonical_entity_id);
+
+
+--
 -- Name: sourcing_captures_source_started_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX sourcing_captures_source_started_idx ON public.sourcing_captures USING btree (source_id, started_at DESC);
+
+
+--
+-- Name: sourcing_identity_constraints_one_active_pair; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX sourcing_identity_constraints_one_active_pair ON public.sourcing_identity_constraints USING btree (grain, left_entity_id, right_entity_id) WHERE (active = true);
+
+
+--
+-- Name: sourcing_match_proposals_candidate_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_match_proposals_candidate_idx ON public.sourcing_match_proposals USING btree (candidate_entity_id, created_at DESC);
+
+
+--
+-- Name: sourcing_match_proposals_observation_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_match_proposals_observation_idx ON public.sourcing_match_proposals USING btree (observation_id, created_at DESC);
+
+
+--
+-- Name: sourcing_merge_policies_one_active_field; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX sourcing_merge_policies_one_active_field ON public.sourcing_merge_policies USING btree (grain, field_key) WHERE (active = true);
 
 
 --
@@ -11491,6 +15942,41 @@ CREATE INDEX sourcing_observations_source_ref_idx ON public.sourcing_observation
 
 
 --
+-- Name: sourcing_resolution_bindings_entity_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_resolution_bindings_entity_active_idx ON public.sourcing_resolution_bindings USING btree (canonical_entity_id) WHERE (ended_at IS NULL);
+
+
+--
+-- Name: sourcing_resolution_bindings_one_active_observation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX sourcing_resolution_bindings_one_active_observation ON public.sourcing_resolution_bindings USING btree (observation_id) WHERE (ended_at IS NULL);
+
+
+--
+-- Name: sourcing_resolution_decisions_entity_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_resolution_decisions_entity_idx ON public.sourcing_resolution_decisions USING btree (canonical_entity_id, created_at DESC) WHERE (canonical_entity_id IS NOT NULL);
+
+
+--
+-- Name: sourcing_resolution_decisions_observation_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_resolution_decisions_observation_idx ON public.sourcing_resolution_decisions USING btree (observation_id, created_at DESC) WHERE (observation_id IS NOT NULL);
+
+
+--
+-- Name: sourcing_source_principal_refs_principal_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcing_source_principal_refs_principal_idx ON public.sourcing_source_principal_refs USING btree (principal_id);
+
+
+--
 -- Name: uniq_active_assignment_ceiling_capability; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11502,6 +15988,13 @@ CREATE UNIQUE INDEX uniq_active_assignment_ceiling_capability ON public.assignme
 --
 
 CREATE UNIQUE INDEX uniq_active_assignment_membership ON public.assignment_memberships USING btree (assignment_id, user_id) WHERE (status = 'ACTIVE'::text);
+
+
+--
+-- Name: uniq_active_assignment_operating_lead; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_active_assignment_operating_lead ON public.assignment_memberships USING btree (assignment_id) WHERE ((status = 'ACTIVE'::text) AND (is_operating_lead = true));
 
 
 --
@@ -11540,6 +16033,20 @@ CREATE UNIQUE INDEX uniq_active_operator_scope ON public.operator_market_scopes 
 
 
 --
+-- Name: uniq_cash_custody_receipts_control; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_cash_custody_receipts_control ON public.cash_custody_receipts USING btree (deposit_id) WHERE (kind = 'CONTROL'::text);
+
+
+--
+-- Name: uniq_cash_custody_receipts_resolution; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_cash_custody_receipts_resolution ON public.cash_custody_receipts USING btree (deposit_id) WHERE (kind = ANY (ARRAY['RECEIVED'::text, 'REFUSED'::text]));
+
+
+--
 -- Name: uniq_cash_deposits_deposit_ref; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11554,10 +16061,31 @@ CREATE UNIQUE INDEX uniq_current_ceiling_template ON public.ceiling_templates US
 
 
 --
+-- Name: uniq_market_cash_destinations_live; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_market_cash_destinations_live ON public.market_cash_destinations USING btree (market_id, kind, account_ref) WHERE (status = ANY (ARRAY['PROPOSED'::text, 'ACTIVE'::text, 'SUSPENDED'::text]));
+
+
+--
+-- Name: uniq_market_payment_accounts_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_market_payment_accounts_active ON public.market_payment_accounts USING btree (market_id, provider, currency) WHERE (status = 'ACTIVE'::text);
+
+
+--
 -- Name: uniq_pending_market_team_invitation; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX uniq_pending_market_team_invitation ON public.market_team_invitations USING btree (assignment_id, email_normalized) WHERE (status = 'PENDING'::text);
+
+
+--
+-- Name: uniq_pending_market_team_invitation_phone; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_pending_market_team_invitation_phone ON public.market_team_invitations USING btree (assignment_id, phone_e164) WHERE ((status = 'PENDING'::text) AND (phone_e164 IS NOT NULL));
 
 
 --
@@ -11603,6 +16131,76 @@ CREATE UNIQUE INDEX uq_products_sku ON public.products USING btree (sku) WHERE (
 
 
 --
+-- Name: uq_sourcing_source_requests_provider; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_sourcing_source_requests_provider ON public.sourcing_source_requests USING btree (lower(btrim(provider_name)));
+
+
+--
+-- Name: uq_supplier_execution_fulfillments_evidence; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_supplier_execution_fulfillments_evidence ON public.supplier_execution_fulfillments USING btree (provider, evidence_source, evidence_ref) WHERE ((evidence_source IS NOT NULL) AND (evidence_ref IS NOT NULL));
+
+
+--
+-- Name: uq_supplier_execution_fulfillments_execution_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_supplier_execution_fulfillments_execution_key ON public.supplier_execution_fulfillments USING btree (provider, fulfillment_execution_key);
+
+
+--
+-- Name: uq_supplier_execution_groups_provider_parent; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_supplier_execution_groups_provider_parent ON public.supplier_execution_groups USING btree (provider, supplier_parent_order_id);
+
+
+--
+-- Name: uq_supplier_execution_groups_provider_payment_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_supplier_execution_groups_provider_payment_ref ON public.supplier_execution_groups USING btree (provider, payment_ref) WHERE (payment_ref IS NOT NULL);
+
+
+--
+-- Name: uq_supplier_execution_orders_provider_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_supplier_execution_orders_provider_code ON public.supplier_execution_orders USING btree (provider, supplier_order_code) WHERE (supplier_order_code IS NOT NULL);
+
+
+--
+-- Name: uq_supplier_execution_orders_provider_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_supplier_execution_orders_provider_order ON public.supplier_execution_orders USING btree (provider, supplier_order_id);
+
+
+--
+-- Name: uq_supplier_execution_payments_provider_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_supplier_execution_payments_provider_key ON public.supplier_execution_payments USING btree (provider, payment_execution_key);
+
+
+--
+-- Name: uq_supplier_execution_payments_provider_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_supplier_execution_payments_provider_ref ON public.supplier_execution_payments USING btree (provider, payment_ref) WHERE (payment_ref IS NOT NULL);
+
+
+--
+-- Name: uq_supplier_payment_proofs_native_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_supplier_payment_proofs_native_ref ON public.supplier_execution_payment_proofs USING btree (provider, proof_source, proof_ref);
+
+
+--
 -- Name: uq_users_email; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11614,6 +16212,20 @@ CREATE UNIQUE INDEX uq_users_email ON public.users USING btree (email) WHERE (em
 --
 
 CREATE UNIQUE INDEX ux_catalog_media_source_identity ON public.catalog_media USING btree (product_id, source_media_id) WHERE (source_media_id IS NOT NULL);
+
+
+--
+-- Name: ux_hub_purchase_allocations_line; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_hub_purchase_allocations_line ON public.hub_purchase_allocations USING btree (purchase_line_id) WHERE (purchase_line_id IS NOT NULL);
+
+
+--
+-- Name: ux_hub_purchase_allocations_po_historical; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_hub_purchase_allocations_po_historical ON public.hub_purchase_allocations USING btree (purchase_order_id) WHERE (purchase_line_id IS NULL);
 
 
 --
@@ -11687,10 +16299,52 @@ CREATE UNIQUE INDEX ux_purchase_orders_order_item_supplier_active ON public.purc
 
 
 --
+-- Name: sourcing_canonical_entities sourcing_canonical_entities_hierarchy_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER sourcing_canonical_entities_hierarchy_guard AFTER INSERT OR UPDATE ON public.sourcing_canonical_entities DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.sourcing_check_canonical_hierarchy();
+
+
+--
+-- Name: sourcing_match_proposals sourcing_match_proposals_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER sourcing_match_proposals_append_only BEFORE DELETE OR UPDATE ON public.sourcing_match_proposals FOR EACH ROW EXECUTE FUNCTION public.sourcing_forbid_resolution_audit_mutation();
+
+
+--
+-- Name: sourcing_match_proposals sourcing_match_proposals_grain_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER sourcing_match_proposals_grain_guard AFTER INSERT OR UPDATE ON public.sourcing_match_proposals DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.sourcing_check_proposal_grain();
+
+
+--
 -- Name: sourcing_observations sourcing_observations_append_only; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER sourcing_observations_append_only BEFORE DELETE OR UPDATE ON public.sourcing_observations FOR EACH ROW EXECUTE FUNCTION public.sourcing_forbid_observation_mutation();
+
+
+--
+-- Name: sourcing_resolution_bindings sourcing_resolution_bindings_grain_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER sourcing_resolution_bindings_grain_guard AFTER INSERT OR UPDATE ON public.sourcing_resolution_bindings DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.sourcing_check_binding_grain();
+
+
+--
+-- Name: sourcing_resolution_decisions sourcing_resolution_decisions_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER sourcing_resolution_decisions_append_only BEFORE DELETE OR UPDATE ON public.sourcing_resolution_decisions FOR EACH ROW EXECUTE FUNCTION public.sourcing_forbid_resolution_audit_mutation();
+
+
+--
+-- Name: sourcing_resolution_decisions sourcing_resolution_decisions_grain_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER sourcing_resolution_decisions_grain_guard AFTER INSERT OR UPDATE ON public.sourcing_resolution_decisions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.sourcing_check_decision_grain();
 
 
 --
@@ -11708,10 +16362,73 @@ CREATE CONSTRAINT TRIGGER sourcing_source_provides_units_guard AFTER DELETE OR U
 
 
 --
+-- Name: assignment_capability_ceiling trg_assignment_ceiling_amount_limit; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_assignment_ceiling_amount_limit BEFORE INSERT OR UPDATE OF capability, limit_amount ON public.assignment_capability_ceiling FOR EACH ROW EXECUTE FUNCTION public.enforce_assignment_ceiling_amount_limit();
+
+
+--
 -- Name: assignment_capability_ceiling trg_assignment_ceiling_capability_guard; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_assignment_ceiling_capability_guard BEFORE INSERT OR UPDATE OF capability, assignment_id ON public.assignment_capability_ceiling FOR EACH ROW EXECUTE FUNCTION public.enforce_assignment_ceiling_capability();
+
+
+--
+-- Name: cash_deposit_allocations trg_cash_alloc_enforce; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_alloc_enforce AFTER INSERT ON public.cash_deposit_allocations FOR EACH ROW EXECUTE FUNCTION public.cash_alloc_enforce();
+
+
+--
+-- Name: cash_custody_losses trg_cash_custody_losses_after; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_custody_losses_after AFTER INSERT ON public.cash_custody_losses FOR EACH ROW EXECUTE FUNCTION public.cash_custody_losses_after();
+
+
+--
+-- Name: cash_custody_losses trg_cash_custody_losses_enforce; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_custody_losses_enforce BEFORE INSERT ON public.cash_custody_losses FOR EACH ROW EXECUTE FUNCTION public.cash_custody_losses_enforce();
+
+
+--
+-- Name: cash_custody_receipts trg_cash_custody_receipts_after; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_custody_receipts_after AFTER INSERT ON public.cash_custody_receipts FOR EACH ROW EXECUTE FUNCTION public.cash_custody_receipts_after();
+
+
+--
+-- Name: cash_custody_receipts trg_cash_custody_receipts_enforce; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_custody_receipts_enforce BEFORE INSERT ON public.cash_custody_receipts FOR EACH ROW EXECUTE FUNCTION public.cash_custody_receipts_enforce();
+
+
+--
+-- Name: cash_deposits trg_cash_deposits_derive_market; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_deposits_derive_market BEFORE INSERT ON public.cash_deposits FOR EACH ROW EXECUTE FUNCTION public.cash_deposits_derive_market();
+
+
+--
+-- Name: cash_deposits trg_cash_deposits_guard_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_deposits_guard_update BEFORE UPDATE ON public.cash_deposits FOR EACH ROW EXECUTE FUNCTION public.cash_deposits_guard_update();
+
+
+--
+-- Name: cash_deposits trg_cash_deposits_zcustody_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_deposits_zcustody_guard BEFORE INSERT ON public.cash_deposits FOR EACH ROW EXECUTE FUNCTION public.cash_deposits_custody_guard();
 
 
 --
@@ -11806,6 +16523,69 @@ CREATE TRIGGER trg_fabrics_updated BEFORE UPDATE ON public.fabrics FOR EACH ROW 
 
 
 --
+-- Name: hub_purchase_allocations trg_hub_allocation_purchase_line; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_allocation_purchase_line BEFORE INSERT ON public.hub_purchase_allocations FOR EACH ROW EXECUTE FUNCTION public.hub_guard_allocation_purchase_line();
+
+
+--
+-- Name: hub_custody_events trg_hub_custody_event_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_custody_event_append_only BEFORE DELETE OR UPDATE ON public.hub_custody_events FOR EACH ROW EXECUTE FUNCTION public.hub_reject_custody_event_mutation();
+
+
+--
+-- Name: hub_physical_units trg_hub_physical_unit_insert_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_physical_unit_insert_guard BEFORE INSERT ON public.hub_physical_units FOR EACH ROW EXECUTE FUNCTION public.hub_guard_physical_unit_insert();
+
+
+--
+-- Name: hub_physical_units trg_hub_physical_unit_update_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_physical_unit_update_guard BEFORE UPDATE ON public.hub_physical_units FOR EACH ROW EXECUTE FUNCTION public.hub_guard_physical_unit_update();
+
+
+--
+-- Name: hub_physical_unit_placements trg_hub_placement_insert_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_placement_insert_guard BEFORE INSERT ON public.hub_physical_unit_placements FOR EACH ROW EXECUTE FUNCTION public.hub_guard_placement_insert();
+
+
+--
+-- Name: hub_physical_unit_placements trg_hub_placement_no_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_placement_no_delete BEFORE DELETE ON public.hub_physical_unit_placements FOR EACH ROW EXECUTE FUNCTION public.hub_reject_placement_delete();
+
+
+--
+-- Name: hub_physical_unit_placements trg_hub_placement_update_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_placement_update_guard BEFORE UPDATE ON public.hub_physical_unit_placements FOR EACH ROW EXECUTE FUNCTION public.hub_guard_placement_update();
+
+
+--
+-- Name: hub_purchase_allocations trg_hub_purchase_allocation_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_purchase_allocation_immutable BEFORE DELETE OR UPDATE ON public.hub_purchase_allocations FOR EACH ROW EXECUTE FUNCTION public.hub_reject_purchase_allocation_mutation();
+
+
+--
+-- Name: hub_physical_units trg_hub_quarantine_incident_required; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER trg_hub_quarantine_incident_required AFTER INSERT OR UPDATE OF state, outcome_type ON public.hub_physical_units DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.hub_require_quarantine_incident();
+
+
+--
 -- Name: incidents trg_incidents_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -11813,10 +16593,52 @@ CREATE TRIGGER trg_incidents_updated BEFORE UPDATE ON public.incidents FOR EACH 
 
 
 --
+-- Name: market_cash_destinations trg_market_cash_destinations_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_market_cash_destinations_guard BEFORE INSERT OR UPDATE ON public.market_cash_destinations FOR EACH ROW EXECUTE FUNCTION public.market_cash_destinations_guard();
+
+
+--
+-- Name: market_delegation_audit trg_market_delegation_audit_market_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_market_delegation_audit_market_guard BEFORE INSERT OR UPDATE OF market_id, assignment_id, membership_id ON public.market_delegation_audit FOR EACH ROW EXECUTE FUNCTION public.enforce_market_delegation_audit_market();
+
+
+--
 -- Name: market_settlements trg_market_settlement_invariants; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_market_settlement_invariants BEFORE INSERT OR UPDATE ON public.market_settlements FOR EACH ROW EXECUTE FUNCTION public.enforce_market_settlement_invariants();
+
+
+--
+-- Name: market_cost_attributions trg_mca_conservation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER trg_mca_conservation AFTER INSERT ON public.market_cost_attributions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.market_cost_attributions_check_conservation();
+
+
+--
+-- Name: market_cost_attributions trg_mca_guard_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_mca_guard_immutable BEFORE DELETE OR UPDATE ON public.market_cost_attributions FOR EACH ROW EXECUTE FUNCTION public.market_cost_attributions_guard_immutable();
+
+
+--
+-- Name: market_cost_attributions trg_mca_guard_reversal_target; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_mca_guard_reversal_target BEFORE INSERT ON public.market_cost_attributions FOR EACH ROW EXECUTE FUNCTION public.market_cost_attributions_guard_reversal_target();
+
+
+--
+-- Name: membership_capabilities trg_membership_capability_amount_limit; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_membership_capability_amount_limit BEFORE INSERT OR UPDATE OF capability, membership_id, limit_amount ON public.membership_capabilities FOR EACH ROW EXECUTE FUNCTION public.enforce_membership_capability_amount_limit();
 
 
 --
@@ -11838,6 +16660,20 @@ CREATE TRIGGER trg_no_delete_parcels BEFORE DELETE ON public.parcels FOR EACH RO
 --
 
 CREATE TRIGGER trg_order_items_fulfillment_source_immutable BEFORE UPDATE OF fulfillment_source ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.prevent_order_item_fulfillment_source_change();
+
+
+--
+-- Name: orders trg_orders_market_id_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_orders_market_id_immutable BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.prevent_orders_market_id_mutation();
+
+
+--
+-- Name: orders trg_orders_relais_market_consistency; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_orders_relais_market_consistency BEFORE INSERT OR UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.prevent_orders_relais_market_mismatch();
 
 
 --
@@ -11869,6 +16705,55 @@ CREATE TRIGGER trg_partners_updated BEFORE UPDATE ON public.partners FOR EACH RO
 
 
 --
+-- Name: cash_deposit_allocations trg_prevent_cash_alloc_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_cash_alloc_delete BEFORE DELETE ON public.cash_deposit_allocations FOR EACH ROW EXECUTE FUNCTION public.cash_ledger_prevent_mutation();
+
+
+--
+-- Name: cash_deposit_allocations trg_prevent_cash_alloc_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_cash_alloc_update BEFORE UPDATE ON public.cash_deposit_allocations FOR EACH ROW EXECUTE FUNCTION public.cash_ledger_prevent_mutation();
+
+
+--
+-- Name: cash_custody_losses trg_prevent_cash_custody_losses_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_cash_custody_losses_delete BEFORE DELETE ON public.cash_custody_losses FOR EACH ROW EXECUTE FUNCTION public.cash_ledger_prevent_mutation();
+
+
+--
+-- Name: cash_custody_losses trg_prevent_cash_custody_losses_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_cash_custody_losses_update BEFORE UPDATE ON public.cash_custody_losses FOR EACH ROW EXECUTE FUNCTION public.cash_ledger_prevent_mutation();
+
+
+--
+-- Name: cash_custody_receipts trg_prevent_cash_custody_receipts_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_cash_custody_receipts_delete BEFORE DELETE ON public.cash_custody_receipts FOR EACH ROW EXECUTE FUNCTION public.cash_ledger_prevent_mutation();
+
+
+--
+-- Name: cash_custody_receipts trg_prevent_cash_custody_receipts_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_cash_custody_receipts_update BEFORE UPDATE ON public.cash_custody_receipts FOR EACH ROW EXECUTE FUNCTION public.cash_ledger_prevent_mutation();
+
+
+--
+-- Name: cash_deposits trg_prevent_cash_deposits_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_cash_deposits_delete BEFORE DELETE ON public.cash_deposits FOR EACH ROW EXECUTE FUNCTION public.cash_ledger_prevent_mutation();
+
+
+--
 -- Name: economic_risk_cost_events trg_prevent_economic_risk_cost_event_mutation; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -11897,6 +16782,13 @@ CREATE TRIGGER trg_prevent_incident_delete BEFORE DELETE ON public.incidents FOR
 
 
 --
+-- Name: market_cash_destinations trg_prevent_market_cash_destinations_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_market_cash_destinations_delete BEFORE DELETE ON public.market_cash_destinations FOR EACH ROW EXECUTE FUNCTION public.cash_ledger_prevent_mutation();
+
+
+--
 -- Name: market_settlements trg_prevent_market_settlement_delete; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -11908,6 +16800,13 @@ CREATE TRIGGER trg_prevent_market_settlement_delete BEFORE DELETE ON public.mark
 --
 
 CREATE TRIGGER trg_prevent_market_settlement_event_mutation BEFORE DELETE OR UPDATE ON public.market_settlement_events FOR EACH ROW EXECUTE FUNCTION public.prevent_market_settlement_event_mutation();
+
+
+--
+-- Name: outbox_events trg_prevent_outbox_event_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_prevent_outbox_event_delete BEFORE DELETE ON public.outbox_events FOR EACH ROW EXECUTE FUNCTION public.prevent_outbox_event_delete();
 
 
 --
@@ -11974,6 +16873,55 @@ CREATE TRIGGER trg_products_updated BEFORE UPDATE ON public.products FOR EACH RO
 
 
 --
+-- Name: purchase_lines trg_purchase_lines_a_groupable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_lines_a_groupable BEFORE INSERT OR UPDATE OF purchase_order_id ON public.purchase_lines FOR EACH ROW EXECUTE FUNCTION public.purchase_lines_guard_groupable();
+
+
+--
+-- Name: purchase_lines trg_purchase_lines_guard_attachment; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_lines_guard_attachment BEFORE INSERT OR UPDATE ON public.purchase_lines FOR EACH ROW EXECUTE FUNCTION public.purchase_lines_guard_attachment();
+
+
+--
+-- Name: purchase_lines trg_purchase_lines_guard_commitment; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_lines_guard_commitment BEFORE INSERT OR UPDATE ON public.purchase_lines FOR EACH ROW EXECUTE FUNCTION public.purchase_lines_guard_commitment();
+
+
+--
+-- Name: purchase_lines trg_purchase_lines_guard_delete; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_lines_guard_delete BEFORE DELETE ON public.purchase_lines FOR EACH ROW EXECUTE FUNCTION public.purchase_lines_guard_delete();
+
+
+--
+-- Name: purchase_lines trg_purchase_lines_guard_freeze; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_lines_guard_freeze BEFORE UPDATE ON public.purchase_lines FOR EACH ROW EXECUTE FUNCTION public.purchase_lines_guard_freeze();
+
+
+--
+-- Name: purchase_orders trg_purchase_orders_cancel_lines; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_orders_cancel_lines AFTER UPDATE OF status ON public.purchase_orders FOR EACH ROW WHEN (((new.status = 'cancelled'::text) AND (old.status IS DISTINCT FROM 'cancelled'::text))) EXECUTE FUNCTION public.purchase_orders_cancel_lines();
+
+
+--
+-- Name: relais trg_relais_market_id_drift_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_relais_market_id_drift_guard BEFORE UPDATE ON public.relais FOR EACH ROW EXECUTE FUNCTION public.prevent_referenced_relais_market_drift();
+
+
+--
 -- Name: risk_provisions trg_risk_provisions_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -11999,6 +16947,27 @@ CREATE TRIGGER trg_shared_carts_updated BEFORE UPDATE ON public.shared_carts FOR
 --
 
 CREATE TRIGGER trg_shipments_updated BEFORE UPDATE ON public.shipments FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: supplier_payment_settlements trg_sps_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_sps_immutable BEFORE DELETE OR UPDATE ON public.supplier_payment_settlements FOR EACH ROW EXECUTE FUNCTION public.supplier_payment_settlements_immutable();
+
+
+--
+-- Name: supplier_execution_group_members trg_supplier_execution_group_members_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_supplier_execution_group_members_guard BEFORE INSERT OR UPDATE ON public.supplier_execution_group_members FOR EACH ROW EXECUTE FUNCTION public.supplier_execution_group_members_guard();
+
+
+--
+-- Name: supplier_execution_payments trg_supplier_execution_payments_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_supplier_execution_payments_guard BEFORE INSERT OR UPDATE OF purchase_order_id, provider, supplier_execution_order_id, supplier_execution_group_id ON public.supplier_execution_payments FOR EACH ROW EXECUTE FUNCTION public.supplier_execution_payments_guard();
 
 
 --
@@ -12128,6 +17097,14 @@ ALTER TABLE ONLY public.boutique_subcategories
 
 
 --
+-- Name: boutique_subcategories boutique_subcategories_customs_category_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.boutique_subcategories
+    ADD CONSTRAINT boutique_subcategories_customs_category_fk FOREIGN KEY (customs_category_key) REFERENCES public.customs_categories(key) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: business_rules_history business_rules_history_changed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12208,6 +17185,134 @@ ALTER TABLE ONLY public.cash_confirmation_controls
 
 
 --
+-- Name: cash_custody_losses cash_custody_losses_decided_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_losses
+    ADD CONSTRAINT cash_custody_losses_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES public.users(id);
+
+
+--
+-- Name: cash_custody_losses cash_custody_losses_deposit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_losses
+    ADD CONSTRAINT cash_custody_losses_deposit_id_fkey FOREIGN KEY (deposit_id) REFERENCES public.cash_deposits(id);
+
+
+--
+-- Name: cash_custody_losses cash_custody_losses_holder_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_losses
+    ADD CONSTRAINT cash_custody_losses_holder_id_fkey FOREIGN KEY (holder_id) REFERENCES public.users(id);
+
+
+--
+-- Name: cash_custody_losses cash_custody_losses_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_losses
+    ADD CONSTRAINT cash_custody_losses_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: cash_custody_losses cash_custody_losses_reverses_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_losses
+    ADD CONSTRAINT cash_custody_losses_reverses_id_fkey FOREIGN KEY (reverses_id) REFERENCES public.cash_custody_losses(id);
+
+
+--
+-- Name: cash_custody_receipts cash_custody_receipts_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_receipts
+    ADD CONSTRAINT cash_custody_receipts_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.users(id);
+
+
+--
+-- Name: cash_custody_receipts cash_custody_receipts_deposit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_receipts
+    ADD CONSTRAINT cash_custody_receipts_deposit_id_fkey FOREIGN KEY (deposit_id) REFERENCES public.cash_deposits(id);
+
+
+--
+-- Name: cash_custody_receipts cash_custody_receipts_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_receipts
+    ADD CONSTRAINT cash_custody_receipts_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: cash_custody_receipts cash_custody_receipts_reverses_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_receipts
+    ADD CONSTRAINT cash_custody_receipts_reverses_id_fkey FOREIGN KEY (reverses_id) REFERENCES public.cash_custody_receipts(id);
+
+
+--
+-- Name: cash_deposit_allocations cash_deposit_allocations_collection_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_deposit_allocations
+    ADD CONSTRAINT cash_deposit_allocations_collection_id_fkey FOREIGN KEY (collection_id) REFERENCES public.cash_collections(id);
+
+
+--
+-- Name: cash_deposit_allocations cash_deposit_allocations_deposit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_deposit_allocations
+    ADD CONSTRAINT cash_deposit_allocations_deposit_id_fkey FOREIGN KEY (deposit_id) REFERENCES public.cash_deposits(id);
+
+
+--
+-- Name: cash_deposit_allocations cash_deposit_allocations_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_deposit_allocations
+    ADD CONSTRAINT cash_deposit_allocations_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: cash_deposits cash_deposits_destination_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_deposits
+    ADD CONSTRAINT cash_deposits_destination_id_fkey FOREIGN KEY (destination_id) REFERENCES public.market_cash_destinations(id);
+
+
+--
+-- Name: cash_deposits cash_deposits_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_deposits
+    ADD CONSTRAINT cash_deposits_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: cash_deposits cash_deposits_recipient_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_deposits
+    ADD CONSTRAINT cash_deposits_recipient_user_id_fkey FOREIGN KEY (recipient_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: cash_deposits cash_deposits_regularizes_deposit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_deposits
+    ADD CONSTRAINT cash_deposits_regularizes_deposit_id_fkey FOREIGN KEY (regularizes_deposit_id) REFERENCES public.cash_deposits(id);
+
+
+--
 -- Name: catalog_enrichment_runs catalog_enrichment_runs_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12253,6 +17358,38 @@ ALTER TABLE ONLY public.catalog_global_access_grants
 
 ALTER TABLE ONLY public.catalog_media
     ADD CONSTRAINT catalog_media_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: catalog_publication_decision_audit catalog_publication_decision_audit_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_publication_decision_audit
+    ADD CONSTRAINT catalog_publication_decision_audit_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: catalog_publication_decision_audit catalog_publication_decision_audit_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_publication_decision_audit
+    ADD CONSTRAINT catalog_publication_decision_audit_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
+
+
+--
+-- Name: catalog_stock_sync_state catalog_stock_sync_state_product_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_stock_sync_state
+    ADD CONSTRAINT catalog_stock_sync_state_product_sku_id_fkey FOREIGN KEY (product_sku_id) REFERENCES public.product_skus(id) ON DELETE CASCADE;
+
+
+--
+-- Name: catalog_taxonomy_audit catalog_taxonomy_audit_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_taxonomy_audit
+    ADD CONSTRAINT catalog_taxonomy_audit_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
@@ -12608,6 +17745,158 @@ ALTER TABLE ONLY public.economic_structure_cost_events
 
 
 --
+-- Name: hub_custody_events hub_custody_events_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_custody_events
+    ADD CONSTRAINT hub_custody_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: hub_custody_events hub_custody_events_allocation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_custody_events
+    ADD CONSTRAINT hub_custody_events_allocation_id_fkey FOREIGN KEY (allocation_id) REFERENCES public.hub_purchase_allocations(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_custody_events hub_custody_events_physical_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_custody_events
+    ADD CONSTRAINT hub_custody_events_physical_unit_id_fkey FOREIGN KEY (physical_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_physical_unit_placements hub_physical_unit_placements_allocation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_physical_unit_placements
+    ADD CONSTRAINT hub_physical_unit_placements_allocation_id_fkey FOREIGN KEY (allocation_id) REFERENCES public.hub_purchase_allocations(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_physical_unit_placements hub_physical_unit_placements_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_physical_unit_placements
+    ADD CONSTRAINT hub_physical_unit_placements_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: hub_physical_unit_placements hub_physical_unit_placements_physical_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_physical_unit_placements
+    ADD CONSTRAINT hub_physical_unit_placements_physical_unit_id_fkey FOREIGN KEY (physical_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_physical_units hub_physical_units_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_physical_units
+    ADD CONSTRAINT hub_physical_units_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: hub_physical_units hub_physical_units_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_physical_units
+    ADD CONSTRAINT hub_physical_units_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_purchase_allocations hub_purchase_allocations_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_purchase_allocations
+    ADD CONSTRAINT hub_purchase_allocations_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_purchase_allocations hub_purchase_allocations_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_purchase_allocations
+    ADD CONSTRAINT hub_purchase_allocations_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_purchase_allocations hub_purchase_allocations_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_purchase_allocations
+    ADD CONSTRAINT hub_purchase_allocations_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_purchase_allocations hub_purchase_allocations_product_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_purchase_allocations
+    ADD CONSTRAINT hub_purchase_allocations_product_sku_id_fkey FOREIGN KEY (product_sku_id) REFERENCES public.product_skus(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_purchase_allocations hub_purchase_allocations_purchase_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_purchase_allocations
+    ADD CONSTRAINT hub_purchase_allocations_purchase_line_id_fkey FOREIGN KEY (purchase_line_id) REFERENCES public.purchase_lines(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_purchase_allocations hub_purchase_allocations_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_purchase_allocations
+    ADD CONSTRAINT hub_purchase_allocations_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_purchase_allocations hub_purchase_allocations_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_purchase_allocations
+    ADD CONSTRAINT hub_purchase_allocations_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: import_runtime_item_events import_runtime_item_events_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_runtime_item_events
+    ADD CONSTRAINT import_runtime_item_events_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.sourcing_candidates(id) ON DELETE SET NULL;
+
+
+--
+-- Name: import_runtime_item_events import_runtime_item_events_run_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_runtime_item_events
+    ADD CONSTRAINT import_runtime_item_events_run_id_fkey FOREIGN KEY (run_id) REFERENCES public.import_runtime_runs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: import_runtime_runs import_runtime_runs_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_runtime_runs
+    ADD CONSTRAINT import_runtime_runs_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE SET NULL;
+
+
+--
+-- Name: import_runtime_runs import_runtime_runs_started_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_runtime_runs
+    ADD CONSTRAINT import_runtime_runs_started_by_fkey FOREIGN KEY (started_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: incidents incidents_detected_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12784,6 +18073,70 @@ ALTER TABLE ONLY public.market_cash_control_policies
 
 
 --
+-- Name: market_cash_destinations market_cash_destinations_activated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_destinations
+    ADD CONSTRAINT market_cash_destinations_activated_by_fkey FOREIGN KEY (activated_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_cash_destinations market_cash_destinations_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_destinations
+    ADD CONSTRAINT market_cash_destinations_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_cash_destinations market_cash_destinations_payment_account_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_destinations
+    ADD CONSTRAINT market_cash_destinations_payment_account_id_fkey FOREIGN KEY (payment_account_id) REFERENCES public.market_payment_accounts(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_cash_destinations market_cash_destinations_proposed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cash_destinations
+    ADD CONSTRAINT market_cash_destinations_proposed_by_fkey FOREIGN KEY (proposed_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_cost_attributions market_cost_attributions_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cost_attributions
+    ADD CONSTRAINT market_cost_attributions_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: market_cost_attributions market_cost_attributions_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cost_attributions
+    ADD CONSTRAINT market_cost_attributions_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id);
+
+
+--
+-- Name: market_cost_attributions market_cost_attributions_reverses_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cost_attributions
+    ADD CONSTRAINT market_cost_attributions_reverses_id_fkey FOREIGN KEY (reverses_id) REFERENCES public.market_cost_attributions(id);
+
+
+--
+-- Name: market_cost_attributions market_cost_attributions_source_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_cost_attributions
+    ADD CONSTRAINT market_cost_attributions_source_event_id_fkey FOREIGN KEY (source_event_id) REFERENCES public.economic_structure_cost_events(id);
+
+
+--
 -- Name: market_delegation_audit market_delegation_audit_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12808,11 +18161,27 @@ ALTER TABLE ONLY public.market_delegation_audit
 
 
 --
+-- Name: market_delegation_audit market_delegation_audit_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delegation_audit
+    ADD CONSTRAINT market_delegation_audit_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: market_delegation_audit market_delegation_audit_membership_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.market_delegation_audit
     ADD CONSTRAINT market_delegation_audit_membership_id_fkey FOREIGN KEY (membership_id) REFERENCES public.assignment_memberships(id) ON DELETE SET NULL;
+
+
+--
+-- Name: market_operating_assignments market_operating_assignments_central_referent_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_operating_assignments
+    ADD CONSTRAINT market_operating_assignments_central_referent_user_id_fkey FOREIGN KEY (central_referent_user_id) REFERENCES public.users(id);
 
 
 --
@@ -12829,6 +18198,30 @@ ALTER TABLE ONLY public.market_operating_assignments
 
 ALTER TABLE ONLY public.market_operating_assignments
     ADD CONSTRAINT market_operating_assignments_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: market_payment_accounts market_payment_accounts_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_payment_accounts
+    ADD CONSTRAINT market_payment_accounts_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_payment_accounts market_payment_accounts_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_payment_accounts
+    ADD CONSTRAINT market_payment_accounts_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: market_payment_accounts market_payment_accounts_verified_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_payment_accounts
+    ADD CONSTRAINT market_payment_accounts_verified_by_fkey FOREIGN KEY (verified_by) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --
@@ -12981,6 +18374,14 @@ ALTER TABLE ONLY public.market_team_invitations
 
 ALTER TABLE ONLY public.market_team_invitations
     ADD CONSTRAINT market_team_invitations_invited_by_membership_id_fkey FOREIGN KEY (invited_by_membership_id) REFERENCES public.assignment_memberships(id);
+
+
+--
+-- Name: market_team_invitations market_team_invitations_invited_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_team_invitations
+    ADD CONSTRAINT market_team_invitations_invited_by_user_id_fkey FOREIGN KEY (invited_by_user_id) REFERENCES public.users(id);
 
 
 --
@@ -13464,6 +18865,14 @@ ALTER TABLE ONLY public.physical_offers
 
 
 --
+-- Name: physical_outcome_receipts physical_outcome_receipts_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.physical_outcome_receipts
+    ADD CONSTRAINT physical_outcome_receipts_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.outbox_events(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: pickup_print_tokens pickup_print_tokens_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13752,11 +19161,75 @@ ALTER TABLE ONLY public.product_variants
 
 
 --
+-- Name: provider_credentials provider_credentials_replaces_ref_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.provider_credentials
+    ADD CONSTRAINT provider_credentials_replaces_ref_fkey FOREIGN KEY (replaces_ref) REFERENCES public.provider_credentials(credential_ref);
+
+
+--
 -- Name: providers providers_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.providers
     ADD CONSTRAINT providers_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: purchase_lines purchase_lines_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_lines
+    ADD CONSTRAINT purchase_lines_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: purchase_lines purchase_lines_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_lines
+    ADD CONSTRAINT purchase_lines_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id) ON DELETE CASCADE;
+
+
+--
+-- Name: purchase_lines purchase_lines_parent_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_lines
+    ADD CONSTRAINT purchase_lines_parent_line_id_fkey FOREIGN KEY (parent_line_id) REFERENCES public.purchase_lines(id);
+
+
+--
+-- Name: purchase_lines purchase_lines_product_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_lines
+    ADD CONSTRAINT purchase_lines_product_sku_id_fkey FOREIGN KEY (product_sku_id) REFERENCES public.product_skus(id);
+
+
+--
+-- Name: purchase_lines purchase_lines_product_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_lines
+    ADD CONSTRAINT purchase_lines_product_supplier_id_fkey FOREIGN KEY (product_supplier_id) REFERENCES public.product_suppliers(id) ON DELETE SET NULL;
+
+
+--
+-- Name: purchase_lines purchase_lines_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_lines
+    ADD CONSTRAINT purchase_lines_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE CASCADE;
+
+
+--
+-- Name: purchase_lines purchase_lines_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_lines
+    ADD CONSTRAINT purchase_lines_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id);
 
 
 --
@@ -14080,11 +19553,59 @@ ALTER TABLE ONLY public.sourcing_candidates
 
 
 --
+-- Name: sourcing_canonical_entities sourcing_canonical_entities_parent_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_canonical_entities
+    ADD CONSTRAINT sourcing_canonical_entities_parent_fk FOREIGN KEY (parent_entity_id) REFERENCES public.sourcing_canonical_entities(canonical_entity_id);
+
+
+--
+-- Name: sourcing_canonical_entities sourcing_canonical_entities_principal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_canonical_entities
+    ADD CONSTRAINT sourcing_canonical_entities_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.sourcing_commercial_principals(principal_id);
+
+
+--
+-- Name: sourcing_canonical_entities sourcing_canonical_entities_superseded_same_grain_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_canonical_entities
+    ADD CONSTRAINT sourcing_canonical_entities_superseded_same_grain_fk FOREIGN KEY (superseded_by, grain) REFERENCES public.sourcing_canonical_entities(canonical_entity_id, grain);
+
+
+--
+-- Name: sourcing_canonical_entity_refs sourcing_canonical_entity_refs_canonical_entity_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_canonical_entity_refs
+    ADD CONSTRAINT sourcing_canonical_entity_refs_canonical_entity_id_fkey FOREIGN KEY (canonical_entity_id) REFERENCES public.sourcing_canonical_entities(canonical_entity_id) ON DELETE CASCADE;
+
+
+--
+-- Name: sourcing_canonical_entity_refs sourcing_canonical_entity_refs_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_canonical_entity_refs
+    ADD CONSTRAINT sourcing_canonical_entity_refs_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.sourcing_sources(source_id);
+
+
+--
 -- Name: sourcing_captures sourcing_captures_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sourcing_captures
     ADD CONSTRAINT sourcing_captures_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.sourcing_sources(source_id);
+
+
+--
+-- Name: sourcing_commercial_principals sourcing_commercial_principals_superseded_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_commercial_principals
+    ADD CONSTRAINT sourcing_commercial_principals_superseded_fk FOREIGN KEY (superseded_by) REFERENCES public.sourcing_commercial_principals(principal_id);
 
 
 --
@@ -14101,6 +19622,54 @@ ALTER TABLE ONLY public.sourcing_global_access_grants
 
 ALTER TABLE ONLY public.sourcing_global_access_grants
     ADD CONSTRAINT sourcing_global_access_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: sourcing_identity_constraints sourcing_identity_constraints_asserted_by_decision_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_identity_constraints
+    ADD CONSTRAINT sourcing_identity_constraints_asserted_by_decision_id_fkey FOREIGN KEY (asserted_by_decision_id) REFERENCES public.sourcing_resolution_decisions(decision_id);
+
+
+--
+-- Name: sourcing_identity_constraints sourcing_identity_constraints_left_grain_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_identity_constraints
+    ADD CONSTRAINT sourcing_identity_constraints_left_grain_fk FOREIGN KEY (left_entity_id, grain) REFERENCES public.sourcing_canonical_entities(canonical_entity_id, grain);
+
+
+--
+-- Name: sourcing_identity_constraints sourcing_identity_constraints_revoked_by_decision_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_identity_constraints
+    ADD CONSTRAINT sourcing_identity_constraints_revoked_by_decision_id_fkey FOREIGN KEY (revoked_by_decision_id) REFERENCES public.sourcing_resolution_decisions(decision_id);
+
+
+--
+-- Name: sourcing_identity_constraints sourcing_identity_constraints_right_grain_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_identity_constraints
+    ADD CONSTRAINT sourcing_identity_constraints_right_grain_fk FOREIGN KEY (right_entity_id, grain) REFERENCES public.sourcing_canonical_entities(canonical_entity_id, grain);
+
+
+--
+-- Name: sourcing_match_proposals sourcing_match_proposals_candidate_grain_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_match_proposals
+    ADD CONSTRAINT sourcing_match_proposals_candidate_grain_fk FOREIGN KEY (candidate_entity_id, grain) REFERENCES public.sourcing_canonical_entities(canonical_entity_id, grain);
+
+
+--
+-- Name: sourcing_match_proposals sourcing_match_proposals_observation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_match_proposals
+    ADD CONSTRAINT sourcing_match_proposals_observation_id_fkey FOREIGN KEY (observation_id) REFERENCES public.sourcing_observations(observation_id);
 
 
 --
@@ -14128,6 +19697,78 @@ ALTER TABLE ONLY public.sourcing_observations
 
 
 --
+-- Name: sourcing_provider_control_events sourcing_provider_control_events_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_provider_control_events
+    ADD CONSTRAINT sourcing_provider_control_events_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.sourcing_sources(source_id);
+
+
+--
+-- Name: sourcing_resolution_bindings sourcing_resolution_bindings_asserted_by_decision_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_bindings
+    ADD CONSTRAINT sourcing_resolution_bindings_asserted_by_decision_id_fkey FOREIGN KEY (asserted_by_decision_id) REFERENCES public.sourcing_resolution_decisions(decision_id);
+
+
+--
+-- Name: sourcing_resolution_bindings sourcing_resolution_bindings_ended_by_decision_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_bindings
+    ADD CONSTRAINT sourcing_resolution_bindings_ended_by_decision_id_fkey FOREIGN KEY (ended_by_decision_id) REFERENCES public.sourcing_resolution_decisions(decision_id);
+
+
+--
+-- Name: sourcing_resolution_bindings sourcing_resolution_bindings_entity_grain_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_bindings
+    ADD CONSTRAINT sourcing_resolution_bindings_entity_grain_fk FOREIGN KEY (canonical_entity_id, grain) REFERENCES public.sourcing_canonical_entities(canonical_entity_id, grain);
+
+
+--
+-- Name: sourcing_resolution_bindings sourcing_resolution_bindings_observation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_bindings
+    ADD CONSTRAINT sourcing_resolution_bindings_observation_id_fkey FOREIGN KEY (observation_id) REFERENCES public.sourcing_observations(observation_id);
+
+
+--
+-- Name: sourcing_resolution_decisions sourcing_resolution_decisions_entity_grain_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_decisions
+    ADD CONSTRAINT sourcing_resolution_decisions_entity_grain_fk FOREIGN KEY (canonical_entity_id, grain) REFERENCES public.sourcing_canonical_entities(canonical_entity_id, grain);
+
+
+--
+-- Name: sourcing_resolution_decisions sourcing_resolution_decisions_observation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_decisions
+    ADD CONSTRAINT sourcing_resolution_decisions_observation_id_fkey FOREIGN KEY (observation_id) REFERENCES public.sourcing_observations(observation_id);
+
+
+--
+-- Name: sourcing_resolution_decisions sourcing_resolution_decisions_proposal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_decisions
+    ADD CONSTRAINT sourcing_resolution_decisions_proposal_id_fkey FOREIGN KEY (proposal_id) REFERENCES public.sourcing_match_proposals(proposal_id);
+
+
+--
+-- Name: sourcing_resolution_decisions sourcing_resolution_decisions_related_grain_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_resolution_decisions
+    ADD CONSTRAINT sourcing_resolution_decisions_related_grain_fk FOREIGN KEY (related_entity_id, grain) REFERENCES public.sourcing_canonical_entities(canonical_entity_id, grain);
+
+
+--
 -- Name: sourcing_source_execution_modes sourcing_source_execution_modes_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14136,11 +19777,43 @@ ALTER TABLE ONLY public.sourcing_source_execution_modes
 
 
 --
+-- Name: sourcing_source_principal_refs sourcing_source_principal_refs_principal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_source_principal_refs
+    ADD CONSTRAINT sourcing_source_principal_refs_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.sourcing_commercial_principals(principal_id);
+
+
+--
+-- Name: sourcing_source_principal_refs sourcing_source_principal_refs_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_source_principal_refs
+    ADD CONSTRAINT sourcing_source_principal_refs_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.sourcing_sources(source_id) ON DELETE CASCADE;
+
+
+--
 -- Name: sourcing_source_provides sourcing_source_provides_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sourcing_source_provides
     ADD CONSTRAINT sourcing_source_provides_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.sourcing_sources(source_id) ON DELETE CASCADE;
+
+
+--
+-- Name: sourcing_sources sourcing_sources_credential_ref_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_sources
+    ADD CONSTRAINT sourcing_sources_credential_ref_fk FOREIGN KEY (credential_ref) REFERENCES public.provider_credentials(credential_ref) NOT VALID;
+
+
+--
+-- Name: sourcing_sources sourcing_sources_production_certified_capture_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_sources
+    ADD CONSTRAINT sourcing_sources_production_certified_capture_id_fkey FOREIGN KEY (production_certified_capture_id) REFERENCES public.sourcing_captures(capture_id) ON DELETE SET NULL;
 
 
 --
@@ -14173,6 +19846,126 @@ ALTER TABLE ONLY public.supplier_catalog_import_rejections
 
 ALTER TABLE ONLY public.supplier_catalog_imports
     ADD CONSTRAINT supplier_catalog_imports_imported_by_fkey FOREIGN KEY (imported_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: supplier_execution_events supplier_execution_events_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_events
+    ADD CONSTRAINT supplier_execution_events_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_events supplier_execution_events_supplier_execution_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_events
+    ADD CONSTRAINT supplier_execution_events_supplier_execution_group_id_fkey FOREIGN KEY (supplier_execution_group_id) REFERENCES public.supplier_execution_groups(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_events supplier_execution_events_supplier_execution_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_events
+    ADD CONSTRAINT supplier_execution_events_supplier_execution_order_id_fkey FOREIGN KEY (supplier_execution_order_id) REFERENCES public.supplier_execution_orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_fulfillments supplier_execution_fulfillment_supplier_execution_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_fulfillments
+    ADD CONSTRAINT supplier_execution_fulfillment_supplier_execution_order_id_fkey FOREIGN KEY (supplier_execution_order_id) REFERENCES public.supplier_execution_orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_group_members supplier_execution_group_membe_supplier_execution_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_group_members
+    ADD CONSTRAINT supplier_execution_group_membe_supplier_execution_group_id_fkey FOREIGN KEY (supplier_execution_group_id) REFERENCES public.supplier_execution_groups(id) ON DELETE CASCADE;
+
+
+--
+-- Name: supplier_execution_group_members supplier_execution_group_membe_supplier_execution_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_group_members
+    ADD CONSTRAINT supplier_execution_group_membe_supplier_execution_order_id_fkey FOREIGN KEY (supplier_execution_order_id) REFERENCES public.supplier_execution_orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_groups supplier_execution_groups_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_groups
+    ADD CONSTRAINT supplier_execution_groups_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_order_lines supplier_execution_order_lines_purchase_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_order_lines
+    ADD CONSTRAINT supplier_execution_order_lines_purchase_line_id_fkey FOREIGN KEY (purchase_line_id) REFERENCES public.purchase_lines(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_order_lines supplier_execution_order_lines_supplier_execution_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_order_lines
+    ADD CONSTRAINT supplier_execution_order_lines_supplier_execution_order_id_fkey FOREIGN KEY (supplier_execution_order_id) REFERENCES public.supplier_execution_orders(id) ON DELETE CASCADE;
+
+
+--
+-- Name: supplier_execution_orders supplier_execution_orders_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_orders
+    ADD CONSTRAINT supplier_execution_orders_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_payment_proofs supplier_execution_payment_proofs_supplier_payment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_payment_proofs
+    ADD CONSTRAINT supplier_execution_payment_proofs_supplier_payment_id_fkey FOREIGN KEY (supplier_payment_id) REFERENCES public.supplier_execution_payments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_payments supplier_execution_payments_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_payments
+    ADD CONSTRAINT supplier_execution_payments_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_payments supplier_execution_payments_supplier_execution_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_payments
+    ADD CONSTRAINT supplier_execution_payments_supplier_execution_group_id_fkey FOREIGN KEY (supplier_execution_group_id) REFERENCES public.supplier_execution_groups(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_execution_payments supplier_execution_payments_supplier_execution_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_execution_payments
+    ADD CONSTRAINT supplier_execution_payments_supplier_execution_order_id_fkey FOREIGN KEY (supplier_execution_order_id) REFERENCES public.supplier_execution_orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: supplier_payment_settlements supplier_payment_settlements_supplier_execution_payment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_payment_settlements
+    ADD CONSTRAINT supplier_payment_settlements_supplier_execution_payment_id_fkey FOREIGN KEY (supplier_execution_payment_id) REFERENCES public.supplier_execution_payments(id) ON DELETE RESTRICT;
 
 
 --

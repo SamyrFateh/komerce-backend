@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 156 | Vérifié sur le dump live Railway. |
-| Vues | 17 | Vérifié sur le dump live Railway. |
+| Tables | 198 | Vérifié sur le dump live Railway. |
+| Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 390 | Performance + contraintes uniques |
-| Foreign keys | 288 | Cohérence relationnelle |
-| Fonctions | 28 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 45 | Triggers présents dans le dump live Railway. |
+| Index | 482 | Performance + contraintes uniques |
+| Foreign keys | 391 | Cohérence relationnelle |
+| Fonctions | 79 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 90 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -103,6 +103,10 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `parcel_events` | Événements colis (création, modification, etc.). |
 | `shipments` | Expéditions (groupes de colis). |
 | `shipment_batches` | Lots logistiques. |
+| `hub_purchase_allocations` | Snapshot economique immuable Purchase Order exacte (historique) ou ligne d achat exacte (colonne `purchase_line_id` ajoutee par la migration 265, PO regroupee) vers order item/SKU/Supplier Order Identity, Market et destination ; aucune reassignation Hub. **Migration 233,265 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `hub_physical_units` | Identite physique HUB-001 ; inbound potentiellement multi-market, outbound PACKED/DISPATCHED force mono-market depuis les allocations actives. **Migration 233 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `hub_physical_unit_placements` | Historique des placements physiques d allocations immuables ; SPLIT/MERGE/REPACK ferment les anciens placements et ajoutent les nouveaux sans reassignation economique. **Migration 233 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `hub_custody_events` | Journal append-only de custody, transitions physiques, lineage SPLIT/MERGE/REPACK et constats physiques HUB-001. **Migration 233 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 
 **Triggers de protection** : `trg_no_delete_parcels` (DELETE bloqué) + `trg_parcel_ship_guard` (transitions contrôlées) + `trg_check_parcel_item_qty` (cohérence quantités).
 
@@ -152,6 +156,12 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `cash_confirmation_controls` | État transactionnel partagé des confirmations cash ; snapshot 1/2 approbations, acteurs distincts, finalisation atomique avec la vérité de paiement. **Migration 199 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 | `market_settlements` | Vérité de règlement du Market Operating Assignment ; snapshot amount + currency immuable et cycle READY -> REQUESTED -> PAID -> RECEIVED, sans payout implicite. **Migration 208 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 | `market_settlement_events` | Journal financier append-only du lifecycle settlement ; UPDATE et DELETE interdits, distinct de market_delegation_audit. **Migration 208 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
+| `cash_custody_receipts` | Faits append-only de réception d'une remise non historique : RECEIVED/REFUSED par le destinataire désigné, CONTROL par un acteur indépendant (clôture), REVERSAL en contre-écriture motivée. Montant annoncé distinct du montant reçu, devise et taux figés ; un transfert accepté déplace la responsabilité sur le seul montant reçu, une réception finale ne clôt qu'après contrôle. **Migration 289 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `cash_custody_losses` | Décisions centrales de perte (LOSS) et leurs contre-écritures (LOSS_REVERSAL), append-only : décideur distinct du détenteur, motif obligatoire, jamais déduites d'un montant reçu ; le détenteur ne peut pas devenir négatif. **Migration 289 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `cash_custody_movements` | Vue unique des mouvements de garde cash (COLLECTION, TRANSFER_OUT, TRANSFER_IN, FINAL_CLOSURE, LOSS) dont la somme par détenteur et Market est le solde canonique ; aucune seconde vérité, lecture seule. **Migration 289 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `market_cash_destinations` | Destinations finales autorisées des espèces par Market (BANK, MOBILE_MONEY) : proposée par un acteur, activée par un second acteur distinct (contrainte en base), suspendue/clôturée avec motif, jamais supprimée ; peut référencer un compte de paiement du même Market et de même devise sans jamais le modifier. **Migration 288 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `cash_deposit_allocations` | Grand livre de garde cash append-only : part de chaque encaissement couverte par une remise (cash_deposits reste l'autorité des remises). Allocation RECONSTRUCTED (FIFO serveur/historique) ou CONFIRMED (PR 4) ; Σ lignes vivantes ≤ encaissement, Σ lignes ≤ remise, même Market et même agent, verrous de lignes. Ne décharge jamais l'agent : la couverture reste provisoire jusqu'à la réception finale prouvée. **Migration 287 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `market_payment_accounts` | Configuration de paiement par Market indépendante du prestataire : titulaire du compte, vendeur juridique, opérateur et entité supportant les remboursements distingués ; credentials_ref est une référence de coffre, jamais un secret ; ACTIVE exige référence, base juridique et une vérification administrative préalable tracée (acteur, date, verification_ref), acte distinct de l'activation ; la validité effective du secret relève de D4b. **Migration 285 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 
 
 ### 4.5 Paniers et catalogue
@@ -166,70 +176,9 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `basket_items` | Items panier. |
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
-<!-- schema-pending
-object: cash_custody_receipts
-kind: table
-migration: 289
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Faits append-only de réception d'une remise non historique : RECEIVED/REFUSED par le destinataire désigné, CONTROL par un acteur indépendant (clôture), REVERSAL en contre-écriture motivée. Montant annoncé distinct du montant reçu, devise et taux figés ; un transfert accepté déplace la responsabilité sur le seul montant reçu, une réception finale ne clôt qu'après contrôle.
--->
-<!-- schema-pending
-object: cash_custody_losses
-kind: table
-migration: 289
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Décisions centrales de perte (LOSS) et leurs contre-écritures (LOSS_REVERSAL), append-only : décideur distinct du détenteur, motif obligatoire, jamais déduites d'un montant reçu ; le détenteur ne peut pas devenir négatif.
--->
-<!-- schema-pending
-object: cash_custody_movements
-kind: view
-migration: 289
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Vue unique des mouvements de garde cash (COLLECTION, TRANSFER_OUT, TRANSFER_IN, FINAL_CLOSURE, LOSS) dont la somme par détenteur et Market est le solde canonique ; aucune seconde vérité, lecture seule.
--->
-<!-- schema-pending
-object: market_cash_destinations
-kind: table
-migration: 288
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Destinations finales autorisées des espèces par Market (BANK, MOBILE_MONEY) : proposée par un acteur, activée par un second acteur distinct (contrainte en base), suspendue/clôturée avec motif, jamais supprimée ; peut référencer un compte de paiement du même Market et de même devise sans jamais le modifier.
--->
-<!-- schema-pending
-object: cash_deposit_allocations
-kind: table
-migration: 287
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Grand livre de garde cash append-only : part de chaque encaissement couverte par une remise (cash_deposits reste l'autorité des remises). Allocation RECONSTRUCTED (FIFO serveur/historique) ou CONFIRMED (PR 4) ; Σ lignes vivantes ≤ encaissement, Σ lignes ≤ remise, même Market et même agent, verrous de lignes. Ne décharge jamais l'agent : la couverture reste provisoire jusqu'à la réception finale prouvée.
--->
-<!-- schema-pending
-object: market_payment_accounts
-kind: table
-migration: 285
-section: ### 4.4 Paiements et finance (9 tables live + 2 visées)
-role: Configuration de paiement par Market indépendante du prestataire : titulaire du compte, vendeur juridique, opérateur et entité supportant les remboursements distingués ; credentials_ref est une référence de coffre, jamais un secret ; ACTIVE exige référence, base juridique et une vérification administrative préalable tracée (acteur, date, verification_ref), acte distinct de l'activation ; la validité effective du secret relève de D4b.
--->
-<!-- schema-pending
-object: catalog_publication_decision_audit
-kind: table
-migration: 283
-section: ### 4.5 Paniers et catalogue
-role: Journal append-only des décisions humaines de curation globale Catalogue ; product_ref et snapshots conservent la preuve même si le produit est supprimé, product_id devenant alors NULL. L'audit n'accorde aucune autorité de publication ni d'exposition marché.
--->
-<!-- schema-pending
-object: catalog_taxonomy_audit
-kind: table
-migration: 282
-section: ### 4.5 Paniers et catalogue
-role: Journal append-only des mutations de taxonomie admin avec acteur, surface source et snapshots avant/après ; l'audit reste observationnel et ne confère aucune autorité.
--->
+| `catalog_publication_decision_audit` | Journal append-only des décisions humaines de curation globale Catalogue ; product_ref et snapshots conservent la preuve même si le produit est supprimé, product_id devenant alors NULL. L'audit n'accorde aucune autorité de publication ni d'exposition marché. **Migration 283 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 | `catalog_glossary` | Glossaire EN→FR autoritaire Komerce (doctrine catalogue §4). `term_fr='='` signifie ne pas traduire. Mémoire des corrections validées : une décision Komerce gagne toujours sur une référence externe. Migration 098, confirmée live. |
-<!-- schema-pending
-object: catalog_terminology_reference
-kind: table
-migration: 243
-section: ### 4.5 Paniers et catalogue
-role: Mémoire terminologique externe sourcée EN→FR (TERMIUM Plus en premier), multi-contextes et multi-traductions. Import filtré par corpus réel, provenance/licence conservées. Référence uniquement : n'écrase jamais catalog_glossary.
--->
+| `catalog_taxonomy_audit` | Journal append-only des mutations de taxonomie admin avec acteur, surface source et snapshots avant/après ; l'audit reste observationnel et ne confère aucune autorité. **Migration 282 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 | `catalog_exclusions` | Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). Deux couches : `absolute` (douane/loi, définitif) et `restricted` (contrainte transport, ex. batteries lithium = maritime uniquement). Matching mots-clés sur la donnée source EN, étage ③ de la raffinerie. Migration 098, confirmée live. |
 | `catalog_field_overrides` | Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK `products` ON DELETE CASCADE. Migration 098, confirmée live. |
 | `catalog_global_access_grants` | Grants explicites autorisant les surfaces Catalogue globales ; vérité d’autorisation résolue côté serveur. Vérifiée live Railway. |
@@ -241,22 +190,11 @@ role: Mémoire terminologique externe sourcée EN→FR (TERMIUM Plus en premier)
 | `product_content_sections` | Sections éditoriales structurées + materials/care/warnings via section_key réservés (MATERIALS/CARE/WARNINGS, toujours BULLETS). UNIQUE(product_id, section_key) pour ré-promotion idempotente. content_json validé par le service de projection avant de traverser le contrat public. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 | `product_attributes` | Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.highlights, kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). UNIQUE(product_id, kind, group_key, attribute_key) pour idempotence. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 | `product_market_exposure` | Exposition commerciale d'un produit du catalogue global sur un Market ID donné (partenaire pays, capability catalog.expose). Le catalogue (products) reste unique ; cette table n'est qu'une projection d'exposition, même patron que commercial_exposure sur physical_offers/services. Absence de ligne = DISABLED (fail-closed). Écrite exclusivement via services/catalog-market-exposure-service.js (catalog, lifecycle owner) ; market-delegation délègue, jamais de SQL direct. **Migration 202 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
+| `catalog_terminology_reference` | Mémoire terminologique externe sourcée EN→FR (TERMIUM Plus en premier), multi-contextes et multi-traductions. Import filtré par corpus réel, provenance/licence conservées. Référence uniquement : n'écrase jamais catalog_glossary. **Migration 243 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `catalog_stock_sync_state` | État courant (non-journal) de la dernière observation de stock fournisseur effectivement APPLIQUÉE par product_skus.id (Mission 1, KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE, docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md). Alimentée exclusivement par services/catalog-stock-sync-application.js — jamais par order-payment-confirmation.js ni order-status-machine.js, qui continuent d'écrire product_skus.stock uniquement via product-stock-service.js#adjustStock (mouvement relatif). Une observation plus récente REMPLACE la ligne existante en une transaction verrouillée (FOR UPDATE sur product_skus), jamais un second insert à réconcilier. **Migration 241 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `catalog_field_sync_state` | Généralise catalog_stock_sync_state (migration 241) à tout champ du contrat Catalog Change Intake au-delà du stock (Mission 2, KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE). État courant (non-journal) de la dernière observation effectivement APPLIQUÉE, par (subject_type, subject_id, field_name). Les champs texte/médias sont suivis au grain product ; `purchase_price` est suivi au grain sku sous la forme native `{amount,currency}`, les deux faits devant provenir de la même capture, sans conversion implicite. Alimentée exclusivement par services/catalog-field-sync-application.js. N'écrit jamais products.cost_kmf (alimente le moteur économique actif, services/pricing-output.js) ni offer_status/is_active/option_axes/sellable_units (lié à la publication, services/catalog-promotion/*) — decision-only pour ces champs, cette table n'en porte donc jamais de ligne applied. **Migration 242 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: catalog_stock_sync_state
-kind: table
-migration: 241
-section: ### 4.5 Paniers et catalogue
-role: État courant (non-journal) de la dernière observation de stock fournisseur effectivement APPLIQUÉE par product_skus.id (Mission 1, KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE, docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md). Alimentée exclusivement par services/catalog-stock-sync-application.js — jamais par order-payment-confirmation.js ni order-status-machine.js, qui continuent d'écrire product_skus.stock uniquement via product-stock-service.js#adjustStock (mouvement relatif). Une observation plus récente REMPLACE la ligne existante en une transaction verrouillée (FOR UPDATE sur product_skus), jamais un second insert à réconcilier.
--->
 
-<!-- schema-pending
-object: catalog_field_sync_state
-kind: table
-migration: 242
-section: ### 4.5 Paniers et catalogue
-role: Généralise catalog_stock_sync_state (migration 241) à tout champ du contrat Catalog Change Intake au-delà du stock (Mission 2, KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE). État courant (non-journal) de la dernière observation effectivement APPLIQUÉE, par (subject_type, subject_id, field_name). Les champs texte/médias sont suivis au grain product ; `purchase_price` est suivi au grain sku sous la forme native `{amount,currency}`, les deux faits devant provenir de la même capture, sans conversion implicite. Alimentée exclusivement par services/catalog-field-sync-application.js. N'écrit jamais products.cost_kmf (alimente le moteur économique actif, services/pricing-output.js) ni offer_status/is_active/option_axes/sellable_units (lié à la publication, services/catalog-promotion/*) — decision-only pour ces champs, cette table n'en porte donc jamais de ligne applied.
--->
 
 
 
@@ -305,6 +243,7 @@ role: Généralise catalog_stock_sync_state (migration 241) à tout champ du con
 | `product_market_price_draft_events` | Journal append-only des décisions prix pays SET, RESET, AUTHORIZE et ACTIVATE avec acteur, raison et snapshot économique. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `market_price_observations` | Observations de prix locales market-scoped par produit, devise du marché, source, preuve et date d'observation ; source du corridor pays distincte de competitor_prices global. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
 | `market_price_observation_events` | Journal append-only des créations et désactivations d'observations de prix marché avec acteur, raison et snapshot ; aucune réécriture historique. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
+| `market_cost_attributions` | Journal append-only d'attribution des charges de structure mutualisées (economic_structure_cost_events scope_kind GROUP) aux marchés. Événements ATTRIBUTION/REVERSAL, FK source_event_id, gardes immutabilité et validation reversal. **Migration 267 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 
 
 
@@ -325,83 +264,16 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 |---|---|
 | `suppliers` | Fournisseurs. |
 | `partners` | Partenaires (élargi vs suppliers, voir ADR-005). |
-<!-- schema-pending
-object: purchase_lines
-kind: table
-migration: 263
-section: ### 4.10 Sourcing et fournisseurs
-role: Ligne d'achat canonique ORDER_ITEM → PURCHASE_LINE → PURCHASE_ORDER (MISSION_PURCHASE_LINES, PR 1 fondation). Snapshot figé de ce qu'on achète (fournisseur, SKU/SOI, prix, Procurement Hub). Quantité effective = 0 si annulée, sinon COALESCE(settled_quantity, confirmed_quantity, quantity) ; garde anti-double-achat I1 (FOR UPDATE sur order_items) ; ligne confirmée/réglée/annulée figée ; suppression directe interdite. Backfill 1:1 depuis purchase_orders ; écriture double avec purchase_orders, aucune lecture métier en PR 1.
--->
-<!-- schema-pending
-object: v_purchase_line_progress
-kind: view
-migration: 264
-section: ### 4.10 Sourcing et fournisseurs
-role: Vue unique de progression d'achat par ligne (MISSION_PURCHASE_LINES, PR 2) : quantité engagée brute et effective, reçu, annulée, PO et forme de PO (historical, grouped, historical_no_line). Seule définition du reçu par ligne pour les lecteurs (signaux, routes purchasing, scans Hub, complétude de réception, stock-sync) ; is_order_complete(uuid) la consomme. Les PO historiques sans ligne (avant la migration 225) y figurent avec line_id NULL. Reçu d'une PO regroupée : 0 jusqu'à la PR 3 (placements RECEIVE).
--->
-<!-- schema-pending
-object: supplier_execution_orders
-kind: table
-migration: 279
-section: ### 4.10 Sourcing et fournisseurs
-role: Sous-ordres natifs provider liés à une Purchase Order Komerce ; porte l'identifiant canonique supplier_order_id, un code secondaire éventuel, le statut provider et des faits bornés sans secret.
--->
-<!-- schema-pending
-object: supplier_execution_order_lines
-kind: table
-migration: 279
-section: ### 4.10 Sourcing et fournisseurs
-role: Rattachement explicite entre un sous-ordre provider et les purchase_lines Komerce couvertes, avec quantité positive ; permet de reprendre le dialogue sans dénaturer la PO métier.
--->
-<!-- schema-pending
-object: supplier_execution_groups
-kind: table
-migration: 279
-section: ### 4.10 Sourcing et fournisseurs
-role: Parent ou groupe natif provider d'une Purchase Order Komerce ; porte supplier_parent_order_id, payment_ref, statuts et faits bornés nécessaires à la reprise.
--->
-<!-- schema-pending
-object: supplier_execution_group_members
-kind: table
-migration: 279
-section: ### 4.10 Sourcing et fournisseurs
-role: Membership parent ↔ sous-ordre provider ; garde DB imposant la même Purchase Order Komerce et le même provider des deux côtés.
--->
-<!-- schema-pending
-object: supplier_execution_events
-kind: table
-migration: 279
-section: ### 4.10 Sourcing et fournisseurs
-role: Journal append-only du dialogue fournisseur : opération, outcome canonique, request id et faits sanitisés pour diagnostic et reprise crash-safe, sans credentials ni payload brut.
--->
-<!-- schema-pending
-object: supplier_execution_fulfillments
-kind: table
-migration: 284
-section: ### 4.10 Sourcing et fournisseurs
-role: Fait canonique provider-side de fulfillment lié à un supplier_execution_order ; porte quantité attendue/observée, statut provider, tracking/carrier éventuels, preuve bornée et verdict de réconciliation. Ne prouve ni réception Hub ni remise client.
--->
-<!-- schema-pending
-object: supplier_execution_payments
-kind: table
-migration: 280
-section: ### 4.10 Sourcing et fournisseurs
-role: Fait canonique de paiement fournisseur : cible exacte ordre ou parent provider, clé idempotente locale, montant attendu/observé, devise, statut de tentative, verdict de rapprochement et preuve explicite de débit réel. Aucun appel provider ni débit n est déclenché par la table.
--->
-<!-- schema-pending
-object: supplier_execution_payment_proofs
-kind: table
-migration: 281
-section: ### 4.10 Sourcing et fournisseurs
-role: Preuves monétaires provider liées à supplier_execution_payments ; unicité native par provider/proof_source/proof_ref ; faits bornés uniquement, sans payload brut ni secret.
--->
-<!-- schema-pending
-object: supplier_payment_settlements
-kind: table
-migration: 294
-section: ### 4.10 Sourcing et fournisseurs
-role: Faits append-only de règlement fournisseur en KMF réellement débités (payment hors frais ; goods_refund, fee_refund, other_refund typés) rattachés à un supplier_execution_payment, avec preuve et clé idempotente ; frais d'opération portés à part ; taux effectif calculé (Σ KMF / Σ devise), jamais stocké ni dérivé d'un taux de référence.
--->
+| `purchase_lines` | Ligne d'achat canonique ORDER_ITEM → PURCHASE_LINE → PURCHASE_ORDER (MISSION_PURCHASE_LINES, PR 1 fondation). Snapshot figé de ce qu'on achète (fournisseur, SKU/SOI, prix, Procurement Hub). Quantité effective = 0 si annulée, sinon COALESCE(settled_quantity, confirmed_quantity, quantity) ; garde anti-double-achat I1 (FOR UPDATE sur order_items) ; ligne confirmée/réglée/annulée figée ; suppression directe interdite. Backfill 1:1 depuis purchase_orders ; écriture double avec purchase_orders, aucune lecture métier en PR 1. **Migration 263 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `v_purchase_line_progress` | Vue unique de progression d'achat par ligne (MISSION_PURCHASE_LINES, PR 2) : quantité engagée brute et effective, reçu, annulée, PO et forme de PO (historical, grouped, historical_no_line). Seule définition du reçu par ligne pour les lecteurs (signaux, routes purchasing, scans Hub, complétude de réception, stock-sync) ; is_order_complete(uuid) la consomme. Les PO historiques sans ligne (avant la migration 225) y figurent avec line_id NULL. Reçu d'une PO regroupée : 0 jusqu'à la PR 3 (placements RECEIVE). **Migration 264 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `supplier_execution_orders` | Sous-ordres natifs provider liés à une Purchase Order Komerce ; porte l'identifiant canonique supplier_order_id, un code secondaire éventuel, le statut provider et des faits bornés sans secret. **Migration 279 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `supplier_execution_order_lines` | Rattachement explicite entre un sous-ordre provider et les purchase_lines Komerce couvertes, avec quantité positive ; permet de reprendre le dialogue sans dénaturer la PO métier. **Migration 279 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `supplier_execution_groups` | Parent ou groupe natif provider d'une Purchase Order Komerce ; porte supplier_parent_order_id, payment_ref, statuts et faits bornés nécessaires à la reprise. **Migration 279 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `supplier_execution_group_members` | Membership parent ↔ sous-ordre provider ; garde DB imposant la même Purchase Order Komerce et le même provider des deux côtés. **Migration 279 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `supplier_execution_events` | Journal append-only du dialogue fournisseur : opération, outcome canonique, request id et faits sanitisés pour diagnostic et reprise crash-safe, sans credentials ni payload brut. **Migration 279 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `supplier_execution_fulfillments` | Fait canonique provider-side de fulfillment lié à un supplier_execution_order ; porte quantité attendue/observée, statut provider, tracking/carrier éventuels, preuve bornée et verdict de réconciliation. Ne prouve ni réception Hub ni remise client. **Migration 284 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `supplier_execution_payments` | Fait canonique de paiement fournisseur : cible exacte ordre ou parent provider, clé idempotente locale, montant attendu/observé, devise, statut de tentative, verdict de rapprochement et preuve explicite de débit réel. Aucun appel provider ni débit n est déclenché par la table. **Migration 280 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `supplier_execution_payment_proofs` | Preuves monétaires provider liées à supplier_execution_payments ; unicité native par provider/proof_source/proof_ref ; faits bornés uniquement, sans payload brut ni secret. **Migration 281 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 | `purchase_orders` | Bons de commande fournisseur. **Migration 225 (2026-09-13, `intended_migration_schema`)** : + `order_item_id` UUID nullable (FK `order_items(id)` ON DELETE SET NULL), + `product_sku_id` UUID nullable (FK `product_skus(id)` ON DELETE SET NULL), + `supplier_unit_ref` TEXT nullable et + `supplier_order_identity` JSONB nullable. Ces colonnes snapshotent l’unité fournisseur exacte décidée au moment de créer la PO ; aucun backfill historique heuristique. Pour une ligne SKU, `product_suppliers` choisit le fournisseur mais ne peut pas remplacer la Supplier Order Identity du SKU vendu. Index partiel unique `(order_item_id, product_supplier_id)` pour les PO actives. **Migration 239 (2026-09-17, `intended_migration_schema`)** : + `supplier_unit_price` NUMERIC(18,4) nullable, + `supplier_currency` TEXT nullable et + `supplier_total_price` NUMERIC(18,4) généré (`supplier_unit_price × qty`) pour snapshotter la monnaie native du fournisseur sans conversion implicite vers AED. Les PO historiques portant `unit_price_aed` sont backfillées comme devise `AED`; pour une ligne SKU/SOI exacte, la Canonical Unit est l'autorité du prix/devise et `unit_price_aed` reste NULL lorsque la devise native n'est pas AED. Doctrine : `docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md`, `docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md` et `docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md`. **Migration 266 (2026-10-02, `intended_migration_schema`, forme regroupée)** : + statut `draft` au CHECK `purchase_orders_status_check` ; `order_id`, `supplier_sku` et `qty` deviennent nullables ; `chk_purchase_orders_qty` devient `qty IS NULL OR qty > 0` ; + `procurement_hub_ref` TEXT NOT NULL DEFAULT `'DXB'` (hub destinataire, recopié sur l'existant) ; + `chk_purchase_orders_header_shape` : une PO est soit historique (`order_id`, `qty`, `supplier_sku` renseignés) soit regroupée (`order_id`, `order_item_id`, `product_sku_id`, `supplier_unit_ref`, `supplier_order_identity`, `qty`, `supplier_sku`, `supplier_unit_price`, `supplier_currency` tous NULL ; le détail vit sur `purchase_lines`). Trigger `trg_purchase_lines_a_groupable` (garde I4) sur `purchase_lines`. Écrite uniquement derrière `KOMERCE_GROUPED_PURCHASING`. |
 | `sourcing_candidates` | Candidats sourcing. **Migration 105 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `normalized_source_contract` JSONB nullable, snapshot du `NormalizedSupplierProduct V2` validé sans dupliquer `raw_payload`. Préserve `media`, `option_axes` et `sellable_units` source ; ne constitue ni le catalogue canonique ni la vérité de stock. |
 | `sourcing_candidate_events` | Événements candidats. |
@@ -418,6 +290,22 @@ role: Faits append-only de règlement fournisseur en KMF réellement débités (
 | `sourcing_captures` | Runs/lots d'acquisition d'une source ; lifecycle operationnel mutable, sans verite produit. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
 | `sourcing_observations` | Observations immuables product/offer/unit ; source unique via capture. Migration 226 vise aussi l'enum sourcing_observation_grain. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
 | `sourcing_observation_evidence` | Index d'evidence derive, namespaced et reconstructible pour le futur Candidate Retrieval ; non autoritatif. **Migration 226 — promue le 2026-09-14 (schema-promote, dump live verifie).** |
+| `supplier_payment_settlements` | Faits append-only de règlement fournisseur en KMF réellement débités (payment hors frais ; goods_refund, fee_refund, other_refund typés) rattachés à un supplier_execution_payment, avec preuve et clé idempotente ; frais d'opération portés à part ; taux effectif calculé (Σ KMF / Σ devise), jamais stocké ni dérivé d'un taux de référence. **Migration 294 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_commercial_principals` | Identite commerciale canonique shadow partageable entre plusieurs sources. **Migration 227 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_source_principal_refs` | Mapping source-scoped principal_ref vers un commercial principal Komerce commun. **Migration 227 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_canonical_entities` | Supertype shadow des identites canoniques Product Offer Unit avec lifecycle ACTIVE/SUPERSEDED. **Migration 227 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_canonical_entity_refs` | References externes namespaced par source et ref_kind. **Migration 227 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_match_proposals` | Propositions append-only de comparaison Observation/candidat avec evidence. **Migration 227 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_resolution_decisions` | Decisions append-only LINK DISTINCT REVIEW_REQUIRED MERGE SPLIT. **Migration 227 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_resolution_bindings` | Projection courante Observation vers identite canonique. **Migration 227 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_identity_constraints` | Contraintes MUST_LINK et CANNOT_LINK reversibles par decision auditee. **Migration 227 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_merge_policies` | Politique de projection de champs par grain sans selection d'offre. **Migration 227 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `v_purchase_line_market` | Marche d origine de chaque ligne d achat (order_item vers order vers market_id), lecture seule ; le marche n est ni porte par l en-tete de PO ni cle de regroupement, et ne se reassigne jamais via Purchasing. **Migration 266 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_source_requests` | Fournisseurs demandés par l'opérateur sans connecteur Komerce (statut unique `connector_required`). Jamais une source : aucun autopilot, aucune capacité, aucune capture, aucun lien avec sourcing_sources. Unicité sur lower(btrim(provider_name)). Écrite exclusivement par services/sourcing-source-registry.js. **Migration 260 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `provider_credentials` | Coffre applicatif des credentials fournisseurs (Provider Credential Authority). Une ligne = un credential versionné ; l'enveloppe est un JSON chiffré AES-256-GCM (IV aléatoire, tag, AAD = provider + credential_ref + version + auth_type) sous la clé maître serveur KOMERCE_PROVIDER_CREDENTIALS_MASTER_KEY, jamais en base. Statuts pending/active/superseded/revoked/failed ; seuls pending et active peuvent porter une enveloppe (crypto-shredding des autres, imposé par CHECK). Les credentials oauth ne portent aucun token : ils référencent la session chiffrée de supplier_oauth_connections via oauth_session_key. Écrite exclusivement par services/provider-credential-service.js ; jamais relue par le navigateur. **Migration 262 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `sourcing_provider_control_events` | Journal append-only des changements Discovery Sync Import Production avec avant/après, opérateur, motif et horodatage. **Migration 255 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `import_runtime_runs` | Identite et chronologie d'un run d'import reel Sourcing vers Catalogue, avec business ref KIR et projection live fail-closed. **Migration 257 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `import_runtime_item_events` | Evenement par produit d'un run d'import (debut, fin, issue, prix source) pour le cockpit live, telemetrie best-effort sans autorite metier. **Migration 258 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 
 
 ### 4.11 Scans et opérations terrain (5 tables)
@@ -499,21 +387,13 @@ role: Faits append-only de règlement fournisseur en KMF réellement débités (
 
 ### 4.15 Infrastructure technique — Outbox transactionnel (HUB-000 F0)
 
-<!-- schema-pending
-object: outbox_events
-kind: table
-migration: 228
-section: ### 4.15 Infrastructure technique — Outbox transactionnel (HUB-000 F0)
-role: Primitive outbox transactionnelle. Un fait métier et son événement (physical_outcome_reported) écrits dans la même transaction côté appelant (services/outbox-producer.js) ; livraison at-least-once, retry durable (attempts/last_error), append-only.
--->
+| Objet | Rôle |
+|---|---|
+| `outbox_events` | Primitive outbox transactionnelle. Un fait métier et son événement (physical_outcome_reported) écrits dans la même transaction côté appelant (services/outbox-producer.js) ; livraison at-least-once, retry durable (attempts/last_error), append-only. **Migration 228 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `physical_outcome_receipts` | Reçu d'audit durable du consumer minimal réel F0 (services/outbox-worker.js), sans effet métier. Idempotence garantie par UNIQUE(event_id, consumer_key). **Migration 228 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 
-<!-- schema-pending
-object: physical_outcome_receipts
-kind: table
-migration: 228
-section: ### 4.15 Infrastructure technique — Outbox transactionnel (HUB-000 F0)
-role: Reçu d'audit durable du consumer minimal réel F0 (services/outbox-worker.js), sans effet métier. Idempotence garantie par UNIQUE(event_id, consumer_key).
--->
+
+
 
 ---
 
@@ -658,117 +538,19 @@ node scripts/ci-migrate.js   # baseline git dynamique + migrations nouvelles
 4. **Présence DB live de `revoked_tokens`** : à vérifier sur Railway. Le code et la migration sont prêts ; la DB live reste la source de vérité finale.
 5. **Trou apparent** dans la numérotation migrations entre 025 et 033 — vérifier l'historique git si nécessaire.
 
-<!-- schema-pending
-object: sourcing_commercial_principals
-kind: table
-migration: 227
-section: ### 4.10 Sourcing et fournisseurs
-role: Identite commerciale canonique shadow partageable entre plusieurs sources.
--->
 
-<!-- schema-pending
-object: sourcing_source_principal_refs
-kind: table
-migration: 227
-section: ### 4.10 Sourcing et fournisseurs
-role: Mapping source-scoped principal_ref vers un commercial principal Komerce commun.
--->
 
-<!-- schema-pending
-object: sourcing_canonical_entities
-kind: table
-migration: 227
-section: ### 4.10 Sourcing et fournisseurs
-role: Supertype shadow des identites canoniques Product Offer Unit avec lifecycle ACTIVE/SUPERSEDED.
--->
 
-<!-- schema-pending
-object: sourcing_canonical_entity_refs
-kind: table
-migration: 227
-section: ### 4.10 Sourcing et fournisseurs
-role: References externes namespaced par source et ref_kind.
--->
 
-<!-- schema-pending
-object: sourcing_match_proposals
-kind: table
-migration: 227
-section: ### 4.10 Sourcing et fournisseurs
-role: Propositions append-only de comparaison Observation/candidat avec evidence.
--->
 
-<!-- schema-pending
-object: sourcing_resolution_decisions
-kind: table
-migration: 227
-section: ### 4.10 Sourcing et fournisseurs
-role: Decisions append-only LINK DISTINCT REVIEW_REQUIRED MERGE SPLIT.
--->
 
-<!-- schema-pending
-object: sourcing_resolution_bindings
-kind: table
-migration: 227
-section: ### 4.10 Sourcing et fournisseurs
-role: Projection courante Observation vers identite canonique.
--->
 
-<!-- schema-pending
-object: sourcing_identity_constraints
-kind: table
-migration: 227
-section: ### 4.10 Sourcing et fournisseurs
-role: Contraintes MUST_LINK et CANNOT_LINK reversibles par decision auditee.
--->
 
-<!-- schema-pending
-object: sourcing_merge_policies
-kind: table
-migration: 227
-section: ### 4.10 Sourcing et fournisseurs
-role: Politique de projection de champs par grain sans selection d'offre.
--->
 
-<!-- schema-pending
-object: v_purchase_line_market
-kind: view
-migration: 266
-section: ### 4.10 Sourcing et fournisseurs
-role: Marche d origine de chaque ligne d achat (order_item vers order vers market_id), lecture seule ; le marche n est ni porte par l en-tete de PO ni cle de regroupement, et ne se reassigne jamais via Purchasing.
--->
 
-<!-- schema-pending
-object: hub_purchase_allocations
-kind: table
-migration: 233,265
-section: ### 4.2 Logistique colis (5 tables)
-role: Snapshot economique immuable Purchase Order exacte (historique) ou ligne d achat exacte (colonne `purchase_line_id` ajoutee par la migration 265, PO regroupee) vers order item/SKU/Supplier Order Identity, Market et destination ; aucune reassignation Hub.
--->
 
-<!-- schema-pending
-object: hub_physical_units
-kind: table
-migration: 233
-section: ### 4.2 Logistique colis (5 tables)
-role: Identite physique HUB-001 ; inbound potentiellement multi-market, outbound PACKED/DISPATCHED force mono-market depuis les allocations actives.
--->
 
-<!-- schema-pending
-object: hub_physical_unit_placements
-kind: table
-migration: 233
-section: ### 4.2 Logistique colis (5 tables)
-role: Historique des placements physiques d allocations immuables ; SPLIT/MERGE/REPACK ferment les anciens placements et ajoutent les nouveaux sans reassignation economique.
--->
 
-<!-- schema-pending
-object: hub_custody_events
-kind: table
-migration: 233
-section: ### 4.2 Logistique colis (5 tables)
-role: Journal append-only de custody, transitions physiques, lineage SPLIT/MERGE/REPACK et constats physiques HUB-001.
--->
 
 ### boutique_subcategories canonical imagery
 
@@ -786,13 +568,6 @@ The canonical boutique taxonomy owns stable navigation imagery at subcategory le
 - `sourcing_sources.connection_test_code`: code métier court du dernier échec (jamais de message fournisseur brut ni de secret).
 - `sourcing_sources.connection_tested_at`: horodatage du dernier test de connexion.
 
-<!-- schema-pending
-object: sourcing_source_requests
-kind: table
-migration: 260
-section: ### 4.10 Sourcing et fournisseurs
-role: Fournisseurs demandés par l'opérateur sans connecteur Komerce (statut unique `connector_required`). Jamais une source : aucun autopilot, aucune capacité, aucune capture, aucun lien avec sourcing_sources. Unicité sur lower(btrim(provider_name)). Écrite exclusivement par services/sourcing-source-registry.js.
--->
 
 ### Cycle de vie des sources (migration 261)
 
@@ -804,13 +579,6 @@ role: Fournisseurs demandés par l'opérateur sans connecteur Komerce (statut un
 - `sourcing_sources.credential_ref`: colonne existante depuis la migration 226, désormais liée par clé étrangère (`sourcing_sources_credential_ref_fk`, `NOT VALID` : aucune valeur historique n'est imposée, toute nouvelle écriture est protégée) au credential actif de la source. Jamais un secret : seulement une référence `cred_<32 hex>`.
 - `sourcing_provider_control_events.capability`: accepte désormais `credentials` (configuration, remplacement, révocation, liaison OAuth ; `old_value`/`new_value` = « credential valide avant / après »). Aucun secret n'est tracé.
 
-<!-- schema-pending
-object: provider_credentials
-kind: table
-migration: 262
-section: ### 4.10 Sourcing et fournisseurs
-role: Coffre applicatif des credentials fournisseurs (Provider Credential Authority). Une ligne = un credential versionné ; l'enveloppe est un JSON chiffré AES-256-GCM (IV aléatoire, tag, AAD = provider + credential_ref + version + auth_type) sous la clé maître serveur KOMERCE_PROVIDER_CREDENTIALS_MASTER_KEY, jamais en base. Statuts pending/active/superseded/revoked/failed ; seuls pending et active peuvent porter une enveloppe (crypto-shredding des autres, imposé par CHECK). Les credentials oauth ne portent aucun token : ils référencent la session chiffrée de supplier_oauth_connections via oauth_session_key. Écrite exclusivement par services/provider-credential-service.js ; jamais relue par le navigateur.
--->
 
 ### Provider control policy (migration 255)
 
@@ -819,13 +587,6 @@ role: Coffre applicatif des credentials fournisseurs (Provider Credential Author
 - `sourcing_sources.import_enabled`: autorisation opérateur explicite de passage automatique vers l'import canonique; défaut OFF.
 - `sourcing_sources.production_enabled`: autorisation opérateur de production; défaut OFF et activation fail-closed tant qu'une preuve runtime par fournisseur n'existe pas.
 
-<!-- schema-pending
-object: sourcing_provider_control_events
-kind: table
-migration: 255
-section: ### 4.10 Sourcing et fournisseurs
-role: Journal append-only des changements Discovery Sync Import Production avec avant/après, opérateur, motif et horodatage.
--->
 
 ### Provider runtime certification (migration 256)
 
@@ -838,33 +599,12 @@ role: Journal append-only des changements Discovery Sync Import Production avec 
 
 Projection opérationnelle d'un import réel pour l'écran live `/admin/import-runtime`. La table ne duplique pas la comptabilité métier : elle conserve seulement l'identité du run, son rattachement à l'import, les horodatages des jalons et un snapshot d'intake ; les compteurs sont recalculés depuis les autorités Sourcing/Certification existantes.
 
-<!-- schema-pending
-object: import_runtime_runs
-kind: table
-migration: 257
-section: ### 4.10 Sourcing et fournisseurs
-role: Identite et chronologie d'un run d'import reel Sourcing vers Catalogue, avec business ref KIR et projection live fail-closed.
--->
 
 ### Import runtime item events (migration 258)
 
 Télémétrie best-effort d'un import réel : un événement par produit traité (début, fin, issue, prix source affiché). Ce n'est pas une autorité métier : le cockpit `/admin/import-runtime` l'affiche pour montrer le produit en cours et les durées, et retombe sur la projection historique quand le run n'a aucun événement.
 
-<!-- schema-pending
-object: import_runtime_item_events
-kind: table
-migration: 258
-section: ### 4.10 Sourcing et fournisseurs
-role: Evenement par produit d'un run d'import (debut, fin, issue, prix source) pour le cockpit live, telemetrie best-effort sans autorite metier.
--->
 
-<!-- schema-pending
-object: market_cost_attributions
-kind: table
-migration: 267
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Journal append-only d'attribution des charges de structure mutualisées (economic_structure_cost_events scope_kind GROUP) aux marchés. Événements ATTRIBUTION/REVERSAL, FK source_event_id, gardes immutabilité et validation reversal.
--->
 
 
 
@@ -874,15 +614,13 @@ role: Journal append-only d'attribution des charges de structure mutualisées (e
 
 ### Supplier commercial category correspondence (migration 292)
 
+| Objet | Rôle |
+|---|---|
+| `supplier_commercial_category_mappings` | Mapping commercial fournisseur + chemin source normalisé vers paire boutique active, statut de validation et proposition de libellé français ; aucune autorité douanière ou publication. **Migration 292 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+
+
 `supplier_commercial_category_mappings` records source provider and normalized original path, optional source ID, source locale, optional French proposal label, and an active Komerce boutique category/subcategory pair. `status` is `PROPOSED`, `REVIEW_REQUIRED` or `CONFIRMED`; only confirmed mappings targeting active boutique taxonomy are eligible for automatic routing. This mapping is independent from customs, tax, economic margins, publication and supplier KIR certification. Missing categories must be kept for review rather than rejected.
 
-<!-- schema-pending
-object: supplier_commercial_category_mappings
-kind: table
-migration: 292
-section: ### Supplier commercial category correspondence (migration 292)
-role: Mapping commercial fournisseur + chemin source normalisé vers paire boutique active, statut de validation et proposition de libellé français ; aucune autorité douanière ou publication.
--->
 
 ## Sourcing candidate independent boutique attachment (migration 293)
 
