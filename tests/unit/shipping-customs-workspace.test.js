@@ -193,3 +193,13 @@ describe('buildSignals — couche de pilotage additive, calcul pur sur données 
     ]);
   });
 });
+
+// DOUANE-2A: audit actor must be wired by the authenticated mutation boundary.
+describe('DOUANE-2A actor audit wiring: services/shipping-customs-workspace.js', () => {
+  test('keeps authenticated actor propagation explicit', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(path.join(__dirname, '../../services/shipping-customs-workspace.js'), 'utf8');
+    expect(src).toMatch(/customs\.updateShipment\(db, shipment\.id, [\s\S]*?actor\)/);
+  });
+});
