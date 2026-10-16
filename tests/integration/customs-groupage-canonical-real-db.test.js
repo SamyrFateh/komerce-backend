@@ -422,6 +422,35 @@ if (!hasIntegrationEnv) {
     });
   });
 
+
+  describe('A5 — annulation après groupage : la perte reste sur la commande annulée', () => {
+    it('A5 — commande annulée après groupage : part historique conservée, aucune redistribution silencieuse, retrait explicite = seule voie', async () => {
+      const { allocateShipmentRealCosts } = require('../../services/transport-cost-allocation');
+      const ps = await seedParcels([
+        { order: 'A', cif: 5000, weight: 2, vol: 10000 },
+        { order: 'B', cif: 5000, weight: 2, vol: 10000 },
+        { order: 'C', cif: 10000, weight: 4, vol: 20000 },
+      ]);
+      const s = await makeShipment(ps, { allocation_method: 'by_cif_value', customs_paid_kmf: '1000.00', freight_kmf: '200.00' });
+      const before = await allocByOrder(s.id, 'customs');
+      const freightBefore = await allocByOrder(s.id, 'freight');
+      expect(before[ps[1].orderId]).toBe(250);
+      await db.query(`UPDATE orders SET status = 'cancelled' WHERE id = $1`, [ps[1].orderId]);
+      await allocateShipmentRealCosts(s.id);
+      expect(await allocByOrder(s.id, 'customs')).toEqual(before);
+      expect(await allocByOrder(s.id, 'freight')).toEqual(freightBefore);
+      expect(await allocTotal(s.id, 'customs')).toBe(1000);
+      // la seule voie de redistribution est le retrait explicite du colis (tracé)
+      await svc.removeParcelsFromShipment(db, s.id, [ps[1].parcelId], { id: null, reason: 'A5 retrait explicite' });
+      const after = await allocByOrder(s.id, 'customs');
+      expect(after[ps[1].orderId]).toBeUndefined();
+      expect(await allocTotal(s.id, 'customs')).toBe(1000);
+      const { rows } = await db.query(
+        `SELECT 1 FROM customs_shipment_parcel_events WHERE shipment_id = $1 AND parcel_id = $2 AND event = 'detach'`, [s.id, ps[1].parcelId]);
+      expect(rows).toHaveLength(1);
+    });
+  });
+
   describe('groupage canonique — retrait, correction tardive, verrouillage, marché', () => {
     it('G5 — retrait de colis : désactivation puis réactivation sur un sous-ensemble, conservation sur les colis restants', async () => {
       const ps = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }, { order: 'B', cif: 10000, weight: 1, vol: 1000 }, { order: 'C', cif: 10000, weight: 1, vol: 1000 }]);
