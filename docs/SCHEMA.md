@@ -873,6 +873,6 @@ role: Journal append-only d'attribution des charges de structure mutualisées (e
 object: supplier_commercial_category_mappings
 kind: table
 migration: 292
-section: Supplier commercial category correspondence (migration 292)
+section: ### Supplier commercial category correspondence (migration 292)
 role: Mapping commercial fournisseur + chemin source normalisé vers paire boutique active, statut de validation et proposition de libellé français ; aucune autorité douanière ou publication.
 -->
