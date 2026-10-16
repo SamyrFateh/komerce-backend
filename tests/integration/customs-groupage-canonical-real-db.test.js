@@ -451,6 +451,25 @@ if (!hasIntegrationEnv) {
     });
   });
 
+
+  describe('A6 — frais après clôture : correction tracée, montant d\'origine jamais réécrit', () => {
+    it('A6 — expédition confirmée : motif obligatoire, ligne post_closure, original intact, ventilation conservée, UPDATE refusé', async () => {
+      const ps = await seedParcels([{ order: 'A', cif: 6000, weight: 1, vol: 1000 }, { order: 'B', cif: 4000, weight: 1, vol: 1000 }]);
+      const s = await makeShipment(ps, { allocation_method: 'by_cif_value', customs_paid_kmf: '100.00' });
+      const rec = (extra) => feeSvc.recordFee(db, s.id, { fee_type: 'storage', amount_kmf: '40.00', proof_ref: 'p', ...extra }, null);
+      const orig = await rec({ idempotency_key: `${RUN_TAG}-a6-1` });
+      expect(orig.fee.post_closure).toBe(false);
+      await db.query(`UPDATE customs_shipments SET status = 'confirmed' WHERE id = $1`, [s.id]);
+      await expect(rec({ idempotency_key: `${RUN_TAG}-a6-2` })).rejects.toMatchObject({ code: 'CUSTOMS_FEE_POST_CLOSURE_REASON_REQUIRED' });
+      const corr = await rec({ idempotency_key: `${RUN_TAG}-a6-3`, kind: 'credit', amount_kmf: '15.00', notes: 'remise surestaries reçue après clôture' });
+      expect(corr.fee.post_closure).toBe(true);
+      expect(Math.round((await allocTotal(s.id, 'port_transitaire')) * 100)).toBe(2500);
+      const { rows } = await db.query('SELECT id, amount_kmf, post_closure FROM customs_shipment_fees WHERE shipment_id = $1 ORDER BY recorded_at', [s.id]);
+      expect(rows.map((r) => [Number(r.amount_kmf), r.post_closure])).toEqual([[40, false], [15, true]]);
+      await expect(db.query('UPDATE customs_shipment_fees SET amount_kmf = 1 WHERE id = $1', [orig.fee.id])).rejects.toBeTruthy();
+    });
+  });
+
   describe('groupage canonique — retrait, correction tardive, verrouillage, marché', () => {
     it('G5 — retrait de colis : désactivation puis réactivation sur un sous-ensemble, conservation sur les colis restants', async () => {
       const ps = await seedParcels([{ order: 'A', cif: 10000, weight: 1, vol: 1000 }, { order: 'B', cif: 10000, weight: 1, vol: 1000 }, { order: 'C', cif: 10000, weight: 1, vol: 1000 }]);
