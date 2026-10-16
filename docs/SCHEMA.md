@@ -926,6 +926,8 @@ section: ### Customs typed shipment fees (migration 297)
 role: Append-only typed customs fee journal (charge/credit, proof and idempotency required, currency traced, KMF borne is authoritative) feeding conserved port_transitaire allocations.
 -->
 
+Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut false) : marque les lignes de frais enregistrées après clôture de l'expédition (status confirmed) ; correction tracée par nouvelle ligne avec motif obligatoire, le montant d'origine n'est jamais réécrit.
+
 ### Customs shipment parcel membership events (migration 299)
 
 `customs_shipment_parcel_events` is an append-only journal of parcel attach/detach events on an open customs shipment (groupage). Every event carries actor, date and a mandatory reason; UPDATE/DELETE are refused. It deliberately has no foreign key (like `customs_shipment_financial_audit`) so the evidence survives deactivation. Cost lines are re-allocated by the existing conserving allocator in the same transaction; prices and margin writers are untouched.
