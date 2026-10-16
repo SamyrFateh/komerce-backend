@@ -40,6 +40,15 @@ describe('order-mutation-service', () => {
     expect(q.query.mock.calls[0][1]).toEqual([['o1', 'o2']]);
   });
 
+  test('margin_real_pct is not recomputed while an active shipment customs is still unknown', async () => {
+    const q = executor();
+    await mutations.recomputeCustomsCosts(q, { orderIds: ['o1'] });
+    const marginSql = q.query.mock.calls[1][0];
+    expect(marginSql).toContain('NOT EXISTS');
+    expect(marginSql).toContain("cs.status = 'pending'");
+    expect(marginSql).toContain('cs.customs_paid_kmf IS NULL');
+  });
+
 
 
 

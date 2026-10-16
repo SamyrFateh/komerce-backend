@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, services/cost-allocation/cost-types.js
  * @used-by       services/cost-allocation/index.js
- * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders
+ * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, customs_shipments, customs_shipment_parcels, parcels
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      pricing_market_viability_cost_scope
@@ -152,6 +152,22 @@ async function computeOrderCostVariance(orderId) {
     [orderId]
   );
 
+  // Douane attendue mais inconnue (expédition active pending / montant NULL) :
+  // l'absence de ligne réelle ne signifie pas « coût nul » → non comparable.
+  const unknownCustomsRes = await db.query(
+    `SELECT COUNT(DISTINCT s.id)::int AS n
+       FROM customs_shipments s
+       JOIN customs_shipment_parcels csp ON csp.shipment_id = s.id
+       JOIN parcels p ON p.id = csp.parcel_id
+      WHERE p.order_id = $1
+        AND s.is_active = TRUE
+        AND (s.status = 'pending' OR s.customs_paid_kmf IS NULL)`,
+    [orderId]
+  );
+  const expectedUnknownCostTypes = (unknownCustomsRes.rows[0] && Number(unknownCustomsRes.rows[0].n) > 0)
+    ? ['customs']
+    : [];
+
   const est = estRes.rows[0] || {};
   const landed = est.landed == null ? null : Number(est.landed);
   const businessVariable = est.business_variable == null ? null : Number(est.business_variable);
@@ -168,7 +184,8 @@ async function computeOrderCostVariance(orderId) {
     : estimatedContributionCost - riskProvision;
 
   const real = _splitRealRows(realRes.rows);
-  const comparable = estimatedReconcilableVariable != null && real.unknownTotal === 0;
+  const comparable = estimatedReconcilableVariable != null && real.unknownTotal === 0
+    && expectedUnknownCostTypes.length === 0;
 
   return {
     order_id: orderId,
@@ -194,9 +211,12 @@ async function computeOrderCostVariance(orderId) {
       provision_by_cost_type: real.provisionByType,
       structure_by_cost_type: real.structureByType,
       unknown_by_cost_type: real.unknownByType,
+      expected_unknown_cost_types: expectedUnknownCostTypes,
     },
     variance: comparable ? _variance(real.variableTotal, estimatedReconcilableVariable) : null,
-    reconciliation_status: comparable ? 'comparable_scope' : 'not_decisional',
+    reconciliation_status: comparable
+      ? 'comparable_scope'
+      : (expectedUnknownCostTypes.length > 0 ? 'incomplete_expected_cost_unknown' : 'not_decisional'),
     risk_provision_status: riskProvision > 0 ? 'period_reconciliation_pending' : 'not_applicable',
   };
 }

@@ -123,6 +123,20 @@ describe('transport cost allocation', () => {
     expect(resolveShipmentTransportRail('land')).toBeNull();
   });
 
+  test('inactive shipment: item allocations are removed, nothing is created', async () => {
+    const client = makeClient([
+      { rows: [{ id: 'ship-off', is_active: false, customs_paid_kmf: '5000', freight_kmf: null }] },
+      { rows: [], rowCount: 3 }, // DELETE allocations
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+
+    const result = await allocateShipmentRealCosts('ship-off');
+
+    expect(result).toMatchObject({ reason: 'inactive', allocations_count: 0, allocations_removed: 3 });
+    expect(client.query.mock.calls.some(c => String(c[0]).includes('DELETE FROM order_item_real_cost_allocations'))).toBe(true);
+    expectTransactionCommitted(client);
+  });
+
   test('AIR shipment without calibration rolls back before freight persistence', async () => {
     const shipment = {
       id: 'ship-air',
