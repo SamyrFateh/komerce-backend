@@ -868,3 +868,11 @@ role: Journal append-only d'attribution des charges de structure mutualisées (e
 ## Supplier commercial category correspondence (migration 292)
 
 `supplier_commercial_category_mappings` records source provider and normalized original path, optional source ID, source locale, optional French proposal label, and an active Komerce boutique category/subcategory pair. `status` is `PROPOSED`, `REVIEW_REQUIRED` or `CONFIRMED`; only confirmed mappings targeting active boutique taxonomy are eligible for automatic routing. This mapping is independent from customs, tax, economic margins, publication and supplier KIR certification. Missing categories must be kept for review rather than rejected.
+
+<!-- schema-pending
+object: supplier_commercial_category_mappings
+kind: table
+migration: 292
+section: Supplier commercial category correspondence (migration 292)
+role: Mapping commercial fournisseur + chemin source normalisé vers paire boutique active, statut de validation et proposition de libellé français ; aucune autorité douanière ou publication.
+-->
