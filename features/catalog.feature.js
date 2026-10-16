@@ -167,6 +167,7 @@ module.exports = {
       'services/pipeline-certification-gate-c.js',
       'services/catalog-media-visual-fr-proof.js',
       'services/catalog-visual-fr-evidence-read.js',
+      'services/catalog-visual-fr-human-review-write.js',
       'services/catalog-refinery-combined-proof.js',
       'services/catalog-fr-quality.js',
       'services/catalog-terminology-memory.js',
