@@ -19,6 +19,7 @@
 'use strict';
 
 const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
+const { findConfirmed } = require('./supplier-commercial-category-mapping');
 
 function sourceLocaleFromCandidate(candidate = {}) {
   const locale = candidate?.normalized_source_contract?.source_locale;
@@ -85,7 +86,20 @@ async function resolveCommercialObjectTaxonomy(q, candidate) {
 
 async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
   const requested = boutiqueTaxonomyFromCandidate(candidate);
-  if (!requested.category && !requested.subcategory) return resolveCommercialObjectTaxonomy(q, candidate);
+  if (!requested.category && !requested.subcategory) {
+    // A validated supplier-path mapping takes precedence over title heuristics.
+    // It has zero economic/customs authority; unknown paths use existing fallback.
+    const provider = candidate.normalized_source_contract?.supplier_name
+      || candidate.raw_payload?.source
+      || candidate.supplier_name;
+    const sourcePath = candidate.supplier_category
+      || candidate.normalized_source_contract?.supplier_category;
+    if (provider && sourcePath) {
+      const mapped = await findConfirmed(provider, sourcePath, q);
+      if (mapped) return mapped;
+    }
+    return resolveCommercialObjectTaxonomy(q, candidate);
+  }
   if (!requested.category || !requested.subcategory) {
     throw new Error('BOUTIQUE_TAXONOMY_INCOMPLETE: target_category + target_subcategory requis ensemble');
   }

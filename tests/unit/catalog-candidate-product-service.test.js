@@ -268,3 +268,30 @@ describe('catalog candidate boutique taxonomy guard', () => {
     expect(q.query).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('supplier commercial mapping priority', () => {
+  test('confirmed path takes precedence over title scoring without touching customs', async () => {
+    const {resolveActiveBoutiqueTaxonomy}=require('../../services/catalog-candidate-product-service');
+    const q={query:jest.fn().mockResolvedValue({rows:[{category:'Auto',subcategory:'Accessoires'}]})};
+    const result=await resolveActiveBoutiqueTaxonomy(q,{
+      product_name:'Generic unknown item',supplier_category:'Automobiles > Interior Accessories',
+      normalized_source_contract:{supplier_name:'AliExpress'},
+      komerce_category:null,
+    });
+    expect(result).toEqual({category:'Auto',subcategory:'Accessoires'});
+    expect(q.query.mock.calls[0][0]).toContain("m.status='CONFIRMED'");
+    expect(q.query.mock.calls[0][1]).toEqual(['aliexpress','automobiles > interior accessories']);
+  });
+  test('unmapped supplier path falls back to read-only configured object matcher', async () => {
+    const {resolveActiveBoutiqueTaxonomy}=require('../../services/catalog-candidate-product-service');
+    const q={query:jest.fn()
+      .mockResolvedValueOnce({rows:[]})
+      .mockResolvedValueOnce({rows:[{category:'Auto',subcategory:'Accessoires',terms:{'car neck pillow':12}}]})};
+    const result=await resolveActiveBoutiqueTaxonomy(q,{
+      product_name:'Car Neck Pillow',supplier_category:'Automobiles > Interior Accessories',
+      normalized_source_contract:{supplier_name:'AliExpress'},
+    });
+    expect(result).toEqual({category:'Auto',subcategory:'Accessoires'});
+    expect(q.query).toHaveBeenCalledTimes(2);
+  });
+});
