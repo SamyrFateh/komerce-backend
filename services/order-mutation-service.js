@@ -89,6 +89,9 @@ async function recomputeCustomsCosts(executor, { orderIds }) {
     [orderIds],
   );
 
+  // Une douane encore inconnue (expédition active pending) n'est jamais
+  // traitée comme nulle : la marge n'est pas recalculée tant qu'elle
+  // l'est (cost_douane_kmf, NOT NULL DEFAULT 0, n'exprime pas l'inconnu).
   await q.query(
     `UPDATE orders
      SET margin_real_pct = CASE
@@ -97,7 +100,16 @@ async function recomputeCustomsCosts(executor, { orderIds }) {
                    / total_kmf * 100)::numeric, 2)
        ELSE margin_real_pct
      END
-     WHERE id = ANY($1::uuid[])`,
+     WHERE id = ANY($1::uuid[])
+       AND NOT EXISTS (
+         SELECT 1
+           FROM parcels p
+           JOIN customs_shipment_parcels csp ON csp.parcel_id = p.id
+           JOIN customs_shipments cs ON cs.id = csp.shipment_id
+          WHERE p.order_id = orders.id
+            AND cs.is_active = TRUE
+            AND (cs.status = 'pending' OR cs.customs_paid_kmf IS NULL)
+       )`,
     [orderIds],
   );
 

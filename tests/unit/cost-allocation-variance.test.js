@@ -38,7 +38,8 @@ describe('cost-allocation/variance', () => {
           { cost_type: 'freight', amount: '4000', all_actual: true },
           { cost_type: 'customs', amount: '6000', all_actual: true },
           { cost_type: 'fixed_overhead', amount: '2000', all_actual: true },
-        ] });
+        ] })
+        .mockResolvedValueOnce({ rows: [{ n: 0 }] });
 
       const result = await computeOrderCostVariance('order-001');
 
@@ -62,7 +63,8 @@ describe('cost-allocation/variance', () => {
           { cost_type: 'freight', amount: '11000', all_actual: true },
           { cost_type: 'risk_provision', amount: '900', all_actual: true },
           { cost_type: 'fixed_overhead', amount: '9000', all_actual: true },
-        ] });
+        ] })
+        .mockResolvedValueOnce({ rows: [{ n: 0 }] });
 
       const result = await computeOrderCostVariance('order-002');
 
@@ -81,7 +83,8 @@ describe('cost-allocation/variance', () => {
           landed: '9000', business_complete: '12000', business_variable: null, risk_provision: '0', fixed_overhead: null,
           imputations_count: 1, missing_variable_snapshot_count: 1,
         }] })
-        .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '10000', all_actual: true }] });
+        .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '10000', all_actual: true }] })
+        .mockResolvedValueOnce({ rows: [{ n: 0 }] });
 
       const result = await computeOrderCostVariance('order-legacy');
 
@@ -99,12 +102,28 @@ describe('cost-allocation/variance', () => {
         .mockResolvedValueOnce({ rows: [
           { cost_type: 'freight', amount: '6000', all_actual: true },
           { cost_type: 'invented_cost', amount: '500', all_actual: true },
-        ] });
+        ] })
+        .mockResolvedValueOnce({ rows: [{ n: 0 }] });
 
       const result = await computeOrderCostVariance('order-unknown');
       expect(result.variance).toBeNull();
       expect(result.reconciliation_status).toBe('not_decisional');
       expect(result.real.unknown_by_cost_type).toEqual({ invented_cost: 500 });
+    });
+
+    it('douane attendue mais inconnue (expédition pending) : non comparable, flag explicite', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [{
+          landed: '9000', business_complete: '12000', business_variable: '1000', risk_provision: '0', fixed_overhead: '2000',
+          imputations_count: 1, missing_variable_snapshot_count: 0,
+        }] })
+        .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '10000', all_actual: true }] })
+        .mockResolvedValueOnce({ rows: [{ n: 1 }] });
+
+      const result = await computeOrderCostVariance('order-customs-pending');
+      expect(result.real.expected_unknown_cost_types).toEqual(['customs']);
+      expect(result.variance).toBeNull();
+      expect(result.reconciliation_status).toBe('incomplete_expected_cost_unknown');
     });
   });
 

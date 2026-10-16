@@ -90,9 +90,10 @@ describe('allocateCustoms', () => {
       expect(allocateCustoms(baseShipment, [])).toEqual([]);
     });
 
-    it('retourne [] si customs_paid_kmf = 0', () => {
+    it('0 explicite = « pas de frais » : parts à 0 pour chaque colis (pas []).', () => {
       const r = allocateCustoms({ ...baseShipment, customs_paid_kmf: 0 }, parcel3);
-      expect(r).toEqual([]);
+      expect(r).toHaveLength(parcel3.length);
+      expect(r.every(x => x.customs_share_kmf === 0)).toBe(true);
     });
 
     it('retourne [] si customs_paid_kmf absent (undefined)', () => {
@@ -399,7 +400,9 @@ describe('deleteShipment — guard 404', () => {
       query: jest.fn(async (sql) => {
         const s = sql.trim();
         if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
+        if (s.startsWith('SELECT id, status FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending' }] };
         if (s.startsWith('SELECT parcel_id')) return { rows: [{ parcel_id: 'p1' }, { parcel_id: 'p2' }] };
+        if (s.startsWith('DELETE FROM order_item_real_cost_allocations')) return { rows: [], rowCount: 0 };
         if (s.startsWith('DELETE FROM customs_shipments')) return { rows: [], rowCount: 1 };
         if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [{ order_id: 'order-1' }] };
         return { rows: [] };
@@ -728,33 +731,13 @@ describe('declareCustomsPayment', () => {
 
     expect(result).toEqual({
       shipment_id: 'ship-1', status: 'declared', customs_paid_kmf: 12000, parcels_updated: 1,
+      allocations_count: 0, invoice_issued: true,
     });
-    expect(costAllocation.allocateShipmentRealCosts).toHaveBeenCalledWith('ship-1');
+    expect(costAllocation.allocateShipmentRealCosts).toHaveBeenCalledWith('ship-1', client);
     expect(customsInvoice.issueForShipment).toHaveBeenCalledWith(['p1'], 'ship-1', 'user-1');
   });
 
-  it('happy path sans colis rattachés (pas de ventilation ni facture)', async () => {
-    const client = {
-      query: jest.fn(async (sql) => {
-        const s = sql.trim();
-        if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
-        if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending' }] };
-        if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
-        if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [] };
-        return { rows: [] };
-      }),
-      release: jest.fn(),
-    };
-    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
-
-    const result = await declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 5000 }, 'user-1');
-
-    expect(result.parcels_updated).toBe(0);
-    expect(customsInvoice.issueForShipment).not.toHaveBeenCalled();
-  });
-
-  it('continue même si allocateShipmentRealCosts échoue (non bloquant)', async () => {
-    costAllocation.allocateShipmentRealCosts.mockRejectedValueOnce(new Error('alloc partiel'));
+  it('refuse (409) un montant sans colis porteur — rien d écrit, aucune facture', async () => {
     const client = {
       query: jest.fn(async (sql) => {
         const s = sql.trim();
@@ -769,10 +752,35 @@ describe('declareCustomsPayment', () => {
     const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
 
     await expect(declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 5000 }, 'user-1'))
-      .resolves.toMatchObject({ status: 'declared' });
+      .rejects.toMatchObject({ status: 409, code: 'CUSTOMS_SHIPMENT_WITHOUT_PARCELS' });
+    expect(customsInvoice.issueForShipment).not.toHaveBeenCalled();
   });
 
-  it('continue même si customsInvoice.issueForShipment échoue (non bloquant)', async () => {
+  it('échec de ventilation = rollback complet (aucun succès partiel)', async () => {
+    costAllocation.allocateShipmentRealCosts.mockRejectedValueOnce(new Error('alloc partiel'));
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
+        if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending' }] };
+        if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
+        if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }] };
+        if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
+        if (s === 'ROLLBACK') return { rows: [] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    await expect(declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 5000 }, 'user-1'))
+      .rejects.toThrow('alloc partiel');
+    const sqls = client.query.mock.calls.map(c => String(c[0]).trim());
+    expect(sqls).toContain('ROLLBACK');
+    expect(sqls).not.toContain('COMMIT');
+  });
+
+  it('échec de la facture (document régénérable) : déclaration conservée, échec rapporté', async () => {
     customsInvoice.issueForShipment.mockRejectedValueOnce(new Error('facture partielle'));
     const client = {
       query: jest.fn(async (sql) => {
@@ -792,7 +800,7 @@ describe('declareCustomsPayment', () => {
     const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
 
     await expect(declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 5000 }, 'user-1'))
-      .resolves.toMatchObject({ status: 'declared' });
+      .resolves.toMatchObject({ status: 'declared', invoice_issued: false, invoice_error: 'facture partielle' });
   });
 
   it('rollback si une query échoue en cours de transaction', async () => {
