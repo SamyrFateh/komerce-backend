@@ -84,6 +84,41 @@ describe('allocateShipmentRealCosts', () => {
     expectTransactionCommitted(client);
   });
 
+  it('frais typés: net 1000.01 sur 2 colis × 1 ligne → port_transitaire conservé au centime, source customs_shipment_fees', async () => {
+    const shipment = { id: 'ship-fee', customs_paid_kmf: '0', freight_kmf: null, allocation_method: 'by_cif_value', fees_net_kmf: '1000.01' };
+    const parcels  = [
+      { parcel_id: 'p1', order_id: 'o1', parcel_cif_kmf: '5000', parcel_weight_kg: '1', customs_share_kmf: null },
+      { parcel_id: 'p2', order_id: 'o2', parcel_cif_kmf: '5000', parcel_weight_kg: '1', customs_share_kmf: null },
+    ];
+    const item = (id) => ({ order_item_id: id, parcel_qty: '1', price_kmf: '5000', order_item_qty: '1', product_id: 'x', weight_kg: '1', cost_kmf: '1000' });
+    const client = makeClient([
+      { rows: [shipment] }, { rows: parcels }, { rows: [], rowCount: 0 },
+      { rows: [item('oi1')] }, { rows: [], rowCount: 1 },
+      { rows: [item('oi2')] }, { rows: [], rowCount: 1 },
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+
+    const result = await allocateShipmentRealCosts('ship-fee');
+
+    const inserts = client.query.mock.calls.filter(c => String(c[0]).includes("'port_transitaire'"));
+    const cents = inserts.reduce((sum, c) => sum + Math.round(Number(c[1][4]) * 100), 0);
+    expect(inserts).toHaveLength(2);
+    expect(cents).toBe(100001);
+    expect(String(inserts[0][0])).toContain("'customs_shipment_fees'");
+    expect(result.total_fees_kmf).toBe(1000.01);
+    expectTransactionCommitted(client);
+  });
+
+  it('frais typés > 0 sans colis porteur → 422 et rollback (rien perdu en silence)', async () => {
+    const client = makeClient([
+      { rows: [{ id: 'ship-fee', customs_paid_kmf: '0', freight_kmf: null, allocation_method: 'by_cif_value', fees_net_kmf: '50' }] },
+      { rows: [] },
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+    await expect(allocateShipmentRealCosts('ship-fee')).rejects.toMatchObject({ code: 'COST_ALLOCATION_INCOMPLETE', status: 422 });
+    expectTransactionRolledBack(client);
+  });
+
   it('nominal : 1 parcel, 1 item → 2 allocations (customs + freight)', async () => {
     const shipment = { id: 'ship-001', customs_paid_kmf: '4000', freight_kmf: '1000', allocation_method: 'by_cif_value' };
     const parcel   = { parcel_id: 'parcel-001', order_id: 'order-001', parcel_cif_kmf: '8000', parcel_weight_kg: '2', customs_share_kmf: null, allocation_basis: null };

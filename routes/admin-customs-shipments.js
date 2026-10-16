@@ -8,8 +8,9 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       customs_shipment_parcels, customs_shipments
+ * @db-read       customs_shipment_fees, customs_shipment_parcels, customs_shipments
  * @db-write      customs_shipment_parcels, customs_shipments, orders, parcels
+ * @db-write-via:customs-shipment-fee-service customs_shipment_fees
  * @db-write-via:customs-invoice transaction_documents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -31,6 +32,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const svc = require('../services/customs-shipment-service');
+const feeSvc = require('../services/customs-shipment-fee-service');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -116,6 +118,23 @@ router.post('/:id/declare', ...guard, async (req, res, next) => {
       req.user.id
     );
     res.json(result);
+  } catch (err) { next(err); }
+});
+
+// POST /api/admin/customs-shipments/:id/fees
+// Frais typés réels (manutention, stockage, transitaire, taxe locale, exceptionnel, autre) :
+// append-only, preuve + idempotence obligatoires, reventilation dans la même transaction.
+router.post('/:id/fees', ...guard, async (req, res, next) => {
+  try {
+    const result = await feeSvc.recordFee(db, req.params.id, req.body, req.user.id);
+    res.status(result.idempotent_replay ? 200 : 201).json(result);
+  } catch (err) { next(err); }
+});
+
+// GET /api/admin/customs-shipments/:id/fees — journal + états par type (inconnu / zéro confirmé / montant)
+router.get('/:id/fees', ...guard, async (req, res, next) => {
+  try {
+    res.json(await feeSvc.listFees(db, req.params.id));
   } catch (err) { next(err); }
 });
 
