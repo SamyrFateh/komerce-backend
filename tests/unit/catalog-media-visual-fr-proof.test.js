@@ -68,3 +68,13 @@ test('an entire source-media set is ready only when every individual image is re
   expect(inspectMediaSet([IMAGE, { ...IMAGE }], [REVIEW]))
     .toMatchObject({ ready: false, code: 'SOURCE_MEDIA_IDENTITY_NOT_UNIQUE' });
 });
+
+test('duplicate reviews cannot silently select the first approval', () => {
+  expect(inspectMediaSet([IMAGE], [REVIEW, { ...REVIEW, text_presence:'UNREADABLE' }]))
+    .toMatchObject({ ready:false, code:'VISUAL_REVIEW_IDENTITY_NOT_UNIQUE' });
+});
+test('orphaned reviews cannot make a media set certified', () => {
+  expect(inspectMediaSet([IMAGE], [REVIEW, { ...REVIEW,
+    source_media_id:'ali:orphan:999', source_url:'https://ae01.alicdn.com/kf/orphan.jpg',
+  }])).toMatchObject({ready:false, code:'VISUAL_REVIEW_SOURCE_NOT_IN_MEDIA_SET'});
+});
