@@ -900,3 +900,16 @@ migration: 295
 section: ### Customs financial correction audit (migration 295)
 role: Append-only evidence of customs shipment financial corrections with old/new JSONB snapshots, optional actor and reason, and same-transaction trigger.
 -->
+
+
+### Customs typed shipment fees (migration 296)
+
+`customs_shipment_fees` is an append-only journal of real, justified customs-side fees per shipment (`handling`, `storage`, `forwarder`, `local_tax`, `exceptional`, `other`). No row for a type means unknown; a `charge` at 0 means confirmed zero; `credit` rows correct downwards. Global customs duties stay in `customs_shipments.customs_paid_kmf` and freight in `freight_kmf` (no double count). Fees are allocated to order items as `port_transitaire` (source `customs_shipment_fees`) by the existing conserving allocator; estimates, customer prices and margin writers are untouched.
+
+<!-- schema-pending
+object: customs_shipment_fees
+kind: table
+migration: 296
+section: ### Customs typed shipment fees (migration 296)
+role: Append-only typed customs fee journal (charge/credit, proof and idempotency required, currency traced, KMF borne is authoritative) feeding conserved port_transitaire allocations.
+-->
