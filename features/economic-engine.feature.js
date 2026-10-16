@@ -204,6 +204,7 @@ module.exports = {
       'tests/unit/economic-price-audit-service.test.js',
       'tests/unit/cost-allocation-variance.test.js',
       'tests/unit/real-margin-shadow.test.js',
+      'tests/unit/real-margin-shadow-settlements.test.js',
       'tests/unit/order-cost-imputation-n2-n3-migration.test.js',
       'tests/unit/pricing-maturity-disposition-migration.test.js',
       'tests/unit/economic-structure-cost-events-migration.test.js',

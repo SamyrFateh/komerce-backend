@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       orders, product_suppliers, purchase_orders, suppliers
- * @db-write      product_suppliers, suppliers
+ * @db-read       orders, product_suppliers, purchase_orders, suppliers, supplier_execution_payments, supplier_payment_settlements
+ * @db-write      product_suppliers, suppliers, supplier_payment_settlements
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown
@@ -50,6 +50,9 @@
  *   POST /api/purchasing/po/:po_id/confirm            → confirmer une PO notified ligne par ligne (reliquat en ligne ouverte)
  *   POST /api/purchasing/lines                        → créer une ligne ouverte manuellement (ex. reliquat chez un autre fournisseur)
  *   POST /api/purchasing/lines/:id/settle             → clôturer une ligne confirmée (reliquat en ligne ouverte)
+ * Coût d'achat réel (migration 293) :
+ *   POST /api/purchasing/supplier-payments/:payment_id/settlements → saisir un règlement/remboursement réellement débité (KMF, preuve, idempotent)
+ *   GET  /api/purchasing/supplier-payments/:payment_id/settlements → lister les règlements du paiement
  */
 
 'use strict';
@@ -67,6 +70,7 @@ const { deleteSupplier, confirmPurchaseOrder, cancelPurchaseOrder } = require('.
 const grouped = require('../services/purchasing-grouped-service');
 const { getPurchaseOrderDetail } = require('../services/purchasing-order-detail');
 const engagement = require('../services/purchasing-engagement-service');
+const settlements = require('../services/supplier-payment-settlement-service');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -105,7 +109,7 @@ router.get('/', ...guard, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Champs de diagnostic relayés tels quels (verdicts de soumission, écarts de lignes de confirmation…).
-const GROUPED_ERROR_EXTRAS = ['verdicts', 'missing', 'extra', 'received_quantity', 'confirmed_quantity', 'quantity', 'purchase_line_id', 'provider', 'details', 'requested', 'attached', 'detached'];
+const GROUPED_ERROR_EXTRAS = ['cap_currency', 'already_settled_currency', 'settled_currency', 'fees_kmf', 'verdicts', 'missing', 'extra', 'received_quantity', 'confirmed_quantity', 'quantity', 'purchase_line_id', 'provider', 'details', 'requested', 'attached', 'detached'];
 
 function groupedError(err, res, next) {
   if (err && err.status) {
@@ -159,6 +163,19 @@ router.post('/lines', ...guard, async (req, res, next) => {
 
 router.post('/lines/:id/settle', ...guard, async (req, res, next) => {
   try { res.json(await engagement.settleLine(req.params.id, req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
+});
+
+// Coût d'achat réel — règlements fournisseur en KMF (admin ; le marché n'est jamais lu du body :
+// la portée est celle du paiement fournisseur, aucun champ market_id n'est accepté).
+router.post('/supplier-payments/:payment_id/settlements', ...guard, async (req, res, next) => {
+  try {
+    const out = await settlements.recordSettlement(db, req.params.payment_id, req.body || {}, req.user && req.user.id);
+    res.status(out.idempotent_replay ? 200 : 201).json(out);
+  } catch (err) { groupedError(err, res, next); }
+});
+
+router.get('/supplier-payments/:payment_id/settlements', ...guard, async (req, res, next) => {
+  try { res.json(await settlements.listSettlements(db, req.params.payment_id)); } catch (err) { groupedError(err, res, next); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -86,6 +86,7 @@ module.exports = {
       'services/suppliers/shipping-capability-contract.js',
       'services/purchasing-trigger-service.js',
       'services/supplier-payment-state.js',
+      'services/supplier-payment-settlement-service.js',
       'services/supplier-payment-review.js',
       'services/supplier-payment-orchestrator.js',
       'services/supplier-real-debit-verification.js',
@@ -140,6 +141,7 @@ module.exports = {
       'migrations/280_supplier_execution_payments.sql',
       'migrations/281_supplier_payment_proofs.sql',
       'migrations/284_supplier_execution_fulfillments.sql',
+      'migrations/293_supplier_payment_settlements.sql',
     ],
     scripts: [
       'scripts/purchase-lines-parity-check.js',
@@ -170,6 +172,9 @@ module.exports = {
       'tests/integration/supplier-execution-persistence-postgres.test.js',
       'tests/integration/supplier-execution-payments-postgres.test.js',
       'tests/unit/supplier-payment-state.test.js',
+      'tests/unit/supplier-payment-settlement-service.test.js',
+      'tests/unit/purchasing-supplier-payment-settlements-route.test.js',
+      'tests/integration/supplier-payment-settlements-real-db.test.js',
       'tests/unit/supplier-payment-review.test.js',
       'tests/unit/supplier-payment-orchestrator.test.js',
       'tests/unit/supplier-real-debit-verification.test.js',
@@ -246,15 +251,17 @@ module.exports = {
       'products: R',
       'purchase_orders: RW!',
       'relais: R',
+      'supplier_execution_payments: R',
+      'supplier_payment_settlements: RW',
       'suppliers: RW',
     ],
   },
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 20,
-    totalRoutes: 20,
-    note: '20/20 routes protégées (guard admin appliqué sur chaque route de routes/purchasing.js — GET/POST/DELETE confondus, y compris le référentiel fournisseur).',
+    authedRoutesDetected: 22,
+    totalRoutes: 22,
+    note: '22/22 routes protégées (guard admin appliqué sur chaque route de routes/purchasing.js — GET/POST/DELETE confondus, y compris le référentiel fournisseur).',
   },
   contract: {
     exposes: [
@@ -334,6 +341,8 @@ module.exports = {
   authority: 'backend-core — tout changement du flux d\'engagement fournisseur (Procurement Route, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing ; supplier-connectivity possède l\'identité provider, la Supplier Order Identity et le contrat générique d\'adapter',
 
   invariants: [
+    { statement: 'coût d\'achat réel (migration 293) : supplier_payment_settlements est append-only (UPDATE/DELETE/TRUNCATE refusés, correction = ligne de compensation typée), n\'est écrite que par supplier-payment-settlement-service (admin, preuve + idempotence, FOR UPDATE sur le paiement, devise = devise du paiement, plafonds de règlement/remboursement) ; seuls les KMF réellement débités hors frais valorisent l\'achat réel, les frais sont un coût payment distinct qui remplace l\'estimé, le taux effectif est calculé (Σ KMF / Σ devise) et jamais un taux de référence ; le shadow ne passe product_purchase en real qu\'avec lignes confirmées, paiements succeeded+real_debit_verified+matched et couverture exacte de la valeur confirmée',
+      test: 'tests/integration/supplier-payment-settlements-real-db.test.js' },
     'le détail GET /api/purchasing/po/:po_id conserve son guard admin et son contrat PO regroupée ; supplier_execution projette en lecture seule ordres, liens de lignes, groupes, membres, paiements, preuves et événements depuis un même snapshot SQL, sans appel provider, nouveau verdict ni agrégat monétaire ; montants décimaux en texte et devises explicites, aucun facts/message provider brut exposé',
     { statement: 'les lecteurs d\'achat (signaux, GET /api/purchasing, complétude de réception, scans Hub, stock-sync) lisent l\'engagé et le reçu par ligne via v_purchase_line_progress, jamais purchase_orders.qty/received_qty ; la vue redonne exactement l\'ancien calcul pour les PO historiques (avec ligne, sans ligne avant 225, annulées) et is_order_complete la consomme ; un item déjà couvert par les lignes (autre fournisseur compris) ne se rachète pas',
       test: 'tests/integration/purchase-line-progress-postgres.test.js' },
