@@ -3,7 +3,7 @@
 -- Audit trigger runs in the same transaction as the source UPDATE.
 CREATE TABLE IF NOT EXISTS customs_shipment_financial_audit (
   id BIGSERIAL PRIMARY KEY,
-  shipment_id UUID NOT NULL REFERENCES customs_shipments(id) ON DELETE RESTRICT,
+  shipment_id UUID NOT NULL, -- immutable reference; deliberately no FK: historical audit survives deletion
   changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actor_id TEXT,
   reason TEXT,
