@@ -18,6 +18,7 @@ const {
   editorialReady,
   classify,
   countReasons,
+  visualFrReviewScope,
 } = require('../../scripts/catalog-refinery-final-acceptance');
 
 function baseRow(overrides = {}) {
@@ -59,6 +60,12 @@ function baseRow(overrides = {}) {
 }
 
 describe('catalog Raffinerie final acceptance', () => {
+  test('technical gate never claims source-image French text was reviewed', () => {
+    expect(visualFrReviewScope()).toEqual({
+      status:'NOT_EVALUATED', requires_separate_proof:true, certified:false,
+    });
+  });
+
   test('refuses non-disposable runtime', () => {
     expect(() => assertDisposableRuntime({
       KOMERCE_ENV: 'production',
