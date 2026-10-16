@@ -113,6 +113,14 @@ describe('catalog canonical certification', () => {
     expect(result.certification.reasons).toContain('supplier_order_identity_incomplete');
   });
 
+  test('SQL certification excludes blank supplier unit refs and blank SOI', async () => {
+    const q = {query: jest.fn().mockResolvedValue({rows:[]})};
+    await certifyCatalogProduct(q, 'p-1', {publicationGuard:PASS_GUARD});
+    const sql = q.query.mock.calls[0][0];
+    expect(sql).toContain("NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL");
+    expect(sql).toContain("NULLIF(BTRIM(supplier_order_identity), '') IS NOT NULL");
+  });
+
   test('publication guard failure is part of the same certification verdict', () => {
     const result = evaluateCatalogProductCertification(readyRow(), {
       publicationGuard: () => ({ ok: false, code: 'invalid_price' }),
