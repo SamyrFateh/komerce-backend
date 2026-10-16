@@ -126,6 +126,11 @@ function insertRowUnderSection(md, sectionHeading, row) {
   return lines.join('\n');
 }
 
+/** Retirer un bloc en fin de fichier ne doit pas laisser de ligne vide finale. */
+function finalizeMarkdown(md) {
+  return md.replace(/\n{2,}$/, '\n');
+}
+
 function main() {
   const P = core.paths();
   const liveSql = fs.readFileSync(P.liveSql, 'utf8');
@@ -177,6 +182,9 @@ function main() {
     console.log(`   ↑ ${b.object} → ligne de tableau sous "${b.section}"`);
   }
 
+  // Retirer un bloc en fin de fichier laisse une ligne vide finale (git diff --check échoue).
+  md = finalizeMarkdown(md);
+
   if (WRITE) {
     fs.writeFileSync(P.schema, md);
     console.log(`✅ SCHEMA.md mis a jour : ${promotable.length} promotion(s). Relancer gate:schema pour confirmer.`);
@@ -188,4 +196,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { insertRowUnderSection, buildRow };
+module.exports = { insertRowUnderSection, buildRow, finalizeMarkdown };
