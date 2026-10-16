@@ -295,3 +295,45 @@ describe('supplier commercial mapping priority', () => {
     expect(q.query).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('confirmed commercial attachment priority', () => {
+  const { boutiqueTaxonomyFromCandidate, resolveActiveBoutiqueTaxonomy } =
+    require('../../services/catalog-candidate-product-service');
+
+  test('confirmed boutique taxonomy overrides discovery but never the customs field', async () => {
+    const candidate = {
+      product_name: 'Phone Case',
+      komerce_category: 'douane-originale',
+      commercial_taxonomy_review: {
+        status: 'CONFIRMED', category: 'Tech', subcategory: 'Phones',
+        source: 'SUPPLIER_MAPPING',
+      },
+      raw_payload: {
+        discovery: { target_category: 'Auto', target_subcategory: 'Accessoires' },
+      },
+    };
+    const q = { query: jest.fn().mockResolvedValue({
+      rows: [{ category: 'Tech', subcategory: 'Phones' }],
+    }) };
+    expect(boutiqueTaxonomyFromCandidate(candidate)).toEqual({
+      category: 'Tech', subcategory: 'Phones',
+    });
+    await expect(resolveActiveBoutiqueTaxonomy(q, candidate)).resolves.toEqual({
+      category: 'Tech', subcategory: 'Phones',
+    });
+    expect(q.query).toHaveBeenCalledTimes(1);
+    expect(q.query.mock.calls[0][1]).toEqual(['Tech', 'Phones']);
+    expect(candidate.komerce_category).toBe('douane-originale');
+  });
+
+  test('unconfirmed commercial review cannot override existing discovery', () => {
+    expect(boutiqueTaxonomyFromCandidate({
+      commercial_taxonomy_review: {
+        status: 'PENDING', category: 'Tech', subcategory: 'Phones',
+      },
+      raw_payload: {
+        discovery: { target_category: 'Auto', target_subcategory: 'Accessoires' },
+      },
+    })).toEqual({ category: 'Auto', subcategory: 'Accessoires' });
+  });
+});
