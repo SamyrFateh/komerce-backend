@@ -524,11 +524,11 @@ describe('getShipment', () => {
 
 describe('createShipment — happy paths', () => {
   const makeClient = (overrides = {}) => ({
-    query: jest.fn(async (sql) => {
+    query: jest.fn(async (sql, params) => {
       const s = sql.trim();
       if (s === 'BEGIN' || s === 'COMMIT' || s === 'ROLLBACK') return { rows: [] };
       if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
-       if (s.includes('FROM parcels p JOIN orders o')) return {rows:[{id:'p1',market_id:'KM'},{id:'p2',market_id:'KM'}]};
+       if (s.includes('FROM parcels p JOIN orders o')) return {rows:(params?.[0] || []).map(id=>({id,market_id:'KM'}))};
        if (s.startsWith('INSERT INTO customs_shipments')) {
         return { rows: [overrides.shipment || { id: 'ship-1', reference: 'ENV-001' }] };
       }
