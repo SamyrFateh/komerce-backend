@@ -153,7 +153,7 @@ async function advanceGoldenCustoms(db, reference) {
       await db.query(
         `INSERT INTO parcels
            (id,order_id,reference,status,type,relais_id,shipped_at,in_transit_at,arrived_at)
-         VALUES ($1,$2,$3,'arrived','standard',$4,
+         VALUES ($1,$2,$3,'in_transit','standard',$4,
                  NOW()-INTERVAL '3 hours',NOW()-INTERVAL '2 hours',NOW()-INTERVAL '1 hour')`,
         [parcelId, order.id, 'KOM-BOX-GOLDEN-' + run, order.relais_id]
       );
@@ -190,6 +190,8 @@ async function advanceGoldenCustoms(db, reference) {
       parcel_ids: [parcel.id],
     }, order.user_id, { marketId: order.market_id });
     shipmentId = created.shipment.id;
+    // Le groupage se constitue sur un colis expédié ; le colis arrive ensuite, la déclaration suit l'arrivée.
+    await db.query("UPDATE parcels SET status='arrived' WHERE id=$1 AND status='in_transit'", [parcel.id]);
   }
 
   await declareCustomsPayment(db, shipmentId, {
