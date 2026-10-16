@@ -95,6 +95,7 @@ module.exports = {
       'tests/unit/customs-shipment-service.test.js',
       'tests/unit/customs-shipment-fee-service.test.js',
       'tests/unit/admin-customs-shipment-fees-route.test.js',
+      'tests/unit/admin-customs-shipment-parcels-route.test.js',
       'tests/integration/customs-shipment-fees-real-db.test.js',
       'tests/integration/customs-effective-rates-real-db.test.js',
       'tests/integration/customs-certification-real-db.test.js',

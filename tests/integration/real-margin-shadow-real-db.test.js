@@ -81,7 +81,7 @@ if (!hasIntegrationEnv) {
       `INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf) VALUES ($1, $2, $3, 1, 10000)`,
       [orderItemId, orderId, productId]
     );
-    await db.query(`INSERT INTO parcels (id, order_id, reference) VALUES ($1, $2, $3)`, [parcelId, orderId, `${RUN_TAG}-parcel-${seq}`]);
+    await db.query(`INSERT INTO parcels (id, order_id, reference, status) VALUES ($1, $2, $3, 'in_transit')`, [parcelId, orderId, `${RUN_TAG}-parcel-${seq}`]);
     await db.query(
       `INSERT INTO parcel_items (id, parcel_id, order_item_id, product_id, quantity, qty_allocated) VALUES ($1, $2, $3, $4, 1, 1)`,
       [crypto.randomUUID(), parcelId, orderItemId, productId]

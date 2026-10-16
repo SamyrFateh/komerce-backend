@@ -61,7 +61,7 @@ if (!hasIntegrationEnv) {
     for (let i = 0; i < parcels; i++) {
       const parcelId = crypto.randomUUID();
       parcelIds.push(parcelId); ids.push(parcelId);
-      await db.query(`INSERT INTO parcels (id, order_id, reference, status) VALUES ($1,$2,$3,'preparation')`,
+      await db.query(`INSERT INTO parcels (id, order_id, reference, status) VALUES ($1,$2,$3,'in_transit')`,
         [parcelId, orderId, `${RUN_TAG}-parcel-${seq}-${i}`]);
       if (withParcelItems) {
         // un order_item par colis (unicité order_item/colis)

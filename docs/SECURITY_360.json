@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-16T13:34:41.781Z",
+  "generatedAt": "2026-10-16T15:48:47.621Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 737,
-    "protected": 682,
+    "total": 739,
+    "protected": 684,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -688,6 +688,20 @@
     },
     {
       "key": "POST /api/admin/customs-shipments/{id}/fees",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/parcels/remove",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/parcels",
       "level": "PROTECTED",
       "roles": [
         "admin"

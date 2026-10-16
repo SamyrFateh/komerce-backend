@@ -393,7 +393,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       `INSERT INTO parcels
          (id, order_id, reference, status, type, relais_id,
           shipped_at, in_transit_at, arrived_at)
-       VALUES ($1,$2,$3,'arrived','standard',$4,
+       VALUES ($1,$2,$3,'in_transit','standard',$4,
                NOW() - INTERVAL '3 hours',
                NOW() - INTERVAL '2 hours',
                NOW() - INTERVAL '1 hour')`,
@@ -419,6 +419,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     }, userId, { marketId });
 
     const customsShipmentId = createdCustoms.shipment.id;
+    // Le colis arrive ensuite (le groupage se constitue sur des colis expédiés, la déclaration suit l'arrivée).
+    await q(`UPDATE parcels SET status = 'arrived' WHERE id = $1`, [parcelId]);
 
     let customsGate = await isCustomsDeclaredForOrder(db, orderId);
     expect(customsGate).toMatchObject({ allowed: false });

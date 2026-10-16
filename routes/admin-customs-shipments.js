@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       customs_shipment_fees, customs_shipment_parcels, customs_shipments
- * @db-write      customs_shipment_parcels, customs_shipments, orders, parcels
+ * @db-write      customs_shipment_parcel_events, customs_shipment_parcels, customs_shipments, orders, parcels
  * @db-write-via:customs-shipment-fee-service customs_shipment_fees
  * @db-write-via:customs-invoice transaction_documents
  * @db-txn        resolve_before_behavior_change
@@ -93,6 +93,23 @@ router.post('/:id/deactivate', ...guard, async (req, res, next) => {
 router.post('/:id/activate', ...guard, async (req, res, next) => {
   try {
     res.json(await svc.activateShipment(db, req.params.id, req.body.parcel_ids));
+  } catch (err) { next(err); }
+});
+
+// POST /api/admin/customs-shipments/:id/parcels — ajout de colis à un groupage ouvert (reason obligatoire).
+// Atomique : contrôles marché / unicité / éligibilité, journal immuable, reventilation complète.
+router.post('/:id/parcels', ...guard, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    res.json(await svc.addParcelsToShipment(db, req.params.id, body.parcel_ids, { id: req.user.id, reason: body.reason }));
+  } catch (err) { next(err); }
+});
+
+// POST /api/admin/customs-shipments/:id/parcels/remove — retrait de colis d'un groupage ouvert.
+router.post('/:id/parcels/remove', ...guard, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    res.json(await svc.removeParcelsFromShipment(db, req.params.id, body.parcel_ids, { id: req.user.id, reason: body.reason }));
   } catch (err) { next(err); }
 });
 
