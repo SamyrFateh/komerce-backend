@@ -84,6 +84,14 @@ function inspectMediaSet(media, reviews = []) {
   if (ids.some(id => !nonempty(id)) || new Set(ids).size !== ids.length) {
     return { ready: false, code: 'SOURCE_MEDIA_IDENTITY_NOT_UNIQUE', results: [] };
   }
+  // Conflicting or orphaned reviews must not silently win by array order.
+  const reviewIds = reviews.map(r => r?.source_media_id);
+  if (reviewIds.some(id => !nonempty(id)) || new Set(reviewIds).size !== reviewIds.length) {
+    return { ready: false, code: 'VISUAL_REVIEW_IDENTITY_NOT_UNIQUE', results: [] };
+  }
+  if (reviewIds.some(id => !ids.includes(id))) {
+    return { ready: false, code: 'VISUAL_REVIEW_SOURCE_NOT_IN_MEDIA_SET', results: [] };
+  }
   const results = media.map(m => inspectOne(m, reviews.find(r =>
     r?.source_media_id === (m.supplier_media_id ?? m.source_media_id)
   )));
