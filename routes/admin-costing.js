@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/*, services/cost-allocation/real-margin-shadow.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       customs_shipments, finance_config, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, products, relais
+ * @db-read       customs_shipments, finance_config, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, products, refunds, purchase_lines, relais, supplier_execution_payments
  * @db-write      finance_config
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -47,6 +47,7 @@
 const express = require('express');
 const db = require('../db');
 const costAllocation = require('../services/cost-allocation');
+const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
 const dashboardCache = require('../services/dashboard-cache');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'admin-costing' });
@@ -664,6 +665,42 @@ router.post('/recalibration-apply', authenticate, requireAdmin, async (req, res,
     res.json({ ok: true, applied: r.rows[0] });
   } catch (err) {
     log.error('[admin-costing] POST /recalibration-apply error:', err);
+    next(err);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// SHADOW — marge réelle canonique (LECTURE SEULE, n'écrit rien, n'alerte pas)
+// Admin global (comme les GET ci-dessus) ; market_id optionnel en query
+// (jamais le body) pour borner. Le listing exige un marché explicite.
+// ═══════════════════════════════════════════════════════════════════════
+const _UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+router.get('/orders/:id/real-margin-shadow', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    if (!_UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'id invalide' });
+    const marketId = req.query.market_id ? String(req.query.market_id) : null;
+    if (marketId && !_UUID_RE.test(marketId)) return res.status(400).json({ error: 'market_id invalide' });
+    const result = await realMarginShadow.computeOrderRealMarginShadow(req.params.id, { marketId });
+    if (!result) return res.status(404).json({ error: 'Commande introuvable' });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/real-margin-shadow', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const marketId = req.query.market_id ? String(req.query.market_id) : null;
+    if (!marketId || !_UUID_RE.test(marketId)) return res.status(400).json({ error: 'market_id requis (uuid)' });
+    const result = await realMarginShadow.listRealMarginShadow({
+      marketId,
+      limit: req.query.limit,
+      offset: req.query.offset,
+      sinceDays: req.query.since_days,
+    });
+    res.json(result);
+  } catch (err) {
     next(err);
   }
 });
