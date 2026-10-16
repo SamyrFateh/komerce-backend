@@ -43,7 +43,7 @@ async function inspectCatalogVisualFrEvidence(q, productId) {
     french_translation: row.french_translation,
     french_presentation: row.french_presentation,
     reviewed_by: row.reviewed_by,
-    reviewed_at: row.reviewed_at,
+    reviewed_at: row.reviewed_at instanceof Date ? row.reviewed_at.toISOString() : row.reviewed_at,
   }));
   return inspectMediaSet(media, reviews);
 }
