@@ -41,3 +41,14 @@ test('zero active media is never a valid visual proof',async()=>{
     ready:false,code:'SOURCE_MEDIA_MISSING',
   });
 });
+
+test('PostgreSQL timestamptz Date is normalized before evidence validation', async () => {
+  const q={query:jest.fn().mockResolvedValue({rows:[{
+    ...media, review_source_media_id:'ali:image:1', source_url:media.url,
+    review_option_values:{color:'red'}, text_presence:'NONE',
+    reviewed_by:'editor', reviewed_at:new Date('2026-10-16T12:00:00.000Z'),
+  }]})};
+  expect(await inspectCatalogVisualFrEvidence(q,'p1')).toMatchObject({
+    ready:true,code:'VISUAL_FR_REVIEWED',
+  });
+});
