@@ -211,3 +211,13 @@ describe('admin-customs-shipments — analytics (Lot C)', () => {
     expect(res.body.ecart_kmf).toBe(100);
   });
 });
+
+// DOUANE-2A: audit actor must be wired by the authenticated mutation boundary.
+describe('DOUANE-2A actor audit wiring: routes/admin-customs-shipments.js', () => {
+  test('keeps authenticated actor propagation explicit', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(path.join(__dirname, '../../routes/admin-customs-shipments.js'), 'utf8');
+    expect(src).toMatch(/updateShipment\(db, req\.params\.id, req\.body, \{ id: req\.user\.id \}/);
+  });
+});
