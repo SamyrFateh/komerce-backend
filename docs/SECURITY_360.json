@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-16T16:15:22.480Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 740,
-    "protected": 685,
+    "total": 741,
+    "protected": 686,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -443,6 +443,13 @@
     },
     {
       "key": "POST /api/admin/catalog/approval-queue/{id}/approve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/catalog/approval-queue/{id}/media/{mediaId}/visual-fr-review",
       "level": "PROTECTED",
       "roles": [
         "admin"
