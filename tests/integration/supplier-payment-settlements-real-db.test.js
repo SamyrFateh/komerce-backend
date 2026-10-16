@@ -11,7 +11,7 @@
  *
  * Feature propriétaire : purchasing / economic-engine
  *
- * Coût d'achat réel sur vraie base : règlements KMF (migration 293) saisis par le
+ * Coût d'achat réel sur vraie base : règlements KMF (migration 294) saisis par le
  * service admin, lus par le shadow. Paiements partiels multi-taux, multi-devises,
  * remboursements typés, PO regroupée (ventilation sans perte), idempotence,
  * append-only, et immuabilité des prix/imputations/marges legacy.

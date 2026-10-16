@@ -1,4 +1,4 @@
--- @migration 293_supplier_payment_settlements.sql
+-- @migration 294_supplier_payment_settlements.sql
 -- @domain    purchasing / economic-engine
 -- @purpose   Faits append-only de règlement fournisseur en KMF réellement débités (coût d'achat réel).
 --
@@ -21,10 +21,10 @@
 DO $pre$
 BEGIN
   IF to_regclass('public.supplier_execution_payments') IS NULL THEN
-    RAISE EXCEPTION '293 precondition: migration 280 requise (supplier_execution_payments)';
+    RAISE EXCEPTION '294 precondition: migration 280 requise (supplier_execution_payments)';
   END IF;
   IF to_regclass('public.supplier_payment_settlements') IS NOT NULL THEN
-    RAISE EXCEPTION '293 precondition: supplier_payment_settlements déjà présente (état inattendu)';
+    RAISE EXCEPTION '294 precondition: supplier_payment_settlements déjà présente (état inattendu)';
   END IF;
 END
 $pre$;

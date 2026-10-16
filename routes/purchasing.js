@@ -50,7 +50,7 @@
  *   POST /api/purchasing/po/:po_id/confirm            → confirmer une PO notified ligne par ligne (reliquat en ligne ouverte)
  *   POST /api/purchasing/lines                        → créer une ligne ouverte manuellement (ex. reliquat chez un autre fournisseur)
  *   POST /api/purchasing/lines/:id/settle             → clôturer une ligne confirmée (reliquat en ligne ouverte)
- * Coût d'achat réel (migration 293) :
+ * Coût d'achat réel (migration 294) :
  *   POST /api/purchasing/supplier-payments/:payment_id/settlements → saisir un règlement/remboursement réellement débité (KMF, preuve, idempotent)
  *   GET  /api/purchasing/supplier-payments/:payment_id/settlements → lister les règlements du paiement
  */

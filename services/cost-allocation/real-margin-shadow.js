@@ -32,7 +32,7 @@
  * Achat : `products.cost_kmf` (allocate.js, is_actual=TRUE) est un coût
  * catalogue du jour, JAMAIS un achat réel. Un achat confirmé
  * (purchase_lines) n'est valorisable en KMF réel que par les KMF réellement
- * débités (supplier_payment_settlements, migration 293, saisis avec preuve) ;
+ * débités (supplier_payment_settlements, migration 294, saisis avec preuve) ;
  * sans cela → `confirmed_unvalued`. Le taux effectif est CALCULÉ
  * (Σ KMF / Σ devise), jamais un taux de référence.
  *   - Réel seulement si : toutes les lignes actives de la commande confirmées ;

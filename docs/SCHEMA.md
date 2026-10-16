@@ -398,7 +398,7 @@ role: Preuves monétaires provider liées à supplier_execution_payments ; unici
 <!-- schema-pending
 object: supplier_payment_settlements
 kind: table
-migration: 293
+migration: 294
 section: ### 4.10 Sourcing et fournisseurs
 role: Faits append-only de règlement fournisseur en KMF réellement débités (payment hors frais ; goods_refund, fee_refund, other_refund typés) rattachés à un supplier_execution_payment, avec preuve et clé idempotente ; frais d'opération portés à part ; taux effectif calculé (Σ KMF / Σ devise), jamais stocké ni dérivé d'un taux de référence.
 -->
