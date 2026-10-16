@@ -278,6 +278,69 @@ if (!hasIntegrationEnv) {
         .rejects.toMatchObject({ status: 422, code: 'COST_ALLOCATION_INCOMPLETE' });
     });
 
+    it('G3b — manual : parts saisies, somme exacte au centime, ventilation sur les articles, audit tracé', async () => {
+      const ps = await seedParcels(SPECS);
+      const shares = [
+        { parcel_id: ps[0].parcelId, customs_share_kmf: '400.01' },
+        { parcel_id: ps[1].parcelId, customs_share_kmf: '300' },
+        { parcel_id: ps[2].parcelId, customs_share_kmf: '300' },
+      ];
+      const s = await makeShipment(ps, { allocation_method: 'manual', customs_paid_kmf: '1000.01', parcel_shares: shares });
+      expect(Math.round((await allocTotal(s.id, 'customs')) * 100)).toBe(100001);
+      const { rows } = await db.query(
+        'SELECT parcel_id, customs_share_kmf, manual_override, allocation_basis FROM customs_shipment_parcels WHERE shipment_id = $1', [s.id]);
+      expect(rows.every((r) => r.manual_override === true && r.allocation_basis === 'manual')).toBe(true);
+      expect(Number(rows.find((r) => r.parcel_id === ps[0].parcelId).customs_share_kmf)).toBe(400.01);
+      expect((await allocByOrder(s.id, 'customs'))[ps[2].orderId]).toBe(300);
+    });
+
+    it('G3c — manual : somme ≠ montant, colis manquant/inconnu, montant invalide → refus, rien d\'écrit', async () => {
+      const ps = await seedParcels(SPECS);
+      const mk = (a, b, c) => [
+        { parcel_id: ps[0].parcelId, customs_share_kmf: a },
+        { parcel_id: ps[1].parcelId, customs_share_kmf: b },
+        { parcel_id: ps[2].parcelId, customs_share_kmf: c },
+      ];
+      await expect(makeShipment(ps, { allocation_method: 'manual', customs_paid_kmf: 1000, parcel_shares: mk(400, 300, 299.99) }))
+        .rejects.toMatchObject({ status: 422, code: 'COST_ALLOCATION_INCOMPLETE' });
+      await expect(makeShipment(ps, { allocation_method: 'manual', customs_paid_kmf: 1000, parcel_shares: mk(500, 500, 0).slice(0, 2) }))
+        .rejects.toMatchObject({ status: 422, code: 'COST_ALLOCATION_INCOMPLETE' });
+      await expect(makeShipment(ps, { allocation_method: 'manual', customs_paid_kmf: 1000, parcel_shares: mk(-1, 500, 501) }))
+        .rejects.toMatchObject({ status: 400, code: 'CUSTOMS_SHARES_INVALID' });
+      await expect(makeShipment(ps, { allocation_method: 'manual', customs_paid_kmf: 1000, parcel_shares: mk(333.333, 333, 333.667) }))
+        .rejects.toMatchObject({ status: 400, code: 'CUSTOMS_SHARES_INVALID' });
+      await expect(makeShipment(ps, { allocation_method: 'by_weight', customs_paid_kmf: 1000, parcel_shares: mk(1, 1, 998) }))
+        .rejects.toMatchObject({ status: 400, code: 'CUSTOMS_SHARES_REQUIRE_MANUAL' });
+    });
+
+    it('G3d — manual : correction du montant et retrait de colis exigent de nouvelles parts ; ajout/retrait avec parts conservés', async () => {
+      const ps = await seedParcels(SPECS);
+      const sh = (arr) => arr.map(([i, v]) => ({ parcel_id: ps[i].parcelId, customs_share_kmf: v }));
+      const s = await makeShipment(ps, { allocation_method: 'manual', customs_paid_kmf: 1000, parcel_shares: sh([[0, 500], [1, 300], [2, 200]]) });
+      // montant modifié sans nouvelles parts : refus, ventilation précédente intacte
+      await expect(svc.updateShipment(db, s.id, { customs_paid_kmf: 1200 }, {})).rejects.toMatchObject({ status: 422 });
+      expect(await allocTotal(s.id, 'customs')).toBe(1000);
+      // montant + parts : accepté, trace d'audit
+      await svc.updateShipment(db, s.id, { customs_paid_kmf: 1200, parcel_shares: sh([[0, 600], [1, 300], [2, 300]]), reason: 'facture rectifiée' }, {});
+      expect(await allocTotal(s.id, 'customs')).toBe(1200);
+      const { rows: [a] } = await db.query(
+        `SELECT COUNT(*)::int n FROM customs_shipment_financial_audit WHERE shipment_id = $1 AND new_values->'allocation_config'->'manual_shares' IS NOT NULL`, [s.id]);
+      expect(a.n).toBeGreaterThanOrEqual(1);
+      // retrait sans parts à jour : refus ; avec parts : conservé
+      await expect(svc.removeParcelsFromShipment(db, s.id, [ps[2].parcelId], { reason: 'retrait' })).rejects.toMatchObject({ status: 422 });
+      expect(await allocTotal(s.id, 'customs')).toBe(1200);
+      await svc.removeParcelsFromShipment(db, s.id, [ps[2].parcelId], { reason: 'retrait', parcel_shares: sh([[0, 800], [1, 400]]) });
+      expect(await allocTotal(s.id, 'customs')).toBe(1200);
+      expect((await allocByOrder(s.id, 'customs'))[ps[2].orderId]).toBeUndefined();
+    });
+
+    it('G3e — manual : zéro confirmé sans parts accepté ; inconnu ne ventile rien', async () => {
+      const ps = await seedParcels(SPECS);
+      const z = await makeShipment(ps, { allocation_method: 'manual', customs_paid_kmf: 0 });
+      expect(z.status).toBe('declared');
+      expect(await allocTotal(z.id, 'customs')).toBe(0);
+    });
+
     it('G4 — zéro confirmé ≠ inconnu : 0 ventile des parts nulles ; NULL ne ventile rien', async () => {
       const ps = await seedParcels(SPECS);
       const z = await makeShipment(ps, { allocation_method: 'by_weight', customs_paid_kmf: 0 });

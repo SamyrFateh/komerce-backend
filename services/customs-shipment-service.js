@@ -139,6 +139,42 @@ function defaultAllocationMethod(allocationMethod, transportMode) {
 }
 
 /**
+ * Répartition manuelle (A4) : une part colis par colis, saisie contrôlée.
+ * Entrée : tableau [{ parcel_id, customs_share_kmf }] ou objet { parcel_id: montant }.
+ * Sortie : objet { parcel_id: "123.45" } (chaînes à 2 décimales, jamais de flottant persisté).
+ * Les parts sont persistées dans allocation_config.manual_shares : colonne déjà auditée
+ * (acteur, raison, avant / après) par le trigger d'audit financier.
+ */
+function normalizeManualShares(raw) {
+  if (raw === undefined || raw === null) return null;
+  const entries = Array.isArray(raw)
+    ? raw.map(item => [item && item.parcel_id, item && item.customs_share_kmf])
+    : (typeof raw === 'object' ? Object.entries(raw) : null);
+  if (!entries || !entries.length) {
+    throw httpError(400, 'parcel_shares : liste de parts colis requise', 'CUSTOMS_SHARES_INVALID');
+  }
+  const out = {};
+  for (const [parcelId, amount] of entries) {
+    const id = parcelId == null ? '' : String(parcelId).trim();
+    const n = typeof amount === 'string' ? Number(amount.replace(',', '.')) : Number(amount);
+    if (!id || amount === null || amount === '' || !Number.isFinite(n) || n < 0
+        || Math.abs(n * 100 - Math.round(n * 100)) > 1e-6) {
+      throw httpError(400, 'parcel_shares : colis et montant ≥ 0 (2 décimales max) requis', 'CUSTOMS_SHARES_INVALID');
+    }
+    if (Object.prototype.hasOwnProperty.call(out, id)) {
+      throw httpError(400, 'parcel_shares : colis en double', 'CUSTOMS_SHARES_INVALID');
+    }
+    out[id] = (Math.round(n * 100) / 100).toFixed(2);
+  }
+  return out;
+}
+
+function withManualShares(allocationConfig, shares) {
+  const base = allocationConfig && typeof allocationConfig === 'object' ? allocationConfig : {};
+  return { ...base, manual_shares: shares };
+}
+
+/**
  * Calcule la part de douane de chaque colis selon la méthode choisie.
  *
  * @param {{ customs_paid_kmf, allocation_method?, allocation_config? }} shipment
@@ -159,7 +195,7 @@ function allocateCustoms(shipment, parcels) {
   if (method === 'manual') {
     return parcels.map(p => ({
       ...p,
-      customs_share_kmf: 0,
+      customs_share_kmf: p.manual_share_kmf != null ? Number(p.manual_share_kmf) : 0,
       allocation_basis:  'manual',
     }));
   }
@@ -432,6 +468,24 @@ async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
 
   // volume_m3 : requis par allocateCustoms (méthode 'by_volume', doctrine fret
   // maritime au m³ — cf. migration 095). cm3 → m3.
+  let manualShares = null;
+  if ((shipmentMeta.allocation_method || 'by_cif_value') === 'manual') {
+    const stored = shipmentMeta.allocation_config && shipmentMeta.allocation_config.manual_shares;
+    const zeroTotal = toCents(shipmentMeta.customs_paid_kmf) === 0;
+    if (stored) {
+      const keys = Object.keys(stored);
+      if (keys.length !== parcelIds.length || parcelIds.some(id => !Object.prototype.hasOwnProperty.call(stored, String(id)))) {
+        throw httpError(422,
+          'Répartition manuelle : une part par colis rattaché est requise (parcel_shares à jour après tout ajout / retrait)',
+          'COST_ALLOCATION_INCOMPLETE');
+      }
+      manualShares = stored;
+    } else if (!zeroTotal) {
+      throw httpError(422,
+        'Répartition manuelle : parcel_shares requis (une part par colis, somme = montant déclaré)',
+        'COST_ALLOCATION_INCOMPLETE');
+    }
+  }
   const allocations = allocateCustoms(
     shipmentMeta,
     parcelData.map(p => ({
@@ -439,6 +493,7 @@ async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
       cif_kmf:    Number(p.cif_kmf)    || 0,
       weight_kg:  Number(p.weight_kg)  || 0,
       volume_m3:  (Number(p.volume_cm3) || 0) / 1e6,
+      manual_share_kmf: manualShares ? manualShares[String(p.id)] : null,
     }))
   );
   const volumeByParcelId = new Map(parcelData.map(p => [p.id, Number(p.volume_cm3) || 0]));
@@ -447,11 +502,12 @@ async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
     await client.query(
       `INSERT INTO customs_shipment_parcels
          (shipment_id, parcel_id, parcel_cif_kmf, parcel_weight_kg, parcel_volume_cm3,
-          customs_share_kmf, allocation_basis)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+          customs_share_kmf, allocation_basis, manual_override)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,($7 = 'manual'))
        ON CONFLICT (shipment_id, parcel_id) DO UPDATE
          SET customs_share_kmf = EXCLUDED.customs_share_kmf,
              allocation_basis  = EXCLUDED.allocation_basis,
+             manual_override   = EXCLUDED.manual_override,
              parcel_volume_cm3 = EXCLUDED.parcel_volume_cm3,
              updated_at        = NOW()`,
       [
@@ -513,6 +569,11 @@ async function createShipment(db, body, userId, options = {}) {
   } = body;
   const marketId = options.marketId || null;
   const effectiveMethod = defaultAllocationMethod(allocation_method, transport_mode);
+  const manualShares = normalizeManualShares(body.parcel_shares);
+  if (manualShares && effectiveMethod !== 'manual') {
+    throw httpError(400, 'parcel_shares exige allocation_method = manual', 'CUSTOMS_SHARES_REQUIRE_MANUAL');
+  }
+  const effectiveConfig = manualShares ? withManualShares(allocation_config, manualShares) : allocation_config;
 
   // customs_paid_kmf n'est plus requis à la création (workflow en deux étapes)
   // Il est saisi lors de la déclaration (declareCustomsPayment).
@@ -550,7 +611,7 @@ async function createShipment(db, body, userId, options = {}) {
         amount,
         freight == null ? null : freight, total_weight_kg || null,
         nb_parcels || null, effectiveMethod,
-        allocation_config ? JSON.stringify(allocation_config) : null,
+        effectiveConfig ? JSON.stringify(effectiveConfig) : null,
         notes || null, supplier_id || null, userId, marketId,
       ]
     );
@@ -573,7 +634,7 @@ async function createShipment(db, body, userId, options = {}) {
       ({ allocations } = await _reallocateDeclared(
         client,
         shipment.id,
-        { customs_paid_kmf: amount, allocation_method: effectiveMethod, allocation_config },
+        { customs_paid_kmf: amount, allocation_method: effectiveMethod, allocation_config: effectiveConfig },
         parcel_ids
       ));
     } else if (parcel_ids?.length) {
@@ -630,11 +691,12 @@ async function updateShipment(db, id, body, actor = {}) {
   for (const k of allowed) {
     if (body[k] !== undefined) values[k] = body[k];
   }
-  if (!Object.keys(values).length) {
+  const manualShares = normalizeManualShares(body.parcel_shares);
+  if (!Object.keys(values).length && !manualShares) {
     const e = new Error('Aucun champ à modifier'); e.status = 400; throw e;
   }
 
-  const touchesFinancial = FINANCIAL_FIELDS.some(k => values[k] !== undefined);
+  const touchesFinancial = manualShares ? true : FINANCIAL_FIELDS.some(k => values[k] !== undefined);
   if (values.customs_paid_kmf !== undefined) {
     values.customs_paid_kmf = parseConfirmedAmount(values.customs_paid_kmf, 'customs_paid_kmf');
   }
@@ -642,10 +704,15 @@ async function updateShipment(db, id, body, actor = {}) {
     values.freight_kmf = parseOptionalAmount(values.freight_kmf, 'freight_kmf');
   }
 
-  const keys = Object.keys(values);
-  const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
-  const params = [...keys.map(k => values[k]), id];
-  const updateSql = `UPDATE customs_shipments SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`;
+  const buildUpdate = () => {
+    const keys = Object.keys(values);
+    const setClause = keys.length ? keys.map((k, i) => `${k} = $${i + 1}`).join(', ') : 'reference = reference';
+    return {
+      params: [...keys.map(k => values[k]), id],
+      updateSql: `UPDATE customs_shipments SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`,
+    };
+  };
+  let { updateSql, params } = buildUpdate();
 
   if (!touchesFinancial) {
     const { rows: [shipment] } = await db.query(updateSql, params);
@@ -672,6 +739,16 @@ async function updateShipment(db, id, body, actor = {}) {
         'Expédition pending : le montant douane se saisit par la déclaration (POST /:id/declare)');
     }
 
+    if (manualShares) {
+      const method = values.allocation_method !== undefined ? values.allocation_method : current.allocation_method;
+      if ((method || 'by_cif_value') !== 'manual') {
+        throw httpError(400, 'parcel_shares exige allocation_method = manual', 'CUSTOMS_SHARES_REQUIRE_MANUAL');
+      }
+      const baseConfig = values.allocation_config !== undefined ? values.allocation_config : current.allocation_config;
+      values.allocation_config = JSON.stringify(withManualShares(
+        typeof baseConfig === 'string' ? JSON.parse(baseConfig) : baseConfig, manualShares));
+      ({ updateSql, params } = buildUpdate());
+    }
     const { rows: [shipment] } = await client.query(updateSql, params);
 
     let reallocated = false;
@@ -757,12 +834,12 @@ async function deactivateShipment(db, id, reason) {
  * @param {string[]} parcelIds
  * ✗ throws err.status=404
  */
-async function activateShipment(db, id, parcelIds) {
+async function activateShipment(db, id, parcelIds, rawShares) {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
 
-    const { rows: [shipment] } = await client.query(
+    let { rows: [shipment] } = await client.query(
       `UPDATE customs_shipments
           SET is_active = TRUE,
               deactivated_at = NULL,
@@ -776,6 +853,10 @@ async function activateShipment(db, id, parcelIds) {
       const e = new Error('Shipment not found'); e.status = 404; throw e;
     }
 
+    if (rawShares !== undefined && rawShares !== null) {
+      await setLocalCustomsAuditContext(client, null, 'réactivation avec parts manuelles');
+      shipment = await _applyManualSharesInTx(client, shipment, rawShares);
+    }
     const ids = Array.isArray(parcelIds) ? parcelIds : [];
     await assertShipmentParcelMarket(client, shipment.id, ids);
     await assertParcelsEligibleForGrouping(client, ids, shipment.id);
@@ -954,6 +1035,13 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
         'CUSTOMS_SHIPMENT_WITHOUT_PARCELS');
     }
 
+    // 2b. Parts manuelles (A4) : persistées dans allocation_config (colonne auditée) avant ventilation
+    const declaredShares = normalizeManualShares(payload && payload.parcel_shares);
+    if (declaredShares && (ship.allocation_method || 'by_cif_value') !== 'manual') {
+      throw httpError(400, 'parcel_shares exige allocation_method = manual', 'CUSTOMS_SHARES_REQUIRE_MANUAL');
+    }
+    const effectiveConfig = declaredShares ? withManualShares(ship.allocation_config, declaredShares) : ship.allocation_config;
+
     // 3. Mettre à jour le montant + statut
     const updates = {
       customs_paid_kmf,
@@ -963,6 +1051,7 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
     };
     if (freight_kmf !== undefined) updates.freight_kmf = freight_kmf;
     if (notes != null) updates.notes = notes;
+    if (declaredShares) updates.allocation_config = JSON.stringify(effectiveConfig);
 
     const fields = Object.keys(updates);
     const vals   = Object.values(updates);
@@ -980,7 +1069,7 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
       {
         customs_paid_kmf,
         allocation_method: ship.allocation_method || 'by_cif_value',
-        allocation_config: ship.allocation_config,
+        allocation_config: effectiveConfig,
       },
       parcelIds
     );
@@ -1042,6 +1131,20 @@ async function _lockOpenShipment(client, shipmentId) {
   return ship;
 }
 
+/** Persiste les parts manuelles (A4) dans allocation_config (audité) ; retourne l'expédition à jour. */
+async function _applyManualSharesInTx(client, ship, rawShares) {
+  const shares = normalizeManualShares(rawShares);
+  if (!shares) return ship;
+  if ((ship.allocation_method || 'by_cif_value') !== 'manual') {
+    throw httpError(400, 'parcel_shares exige allocation_method = manual', 'CUSTOMS_SHARES_REQUIRE_MANUAL');
+  }
+  const { rows: [updated] } = await client.query(
+    'UPDATE customs_shipments SET allocation_config = $2 WHERE id = $1 RETURNING *',
+    [ship.id, JSON.stringify(withManualShares(ship.allocation_config, shares))]
+  );
+  return updated;
+}
+
 async function _recordMembershipEvents(client, shipmentId, parcelIds, event, actorId, reason) {
   for (const parcelId of parcelIds) {
     await client.query(
@@ -1066,7 +1169,7 @@ async function addParcelsToShipment(db, shipmentId, parcelIds, actor = {}) {
   try {
     await client.query('BEGIN');
     await setLocalCustomsAuditContext(client, actor.id, why);
-    const ship = await _lockOpenShipment(client, shipmentId);
+    let ship = await _lockOpenShipment(client, shipmentId);
 
     const linked = new Set((await _linkedParcelIds(client, shipmentId)).map(String));
     const fresh = ids.filter(id => !linked.has(id));
@@ -1082,6 +1185,7 @@ async function addParcelsToShipment(db, shipmentId, parcelIds, actor = {}) {
         `INSERT INTO customs_shipment_parcels (shipment_id, parcel_id) VALUES ($1, $2)`, [shipmentId, pid]);
     }
     await _recordMembershipEvents(client, shipmentId, fresh, 'attach', actor.id, why);
+    ship = await _applyManualSharesInTx(client, ship, actor.parcel_shares);
 
     const all = await _linkedParcelIds(client, shipmentId);
     let reallocated = false;
@@ -1112,7 +1216,7 @@ async function removeParcelsFromShipment(db, shipmentId, parcelIds, actor = {}) 
   try {
     await client.query('BEGIN');
     await setLocalCustomsAuditContext(client, actor.id, why);
-    const ship = await _lockOpenShipment(client, shipmentId);
+    let ship = await _lockOpenShipment(client, shipmentId);
 
     const linked = (await _linkedParcelIds(client, shipmentId)).map(String);
     if (ids.some(id => !linked.includes(id))) {
@@ -1126,6 +1230,7 @@ async function removeParcelsFromShipment(db, shipmentId, parcelIds, actor = {}) 
     await client.query(
       `DELETE FROM customs_shipment_parcels WHERE shipment_id = $1 AND parcel_id = ANY($2::uuid[])`, [shipmentId, ids]);
     await _recordMembershipEvents(client, shipmentId, ids, 'detach', actor.id, why);
+    ship = await _applyManualSharesInTx(client, ship, actor.parcel_shares);
 
     if (amountKnown) {
       await _reallocateDeclared(client, shipmentId, ship, remaining);
