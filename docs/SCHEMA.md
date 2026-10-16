@@ -887,3 +887,16 @@ role: Mapping commercial fournisseur + chemin source normalisé vers paire bouti
 ## Sourcing candidate independent boutique attachment (migration 293)
 
 `sourcing_candidates.commercial_taxonomy_review` (`jsonb`, nullable, `intended_migration_schema`) stores a confirmed active boutique category/subcategory from supplier-path mapping independently of `komerce_category`, scan outcome and customs qualification. Existing candidate rows remain unchanged until the explicit audited batch attachment; journal entries are added to `sourcing_candidate_events` only for newly attached candidates. No KIR historical mutation or catalogue publication is implied.
+
+
+### Visual French media review evidence (migration 295)
+
+`catalog_media_visual_fr_reviews` stores explicit human French image-text review proofs linked to a canonical `catalog_media` row. Source URL and variant options remain part of the evidence: a later change invalidates review at read time. Records are not automatically synthesized for existing media, and this migration has no publishing authority.
+
+<!-- schema-pending
+object: catalog_media_visual_fr_reviews
+kind: table
+migration: 295
+section: ### Visual French media review evidence (migration 295)
+role: Preuve de relecture visuelle francaise liee a une image source, sa variante, son auteur et sa date ; aucune publication implicite.
+-->
