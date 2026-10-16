@@ -2080,7 +2080,10 @@
     const poll = typeof global.setInterval === 'function'
       ? global.setInterval(() => { refresh({ preserve:true }); }, COMMAND_POLL_MS) : null;
     try {
-      await api(`/api/admin/workspaces/sourcing/sources/${encodeURIComponent(sourceRef)}/import-now`, { method:'POST', body:{} });
+      const response = await api(`/api/admin/workspaces/sourcing/sources/${encodeURIComponent(sourceRef)}/import-now`, { method:'POST', body:{} });
+      const runRef = response?.result?.run_ref;
+      if (runRef) goto(urlFor(runRef));
+      else showCommandError('Mise à jour', 'Aucune référence de passage retournée. Consultez les Passages.');
     } catch (error) {
       const main = root.querySelector?.('.kir-main');
       if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Mise à jour · ${esc(error.message)}</div>`);
