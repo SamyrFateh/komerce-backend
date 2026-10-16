@@ -81,8 +81,8 @@ async function loadRows() {
               )::int AS supplier_skus,
               COUNT(*) FILTER (
                 WHERE source='SUPPLIER'
-                  AND supplier_unit_ref IS NOT NULL
-                  AND supplier_order_identity IS NOT NULL
+                  AND NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL
+                  AND NULLIF(BTRIM(supplier_order_identity), '') IS NOT NULL
               )::int AS complete_soi_skus,
               COUNT(*) FILTER (
                 WHERE source='SUPPLIER' AND is_active=TRUE
@@ -90,8 +90,8 @@ async function loadRows() {
               COUNT(*) FILTER (
                 WHERE source='SUPPLIER'
                   AND is_active=TRUE
-                  AND supplier_unit_ref IS NOT NULL
-                  AND supplier_order_identity IS NOT NULL
+                  AND NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL
+                  AND NULLIF(BTRIM(supplier_order_identity), '') IS NOT NULL
               )::int AS active_complete_soi_skus
          FROM product_skus
         GROUP BY product_id
@@ -209,6 +209,10 @@ function classify(row) {
   };
 }
 
+function visualFrReviewScope() {
+  return Object.freeze({status:'NOT_EVALUATED', requires_separate_proof:true, certified:false});
+}
+
 function countReasons(rows, key) {
   const counts = {};
   for (const row of rows) {
@@ -256,6 +260,9 @@ async function run(options = parseArgs()) {
     approval_queue_visible: rows.filter(approvalQueueVisible).length,
     publication_guard_pass: products.filter(p => p.publication_guard === 'PASS').length,
     final_ready_for_human_publication_review: finalReady,
+    // This gate verifies media presence, not the text embedded in supplier images.
+    visual_fr_review_status: visualFrReviewScope().status,
+    visual_fr_review_requires_separate_proof: visualFrReviewScope().requires_separate_proof,
     products_with_media: rows.filter(row => Number(row.active_media) >= 1).length,
     products_with_supplier_sku: rows.filter(row => Number(row.supplier_skus) >= 1).length,
     products_with_complete_soi: rows.filter(row =>
@@ -293,6 +300,8 @@ async function run(options = parseArgs()) {
       ? 'RAFFINERIE_TO_CATALOG_STRUCTURAL_ACCEPTANCE'
       : 'READY_FOR_HUMAN_PUBLICATION_REVIEW_ACCEPTANCE',
     accepted,
+    // Technical acceptance is not a human visual-text/translation approval.
+    human_visual_fr_certified: visualFrReviewScope().certified,
     summary,
     blocked_samples: products
       .filter(product => options.mode === 'preflight' ? !product.structural_ok : !product.final_ok)
@@ -332,5 +341,6 @@ module.exports = {
   editorialReady,
   classify,
   countReasons,
+  visualFrReviewScope,
   run,
 };
