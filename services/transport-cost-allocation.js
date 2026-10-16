@@ -8,7 +8,7 @@
  * @outputs       allocation_contract, allocated_shares, persisted_real_cost_allocations
  * @depends       ./cost-allocation/_helpers, db (lazy for shipment persistence)
  * @used-by       services/cost-allocation/index.js, future shipment cost ingestion
- * @db-read       customs_shipment_parcels, customs_shipments, order_items, parcel_items, parcels, products
+ * @db-read       customs_shipment_fees, customs_shipment_parcels, customs_shipments, order_items, parcel_items, parcels, products
  * @db-write      order_item_real_cost_allocations
  * @db-txn        allocateShipmentRealCosts
  * @doctrine      docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md
@@ -315,7 +315,10 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
     if (ownTx) await client.query('BEGIN');
 
     const shipRes = await client.query(
-      'SELECT * FROM customs_shipments WHERE id = $1',
+      `SELECT cs.*,
+              COALESCE((SELECT SUM(CASE WHEN f.kind = 'credit' THEN -f.amount_kmf ELSE f.amount_kmf END)
+                          FROM customs_shipment_fees f WHERE f.shipment_id = cs.id), 0) AS fees_net_kmf
+         FROM customs_shipments cs WHERE cs.id = $1`,
       [shipmentId]
     );
     if (!shipRes.rows.length) {
@@ -342,6 +345,11 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
     const freightKnown = ship.freight_kmf != null;
     const totalCustoms = customsKnown ? Number(ship.customs_paid_kmf) : 0;
     const totalFreight = freightKnown ? Number(ship.freight_kmf) : 0;
+    // Frais typés (manutention, transitaire…) : net charges − credits, jamais négatif.
+    const totalFees = Number(ship.fees_net_kmf) || 0;
+    if (toCents(totalFees) < 0) {
+      throw allocationIncomplete('port_transitaire', `frais nets négatifs (${totalFees})`);
+    }
 
     const parcelsRes = await client.query(
       `SELECT
@@ -362,6 +370,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
       // Un montant réel non nul sans colis porteur serait imputé nulle part.
       if (toCents(totalCustoms) > 0) throw allocationIncomplete('customs', 'aucun colis rattaché à l\'expédition');
       if (toCents(totalFreight) > 0) throw allocationIncomplete('freight', 'aucun colis rattaché à l\'expédition');
+      if (toCents(totalFees) > 0) throw allocationIncomplete('port_transitaire', 'aucun colis rattaché à l\'expédition');
       if (ownTx) await client.query('COMMIT');
       return { shipment_id: shipmentId, allocations_count: 0, reason: 'no_parcels' };
     }
@@ -434,14 +443,27 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
       freight_share: share.share,
     }));
 
+    // Frais typés : même clé de répartition que la douane (valeur CIF / poids), conservée au centime.
+    const { entries: feeWeights } = weightsOrFallback(parcels.map(parcel => ({
+      id: parcel.parcel_id,
+      weight: allocMethod === 'by_weight'
+        ? Number(parcel.parcel_weight_kg) || 0
+        : Number(parcel.parcel_cif_kmf) || 0,
+    })), () => 1);
+    const feeShares = toCents(totalFees) > 0
+      ? splitConserving(totalFees, feeWeights)
+      : feeWeights.map(entry => ({ id: entry.id, share: 0 }));
+
     let totalAllocations = 0;
     let insertedCustomsCents = 0;
     let insertedFreightCents = 0;
+    let insertedFeesCents = 0;
 
     for (const parcel of parcels) {
       const customsShare = customsShares.find(item => item.parcel_id === parcel.parcel_id)?.customs_share || 0;
       const freightShare = freightShares.find(item => item.parcel_id === parcel.parcel_id)?.freight_share || 0;
-      const parcelHasCost = toCents(customsShare) > 0 || toCents(freightShare) > 0;
+      const feeShare = feeShares.find(item => item.id === parcel.parcel_id)?.share || 0;
+      const parcelHasCost = toCents(customsShare) > 0 || toCents(freightShare) > 0 || toCents(feeShare) > 0;
 
       let parcelItemsRes = await client.query(
         `SELECT
@@ -501,6 +523,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
         weight: (Number(item.cost_kmf) || 0) * (Number(item.parcel_qty) || 1),
       })), quantityOf);
       const customsSplit = splitConserving(customsShare, customsWeights);
+      const feeSplit = splitConserving(feeShare, customsWeights);
       const customsFallback = itemsFallback || customsValueFallback;
 
       let freightSplit;
@@ -553,6 +576,28 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
           totalAllocations += 1;
         }
 
+        const feeItemShare = feeSplit[index].share;
+        if (feeItemShare > 0) {
+          await client.query(
+            `INSERT INTO order_item_real_cost_allocations
+               (order_id, order_item_id, parcel_id, shipment_id,
+                cost_type, amount_kmf, allocation_method,
+                source, is_actual, confidence)
+             VALUES ($1,$2,$3,$4,'port_transitaire',$5,$6,'customs_shipment_fees',TRUE,$7)`,
+            [
+              parcel.order_id,
+              item.order_item_id,
+              parcel.parcel_id,
+              shipmentId,
+              feeItemShare,
+              customsFallback ? 'estimated_fallback' : 'by_value',
+              customsFallback ? 'low' : 'high',
+            ]
+          );
+          insertedFeesCents += toCents(feeItemShare);
+          totalAllocations += 1;
+        }
+
         if (freightItemShare > 0) {
           await client.query(
             `INSERT INTO order_item_real_cost_allocations
@@ -581,6 +626,10 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
       throw allocationIncomplete('customs',
         `lignes écrites (${insertedCustomsCents / 100}) ≠ montant déclaré (${totalCustoms})`);
     }
+    if (insertedFeesCents !== toCents(totalFees)) {
+      throw allocationIncomplete('port_transitaire',
+        `lignes écrites (${insertedFeesCents / 100}) ≠ frais enregistrés (${totalFees})`);
+    }
     if (freightKnown && insertedFreightCents !== toCents(totalFreight)) {
       throw allocationIncomplete('freight',
         `lignes écrites (${insertedFreightCents / 100}) ≠ montant déclaré (${totalFreight})`);
@@ -593,6 +642,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
       allocations_count: totalAllocations,
       total_customs_kmf: totalCustoms,
       total_freight_kmf: totalFreight,
+      total_fees_kmf: totalFees,
       customs_known: customsKnown,
       freight_known: freightKnown,
       transport_rail: transportRail,

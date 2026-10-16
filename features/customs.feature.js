@@ -63,7 +63,8 @@ module.exports = {
       'services/customs-dynamic-category-classifier.js',
       'services/customs-analytics.js',
     
-      'services/customs-shipment-service.js',],
+      'services/customs-shipment-service.js',
+      'services/customs-shipment-fee-service.js',],
     routes: [
       'routes/admin/customs.js',
       'routes/admin-customs-shipments.js',
@@ -92,6 +93,11 @@ module.exports = {
       'tests/unit/customs-classification.test.js',
       'tests/unit/customs-dynamic-category-classifier.test.js',
       'tests/unit/customs-shipment-service.test.js',
+      'tests/unit/customs-shipment-fee-service.test.js',
+      'tests/unit/admin-customs-shipment-fees-route.test.js',
+      'tests/integration/customs-shipment-fees-real-db.test.js',
+      'tests/integration/customs-effective-rates-real-db.test.js',
+      'tests/integration/customs-certification-real-db.test.js',
       'tests/unit/customs-shipment-service-market-atomicity.test.js',
       'tests/integration/customs-shipments-contract.test.js',
       // E2E fonctionnel — chantier currency debt, LOT 8 (clôture). Vérifie
