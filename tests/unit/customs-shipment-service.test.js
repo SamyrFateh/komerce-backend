@@ -916,3 +916,13 @@ describe('_insertAllocations — SQL des métriques par colis (via declareCustom
     expect(src).toMatch(/ord\.volume_cm3 \/ pc\.n/);
   });
 });
+
+// DOUANE-2A: audit actor must be wired by the authenticated mutation boundary.
+describe('DOUANE-2A actor audit wiring: services/customs-shipment-service.js', () => {
+  test('keeps authenticated actor propagation explicit', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(path.join(__dirname, '../../services/customs-shipment-service.js'), 'utf8');
+    expect(src).toMatch(/setLocalCustomsAuditContext\(client, actor\.id, body && body\.reason\)/);
+  });
+});
