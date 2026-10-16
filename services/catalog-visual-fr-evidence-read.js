@@ -5,6 +5,9 @@
  * @layer service
  * @owner catalog
  * @purpose Read persisted visual French review proofs without publication mutations.
+ * @db-read catalog_media, catalog_media_visual_fr_reviews
+ * @db-write none
+ * @db-txn none
  * @impact-areas catalog,sourcing
  */
 'use strict';
