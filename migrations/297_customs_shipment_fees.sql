@@ -1,4 +1,4 @@
--- @migration 296_customs_shipment_fees.sql
+-- @migration 297_customs_shipment_fees.sql
 -- @domain    customs / economic-engine
 -- @purpose   Frais douaniers typés, réels et justifiés, par expédition (journal append-only).
 --
@@ -21,10 +21,10 @@
 DO $pre$
 BEGIN
   IF to_regclass('public.customs_shipments') IS NULL THEN
-    RAISE EXCEPTION '296 precondition: customs_shipments requise';
+    RAISE EXCEPTION '297 precondition: customs_shipments requise';
   END IF;
   IF to_regclass('public.customs_shipment_fees') IS NOT NULL THEN
-    RAISE EXCEPTION '296 precondition: customs_shipment_fees déjà présente (état inattendu)';
+    RAISE EXCEPTION '297 precondition: customs_shipment_fees déjà présente (état inattendu)';
   END IF;
 END
 $pre$;
