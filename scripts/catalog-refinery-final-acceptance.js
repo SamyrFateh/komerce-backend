@@ -209,6 +209,10 @@ function classify(row) {
   };
 }
 
+function visualFrReviewScope() {
+  return Object.freeze({status:'NOT_EVALUATED', requires_separate_proof:true, certified:false});
+}
+
 function countReasons(rows, key) {
   const counts = {};
   for (const row of rows) {
@@ -257,8 +261,8 @@ async function run(options = parseArgs()) {
     publication_guard_pass: products.filter(p => p.publication_guard === 'PASS').length,
     final_ready_for_human_publication_review: finalReady,
     // This gate verifies media presence, not the text embedded in supplier images.
-    visual_fr_review_status: 'NOT_EVALUATED',
-    visual_fr_review_requires_separate_proof: true,
+    visual_fr_review_status: visualFrReviewScope().status,
+    visual_fr_review_requires_separate_proof: visualFrReviewScope().requires_separate_proof,
     products_with_media: rows.filter(row => Number(row.active_media) >= 1).length,
     products_with_supplier_sku: rows.filter(row => Number(row.supplier_skus) >= 1).length,
     products_with_complete_soi: rows.filter(row =>
@@ -297,7 +301,7 @@ async function run(options = parseArgs()) {
       : 'READY_FOR_HUMAN_PUBLICATION_REVIEW_ACCEPTANCE',
     accepted,
     // Technical acceptance is not a human visual-text/translation approval.
-    human_visual_fr_certified: false,
+    human_visual_fr_certified: visualFrReviewScope().certified,
     summary,
     blocked_samples: products
       .filter(product => options.mode === 'preflight' ? !product.structural_ok : !product.final_ok)
@@ -337,5 +341,6 @@ module.exports = {
   editorialReady,
   classify,
   countReasons,
+  visualFrReviewScope,
   run,
 };
