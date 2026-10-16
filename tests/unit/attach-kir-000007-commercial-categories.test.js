@@ -51,3 +51,30 @@ test('apply rolls back on existing classification conflict',async()=>{
   'BEGIN',expect.stringContaining('SELECT'),'ROLLBACK']);
  expect(client.release).toHaveBeenCalled();
 });
+
+test('historical imported candidates fill only inactive draft boutique taxonomy',async()=>{
+ const client={query:jest.fn(async (sql)=>{
+  if(sql.includes('FROM sourcing_candidates'))return {rows:[{id:'candidate-1',state:'imported_to_catalog',product_id:'product-1',commercial_taxonomy_review:null}]};
+  if(sql.includes('FROM products'))return {rows:[{id:'product-1',boutique_category_key:null,boutique_subcategory_key:null,lifecycle_status:'candidate',is_active:false}]};
+  return {rowCount:1};
+ }),release:jest.fn()};
+ const result=await run({apply:true,actor:'operator',source,find,query:{getClient:async()=>client}});
+ expect(result.product_filled).toBe(20);
+ const productUpdates=client.query.mock.calls.filter(([sql])=>sql.includes('UPDATE products SET'));
+ expect(productUpdates).toHaveLength(20);
+ expect(productUpdates[0][0]).toContain("lifecycle_status='candidate'");
+ expect(productUpdates[0][0]).not.toContain('price_kmf');
+ expect(client.query.mock.calls.at(-1)[0]).toBe('COMMIT');
+});
+
+test('existing catalog taxonomy conflict rolls back without overwriting',async()=>{
+ const client={query:jest.fn(async sql=>{
+  if(sql.includes('FROM sourcing_candidates'))return {rows:[{id:'candidate-1',state:'imported_to_catalog',product_id:'product-1'}]};
+  if(sql.includes('FROM products'))return {rows:[{id:'product-1',boutique_category_key:'Tech',boutique_subcategory_key:'Phones',lifecycle_status:'candidate',is_active:false}]};
+  return {rowCount:1};
+ }),release:jest.fn()};
+ await expect(run({apply:true,actor:'operator',source,find,query:{getClient:async()=>client}}))
+  .rejects.toThrow('CATALOG_CLASSIFICATION_CONFLICT');
+ expect(client.query.mock.calls.map(([sql])=>sql)).toContain('ROLLBACK');
+ expect(client.query.mock.calls.some(([sql])=>sql.includes('UPDATE products SET'))).toBe(false);
+});
