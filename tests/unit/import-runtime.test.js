@@ -36,3 +36,12 @@ test('Sourcing transmet des brouillons à la Raffinerie sans promettre une publi
   expect(source).toContain('Retenus Sourcing');
   expect(source).toContain('/admin/workspaces/catalog?view=refinery');
 });
+
+test('manual source update navigates to the actual returned KIR, never a guessed passage', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
+  const handler = source.split('async function updateSourceNow(root, sourceRef) {')[1]
+    .split('// ── Registre opérateur')[0];
+  expect(handler).toContain('const runRef = response?.result?.run_ref;');
+  expect(handler).toContain('if (runRef) goto(urlFor(runRef));');
+  expect(handler).toContain('Aucune référence de passage retournée');
+});
