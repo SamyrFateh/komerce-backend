@@ -82,7 +82,7 @@ async function loadRows() {
               COUNT(*) FILTER (
                 WHERE source='SUPPLIER'
                   AND NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL
-                  AND NULLIF(BTRIM(supplier_order_identity), '') IS NOT NULL
+                  AND supplier_order_identity IS NOT NULL
               )::int AS complete_soi_skus,
               COUNT(*) FILTER (
                 WHERE source='SUPPLIER' AND is_active=TRUE
@@ -91,7 +91,7 @@ async function loadRows() {
                 WHERE source='SUPPLIER'
                   AND is_active=TRUE
                   AND NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL
-                  AND NULLIF(BTRIM(supplier_order_identity), '') IS NOT NULL
+                  AND supplier_order_identity IS NOT NULL
               )::int AS active_complete_soi_skus
          FROM product_skus
         GROUP BY product_id
