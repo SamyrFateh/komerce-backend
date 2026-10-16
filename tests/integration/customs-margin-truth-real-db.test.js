@@ -82,7 +82,7 @@ if (!hasIntegrationEnv) {
     seq += 1;
     const r = await svc.createShipment(db, {
       reference: `${RUN_TAG}-ship-${seq}`, shipment_date: '2026-01-01', cif_value_kmf: 100000, ...body,
-    }, null);
+    }, null, {marketId});
     shipmentIds.push(r.shipment.id);
     return r;
   };
