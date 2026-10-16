@@ -252,3 +252,21 @@ describe('transport cost allocation', () => {
     expectTransactionCommitted(client);
   });
 });
+
+describe('A3 — normalizeFeeAllocation', () => {
+  const { normalizeFeeAllocation } = require('../../services/transport-cost-allocation');
+  it('accepte null et les cinq méthodes, avec défauts mixed 50/50', () => {
+    expect(normalizeFeeAllocation(null)).toEqual({});
+    expect(normalizeFeeAllocation({ default: { method: 'mixed' } }).default).toEqual({ method: 'mixed', cif: 0.5, weight: 0.5 });
+    expect(normalizeFeeAllocation({ storage: { method: 'manual', shares: { a: 1, b: 3 } } }).storage.shares).toEqual({ a: 1, b: 3 });
+  });
+  it('refuse nature inconnue, méthode inconnue, manual sans parts ou à parts nulles/négatives', () => {
+    for (const bad of [
+      { nope: { method: 'by_weight' } }, { storage: { method: 'x' } }, { storage: { method: 'manual' } },
+      { storage: { method: 'manual', shares: { a: 0 } } }, { storage: { method: 'manual', shares: { a: -1 } } },
+      { other: { method: 'mixed', cif: 0, weight: 0 } }, [],
+    ]) {
+      expect(() => normalizeFeeAllocation(bad)).toThrow(expect.objectContaining({ code: 'CUSTOMS_FEE_ALLOCATION_INVALID' }));
+    }
+  });
+});
