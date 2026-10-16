@@ -18,6 +18,7 @@
 'use strict';
 
 const { validatePublicationUpdate } = require('./product-publication-guard');
+const { inspectMediaSet } = require('./catalog-media-visual-fr-proof');
 const { reconcileCertificationBatch } = require('../utils/certification-accounting');
 
 const CATALOG_CERTIFICATION_VERSION = 'catalog-certification-v1';
@@ -96,6 +97,21 @@ function evaluateCatalogProductCertification(row = {}, options = {}) {
     certified: reasons.length === 0,
     reasons,
     publication_guard: publication.ok ? 'PASS' : publication.code,
+  };
+}
+
+// Independent evidence gate. No stored review means no visual-FR certification.
+ // Publication paths remain unchanged until source-linked reviews are persisted.
+function evaluateVisualFrCatalogCertification(row = {}, media, reviews) {
+  const technical = evaluateCatalogProductCertification(row);
+  const visual = inspectMediaSet(media, reviews);
+  return {
+    certified: technical.certified && visual.ready,
+    technical_certified: technical.certified,
+    technical_reasons: technical.reasons,
+    visual_fr_certified: visual.ready,
+    visual_fr_reason: visual.code,
+    visual_fr_results: visual.results,
   };
 }
 
@@ -224,6 +240,7 @@ module.exports = {
   sourceContractV2,
   editorialReady,
   evaluateCatalogProductCertification,
+  evaluateVisualFrCatalogCertification,
   loadCatalogProductCertificationFacts,
   certifyCatalogProduct,
   certifyCatalogBatch,

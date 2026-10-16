@@ -5,6 +5,7 @@
 const {
   CATALOG_CERTIFICATION_VERSION,
   evaluateCatalogProductCertification,
+  evaluateVisualFrCatalogCertification,
   certifyCatalogProduct,
   certifyCatalogBatch,
 } = require('../../services/catalog-certification');
@@ -119,6 +120,20 @@ describe('catalog canonical certification', () => {
     const sql = q.query.mock.calls[0][0];
     expect(sql).toContain("NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL");
     expect(sql).toContain("NULLIF(BTRIM(supplier_order_identity), '') IS NOT NULL");
+  });
+
+  test('combined refinery certification requires explicit source-linked visual FR review', () => {
+    const media = [{ supplier_media_id:'supplier:img:1', url:'https://supplier.example/image.jpg' }];
+    const technicalOnly = evaluateVisualFrCatalogCertification(readyRow(), media, []);
+    expect(technicalOnly.technical_certified).toBe(true);
+    expect(technicalOnly.certified).toBe(false);
+    expect(technicalOnly.visual_fr_reason).toBe('VISUAL_FR_REVIEW_PENDING');
+    const reviewed = evaluateVisualFrCatalogCertification(readyRow(), media, [{
+      source_media_id:'supplier:img:1', source_url:media[0].url,
+      text_presence:'NONE', reviewed_by:'editor', reviewed_at:'2026-10-16T10:00:00Z',
+    }]);
+    expect(reviewed.certified).toBe(true);
+    expect(reviewed.visual_fr_certified).toBe(true);
   });
 
   test('publication guard failure is part of the same certification verdict', () => {
