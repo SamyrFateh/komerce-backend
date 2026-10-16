@@ -233,12 +233,78 @@ function allocateFreightShares({ total, transportRail, entries, options = {} }) 
   };
 }
 
+// ── Conservation des coûts réels d'expédition ─────────────────────────────
+// Une charge réelle déclarée ne disparaît jamais, n'est jamais comptée deux
+// fois et ne devient jamais artificiellement nulle :
+//   - NULL (customs_paid_kmf / freight_kmf) = inconnu → rien n'est ventilé
+//     pour ce type ; 0 explicite = aucun frais confirmé ;
+//   - ventilation au CENTIME par plus grand reste : la somme des lignes
+//     écrites égale exactement le montant déclaré ;
+//   - une part sans porteur fait échouer l'opération
+//     (COST_ALLOCATION_INCOMPLETE) au lieu d'être perdue en silence.
+
+function toCents(value) {
+  return Math.round(Number(value) * 100);
+}
+
+function fromCentShares(shares) {
+  return shares.map(share => ({ ...share, share: share.share / 100 }));
+}
+
+function sumCents(shares) {
+  return shares.reduce((sum, share) => sum + toCents(share.share), 0);
+}
+
+function splitConserving(totalKmf, entries) {
+  return fromCentShares(shareByWeight(toCents(totalKmf), entries));
+}
+
+function weightsOrFallback(entries, fallbackWeight) {
+  const sum = entries.reduce((total, entry) => total + (Number(entry.weight) || 0), 0);
+  if (sum > 0) return { entries, fallback: false };
+  return { entries: entries.map(entry => ({ ...entry, weight: fallbackWeight(entry) })), fallback: true };
+}
+
+function allocationIncomplete(costType, details) {
+  const error = new Error(`Ventilation ${costType} incomplète : ${details}`);
+  error.status = 422;
+  error.code = 'COST_ALLOCATION_INCOMPLETE';
+  return error;
+}
+
+/**
+ * Fret au centime sur le contrat transport existant. Rail inconnu sans aucun
+ * poids : répartition égale signalée (estimated_fallback/low) plutôt qu'un
+ * fret entier perdu. AIR non calibré reste fail-closed (doctrine).
+ */
+function allocateFreightConserving({ total, transportRail, entries, options }) {
+  const allocation = allocateFreightShares({
+    total: toCents(total),
+    transportRail,
+    entries,
+    options,
+  });
+  const shares = fromCentShares(allocation.shares);
+  if (sumCents(shares) === toCents(total) || !entries.length) {
+    return { ...allocation, shares };
+  }
+  return {
+    shares: splitConserving(total, entries.map(entry => ({ id: entry.id, weight: 1 }))),
+    allocationMethod: 'estimated_fallback',
+    confidence: 'low',
+  };
+}
+
 /**
  * Allocation réelle d'un shipment vers parcels puis order_items.
  *
  * Les rails explicites consomment le contrat transport-cost-allocation.
  * Un transport_mode absent/inconnu conserve temporairement le comportement
  * legacy by_weight, sans être converti silencieusement en SEA_STANDARD.
+ *
+ * Expédition désactivée : ses allocations sont retirées (aucune allocation
+ * active ne subsiste) ; le fait source — montant, méthode, deactivated_at,
+ * deactivated_reason — reste porté par customs_shipments.
  */
 async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = {}) {
   const ownTx = !dbClient;
@@ -258,6 +324,25 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
     }
     const ship = shipRes.rows[0];
 
+    if (ship.is_active === false) {
+      const removed = await client.query(
+        'DELETE FROM order_item_real_cost_allocations WHERE shipment_id = $1',
+        [shipmentId]
+      );
+      if (ownTx) await client.query('COMMIT');
+      return {
+        shipment_id: shipmentId,
+        allocations_count: 0,
+        allocations_removed: removed.rowCount || 0,
+        reason: 'inactive',
+      };
+    }
+
+    const customsKnown = ship.customs_paid_kmf != null;
+    const freightKnown = ship.freight_kmf != null;
+    const totalCustoms = customsKnown ? Number(ship.customs_paid_kmf) : 0;
+    const totalFreight = freightKnown ? Number(ship.freight_kmf) : 0;
+
     const parcelsRes = await client.query(
       `SELECT
          p.id AS parcel_id,
@@ -274,6 +359,9 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
     );
 
     if (!parcelsRes.rows.length) {
+      // Un montant réel non nul sans colis porteur serait imputé nulle part.
+      if (toCents(totalCustoms) > 0) throw allocationIncomplete('customs', 'aucun colis rattaché à l\'expédition');
+      if (toCents(totalFreight) > 0) throw allocationIncomplete('freight', 'aucun colis rattaché à l\'expédition');
       if (ownTx) await client.query('COMMIT');
       return { shipment_id: shipmentId, allocations_count: 0, reason: 'no_parcels' };
     }
@@ -284,30 +372,37 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
       [shipmentId]
     );
 
-    const totalCustoms = Number(ship.customs_paid_kmf) || 0;
-    const totalFreight = Number(ship.freight_kmf) || 0;
     const allocMethod = ship.allocation_method || 'by_cif_value';
     const transportRail = resolveShipmentTransportRail(ship.transport_mode);
 
-    const parcelsCustomsShares = parcels.map(parcel => ({
-      parcel_id: parcel.parcel_id,
-      order_id: parcel.order_id,
-      customs_share: Number(parcel.customs_share_kmf) || null,
-    }));
-
-    const allCustomsSharesSet = parcelsCustomsShares.every(parcel => parcel.customs_share != null);
+    // customs_share_kmf saisi (0 compris) fait foi pour tous les colis ;
+    // il doit alors couvrir exactement le montant déclaré.
+    const allCustomsSharesSet = parcels.every(parcel => parcel.customs_share_kmf != null);
     let customsShares;
-    if (allCustomsSharesSet) {
-      customsShares = parcelsCustomsShares;
+    if (!customsKnown) {
+      customsShares = parcels.map(parcel => ({
+        parcel_id: parcel.parcel_id, order_id: parcel.order_id, customs_share: 0,
+      }));
+    } else if (allCustomsSharesSet) {
+      customsShares = parcels.map(parcel => ({
+        parcel_id: parcel.parcel_id,
+        order_id: parcel.order_id,
+        customs_share: Number(parcel.customs_share_kmf),
+      }));
+      const declaredSharesCents = customsShares.reduce((sum, share) => sum + toCents(share.customs_share), 0);
+      if (declaredSharesCents !== toCents(totalCustoms)) {
+        throw allocationIncomplete('customs',
+          `parts colis (${declaredSharesCents / 100}) ≠ montant déclaré (${totalCustoms})`);
+      }
     } else {
-      const weights = parcels.map(parcel => ({
+      const { entries: weights } = weightsOrFallback(parcels.map(parcel => ({
         id: parcel.parcel_id,
         order_id: parcel.order_id,
         weight: allocMethod === 'by_weight'
           ? Number(parcel.parcel_weight_kg) || 0
           : Number(parcel.parcel_cif_kmf) || 0,
-      }));
-      const shares = shareByWeight(totalCustoms, weights);
+      })), () => 1);
+      const shares = splitConserving(totalCustoms, weights);
       customsShares = shares.map((share, index) => ({
         parcel_id: share.id,
         order_id: weights[index].order_id,
@@ -321,8 +416,8 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
       volume_m3: (Number(parcel.parcel_volume_cm3) || 0) / 1_000_000,
     }));
 
-    const freightAllocation = totalFreight > 0
-      ? allocateFreightShares({
+    const freightAllocation = toCents(totalFreight) > 0
+      ? allocateFreightConserving({
           total: totalFreight,
           transportRail,
           entries: parcelFreightEntries,
@@ -340,12 +435,15 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
     }));
 
     let totalAllocations = 0;
+    let insertedCustomsCents = 0;
+    let insertedFreightCents = 0;
 
     for (const parcel of parcels) {
       const customsShare = customsShares.find(item => item.parcel_id === parcel.parcel_id)?.customs_share || 0;
       const freightShare = freightShares.find(item => item.parcel_id === parcel.parcel_id)?.freight_share || 0;
+      const parcelHasCost = toCents(customsShare) > 0 || toCents(freightShare) > 0;
 
-      const parcelItemsRes = await client.query(
+      let parcelItemsRes = await client.query(
         `SELECT
            pi.order_item_id,
            pi.quantity AS parcel_qty,
@@ -362,28 +460,69 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
         [parcel.parcel_id]
       );
 
-      if (!parcelItemsRes.rows.length) continue;
+      // Colis sans parcel_items : parcels.order_id est NOT NULL, donc sa part
+      // reste sur SA commande, ventilée sur ses lignes et signalée
+      // estimated_fallback / low — jamais perdue.
+      let itemsFallback = false;
+      if (!parcelItemsRes.rows.length && parcelHasCost) {
+        parcelItemsRes = await client.query(
+          `SELECT
+             oi.id AS order_item_id,
+             oi.quantity AS parcel_qty,
+             oi.price_kmf,
+             oi.quantity AS order_item_qty,
+             oi.product_id,
+             p.weight_kg,
+             p.volume_cm3,
+             p.cost_kmf
+           FROM order_items oi
+           LEFT JOIN products p ON p.id = oi.product_id
+           WHERE oi.order_id = $1`,
+          [parcel.order_id]
+        );
+        itemsFallback = true;
+      }
+      if (!parcelItemsRes.rows.length) {
+        if (parcelHasCost) {
+          throw allocationIncomplete('customs/freight',
+            `aucune ligne de commande porteuse pour le colis ${parcel.parcel_id}`);
+        }
+        continue;
+      }
       const items = parcelItemsRes.rows;
+      const quantityOf = entry => {
+        const row = items.find(item => item.order_item_id === entry.id);
+        return Number(row && row.parcel_qty) || 1;
+      };
 
-      const customsWeights = items.map(item => ({
+      // Coûts produit inconnus partout → répartition par quantité, signalée.
+      const { entries: customsWeights, fallback: customsValueFallback } = weightsOrFallback(items.map(item => ({
         id: item.order_item_id,
         weight: (Number(item.cost_kmf) || 0) * (Number(item.parcel_qty) || 1),
-      }));
-      const customsSplit = shareByWeight(customsShare, customsWeights);
+      })), quantityOf);
+      const customsSplit = splitConserving(customsShare, customsWeights);
+      const customsFallback = itemsFallback || customsValueFallback;
 
       let freightSplit;
-      if (freightShare > 0) {
+      let freightRowMethod = freightAllocation.allocationMethod;
+      let freightRowConfidence = freightAllocation.confidence;
+      if (toCents(freightShare) > 0) {
         const itemFreightEntries = items.map(item => ({
           id: item.order_item_id,
           actual_weight_kg: (Number(item.weight_kg) || 0) * (Number(item.parcel_qty) || 1),
           volume_m3: ((Number(item.volume_cm3) || 0) * (Number(item.parcel_qty) || 1)) / 1_000_000,
         }));
-        freightSplit = allocateFreightShares({
+        const itemFreight = allocateFreightConserving({
           total: freightShare,
           transportRail,
           entries: itemFreightEntries,
           options: options.transport_cost_allocation || {},
-        }).shares;
+        });
+        freightSplit = itemFreight.shares;
+        if (itemsFallback || itemFreight.allocationMethod === 'estimated_fallback') {
+          freightRowMethod = 'estimated_fallback';
+          freightRowConfidence = 'low';
+        }
       } else {
         freightSplit = items.map(item => ({ id: item.order_item_id, share: 0, share_pct: 0 }));
       }
@@ -399,9 +538,18 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
                (order_id, order_item_id, parcel_id, shipment_id,
                 cost_type, amount_kmf, allocation_method,
                 source, is_actual, confidence)
-             VALUES ($1,$2,$3,$4,'customs',$5,'by_value','customs_shipments',TRUE,'high')`,
-            [parcel.order_id, item.order_item_id, parcel.parcel_id, shipmentId, customsItemShare]
+             VALUES ($1,$2,$3,$4,'customs',$5,$6,'customs_shipments',TRUE,$7)`,
+            [
+              parcel.order_id,
+              item.order_item_id,
+              parcel.parcel_id,
+              shipmentId,
+              customsItemShare,
+              customsFallback ? 'estimated_fallback' : 'by_value',
+              customsFallback ? 'low' : 'high',
+            ]
           );
+          insertedCustomsCents += toCents(customsItemShare);
           totalAllocations += 1;
         }
 
@@ -418,13 +566,24 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
               parcel.parcel_id,
               shipmentId,
               freightItemShare,
-              freightAllocation.allocationMethod,
-              freightAllocation.confidence,
+              freightRowMethod,
+              freightRowConfidence,
             ]
           );
+          insertedFreightCents += toCents(freightItemShare);
           totalAllocations += 1;
         }
       }
+    }
+
+    // Conservation : ce qui est écrit égale exactement ce qui est déclaré.
+    if (customsKnown && insertedCustomsCents !== toCents(totalCustoms)) {
+      throw allocationIncomplete('customs',
+        `lignes écrites (${insertedCustomsCents / 100}) ≠ montant déclaré (${totalCustoms})`);
+    }
+    if (freightKnown && insertedFreightCents !== toCents(totalFreight)) {
+      throw allocationIncomplete('freight',
+        `lignes écrites (${insertedFreightCents / 100}) ≠ montant déclaré (${totalFreight})`);
     }
 
     if (ownTx) await client.query('COMMIT');
@@ -434,6 +593,8 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
       allocations_count: totalAllocations,
       total_customs_kmf: totalCustoms,
       total_freight_kmf: totalFreight,
+      customs_known: customsKnown,
+      freight_known: freightKnown,
       transport_rail: transportRail,
       freight_allocation_method: freightAllocation.allocationMethod,
       parcels_processed: parcels.length,

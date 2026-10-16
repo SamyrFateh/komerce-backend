@@ -59,10 +59,21 @@ describe('allocateShipmentRealCosts', () => {
     expectTransactionRolledBack(client);
   });
 
-  it('retourne no_parcels si shipment sans parcels', async () => {
+  it('refuse (422, rollback) un montant réel > 0 sans colis porteur — pas de perte silencieuse', async () => {
     const client = makeClient([
       { rows: [{ id: 'ship-001', customs_paid_kmf: '5000', freight_kmf: '2000', allocation_method: 'by_cif_value' }] },
       { rows: [] }, // customs_shipment_parcels → vide
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+
+    await expect(allocateShipmentRealCosts('ship-001')).rejects.toMatchObject({ code: 'COST_ALLOCATION_INCOMPLETE', status: 422 });
+    expectTransactionRolledBack(client);
+  });
+
+  it('retourne no_parcels si montants inconnus ou 0 et aucun colis', async () => {
+    const client = makeClient([
+      { rows: [{ id: 'ship-001', customs_paid_kmf: '0', freight_kmf: null, allocation_method: 'by_cif_value' }] },
+      { rows: [] },
     ]);
     db.pool.connect.mockResolvedValue(client);
 

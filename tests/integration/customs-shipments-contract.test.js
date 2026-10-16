@@ -168,19 +168,14 @@ if (!hasIntegrationEnv) {
       expect(res.body).toHaveProperty('error');
     });
 
-    test('200 admin — déclare le montant réel payé', async () => {
+    test('409 admin — refuse de déclarer un montant sans colis porteur (aucune ventilation possible)', async () => {
       const res = await request(app)
         .post(`${BASE}/${pendingForDeclare.id}/declare`)
         .set(...bearer(adminUser.token))
         .send({ customs_paid_kmf: 18000, freight_kmf: 5000, notes: 'déclaration D-06' });
 
-      expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({
-        shipment_id: pendingForDeclare.id,
-        status: 'declared',
-        parcels_updated: 0,
-      });
-      expect(Number(res.body.customs_paid_kmf)).toBe(18000);
+      expect(res.status).toBe(409);
+      expect(res.body).toHaveProperty('error');
     });
   });
 

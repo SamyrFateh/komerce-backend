@@ -145,7 +145,8 @@ describe('computeOrderCostVariance', () => {
           { cost_type: 'customs', amount: '250', all_actual: true },
           { cost_type: 'fixed_overhead', amount: '100', all_actual: true },
         ],
-      });
+      })
+      .mockResolvedValueOnce({ rows: [{ n: 0 }] });
 
     const result = await computeOrderCostVariance(ORDER_ID);
 
@@ -164,7 +165,8 @@ describe('computeOrderCostVariance', () => {
         landed: '0', business_complete: '0', business_variable: '0', risk_provision: '0', fixed_overhead: '0',
         imputations_count: 1, missing_variable_snapshot_count: 0,
       }] })
-      .mockResolvedValueOnce({ rows: [] });
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ n: 0 }] });
 
     const result = await computeOrderCostVariance(ORDER_ID);
     expect(result.variance.total_pct).toBeNull();
@@ -176,7 +178,8 @@ describe('computeOrderCostVariance', () => {
         landed: '800', business_complete: '1000', business_variable: null, risk_provision: '0', fixed_overhead: null,
         imputations_count: 1, missing_variable_snapshot_count: 1,
       }] })
-      .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '600', all_actual: true }] });
+      .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '600', all_actual: true }] })
+      .mockResolvedValueOnce({ rows: [{ n: 0 }] });
 
     const result = await computeOrderCostVariance(ORDER_ID);
     expect(result.variance).toBeNull();

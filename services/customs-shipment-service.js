@@ -6,13 +6,14 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/cost-allocation/index.js, services/documents/customs-invoice.js, services/parcel-mutation-service.js
+ * @depends       services/cost-allocation/index.js, services/cost-allocation/_helpers.js, services/documents/customs-invoice.js, services/parcel-mutation-service.js
  * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js, services/shipping-customs-workspace.js
- * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_items, orders, parcels, products
- * @db-write      customs_shipment_parcels, customs_shipments, orders
+ * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, order_items, orders, parcels, products
+ * @db-write      customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, orders
  * @db-write-via:parcel-mutation-service parcels
- * @db-txn        createShipment_owns_full_transaction
- * @doctrine      trusted_market_scope_options_never_request_body, resolve_before_behavior_change
+ * @db-write-via:cost-allocation order_item_real_cost_allocations
+ * @db-txn        createShipment_owns_full_transaction, declaration_allocation_atomic
+ * @doctrine      trusted_market_scope_options_never_request_body, resolve_before_behavior_change, customs_unknown_is_not_zero, customs_allocation_conserved_and_atomic
  * @impact-areas  customs, logistics, market-authorization
  * @version       2026-09
  */
@@ -21,6 +22,53 @@
 
 const { markCustomsCleared } = require('./parcel-mutation-service');
 const { recomputeCustomsCosts } = require('./order-mutation-service');
+const { shareByWeight } = require('./cost-allocation/_helpers');
+
+// ── Intégrité financière des coûts douaniers ─────────────────────────────────
+//   - NULL = montant inconnu (expédition pending) ; 0 explicite = aucun frais
+//     confirmé. Les deux ne se confondent jamais.
+//   - Déclaration, ventilation par colis, ventilation par article et agrégats
+//     commande sont écrits dans UNE transaction : tout ou rien.
+//   - La somme des parts égale exactement le montant déclaré (au centime) ;
+//     sinon l'opération est refusée (COST_ALLOCATION_INCOMPLETE).
+//   - Une expédition déclarée n'est jamais supprimée : on la désactive, ce qui
+//     retire ses allocations actives et conserve le fait source tracé.
+
+const FINANCIAL_FIELDS = Object.freeze(['customs_paid_kmf', 'freight_kmf', 'allocation_method', 'allocation_config']);
+
+function httpError(status, message, code) {
+  const e = new Error(message);
+  e.status = status;
+  if (code) e.code = code;
+  return e;
+}
+
+function toCents(value) {
+  return Math.round(Number(value) * 100);
+}
+
+function isBlankAmount(value) {
+  return value === null || value === undefined || value === '';
+}
+
+/** Montant confirmé obligatoire : 0 accepté (aucun frais), jamais inféré. */
+function parseConfirmedAmount(value, field) {
+  if (isBlankAmount(value)) {
+    throw httpError(400, `${field} requis — saisir 0 si l'absence de frais est confirmée`);
+  }
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) throw httpError(400, `${field} doit être un montant ≥ 0`);
+  return n;
+}
+
+/** Montant facultatif : undefined = non fourni, null/'' = inconnu, sinon ≥ 0. */
+function parseOptionalAmount(value, field) {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) throw httpError(400, `${field} doit être un montant ≥ 0`);
+  return n;
+}
 
 /**
  * customs-shipment-service.js
@@ -79,11 +127,14 @@ const { recomputeCustomsCosts } = require('./order-mutation-service');
  * @returns {Array<{ parcel_id, cif_kmf, weight_kg, customs_share_kmf, allocation_basis }>}
  */
 function allocateCustoms(shipment, parcels) {
-  const total  = Number(shipment.customs_paid_kmf) || 0;
   const method = shipment.allocation_method || 'by_cif_value';
   const cfg    = shipment.allocation_config  || {};
 
-  if (!parcels.length || total === 0) return [];
+  // Montant inconnu : aucune part n'est fabriquée. 0 confirmé : part nulle
+  // explicite pour chaque colis (remplace toute ancienne part non nulle).
+  if (!parcels.length || isBlankAmount(shipment.customs_paid_kmf)) return [];
+  const total = Number(shipment.customs_paid_kmf);
+  if (!Number.isFinite(total)) return [];
 
   // manual : pas de calcul automatique
   if (method === 'manual') {
@@ -118,11 +169,33 @@ function allocateCustoms(shipment, parcels) {
     weights = sum > 0 ? values.map(v => v / sum) : parcels.map(() => 1 / parcels.length);
   }
 
+  // Aucun signal exploitable (ex. mixed sans CIF ni poids) : répartition égale
+  // plutôt qu'un montant entier perdu.
+  if (!weights.some(w => w > 0)) weights = parcels.map(() => 1);
+
+  // Plus grand reste au centime : la somme des parts égale exactement le total.
+  const centShares = shareByWeight(toCents(total), weights.map((weight, index) => ({ id: index, weight })));
+
   return parcels.map((p, i) => ({
     ...p,
-    customs_share_kmf: Math.round((total * weights[i]) * 100) / 100,
+    customs_share_kmf: centShares[i].share / 100,
     allocation_basis:  method,
   }));
+}
+
+/**
+ * Refuse toute ventilation colis qui ne couvre pas exactement le montant
+ * déclaré (méthode manual sans parts saisies, colis manquant, arrondi).
+ */
+function assertParcelSharesComplete(allocations, customsPaidKmf, expectedParcels) {
+  const declaredCents = toCents(customsPaidKmf);
+  const allocatedCents = allocations.reduce((s, a) => s + toCents(a.customs_share_kmf), 0);
+  if (allocations.length !== expectedParcels || allocatedCents !== declaredCents) {
+    throw httpError(422,
+      `Ventilation douane incomplète : ${allocatedCents / 100} ventilés sur ${declaredCents / 100} déclarés ` +
+      `(${allocations.length}/${expectedParcels} colis)`,
+      'COST_ALLOCATION_INCOMPLETE');
+  }
 }
 
 /**
@@ -273,6 +346,34 @@ async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
 }
 
 /**
+ * Ventilation complète d'une expédition au montant connu, DANS la
+ * transaction de l'appelant : parts colis → agrégats commande → lignes
+ * article. Toute incomplétude lève et fait annuler l'ensemble.
+ */
+async function _reallocateDeclared(client, shipmentId, shipmentMeta, parcelIds) {
+  const ids = Array.isArray(parcelIds) ? parcelIds : [];
+  if (!ids.length) {
+    throw httpError(409,
+      'Aucun colis rattaché : un montant douane ne peut pas être déclaré ou ventilé sans porteur',
+      'CUSTOMS_SHIPMENT_WITHOUT_PARCELS');
+  }
+  const allocations = await _insertAllocations(client, shipmentId, shipmentMeta, ids);
+  assertParcelSharesComplete(allocations, shipmentMeta.customs_paid_kmf, ids.length);
+
+  const costAllocation = require('./cost-allocation');
+  const itemResult = await costAllocation.allocateShipmentRealCosts(shipmentId, client);
+  return { allocations, itemResult: itemResult || {} };
+}
+
+async function _linkedParcelIds(client, shipmentId) {
+  const { rows } = await client.query(
+    `SELECT parcel_id FROM customs_shipment_parcels WHERE shipment_id = $1`,
+    [shipmentId]
+  );
+  return rows.map(r => r.parcel_id);
+}
+
+/**
  * Crée un envoi douane + snapshot marché + ventilation initiale dans une seule transaction.
  *
  * @param {import('pg').Pool} db
@@ -298,6 +399,17 @@ async function createShipment(db, body, userId, options = {}) {
     e.status = 400; throw e;
   }
 
+  // Montant fourni à la création (flux rétrocompatible) : 0 confirmé accepté,
+  // mais jamais sans colis porteur — sinon déclarer plus tard.
+  const hasAmount = !isBlankAmount(customs_paid_kmf);
+  const amount = hasAmount ? parseConfirmedAmount(customs_paid_kmf, 'customs_paid_kmf') : null;
+  const freight = parseOptionalAmount(freight_kmf, 'freight_kmf');
+  if (hasAmount && !parcel_ids?.length) {
+    throw httpError(400,
+      'customs_paid_kmf fourni sans parcel_ids : rattacher les colis ou déclarer le montant plus tard',
+      'CUSTOMS_SHIPMENT_WITHOUT_PARCELS');
+  }
+
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
@@ -313,8 +425,8 @@ async function createShipment(db, body, userId, options = {}) {
       [
         reference, shipment_date, transitaire_name || null, transport_mode || null,
         cif_value_kmf,
-        customs_paid_kmf != null ? customs_paid_kmf : null,
-        freight_kmf || null, total_weight_kg || null,
+        amount,
+        freight == null ? null : freight, total_weight_kg || null,
         nb_parcels || null, allocation_method || 'by_cif_value',
         allocation_config ? JSON.stringify(allocation_config) : null,
         notes || null, supplier_id || null, userId, marketId,
@@ -322,22 +434,23 @@ async function createShipment(db, body, userId, options = {}) {
     );
 
     // Ventilation immédiate uniquement si le montant est déjà fourni
-    // (rétrocompatibilité : ancien flow où tout était saisi d'un coup)
+    // (rétrocompatibilité : ancien flow où tout était saisi d'un coup).
+    // 0 confirmé est une déclaration valide ; NULL reste pending.
     let allocations = [];
-    if (customs_paid_kmf != null && Number(customs_paid_kmf) > 0 && parcel_ids?.length) {
-      allocations = await _insertAllocations(
-        client,
-        shipment.id,
-        { customs_paid_kmf, allocation_method: allocation_method || 'by_cif_value', allocation_config },
-        parcel_ids
-      );
-      // Marquer comme déclaré immédiatement
+    if (hasAmount) {
+      // Marquer comme déclaré, puis ventilation complète dans la même transaction.
       await client.query(
         `UPDATE customs_shipments
             SET status = 'declared', declared_at = NOW(), declared_by = $2
           WHERE id = $1`,
         [shipment.id, userId]
       );
+      ({ allocations } = await _reallocateDeclared(
+        client,
+        shipment.id,
+        { customs_paid_kmf: amount, allocation_method: allocation_method || 'by_cif_value', allocation_config },
+        parcel_ids
+      ));
     } else if (parcel_ids?.length) {
       // Rattacher les colis sans ventilation (montant inconnu pour l'instant)
       for (const pid of parcel_ids) {
@@ -368,13 +481,19 @@ async function createShipment(db, body, userId, options = {}) {
 }
 
 /**
- * Met à jour les métadonnées d'un envoi (sans recalcul de ventilation).
+ * Met à jour un envoi.
+ *
+ * Métadonnées seules : mise à jour directe. Champs financiers
+ * (FINANCIAL_FIELDS) : transaction verrouillée — refus sur expédition
+ * confirmée, refus du montant douane sur une expédition pending (passer par
+ * la déclaration), reventilation atomique complète sur une expédition
+ * déclarée active. Jamais de parts colis/article périmées.
  *
  * @param {import('pg').Pool} db
  * @param {string} id
  * @param {object} body
- * @returns {{ shipment }}
- * ✗ throws err.status=400 | 404
+ * @returns {{ shipment, reallocated? }}
+ * ✗ throws err.status=400 | 404 | 409 | 422
  */
 async function updateShipment(db, id, body) {
   const allowed = [
@@ -382,28 +501,71 @@ async function updateShipment(db, id, body) {
     'cif_value_kmf', 'customs_paid_kmf', 'freight_kmf', 'total_weight_kg',
     'nb_parcels', 'allocation_method', 'allocation_config', 'notes', 'supplier_id',
   ];
-  const updates = [];
-  const params  = [];
-  let pi = 1;
+  const values = {};
   for (const k of allowed) {
-    if (body[k] !== undefined) {
-      updates.push(`${k} = $${pi++}`);
-      params.push(body[k]);
-    }
+    if (body[k] !== undefined) values[k] = body[k];
   }
-  if (!updates.length) {
+  if (!Object.keys(values).length) {
     const e = new Error('Aucun champ à modifier'); e.status = 400; throw e;
   }
-  params.push(id);
 
-  const { rows: [shipment] } = await db.query(
-    `UPDATE customs_shipments SET ${updates.join(', ')} WHERE id = $${pi} RETURNING *`,
-    params
-  );
-  if (!shipment) {
-    const e = new Error('Shipment not found'); e.status = 404; throw e;
+  const touchesFinancial = FINANCIAL_FIELDS.some(k => values[k] !== undefined);
+  if (values.customs_paid_kmf !== undefined) {
+    values.customs_paid_kmf = parseConfirmedAmount(values.customs_paid_kmf, 'customs_paid_kmf');
   }
-  return { shipment };
+  if (values.freight_kmf !== undefined) {
+    values.freight_kmf = parseOptionalAmount(values.freight_kmf, 'freight_kmf');
+  }
+
+  const keys = Object.keys(values);
+  const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  const params = [...keys.map(k => values[k]), id];
+  const updateSql = `UPDATE customs_shipments SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`;
+
+  if (!touchesFinancial) {
+    const { rows: [shipment] } = await db.query(updateSql, params);
+    if (!shipment) {
+      const e = new Error('Shipment not found'); e.status = 404; throw e;
+    }
+    return { shipment };
+  }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: [current] } = await client.query(
+      `SELECT * FROM customs_shipments WHERE id = $1 FOR UPDATE`,
+      [id]
+    );
+    if (!current) throw httpError(404, 'Shipment not found');
+    if (current.status === 'confirmed') {
+      throw httpError(409, 'Expédition confirmée : montants et ventilation ne sont plus modifiables');
+    }
+    if (current.status === 'pending' && values.customs_paid_kmf !== undefined) {
+      throw httpError(400,
+        'Expédition pending : le montant douane se saisit par la déclaration (POST /:id/declare)');
+    }
+
+    const { rows: [shipment] } = await client.query(updateSql, params);
+
+    let reallocated = false;
+    if (shipment.status === 'declared' && shipment.is_active !== false) {
+      await _reallocateDeclared(client, shipment.id, {
+        customs_paid_kmf: shipment.customs_paid_kmf,
+        allocation_method: shipment.allocation_method || 'by_cif_value',
+        allocation_config: shipment.allocation_config,
+      }, await _linkedParcelIds(client, shipment.id));
+      reallocated = true;
+    }
+
+    await client.query('COMMIT');
+    return { shipment, reallocated };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /**
@@ -437,6 +599,13 @@ async function deactivateShipment(db, id, reason) {
       `DELETE FROM customs_shipment_parcels WHERE shipment_id = $1 RETURNING parcel_id`,
       [id]
     );
+    // Aucune allocation article active ne survit à la désactivation. Le fait
+    // source (montant, méthode, deactivated_at/reason) reste sur customs_shipments
+    // et la réactivation reventile entièrement.
+    const itemAllocations = await client.query(
+      `DELETE FROM order_item_real_cost_allocations WHERE shipment_id = $1`,
+      [id]
+    );
     await propagateCostDouane(client, removed.map(r => r.parcel_id));
 
     await client.query('COMMIT');
@@ -444,6 +613,7 @@ async function deactivateShipment(db, id, reason) {
       shipment,
       message:       `Envoi désactivé. Ventilation retirée de ${removed.length} colis. Marges recalculées.`,
       parcels_reset: removed.length,
+      item_allocations_removed: (itemAllocations && itemAllocations.rowCount) || 0,
     };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
@@ -480,7 +650,24 @@ async function activateShipment(db, id, parcelIds) {
       const e = new Error('Shipment not found'); e.status = 404; throw e;
     }
 
-    const allocations = await _insertAllocations(client, shipment.id, shipment, parcelIds || []);
+    const ids = Array.isArray(parcelIds) ? parcelIds : [];
+    let allocations = [];
+    if (shipment.status === 'pending' || isBlankAmount(shipment.customs_paid_kmf)) {
+      // Montant encore inconnu : rattacher les colis sans fabriquer de part
+      // (auparavant le rattachement était perdu faute de montant).
+      for (const pid of ids) {
+        await client.query(
+          `INSERT INTO customs_shipment_parcels (shipment_id, parcel_id)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [shipment.id, pid]
+        );
+      }
+      await propagateCostDouane(client, ids);
+    } else {
+      // Montant connu : reventilation complète (colis + articles) atomique.
+      ({ allocations } = await _reallocateDeclared(client, shipment.id, shipment, ids));
+    }
 
     await client.query('COMMIT');
     return {
@@ -497,20 +684,44 @@ async function activateShipment(db, id, parcelIds) {
 }
 
 /**
- * Supprime définitivement un envoi (cascade sur customs_shipment_parcels)
- * et recalcule les marges des commandes liées.
+ * Supprime définitivement un envoi encore pending (aucun fait financier),
+ * avec ses rattachements, et recalcule les marges des commandes liées.
+ *
+ * Une expédition déclarée/confirmée porte un historique financier : elle
+ * doit être désactivée, jamais supprimée (sinon order_item_real_cost_allocations
+ * deviendrait orpheline via shipment_id ON DELETE SET NULL).
  *
  * @param {import('pg').Pool} db
  * @param {string} id
- * ✗ throws err.status=404
+ * ✗ throws err.status=404 | 409
  */
 async function deleteShipment(db, id) {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
 
+    const { rows: [current] } = await client.query(
+      `SELECT id, status FROM customs_shipments WHERE id = $1 FOR UPDATE`,
+      [id]
+    );
+    if (!current) {
+      await client.query('ROLLBACK');
+      const e = new Error('Shipment not found'); e.status = 404; throw e;
+    }
+    if (current.status !== 'pending') {
+      throw httpError(409,
+        'Expédition déclarée : historique financier — la désactiver plutôt que la supprimer',
+        'CUSTOMS_SHIPMENT_HAS_FINANCIAL_HISTORY');
+    }
+
     const { rows: linkedParcels } = await client.query(
       `SELECT parcel_id FROM customs_shipment_parcels WHERE shipment_id = $1`,
+      [id]
+    );
+
+    // Défensif : jamais d'allocation orpheline (FK ON DELETE SET NULL).
+    await client.query(
+      `DELETE FROM order_item_real_cost_allocations WHERE shipment_id = $1`,
       [id]
     );
 
@@ -561,20 +772,25 @@ module.exports = {
  *   → order_item_real_cost_allocations (via cost-allocation.js)
  *   → parcels.customs_cleared_at
  *
- * Idempotent : peut être appelé plusieurs fois (recalcule).
+ * 0 explicite est une déclaration valide (absence de frais confirmée) ;
+ * un montant absent reste inconnu et est refusé.
+ *
+ * Atomique : montant, parts colis, agrégats commande, lignes article et
+ * customs_cleared_at sont écrits dans la même transaction — tout ou rien.
+ * Seule la facture (document régénérable) est émise après COMMIT, et son
+ * échec est retourné explicitement (invoice_issued=false), jamais silencieux.
+ *
+ * Idempotent : peut être appelé plusieurs fois (recalcule à l'identique).
  *
  * @param {import('pg').Pool} db
  * @param {string} shipmentId
- * @param {{ customs_paid_kmf: number, freight_kmf?: number, notes?: string }} payload
+ * @param {{ customs_paid_kmf: number, freight_kmf?: number|null, notes?: string }} payload
  * @param {string} userId
  */
 async function declareCustomsPayment(db, shipmentId, payload, userId) {
-  const { customs_paid_kmf, freight_kmf, notes } = payload;
-
-  if (!customs_paid_kmf || Number(customs_paid_kmf) <= 0) {
-    const e = new Error('customs_paid_kmf requis et doit être > 0');
-    e.status = 400; throw e;
-  }
+  const customs_paid_kmf = parseConfirmedAmount(payload && payload.customs_paid_kmf, 'customs_paid_kmf');
+  const freight_kmf = parseOptionalAmount(payload && payload.freight_kmf, 'freight_kmf');
+  const notes = payload && payload.notes;
 
   const client = await db.pool.connect();
   try {
@@ -592,15 +808,26 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
       const e = new Error('Expédition déjà confirmée — impossible de modifier la déclaration');
       e.status = 409; throw e;
     }
+    if (ship.is_active === false) {
+      throw httpError(409, 'Expédition désactivée — la réactiver avant de déclarer');
+    }
 
-    // 2. Mettre à jour le montant + statut
+    // 2. Colis porteurs : aucun montant déclaré sans affectation possible
+    const parcelIds = await _linkedParcelIds(client, shipmentId);
+    if (!parcelIds.length) {
+      throw httpError(409,
+        'Aucun colis rattaché : un montant douane ne peut pas être déclaré sans porteur',
+        'CUSTOMS_SHIPMENT_WITHOUT_PARCELS');
+    }
+
+    // 3. Mettre à jour le montant + statut
     const updates = {
       customs_paid_kmf,
       status: 'declared',
       declared_at: new Date(),
       declared_by: userId,
     };
-    if (freight_kmf != null) updates.freight_kmf = freight_kmf;
+    if (freight_kmf !== undefined) updates.freight_kmf = freight_kmf;
     if (notes != null) updates.notes = notes;
 
     const fields = Object.keys(updates);
@@ -612,56 +839,37 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
       [shipmentId, ...vals]
     );
 
-    // 3. Charger les colis rattachés
-    const { rows: linked } = await client.query(
-      `SELECT parcel_id FROM customs_shipment_parcels WHERE shipment_id = $1`,
-      [shipmentId]
+    // 4. Ventilation complète dans la transaction : colis → commandes → articles
+    const { itemResult } = await _reallocateDeclared(
+      client,
+      shipmentId,
+      {
+        customs_paid_kmf,
+        allocation_method: ship.allocation_method || 'by_cif_value',
+        allocation_config: ship.allocation_config,
+      },
+      parcelIds
     );
-    const parcelIds = linked.map(r => r.parcel_id);
 
-    // 4. Recalculer la ventilation par colis
-    if (parcelIds.length > 0) {
-      await _insertAllocations(
-        client,
-        shipmentId,
-        {
-          customs_paid_kmf,
-          allocation_method: ship.allocation_method || 'by_cif_value',
-          allocation_config: ship.allocation_config,
-        },
-        parcelIds
-      );
-
-      // 5. Propager vers orders.cost_douane_kmf + margin_real_pct
-      await propagateCostDouane(client, parcelIds);
-
-      // 6. Poser customs_cleared_at sur les colis
-      await markCustomsCleared(client, {
-        parcelIds,
-        notes,
-      });
-    }
+    // 5. Poser customs_cleared_at sur les colis
+    await markCustomsCleared(client, {
+      parcelIds,
+      notes,
+    });
 
     await client.query('COMMIT');
 
-    // 7. Ventilation par order_item (hors transaction principale — idempotent)
+    // 6. Émettre la facture classifiée par colis (Lot B — DOUANE_DECLARATION_PIVOT)
+    // Document régénérable via l'endpoint admin : son échec est retourné, pas tu.
+    let invoiceIssued = true;
+    let invoiceError;
     try {
-      const costAllocation = require('./cost-allocation');
-      await costAllocation.allocateShipmentRealCosts(shipmentId);
-    } catch (allocErr) {
-      // Non bloquant : la ventilation items peut être relancée manuellement
-      console.warn('[customs-shipment] allocateShipmentRealCosts partiel:', allocErr.message);
-    }
-
-    // 8. Émettre la facture classifiée par colis (Lot B — DOUANE_DECLARATION_PIVOT)
-    // Non bloquant : la facture peut être régénérée via l'endpoint admin.
-    if (parcelIds.length > 0) {
-      try {
-        const customsInvoice = require('./documents/customs-invoice');
-        await customsInvoice.issueForShipment(parcelIds, shipmentId, userId);
-      } catch (invErr) {
-        console.warn('[customs-shipment] customs-invoice partiel:', invErr.message);
-      }
+      const customsInvoice = require('./documents/customs-invoice');
+      await customsInvoice.issueForShipment(parcelIds, shipmentId, userId);
+    } catch (invErr) {
+      invoiceIssued = false;
+      invoiceError = invErr.message;
+      console.warn('[customs-shipment] customs-invoice partiel:', invErr.message);
     }
 
     return {
@@ -669,6 +877,9 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
       status: 'declared',
       customs_paid_kmf,
       parcels_updated: parcelIds.length,
+      allocations_count: Number(itemResult.allocations_count) || 0,
+      invoice_issued: invoiceIssued,
+      ...(invoiceIssued ? {} : { invoice_error: invoiceError }),
     };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
@@ -698,6 +909,19 @@ async function confirmCustomsShipmentsForOrder(q, orderId) {
            updated_at = NOW()
      WHERE cs.is_active = TRUE
        AND cs.status = 'declared'
+       -- Clôture interdite sans affectation complète au centime : les lignes
+       -- article de l'expédition couvrent exactement les montants déclarés.
+       AND cs.customs_paid_kmf IS NOT NULL
+       AND ROUND(cs.customs_paid_kmf * 100) = COALESCE((
+         SELECT ROUND(SUM(a.amount_kmf) * 100)
+           FROM order_item_real_cost_allocations a
+          WHERE a.shipment_id = cs.id AND a.cost_type = 'customs'
+       ), 0)
+       AND (cs.freight_kmf IS NULL OR ROUND(cs.freight_kmf * 100) = COALESCE((
+         SELECT ROUND(SUM(a.amount_kmf) * 100)
+           FROM order_item_real_cost_allocations a
+          WHERE a.shipment_id = cs.id AND a.cost_type = 'freight'
+       ), 0))
        AND EXISTS (
          SELECT 1
            FROM customs_shipment_parcels csp
