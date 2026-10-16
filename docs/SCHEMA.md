@@ -912,6 +912,7 @@ kind: table
 migration: 296
 section: ### Visual French media review evidence (migration 296)
 role: Preuve de relecture visuelle francaise associee a une image, sa variante, son auteur et sa date ; aucune publication automatique.
+-->
 
 
 ### Customs typed shipment fees (migration 297)
