@@ -887,3 +887,16 @@ role: Mapping commercial fournisseur + chemin source normalisé vers paire bouti
 ## Sourcing candidate independent boutique attachment (migration 293)
 
 `sourcing_candidates.commercial_taxonomy_review` (`jsonb`, nullable, `intended_migration_schema`) stores a confirmed active boutique category/subcategory from supplier-path mapping independently of `komerce_category`, scan outcome and customs qualification. Existing candidate rows remain unchanged until the explicit audited batch attachment; journal entries are added to `sourcing_candidate_events` only for newly attached candidates. No KIR historical mutation or catalogue publication is implied.
+
+
+### Customs financial correction audit (migration 295)
+
+`customs_shipment_financial_audit` records a transactionally captured immutable before/after snapshot when a shipment's customs amount, freight or allocation method/configuration changes. Actor and reason are copied only from explicit transaction context; absent context stays NULL. The audit is evidence, not a replacement for the customs allocation engine, estimated customs rates, or the real-margin shadow calculator.
+
+<!-- schema-pending
+object: customs_shipment_financial_audit
+kind: table
+migration: 295
+section: ### Customs financial correction audit (migration 295)
+role: Append-only evidence of customs shipment financial corrections with old/new JSONB snapshots, optional actor and reason, and same-transaction trigger.
+-->
