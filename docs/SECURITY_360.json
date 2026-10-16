@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-13T12:09:14.819Z",
+  "generatedAt": "2026-10-16T09:31:15.099Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 731,
-    "protected": 676,
+    "total": 733,
+    "protected": 678,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -533,6 +533,13 @@
       ]
     },
     {
+      "key": "GET /api/admin/costing/orders/{id}/real-margin-shadow",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /api/admin/costing/orders/{orderId}",
       "level": "PROTECTED",
       "roles": [
@@ -555,6 +562,13 @@
     },
     {
       "key": "GET /api/admin/costing/products",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/real-margin-shadow",
       "level": "PROTECTED",
       "roles": [
         "admin"

@@ -96,4 +96,13 @@ describe('finance-metrics/finance-summary', () => {
       .mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
     expect((await getFinanceSummary({})).marges.nb_douane_inconnue).toBe(0);
   });
+
+  it('utilise le prédicat douane-inconnue factorisé (customs-unknown.js) sans changement', async () => {
+    const { customsUnknownSql } = require('../../services/finance-metrics/customs-unknown');
+    db.query
+      .mockResolvedValueOnce({ rows: [{ ca_kmf: '0', ca_prev_kmf: '0', nb_commandes: '0', nb_prev: '0', nb_livrees: '0', nb_annulees: '0', panier_moyen_kmf: '0', nb_cash: '0', nb_stripe: '0', ca_cash_kmf: '0', ca_stripe_eur: '0', cout_logistique_kmf: '0', marge_reelle_kmf: '0', nb_avec_cost: '0', nb_sans_cost: '0' }] })
+      .mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+    await getFinanceSummary({});
+    expect(db.query.mock.calls[0][0]).toContain(customsUnknownSql('orders'));
+  });
 });
