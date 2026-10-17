@@ -52,9 +52,9 @@ test('phoneFromPath ne reconnaît que le détail Client 360', () => {
 test('metricItems ne fait que formatter les valeurs serveur', () => {
   const metrics = client360.metricItems(payload());
 
-  expect(metrics.map(row => row.key)).toEqual(['orders', 'ltv', 'basket', 'silence', 'markets', 'security']);
+  expect(metrics.map(row => row.key)).toEqual(['orders', 'ltv', 'basket', 'silence', 'markets']);
   expect(metrics.find(row => row.key === 'ltv').value).toContain('150');
-  expect(metrics.find(row => row.key === 'security').value).toBe('Central uniquement');
+  expect(metrics.some(row => /passkey|sécurité/i.test(row.label))).toBe(false);
 });
 
 function globalContext() {
