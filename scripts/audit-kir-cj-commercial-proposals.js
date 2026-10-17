@@ -18,15 +18,18 @@ const {normalizePath}=require('../services/supplier-commercial-category-mapping'
 const RULES=[
  {re:/home (office|storage)|bathroom storage/,pair:['Maison','Rangement'],evidence:'storage'},
  {re:/lady dresses|blouses|rompers|wide leg pants|panties/,pair:['Mode & Beauté','Femme'],evidence:'womens garment'},
- {re:/men.s clothing|casual pants|t-shirts|socks/,pair:['Mode & Beauté','Homme'],evidence:'mens garment'},
+ {re:/(?:^| > )men's clothing(?: > |$)|casual pants|t-shirts|socks/,pair:['Mode & Beauté','Homme'],evidence:'mens garment'},
  {re:/stuffed.*plush animals/,pair:['Enfant','Jouets'],evidence:'plush toy'},
  {re:/sportswear.*sports accessories/,pair:['Sport','Fitness'],evidence:'sports accessories',reviewOnly:true},
 ];
 function suggest(sourcePath,activePairs) {
  const normalized=normalizePath(sourcePath);
- const matches=RULES.filter(r=>r.re.test(normalized)&&activePairs.has(r.pair.join('/')));
- if(matches.length!==1)return {status:'REVIEW_REQUIRED',proposal:null,reason:matches.length?'MULTIPLE_POSSIBLE':'NO_SAFE_MATCH'};
- const rule=matches[0];
+ const matchingRules=RULES.filter(r=>r.re.test(normalized));
+ if(matchingRules.length!==1)return {status:'REVIEW_REQUIRED',proposal:null,
+   reason:matchingRules.length?'MULTIPLE_POSSIBLE':'NO_SAFE_MATCH'};
+ const rule=matchingRules[0];
+ if(!activePairs.has(rule.pair.join('/')))return {status:'REVIEW_REQUIRED',proposal:null,
+   reason:'BOUTIQUE_PAIR_INACTIVE_OR_MISSING',suggested_pair:{category:rule.pair[0],subcategory:rule.pair[1]}};
  return {status:'PROPOSAL_NEEDS_CONFIRMATION',proposal:{category:rule.pair[0],subcategory:rule.pair[1]},
   reason:rule.reviewOnly?'BROAD_CATEGORY_CONFIRM':'SOURCE_PATH_PHRASE',evidence:rule.evidence};
 }
