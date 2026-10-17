@@ -973,3 +973,71 @@ body.kmc-shell-v4 #market-autonomy-root,
 body.kmc-shell-v4 #market-catalog-root{
   background:var(--kmc-brand-canvas, #FFFFFF) !important;
 }
+
+/* Expéditions & Douane — formulaire intégré de déclaration / correction */
+.kmc-customs-form {
+  display: grid;
+  gap: 8px;
+  max-width: 520px;
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid var(--kmc-legacy-line, #dde3ec);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.kmc-customs-form-title { margin: 0; font-size: 1rem; }
+
+.kmc-customs-form-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0;
+}
+
+.kmc-customs-form-facts dt { font-size: 0.75rem; color: var(--kmc-legacy-ink-2, #4a5361); }
+.kmc-customs-form-facts dd { margin: 0; font-weight: 700; }
+.kmc-customs-form-label { font-weight: 700; font-size: 0.875rem; }
+
+.kmc-customs-input-group { display: flex; align-items: stretch; }
+
+.kmc-customs-input-group input,
+.kmc-customs-form > input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--kmc-legacy-line, #c9d1dd);
+}
+
+.kmc-customs-input-group input { border-radius: 8px 0 0 8px; }
+.kmc-customs-input-group input[readonly] { background: #f3f5f9; }
+.kmc-customs-input-group input[aria-invalid="true"] { border-color: var(--kmc-legacy-red, #a3231b); }
+
+.kmc-customs-unit {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  font-weight: 700;
+  border: 1px solid var(--kmc-legacy-line, #c9d1dd);
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  background: #f3f5f9;
+}
+
+.kmc-customs-form-hint { font-size: 0.8125rem; color: var(--kmc-legacy-ink-2, #4a5361); }
+.kmc-customs-form-preview { min-height: 1.25em; font-weight: 700; }
+.kmc-customs-form-error { min-height: 1.25em; color: var(--kmc-legacy-red, #a3231b); font-weight: 600; }
+.kmc-customs-form-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+.kmc-customs-form-actions .kmc-workspace-action { min-height: 44px; min-width: 120px; }
+
+.kmc-workspace-table tr.is-highlighted td { background: var(--health-green-bg, #e6f5ec); }
+
+@media (max-width: 680px) {
+  .kmc-customs-form { max-width: none; }
+  .kmc-customs-form-actions { flex-direction: column-reverse; }
+  .kmc-customs-form-actions .kmc-workspace-action { width: 100%; }
+}
