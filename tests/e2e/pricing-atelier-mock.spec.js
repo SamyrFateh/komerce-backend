@@ -20,7 +20,7 @@ const COMPONENTS = [
   { key: 'cash_fee_kmf', label: 'Frais collecte cash', family: 'business', category: 'payment', unit: 'kmf_per_order', default_value: 500, allocation_method: 'per_order', inherited: false, is_active: true },
 ];
 
-async function mount(page, { populated = false } = {}) {
+async function mount(page, { populated = false, autoMarket = false } = {}) {
   const market = populated ? { ...FX.market, cost_components: COMPONENTS } : FX.market;
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -31,7 +31,7 @@ async function mount(page, { populated = false } = {}) {
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
     }
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
-    if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
+    if (url.pathname === '/api/admin/dashboard/context') return json(autoMarket ? { ...FX.context, access: { ...FX.context.access, defaultMarket: 'KM' } } : FX.context);
     if (url.pathname === '/api/admin/workspaces/pricing') return json(FX.global);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM') return json(market);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision') return json(FX.decision);
@@ -40,7 +40,7 @@ async function mount(page, { populated = false } = {}) {
     return route.fulfill({ status: 404, body: '' });
   });
   await page.goto(`${ORIGIN}/admin/workspaces/pricing`);
-  await page.locator('select').first().selectOption({ label: 'KM · Comores' });
+  if (!autoMarket) await page.locator('select').first().selectOption({ label: 'KM · Comores' });
   await expect(page.locator('[data-pricing-economic-cockpit]')).toBeVisible();
 }
 
@@ -57,6 +57,23 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(kpis.locator('.kmc-metric-value')).toHaveText(['Indisponible', 'Indisponible', 'Indisponible', 'Indisponible']);
       const body = await page.locator('body').innerText();
       expect(body).not.toMatch(/\bnull\b|\bundefined\b|\\n/);
+    });
+
+    test('premier affichage : le marché autorisé par le serveur est chargé sans sélection manuelle, titre inclus', async ({ page }) => {
+      await mount(page, { autoMarket: true });
+      await expect(page.locator('h1')).toHaveText('Atelier des prix · Comores');
+    });
+
+    test('familles : navigation clavier (flèches, Home/End)', async ({ page }) => {
+      await mount(page, { populated: true });
+      const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');
+      await tabs.nth(0).focus();
+      await page.keyboard.press('ArrowRight');
+      await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+      await page.keyboard.press('End');
+      await expect(tabs.nth(2)).toHaveAttribute('aria-selected', 'true');
+      await page.keyboard.press('Home');
+      await expect(tabs.nth(0)).toHaveAttribute('aria-selected', 'true');
     });
 
     test('trois familles en onglets : une seule visible, bascule au clic', async ({ page }) => {

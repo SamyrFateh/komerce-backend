@@ -313,7 +313,7 @@
       marketMode ? 'pricing-market-decision' : 'pricing-engine-state');
     metrics.section.setAttribute('data-dashboard-role', 'primary');
     ui.MetricStrip.render(metrics.body, { items: marketMode ? marketMetricItems(payload, decision, workspace) : globalMetricItems(payload) });
-    overview.appendChild(metrics.section);
+    overview.insertBefore(metrics.section, overview.querySelector('[data-dashboard-role="attention"]'));
 
     const existing = rootNode.querySelector('[data-pricing-decision-overview]');
     if (existing) existing.remove();

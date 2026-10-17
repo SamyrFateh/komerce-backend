@@ -490,6 +490,7 @@
     CM: '/dashboards/canonical/assets/flags/CM.svg',
     CG: '/dashboards/canonical/assets/flags/CG.svg',
     KM: '/dashboards/canonical/assets/flags/KM.svg',
+    YT: '/dashboards/canonical/assets/flags/YT.svg',
   });
 
   function marketFlagAsset(code) {

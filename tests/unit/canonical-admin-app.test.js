@@ -452,3 +452,7 @@ describe('canonical admin app — defaultLandingSurface (docs/admin-nav-capabili
     expect(env.validateAdminContext).not.toHaveBeenCalled();
   });
 });
+test('Prix : le marché autorisé par le serveur est exigé dès le premier affichage (requireMarket)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/app.js'), 'utf8');
+  expect(src).toContain('requireMarket: true');
+});

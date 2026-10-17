@@ -286,3 +286,6 @@ body.kmc-shell-v4.kmc-hero-first .kmc-admin-reference-results {
     max-width: none;
   }
 }
+
+/* Preserve the flag gutter against the hero select's shorthand padding. */
+body.kmc-shell-v4.kmc-hero-first > .kmc-admin-topbar .kmc-admin-market-select.has-flag { padding-left: 40px; }
