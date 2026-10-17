@@ -175,25 +175,24 @@ if (!hasIntegrationEnv) {
       expect(b.allocation_basis).toBe('by_volume:equal_fallback');
     });
 
-    it('T2 — finance-summary : transport>0 + expédition pending => exclue des coûts/marge, comptée inconnue ; déclarée => comptée', async () => {
-      const { orderId, parcelIds: ps } = await seedOrder({ parcels: 1, totalKmf: 50000 });
+    it('T2 — finance-summary : commande importée non groupée = douane inconnue (jamais 0) ; groupée pending = inconnue ; déclarée => comptée', async () => {
+      const { orderId, parcelIds: ps } = await seedOrder({ parcels: 1, totalKmf: 50000, withParcelItems: [1] });
       await db.query(`UPDATE orders SET cost_transport_kmf = 3000 WHERE id = $1`, [orderId]);
-      const before = (await getFinanceSummary({ period: '365' })).marges;
+      // Non groupée : déjà « douane inconnue » (A8-prépa : NULL ≠ 0), exclue des coûts/marge.
+      const ungrouped = (await getFinanceSummary({ period: '365' })).marges;
 
       const { shipment } = await ship({ transport_mode: 'sea' });
       await db.query(`INSERT INTO customs_shipment_parcels (shipment_id, parcel_id) VALUES ($1,$2)`, [shipment.id, ps[0]]);
 
       const pending = (await getFinanceSummary({ period: '365' })).marges;
-      // la commande (transport 3000, douane 0 par défaut) était comptée AVANT le rattachement ; maintenant exclue
-      expect(pending.nb_douane_inconnue).toBe(before.nb_douane_inconnue + 1);
-      expect(pending.cout_logistique_kmf).toBe(before.cout_logistique_kmf - 3000);
-      expect(pending.marge_reelle_kmf).toBe(before.marge_reelle_kmf - 47000);
-      expect(pending.nb_avec_cost).toBe(before.nb_avec_cost - 1);
+      expect(pending.nb_douane_inconnue).toBe(ungrouped.nb_douane_inconnue);
+      expect(pending.cout_logistique_kmf).toBe(ungrouped.cout_logistique_kmf);
+      expect(pending.marge_reelle_kmf).toBe(ungrouped.marge_reelle_kmf);
 
       await svc.declareCustomsPayment(db, shipment.id, { customs_paid_kmf: 1000 }, null);
       const declared = (await getFinanceSummary({ period: '365' })).marges;
-      expect(declared.nb_douane_inconnue).toBe(before.nb_douane_inconnue);
-      expect(declared.cout_logistique_kmf).toBe(before.cout_logistique_kmf + 1000);
+      expect(declared.nb_douane_inconnue).toBe(ungrouped.nb_douane_inconnue - 1);
+      expect(declared.cout_logistique_kmf).toBe(ungrouped.cout_logistique_kmf + 3000 + 1000);
     });
   });
 }
