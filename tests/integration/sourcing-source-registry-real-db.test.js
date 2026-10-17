@@ -81,6 +81,18 @@ describeE2E('Registre des sources — création → certification → activation
        VALUES ('e2e_registry_gadgets', 'E2E Registry Gadgets', 5, 10, 40, true)
        ON CONFLICT (key) DO NOTHING`
     );
+    // Test-only commercial classification of the synthetic CJ gadget feed.
+    // Customs classification above is independent and cannot route boutique.
+    await db.query(`INSERT INTO boutique_categories (key,label,is_active)
+      VALUES ('E2E Registry Gadgets','E2E Registry Gadgets',TRUE)
+      ON CONFLICT (key) DO NOTHING`);
+    await db.query(`INSERT INTO boutique_subcategories (category_key,key,label,is_active)
+      VALUES ('E2E Registry Gadgets','Gadgets','Gadgets',TRUE)
+      ON CONFLICT (category_key,key) DO NOTHING`);
+    await db.query(`INSERT INTO supplier_commercial_category_mappings
+      (provider,source_category_path,boutique_category_key,boutique_subcategory_key,status,confirmed_by,confirmed_at)
+      VALUES ('cjdropshipping','e2e registry gadgets','E2E Registry Gadgets','Gadgets','CONFIRMED','e2e-fixture',NOW())
+      ON CONFLICT (provider,source_category_path) DO NOTHING`);
     const { rows } = await db.query('SELECT 1 FROM sourcing_sources WHERE source_id = $1', [SOURCE]);
     if (rows.length) throw new Error('Base de test non vierge pour api:cj — recréer la base de test');
   });

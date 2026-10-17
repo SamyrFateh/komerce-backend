@@ -162,6 +162,15 @@ async function createDraftProductFromSourcingCandidate(q, {
   const hasVariants = hasVariantsFromCandidate(candidate);
   const sourceLocale = sourceLocaleFromCandidate(candidate);
   const boutiqueTaxonomy = await resolveActiveBoutiqueTaxonomy(q, candidate);
+  // No catalog draft without an active and complete commercial classification.
+  // Keep the sourcing candidate unresolved for explicit human mapping; never
+  // infer the boutique category from customs and never invent a fallback.
+  const commercialProvider = String(candidate?.normalized_source_contract?.supplier_name
+    || candidate?.supplier_name || '').trim().toLowerCase();
+  const strictSupplier = ['aliexpress', 'cj', 'cjdropshipping'].includes(commercialProvider);
+  if (strictSupplier && (!boutiqueTaxonomy?.category || !boutiqueTaxonomy?.subcategory)) {
+    throw new Error('BOUTIQUE_TAXONOMY_UNRESOLVED: category/subcategory review required before draft creation');
+  }
   // Identité client (nom court, description proposée) dérivée mécaniquement
   // du fournisseur — jamais d'invention, jamais d'IA (DOCTRINE_CATALOGUE.md
   // §2/§4). La phrase extraite reste une proposition : needs_review signale
