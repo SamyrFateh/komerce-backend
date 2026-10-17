@@ -54,6 +54,18 @@ describe('finance-metrics/sales-analysis', () => {
     expect(result.cohorts.rows).toEqual([{ cohort_month: '2026-06-01', offset_months: 1, nb_clients: 3 }]);
   });
 
+  it('catégorie sans marge connue : marge et taux null (NULL ≠ 0), SQL sans COALESCE(margin_real_pct,0)', async () => {
+    const base = { ca_kmf: '0', ca_eur: '0', nb_commandes: '0', panier_moyen: '0', nb_avec_cost: '0', nb_sans_cost: '0', marge_moy_pct: '0', ca: '0', nb: '0', nb_creees: '0', nb_payees: '0', nb_livrees: '0', nb_annulees: '0' };
+    db.query.mockImplementation(async (sql) => (/GROUP BY p\.category/.test(sql)
+      ? { rows: [{ categorie: 'food', nb_commandes: '2', ca_kmf: '1000', marge_kmf: null, taux_marge_pct: null }] }
+      : { rows: [base] }));
+    const out = await getSalesAnalysis({});
+    expect(out.by_category).toEqual([{ categorie: 'food', nb_commandes: 2, ca_kmf: 1000, marge_kmf: null, taux_marge_pct: null }]);
+    const catSql = db.query.mock.calls.map((c) => c[0]).find((q) => /AS taux_marge_pct/.test(q) && /GROUP BY p.category/.test(q));
+    expect(catSql).toBeTruthy();
+    expect(catSql).not.toMatch(/COALESCE\(o\.margin_real_pct, 0\)/);
+  });
+
   it('utilise bucket week si periode superieure a 31 jours et fallback marge cible a 40', async () => {
     mockSalesQueries({ financeConfig: [] });
 

@@ -93,12 +93,11 @@ async function getSalesAnalysis(query) {
       p.category                                          AS categorie,
       COUNT(DISTINCT o.id)                                AS nb_commandes,
       COALESCE(SUM(oi.price_kmf * oi.quantity), 0)        AS ca_kmf,
-      COALESCE(SUM(
-        (oi.price_kmf * oi.quantity) *
-        COALESCE(o.margin_real_pct, 0) / 100
-      ), 0)                                               AS marge_kmf,
-      COALESCE(AVG(o.margin_real_pct) FILTER (
-        WHERE o.margin_real_pct IS NOT NULL), 0)          AS taux_marge_pct
+      SUM(
+        (oi.price_kmf * oi.quantity) * o.margin_real_pct / 100
+      ) FILTER (WHERE o.margin_real_pct IS NOT NULL)      AS marge_kmf,
+      AVG(o.margin_real_pct) FILTER (
+        WHERE o.margin_real_pct IS NOT NULL)              AS taux_marge_pct
     FROM order_items oi
     JOIN products p ON p.id = oi.product_id
     JOIN orders o   ON o.id = oi.order_id
@@ -223,8 +222,9 @@ async function getSalesAnalysis(query) {
       categorie:      r.categorie,
       nb_commandes:   Number(r.nb_commandes),
       ca_kmf:         Math.round(Number(r.ca_kmf)),
-      marge_kmf:      Math.round(Number(r.marge_kmf)),
-      taux_marge_pct: +Number(r.taux_marge_pct).toFixed(1),
+      // NULL ≠ 0 : aucune marge connue sur la catégorie → null (jamais 0 fictif).
+      marge_kmf:      r.marge_kmf == null ? null : Math.round(Number(r.marge_kmf)),
+      taux_marge_pct: r.taux_marge_pct == null ? null : +Number(r.taux_marge_pct).toFixed(1),
     })),
     evolution: {
       bucket,
