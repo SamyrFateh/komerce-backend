@@ -592,6 +592,49 @@
     if (po.status === 'notified') renderConfirmForm(doc, slot, po, lines, context);
   }
 
+  // Existing GET /api/purchasing is the canonical read-only PO list (latest 100).
+  // A confirmed PO remains ongoing until the Hub receives it; supplier SHIPPED alone is not closure.
+  function renderPurchaseOrderLists(rootNode, ui, doc, payload, context) {
+    const orders = (payload && payload.purchase_orders) || [];
+    const groups = [
+      { title: 'Achats fournisseurs en cours', statuses: ['draft', 'notified', 'confirmed'], empty: 'Aucune commande fournisseur en cours.' },
+      { title: 'Historique des achats', statuses: ['hub_received', 'cancelled'], empty: 'Aucune commande terminée ou annulée dans les 100 dernières.' },
+    ];
+    groups.forEach((group) => {
+      const slot = createSection(rootNode, ui, doc, group.title, 'Commandes fournisseur récentes · lecture seule · 100 dernières maximum');
+      const entries = orders.filter((po) => group.statuses.includes(po.status));
+      if (!entries.length) {
+        slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', group.empty));
+        return;
+      }
+      const search = doc.createElement('input');
+      search.type = 'search';
+      search.className = 'kmc-purchasing-list-search';
+      search.placeholder = 'Filtrer par PO, fournisseur ou référence commande';
+      search.setAttribute('aria-label', 'Filtrer ' + group.title);
+      slot.appendChild(search);
+      const list = doc.createElement('div');
+      list.className = 'kmc-purchasing-po-list';
+      slot.appendChild(list);
+      const renderEntries = () => {
+        list.replaceChildren();
+        const needle = search.value.trim().toLocaleLowerCase('fr');
+        const matching = entries.filter((po) => [po.id, po.supplier_name, po.order_ref, po.status].some((v) => String(v || '').toLocaleLowerCase('fr').includes(needle)));
+        if (!matching.length) list.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun résultat pour ce filtre.'));
+        matching.forEach((po) => {
+          const button = doc.createElement('button');
+          button.type = 'button';
+          button.className = 'kmc-purchasing-po-link';
+          button.textContent = `PO ${shortId(po.id)} · ${po.supplier_name || 'Fournisseur'} · ${STATUS_LABELS[po.status] || po.status}${po.order_ref ? ' · ' + po.order_ref : ''}`;
+          button.addEventListener('click', () => { context.openPo(po.id); context.reload().catch(() => {}); });
+          list.appendChild(button);
+        });
+      };
+      search.addEventListener('input', renderEntries);
+      renderEntries();
+    });
+  }
+
   function renderPayload(rootNode, ui, doc, state, context) {
     rootNode.replaceChildren();
     rootNode.classList.add('kmc-purchasing-workspace');
@@ -603,6 +646,7 @@
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', state.detailError));
     }
     renderOpenLines(rootNode, ui, doc, state.openLines, context);
+    renderPurchaseOrderLists(rootNode, ui, doc, state.purchaseOrders, context);
   }
 
   // ─── Montage ──────────────────────────────────────────────────────────────────────────────────
@@ -650,13 +694,14 @@
 
     context.reload = async () => {
       try {
-        const [openLines, detailResult] = await Promise.all([
+        const [openLines, purchaseOrders, detailResult] = await Promise.all([
+          jsonRequest(fetchFn, ENDPOINT),
           jsonRequest(fetchFn, `${ENDPOINT}/open-lines`),
           context.poId
             ? jsonRequest(fetchFn, `${ENDPOINT}/po/${encodeURIComponent(context.poId)}`).then((d) => ({ detail: d }), (e) => ({ error: e }))
             : Promise.resolve({}),
         ]);
-        const state = { openLines, detail: detailResult.detail || null, detailError: detailResult.error ? describeError(detailResult.error) : null };
+        const state = { openLines, purchaseOrders, detail: detailResult.detail || null, detailError: detailResult.error ? describeError(detailResult.error) : null };
         renderPayload(rootNode, ui, doc, state, context);
         return state;
       } catch (error) {
