@@ -22,7 +22,7 @@
  * KOMERCE — A8 : extraction LECTURE SEULE shadow vs legacy.
  *
  * Usage (aucune saisie, aucun UUID) :
- *   railway run node scripts/a8-shadow-extract.js
+ *   railway run --service Postgres node scripts/a8-shadow-extract.js
  *   railway run node scripts/a8-shadow-extract.js --days=365 --max-orders=3000 --out=a8.json
  *
  * Garanties :
@@ -39,10 +39,23 @@
 // Lecture seule imposée AVANT le chargement de db.js (pg lit PGOPTIONS).
 process.env.PGOPTIONS = `${process.env.PGOPTIONS ? process.env.PGOPTIONS + ' ' : ''}-c default_transaction_read_only=on`;
 
-// `railway run` expose l'URL interne (*.railway.internal), injoignable hors Railway : repli sur l'URL publique.
-if (/\.railway\.internal/.test(process.env.DATABASE_URL || '') && process.env.DATABASE_PUBLIC_URL) {
-  process.env.DATABASE_URL = process.env.DATABASE_PUBLIC_URL;
+// Résolution de l'URL (aucun log de l'URL). Priorité : A8_DATABASE_URL > DATABASE_PUBLIC_URL (si l'URL
+// courante est interne Railway) > DATABASE_URL. L'URL interne (*.railway.internal) est injoignable hors Railway.
+function resolveDatabaseUrl(env) {
+  if (env.A8_DATABASE_URL) return { url: env.A8_DATABASE_URL };
+  const cur = env.DATABASE_URL || '';
+  if (/\.railway\.internal/.test(cur)) {
+    if (env.DATABASE_PUBLIC_URL) return { url: env.DATABASE_PUBLIC_URL };
+    return {
+      error: 'URL interne Railway injoignable depuis ce poste. Relancez avec le service Postgres : '
+        + '`railway run --service Postgres node scripts/a8-shadow-extract.js --out=a8.json` '
+        + '(ou définissez A8_DATABASE_URL avec la DATABASE_PUBLIC_URL).',
+    };
+  }
+  return { url: cur };
 }
+const resolved = resolveDatabaseUrl(process.env);
+if (!resolved.error && resolved.url) process.env.DATABASE_URL = resolved.url;
 
 const fs = require('fs');
 
@@ -106,6 +119,7 @@ async function extract({ db, listRealMarginShadow, days, maxOrders }) {
 }
 
 async function main() {
+  if (resolved.error) throw new Error(resolved.error);
   const args = parseArgs(process.argv.slice(2));
   const db = require('../db');
   const { listRealMarginShadow } = require('../services/cost-allocation/real-margin-shadow');
@@ -123,4 +137,4 @@ if (require.main === module) {
   main().then(() => process.exit(0)).catch((e) => { process.stderr.write(`A8 extract: ${e.message}\n`); process.exit(1); });
 }
 
-module.exports = { extract, parseArgs };
+module.exports = { extract, parseArgs, resolveDatabaseUrl };

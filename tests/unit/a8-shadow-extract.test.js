@@ -5,7 +5,7 @@
  * A8 — extraction lecture seule shadow vs legacy.
  */
 
-const { extract, parseArgs } = require('../../scripts/a8-shadow-extract');
+const { extract, parseArgs, resolveDatabaseUrl } = require('../../scripts/a8-shadow-extract');
 
 const item = (id, completeness, shadow, legacy) => ({
   order_id: id, status_order: 'confirmed', completeness, shadow_pct: shadow, legacy_margin_real_pct: legacy,
@@ -25,6 +25,13 @@ describe('a8-shadow-extract', () => {
   it('parseArgs : défauts et surcharge', () => {
     expect(parseArgs([])).toEqual({ days: 365, maxOrders: 5000, out: null });
     expect(parseArgs(['--days=30', '--max-orders=10', '--out=x.json'])).toEqual({ days: 30, maxOrders: 10, out: 'x.json' });
+  });
+
+  it('resolveDatabaseUrl : override > publique > interne refusée avec consigne', () => {
+    expect(resolveDatabaseUrl({ A8_DATABASE_URL: 'pg://a', DATABASE_URL: 'pg://x' })).toEqual({ url: 'pg://a' });
+    expect(resolveDatabaseUrl({ DATABASE_URL: 'pg://u@postgres.railway.internal/db', DATABASE_PUBLIC_URL: 'pg://pub' })).toEqual({ url: 'pg://pub' });
+    expect(resolveDatabaseUrl({ DATABASE_URL: 'pg://u@postgres.railway.internal/db' }).error).toMatch(/--service Postgres/);
+    expect(resolveDatabaseUrl({ DATABASE_URL: 'pg://local/db' })).toEqual({ url: 'pg://local/db' });
   });
 
   it('refuse une session non lecture seule', async () => {
