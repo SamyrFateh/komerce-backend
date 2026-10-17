@@ -39,6 +39,25 @@ describe('politique de classification', () => {
   });
 });
 
+describe('classification des comptes — V3', () => {
+  it('--test-ids classe explicitement un inconnu ; un compte déjà archivé est neutre', () => {
+    const r = sc.classifyUsers([{ id: 'u1', email: 'x@komerce.km', role: 'client' }, { id: 'u2', email: 'archived+u2@archived.invalid', role: 'client' }], policy, { testIds: ['u1'] });
+    expect(r.all.map((u) => [u.id, u.cls, u.reason])).toEqual([['u1', 'test', 'TEST_EXPLICIT_ID'], ['u2', 'archived', 'ALREADY_ARCHIVED']]);
+    expect(r.test.map((u) => u.id)).toEqual(['u1']);
+  });
+  it('@komerce.km n’est jamais présumé fictif', () => {
+    expect(sc.classifyUsers([{ id: 'u1', email: 'a@komerce.km', role: 'admin' }], policy).unclassified).toHaveLength(1);
+  });
+  it('politique : habilitations révoquées par règle, définitions de capacités jamais supprimées', () => {
+    const del = Object.keys(policy.user_scoped_delete);
+    expect(del).toEqual(expect.arrayContaining(['assignment_memberships', 'membership_capabilities', 'operator_market_scopes']));
+    for (const t of ['capability_registry', 'assignment_capability_ceiling', 'ceiling_template_capabilities']) {
+      expect(del).not.toContain(t); expect(policy.classes.preserve).toContain(t);
+    }
+    expect(policy.classes.retention_financial.length).toBeGreaterThan(0);
+  });
+});
+
 describe('classification des comptes', () => {
   const users = [
     { id: 1, email: 'admin@komerce.km', role: 'admin' }, { id: 2, email: 'e2e_test_x@example.com', role: 'client' },

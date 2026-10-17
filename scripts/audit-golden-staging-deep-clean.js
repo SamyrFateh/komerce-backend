@@ -79,25 +79,29 @@ function classifyTables(existing, policy) {
  * keep = liste explicite de l'opérateur (e-mail ou id) ; test = liste explicite ou motif ; sinon unclassified.
  * Un keep explicite l'emporte toujours sur un motif de test. Chaque compte reçoit un motif (reason).
  */
-function classifyUsers(users, policy, { keepEmails = [], keepIds = [], testEmails = [] } = {}) {
+function classifyUsers(users, policy, { keepEmails = [], keepIds = [], testEmails = [], testIds = [] } = {}) {
   const pats = policy.users.test_email_patterns.map((p) => new RegExp(p, 'i'));
   const keepSet = new Set(keepEmails.map((e) => e.toLowerCase()));
   const keepIdSet = new Set(keepIds.map(String));
   const testSet = new Set(testEmails.map((e) => e.toLowerCase()));
-  const out = { keep: [], test: [], unclassified: [], all: [] };
+  const testIdSet = new Set(testIds.map(String));
+  const arch = new RegExp(policy.users.archive_email_pattern || '^$a');
+  const out = { keep: [], test: [], unclassified: [], archived: [], all: [] };
   const sorted = [...users].sort((x, y) => String(x.id).localeCompare(String(y.id)));
   for (const u of sorted) {
     const email = (u.email || '').toLowerCase();
     let cls; let reason;
     if (keepSet.has(email)) { cls = 'keep'; reason = 'KEEP_EXPLICIT_EMAIL'; }
     else if (keepIdSet.has(String(u.id))) { cls = 'keep'; reason = 'KEEP_EXPLICIT_ID'; }
+    else if (arch.test(email)) { cls = 'archived'; reason = 'ALREADY_ARCHIVED'; }
+    else if (testIdSet.has(String(u.id))) { cls = 'test'; reason = 'TEST_EXPLICIT_ID'; }
     else if (testSet.has(email)) { cls = 'test'; reason = 'TEST_EXPLICIT_EMAIL'; }
     else {
       const i = pats.findIndex((re) => re.test(email));
       if (i >= 0) { cls = 'test'; reason = `TEST_PATTERN_${i}`; } else { cls = 'unclassified'; reason = 'UNCLASSIFIED_NO_RULE'; }
     }
     const rec = { ...u, cls, reason };
-    out[cls === 'keep' ? 'keep' : cls === 'test' ? 'test' : 'unclassified'].push(u);
+    out[cls].push(u);
     out.all.push(rec);
   }
   return out;
@@ -154,6 +158,8 @@ function truncateSet(doomed, guarded, edges) {
   }
   return [...set].sort();
 }
+
+const scopeOf = (ident_, spec) => (typeof spec === 'string' ? `${ident_(spec)} = ANY($1::uuid[])` : spec.where);
 
 const DELETE_ACTION = { a: 'NO ACTION', r: 'RESTRICT', c: 'CASCADE', n: 'SET NULL', d: 'SET DEFAULT' };
 
@@ -218,41 +224,65 @@ async function inspect(q, opts = {}) {
 
   const { rows: fk } = await q.query(`SELECT c.conname, child.relname AS child, parent.relname AS parent, c.confdeltype AS action,
         array_length(c.conkey,1) AS ncols,
-        (SELECT a.attname FROM pg_attribute a WHERE a.attrelid=c.conrelid AND a.attnum=c.conkey[1]) AS child_col
+        (SELECT a.attname FROM pg_attribute a WHERE a.attrelid=c.conrelid AND a.attnum=c.conkey[1]) AS child_col,
+        (SELECT a.attname FROM pg_attribute a WHERE a.attrelid=c.confrelid AND a.attnum=c.confkey[1]) AS parent_col
       FROM pg_constraint c JOIN pg_class child ON child.oid=c.conrelid JOIN pg_class parent ON parent.oid=c.confrelid
       WHERE c.contype='f' AND child.relnamespace='public'::regnamespace AND parent.relnamespace='public'::regnamespace
       ORDER BY child.relname, c.conname`);
 
-  const { rows: users } = await q.query('SELECT id, email, role FROM users ORDER BY id');
+  const { rows: users } = await q.query('SELECT id, email, role, last_login_at FROM users ORDER BY id');
   const uc = classifyUsers(users, policy, opts);
-  const testIds = uc.test.map((u) => u.id);
+  const testIds = uc.test.map((u) => u.id); // candidats (suppression ou archivage)
 
   const wholesale = (c) => [...cls.entries()].filter(([t, k]) => k === c && existing.includes(t)).map(([t]) => t).sort();
   const deleteAll = wholesale('delete_all');
-  const retention = wholesale('retention_financial');
+  const retentionMode = opts.retentionMode === 'delete' ? 'delete' : 'preserve';
+  const retentionAll = wholesale('retention_financial');
+  const retention = retentionMode === 'delete' ? retentionAll : []; // par défaut les lignes financières sont PRÉSERVÉES
   const userScoped = Object.keys(policy.user_scoped_delete || {}).filter((t) => existing.includes(t));
+  const revokeSpecs = Object.entries(policy.user_scoped_revoke || {}).filter(([t]) => existing.includes(t));
+  const scope = (t) => scopeOf(ident, policy.user_scoped_delete[t]);
+
+  // Références vers les comptes de test depuis des lignes CONSERVÉES (audit, acteurs, habilitations épinglées) :
+  // le compte ne peut pas être supprimé sans rompre la traçabilité => ARCHIVAGE (désactivation), jamais de suppression.
+  const userRefs = {};
+  const keptClass = (t) => { const k = cls.get(t); return k === 'preserve' || (k === 'retention_financial' && retentionMode === 'preserve') || k === 'user_scoped'; };
+  for (const e of fk) {
+    if (e.parent !== 'users' || e.ncols > 1 || !keptClass(e.child) || !testIds.length) continue;
+    const col = ident(e.child_col);
+    const excl = cls.get(e.child) === 'user_scoped' ? ` AND NOT (${scope(e.child)})` : '';
+    const { rows: per } = await q.query(`SELECT ${col} AS uid, count(*)::int AS n FROM ${ident(e.child)} WHERE ${col} = ANY($1::uuid[])${excl} GROUP BY ${col}`, [testIds]);
+    for (const r of per) (userRefs[r.uid] = userRefs[r.uid] || []).push({ ref: `${e.child}.${e.child_col}`, on_delete: DELETE_ACTION[e.action], rows: r.n });
+  }
+  const archiveIds = testIds.filter((id) => userRefs[id]);
+  const deleteIds = testIds.filter((id) => !userRefs[id]);
+  for (const u of uc.all) if (u.cls === 'test' && userRefs[u.id]) { u.cls = 'archive'; u.reason = 'ARCHIVE_AUDIT_REFERENCED'; }
 
   // Comptes
   const count = async (sql, params) => Number((await q.query(sql, params)).rows[0].n);
   const counts = {};
   for (const t of [...deleteAll, ...retention]) counts[t] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`);
-  for (const t of userScoped) counts[t] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)} WHERE ${ident(policy.user_scoped_delete[t])} = ANY($1::uuid[])`, [testIds]);
-  counts.users = testIds.length;
+  for (const t of userScoped) counts[t] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)} WHERE ${scope(t)}`, [testIds]);
+  for (const [t, r] of revokeSpecs) counts[`${t}#revoke`] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)} WHERE (${r.where}) AND ${r.pending}`, [testIds]);
+  counts['users#archive'] = (await count('SELECT count(*)::bigint AS n FROM users WHERE id = ANY($1::uuid[])', [archiveIds]));
+  counts.users = deleteIds.length;
   const preservedCounts = {};
-  for (const t of wholesale('preserve')) preservedCounts[t] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`);
+  for (const t of [...wholesale('preserve'), ...(retentionMode === 'preserve' ? retentionAll : [])]) preservedCounts[t] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`);
   for (const t of userScoped) preservedCounts[`${t}#kept`] = (await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`)) - counts[t];
+  for (const [t] of revokeSpecs) preservedCounts[`${t}#revoked_kept`] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`);
   preservedCounts['users#kept'] = uc.keep.length;
+  preservedCounts['users#archived'] = uc.archived.length + archiveIds.length;
 
   // Dépendances : toute FK dont le parent est (en partie) supprimé
   const doomedWhole = new Set([...deleteAll, ...retention]);
-  const doomedUsers = testIds.length > 0;
+  const doomedUsers = deleteIds.length > 0;
   const blockers = [];
   const dependencies = [];
-  const userRefs = {};
   for (const e of fk) {
     const parentDoomed = doomedWhole.has(e.parent) || (e.parent === 'users' && doomedUsers);
     if (!parentDoomed) continue;
-    const childClass = cls.get(e.child) || 'unclassified';
+    let childClass = cls.get(e.child) || 'unclassified';
+    if (childClass === 'retention_financial' && !doomedWhole.has(e.child)) childClass = 'preserve';
     if (childClass === 'delete_all' || (childClass === 'retention_financial' && doomedWhole.has(e.child))) {
       dependencies.push({ child: e.child, parent: e.parent, on_delete: DELETE_ACTION[e.action], child_class: childClass, rows_referencing: null });
       continue;
@@ -267,11 +297,7 @@ async function inspect(q, opts = {}) {
     const refSql = e.parent === 'users'
       ? `SELECT count(*)::bigint AS n FROM ${ident(e.child)} WHERE ${col} = ANY($1::uuid[])`
       : `SELECT count(*)::bigint AS n FROM ${ident(e.child)} WHERE ${col} IS NOT NULL`;
-    const n = await count(refSql, e.parent === 'users' ? [testIds] : []);
-    if (e.parent === 'users' && n > 0 && childClass === 'preserve') {
-      const { rows: per } = await q.query(`SELECT ${col} AS uid, count(*)::int AS n FROM ${ident(e.child)} WHERE ${col} = ANY($1::uuid[]) GROUP BY ${col}`, [testIds]);
-      for (const r of per) (userRefs[r.uid] = userRefs[r.uid] || []).push({ ref: `${e.child}.${e.child_col}`, on_delete: DELETE_ACTION[e.action], rows: r.n });
-    }
+    const n = await count(refSql, e.parent === 'users' ? [deleteIds] : []);
     dependencies.push({ child: e.child, parent: e.parent, on_delete: DELETE_ACTION[e.action], child_class: childClass, rows_referencing: n });
     if (n > 0 && childClass === 'preserve') {
       blockers.push({ code: e.action === 'n' ? 'PRESERVED_ROWS_WOULD_BE_NULLIFIED' : e.action === 'c' ? 'PRESERVED_ROWS_WOULD_BE_CASCADE_DELETED' : 'PRESERVED_ROWS_REFERENCE_DOOMED_ROWS',
@@ -280,16 +306,23 @@ async function inspect(q, opts = {}) {
       blockers.push({ code: 'UNCLASSIFIED_DEPENDENT', detail: `${e.child} → ${e.parent}` });
     }
   }
+  // Enfants conservés pointant vers des lignes d'habilitation à supprimer (doit être 0 par construction des règles)
+  for (const e of fk) {
+    if (cls.get(e.parent) !== 'user_scoped' || e.parent === 'webauthn_credentials' || !keptClass(e.child) || cls.get(e.child) === 'user_scoped' || e.ncols > 1 || !testIds.length) continue;
+    const n = await count(`SELECT count(*)::bigint AS n FROM ${ident(e.child)} WHERE ${ident(e.child_col)} IN (SELECT ${ident(e.parent_col)} FROM ${ident(e.parent)} WHERE ${scope(e.parent)})`, [testIds]);
+    dependencies.push({ child: e.child, parent: e.parent, on_delete: DELETE_ACTION[e.action], child_class: cls.get(e.child), rows_referencing: n });
+    if (n > 0) blockers.push({ code: 'HABILITATION_REFERENCED_BY_PRESERVED_ROWS', detail: `${e.child}.${e.child_col} → ${e.parent} : ${n}` });
+  }
   // Structure : FK de tables conservées vers tables supprimées avec CASCADE (dangereux même à 0 ligne aujourd'hui)
   const structural = fk.filter((e) => (doomedWhole.has(e.parent) || e.parent === 'users') && cls.get(e.child) === 'preserve' && e.action === 'c')
     .map((e) => `${e.child}.${e.child_col} → ${e.parent} (CASCADE)`);
 
-  const retentionRows = retention.reduce((s, t) => s + counts[t], 0);
+  const retentionRows = retention.reduce((n, t) => n + counts[t], 0);
+  const retentionPreservedRows = retentionMode === 'preserve' ? (await Promise.all(retentionAll.map((t) => count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`)))).reduce((n, v) => n + v, 0) : 0;
   const ordersN = counts.orders || 0;
   if (unclassified.length) blockers.push({ code: 'UNCLASSIFIED_TABLES', detail: unclassified.join(', ') });
   if (duplicates.length) blockers.push({ code: 'POLICY_DUPLICATE_TABLES', detail: duplicates.join(', ') });
   if (stale.length) blockers.push({ code: 'POLICY_STALE_TABLES', detail: stale.join(', ') });
-  if (Object.keys(userRefs).length) blockers.push({ code: 'TEST_USERS_REFERENCED_BY_PROTECTED_ROWS', detail: `${Object.keys(userRefs).length} compte(s) de test référencé(s) par des lignes conservées (habilitations/audit) : voir users.classification[].blocked_by` });
   if (uc.unclassified.length) blockers.push({ code: 'UNCLASSIFIED_USERS', detail: `${uc.unclassified.length} compte(s) ni protégé ni de test : fournir --keep-emails ou --test-emails` });
   if (ordersN > policy.limits.max_orders) blockers.push({ code: 'LIMIT_ORDERS_EXCEEDED', detail: `${ordersN} > ${policy.limits.max_orders} : environnement inattendu` });
   if (testIds.length > policy.limits.max_users) blockers.push({ code: 'LIMIT_USERS_EXCEEDED', detail: `${testIds.length} > ${policy.limits.max_users}` });
@@ -316,19 +349,21 @@ async function inspect(q, opts = {}) {
   const steps = [
     ...(tset.length ? [{ seq: 0, table: tset.join(','), class: 'truncate_group', method: 'TRUNCATE', scope: 'ALL_ROWS (liste explicite fermée par FK)', rows: immutability.rows, members: tset }] : []),
     ...order.map((t) => ({ seq: 0, table: t, class: cls.get(t), method: 'DELETE', scope: 'ALL_ROWS', rows: counts[t] })),
-    ...userScoped.map((t) => ({ seq: 0, table: t, class: 'user_scoped', method: 'DELETE', scope: `${policy.user_scoped_delete[t]} IN test_users`, rows: counts[t] })),
-    { seq: 0, table: 'users', class: 'users', method: 'DELETE', scope: 'id IN test_users', rows: testIds.length },
+    ...userScoped.map((t) => ({ seq: 0, table: t, class: 'user_scoped', method: 'DELETE', scope: typeof policy.user_scoped_delete[t] === 'string' ? `${policy.user_scoped_delete[t]} IN test_users` : 'habilitations des comptes de test (hors lignes épinglées par l\u2019audit)', rows: counts[t] })),
+    ...revokeSpecs.map(([t, r]) => ({ seq: 0, table: t, class: 'user_revoke', method: 'UPDATE', scope: `révocation (${r.set}) des lignes épinglées par l\u2019audit`, rows: counts[`${t}#revoke`] })),
+    { seq: 0, table: 'users', class: 'users', method: 'DELETE', scope: 'id IN delete_users', rows: deleteIds.length },
+    { seq: 0, table: 'users', class: 'users_archive', method: 'UPDATE', scope: 'id IN archive_users : identifiants neutralisés, e-mail archivé, rôle client, ligne conservée', rows: archiveIds.length },
   ].map((s, i) => ({ ...s, seq: i + 1 }));
   // user_scoped doivent précéder users et suivre leurs propres enfants : ils sont placés avant users (ci-dessus)
 
   const foundation = {};
   for (const t of policy.foundation_checks) if (existing.includes(t)) foundation[t] = preservedCounts[t] ?? await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`);
   const plan = { policy_sha256: policy.policy_sha256, steps, preserved_counts: preservedCounts,
-    users_plan: { delete: testIds.length, keep: uc.keep.length, test_ids_sha256: sha(testIds.join(',')), keep_ids_sha256: sha(uc.keep.map((u) => u.id).join(',')) } };
+    users_plan: { retention_mode: retentionMode, archive: archiveIds.length, archive_ids_sha256: sha(archiveIds.join(',')), delete: deleteIds.length, keep: uc.keep.length, test_ids_sha256: sha(deleteIds.join(',')), keep_ids_sha256: sha(uc.keep.map((u) => u.id).join(',')) } };
   const plan_sha256 = hashPlan(plan);
 
   const live = { system_identifier: systemIdentifier, database_name: ident0.database_name, counts: { ...counts, ...Object.fromEntries(Object.entries(foundation).map(([k, v]) => [`foundation:${k}`, v])) },
-    plan_sha256, retention_rows: retentionRows };
+    plan_sha256, retention_rows: retentionRows, testIds, deleteIds, archiveIds };
   live.immutability_tables_sha256 = tset.length ? immutability.tables_sha256 : null;
   const prerequisites = evaluatePrerequisites({ manifest: opts.manifest, flags: opts.flags || {}, env: process.env, live });
 
@@ -336,11 +371,12 @@ async function inspect(q, opts = {}) {
     purpose: 'GOLDEN_STAGING_DEEP_CLEAN_V2', mode: opts.mode || 'DRY_RUN', writes: 0, identity,
     decision: blockers.length ? 'PLAN_BLOCKED' : prerequisites.every((p) => p.status === 'MET') ? 'READY_TO_EXECUTE' : 'PLAN_READY_PREREQUISITES_MISSING',
     plan_sha256, totals: { rows_to_delete: steps.reduce((s, x) => s + x.rows, 0), tables_touched: steps.reduce((n, s) => n + (s.rows > 0 ? (s.members ? s.members.filter((t) => counts[t] > 0).length : 1) : 0), 0),
-      financial_retention_rows: retentionRows, tables_preserved: Object.keys(preservedCounts).length },
-    immutability_bypass: immutability, steps, users: { counters: userCounters(uc.all), delete: uc.test.length,
+      financial_retention_rows: retentionRows, financial_rows_preserved: retentionPreservedRows, retention_mode: retentionMode, tables_preserved: Object.keys(preservedCounts).length },
+    immutability_bypass: immutability, steps, users: { counters: userCounters(uc.all), delete: deleteIds.length, archive: archiveIds.length, already_archived: uc.archived.length,
+      admin_candidates: uc.all.filter((u) => u.role === 'admin').map((u) => ({ id: u.id, email: maskEmail(u.email), class: u.cls, last_login_at: users.find((x) => x.id === u.id).last_login_at })),
       classification: uc.all.map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role, class: u.cls, reason: u.reason,
         ...(userRefs[u.id] ? { blocked_by: userRefs[u.id] } : {}) })),
-      blocked_test_users: Object.keys(userRefs).sort(), keep: uc.keep.map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role })),
+      archive_ids: archiveIds, keep: uc.keep.map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role })),
       unclassified: uc.unclassified.map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role })) },
     dependencies, protections: { foundation_counts: foundation, preserved_tables: wholesale('preserve').length, structural_cascade_risks: structural,
       guarantees: ['aucun TRUNCATE ... CASCADE', 'triggers jamais désactivés', 'session_replication_role jamais modifié', 'DELETE explicite avec nombre de lignes vérifié par statement', 'TRUNCATE de liste explicite seulement pour les tables gardées par trigger (accord lié par empreinte)'] },
@@ -362,8 +398,6 @@ async function execute(db, report, opts, policy) {
     await client.query('BEGIN');
     await client.query("SET LOCAL lock_timeout = '10s'");
     await client.query("SET LOCAL statement_timeout = '120s'");
-    const { rows: users } = await client.query('SELECT id, email, role FROM users ORDER BY id');
-    const testIds = classifyUsers(users, policy, opts).test.map((u) => u.id);
     // Rejoue l'inspection DANS la transaction (verrous) et exige le même plan
     const recheck = await inspect(client, { ...opts, policy, mode: 'EXECUTE_RECHECK' });
     if (recheck.plan_sha256 !== report.plan_sha256 || recheck.blockers.length) throw new Error('PLAN_DRIFT_ABORT');
@@ -374,8 +408,10 @@ async function execute(db, report, opts, policy) {
         continue;
       }
       let r;
-      if (s.class === 'users') r = await client.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [testIds]);
-      else if (s.class === 'user_scoped') r = await client.query(`DELETE FROM ${ident(s.table)} WHERE ${ident(policy.user_scoped_delete[s.table])} = ANY($1::uuid[])`, [testIds]);
+      if (s.class === 'users') r = await client.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [recheck._live.deleteIds]);
+      else if (s.class === 'user_scoped') r = await client.query(`DELETE FROM ${ident(s.table)} WHERE ${scopeOf(ident, policy.user_scoped_delete[s.table])}`, [recheck._live.testIds]);
+      else if (s.class === 'user_revoke') { const rv = policy.user_scoped_revoke[s.table]; r = await client.query(`UPDATE ${ident(s.table)} SET ${rv.set} WHERE (${rv.where}) AND ${rv.pending}`, [recheck._live.testIds]); }
+      else if (s.class === 'users_archive') r = await client.query("UPDATE users SET password_hash = NULL, magic_token = NULL, magic_token_expires_at = NULL, email = 'archived+' || id::text || '@archived.invalid', phone = NULL, whatsapp_phone = NULL, phone_payer = NULL, role = 'client' WHERE id = ANY($1::uuid[])", [recheck._live.archiveIds]);
       else r = await client.query(`DELETE FROM ${ident(s.table)}`);
       if (r.rowCount !== s.rows) throw new Error(`ROW_COUNT_MISMATCH ${s.table}: ${r.rowCount} != ${s.rows}`);
     }
@@ -418,7 +454,7 @@ async function main() {
   try {
     const policy = loadPolicy();
     const manifest = arg('manifest') ? JSON.parse(fs.readFileSync(arg('manifest'), 'utf8')) : null;
-    const opts = { policy, manifest, keepEmails: [...list(arg('keep-emails')), ...readList(arg('keep-file'))], keepIds: list(arg('keep-ids')),
+    const opts = { policy, manifest, keepEmails: [...list(arg('keep-emails')), ...readList(arg('keep-file'))], keepIds: list(arg('keep-ids')), testIds: list(arg('test-ids')), retentionMode: arg('retention-mode'),
       testEmails: [...list(arg('test-emails')), ...readList(arg('test-file'))],
       flags: { planSha: arg('plan-sha256'), confirm: arg('confirm') }, mode: EXECUTE ? 'EXECUTE' : 'DRY_RUN' };
     const { rows: [ro] } = await db.query('SHOW default_transaction_read_only');

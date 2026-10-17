@@ -4,7 +4,6 @@
  "classes": {
   "preserve": [
    "assignment_capability_ceiling",
-   "assignment_memberships",
    "boutique_categories",
    "boutique_subcategories",
    "business_rules",
@@ -15,7 +14,6 @@
    "catalog_exclusions",
    "catalog_field_overrides",
    "catalog_field_sync_state",
-   "catalog_global_access_grants",
    "catalog_glossary",
    "catalog_media",
    "catalog_media_visual_fr_reviews",
@@ -34,8 +32,6 @@
    "cost_components",
    "currency_parities",
    "customs_categories",
-   "dashboard_global_access_grants",
-   "decision_signal_global_access_grants",
    "economic_risk_watermark_events",
    "economic_structure_cost_events",
    "economic_variables",
@@ -55,8 +51,6 @@
    "market_price_observations",
    "market_team_invitations",
    "markets",
-   "membership_capabilities",
-   "operator_market_scopes",
    "partners",
    "physical_offers",
    "price_history",
@@ -64,7 +58,6 @@
    "pricing_category_dims",
    "pricing_category_taxes",
    "pricing_components",
-   "pricing_global_access_grants",
    "pricing_market_decision_policy_events",
    "pricing_matrices_audit",
    "pricing_maturity_disposition_events",
@@ -94,7 +87,6 @@
    "sourcing_canonical_entity_refs",
    "sourcing_captures",
    "sourcing_commercial_principals",
-   "sourcing_global_access_grants",
    "sourcing_identity_constraints",
    "sourcing_match_proposals",
    "sourcing_merge_policies",
@@ -210,6 +202,20 @@
   ]
  },
  "user_scoped_delete": {
+  "membership_capabilities": {
+   "where": "membership_id IN (SELECT id FROM assignment_memberships WHERE user_id = ANY($1::uuid[]))"
+  },
+  "operator_market_scopes": {
+   "where": "user_id = ANY($1::uuid[]) OR projected_from_membership_id IN (SELECT id FROM assignment_memberships WHERE user_id = ANY($1::uuid[]))"
+  },
+  "assignment_memberships": {
+   "where": "user_id = ANY($1::uuid[]) AND NOT (EXISTS (SELECT 1 FROM market_delegation_audit x WHERE x.membership_id = assignment_memberships.id) OR EXISTS (SELECT 1 FROM market_cash_control_policies x WHERE x.updated_by_membership_id = assignment_memberships.id) OR EXISTS (SELECT 1 FROM market_team_invitations x WHERE x.invited_by_membership_id = assignment_memberships.id OR x.revoked_by_membership_id = assignment_memberships.id))"
+  },
+  "catalog_global_access_grants": "user_id",
+  "dashboard_global_access_grants": "user_id",
+  "decision_signal_global_access_grants": "user_id",
+  "pricing_global_access_grants": "user_id",
+  "sourcing_global_access_grants": "user_id",
   "webauthn_credentials": "user_id"
  },
  "users": {
@@ -226,7 +232,8 @@
    "@[^@]*\\.(test|local|invalid|localhost)$",
    "^recette"
   ],
-  "unclassified_policy": "BLOCK"
+  "unclassified_policy": "BLOCK",
+  "archive_email_pattern": "^archived\\+.+@archived\\.invalid$"
  },
  "foundation_checks": [
   "supplier_commercial_category_mappings",
@@ -255,5 +262,12 @@
  "limits": {
   "max_orders": 2000,
   "max_users": 500
+ },
+ "user_scoped_revoke": {
+  "assignment_memberships": {
+   "where": "user_id = ANY($1::uuid[]) AND (EXISTS (SELECT 1 FROM market_delegation_audit x WHERE x.membership_id = assignment_memberships.id) OR EXISTS (SELECT 1 FROM market_cash_control_policies x WHERE x.updated_by_membership_id = assignment_memberships.id) OR EXISTS (SELECT 1 FROM market_team_invitations x WHERE x.invited_by_membership_id = assignment_memberships.id OR x.revoked_by_membership_id = assignment_memberships.id))",
+   "pending": "status <> 'REVOKED'",
+   "set": "status = 'REVOKED', revoked_at = now()"
+  }
  }
 }
