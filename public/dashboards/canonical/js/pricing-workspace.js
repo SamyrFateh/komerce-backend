@@ -610,11 +610,26 @@
       : '<thead><tr><th>Clé</th><th>Famille</th><th>Catégorie</th><th>Valeur</th><th>Unité</th><th>Scope</th><th>État</th><th></th></tr></thead>';
     // Group only by the server's actual family: no inferred accounting classification.
     const familyNames = {
-      landed_relay: 'Coûts variables · logistique et relais',
-      business: 'Charges d’exploitation · classification à confirmer',
+      variable: 'Coûts variables',
+      fixed_direct: 'Charges fixes directes',
+      fixed_mutualized: 'Charges fixes mutualisées',
       exceptional: 'Charges exceptionnelles',
+      unclassified: 'Nature économique à qualifier',
     };
-    const familyKeys = [...new Set(rows.map(row => row.family || 'non_classe'))];
+    const economicGroup = row => {
+      if (row.is_exceptional || row.family === 'exceptional') return 'exceptional';
+      // Canonical nature and allocation perimeter are independent axes.
+      // A missing nature must not silently become variable.
+      const nature = row.economic_nature;
+      if (nature === 'variable') return 'variable';
+      if (nature === 'fixed') {
+        if (row.allocation_perimeter === 'mutualized') return 'fixed_mutualized';
+        if (row.allocation_perimeter === 'direct') return 'fixed_direct';
+      }
+      return 'unclassified';
+    };
+    const familyKeys = ['variable', 'fixed_direct', 'fixed_mutualized', 'exceptional', 'unclassified']
+      .filter(family => rows.some(row => economicGroup(row) === family));
     const familyHost = doc.createElement('div');
     familyHost.className = 'kmc-pricing-cost-families';
     familyKeys.forEach((family, index) => {
@@ -622,13 +637,13 @@
       panel.className = 'kmc-pricing-cost-family';
       panel.open = index === 0;
       const heading = doc.createElement('summary');
-      heading.textContent = `${familyNames[family] || family} · ${rows.filter(row => (row.family || 'non_classe') === family).length} ligne(s)`;
+      heading.textContent = `${familyNames[family] || family} · ${rows.filter(row => economicGroup(row) === family).length} ligne(s)`;
       panel.appendChild(heading);
       const familyWrap = doc.createElement('div');
       familyWrap.className = 'kmc-workspace-table-wrap';
       const familyTable = table.cloneNode(true);
       const tbody = doc.createElement('tbody');
-      rows.filter(row => (row.family || 'non_classe') === family).forEach(row => {
+      rows.filter(row => economicGroup(row) === family).forEach(row => {
       const tr = doc.createElement('tr');
       tr.appendChild(td(doc, row.key));
       tr.appendChild(td(doc, row.family));
