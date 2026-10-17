@@ -110,3 +110,11 @@ test('le lien actif est recentré dans le menu sans mouvement du document', () =
   expect(__src).toContain('revealActiveNavigation(doc)');
   expect(__src).not.toContain("active.scrollIntoView(");
 });
+
+test('Mayotte : drapeau SVG fourni et référencé par la politique de navigation', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
+  expect(src).toContain("YT: '/dashboards/canonical/assets/flags/YT.svg'");
+  expect(fs.existsSync(path.join(__dirname, '../../public/dashboards/canonical/assets/flags/YT.svg'))).toBe(true);
+});

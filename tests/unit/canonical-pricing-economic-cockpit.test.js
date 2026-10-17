@@ -127,3 +127,10 @@ test('Atelier des prix : familles en onglets, colonnes Valeur/Provenance, pannea
   expect(css).toContain('.kmc-cockpit-costs > .kmc-cockpit-cost-card[hidden]');
   expect(css).toContain('.kmc-cockpit-secondary');
 });
+
+test('familles : navigation clavier flèches/Home/End', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
+  expect(src).toContain("event.key === 'ArrowRight'");
+  expect(src).toContain("event.key === 'Home'");
+  expect(src).toContain("event.key === 'End'");
+});

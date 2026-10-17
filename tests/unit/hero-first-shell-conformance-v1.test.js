@@ -104,3 +104,8 @@ describe('Hero-first shell conformance v1 — Clients', () => {
 test('hero-first-shell-conformance-v1.css : plancher typographique (aucun texte sous 10 px)', () => {
   expect(require('../helpers/fontFloor').tinyFonts('hero-first-shell-conformance-v1.css')).toEqual([]);
 });
+
+test('hero-first-shell-conformance-v1.css : gouttière du drapeau préservée sur le sélecteur de marché', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/hero-first-shell-conformance-v1.css'), 'utf8');
+  expect(css).toContain('.kmc-admin-market-select.has-flag { padding-left: 40px; }');
+});

@@ -175,3 +175,8 @@ describe('Atelier des prix — KPI de marché (mock validé)', () => {
     expect(String(card.value)).not.toMatch(/null|undefined/);
   });
 });
+
+test('indicateurs placés avant les alertes dans la vue de décision', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'public/dashboards/canonical/js/pricing-workspace-decision.js'), 'utf8');
+  expect(src).toContain("overview.insertBefore(metrics.section, overview.querySelector('[data-dashboard-role=\"attention\"]'))");
+});
