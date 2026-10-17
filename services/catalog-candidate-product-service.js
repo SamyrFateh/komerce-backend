@@ -165,7 +165,10 @@ async function createDraftProductFromSourcingCandidate(q, {
   // No catalog draft without an active and complete commercial classification.
   // Keep the sourcing candidate unresolved for explicit human mapping; never
   // infer the boutique category from customs and never invent a fallback.
-  if (!boutiqueTaxonomy?.category || !boutiqueTaxonomy?.subcategory) {
+  const commercialProvider = String(candidate?.normalized_source_contract?.supplier_name
+    || candidate?.supplier_name || '').trim().toLowerCase();
+  const strictSupplier = ['aliexpress', 'cj', 'cjdropshipping'].includes(commercialProvider);
+  if (strictSupplier && (!boutiqueTaxonomy?.category || !boutiqueTaxonomy?.subcategory)) {
     throw new Error('BOUTIQUE_TAXONOMY_UNRESOLVED: category/subcategory review required before draft creation');
   }
   // Identité client (nom court, description proposée) dérivée mécaniquement
