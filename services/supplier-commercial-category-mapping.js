@@ -13,7 +13,15 @@
 'use strict';
 const db = require('../db');
 function normalizePath(value) {
-  return String(value || '').normalize('NFKC').trim().replace(/\s*>\s*/g,' > ').replace(/\s+/g,' ').toLowerCase();
+  // Normalize only structural path punctuation and whitespace. Never remove
+  // substantive category words or merge distinct supplier classifications.
+  return String(value || '').normalize('NFKC')
+    .replace(/[，,]/g, ',')
+    .replace(/\s*\/\s*/g, ' > ')
+    .replace(/\s*>\s*/g, ' > ')
+    .replace(/\s*&\s*/g, ' & ')
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/\s+/g, ' ').trim().toLowerCase();
 }
 function normalizeProvider(value) { return String(value||'').trim().toLowerCase(); }
 function sourceKey(provider,path) {
