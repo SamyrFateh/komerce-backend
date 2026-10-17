@@ -24,3 +24,17 @@ test('does not mutate or hide deferred review groups',async()=>{
  expect(result.all_groups).toHaveLength(12);
  expect(query.query).toHaveBeenCalledTimes(1);
 });
+
+test('women clothing matches female only rather than substring of mens clothing',()=>{
+ for(const path of ["Women's Clothing > Tops & Sets > Lady Dresses",
+ "Women's Clothing / Tops & Sets / Blouses & Shirts",
+ "Women's Clothing > Bottoms > Wide Leg Pants"]) {
+  expect(suggest(path,pairs)).toMatchObject({status:'PROPOSAL_NEEDS_CONFIRMATION',
+    proposal:{category:'Mode & Beauté',subcategory:'Femme'}});
+ }
+});
+test('home storage absent in active taxonomy has distinct actionable reason',()=>{
+ const result=suggest('Home, Garden & Furniture > Home Storage > Home Office Storage',new Set());
+ expect(result).toMatchObject({status:'REVIEW_REQUIRED',reason:'BOUTIQUE_PAIR_INACTIVE_OR_MISSING',
+  suggested_pair:{category:'Maison',subcategory:'Rangement'}});
+});
