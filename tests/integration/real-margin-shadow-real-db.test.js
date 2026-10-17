@@ -46,7 +46,7 @@ if (!hasIntegrationEnv) {
     business: { payment: 0, risk_provision: 0 },
   };
 
-  async function seedOrder({ declared, marginRealCostKmf = null }) {
+  async function seedOrder({ declared, marginRealCostKmf = null, quantity = 1, fulfillment = null, grouped = true }) {
     seq += 1;
     const relaisId = crypto.randomUUID();
     const shipmentId = crypto.randomUUID();
@@ -78,26 +78,31 @@ if (!hasIntegrationEnv) {
       [orderId, `${RUN_TAG}-order-${seq}`, relaisId, marketId]
     );
     await db.query(
-      `INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf) VALUES ($1, $2, $3, 1, 10000)`,
-      [orderItemId, orderId, productId]
+      `INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf, fulfillment_source) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [orderItemId, orderId, productId, quantity, 10000 / quantity, fulfillment]
     );
     await db.query(`INSERT INTO parcels (id, order_id, reference, status) VALUES ($1, $2, $3, 'in_transit')`, [parcelId, orderId, `${RUN_TAG}-parcel-${seq}`]);
     await db.query(
       `INSERT INTO parcel_items (id, parcel_id, order_item_id, product_id, quantity, qty_allocated) VALUES ($1, $2, $3, $4, 1, 1)`,
       [crypto.randomUUID(), parcelId, orderItemId, productId]
     );
-    await db.query(
-      `INSERT INTO customs_shipment_parcels (shipment_id, parcel_id, parcel_cif_kmf, parcel_weight_kg) VALUES ($1, $2, 10000, 1)`,
-      [shipmentId, parcelId]
-    );
+    if (grouped) {
+      await db.query(
+        `INSERT INTO customs_shipment_parcels (shipment_id, parcel_id, parcel_cif_kmf, parcel_weight_kg) VALUES ($1, $2, 10000, 1)`,
+        [shipmentId, parcelId]
+      );
+    }
     await db.query(
       `INSERT INTO order_item_cost_imputations
          (order_id, order_item_id, product_id, quantity, sale_unit_price_kmf, sale_total_kmf,
           estimated_landed_relay_cost_kmf, estimated_business_variable_cost_kmf, estimated_business_complete_cost_kmf, cost_breakdown)
-       VALUES ($1, $2, $3, 1, 10000, 10000, 4800, 4800, 4800, $4::jsonb)`,
-      [orderId, orderItemId, productId, JSON.stringify(BREAKDOWN)]
+       VALUES ($1, $2, $3, $5, $6, 10000, 4800, 4800, 4800, $4::jsonb)`,
+      [orderId, orderItemId, productId, JSON.stringify(quantity === 1 ? BREAKDOWN : {
+        landed_relay: { product_purchase: 4000 / quantity, freight: 300 / quantity, customs: 500 / quantity },
+        business: { payment: 0, risk_provision: 0 },
+      }), quantity, 10000 / quantity]
     );
-    if (declared) await svc.declareCustomsPayment(db, shipmentId, { customs_paid_kmf: 600, freight_kmf: 300 }, null);
+    if (declared && grouped) await svc.declareCustomsPayment(db, shipmentId, { customs_paid_kmf: 600, freight_kmf: 300 }, null);
     if (marginRealCostKmf != null) {
       // Seed uniquement : pose du legacy via le trigger compute_real_margin.
       await db.query('UPDATE orders SET cost_real_kmf = $2 WHERE id = $1', [orderId, marginRealCostKmf]);
@@ -201,4 +206,53 @@ if (!hasIntegrationEnv) {
       console.info('RMSHADOW_MEASURE', JSON.stringify({ by_completeness: l.aggregate.by_completeness, avg_delta: l.aggregate.avg_delta_pct_points, legacy: l.aggregate.orders_with_legacy_margin, mine: mine.map((m) => ({ c: m.completeness, p: m.shadow_pct, d: m.delta_pct_points })) }));
     });
   });
+
+  describe('doctrine douane 2026-10 — non-régression (REAL_DB)', () => {
+    it('quantité 2 : estimé unitaire pondéré par la quantité (pas de sous-comptage)', async () => {
+      const id = await seedOrder({ declared: true, quantity: 2 });
+      const r = await computeOrderRealMarginShadow(id);
+      expect(r.costs.by_type.product_purchase.estimated_kmf).toBe(4000);
+      expect(r.margin.shadow_kmf).toBe(5100);
+    });
+
+    it('stock local : douane non attendue, estimé théorique 500 ignoré', async () => {
+      const id = await seedOrder({ declared: false, grouped: false, fulfillment: 'LOCAL_STOCK' });
+      const r = await computeOrderRealMarginShadow(id);
+      expect(r.costs.by_type.customs.state).toBe('not_expected');
+      expect(r.margin.shadow_kmf).toBe(10000 - 4000 - 300);
+    });
+
+    it('ligne importée non groupée : douane inconnue → incomplete (jamais l\'estimé, jamais 0)', async () => {
+      const id = await seedOrder({ declared: false, grouped: false });
+      const r = await computeOrderRealMarginShadow(id);
+      expect(r.costs.by_type.customs.state).toBe('unknown');
+      expect(r.completeness).toBe('incomplete');
+      expect(r.margin.shadow_kmf).toBeNull();
+    });
+
+    it('conservation : Σ allocations douane = montant déclaré ; cost_douane_kmf jamais additionné', async () => {
+      const id = await seedOrder({ declared: true });
+      const { rows: [a] } = await db.query(
+        `SELECT COALESCE(SUM(amount_kmf),0)::numeric AS t FROM order_item_real_cost_allocations
+          WHERE order_id = $1 AND cost_type = 'customs' AND is_actual`, [id]);
+      expect(Number(a.t)).toBe(600);
+      await db.query('UPDATE orders SET cost_douane_kmf = 9999 WHERE id = $1', [id]);
+      const r = await computeOrderRealMarginShadow(id);
+      expect(r.costs.by_type.customs.real_kmf).toBe(600);
+      expect(r.margin.shadow_kmf).toBe(5100);
+    });
+
+    it('pricing : un taux douane de catégorie ne crée aucun coût ; statut figé dans le snapshot', async () => {
+      const engine = require('../../services/pricing-engine');
+      const reco = await engine.recommend(
+        { category: 'e2e_douane_test', cost_kmf: 4000, weight_kg: 1, volume_m3: 0.01, current_price_kmf: 10000 },
+        { config: { finance: { taux_change_eur_kmf: 491, fret_eur_per_m3: 100 }, categories: { e2e_douane_test: { douane_pct: 40, tva_pct: 10, taxe_add_pct: 5, default_margin_pct: 35 } }, components: [], provisions: [], charges: [], cost_benchmarks: [] } }
+      );
+      expect(reco.cost_breakdown.landed_relay.customs).toBe(0);
+      expect(reco.cost_breakdown.customs_status).toBe('not_estimated');
+      expect(reco.cost_breakdown.target_margin_pct).toBe(35);
+      expect(reco.data_quality.sources.customs).toBe('not_estimated');
+    });
+  });
+
 }

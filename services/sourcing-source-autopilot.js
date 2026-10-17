@@ -8,7 +8,7 @@
  * @outputs       recurring_source_imports, source_runtime_projection
  * @depends       db.js, services/sourcing-import-dispatch.js, services/provider-credential-service.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-candidate-actions.js
  * @used-by       services/sourcing-workspace.js, scripts/sourcing-source-autopilot.js
- * @db-read       sourcing_sources, sourcing_captures
+ * @db-read       sourcing_sources, sourcing_captures, provider_credentials
  * @db-write      sourcing_sources, sourcing_captures
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates, sourcing_sources, sourcing_source_provides, sourcing_captures, sourcing_observations
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media, import_runtime_runs

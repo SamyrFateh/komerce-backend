@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-16T19:02:42.918Z",
+  "generatedAt": "2026-10-17T08:10:05.469Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 731,
+  "count": 732,
   "routes": [
     {
       "method": "GET",
@@ -218,6 +218,16 @@
       "fullPath": "/api/admin/catalog/approval-queue/:id/approve",
       "mountPrefix": "/api/admin",
       "localPath": "/catalog/approval-queue/:id/approve",
+      "routeFile": "routes/admin/catalog-approval.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/catalog/approval-queue/:id/media/:mediaId/visual-fr-review",
+      "mountPrefix": "/api/admin",
+      "localPath": "/catalog/approval-queue/:id/media/:mediaId/visual-fr-review",
       "routeFile": "routes/admin/catalog-approval.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

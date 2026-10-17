@@ -5,7 +5,7 @@
  * @test-runner jest
  * @test-requires none
  */
-const { customsUnknownSql } = require('../../services/finance-metrics/customs-unknown');
+const { customsUnknownSql, customsExpectedSql, customsUnknownForLinesSql } = require('../../services/finance-metrics/customs-unknown');
 
 describe('customs-unknown (prédicat #2554)', () => {
   it('cible l\'alias fourni et le prédicat pending / customs_paid_kmf NULL', () => {
@@ -17,5 +17,14 @@ describe('customs-unknown (prédicat #2554)', () => {
 
   it('fragment SQL pur : aucune écriture', () => {
     expect(customsUnknownSql('orders')).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/i);
+  });
+
+  it('niveau ligne : stock local exclu, ligne importée sans expédition déclarée connue = inconnue', () => {
+    const sql = customsUnknownForLinesSql('o');
+    expect(sql).toContain(customsUnknownSql('o'));
+    expect(sql).toMatch(/fulfillment_source IS DISTINCT FROM 'LOCAL_STOCK'/);
+    expect(sql).toMatch(/cs\.status <> 'pending' AND cs\.customs_paid_kmf IS NOT NULL/);
+    expect(customsExpectedSql('o')).toMatch(/IS DISTINCT FROM 'LOCAL_STOCK'/);
+    expect(sql + customsExpectedSql('o')).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/i);
   });
 });

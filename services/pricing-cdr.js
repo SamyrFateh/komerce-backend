@@ -217,7 +217,7 @@ function computeCDR(product, ctx = {}) {
 
   const categoryKey    = product.category || 'phones';
   const cat            = cfg.categories[categoryKey];
-  if (!cat) warnings.push(`Catégorie "${categoryKey}" inconnue — taux douane par défaut utilisés.`);
+  if (!cat) warnings.push(`Catégorie "${categoryKey}" inconnue — poids, volume et marge cible par défaut utilisés.`);
 
   const productCostKmf = Number(product.cost_kmf) || 0;
   const productWeightKg = positiveNumberOrNull(product.weight_kg);
@@ -337,18 +337,15 @@ function computeCDR(product, ctx = {}) {
     runningSubtotal += amount;
   }
 
-  if (cat) {
-    const baseDouane = productCostKmf + freightEstimated;
-    const customsAmt = baseDouane * (Number(cat.douane_pct) || 0) / 100;
-    const tvaAmt     = baseDouane * (Number(cat.tva_pct) || 0) / 100;
-    const taxAddAmt  = baseDouane * (Number(cat.taxe_add_pct) || 0) / 100;
-    // P2 fix : la matrice catégorie est la source de vérité douane (ADR-004).
-    // Retirer la douane éventuellement déjà imputée par des cost_components
-    // (details.customs = somme brute des composants douane à ce stade) afin
-    // d'éviter un double-comptage dans runningSubtotal. No-op si aucun composant douane.
-    runningSubtotal -= details.customs;
-    details.customs = r(customsAmt + tvaAmt + taxAddAmt);
-    runningSubtotal += customsAmt + tvaAmt + taxAddAmt;
+  // Doctrine douane (2026-10) : la douane réelle est un montant par expédition Komerce,
+  // ventilé après coup (customs_shipments → allocations). Les taux de catégorie
+  // (douane_pct / tva_pct / taxe_add_pct) restent des classifications figées, jamais
+  // un coût économique : aucune douane théorique n'est calculée ici. Seul un composant
+  // de coût `customs` explicitement configuré (cost_components) est conservé.
+  // Sans composant, la douane est NON ESTIMÉE (≠ 0) : connue seulement après ventilation.
+  const customsEstimateStatus = details.customs > 0 ? 'cost_component' : 'not_estimated';
+  if (customsEstimateStatus === 'not_estimated') {
+    warnings.push('Douane non estimée : coût réel connu après ventilation de l\'expédition (aucun taux théorique appliqué).');
   }
 
   const variableCostEstimated = runningSubtotal;
@@ -386,6 +383,7 @@ function computeCDR(product, ctx = {}) {
     monthly_fixed_costs_kmf:      fixedAlloc.monthly_fixed_costs_kmf,
     target_orders_per_month:      fixedAlloc.target_orders_per_month,
     details,
+    customs_estimate_status: customsEstimateStatus,
     warnings,
     _meta: {
       taxAED, taxEUR, fretEUR, category: categoryKey, channel,

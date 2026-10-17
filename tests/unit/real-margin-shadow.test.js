@@ -135,7 +135,9 @@ describe('real-margin-shadow', () => {
   it('allocation is_actual=false ne compte pas comme réel', async () => {
     setup({ real: [realRow('customs', '1000', { is_actual: false }), realRow('freight', '500')] });
     const r = await computeOrderRealMarginShadow('o1');
-    expect(r.costs.by_type.customs.state).toBe('estimated_only');
+    // Douane : une ventilation non certifiée n'est ni réelle ni remplacée par l'estimé.
+    expect(r.costs.by_type.customs.state).toBe('unknown');
+    expect(r.completeness).toBe('incomplete');
   });
 
   it('pas de double comptage douane : cost_douane_kmf legacy jamais additionné', async () => {
@@ -210,5 +212,36 @@ describe('real-margin-shadow', () => {
       expect(s).toMatch(/^SELECT/i);
       expect(s).not.toMatch(/^\s*(INSERT|UPDATE|DELETE|TRUNCATE|ALTER|DROP|CREATE)\b/i);
     }
+  });
+
+  describe('doctrine douane 2026-10 : jamais de douane théorique dans la marge', () => {
+    it('estimé figé douane (taux de catégorie) ignoré : douane réelle 0 confirmée, pas 1000', async () => {
+      setup({ est: { e_customs: '1000' }, real: [realRow('freight', '500')] });
+      const r = await computeOrderRealMarginShadow('o1');
+      expect(r.costs.by_type.customs).toMatchObject({ state: 'real', real_kmf: 0, estimated_kmf: 1000 });
+      expect(r.margin.shadow_kmf).toBe(10000 - 4000 - 500);
+    });
+
+    it('stock local : douane non attendue même si un estimé figé existe', async () => {
+      setup({ order: { customs_expected: false }, est: { e_customs: '1000' }, real: [realRow('freight', '500')] });
+      const r = await computeOrderRealMarginShadow('o1');
+      expect(r.costs.by_type.customs.state).toBe('not_expected');
+      expect(r.margin.shadow_kmf).toBe(10000 - 4000 - 500);
+    });
+
+    it('ligne importée pas encore groupée : douane inconnue → incomplete, marge NULL', async () => {
+      setup({ order: { customs_unknown: true }, real: [realRow('freight', '500')] });
+      const r = await computeOrderRealMarginShadow('o1');
+      expect(r.costs.by_type.customs.state).toBe('unknown');
+      expect(r.completeness).toBe('incomplete');
+      expect(r.margin.shadow_kmf).toBeNull();
+    });
+
+    it("l'estimé est pondéré par la quantité (cost_breakdown unitaire)", async () => {
+      setup({ real: [realRow('customs', '1000'), realRow('freight', '500')] });
+      await computeOrderRealMarginShadow('o1');
+      const estSql = mockQuery.mock.calls.map(([q]) => q).find((q) => /FROM order_item_cost_imputations/.test(q));
+      expect(estSql).toMatch(/SUM\(quantity \* \(cost_breakdown->'landed_relay'->>'product_purchase'\)/);
+    });
   });
 });

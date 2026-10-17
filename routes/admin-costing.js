@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*, services/cost-allocation/real-margin-shadow.js
+ * @depends       db.js, middleware/auth.js, services/*, services/cost-allocation/real-margin-shadow.js, services/cost-allocation/product-margin-steering.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       customs_shipments, finance_config, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, products, refunds, purchase_lines, relais, supplier_execution_payments
  * @db-write      finance_config
@@ -48,6 +48,7 @@ const express = require('express');
 const db = require('../db');
 const costAllocation = require('../services/cost-allocation');
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
+const productMarginSteering = require('../services/cost-allocation/product-margin-steering');
 const dashboardCache = require('../services/dashboard-cache');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'admin-costing' });
@@ -698,6 +699,22 @@ router.get('/real-margin-shadow', authenticate, requireAdmin, async (req, res, n
       limit: req.query.limit,
       offset: req.query.offset,
       sinceDays: req.query.since_days,
+    });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Pilotage par la marge, par produit (lecture seule ; aucun prix modifié, aucun blocage).
+router.get('/products/margin-steering', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const marketId = req.query.market_id ? String(req.query.market_id) : null;
+    if (!marketId || !_UUID_RE.test(marketId)) return res.status(400).json({ error: 'market_id requis (uuid)' });
+    const productId = req.query.product_id ? String(req.query.product_id) : null;
+    if (productId && !_UUID_RE.test(productId)) return res.status(400).json({ error: 'product_id invalide' });
+    const result = await productMarginSteering.listProductMarginSteering({
+      marketId, productId, sinceDays: req.query.since_days, limit: req.query.limit,
     });
     res.json(result);
   } catch (err) {

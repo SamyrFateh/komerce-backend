@@ -76,6 +76,17 @@ describe('catalog-product-mutation-service', () => {
     expect(db.query.mock.calls[0][1]).toEqual([1.25, 'p1']);
   });
 
+  test('updateSourcingFields accepte target_margin_pct (0 ≤ x < 100 ou null) et refuse le reste', async () => {
+    const db = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'p1', target_margin_pct: 35 }] }) };
+    await service.updateSourcingFields(db, 'p1', { target_margin_pct: 35 });
+    expect(db.query.mock.calls[0][0]).toContain('target_margin_pct = $1');
+    await service.updateSourcingFields(db, 'p1', { target_margin_pct: null });
+    for (const bad of [-1, 100, 'abc']) {
+      await expect(service.updateSourcingFields(db, 'p1', { target_margin_pct: bad }))
+        .rejects.toMatchObject({ status: 400, code: 'TARGET_MARGIN_INVALID' });
+    }
+  });
+
   test('updateSourcingFields rejects an empty mutation exactly like the legacy service', async () => {
     const db = { query: jest.fn() };
 

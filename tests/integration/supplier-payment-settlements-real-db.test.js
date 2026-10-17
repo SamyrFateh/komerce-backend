@@ -58,7 +58,8 @@ if (!hasIntegrationEnv) {
       ids.products.push(productId); ids.items.push(itemId);
       await db.query(`INSERT INTO products (id, name, price_kmf, stock, weight_kg, cost_kmf) VALUES ($1, $2, 10000, 100, 1, 4100)`,
         [productId, `E2E SPS Produit ${RUN_TAG}-${seq}-${i}`]);
-      await db.query(`INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf) VALUES ($1, $2, $3, 1, 10000)`,
+      // Sans logistique d'import (douane/fret = 0 dans l'imputation) : ligne stock local, douane non attendue.
+      await db.query(`INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf, fulfillment_source) VALUES ($1, $2, $3, 1, 10000, 'LOCAL_STOCK')`,
         [itemId, orderId, productId]);
       await db.query(
         `INSERT INTO order_item_cost_imputations
