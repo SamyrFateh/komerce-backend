@@ -45,3 +45,8 @@ describe('Pricing workshop presentation', () => {
     expect(groups.map(group => group.components[0].key)).toEqual(['freight', 'fixed', 'hub', 'incident']);
   });
 });
+
+test('« Comment lire l’atelier » est une aide repliée par défaut', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/pricing-workspace-presentation.js'), 'utf8');
+  expect(src).toContain("el(doc, 'details', 'kmc-cockpit-secondary kmc-cost-formula-help')");
+});
