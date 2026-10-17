@@ -36,6 +36,7 @@
   }
 
   function finite(value) {
+    if (value == null || value === '') return null;
     const number = Number(value);
     return Number.isFinite(number) ? number : null;
   }
@@ -170,7 +171,7 @@
     table.appendChild(tableCell(doc, '—', 'is-derived'));
     table.appendChild(tableCell(doc, '—', 'is-derived'));
 
-    components.slice(0, 5).forEach(component => {
+    components.forEach(component => {
       const perimeter = allocationPerimeter(component);
       table.appendChild(tableCell(doc, component.label || component.key));
       const natureCell = tableCell(doc, '', 'is-badge-cell');
@@ -307,8 +308,19 @@
       });
       cards.forEach((card, i) => { card.hidden = COST_FAMILIES[i][0] !== key; });
     };
-    buttons.forEach((button) => {
+    buttons.forEach((button, index) => {
       button.addEventListener('click', () => select(button.dataset.costFamilyTab));
+      // Navigation clavier (flèches, Home/End) conservée de la PR #2624.
+      button.addEventListener('keydown', (event) => {
+        const last = buttons.length - 1;
+        const next = event.key === 'ArrowRight' ? (index === last ? 0 : index + 1)
+          : event.key === 'ArrowLeft' ? (index === 0 ? last : index - 1)
+          : event.key === 'Home' ? 0 : event.key === 'End' ? last : null;
+        if (next === null) return;
+        event.preventDefault();
+        select(buttons[next].dataset.costFamilyTab);
+        buttons[next].focus();
+      });
       tabs.appendChild(button);
     });
     select(active);
@@ -843,7 +855,9 @@
       const input = doc.createElement('input');
       input.type = 'number';
       input.step = 'any';
-      input.value = Number.isFinite(Number(component.default_value)) ? String(component.default_value) : '';
+      input.value = component.default_value != null && Number.isFinite(Number(component.default_value)) ? String(component.default_value) : '';
+      input.min = '0';
+      input.required = true;
       input.dataset.originalValue = input.value;
       input.dataset.variableCostInput = component.key;
       input.setAttribute('aria-label', `Valeur de ${component.label || component.key}`);
@@ -882,7 +896,7 @@
       try {
         for (const input of changed) {
           const value = Number(input.value);
-          if (!Number.isFinite(value) || value < 0) throw new Error('Chaque coût doit être un nombre positif ou nul.');
+          if (!input.value.trim() || !Number.isFinite(value) || value < 0) throw new Error('Chaque coût doit être un nombre positif ou nul.');
           await workspace.jsonRequest(options.fetch, `${endpoint}/cost-components/${encodeURIComponent(input.dataset.variableCostInput)}/update`, {
             method: 'POST',
             body: { default_value: value, source: 'economic_cockpit_variable_cost_panel' },

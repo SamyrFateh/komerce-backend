@@ -1169,3 +1169,7 @@
 
 .kmc-cockpit-cost-table.is-variable { grid-template-columns: minmax(130px, 1.3fr) 72px 84px minmax(100px, .9fr) minmax(90px, .9fr) minmax(100px, .9fr) minmax(100px, .9fr); }
 @media (max-width: 900px) { .kmc-cockpit-cost-table.is-variable { min-width: 720px; } }
+.kmc-economic-cockpit .kmc-cockpit-footer { position: static; width: auto; }
+.kmc-pricing-decision-overview { display: grid; gap: 16px; }
+.kmc-pricing-decision-overview .kmc-dashboard-attention-band { height: auto; max-height: none; overflow: visible; }
+.kmc-pricing-decision-overview .kmc-decision-card { height: auto; min-height: 0; max-height: none; padding: 16px; }
