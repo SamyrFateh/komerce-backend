@@ -395,7 +395,10 @@
     const slot = workshop.querySelector('[data-section-slot]');
     if (!slot) return false;
     slot.replaceChildren();
-    slot.appendChild(createFormula(doc, marketMode, marketCode, canManage));
+    const help = el(doc, 'details', 'kmc-cockpit-secondary kmc-cost-formula-help');
+    help.appendChild(el(doc, 'summary', '', 'Comment lire l’atelier'));
+    help.appendChild(createFormula(doc, marketMode, marketCode, canManage));
+    slot.appendChild(help);
     if (marketMode && !canManage) slot.appendChild(el(doc, 'div', 'kmc-cost-inactive-note', 'Mode viewer · les calculs et leviers restent visibles, les mutations sont réservées au manager du marché.'));
 
     const components = Array.isArray(payload.cost_components) ? payload.cost_components : [];

@@ -76,7 +76,7 @@ test('runtime Pricing n’importe aucune vue Legacy ni API historique', () => {
 test('Atelier market rend le viewer en lecture seule et réserve les mutations au manager', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=1301');
+  expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=261017-1');
   expect(index).toContain('/dashboards/canonical/css/pricing-workspace-economic-v3.css?v=261010-9');
   expect(presentation).toContain('payload.capabilities?.cost_overrides');
   expect(presentation).toContain("payload.access?.read_only !== true");
@@ -184,4 +184,9 @@ test('Pilotage Financier converge vers Finance avec rollback Legacy explicite', 
   const legacyRes = fakeRes();
   app._routes['/admin/pilotage-fin']({ query: { legacy: '1' } }, legacyRes);
   expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+});
+test('« Comment lire l’atelier » est une aide repliée par défaut', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/pricing-workspace-presentation.js'), 'utf8');
+  expect(src).toContain("el(doc, 'details', 'kmc-cockpit-secondary kmc-cost-formula-help')");
+  expect(src).toContain('Comment lire l’atelier');
 });

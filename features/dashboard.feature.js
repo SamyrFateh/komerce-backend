@@ -554,6 +554,7 @@ module.exports = {
       'dashboards/canonical/js/pricing-workspace.js',
       'dashboards/canonical/js/pricing-economic-cockpit.js',
       'dashboards/canonical/js/pricing-workspace-decision.js',
+      'dashboards/canonical/js/pricing-workspace-presentation.js',
       'dashboards/canonical/js/pricing-product-focus.js',
       'dashboards/canonical/js/action-center.js',
       'dashboards/canonical/js/client-index.js',

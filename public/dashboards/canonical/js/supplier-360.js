@@ -133,7 +133,11 @@
     });
 
     const certifications = supplier.capability_certifications || { records: [] };
-    renderTable(rootNode, ui, {
+    const proofs = doc.createElement('details');
+    proofs.className = 'kmc-cockpit-secondary kmc-supplier-proofs';
+    proofs.appendChild(doc.createElement('summary')).textContent = 'Preuves capability · détail de gouvernance';
+    rootNode.appendChild(proofs);
+    renderTable(proofs, ui, {
       title: 'Capabilities & certifications observées',
       description: 'Projection read-only du registre de preuves provider. Ces lignes décrivent une preuve, un environnement et ses limites ; elles n’activent jamais une capability runtime.',
       columns: [
