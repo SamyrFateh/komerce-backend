@@ -25,3 +25,15 @@ test('l\'en-tête du workspace porte le rôle hero (cadre et illustration commun
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/shipping-customs-workspace.js'), 'utf8');
   expect(src).toContain("header.setAttribute('data-dashboard-role', 'hero')");
 });
+
+test('la déclaration douane passe par un formulaire intégré (ni prompt ni confirm natif) et propose la correction', () => {
+  const start = source.indexOf('function renderCustoms');
+  const customs = source.slice(start, source.indexOf('function renderHistory'));
+  expect(customs).toContain("openCustomsForm(context, doc, formHost, row, 'declare')");
+  expect(customs).toContain("openCustomsForm(context, doc, formHost, row, 'correct')");
+  expect(customs).not.toMatch(/Montant douane payé pour/);
+  const formSource = source.slice(source.indexOf('function openCustomsForm'), start);
+  expect(formSource).not.toMatch(/\b(prompt|confirm)\(/);
+  expect(formSource).toContain('customs/shipments/${ref}/declare');
+  expect(formSource).toContain('customs/shipments/${ref}/update');
+});

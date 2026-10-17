@@ -259,6 +259,188 @@
       .filter(Boolean);
   }
 
+  // ── Saisie douane : formulaire intégré (remplace prompt()/confirm() natifs) ──────────────────
+  const CURRENCY_LABEL = 'KMF';
+  const STATUS_LABELS = Object.freeze({ pending: 'À déclarer', declared: 'Déclarée', confirmed: 'Confirmée' });
+
+  /**
+   * Normalise un montant saisi : espaces (dont insécables/fines) de milliers ignorés, virgule ou point
+   * décimal (≤ 2 chiffres). Retourne { ok, value } ou { ok:false, error }. 0 est un montant valide
+   * (douane confirmée à zéro) ; vide/négatif/texte → refusé, jamais converti silencieusement en 0.
+   */
+  function parseAmountInput(raw) {
+    const cleaned = String(raw == null ? '' : raw).replace(/[\s   ]/g, '');
+    if (!cleaned) return { ok: false, error: 'Saisissez le montant de douane payé (0 si aucune douane n’est due).' };
+    if (/^-/.test(cleaned)) return { ok: false, error: 'Le montant ne peut pas être négatif.' };
+    if (!/^\d+([.,]\d{1,2})?$/.test(cleaned)) return { ok: false, error: 'Montant invalide : chiffres uniquement (ex. 6 000).' };
+    const value = Number(cleaned.replace(',', '.'));
+    if (!Number.isFinite(value) || value > 9999999999) return { ok: false, error: 'Montant hors limite.' };
+    return { ok: true, value };
+  }
+
+  function statusLabel(status) {
+    return STATUS_LABELS[status] || status || '—';
+  }
+
+  function closeCustomsForm(context) {
+    if (context.customsForm && context.customsForm.element && context.customsForm.element.parentNode) {
+      context.customsForm.element.parentNode.removeChild(context.customsForm.element);
+    }
+    context.customsForm = null;
+  }
+
+  /**
+   * Formulaire de déclaration (statut pending) ou de correction (statut declared).
+   * - saisie conservée pendant chargement, erreur et échec réseau ;
+   * - ne se ferme qu'après réponse serveur OK ; double clic ignoré (verrou) ;
+   * - réutilise POST …/declare et …/update (contrôles métier et ventilation A8 inchangés côté serveur).
+   */
+  function openCustomsForm(context, doc, host, row, mode) {
+    if (context.customsForm && context.customsForm.submitting) return null;
+    closeCustomsForm(context);
+    const correcting = mode === 'correct';
+    const form = doc.createElement('form');
+    form.className = 'kmc-customs-form';
+    form.setAttribute('data-customs-form', mode);
+    form.setAttribute('role', 'group');
+    form.setAttribute('aria-label', `${correcting ? 'Corriger' : 'Déclarer'} la douane de ${row.reference}`);
+    form.noValidate = true;
+
+    form.appendChild(text(doc, 'h3', 'kmc-customs-form-title', `${correcting ? 'Corriger la douane' : 'Déclarer la douane'} · ${row.reference}`));
+    const facts = doc.createElement('dl');
+    facts.className = 'kmc-customs-form-facts';
+    const factRows = [['Référence', row.reference], ['Colis', row.linked_parcels == null ? '—' : String(row.linked_parcels)], ['Valeur CIF', formatKmf(row.cif_value_kmf)]];
+    if (correcting) factRows.push(['Douane déclarée', formatKmf(row.customs_paid_kmf)], ['Statut', statusLabel(row.status)]);
+    factRows.forEach(([label, value]) => {
+      const box = doc.createElement('div');
+      box.appendChild(text(doc, 'dt', '', label));
+      box.appendChild(text(doc, 'dd', '', value));
+      facts.appendChild(box);
+    });
+    form.appendChild(facts);
+
+    const inputId = `kmc-customs-amount-${String(row.reference).replace(/[^A-Za-z0-9_-]/g, '_')}`;
+    const label = text(doc, 'label', 'kmc-customs-form-label', correcting ? 'Nouveau montant de douane payé' : 'Montant de douane payé');
+    label.setAttribute('for', inputId);
+    form.appendChild(label);
+    const group = doc.createElement('div');
+    group.className = 'kmc-customs-input-group';
+    const input = doc.createElement('input');
+    input.type = 'text';
+    input.id = inputId;
+    input.name = 'customs_paid_kmf';
+    input.setAttribute('inputmode', 'decimal');
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('data-customs-amount', '');
+    input.setAttribute('aria-describedby', `${inputId}-hint`);
+    if (correcting && row.customs_paid_kmf != null) input.value = formatNumber(row.customs_paid_kmf);
+    group.appendChild(input);
+    group.appendChild(text(doc, 'span', 'kmc-customs-unit', CURRENCY_LABEL));
+    form.appendChild(group);
+    const hint = text(doc, 'div', 'kmc-customs-form-hint', 'Saisir 0 si aucune douane n’est due (confirmé). Les espaces de milliers sont acceptés.');
+    hint.id = `${inputId}-hint`;
+    form.appendChild(hint);
+    const preview = text(doc, 'div', 'kmc-customs-form-preview', '');
+    preview.setAttribute('data-customs-preview', '');
+    preview.setAttribute('aria-live', 'polite');
+    form.appendChild(preview);
+
+    let reasonInput = null;
+    if (correcting) {
+      const reasonLabel = text(doc, 'label', 'kmc-customs-form-label', 'Motif de la correction (journalisé, facultatif)');
+      reasonLabel.setAttribute('for', `${inputId}-reason`);
+      form.appendChild(reasonLabel);
+      reasonInput = doc.createElement('input');
+      reasonInput.type = 'text';
+      reasonInput.id = `${inputId}-reason`;
+      reasonInput.setAttribute('data-customs-reason', '');
+      reasonInput.setAttribute('maxlength', '300');
+      form.appendChild(reasonInput);
+    }
+
+    const error = text(doc, 'div', 'kmc-customs-form-error', '');
+    error.setAttribute('role', 'alert');
+    error.setAttribute('data-customs-error', '');
+    form.appendChild(error);
+
+    const buttons = doc.createElement('div');
+    buttons.className = 'kmc-customs-form-actions';
+    const cancel = text(doc, 'button', 'kmc-workspace-action is-secondary', 'Annuler');
+    cancel.type = 'button';
+    cancel.setAttribute('data-customs-cancel', '');
+    const confirm = text(doc, 'button', 'kmc-workspace-action', correcting ? 'Confirmer la correction' : 'Confirmer la déclaration');
+    confirm.type = 'submit';
+    confirm.setAttribute('data-customs-confirm', '');
+    buttons.appendChild(cancel);
+    buttons.appendChild(confirm);
+    form.appendChild(buttons);
+
+    const state = { element: form, submitting: false };
+    context.customsForm = state;
+
+    const showError = message => { error.textContent = message || ''; input.setAttribute('aria-invalid', message ? 'true' : 'false'); };
+    const refreshPreview = () => {
+      const parsed = parseAmountInput(input.value);
+      preview.textContent = parsed.ok ? `= ${formatNumber(parsed.value)} ${CURRENCY_LABEL}` : '';
+    };
+    const setBusy = busy => {
+      state.submitting = busy;
+      input.readOnly = busy;
+      if (reasonInput) reasonInput.readOnly = busy;
+      cancel.disabled = busy;
+      confirm.disabled = busy;
+      confirm.textContent = busy ? 'En cours…' : (correcting ? 'Confirmer la correction' : 'Confirmer la déclaration');
+    };
+
+    input.addEventListener('input', () => { showError(''); refreshPreview(); });
+    cancel.addEventListener('click', () => { if (!state.submitting) closeCustomsForm(context); });
+    form.addEventListener('keydown', event => { if (event.key === 'Escape' && !state.submitting) closeCustomsForm(context); });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (state.submitting) return;
+      const parsed = parseAmountInput(input.value);
+      if (!parsed.ok) { showError(parsed.error); input.focus(); return; }
+      if (correcting && row.customs_paid_kmf != null && Number(row.customs_paid_kmf) === parsed.value) {
+        showError('Montant identique à la douane déjà déclarée : rien à corriger.');
+        input.focus();
+        return;
+      }
+      showError('');
+      setBusy(true);
+      setFeedback(context.root, correcting ? 'Correction en cours…' : 'Déclaration en cours…');
+      const ref = encodeURIComponent(row.reference);
+      const request = correcting
+        ? { url: endpointFor(context.marketCode, `customs/shipments/${ref}/update`), body: { customs_paid_kmf: parsed.value, reason: (reasonInput && reasonInput.value.trim()) || undefined } }
+        : { url: endpointFor(context.marketCode, `customs/shipments/${ref}/declare`), body: { customs_paid_kmf: parsed.value } };
+      try {
+        await jsonRequest(context.fetch, request.url, { method: 'POST', body: request.body });
+      } catch (err) {
+        setBusy(false);
+        showError(err.message || 'Échec de l’enregistrement. Votre saisie est conservée : vous pouvez réessayer.');
+        setFeedback(context.root, '');
+        input.focus();
+        return;
+      }
+      closeCustomsForm(context);
+      context.highlightReference = row.reference;
+      const okMessage = correcting
+        ? `Douane corrigée pour ${row.reference} : ${formatKmf(parsed.value)}.`
+        : `Douane déclarée pour ${row.reference} : ${formatKmf(parsed.value)}.`;
+      setFeedback(context.root, okMessage, 'positive');
+      try {
+        await context.reload();
+        setFeedback(context.root, okMessage, 'positive');
+      } catch (reloadError) {
+        setFeedback(context.root, `${okMessage} Actualisation impossible : rechargez la page pour revoir la liste.`, 'warning');
+      }
+    });
+
+    host.appendChild(form);
+    refreshPreview();
+    input.focus();
+    return form;
+  }
+
   function renderCustoms(rootNode, ui, doc, payload, context) {
     const slot = createSection(
       rootNode,
@@ -294,6 +476,12 @@
       });
     }
 
+    const formHost = doc.createElement('div');
+    formHost.className = 'kmc-customs-form-host';
+    formHost.setAttribute('data-customs-form-host', '');
+    slot.appendChild(formHost);
+    context.customsForm = null; // le rendu a remplacé le DOM : toute ancienne instance est caduque
+
     const rows = payload.customs.shipments || [];
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune expédition douane pour ce marché.'));
@@ -306,7 +494,13 @@
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
-      [row.reference, String(row.shipment_date || '').slice(0, 10), row.status, row.linked_parcels, formatKmf(row.cif_value_kmf), formatKmf(row.customs_paid_kmf), row.is_active ? 'Active' : 'Inactive'].forEach(value => {
+      tr.setAttribute('data-shipment-ref', row.reference);
+      tr.setAttribute('data-shipment-status', row.status || '');
+      if (context.highlightReference && context.highlightReference === row.reference) {
+        tr.className = 'is-highlighted';
+        tr.setAttribute('aria-current', 'true');
+      }
+      [row.reference, String(row.shipment_date || '').slice(0, 10), statusLabel(row.status), row.linked_parcels, formatKmf(row.cif_value_kmf), formatKmf(row.customs_paid_kmf), row.is_active ? 'Active' : 'Inactive'].forEach(value => {
         const td = doc.createElement('td');
         td.textContent = value == null || value === '' ? '—' : String(value);
         tr.appendChild(td);
@@ -315,17 +509,14 @@
       if (context.user && context.user.role === 'admin') {
         if (row.status === 'pending' && row.is_active) {
           const declare = makeButton(doc, 'Déclarer', 'declare-customs');
-          declare.addEventListener('click', () => {
-            const amount = (context.prompt || (() => null))(`Montant douane payé pour ${row.reference} (KMF)`);
-            if (!amount) return;
-            runAction(context, declare, {
-              url: endpointFor(context.marketCode, `customs/shipments/${encodeURIComponent(row.reference)}/declare`),
-              body: { customs_paid_kmf: Number(amount) },
-              confirmMessage: `Déclarer ${formatKmf(amount)} pour ${row.reference} ?`,
-              successMessage: `Douane déclarée pour ${row.reference}.`,
-            });
-          });
+          declare.addEventListener('click', () => openCustomsForm(context, doc, formHost, row, 'declare'));
           td.appendChild(declare);
+        }
+        if (row.status === 'declared' && row.is_active) {
+          const correct = makeButton(doc, 'Corriger', 'correct-customs');
+          correct.classList.add('is-secondary');
+          correct.addEventListener('click', () => openCustomsForm(context, doc, formHost, row, 'correct'));
+          td.appendChild(correct);
         }
         const toggle = makeButton(doc, row.is_active ? 'Désactiver' : 'Réactiver', row.is_active ? 'deactivate-customs' : 'activate-customs');
         toggle.addEventListener('click', () => {
@@ -417,5 +608,5 @@
     return context.reload();
   }
 
-  return Object.freeze({ endpointFor, metricItems, mount, _test: { candidateRefs, canConfirmTransit } });
+  return Object.freeze({ endpointFor, metricItems, mount, _test: { candidateRefs, canConfirmTransit, parseAmountInput } });
 });
