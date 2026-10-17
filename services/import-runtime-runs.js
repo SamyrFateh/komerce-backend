@@ -8,7 +8,7 @@
  * @outputs       import_runtime_run_projection, product_trace
  * @depends       db.js, services/sourcing-certification.js, services/catalog-run-progress.js
  * @used-by       services/suppliers/catalog-import-orchestrator.js, services/sourcing-candidate-actions.js, routes/admin-sourcing-workspace.js
- * @db-read       import_runtime_runs, sourcing_candidates, supplier_catalog_imports, sourcing_sources, products
+ * @db-read       import_runtime_runs, sourcing_candidates, supplier_catalog_imports, sourcing_sources, products, import_runtime_item_events
  * @db-write      import_runtime_runs
  * @db-txn        none
  * @doctrine      dashboard_observes_server_truth, fail_closed_certification, no_parallel_accounting, no_browser_internal_ids, sourcing_global_authority

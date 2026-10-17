@@ -128,13 +128,11 @@ describe('supplier platform — contrainte canonique évolutive', () => {
     expect(schema).toEqual(migration);
   });
 
-  // F. docs/db/railway-live-schema.sql N'EST PAS modifié (garde CI baseline)
-  test('F — docs/db/railway-live-schema.sql ne contient PAS encore allegro (dump non rafraîchi)', () => {
+  // F. Le dump live a été rafraîchi (sync Railway #2590) : la migration 240 est déployée.
+  test('F — docs/db/railway-live-schema.sql contient allegro (dump rafraîchi après déploiement)', () => {
     const platforms = extractPlatformsFromSchema(
       path.join(ROOT, 'docs', 'db', 'railway-live-schema.sql')
     );
-    // La migration 240 sera appliquée en Mode B — le dump sera rafraîchi après déploiement.
-    // Ce test documente que le dump N'EST PAS touché dans cette PR (volontaire).
-    expect(platforms).not.toContain('allegro');
+    expect(platforms).toContain('allegro');
   });
 });
