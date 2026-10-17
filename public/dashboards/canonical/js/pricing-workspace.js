@@ -955,18 +955,31 @@
         'Décidez à partir des données économiques du serveur. Les paramètres avancés restent disponibles ci-dessous.');
       rootNode.appendChild(intro);
 
-      rootNode.appendChild(context.ui.KpiStrip.create(metrics(payload.summary)).element);
+      // Keep the decision and editable cost controls prominent; technical inventories are secondary.
+      const pricingDetails = (label, render) => {
+        const holder = context.document.createElement('div');
+        render(holder);
+        const disclosure = context.document.createElement('details');
+        disclosure.className = 'kmc-pricing-secondary';
+        const summary = context.document.createElement('summary');
+        summary.textContent = label;
+        disclosure.appendChild(summary);
+        while (holder.firstChild) disclosure.appendChild(holder.firstChild);
+        rootNode.appendChild(disclosure);
+      };
+      pricingDetails('Données de suivi · produits, coûts et concurrence', host =>
+        host.appendChild(context.ui.KpiStrip.create(metrics(payload.summary)).element));
       if (context.requestedMarket) {
         const marketData = await loadMarketDecisionData(context);
         renderMarketDecision(rootNode, context.ui, context.document, marketData, payload, context);
         renderCosts(rootNode, context.ui, context.document, payload, context);
       } else {
         renderEconomicModel(rootNode, context.ui, context.document, payload);
-        renderProducts(rootNode, context.ui, context.document, payload, context);
-        renderStrategy(rootNode, context.ui, context.document, context);
         renderCosts(rootNode, context.ui, context.document, payload, context);
-        renderEconomicVariables(rootNode, context.ui, context.document, payload);
-        renderEconomicCharges(rootNode, context.ui, context.document, payload);
+        pricingDetails('Produits et prix · détail', host => renderProducts(host, context.ui, context.document, payload, context));
+        pricingDetails('Stratégie de prix · paramètres', host => renderStrategy(host, context.ui, context.document, context));
+        pricingDetails('Hypothèses économiques · lecture seule', host => renderEconomicVariables(host, context.ui, context.document, payload));
+        pricingDetails('Charges économiques · lecture seule', host => renderEconomicCharges(host, context.ui, context.document, payload));
       }
       bind(rootNode, context);
       return payload;
