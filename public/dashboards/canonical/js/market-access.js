@@ -153,7 +153,7 @@
     if (!credentials) return;
 
     const box = el(doc, 'div', 'kmc-access-credentials');
-    box.appendChild(el(doc, 'strong', '', 'Compte démo créé — identifiants à conserver maintenant'));
+    box.appendChild(el(doc, 'strong', '', 'Compte créé — identifiants à conserver maintenant'));
     box.appendChild(el(doc, 'code', '', credentials.email));
     box.appendChild(el(doc, 'code', '', credentials.password));
 
@@ -336,12 +336,6 @@
     hero.appendChild(el(doc, 'h2', '', 'Responsables pays'));
     hero.appendChild(el(doc, 'p', '', 'Créer un market_operator, attribuer ses marchés, choisir viewer ou manager et administrer ses identifiants. Les droits restent résolus côté serveur ; aucun market_id du navigateur ne fait autorité.'));
 
-    const demo = el(doc, 'div', 'kmc-access-demo');
-    const demoCopy = el(doc, 'div', '');
-    demoCopy.appendChild(el(doc, 'strong', '', 'Démo immédiate'));
-    demoCopy.appendChild(el(doc, 'p', '', 'Préremplis un responsable pays de démonstration, crée-le, puis reconnecte-toi avec les identifiants générés.'));
-    demo.appendChild(demoCopy);
-    hero.appendChild(demo);
     root.appendChild(hero);
 
     const createPanel = el(doc, 'section', 'kmc-access-panel');
@@ -368,18 +362,6 @@
     form.appendChild(field(doc, 'Niveau', role));
 
     const actions = el(doc, 'div', 'kmc-access-actions');
-    const demoButton = el(doc, 'button', 'kmc-access-button', 'Préremplir une démo');
-    demoButton.type = 'button';
-    demoButton.addEventListener('click', () => {
-      const credentials = buildDemoCredentials(state.markets);
-      fullName.value = credentials.fullName;
-      email.value = credentials.email;
-      password.value = credentials.password;
-      market.value = credentials.marketCode;
-      role.value = credentials.scopeRole;
-      setFeedback(feedback, 'Démo préremplie. Vérifie le pays puis clique Créer.', 'success');
-    });
-    actions.appendChild(demoButton);
 
     const submit = el(doc, 'button', 'kmc-access-button is-primary', 'Créer le market_operator');
     submit.type = 'submit';
@@ -437,7 +419,7 @@
     });
 
     renderOperators(doc, operators, state.users, state.markets, refresh, fetchImpl, feedback);
-    return { refresh, form, feedback, operators, demoButton, credentialsSlot };
+    return { refresh, form, feedback, operators, credentialsSlot };
   }
 
   async function requireAdmin(fetchImpl) {

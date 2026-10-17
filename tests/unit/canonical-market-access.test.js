@@ -161,3 +161,11 @@ test('access.html ne montre pas un ancien écran avant le montage de Responsable
   expect(initialRoot).not.toContain('<h1>Accès pays</h1>');
   expect(initialRoot).toContain('Chargement de l’accès pays');
 });
+
+test('Responsables pays : aucune fonction de démo dans l’écran de production', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/market-access.js'), 'utf8');
+  expect(src).not.toContain('Démo immédiate');
+  expect(src).not.toContain('Préremplir une démo');
+  expect(src).not.toContain('Compte démo créé');
+  expect(src).toContain('Compte créé — identifiants à conserver maintenant');
+});
