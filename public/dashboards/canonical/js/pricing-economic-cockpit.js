@@ -769,11 +769,11 @@
     const footer = el(doc, 'div', 'kmc-cockpit-footer');
     const info = el(doc, 'div', 'kmc-cockpit-footer-info');
     info.appendChild(el(doc, 'span', 'kmc-cockpit-footer-info-icon', 'ⓘ'));
-    const note = el(doc, 'span', '', 'Les valeurs grisées sont calculées automatiquement par le moteur. Le prix final marché retenu est le levier de décision sur cette page.');
+    const note = el(doc, 'span', '', 'Les ajustements sont enregistrés automatiquement. Les valeurs grisées sont calculées par le moteur ; le prix final marché est le levier de décision.');
     note.dataset.cockpitFooterNote = '';
     info.appendChild(note);
     footer.appendChild(info);
-    const save = el(doc, 'button', 'kmc-cockpit-footer-save', '✓ Enregistrer les ajustements');
+    const save = el(doc, 'button', 'kmc-cockpit-footer-save', '✓ Enregistrer maintenant');
     save.type = 'button';
     save.dataset.cockpitSaveAll = '';
     footer.appendChild(save);
@@ -863,6 +863,10 @@
       input.setAttribute('aria-label', `Valeur de ${component.label || component.key}`);
       control.appendChild(input);
       control.appendChild(el(doc, 'span', '', unitLabel(component.unit) || component.unit || 'KMF'));
+      const autosaveStatus = el(doc, 'small', 'kmc-autosave-status', '');
+      autosaveStatus.dataset.autosaveStatus = '';
+      autosaveStatus.setAttribute('aria-live', 'polite');
+      control.appendChild(autosaveStatus);
       row.appendChild(control);
       form.appendChild(row);
     });
@@ -872,7 +876,7 @@
     const footer = el(doc, 'div', 'kmc-structure-panel-footer');
     const cancel = el(doc, 'button', 'kmc-cockpit-outline-action', 'Annuler');
     cancel.type = 'button';
-    const save = el(doc, 'button', 'kmc-cockpit-footer-save', 'Enregistrer les coûts');
+    const save = el(doc, 'button', 'kmc-cockpit-footer-save', 'Terminé');
     save.type = 'button';
     footer.appendChild(cancel);
     footer.appendChild(save);
@@ -885,7 +889,42 @@
     cancel.addEventListener('click', closePanel);
     overlay.addEventListener('click', event => { if (event.target === overlay) closePanel(); });
 
+    // Enregistrement automatique : chaque valeur validée (sortie du champ / Entrée) est écrite immédiatement.
+    // Une valeur vide ou négative n'est jamais enregistrée (NULL ≠ 0) et l'erreur reste affichée.
+    let autosaving = Promise.resolve();
+    form.addEventListener('submit', event => event.preventDefault());
+    form.addEventListener('change', event => {
+      const input = event.target.closest('[data-variable-cost-input]');
+      if (!input || input.value === input.dataset.originalValue) return;
+      autosaving = autosaving.then(async () => {
+        const value = Number(input.value);
+        const status = input.closest('.kmc-variable-cost-panel-row')?.querySelector('[data-autosave-status]');
+        if (!input.value.trim() || !Number.isFinite(value) || value < 0) {
+          error.textContent = 'Chaque coût doit être un nombre positif ou nul : valeur non enregistrée.';
+          error.hidden = false;
+          return;
+        }
+        error.hidden = true;
+        if (status) status.textContent = 'Enregistrement…';
+        const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });
+        try {
+          await workspace.jsonRequest(options.fetch, `${endpoint}/cost-components/${encodeURIComponent(input.dataset.variableCostInput)}/update`, {
+            method: 'POST',
+            body: { default_value: value, source: 'economic_cockpit_variable_cost_panel' },
+          });
+          input.dataset.originalValue = input.value;
+          if (status) status.textContent = '✓ Enregistré automatiquement';
+          await rootObject.KomerceCanonicalPricingWorkspace.mount(options);
+        } catch (err) {
+          if (status) status.textContent = '';
+          error.textContent = `Non enregistré : ${err.message}`;
+          error.hidden = false;
+        }
+      });
+    });
+
     save.addEventListener('click', async () => {
+      await autosaving;
       const inputs = Array.from(form.querySelectorAll('[data-variable-cost-input]'));
       const changed = inputs.filter(input => input.value !== input.dataset.originalValue);
       if (!changed.length) { closePanel(); return; }
@@ -908,7 +947,7 @@
         error.textContent = err.message;
         error.hidden = false;
         save.disabled = false;
-        save.textContent = 'Enregistrer les coûts';
+        save.textContent = 'Terminé';
       }
     });
 
@@ -1045,7 +1084,23 @@
       const isDirty = priceInput.dataset.originalValue !== priceInput.value;
       form.classList.toggle('is-dirty', isDirty);
       const footerNote = cockpit.querySelector('[data-cockpit-footer-note]');
-      if (footerNote) footerNote.textContent = isDirty ? 'Modifications non enregistrées.' : 'Les valeurs grisées sont calculées automatiquement par le moteur. Le prix final marché retenu est le levier de décision sur cette page.';
+      if (footerNote) footerNote.textContent = isDirty ? 'Modification en cours : enregistrée automatiquement à la validation du champ.' : 'Les ajustements sont enregistrés automatiquement. Les valeurs grisées sont calculées par le moteur ; le prix final marché est le levier de décision.';
+    });
+
+    // Enregistrement automatique du prix final : à la validation du champ (Entrée / sortie), jamais à la frappe.
+    cockpit.addEventListener('change', event => {
+      const priceInput = event.target.closest('[data-final-market-price]');
+      if (!priceInput) return;
+      const form = priceInput.closest('[data-cockpit-price-form]');
+      const footerNote = cockpit.querySelector('[data-cockpit-footer-note]');
+      if (!form || priceInput.dataset.originalValue === priceInput.value) return;
+      const amount = Number(priceInput.value);
+      if (!priceInput.value.trim() || !Number.isFinite(amount) || amount <= 0) {
+        if (footerNote) footerNote.textContent = 'Montant invalide : prix non enregistré.';
+        return;
+      }
+      if (footerNote) footerNote.textContent = 'Enregistrement automatique…';
+      form.requestSubmit();
     });
 
     cockpit.addEventListener('submit', async event => {
@@ -1063,7 +1118,11 @@
           });
           portfolio.__corridors.delete(productRef);
           await loadCategory(doc, workspace, options, payload, portfolio, portfolio.__activeCategory);
+          const note = cockpit.querySelector('[data-cockpit-footer-note]');
+          if (note) note.textContent = '✓ Prix enregistré automatiquement.';
         } catch (error) {
+          const note = cockpit.querySelector('[data-cockpit-footer-note]');
+          if (note) note.textContent = `Prix non enregistré : ${error.message}`;
           priceForm.closest('.kmc-cockpit-detail-card')?.prepend(el(doc, 'div', 'kmc-cockpit-error', `Décision refusée : ${error.message}`));
         }
         return;

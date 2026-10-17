@@ -13,8 +13,8 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261017-1');
-  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261017-2');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261017-3');
+  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261017-3');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
   expect(source).toContain('Charges fixes directes');
@@ -61,7 +61,7 @@ test('les valeurs calculées sont grisées et le prix final marché est le levie
   expect(source).toContain('economics.variable_cost_outside_purchase_kmf');
   expect(source).toContain("'Prix retenu'");
   expect(source).toContain('dataset.finalMarketPrice');
-  expect(source).toContain('Les valeurs grisées sont calculées automatiquement par le moteur');
+  expect(source).toContain('Les ajustements sont enregistrés automatiquement. Les valeurs grisées sont calculées par le moteur');
   expect(css).toContain('.kmc-cockpit-cell.is-derived');
   expect(css).toContain('.kmc-cockpit-final-price');
   expect(source).not.toMatch(/variable_cost_complete_kmf\s*-\s*.*purchase/i);
@@ -139,4 +139,14 @@ test('familles : onglets répartis sur la largeur et colonnes sans troncature', 
   const css = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/pricing-economic-cockpit.css'), 'utf8');
   expect(css).toContain('.kmc-cockpit-cost-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));');
   expect(css).toContain('.kmc-cockpit-costs .kmc-cockpit-cost-table .kmc-cockpit-cell { white-space: normal;');
+});
+
+test('ajustements : enregistrement automatique (prix à la validation, coûts par champ), jamais à la frappe ni vide', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
+  expect(src).toContain("cockpit.addEventListener('change'");
+  expect(src).toContain('form.requestSubmit()');
+  expect(src).toContain("form.addEventListener('change'");
+  expect(src).toContain('valeur non enregistrée');
+  expect(src).toContain('Montant invalide : prix non enregistré.');
+  expect(src).toContain('Enregistrer maintenant');
 });

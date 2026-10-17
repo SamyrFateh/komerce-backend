@@ -20,7 +20,7 @@ const COMPONENTS = [
   { key: 'cash_fee_kmf', label: 'Frais collecte cash', family: 'business', category: 'payment', unit: 'kmf_per_order', default_value: 500, allocation_method: 'per_order', inherited: false, is_active: true },
 ];
 
-async function mount(page, { populated = false, autoMarket = false } = {}) {
+async function mount(page, { populated = false, autoMarket = false, posts = [] } = {}) {
   const market = populated ? { ...FX.market, cost_components: COMPONENTS } : FX.market;
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -30,6 +30,7 @@ async function mount(page, { populated = false, autoMarket = false } = {}) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
     }
+    if (route.request().method() === 'POST') { posts.push({ path: url.pathname, body: route.request().postDataJSON() }); return json({ ok: true }); }
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(autoMarket ? { ...FX.context, access: { ...FX.context.access, defaultMarket: 'KM' } } : FX.context);
     if (url.pathname === '/api/admin/workspaces/pricing') return json(FX.global);
@@ -72,6 +73,22 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const card = await page.locator('.kmc-cockpit-cost-card:visible').evaluate(n => Math.round(n.getBoundingClientRect().width));
       expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(2);
       expect(widths.reduce((a, b) => a + b, 0)).toBeGreaterThan(card * 0.9);
+    });
+
+    test('coûts variables : enregistrement automatique à la validation, valeur vide jamais enregistrée', async ({ page }) => {
+      const posts = [];
+      await mount(page, { populated: true, posts });
+      await page.locator('[data-open-cost-detail="variable"]').click();
+      const input = page.locator('[data-variable-cost-input="stripe_fee_pct"]');
+      await input.fill('3.1');
+      await input.blur();
+      await expect.poll(() => posts.length).toBe(1);
+      expect(posts[0].path).toBe('/api/admin/workspaces/pricing/market/KM/cost-components/stripe_fee_pct/update');
+      expect(posts[0].body).toMatchObject({ default_value: 3.1 });
+      await input.fill('');
+      await input.blur();
+      await expect(page.locator('.kmc-structure-panel-error')).toBeVisible();
+      expect(posts.length).toBe(1);
     });
 
     test('familles : navigation clavier (flèches, Home/End)', async ({ page }) => {
