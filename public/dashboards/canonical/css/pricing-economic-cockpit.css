@@ -1188,3 +1188,5 @@
 }
 .kmc-cockpit-costs .kmc-cockpit-cost-table.is-variable { grid-template-columns: minmax(150px, 1.4fr) 96px 100px minmax(120px, 1fr) minmax(150px, 1.1fr) minmax(130px, 1fr) minmax(110px, .9fr); }
 .kmc-cockpit-costs .kmc-cockpit-cost-table .kmc-cockpit-cell { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+.kmc-autosave-status { min-width: 150px; color: #047857; font-size: 12px; }
+.kmc-autosave-status:empty { min-width: 0; }
