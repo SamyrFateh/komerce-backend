@@ -58,6 +58,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(kpis.locator('.kmc-metric-value')).toHaveText(['Indisponible', 'Indisponible', 'Indisponible', 'Indisponible']);
       const body = await page.locator('body').innerText();
       expect(body).not.toMatch(/\bnull\b|\bundefined\b|\\n/);
+      expect(body).not.toContain('Ajouter un produit');
     });
 
     test('premier affichage : le marché autorisé par le serveur est chargé sans sélection manuelle, titre inclus', async ({ page }) => {

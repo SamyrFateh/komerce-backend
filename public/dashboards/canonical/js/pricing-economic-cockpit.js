@@ -362,10 +362,6 @@
     search.placeholder = 'Rechercher un produit…';
     search.dataset.cockpitSearch = '';
     headActions.appendChild(search);
-    const addBtn = el(doc, 'button', 'kmc-cockpit-outline-action is-add', '+ Ajouter un produit');
-    addBtn.type = 'button';
-    addBtn.dataset.cockpitAddProduct = '';
-    headActions.appendChild(addBtn);
     head.appendChild(headActions);
     section.appendChild(head);
 
@@ -1007,12 +1003,6 @@
         } catch (error) {
           portfolio.querySelector('[data-cockpit-product-detail]')?.prepend(el(doc, 'div', 'kmc-cockpit-error', `Activation refusée : ${error.message}`));
         }
-        return;
-      }
-
-      const addProduct = event.target.closest('[data-cockpit-add-product]');
-      if (addProduct) {
-        rootObject.location.href = '/admin/workspaces/catalog?intent=create-product';
         return;
       }
 

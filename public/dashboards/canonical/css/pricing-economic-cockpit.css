@@ -117,15 +117,6 @@
   align-items: center;
   gap: 8px;
 }
-.kmc-cockpit-outline-action.is-add {
-  padding: 8px 14px;
-  border-color: #1676e8;
-  color: #1676e8;
-  font-weight: 850;
-}
-.kmc-cockpit-outline-action.is-add:hover {
-  background: #eff6ff;
-}
 
 /* ── Portfolio totals row ────────────────────────────────── */
 .kmc-cockpit-product-row.is-totals {
@@ -840,7 +831,6 @@
   .kmc-cockpit-portfolio-head { display: grid; }
   .kmc-cockpit-portfolio-head-actions { flex-direction: column; align-items: stretch; }
   .kmc-cockpit-portfolio-head-actions input { width: 100%; }
-  .kmc-cockpit-outline-action.is-add { width: 100%; text-align: center; }
   .kmc-cockpit-observation-form,
   .kmc-cockpit-final-price-form { grid-template-columns: 1fr; }
   .kmc-cockpit-price-reason { grid-column: auto; }
@@ -1075,7 +1065,6 @@
 .kmc-cockpit-portfolio-head h3 { color: #102a72; font-size: 18px; }
 .kmc-cockpit-tab { border-radius: 6px; color: #355387; }
 .kmc-cockpit-tab.is-active { border-color: #0b84f3; background: #0b84f3; }
-.kmc-cockpit-outline-action.is-add { border-color: #0b84f3; color: #0b84f3; }
 .kmc-cockpit-portfolio-table { border-radius: 7px; }
 .kmc-cockpit-product-row.is-head { background: #f6faff; }
 .kmc-cockpit-product-row.is-head .kmc-cockpit-cell { color: #35507d; }
