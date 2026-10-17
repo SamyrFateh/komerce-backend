@@ -269,6 +269,21 @@ describe('catalog candidate boutique taxonomy guard', () => {
   });
 });
 
+describe('orphan prevention at catalog draft boundary', () => {
+  test.each(['AliExpress', 'CJdropshipping'])('%s unresolved boutique taxonomy cannot create product', async (supplier) => {
+    const q = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    await expect(createDraftProductFromSourcingCandidate(q, {
+      candidate: {
+        product_name: 'Unknown unclassified item',
+        supplier_name: supplier,
+        normalized_source_contract: { supplier_name: supplier },
+      },
+      initialPrice: 1000,
+    })).rejects.toThrow('BOUTIQUE_TAXONOMY_UNRESOLVED');
+    expect(q.query.mock.calls.every(([sql]) => /^SELECT/i.test(sql.trim()))).toBe(true);
+  });
+});
+
 describe('supplier commercial mapping priority', () => {
   test('confirmed path takes precedence over title scoring without touching customs', async () => {
     const {resolveActiveBoutiqueTaxonomy}=require('../../services/catalog-candidate-product-service');
