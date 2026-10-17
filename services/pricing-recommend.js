@@ -225,19 +225,9 @@ async function computeRecommend(b = {}) {
     valCIF += valeurKmf;
   }
 
-  if (cat) {
-    const base       = prixAchatKmf + fretKmf;
-    const douaneKmf  = base * (Number(cat.douane_pct) / 100);
-    const tvaKmf     = base * (Number(cat.tva_pct) / 100);
-    const taxeAddKmf = base * (Number(cat.taxe_add_pct) / 100);
-
-    niveau1Items.push({ key: 'douane_pct',   label: `Droits douane (${cat.douane_pct}%)`,   category: 'douane', unit: 'pct', rate: cat.douane_pct,   valeur_kmf: Math.round(douaneKmf) });
-    niveau1Items.push({ key: 'tva_pct',      label: `TVA (${cat.tva_pct}%)`,                category: 'douane', unit: 'pct', rate: cat.tva_pct,      valeur_kmf: Math.round(tvaKmf) });
-    if (Number(cat.taxe_add_pct) > 0) {
-      niveau1Items.push({ key: 'taxe_add_pct', label: `Taxe additionnelle (${cat.taxe_add_pct}%)`, category: 'douane', unit: 'pct', rate: cat.taxe_add_pct, valeur_kmf: Math.round(taxeAddKmf) });
-    }
-    valCIF += douaneKmf + tvaKmf + taxeAddKmf;
-  }
+  // Doctrine douane 2026-10 : taux de catégorie = classification figée, jamais un coût
+  // (douane réelle = montant d'expédition ventilé). Aucune ligne douane théorique.
+  if (cat) warnings.push('Douane non estimée : coût réel connu après ventilation de l\'expédition.');
 
   const niveau1Total = Math.round(valCIF);
 
@@ -458,12 +448,6 @@ async function computeRecommendBatch(b = {}) {
       valCIF += _computeComponent(comp, valCIF, unitCtx);
     }
 
-    if (cat) {
-      const base = prixAchatKmf + fretKmf;
-      valCIF += base * (Number(cat.douane_pct) / 100);
-      valCIF += base * (Number(cat.tva_pct) / 100);
-      valCIF += base * (Number(cat.taxe_add_pct) / 100);
-    }
     const niveau1Total = Math.round(valCIF);
 
     // Niveau 3

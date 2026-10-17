@@ -145,6 +145,8 @@ describe('computeRecommend', () => {
 
     expect(result.source_of_truth).toBe('legacy-fallback');
     expect(result.niveau1.total).toBeGreaterThan(0);
+    // Doctrine douane 2026-10 : aucune ligne douane théorique (douane_pct/tva_pct).
+    expect(JSON.stringify(result.niveau1)).not.toMatch(/douane_pct|tva_pct|taxe_add_pct/);
     expect(result.niveau2.total).toBe(1000); // 100000 / 100 commandes cible
     expect(result.prix_recommande_kmf).toBeGreaterThan(result.cout_total_kmf);
     expect(result.warnings).toEqual(

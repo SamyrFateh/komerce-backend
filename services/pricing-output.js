@@ -494,7 +494,8 @@ function buildDataQuality(input, context) {
   if (!context.hasCustomsCategory) missing.push('customs_category');
   sources.fixed_overhead = context.hasFinanceConfig ? 'real' : 'default';
   sources.freight = 'category';
-  sources.customs = context.hasCustomsCategory ? 'category' : 'default';
+  // Douane : jamais estimée par taux de catégorie (classification seule).
+  sources.customs = context.customsEstimateStatus || 'not_estimated';
 
   const total = Object.keys(sources).length;
   const realOrManual = Object.values(sources).filter(s => s === 'real' || s === 'manual').length;
