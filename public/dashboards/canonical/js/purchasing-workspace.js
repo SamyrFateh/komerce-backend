@@ -618,7 +618,7 @@
       slot.appendChild(list);
       const renderEntries = () => {
         list.replaceChildren();
-        const needle = search.value.trim().toLocaleLowerCase('fr');
+        const needle = String(search.value || '').trim().toLocaleLowerCase('fr');
         const matching = entries.filter((po) => [po.id, po.supplier_name, po.order_ref, po.status].some((v) => String(v || '').toLocaleLowerCase('fr').includes(needle)));
         if (!matching.length) list.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun résultat pour ce filtre.'));
         matching.forEach((po) => {
