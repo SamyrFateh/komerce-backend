@@ -161,6 +161,15 @@ describe('pricing-engine', () => {
     expect(result).not.toHaveProperty('n3_fixed_overhead_allocation_kmf');
   });
 
+  it('recommend : marge cible produit (target_margin_pct) prioritaire sur la catégorie', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'prod-001', category: 'food', cost_kmf: 900, weight_kg: 1.2, price_kmf: 2400, target_margin_pct: '33' }] })
+      .mockResolvedValueOnce({ rows: [{ paid_orders: '6', unique_buyers: '6', first_sale_at: new Date().toISOString() }] })
+      .mockResolvedValueOnce({ rows: [{ created_at: new Date().toISOString() }] });
+    await engine.recommend({ product_id: 'prod-001' });
+    expect(out.computePrices).toHaveBeenCalledWith(baseCdr(), expect.objectContaining({ default_margin_pct: 33 }), expect.any(Object));
+  });
+
   it('recommend applique les overrides de structure sans muter la config passée', async () => {
     const config = baseConfig();
 

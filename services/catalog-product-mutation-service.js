@@ -122,6 +122,7 @@ async function updateSourcingFields(db, productId, body) {
     'fragility', 'sale_mode', 'exposure_mode', 'lifecycle_status',
     'quality_validated', 'real_weight_known', 'real_price_validated',
     'delivery_delay_days', 'supplier_notes',
+    'target_margin_pct',
   ];
   const LEGACY_FIELD_MAP = {
     cost_price_kmf: 'cost_kmf',
@@ -140,6 +141,15 @@ async function updateSourcingFields(db, productId, body) {
     vals.push(value);
     idx++;
   };
+
+  if (body.target_margin_pct !== undefined && body.target_margin_pct !== null) {
+    const t = Number(body.target_margin_pct);
+    if (!Number.isFinite(t) || t < 0 || t >= 100) {
+      const err = new Error('target_margin_pct doit être un nombre entre 0 et 100 (exclu), ou null');
+      err.status = 400; err.code = 'TARGET_MARGIN_INVALID';
+      throw err;
+    }
+  }
 
   for (const key of ALLOWED_FIELDS) {
     if (body[key] !== undefined) {

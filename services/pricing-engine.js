@@ -146,7 +146,10 @@ async function recommend(input, options = {}) {
 
   const cdr = computeCDR(merged, ctx);
   const cat = config.categories?.[merged.category] || null;
-  const prices = computePrices(cdr, cat, fc);
+  // Marge cible : produit (products.target_margin_pct, migration 301) → catégorie → finance.
+  const productTargetPct = product && product.target_margin_pct != null ? Number(product.target_margin_pct) : null;
+  const priceCat = Number.isFinite(productTargetPct) ? { ...(cat || {}), default_margin_pct: productTargetPct } : cat;
+  const prices = computePrices(cdr, priceCat, fc);
   const scenarios = computeScenarios(cdr, prices, cat, fc);
   const breakdown = buildCostBreakdown(cdr.details || {});
 
