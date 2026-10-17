@@ -78,10 +78,23 @@ describe('GET /products/margin-steering', () => {
   });
 
   it('admin : délègue au service lecture seule avec marché et filtres', async () => {
-    mockSteering.mockResolvedValue({ products: [] });
+    mockSteering.mockResolvedValue({ market_id: MID, since_days: 30, rules: {}, products: [], truncated: false });
     const r = await request(app).get(`/api/admin/costing/products/margin-steering?market_id=${MID}&product_id=${OID}&since_days=30`);
     expect(r.status).toBe(200);
+    expect(r.body.products).toEqual([]);
+    expect(r.body.market_id).toBe(MID);
     expect(mockSteering).toHaveBeenCalledWith({ marketId: MID, productId: OID, sinceDays: '30', limit: undefined });
+  });
+
+  it('market_code résolu en uuid ; code inconnu → 400', async () => {
+    const db = require('../../db');
+    mockSteering.mockResolvedValue({ products: [] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: MID }] });
+    expect((await request(app).get('/api/admin/costing/products/margin-steering?market_code=km')).status).toBe(200);
+    expect(db.query).toHaveBeenCalledWith('SELECT id FROM markets WHERE code = $1', ['KM']);
+    expect(mockSteering).toHaveBeenLastCalledWith(expect.objectContaining({ marketId: MID }));
+    db.query.mockResolvedValueOnce({ rows: [] });
+    expect((await request(app).get('/api/admin/costing/products/margin-steering?market_code=zz')).status).toBe(400);
   });
 
   it('non admin → 403', async () => {
