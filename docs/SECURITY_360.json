@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-16T16:15:22.480Z",
+  "generatedAt": "2026-10-17T08:21:30.514Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 741,
-    "protected": 686,
+    "total": 742,
+    "protected": 687,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -569,6 +569,13 @@
     },
     {
       "key": "POST /api/admin/costing/parcels/{id}/allocate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/products/margin-steering",
       "level": "PROTECTED",
       "roles": [
         "admin"
