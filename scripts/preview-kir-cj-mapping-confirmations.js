@@ -18,7 +18,7 @@ const {normalizePath}=require('../services/supplier-commercial-category-mapping'
 
 function buildPlan(report) {
  if(report.provider!=='CJdropshipping')throw new Error('CJ_PROVIDER_REQUIRED');
- if(!/^KIR-\\d{6}$/.test(report.run_ref))throw new Error('KIR_REF_INVALID');
+ if(!/^KIR-\d{6}$/.test(report.run_ref))throw new Error('KIR_REF_INVALID');
  const candidates=(report.all_groups||[]).map(g=>({
    source_path:g.source_path,normalized_path:normalizePath(g.source_path),
    affected_products:g.count,product_refs:[...g.product_refs],
