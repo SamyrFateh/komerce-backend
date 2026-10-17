@@ -694,7 +694,7 @@
 
     context.reload = async () => {
       try {
-        const [openLines, purchaseOrders, detailResult] = await Promise.all([
+        const [purchaseOrders, openLines, detailResult] = await Promise.all([
           jsonRequest(fetchFn, ENDPOINT),
           jsonRequest(fetchFn, `${ENDPOINT}/open-lines`),
           context.poId
