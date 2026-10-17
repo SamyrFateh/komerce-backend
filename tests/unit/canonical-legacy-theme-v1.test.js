@@ -111,3 +111,8 @@ test('la recherche globale conserve un seul indicateur de focus accessible', () 
   expect(css).toContain('.kmc-admin-search:focus-within .kmc-admin-search-input:focus-visible{');
   expect(css).toMatch(/\.kmc-admin-search:focus-within \.kmc-admin-search-input:focus-visible\{\s*outline:none;/);
 });
+
+test('le formulaire de déclaration douane vit dans la couche legacy-theme (unité KMF, erreur, actions, mobile)', () => {
+  const css = fs.readFileSync(path.join(CSS_DIR, 'canonical-legacy-theme-v1.css'), 'utf8');
+  ['.kmc-customs-form {', '.kmc-customs-unit', '.kmc-customs-form-error', '.kmc-customs-form-actions'].forEach(sel => expect(css).toContain(sel));
+});
