@@ -20,3 +20,11 @@ test('Supplier 360 ne référence aucun secret côté UI', () => {
   expect(source).not.toContain('api_key_enc');
   expect(source).not.toContain('api_secret_enc');
 });
+
+test('preuves capability fournisseur : conservées mais repliées par défaut', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'supplier-360.js'), 'utf8');
+  expect(src).toContain('kmc-supplier-proofs');
+  expect(src).toContain('Capabilities & certifications observées');
+  expect(src).toContain("label: 'Preuve max'");
+  expect(src).toContain("label: 'Evidence'");
+});
