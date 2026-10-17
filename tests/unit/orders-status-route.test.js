@@ -33,6 +33,10 @@
 
 const { makeClient, expectTransactionRolledBack, expectTransactionCommitted } = require('../integration/test-harness/mock-db');
 
+jest.mock('../../services/cost-allocation/canonical-margin-writer', () => ({
+  isEnabled: jest.fn().mockResolvedValue(false),
+  refreshCanonicalMarginForOrders: jest.fn().mockResolvedValue({ enabled: false }),
+}));
 jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
 
 const mockState = { user: { id: 'admin-1', role: 'admin' } };
@@ -270,6 +274,36 @@ describe('orders/status — PATCH /:id/cost', () => {
     expect(updateSql).toContain('cost_real_kmf = $1');
     expect(updateSql).not.toContain('supplier_name');
     expect(updateParams).toEqual([1000, 'order-1']);
+  });
+
+  it('A8 — writer actif : UPDATE et marge canonique dans UNE transaction (un seul écrivain effectif)', async () => {
+    const canonical = require('../../services/cost-allocation/canonical-margin-writer');
+    canonical.isEnabled.mockResolvedValueOnce(true);
+    const tx = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    db.withTransaction = jest.fn(async (fn) => fn(tx));
+    db.query
+      .mockResolvedValueOnce({ rows: [orderRow()] }) // SELECT order
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', cost_real_kmf: 1000 }] }); // SELECT final
+
+    const res = await request(app).patch('/api/orders/o1/cost').send({ cost_real_kmf: 1000 });
+
+    expect(res.status).toBe(200);
+    expect(db.withTransaction).toHaveBeenCalledTimes(1);
+    expect(tx.query.mock.calls[0][0]).toContain('cost_real_kmf = $1');
+    expect(canonical.refreshCanonicalMarginForOrders).toHaveBeenCalledWith(['order-1'], { client: tx });
+    delete db.withTransaction;
+  });
+
+  it('A8 — writer inactif : comportement historique (aucune transaction, aucun refresh)', async () => {
+    const canonical = require('../../services/cost-allocation/canonical-margin-writer');
+    canonical.refreshCanonicalMarginForOrders.mockClear();
+    db.query
+      .mockResolvedValueOnce({ rows: [orderRow()] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1' }] });
+    const res = await request(app).patch('/api/orders/o1/cost').send({ cost_real_kmf: 1000 });
+    expect(res.status).toBe(200);
+    expect(canonical.refreshCanonicalMarginForOrders).not.toHaveBeenCalled();
   });
 
   it('UPDATE inclut supplier_name et supplier_invoice_url si fournis', async () => {

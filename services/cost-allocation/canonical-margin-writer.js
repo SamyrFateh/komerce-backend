@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/rules.js, services/cost-allocation/real-margin-shadow.js
+ * @depends       db, utils/rules.js, utils/logger.js, services/cost-allocation/real-margin-shadow.js
  * @used-by       none
  * @db-read       orders
  * @db-write      orders
@@ -43,6 +43,7 @@
 const db = require('../../db');
 const { getRuleNumber } = require('../../utils/rules');
 const { computeOrderRealMarginShadow } = require('./real-margin-shadow');
+const log = require('../../utils/logger').child({ module: 'canonical-margin-writer' });
 
 const ALERT_THRESHOLD_PCT = 10;
 const RULE_ENABLED = 'CANONICAL_MARGIN_WRITER_ENABLED';
@@ -85,7 +86,7 @@ async function previewCanonicalMargin(orderId, opts = {}) {
  */
 async function applyCanonicalMargin(orderId, opts = {}) {
   if (!(await isEnabled())) return { enabled: false, wrote: false, order_id: orderId };
-  const preview = await previewCanonicalMargin(orderId, { marketId: opts.marketId });
+  const preview = await previewCanonicalMargin(orderId, { marketId: opts.marketId, client: opts.client });
   if (!preview) return { enabled: true, wrote: false, order_id: orderId, reason: 'order_not_found' };
   const { plan } = preview;
   const q = opts.client || db;
@@ -101,4 +102,35 @@ async function applyCanonicalMargin(orderId, opts = {}) {
   return { enabled: true, wrote: rowCount > 0, order_id: orderId, plan };
 }
 
-module.exports = { planCanonicalMargin, previewCanonicalMargin, applyCanonicalMargin, isEnabled, RULE_ENABLED, RULE_PROVISIONAL };
+/**
+ * Point d'entrée des événements métier (douane, frais, règlements, annulation/remboursement).
+ * No-op complet si désactivé. Dans la transaction de l'appelant, chaque commande est protégée
+ * par un SAVEPOINT : un échec du writer ne casse ni ne bloque jamais l'opération métier.
+ * @param {string[]} orderIds
+ * @param {{client?: {query: Function}}} [opts]
+ */
+async function refreshCanonicalMarginForOrders(orderIds, opts = {}) {
+  const ids = [...new Set((orderIds || []).filter(Boolean))];
+  if (!ids.length || !(await isEnabled())) return { enabled: false, refreshed: 0, written: 0, failed: 0 };
+  const client = opts.client || null;
+  let written = 0;
+  let failed = 0;
+  for (const id of ids) {
+    try {
+      if (client) await client.query('SAVEPOINT cmw_refresh');
+      const r = await applyCanonicalMargin(id, { client });
+      if (r.wrote) written += 1;
+      if (client) await client.query('RELEASE SAVEPOINT cmw_refresh');
+    } catch (err) {
+      failed += 1;
+      if (client) await client.query('ROLLBACK TO SAVEPOINT cmw_refresh').catch(() => {});
+      log.error({ err: err.message, order_id: id }, '[A8] refresh marge canonique échoué (opération métier non bloquée)');
+    }
+  }
+  return { enabled: true, refreshed: ids.length - failed, written, failed };
+}
+
+module.exports = {
+  planCanonicalMargin, previewCanonicalMargin, applyCanonicalMargin, refreshCanonicalMarginForOrders,
+  isEnabled, RULE_ENABLED, RULE_PROVISIONAL,
+};

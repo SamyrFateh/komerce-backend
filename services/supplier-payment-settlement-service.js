@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        payment_id, settlement_payload, admin_user_id
  * @outputs       append_only_settlement_fact, settlement_list
- * @depends       none (db injecté par l'appelant)
+ * @depends       services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)
  * @used-by       routes/purchasing.js
- * @db-read       supplier_execution_payments, supplier_payment_settlements
+ * @db-read       order_items, purchase_lines, supplier_execution_payments, supplier_payment_settlements
  * @db-write      supplier_payment_settlements
  * @db-txn        recordSettlement (FOR UPDATE sur le paiement)
  * @doctrine      pricing_market_viability_cost_scope
@@ -174,6 +174,14 @@ async function recordSettlement(database, paymentId, payload, userId) {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [paymentId, n.kind, fmt(n.amountCurrency, 4), n.currency, fmt(n.amountKmf, 2), fmt(n.feesKmf, 2),
         n.proofRef, n.key, n.notes, userId || null]);
+    // A8 : le règlement change l'achat réel des commandes de la PO → marge canonique (no-op si désactivé).
+    const canonical = require('./cost-allocation/canonical-margin-writer');
+    if (await canonical.isEnabled()) {
+      const { rows: affected } = await client.query(
+        `SELECT DISTINCT oi.order_id FROM purchase_lines pl JOIN order_items oi ON oi.id = pl.order_item_id
+          WHERE pl.purchase_order_id = $1 AND pl.cancelled_at IS NULL`, [pay.purchase_order_id]);
+      await canonical.refreshCanonicalMarginForOrders(affected.map((r) => r.order_id), { client });
+    }
     return { settlement: shape(row), idempotent_replay: false };
   });
 }

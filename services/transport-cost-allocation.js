@@ -356,6 +356,17 @@ function feeWeightsFor(spec, parcels, shipmentMethod) {
   return parcels.map(parcel => ({ id: parcel.parcel_id, weight: metric(parcel, method) }));
 }
 
+// A8 : après toute (ré)allocation, la marge canonique des commandes de l'expédition est recalculée
+// dans la même transaction (no-op si le writer est désactivé ; échec isolé par SAVEPOINT).
+async function refreshOrdersOfShipment(client, shipmentId) {
+  const { refreshCanonicalMarginForOrders, isEnabled } = require('./cost-allocation/canonical-margin-writer');
+  if (!(await isEnabled())) return;
+  const { rows } = await client.query(
+    `SELECT DISTINCT p.order_id FROM customs_shipment_parcels csp JOIN parcels p ON p.id = csp.parcel_id
+      WHERE csp.shipment_id = $1`, [shipmentId]);
+  await refreshCanonicalMarginForOrders(rows.map((r) => r.order_id), { client });
+}
+
 /**
  * Allocation réelle d'un shipment vers parcels puis order_items.
  *
@@ -396,6 +407,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
         'DELETE FROM order_item_real_cost_allocations WHERE shipment_id = $1',
         [shipmentId]
       );
+      await refreshOrdersOfShipment(client, shipmentId);
       if (ownTx) await client.query('COMMIT');
       return {
         shipment_id: shipmentId,
@@ -707,6 +719,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
         `lignes écrites (${insertedFreightCents / 100}) ≠ montant déclaré (${totalFreight})`);
     }
 
+    await refreshOrdersOfShipment(client, shipmentId);
     if (ownTx) await client.query('COMMIT');
 
     return {

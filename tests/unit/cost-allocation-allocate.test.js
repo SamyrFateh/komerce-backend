@@ -23,6 +23,7 @@
 const { makeClient, expectTransactionCommitted, expectTransactionRolledBack } =
   require('../integration/test-harness/mock-db');
 
+jest.mock('../../services/cost-allocation/canonical-margin-writer', () => ({ isEnabled: jest.fn().mockResolvedValue(false), refreshCanonicalMarginForOrders: jest.fn() }));
 jest.mock('../../db', () => ({
   query: jest.fn(),
   pool: { connect: jest.fn() },

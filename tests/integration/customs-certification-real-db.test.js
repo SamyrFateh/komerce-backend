@@ -18,6 +18,12 @@
  */
 
 const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
+// A8 : règles applicatives contrôlées par le test (défaut = writer désactivé).
+let mockRules = {};
+jest.mock('../../utils/rules', () => ({
+  ...jest.requireActual('../../utils/rules'),
+  getRuleNumber: async (k, d) => (k in mockRules ? mockRules[k] : d),
+}));
 
 if (!hasIntegrationEnv) {
   describe.skip('CUSTOMS CERTIFICATION — REAL_DB proofs — SKIPPED: no DATABASE_URL', () => {
@@ -163,7 +169,8 @@ if (!hasIntegrationEnv) {
       // A porte 2 colis sur 3, B 1 sur 3 ; chaque total conservé au centime.
       const cA = await sumAlloc(g.orderA, 'customs'); const cB = await sumAlloc(g.orderB, 'customs');
       expect(cA.total + cB.total).toBeCloseTo(1000, 2);
-      expect(cA.total).toBeCloseTo(666.67, 2);
+      // le centime résiduel est attribué à un colis dans l'ordre des identifiants (aléatoires) : A ∈ {666.66, 666.67}
+      expect([66666, 66667]).toContain(Math.round(cA.total * 100));
       const fA = await sumAlloc(g.orderA, 'freight'); const fB = await sumAlloc(g.orderB, 'freight');
       expect(fA.total + fB.total).toBeCloseTo(300, 2);
       const pA = await sumAlloc(g.orderA, 'port_transitaire'); const pB = await sumAlloc(g.orderB, 'port_transitaire');
@@ -217,6 +224,97 @@ if (!hasIntegrationEnv) {
       const b = await computeOrderRealMarginShadow(g.orderB);
       expect(b.completeness).toBe('not_applicable');
       expect(await sumAlloc(g.orderA, 'customs')).toEqual(cBefore);
+    });
+  });
+
+  describe('A8 — writer canonique ACTIF : les événements métier écrivent la marge (REAL_DB)', () => {
+    const canonical = require('../../services/cost-allocation/canonical-margin-writer');
+    const { transitionOrderStatus } = require('../../services/order-status-machine');
+    const marginOf = async (id) => (await db.query('SELECT margin_real_pct, margin_alert, sourcing_blocked FROM orders WHERE id = $1', [id])).rows[0];
+    let g;
+
+    beforeAll(async () => {
+      mockRules = { CANONICAL_MARGIN_WRITER_ENABLED: 1, CANONICAL_MARGIN_WRITE_PROVISIONAL: 1 };
+      g = await seedGroupage();
+    });
+    afterAll(() => { mockRules = {}; });
+
+    it('A — douane inconnue : aucune marge écrite (NULL, jamais 0)', async () => {
+      expect((await marginOf(g.orderA)).margin_real_pct).toBeNull();
+    });
+
+    it('B — déclaration douane : l\'événement écrit la marge CANONIQUE (pas la formule legacy), pour les 2 commandes', async () => {
+      await svc.declareCustomsPayment(db, g.shipmentId, { customs_paid_kmf: 1000, freight_kmf: 300 }, null);
+      for (const id of [g.orderA, g.orderB]) {
+        const sh = await computeOrderRealMarginShadow(id);
+        expect(sh.completeness).toBe('provisional');
+        const m = await marginOf(id);
+        expect(Number(m.margin_real_pct)).toBeCloseTo(sh.margin.shadow_pct, 2);
+        const { rows: [o] } = await db.query('SELECT total_kmf, cost_transport_kmf, cost_douane_kmf FROM orders WHERE id = $1', [id]);
+        const legacy = ((o.total_kmf - (o.cost_transport_kmf || 0) - (o.cost_douane_kmf || 0)) / o.total_kmf) * 100;
+        expect(Number(m.margin_real_pct)).not.toBeCloseTo(legacy, 1); // l'ancien écrivain ne s'exécute plus
+      }
+    });
+
+    it('C — frais supplémentaire (hausse) puis crédit (baisse) : marge recalculée à chaque événement, conservation', async () => {
+      const before = Number((await marginOf(g.orderA)).margin_real_pct);
+      await fee(g.shipmentId, 'handling', '300', 'w1');
+      const up = Number((await marginOf(g.orderA)).margin_real_pct);
+      expect(up).toBeLessThan(before);
+      expect(up).toBeCloseTo((await computeOrderRealMarginShadow(g.orderA)).margin.shadow_pct, 2);
+      await fee(g.shipmentId, 'handling', '300', 'w2', 'credit');
+      expect(Number((await marginOf(g.orderA)).margin_real_pct)).toBeCloseTo(before, 2);
+      const cA = await sumAlloc(g.orderA, 'customs'); const cB = await sumAlloc(g.orderB, 'customs');
+      expect(cA.total + cB.total).toBeCloseTo(1000, 2);
+    });
+
+    it('D — idempotence : rejouer le writer n\'écrit rien', async () => {
+      const r = await canonical.refreshCanonicalMarginForOrders([g.orderA, g.orderB]);
+      expect(r).toMatchObject({ enabled: true, failed: 0, written: 0 });
+    });
+
+    it('E — annulation via la machine d\'état : marge canonique NULL (not_applicable), l\'autre commande intacte', async () => {
+      const aBefore = await marginOf(g.orderA);
+      await db.withTransaction((client) => transitionOrderStatus({
+        orderId: g.orderB, newStatus: 'cancelled', actor: { id: null, role: 'system' }, source: 'cancel', dbClient: client,
+      }));
+      expect((await marginOf(g.orderB)).margin_real_pct).toBeNull();
+      expect(await marginOf(g.orderA)).toEqual(aBefore);
+      expect((await marginOf(g.orderB)).sourcing_blocked).toBe(false);
+    });
+
+    it('F — douane explicitement à ZÉRO : réel 0 (pas inconnu), marge écrite', async () => {
+      const z = await seedGroupage();
+      await svc.declareCustomsPayment(db, z.shipmentId, { customs_paid_kmf: 0, freight_kmf: 0 }, null);
+      const sh = await computeOrderRealMarginShadow(z.orderA);
+      expect(sh.costs.by_type.customs).toMatchObject({ state: 'real', real_kmf: 0 });
+      expect(sh.completeness).toBe('provisional');
+      expect((await marginOf(z.orderA)).margin_real_pct).not.toBeNull();
+    });
+
+    it('H — correction du montant douane à la hausse puis à la baisse : marge canonique suit, conservation exacte', async () => {
+      const k = await seedGroupage();
+      await svc.declareCustomsPayment(db, k.shipmentId, { customs_paid_kmf: 1000, freight_kmf: 0 }, null);
+      const m0 = Number((await marginOf(k.orderA)).margin_real_pct);
+      await svc.updateShipment(db, k.shipmentId, { customs_paid_kmf: 1500 }, { reason: 'correction hausse' });
+      const m1 = Number((await marginOf(k.orderA)).margin_real_pct);
+      expect(m1).toBeLessThan(m0);
+      await svc.updateShipment(db, k.shipmentId, { customs_paid_kmf: 700 }, { reason: 'correction baisse' });
+      const m2 = Number((await marginOf(k.orderA)).margin_real_pct);
+      expect(m2).toBeGreaterThan(m0);
+      const cA = await sumAlloc(k.orderA, 'customs'); const cB = await sumAlloc(k.orderB, 'customs');
+      expect(Math.round((cA.total + cB.total) * 100)).toBe(70000);
+      expect(m2).toBeCloseTo((await computeOrderRealMarginShadow(k.orderA)).margin.shadow_pct, 2);
+    });
+
+    it('G — désactivé : plus aucune écriture canonique (retour arrière) ; la prochaine déclaration repasse par l\'ancien écrivain', async () => {
+      mockRules = {};
+      const h = await seedGroupage();
+      await svc.declareCustomsPayment(db, h.shipmentId, { customs_paid_kmf: 900, freight_kmf: 0 }, null);
+      const { rows: [o] } = await db.query('SELECT total_kmf, cost_douane_kmf, cost_transport_kmf, margin_real_pct FROM orders WHERE id = $1', [h.orderA]);
+      const legacy = Math.round(((o.total_kmf - (o.cost_transport_kmf || 0) - (o.cost_douane_kmf || 0)) / o.total_kmf) * 10000) / 100;
+      expect(Number(o.margin_real_pct)).toBeCloseTo(legacy, 2);
+      mockRules = { CANONICAL_MARGIN_WRITER_ENABLED: 1, CANONICAL_MARGIN_WRITE_PROVISIONAL: 1 };
     });
   });
 }

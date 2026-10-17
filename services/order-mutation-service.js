@@ -72,7 +72,7 @@ async function setInventoryCompletion(executor, {
   );
 }
 
-async function recomputeCustomsCosts(executor, { orderIds }) {
+async function recomputeCustomsCosts(executor, { orderIds, skipLegacyMargin = false }) {
   const q = requireExecutor(executor);
   if (!Array.isArray(orderIds) || orderIds.length === 0) return { rowCount: 0 };
 
@@ -88,6 +88,9 @@ async function recomputeCustomsCosts(executor, { orderIds }) {
      WHERE o.id = ANY($1::uuid[])`,
     [orderIds],
   );
+
+  // A8 : writer canonique actif → un seul écrivain de marge (cf. canonical-margin-writer).
+  if (skipLegacyMargin) return first;
 
   // Une douane encore inconnue (expédition active pending) n'est jamais
   // traitée comme nulle : la marge n'est pas recalculée tant qu'elle

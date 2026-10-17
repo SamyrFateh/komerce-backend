@@ -10,6 +10,7 @@
  * Client PostgreSQL simulé en mémoire (les preuves SQL réelles sont en intégration).
  */
 
+jest.mock('../../services/cost-allocation/canonical-margin-writer', () => ({ isEnabled: jest.fn().mockResolvedValue(false), refreshCanonicalMarginForOrders: jest.fn() }));
 const { recordSettlement, listSettlements } = require('../../services/supplier-payment-settlement-service');
 
 const PAY = '11111111-1111-4111-8111-111111111111';

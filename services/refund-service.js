@@ -45,6 +45,12 @@ function _buildIdempotencyKey(orderId, refundType, parcelId) {
   return `refund_${orderId}_${refundType}_${parcelId || 'full'}`;
 }
 
+// A8 : un remboursement change le CA net → marge canonique recalculée dans la transaction du caller
+// (no-op si le writer est désactivé ; échec isolé par SAVEPOINT, jamais bloquant).
+async function _refreshCanonicalMargin(dbClient, orderId) {
+  await require('./cost-allocation/canonical-margin-writer').refreshCanonicalMarginForOrders([orderId], { client: dbClient });
+}
+
 /**
  * Traite un remboursement (Stripe ou wallet).
  * Doit être appelé dans une transaction DB existante.
@@ -126,6 +132,7 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
   // Pour les callers qui ne gèrent pas eux-mêmes le post-commit, on attache
   // une fonction helper non bloquante sur le résultat.
 
+  await _refreshCanonicalMargin(dbClient, order.id);
   return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf, refundRowId };
 }
 
@@ -232,6 +239,7 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
     );
   }
 
+  await _refreshCanonicalMargin(dbClient, order.id);
   return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf, refundRowId };
 }
 
@@ -289,7 +297,10 @@ async function recordExternalRefund(dbClient, {
     ]
   );
 
-  if (row) return row.id;
+  if (row) {
+    await _refreshCanonicalMargin(dbClient, orderId);
+    return row.id;
+  }
 
   // Conflit (retry) — retrouver l'existant via la clé d'idempotence
   if (conflictOn === 'stripe_refund_id' && externalRefundId) {

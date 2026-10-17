@@ -40,6 +40,14 @@ describe('order-mutation-service', () => {
     expect(q.query.mock.calls[0][1]).toEqual([['o1', 'o2']]);
   });
 
+  test('A8 : skipLegacyMargin ne laisse que le recalcul cost_douane (un seul écrivain de marge)', async () => {
+    const q = executor();
+    await mutations.recomputeCustomsCosts(q, { orderIds: ['o1'], skipLegacyMargin: true });
+    expect(q.query).toHaveBeenCalledTimes(1);
+    expect(q.query.mock.calls[0][0]).toContain('customs_shipment_parcels');
+    expect(q.query.mock.calls.some((c) => c[0].includes('margin_real_pct'))).toBe(false);
+  });
+
   test('margin_real_pct is not recomputed while an active shipment customs is still unknown', async () => {
     const q = executor();
     await mutations.recomputeCustomsCosts(q, { orderIds: ['o1'] });

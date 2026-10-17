@@ -9,6 +9,7 @@ const mockQuery = jest.fn();
 const mockShadow = jest.fn();
 let mockRules = {};
 jest.mock('../../db', () => ({ query: (...a) => mockQuery(...a) }));
+jest.mock('../../utils/logger', () => { const l = { error: jest.fn(), info: jest.fn(), warn: jest.fn(), child: () => l }; return l; });
 jest.mock('../../utils/rules', () => ({ getRuleNumber: async (k, d) => (k in mockRules ? mockRules[k] : d) }));
 jest.mock('../../services/cost-allocation/real-margin-shadow', () => ({ computeOrderRealMarginShadow: (...a) => mockShadow(...a) }));
 
@@ -101,5 +102,36 @@ describe('applyCanonicalMargin', () => {
     const p = await w.previewCanonicalMargin('o1');
     expect(p.plan.margin_real_pct).toBe(12);
     expect(mockQuery).not.toHaveBeenCalled();
+  });
+});
+
+describe('refreshCanonicalMarginForOrders (événements métier)', () => {
+  it('désactivé : no-op total (ni calcul, ni SAVEPOINT, ni écriture)', async () => {
+    const client = { query: jest.fn() };
+    const r = await w.refreshCanonicalMarginForOrders(['o1', 'o2'], { client });
+    expect(r).toEqual({ enabled: false, refreshed: 0, written: 0, failed: 0 });
+    expect(client.query).not.toHaveBeenCalled();
+    expect(mockShadow).not.toHaveBeenCalled();
+  });
+
+  it('actif : dédoublonne, SAVEPOINT par commande, écrit via le client de la transaction', async () => {
+    mockRules = { CANONICAL_MARGIN_WRITER_ENABLED: 1 };
+    mockShadow.mockResolvedValue(shadow('final', 30));
+    const client = { query: jest.fn().mockResolvedValue({ rowCount: 1 }) };
+    const r = await w.refreshCanonicalMarginForOrders(['o1', 'o1', 'o2'], { client });
+    expect(r).toEqual({ enabled: true, refreshed: 2, written: 2, failed: 0 });
+    const sqls = client.query.mock.calls.map((c) => c[0]);
+    expect(sqls.filter((x) => x === 'SAVEPOINT cmw_refresh')).toHaveLength(2);
+    expect(sqls.filter((x) => x === 'RELEASE SAVEPOINT cmw_refresh')).toHaveLength(2);
+    expect(mockShadow.mock.calls[0][1]).toMatchObject({ client });
+  });
+
+  it('un échec du writer est isolé (ROLLBACK TO SAVEPOINT) et ne bloque pas les autres commandes', async () => {
+    mockRules = { CANONICAL_MARGIN_WRITER_ENABLED: 1 };
+    mockShadow.mockRejectedValueOnce(new Error('boom')).mockResolvedValue(shadow('final', 30));
+    const client = { query: jest.fn().mockResolvedValue({ rowCount: 1 }) };
+    const r = await w.refreshCanonicalMarginForOrders(['bad', 'ok'], { client });
+    expect(r).toMatchObject({ enabled: true, failed: 1, written: 1 });
+    expect(client.query.mock.calls.map((c) => c[0])).toContain('ROLLBACK TO SAVEPOINT cmw_refresh');
   });
 });

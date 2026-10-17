@@ -116,6 +116,7 @@ module.exports = {
       'orders (commande source)',
       'wallet (credit)',
       'documents (reçu)',
+      'economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)',
     ],
   },
 

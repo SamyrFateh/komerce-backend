@@ -18,6 +18,12 @@
  */
 
 const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
+// A8 : règles applicatives pilotées par le test (défaut = writer désactivé).
+let mockRules = {};
+jest.mock('../../utils/rules', () => ({
+  ...jest.requireActual('../../utils/rules'),
+  getRuleNumber: async (k, d) => (k in mockRules ? mockRules[k] : d),
+}));
 
 if (!hasIntegrationEnv) {
   describe.skip('SUPPLIER PAYMENT SETTLEMENTS — REAL_DB proofs — SKIPPED: no DATABASE_URL', () => {
@@ -183,6 +189,31 @@ if (!hasIntegrationEnv) {
       expect(r.margin.shadow_kmf).toBe(10000 - 41200 - 150);
       expect(r.margin.basis).toBe('real_only');
       expect(await guarded([orderId])).toEqual(before);
+    });
+
+    it('A8 — writer actif : chaque règlement/remboursement écrit la marge canonique (final seulement), sans blocage sourcing', async () => {
+      mockRules = { CANONICAL_MARGIN_WRITER_ENABLED: 1 };
+      try {
+        const { orderId, items } = await seedOrder();
+        const { paymentId } = await seedPo({ lines: [{ itemId: items[0], qty: 1, price: '100' }] });
+        await settle(paymentId, { amount_currency: '40', amount_kmf: '16000', fees_kmf: '100', idempotency_key: 'w1' });
+        const m = async () => (await db.query('SELECT margin_real_pct, margin_alert, sourcing_blocked FROM orders WHERE id = $1', [orderId])).rows[0];
+        expect((await m()).margin_real_pct).toBeNull(); // achat sous-payé : jamais final → NULL
+        await settle(paymentId, { amount_currency: '60', amount_kmf: '25200', fees_kmf: '50', idempotency_key: 'w2' });
+        const sh = await computeOrderRealMarginShadow(orderId);
+        expect(sh.completeness).toBe('final');
+        const after = await m();
+        expect(Number(after.margin_real_pct)).toBeCloseTo(sh.margin.shadow_pct, 2); // -313.5
+        expect(after.margin_alert).toBe(true);
+        expect(after.sourcing_blocked).toBe(false); // jamais posé par le writer canonique
+        // correction : remboursement de marchandises → marge recalculée par l'événement
+        await settle(paymentId, { kind: 'goods_refund', amount_currency: '10', amount_kmf: '4000', idempotency_key: 'w3' });
+        const sh2 = await computeOrderRealMarginShadow(orderId);
+        // le remboursement rend l'achat à nouveau partiellement estimé → provisional : la marge n'est plus
+        // présentée comme définitive (NULL) tant que le réel n'est pas re-justifié
+        expect(sh2.completeness).toBe('provisional');
+        expect((await m()).margin_real_pct).toBeNull();
+      } finally { mockRules = {}; }
     });
 
     it('remboursements typés : goods réduit l\'achat, fee réduit payment, other sans effet', async () => {

@@ -279,7 +279,12 @@ async function propagateCostDouane(client, parcelIds) {
   if (!ordersToUpdate.length) return;
   const orderIds = ordersToUpdate.map(r => r.order_id);
 
-  await recomputeCustomsCosts(client, { orderIds });
+  // A8 : writer canonique actif → il est l'unique écrivain de margin_real_pct (l'ancien recalcul
+  // de marge est coupé) ; désactivé → comportement historique strictement inchangé.
+  const canonical = require('./cost-allocation/canonical-margin-writer');
+  const canonicalOn = await canonical.isEnabled();
+  await recomputeCustomsCosts(client, { orderIds, skipLegacyMargin: canonicalOn });
+  if (canonicalOn) await canonical.refreshCanonicalMarginForOrders(orderIds, { client });
 }
 
 // ── Lecture ───────────────────────────────────────────────────────────────────
