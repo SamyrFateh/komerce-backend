@@ -597,7 +597,8 @@
   function renderPurchaseOrderLists(rootNode, ui, doc, payload, context) {
     const orders = (payload && payload.purchase_orders) || [];
     const groups = [
-      { title: 'À préparer · PO brouillon', statuses: ['draft'], empty: 'Aucun brouillon à finaliser.' },\n      { title: 'Achats fournisseurs en cours', statuses: ['notified', 'confirmed'], empty: 'Aucune commande fournisseur engagée.' },
+      { title: 'À préparer · PO brouillon', statuses: ['draft'], empty: 'Aucun brouillon à finaliser.' },
+      { title: 'Achats fournisseurs en cours', statuses: ['notified', 'confirmed'], empty: 'Aucune commande fournisseur engagée.' },
       { title: 'Historique des achats', statuses: ['hub_received', 'cancelled'], empty: 'Aucune commande terminée ou annulée dans les 100 dernières.' },
     ];
     groups.forEach((group) => {
@@ -701,7 +702,8 @@
       prompt: options.prompt || (typeof window !== 'undefined' ? window.prompt.bind(window) : () => null),
       selection: new Set(),
       busy: new Set(),
-      poId: readPoFromLocation(loc),\n      activeTab: 'prepare',
+      poId: readPoFromLocation(loc),
+      activeTab: 'prepare',
       reload: null,
       act: null,
       openPo: null,
