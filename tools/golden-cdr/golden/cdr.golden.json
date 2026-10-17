@@ -266,6 +266,8 @@
     ]
   },
   "mode": "db",
+  "recapture_reason": "Doctrine douane 2026-10 (écarts expliqués, I-7) : la douane théorique par catégorie (douane_pct + tva_pct + taxe_add_pct) n'est plus un coût ; seuls les composants customs explicites restent. Écarts attendus : breakdown.customs, breakdown/totals.risk (provision % du variable), totals.variable/total, avertissement catégorie inconnue. Config figée inchangée (même empreinte).",
+  "recaptured_at": "2026-10-17T00:00:00.000Z",
   "snapshots": [
     {
       "allocation": {
@@ -278,7 +280,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 30071,
+        "customs": 25,
         "distribution": 725,
         "freight": 1478,
         "hub": 50,
@@ -287,7 +289,7 @@
         "payment": 80,
         "purchase": 152255,
         "relay": 200,
-        "risk": 11274,
+        "risk": 9531,
         "sourcing": 80,
         "transitary": 4744
       },
@@ -303,9 +305,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 11274,
-        "total": 225058,
-        "variable": 205650
+        "risk": 9531,
+        "total": 193269,
+        "variable": 173861
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -322,7 +324,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 30071,
+        "customs": 25,
         "distribution": 725,
         "freight": 1478,
         "hub": 50,
@@ -331,7 +333,7 @@
         "payment": 2443,
         "purchase": 152255,
         "relay": 200,
-        "risk": 11415,
+        "risk": 9672,
         "sourcing": 80,
         "transitary": 4744
       },
@@ -347,9 +349,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 11415,
-        "total": 227634,
-        "variable": 208226
+        "risk": 9672,
+        "total": 195845,
+        "variable": 176437
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -366,7 +368,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 3987,
+        "customs": 25,
         "distribution": 725,
         "freight": 599,
         "hub": 50,
@@ -375,7 +377,7 @@
         "payment": 80,
         "purchase": 12184,
         "relay": 200,
-        "risk": 1086,
+        "risk": 856,
         "sourcing": 80,
         "transitary": 515
       },
@@ -391,9 +393,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 1086,
-        "total": 39223,
-        "variable": 19815
+        "risk": 856,
+        "total": 35031,
+        "variable": 15623
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -410,7 +412,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 14857,
+        "customs": 25,
         "distribution": 725,
         "freight": 1662,
         "hub": 50,
@@ -419,7 +421,7 @@
         "payment": 800,
         "purchase": 45686,
         "relay": 200,
-        "risk": 3887,
+        "risk": 3027,
         "sourcing": 80,
         "transitary": 1552
       },
@@ -435,9 +437,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 3887,
-        "total": 90311,
-        "variable": 70903
+        "risk": 3027,
+        "total": 74620,
+        "variable": 55212
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -454,7 +456,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 51782,
+        "customs": 25,
         "distribution": 725,
         "freight": 15344,
         "hub": 50,
@@ -463,7 +465,7 @@
         "payment": 80,
         "purchase": 203107,
         "relay": 200,
-        "risk": 16516,
+        "risk": 13514,
         "sourcing": 80,
         "transitary": 6685
       },
@@ -479,9 +481,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 16516,
-        "total": 320683,
-        "variable": 301275
+        "risk": 13514,
+        "total": 265924,
+        "variable": 246516
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -498,7 +500,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 7805,
+        "customs": 25,
         "distribution": 725,
         "freight": 486,
         "hub": 50,
@@ -507,7 +509,7 @@
         "payment": 468,
         "purchase": 25378,
         "relay": 200,
-        "risk": 2136,
+        "risk": 1685,
         "sourcing": 80,
         "transitary": 908
       },
@@ -523,9 +525,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 2136,
-        "total": 58370,
-        "variable": 38962
+        "risk": 1685,
+        "total": 50139,
+        "variable": 30731
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -542,7 +544,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 20569,
+        "customs": 25,
         "distribution": 725,
         "freight": 45080,
         "hub": 50,
@@ -551,7 +553,7 @@
         "payment": 1711,
         "purchase": 61234,
         "relay": 200,
-        "risk": 7902,
+        "risk": 6710,
         "sourcing": 80,
         "transitary": 3321
       },
@@ -567,9 +569,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 7902,
-        "total": 163546,
-        "variable": 144138
+        "risk": 6710,
+        "total": 141811,
+        "variable": 122403
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -586,7 +588,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 3778,
+        "customs": 25,
         "distribution": 725,
         "freight": 1883,
         "hub": 50,
@@ -595,7 +597,7 @@
         "payment": 80,
         "purchase": 18283,
         "relay": 200,
-        "risk": 1529,
+        "risk": 1311,
         "sourcing": 80,
         "transitary": 737
       },
@@ -611,9 +613,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 1529,
-        "total": 47291,
-        "variable": 27883
+        "risk": 1311,
+        "total": 43320,
+        "variable": 23912
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -630,7 +632,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 23168,
+        "customs": 25,
         "distribution": 725,
         "freight": 5831,
         "hub": 50,
@@ -639,7 +641,7 @@
         "payment": 80,
         "purchase": 91390,
         "relay": 200,
-        "risk": 7395,
+        "risk": 6053,
         "sourcing": 80,
         "transitary": 3049
       },
@@ -655,9 +657,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 7395,
-        "total": 154310,
-        "variable": 134902
+        "risk": 6053,
+        "total": 129825,
+        "variable": 110417
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -704,7 +706,7 @@
         "variable": 59545
       },
       "warnings": [
-        "Catégorie \"ghost_category_xyz\" inconnue — taux douane par défaut utilisés.",
+        "Catégorie \"ghost_category_xyz\" inconnue — poids, volume et marge cible par défaut utilisés.",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
@@ -719,7 +721,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 71,
+        "customs": 25,
         "distribution": 725,
         "freight": 717,
         "hub": 50,
@@ -728,7 +730,7 @@
         "payment": 80,
         "purchase": 5,
         "relay": 200,
-        "risk": 117,
+        "risk": 114,
         "sourcing": 80,
         "transitary": 154
       },
@@ -744,9 +746,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 117,
-        "total": 21540,
-        "variable": 2132
+        "risk": 114,
+        "total": 21491,
+        "variable": 2083
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.",
@@ -764,7 +766,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 300446,
+        "customs": 25,
         "distribution": 725,
         "freight": 9673,
         "hub": 50,
@@ -773,7 +775,7 @@
         "payment": 19036,
         "purchase": 1218027,
         "relay": 200,
-        "risk": 94185,
+        "risk": 76760,
         "sourcing": 80,
         "transitary": 36963
       },
@@ -789,9 +791,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 94185,
-        "total": 1737463,
-        "variable": 1718055
+        "risk": 76760,
+        "total": 1419619,
+        "variable": 1400211
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
@@ -808,7 +810,7 @@
         "min_confidence": "low"
       },
       "breakdown": {
-        "customs": 30089,
+        "customs": 25,
         "distribution": 725,
         "freight": 1658,
         "hub": 50,
@@ -817,7 +819,7 @@
         "payment": 80,
         "purchase": 152257,
         "relay": 200,
-        "risk": 11286,
+        "risk": 9542,
         "sourcing": 80,
         "transitary": 4749
       },
@@ -833,9 +835,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 11286,
-        "total": 225280,
-        "variable": 205872
+        "risk": 9542,
+        "total": 193472,
+        "variable": 174064
       },
       "warnings": [
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.",
