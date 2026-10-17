@@ -186,3 +186,9 @@
   max-width: 680px;
   font-size: 13.5px;
 }
+
+/* Read-only PO index: compact, keyboard accessible, responsive. */
+.kmc-purchasing-list-search { width: 100%; max-width: 36rem; padding: .65rem .8rem; margin: .6rem 0; border: 1px solid #cbd5e1; border-radius: .5rem; background: #fff; color: #10233f; }
+.kmc-purchasing-po-list { display: grid; gap: .5rem; margin-top: .5rem; }
+.kmc-purchasing-po-link { display: block; width: 100%; padding: .75rem .9rem; border: 1px solid #dbe4f0; border-radius: .5rem; background: #f8fbff; color: #163b6b; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+.kmc-purchasing-po-link:hover, .kmc-purchasing-po-link:focus-visible { border-color: #3169bd; background: #edf4ff; outline-offset: 2px; }
