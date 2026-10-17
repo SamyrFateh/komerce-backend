@@ -141,8 +141,8 @@
     header.setAttribute('data-dashboard-role', 'hero');
     const copy = doc.createElement('div');
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'ACHATS FOURNISSEURS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Achats à traiter'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Voir ce qui doit être commandé ou confirmé auprès des fournisseurs.'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Achats fournisseurs'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Traitez les achats en attente et consultez les commandes fournisseur déjà engagées.'));
     header.appendChild(copy);
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
     feedback.setAttribute('data-workspace-feedback', '');
@@ -507,7 +507,7 @@
     const slot = createSection(
       rootNode,
       ui,
-      `Commande ${shortId(po.id)}`,
+      `${['confirmed', 'hub_received', 'cancelled'].includes(po.status) ? 'Historique des achats · ' : 'Achat en cours · '}Commande ${shortId(po.id)}`,
       `Hub ${po.procurement_hub_ref || '—'} · ${STATUS_LABELS[po.status] || po.status}`
     );
     slot.setAttribute('data-purchasing-po', po.id);
