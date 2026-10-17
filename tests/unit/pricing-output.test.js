@@ -182,6 +182,8 @@ describe('pricing-output', () => {
       },
     );
     expect(categoryFallback.sources.weight).toBe('category');
+    // Douane : jamais « category » (taux de classification ≠ coût).
+    expect(categoryFallback.sources.customs).toBe('not_estimated');
     expect(categoryFallback.sources.volume).toBe('category');
     expect(categoryFallback.missing_fields).not.toEqual(expect.arrayContaining(['weight', 'volume']));
 

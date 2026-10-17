@@ -219,6 +219,7 @@ async function recommend(input, options = {}) {
       && Number(cat?.default_dim_w_cm) > 0
       && Number(cat?.default_dim_h_cm) > 0,
     hasCustomsCategory: !!cat,
+    customsEstimateStatus: cdr.customs_estimate_status || 'not_estimated',
     hasFinanceConfig: Object.keys(fc).length > 0,
     warnings,
   });
@@ -322,6 +323,10 @@ async function recommend(input, options = {}) {
       business: breakdown.business,
       allocations: cdr.details?._allocations || [],
       allocation_averages: allocationAverages,
+      // Figés au checkout (order_item_cost_imputations.cost_breakdown) :
+      // la douane n'est jamais estimée par taux théorique ; la marge cible du moment.
+      customs_status: cdr.customs_estimate_status || 'not_estimated',
+      target_margin_pct: prices.target_margin_pct,
     },
 
     current_price_kmf: currentPrice == null ? null : r(currentPrice),

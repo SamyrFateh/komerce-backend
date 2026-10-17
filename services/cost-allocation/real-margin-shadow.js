@@ -56,7 +56,7 @@
 
 const db = require('../../db');
 const { SNAPSHOT_LANDED_TO_REAL_COST_TYPE } = require('./cost-types');
-const { customsUnknownSql } = require('../finance-metrics/customs-unknown');
+const { customsExpectedSql, customsUnknownForLinesSql } = require('../finance-metrics/customs-unknown');
 const { shareByWeight } = require('./_helpers');
 
 const N1_TYPES = Object.values(SNAPSHOT_LANDED_TO_REAL_COST_TYPE);
@@ -76,7 +76,8 @@ async function _loadOrder(orderId) {
             o.wallet_applied_kmf, o.transport_price_kmf,
             o.cost_real_kmf, o.cost_transport_kmf, o.cost_douane_kmf,
             o.margin_real_pct, o.margin_alert, o.sourcing_blocked,
-            ${customsUnknownSql('o')} AS customs_unknown
+            ${customsUnknownForLinesSql('o')} AS customs_unknown,
+            ${customsExpectedSql('o')} AS customs_expected
        FROM orders o WHERE o.id = $1`,
     [orderId]
   );
@@ -85,14 +86,14 @@ async function _loadOrder(orderId) {
 
 async function _loadEstimated(orderId) {
   const landedCols = Object.keys(SNAPSHOT_LANDED_TO_REAL_COST_TYPE)
-    .map((k) => `COALESCE(SUM((cost_breakdown->'landed_relay'->>'${k}')::numeric), 0) AS e_${k}`)
+    .map((k) => `COALESCE(SUM(quantity * (cost_breakdown->'landed_relay'->>'${k}')::numeric), 0) AS e_${k}`)
     .join(',\n       ');
   const { rows } = await db.query(
     `SELECT COUNT(*)::int AS imputations_count,
             COUNT(*) FILTER (WHERE cost_breakdown IS NULL)::int AS missing_snapshot_count,
             ${landedCols},
-            COALESCE(SUM((cost_breakdown->'business'->>'payment')::numeric), 0) AS e_payment,
-            COALESCE(SUM((cost_breakdown->'business'->>'risk_provision')::numeric), 0) AS e_risk
+            COALESCE(SUM(quantity * (cost_breakdown->'business'->>'payment')::numeric), 0) AS e_payment,
+            COALESCE(SUM(quantity * (cost_breakdown->'business'->>'risk_provision')::numeric), 0) AS e_risk
        FROM order_item_cost_imputations WHERE order_id = $1`,
     [orderId]
   );
@@ -319,7 +320,7 @@ function _revenue(o, refunds) {
   };
 }
 
-function _classifyTypes({ est, realSplit, customsUnknown, purchaseInfo, purchaseReal }) {
+function _classifyTypes({ est, realSplit, customsUnknown, customsExpected = true, purchaseInfo, purchaseReal }) {
   const by = {};
   const unknown = [];
   const unvalued = [];
@@ -341,9 +342,20 @@ function _classifyTypes({ est, realSplit, customsUnknown, purchaseInfo, purchase
         entry.state = 'estimated_only';
         entry.real_source = realSplit.catalog.amount > 0 ? 'catalog_estimate:products.cost_kmf' : null;
       }
-    } else if (t === 'customs' && customsUnknown) {
-      entry.state = 'unknown';
-      unknown.push(t);
+    } else if (t === 'customs') {
+      // Douane : jamais l'estimé figé (taux de catégorie = classification, pas un coût).
+      // Réel = allocations d'expédition ; sinon inconnue ; non attendue si stock local.
+      if (!customsExpected) {
+        entry.state = 'not_expected';
+      } else if (customsUnknown || (slot && !(slot.real > 0) && slot.fallback > 0)) {
+        // Inconnue, ou seulement une ventilation non certifiée (is_actual=false).
+        entry.state = 'unknown';
+        unknown.push(t);
+      } else {
+        entry.state = 'real';
+        entry.real_kmf = kmf(slot ? slot.real : 0);
+        entry.real_source = slot && slot.sources.size ? [...slot.sources].join(',') : 'customs_shipment:zero_confirmed';
+      }
     } else if (t === PAYMENT && !(slot && slot.real > 0) && purchaseReal.complete && purchaseReal.fees_kmf > 0) {
       // Frais réels (net des remboursements de frais) : REMPLACENT l'estimé, jamais additionnés.
       entry.state = 'real';
@@ -408,6 +420,7 @@ async function computeOrderRealMarginShadow(orderId, opts = {}) {
   const confirmedLines = purchase.lines.lines;
   const { by, unknown, unvalued } = _classifyTypes({
     est, realSplit, customsUnknown: o.customs_unknown === true,
+    customsExpected: o.customs_expected !== false,
     purchaseInfo: { confirmedLines }, purchaseReal,
   });
   if (realSplit.ignored.length) revenue.flags.push(`real_cost_types_ignored:${realSplit.ignored.join('|')}`);

@@ -87,7 +87,7 @@ describe('pricing-cdr', () => {
     expect(result.warnings[0]).toContain('objectif_commandes_mois absent');
   });
 
-  it('computeCDR calcule CDR complet avec composants, douane categorie, risque et fixe', () => {
+  it('computeCDR calcule CDR complet avec composants, risque et fixe — douane de catégorie jamais appliquée', () => {
     const cfg = {
       finance: { taux_change_eur_kmf: 500, fret_eur_per_m3: 100, objectif_commandes_mois: 10, avg_articles_per_order: 2, allocation_confidence: 'high' },
       categories: { food: { douane_pct: 5, tva_pct: 10, taxe_add_pct: 0 } },
@@ -109,7 +109,10 @@ describe('pricing-cdr', () => {
     expect(result.details.sourcing).toBe(100);
     expect(result.details.payment).toBe(50);
     expect(result.details.fixed_costs).toBe(500);
-    expect(result.details.customs).toBe(900);
+    // Doctrine 2026-10 : douane_pct/tva_pct = classification, jamais un coût.
+    expect(result.details.customs).toBe(0);
+    expect(result.customs_estimate_status).toBe('not_estimated');
+    expect(result.warnings.join(' ')).toContain('Douane non estimée');
     expect(result.risk_provision_estimated_kmf).toBeGreaterThan(0);
     expect(result.cost_complete_estimated_kmf).toBe(result.variable_cost_estimated_kmf + result.fixed_cost_allocation_kmf);
     expect(result._meta).toMatchObject({ taxEUR: 500, fretEUR: 100, category: 'food', channel: 'cash_relais' });
@@ -162,5 +165,18 @@ describe('pricing-cdr', () => {
       expect.stringContaining('cost_kmf absent'),
       expect.stringContaining('Moyennes d\'allocation non calibrées'),
     ]));
+  });
+
+  it('computeCDR conserve un composant douane explicitement configuré (status cost_component), sans taux de catégorie', () => {
+    const cfg = {
+      finance: { taux_change_eur_kmf: 500, fret_eur_per_m3: 100, objectif_commandes_mois: 10, allocation_confidence: 'high' },
+      categories: { food: { douane_pct: 50, tva_pct: 50, taxe_add_pct: 50 } },
+      components: [{ key: 'customs_forfait', category: 'customs', unit: 'kmf', default_value: 300, scope: 'global' }],
+      provisions: [],
+      charges: [],
+    };
+    const result = computeCDR({ category: 'food', cost_kmf: 1000, weight_kg: 1 }, { config: cfg, volume_m3: 0.1 });
+    expect(result.details.customs).toBe(300);
+    expect(result.customs_estimate_status).toBe('cost_component');
   });
 });

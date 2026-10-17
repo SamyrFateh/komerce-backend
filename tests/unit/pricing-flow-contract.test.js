@@ -44,7 +44,7 @@ describe('Contrat moteur — vue /flow', () => {
   beforeAll(async () => {
     reco = await engine.recommend(
       { category: 'phones', cost_kmf: 6000, weight_kg: 0.3, current_price_kmf: 12990,
-        pricing_strategy: 'loss_leader', final_price_kmf: 9000 },
+        pricing_strategy: 'loss_leader', final_price_kmf: 6000 },
       { config }
     );
   });
@@ -52,8 +52,8 @@ describe('Contrat moteur — vue /flow', () => {
   it.each(REQUIRED)('champ présent : %s', (k) => {
     expect(reco[k]).toBeDefined();
   });
-  it('final_price reflète l\'override', () => expect(reco.final_price_kmf).toBe(9000));
-  it('strategy_risk = contributive_low_buffer ou destructive (9000 sous CDR)', () =>
+  it('final_price reflète l\'override', () => expect(reco.final_price_kmf).toBe(6000));
+  it('strategy_risk = contributive_low_buffer ou destructive (6000 = prix d\'achat, sous CDR)', () =>
     expect(['contributive_low_buffer', 'destructive']).toContain(reco.strategy_risk));
   it('variable_cost_complete = coût landed_relay + coût variable business', () =>
     expect(reco.variable_cost_complete_kmf).toBe(reco.landed_relay_cost_kmf + reco.business_variable_cost_kmf));

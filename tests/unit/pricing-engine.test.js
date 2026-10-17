@@ -132,6 +132,7 @@ describe('pricing-engine', () => {
     expect(out.computePrices).toHaveBeenCalledWith(baseCdr(), { target_marge_brute_pct: 40 }, expect.objectContaining({ target_marge_brute_pct: 40 }));
     expect(out.computeHealthStatus).toHaveBeenCalledWith(2400, 1400, expect.any(Number));
     expect(out.computeSourcingDecision).toHaveBeenCalledWith({ health_status: 'healthy', market_confidence: 'validated', weight_kg: 1.2 });
+    expect(result.cost_breakdown).toMatchObject({ customs_status: 'not_estimated' });
     expect(result).toMatchObject({
       subject_type: 'catalog_product',
       product_id: 'prod-001',
