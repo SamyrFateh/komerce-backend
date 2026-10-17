@@ -13,8 +13,8 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1406');
-  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261010-9');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261017-1');
+  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261017-1');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
   expect(source).toContain('Charges fixes directes');
@@ -112,4 +112,18 @@ test('les trois actions de coûts du mock ouvrent des panneaux séparés, jamais
   // Le panneau est un module Canonical natif séparé, chargé dans index.html.
   expect(index).toContain('/dashboards/canonical/js/pricing-structure-event-panel.js');
   expect(index).toContain('/dashboards/canonical/css/pricing-structure-event-panel.css');
+});
+
+test('Atelier des prix : familles en onglets, colonnes Valeur/Provenance, panneau secondaire fermé', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const dir = path.join(__dirname, '../../public/dashboards/canonical');
+  const source = fs.readFileSync(path.join(dir, 'js/pricing-economic-cockpit.js'), 'utf8');
+  const css = fs.readFileSync(path.join(dir, 'css/pricing-economic-cockpit.css'), 'utf8');
+  expect(source).toContain('costFamilyTabs');
+  expect(source).toContain("'Valeur', 'Provenance'");
+  expect(source).toContain("'Surcharge pays'");
+  expect(source).toContain('kmc-cockpit-secondary');
+  expect(css).toContain('.kmc-cockpit-costs > .kmc-cockpit-cost-card[hidden]');
+  expect(css).toContain('.kmc-cockpit-secondary');
 });

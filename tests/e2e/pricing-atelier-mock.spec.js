@@ -1,0 +1,91 @@
+/**
+ * @e2e   pricing-atelier-mock.spec.js
+ * @feature dashboard (espace « Atelier des prix », /admin/workspaces/pricing, marché Comores)
+ * @brief Conformité au mock validé : titre, 4 KPI (valeur absente = « Indisponible », jamais 0 ni « null »),
+ *        trois familles économiques en onglets (une seule visible), colonnes Valeur/Provenance avec unités,
+ *        panneau secondaire fermé par défaut, aucun texte parasite, aucun débordement horizontal (desktop et mobile).
+ *        API simulée avec réponses réelles rejouées : aucun serveur ni base requis.
+ */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const { test, expect } = require('@playwright/test');
+
+const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical');
+const FX = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'pricing-atelier-km.json'), 'utf8'));
+const ORIGIN = 'http://komerce.test';
+
+const COMPONENTS = [
+  { key: 'stripe_fee_pct', label: 'Frais Stripe', family: 'business', category: 'payment', unit: 'pct', default_value: 2.9, allocation_method: 'per_order', inherited: true, is_active: true },
+  { key: 'cash_fee_kmf', label: 'Frais collecte cash', family: 'business', category: 'payment', unit: 'kmf_per_order', default_value: 500, allocation_method: 'per_order', inherited: false, is_active: true },
+];
+
+async function mount(page, { populated = false } = {}) {
+  const market = populated ? { ...FX.market, cost_components: COMPONENTS } : FX.market;
+  await page.route(`${ORIGIN}/**`, async (route) => {
+    const url = new URL(route.request().url());
+    const json = (body) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+    if (url.pathname === '/admin/workspaces/pricing') return route.fulfill({ contentType: 'text/html', path: path.join(CANONICAL, 'index.html') });
+    if (url.pathname.startsWith('/dashboards/canonical/')) {
+      const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
+      return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
+    }
+    if (url.pathname === '/api/auth/me') return json(FX.auth_me);
+    if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
+    if (url.pathname === '/api/admin/workspaces/pricing') return json(FX.global);
+    if (url.pathname === '/api/admin/workspaces/pricing/market/KM') return json(market);
+    if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision') return json(FX.decision);
+    if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision-policy/history') return json(FX.history);
+    if (url.pathname === '/api/admin/workspaces/pricing/market/KM/corridor') return json(FX.corridor);
+    return route.fulfill({ status: 404, body: '' });
+  });
+  await page.goto(`${ORIGIN}/admin/workspaces/pricing`);
+  await page.locator('select').first().selectOption({ label: 'KM · Comores' });
+  await expect(page.locator('[data-pricing-economic-cockpit]')).toBeVisible();
+}
+
+for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mobile', { width: 390, height: 844 }]]) {
+  test.describe(`Atelier des prix — ${name}`, () => {
+    test.use({ viewport });
+
+    test('titre, quatre KPI indisponibles sans zéro ni null, aucun texte parasite', async ({ page }) => {
+      await mount(page);
+      await expect(page.locator('h1')).toHaveText('Atelier des prix · Comores');
+      const kpis = page.locator('.kmc-metric-card');
+      await expect(kpis).toHaveCount(4);
+      await expect(kpis.locator('.kmc-metric-label')).toHaveText(['Couverture réelle', 'Contribution reconnue', 'Structure à couvrir', 'Maturité']);
+      await expect(kpis.locator('.kmc-metric-value')).toHaveText(['Indisponible', 'Indisponible', 'Indisponible', 'Indisponible']);
+      const body = await page.locator('body').innerText();
+      expect(body).not.toMatch(/\bnull\b|\bundefined\b|\\n/);
+    });
+
+    test('trois familles en onglets : une seule visible, bascule au clic', async ({ page }) => {
+      await mount(page, { populated: true });
+      const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');
+      await expect(tabs).toHaveText(['Coûts variables', 'Charges fixes directes', 'Charges fixes mutualisées']);
+      const visible = page.locator('.kmc-cockpit-cost-card:visible');
+      await expect(visible).toHaveCount(1);
+      await expect(visible).toHaveAttribute('data-cost-summary', 'variable');
+      await tabs.nth(1).click();
+      await expect(visible).toHaveAttribute('data-cost-summary', 'fixed-direct');
+      await tabs.nth(2).click();
+      await expect(visible).toHaveAttribute('data-cost-summary', 'fixed-mutualized');
+      await tabs.nth(0).click();
+      const cells = (await page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cell').allInnerTexts()).join('|');
+      expect(cells).toContain('Valeur');
+      expect(cells).toContain('Provenance');
+      expect(cells).toContain('2,9 %');
+      expect(cells).toContain('500 KMF/commande');
+      expect(cells).toContain('Global hérité');
+      expect(cells).toContain('Surcharge pays');
+    });
+
+    test('panneau secondaire fermé par défaut et aucun débordement horizontal de la page', async ({ page }) => {
+      await mount(page, { populated: true });
+      await expect(page.locator('details.kmc-cockpit-secondary')).toHaveCount(1);
+      await expect(page.locator('details.kmc-cockpit-secondary')).not.toHaveAttribute('open', '');
+      const widths = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, inner: window.innerWidth }));
+      expect(widths.scroll).toBeLessThanOrEqual(widths.inner);
+    });
+  });
+}

@@ -1138,3 +1138,34 @@
 @media (max-width: 1250px) {
   .kmc-cockpit-product-detail-body { grid-template-columns: 1fr; }
 }
+
+/* Alignement mock validé : une famille économique à la fois (onglets), tableau pleine largeur, principe en colonne latérale. */
+.kmc-cockpit-costs {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  align-items: start;
+}
+.kmc-cockpit-costs > .kmc-cockpit-cost-tabs { grid-column: 1; }
+.kmc-cockpit-costs > .kmc-cockpit-cost-card { grid-column: 1; min-width: 0; overflow-x: auto; }
+.kmc-cockpit-costs > .kmc-cockpit-cost-card[hidden] { display: none; }
+.kmc-cockpit-costs > .kmc-cockpit-principle { grid-column: 2; grid-row: 1 / span 3; }
+.kmc-cockpit-costs { grid-template-rows: auto auto 1fr; }
+.kmc-economic-cockpit { margin-top: 16px; }
+.kmc-cockpit-decisions { margin-bottom: 16px; }
+.kmc-cockpit-decisions .kmc-decision-card-copy,
+.kmc-cockpit-decisions .kmc-decision-card-helper { min-width: 0; overflow-wrap: anywhere; }
+.kmc-cockpit-decisions .kmc-decision-card { min-height: 0; padding-bottom: 12px; }
+.kmc-cockpit-secondary { border: 1px solid #e3e9f3; border-radius: 8px; background: #fff; }
+.kmc-cockpit-secondary > summary { cursor: pointer; padding: 12px 14px; font-weight: 700; color: #102a72; min-height: 44px; display: flex; align-items: center; }
+.kmc-cockpit-secondary[open] > summary { border-bottom: 1px solid #e3e9f3; }
+.kmc-cockpit-secondary > .kmc-cockpit-detail-grid { padding: 12px; }
+.kmc-cockpit-cost-tabs .kmc-cockpit-tab { min-height: 40px; }
+@media (max-width: 900px) {
+  .kmc-cockpit-costs { grid-template-columns: minmax(0, 1fr); }
+  .kmc-cockpit-costs { grid-template-rows: none; }
+  .kmc-cockpit-costs > .kmc-cockpit-principle { grid-column: 1; grid-row: auto; }
+  .kmc-cockpit-cost-tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .kmc-cockpit-cost-tabs .kmc-cockpit-tab { white-space: nowrap; }
+}
+
+.kmc-cockpit-cost-table.is-variable { grid-template-columns: minmax(130px, 1.3fr) 72px 84px minmax(100px, .9fr) minmax(90px, .9fr) minmax(100px, .9fr) minmax(100px, .9fr); }
+@media (max-width: 900px) { .kmc-cockpit-cost-table.is-variable { min-width: 720px; } }

@@ -31,6 +31,7 @@ const DASHBOARD_SPECS = [
   'import-runtime-credentials',
   'import-runtime-source-registry',
   'purchasing-workspace',
+  'pricing-atelier-mock',
   'dashboard-role-matrix',
   'order-360-lineage',
   'b9-ui-truth-paths',
