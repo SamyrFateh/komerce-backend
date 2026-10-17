@@ -243,7 +243,8 @@ describe('SalesView', () => {
       await flush();
       const html = root.querySelector('#sales-sections').innerHTML;
       expect(html).toContain('sales-cat-marge unknown">—<');
-      expect(html).not.toContain('0.0%');
+      const cells = [...root.querySelectorAll('.sales-cat-marge')].map((e) => e.textContent.trim());
+      expect(cells).toEqual(['—', '—']);
     });
   });
 
