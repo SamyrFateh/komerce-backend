@@ -17,7 +17,13 @@ jest.mock('../../db', () => ({
   pool: { connect: jest.fn() },
 }));
 
+jest.mock('../../services/cost-allocation/canonical-margin-writer', () => ({
+  isEnabled: jest.fn().mockResolvedValue(false),
+  refreshCanonicalMarginForOrders: jest.fn().mockResolvedValue({ enabled: true }),
+}));
+
 const db = require('../../db');
+const canonical = require('../../services/cost-allocation/canonical-margin-writer');
 const {
   ALLOCATION_KEYS,
   TransportCostAllocationError,
@@ -28,7 +34,10 @@ const {
   allocateShipmentRealCosts,
 } = require('../../services/transport-cost-allocation');
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  canonical.isEnabled.mockResolvedValue(false);
+});
 
 describe('transport cost allocation', () => {
   test('SEA freight uses volume and exposes equal-split fallback', () => {
@@ -249,6 +258,40 @@ describe('transport cost allocation', () => {
     expect(freightInsertA[1][4]).toBe(250);
     expect(freightInsertB[1][4]).toBe(750);
     expect(freightInsertA[1][5]).toBe('by_taxable_weight');
+    expectTransactionCommitted(client);
+  });
+});
+
+describe('A8 — raccordement du writer canonique à l\'allocation réelle', () => {
+  const shipment = { id: 'ship-a8', customs_paid_kmf: '0', freight_kmf: '0', allocation_method: 'by_cif_value', transport_mode: 'air' };
+  const parcel = { parcel_id: 'parcel-A', order_id: 'order-A', parcel_cif_kmf: '1000', parcel_weight_kg: '1', parcel_volume_cm3: '1000', customs_share_kmf: null };
+  const item = { order_item_id: 'oi-A', parcel_qty: '1', product_id: 'prod-A', weight_kg: '1', volume_cm3: '1000', cost_kmf: '1000' };
+  const script = () => [
+    { rows: [shipment] }, { rows: [parcel] }, { rows: [], rowCount: 0 },
+    { rows: [item] }, { rows: [], rowCount: 1 },
+  ];
+
+  test('writer actif : les commandes du groupage sont rafraîchies dans la même transaction, avant COMMIT', async () => {
+    canonical.isEnabled.mockResolvedValue(true);
+    const client = makeClient(script());
+    const base = client.query.getMockImplementation();
+    client.query.mockImplementation(async (sql, params) => (String(sql).includes('SELECT DISTINCT p.order_id')
+      ? (client.calls.push({ sql, params }), { rows: [{ order_id: 'order-A' }], rowCount: 1 })
+      : base(sql, params)));
+    db.pool.connect.mockResolvedValue(client);
+    await allocateShipmentRealCosts('ship-a8', null, { transport_cost_allocation: { volumetric_factor_kg_per_m3: 100 } });
+    expect(canonical.refreshCanonicalMarginForOrders).toHaveBeenCalledWith(['order-A'], { client });
+    const sqls = client.calls.map((c) => String(c.sql).replace(/\s+/g, ' ').trim());
+    expect(sqls.lastIndexOf('COMMIT')).toBeGreaterThan(sqls.findIndex((q) => q.includes('SELECT DISTINCT p.order_id')));
+    expectTransactionCommitted(client);
+  });
+
+  test('writer désactivé : aucune requête ni appel supplémentaire (comportement historique)', async () => {
+    const client = makeClient(script());
+    db.pool.connect.mockResolvedValue(client);
+    await allocateShipmentRealCosts('ship-a8', null, { transport_cost_allocation: { volumetric_factor_kg_per_m3: 100 } });
+    expect(canonical.refreshCanonicalMarginForOrders).not.toHaveBeenCalled();
+    expect(client.calls.some((c) => String(c.sql).includes('SELECT DISTINCT p.order_id'))).toBe(false);
     expectTransactionCommitted(client);
   });
 });
