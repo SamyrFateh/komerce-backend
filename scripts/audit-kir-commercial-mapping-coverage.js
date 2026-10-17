@@ -33,11 +33,31 @@ async function audit(runRef, deps={}) {
       mapping:mapping||null,
       status:mapping?'AUTO_CLASSIFIABLE':'MAPPING_NEEDED'});
   }
+  // Triage at supplier-path level: one human confirmation can resolve many
+  // products. Keep the complete backlog visible; limit only the proposed
+  // review workpack, never silently mark uncertain products classified.
+  const unresolved=categories.filter(g=>g.status==='MAPPING_NEEDED')
+    .sort((a,b)=>b.count-a.count || a.source_path.localeCompare(b.source_path));
+  const reviewWorkpack=unresolved.slice(0,10).map(group=>({
+    source_path:group.source_path,
+    affected_products:group.count,
+    sample_product_refs:group.product_refs.slice(0,3),
+    decision_required:'CONFIRM_ACTIVE_BOUTIQUE_PAIR',
+  }));
+  const ungrouped=evidence.items.length-categories.reduce((sum,g)=>sum+g.count,0);
+  const autoCount=categories.filter(g=>g.mapping).reduce((sum,g)=>sum+g.count,0);
   return {run_ref:runRef,provider:evidence.provider,inspected:evidence.inspected,
     source_category_groups:categories.length,
-    auto_classifiable_products:categories.filter(g=>g.mapping).reduce((s,g)=>s+g.count,0),
+    auto_classifiable_products:autoCount,
+    automatic_mapping_coverage_pct:evidence.items.length?Number((100*autoCount/evidence.items.length).toFixed(2)):0,
+    automatic_target_pct:95,
+    automatic_target_met:evidence.items.length>0 && autoCount/evidence.items.length>=0.95,
+    human_review_workpack:reviewWorkpack,
+    human_review_workpack_limit:10,
+    deferred_review_groups:Math.max(0,unresolved.length-reviewWorkpack.length),
+    unresolved_product_count:unresolved.reduce((sum,g)=>sum+g.count,0)+ungrouped,
     mapping_needed_groups:categories.filter(g=>!g.mapping).length,
-    ungrouped_products:evidence.items.length-categories.reduce((s,g)=>s+g.count,0),
+    ungrouped_products:ungrouped,
     categories,writes:0,provider_calls:0,
     note:'Read only. No customs classification, product mutation, automatic taxonomy creation or publication.'};
 }
