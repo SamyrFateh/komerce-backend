@@ -259,7 +259,7 @@
     const slot = createSection(
       rootNode,
       ui,
-      'Achats fournisseurs en cours · Lignes à préparer',
+      'Lignes à préparer',
       'Sélectionnez les lignes d’un même fournisseur puis préparez la commande.'
     );
     if (!(payload.groups || []).length) {
@@ -584,7 +584,7 @@
       bar.appendChild(discard);
       bar.appendChild(submit);
     }
-    const close = makeButton(doc, 'Fermer le détail', 'close-po', true);
+    const close = makeButton(doc, 'Retour à la liste', 'close-po', true);
     close.addEventListener('click', () => context.closePo());
     bar.appendChild(close);
     slot.appendChild(bar);
@@ -597,7 +597,7 @@
   function renderPurchaseOrderLists(rootNode, ui, doc, payload, context) {
     const orders = (payload && payload.purchase_orders) || [];
     const groups = [
-      { title: 'Achats fournisseurs en cours', statuses: ['draft', 'notified', 'confirmed'], empty: 'Aucune commande fournisseur en cours.' },
+      { title: 'À préparer · PO brouillon', statuses: ['draft'], empty: 'Aucun brouillon à finaliser.' },\n      { title: 'Achats fournisseurs en cours', statuses: ['notified', 'confirmed'], empty: 'Aucune commande fournisseur engagée.' },
       { title: 'Historique des achats', statuses: ['hub_received', 'cancelled'], empty: 'Aucune commande terminée ou annulée dans les 100 dernières.' },
     ];
     groups.forEach((group) => {
@@ -640,7 +640,7 @@
     rootNode.classList.add('kmc-purchasing-workspace');
     rootNode.setAttribute('data-workspace-kind', 'purchasing');
     rootNode.appendChild(createHeader(doc));
-    if (state.detail) renderPurchaseOrder(rootNode, ui, doc, state.detail, context);
+    if (context.poId) {\n      if (state.detail) renderPurchaseOrder(rootNode, ui, doc, state.detail, context);
     if (state.detailError) {
       const slot = createSection(rootNode, ui, 'Commande indisponible', state.detailError);
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', state.detailError));
@@ -685,7 +685,7 @@
       prompt: options.prompt || (typeof window !== 'undefined' ? window.prompt.bind(window) : () => null),
       selection: new Set(),
       busy: new Set(),
-      poId: readPoFromLocation(loc),
+      poId: readPoFromLocation(loc),\n      activeTab: 'prepare',
       reload: null,
       act: null,
       openPo: null,
