@@ -189,7 +189,7 @@
       key: 'market-decision',
       label: meta.label,
       helper: decision.reason || 'Décision serveur',
-      value: decision.coverage && decision.coverage.coverage_ratio == null ? '—' : String(decision.coverage && decision.coverage.coverage_ratio),
+      value: decision.coverage && decision.coverage.coverage_ratio != null ? String(decision.coverage.coverage_ratio) : 'Indisponible',
       tone: meta.tone,
       icon: meta.tone === 'positive' ? '✓' : '!',
       href: '#pricing-market-decision',
@@ -211,17 +211,14 @@
   }
 
   function marketMetricItems(payload, decision, workspace) {
-    const summary = payload && payload.summary || {};
     const coverage = decision && decision.coverage || {};
-    const components = Array.isArray(payload && payload.cost_components) ? payload.cost_components : [];
-    const overrides = components.filter(component => component && component.inherited === false).length;
+    // Quatre KPI prioritaires ; une valeur absente est déclarée indisponible, jamais remplacée par zéro.
+    const known = value => (value == null || value === '—' ? 'Indisponible' : value);
     return [
-      { key: 'coverage', label: 'Couverture réelle', value: formatRatio(workspace, coverage.coverage_ratio), tone: marketDecisionMeta(decision).tone },
-      { key: 'contribution', label: 'Contribution reconnue', value: formatKmf(coverage.numerator_contribution_kmf), tone: 'neutral' },
-      { key: 'structure', label: 'Structure à couvrir', value: formatKmf(coverage.denominator_n3_kmf), tone: 'neutral' },
-      { key: 'maturity', label: 'Maturité', value: formatPercentRatio(workspace, coverage.maturity && coverage.maturity.maturity_ratio), tone: 'neutral' },
-      { key: 'overrides', label: 'Overrides pays', value: String(overrides), tone: overrides ? 'info' : 'neutral' },
-      { key: 'active-costs', label: 'Coûts actifs', value: formatNumber(summary.active_cost_components), tone: 'neutral' },
+      { key: 'coverage', label: 'Couverture réelle', value: known(formatRatio(workspace, coverage.coverage_ratio)), tone: marketDecisionMeta(decision).tone },
+      { key: 'contribution', label: 'Contribution reconnue', value: coverage.numerator_contribution_kmf == null ? 'Indisponible' : formatKmf(coverage.numerator_contribution_kmf), tone: 'neutral' },
+      { key: 'structure', label: 'Structure à couvrir', value: coverage.denominator_n3_kmf == null ? 'Indisponible' : formatKmf(coverage.denominator_n3_kmf), tone: 'neutral' },
+      { key: 'maturity', label: 'Maturité', value: known(formatPercentRatio(workspace, coverage.maturity && coverage.maturity.maturity_ratio)), tone: 'neutral' },
     ];
   }
 
@@ -296,7 +293,7 @@
     header.className = 'kmc-dashboard-header';
     header.setAttribute('data-dashboard-role', 'hero');
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'ATELIER ÉCONOMIQUE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', marketMode ? `Économie · ${options.requestedMarket}` : 'Prix & économie'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', marketMode ? `Atelier des prix · ${(payload && payload.scope && payload.scope.market_name) || options.requestedMarket}` : 'Atelier des prix'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', marketMode
       ? 'Voir si le marché est économiquement sain et ce qui demande une décision.'
       : 'Voir la santé économique et ce qui demande une décision avant d’agir sur les prix.'));

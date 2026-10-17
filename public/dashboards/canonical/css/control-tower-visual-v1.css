@@ -8,7 +8,7 @@ body.kmc-shell-v4 {
   --kmc-shell-sidebar-width: 260px;
 }
 body.kmc-shell-v4 > .kmc-admin-navigation {
-  width: 260px;
+  width: var(--kmc-shell-sidebar-width);
   background: #0f172a;
   color: #ffffff;
   border-right: 3px solid #3b82f6;
@@ -391,6 +391,15 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-trust-f
 }
 
 /* Responsive */
+/* Le gabarit 260 px ne doit pas écraser les largeurs réduites du shell (tablette 72 px, mobile 58 px). */
+@media (max-width: 980px) {
+  body.kmc-shell-v4 { --kmc-shell-sidebar-width: 72px; }
+  body.kmc-shell-v4 .kmc-admin-logout { font-size: 0; }
+}
+@media (max-width: 680px) {
+  body.kmc-shell-v4 { --kmc-shell-sidebar-width: 58px; }
+}
+
 @media (max-width: 1180px) {
   body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));

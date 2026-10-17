@@ -153,7 +153,7 @@
     card.appendChild(costCardHeader(doc, '🛒', 'Coûts variables', 'Ces coûts affectent directement la contribution.', 'Ajuster les coûts', 'variable'));
 
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-variable');
-    ['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', 'Quote-part marché'].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
+    ['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', 'Valeur', 'Provenance', 'Quote-part marché'].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
 
     // Le mock rappelle explicitement que l'achat fournisseur est un coût
     // variable direct. Sa valeur reste produit-spécifique : aucune moyenne
@@ -165,6 +165,8 @@
     const purchasePerimeter = tableCell(doc, '', 'is-badge-cell');
     purchasePerimeter.appendChild(badge(doc, 'Direct', 'direct'));
     table.appendChild(purchasePerimeter);
+    table.appendChild(tableCell(doc, '—', 'is-derived'));
+    table.appendChild(tableCell(doc, 'Par produit', 'is-derived'));
     table.appendChild(tableCell(doc, '—', 'is-derived'));
     table.appendChild(tableCell(doc, '—', 'is-derived'));
 
@@ -178,6 +180,8 @@
       perimeterCell.appendChild(badge(doc, perimeter === 'mutualized' ? 'Mutualisé' : 'Direct', perimeter === 'mutualized' ? 'mutualized' : 'direct'));
       table.appendChild(perimeterCell);
       table.appendChild(tableCell(doc, allocationLabel(component.allocation_method), 'is-derived'));
+      table.appendChild(tableCell(doc, componentValue(component), 'is-derived'));
+      table.appendChild(tableCell(doc, component.inherited === false ? 'Surcharge pays' : component.inherited === true ? 'Global hérité' : '—', 'is-derived'));
       table.appendChild(tableCell(doc, variableMarketShare(component), 'is-derived'));
     });
 
@@ -275,14 +279,51 @@
     return card;
   }
 
-  function createCostPilotage(doc, payload, marketCode, decision, user) {
+  const COST_FAMILIES = [
+    ['variable', 'Coûts variables'],
+    ['fixed-direct', 'Charges fixes directes'],
+    ['fixed-mutualized', 'Charges fixes mutualisées'],
+  ];
+
+  // Une seule famille affichée à la fois ; les trois restent dans le DOM (hidden) pour ne rien perdre au recalcul.
+  function costFamilyTabs(doc, section, cards, active) {
+    const tabs = el(doc, 'div', 'kmc-cockpit-tabs kmc-cockpit-cost-tabs');
+    tabs.setAttribute('role', 'tablist');
+    tabs.setAttribute('aria-label', 'Familles économiques');
+    const buttons = COST_FAMILIES.map(([key, label]) => {
+      const button = el(doc, 'button', 'kmc-cockpit-tab', label);
+      button.type = 'button';
+      button.setAttribute('role', 'tab');
+      button.dataset.costFamilyTab = key;
+      return button;
+    });
+    const select = (key) => {
+      section.dataset.activeFamily = key;
+      buttons.forEach((button) => {
+        const on = button.dataset.costFamilyTab === key;
+        button.classList.toggle('is-active', on);
+        button.setAttribute('aria-selected', on ? 'true' : 'false');
+        button.tabIndex = on ? 0 : -1;
+      });
+      cards.forEach((card, i) => { card.hidden = COST_FAMILIES[i][0] !== key; });
+    };
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => select(button.dataset.costFamilyTab));
+      tabs.appendChild(button);
+    });
+    select(active);
+    return tabs;
+  }
+
+  function createCostPilotage(doc, payload, marketCode, decision, user, activeFamily) {
     const groups = classifyComponents(Array.isArray(payload.cost_components) ? payload.cost_components : []);
     const structure = decision?.coverage?.structure || null;
     const marketLabel = payload.scope?.market_name || marketCode;
     const section = el(doc, 'section', 'kmc-cockpit-costs');
-    section.appendChild(variableCostCard(doc, groups.variable));
-    section.appendChild(fixedDirectCard(doc, structure));
-    section.appendChild(fixedMutualizedCard(doc, structure, marketLabel));
+    const cards = [variableCostCard(doc, groups.variable), fixedDirectCard(doc, structure), fixedMutualizedCard(doc, structure, marketLabel)];
+    const active = COST_FAMILIES.some(([key]) => key === activeFamily) ? activeFamily : COST_FAMILIES[0][0];
+    section.appendChild(costFamilyTabs(doc, section, cards, active));
+    cards.forEach(card => section.appendChild(card));
     section.appendChild(principleCard(doc, marketCode));
     return section;
   }
@@ -547,15 +588,22 @@
     return card;
   }
 
-  function renderProductDetail(doc, portfolio, corridor, canManage) {
+  function renderProductDetail(doc, portfolio, corridor, canManage, reveal) {
     const detail = portfolio.querySelector('[data-cockpit-product-detail]');
     if (!detail) return;
+    // Panneau secondaire : fermé par défaut, ouvert si l'opérateur l'a ouvert ou agit sur un produit.
+    const previous = detail.querySelector('details.kmc-cockpit-secondary');
+    const wasOpen = Boolean(reveal) || Boolean(previous && previous.open);
     detail.replaceChildren();
+    const panel = el(doc, 'details', 'kmc-cockpit-secondary');
+    panel.open = wasOpen;
+    panel.appendChild(el(doc, 'summary', '', 'Détail produit, sensibilité et données de marché'));
     const grid = el(doc, 'div', 'kmc-cockpit-detail-grid');
     grid.appendChild(productDecisionCard(doc, corridor, canManage));
     grid.appendChild(sensitivityCard(doc, corridor));
     grid.appendChild(marketDataCard(doc, corridor));
-    detail.appendChild(grid);
+    panel.appendChild(grid);
+    detail.appendChild(panel);
     portfolio.__selectedProductRef = corridor?.product?.product_ref || null;
   }
 
@@ -887,7 +935,7 @@
       if (select) {
         const corridor = portfolio.__corridors.get(select.dataset.cockpitSelectProduct);
         if (corridor) {
-          renderProductDetail(doc, portfolio, corridor, payload.capabilities?.local_strategy_owner === true);
+          renderProductDetail(doc, portfolio, corridor, payload.capabilities?.local_strategy_owner === true, true);
           portfolio.querySelector('[data-cockpit-product-detail]')?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
         }
         return;
@@ -927,7 +975,7 @@
       if (rowMenu) {
         const corridor = portfolio.__corridors.get(rowMenu.dataset.cockpitRowMenu);
         if (corridor) {
-          renderProductDetail(doc, portfolio, corridor, payload.capabilities?.local_strategy_owner === true);
+          renderProductDetail(doc, portfolio, corridor, payload.capabilities?.local_strategy_owner === true, true);
           portfolio.querySelector('[data-cockpit-product-detail]')?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
         }
         return;
@@ -1034,7 +1082,7 @@
       }
 
       const oldCosts = cockpit.querySelector('.kmc-cockpit-costs');
-      if (oldCosts) oldCosts.replaceWith(createCostPilotage(doc, payload, marketCode, newDecision, options.user));
+      if (oldCosts) oldCosts.replaceWith(createCostPilotage(doc, payload, marketCode, newDecision, options.user, oldCosts.dataset.activeFamily));
 
       const oldEquilibrium = cockpit.querySelector('.kmc-flow-equilibrium-panel--cockpit');
       if (oldEquilibrium && rootObject.KomercePricingEquilibriumPanel?.buildPanel) {

@@ -68,3 +68,10 @@ test('Tour de contrôle : échelle alignée sur le reste (titres 20, libellés 1
   expect(css).not.toContain('font-size: 14.08px');
   expect(css).toMatch(/kmc-decision-dashboard-section-title \{[^}]*font-size: 20px/);
 });
+
+test('Shell : la largeur de la navigation suit la variable responsive (72 px tablette, 58 px mobile)', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/control-tower-visual-v1.css'), 'utf8');
+  expect(css).toMatch(/> \.kmc-admin-navigation \{\s*width: var\(--kmc-shell-sidebar-width\)/);
+  expect(css).toMatch(/max-width: 980px\) \{\s*body\.kmc-shell-v4 \{ --kmc-shell-sidebar-width: 72px/);
+  expect(css).toMatch(/max-width: 680px\) \{\s*body\.kmc-shell-v4 \{ --kmc-shell-sidebar-width: 58px/);
+});

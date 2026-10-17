@@ -92,7 +92,7 @@ describe('decision-first Atelier économique', () => {
     expect(decision.globalTrust(payload).qualityLabel).toBe('Recommandation serveur : Surveiller la contribution.');
   });
 
-  test('projection marché reprend couverture, contribution, maturité et overrides sans refaire le calcul', () => {
+  test('projection marché reprend les quatre KPI prioritaires sans refaire le calcul', () => {
     const payload = fixture();
     const marketDecision = {
       decision_status: 'UNCOVERED',
@@ -116,8 +116,6 @@ describe('decision-first Atelier économique', () => {
       ['Contribution reconnue', '820 000 KMF'],
       ['Structure à couvrir', '1 000 000 KMF'],
       ['Maturité', '91 %'],
-      ['Overrides pays', '1'],
-      ['Coûts actifs', '7'],
     ]);
     expect(decision.marketCostItems(payload)[0]).toEqual(expect.objectContaining({
       title: 'Relais',
@@ -158,4 +156,22 @@ test('pricing workspace decision — overview essential-only', () => {
   expect(render).not.toContain("'Frontières prix produit'");
   expect(render).not.toContain("'Stratégie & concurrence'");
   expect(render).not.toContain('TrustFooter.render');
+});
+
+describe('Atelier des prix — KPI de marché (mock validé)', () => {
+  const workspace = pricingWorkspace;
+  it('quatre KPI ; valeur absente = Indisponible, jamais 0', () => {
+    const items = decision.marketMetricItems({}, null, workspace);
+    expect(items.map(i => i.label)).toEqual(['Couverture réelle', 'Contribution reconnue', 'Structure à couvrir', 'Maturité']);
+    expect(items.every(i => i.value === 'Indisponible')).toBe(true);
+  });
+  it('valeur zéro réelle conservée (NULL ≠ 0)', () => {
+    const items = decision.marketMetricItems({}, { coverage: { numerator_contribution_kmf: 0 } }, workspace);
+    expect(items[1].value).not.toBe('Indisponible');
+  });
+  it('carte décision sans couverture : jamais « null » ni « undefined »', () => {
+    const [card] = decision.marketDecisionItems({ decision_status: 'NOT_DECISIONAL', coverage: null, reason: 'X' });
+    expect(card.value).toBe('Indisponible');
+    expect(String(card.value)).not.toMatch(/null|undefined/);
+  });
 });
