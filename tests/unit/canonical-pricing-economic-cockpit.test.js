@@ -13,8 +13,8 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261017-3');
-  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261017-3');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261017-4');
+  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261017-4');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
   expect(source).toContain('Charges fixes directes');
@@ -149,4 +149,11 @@ test('ajustements : enregistrement automatique (prix à la validation, coûts pa
   expect(src).toContain('valeur non enregistrée');
   expect(src).toContain('Montant invalide : prix non enregistré.');
   expect(src).toContain('Enregistrer maintenant');
+});
+
+test('Atelier des prix : aucun bouton « Ajouter un produit » (la création relève du Catalogue)', () => {
+  const dir = require('path').join(__dirname, '../../public/dashboards/canonical');
+  const src = require('fs').readFileSync(require('path').join(dir, 'js/pricing-economic-cockpit.js'), 'utf8');
+  expect(src).not.toContain('Ajouter un produit');
+  expect(src).not.toContain('create-product');
 });
