@@ -179,7 +179,8 @@ async function mountWorkspace(page, api, { search = '' } = {}) {
     });
     return window.__mounted;
   });
-  await expect(page.locator('[data-purchasing-group]')).toBeVisible();
+  if (!search.includes('po=')) await expect(page.locator('[data-purchasing-group]')).toBeVisible();
+  else await expect(page.locator('[data-purchasing-po]')).toBeVisible();
 }
 
 async function expectNoHorizontalOverflow(page) {
@@ -219,6 +220,8 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     expect(mutatingCalls(api, '/po/prepare')[0].body.line_ids).toHaveLength(2);
     expect(api.state.pos.size).toBe(1);
     expect(page.url()).toContain('po=cccccccc-cccc-4ccc-8ccc-000000000001');
+    await expect(page.locator('tr[data-purchasing-po-line]')).toHaveCount(2);
+    await page.locator('[data-workspace-action="close-po"]').click();
     await expect(page.locator('tr[data-purchasing-line]')).toHaveCount(1);
   });
 
@@ -234,6 +237,7 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     await page.locator('[data-workspace-action="detach-lines"]').click();
 
     await expect(page.locator('tr[data-purchasing-po-line]')).toHaveCount(1);
+    await page.locator('[data-workspace-action="close-po"]').click();
     await expect(page.locator('tr[data-purchasing-line]')).toHaveCount(2);
     expect(mutatingCalls(api, '/po/cccccccc-cccc-4ccc-8ccc-000000000001/detach')).toHaveLength(1);
   });
@@ -258,6 +262,7 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     expect(confirm[0].body.lines).toEqual([{ purchase_line_id: '00000000-0000-4000-8000-000000000001', confirmed_quantity: 2 }]);
     await expect(page.locator('[data-workspace-feedback]')).toContainText('1 reliquat');
     // reliquat 5 - 2 = 3 : nouvelle ligne ouverte (KOM-1009) qui garde le marché de la ligne d'origine
+    await page.locator('[data-workspace-action="close-po"]').click();
     const remnant = page.locator('tr[data-purchasing-line]').filter({ hasText: 'KOM-1009' });
     await expect(remnant).toHaveCount(1);
     await expect(remnant.locator('td').nth(2)).toHaveText('KM');
