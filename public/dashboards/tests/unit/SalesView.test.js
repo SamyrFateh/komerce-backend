@@ -234,6 +234,19 @@ describe('SalesView', () => {
     });
   });
 
+  describe('marge catégorie inconnue', () => {
+    it('marge null affichée « — », jamais 0 ni classe de marge', async () => {
+      global.KmcApi.getSales.mockResolvedValue(baseSalesData({
+        by_category: [{ categorie: 'tech', ca_kmf: 500_000, marge_kmf: null, taux_marge_pct: null }],
+      }));
+      await window.SalesView.render(root);
+      await flush();
+      const html = root.querySelector('#sales-sections').innerHTML;
+      expect(html).toContain('sales-cat-marge unknown">—<');
+      expect(html).not.toContain('0.0%');
+    });
+  });
+
   describe('renderTopProducts', () => {
     it('aucune vente → vide', async () => {
       await window.SalesView.render(root);

@@ -509,14 +509,14 @@
         </div>`;
       cats.forEach(c => {
         const pct = ((c.ca_kmf / maxCa) * 100).toFixed(1);
-        const cls = margeClass(c.taux_marge_pct);
+        const cls = c.taux_marge_pct == null ? 'unknown' : margeClass(c.taux_marge_pct);
         html += `
           <div class="sales-cat-row">
             <div style="font-weight:600;text-transform:capitalize">${c.categorie || '—'}</div>
             <div class="sales-cat-track"><div class="sales-cat-fill" style="width:${pct}%"></div></div>
             <div style="text-align:right">${fmtFull(c.ca_kmf)}</div>
-            <div class="sales-cat-marge ${cls}">${fmtFull(c.marge_kmf)}</div>
-            <div class="sales-cat-marge ${cls}">${Number(c.taux_marge_pct).toFixed(1)}%</div>
+            <div class="sales-cat-marge ${cls}">${c.marge_kmf == null ? '—' : fmtFull(c.marge_kmf)}</div>
+            <div class="sales-cat-marge ${cls}">${c.taux_marge_pct == null ? '—' : Number(c.taux_marge_pct).toFixed(1) + '%'}</div>
           </div>`;
       });
     }
