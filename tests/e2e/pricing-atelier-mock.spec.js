@@ -64,6 +64,16 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('h1')).toHaveText('Atelier des prix · Comores');
     });
 
+    test('familles : onglets répartis sur la largeur du panneau actif', async ({ page }) => {
+      await mount(page, { populated: true });
+      if (viewport.width < 900) return; // mobile : défilement horizontal des onglets
+      const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');
+      const widths = await tabs.evaluateAll(nodes => nodes.map(n => Math.round(n.getBoundingClientRect().width)));
+      const card = await page.locator('.kmc-cockpit-cost-card:visible').evaluate(n => Math.round(n.getBoundingClientRect().width));
+      expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(2);
+      expect(widths.reduce((a, b) => a + b, 0)).toBeGreaterThan(card * 0.9);
+    });
+
     test('familles : navigation clavier (flèches, Home/End)', async ({ page }) => {
       await mount(page, { populated: true });
       const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');

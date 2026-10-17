@@ -14,7 +14,7 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
   expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261017-1');
-  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261017-1');
+  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261017-2');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
   expect(source).toContain('Charges fixes directes');
@@ -133,4 +133,10 @@ test('familles : navigation clavier flèches/Home/End', () => {
   expect(src).toContain("event.key === 'ArrowRight'");
   expect(src).toContain("event.key === 'Home'");
   expect(src).toContain("event.key === 'End'");
+});
+
+test('familles : onglets répartis sur la largeur et colonnes sans troncature', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/pricing-economic-cockpit.css'), 'utf8');
+  expect(css).toContain('.kmc-cockpit-cost-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));');
+  expect(css).toContain('.kmc-cockpit-costs .kmc-cockpit-cost-table .kmc-cockpit-cell { white-space: normal;');
 });
