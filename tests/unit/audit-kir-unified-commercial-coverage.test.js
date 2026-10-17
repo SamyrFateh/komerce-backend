@@ -22,3 +22,30 @@ test('empty KIR never reports target met',async()=>{
  const result=await audit('KIR-000008',{sourceAudit:async()=>({provider:'CJdropshipping',items:[]})});
  expect(result).toMatchObject({inspected:0,automatic_coverage_pct:0,target_met:false,review_workpack:[]});
 });
+
+test('historical discovery classifications do not masquerade as automatic coverage',async()=>{
+ const row={candidate_ref:'KSC-000120',product_name:'Car Phone Holder',
+  raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Accessoires'}},
+  commercial_taxonomy_review:{status:'CONFIRMED',category:'Auto',subcategory:'Accessoires'}};
+ const resolveVerdict=jest.fn(async(_,candidate)=>{
+   expect(candidate.raw_payload.discovery).toBeNull();
+   expect(candidate.commercial_taxonomy_review).toBeNull();
+   return {status:'AUTO_CLASSIFIED',source:'OBJECT_NAME_MATCH',category:'Auto',subcategory:'Accessoires'};
+ });
+ const result=await audit('KIR-000007',{
+  sourceAudit:async()=>({provider:'AliExpress',items:[{candidate_ref:row.candidate_ref,supplier_category:'Auto',category_path:[]}]}),
+  query:{query:jest.fn().mockResolvedValue({rows:[row]})},resolveVerdict,
+ });
+ expect(result).toMatchObject({historically_classified_products:1,auto_classifiable_products:1,
+  automatic_coverage_pct:100,explicit_review_products:0});
+});
+test('replayed category conflict triggers review instead of silent auto approval',async()=>{
+ const result=await audit('KIR-000007',{
+  sourceAudit:async()=>({provider:'AliExpress',items:[{candidate_ref:'KSC-1',supplier_category:'Electronics',category_path:[]}]}),
+  query:{query:jest.fn().mockResolvedValue({rows:[{candidate_ref:'KSC-1',
+    raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}}}]})},
+  resolveVerdict:async()=>({status:'AUTO_CLASSIFIED',source:'OBJECT_NAME_MATCH',category:'Auto',subcategory:'Accessoires'}),
+ });
+ expect(result).toMatchObject({auto_classifiable_products:0,conflicting_classifications:1,
+  unresolved_products:1,human_review_groups:1});
+});

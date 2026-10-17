@@ -32,9 +32,28 @@ async function audit(runRef,deps={}) {
       results.push({candidate_ref:item.candidate_ref,status:'REVIEW_REQUIRED',source:'CANDIDATE_MISSING',source_path:item.supplier_category||item.category_path.join(' > ')});
       continue;
     }
-    const decision=await verdict(q,candidate);
-    results.push({candidate_ref:item.candidate_ref,status:decision.status,
-      source:decision.source,category:decision.category,subcategory:decision.subcategory,
+    // Re-run classification without saved discovery hints or historical human
+    // review, so coverage measures what a fresh import can reproduce.
+    const historical=candidate.commercial_taxonomy_review?.status==='CONFIRMED'
+      ? {category:candidate.commercial_taxonomy_review.category,
+        subcategory:candidate.commercial_taxonomy_review.subcategory,
+        source:'CONFIRMED_REVIEW'}
+      : candidate.raw_payload?.discovery?.target_category
+        ? {category:candidate.raw_payload.discovery.target_category,
+          subcategory:candidate.raw_payload.discovery.target_subcategory,
+          source:'DISCOVERY_HINT'} : null;
+    const replay={...candidate,commercial_taxonomy_review:null,
+      raw_payload:{...(candidate.raw_payload||{}),discovery:null}};
+    const decision=await verdict(q,replay);
+    const mismatch=historical?.category && decision.status==='AUTO_CLASSIFIED'
+      && (historical.category!==decision.category || historical.subcategory!==decision.subcategory);
+    results.push({candidate_ref:item.candidate_ref,
+      status:mismatch?'REVIEW_REQUIRED':decision.status,
+      source:mismatch?'HISTORICAL_CLASSIFICATION_CONFLICT':decision.source,
+      category:mismatch?null:decision.category,subcategory:mismatch?null:decision.subcategory,
+      historical_category:historical?.category||null,
+      historical_subcategory:historical?.subcategory||null,
+      historical_source:historical?.source||null,
       source_path:item.category_path.length?item.category_path.join(' > '):item.supplier_category});
   }
   const automatic=results.filter(x=>x.status==='AUTO_CLASSIFIED');
@@ -57,6 +76,8 @@ async function audit(runRef,deps={}) {
     via_supplier_mapping:automatic.filter(x=>x.source==='CONFIRMED_SUPPLIER_PATH').length,
     via_object_name:automatic.filter(x=>x.source==='OBJECT_NAME_MATCH').length,
     explicit_review_products:explicit.length,
+    historically_classified_products:results.filter(x=>x.historical_category && x.historical_subcategory).length,
+    conflicting_classifications:results.filter(x=>x.source==='HISTORICAL_CLASSIFICATION_CONFLICT').length,
     unresolved_products:human.length,
     human_review_groups:ordered.length,
     review_workpack:ordered.slice(0,10),deferred_review_groups:Math.max(0,ordered.length-10),
