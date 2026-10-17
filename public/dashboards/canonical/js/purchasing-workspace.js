@@ -142,7 +142,7 @@
     const copy = doc.createElement('div');
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'ACHATS FOURNISSEURS'));
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Achats fournisseurs'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Traitez les achats en attente et consultez les commandes fournisseur déjà engagées.'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Suivez les achats fournisseurs en cours et retrouvez les commandes terminées.'));
     header.appendChild(copy);
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
     feedback.setAttribute('data-workspace-feedback', '');
@@ -259,7 +259,7 @@
     const slot = createSection(
       rootNode,
       ui,
-      'Lignes à acheter',
+      'Achats fournisseurs en cours · Lignes à préparer',
       'Sélectionnez les lignes d’un même fournisseur puis préparez la commande.'
     );
     if (!(payload.groups || []).length) {
@@ -507,7 +507,7 @@
     const slot = createSection(
       rootNode,
       ui,
-      `${['confirmed', 'hub_received', 'cancelled'].includes(po.status) ? 'Historique des achats · ' : 'Achat en cours · '}Commande ${shortId(po.id)}`,
+      `${['hub_received', 'cancelled'].includes(po.status) ? 'Historique des achats · ' : 'Achat fournisseur en cours · '}Commande ${shortId(po.id)}`,
       `Hub ${po.procurement_hub_ref || '—'} · ${STATUS_LABELS[po.status] || po.status}`
     );
     slot.setAttribute('data-purchasing-po', po.id);
