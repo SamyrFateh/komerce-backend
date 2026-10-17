@@ -910,6 +910,39 @@
       const rootNode = context.root;
       rootNode.replaceChildren();
       rootNode.appendChild(header(context.document, context));
+      // Approved pricing mock: one focused economic workspace, with secondary controls on demand.
+      rootNode.classList.add('kmc-pricing-approved-layout');
+      if (!context.document.getElementById('kmc-pricing-approved-layout-style')) {
+        const style = context.document.createElement('style');
+        style.id = 'kmc-pricing-approved-layout-style';
+        style.textContent = `
+          .kmc-pricing-approved-layout { --pricing-blue:#1767db; --pricing-border:#dbe5f2; color:#142747; }
+          .kmc-pricing-approved-layout .kmc-workspace-header { background:transparent; border:0; box-shadow:none; padding:8px 4px 18px; }
+          .kmc-pricing-approved-layout .kmc-workspace-title { color:#102a53; letter-spacing:-.025em; }
+          .kmc-pricing-approved-layout .kmc-workspace-section { background:#fff; border:1px solid var(--pricing-border); border-radius:16px; box-shadow:0 3px 16px rgba(27,66,117,.05); margin-bottom:18px; min-width:0; }
+          .kmc-pricing-approved-layout .kmc-workspace-section table { width:100%; }
+          .kmc-pricing-approved-layout .kmc-workspace-section input, .kmc-pricing-approved-layout .kmc-workspace-section select { max-width:100%; }
+          .kmc-pricing-approved-layout .kmc-workspace-section details { max-width:100%; }
+          .kmc-pricing-approved-layout .kmc-workspace-action { border-radius:10px; }
+          .kmc-pricing-approved-layout .kmc-market-decision-hero { border-radius:13px; overflow-wrap:anywhere; }
+          .kmc-pricing-approved-layout .kmc-market-decision-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+          .kmc-pricing-approved-layout .kmc-market-decision-metrics > * { min-width:0; }
+          .kmc-pricing-approved-layout .kmc-pricing-secondary { border:1px solid var(--pricing-border); border-radius:15px; background:#fff; margin:12px 0; overflow:hidden; }
+          .kmc-pricing-approved-layout .kmc-pricing-secondary > summary { cursor:pointer; padding:16px 18px; font-weight:700; color:#1b4278; background:#f4f8ff; }
+          .kmc-pricing-approved-layout .kmc-pricing-secondary > .kmc-workspace-section { margin:12px; }
+          .kmc-pricing-approved-layout .kmc-pricing-intro { padding:12px 16px; margin-bottom:16px; background:#eaf4ff; border:1px solid #d0e4fb; border-radius:12px; color:#244d7a; }
+          @media(max-width:760px) {
+            .kmc-pricing-approved-layout .kmc-market-decision-metrics { grid-template-columns:1fr; }
+            .kmc-pricing-approved-layout .kmc-workspace-section { overflow-x:auto; }
+            .kmc-pricing-approved-layout .kmc-workspace-header { padding:8px 0 14px; }
+          }
+        `;
+        (context.document.head || context.document.documentElement).appendChild(style);
+      }
+      const intro = text(context.document, 'p', 'kmc-pricing-intro',
+        'Décidez à partir des données économiques du serveur. Les paramètres avancés restent disponibles ci-dessous.');
+      rootNode.appendChild(intro);
+
       rootNode.appendChild(context.ui.KpiStrip.create(metrics(payload.summary)).element);
       if (context.requestedMarket) {
         const marketData = await loadMarketDecisionData(context);
