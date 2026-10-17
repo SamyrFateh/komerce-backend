@@ -1,74 +1,414 @@
 'use strict';
 /** @komerce-arch
- * @role golden-staging-deep-clean-inventory
+ * @role golden-staging-deep-clean
  * @domain infrastructure
  * @layer script
- * @criticality medium
- * @inputs database identity, schema FK dependencies
- * @outputs read-only financial/user/customs purge inventory
- * @depends db.js, scripts/controlled-business-purge.js
+ * @criticality critical
+ * @inputs governance/golden-staging-clean-policy.json, operator manifest (identity, backup, retention), database catalog
+ * @outputs deterministic deletion plan (sha256), blockers, protections; gated execution
+ * @depends db.js
+ * @used-by operator one-shot job only
  * @db-read pg_catalog, public business tables
  * @db-write none
- * @db-txn none
+ * @db-txn owned
+ * @doctrine staging_identity_proven_out_of_band_backup_restorable_no_truncate_no_cascade
+ * @version 2026-10
  */
-const db=require('../db');
-const {computeCascadeClosure,PROTECTED_TABLES}=require('./controlled-business-purge');
-const TARGETS=Object.freeze(['users','customs_shipments','customs_shipment_audit',
- 'customs_shipment_events','customs_grouping_audit','customs_payment_declarations',
- 'financial_events','financial_transactions','payment_events','payments',
- 'payment_attempts','transactions','transaction_documents','invoices','refunds',
- 'business_rules_history','order_item_real_cost_allocations']);
-const NEVER_PURGE=new Set(['schema_migrations','migrations','knex_migrations','knex_migrations_lock',
- 'business_rules','finance_config','economic_variables','charges','markets','relais',
- 'supplier_commercial_category_mappings','boutique_categories','boutique_subcategories',
- 'roles','permissions','sourcing_sources','supplier_oauth_connections']);
-const identifier=x=>{if(!/^[a-z_][a-z0-9_]*$/.test(x))throw Error('UNSAFE_IDENTIFIER');return '"'+x+'"';};
-function assess(roots,edges,counts){
- const closure=computeCascadeClosure(roots,edges);
- const foundationHits=closure.filter(x=>NEVER_PURGE.has(x));
- const otherProtected=closure.filter(x=>PROTECTED_TABLES.has(x)&&!roots.includes(x)&&!NEVER_PURGE.has(x));
- return {candidate_roots:roots,cascade_tables:closure,
-  foundation_hits:foundationHits,other_protected_dependencies:otherProtected,
-  table_counts:counts,decision:foundationHits.length||otherProtected.length?'BLOCKED':'INVENTORY_ONLY'};
+
+/**
+ * KOMERCE — Golden staging deep clean V2.
+ *
+ *   node scripts/audit-golden-staging-deep-clean.js [--dry-run] [--out=plan.json] [--keep-emails=a@x,b@y] [--test-emails=file.txt]
+ *       → LECTURE SEULE (session PostgreSQL read-only imposée avant la connexion). Inventaire, plan, dépendances,
+ *         protections, blocages, prérequis d'exécution (MET/MISSING) et plan_sha256.
+ *   node scripts/audit-golden-staging-deep-clean.js --execute --manifest=m.json --plan-sha256=<hash> --confirm=DELETE_GOLDEN_STAGING_TEST_DATA
+ *       → mode distinct, REFUSÉ tant que tous les prérequis ne sont pas prouvés (identité, sauvegarde restaurable
+ *         vérifiée et égale à l'état courant, plan relu, renonciation de rétention exportée, admin/sessions).
+ *
+ * Jamais de TRUNCATE ... CASCADE, jamais session_replication_role, aucun trigger désactivé. Suppressions = DELETE explicites
+ * dans l'ordre FK (chaque statement doit supprimer EXACTEMENT le nombre de lignes planifié) ; TRUNCATE d'une liste
+ * explicite fermée par FK uniquement pour les tables protégées par trigger d'immutabilité (accord lié par empreinte), post-contrôles dans la transaction,
+ * ROLLBACK au moindre écart. Identité staging : jamais déduite de NODE_ENV, du nom de base ou d'une IP.
+ */
+
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+const ARGV = process.argv.slice(2);
+const EXECUTE = ARGV.includes('--execute');
+if (!EXECUTE) {
+  // Lecture seule imposée AVANT le chargement de db.js (pg lit PGOPTIONS).
+  process.env.PGOPTIONS = `${process.env.PGOPTIONS ? process.env.PGOPTIONS + ' ' : ''}-c default_transaction_read_only=on`;
 }
-async function inspect(q=db){
- const {rows:[identity]}=await q.query(`SELECT current_database() AS database_name,
- current_user AS database_user,inet_server_addr()::text AS server_ip,
- inet_server_port() AS server_port`);
- const {rows:tables}=await q.query("SELECT tablename FROM pg_tables WHERE schemaname='public'");
- const existing=new Set(tables.map(x=>x.tablename));
- const roots=TARGETS.filter(x=>existing.has(x));
- const {rows:edges}=await q.query(`SELECT parent.relname AS referenced_table,child.relname AS referencing_table
- FROM pg_constraint c
- JOIN pg_class child ON child.oid=c.conrelid
- JOIN pg_class parent ON parent.oid=c.confrelid
- JOIN pg_namespace nc ON nc.oid=child.relnamespace
- JOIN pg_namespace np ON np.oid=parent.relnamespace
- WHERE c.contype='f' AND nc.nspname='public' AND np.nspname='public'`);
- const closure=computeCascadeClosure(roots,edges);
- const counts={};
- for(const table of closure){
-  const {rows:[row]}=await q.query('SELECT count(*)::bigint AS n FROM '+identifier(table));
-  counts[table]=Number(row.n);
- }
- const plan=assess(roots,edges,counts);
- return {purpose:'GOLDEN_STAGING_DEEP_CLEAN_INVENTORY',identity,
-  runtime:process.env.KOMERCE_ENV||process.env.NODE_ENV||null,...plan,
-  hard_requirements:['Prove Railway staging service and database identity out of band',
-   'Take restorable database backup and verify restore procedure',
-   'Define admin rebootstrap and revoke affected authentication sessions',
-   'Review every CASCADE table and financial audit/legal retention scope',
-   'Obtain explicit operator confirmation of final deletion plan'],
-  warnings:['This script cannot prove staging from database_name, private IP or NODE_ENV.',
-   'Historical financial audit records might be subject to retention requirements.',
-   'This is inventory only; no delete, truncate or account mutation exists.'],
-  writes:0};
+
+const POLICY_PATH = path.join(__dirname, '..', 'governance', 'golden-staging-clean-policy.json');
+const CONFIRM_TOKEN = 'DELETE_GOLDEN_STAGING_TEST_DATA';
+const MAX_BACKUP_AGE_H = 24;
+
+const ident = (x) => {
+  if (!/^[a-z_][a-z0-9_]*$/.test(x)) throw new Error('UNSAFE_IDENTIFIER');
+  return `"${x}"`;
+};
+const sha = (x) => crypto.createHash('sha256').update(typeof x === 'string' ? x : JSON.stringify(x)).digest('hex');
+const maskEmail = (e) => (e ? e.replace(/^(.{2}).*(@.*)$/, '$1***$2') : null);
+
+function loadPolicy() {
+  const raw = fs.readFileSync(POLICY_PATH, 'utf8');
+  return { ...JSON.parse(raw), policy_sha256: sha(raw) };
 }
-if(require.main===module){
- if(process.argv.includes('--execute')||process.argv.includes('--apply')){
-  console.error('READ_ONLY_INVENTORY_NO_EXECUTION');process.exitCode=2;
- }else inspect().then(x=>console.log(JSON.stringify(x,null,2)))
-  .catch(e=>{console.error(e.message);process.exitCode=1;})
-  .finally(()=>db.pool.end());
+
+// ── Fonctions pures (testées sans base) ────────────────────────────────────────────────
+
+/** Classe chaque table ; rapporte non classées et entrées périmées de la politique. */
+function classifyTables(existing, policy) {
+  const cls = new Map();
+  const dup = [];
+  for (const [name, list] of Object.entries(policy.classes)) {
+    for (const t of list) { if (cls.has(t)) dup.push(t); cls.set(t, name); }
+  }
+  for (const t of Object.keys(policy.user_scoped_delete || {})) { if (cls.has(t)) dup.push(t); cls.set(t, 'user_scoped'); }
+  cls.set('users', 'users');
+  const unclassified = existing.filter((t) => !cls.has(t)).sort();
+  const stale = [...cls.keys()].filter((t) => !existing.includes(t)).sort();
+  return { cls, unclassified, stale, duplicates: dup };
 }
-module.exports={inspect,assess,TARGETS,NEVER_PURGE};
+
+/** Utilisateurs : keep (rôle protégé / liste explicite), test (motif ou liste explicite), unclassified. */
+function classifyUsers(users, policy, { keepEmails = [], testEmails = [] } = {}) {
+  const pats = policy.users.test_email_patterns.map((p) => new RegExp(p, 'i'));
+  const keepSet = new Set(keepEmails.map((e) => e.toLowerCase()));
+  const testSet = new Set(testEmails.map((e) => e.toLowerCase()));
+  const out = { keep: [], test: [], unclassified: [] };
+  for (const u of users) {
+    const email = (u.email || '').toLowerCase();
+    if (keepSet.has(email) || policy.users.keep_roles.includes(u.role)) out.keep.push(u);
+    else if (testSet.has(email) || pats.some((re) => re.test(email))) out.test.push(u);
+    else out.unclassified.push(u);
+  }
+  return out;
+}
+
+/** Ordre de suppression : enfants avant parents (tri topologique déterministe). Auto-références ignorées. */
+function deletionOrder(tables, edges) {
+  const set = new Set(tables);
+  const children = new Map(tables.map((t) => [t, new Set()]));
+  const indeg = new Map(tables.map((t) => [t, 0]));
+  // edge: child REFERENCES parent  ⇒  child doit être supprimé avant parent
+  for (const e of edges) {
+    if (!set.has(e.child) || !set.has(e.parent) || e.child === e.parent) continue;
+    if (!children.get(e.child).has(e.parent)) { children.get(e.child).add(e.parent); indeg.set(e.parent, indeg.get(e.parent) + 1); }
+  }
+  const ready = [...tables].filter((t) => indeg.get(t) === 0).sort();
+  const order = [];
+  while (ready.length) {
+    const t = ready.shift();
+    order.push(t);
+    for (const p of [...children.get(t)].sort()) {
+      indeg.set(p, indeg.get(p) - 1);
+      if (indeg.get(p) === 0) { ready.push(p); ready.sort(); }
+    }
+  }
+  return { order, cycle: tables.filter((t) => !order.includes(t)).sort() };
+}
+
+/**
+ * Tables « gardées » (trigger BEFORE DELETE d'immutabilité) : DELETE impossible par conception.
+ * Seule voie sans contourner les triggers ni CASCADE : TRUNCATE d'une liste EXPLICITE fermée par FK
+ * (PostgreSQL refuse le TRUNCATE si une table hors liste référence un membre → aucun effet de bord possible).
+ * Fermeture = tables gardées + toutes les tables supprimées qui les référencent (transitivement).
+ */
+function truncateSet(doomed, guarded, edges) {
+  const doomedSet = new Set(doomed);
+  const set = new Set(doomed.filter((t) => guarded.includes(t)));
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const e of edges) {
+      if (set.has(e.parent) && doomedSet.has(e.child) && !set.has(e.child)) { set.add(e.child); grew = true; }
+    }
+  }
+  return [...set].sort();
+}
+
+const DELETE_ACTION = { a: 'NO ACTION', r: 'RESTRICT', c: 'CASCADE', n: 'SET NULL', d: 'SET DEFAULT' };
+
+function hashPlan(plan) {
+  return sha({ policy: plan.policy_sha256, steps: plan.steps, preserved: plan.preserved_counts, users: plan.users_plan });
+}
+
+/**
+ * Prérequis d'exécution. Chaque entrée : { id, status: MET|MISSING, detail }.
+ * `live` = { system_identifier, database_name, counts, plan_sha256, retention_rows } relevé en base.
+ */
+function evaluatePrerequisites({ manifest, flags, env, live, now = Date.now() }) {
+  const out = [];
+  const add = (id, ok, detail) => out.push({ id, status: ok ? 'MET' : 'MISSING', detail });
+  const m = manifest || {};
+  const idn = m.identity || {};
+  const rw = idn.railway || {};
+  add('RUNTIME_RAILWAY_STAGING', env.RAILWAY_ENVIRONMENT_NAME === 'staging', 'RAILWAY_ENVIRONMENT_NAME injecté par le runtime Railway doit valoir "staging" (signal nécessaire, jamais suffisant)');
+  add('IDENTITY_ATTESTED', !!(idn.system_identifier && rw.project_id && rw.environment === 'staging' && rw.service && rw.attested_by && rw.attested_at),
+    'manifest.identity : system_identifier + railway{project_id, environment:"staging", service, attested_by, attested_at} relevés hors bande');
+  add('IDENTITY_MATCHES_DB', !!live.system_identifier && idn.system_identifier === live.system_identifier && idn.database_name === live.database_name,
+    `system_identifier/base courants (${live.system_identifier || 'inconnu'} / ${live.database_name}) doivent égaler ceux attestés`);
+  add('NOT_DECLARED_PRODUCTION', !(m.identity && Array.isArray(m.identity.production_system_identifiers) && m.identity.production_system_identifiers.includes(live.system_identifier)),
+    'le system_identifier courant ne doit figurer dans aucune liste de production déclarée');
+  const b = m.backup || {};
+  const age = b.restore_verified_at ? (now - Date.parse(b.restore_verified_at)) / 3600000 : Infinity;
+  add('BACKUP_RESTORABLE_VERIFIED', !!(b.artifact && /^[0-9a-f]{64}$/.test(b.sha256 || '') && age >= 0 && age <= MAX_BACKUP_AGE_H && b.restore_target),
+    `manifest.backup : artifact + sha256 + restore_target + restore_verified_at (< ${MAX_BACKUP_AGE_H} h)`);
+  const bc = b.table_counts || {};
+  const drift = Object.keys(live.counts || {}).filter((t) => bc[t] !== live.counts[t]);
+  add('BACKUP_EQUALS_CURRENT_STATE', Object.keys(bc).length > 0 && drift.length === 0, drift.length ? `écarts sauvegarde/état courant : ${drift.slice(0, 8).join(', ')}` : 'comptes de la sauvegarde restaurée = comptes courants');
+  add('PLAN_REVIEWED', !!flags.planSha && flags.planSha === live.plan_sha256, 'plan_sha256 du dry-run relu doit égaler le plan recalculé (aucune dérive)');
+  add('OPERATOR_CONFIRMATION', flags.confirm === CONFIRM_TOKEN, `--confirm=${CONFIRM_TOKEN}`);
+  const needsWaiver = (live.retention_rows || 0) > 0 || !!live.immutability_tables_sha256;
+  const rt = m.retention || {};
+  add('RETENTION_WAIVER_EXPORTED', !needsWaiver || !!(rt.waiver_ref && /^[0-9a-f]{64}$/.test(rt.export_sha256 || '')),
+    needsWaiver ? `${live.retention_rows} ligne(s) financières à supprimer : renonciation (waiver_ref) + export archivé (export_sha256) requis` : 'aucune ligne financière concernée');
+  add('IMMUTABILITY_BYPASS_ACKNOWLEDGED', !live.immutability_tables_sha256 || rt.immutability_bypass_tables_sha256 === live.immutability_tables_sha256,
+    live.immutability_tables_sha256 ? 'tables à triggers d\u2019immutabilité supprimées par TRUNCATE de liste : manifest.retention.immutability_bypass_tables_sha256 = immutability_bypass.tables_sha256 du dry-run relu' : 'aucune table gardée concernée');
+  const ad = m.admin || {};
+  add('ADMIN_REBOOTSTRAP_AND_SESSIONS', !!(ad.rebootstrap_ready === true && ad.session_revocation && ad.admin_email),
+    'manifest.admin : admin_email + rebootstrap_ready:true (scripts/reset-admin.js) + session_revocation (ex. rotation JWT_SECRET planifiée)');
+  return out;
+}
+
+// ── Inspection (lecture seule) ─────────────────────────────────────────────────────────
+
+async function inspect(q, opts = {}) {
+  const policy = opts.policy || loadPolicy();
+  const { rows: [ident0] } = await q.query(`SELECT current_database() AS database_name, current_user AS database_user,
+      current_setting('server_version') AS server_version`);
+  let systemIdentifier = null;
+  try { systemIdentifier = (await q.query('SELECT system_identifier::text AS s FROM pg_control_system()')).rows[0].s; } catch (_) { /* droits */ }
+  const identity = { ...ident0, system_identifier: systemIdentifier,
+    runtime_reported: { RAILWAY_PROJECT_ID: process.env.RAILWAY_PROJECT_ID || null, RAILWAY_ENVIRONMENT_NAME: process.env.RAILWAY_ENVIRONMENT_NAME || null,
+      RAILWAY_SERVICE_NAME: process.env.RAILWAY_SERVICE_NAME || null },
+    proof: 'AUCUNE : cette sortie ne prouve pas staging (nom de base, IP privée et NODE_ENV ignorés). Preuve = manifest attesté hors bande + system_identifier.' };
+
+  const { rows: tr } = await q.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY 1");
+  const existing = tr.map((r) => r.tablename);
+  const { cls, unclassified, stale, duplicates } = classifyTables(existing, policy);
+
+  const { rows: fk } = await q.query(`SELECT c.conname, child.relname AS child, parent.relname AS parent, c.confdeltype AS action,
+        array_length(c.conkey,1) AS ncols,
+        (SELECT a.attname FROM pg_attribute a WHERE a.attrelid=c.conrelid AND a.attnum=c.conkey[1]) AS child_col
+      FROM pg_constraint c JOIN pg_class child ON child.oid=c.conrelid JOIN pg_class parent ON parent.oid=c.confrelid
+      WHERE c.contype='f' AND child.relnamespace='public'::regnamespace AND parent.relnamespace='public'::regnamespace
+      ORDER BY child.relname, c.conname`);
+
+  const { rows: users } = await q.query('SELECT id, email, role FROM users ORDER BY id');
+  const uc = classifyUsers(users, policy, opts);
+  const testIds = uc.test.map((u) => u.id);
+
+  const wholesale = (c) => [...cls.entries()].filter(([t, k]) => k === c && existing.includes(t)).map(([t]) => t).sort();
+  const deleteAll = wholesale('delete_all');
+  const retention = wholesale('retention_financial');
+  const userScoped = Object.keys(policy.user_scoped_delete || {}).filter((t) => existing.includes(t));
+
+  // Comptes
+  const count = async (sql, params) => Number((await q.query(sql, params)).rows[0].n);
+  const counts = {};
+  for (const t of [...deleteAll, ...retention]) counts[t] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`);
+  for (const t of userScoped) counts[t] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)} WHERE ${ident(policy.user_scoped_delete[t])} = ANY($1::uuid[])`, [testIds]);
+  counts.users = testIds.length;
+  const preservedCounts = {};
+  for (const t of wholesale('preserve')) preservedCounts[t] = await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`);
+  for (const t of userScoped) preservedCounts[`${t}#kept`] = (await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`)) - counts[t];
+  preservedCounts['users#kept'] = uc.keep.length;
+
+  // Dépendances : toute FK dont le parent est (en partie) supprimé
+  const doomedWhole = new Set([...deleteAll, ...retention]);
+  const doomedUsers = testIds.length > 0;
+  const blockers = [];
+  const dependencies = [];
+  for (const e of fk) {
+    const parentDoomed = doomedWhole.has(e.parent) || (e.parent === 'users' && doomedUsers);
+    if (!parentDoomed) continue;
+    const childClass = cls.get(e.child) || 'unclassified';
+    if (childClass === 'delete_all' || (childClass === 'retention_financial' && doomedWhole.has(e.child))) {
+      dependencies.push({ child: e.child, parent: e.parent, on_delete: DELETE_ACTION[e.action], child_class: childClass, rows_referencing: null });
+      continue;
+    }
+    if (childClass === 'users' && e.parent === 'users') continue; // auto-référence users
+    if (childClass === 'user_scoped' && e.parent === 'users') {
+      dependencies.push({ child: e.child, parent: e.parent, on_delete: DELETE_ACTION[e.action], child_class: 'user_scoped', rows_referencing: counts[e.child] });
+      continue;
+    }
+    if (e.ncols > 1) { blockers.push({ code: 'COMPOSITE_FK_UNVERIFIED', detail: `${e.child}.${e.conname} → ${e.parent}` }); continue; }
+    const col = ident(e.child_col);
+    const refSql = e.parent === 'users'
+      ? `SELECT count(*)::bigint AS n FROM ${ident(e.child)} WHERE ${col} = ANY($1::uuid[])`
+      : `SELECT count(*)::bigint AS n FROM ${ident(e.child)} WHERE ${col} IS NOT NULL`;
+    const n = await count(refSql, e.parent === 'users' ? [testIds] : []);
+    dependencies.push({ child: e.child, parent: e.parent, on_delete: DELETE_ACTION[e.action], child_class: childClass, rows_referencing: n });
+    if (n > 0 && childClass === 'preserve') {
+      blockers.push({ code: e.action === 'n' ? 'PRESERVED_ROWS_WOULD_BE_NULLIFIED' : e.action === 'c' ? 'PRESERVED_ROWS_WOULD_BE_CASCADE_DELETED' : 'PRESERVED_ROWS_REFERENCE_DOOMED_ROWS',
+        detail: `${e.child}.${e.child_col} → ${e.parent} : ${n} ligne(s) conservée(s) pointent vers des données à supprimer (${DELETE_ACTION[e.action]})` });
+    } else if (childClass === 'unclassified') {
+      blockers.push({ code: 'UNCLASSIFIED_DEPENDENT', detail: `${e.child} → ${e.parent}` });
+    }
+  }
+  // Structure : FK de tables conservées vers tables supprimées avec CASCADE (dangereux même à 0 ligne aujourd'hui)
+  const structural = fk.filter((e) => (doomedWhole.has(e.parent) || e.parent === 'users') && cls.get(e.child) === 'preserve' && e.action === 'c')
+    .map((e) => `${e.child}.${e.child_col} → ${e.parent} (CASCADE)`);
+
+  const retentionRows = retention.reduce((s, t) => s + counts[t], 0);
+  const ordersN = counts.orders || 0;
+  if (unclassified.length) blockers.push({ code: 'UNCLASSIFIED_TABLES', detail: unclassified.join(', ') });
+  if (duplicates.length) blockers.push({ code: 'POLICY_DUPLICATE_TABLES', detail: duplicates.join(', ') });
+  if (stale.length) blockers.push({ code: 'POLICY_STALE_TABLES', detail: stale.join(', ') });
+  if (uc.unclassified.length) blockers.push({ code: 'UNCLASSIFIED_USERS', detail: `${uc.unclassified.length} compte(s) ni protégé ni de test : fournir --keep-emails ou --test-emails` });
+  if (ordersN > policy.limits.max_orders) blockers.push({ code: 'LIMIT_ORDERS_EXCEEDED', detail: `${ordersN} > ${policy.limits.max_orders} : environnement inattendu` });
+  if (testIds.length > policy.limits.max_users) blockers.push({ code: 'LIMIT_USERS_EXCEEDED', detail: `${testIds.length} > ${policy.limits.max_users}` });
+  if (!uc.keep.length) blockers.push({ code: 'NO_ADMIN_PRESERVED', detail: 'aucun compte administrateur conservé : rebootstrap impossible à valider' });
+
+  const doomedAll = [...deleteAll, ...retention];
+  const { rows: gr } = await q.query(`SELECT c.relname AS t, array_agg(DISTINCT t.tgname ORDER BY t.tgname) AS triggers
+      FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
+     WHERE NOT t.tgisinternal AND c.relnamespace='public'::regnamespace AND (t.tgtype & 1)=1 AND (t.tgtype & 2)=2 AND (t.tgtype & 8)=8
+     GROUP BY c.relname ORDER BY 1`);
+  const guardedAll = gr.map((r) => r.t);
+  const allEdges = fk.map((e) => ({ child: e.child, parent: e.parent }));
+  const tset = truncateSet(doomedAll, guardedAll, allEdges);
+  for (const e of fk) {
+    if (tset.includes(e.parent) && !tset.includes(e.child) && e.child !== 'users') {
+      blockers.push({ code: 'TRUNCATE_BLOCKED_BY_FK_FROM_OUTSIDE_SET', detail: `${e.child}.${e.child_col} → ${e.parent} : table hors liste (${cls.get(e.child) || '?'}) référence un membre du TRUNCATE` });
+    }
+  }
+  const immutability = { tables: tset, tables_sha256: sha(tset.join(',')), rows: tset.reduce((n, t) => n + counts[t], 0),
+    guard_triggers: Object.fromEntries(gr.filter((r) => tset.includes(r.t)).map((r) => [r.t, r.triggers])),
+    note: 'DELETE interdit par trigger d\u2019immutabilité sur ces tables : suppression par TRUNCATE de liste explicite (sans CASCADE). Accord explicite requis (manifest.retention.immutability_bypass_tables_sha256).' };
+  const { order, cycle } = deletionOrder(doomedAll.filter((t) => !tset.includes(t)), fk.filter((e) => e.action !== 'n').map((e) => ({ child: e.child, parent: e.parent })));
+  if (cycle.length) blockers.push({ code: 'FK_CYCLE', detail: cycle.join(', ') });
+  const steps = [
+    ...(tset.length ? [{ seq: 0, table: tset.join(','), class: 'truncate_group', method: 'TRUNCATE', scope: 'ALL_ROWS (liste explicite fermée par FK)', rows: immutability.rows, members: tset }] : []),
+    ...order.map((t) => ({ seq: 0, table: t, class: cls.get(t), method: 'DELETE', scope: 'ALL_ROWS', rows: counts[t] })),
+    ...userScoped.map((t) => ({ seq: 0, table: t, class: 'user_scoped', method: 'DELETE', scope: `${policy.user_scoped_delete[t]} IN test_users`, rows: counts[t] })),
+    { seq: 0, table: 'users', class: 'users', method: 'DELETE', scope: 'id IN test_users', rows: testIds.length },
+  ].map((s, i) => ({ ...s, seq: i + 1 }));
+  // user_scoped doivent précéder users et suivre leurs propres enfants : ils sont placés avant users (ci-dessus)
+
+  const foundation = {};
+  for (const t of policy.foundation_checks) if (existing.includes(t)) foundation[t] = preservedCounts[t] ?? await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`);
+  const plan = { policy_sha256: policy.policy_sha256, steps, preserved_counts: preservedCounts,
+    users_plan: { delete: testIds.length, keep: uc.keep.length, test_ids_sha256: sha(testIds.join(',')) } };
+  const plan_sha256 = hashPlan(plan);
+
+  const live = { system_identifier: systemIdentifier, database_name: ident0.database_name, counts: { ...counts, ...Object.fromEntries(Object.entries(foundation).map(([k, v]) => [`foundation:${k}`, v])) },
+    plan_sha256, retention_rows: retentionRows };
+  live.immutability_tables_sha256 = tset.length ? immutability.tables_sha256 : null;
+  const prerequisites = evaluatePrerequisites({ manifest: opts.manifest, flags: opts.flags || {}, env: process.env, live });
+
+  return {
+    purpose: 'GOLDEN_STAGING_DEEP_CLEAN_V2', mode: opts.mode || 'DRY_RUN', writes: 0, identity,
+    decision: blockers.length ? 'PLAN_BLOCKED' : prerequisites.every((p) => p.status === 'MET') ? 'READY_TO_EXECUTE' : 'PLAN_READY_PREREQUISITES_MISSING',
+    plan_sha256, totals: { rows_to_delete: steps.reduce((s, x) => s + x.rows, 0), tables_touched: steps.reduce((n, s) => n + (s.rows > 0 ? (s.members ? s.members.filter((t) => counts[t] > 0).length : 1) : 0), 0),
+      financial_retention_rows: retentionRows, tables_preserved: Object.keys(preservedCounts).length },
+    immutability_bypass: immutability, steps, users: { delete: uc.test.length, keep: uc.keep.map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role })),
+      unclassified: uc.unclassified.slice(0, 50).map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role })) },
+    dependencies, protections: { foundation_counts: foundation, preserved_tables: wholesale('preserve').length, structural_cascade_risks: structural,
+      guarantees: ['aucun TRUNCATE ... CASCADE', 'triggers jamais désactivés', 'session_replication_role jamais modifié', 'DELETE explicite avec nombre de lignes vérifié par statement', 'TRUNCATE de liste explicite seulement pour les tables gardées par trigger (accord lié par empreinte)'] },
+    blockers, execute_prerequisites: prerequisites,
+    post_steps: ['scripts/reset-admin.js (rebootstrap admin)', 'rotation JWT_SECRET (révocation des sessions existantes)', 'audit post-purge : node scripts/audit-golden-staging-deep-clean.js --dry-run → 0 ligne à supprimer'],
+    _live: live, // retiré de la sortie CLI
+  };
+}
+
+// ── Exécution (verrouillée) ────────────────────────────────────────────────────────────
+
+async function execute(db, report, opts, policy) {
+  const failed = report.execute_prerequisites.filter((p) => p.status !== 'MET');
+  if (report.blockers.length || failed.length) {
+    const e = new Error('EXECUTION_REFUSED'); e.report = { blockers: report.blockers, prerequisites_missing: failed }; throw e;
+  }
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SET LOCAL lock_timeout = '10s'");
+    await client.query("SET LOCAL statement_timeout = '120s'");
+    const { rows: users } = await client.query('SELECT id, email, role FROM users ORDER BY id');
+    const testIds = classifyUsers(users, policy, opts).test.map((u) => u.id);
+    // Rejoue l'inspection DANS la transaction (verrous) et exige le même plan
+    const recheck = await inspect(client, { ...opts, policy, mode: 'EXECUTE_RECHECK' });
+    if (recheck.plan_sha256 !== report.plan_sha256 || recheck.blockers.length) throw new Error('PLAN_DRIFT_ABORT');
+    for (const s of recheck.steps) {
+      if (s.method === 'TRUNCATE') {
+        // Liste explicite, jamais de CASCADE ni de RESTART IDENTITY : PostgreSQL refuse si une table hors liste référence un membre.
+        await client.query(`TRUNCATE TABLE ${s.members.map(ident).join(', ')}`);
+        continue;
+      }
+      let r;
+      if (s.class === 'users') r = await client.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [testIds]);
+      else if (s.class === 'user_scoped') r = await client.query(`DELETE FROM ${ident(s.table)} WHERE ${ident(policy.user_scoped_delete[s.table])} = ANY($1::uuid[])`, [testIds]);
+      else r = await client.query(`DELETE FROM ${ident(s.table)}`);
+      if (r.rowCount !== s.rows) throw new Error(`ROW_COUNT_MISMATCH ${s.table}: ${r.rowCount} != ${s.rows}`);
+    }
+    // Post-contrôles : tables conservées inchangées, aucune FK orpheline
+    const after = await inspect(client, { ...opts, policy, mode: 'EXECUTE_POSTCHECK' });
+    for (const [t, n] of Object.entries(recheck.protections.foundation_counts)) {
+      if (after.protections.foundation_counts[t] !== n) throw new Error(`FOUNDATION_CHANGED ${t}`);
+    }
+    for (const [t, n] of Object.entries(recheck._live.counts)) {
+      if (t.startsWith('foundation:')) continue;
+      const left = after._live.counts[t];
+      if (left !== 0) throw new Error(`RESIDUE ${t}: ${left} (avant ${n})`);
+    }
+    const { rows: fks } = await client.query(`SELECT c.conname, child.relname AS child, parent.relname AS parent,
+        (SELECT a.attname FROM pg_attribute a WHERE a.attrelid=c.conrelid AND a.attnum=c.conkey[1]) AS child_col,
+        (SELECT a.attname FROM pg_attribute a WHERE a.attrelid=c.confrelid AND a.attnum=c.confkey[1]) AS parent_col
+      FROM pg_constraint c JOIN pg_class child ON child.oid=c.conrelid JOIN pg_class parent ON parent.oid=c.confrelid
+      WHERE c.contype='f' AND array_length(c.conkey,1)=1 AND child.relnamespace='public'::regnamespace AND parent.relnamespace='public'::regnamespace`);
+    for (const f of fks) {
+      const { rows: [o] } = await client.query(`SELECT count(*)::bigint AS n FROM ${ident(f.child)} c WHERE c.${ident(f.child_col)} IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM ${ident(f.parent)} p WHERE p.${ident(f.parent_col)} = c.${ident(f.child_col)})`);
+      if (Number(o.n) > 0) throw new Error(`ORPHANS ${f.child}.${f.child_col} → ${f.parent}: ${o.n}`);
+    }
+    await client.query('COMMIT');
+    return { executed: true, deleted: recheck.steps.map((s) => ({ table: s.table, rows: s.rows })), plan_sha256: report.plan_sha256 };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally { client.release(); }
+}
+
+// ── CLI ────────────────────────────────────────────────────────────────────────────────
+
+function arg(name) { const a = ARGV.find((x) => x.startsWith(`--${name}=`)); return a ? a.slice(name.length + 3) : null; }
+const list = (v) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : []);
+function readList(file) { return file ? fs.readFileSync(file, 'utf8').split(/\r?\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('#')) : []; }
+
+async function main() {
+  const db = require('../db');
+  try {
+    const policy = loadPolicy();
+    const manifest = arg('manifest') ? JSON.parse(fs.readFileSync(arg('manifest'), 'utf8')) : null;
+    const opts = { policy, manifest, keepEmails: [...list(arg('keep-emails')), ...readList(arg('keep-file'))],
+      testEmails: [...list(arg('test-emails')), ...readList(arg('test-file'))],
+      flags: { planSha: arg('plan-sha256'), confirm: arg('confirm') }, mode: EXECUTE ? 'EXECUTE' : 'DRY_RUN' };
+    const { rows: [ro] } = await db.query('SHOW default_transaction_read_only');
+    if (!EXECUTE && ro.default_transaction_read_only !== 'on') throw new Error('Session non lecture seule : arrêt (garde-fou).');
+    const report = await inspect(db, opts);
+    if (ARGV.includes('--print-counts')) { process.stdout.write(`${JSON.stringify(report._live.counts, null, 2)}\n`); return; }
+    const cli = { ...report }; delete cli._live;
+    if (EXECUTE) {
+      const result = await execute(db, report, opts, policy);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return;
+    }
+    const json = JSON.stringify(cli, null, 2);
+    if (arg('out')) fs.writeFileSync(arg('out'), json);
+    process.stdout.write(`${json}\n`);
+  } finally { await db.pool.end().catch(() => {}); }
+}
+
+if (require.main === module) {
+  main().catch((e) => {
+    process.stderr.write(`${e.message}\n${e.report ? JSON.stringify(e.report, null, 2) + '\n' : ''}`);
+    process.exitCode = e.message === 'EXECUTION_REFUSED' ? 3 : 1;
+  });
+}
+
+module.exports = { truncateSet, inspect, execute, classifyTables, classifyUsers, deletionOrder, evaluatePrerequisites, hashPlan, loadPolicy, CONFIRM_TOKEN };
