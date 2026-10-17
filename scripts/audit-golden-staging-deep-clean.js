@@ -74,19 +74,43 @@ function classifyTables(existing, policy) {
   return { cls, unclassified, stale, duplicates: dup };
 }
 
-/** Utilisateurs : keep (rôle protégé / liste explicite), test (motif ou liste explicite), unclassified. */
-function classifyUsers(users, policy, { keepEmails = [], testEmails = [] } = {}) {
+/**
+ * Utilisateurs : classification déterministe par identifiant. AUCUNE protection implicite par rôle :
+ * keep = liste explicite de l'opérateur (e-mail ou id) ; test = liste explicite ou motif ; sinon unclassified.
+ * Un keep explicite l'emporte toujours sur un motif de test. Chaque compte reçoit un motif (reason).
+ */
+function classifyUsers(users, policy, { keepEmails = [], keepIds = [], testEmails = [] } = {}) {
   const pats = policy.users.test_email_patterns.map((p) => new RegExp(p, 'i'));
   const keepSet = new Set(keepEmails.map((e) => e.toLowerCase()));
+  const keepIdSet = new Set(keepIds.map(String));
   const testSet = new Set(testEmails.map((e) => e.toLowerCase()));
-  const out = { keep: [], test: [], unclassified: [] };
-  for (const u of users) {
+  const out = { keep: [], test: [], unclassified: [], all: [] };
+  const sorted = [...users].sort((x, y) => String(x.id).localeCompare(String(y.id)));
+  for (const u of sorted) {
     const email = (u.email || '').toLowerCase();
-    if (keepSet.has(email) || policy.users.keep_roles.includes(u.role)) out.keep.push(u);
-    else if (testSet.has(email) || pats.some((re) => re.test(email))) out.test.push(u);
-    else out.unclassified.push(u);
+    let cls; let reason;
+    if (keepSet.has(email)) { cls = 'keep'; reason = 'KEEP_EXPLICIT_EMAIL'; }
+    else if (keepIdSet.has(String(u.id))) { cls = 'keep'; reason = 'KEEP_EXPLICIT_ID'; }
+    else if (testSet.has(email)) { cls = 'test'; reason = 'TEST_EXPLICIT_EMAIL'; }
+    else {
+      const i = pats.findIndex((re) => re.test(email));
+      if (i >= 0) { cls = 'test'; reason = `TEST_PATTERN_${i}`; } else { cls = 'unclassified'; reason = 'UNCLASSIFIED_NO_RULE'; }
+    }
+    const rec = { ...u, cls, reason };
+    out[cls === 'keep' ? 'keep' : cls === 'test' ? 'test' : 'unclassified'].push(u);
+    out.all.push(rec);
   }
   return out;
+}
+
+function userCounters(all) {
+  const c = { total: all.length, by_class: {}, by_reason: {}, by_role_class: {} };
+  for (const u of all) {
+    c.by_class[u.cls] = (c.by_class[u.cls] || 0) + 1;
+    c.by_reason[u.reason] = (c.by_reason[u.reason] || 0) + 1;
+    const k = `${u.role}:${u.cls}`; c.by_role_class[k] = (c.by_role_class[k] || 0) + 1;
+  }
+  return c;
 }
 
 /** Ordre de suppression : enfants avant parents (tri topologique déterministe). Auto-références ignorées. */
@@ -224,6 +248,7 @@ async function inspect(q, opts = {}) {
   const doomedUsers = testIds.length > 0;
   const blockers = [];
   const dependencies = [];
+  const userRefs = {};
   for (const e of fk) {
     const parentDoomed = doomedWhole.has(e.parent) || (e.parent === 'users' && doomedUsers);
     if (!parentDoomed) continue;
@@ -243,6 +268,10 @@ async function inspect(q, opts = {}) {
       ? `SELECT count(*)::bigint AS n FROM ${ident(e.child)} WHERE ${col} = ANY($1::uuid[])`
       : `SELECT count(*)::bigint AS n FROM ${ident(e.child)} WHERE ${col} IS NOT NULL`;
     const n = await count(refSql, e.parent === 'users' ? [testIds] : []);
+    if (e.parent === 'users' && n > 0 && childClass === 'preserve') {
+      const { rows: per } = await q.query(`SELECT ${col} AS uid, count(*)::int AS n FROM ${ident(e.child)} WHERE ${col} = ANY($1::uuid[]) GROUP BY ${col}`, [testIds]);
+      for (const r of per) (userRefs[r.uid] = userRefs[r.uid] || []).push({ ref: `${e.child}.${e.child_col}`, on_delete: DELETE_ACTION[e.action], rows: r.n });
+    }
     dependencies.push({ child: e.child, parent: e.parent, on_delete: DELETE_ACTION[e.action], child_class: childClass, rows_referencing: n });
     if (n > 0 && childClass === 'preserve') {
       blockers.push({ code: e.action === 'n' ? 'PRESERVED_ROWS_WOULD_BE_NULLIFIED' : e.action === 'c' ? 'PRESERVED_ROWS_WOULD_BE_CASCADE_DELETED' : 'PRESERVED_ROWS_REFERENCE_DOOMED_ROWS',
@@ -260,10 +289,11 @@ async function inspect(q, opts = {}) {
   if (unclassified.length) blockers.push({ code: 'UNCLASSIFIED_TABLES', detail: unclassified.join(', ') });
   if (duplicates.length) blockers.push({ code: 'POLICY_DUPLICATE_TABLES', detail: duplicates.join(', ') });
   if (stale.length) blockers.push({ code: 'POLICY_STALE_TABLES', detail: stale.join(', ') });
+  if (Object.keys(userRefs).length) blockers.push({ code: 'TEST_USERS_REFERENCED_BY_PROTECTED_ROWS', detail: `${Object.keys(userRefs).length} compte(s) de test référencé(s) par des lignes conservées (habilitations/audit) : voir users.classification[].blocked_by` });
   if (uc.unclassified.length) blockers.push({ code: 'UNCLASSIFIED_USERS', detail: `${uc.unclassified.length} compte(s) ni protégé ni de test : fournir --keep-emails ou --test-emails` });
   if (ordersN > policy.limits.max_orders) blockers.push({ code: 'LIMIT_ORDERS_EXCEEDED', detail: `${ordersN} > ${policy.limits.max_orders} : environnement inattendu` });
   if (testIds.length > policy.limits.max_users) blockers.push({ code: 'LIMIT_USERS_EXCEEDED', detail: `${testIds.length} > ${policy.limits.max_users}` });
-  if (!uc.keep.length) blockers.push({ code: 'NO_ADMIN_PRESERVED', detail: 'aucun compte administrateur conservé : rebootstrap impossible à valider' });
+  if (!uc.keep.length) blockers.push({ code: 'NO_ADMIN_PRESERVED', detail: 'aucun compte conservé explicitement (--keep-emails/--keep-ids/--keep-file) : le rôle admin ne protège pas' });
 
   const doomedAll = [...deleteAll, ...retention];
   const { rows: gr } = await q.query(`SELECT c.relname AS t, array_agg(DISTINCT t.tgname ORDER BY t.tgname) AS triggers
@@ -294,7 +324,7 @@ async function inspect(q, opts = {}) {
   const foundation = {};
   for (const t of policy.foundation_checks) if (existing.includes(t)) foundation[t] = preservedCounts[t] ?? await count(`SELECT count(*)::bigint AS n FROM ${ident(t)}`);
   const plan = { policy_sha256: policy.policy_sha256, steps, preserved_counts: preservedCounts,
-    users_plan: { delete: testIds.length, keep: uc.keep.length, test_ids_sha256: sha(testIds.join(',')) } };
+    users_plan: { delete: testIds.length, keep: uc.keep.length, test_ids_sha256: sha(testIds.join(',')), keep_ids_sha256: sha(uc.keep.map((u) => u.id).join(',')) } };
   const plan_sha256 = hashPlan(plan);
 
   const live = { system_identifier: systemIdentifier, database_name: ident0.database_name, counts: { ...counts, ...Object.fromEntries(Object.entries(foundation).map(([k, v]) => [`foundation:${k}`, v])) },
@@ -307,8 +337,11 @@ async function inspect(q, opts = {}) {
     decision: blockers.length ? 'PLAN_BLOCKED' : prerequisites.every((p) => p.status === 'MET') ? 'READY_TO_EXECUTE' : 'PLAN_READY_PREREQUISITES_MISSING',
     plan_sha256, totals: { rows_to_delete: steps.reduce((s, x) => s + x.rows, 0), tables_touched: steps.reduce((n, s) => n + (s.rows > 0 ? (s.members ? s.members.filter((t) => counts[t] > 0).length : 1) : 0), 0),
       financial_retention_rows: retentionRows, tables_preserved: Object.keys(preservedCounts).length },
-    immutability_bypass: immutability, steps, users: { delete: uc.test.length, keep: uc.keep.map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role })),
-      unclassified: uc.unclassified.slice(0, 50).map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role })) },
+    immutability_bypass: immutability, steps, users: { counters: userCounters(uc.all), delete: uc.test.length,
+      classification: uc.all.map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role, class: u.cls, reason: u.reason,
+        ...(userRefs[u.id] ? { blocked_by: userRefs[u.id] } : {}) })),
+      blocked_test_users: Object.keys(userRefs).sort(), keep: uc.keep.map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role })),
+      unclassified: uc.unclassified.map((u) => ({ id: u.id, email: maskEmail(u.email), role: u.role })) },
     dependencies, protections: { foundation_counts: foundation, preserved_tables: wholesale('preserve').length, structural_cascade_risks: structural,
       guarantees: ['aucun TRUNCATE ... CASCADE', 'triggers jamais désactivés', 'session_replication_role jamais modifié', 'DELETE explicite avec nombre de lignes vérifié par statement', 'TRUNCATE de liste explicite seulement pour les tables gardées par trigger (accord lié par empreinte)'] },
     blockers, execute_prerequisites: prerequisites,
@@ -385,7 +418,7 @@ async function main() {
   try {
     const policy = loadPolicy();
     const manifest = arg('manifest') ? JSON.parse(fs.readFileSync(arg('manifest'), 'utf8')) : null;
-    const opts = { policy, manifest, keepEmails: [...list(arg('keep-emails')), ...readList(arg('keep-file'))],
+    const opts = { policy, manifest, keepEmails: [...list(arg('keep-emails')), ...readList(arg('keep-file'))], keepIds: list(arg('keep-ids')),
       testEmails: [...list(arg('test-emails')), ...readList(arg('test-file'))],
       flags: { planSha: arg('plan-sha256'), confirm: arg('confirm') }, mode: EXECUTE ? 'EXECUTE' : 'DRY_RUN' };
     const { rows: [ro] } = await db.query('SHOW default_transaction_read_only');
@@ -411,4 +444,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { truncateSet, inspect, execute, classifyTables, classifyUsers, deletionOrder, evaluatePrerequisites, hashPlan, loadPolicy, CONFIRM_TOKEN };
+module.exports = { truncateSet, inspect, execute, classifyTables, classifyUsers, userCounters, deletionOrder, evaluatePrerequisites, hashPlan, loadPolicy, CONFIRM_TOKEN };
