@@ -78,9 +78,11 @@ describe('GET /products/margin-steering', () => {
   });
 
   it('admin : délègue au service lecture seule avec marché et filtres', async () => {
-    mockSteering.mockResolvedValue({ products: [] });
+    mockSteering.mockResolvedValue({ market_id: MID, since_days: 30, rules: {}, products: [], truncated: false });
     const r = await request(app).get(`/api/admin/costing/products/margin-steering?market_id=${MID}&product_id=${OID}&since_days=30`);
     expect(r.status).toBe(200);
+    expect(r.body.products).toEqual([]);
+    expect(r.body.market_id).toBe(MID);
     expect(mockSteering).toHaveBeenCalledWith({ marketId: MID, productId: OID, sinceDays: '30', limit: undefined });
   });
 
