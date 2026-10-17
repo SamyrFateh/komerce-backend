@@ -19,6 +19,7 @@ describe('KmcApi (api-client)', () => {
     expect(typeof window.KmcApi.getClients).toBe('function');
     expect(typeof window.KmcApi.getSales).toBe('function');
     expect(typeof window.KmcApi.getCosting).toBe('function');
+    expect(typeof window.KmcApi.getMarginSteering).toBe('function');
   });
 
   it('getControlTower appelle fetch', async () => {
