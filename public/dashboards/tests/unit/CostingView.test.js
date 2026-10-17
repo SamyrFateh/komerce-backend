@@ -55,6 +55,8 @@ describe('CostingView', () => {
       getCostingOrders: jest.fn().mockResolvedValue({ orders: [] }),
       getCostingProducts: jest.fn().mockResolvedValue({ products: [] }),
       getCostingRelais: jest.fn().mockResolvedValue({ relais: [] }),
+      getMarkets: jest.fn().mockResolvedValue({ markets: [] }),
+      getMarginSteering: jest.fn().mockResolvedValue({ products: [] }),
     }, overrides));
   }
 
@@ -345,5 +347,57 @@ describe('CostingView', () => {
     const View = loadIt();
     await View.render(main);
     expect(document.getElementById('cost-meta').textContent).toBe('');
+  });
+
+  describe('pilotage par la marge (lecture seule)', () => {
+    const product = {
+      product_id: 'p1', product_name: 'Robe', sales: 4, sales_measured: 3, target_margin_pct: 30,
+      cumulative_margin_pct: 22.5, gap_pts: -7.5, customs_impact_pts: 4.2, signal: 'review_suggested',
+      reasons: ['écart répété'], proposal: 'Revoir le prix de vente ou la marge cible (aucun ajustement automatique).',
+      by_shipment: [{ reference: 'SH-1', shipment_date: '2026-09-01', customs_kmf: 1000, fees_kmf: 200, customs_impact_pts: 4.2 }],
+      sales_detail: [{ sold_at: '2026-09-10T00:00:00Z', quantity: 1, sale_kmf: 20000, cost_kmf: 15000, margin_pct: 25, gap_pts: -5, status: 'final' }],
+    };
+
+    it('charge les marchés puis margin-steering par market_code, rend le tableau', async () => {
+      const api = setupApi({
+        getMarkets: jest.fn().mockResolvedValue({ markets: [{ code: 'KM', name: 'Comores' }] }),
+        getMarginSteering: jest.fn().mockResolvedValue({ products: [product] }),
+      });
+      const View = loadIt();
+      await View.render(main);
+      expect(api.getMarginSteering).toHaveBeenCalledWith({ market_code: 'KM' });
+      const cfg = dataTableCallFor(main.querySelector('#cost-steering-table'));
+      expect(cfg.rows).toHaveLength(1);
+      const byKey = Object.fromEntries(cfg.columns.map((c) => [c.key, c]));
+      expect(byKey.gap_pts.render(product)).toBe('-7.5 pts');
+      expect(byKey.signal.render(product)).toContain('Revue suggérée');
+      expect(byKey.signal.render(product)).toContain('aucun ajustement automatique');
+    });
+
+    it('inconnu affiché « — », jamais 0', async () => {
+      setupApi({
+        getMarkets: jest.fn().mockResolvedValue({ markets: [{ code: 'KM', name: 'Comores' }] }),
+        getMarginSteering: jest.fn().mockResolvedValue({ products: [{ ...product, cumulative_margin_pct: null, gap_pts: null, customs_impact_pts: null, target_margin_pct: null }] }),
+      });
+      const View = loadIt();
+      await View.render(main);
+      const cfg = dataTableCallFor(main.querySelector('#cost-steering-table'));
+      const byKey = Object.fromEntries(cfg.columns.map((c) => [c.key, c]));
+      const p = { cumulative_margin_pct: null, gap_pts: null, customs_impact_pts: null, target_margin_pct: null };
+      expect(byKey.cumulative_margin_pct.render(p)).toBe('—');
+      expect(byKey.gap_pts.render(p)).toBe('—');
+      expect(byKey.customs_impact_pts.render(p)).toBe('—');
+      expect(byKey.target_margin_pct.render(p)).toBe('—');
+    });
+
+    it('erreur API : error-state local, le reste de la vue survit', async () => {
+      setupApi({
+        getMarkets: jest.fn().mockResolvedValue({ markets: [{ code: 'KM', name: 'Comores' }] }),
+        getMarginSteering: jest.fn().mockRejectedValue(new Error('boom')),
+      });
+      const View = loadIt();
+      await View.render(main);
+      expect(main.querySelector('#cost-steering-table').innerHTML).toContain('boom');
+    });
   });
 });

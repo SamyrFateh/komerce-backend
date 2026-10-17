@@ -30,6 +30,7 @@
  *   - E : Rentabilité produits (top 10)
  *   - G : Rentabilité relais
  *   - H : Alertes coût avec actions (allouer)
+ *   - I : Pilotage par la marge (cible, cumul, écart, impact douane ; lecture seule)
  */
 
 (function (global) {
@@ -95,6 +96,18 @@
         </div>
       </section>
 
+      <section class="page-section">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Pilotage par la marge (par produit)</h3>
+            <select id="cost-steering-market" aria-label="Marché"></select>
+          </div>
+          <p style="font-size: var(--fs-xs); color: var(--text-tertiary);">Lecture seule : signaux et propositions, aucun prix modifié, aucun blocage. « — » = inconnu (jamais 0).</p>
+          <div id="cost-steering-table"></div>
+          <div id="cost-steering-detail"></div>
+        </div>
+      </section>
+
       <p id="cost-meta" style="margin-top: 16px; font-size: var(--fs-xs); color: var(--text-tertiary);"></p>
     `;
 
@@ -141,6 +154,7 @@
       await loadOrdersTable(filters);
       await loadProductsTable(filters);
       await loadRelaisTable(filters);
+      await initSteering();
 
       // Bouton refresh
       document.getElementById('cost-orders-refresh').addEventListener('click', async (e) => {
@@ -333,6 +347,91 @@
     } catch (err) {
       tableEl.innerHTML = `<div class="error-state">Erreur: ${esc(err.message)}</div>`; // FRESH-104
     }
+  }
+
+  const SIGNAL_LABEL = {
+    ok: ['OK', 'is-green'],
+    watch: ['À surveiller', 'is-orange'],
+    review_suggested: ['Revue suggérée', 'is-red'],
+    insufficient_data: ['Données insuffisantes', 'is-gray'],
+  };
+  const fmtPct = (v) => (v != null ? Number(v).toFixed(1) + '%' : '—');
+  const fmtKmf = (v) => (v != null ? Number(v).toLocaleString('fr-FR') : '—');
+  const fmtGap = (v) => (v != null ? (v > 0 ? '+' : '') + Number(v).toFixed(1) + ' pts' : '—');
+
+  async function initSteering() {
+    const sel = document.getElementById('cost-steering-market');
+    if (!sel) return;
+    try {
+      const res = await KmcApi.getMarkets();
+      const markets = (res && res.markets) || [];
+      sel.innerHTML = markets.map((m) => `<option value="${esc(m.code)}">${esc(m.code)} · ${esc(m.name)}</option>`).join('');
+      sel.addEventListener('change', () => loadSteering(sel.value));
+      if (markets.length) await loadSteering(markets[0].code);
+      else document.getElementById('cost-steering-table').innerHTML = '<div class="empty-state">Aucun marché</div>';
+    } catch (err) {
+      document.getElementById('cost-steering-table').innerHTML = `<div class="error-state">Erreur: ${esc(err.message)}</div>`;
+    }
+  }
+
+  async function loadSteering(marketCode) {
+    const tableEl = document.getElementById('cost-steering-table');
+    const detailEl = document.getElementById('cost-steering-detail');
+    detailEl.innerHTML = '';
+    tableEl.innerHTML = '<div class="loading-state"><span class="loader"></span></div>';
+    try {
+      const data = await KmcApi.getMarginSteering({ market_code: marketCode });
+      const products = data.products || [];
+      DataTable.render(tableEl, {
+        emptyText: 'Aucune vente mesurable sur la période',
+        columns: [
+          { key: 'product_name', label: 'Produit', render: (r) => esc(r.product_name || r.product_id || '—') },
+          { key: 'sales', label: 'Ventes', align: 'right', render: (r) => `${r.sales_measured}/${r.sales}` },
+          { key: 'target_margin_pct', label: 'Cible', align: 'right', render: (r) => fmtPct(r.target_margin_pct) },
+          { key: 'cumulative_margin_pct', label: 'Marge cumulée', align: 'right', render: (r) => fmtPct(r.cumulative_margin_pct) },
+          { key: 'gap_pts', label: 'Écart', align: 'right', render: (r) => fmtGap(r.gap_pts) },
+          { key: 'customs_impact_pts', label: 'Impact douane', align: 'right', render: (r) => (r.customs_impact_pts != null ? r.customs_impact_pts.toFixed(1) + ' pts' : '—') },
+          {
+            key: 'signal',
+            label: 'Signal',
+            render: (r) => {
+              const [label, cls] = SIGNAL_LABEL[r.signal] || [r.signal || '—', 'is-gray'];
+              const why = (r.reasons || []).map(esc).join(' · ');
+              const prop = r.proposal ? `<div style="font-size: var(--fs-xs);">${esc(r.proposal)}</div>` : '';
+              return `<span class="badge ${cls}">${esc(label)}</span>${why ? `<div style="font-size: var(--fs-xs);">${why}</div>` : ''}${prop}`;
+            },
+          },
+          { key: 'detail', label: '', render: (r) => `<a href="#" class="cost-steering-open" data-pid="${escAttr(r.product_id)}">détail</a>` },
+        ],
+        rows: products,
+      });
+      tableEl.querySelectorAll('.cost-steering-open').forEach((a) => a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = products.find((x) => String(x.product_id) === a.getAttribute('data-pid'));
+        if (p) renderSteeringDetail(detailEl, p);
+      }));
+    } catch (err) {
+      tableEl.innerHTML = `<div class="error-state">Erreur: ${esc(err.message)}</div>`;
+    }
+  }
+
+  function renderSteeringDetail(el, p) {
+    const ships = (p.by_shipment || []).map((s) => `<tr>
+      <td>${esc(s.reference || s.shipment_id || '—')}</td><td>${esc(s.shipment_date || '—')}</td>
+      <td style="text-align:right">${fmtKmf(s.customs_kmf)}</td><td style="text-align:right">${fmtKmf(s.fees_kmf)}</td>
+      <td style="text-align:right">${s.customs_impact_pts != null ? s.customs_impact_pts.toFixed(1) + ' pts' : '—'}</td></tr>`).join('');
+    const sales = (p.sales_detail || []).map((l) => `<tr>
+      <td>${esc(String(l.sold_at || '').slice(0, 10))}</td><td style="text-align:right">${esc(l.quantity)}</td>
+      <td style="text-align:right">${fmtKmf(l.sale_kmf)}</td><td style="text-align:right">${fmtKmf(l.cost_kmf)}</td>
+      <td style="text-align:right">${fmtPct(l.margin_pct)}</td><td style="text-align:right">${fmtGap(l.gap_pts)}</td>
+      <td>${esc(l.status === 'incomplete' ? 'incomplet' + (l.reason ? ' (' + l.reason + ')' : '') : l.status)}</td></tr>`).join('');
+    el.innerHTML = `
+      <h4 style="margin-top:16px">${esc(p.product_name || p.product_id)} — par expédition</h4>
+      <table class="data-table"><thead><tr><th>Expédition</th><th>Date</th><th>Douane</th><th>Frais</th><th>Impact</th></tr></thead>
+        <tbody>${ships || '<tr><td colspan="5">Aucune expédition</td></tr>'}</tbody></table>
+      <h4 style="margin-top:16px">Par vente</h4>
+      <table class="data-table"><thead><tr><th>Date</th><th>Qté</th><th>Vente</th><th>Coût</th><th>Marge</th><th>Écart</th><th>Statut</th></tr></thead>
+        <tbody>${sales || '<tr><td colspan="7">Aucune vente</td></tr>'}</tbody></table>`;
   }
 
   function bindAlertActions() {

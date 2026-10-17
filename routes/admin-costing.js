@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*, services/cost-allocation/real-margin-shadow.js, services/cost-allocation/product-margin-steering.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       customs_shipments, finance_config, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, products, refunds, purchase_lines, relais, supplier_execution_payments
+ * @db-read       customs_shipments, finance_config, markets, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, products, refunds, purchase_lines, relais, supplier_execution_payments
  * @db-write      finance_config
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -709,8 +709,12 @@ router.get('/real-margin-shadow', authenticate, requireAdmin, async (req, res, n
 // Pilotage par la marge, par produit (lecture seule ; aucun prix modifié, aucun blocage).
 router.get('/products/margin-steering', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const marketId = req.query.market_id ? String(req.query.market_id) : null;
-    if (!marketId || !_UUID_RE.test(marketId)) return res.status(400).json({ error: 'market_id requis (uuid)' });
+    let marketId = req.query.market_id ? String(req.query.market_id) : null;
+    if (!marketId && req.query.market_code) {
+      const { rows: [m] } = await db.query('SELECT id FROM markets WHERE code = $1', [String(req.query.market_code).toUpperCase()]);
+      marketId = m ? m.id : null;
+    }
+    if (!marketId || !_UUID_RE.test(marketId)) return res.status(400).json({ error: 'market_id (uuid) ou market_code requis' });
     const productId = req.query.product_id ? String(req.query.product_id) : null;
     if (productId && !_UUID_RE.test(productId)) return res.status(400).json({ error: 'product_id invalide' });
     const result = await productMarginSteering.listProductMarginSteering({
