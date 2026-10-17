@@ -640,12 +640,28 @@
     rootNode.classList.add('kmc-purchasing-workspace');
     rootNode.setAttribute('data-workspace-kind', 'purchasing');
     rootNode.appendChild(createHeader(doc));
-    if (context.poId) {\n      if (state.detail) renderPurchaseOrder(rootNode, ui, doc, state.detail, context);
-    if (state.detailError) {
-      const slot = createSection(rootNode, ui, 'Commande indisponible', state.detailError);
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', state.detailError));
+    if (context.poId) {
+      if (state.detail) renderPurchaseOrder(rootNode, ui, doc, state.detail, context);
+      if (state.detailError) {
+        const slot = createSection(rootNode, ui, 'Commande indisponible', state.detailError);
+        slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', state.detailError));
+      }
+      return;
     }
-    renderOpenLines(rootNode, ui, doc, state.openLines, context);
+    const nav = doc.createElement('nav');
+    nav.className = 'kmc-purchasing-tabs';
+    nav.setAttribute('aria-label', 'Étapes des achats fournisseurs');
+    [['prepare', 'À préparer'], ['ongoing', 'En cours'], ['history', 'Historique']].forEach(([key, label]) => {
+      const button = doc.createElement('button');
+      button.type = 'button';
+      button.className = 'kmc-purchasing-tab';
+      button.textContent = label;
+      button.setAttribute('aria-current', context.activeTab === key ? 'page' : 'false');
+      button.addEventListener('click', () => { context.activeTab = key; context.reload().catch(() => {}); });
+      nav.appendChild(button);
+    });
+    rootNode.appendChild(nav);
+    if (context.activeTab === 'prepare') renderOpenLines(rootNode, ui, doc, state.openLines, context);
     renderPurchaseOrderLists(rootNode, ui, doc, state.purchaseOrders, context);
   }
 
