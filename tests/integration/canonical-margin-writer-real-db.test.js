@@ -33,6 +33,18 @@ if (!hasIntegrationEnv) {
 
   jest.setTimeout(30000);
 
+  // Migration 302 : les règles existent (PATCH /api/admin/rules/:key exige une ligne) et sont DÉSACTIVÉES.
+  describe('migration 302 — règles applicatives du writer', () => {
+    it.each([writer.RULE_ENABLED, writer.RULE_PROVISIONAL])('%s existe, vaut 0, number 0..1, active', async (key) => {
+      const { rows } = await db.query('SELECT value, value_type, min_value, max_value, is_active FROM business_rules WHERE key = $1', [key]);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].value).toEqual({ value: 0 });
+      expect(rows[0].value_type).toBe('number');
+      expect([Number(rows[0].min_value), Number(rows[0].max_value)]).toEqual([0, 1]);
+      expect(rows[0].is_active).toBe(true);
+    });
+  });
+
   const RUN_TAG = `e2e_test_cmwriter_${Date.now().toString(36)}${crypto.randomBytes(2).toString('hex')}`;
   const orderIds = [];
   const parcelIds = [];
