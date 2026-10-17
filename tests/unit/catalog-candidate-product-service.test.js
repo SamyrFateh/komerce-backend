@@ -352,3 +352,37 @@ describe('confirmed commercial attachment priority', () => {
     })).toEqual({ category: 'Auto', subcategory: 'Accessoires' });
   });
 });
+
+describe('unified commercial classification verdict', () => {
+  const {resolveCommercialTaxonomyVerdict}=require('../../services/catalog-candidate-product-service');
+  test('confirmed supplier path classifies without title fallback',async()=>{
+    const q={query:jest.fn().mockResolvedValue({rows:[{category:'Tech',subcategory:'Phones'}]})};
+    const result=await resolveCommercialTaxonomyVerdict(q,{
+      supplier_name:'AliExpress',supplier_category:'Phones > Cases',product_name:'Unknown object',
+    });
+    expect(result).toEqual({status:'AUTO_CLASSIFIED',category:'Tech',subcategory:'Phones',
+      source:'CONFIRMED_SUPPLIER_PATH'});
+    expect(q.query).toHaveBeenCalledTimes(1);
+  });
+  test('CJ unknown supplier path can classify by unique object name',async()=>{
+    const q={query:jest.fn()
+      .mockResolvedValueOnce({rows:[]})
+      .mockResolvedValueOnce({rows:[{category:'Auto',subcategory:'Accessoires',terms:{'car neck pillow':10}}]})};
+    await expect(resolveCommercialTaxonomyVerdict(q,{
+      supplier_name:'CJdropshipping',supplier_category:'Unmapped',product_name:'Car Neck Pillow',
+    })).resolves.toMatchObject({status:'AUTO_CLASSIFIED',source:'OBJECT_NAME_MATCH',
+      category:'Auto',subcategory:'Accessoires'});
+  });
+  test('ambiguous object remains review required with no fabricated pair',async()=>{
+    const q={query:jest.fn()
+      .mockResolvedValueOnce({rows:[]})
+      .mockResolvedValueOnce({rows:[
+        {category:'Auto',subcategory:'Accessoires',terms:{'car neck pillow':10}},
+        {category:'Maison',subcategory:'Textile',terms:{'car neck pillow':10}},
+      ]})};
+    await expect(resolveCommercialTaxonomyVerdict(q,{
+      supplier_name:'AliExpress',supplier_category:'Unmapped',product_name:'Car Neck Pillow',
+    })).resolves.toEqual({status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'UNRESOLVED_COMMERCIAL_TAXONOMY'});
+  });
+});

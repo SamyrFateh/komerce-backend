@@ -88,22 +88,32 @@ async function resolveCommercialObjectTaxonomy(q, candidate) {
   return { category:ranked[0].row.category, subcategory:ranked[0].row.subcategory };
 }
 
-async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
+async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
   const requested = boutiqueTaxonomyFromCandidate(candidate);
-  if (!requested.category && !requested.subcategory) {
-    // A validated supplier-path mapping takes precedence over title heuristics.
-    // It has zero economic/customs authority; unknown paths use existing fallback.
-    const provider = candidate.normalized_source_contract?.supplier_name
-      || candidate.raw_payload?.source
-      || candidate.supplier_name;
-    const sourcePath = candidate.supplier_category
-      || candidate.normalized_source_contract?.supplier_category;
-    if (provider && sourcePath) {
-      const mapped = await findConfirmed(provider, sourcePath, q);
-      if (mapped) return mapped;
-    }
-    return resolveCommercialObjectTaxonomy(q, candidate);
+  if (requested.category || requested.subcategory) {
+    return { status:'EXPLICIT_REVIEW', category:requested.category,
+      subcategory:requested.subcategory, source:'OPERATOR_OR_DISCOVERY' };
   }
+  const provider = candidate.normalized_source_contract?.supplier_name
+    || candidate.raw_payload?.source || candidate.supplier_name;
+  const sourcePath = candidate.supplier_category
+    || candidate.normalized_source_contract?.supplier_category;
+  if (provider && sourcePath) {
+    const mapped = await findConfirmed(provider, sourcePath, q);
+    if (mapped) return { status:'AUTO_CLASSIFIED', ...mapped, source:'CONFIRMED_SUPPLIER_PATH' };
+  }
+  const matched = await resolveCommercialObjectTaxonomy(q, candidate);
+  if (matched.category && matched.subcategory) {
+    return { status:'AUTO_CLASSIFIED', ...matched, source:'OBJECT_NAME_MATCH' };
+  }
+  return { status:'REVIEW_REQUIRED', category:null, subcategory:null,
+    source:'UNRESOLVED_COMMERCIAL_TAXONOMY' };
+}
+
+async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
+  const verdict = await resolveCommercialTaxonomyVerdict(q, candidate);
+  const requested = { category:verdict.category, subcategory:verdict.subcategory };
+  if (verdict.status !== 'EXPLICIT_REVIEW') return requested;
   if (!requested.category || !requested.subcategory) {
     throw new Error('BOUTIQUE_TAXONOMY_INCOMPLETE: target_category + target_subcategory requis ensemble');
   }
@@ -228,6 +238,7 @@ module.exports = {
   sourceLocaleFromCandidate,
   boutiqueTaxonomyFromCandidate,
   resolveActiveBoutiqueTaxonomy,
+  resolveCommercialTaxonomyVerdict,
   resolveCommercialObjectTaxonomy,
   objectPhraseMatch,
 };
