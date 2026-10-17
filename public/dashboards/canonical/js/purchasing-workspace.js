@@ -601,7 +601,7 @@
       { title: 'Historique des achats', statuses: ['hub_received', 'cancelled'], empty: 'Aucune commande terminée ou annulée dans les 100 dernières.' },
     ];
     groups.forEach((group) => {
-      const slot = createSection(rootNode, ui, doc, group.title, 'Commandes fournisseur récentes · lecture seule · 100 dernières maximum');
+      const slot = createSection(rootNode, ui, group.title, 'Commandes fournisseur récentes · lecture seule · 100 dernières maximum');
       const entries = orders.filter((po) => group.statuses.includes(po.status));
       if (!entries.length) {
         slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', group.empty));
