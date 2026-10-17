@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 723,
-    "filesWithFullHeaders": 675,
+    "scannedCodeFiles": 724,
+    "filesWithFullHeaders": 676,
     "filesWithLiteHeaders": 48,
-    "filesWithAnyHeaders": 723,
+    "filesWithAnyHeaders": 724,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1764,
-    "edges": 8901,
+    "graphNodes": 1765,
+    "edges": 8924,
     "dbTables": 205,
     "doctrines": 637,
     "impactAreas": 199,
-    "unresolvedCodeEdges": 873,
+    "unresolvedCodeEdges": 874,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 86
   },
@@ -40,7 +40,7 @@
     "decision-signals": 14,
     "market-delegation": 35,
     "market": 4,
-    "economic-engine": 59,
+    "economic-engine": 60,
     "sourcing": 37,
     "logistics": 51,
     "boutique": 22,
@@ -109,7 +109,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 407,
+    "service": 408,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -119,7 +119,7 @@
   },
   "byCriticality": {
     "critical": 97,
-    "medium": 146,
+    "medium": 147,
     "high": 423,
     "low": 57
   },
@@ -6014,7 +6014,8 @@
         "db.js",
         "middleware/auth.js",
         "services/*",
-        "services/cost-allocation/real-margin-shadow.js"
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/cost-allocation/product-margin-steering.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -15911,6 +15912,60 @@
       "version": "2026-07"
     },
     {
+      "id": "services/cost-allocation/product-margin-steering.js",
+      "file": "services/cost-allocation/product-margin-steering.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-product-margin-steering",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result"
+      ],
+      "depends": [
+        "db",
+        "utils/rules.js",
+        "services/cost-allocation/cost-types.js",
+        "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/real-margin-shadow.js"
+      ],
+      "usedBy": [
+        "routes/admin-costing.js"
+      ],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "products",
+        "customs_categories",
+        "finance_config",
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "parcel_items",
+        "business_rules"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "pricing_market_viability_cost_scope"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-costing"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/cost-allocation/real-margin-shadow.js",
       "file": "services/cost-allocation/real-margin-shadow.js",
       "type": "file",
@@ -18040,6 +18095,8 @@
       "dbRead": [
         "customs_shipment_parcels",
         "customs_shipments",
+        "order_items",
+        "parcel_items",
         "parcels"
       ],
       "dbWrite": [],
@@ -48437,6 +48494,12 @@
       "label": "services/cost-allocation/real-margin-shadow.js"
     },
     {
+      "from": "routes/admin-costing.js",
+      "to": "services/cost-allocation/product-margin-steering.js",
+      "type": "depends",
+      "label": "services/cost-allocation/product-margin-steering.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-costing.js",
       "type": "uses",
@@ -63961,6 +64024,126 @@
       "label": "dashboard"
     },
     {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "utils/rules.js",
+      "type": "depends",
+      "label": "utils/rules.js"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "services/cost-allocation/cost-types.js",
+      "type": "depends",
+      "label": "services/cost-allocation/cost-types.js"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "services/cost-allocation/_helpers.js",
+      "type": "depends",
+      "label": "services/cost-allocation/_helpers.js"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "services/cost-allocation/real-margin-shadow.js",
+      "type": "depends",
+      "label": "services/cost-allocation/real-margin-shadow.js"
+    },
+    {
+      "from": "routes/admin-costing.js",
+      "to": "services/cost-allocation/product-margin-steering.js",
+      "type": "uses",
+      "label": "routes/admin-costing.js"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:customs_categories",
+      "type": "db-read",
+      "label": "customs_categories"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:finance_config",
+      "type": "db-read",
+      "label": "finance_config"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:business_rules",
+      "type": "db-read",
+      "label": "business_rules"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "doctrine:pricing_market_viability_cost_scope",
+      "type": "doctrine",
+      "label": "pricing_market_viability_cost_scope"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "impact:admin-costing",
+      "type": "impact",
+      "label": "admin-costing"
+    },
+    {
       "from": "services/cost-allocation/real-margin-shadow.js",
       "to": "db",
       "type": "depends",
@@ -67474,6 +67657,18 @@
       "to": "db:customs_shipments",
       "type": "db-read",
       "label": "customs_shipments"
+    },
+    {
+      "from": "services/finance-metrics/customs-unknown.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/finance-metrics/customs-unknown.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
     },
     {
       "from": "services/finance-metrics/customs-unknown.js",
@@ -99910,7 +100105,8 @@
         "db.js",
         "middleware/auth.js",
         "services/*",
-        "services/cost-allocation/real-margin-shadow.js"
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/cost-allocation/product-margin-steering.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -99960,6 +100156,7 @@
         "impact:economic-engine",
         "middleware/auth.js",
         "services/cost-allocation/index.js",
+        "services/cost-allocation/product-margin-steering.js",
         "services/cost-allocation/real-margin-shadow.js",
         "services/dashboard-cache.js",
         "utils/logger.js"
@@ -109578,6 +109775,7 @@
         "impact:economic-engine",
         "services/cost-allocation/allocate.js",
         "services/cost-allocation/cost-types.js",
+        "services/cost-allocation/product-margin-steering.js",
         "services/cost-allocation/real-margin-shadow.js",
         "services/customs-shipment-service.js",
         "services/order-cost-snapshot.js"
@@ -109674,6 +109872,7 @@
         "impact:pricing",
         "impact:reconciliation",
         "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/product-margin-steering.js",
         "services/cost-allocation/real-margin-shadow.js",
         "services/cost-allocation/variance.js",
         "services/dashboard-metrics/_helpers.js",
@@ -109749,6 +109948,68 @@
         "services/transport-cost-allocation.js"
       ]
     },
+    "services/cost-allocation/product-margin-steering.js": {
+      "role": "economic-engine-product-margin-steering",
+      "domain": "economic-engine",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "utils/rules.js",
+        "services/cost-allocation/cost-types.js",
+        "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/real-margin-shadow.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-costing.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "products",
+        "customs_categories",
+        "finance_config",
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "parcel_items",
+        "business_rules"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "pricing_market_viability_cost_scope"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-costing"
+      ],
+      "mustCheck": [
+        "db:business_rules",
+        "db:customs_categories",
+        "db:customs_shipment_parcels",
+        "db:customs_shipments",
+        "db:finance_config",
+        "db:order_item_cost_imputations",
+        "db:order_item_real_cost_allocations",
+        "db:order_items",
+        "db:orders",
+        "db:parcel_items",
+        "db:products",
+        "doctrine:pricing_market_viability_cost_scope",
+        "impact:admin-costing",
+        "impact:economic-engine",
+        "routes/admin-costing.js",
+        "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/cost-types.js",
+        "services/cost-allocation/real-margin-shadow.js",
+        "utils/rules.js"
+      ]
+    },
     "services/cost-allocation/real-margin-shadow.js": {
       "role": "economic-engine-real-margin-shadow",
       "domain": "economic-engine",
@@ -109808,6 +110069,7 @@
         "routes/admin-costing.js",
         "services/cost-allocation/_helpers.js",
         "services/cost-allocation/cost-types.js",
+        "services/cost-allocation/product-margin-steering.js",
         "services/finance-metrics/customs-unknown.js"
       ]
     },
@@ -111868,6 +112130,8 @@
       "dbRead": [
         "customs_shipment_parcels",
         "customs_shipments",
+        "order_items",
+        "parcel_items",
         "parcels"
       ],
       "dbWrite": [],
@@ -111882,6 +112146,8 @@
       "mustCheck": [
         "db:customs_shipment_parcels",
         "db:customs_shipments",
+        "db:order_items",
+        "db:parcel_items",
         "db:parcels",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
@@ -128473,6 +128739,7 @@
         "services/catalog-enrichment.js",
         "services/catalog-product-detail.js",
         "services/catalog-workspace.js",
+        "services/cost-allocation/product-margin-steering.js",
         "services/parcel-operations.js",
         "services/radar-queries.js",
         "services/signal-service.js",
@@ -131967,6 +132234,12 @@
       "to": "../transport-cost-allocation",
       "type": "depends",
       "label": "../transport-cost-allocation"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "services/cost-allocation/real-margin-shadow.js",

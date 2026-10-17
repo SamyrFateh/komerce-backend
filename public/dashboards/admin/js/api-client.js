@@ -105,6 +105,7 @@
   function getCostingOrders(params)          { return fetchJSON(apiUrl('/admin/costing/orders',   params)); }
   function getCostingProducts(params)        { return fetchJSON(apiUrl('/admin/costing/products', params)); }
   function getCostingRelais(params)          { return fetchJSON(apiUrl('/admin/costing/relais',   params)); }
+  function getMarginSteering(params)         { return fetchJSON(apiUrl('/admin/costing/products/margin-steering', params)); }
   function getLogistics(filters, extra)      { return fetchJSON(dashboardUrl('logistics',        filters, extra)); }
   function getUnified(filters, extra)        { return fetchJSON(dashboardUrl('unified',          filters, extra)); }
 
@@ -534,6 +535,7 @@
     getCostingOrders,
     getCostingProducts,
     getCostingRelais,
+    getMarginSteering,
     getLogistics,
     getUnified,
     clearCache,

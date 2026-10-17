@@ -1095,6 +1095,11 @@ const KNOWN_RESPONSES = {
   '/api/admin/costing/relais': {
     get: { fields: ['relais','doctrine_phase'], source: 'test' }
   },
+  // Pilotage marge par produit (#2595/écran) : tests/unit/admin-costing-real-margin-shadow.test.js
+  // asserte res.body.products / market_id → 'test'.
+  '/api/admin/costing/products/margin-steering': {
+    get: { fields: ['market_id','since_days','rules','products','truncated'], source: 'test' }
+  },
   // GET /api/admin/radar : routes/admin-radar.js → res.json(await radar.getRadarSummary())
   // ; shape lue dans services/radar-queries.js, pas de test dédié → 'route-read'.
   '/api/admin/radar': {
