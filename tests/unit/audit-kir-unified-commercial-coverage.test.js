@@ -49,3 +49,16 @@ test('replayed category conflict triggers review instead of silent auto approval
  expect(result).toMatchObject({auto_classifiable_products:0,conflicting_classifications:1,
   unresolved_products:1,human_review_groups:1});
 });
+
+test('CJ review workpack groups structural path variations only',async()=>{
+ const paths=["Men's Clothing / T-Shirts / Print","Men's Clothing > T-Shirts > Print",
+   'Home & Garden， Furniture > Home Storage > Home Office Storage',
+   'Home & Garden, Furniture / Home Storage / Home Office Storage',
+   'Home, Garden & Furniture > Home Storage > Home Office Storage'];
+ const items=paths.map((source_path,i)=>({candidate_ref:'CJ-'+i,supplier_category:source_path,category_path:[]}));
+ const result=await audit('KIR-000008',{sourceAudit:async()=>({provider:'CJdropshipping',items}),
+   query:{query:jest.fn().mockResolvedValue({rows:items.map(x=>({candidate_ref:x.candidate_ref}))})},
+   resolveVerdict:async()=>({status:'REVIEW_REQUIRED',source:'UNRESOLVED_COMMERCIAL_TAXONOMY',category:null,subcategory:null})});
+ expect(result).toMatchObject({inspected:5,unresolved_products:5,human_review_groups:3});
+ expect(result.review_workpack.map(x=>x.affected_products).sort()).toEqual([1,2,2]);
+});
