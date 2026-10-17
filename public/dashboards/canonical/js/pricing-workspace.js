@@ -621,7 +621,15 @@
       input.step = '0.01';
       input.value = row.default_value == null ? '' : row.default_value;
       input.dataset.costValue = row.key;
-      valueCell.appendChild(input);
+      input.setAttribute('aria-label', `Valeur de ${row.label || row.key} (${row.unit || 'unité non définie'})`);
+      const valueEditor = doc.createElement('div');
+      valueEditor.className = 'kmc-pricing-value-editor';
+      valueEditor.appendChild(input);
+      const unitLabel = doc.createElement('span');
+      unitLabel.className = 'kmc-pricing-value-unit';
+      unitLabel.textContent = ({ kmf: 'KMF', pct: '%', kmf_per_kg: 'KMF/kg', kmf_per_m3: 'KMF/m³' })[row.unit] || row.unit || '—';
+      valueEditor.appendChild(unitLabel);
+      valueCell.appendChild(valueEditor);
       tr.appendChild(valueCell);
       if (marketMode) {
         tr.appendChild(td(doc, row.base_default_value));
@@ -924,6 +932,10 @@
           .kmc-pricing-approved-layout .kmc-workspace-section input, .kmc-pricing-approved-layout .kmc-workspace-section select { max-width:100%; }
           .kmc-pricing-approved-layout .kmc-workspace-section details { max-width:100%; }
           .kmc-pricing-approved-layout .kmc-workspace-action { border-radius:10px; }
+          .kmc-pricing-approved-layout .kmc-pricing-value-editor { display:flex; align-items:stretch; min-width:130px; max-width:240px; border:1px solid #c7d5e8; border-radius:10px; overflow:hidden; background:#fff; }
+          .kmc-pricing-approved-layout .kmc-pricing-value-editor:focus-within { outline:2px solid #1767db; outline-offset:1px; }
+          .kmc-pricing-approved-layout .kmc-pricing-value-editor input { width:100%; min-width:64px; flex:1; border:0; box-shadow:none; outline:none; padding:8px; background:transparent; }
+          .kmc-pricing-approved-layout .kmc-pricing-value-unit { display:flex; align-items:center; padding:0 9px; white-space:nowrap; font-weight:650; font-size:.82rem; color:#244d7a; background:#edf4fd; border-left:1px solid #dbe5f2; }
           .kmc-pricing-approved-layout .kmc-market-decision-hero { border-radius:13px; overflow-wrap:anywhere; }
           .kmc-pricing-approved-layout .kmc-market-decision-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
           .kmc-pricing-approved-layout .kmc-market-decision-metrics > * { min-width:0; }
