@@ -608,8 +608,27 @@
     table.innerHTML = marketMode
       ? '<thead><tr><th>Clé</th><th>Famille</th><th>Catégorie</th><th>Valeur effective</th><th>Base globale</th><th>Unité</th><th>Origine</th><th>État</th><th></th></tr></thead>'
       : '<thead><tr><th>Clé</th><th>Famille</th><th>Catégorie</th><th>Valeur</th><th>Unité</th><th>Scope</th><th>État</th><th></th></tr></thead>';
-    const tbody = doc.createElement('tbody');
-    rows.forEach(row => {
+    // Group only by the server's actual family: no inferred accounting classification.
+    const familyNames = {
+      landed_relay: 'Coûts variables · logistique et relais',
+      business: 'Charges d’exploitation · classification à confirmer',
+      exceptional: 'Charges exceptionnelles',
+    };
+    const familyKeys = [...new Set(rows.map(row => row.family || 'non_classe'))];
+    const familyHost = doc.createElement('div');
+    familyHost.className = 'kmc-pricing-cost-families';
+    familyKeys.forEach((family, index) => {
+      const panel = doc.createElement('details');
+      panel.className = 'kmc-pricing-cost-family';
+      panel.open = index === 0;
+      const heading = doc.createElement('summary');
+      heading.textContent = `${familyNames[family] || family} · ${rows.filter(row => (row.family || 'non_classe') === family).length} ligne(s)`;
+      panel.appendChild(heading);
+      const familyWrap = doc.createElement('div');
+      familyWrap.className = 'kmc-workspace-table-wrap';
+      const familyTable = table.cloneNode(true);
+      const tbody = doc.createElement('tbody');
+      rows.filter(row => (row.family || 'non_classe') === family).forEach(row => {
       const tr = doc.createElement('tr');
       tr.appendChild(td(doc, row.key));
       tr.appendChild(td(doc, row.family));
@@ -655,10 +674,14 @@
       }
       tr.appendChild(actions);
       tbody.appendChild(tr);
+      });
+      familyTable.appendChild(tbody);
+      familyWrap.appendChild(familyTable);
+      panel.appendChild(familyWrap);
+      familyHost.appendChild(panel);
     });
-    table.appendChild(tbody);
-    wrap.appendChild(table);
-    slot.appendChild(wrap);
+    if (!familyKeys.length) familyHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun composant de coût disponible.'));
+    slot.appendChild(familyHost);
 
     if (!marketMode) {
       const form = doc.createElement('form');
@@ -942,6 +965,9 @@
           .kmc-pricing-approved-layout .kmc-pricing-secondary { border:1px solid var(--pricing-border); border-radius:15px; background:#fff; margin:12px 0; overflow:hidden; }
           .kmc-pricing-approved-layout .kmc-pricing-secondary > summary { cursor:pointer; padding:16px 18px; font-weight:700; color:#1b4278; background:#f4f8ff; }
           .kmc-pricing-approved-layout .kmc-pricing-secondary > .kmc-workspace-section { margin:12px; }
+          .kmc-pricing-approved-layout .kmc-pricing-cost-family { border:1px solid #dbe5f2; border-radius:12px; margin:12px 0; overflow:hidden; }
+          .kmc-pricing-approved-layout .kmc-pricing-cost-family > summary { padding:14px 16px; font-weight:700; cursor:pointer; background:#f1f6ff; color:#1b4278; }
+          .kmc-pricing-approved-layout .kmc-pricing-cost-family[open] > summary { border-bottom:1px solid #dbe5f2; }
           .kmc-pricing-approved-layout .kmc-pricing-intro { padding:12px 16px; margin-bottom:16px; background:#eaf4ff; border:1px solid #d0e4fb; border-radius:12px; color:#244d7a; }
           @media(max-width:760px) {
             .kmc-pricing-approved-layout .kmc-market-decision-metrics { grid-template-columns:1fr; }
