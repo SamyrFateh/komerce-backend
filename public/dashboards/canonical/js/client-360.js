@@ -111,8 +111,6 @@
     const summary = payload.summary || {};
     const finance = payload.finance || {};
     const client = payload.client || {};
-    const security = payload.security || {};
-    const passkeys = security.passkeys || {};
 
     return [
       { key: 'orders', label: 'Commandes valides', value: formatNumber(summary.orders_valid) },
@@ -125,9 +123,6 @@
         tone: Number(client.days_since_last_order) > 90 ? 'warning' : 'neutral',
       },
       { key: 'markets', label: 'Marchés visibles', value: formatNumber(summary.markets) },
-      security.visibility === 'global'
-        ? { key: 'passkeys', label: 'Passkeys actifs', value: formatNumber(passkeys.active_count), tone: Number(passkeys.active_count) > 0 ? 'positive' : 'neutral' }
-        : { key: 'security', label: 'Sécurité compte', value: 'Central uniquement', tone: 'neutral' },
     ];
   }
 
@@ -237,42 +232,18 @@
       });
     }
 
-    const alerts = doc.createElement('section');
-    rootNode.appendChild(alerts);
-    ui.AlertPanel.render(alerts, {
-      title: 'Notifications client',
-      emptyText: 'Aucune notification client dans le périmètre.',
-      items: (payload.notifications || []).map(row => ({
-        level: row.severity === 'urgent' && row.status === 'open' ? 'critical' : (row.status === 'open' ? 'warning' : 'info'),
-        title: [row.title, row.order_reference].filter(Boolean).join(' · '),
-        message: [row.message, row.status, formatDate(row.created_at)].filter(Boolean).join(' · '),
-      })),
-    });
-
     if (security.visibility === 'global') {
       const account = security.account || {};
-      const passkeys = security.passkeys || {};
       renderTableSection(rootNode, ui, {
-        title: 'Compte & authentification',
+        title: 'Compte',
         description: 'Visible uniquement avec autorité centrale globale explicite.',
         columns: [{ key: 'champ', label: 'Champ' }, { key: 'valeur', label: 'Valeur' }],
         rows: [
           { champ: 'Rôle', valeur: account.role },
           { champ: 'Préférence devise', valeur: account.currency_pref },
           { champ: 'Dernière connexion', valeur: formatDate(account.last_login_at) },
-          { champ: 'Passkeys actifs', valeur: formatNumber(passkeys.active_count) },
-          { champ: 'Passkeys révoqués', valeur: formatNumber(passkeys.revoked_count) },
-          { champ: 'Dernier usage passkey', valeur: formatDate(passkeys.last_used_at) },
         ],
         emptyText: 'Aucune information d’authentification.',
-      });
-    } else {
-      renderTableSection(rootNode, ui, {
-        title: 'Compte & authentification',
-        description: 'Cette facette n’appartient pas au périmètre d’un opérateur pays.',
-        columns: [{ key: 'champ', label: 'Champ' }, { key: 'valeur', label: 'Valeur' }],
-        rows: [{ champ: 'Visibilité', valeur: 'Réservée au central Komerce' }],
-        emptyText: 'Sécurité compte restreinte.',
       });
     }
 
