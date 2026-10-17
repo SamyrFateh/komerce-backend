@@ -213,9 +213,7 @@
   "webauthn_credentials": "user_id"
  },
  "users": {
-  "keep_roles": [
-   "admin"
-  ],
+  "keep_roles": [],
   "test_email_patterns": [
    "^e2e_test_",
    "^a8-recette",
@@ -224,6 +222,8 @@
    "\\+test@",
    "^golden[._-]",
    "@test\\.",
+   "@komerce\\.test$",
+   "@[^@]*\\.(test|local|invalid|localhost)$",
    "^recette"
   ],
   "unclassified_policy": "BLOCK"

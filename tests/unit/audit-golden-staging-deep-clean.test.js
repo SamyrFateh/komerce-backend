@@ -44,16 +44,25 @@ describe('classification des comptes', () => {
     { id: 1, email: 'admin@komerce.km', role: 'admin' }, { id: 2, email: 'e2e_test_x@example.com', role: 'client' },
     { id: 3, email: 'real.agent@komerce.km', role: 'agent_hub' }, { id: 4, email: 'fatima@gmail.com', role: 'client' },
   ];
-  it('admin conservé, motifs de test supprimés, inconnus bloquants', () => {
-    const r = sc.classifyUsers(users, policy);
-    expect(r.keep.map((u) => u.id)).toEqual([1]);
-    expect(r.test.map((u) => u.id)).toEqual([2]);
-    expect(r.unclassified.map((u) => u.id)).toEqual([3, 4]);
+  it('aucun keep implicite par rôle : admin non listé = non classé ou test, motifs et compteurs', () => {
+    const u2 = [...users, { id: 5, email: 'boss@test.local', role: 'admin' }, { id: 6, email: 'x@komerce.test', role: 'admin' }];
+    const r = sc.classifyUsers(u2, policy);
+    expect(r.keep).toEqual([]);
+    expect(r.test.map((u) => u.id)).toEqual([2, 5, 6]);
+    expect(r.unclassified.map((u) => u.id)).toEqual([1, 3, 4]);
+    const c = sc.userCounters(r.all);
+    expect(c.by_class).toEqual({ test: 3, unclassified: 3 });
+    expect(c.by_role_class['admin:test']).toBe(2);
+    expect(r.all.map((u) => u.id)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+  it('keep explicite (e-mail ou id) l’emporte sur un motif de test', () => {
+    const r = sc.classifyUsers([{ id: 9, email: 'ops@komerce.test', role: 'admin' }], policy, { keepIds: ['9'] });
+    expect(r.all[0]).toMatchObject({ cls: 'keep', reason: 'KEEP_EXPLICIT_ID' });
   });
   it('listes explicites de l’opérateur', () => {
-    const r = sc.classifyUsers(users, policy, { keepEmails: ['real.agent@komerce.km'], testEmails: ['fatima@gmail.com'] });
-    expect(r.keep.map((u) => u.id)).toEqual([1, 3]);
-    expect(r.test.map((u) => u.id)).toEqual([2, 4]);
+    const r = sc.classifyUsers(users, policy, { keepEmails: ['real.agent@komerce.km'], testEmails: ['fatima@gmail.com', 'admin@komerce.km'] });
+    expect(r.keep.map((u) => u.id)).toEqual([3]);
+    expect(r.test.map((u) => u.id)).toEqual([1, 2, 4]);
     expect(r.unclassified).toEqual([]);
   });
 });
