@@ -33,3 +33,15 @@ test('confirmed mapping preserves original source and French label separately',a
   expect(q.query.mock.calls[1][1]).toContain('automobiles > interior accessories');
   expect(q.query.mock.calls[1][0]).not.toContain('komerce_category');
 });
+
+test('CJ path punctuation variants share one canonical path without merging different branches',()=>{
+ const {normalizePath}=require('../../services/supplier-commercial-category-mapping');
+ expect(normalizePath("Men's Clothing / T-Shirts / Print"))
+   .toBe(normalizePath("Men's Clothing > T-Shirts > Print"));
+ expect(normalizePath('Home & Garden， Furniture > Home Storage > Home Office Storage'))
+   .toBe(normalizePath('Home & Garden, Furniture / Home Storage / Home Office Storage'));
+ expect(normalizePath('Home, Garden & Furniture > Home Storage > Home Office Storage'))
+   .not.toBe(normalizePath('Home & Garden, Furniture > Home Storage > Home Office Storage'));
+ expect(normalizePath('Home, Garden & Furniture > Home Storage > Bathroom Storage'))
+   .not.toBe(normalizePath('Home, Garden & Furniture > Home Storage > Home Office Storage'));
+});
