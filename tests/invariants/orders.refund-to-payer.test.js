@@ -67,7 +67,11 @@ describe('invariant orders — remboursement au payeur (dynamique)', () => {
   jest.mock('../../utils/logger', () => ({
     child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })),
   }));
-  jest.mock('stripe', () =>
+  jest.mock('../../services/cost-allocation/canonical-margin-writer', () => ({
+  isEnabled: jest.fn().mockResolvedValue(false),
+  refreshCanonicalMarginForOrders: jest.fn().mockResolvedValue({ enabled: false }),
+}));
+jest.mock('stripe', () =>
     jest.fn(() => ({ refunds: { create: jest.fn().mockResolvedValue({ id: 'rf_test' }) } }))
   );
   jest.mock('../../services/wallet-service', () => ({

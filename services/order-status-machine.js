@@ -524,6 +524,12 @@ async function transitionOrderStatus({
 
   log.info({ order_id: orderId, previous_status: previousStatus, new_status: newStatus, source }, 'Order status transition applied');
 
+  // A8 : annulation / remboursement → marge canonique « not_applicable » (NULL) dans la même transaction.
+  // No-op si le writer est désactivé ; échec isolé par SAVEPOINT, jamais bloquant.
+  if (newStatus === 'cancelled' || newStatus === 'refunded') {
+    await require('./cost-allocation/canonical-margin-writer').refreshCanonicalMarginForOrders([orderId], { client: dbClient });
+  }
+
   return { success: true, previousStatus, newStatus, pickupCode, cancelEffects };
 }
 

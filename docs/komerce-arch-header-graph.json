@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 724,
-    "filesWithFullHeaders": 676,
+    "scannedCodeFiles": 725,
+    "filesWithFullHeaders": 677,
     "filesWithLiteHeaders": 48,
-    "filesWithAnyHeaders": 724,
+    "filesWithAnyHeaders": 725,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1765,
-    "edges": 8924,
+    "graphNodes": 1766,
+    "edges": 8936,
     "dbTables": 205,
     "doctrines": 637,
     "impactAreas": 199,
-    "unresolvedCodeEdges": 874,
+    "unresolvedCodeEdges": 875,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 86
   },
@@ -40,7 +40,7 @@
     "decision-signals": 14,
     "market-delegation": 35,
     "market": 4,
-    "economic-engine": 60,
+    "economic-engine": 61,
     "sourcing": 37,
     "logistics": 51,
     "boutique": 22,
@@ -109,7 +109,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 408,
+    "service": 409,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -120,7 +120,7 @@
   "byCriticality": {
     "critical": 97,
     "medium": 147,
-    "high": 423,
+    "high": 424,
     "low": 57
   },
   "nodes": [
@@ -6023,6 +6023,7 @@
       "dbRead": [
         "customs_shipments",
         "finance_config",
+        "markets",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
         "order_items",
@@ -15807,6 +15808,50 @@
       "version": "2026-06"
     },
     {
+      "id": "services/cost-allocation/canonical-margin-writer.js",
+      "file": "services/cost-allocation/canonical-margin-writer.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-canonical-margin-writer",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "utils/rules.js",
+        "utils/logger.js",
+        "services/cost-allocation/real-margin-shadow.js"
+      ],
+      "usedBy": [],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [
+        "orders"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_provided_or_single_statement"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/cost-allocation/cost-types.js",
       "file": "services/cost-allocation/cost-types.js",
       "type": "file",
@@ -18144,6 +18189,7 @@
         "finance_config",
         "order_items",
         "orders",
+        "parcel_items",
         "parcels",
         "products",
         "refunds"
@@ -30482,12 +30528,14 @@
         "settlement_list"
       ],
       "depends": [
-        "none (db injecté par l'appelant)"
+        "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)"
       ],
       "usedBy": [
         "routes/purchasing.js"
       ],
       "dbRead": [
+        "order_items",
+        "purchase_lines",
         "supplier_execution_payments",
         "supplier_payment_settlements"
       ],
@@ -48519,6 +48567,12 @@
     },
     {
       "from": "routes/admin-costing.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/admin-costing.js",
       "to": "db:order_item_cost_imputations",
       "type": "db-read",
       "label": "order_item_cost_imputations"
@@ -63826,6 +63880,54 @@
       "label": "economic-engine"
     },
     {
+      "from": "services/cost-allocation/canonical-margin-writer.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/cost-allocation/canonical-margin-writer.js",
+      "to": "utils/rules.js",
+      "type": "depends",
+      "label": "utils/rules.js"
+    },
+    {
+      "from": "services/cost-allocation/canonical-margin-writer.js",
+      "to": "utils/logger.js",
+      "type": "depends",
+      "label": "utils/logger.js"
+    },
+    {
+      "from": "services/cost-allocation/canonical-margin-writer.js",
+      "to": "services/cost-allocation/real-margin-shadow.js",
+      "type": "depends",
+      "label": "services/cost-allocation/real-margin-shadow.js"
+    },
+    {
+      "from": "services/cost-allocation/canonical-margin-writer.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/cost-allocation/canonical-margin-writer.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "services/cost-allocation/canonical-margin-writer.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/cost-allocation/canonical-margin-writer.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
       "from": "services/cost-allocation/cost-types.js",
       "to": "@none",
       "type": "depends",
@@ -67747,6 +67849,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
     },
     {
       "from": "services/finance-metrics/finance-summary.js",
@@ -87804,15 +87912,27 @@
     },
     {
       "from": "services/supplier-payment-settlement-service.js",
-      "to": "none (db injecté par l'appelant)",
+      "to": "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)",
       "type": "depends",
-      "label": "none (db injecté par l'appelant)"
+      "label": "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)"
     },
     {
       "from": "routes/purchasing.js",
       "to": "services/supplier-payment-settlement-service.js",
       "type": "uses",
       "label": "routes/purchasing.js"
+    },
+    {
+      "from": "services/supplier-payment-settlement-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/supplier-payment-settlement-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
     },
     {
       "from": "services/supplier-payment-settlement-service.js",
@@ -100115,6 +100235,7 @@
       "dbRead": [
         "customs_shipments",
         "finance_config",
+        "markets",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
         "order_items",
@@ -100141,6 +100262,7 @@
         "bootstrap/api-routes.js",
         "db:customs_shipments",
         "db:finance_config",
+        "db:markets",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:order_items",
@@ -109836,6 +109958,43 @@
         "utils/relay-commission.js"
       ]
     },
+    "services/cost-allocation/canonical-margin-writer.js": {
+      "role": "economic-engine-canonical-margin-writer",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "utils/rules.js",
+        "utils/logger.js",
+        "services/cost-allocation/real-margin-shadow.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [
+        "orders"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "doctrine:resolve_before_behavior_change",
+        "impact:economic-engine",
+        "services/cost-allocation/real-margin-shadow.js",
+        "utils/logger.js",
+        "utils/rules.js"
+      ]
+    },
     "services/cost-allocation/cost-types.js": {
       "role": "economic-engine-cost-type-classification",
       "domain": "economic-engine",
@@ -110068,6 +110227,7 @@
         "impact:economic-engine",
         "routes/admin-costing.js",
         "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/canonical-margin-writer.js",
         "services/cost-allocation/cost-types.js",
         "services/cost-allocation/product-margin-steering.js",
         "services/finance-metrics/customs-unknown.js"
@@ -112178,6 +112338,7 @@
         "finance_config",
         "order_items",
         "orders",
+        "parcel_items",
         "parcels",
         "products",
         "refunds"
@@ -112197,6 +112358,7 @@
         "db:finance_config",
         "db:order_items",
         "db:orders",
+        "db:parcel_items",
         "db:parcels",
         "db:products",
         "db:refunds",
@@ -124553,13 +124715,15 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "none (db injecté par l'appelant)"
+        "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)"
       ],
       "directUsedBy": [
         "routes/purchasing.js"
       ],
       "ownedFiles": [],
       "dbRead": [
+        "order_items",
+        "purchase_lines",
         "supplier_execution_payments",
         "supplier_payment_settlements"
       ],
@@ -124575,6 +124739,8 @@
         "economic-engine"
       ],
       "mustCheck": [
+        "db:order_items",
+        "db:purchase_lines",
         "db:supplier_execution_payments",
         "db:supplier_payment_settlements",
         "doctrine:pricing_market_viability_cost_scope",
@@ -128139,6 +128305,7 @@
         "services/catalog-approval.js",
         "services/catalog-enrichment.js",
         "services/confirm-pickup-cash-payment.js",
+        "services/cost-allocation/canonical-margin-writer.js",
         "services/dashboard-clients-queries.js",
         "services/dashboard-ops-queries.js",
         "services/documents/customs-invoice.js",
@@ -128739,6 +128906,7 @@
         "services/catalog-enrichment.js",
         "services/catalog-product-detail.js",
         "services/catalog-workspace.js",
+        "services/cost-allocation/canonical-margin-writer.js",
         "services/cost-allocation/product-margin-steering.js",
         "services/parcel-operations.js",
         "services/radar-queries.js",
@@ -128829,7 +128997,7 @@
   "multiWriterTables": [
     {
       "table": "orders",
-      "writerCount": 30,
+      "writerCount": 31,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/delete-order-cascade.js",
@@ -128841,6 +129009,7 @@
         "routes/tracking.js",
         "services/admin-order-refund.js",
         "services/cash-reminder-service.js",
+        "services/cost-allocation/canonical-margin-writer.js",
         "services/customs-shipment-service.js",
         "services/inventory-service.js",
         "services/order-checkout-persistence.js",
@@ -132206,6 +132375,12 @@
       "label": "_helpers (shareByWeight)"
     },
     {
+      "from": "services/cost-allocation/canonical-margin-writer.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
       "from": "services/cost-allocation/cost-types.js",
       "to": "@none",
       "type": "depends",
@@ -134157,9 +134332,9 @@
     },
     {
       "from": "services/supplier-payment-settlement-service.js",
-      "to": "none (db injecté par l'appelant)",
+      "to": "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)",
       "type": "depends",
-      "label": "none (db injecté par l'appelant)"
+      "label": "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)"
     },
     {
       "from": "future provider payment orchestration",

@@ -10,6 +10,10 @@ const { makeClient } = require('../integration/test-harness/mock-db');
 
 const mockStripeRefundsCreate = jest.fn();
 
+jest.mock('../../services/cost-allocation/canonical-margin-writer', () => ({
+  isEnabled: jest.fn().mockResolvedValue(false),
+  refreshCanonicalMarginForOrders: jest.fn().mockResolvedValue({ enabled: false }),
+}));
 jest.mock('stripe', () => jest.fn(() => ({
   refunds: { create: mockStripeRefundsCreate },
 })));

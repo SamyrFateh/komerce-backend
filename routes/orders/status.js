@@ -170,10 +170,18 @@ router.patch('/:id/cost', authenticate, requireRole(['admin']), validate(orders.
     }
     values.push(order.id);
 
-    await db.query(
+    // A8 : si le writer canonique est actif, la saisie manuelle (trigger compute_real_margin) et la marge
+    // canonique s'écrivent dans la MÊME transaction : la marge canonique prévaut (un seul écrivain effectif).
+    const canonical = require('../../services/cost-allocation/canonical-margin-writer');
+    const canonicalOn = await canonical.isEnabled();
+    const run = (fn) => (canonicalOn && typeof db.withTransaction === 'function' ? db.withTransaction(fn) : fn(db));
+    await run(async (q) => {
+    await q.query(
       `UPDATE orders SET ${updates.join(', ')} WHERE id = $${pi}`,
       values
     );
+    if (canonicalOn) await canonical.refreshCanonicalMarginForOrders([order.id], { client: q });
+    });
 
     if (customs_real_kmf && sh_category) {
       await db.query(

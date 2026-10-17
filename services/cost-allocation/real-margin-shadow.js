@@ -70,8 +70,8 @@ const num = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v))
 const kmf = (v) => (v == null ? null : Math.round(v));
 const pct2 = (v) => (v == null ? null : Number(v.toFixed(2)));
 
-async function _loadOrder(orderId) {
-  const { rows } = await db.query(
+async function _loadOrder(orderId, q = db) {
+  const { rows } = await q.query(
     `SELECT o.id, o.market_id, o.status, o.payment_status, o.total_kmf, o.discount_kmf,
             o.wallet_applied_kmf, o.transport_price_kmf,
             o.cost_real_kmf, o.cost_transport_kmf, o.cost_douane_kmf,
@@ -84,11 +84,11 @@ async function _loadOrder(orderId) {
   return rows[0] || null;
 }
 
-async function _loadEstimated(orderId) {
+async function _loadEstimated(orderId, q = db) {
   const landedCols = Object.keys(SNAPSHOT_LANDED_TO_REAL_COST_TYPE)
     .map((k) => `COALESCE(SUM(quantity * (cost_breakdown->'landed_relay'->>'${k}')::numeric), 0) AS e_${k}`)
     .join(',\n       ');
-  const { rows } = await db.query(
+  const { rows } = await q.query(
     `SELECT COUNT(*)::int AS imputations_count,
             COUNT(*) FILTER (WHERE cost_breakdown IS NULL)::int AS missing_snapshot_count,
             ${landedCols},
@@ -100,8 +100,8 @@ async function _loadEstimated(orderId) {
   return rows[0];
 }
 
-async function _loadReal(orderId) {
-  const { rows } = await db.query(
+async function _loadReal(orderId, q = db) {
+  const { rows } = await q.query(
     `SELECT cost_type, source, allocation_method, is_actual, SUM(amount_kmf) AS amount
        FROM order_item_real_cost_allocations WHERE order_id = $1
       GROUP BY cost_type, source, allocation_method, is_actual`,
@@ -110,8 +110,8 @@ async function _loadReal(orderId) {
   return rows;
 }
 
-async function _loadRefundsKmf(orderId) {
-  const { rows } = await db.query(
+async function _loadRefundsKmf(orderId, q = db) {
+  const { rows } = await q.query(
     `SELECT COALESCE(SUM(amount_kmf) FILTER (WHERE status = 'completed'), 0) AS done,
             COALESCE(SUM(amount_kmf) FILTER (WHERE status <> 'completed'), 0) AS pending
        FROM refunds WHERE order_id = $1`,
@@ -120,8 +120,8 @@ async function _loadRefundsKmf(orderId) {
   return rows[0];
 }
 
-async function _loadPurchase(orderId) {
-  const { rows } = await db.query(
+async function _loadPurchase(orderId, q = db) {
+  const { rows } = await q.query(
     `SELECT COUNT(*)::int AS lines,
             COALESCE(SUM(pl.confirmed_quantity), 0)::int AS quantity,
             SUM(pl.confirmed_quantity * pl.confirmed_unit_price) AS amount,
@@ -133,7 +133,7 @@ async function _loadPurchase(orderId) {
         AND COALESCE(pl.confirmed_quantity, 0) > 0`,
     [orderId]
   );
-  const { rows: pay } = await db.query(
+  const { rows: pay } = await q.query(
     `SELECT COUNT(DISTINCT sep.id)::int AS payments,
             COUNT(DISTINCT sep.id) FILTER (WHERE sep.real_debit_verified)::int AS verified
        FROM supplier_execution_payments sep
@@ -147,8 +147,8 @@ async function _loadPurchase(orderId) {
 
 // ─── Coût d'achat réel (règlements KMF) ──────────────────────────────────────
 
-async function _loadSettlementFacts(orderId) {
-  const { rows: lines } = await db.query(
+async function _loadSettlementFacts(orderId, q = db) {
+  const { rows: lines } = await q.query(
     `SELECT /* settle:lines */ pl.id, pl.purchase_order_id, pl.confirmed_at, pl.confirmed_quantity,
             pl.confirmed_unit_price::text AS confirmed_unit_price, pl.supplier_currency,
             (oi.order_id = $1) AS in_order
@@ -163,13 +163,13 @@ async function _loadSettlementFacts(orderId) {
   );
   const poIds = [...new Set(lines.map((l) => l.purchase_order_id).filter(Boolean))];
   if (!poIds.length) return { lines, payments: [], settlements: [] };
-  const { rows: payments } = await db.query(
+  const { rows: payments } = await q.query(
     `SELECT /* settle:payments */ id, purchase_order_id, status, real_debit_verified, reconciliation_status, currency
        FROM supplier_execution_payments WHERE purchase_order_id = ANY($1::uuid[])`,
     [poIds]
   );
   const payIds = payments.map((p) => p.id);
-  const { rows: settlements } = payIds.length ? await db.query(
+  const { rows: settlements } = payIds.length ? await q.query(
     `SELECT /* settle:settlements */ supplier_execution_payment_id, kind, amount_currency::text AS amount_currency, currency,
             amount_kmf::text AS amount_kmf, fees_kmf::text AS fees_kmf
        FROM supplier_payment_settlements WHERE supplier_execution_payment_id = ANY($1::uuid[])`,
@@ -401,17 +401,19 @@ function _margin(revenueNet, by, completeness) {
 
 /**
  * @param {string} orderId
- * @param {{marketId?: string}} [opts] marketId de confiance (serveur) : isole par marché
+ * @param {{marketId?: string, client?: {query: Function}}} [opts] marketId de confiance (serveur) : isole par marché ;
+ *        client = transaction de l'appelant (lecture cohérente avec ses écritures, A8)
  * @returns {Promise<object|null>} null si la commande n'existe pas (ou hors marché)
  */
 async function computeOrderRealMarginShadow(orderId, opts = {}) {
-  const o = await _loadOrder(orderId);
+  const q = opts.client || db; // transaction de l'appelant : lit ses écritures non commitées
+  const o = await _loadOrder(orderId, q);
   if (!o) return null;
   if (opts.marketId && o.market_id !== opts.marketId) return null;
 
   const [est, realRows, refunds, purchase, settleFacts] = await Promise.all([
-    _loadEstimated(orderId), _loadReal(orderId), _loadRefundsKmf(orderId), _loadPurchase(orderId),
-    _loadSettlementFacts(orderId),
+    _loadEstimated(orderId, q), _loadReal(orderId, q), _loadRefundsKmf(orderId, q), _loadPurchase(orderId, q),
+    _loadSettlementFacts(orderId, q),
   ]);
   const purchaseReal = computePurchaseReal(settleFacts);
 
