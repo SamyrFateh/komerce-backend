@@ -78,6 +78,9 @@ function createFakeApi({ submitRefusal = false } = {}) {
     const key = `${method} ${pathname}`;
     if (method === 'POST') state.calls.push({ key, body });
 
+    if (key === 'GET /api/purchasing') {
+      return { status: 200, json: { purchase_orders: [...state.pos.values()].map((po) => ({ ...po, supplier_name: SUPPLIER.name })), total: state.pos.size } };
+    }
     if (key === 'GET /api/purchasing/open-lines') {
       const lines = openLines();
       const groups = lines.length ? [{
@@ -152,7 +155,7 @@ async function mountWorkspace(page, api, { search = '' } = {}) {
           <script src="/dashboards/canonical/js/purchasing-workspace.js"></script></body></html>`,
       });
     }
-    if (url.pathname.startsWith('/api/purchasing/')) {
+    if (url.pathname === '/api/purchasing' || url.pathname.startsWith('/api/purchasing/')) {
       const raw = request.postData();
       const result = await api.handle(request.method(), url.pathname, url.search, raw ? JSON.parse(raw) : null);
       return route.fulfill({ status: result.status, contentType: 'application/json', body: JSON.stringify(result.json) });
