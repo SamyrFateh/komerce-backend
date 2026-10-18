@@ -166,7 +166,8 @@
     removeExisting(root);
     reserveAnchor(root);
 
-    const product = (payload.products || []).find(row => row.product_ref === productRef) || {};
+    const found = (payload.products || []).find(row => row.product_ref === productRef);
+    const product = found || {};
     const section = doc.createElement('section');
     section.id = 'pricing-products';
     section.className = 'kmc-section kmc-pricing-product-focus';
@@ -195,6 +196,14 @@
       'kmc-workspace-note',
       `Catégorie : ${product.category || '—'} · prix actuel : ${formatKmf(product.price_kmf)}`
     ));
+    if (!found) {
+      identity.appendChild(text(
+        doc,
+        'p',
+        'kmc-workspace-feedback is-critical',
+        'Produit introuvable dans l’atelier de tarification : vérifiez la référence ou retournez à la curation.'
+      ));
+    }
     body.appendChild(identity);
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', 'Calcul du prix en cours…');

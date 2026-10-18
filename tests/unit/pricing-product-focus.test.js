@@ -85,10 +85,22 @@ describe('Pricing focused product action surface', () => {
     const index = read('public/dashboards/canonical/index.html');
     const decisionSource = read('public/dashboards/canonical/js/pricing-workspace-decision.js');
     const decisionIndex = index.indexOf('/dashboards/canonical/js/pricing-workspace-decision.js?v=261017-1');
-    const focusIndex = index.indexOf('/dashboards/canonical/js/pricing-product-focus.js?v=261010-6');
+    const focusIndex = index.indexOf('/dashboards/canonical/js/pricing-product-focus.js?v=261019-1');
 
     expect(decisionIndex).toBeGreaterThanOrEqual(0);
     expect(focusIndex).toBeGreaterThan(decisionIndex);
     expect(decisionSource).not.toMatch(/method\s*:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/);
+  });
+
+  test('C1 : produit absent de la liste → message explicite, pas un écran vide', () => {
+    const src = read('public/dashboards/canonical/js/pricing-product-focus.js');
+    expect(src).toMatch(/Produit introuvable dans l’atelier de tarification/);
+    expect(src).toMatch(/if \(!found\)/);
+  });
+
+  test('C1 : le chargement global transmet product_ref au serveur', () => {
+    const src = read('public/dashboards/canonical/js/pricing-workspace.js');
+    expect(src).toMatch(/\?product_ref=\$\{encodeURIComponent\(context\.requestedProductRef\)\}/);
+    expect(src).toMatch(/!context\.requestedMarket && context\.requestedProductRef/);
   });
 });

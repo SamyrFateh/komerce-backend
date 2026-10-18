@@ -106,7 +106,7 @@ test('Décision marché est lue du serveur, affichée avant l’atelier et reste
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace.js'), 'utf8');
   const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-workspace.css'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/pricing-workspace.js?v=1301');
+  expect(index).toContain('/dashboards/canonical/js/pricing-workspace.js?v=261019-1');
   expect(source).toContain("`${endpointFor(context)}/decision`");
   expect(source).toContain("`${endpointFor(context)}/decision-policy/history`");
   expect(source).toContain('decision.decision_status');

@@ -102,6 +102,41 @@ test('workspace Pricing conserve un produit non pricé à null', async () => {
   expect(result.products[0].volume_m3).toBeNull();
 });
 
+test('C1 : un brouillon inactif demandé par product_ref reste dans la liste et la simulation même hors des 250 premiers', async () => {
+  const draft = { id: 'internal-draft', product_ref: 'KPR-DRAFT', name: 'Brouillon CJ', category: 'vetements', price_kmf: null, cost_kmf: 3200, weight_kg: 0.3, volume_m3: null, is_active: false };
+  const active = { id: 'internal-active', product_ref: 'KPR-ACTIVE', name: 'Actif', category: 'vetements', price_kmf: 9000, cost_kmf: 4000, weight_kg: 0.3, volume_m3: null, is_active: true };
+  mockQuery.mockImplementation(async (sql, params) => {
+    const source = String(sql);
+    if (source.includes('product_ref = $1')) return { rows: params[0] === 'KPR-DRAFT' ? [draft] : [] };
+    if (source.includes('FROM products')) return { rows: [active] }; // le brouillon est coupé par LIMIT 250
+    if (source.includes('FROM competitor_prices')) return { rows: [{ count: 0 }] };
+    return { rows: [] };
+  });
+
+  const result = await workspace.buildWorkspace({ focusProductRef: 'KPR-DRAFT' });
+
+  expect(result.products.map(p => p.product_ref)).toEqual(['KPR-DRAFT', 'KPR-ACTIVE']);
+  expect(result.products[0]).toMatchObject({ price_kmf: null, cost_kmf: 3200, is_active: false });
+  expect(result.simulation_products.map(p => p.product_ref)).toEqual(['KPR-DRAFT', 'KPR-ACTIVE']);
+});
+
+test('C1 : sans product_ref ou avec une référence inconnue, la liste reste inchangée (pas d erreur)', async () => {
+  const active = { id: 'a', product_ref: 'KPR-ACTIVE', name: 'Actif', category: 'x', price_kmf: 1000, cost_kmf: 500, weight_kg: 1, volume_m3: null, is_active: true };
+  mockQuery.mockImplementation(async (sql) => {
+    const source = String(sql);
+    if (source.includes('product_ref = $1')) return { rows: [] };
+    if (source.includes('FROM products')) return { rows: [active] };
+    if (source.includes('FROM competitor_prices')) return { rows: [{ count: 0 }] };
+    return { rows: [] };
+  });
+
+  const none = await workspace.buildWorkspace();
+  const unknown = await workspace.buildWorkspace({ focusProductRef: 'KPR-NOPE' });
+
+  expect(none.products.map(p => p.product_ref)).toEqual(['KPR-ACTIVE']);
+  expect(unknown.products.map(p => p.product_ref)).toEqual(['KPR-ACTIVE']);
+});
+
 test('simulation convertit product_ref en id uniquement pour le moteur', async () => {
   mockQuery.mockResolvedValueOnce({ rows: [{ id: 'internal-product', product_ref: 'KPR-000001' }] });
   mockRecommend.mockResolvedValueOnce({ product_id: 'internal-product', recommended_price_kmf: 5000 });
