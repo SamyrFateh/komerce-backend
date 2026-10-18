@@ -101,30 +101,79 @@ function evaluatePhysicalLines(rows) {
   return { customs, relay };
 }
 
+function evaluatePurchaseCoverage(rows) {
+  if (!rows.length) return { purchasing: false, payment: false };
+  const purchasing = rows.every(r => Number(r.ordered_qty) > 0
+    && Number(r.purchased_qty) === Number(r.ordered_qty));
+  const payment = purchasing && rows.every(r => Number(r.paid_qty) === Number(r.ordered_qty));
+  return { purchasing, payment };
+}
+
 async function projectGoldenEvidence(db, order) {
   const orderId = order.id;
-  const purchasing = await exists(db,
-    'SELECT EXISTS(SELECT 1 FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=$1 AND pl.purchase_order_id IS NOT NULL) ok', orderId);
-  const supplierPayment = await exists(db,
-    "SELECT EXISTS(SELECT 1 FROM supplier_execution_payments p JOIN purchase_orders po ON po.id=p.purchase_order_id JOIN purchase_lines pl ON pl.purchase_order_id=po.id JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=$1 AND p.status='succeeded' AND p.reconciliation_status='matched' AND p.real_debit_verified=TRUE) ok", orderId);
-  const fulfillmentResult = await db.query(
-    "SELECT f.id, f.tracking_number FROM supplier_execution_fulfillments f JOIN supplier_execution_orders e ON e.id=f.supplier_execution_order_id JOIN purchase_orders po ON po.id=e.purchase_order_id JOIN purchase_lines pl ON pl.purchase_order_id=po.id JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=$1 AND f.reconciliation_status='matched' ORDER BY f.created_at DESC LIMIT 1", [orderId]);
-  const fulfillment = fulfillmentResult.rows[0] || null;
+  // Chaque besoin client doit être couvert en quantité par des lignes d'achat actives.
+  // Le paiement fournisseur doit être prouvé sur TOUS les PO concernés, pas seulement un.
+  const purchaseResult = await db.query(`
+    SELECT oi.id AS order_item_id, oi.quantity AS ordered_qty,
+           COALESCE(SUM(pl.quantity) FILTER (
+             WHERE pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL
+           ), 0) AS purchased_qty,
+           COALESCE(SUM(pl.quantity) FILTER (
+             WHERE pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL
+               AND EXISTS (
+                 SELECT 1 FROM supplier_execution_payments sep
+                  WHERE sep.purchase_order_id = pl.purchase_order_id
+                    AND sep.status = 'succeeded'
+                    AND sep.reconciliation_status = 'matched'
+                    AND sep.real_debit_verified = TRUE
+               )
+           ), 0) AS paid_qty
+      FROM order_items oi
+      LEFT JOIN purchase_lines pl ON pl.order_item_id = oi.id
+     WHERE oi.order_id = $1
+     GROUP BY oi.id, oi.quantity
+  `, [orderId]);
+  const coverage = evaluatePurchaseCoverage(purchaseResult.rows || []);
+  const purchasing = coverage.purchasing;
+  const supplierPayment = coverage.payment;
+
+  // Aucun LIMIT 1 : tous les fulfillments de toutes les lignes sont contrôlés.
+  const fulfillmentResult = await db.query(`
+    SELECT DISTINCT f.id, f.tracking_number, f.reconciliation_status,
+           f.expected_quantity, f.observed_quantity
+      FROM supplier_execution_fulfillments f
+      JOIN supplier_execution_orders e ON e.id = f.supplier_execution_order_id
+      JOIN supplier_execution_order_lines eol ON eol.supplier_execution_order_id = e.id
+      JOIN purchase_lines pl ON pl.id = eol.purchase_line_id AND pl.cancelled_at IS NULL
+      JOIN order_items oi ON oi.id = pl.order_item_id
+     WHERE oi.order_id = $1
+     ORDER BY f.id
+  `, [orderId]);
+  const fulfillments = fulfillmentResult.rows || [];
+  const fulfillmentComplete = purchasing && fulfillments.length > 0
+    && fulfillments.every(f => f.reconciliation_status === 'matched'
+      && Boolean(f.tracking_number)
+      && Number(f.expected_quantity) > 0
+      && Number(f.observed_quantity) === Number(f.expected_quantity));
   const physical = evaluatePhysicalLines(await loadOrderLines(db, orderId));
 
-  const inbound = fulfillment
-    ? await reconcileHubInbound(db, { supplierFulfillmentId: fulfillment.id })
-    : { verdict: 'PENDING', reason: 'SUPPLIER_FULFILLMENT_NOT_FOUND' };
+  const inboundResults = await Promise.all(fulfillments.map(f =>
+    reconcileHubInbound(db, { supplierFulfillmentId: f.id })
+  ));
+  const inboundMatched = fulfillmentComplete && inboundResults.length === fulfillments.length
+    && inboundResults.every(r => r.verdict === 'INBOUND_MATCHED');
+  const inboundEvidence = !fulfillments.length ? 'SUPPLIER_FULFILLMENT_NOT_FOUND'
+    : inboundResults.map((r, i) => `${fulfillments[i].id}:${r.verdict}`).join(';');
   const handoff = await reconcileCustomerHandoff(db, { orderId });
   const close = await reconcileOrderFinancialClose(db, { orderId });
 
   const raw = [
     ['CLIENT_ORDER', true, order.status],
     ['CLIENT_PAYMENT', order.payment_status === 'paid', order.payment_status],
-    ['PURCHASING', purchasing, purchasing ? 'PO_LINKED' : 'PENDING'],
-    ['SUPPLIER_EXECUTION', supplierPayment, supplierPayment ? 'PAYMENT_MATCHED' : 'PENDING'],
-    ['FULFILLMENT', Boolean(fulfillment && fulfillment.tracking_number), fulfillment && fulfillment.tracking_number || 'PENDING'],
-    ['HUB_INBOUND', inbound.verdict === 'INBOUND_MATCHED', inbound.verdict],
+    ['PURCHASING', purchasing, purchasing ? 'ALL_LINES_PO_LINKED' : 'PENDING:PARTIAL_PURCHASING'],
+    ['SUPPLIER_EXECUTION', supplierPayment, supplierPayment ? 'ALL_LINES_PAYMENT_MATCHED' : 'PENDING:PARTIAL_SUPPLIER_PAYMENT'],
+    ['FULFILLMENT', fulfillmentComplete, fulfillmentComplete ? `${fulfillments.length} FULFILLMENTS_MATCHED` : 'PENDING:FULFILLMENT_COVERAGE'],
+    ['HUB_INBOUND', inboundMatched, inboundEvidence],
     ['CUSTOMS', physical.customs.passed, physical.customs.evidence],
     ['RELAY_AVAILABLE', physical.relay.passed, physical.relay.evidence],
     ['CUSTOMER_HANDOFF', handoff.verdict === 'HANDOFF_MATCHED', handoff.verdict],
@@ -139,4 +188,4 @@ async function projectGoldenEvidence(db, order) {
   };
 }
 
-module.exports = { projectGoldenEvidence, evaluatePhysicalLines };
+module.exports = { projectGoldenEvidence, evaluatePhysicalLines, evaluatePurchaseCoverage };
