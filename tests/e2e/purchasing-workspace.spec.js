@@ -307,6 +307,7 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     await page.locator('tr[data-purchasing-line] input[type=checkbox]').nth(0).check();
     await page.locator('[data-workspace-action="prepare-po"]').click();
 
+    await page.locator('[data-purchasing-execution-fold] > summary').click();
     const execution = page.locator('[data-purchasing-execution]');
     await expect(execution).toBeVisible();
     await expect(execution.locator('[data-purchasing-execution-block="orders"]')).toContainText('awaiting_supplier');

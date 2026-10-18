@@ -197,3 +197,8 @@
 .kmc-purchasing-tab { border: 1px solid #cbd5e1; border-radius: .65rem; background: #fff; color: #17365d; padding: .7rem 1rem; cursor: pointer; font-weight: 600; }
 .kmc-purchasing-tab[aria-current="page"] { background: #e8f0ff; border-color: #3b70c7; color: #123d80; }
 .kmc-purchasing-tab:focus-visible { outline: 2px solid #3b70c7; outline-offset: 2px; }
+
+.kmc-purchasing-detail-fold { margin: 1rem 0; border: 1px solid #d5e1f0; border-radius: .75rem; overflow: hidden; }
+.kmc-purchasing-detail-fold > summary { cursor: pointer; padding: .9rem 1rem; background: #f5f8fd; color: #163b71; font-weight: 650; }
+.kmc-purchasing-detail-fold > summary:focus-visible { outline: 2px solid #3671d5; outline-offset: -2px; }
+.kmc-purchasing-detail-fold > .kmc-purchasing-execution { padding: 1rem; }

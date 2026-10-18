@@ -551,7 +551,14 @@
     });
     table.appendChild(tbody);
     slot.appendChild(wrapTable(doc, table));
-    renderSupplierExecution(doc, slot, detail.supplier_execution);
+    const executionPanel = doc.createElement('details');
+    executionPanel.className = 'kmc-purchasing-detail-fold';
+    executionPanel.setAttribute('data-purchasing-execution-fold', '');
+    const executionSummary = doc.createElement('summary');
+    executionSummary.textContent = 'Exécution fournisseur · ordres, paiements, preuves et événements';
+    executionPanel.appendChild(executionSummary);
+    renderSupplierExecution(doc, executionPanel, detail.supplier_execution);
+    slot.appendChild(executionPanel);
 
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions';
