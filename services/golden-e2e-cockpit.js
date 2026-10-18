@@ -8,7 +8,7 @@
  * @outputs       read_only_golden_boundary_evidence
  * @depends       services/hub-inbound-reconciliation, services/customer-handoff-reconciliation, services/order-financial-closure-reconciliation
  * @used-by       routes/admin-order-360
- * @db-read       purchase_lines, order_items, supplier_execution_payments, purchase_orders, supplier_execution_fulfillments, supplier_execution_orders, customs_shipment_parcels, parcels, parcel_items, customs_shipments
+ * @db-read       purchase_lines, order_items, supplier_execution_payments, purchase_orders, supplier_execution_fulfillments, supplier_execution_orders, supplier_execution_order_lines, customs_shipment_parcels, parcels, parcel_items, customs_shipments
  * @db-write      none
  * @db-txn        none
  * @doctrine      projection_only_no_business_authority, hub_organizes_parcels_freely, proof_by_units_not_by_parcels
