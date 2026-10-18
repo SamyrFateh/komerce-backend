@@ -1,3 +1,17 @@
+/**
+ * @komerce-arch
+ * @role          payment-cash-order-provenance-reader
+ * @domain        payment
+ * @layer         service
+ * @criticality   high
+ * @inputs        pg_client, order_id
+ * @outputs       cash_order_provenance_assessment
+ * @depends       none
+ * @used-by       none
+ * @db-read       cash_collections, cash_deposit_allocations, cash_deposits
+ * @db-write      none
+ * @doctrine      final_cash_remittance_requires_attributable_proof, reconstructed_allocation_is_not_final_proof
+ */
 'use strict';
 
 /**
