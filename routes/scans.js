@@ -38,6 +38,7 @@ const { validate } = require('../middleware/validate');
 const { scans } = require('../validators');
 const scanOps = require('../services/scan-operations');
 const hubOps = require('../services/hub-operations');
+const hubReceivable = require('../services/hub-receivable');
 
 const requireAuth = authenticate;
 
@@ -120,6 +121,15 @@ router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), asy
        ORDER BY o.created_at ASC`
     );
     res.json({ count: result.rows.length, orders: result.rows });
+  } catch (err) { next(err); }
+});
+
+// Lecture minimale pour la réception physique Hub (admin + agent_hub uniquement ; aucun coût ni credential).
+// IMPORTANT : doit rester AVANT /:order_id
+router.get('/hub/receivable', requireAuth, requireRole(['admin', 'agent_hub']), async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await hubReceivable.listReceivable());
   } catch (err) { next(err); }
 });
 

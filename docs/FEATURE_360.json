@@ -16901,7 +16901,7 @@
             ]
           },
           "services": {
-            "count": 29,
+            "count": 31,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -16926,6 +16926,16 @@
               {
                 "declared": "services/hub-physical-identity.js",
                 "resolvedPath": "services/hub-physical-identity.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-receivable.js",
+                "resolvedPath": "services/hub-receivable.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-receive-idempotency.js",
+                "resolvedPath": "services/hub-receive-idempotency.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -17371,7 +17381,7 @@
             ]
           }
         },
-        "totalFiles": 122,
+        "totalFiles": 124,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-17T08:21:30.514Z",
+  "generatedAt": "2026-10-18T13:41:25.042Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 742,
-    "protected": 687,
+    "total": 743,
+    "protected": 688,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4784,6 +4784,14 @@
     },
     {
       "key": "GET /api/scans/hub/pending",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/scans/hub/receivable",
       "level": "PROTECTED",
       "roles": [
         "admin",

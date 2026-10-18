@@ -114,6 +114,8 @@ module.exports = {
       'services/parcelOptimizationService.js',
       'services/parcel-service.js',
       'services/hub-operations.js',
+      'services/hub-receivable.js',
+      'services/hub-receive-idempotency.js',
       'services/hub-physical-identity.js',
       'services/hub-inbound-reconciliation.js',
       'services/customer-handoff-reconciliation.js',

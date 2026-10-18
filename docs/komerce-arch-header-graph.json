@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 725,
-    "filesWithFullHeaders": 677,
+    "scannedCodeFiles": 727,
+    "filesWithFullHeaders": 679,
     "filesWithLiteHeaders": 48,
-    "filesWithAnyHeaders": 725,
+    "filesWithAnyHeaders": 727,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1766,
-    "edges": 8936,
+    "graphNodes": 1774,
+    "edges": 8962,
     "dbTables": 205,
-    "doctrines": 637,
+    "doctrines": 643,
     "impactAreas": 199,
-    "unresolvedCodeEdges": 875,
+    "unresolvedCodeEdges": 878,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 86
   },
@@ -42,7 +42,7 @@
     "market": 4,
     "economic-engine": 61,
     "sourcing": 37,
-    "logistics": 51,
+    "logistics": 53,
     "boutique": 22,
     "checkout": 3,
     "shared-cart": 25,
@@ -109,7 +109,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 409,
+    "service": 411,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -119,8 +119,8 @@
   },
   "byCriticality": {
     "critical": 97,
-    "medium": 147,
-    "high": 424,
+    "medium": 148,
+    "high": 425,
     "low": 57
   },
   "nodes": [
@@ -18810,6 +18810,99 @@
       "version": "2026-09"
     },
     {
+      "id": "services/hub-receivable.js",
+      "file": "services/hub-receivable.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-receivable",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "db"
+      ],
+      "outputs": [
+        "receivable_purchase_orders_read_model"
+      ],
+      "depends": [
+        "db",
+        "v_purchase_line_progress"
+      ],
+      "usedBy": [
+        "routes/scans.js"
+      ],
+      "dbRead": [
+        "v_purchase_line_progress",
+        "purchase_orders",
+        "purchase_lines",
+        "product_skus",
+        "product_suppliers",
+        "products",
+        "suppliers"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "read_model_minimal_for_hub_reception",
+        "no_reception_from_supplier_status",
+        "quantities_come_from_server"
+      ],
+      "impactAreas": [
+        "hub",
+        "purchasing"
+      ],
+      "version": "2026-10"
+    },
+    {
+      "id": "services/hub-receive-idempotency.js",
+      "file": "services/hub-receive-idempotency.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-receive-idempotency",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "db",
+        "reception_reference",
+        "normalized_contents"
+      ],
+      "outputs": [
+        "prior_reception_lookup",
+        "idempotent_replay_or_conflict"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "services/hub-operations.js"
+      ],
+      "dbRead": [
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "hub_custody_events"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "same_reference_same_content_is_replay",
+        "same_reference_other_content_is_controlled_conflict",
+        "never_double_place"
+      ],
+      "impactAreas": [
+        "hub",
+        "purchasing"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/hub-reference.js",
       "file": "services/hub-reference.js",
       "type": "file",
@@ -35734,6 +35827,11 @@
       "table": "outbox_events"
     },
     {
+      "id": "db:v_purchase_line_progress",
+      "type": "db-table",
+      "table": "v_purchase_line_progress"
+    },
+    {
       "id": "db:import_runtime_item_events",
       "type": "db-table",
       "table": "import_runtime_item_events"
@@ -35852,11 +35950,6 @@
       "id": "db:pricing_strategy_history",
       "type": "db-table",
       "table": "pricing_strategy_history"
-    },
-    {
-      "id": "db:v_purchase_line_progress",
-      "type": "db-table",
-      "table": "v_purchase_line_progress"
     },
     {
       "id": "db:v_purchase_line_market",
@@ -37847,6 +37940,36 @@
       "id": "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
       "type": "doctrine",
       "doctrine": "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
+    },
+    {
+      "id": "doctrine:read_model_minimal_for_hub_reception",
+      "type": "doctrine",
+      "doctrine": "read_model_minimal_for_hub_reception"
+    },
+    {
+      "id": "doctrine:no_reception_from_supplier_status",
+      "type": "doctrine",
+      "doctrine": "no_reception_from_supplier_status"
+    },
+    {
+      "id": "doctrine:quantities_come_from_server",
+      "type": "doctrine",
+      "doctrine": "quantities_come_from_server"
+    },
+    {
+      "id": "doctrine:same_reference_same_content_is_replay",
+      "type": "doctrine",
+      "doctrine": "same_reference_same_content_is_replay"
+    },
+    {
+      "id": "doctrine:same_reference_other_content_is_controlled_conflict",
+      "type": "doctrine",
+      "doctrine": "same_reference_other_content_is_controlled_conflict"
+    },
+    {
+      "id": "doctrine:never_double_place",
+      "type": "doctrine",
+      "doctrine": "never_double_place"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md",
@@ -69123,6 +69246,162 @@
       "to": "impact:incident-management",
       "type": "impact",
       "label": "incident-management"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "v_purchase_line_progress",
+      "type": "depends",
+      "label": "v_purchase_line_progress"
+    },
+    {
+      "from": "routes/scans.js",
+      "to": "services/hub-receivable.js",
+      "type": "uses",
+      "label": "routes/scans.js"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "db:v_purchase_line_progress",
+      "type": "db-read",
+      "label": "v_purchase_line_progress"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "db:product_suppliers",
+      "type": "db-read",
+      "label": "product_suppliers"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "doctrine:read_model_minimal_for_hub_reception",
+      "type": "doctrine",
+      "label": "read_model_minimal_for_hub_reception"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "doctrine:no_reception_from_supplier_status",
+      "type": "doctrine",
+      "label": "no_reception_from_supplier_status"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "doctrine:quantities_come_from_server",
+      "type": "doctrine",
+      "label": "quantities_come_from_server"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "services/hub-receive-idempotency.js",
+      "type": "uses",
+      "label": "services/hub-operations.js"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "db:hub_custody_events",
+      "type": "db-read",
+      "label": "hub_custody_events"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "doctrine:same_reference_same_content_is_replay",
+      "type": "doctrine",
+      "label": "same_reference_same_content_is_replay"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "doctrine:same_reference_other_content_is_controlled_conflict",
+      "type": "doctrine",
+      "label": "same_reference_other_content_is_controlled_conflict"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "doctrine:never_double_place",
+      "type": "doctrine",
+      "label": "never_double_place"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "services/hub-reference.js",
@@ -106328,6 +106607,7 @@
         "middleware/auth.js",
         "middleware/validate.js",
         "services/hub-operations.js",
+        "services/hub-receivable.js",
         "services/scan-operations.js"
       ]
     },
@@ -112936,6 +113216,7 @@
         "routes/hub.js",
         "routes/scans.js",
         "services/hub-physical-identity.js",
+        "services/hub-receive-idempotency.js",
         "services/hub-reference.js",
         "services/purchasing-completion-service.js",
         "utils/parcelSync.js"
@@ -113017,6 +113298,101 @@
         "services/hub-operations.js",
         "services/incident-write-service.js",
         "services/outbox-producer.js"
+      ]
+    },
+    "services/hub-receivable.js": {
+      "role": "hub-receivable",
+      "domain": "logistics",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "v_purchase_line_progress"
+      ],
+      "directUsedBy": [
+        "routes/scans.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "v_purchase_line_progress",
+        "purchase_orders",
+        "purchase_lines",
+        "product_skus",
+        "product_suppliers",
+        "products",
+        "suppliers"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "read_model_minimal_for_hub_reception",
+        "no_reception_from_supplier_status",
+        "quantities_come_from_server"
+      ],
+      "impactAreas": [
+        "hub",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "db:product_skus",
+        "db:product_suppliers",
+        "db:products",
+        "db:purchase_lines",
+        "db:purchase_orders",
+        "db:suppliers",
+        "db:v_purchase_line_progress",
+        "doctrine:no_reception_from_supplier_status",
+        "doctrine:quantities_come_from_server",
+        "doctrine:read_model_minimal_for_hub_reception",
+        "impact:hub",
+        "impact:purchasing",
+        "routes/scans.js"
+      ]
+    },
+    "services/hub-receive-idempotency.js": {
+      "role": "hub-receive-idempotency",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "services/hub-operations.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "hub_custody_events"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "same_reference_same_content_is_replay",
+        "same_reference_other_content_is_controlled_conflict",
+        "never_double_place"
+      ],
+      "impactAreas": [
+        "hub",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "db:hub_custody_events",
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "doctrine:never_double_place",
+        "doctrine:same_reference_other_content_is_controlled_conflict",
+        "doctrine:same_reference_same_content_is_replay",
+        "impact:hub",
+        "impact:purchasing",
+        "services/hub-operations.js"
       ]
     },
     "services/hub-reference.js": {
@@ -133009,6 +133385,24 @@
       "to": "services/hub-physical-identity.js",
       "type": "uses",
       "label": "HUB-001 internal logistics boundary"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/hub-receivable.js",
+      "to": "v_purchase_line_progress",
+      "type": "depends",
+      "label": "v_purchase_line_progress"
+    },
+    {
+      "from": "services/hub-receive-idempotency.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "services/hub-reference.js",

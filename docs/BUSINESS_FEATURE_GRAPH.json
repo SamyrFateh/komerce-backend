@@ -12416,6 +12416,20 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-receivable.js",
+        "resolvedPath": "services/hub-receivable.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/hub-receive-idempotency.js",
+        "resolvedPath": "services/hub-receive-idempotency.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/hub-physical-identity.js",
         "resolvedPath": "services/hub-physical-identity.js",
         "status": "resolved-in-technical-graph"
@@ -37841,6 +37855,14 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/hub-receivable.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/hub-receive-idempotency.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/hub-physical-identity.js",
                 "targetFile": "services/outbox-producer.js"
               },
@@ -45729,7 +45751,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2066
+        "filesObserved": 2068
       },
       "boutique": {
         "filesObserved": 214,
@@ -48925,8 +48947,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 621,
-        "technicalNodesOwned": 621,
+        "technicalNodesTotal": 623,
+        "technicalNodesOwned": 623,
         "technicalOrphans": 0
       },
       "dash": {

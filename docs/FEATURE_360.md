@@ -1237,14 +1237,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 122 fichier(s) déclaré(s)
+**Implementation** : 124 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 6
   - middleware : 1
   - migrations : 3
   - routes : 18
-  - services : 29
+  - services : 31
   - tests : 59
   - utils : 3
 

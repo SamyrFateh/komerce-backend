@@ -239,3 +239,26 @@ describe('scans — exports', () => {
     expect(mockTriggerScan3).toHaveBeenCalledWith('order-1', 'user-1');
   });
 });
+
+describe('scans — GET /hub/receivable (permissions)', () => {
+  it('admin et agent_hub : lecture autorisée, jamais mise en cache', async () => {
+    for (const role of ['admin', 'agent_hub']) {
+      currentUser = { id: 'u-' + role, role };
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      const res = await request(app).get('/api/scans/hub/receivable');
+      expect(res.status).toBe(200);
+      expect(res.body.purchase_orders).toEqual([]);
+      expect(res.headers['cache-control']).toMatch(/no-store/);
+    }
+  });
+
+  it('agent_relais, client et autres rôles : 403 sans requête base', async () => {
+    for (const role of ['agent_relais', 'customer', 'market_operator']) {
+      currentUser = { id: 'u-' + role, role };
+      mockQuery.mockClear();
+      const res = await request(app).get('/api/scans/hub/receivable');
+      expect(res.status).toBe(403);
+      expect(mockQuery).not.toHaveBeenCalled();
+    }
+  });
+});

@@ -36,7 +36,7 @@ test('canonical import runtime is loaded without legacy dependency', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
   expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=261010-5');
   expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=261010-9');
+  expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=261017-1');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(source).not.toMatch(/\b(?:ImportRuntimeView|KmcApi|ApiClient)\b/);

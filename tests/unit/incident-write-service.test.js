@@ -292,3 +292,15 @@ describe('incident-write-service — F2/F3', () => {
       .rejects.toThrow(/16 legacy or 19 governed positional values/);
   });
 });
+
+test('incident de réconciliation physique : detected_source conforme à la contrainte DB (quarantaine possible)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'incident-write-service.js'), 'utf8');
+  const schema = fs.readFileSync(path.join(__dirname, '..', '..', 'db', 'schema.sql'), 'utf8');
+  const allowed = schema.match(/incidents_detected_source_check CHECK \(\(detected_source = ANY \(ARRAY\[([^\]]+)\]/)[1]
+    .match(/'([a-z_]+)'/g).map(v => v.replace(/'/g, ''));
+  const block = src.slice(src.indexOf('function createHubPhysicalReconciliationIncident'));
+  const value = block.match(/'reconciliation_error',\$3,\$4,\$5,\$6,'([a-z_]+)'/)[1];
+  expect(allowed).toContain(value);
+});

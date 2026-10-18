@@ -33,6 +33,7 @@ const {
 } = require('./hub-physical-identity');
 
 const { parseInboundTag, generatePhysicalReference } = require('./hub-reference');
+const { findPriorReception, replayResponse } = require('./hub-receive-idempotency');
 const { completeOrdersAfterHubReceipt } = require('./purchasing-completion-service');
 
 const REPACK_MIN_GAIN_FALLBACK_CM3 = 2000;
@@ -189,13 +190,30 @@ async function receiveSupplierPackageCommand(payload, userId) {
       throw badRequest('quantity doit être un entier strictement positif');
     }
 
-    const result = await withOperatorTransaction((client) => receiveSupplierPackageCore(client, {
-      reference,
-      externalRef,
-      actorId: userId || null,
-      locationRef,
-      contents: normalizedContents,
-    }));
+    // Idempotence : une référence fournie identifie la saisie (même contenu = déjà traité, sinon conflit).
+    const explicitReference = Boolean(payload && payload.reference);
+    if (explicitReference) {
+      const prior = await findPriorReception(reference);
+      if (prior) return replayResponse(prior, normalizedContents);
+    }
+
+    let result;
+    try {
+      result = await withOperatorTransaction((client) => receiveSupplierPackageCore(client, {
+        reference,
+        externalRef,
+        actorId: userId || null,
+        locationRef,
+        contents: normalizedContents,
+      }));
+    } catch (error) {
+      // Course : deux envois simultanés de la même référence — le second relit l'état au lieu d'échouer en 500.
+      if (explicitReference && error && error.code === '23505') {
+        const prior = await findPriorReception(reference);
+        if (prior) return replayResponse(prior, normalizedContents);
+      }
+      throw error;
+    }
 
     // PR 7 : après COMMIT, la complétude d'achat des commandes touchées par des lignes regroupées (jamais bloquante).
     if (!result.quarantined) await completeOrdersAfterHubReceipt(result.allocations, { actor: { id: userId || null } });
