@@ -132,6 +132,21 @@ describe('product-admin-service', () => {
     expect(db.query).toHaveBeenCalledTimes(1);
   });
 
+  it('C3 : updateProduct renvoie 422 FRENCH_NOT_DETECTED si le texte d\'une source étrangère reste anglais', async () => {
+    const before = {
+      id: 'prod-001', name: 'Old', category: 'food', subcategory: null,
+      price_kmf: 1000, stock: 1, is_active: false, is_available: false,
+      content_source: 'connector_raw', lifecycle_status: 'candidate',
+    };
+    isPipelineSourced.mockReturnValueOnce(true);
+    upsertOverrides.mockRejectedValueOnce(Object.assign(new Error('Préparation française refusée'), { code: 'FRENCH_NOT_DETECTED' }));
+    const db = { query: jest.fn().mockResolvedValueOnce({ rows: [before] }) };
+
+    const result = await svc.updateProduct(db, 'prod-001', { name: 'Wireless headphones' }, { id: 'admin' });
+
+    expect(result).toMatchObject({ status: 422, body: { code: 'FRENCH_NOT_DETECTED' } });
+  });
+
   it('updateProduct refuse la publication directe d\'un candidat pipeline non approuvé (§6, code pending_approval)', async () => {
     const before = {
       id: 'prod-002', name: 'Nouveau', category: 'tech', subcategory: null,
