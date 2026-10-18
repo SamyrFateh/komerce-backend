@@ -12,10 +12,10 @@ const source=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards'
 test('Achats fournisseurs garde une vue d’ensemble centrée sur les achats à traiter',()=>{
   expect(source).toContain("data-workspace-kind', 'purchasing");
   expect(source).toContain("'ACHATS FOURNISSEURS'");
-  expect(source).toContain("'Achats à traiter'");
-  expect(source).toContain("'Voir ce qui doit être commandé ou confirmé auprès des fournisseurs.'");
-  expect(source).toContain("'Lignes à acheter'");
-  expect(source).toContain("'Sélectionnez les lignes d’un même fournisseur puis préparez la commande.'");
+  expect(source).toContain("'Achats fournisseurs'");
+  expect(source).toContain("'Suivez les achats fournisseurs en cours et retrouvez les commandes terminées.'");
+  expect(source).toContain('Lignes à acheter');
+  expect(source).toContain('Sélectionnez les lignes d’un même fournisseur puis préparez la commande.');
 });
 
 test('l\'en-tête du workspace porte le rôle hero (cadre et illustration communs aux overviews)', () => {
