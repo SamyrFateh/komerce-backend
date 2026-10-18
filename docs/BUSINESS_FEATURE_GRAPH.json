@@ -5605,6 +5605,34 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/pricing-economic-cockpit.js",
+        "resolvedPath": "public/dashboards/canonical/js/pricing-economic-cockpit.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/pricing-workspace-decision.js",
+        "resolvedPath": "public/dashboards/canonical/js/pricing-workspace-decision.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/client-360.js",
+        "resolvedPath": "public/dashboards/canonical/js/client-360.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/pricing-workspace-presentation.js",
+        "resolvedPath": "public/dashboards/canonical/js/pricing-workspace-presentation.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/pricing-product-focus.js",
         "resolvedPath": "public/dashboards/canonical/js/pricing-product-focus.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -45701,7 +45729,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2062
+        "filesObserved": 2066
       },
       "boutique": {
         "filesObserved": 214,

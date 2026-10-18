@@ -462,5 +462,6 @@ test('Hub live · Exécution : vue execute montée via le shell marché, même m
   expect(src).toContain("get('view') === 'execute'");
   expect(src).toContain("surface: 'hub-live-execution'");
   expect(src).toContain("mode: 'execution'");
-  expect(src).toContain('isHubExecutionRequest() ? renderHubExecutionShell(root, user, adminContext) : renderHubLive(root, user)');
+  expect(src).toContain('if (isHubExecutionRequest()) return renderHubExecutionShell(root, user, adminContext);');
+  expect(src).toContain('if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user, adminContext);');
 });

@@ -490,7 +490,8 @@
     });
   }
 
-  function renderHubLive(root, user) {
+  function renderHubLive(root, user, adminContext) {
+    if (isHubExecutionRequest()) return renderHubExecutionShell(root, user, adminContext);
     if (!global.KomerceCanonicalHubLive) throw new Error('canonical_hub_live_module_missing');
     return global.KomerceCanonicalHubLive.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
   }
@@ -765,7 +766,7 @@
     if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);
     if (surface === SURFACES.PURCHASING_WORKSPACE) return renderPurchasingWorkspace(root, user);
     if (surface === SURFACES.IMPORT_RUNTIME) return renderImportRuntime(root, user);
-    if (surface === SURFACES.HUB_LIVE) return isHubExecutionRequest() ? renderHubExecutionShell(root, user, adminContext) : renderHubLive(root, user);
+    if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user, adminContext);
     if (surface === SURFACES.RELAIS_LIVE) return renderRelayLive(root, user);
     if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);
