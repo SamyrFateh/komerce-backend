@@ -16,13 +16,12 @@ jest.mock('../../services/order-financial-closure-reconciliation', () => ({
   reconcileOrderFinancialClose: jest.fn().mockResolvedValue({ verdict:'FINANCIAL_CLOSE_MATCHED' }),
 }));
 
-const { projectGoldenEvidence, evaluatePhysicalLines } = require('../../services/golden-e2e-cockpit');
+const { projectGoldenEvidence, evaluatePhysicalLines, evaluatePurchaseCoverage } = require('../../services/golden-e2e-cockpit');
 
 test('projette 10 preuves réelles sans mutation DB', async () => {
   const db = { query: jest.fn()
-    .mockResolvedValueOnce({ rows:[{ ok:true }] })
-    .mockResolvedValueOnce({ rows:[{ ok:true }] })
-    .mockResolvedValueOnce({ rows:[{ id:'fulfillment-1', tracking_number:'TRK-1' }] })
+    .mockResolvedValueOnce({ rows:[{ order_item_id:'oi-1', ordered_qty:1, purchased_qty:1, paid_qty:1 }] })
+    .mockResolvedValueOnce({ rows:[{ id:'fulfillment-1', tracking_number:'TRK-1', reconciliation_status:'matched', expected_quantity:1, observed_quantity:1 }] })
     .mockResolvedValueOnce({ rows:[{ order_item_id:'oi-1', ordered_qty:1, parcel_id:'p-1', line_qty:1, qty_received:0, qty_collected:0, parcel_ref:'P1', parcel_status:'collected', customs_ok:true }] }) };
   const result = await projectGoldenEvidence(db, {
     id:'order-1', reference:'K-GOLDEN-TEST', market_code:'KM', status:'collected', payment_status:'paid',
@@ -32,7 +31,7 @@ test('projette 10 preuves réelles sans mutation DB', async () => {
   expect(result.steps.every(step => step.passed)).toBe(true);
   expect(result.verdict).toBe('FINANCIAL_CLOSE_MATCHED');
   expect(result.doctrine).toBe('read_only_projection_no_business_authority');
-  expect(db.query).toHaveBeenCalledTimes(4);
+  expect(db.query).toHaveBeenCalledTimes(3);
   expect(db.query.mock.calls.every(([sql]) => /^SELECT/i.test(sql.trim()))).toBe(true);
 });
 
@@ -95,5 +94,42 @@ describe('preuves physiques par lignes et quantités', () => {
 
   test('commande sans lignes → non prouvé', () => {
     expect(stepsOf([]).relay.evidence).toBe('NON_PROUVE:NO_ORDER_ITEMS');
+  });
+});
+
+describe('Golden coverage must be complete', () => {
+  test('two lines with only one purchased cannot pass', () => {
+    expect(evaluatePurchaseCoverage([
+      { ordered_qty:2, purchased_qty:2, paid_qty:2 },
+      { ordered_qty:3, purchased_qty:0, paid_qty:0 },
+    ])).toEqual({ purchasing:false, payment:false });
+  });
+
+  test('partial supplier payment cannot pass despite full purchasing', () => {
+    expect(evaluatePurchaseCoverage([
+      { ordered_qty:2, purchased_qty:2, paid_qty:2 },
+      { ordered_qty:3, purchased_qty:3, paid_qty:1 },
+    ])).toEqual({ purchasing:true, payment:false });
+  });
+
+  test('missing lines, over-purchasing and overpayment fail closed', () => {
+    expect(evaluatePurchaseCoverage([]).payment).toBe(false);
+    expect(evaluatePurchaseCoverage([{ ordered_qty:1, purchased_qty:2, paid_qty:2 }]).purchasing).toBe(false);
+  });
+
+  test('all fulfillments must reconcile at the Hub', async () => {
+    const { reconcileHubInbound } = require('../../services/hub-inbound-reconciliation');
+    reconcileHubInbound.mockReset().mockResolvedValueOnce({ verdict:'INBOUND_MATCHED' })
+      .mockResolvedValueOnce({ verdict:'PENDING' });
+    const db = { query: jest.fn()
+      .mockResolvedValueOnce({ rows:[{ ordered_qty:2, purchased_qty:2, paid_qty:2 }] })
+      .mockResolvedValueOnce({ rows:[
+        { id:'f1', tracking_number:'T1', reconciliation_status:'matched', expected_quantity:1, observed_quantity:1 },
+        { id:'f2', tracking_number:'T2', reconciliation_status:'matched', expected_quantity:1, observed_quantity:1 },
+      ] })
+      .mockResolvedValueOnce({ rows:[{ order_item_id:'oi1', ordered_qty:2, parcel_id:'p1', line_qty:2, parcel_status:'available', customs_ok:true }] }) };
+    const result = await projectGoldenEvidence(db, { id:'o1', reference:'K-GOLDEN-1', status:'collected', payment_status:'paid' });
+    expect(result.steps.find(s => s.key === 'HUB_INBOUND').passed).toBe(false);
+    expect(reconcileHubInbound).toHaveBeenCalledTimes(2);
   });
 });
