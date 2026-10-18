@@ -16,7 +16,7 @@ jest.mock('../../services/order-financial-closure-reconciliation', () => ({
   reconcileOrderFinancialClose: jest.fn().mockResolvedValue({ verdict:'FINANCIAL_CLOSE_MATCHED' }),
 }));
 
-const { projectGoldenEvidence, evaluatePhysicalLines, evaluatePurchaseCoverage } = require('../../services/golden-e2e-cockpit');
+const { projectGoldenEvidence, evaluatePhysicalLines, evaluatePurchaseCoverage, evaluateInboundIndependence } = require('../../services/golden-e2e-cockpit');
 
 test('projette 10 preuves réelles sans mutation DB', async () => {
   const db = { query: jest.fn()
@@ -131,5 +131,36 @@ describe('Golden coverage must be complete', () => {
     const result = await projectGoldenEvidence(db, { id:'o1', reference:'K-GOLDEN-1', status:'collected', payment_status:'paid' });
     expect(result.steps.find(s => s.key === 'HUB_INBOUND').passed).toBe(false);
     expect(reconcileHubInbound).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('Golden Hub inbound independence (Lot 1B)', () => {
+  const matched = (id, lines, units) => ({
+    verdict: 'INBOUND_MATCHED', supplier_fulfillment_id: id,
+    purchase_line_ids: lines, hub_unit_refs: units,
+  });
+
+  test('two fulfillments cannot reuse the same purchase line receipt', () => {
+    const proof = evaluateInboundIndependence([
+      matched('f1', ['line-1'], ['unit-1']),
+      matched('f2', ['line-1'], ['unit-1']),
+    ]);
+    expect(proof.independent).toBe(false);
+    expect(proof.conflicts).toEqual(expect.arrayContaining([
+      'SHARED_PURCHASE_LINE:line-1', 'SHARED_HUB_UNIT:unit-1',
+    ]));
+  });
+
+  test('independent receipt lineages remain eligible', () => {
+    expect(evaluateInboundIndependence([
+      matched('f1', ['line-1'], ['unit-1']),
+      matched('f2', ['line-2'], ['unit-2']),
+    ])).toEqual({ independent: true, conflicts: [] });
+  });
+
+  test('one fulfillment with repeated references does not self-conflict', () => {
+    expect(evaluateInboundIndependence([
+      matched('f1', ['line-1', 'line-1'], ['unit-1', 'unit-1']),
+    ]).independent).toBe(true);
   });
 });
