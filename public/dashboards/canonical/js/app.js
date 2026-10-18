@@ -394,6 +394,37 @@
     );
   }
 
+  // Hub live · Exécution : même module d'exécution canonique que le Workspace, restreint aux actions Hub.
+  function renderHubExecution(root, user, adminContext, requestedMarket) {
+    const moduleApi = global.KomerceCanonicalOperationsWorkspace;
+    if (!moduleApi) throw new Error('canonical_operations_workspace_module_missing');
+    return moduleApi.mount({
+      root,
+      user,
+      adminContext,
+      requestedMarket,
+      mode: 'execution',
+      contextContract: global.KomerceAdminContext,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      renderer: global.KomerceDashboardRenderer,
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
+  function isHubExecutionRequest() {
+    return new URLSearchParams(String(global.location?.search || '')).get('view') === 'execute';
+  }
+
+  function renderHubExecutionShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'hub-live-execution',
+      title: 'Hub live · Exécution',
+      requireMarket: true,
+      render: renderHubExecution,
+    });
+  }
+
   function renderShippingCustomsWorkspace(root, user, adminContext, requestedMarket) {
     return canonicalMount(
       global.KomerceCanonicalShippingCustomsWorkspace,
@@ -459,7 +490,8 @@
     });
   }
 
-  function renderHubLive(root, user) {
+  function renderHubLive(root, user, adminContext) {
+    if (isHubExecutionRequest()) return renderHubExecutionShell(root, user, adminContext);
     if (!global.KomerceCanonicalHubLive) throw new Error('canonical_hub_live_module_missing');
     return global.KomerceCanonicalHubLive.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
   }
@@ -734,7 +766,7 @@
     if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);
     if (surface === SURFACES.PURCHASING_WORKSPACE) return renderPurchasingWorkspace(root, user);
     if (surface === SURFACES.IMPORT_RUNTIME) return renderImportRuntime(root, user);
-    if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user);
+    if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user, adminContext);
     if (surface === SURFACES.RELAIS_LIVE) return renderRelayLive(root, user);
     if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);
@@ -838,6 +870,7 @@
     renderSourcingWorkspace,
     renderImportRuntime,
     renderHubLive,
+    renderHubExecution,
     renderRelayLive,
     renderPricingWorkspace,
     renderActionCenter,

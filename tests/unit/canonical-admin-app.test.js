@@ -456,3 +456,12 @@ test('Prix : le marché autorisé par le serveur est exigé dès le premier affi
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/app.js'), 'utf8');
   expect(src).toContain('requireMarket: true');
 });
+
+test('Hub live · Exécution : vue execute montée via le shell marché, même module d’exécution canonique', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/app.js'), 'utf8');
+  expect(src).toContain("get('view') === 'execute'");
+  expect(src).toContain("surface: 'hub-live-execution'");
+  expect(src).toContain("mode: 'execution'");
+  expect(src).toContain('if (isHubExecutionRequest()) return renderHubExecutionShell(root, user, adminContext);');
+  expect(src).toContain('if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user, adminContext);');
+});

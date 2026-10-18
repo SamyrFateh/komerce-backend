@@ -1,15 +1,15 @@
 {
   "version": "ARI-1.0",
   "contractVersion": "ARC-1.0",
-  "generatedAt": "2026-10-12",
+  "generatedAt": "2026-10-18",
   "policy": {
     "principle": "1 measured deviation = 1 stable remediation code = 1 canonical owner = 1 allowed repair path",
     "baselineRule": "never increase an allowlist/baseline only to make a gate pass",
     "generatedTruth": "regenerate this index from executable measurements; never hand-edit it"
   },
   "backend": {
-    "measuredRows": 7,
-    "openDebtCount": 0,
+    "measuredRows": 8,
+    "openDebtCount": 21,
     "reviewedExceptionCount": 11,
     "healthyMeasurementCount": 2,
     "measured": [
@@ -222,6 +222,75 @@
             "entries": [
               "liveTablesUndocumented = 0",
               "headerUnderDeclaration = 0"
+            ]
+          }
+        }
+      },
+      {
+        "rule": "CONTRACT",
+        "label": "Réponses API 200 sans forme prouvée",
+        "count": 21,
+        "entries": [
+          "UNKNOWN response #1",
+          "UNKNOWN response #2",
+          "UNKNOWN response #3",
+          "UNKNOWN response #4",
+          "UNKNOWN response #5",
+          "UNKNOWN response #6",
+          "UNKNOWN response #7",
+          "UNKNOWN response #8",
+          "UNKNOWN response #9",
+          "UNKNOWN response #10",
+          "UNKNOWN response #11",
+          "UNKNOWN response #12",
+          "UNKNOWN response #13",
+          "UNKNOWN response #14",
+          "UNKNOWN response #15",
+          "UNKNOWN response #16",
+          "UNKNOWN response #17",
+          "UNKNOWN response #18",
+          "UNKNOWN response #19",
+          "UNKNOWN response #20",
+          "UNKNOWN response #21"
+        ],
+        "lot": "Fermer chaque UNKNOWN par test, lecture de route/service fiable ou contrat explicite",
+        "note": "Source : docs/contract/openapi.json → x-contract-debt.unknown_responses",
+        "remediation": {
+          "code": "BACKEND-ARCH",
+          "scope": "backend",
+          "owner": "feature manifest + scripts/audit-backend-arch.js",
+          "cause": "Une règle d’architecture backend est violée ou une exception connue a dérivé.",
+          "action": "Corriger le fichier signalé selon le remedy I-BACK correspondant et conserver l’owner canonique.",
+          "forbidden": "Ne pas ajouter le fichier à une allowlist ni élargir une exception pour faire passer le gate.",
+          "baselinePolicy": "never-increase-to-pass",
+          "severity": "error",
+          "autoRemediation": true,
+          "evidence": {
+            "rule": "CONTRACT",
+            "lot": "Fermer chaque UNKNOWN par test, lecture de route/service fiable ou contrat explicite",
+            "note": "Source : docs/contract/openapi.json → x-contract-debt.unknown_responses",
+            "entries": [
+              "UNKNOWN response #1",
+              "UNKNOWN response #2",
+              "UNKNOWN response #3",
+              "UNKNOWN response #4",
+              "UNKNOWN response #5",
+              "UNKNOWN response #6",
+              "UNKNOWN response #7",
+              "UNKNOWN response #8",
+              "UNKNOWN response #9",
+              "UNKNOWN response #10",
+              "UNKNOWN response #11",
+              "UNKNOWN response #12",
+              "UNKNOWN response #13",
+              "UNKNOWN response #14",
+              "UNKNOWN response #15",
+              "UNKNOWN response #16",
+              "UNKNOWN response #17",
+              "UNKNOWN response #18",
+              "UNKNOWN response #19",
+              "UNKNOWN response #20",
+              "UNKNOWN response #21"
             ]
           }
         }

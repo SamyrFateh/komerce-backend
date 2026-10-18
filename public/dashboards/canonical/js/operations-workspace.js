@@ -82,19 +82,20 @@
     return body;
   }
 
-  function createHeader(doc, payload) {
+  function createHeader(doc, payload, mode) {
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
     header.setAttribute('data-dashboard-role', 'hero');
 
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'HUB & RELAIS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Flux à traiter'));
+    const execution = mode === 'execution';
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', execution ? 'HUB LIVE · EXÉCUTION' : 'HUB & RELAIS'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', execution ? 'Exécuter les opérations Hub' : 'Flux à traiter'));
     copy.appendChild(text(
       doc,
       'p',
       'kmc-workspace-subtitle',
-      `${payload.scope.code} · ${payload.scope.name} · voir ce qui attend une action`
+      `${payload.scope.code} · ${payload.scope.name} · ${execution ? 'commander, répartir, expédier, affecter' : 'voir ce qui attend une action'}`
     ));
     header.appendChild(copy);
 
@@ -330,12 +331,12 @@
     { id: 'inventory', label: 'Stock à affecter' },
   ]);
 
-  function createViewTabs(doc, activeView, onSelect) {
+  function createViewTabs(doc, activeView, onSelect, views = WORKSPACE_VIEWS) {
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-tabs';
     bar.setAttribute('role', 'tablist');
     bar.setAttribute('data-workspace-views', '');
-    WORKSPACE_VIEWS.forEach(item => {
+    views.forEach(item => {
       const button = doc.createElement('button');
       button.type = 'button';
       button.className = `kmc-workspace-tab${item.id === activeView ? ' is-active' : ''}`;
@@ -353,7 +354,7 @@
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
     rootNode.replaceChildren();
-    rootNode.appendChild(createHeader(doc, payload));
+    rootNode.appendChild(createHeader(doc, payload, context.mode));
 
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
@@ -361,11 +362,13 @@
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
 
     // UX-07 : une vue = une question. Un seul groupe de sections à la fois.
-    const view = WORKSPACE_VIEWS.some(item => item.id === context.view) ? context.view : 'hub';
+    // Mode « execution » (Hub live) : uniquement les actions Hub ; les actions Relais restent hors de cette surface.
+    const views = context.mode === 'execution' ? WORKSPACE_VIEWS.filter(item => item.id !== 'relay') : WORKSPACE_VIEWS;
+    const view = views.some(item => item.id === context.view) ? context.view : 'hub';
     rootNode.appendChild(createViewTabs(doc, view, nextView => {
       context.view = nextView;
       renderPayload(rootNode, ui, doc, payload, context);
-    }));
+    }, views));
 
     if (view === 'hub') {
     renderOrderActionSection(rootNode, ui, doc, context, {
@@ -575,6 +578,7 @@
       root: rootNode,
       fetch: fetchFn,
       marketCode,
+      mode: options.mode === 'execution' ? 'execution' : 'pilot',
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),
