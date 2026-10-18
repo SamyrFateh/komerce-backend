@@ -26,8 +26,6 @@ const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard
 const order360 = require('../services/order-360');
 const { projectGoldenEvidence } = require('../services/golden-e2e-cockpit');
 const { projectUpstreamEvidence } = require('../services/golden-upstream-evidence');
-const { advanceGoldenJourney } = require('../tests/helpers/goldenJourney');
-const { createGoldenJourney } = require('../tests/helpers/goldenJourneySetup');
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'admin-order-360' });
 
@@ -156,47 +154,8 @@ router.get(
 );
 
 
-router.post(
-  '/orders/:orderReference/golden-advance',
-  authenticate,
-  attachMarketDelegatedRoleFor(['admin']),
-  requireRole(['admin']),
-  resolveOrderReference,
-  attachOrder360Authority,
-  requireOrderMarketRead,
-  async (req, res, next) => {
-    try {
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ error:'Golden advance interdit en production', code:'golden_advance_production_forbidden' });
-      }
-      if (!/^K-GOLDEN-/i.test(req.order360Order.reference || '')) {
-        return res.status(400).json({ error:'Commande non Golden', code:'not_golden_order' });
-      }
-      res.set('Cache-Control', 'private, no-store');
-      return res.json(await advanceGoldenJourney(db, req.order360Order.reference));
-    } catch (err) { return next(err); }
-  }
-);
-
-router.post(
-  '/golden-create',
-  authenticate,
-  attachMarketDelegatedRoleFor(['admin']),
-  requireRole(['admin']),
-  async (req, res, next) => {
-    try {
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ error:'Golden create interdit en production', code:'golden_create_production_forbidden' });
-      }
-      res.set('Cache-Control', 'private, no-store');
-      const marketCode = String((req.body && req.body.marketCode) || 'KM').toUpperCase();
-      if (!['KM','CM','CG'].includes(marketCode)) {
-        return res.status(400).json({ error:'Market Golden non supporté', code:'golden_market_unsupported' });
-      }
-      return res.status(201).json(await createGoldenJourney(db, { marketCode }));
-    } catch (err) { return next(err); }
-  }
-);
+// Synthetic Golden mutations belong exclusively in isolated test runners.
+// Application routes expose only canonical read-only evidence.
 
 module.exports = router;
 module.exports._test = {
