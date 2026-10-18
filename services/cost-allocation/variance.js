@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, services/cost-allocation/cost-types.js
  * @used-by       services/cost-allocation/index.js
- * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, customs_shipments, customs_shipment_parcels, parcels
+ * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, customs_shipments, customs_shipment_parcels, parcel_items, parcels
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      pricing_market_viability_cost_scope
