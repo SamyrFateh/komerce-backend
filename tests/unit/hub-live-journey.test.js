@@ -115,3 +115,16 @@ test('LIVE-02/07 : l’écran lit les endpoints en projection Live et affiche l�
   expect((src.match(/projection=live|projection:'live'/g) || []).length).toBeGreaterThanOrEqual(4);
   expect(src).toContain("/api/hub-dash/dashboard'"); // KPI : aucun contact, pas de projection nécessaire
 });
+
+test('anti-doublon : Hub live ne mute jamais ; Hub & Relais reste l’unique surface d’exécution canonique', () => {
+  const live = read('hub-live.js');
+  expect(live).not.toMatch(/method\s*:\s*['"](POST|PUT|PATCH|DELETE)['"]/i);
+  expect(live).not.toMatch(/\/api\/hub-dash\/[^'"`]*(start-prep|create-parcel|auto-prepare|add-item|remove-item|reassign-item|\/ready|\/ship|backorder)/);
+  expect(live).toContain('read_only_live_cockpit');
+
+  const workspace = read('operations-workspace.js');
+  expect(workspace).toMatch(/method:\s*'POST'/);
+  ['distribution/run', '/ship', '/receive', '/collect', '/assign'].forEach(fragment => {
+    expect(workspace).toContain(fragment);
+  });
+});
