@@ -8,7 +8,7 @@
  * @outputs       read-only financial closure verdict across handoff/incidents/refunds/supplier-payments
  * @depends       services/customer-handoff-reconciliation.js, services/pricing-maturity.js
  * @used-by       future Order 360 / Control Tower / Golden closure
- * @db-read       orders, parcels, incidents, refunds, purchase_lines, order_items, supplier_execution_payments, order_item_real_cost_allocations, order_item_cost_imputations, customs_shipments, customs_shipment_parcels
+ * @db-read       orders, parcels, incidents, refunds, purchase_lines, order_items, supplier_execution_payments, order_item_real_cost_allocations, order_item_cost_imputations, customs_shipments, customs_shipment_parcels, cash_collections
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/chantier/CUSTOMER_TO_CUSTOMER_CLOSURE.md
@@ -155,6 +155,19 @@ function exposeRefunds(rows) {
     amount_eur: row.amount_eur == null ? null : asNumber(row.amount_eur),
     completed_at: row.completed_at || null,
   })));
+}
+
+async function loadCashCollectionProof(client, orderId) {
+  const { rows } = await client.query(`
+    SELECT COUNT(*)::int AS collection_count,
+           COALESCE(SUM(amount_kmf), 0)::numeric AS collected_kmf
+      FROM cash_collections
+     WHERE order_id = $1
+  `, [orderId]);
+  return {
+    collection_count: Number(rows[0]?.collection_count || 0),
+    collected_kmf: Number(rows[0]?.collected_kmf || 0),
+  };
 }
 
 async function loadEconomicActuals(client, order) {
@@ -367,6 +380,23 @@ async function reconcileOrderFinancialClose(client, { orderId } = {}) {
     });
   }
 
+  // paid means the customer handed over cash, not that custody reached a
+  // centrally controlled final destination. Cash movements are holder-scoped
+  // and cannot currently attribute final closure to this specific order.
+  // Never turn a custody transfer, loss, or declared deposit into order proof.
+  if (order.payment_mode === 'cash_relais') {
+    const cash = await loadCashCollectionProof(client, order.id);
+    return output({
+      ...base,
+      verdict: cash.collection_count === 0 || cash.collected_kmf <= 0
+        ? VERDICT.MISMATCH : VERDICT.PENDING,
+      reason: cash.collection_count === 0 || cash.collected_kmf <= 0
+        ? 'FINANCIAL_CLOSE_CASH_COLLECTION_MISSING'
+        : 'FINANCIAL_CLOSE_CASH_FINAL_REMITTANCE_NOT_ATTRIBUTABLE',
+      mode: 'financial',
+    });
+  }
+
   if (!economicMaturity || economicMaturity.mature !== true) {
     return output({
       ...base,
@@ -393,5 +423,6 @@ module.exports = {
   refundAssessment,
   incidentAssessment,
   loadEconomicActuals,
+  loadCashCollectionProof,
   reconcileOrderFinancialClose,
 };
