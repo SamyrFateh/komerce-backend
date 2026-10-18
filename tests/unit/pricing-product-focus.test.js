@@ -85,7 +85,7 @@ describe('Pricing focused product action surface', () => {
     const index = read('public/dashboards/canonical/index.html');
     const decisionSource = read('public/dashboards/canonical/js/pricing-workspace-decision.js');
     const decisionIndex = index.indexOf('/dashboards/canonical/js/pricing-workspace-decision.js?v=261017-1');
-    const focusIndex = index.indexOf('/dashboards/canonical/js/pricing-product-focus.js?v=261010-6');
+    const focusIndex = index.indexOf('/dashboards/canonical/js/pricing-product-focus.js?v=261019-1');
 
     expect(decisionIndex).toBeGreaterThanOrEqual(0);
     expect(focusIndex).toBeGreaterThan(decisionIndex);
