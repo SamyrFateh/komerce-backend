@@ -465,3 +465,64 @@ test('Hub live · Exécution : vue execute montée via le shell marché, même m
   expect(src).toContain('if (isHubExecutionRequest()) return renderHubExecutionShell(root, user, adminContext);');
   expect(src).toContain('if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user, adminContext);');
 });
+
+describe('canonical admin app — encadré « À quoi sert cet écran ? »', () => {
+  function fakeHost() {
+    const inserted = [];
+    const removed = [];
+    const parent = {
+      insertBefore: jest.fn((node, ref) => { inserted.push({ node, ref }); return node; }),
+      removeChild: jest.fn(node => { removed.push(node); return node; }),
+    };
+    const doc = {
+      createElement: tag => fakeNode(tag),
+      querySelector: jest.fn(() => null),
+    };
+    const root = { ownerDocument: doc, parentNode: parent };
+    return { root, doc, parent, inserted, removed };
+  }
+
+  test('insère un encadré avant la racine, avec le texte de la surface', () => {
+    const { api } = loadCanonicalApp();
+    const { root, inserted } = fakeHost();
+
+    const box = api.mountPurposeBox(root, 'finance');
+
+    expect(inserted).toHaveLength(1);
+    expect(inserted[0].ref).toBe(root);
+    expect(box.className).toBe('kmc-purpose-box');
+    expect(box.attributes['data-purpose-surface']).toBe('finance');
+    expect(box.children[0].textContent).toBe('À quoi sert cet écran ?');
+    expect(box.children[1].textContent).toBe(api.SCREEN_PURPOSE.finance);
+  });
+
+  test('remplace l’encadré précédent au lieu de l’empiler', () => {
+    const { api } = loadCanonicalApp();
+    const { root, doc, removed } = fakeHost();
+    const old = { parentNode: root.parentNode };
+    doc.querySelector.mockReturnValueOnce(old);
+
+    api.mountPurposeBox(root, 'commerce');
+
+    expect(removed).toEqual([old]);
+  });
+
+  test('ne fabrique aucun texte pour une surface inconnue ou sans DOM exploitable', () => {
+    const { api } = loadCanonicalApp();
+    expect(api.mountPurposeBox(fakeHost().root, 'settings')).toBeNull();
+    expect(api.mountPurposeBox(fakeHost().root, 'inconnue')).toBeNull();
+    expect(api.mountPurposeBox({}, 'finance')).toBeNull();
+    expect(api.mountPurposeBox(null, 'finance')).toBeNull();
+  });
+
+  test('textes courts et sans jargon technique', () => {
+    const { api } = loadCanonicalApp();
+    const jargon = /\b(KPI|canonique|projection|backend|payload|snapshot|SLA|API|SQL)\b/i;
+    for (const [surface, text] of Object.entries(api.SCREEN_PURPOSE)) {
+      expect(text.length).toBeLessThanOrEqual(230);
+      expect(text).not.toMatch(jargon);
+      expect(typeof surface).toBe('string');
+    }
+    expect(Object.keys(api.SCREEN_PURPOSE).length).toBeGreaterThanOrEqual(15);
+  });
+});
