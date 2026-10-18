@@ -601,7 +601,9 @@
       { title: 'Achats fournisseurs en cours', statuses: ['notified', 'confirmed'], empty: 'Aucune commande fournisseur engagée.' },
       { title: 'Historique des achats', statuses: ['hub_received', 'cancelled'], empty: 'Aucune commande terminée ou annulée dans les 100 dernières.' },
     ];
-    groups.forEach((group) => {
+    const activeStatuses = { prepare: ['draft'], ongoing: ['notified', 'confirmed'], history: ['hub_received', 'cancelled'] };
+    const visibleGroups = groups.filter((group) => group.statuses.some((status) => (activeStatuses[context.activeTab] || activeStatuses.prepare).includes(status)));
+    visibleGroups.forEach((group) => {
       const slot = createSection(rootNode, ui, group.title, 'Commandes fournisseur récentes · lecture seule · 100 dernières maximum');
       const entries = orders.filter((po) => group.statuses.includes(po.status));
       if (!entries.length) {
