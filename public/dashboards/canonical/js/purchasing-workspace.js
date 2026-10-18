@@ -259,7 +259,7 @@
     const slot = createSection(
       rootNode,
       ui,
-      'Achats fournisseurs en cours · Lignes à préparer',
+      'Lignes à préparer',
       'Sélectionnez les lignes d’un même fournisseur puis préparez la commande.'
     );
     if (!(payload.groups || []).length) {
@@ -584,7 +584,7 @@
       bar.appendChild(discard);
       bar.appendChild(submit);
     }
-    const close = makeButton(doc, 'Fermer le détail', 'close-po', true);
+    const close = makeButton(doc, 'Retour à la liste', 'close-po', true);
     close.addEventListener('click', () => context.closePo());
     bar.appendChild(close);
     slot.appendChild(bar);
@@ -597,7 +597,8 @@
   function renderPurchaseOrderLists(rootNode, ui, doc, payload, context) {
     const orders = (payload && payload.purchase_orders) || [];
     const groups = [
-      { title: 'Achats fournisseurs en cours', statuses: ['draft', 'notified', 'confirmed'], empty: 'Aucune commande fournisseur en cours.' },
+      { title: 'À préparer · PO brouillon', statuses: ['draft'], empty: 'Aucun brouillon à finaliser.' },
+      { title: 'Achats fournisseurs en cours', statuses: ['notified', 'confirmed'], empty: 'Aucune commande fournisseur engagée.' },
       { title: 'Historique des achats', statuses: ['hub_received', 'cancelled'], empty: 'Aucune commande terminée ou annulée dans les 100 dernières.' },
     ];
     groups.forEach((group) => {
@@ -640,12 +641,28 @@
     rootNode.classList.add('kmc-purchasing-workspace');
     rootNode.setAttribute('data-workspace-kind', 'purchasing');
     rootNode.appendChild(createHeader(doc));
-    if (state.detail) renderPurchaseOrder(rootNode, ui, doc, state.detail, context);
-    if (state.detailError) {
-      const slot = createSection(rootNode, ui, 'Commande indisponible', state.detailError);
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', state.detailError));
+    if (context.poId) {
+      if (state.detail) renderPurchaseOrder(rootNode, ui, doc, state.detail, context);
+      if (state.detailError) {
+        const slot = createSection(rootNode, ui, 'Commande indisponible', state.detailError);
+        slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', state.detailError));
+      }
+      return;
     }
-    renderOpenLines(rootNode, ui, doc, state.openLines, context);
+    const nav = doc.createElement('nav');
+    nav.className = 'kmc-purchasing-tabs';
+    nav.setAttribute('aria-label', 'Étapes des achats fournisseurs');
+    [['prepare', 'À préparer'], ['ongoing', 'En cours'], ['history', 'Historique']].forEach(([key, label]) => {
+      const button = doc.createElement('button');
+      button.type = 'button';
+      button.className = 'kmc-purchasing-tab';
+      button.textContent = label;
+      button.setAttribute('aria-current', context.activeTab === key ? 'page' : 'false');
+      button.addEventListener('click', () => { context.activeTab = key; context.reload().catch(() => {}); });
+      nav.appendChild(button);
+    });
+    rootNode.appendChild(nav);
+    if (context.activeTab === 'prepare') renderOpenLines(rootNode, ui, doc, state.openLines, context);
     renderPurchaseOrderLists(rootNode, ui, doc, state.purchaseOrders, context);
   }
 
@@ -686,6 +703,7 @@
       selection: new Set(),
       busy: new Set(),
       poId: readPoFromLocation(loc),
+      activeTab: 'prepare',
       reload: null,
       act: null,
       openPo: null,

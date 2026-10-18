@@ -192,3 +192,8 @@
 .kmc-purchasing-po-list { display: grid; gap: .5rem; margin-top: .5rem; }
 .kmc-purchasing-po-link { display: block; width: 100%; padding: .75rem .9rem; border: 1px solid #dbe4f0; border-radius: .5rem; background: #f8fbff; color: #163b6b; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
 .kmc-purchasing-po-link:hover, .kmc-purchasing-po-link:focus-visible { border-color: #3169bd; background: #edf4ff; outline-offset: 2px; }
+
+.kmc-purchasing-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin: .75rem 0 1rem; }
+.kmc-purchasing-tab { border: 1px solid #cbd5e1; border-radius: .65rem; background: #fff; color: #17365d; padding: .7rem 1rem; cursor: pointer; font-weight: 600; }
+.kmc-purchasing-tab[aria-current="page"] { background: #e8f0ff; border-color: #3b70c7; color: #123d80; }
+.kmc-purchasing-tab:focus-visible { outline: 2px solid #3b70c7; outline-offset: 2px; }
