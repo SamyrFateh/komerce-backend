@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-18T13:41:25.042Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 743,
-    "protected": 688,
+    "total": 741,
+    "protected": 686,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1057,21 +1057,7 @@
       ]
     },
     {
-      "key": "POST /api/admin/entities/golden-create",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
       "key": "GET /api/admin/entities/golden-upstream",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "POST /api/admin/entities/orders/{orderReference}/golden-advance",
       "level": "PROTECTED",
       "roles": [
         "admin"
