@@ -64,6 +64,12 @@ test('grant pricing ouvre projection globale sans marché', async () => {
   expect(mockCalls.buildWorkspace).toHaveBeenCalledTimes(1);
 });
 
+test('C1 : product_ref de la requête est transmis au service pour garder le brouillon visible', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/pricing?product_ref=KPR-DRAFT');
+  expect(res.status).toBe(200);
+  expect(mockCalls.buildWorkspace).toHaveBeenCalledWith({ focusProductRef: 'KPR-DRAFT' });
+});
+
 test('rôle admin seul ne suffit pas sans grant pricing', async () => {
   mockPricingAllowed = false;
   const res = await request(app()).get('/api/admin/workspaces/pricing');

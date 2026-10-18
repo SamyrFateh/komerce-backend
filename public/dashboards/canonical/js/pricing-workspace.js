@@ -952,7 +952,10 @@
       reload: null,
     };
     async function load() {
-      const payload = await jsonRequest(context.fetch, endpointFor(context));
+      const focusQuery = !context.requestedMarket && context.requestedProductRef
+        ? `?product_ref=${encodeURIComponent(context.requestedProductRef)}`
+        : '';
+      const payload = await jsonRequest(context.fetch, `${endpointFor(context)}${focusQuery}`);
       const rootNode = context.root;
       rootNode.replaceChildren();
       rootNode.appendChild(header(context.document, context));

@@ -91,4 +91,16 @@ describe('Pricing focused product action surface', () => {
     expect(focusIndex).toBeGreaterThan(decisionIndex);
     expect(decisionSource).not.toMatch(/method\s*:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/);
   });
+
+  test('C1 : produit absent de la liste → message explicite, pas un écran vide', () => {
+    const src = read('public/dashboards/canonical/js/pricing-product-focus.js');
+    expect(src).toMatch(/Produit introuvable dans l’atelier de tarification/);
+    expect(src).toMatch(/if \(!found\)/);
+  });
+
+  test('C1 : le chargement global transmet product_ref au serveur', () => {
+    const src = read('public/dashboards/canonical/js/pricing-workspace.js');
+    expect(src).toMatch(/\?product_ref=\$\{encodeURIComponent\(context\.requestedProductRef\)\}/);
+    expect(src).toMatch(/!context\.requestedMarket && context\.requestedProductRef/);
+  });
 });
