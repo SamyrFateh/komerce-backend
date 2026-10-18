@@ -108,7 +108,9 @@ async function getCoutReel(filters = {}) {
 
 
 async function getMargeEstimee(filters = {}) {
-  // Marge estimee = CA - cout_estime (sur cmds avec snapshot)
+  // Marge estimee = CA - cout_estime (sur cmds avec snapshot).
+  // Le CA du pourcentage porte sur la MEME population que la marge (cmds estimees) :
+  // sinon le % est sous-evalue des que la couverture est < 100 % (audit KPI-3).
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     WITH order_aggs AS (
@@ -123,7 +125,7 @@ async function getMargeEstimee(filters = {}) {
     )
     SELECT
       COALESCE(SUM(total_kmf - est_cost), 0)::bigint AS margin_kmf,
-      COALESCE(SUM(total_kmf), 0)::bigint AS revenue_kmf,
+      COALESCE(SUM(total_kmf) FILTER (WHERE est_cost IS NOT NULL), 0)::bigint AS revenue_kmf,
       COUNT(*) FILTER (WHERE est_cost IS NOT NULL)::int AS items_with_data,
       COUNT(*)::int AS items_total
     FROM order_aggs

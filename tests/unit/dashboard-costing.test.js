@@ -55,6 +55,16 @@ describe('dashboard-metrics/costing', () => {
     expect(result.data_quality.warning).toBe('25% sur 2/3 cmds');
   });
 
+  it('getMargeEstimee : le CA du pourcentage porte sur les memes commandes que la marge (audit KPI-3)', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ margin_kmf: '30000', revenue_kmf: '100000', items_with_data: '1', items_total: '2' }] });
+
+    const result = await costing.getMargeEstimee();
+
+    const sql = db.query.mock.calls[db.query.mock.calls.length - 1][0];
+    expect(sql).toMatch(/SUM\(total_kmf\)\s+FILTER\s*\(WHERE est_cost IS NOT NULL\)/);
+    expect(result.data_quality.warning).toBe('30% sur 1/2 cmds');
+  });
+
   it('getMargeVariableReelle passe les couts variables attendus en parametre', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ margin_kmf: '30000', revenue_kmf: '100000', items_with_data: '1', items_total: '2' }] });
 
