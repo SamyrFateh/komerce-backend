@@ -3,8 +3,8 @@
 > Fichier généré depuis `docs/contract/openapi.json` par `scripts/contract-debt-sync.js`.
 > Ne pas maintenir cette liste à la main.
 
-- Routes dans le contrat : **678**
-- Réponses 200 `UNKNOWN` : **21**
+- Routes dans le contrat : **679**
+- Réponses 200 `UNKNOWN` : **22**
 
 | # | Opération | Source route |
 |---:|---|---|
@@ -29,6 +29,7 @@
 | 19 | `GET /api/market-delegation/markets/{marketCode}/cash-custody` | `routes/market-delegation-cash-control.js` |
 | 20 | `POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations` | `routes/market-delegation-cash-control.js` |
 | 21 | `POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations/{destinationId}/{verb}` | `routes/market-delegation-cash-control.js` |
+| 22 | `GET /api/scans/hub/receivable` | `routes/scans.js` |
 
 Chaque ligne doit être fermée par une preuve de forme de réponse (test, lecture de route/service fiable ou contrat explicite), jamais par une forme inventée.
 
