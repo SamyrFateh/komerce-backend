@@ -275,15 +275,40 @@ describe('A8 — raccordement du writer canonique à l\'allocation réelle', () 
     canonical.isEnabled.mockResolvedValue(true);
     const client = makeClient(script());
     const base = client.query.getMockImplementation();
-    client.query.mockImplementation(async (sql, params) => (String(sql).includes('SELECT DISTINCT p.order_id')
+    client.query.mockImplementation(async (sql, params) => (String(sql).includes('orders-of-shipment')
       ? (client.calls.push({ sql, params }), { rows: [{ order_id: 'order-A' }], rowCount: 1 })
       : base(sql, params)));
     db.pool.connect.mockResolvedValue(client);
     await allocateShipmentRealCosts('ship-a8', null, { transport_cost_allocation: { volumetric_factor_kg_per_m3: 100 } });
     expect(canonical.refreshCanonicalMarginForOrders).toHaveBeenCalledWith(['order-A'], { client });
     const sqls = client.calls.map((c) => String(c.sql).replace(/\s+/g, ' ').trim());
-    expect(sqls.lastIndexOf('COMMIT')).toBeGreaterThan(sqls.findIndex((q) => q.includes('SELECT DISTINCT p.order_id')));
+    expect(sqls.lastIndexOf('COMMIT')).toBeGreaterThan(sqls.findIndex((q) => q.includes('orders-of-shipment')));
     expectTransactionCommitted(client);
+  });
+
+  test('colis groupé (audit P0-PRE) : allocation à la commande de la ligne ; les deux commandes sont rafraîchies', async () => {
+    canonical.isEnabled.mockResolvedValue(true);
+    const ship = { ...shipment, id: 'ship-grp', customs_paid_kmf: '1000' };
+    const itemA = { ...item, order_item_id: 'oi-A', order_id: 'order-A' };
+    const itemB = { ...item, order_item_id: 'oi-B', order_id: 'order-B', product_id: 'prod-B' };
+    const client = makeClient([
+      { rows: [ship] }, { rows: [parcel] }, { rows: [], rowCount: 0 },
+      { rows: [itemA, itemB] }, { rows: [], rowCount: 1 }, { rows: [], rowCount: 1 }, { rows: [], rowCount: 1 },
+    ]);
+    const base = client.query.getMockImplementation();
+    client.query.mockImplementation(async (sql, params) => (String(sql).includes('orders-of-shipment')
+      ? (client.calls.push({ sql, params }), { rows: [{ order_id: 'order-A' }, { order_id: 'order-B' }], rowCount: 2 })
+      : base(sql, params)));
+    db.pool.connect.mockResolvedValue(client);
+
+    await allocateShipmentRealCosts('ship-grp', null, { transport_cost_allocation: { volumetric_factor_kg_per_m3: 100 } });
+
+    const inserts = client.calls.filter((c) => String(c.sql).includes("'customs'") && String(c.sql).includes('INSERT INTO order_item_real_cost_allocations'));
+    const byItem = Object.fromEntries(inserts.map((c) => [c.params[1], c.params[0]]));
+    expect(byItem).toEqual({ 'oi-A': 'order-A', 'oi-B': 'order-B' });
+    const refreshSql = client.calls.find((c) => String(c.sql).includes('orders-of-shipment'));
+    expect(String(refreshSql.sql)).toMatch(/parcel_items/);
+    expect(canonical.refreshCanonicalMarginForOrders).toHaveBeenCalledWith(['order-A', 'order-B'], { client });
   });
 
   test('writer désactivé : aucune requête ni appel supplémentaire (comportement historique)', async () => {
@@ -291,7 +316,7 @@ describe('A8 — raccordement du writer canonique à l\'allocation réelle', () 
     db.pool.connect.mockResolvedValue(client);
     await allocateShipmentRealCosts('ship-a8', null, { transport_cost_allocation: { volumetric_factor_kg_per_m3: 100 } });
     expect(canonical.refreshCanonicalMarginForOrders).not.toHaveBeenCalled();
-    expect(client.calls.some((c) => String(c.sql).includes('SELECT DISTINCT p.order_id'))).toBe(false);
+    expect(client.calls.some((c) => String(c.sql).includes('orders-of-shipment'))).toBe(false);
     expectTransactionCommitted(client);
   });
 });

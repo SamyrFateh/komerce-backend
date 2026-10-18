@@ -7,7 +7,7 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/rules.js, utils/logger.js, services/cost-allocation/real-margin-shadow.js
- * @used-by       none
+ * @used-by       services/refund-service.js, services/transport-cost-allocation.js, services/customs-shipment-service.js, services/order-status-machine.js, services/supplier-payment-settlement-service.js, routes/orders/status.js
  * @db-read       orders
  * @db-write      orders
  * @db-txn        caller_provided_or_single_statement

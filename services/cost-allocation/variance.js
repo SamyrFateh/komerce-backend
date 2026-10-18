@@ -159,8 +159,12 @@ async function computeOrderCostVariance(orderId) {
        FROM customs_shipments s
        JOIN customs_shipment_parcels csp ON csp.shipment_id = s.id
        JOIN parcels p ON p.id = csp.parcel_id
-      WHERE p.order_id = $1
-        AND s.is_active = TRUE
+      WHERE s.is_active = TRUE
+        AND (EXISTS (
+               SELECT 1 FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
+                WHERE pi.parcel_id = csp.parcel_id AND oi.order_id = $1)
+             OR (p.order_id = $1
+                 AND NOT EXISTS (SELECT 1 FROM parcel_items pi0 WHERE pi0.parcel_id = p.id)))
         AND (s.status = 'pending' OR s.customs_paid_kmf IS NULL)`,
     [orderId]
   );

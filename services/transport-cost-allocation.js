@@ -362,7 +362,13 @@ async function refreshOrdersOfShipment(client, shipmentId) {
   const { refreshCanonicalMarginForOrders, isEnabled } = require('./cost-allocation/canonical-margin-writer');
   if (!(await isEnabled())) return;
   const { rows } = await client.query(
-    `SELECT DISTINCT p.order_id FROM customs_shipment_parcels csp JOIN parcels p ON p.id = csp.parcel_id
+    `/* orders-of-shipment */
+     SELECT p.order_id FROM customs_shipment_parcels csp JOIN parcels p ON p.id = csp.parcel_id
+      WHERE csp.shipment_id = $1
+     UNION
+     SELECT oi.order_id FROM customs_shipment_parcels csp
+       JOIN parcel_items pi ON pi.parcel_id = csp.parcel_id
+       JOIN order_items oi ON oi.id = pi.order_item_id
       WHERE csp.shipment_id = $1`, [shipmentId]);
   await refreshCanonicalMarginForOrders(rows.map((r) => r.order_id), { client });
 }
@@ -552,6 +558,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
       let parcelItemsRes = await client.query(
         `SELECT
            pi.order_item_id,
+           oi.order_id AS order_id,
            pi.quantity AS parcel_qty,
            oi.price_kmf,
            oi.quantity AS order_item_qty,
@@ -574,6 +581,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
         parcelItemsRes = await client.query(
           `SELECT
              oi.id AS order_item_id,
+             oi.order_id AS order_id,
              oi.quantity AS parcel_qty,
              oi.price_kmf,
              oi.quantity AS order_item_qty,
@@ -647,7 +655,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
                 source, is_actual, confidence)
              VALUES ($1,$2,$3,$4,'customs',$5,$6,'customs_shipments',TRUE,$7)`,
             [
-              parcel.order_id,
+              item.order_id || parcel.order_id,
               item.order_item_id,
               parcel.parcel_id,
               shipmentId,
@@ -669,7 +677,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
                 source, is_actual, confidence)
              VALUES ($1,$2,$3,$4,'port_transitaire',$5,$6,'customs_shipment_fees',TRUE,$7)`,
             [
-              parcel.order_id,
+              item.order_id || parcel.order_id,
               item.order_item_id,
               parcel.parcel_id,
               shipmentId,
@@ -690,7 +698,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = 
                 source, is_actual, confidence)
              VALUES ($1,$2,$3,$4,'freight',$5,$6,'customs_shipments',TRUE,$7)`,
             [
-              parcel.order_id,
+              item.order_id || parcel.order_id,
               item.order_item_id,
               parcel.parcel_id,
               shipmentId,

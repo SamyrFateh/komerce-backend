@@ -284,7 +284,16 @@ async function propagateCostDouane(client, parcelIds) {
   const canonical = require('./cost-allocation/canonical-margin-writer');
   const canonicalOn = await canonical.isEnabled();
   await recomputeCustomsCosts(client, { orderIds, skipLegacyMargin: canonicalOn });
-  if (canonicalOn) await canonical.refreshCanonicalMarginForOrders(orderIds, { client });
+  if (canonicalOn) {
+    // Colis groupé : les lignes d'autres commandes portent aussi une part (audit P0-PRE).
+    const { rows: lineOrders } = await client.query(
+      `SELECT DISTINCT oi.order_id FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
+        WHERE pi.parcel_id = ANY($1::uuid[])`,
+      [parcelIds]
+    );
+    const all = [...new Set([...orderIds, ...(lineOrders || []).map(r => r.order_id)])];
+    await canonical.refreshCanonicalMarginForOrders(all, { client });
+  }
 }
 
 // ── Lecture ───────────────────────────────────────────────────────────────────

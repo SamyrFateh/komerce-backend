@@ -190,6 +190,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
       const parcelItemsRes = await client.query(
         `SELECT
            pi.order_item_id,
+           oi.order_id AS order_id,
            pi.quantity AS parcel_qty,
            oi.price_kmf,
            oi.quantity AS order_item_qty,
@@ -244,7 +245,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
                 cost_type, amount_kmf, allocation_method,
                 source, is_actual, confidence)
              VALUES ($1,$2,$3,$4,'customs',$5,'by_value','customs_shipments',TRUE,'high')`,
-            [parcel.order_id, it.order_item_id, parcel.parcel_id, shipmentId, cShare]
+            [it.order_id || parcel.order_id, it.order_item_id, parcel.parcel_id, shipmentId, cShare]
           );
           totalAllocations++;
         }
@@ -256,7 +257,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
                 cost_type, amount_kmf, allocation_method,
                 source, is_actual, confidence)
              VALUES ($1,$2,$3,$4,'freight',$5,$6,'customs_shipments',TRUE,$7)`,
-            [parcel.order_id, it.order_item_id, parcel.parcel_id, shipmentId, fShare, freightAllocationMethod, freightConfidence]
+            [it.order_id || parcel.order_id, it.order_item_id, parcel.parcel_id, shipmentId, fShare, freightAllocationMethod, freightConfidence]
           );
           totalAllocations++;
         }
@@ -324,7 +325,7 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
 
     // Charger order_items du parcel
     const itemsRes = await client.query(
-      `SELECT pi.order_item_id, pi.quantity, p.weight_kg
+      `SELECT pi.order_item_id, oi.order_id AS order_id, pi.quantity, p.weight_kg
        FROM parcel_items pi
        JOIN order_items oi ON oi.id = pi.order_item_id
        LEFT JOIN products p ON p.id = oi.product_id
@@ -371,7 +372,7 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
             cost_type, amount_kmf, allocation_method,
             source, is_actual, confidence)
          VALUES ($1,$2,$3,'relay',$4,'per_item',$5,TRUE,'medium')`,
-        [parcel.order_id, it.order_item_id, parcelId, amount, relayCommission.source]
+        [it.order_id || parcel.order_id, it.order_item_id, parcelId, amount, relayCommission.source]
       );
       allocations++;
     }
