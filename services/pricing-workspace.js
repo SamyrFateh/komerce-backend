@@ -545,7 +545,20 @@ function simulationEngineInput(product = {}, body = {}) {
   };
 }
 
-async function buildWorkspace() {
+// C1 (audit 19/10) : la liste est plafonnée (LIMIT 250, actifs d'abord). Un brouillon inactif
+// demandé explicitement via ?product_ref= doit rester visible et simulable, jamais disparaître.
+async function loadFocusProduct(productRef, listedRows) {
+  const ref = String(productRef || '').trim();
+  if (!ref || listedRows.some(row => row.product_ref === ref)) return null;
+  try {
+    return await resolveProductRef(ref);
+  } catch (error) {
+    if (error instanceof PricingWorkspaceError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+async function buildWorkspace({ focusProductRef = null } = {}) {
   const [
     productRes,
     componentProjection,
@@ -586,9 +599,10 @@ async function buildWorkspace() {
     recommendations = [];
   }
 
+  const focusProduct = await loadFocusProduct(focusProductRef, productRes.rows);
   const explainedComponents = costExplainability.explainComponents(componentProjection.components.map(publicComponent));
   const components = attachCostObservations(explainedComponents, observedRows);
-  const products = productRes.rows.map(publicProduct);
+  const products = (focusProduct ? [focusProduct, ...productRes.rows] : productRes.rows).map(publicProduct);
   return {
     scope: { mode: 'global_pricing' },
     summary: {
@@ -601,7 +615,9 @@ async function buildWorkspace() {
       mature_observed_cost_lines: components.filter(component => component.observation?.maturity?.state === 'mature').length,
     },
     products,
-    simulation_products: products.filter(product => product.is_active).map(simulationProduct),
+    simulation_products: products
+      .filter(product => product.is_active || (focusProductRef && product.product_ref === focusProductRef))
+      .map(simulationProduct),
     recommendations,
     cost_components: components,
     cost_meta: costComponents.META,
