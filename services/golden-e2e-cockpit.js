@@ -109,6 +109,33 @@ function evaluatePurchaseCoverage(rows) {
   return { purchasing, payment };
 }
 
+/**
+ * A Hub allocation belongs to a purchase-line lineage, not necessarily to a
+ * specific fulfillment. Two matched fulfillments sharing the same lineage
+ * cannot both claim the same receipt as independent proof.
+ * Fail closed until a persisted fulfillment-specific allocation exists.
+ */
+function evaluateInboundIndependence(results = []) {
+  const lineOwners = new Map();
+  const unitOwners = new Map();
+  const conflicts = [];
+  for (const row of results) {
+    if (row?.verdict !== 'INBOUND_MATCHED') continue;
+    const id = String(row.supplier_fulfillment_id || '');
+    for (const [values, owners, kind] of [
+      [row.purchase_line_ids, lineOwners, 'PURCHASE_LINE'],
+      [row.hub_unit_refs, unitOwners, 'HUB_UNIT'],
+    ]) {
+      for (const value of new Set(Array.isArray(values) ? values : [])) {
+        if (owners.has(value) && owners.get(value) !== id) {
+          conflicts.push(`SHARED_${kind}:${value}`);
+        } else owners.set(value, id);
+      }
+    }
+  }
+  return { independent: conflicts.length === 0, conflicts };
+}
+
 async function projectGoldenEvidence(db, order) {
   const orderId = order.id;
   // Chaque besoin client doit être couvert en quantité par des lignes d'achat actives.
@@ -160,10 +187,13 @@ async function projectGoldenEvidence(db, order) {
   const inboundResults = await Promise.all(fulfillments.map(f =>
     reconcileHubInbound(db, { supplierFulfillmentId: f.id })
   ));
+  const inboundIndependence = evaluateInboundIndependence(inboundResults);
   const inboundMatched = fulfillmentComplete && inboundResults.length === fulfillments.length
-    && inboundResults.every(r => r.verdict === 'INBOUND_MATCHED');
+    && inboundResults.every(r => r.verdict === 'INBOUND_MATCHED')
+    && inboundIndependence.independent;
   const inboundEvidence = !fulfillments.length ? 'SUPPLIER_FULFILLMENT_NOT_FOUND'
-    : inboundResults.map((r, i) => `${fulfillments[i].id}:${r.verdict}`).join(';');
+    : [...inboundResults.map((r, i) => `${fulfillments[i].id}:${r.verdict}`),
+       ...inboundIndependence.conflicts.map(c => `NON_PROUVE:${c}`)].join(';');
   const handoff = await reconcileCustomerHandoff(db, { orderId });
   const close = await reconcileOrderFinancialClose(db, { orderId });
 
@@ -188,4 +218,4 @@ async function projectGoldenEvidence(db, order) {
   };
 }
 
-module.exports = { projectGoldenEvidence, evaluatePhysicalLines, evaluatePurchaseCoverage };
+module.exports = { projectGoldenEvidence, evaluatePhysicalLines, evaluatePurchaseCoverage, evaluateInboundIndependence };
