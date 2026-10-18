@@ -105,13 +105,34 @@ describe('dashboard-metrics/control-tower', () => {
     expect(db.query.mock.calls[0][1]).toEqual(['m-1']);
   });
 
-  it('getCmdsBloquees signale les commandes payees sans stock et drill vers Operations', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ value: '2' }] });
+  it('getCmdsBloquees (S4) : source canonique alertes/incidents, jamais le texte de orders.notes', async () => {
+    db.query.mockResolvedValueOnce({ rows: [
+      { reason: 'paid_but_stock_blocked', n: 2, total: 3 },
+      { reason: 'quantity_mismatch', n: 1, total: 3 },
+    ] });
 
     const result = await control.getCmdsBloquees();
 
-    expect(result).toMatchObject({ key: 'cmds_bloquees', value: 2, drill_to: '/admin/operations#operations-control-chain' });
-    expect(result.data_quality.warning).toBe('2 commande(s) payée(s) sans stock');
+    expect(result).toMatchObject({ key: 'cmds_bloquees', value: 3, drill_to: '/admin/operations#operations-control-chain' });
+    expect(result.breakdown).toEqual([
+      { reason: 'paid_but_stock_blocked', label: 'payée sans stock', count: 2 },
+      { reason: 'quantity_mismatch', label: 'écart de quantité', count: 1 },
+    ]);
+    expect(result.data_quality.warning).toBe('3 commande(s) payée(s) bloquée(s) — motifs : payée sans stock : 2 · écart de quantité : 1 (une commande peut en cumuler plusieurs)');
+    const [sql, params] = db.query.mock.calls[0];
+    expect(sql).not.toMatch(/ILIKE|o\.notes/);
+    expect(sql).toMatch(/FROM incidents i/);
+    expect(sql).toMatch(/JOIN alerts a/);
+    expect(sql).toMatch(/a\.resolved_at IS NULL/);
+    expect(params[params.length - 1]).toEqual(['blocked', 'quantity_mismatch', 'hub_purchase_identity_conflict', 'hub_purchase_quantity_conflict']);
+  });
+
+  it('getCmdsBloquees (S4) : aucun blocage → 0 sans avertissement', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await control.getCmdsBloquees();
+    expect(result.value).toBe(0);
+    expect(result.breakdown).toEqual([]);
+    expect(result.data_quality.warning).toBeNull();
   });
 
   it('getTauxCompletudeScans retourne null et provisional sans colis', async () => {

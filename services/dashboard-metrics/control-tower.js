@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, ./_helpers
  * @used-by       services/dashboard-metrics/index.js
- * @db-read       cash_collections, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, scan_events, signals
+ * @db-read       alerts, cash_collections, order_item_cost_imputations, order_item_real_cost_allocations, incidents, order_items, orders, parcels, scan_events, signals
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      server_market_scope_is_authority
@@ -213,23 +213,66 @@ async function getPointsAttention(filters = {}) {
   });
 }
 
+// S4 (audit dashboards) : source canonique des blocages. Plus aucune lecture du texte de
+// orders.notes : un blocage est un fait persisté (alerte non résolue ou incident ouvert).
+const BLOCKING_INCIDENT_TYPES = Object.freeze([
+  'blocked', 'quantity_mismatch', 'hub_purchase_identity_conflict', 'hub_purchase_quantity_conflict',
+]);
+const BLOCKED_REASON_LABELS = Object.freeze({
+  paid_but_stock_blocked: 'payée sans stock',
+  blocked: 'colis bloqué',
+  quantity_mismatch: 'écart de quantité',
+  hub_purchase_identity_conflict: 'conflit achat / Hub',
+  hub_purchase_quantity_conflict: 'conflit achat / Hub',
+});
+
 async function getCmdsBloquees(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
+  const typesParam = `$${params.length + 1}`;
   const sql = `
-    SELECT COUNT(*)::int AS value
-    FROM orders o
-    WHERE ${where}
-      AND o.payment_status = 'paid'
-      AND o.notes ILIKE '%paid_but_stock_blocked%'
-      AND o.status NOT IN ('cancelled', 'refunded', 'collected')
+    WITH blocked AS (
+      SELECT o.id AS order_id, a.type AS reason
+        FROM orders o
+        JOIN alerts a ON a.entity_type = 'order'
+                     AND a.entity_id::text = o.id::text
+                     AND a.type = 'paid_but_stock_blocked'
+                     AND a.resolved_at IS NULL
+       WHERE ${where}
+         AND o.payment_status = 'paid'
+         AND o.status NOT IN ('cancelled', 'refunded', 'collected')
+      UNION ALL
+      SELECT o.id AS order_id, i.incident_type AS reason
+        FROM incidents i
+        LEFT JOIN parcels ip ON ip.id = i.parcel_id
+        JOIN orders o ON o.id = COALESCE(i.order_id, ip.order_id)
+       WHERE ${where}
+         AND i.status IN ('open', 'investigating')
+         AND i.incident_type = ANY(${typesParam}::text[])
+         AND o.payment_status = 'paid'
+         AND o.status NOT IN ('cancelled', 'refunded', 'collected')
+    )
+    SELECT reason, COUNT(DISTINCT order_id)::int AS n,
+           (SELECT COUNT(DISTINCT order_id) FROM blocked)::int AS total
+      FROM blocked
+     GROUP BY reason
+     ORDER BY n DESC, reason
   `;
-  const r = await db.query(sql, params);
-  const value = Number(r.rows[0].value) || 0;
+  const r = await db.query(sql, [...params, BLOCKING_INCIDENT_TYPES]);
+  const rows = r.rows || [];
+  const value = rows.length ? Number(rows[0].total) || 0 : 0;
+  const breakdown = rows.map((row) => ({
+    reason: row.reason,
+    label: BLOCKED_REASON_LABELS[row.reason] || row.reason,
+    count: Number(row.n) || 0,
+  }));
+  const detail = breakdown.map((b) => `${b.label} : ${b.count}`).join(' · ');
 
-  return makeKpi('cmds_bloquees', 'Commandes bloquées', value, 'count', {
+  const kpi = makeKpi('cmds_bloquees', 'Commandes bloquées', value, 'count', {
     drillTo: '/admin/operations#operations-control-chain',
-    warning: value > 0 ? `${value} commande(s) payée(s) sans stock` : null,
+    warning: value > 0 ? `${value} commande(s) payée(s) bloquée(s) — motifs : ${detail} (une commande peut en cumuler plusieurs)` : null,
   });
+  kpi.breakdown = breakdown;
+  return kpi;
 }
 
 async function getTauxCompletudeScans(filters = {}) {
