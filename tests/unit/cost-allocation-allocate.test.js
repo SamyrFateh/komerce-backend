@@ -145,6 +145,26 @@ describe('allocateShipmentRealCosts', () => {
     expectTransactionCommitted(client);
   });
 
+  it('colis groupé (audit P0-PRE) : chaque allocation va à la commande de SA ligne, pas à la commande porteuse', async () => {
+    const shipment = { id: 'ship-grp', customs_paid_kmf: '1000', freight_kmf: '0', allocation_method: 'by_cif_value' };
+    const parcel   = { parcel_id: 'parcel-grp', order_id: 'order-A', parcel_cif_kmf: '2000', parcel_weight_kg: '2', customs_share_kmf: null, allocation_basis: null };
+    const itemA    = { order_item_id: 'oi-A', order_id: 'order-A', parcel_qty: '1', price_kmf: '1000', order_item_qty: '1', product_id: 'p1', weight_kg: '1', cost_kmf: '1000' };
+    const itemB    = { order_item_id: 'oi-B', order_id: 'order-B', parcel_qty: '1', price_kmf: '1000', order_item_qty: '1', product_id: 'p2', weight_kg: '1', cost_kmf: '1000' };
+    const client = makeClient([
+      { rows: [shipment] }, { rows: [parcel] }, { rows: [], rowCount: 0 },
+      { rows: [itemA, itemB] }, { rows: [], rowCount: 1 }, { rows: [], rowCount: 1 },
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+
+    await allocateShipmentRealCosts('ship-grp');
+
+    const inserts = client.query.mock.calls.filter(c => String(c[0]).includes('INSERT INTO order_item_real_cost_allocations'));
+    const byItem = Object.fromEntries(inserts.map(c => [c[1][1], c[1][0]]));
+    expect(byItem).toEqual({ 'oi-A': 'order-A', 'oi-B': 'order-B' });
+    const total = inserts.reduce((sum, c) => sum + Number(c[1][4]), 0);
+    expect(total).toBe(1000);
+  });
+
   it('maritime + volume snapshoté → freight ventilé par volume (pas par poids)', async () => {
     // Doctrine : fret maritime acheté au m³, pas au kg. Colis A est lourd/compact
     // (peu de volume, beaucoup de poids) ; colis B est léger/volumineux.

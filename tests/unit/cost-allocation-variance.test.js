@@ -127,6 +127,22 @@ describe('cost-allocation/variance', () => {
     });
   });
 
+  it('colis groupé (audit P0-PRE) : la douane inconnue est cherchée via parcel_items, pas seulement la commande porteuse', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{
+        landed: '9000', business_complete: '12000', business_variable: '1000', risk_provision: '0', fixed_overhead: '2000',
+        imputations_count: 1, missing_variable_snapshot_count: 0,
+      }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ n: 0 }] });
+
+    await computeOrderCostVariance('order-B');
+
+    const sql = String(db.query.mock.calls[2][0]);
+    expect(sql).toMatch(/parcel_items/);
+    expect(sql).toMatch(/oi\.order_id = \$1/);
+  });
+
   describe('computeProductCostVariance', () => {
     it('retourne no_data quand aucun produit ne correspond', async () => {
       db.query.mockResolvedValueOnce({ rows: [] });

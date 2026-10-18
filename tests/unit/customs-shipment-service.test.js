@@ -449,6 +449,27 @@ describe('propagateCostDouane', () => {
   });
 });
 
+describe('propagateCostDouane — colis groupé (audit P0-PRE)', () => {
+  it('writer actif : rafraîchit aussi les commandes des lignes du colis, pas seulement la porteuse', async () => {
+    const canonical = require('../../services/cost-allocation/canonical-margin-writer');
+    const enabled = jest.spyOn(canonical, 'isEnabled').mockResolvedValue(true);
+    const refresh = jest.spyOn(canonical, 'refreshCanonicalMarginForOrders').mockResolvedValue({ enabled: true });
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ order_id: 'oA' }] })   // commande porteuse
+        .mockResolvedValueOnce({ rows: [] })                      // recompute cost_douane_kmf
+        .mockResolvedValueOnce({ rows: [{ order_id: 'oA' }, { order_id: 'oB' }] }), // commandes des lignes
+    };
+    try {
+      await propagateCostDouane(client, ['p1']);
+      expect(refresh).toHaveBeenCalledWith(['oA', 'oB'], { client });
+    } finally {
+      enabled.mockRestore();
+      refresh.mockRestore();
+    }
+  });
+});
+
 // ── listShipments ───────────────────────────────────────────────────────────
 
 describe('listShipments', () => {
