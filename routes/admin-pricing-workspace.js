@@ -633,7 +633,7 @@ router.post('/structure-events/:eventId/attributions/correct', async (req, res, 
 router.get('/', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store');
-    res.json(await workspace.buildWorkspace());
+    res.json(await workspace.buildWorkspace({ focusProductRef: req.query.product_ref || null }));
   } catch (error) { handleError(error, res, next); }
 });
 
