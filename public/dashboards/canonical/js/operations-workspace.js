@@ -309,27 +309,209 @@
     button.disabled = true;
     button.textContent = 'En cours…';
     setFeedback(context.root, options.runningMessage || 'Action en cours…', 'neutral');
+    let result;
     try {
-      const result = await jsonRequest(context.fetch, options.url, {
+      result = await jsonRequest(context.fetch, options.url, {
         method: 'POST',
         body: options.body,
       });
-      setFeedback(context.root, options.successMessage || 'Action appliquée.', 'positive');
-      await context.reload();
-      return result;
     } catch (error) {
       setFeedback(context.root, error.message, 'critical');
       button.disabled = false;
       button.textContent = previous;
       throw error;
     }
+    if (typeof options.onSuccess === 'function') options.onSuccess(result);
+    const message = typeof options.successMessage === 'function'
+      ? options.successMessage(result)
+      : (options.successMessage || 'Action appliquée.');
+    const tone = typeof options.successTone === 'function' ? options.successTone(result) : 'positive';
+    try {
+      await context.reload();
+      // La relecture reconstruit l'en-tête : le message est posé après, pour rester lisible.
+      setFeedback(context.root, message, tone);
+    } catch (error) {
+      setFeedback(context.root, `${message} La relecture a échoué : ${error.message}`, 'critical');
+    }
+    return result;
   }
+
+  const RECEIVABLE_ENDPOINT = '/api/scans/hub/receivable';
+  const RECEIVE_ENDPOINT = '/api/scans/hub/receive';
+  const RECEPTION_STATE_LABELS = Object.freeze({ NOT_RECEIVED: 'Non reçu', PARTIAL: 'Partiel', COMPLETE: 'Complet' });
 
   const WORKSPACE_VIEWS = Object.freeze([
     { id: 'hub', label: 'Hub' },
     { id: 'relay', label: 'Relais' },
     { id: 'inventory', label: 'Stock à affecter' },
   ]);
+
+  // Hub live · Exécution : actions Hub uniquement (jamais Relais) + réception fournisseur.
+  const EXECUTION_VIEWS = Object.freeze([
+    { id: 'hub', label: 'Hub' },
+    { id: 'reception', label: 'Réception fournisseur' },
+    { id: 'inventory', label: 'Stock à affecter' },
+  ]);
+
+  function newReceptionReference() {
+    const crypto = globalThis.crypto;
+    const id = crypto && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    return `SUPPLIER_PACKAGE-${id}`;
+  }
+
+  // Référence stable par saisie : un renvoi (réseau, double clic) rejoue la même réception, jamais une seconde.
+  function receptionReferenceFor(context, purchaseOrderId) {
+    if (!context.receiveRefs) context.receiveRefs = new Map();
+    if (!context.receiveRefs.has(purchaseOrderId)) context.receiveRefs.set(purchaseOrderId, newReceptionReference());
+    return context.receiveRefs.get(purchaseOrderId);
+  }
+
+  function receptionMessage(result) {
+    if (result && result.idempotent_replay) {
+      return `Réception déjà traitée${result.unit && result.unit.reference ? ` (${result.unit.reference})` : ''} : aucune nouvelle mutation.`;
+    }
+    if (result && result.quarantined) {
+      return `Colis mis en quarantaine (${result.reason_code || 'écart constaté'}) : un incident de réconciliation est ouvert, le stock n’est pas augmenté.`;
+    }
+    return 'Réception enregistrée.';
+  }
+
+  function createReceptionCard(doc, context, po) {
+    const card = doc.createElement('article');
+    card.className = 'kmc-workspace-receive-card';
+    card.setAttribute('data-receive-po', po.purchase_order_id);
+
+    const head = doc.createElement('header');
+    head.className = 'kmc-workspace-receive-head';
+    head.appendChild(text(doc, 'strong', '', (po.supplier && po.supplier.name) || 'Fournisseur non renseigné'));
+    head.appendChild(text(doc, 'span', 'kmc-workspace-muted',
+      `PO ${String(po.purchase_order_id).slice(0, 8)} · ${po.supplier_order_ref || 'sans référence fournisseur'} · statut fournisseur : ${po.po_status} (information, pas une réception)`));
+    card.appendChild(head);
+
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table';
+    const thead = doc.createElement('thead');
+    const headRow = doc.createElement('tr');
+    ['Article', 'Attendu', 'Reçu', 'Restant', 'État', 'Reçu maintenant'].forEach(label => headRow.appendChild(text(doc, 'th', '', label)));
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+    const tbody = doc.createElement('tbody');
+    const inputs = [];
+    po.lines.forEach((line, index) => {
+      const row = doc.createElement('tr');
+      row.appendChild(text(doc, 'td', '', line.product_name));
+      row.appendChild(text(doc, 'td', '', formatNumber(line.expected_quantity)));
+      row.appendChild(text(doc, 'td', '', formatNumber(line.received_quantity)));
+      row.appendChild(text(doc, 'td', '', formatNumber(line.remaining_quantity)));
+      row.appendChild(text(doc, 'td', '', RECEPTION_STATE_LABELS[line.reception_state] || line.reception_state));
+      const cell = doc.createElement('td');
+      const input = doc.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.max = String(line.remaining_quantity);
+      input.step = '1';
+      input.inputMode = 'numeric';
+      input.className = 'kmc-workspace-receive-qty';
+      input.setAttribute('data-receive-line', String(index));
+      input.setAttribute('aria-label', `Quantité reçue maintenant pour ${line.product_name}`);
+      cell.appendChild(input);
+      row.appendChild(cell);
+      tbody.appendChild(row);
+      inputs.push({ input, line });
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    card.appendChild(wrap);
+
+    const footer = doc.createElement('div');
+    footer.className = 'kmc-workspace-receive-footer';
+    const tracking = doc.createElement('input');
+    tracking.type = 'text';
+    tracking.className = 'kmc-workspace-receive-tracking';
+    tracking.maxLength = 120;
+    tracking.placeholder = 'Suivi / référence du colis (facultatif)';
+    tracking.setAttribute('aria-label', 'Suivi ou référence du colis reçu');
+    footer.appendChild(tracking);
+    const hint = text(doc, 'span', 'kmc-workspace-muted kmc-workspace-receive-hint', 'Saisissez la quantité réellement reçue. Aucune quantité n’est préremplie.');
+    footer.appendChild(hint);
+    const button = makeActionButton(doc, 'Enregistrer la réception', 'receive-supplier');
+    button.disabled = true;
+    footer.appendChild(button);
+    card.appendChild(footer);
+
+    function collect() {
+      const contents = [];
+      let invalid = false;
+      inputs.forEach(({ input, line }) => {
+        const raw = String(input.value || '').trim();
+        if (raw === '') return;
+        const quantity = Number(raw);
+        if (!Number.isInteger(quantity) || quantity < 0 || quantity > line.remaining_quantity) { invalid = true; return; }
+        if (quantity > 0) {
+          contents.push({
+            purchase_order_id: po.purchase_order_id,
+            ...(line.product_sku_id ? { product_sku_id: line.product_sku_id } : {}),
+            quantity,
+          });
+        }
+      });
+      return { contents, invalid };
+    }
+
+    function sync() {
+      const { contents, invalid } = collect();
+      button.disabled = invalid || contents.length === 0;
+      hint.textContent = invalid
+        ? 'Quantité invalide : entier entre 0 et le restant attendu.'
+        : 'Saisissez la quantité réellement reçue. Aucune quantité n’est préremplie.';
+    }
+    inputs.forEach(({ input }) => input.addEventListener('input', sync));
+
+    button.addEventListener('click', () => {
+      const { contents, invalid } = collect();
+      if (invalid || contents.length === 0) return;
+      const total = contents.reduce((sum, item) => sum + item.quantity, 0);
+      const trackingRef = String(tracking.value || '').trim();
+      runAction(context, button, {
+        url: RECEIVE_ENDPOINT,
+        body: { reference: receptionReferenceFor(context, po.purchase_order_id), ...(trackingRef ? { tracking_ref: trackingRef } : {}), contents },
+        confirmMessage: `Confirmer la réception physique de ${total} article(s) du PO ${String(po.purchase_order_id).slice(0, 8)} ?`,
+        runningMessage: 'Réception en cours…',
+        successMessage: receptionMessage,
+        successTone: result => (result && result.quarantined ? 'critical' : 'positive'),
+        onSuccess: () => { context.receiveRefs.delete(po.purchase_order_id); },
+      }).catch(error => {
+        if (error && error.code === 'HUB_RECEPTION_REFERENCE_CONFLICT') {
+          context.receiveRefs.delete(po.purchase_order_id);
+          setFeedback(context.root, 'Cette saisie existe déjà avec un contenu différent. Vérifiez les quantités restantes, puis recommencez.', 'critical');
+        }
+      });
+    });
+    return card;
+  }
+
+  function renderReceptionSection(rootNode, ui, doc, context) {
+    const slot = createSection(
+      rootNode,
+      ui,
+      'Hub · Réception fournisseur',
+      'Enregistrez ce qui est physiquement arrivé au Hub. Le statut fournisseur (par exemple SHIPPED) n’est jamais une réception ; les réceptions partielles sont acceptées.'
+    );
+    if (context.receivableError) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Réception indisponible : ${context.receivableError}`));
+      return;
+    }
+    const orders = (context.receivable && context.receivable.purchase_orders) || [];
+    if (!orders.length) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune Purchase Order en attente de réception.'));
+      return;
+    }
+    orders.forEach(po => slot.appendChild(createReceptionCard(doc, context, po)));
+  }
 
   function createViewTabs(doc, activeView, onSelect, views = WORKSPACE_VIEWS) {
     const bar = doc.createElement('div');
@@ -363,7 +545,7 @@
 
     // UX-07 : une vue = une question. Un seul groupe de sections à la fois.
     // Mode « execution » (Hub live) : uniquement les actions Hub ; les actions Relais restent hors de cette surface.
-    const views = context.mode === 'execution' ? WORKSPACE_VIEWS.filter(item => item.id !== 'relay') : WORKSPACE_VIEWS;
+    const views = context.mode === 'execution' ? EXECUTION_VIEWS : WORKSPACE_VIEWS;
     const view = views.some(item => item.id === context.view) ? context.view : 'hub';
     rootNode.appendChild(createViewTabs(doc, view, nextView => {
       context.view = nextView;
@@ -424,6 +606,8 @@
       empty: 'Aucun colis à expédier.',
     });
     }
+
+    if (view === 'reception') renderReceptionSection(rootNode, ui, doc, context);
 
     if (view === 'relay') {
     renderOrderActionSection(rootNode, ui, doc, context, {
@@ -587,6 +771,15 @@
 
     async function reload() {
       const payload = await jsonRequest(fetchFn, endpointFor(marketCode));
+      if (context.mode === 'execution') {
+        try {
+          context.receivable = await jsonRequest(fetchFn, RECEIVABLE_ENDPOINT);
+          context.receivableError = null;
+        } catch (error) {
+          context.receivable = null;
+          context.receivableError = error.message;
+        }
+      }
       currentPayload = payload;
       renderPayload(rootNode, ui, doc, payload, context);
       return payload;

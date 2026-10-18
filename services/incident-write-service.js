@@ -129,7 +129,7 @@ async function createHubPhysicalReconciliationIncident(executor, {
       incident_type, severity, title, description, details, detected_source,
       origin_domain, resolver_domain, resolution_class, due_at
     ) VALUES (
-      NULL,$1,$2,'reconciliation_error',$3,$4,$5,$6,'hub_physical_identity',
+      NULL,$1,$2,'reconciliation_error',$3,$4,$5,$6,'reconciliation',
       $7,$8,$9,$10
     )
     RETURNING *

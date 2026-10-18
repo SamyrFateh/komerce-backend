@@ -7,6 +7,12 @@ jest.mock('../../db', () => ({
   withTransaction: jest.fn(),
 }));
 
+// Idempotence : par défaut aucune réception antérieure pour la référence (lecture isolée, sans base).
+jest.mock('../../services/hub-receive-idempotency', () => {
+  const actual = jest.requireActual('../../services/hub-receive-idempotency');
+  return { ...actual, findPriorReception: jest.fn().mockResolvedValue(null) };
+});
+
 jest.mock('../../services/hub-physical-identity', () => {
   class HubPhysicalError extends Error {
     constructor(code, message) { super(message || code); this.code = code; }
@@ -27,6 +33,7 @@ jest.mock('../../services/hub-physical-identity', () => {
 const db = require('../../db');
 const hubPhysical = require('../../services/hub-physical-identity');
 const hubOps = require('../../services/hub-operations');
+const idempotency = require('../../services/hub-receive-idempotency');
 
 const U1 = '00000000-0000-0000-0000-000000000101';
 const U2 = '00000000-0000-0000-0000-000000000102';
@@ -304,4 +311,65 @@ test('physical outcome delegates atomically to HUB-001/F0 boundary', async () =>
   const result = await hubOps.recordPhysicalOutcomeCommand({ unit_id: U1, outcome_type: 'LOST' }, 'user-1');
   expect(result.status).toBe(200);
   expect(hubPhysical.recordPhysicalUnitOutcome).toHaveBeenCalled();
+});
+
+
+describe('réception fournisseur — idempotence de la référence', () => {
+  const content = [{ purchase_order_id: PO1, quantity: 2 }];
+
+  beforeEach(() => { idempotency.findPriorReception.mockResolvedValue(null); });
+
+  test('même référence + même contenu : déjà traité, aucune nouvelle réception', async () => {
+    idempotency.findPriorReception.mockResolvedValueOnce({
+      unit: { id: U1, reference: 'SUP-REPLAY', state: 'RECEIVED' },
+      contents: [{ purchase_order_id: PO1, product_sku_id: null, quantity: 2 }],
+    });
+    hubPhysical.receiveSupplierPackage.mockClear();
+
+    const result = await hubOps.receiveSupplierPackageCommand({ reference: 'SUP-REPLAY', contents: content }, 'user-1');
+
+    expect(result.status).toBe(200);
+    expect(result.body).toEqual(expect.objectContaining({ idempotent_replay: true, quarantined: false }));
+    expect(hubPhysical.receiveSupplierPackage).not.toHaveBeenCalled();
+  });
+
+  test('même référence + contenu différent : conflit contrôlé 409, aucune mutation', async () => {
+    idempotency.findPriorReception.mockResolvedValueOnce({
+      unit: { id: U1, reference: 'SUP-REPLAY', state: 'RECEIVED' },
+      contents: [{ purchase_order_id: PO1, product_sku_id: null, quantity: 1 }],
+    });
+    hubPhysical.receiveSupplierPackage.mockClear();
+
+    const result = await hubOps.receiveSupplierPackageCommand({ reference: 'SUP-REPLAY', contents: content }, 'user-1');
+
+    expect(result.status).toBe(409);
+    expect(result.body.code).toBe('HUB_RECEPTION_REFERENCE_CONFLICT');
+    expect(hubPhysical.receiveSupplierPackage).not.toHaveBeenCalled();
+  });
+
+  test('course concurrente (violation d’unicité) : relecture et réponse contrôlée, jamais un 500', async () => {
+    const duplicate = Object.assign(new Error('duplicate key'), { code: '23505' });
+    db.withTransaction.mockRejectedValueOnce(duplicate);
+    idempotency.findPriorReception
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        unit: { id: U1, reference: 'SUP-RACE', state: 'RECEIVED' },
+        contents: [{ purchase_order_id: PO1, product_sku_id: null, quantity: 2 }],
+      });
+
+    const result = await hubOps.receiveSupplierPackageCommand({ reference: 'SUP-RACE', contents: content }, 'user-1');
+
+    expect(result.status).toBe(200);
+    expect(result.body.idempotent_replay).toBe(true);
+  });
+
+  test('sans référence fournie : aucune recherche d’antériorité (référence générée)', async () => {
+    hubPhysical.receiveSupplierPackage.mockResolvedValue({ quarantined: false, unit: { id: U1 } });
+    db.withTransaction.mockImplementation(async (work) => work(clientWithUnit(null)));
+    idempotency.findPriorReception.mockClear();
+
+    await hubOps.receiveSupplierPackageCommand({ contents: content }, 'user-1');
+
+    expect(idempotency.findPriorReception).not.toHaveBeenCalled();
+  });
 });

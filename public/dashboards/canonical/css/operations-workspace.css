@@ -1119,3 +1119,13 @@
 .kmc-catalog-curation-table .kmc-workspace-action.is-danger{border-color:#F6C9CE;background:#fff;color:#B42318}
 .kmc-catalog-curation-table .kmc-workspace-action.is-danger:hover:not(:disabled){background:#FEF2F3;border-color:#E5848E}
 @media (prefers-reduced-motion:no-preference){.kmc-catalog-chain-stage.is-current{transition:box-shadow .2s}}
+
+
+/* Hub live · Exécution — réception fournisseur */
+.kmc-workspace-receive-card { border: 1px solid #e3e9f3; border-radius: 8px; background: #fff; padding: 14px; margin-bottom: 12px; }
+.kmc-workspace-receive-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.kmc-workspace-receive-qty { width: 96px; min-height: 40px; padding: 6px 8px; border: 1px solid #c9d3e6; border-radius: 6px; font: inherit; }
+.kmc-workspace-receive-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.kmc-workspace-receive-tracking { flex: 1 1 220px; min-width: 0; min-height: 40px; padding: 6px 10px; border: 1px solid #c9d3e6; border-radius: 6px; font: inherit; }
+.kmc-workspace-receive-hint { flex: 1 1 100%; }
+@media (max-width: 680px) { .kmc-workspace-receive-card { padding: 10px; } .kmc-workspace-receive-footer .kmc-workspace-action { width: 100%; } }
