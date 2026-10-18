@@ -74,13 +74,27 @@
     [SURFACES.USERS_ADMIN]: 'Qui a accès à Komerce, et avec quel rôle.',
   });
 
+  // Ancre : uniquement là où la mise en page est connue et testée (canon de layout).
+  //  - dashboards à hiérarchie : bloc « attention » (le CSS lui donne `order: 25`, entre attention et primary) ;
+  //  - Action Center : bande de métriques.
+  // Ailleurs : pas d'encadré, plutôt que de risquer de décaler le hero (la topbar est superposée au hero).
+  function purposeAnchor(root) {
+    if (!root || typeof root.querySelector !== 'function') return null;
+    const attention = root.querySelector('[data-dashboard-role="attention"]');
+    const holder = attention && attention.parentNode;
+    if (holder && typeof holder.getAttribute === 'function' && holder.getAttribute('data-dashboard-hierarchy')) return attention;
+    return root.querySelector('.kmc-action-center > .kmc-metric-strip');
+  }
+
   function mountPurposeBox(root, surface) {
-    const doc = root && root.ownerDocument;
     const text = SCREEN_PURPOSE[surface];
-    if (!doc || typeof doc.createElement !== 'function' || !text || !root.parentNode
-      || typeof root.parentNode.insertBefore !== 'function') return null;
-    const previous = typeof doc.querySelector === 'function' ? doc.querySelector('.kmc-purpose-box') : null;
-    if (previous && previous.parentNode) previous.parentNode.removeChild(previous);
+    const anchor = text ? purposeAnchor(root) : null;
+    const doc = root && root.ownerDocument;
+    if (!anchor || !doc || typeof doc.createElement !== 'function' || !anchor.parentNode
+      || typeof anchor.parentNode.insertBefore !== 'function') return null;
+    if (typeof root.querySelectorAll === 'function') {
+      root.querySelectorAll('.kmc-purpose-box').forEach(old => { if (old.parentNode) old.parentNode.removeChild(old); });
+    }
     const box = doc.createElement('details');
     box.className = 'kmc-purpose-box';
     box.open = true;
@@ -91,8 +105,29 @@
     body.textContent = text;
     box.appendChild(title);
     box.appendChild(body);
-    root.parentNode.insertBefore(box, root);
+    anchor.parentNode.insertBefore(box, anchor.nextSibling);
     return box;
+  }
+
+  // Les écrans se rendent de façon asynchrone et peuvent effacer la racine (changement de marché) :
+  // on (ré)insère l'encadré dès que l'ancre existe, sans jamais boucler (no-op s'il est déjà en place).
+  function watchPurposeBox(root, surface) {
+    if (!SCREEN_PURPOSE[surface]) return;
+    const ensure = () => {
+      const anchor = purposeAnchor(root);
+      if (!anchor) return;
+      const next = anchor.nextSibling;
+      if (next && next.className === 'kmc-purpose-box' && next.getAttribute('data-purpose-surface') === surface) return;
+      mountPurposeBox(root, surface);
+    };
+    ensure();
+    if (typeof global.MutationObserver !== 'function' || !root || typeof root.nodeType !== 'number') return;
+    let queued = false;
+    new global.MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      Promise.resolve().then(() => { queued = false; ensure(); });
+    }).observe(root, { childList: true, subtree: true });
   }
 
   // Landing par défaut par rôle — voir docs/admin-nav-capability-map.md.
@@ -797,7 +832,7 @@
 
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
-    mountPurposeBox(root, surface);
+    watchPurposeBox(root, surface);
     if (surface === SURFACES.SETTINGS) return renderSettingsWorkspace(root, user);
     if (surface === SURFACES.PROVIDERS_ADMIN) return renderProvidersAdmin(root);
     if (surface === SURFACES.USERS_ADMIN) return renderUsersAdmin(root);
@@ -939,6 +974,7 @@
     renderDemo,
     renderReady,
     mountPurposeBox,
+    watchPurposeBox,
     SCREEN_PURPOSE,
     ROLE_DEFAULT_LANDING,
     defaultLandingSurface,

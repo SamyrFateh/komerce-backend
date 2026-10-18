@@ -480,7 +480,7 @@ body.kmc-shell-v4 .kmc-ctl-stage {
 .kmc-purpose-box {
   box-sizing: border-box;
   max-width: var(--kmc-shell-max, 1480px);
-  margin: 12px auto 0;
+  margin: 0;
   padding: 10px 16px;
   background: #fff;
   border: 1px solid #dbe4f3;
@@ -499,4 +499,9 @@ body.kmc-shell-v4 .kmc-ctl-stage {
 
 .kmc-purpose-box > p {
   margin: 6px 0 0;
+}
+
+/* Dans une grille à rôles (hero 10 / attention 20 / primary 30), l'encadré s'intercale sans déplacer le hero. */
+body.kmc-shell-v4 [data-dashboard-hierarchy] > .kmc-purpose-box {
+  order: 25;
 }
