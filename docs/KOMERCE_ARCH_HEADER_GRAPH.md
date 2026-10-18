@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 725
-- Files with full headers: 677
+- Scanned code files: 727
+- Files with full headers: 679
 - Files with lite headers: 48
-- Files with any headers: 725
+- Files with any headers: 727
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1766
-- Edges: 8936
+- Graph nodes: 1774
+- Edges: 8962
 - DB tables: 205
-- Doctrines: 637
+- Doctrines: 643
 - Impact areas: 199
-- Unresolved code edges: 875
+- Unresolved code edges: 878
 - Tables multi-écrivains directs (>=2): 86
 - Avertissements db-write / db-write-via en chevauchement: 9
 
@@ -44,7 +44,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 23
 - inventory: 2
 - local-stock: 4
-- logistics: 51
+- logistics: 53
 - loyalty: 3
 - market: 4
 - market-autonomy: 4
@@ -89,7 +89,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 409
+- service: 411
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -431,6 +431,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/finance-metrics/sales-analysis.js — economic-engine-sales-analysis (economic-engine, high, full)
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/hub-inbound-reconciliation.js — hub-inbound-reconciliation (logistics, high, full)
+- services/hub-receive-idempotency.js — hub-receive-idempotency (logistics, high, full)
 - services/hub-reference.js — hub-reference (logistics, high, full)
 - services/import-lot-registry.js — import-lot-registry-projection (admin-dashboard, high, full)
 - services/import-runtime-runs.js — import-runtime-run-projection (sourcing, high, full)

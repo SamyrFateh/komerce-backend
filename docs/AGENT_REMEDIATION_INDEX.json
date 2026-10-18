@@ -9,7 +9,7 @@
   },
   "backend": {
     "measuredRows": 8,
-    "openDebtCount": 21,
+    "openDebtCount": 22,
     "reviewedExceptionCount": 11,
     "healthyMeasurementCount": 2,
     "measured": [
@@ -229,7 +229,7 @@
       {
         "rule": "CONTRACT",
         "label": "Réponses API 200 sans forme prouvée",
-        "count": 21,
+        "count": 22,
         "entries": [
           "UNKNOWN response #1",
           "UNKNOWN response #2",
@@ -251,7 +251,8 @@
           "UNKNOWN response #18",
           "UNKNOWN response #19",
           "UNKNOWN response #20",
-          "UNKNOWN response #21"
+          "UNKNOWN response #21",
+          "UNKNOWN response #22"
         ],
         "lot": "Fermer chaque UNKNOWN par test, lecture de route/service fiable ou contrat explicite",
         "note": "Source : docs/contract/openapi.json → x-contract-debt.unknown_responses",
@@ -290,7 +291,8 @@
               "UNKNOWN response #18",
               "UNKNOWN response #19",
               "UNKNOWN response #20",
-              "UNKNOWN response #21"
+              "UNKNOWN response #21",
+              "UNKNOWN response #22"
             ]
           }
         }

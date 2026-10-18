@@ -1,9 +1,7 @@
-'use strict';
-
 /**
  * @komerce-arch
  * @role          hub-receive-idempotency
- * @domain        hub
+ * @domain        logistics
  * @layer         service
  * @criticality   high
  * @inputs        db, reception_reference, normalized_contents
@@ -19,6 +17,8 @@
  * Idempotence de la réception fournisseur : la `reference` (UNIQUE) identifie la saisie.
  * Même référence + même contenu = déjà traité (aucune nouvelle mutation) ; contenu différent = conflit contrôlé.
  */
+
+'use strict';
 
 const db = require('../db');
 

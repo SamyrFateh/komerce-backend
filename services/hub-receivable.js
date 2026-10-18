@@ -1,16 +1,14 @@
-'use strict';
-
 /**
  * @komerce-arch
  * @role          hub-receivable
- * @domain        hub
+ * @domain        logistics
  * @layer         service
  * @criticality   medium
  * @inputs        db
  * @outputs       receivable_purchase_orders_read_model
  * @depends       db, v_purchase_line_progress
  * @used-by       routes/scans.js
- * @db-read       v_purchase_line_progress, purchase_orders, purchase_lines, product_suppliers, products, suppliers
+ * @db-read       v_purchase_line_progress, purchase_orders, purchase_lines, product_skus, product_suppliers, products, suppliers
  * @db-write      none
  * @doctrine      read_model_minimal_for_hub_reception, no_reception_from_supplier_status, quantities_come_from_server
  * @impact-areas  hub, purchasing
@@ -20,6 +18,8 @@
  * `POST /api/scans/hub/receive` (PO, SKU, quantités). Aucun coût, aucun prix, aucun credential.
  * Le statut fournisseur (p. ex. SHIPPED) est informatif : il ne déclenche ni n'autorise aucune réception.
  */
+
+'use strict';
 
 const db = require('../db');
 
