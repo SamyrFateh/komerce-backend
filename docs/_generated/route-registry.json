@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-17T08:10:05.469Z",
+  "generatedAt": "2026-10-18T13:40:58.069Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 732,
+  "count": 733,
   "routes": [
     {
       "method": "GET",
@@ -6590,6 +6590,16 @@
       "fullPath": "/api/scans/hub/pending",
       "mountPrefix": "/api/scans",
       "localPath": "/hub/pending",
+      "routeFile": "routes/scans.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/scans/hub/receivable",
+      "mountPrefix": "/api/scans",
+      "localPath": "/hub/receivable",
       "routeFile": "routes/scans.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
