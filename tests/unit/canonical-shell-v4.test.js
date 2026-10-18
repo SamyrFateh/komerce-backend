@@ -71,3 +71,16 @@ describe('canonical-shell-v4.css', () => {
 test('canonical-shell-v4.css : plancher typographique (aucun texte sous 10 px)', () => {
   expect(require('../helpers/fontFloor').tinyFonts('canonical-shell-v4.css')).toEqual([]);
 });
+
+test('canonical-shell-v4.css : l’encadré « À quoi sert cet écran ? » ne décale pas la grille (pas de marge propre, pas de position absolue)', () => {
+  const css = fs.readFileSync(CSS_PATH, 'utf8');
+  const block = css.match(/\.kmc-purpose-box\s*\{[^}]*\}/);
+  expect(block).not.toBeNull();
+  expect(block[0]).toMatch(/margin:\s*0\s*;/);
+  expect(block[0]).not.toMatch(/position:\s*(absolute|fixed)/);
+});
+
+test('canonical-shell-v4.css : dans une grille à rôles, l’encadré a order 25 (entre attention 20 et primary 30)', () => {
+  const css = fs.readFileSync(CSS_PATH, 'utf8');
+  expect(css).toMatch(/\[data-dashboard-hierarchy\]\s*>\s*\.kmc-purpose-box\s*\{[^}]*order:\s*25\s*;/);
+});

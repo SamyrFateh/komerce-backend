@@ -474,3 +474,34 @@ body.kmc-shell-v4 .kmc-ctl-stage {
     transition: none;
   }
 }
+
+/* ---------- Encadré « À quoi sert cet écran ? » ---------- */
+
+.kmc-purpose-box {
+  box-sizing: border-box;
+  max-width: var(--kmc-shell-max, 1480px);
+  margin: 0;
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid #dbe4f3;
+  border-left: 4px solid #2563eb;
+  border-radius: 6px;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.kmc-purpose-box > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.kmc-purpose-box > p {
+  margin: 6px 0 0;
+}
+
+/* Dans une grille à rôles (hero 10 / attention 20 / primary 30), l'encadré s'intercale sans déplacer le hero. */
+body.kmc-shell-v4 [data-dashboard-hierarchy] > .kmc-purpose-box {
+  order: 25;
+}

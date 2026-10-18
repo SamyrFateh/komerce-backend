@@ -465,3 +465,91 @@ test('Hub live · Exécution : vue execute montée via le shell marché, même m
   expect(src).toContain('if (isHubExecutionRequest()) return renderHubExecutionShell(root, user, adminContext);');
   expect(src).toContain('if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user, adminContext);');
 });
+
+describe('canonical admin app — encadré « À quoi sert cet écran ? »', () => {
+  // Faux DOM minimal. `hierarchy` : le parent porte data-dashboard-hierarchy (dashboard à rôles).
+  function fakeHost({ hierarchy = true, actionCenterStrip = false } = {}) {
+    const inserted = [];
+    const removed = [];
+    const parent = {
+      insertBefore: jest.fn((node, ref) => { inserted.push({ node, ref }); return node; }),
+      getAttribute: name => (name === 'data-dashboard-hierarchy' && hierarchy ? 'hero-attention-primary-secondary' : null),
+    };
+    const attention = { parentNode: parent, nextSibling: 'primary-node' };
+    const strip = { parentNode: parent, nextSibling: 'section-node' };
+    const stale = { parentNode: { removeChild: jest.fn(node => removed.push(node)) } };
+    const doc = { createElement: tag => fakeNode(tag) };
+    const root = {
+      ownerDocument: doc,
+      querySelector: jest.fn(sel => {
+        if (sel.includes('attention')) return attention;
+        if (sel.includes('metric-strip')) return actionCenterStrip ? strip : null;
+        return null;
+      }),
+      querySelectorAll: jest.fn(() => [stale]),
+    };
+    return { root, inserted, removed, stale, attention, strip };
+  }
+
+  test('insère l’encadré après le bloc attention, avec le texte de la surface', () => {
+    const { api } = loadCanonicalApp();
+    const { root, inserted, attention } = fakeHost();
+
+    const box = api.mountPurposeBox(root, 'finance');
+
+    expect(inserted).toHaveLength(1);
+    expect(inserted[0].ref).toBe(attention.nextSibling);
+    expect(box.className).toBe('kmc-purpose-box');
+    expect(box.attributes['data-purpose-surface']).toBe('finance');
+    expect(box.children[0].textContent).toBe('À quoi sert cet écran ?');
+    expect(box.children[1].textContent).toBe(api.SCREEN_PURPOSE.finance);
+  });
+
+  test('Action Center : se place après la bande de métriques', () => {
+    const { api } = loadCanonicalApp();
+    const { root, inserted, strip } = fakeHost({ hierarchy: false, actionCenterStrip: true });
+    api.mountPurposeBox(root, 'action-center');
+    expect(inserted[0].ref).toBe(strip.nextSibling);
+  });
+
+  test('sans mise en page connue (pas de hiérarchie, pas de bande), ne s’insère pas : on ne risque pas de décaler le hero', () => {
+    const { api } = loadCanonicalApp();
+    const none = fakeHost({ hierarchy: false });
+    expect(api.mountPurposeBox(none.root, 'commerce')).toBeNull();
+    expect(none.inserted).toHaveLength(0);
+  });
+
+  test('remplace l’encadré précédent au lieu de l’empiler', () => {
+    const { api } = loadCanonicalApp();
+    const { root, removed, stale } = fakeHost();
+    api.mountPurposeBox(root, 'commerce');
+    expect(removed).toEqual([stale]);
+  });
+
+  test('ne fabrique aucun texte pour une surface inconnue ou sans DOM exploitable', () => {
+    const { api } = loadCanonicalApp();
+    expect(api.mountPurposeBox(fakeHost().root, 'settings')).toBeNull();
+    expect(api.mountPurposeBox(fakeHost().root, 'inconnue')).toBeNull();
+    expect(api.mountPurposeBox({}, 'finance')).toBeNull();
+    expect(api.mountPurposeBox(null, 'finance')).toBeNull();
+  });
+
+  test('watchPurposeBox ne plante pas sans observateur et ignore les surfaces sans texte', () => {
+    const { api } = loadCanonicalApp();
+    const { root, inserted } = fakeHost();
+    expect(() => api.watchPurposeBox(root, 'finance')).not.toThrow();
+    expect(inserted).toHaveLength(1);
+    expect(() => api.watchPurposeBox(root, 'settings')).not.toThrow();
+    expect(inserted).toHaveLength(1);
+  });
+
+  test('textes courts et sans jargon technique', () => {
+    const { api } = loadCanonicalApp();
+    const jargon = /\b(KPI|canonique|projection|backend|payload|snapshot|SLA|API|SQL)\b/i;
+    for (const text of Object.values(api.SCREEN_PURPOSE)) {
+      expect(text.length).toBeLessThanOrEqual(230);
+      expect(text).not.toMatch(jargon);
+    }
+    expect(Object.keys(api.SCREEN_PURPOSE).length).toBeGreaterThanOrEqual(15);
+  });
+});

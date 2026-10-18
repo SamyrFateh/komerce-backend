@@ -49,6 +49,87 @@
     USERS_ADMIN: 'users-admin',
   });
 
+  // Encadré « À quoi sert cet écran ? » — mots simples, une seule source.
+  // Texte volontairement court et sans jargon ; uniquement ce qui est vérifié dans le code.
+  // Une surface absente de cette table n'affiche pas d'encadré (pas de texte inventé).
+  const SCREEN_PURPOSE = Object.freeze({
+    [SURFACES.PILOTAGE]: 'Cet écran montre en un coup d’œil si l’activité va bien : ventes encaissées, commandes en cours, alertes. Il indique aussi quoi regarder en premier.',
+    [SURFACES.COMMERCE]: 'Cet écran montre ce qui se vend, combien ça rapporte, et à quelle étape des commandes se perdent.',
+    [SURFACES.OPERATIONS]: 'Cet écran suit les commandes en route : celles qui avancent, celles qui sont en retard et celles qui sont bloquées.',
+    [SURFACES.FINANCE]: 'Cet écran montre où en est l’argent : ce qui est encaissé, ce que ça a coûté et ce qu’il reste en marge. Un chiffre « estimé » n’est pas un chiffre « réel ».',
+    [SURFACES.OPERATIONS_WORKSPACE]: 'Le travail du Hub et des Relais : les colis à recevoir, à préparer et à remettre aux clients.',
+    [SURFACES.SHIPPING_CUSTOMS_WORKSPACE]: 'Le suivi des envois et de la douane : quels colis voyagent et lesquels attendent d’être dédouanés.',
+    [SURFACES.CATALOG_WORKSPACE]: 'Ici, on choisit les produits qui entrent au catalogue et ceux à corriger. Un produit sans prix reste en brouillon : les clients ne le voient pas.',
+    [SURFACES.ACCOUNTING_WORKSPACE]: 'Le suivi de l’argent liquide et des paiements : ce qui est encaissé, ce qui est déposé, et ce qu’il reste à vérifier.',
+    [SURFACES.SOURCING_WORKSPACE]: 'Ici, on choisit parmi les produits trouvés chez les fournisseurs ceux à envoyer au catalogue.',
+    [SURFACES.PURCHASING_WORKSPACE]: 'Les achats faits aux fournisseurs : ce qui est commandé, payé et expédié.',
+    [SURFACES.IMPORT_RUNTIME]: 'Le suivi en direct des produits qui arrivent des fournisseurs : où en est chaque lot et ce qui le bloque.',
+    [SURFACES.HUB_LIVE]: 'L’écran de travail du Hub, en direct : les colis attendus, reçus et à traiter.',
+    [SURFACES.RELAIS_LIVE]: 'L’écran de travail du Relais, en direct : les colis arrivés et ceux à remettre aux clients.',
+    [SURFACES.PRICING_WORKSPACE]: 'Ici, on fixe les prix de vente. Un bon prix couvre ce que le produit coûte et laisse une marge. Tant qu’un coût réel n’existe pas, on utilise un coût estimé, indiqué comme tel.',
+    [SURFACES.ACTION_CENTER]: 'La liste de ce qui demande une action maintenant. Chaque ligne dit qui doit agir et pourquoi.',
+    [SURFACES.ORDER_360]: 'Tout sur une commande au même endroit : le client, le paiement, le colis et les étapes déjà faites.',
+    [SURFACES.CLIENT_INDEX]: 'La liste des clients, pour retrouver quelqu’un vite et ouvrir sa fiche.',
+    [SURFACES.CLIENT_360]: 'La fiche d’un client : ses commandes et son historique.',
+    [SURFACES.USERS_ADMIN]: 'Qui a accès à Komerce, et avec quel rôle.',
+  });
+
+  // Ancre : uniquement là où la mise en page est connue et testée (canon de layout).
+  //  - dashboards à hiérarchie : bloc « attention » (le CSS lui donne `order: 25`, entre attention et primary) ;
+  //  - Action Center : bande de métriques.
+  // Ailleurs : pas d'encadré, plutôt que de risquer de décaler le hero (la topbar est superposée au hero).
+  function purposeAnchor(root) {
+    if (!root || typeof root.querySelector !== 'function') return null;
+    const attention = root.querySelector('[data-dashboard-role="attention"]');
+    const holder = attention && attention.parentNode;
+    if (holder && typeof holder.getAttribute === 'function' && holder.getAttribute('data-dashboard-hierarchy')) return attention;
+    return root.querySelector('.kmc-action-center > .kmc-metric-strip');
+  }
+
+  function mountPurposeBox(root, surface) {
+    const text = SCREEN_PURPOSE[surface];
+    const anchor = text ? purposeAnchor(root) : null;
+    const doc = root && root.ownerDocument;
+    if (!anchor || !doc || typeof doc.createElement !== 'function' || !anchor.parentNode
+      || typeof anchor.parentNode.insertBefore !== 'function') return null;
+    if (typeof root.querySelectorAll === 'function') {
+      root.querySelectorAll('.kmc-purpose-box').forEach(old => { if (old.parentNode) old.parentNode.removeChild(old); });
+    }
+    const box = doc.createElement('details');
+    box.className = 'kmc-purpose-box';
+    box.open = true;
+    box.setAttribute('data-purpose-surface', surface);
+    const title = doc.createElement('summary');
+    title.textContent = 'À quoi sert cet écran ?';
+    const body = doc.createElement('p');
+    body.textContent = text;
+    box.appendChild(title);
+    box.appendChild(body);
+    anchor.parentNode.insertBefore(box, anchor.nextSibling);
+    return box;
+  }
+
+  // Les écrans se rendent de façon asynchrone et peuvent effacer la racine (changement de marché) :
+  // on (ré)insère l'encadré dès que l'ancre existe, sans jamais boucler (no-op s'il est déjà en place).
+  function watchPurposeBox(root, surface) {
+    if (!SCREEN_PURPOSE[surface]) return;
+    const ensure = () => {
+      const anchor = purposeAnchor(root);
+      if (!anchor) return;
+      const next = anchor.nextSibling;
+      if (next && next.className === 'kmc-purpose-box' && next.getAttribute('data-purpose-surface') === surface) return;
+      mountPurposeBox(root, surface);
+    };
+    ensure();
+    if (typeof global.MutationObserver !== 'function' || !root || typeof root.nodeType !== 'number') return;
+    let queued = false;
+    new global.MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      Promise.resolve().then(() => { queued = false; ensure(); });
+    }).observe(root, { childList: true, subtree: true });
+  }
+
   // Landing par défaut par rôle — voir docs/admin-nav-capability-map.md.
   // Chaque rôle atterrit sur le premier onglet qu'il peut réellement charger
   // côté serveur ; aujourd'hui seuls admin et market_operator ont des
@@ -751,6 +832,7 @@
 
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
+    watchPurposeBox(root, surface);
     if (surface === SURFACES.SETTINGS) return renderSettingsWorkspace(root, user);
     if (surface === SURFACES.PROVIDERS_ADMIN) return renderProvidersAdmin(root);
     if (surface === SURFACES.USERS_ADMIN) return renderUsersAdmin(root);
@@ -891,6 +973,9 @@
     renderPricingWorkspaceShell,
     renderDemo,
     renderReady,
+    mountPurposeBox,
+    watchPurposeBox,
+    SCREEN_PURPOSE,
     ROLE_DEFAULT_LANDING,
     defaultLandingSurface,
   };
