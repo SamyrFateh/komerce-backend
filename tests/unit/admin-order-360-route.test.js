@@ -167,36 +167,24 @@ describe('Golden evidence route contract', () => {
 });
 
 
-describe('Golden advance route contract', () => {
-  test('mutation is admin-only, Golden-only and forbidden in production', () => {
+describe('Golden mutation routes retired', () => {
+  test('synthetic creation and advance are not registered in application routes', async () => {
     const fs = require('fs');
     const path = require('path');
     const source = fs.readFileSync(path.join(__dirname, '../../routes/admin-order-360.js'), 'utf8');
-    expect(source).toContain("'/orders/:orderReference/golden-advance'");
-    expect(source).toContain("attachMarketDelegatedRoleFor(['admin'])");
-    expect(source).toContain("requireRole(['admin'])");
-    expect(source).toContain("process.env.NODE_ENV === 'production'");
-    expect(source).toContain('golden_advance_production_forbidden');
-    expect(source).toContain('advanceGoldenJourney(db, req.order360Order.reference)');
+    expect(source).not.toContain("'/orders/:orderReference/golden-advance'");
+    expect(source).not.toContain("'/golden-create'");
+    expect(source).not.toContain('advanceGoldenJourney(');
+    expect(source).not.toContain('createGoldenJourney(');
+    expect(source).not.toContain("require('../tests/helpers/goldenJourney')");
+    expect(source).not.toContain("require('../tests/helpers/goldenJourneySetup')");
+
+    const advanced = await request(app()).post('/api/admin/entities/orders/K-GOLDEN-1/golden-advance');
+    const created = await request(app()).post('/api/admin/entities/golden-create');
+    expect(advanced.status).toBe(404);
+    expect(created.status).toBe(404);
   });
 });
-
-
-describe('Golden create route contract', () => {
-  test('creation is admin-only and forbidden in production', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const source = fs.readFileSync(path.join(__dirname, '../../routes/admin-order-360.js'), 'utf8');
-    expect(source).toContain("'/golden-create'");
-    expect(source).toContain("['KM','CM','CG'].includes(marketCode)");
-    expect(source).toContain("golden_market_unsupported");
-    expect(source).toContain("attachMarketDelegatedRoleFor(['admin'])");
-    expect(source).toContain("requireRole(['admin'])");
-    expect(source).toContain('golden_create_production_forbidden');
-    expect(source).toContain("createGoldenJourney(db, { marketCode })");
-  });
-});
-
 
 describe('Golden upstream route', () => {
   const PID = '11111111-1111-4111-8111-111111111111';
