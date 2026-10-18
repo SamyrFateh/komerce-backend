@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_id, field_name, field_value, reason, admin_user
  * @outputs       override_row, applied_product_row
- * @depends       db.js, services/catalog-enrichment.js
+ * @depends       db.js, services/catalog-enrichment.js, services/catalog-fr-quality.js
  * @used-by       services/product-admin-service.js, services/catalog-approval.js, scripts/catalog-fr-quality-apply.js
  * @db-read       catalog_field_overrides, products
  * @db-write      catalog_field_overrides, products
@@ -29,6 +29,8 @@
  * garde de publication sait que le contenu affiché n'est plus la donnée brute.
  */
 
+const { frenchLanguageProblems, describeFrenchProblems } = require('./catalog-fr-quality');
+
 const OVERRIDABLE_FIELDS = ['name', 'description', 'category', 'fragility', 'emoji'];
 
 function isFrenchLocale(locale) {
@@ -46,6 +48,29 @@ function isPipelineSourced(product) {
   if (product.content_source === 'connector_raw' || product.content_source === 'ai_enriched') return true;
   if (product.content_source === 'manual' && (product.name_source || product.description_source)) return true;
   return false;
+}
+
+/**
+ * C3 : une source étrangère ne devient « préparée » (manual) que si le texte saisi est bien du français.
+ * Contrôle avant toute écriture ; mêmes règles que le FR Quality Pass (catalog-fr-quality.js).
+ */
+async function assertFrenchPreparation(q, productId, fields) {
+  const name = fields && fields.name;
+  const description = fields && fields.description;
+  if (name == null && description == null) return;
+  const { rows: [product] } = await q.query(
+    'SELECT content_source, source_locale FROM products WHERE id = $1',
+    [productId]
+  );
+  if (!product || product.content_source !== 'connector_raw' || isFrenchLocale(product.source_locale)) return;
+  const problems = frenchLanguageProblems({ title: name, description });
+  if (problems.length) {
+    const err = new Error(`Préparation française refusée : ${describeFrenchProblems(problems)}.`);
+    err.code = 'FRENCH_NOT_DETECTED';
+    err.status = 422;
+    err.problems = problems;
+    throw err;
+  }
 }
 
 function manualPreparationComplete(product, overridden) {
@@ -115,6 +140,8 @@ async function upsertOverrides(q, productId, fields, { reason = null, setBy = nu
     err.code = 'OVERRIDE_FIELD_NOT_ALLOWED';
     throw err;
   }
+
+  await assertFrenchPreparation(q, productId, fields);
 
   let product = null;
   const overridden = [];

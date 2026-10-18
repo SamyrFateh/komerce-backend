@@ -93,6 +93,40 @@ describe('product-publication-guard', () => {
     expect(validatePublicationUpdate({ before, patch: { is_active: true } })).toEqual({ ok: true });
   });
 
+  it('C3 : une fiche d’origine étrangère marquée manual mais restée en anglais est refusée', () => {
+    const before = {
+      name: 'Wireless headphones with microphone',
+      category: 'Audio',
+      price_kmf: 15000,
+      stock: 4,
+      is_active: false,
+      is_available: false,
+      content_source: 'manual',
+      source_locale: 'en',
+      name_source: 'Wireless headphones with microphone',
+      description: 'Bluetooth wireless headphones for daily use with the best sound and the battery for all day long.',
+    };
+    expect(validatePublicationUpdate({ before, patch: { is_active: true } }))
+      .toMatchObject({ ok: false, code: 'french_not_detected' });
+  });
+
+  it('C3 : la même fiche correctement rédigée en français passe le gate de langue', () => {
+    const before = {
+      name: 'Casque audio sans fil avec micro',
+      category: 'Audio',
+      price_kmf: 15000,
+      stock: 4,
+      is_active: false,
+      is_available: false,
+      content_source: 'manual',
+      source_locale: 'en',
+      name_source: 'Wireless headphones with microphone',
+      description: 'Casque audio Bluetooth sans fil pour un usage quotidien, avec un très bon son et une batterie qui tient toute la journée.',
+    };
+    expect(validatePublicationUpdate({ before, patch: { is_active: true }, context: { catalogMediaCount: 1 } }))
+      .toEqual({ ok: true });
+  });
+
   it('refuse un titre client trop long ou ressemblant à des métadonnées source', () => {
     const base = {
       category: 'Créations personnelles',

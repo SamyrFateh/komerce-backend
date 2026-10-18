@@ -192,6 +192,37 @@ function criticalTechnicalTokens(value) {
   );
 }
 
+/**
+ * C3 (audit 19/10) : mêmes règles de langue que evaluateFrenchCopy, utilisables seules.
+ * Retourne la liste des problèmes (vide = rien à signaler). Aucun nouveau moteur linguistique.
+ */
+function frenchLanguageProblems({ title, description } = {}) {
+  const t = normalizeSpace(title);
+  const d = normalizeSpace(description);
+  const problems = [];
+  if (t && englishResidues(t).length >= 1) problems.push('english_residue_in_title');
+  if (d && englishResidues(d).length >= 3) problems.push('english_residue_in_description');
+  if (d) {
+    // Plus souple que le FR Quality Pass (qui exige 3 marqueurs français) : une description courte
+    // mais française ne doit pas être refusée. On refuse seulement un texte qui penche vers
+    // l'anglais ou l'espagnol sans être reconnu comme français.
+    const scores = languageScores(`${t}. ${d}`);
+    const foreign = Math.max(scores.english, scores.spanish);
+    if (!looksFrench(`${t}. ${d}`) && foreign > scores.french) problems.push('french_not_detected');
+  }
+  return problems;
+}
+
+const FRENCH_PROBLEM_MESSAGES = Object.freeze({
+  english_residue_in_title: 'le titre contient encore des mots anglais',
+  english_residue_in_description: 'la description contient encore des mots anglais',
+  french_not_detected: 'le texte ne semble pas être en français',
+});
+
+function describeFrenchProblems(problems = []) {
+  return problems.map(code => FRENCH_PROBLEM_MESSAGES[code] || code).join(' ; ');
+}
+
 function evaluateFrenchCopy(source, proposal = {}) {
   const title = normalizeSpace(proposal.title_fr);
   const description = normalizeSpace(proposal.description_fr);
@@ -279,6 +310,8 @@ module.exports = {
   englishResidues,
   languageScores,
   looksFrench,
+  frenchLanguageProblems,
+  describeFrenchProblems,
   controlledClaims,
   criticalTechnicalTokens,
   evaluateFrenchCopy,
