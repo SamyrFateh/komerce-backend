@@ -313,3 +313,29 @@ test('supplier payment assessment is fail-closed', () => {
     supplierPayment({ reconciliation_status: 'mismatched' }),
   ]).state).toBe('mismatch');
 });
+
+test('cash order with collected cash but no attributable final remittance remains pending', async () => {
+  const c = client({
+    order: baseOrder({ payment_mode: 'cash_relais' }),
+    supplierPayments: [supplierPayment()],
+  });
+  c.query.mockResolvedValueOnce({ rows: [{ collection_count: 1, collected_kmf: '25000' }] });
+  await expect(reconcileOrderFinancialClose(c, { orderId: baseOrder().id }))
+    .resolves.toMatchObject({
+      verdict: 'FINANCIAL_CLOSE_PENDING',
+      reason: 'FINANCIAL_CLOSE_CASH_FINAL_REMITTANCE_NOT_ATTRIBUTABLE',
+    });
+});
+
+test('cash order marked paid without cash collection fact is a mismatch', async () => {
+  const c = client({
+    order: baseOrder({ payment_mode: 'cash_relais' }),
+    supplierPayments: [supplierPayment()],
+  });
+  c.query.mockResolvedValueOnce({ rows: [{ collection_count: 0, collected_kmf: '0' }] });
+  await expect(reconcileOrderFinancialClose(c, { orderId: baseOrder().id }))
+    .resolves.toMatchObject({
+      verdict: 'FINANCIAL_CLOSE_MISMATCH',
+      reason: 'FINANCIAL_CLOSE_CASH_COLLECTION_MISSING',
+    });
+});
