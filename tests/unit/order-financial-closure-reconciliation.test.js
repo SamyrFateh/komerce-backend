@@ -22,13 +22,14 @@ function client({
   refunds = [],
   supplierPayments = [],
   realCostKmf = 10000,
+  cashCollection = null,
 }) {
   const query = jest.fn()
     .mockResolvedValueOnce({ rows: [order] })
     .mockResolvedValueOnce({ rows: incidents })
     .mockResolvedValueOnce({ rows: refunds })
     .mockResolvedValueOnce({ rows: supplierPayments })
-    .mockResolvedValueOnce({ rows: [{ real_cost_kmf: String(realCostKmf) }] });
+    .mockResolvedValueOnce({ rows: cashCollection ? [cashCollection] : [{ real_cost_kmf: String(realCostKmf) }] });
   return { query };
 }
 
@@ -318,8 +319,8 @@ test('cash order with collected cash but no attributable final remittance remain
   const c = client({
     order: baseOrder({ payment_mode: 'cash_relais' }),
     supplierPayments: [supplierPayment()],
+    cashCollection: { collection_count: 1, collected_kmf: '25000' },
   });
-  c.query.mockResolvedValueOnce({ rows: [{ collection_count: 1, collected_kmf: '25000' }] });
   await expect(reconcileOrderFinancialClose(c, { orderId: baseOrder().id }))
     .resolves.toMatchObject({
       verdict: 'FINANCIAL_CLOSE_PENDING',
@@ -331,8 +332,8 @@ test('cash order marked paid without cash collection fact is a mismatch', async 
   const c = client({
     order: baseOrder({ payment_mode: 'cash_relais' }),
     supplierPayments: [supplierPayment()],
+    cashCollection: { collection_count: 0, collected_kmf: '0' },
   });
-  c.query.mockResolvedValueOnce({ rows: [{ collection_count: 0, collected_kmf: '0' }] });
   await expect(reconcileOrderFinancialClose(c, { orderId: baseOrder().id }))
     .resolves.toMatchObject({
       verdict: 'FINANCIAL_CLOSE_MISMATCH',
