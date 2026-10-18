@@ -1009,6 +1009,7 @@
       return [
         { id: 'hub-suivi', label: 'Suivi', href: '/admin/hub-live' },
         { id: 'hub-commandes', label: 'Commandes', href: '/admin/hub-live?view=queue&tab=all' },
+        { id: 'hub-execution', label: 'Exécution', href: '/admin/hub-live?view=execute' },
       ];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/relais-live') {
@@ -1042,6 +1043,7 @@
       return view === 'passages' ? 'sourcing-passages' : view === 'sources' ? 'sourcing-sources' : 'sourcing-suivi';
     }
     if (domainId === 'live' && path === '/admin/hub-live') {
+      if (search.get('view') === 'execute') return 'hub-execution';
       return search.get('view') === 'queue' && search.get('tab') === 'all' || search.get('view') === 'order' && search.get('from') === 'all' ? 'hub-commandes' : 'hub-suivi';
     }
     if (domainId === 'live' && path === '/admin/relais-live') {

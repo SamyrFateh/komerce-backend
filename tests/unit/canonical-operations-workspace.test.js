@@ -91,3 +91,9 @@ test('UX-07 — Hub & Relais : une vue exclusive à la fois (Hub / Relais / Stoc
   expect(SOURCE).toContain("if (view === 'inventory') renderInventorySection");
   expect(SOURCE).toContain("'Stock à affecter'");
 });
+
+test('mode execution (Hub live) : actions Hub uniquement, aucune action Relais exposée', () => {
+  expect(SOURCE).toContain("context.mode === 'execution' ? WORKSPACE_VIEWS.filter(item => item.id !== 'relay')");
+  expect(SOURCE).toContain("mode: options.mode === 'execution' ? 'execution' : 'pilot'");
+  expect(SOURCE).toContain('HUB LIVE · EXÉCUTION');
+});
