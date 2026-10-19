@@ -665,7 +665,7 @@
     const situation = cardSection(
       doc,
       'Situation financière',
-      'Les chiffres essentiels et les paiements qui demandent une vérification.',
+      '',
       'finance-situation'
     );
     situation.section.className += ' is-cockpit-truth';
@@ -692,6 +692,9 @@
 
     const notes = indicatorNotes(payload, base);
     if (notes.length) {
+      // The headline KPIs stay quiet; detailed definitions remain available on demand.
+      const details = el(doc, 'details', 'kmc-fin-indicator-help');
+      details.appendChild(el(doc, 'summary', 'kmc-fin-indicator-help-trigger', 'Comprendre les indicateurs'));
       const notesHost = el(doc, 'div', 'kmc-fin-notes');
       notes.forEach(note => {
         const block = el(doc, 'div', 'kmc-fin-notes-item');
@@ -700,7 +703,8 @@
         block.appendChild(el(doc, 'span', 'kmc-fin-notes-text', note.text));
         notesHost.appendChild(block);
       });
-      situation.body.insertBefore(notesHost, reviewTitle);
+      details.appendChild(notesHost);
+      situation.body.insertBefore(details, reviewTitle);
     }
 
     dashboard.appendChild(situation.section);
@@ -708,7 +712,7 @@
     const incomplete = cardSection(
       doc,
       'Coûts restant à établir',
-      'Commandes dont un coût attendu à leur stade n’est pas encore enregistré. Une attente normale n’est pas une anomalie : « pas encore dû » reste distinct de « inconnu ».',
+      'Commandes en attente d’un coût justifié à leur stade.',
       'finance-incomplete-costs'
     );
     incomplete.section.setAttribute('data-dashboard-role', 'secondary');
@@ -718,7 +722,7 @@
     const variances = cardSection(
       doc,
       'Écarts entre coûts prévus et constatés',
-      'Surcoûts et économies confirmés, écarts provisoires et commandes non comparables, avec la décomposition par composante.',
+      'Écarts confirmés et comparaisons encore provisoires.',
       'finance-variances'
     );
     variances.section.setAttribute('data-dashboard-role', 'secondary');
