@@ -31,3 +31,22 @@ test('responsable : done si le compte existe avec le role operateur', async () =
   assert.equal((await st.inspect({ db: db(() => [{ id: 'u', role: 'market_operator' }]) })).done, true);
   assert.equal((await st.inspect({ db: db(() => []) })).done, false);
 });
+
+test('J : garde canonique en lecture seule — 409 MARKET_MISMATCH entre KM et CM, aucune ecriture', async () => {
+  const j = steps.find(x => x.id === 'check.J.market-mismatch');
+  const writes = [];
+  const fake = { query: async (sql) => {
+    if (/^\s*(INSERT|UPDATE|DELETE|SAVEPOINT)/i.test(sql)) writes.push(sql);
+    if (sql.includes("reference='RCT1-E1'")) return { rows: [{ id: 'k', market_id: 'm1' }] };
+    if (sql.includes("reference='RCT1-CM1'")) return { rows: [{ id: 'c', market_id: 'm2' }] };
+    if (sql.includes('ANY')) return { rows: [{ id: 'k', market_id: 'm1' }, { id: 'c', market_id: 'm2' }] };
+    return { rows: [] };
+  } };
+  const out = await j.verify({ db: fake, shared: {} });
+  assert.equal(out.ok, true);
+  assert.equal(out.cross_market.code, 'MARKET_MISMATCH');
+  assert.equal(out.cross_market.status, 409);
+  assert.deepEqual(writes, []);
+  const same = await j.verify({ db: { query: async (sql) => (sql.includes("RCT1-E1") ? { rows: [{ id: 'k', market_id: 'm1' }] } : sql.includes("RCT1-CM1") ? { rows: [{ id: 'c', market_id: 'm1' }] } : { rows: [{ id: 'k', market_id: 'm1' }, { id: 'c', market_id: 'm1' }] }) }, shared: {} });
+  assert.equal(same.ok, false);
+});
