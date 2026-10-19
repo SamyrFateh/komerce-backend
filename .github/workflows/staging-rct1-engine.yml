@@ -40,7 +40,7 @@ jobs:
         run: |
           phase="${ISSUE_TITLE#\[staging-op\] rct1-}"
           case "$phase" in
-            introspect|pricing-probe|finance-probe|inventory|dump|tables|plan|dry-run|apply|verify|replay|report) ;;
+            introspect|pricing-probe|gate-probe|finance-probe|inventory|dump|tables|plan|dry-run|apply|verify|replay|report) ;;
             *) echo "::error::phase refusee"; exit 1 ;;
           esac
           # Corps d'issue : lignes TABLES=a,b / ONLY=id1,id2 (liste blanche de caracteres)

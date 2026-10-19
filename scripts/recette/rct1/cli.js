@@ -121,6 +121,25 @@ async function main() {
       process.stdout.write(JSON.stringify({ with_scope: withScope, without_scope: { ...noScope, rct1_orders_visible: noScope.orders.length } }, null, 1) + '\n');
       return;
     }
+    if (phase === 'gate-probe') {
+      // Lecture seule : conditions du garde marche KM (politique, couverture hypothetique) + preuve du flag snapshot deploye.
+      const v = await confirmTarget({ db });
+      if (!v.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
+      const km = (await db.query("SELECT id FROM markets WHERE code='KM'")).rows[0];
+      const policy = require('../../../services/pricing-market-decision-policy');
+      const { computeMarketCoverage } = require('../../../services/pricing-market-coverage');
+      const out = { policies: (await policy.listMarketDecisionPolicyHistory(km.id)).length, coverage: [] };
+      const hyp = { version: 'probe', source: 'rct1-gate-probe', evidence_ref: 'probe-readonly', maturity_threshold: 0.8, coverage_threshold: 1.0, disposed_contribution_treatment: 'EXCLUDE_FROM_NUMERATOR', effective_from: '2026-01-01T00:00:00Z' };
+      for (const [from, to] of [['2026-10-01T00:00:00Z', '2026-11-01T00:00:00Z'], ['2026-07-21T00:00:00Z', '2026-10-19T23:59:59Z']]) {
+        try {
+          const c = await computeMarketCoverage({ marketId: km.id, from, to, coveragePolicy: hyp, dispositionPolicy: { version: 'probe', source: 'probe', max_ratio: 0.2 } });
+          out.coverage.push({ from, status: c.coverage_status, reason: c.reason, authorization: c.authorization, maturity: c.maturity && { status: c.maturity.decision_status, ratio: c.maturity.maturity_ratio, mature_orders: c.maturity.mature_orders }, n3: c.structure && { decisional: c.structure.market_n3_decisional, total: c.structure.market_n3_total_kmf }, mature_contribution: c.contribution && c.contribution.contribution_before_risk_kmf, ratio: c.coverage_ratio });
+        } catch (e) { out.coverage.push({ from, error: String(e.message).slice(0, 150) }); }
+      }
+      out.snapshot_flag_evidence = (await db.query(`SELECT (o.simulation_scope IS NOT NULL) AS rct1_scope, COUNT(*)::int AS orders, COUNT(*) FILTER (WHERE EXISTS(SELECT 1 FROM order_item_cost_imputations i WHERE i.order_id=o.id))::int AS with_imputation FROM orders o GROUP BY 1`)).rows;
+      process.stdout.write(JSON.stringify(out, null, 1) + '\n');
+      return;
+    }
     if (phase === 'inventory') {
       const v = await confirmTarget({ db });
       if (!v.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
