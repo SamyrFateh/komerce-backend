@@ -26,8 +26,8 @@ const RELAYS = Object.freeze([
 
 const DESCRIPTION_SUFFIX = ' Produit de recette RCT1, donnee de test sans valeur commerciale reelle.';
 const PRODUCTS = Object.freeze({
-  P1: { ref: 'RCT1-P1', name: 'Theiere en fonte (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 15000, weight_kg: 1, origin: 'IMPORT' },
-  P3: { ref: 'RCT1-P3', name: 'Panier tisse local (recette RCT1)', category: 'Maison', subcategory: 'Rangement', price_kmf: 6000, weight_kg: 1, origin: 'LOCAL_STOCK', local_stock_qty: 5, stock_market: 'KM' },
+  P1: { ref: 'RCT1-P1', name: 'Theiere en fonte (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 15000, cost_kmf: 6000, weight_kg: 1, origin: 'IMPORT' },
+  P3: { ref: 'RCT1-P3', name: 'Panier tisse local (recette RCT1)', category: 'Maison', subcategory: 'Rangement', price_kmf: 6000, cost_kmf: 3000, weight_kg: 1, origin: 'LOCAL_STOCK', local_stock_qty: 5, stock_market: 'KM' },
 });
 for (const p of Object.values(PRODUCTS)) p.description = `${p.name}.${DESCRIPTION_SUFFIX}`;
 

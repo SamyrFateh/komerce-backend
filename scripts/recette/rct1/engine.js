@@ -49,11 +49,16 @@ async function run({ db, phase, steps, env = process.env, confirm, only = null }
   if (String(env.KOMERCE_ENV).toLowerCase() !== 'staging' || env.NODE_ENV === 'production') throw new Error('RCT1_STAGING_ONLY');
   const verdict = await confirm({ db, env });
   if (!verdict || !verdict.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
-  const ordered = orderSteps(steps).filter(s => !only || only.includes(s.id));
+  const ordered = orderSteps(steps);
   const ctx = { env, scope: 'RCT1', shared: {} };
   const report = { phase, scope: 'RCT1', target_confirmed: true, steps: [], writes: 0, ok: true };
   for (const step of ordered) {
     const row = { id: step.id };
+    if (only && !only.includes(step.id)) {
+      // Hors selection : inspection seule (alimente ctx.shared pour les etapes selectionnees), jamais d'ecriture.
+      await inTx(db, true, c => step.inspect({ ...ctx, db: c }));
+      continue;
+    }
     const readOnly = phase !== 'apply' && phase !== 'replay';
     const pre = await inTx(db, true, c => step.inspect({ ...ctx, db: c }));
     row.done = !!pre.done; row.detail = pre.detail;
