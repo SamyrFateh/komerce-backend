@@ -23,7 +23,7 @@ describe('dashboard-metrics/index', () => {
     expect(metrics.ACTIVE_ORDER_STATUSES).toContain('available');
     expect(metrics.TRANSIT_PARCEL_STATUSES).toContain('in_transit');
     expect(metrics.EXPECTED_VARIABLE_COSTS).toContain('freight');
-    expect(metrics.EXPECTED_FIXED_COSTS).toContain('fixed_overhead');
+    expect(metrics.EXPECTED_FIXED_COSTS).toEqual([]); // D1 : structure jamais exigée par commande
     expect(metrics.EXPECTED_PAYMENT_COSTS).toEqual(['payment']);
   });
 });

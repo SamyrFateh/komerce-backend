@@ -235,10 +235,27 @@
   // sur la carte. incomplete_cost_orders existe déjà dans le payload
   // (services/dashboard-finance-canonical.js, même clause WHERE que le
   // compte cmds_cout_incomplet) mais n'était affiché nulle part.
+  // D1 — ce qui manque précisément, ce qui n'est pas encore attendu à ce stade.
+  // Un coût sans mécanisme de collecte reste un manque fonctionnel (jamais « non applicable »).
+  function costExplanationText(row) {
+    const e = row && row.cost_explanation;
+    if (!e) return '';
+    const parts = [];
+    if (e.missing_estimate) parts.push('Estimation absente');
+    if (Array.isArray(e.missing) && e.missing.length) {
+      parts.push('Manque : ' + e.missing.map(m => (m.label || m.type) + (m.collection_mechanism === false ? ' (mécanisme de collecte absent)' : '')).join(', '));
+    }
+    if (Array.isArray(e.not_yet_expected) && e.not_yet_expected.length) {
+      parts.push('Pas encore attendu : ' + e.not_yet_expected.map(m => m.label || m.type).join(', '));
+    }
+    if (e.margin && e.margin.label) parts.push(e.margin.label);
+    return parts.length ? ' · ' + parts.join(' · ') : '';
+  }
+
   function incompleteCostOrderItems(payload, base) {
     return (Array.isArray(payload && payload.incomplete_cost_orders) ? payload.incomplete_cost_orders : []).map(row => ({
       title: row.reference || 'Commande',
-      helper: `${row.status || '—'} · paiement ${row.payment_status || '—'} · ${base.formatDate(row.created_at)}`,
+      helper: `${row.status || '—'} · paiement ${row.payment_status || '—'} · ${base.formatDate(row.created_at)}${costExplanationText(row)}`,
       value: base.formatKmf(row.total_kmf),
       tone: 'warning',
     }));
