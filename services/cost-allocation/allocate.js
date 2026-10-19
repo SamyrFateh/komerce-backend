@@ -363,6 +363,15 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
             AND (active_until IS NULL OR active_until >= CURRENT_DATE)
           ORDER BY display_order, key
           LIMIT 1) AS component_updated_by,
+        (SELECT provenance
+           FROM cost_components
+          WHERE key = 'commission_relais_kmf'
+            AND is_active = TRUE
+            AND is_exceptional = FALSE
+            AND (active_from IS NULL OR active_from <= CURRENT_DATE)
+            AND (active_until IS NULL OR active_until >= CURRENT_DATE)
+          ORDER BY display_order, key
+          LIMIT 1) AS component_provenance,
         (SELECT commission_relais_standard_kmf
            FROM finance_config
           WHERE id = 1) AS legacy_standard_value
@@ -371,8 +380,12 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
     const commissionPerItem = relayCommission.amount_kmf;
     // C2 : seul un montant saisi par un opérateur sur le composant canonique est
     // un coût réel. Seed, repli finance_config ou littéral = estimation.
+    // L3 : l'auteur seul ne suffit pas — il faut aussi une provenance déclarée de la valeur.
+    const relayCfg = relayCfgRes.rows[0] || {};
+    const relayProvenance = relayCfg.component_provenance && String(relayCfg.component_provenance).trim()
+      ? String(relayCfg.component_provenance).trim() : null;
     const relayIsActual = relayCommission.source === 'cost_components.commission_relais_kmf'
-      && Boolean((relayCfgRes.rows[0] || {}).component_updated_by);
+      && Boolean(relayCfg.component_updated_by) && Boolean(relayProvenance);
 
     let allocations = 0;
 
@@ -383,9 +396,9 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
         `INSERT INTO order_item_real_cost_allocations
            (order_id, order_item_id, parcel_id,
             cost_type, amount_kmf, allocation_method,
-            source, is_actual, confidence)
-         VALUES ($1,$2,$3,'relay',$4,'per_item',$5,$6,'medium')`,
-        [it.order_id || parcel.order_id, it.order_item_id, parcelId, amount, relayCommission.source, relayIsActual]
+            source, is_actual, confidence, provenance)
+         VALUES ($1,$2,$3,'relay',$4,'per_item',$5,$6,'medium',$7)`,
+        [it.order_id || parcel.order_id, it.order_item_id, parcelId, amount, relayCommission.source, relayIsActual, relayProvenance]
       );
       allocations++;
     }

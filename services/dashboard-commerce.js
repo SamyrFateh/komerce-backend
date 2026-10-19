@@ -19,6 +19,12 @@
 'use strict';
 
 const db = require('../db');
+const { isValidScope } = require('./simulation-scope-service');
+
+// L3 — vue d'un périmètre de recette : mêmes calculs, sélection explicite, libellé obligatoire.
+const SIMULATION_VIEW = (query = {}) => (isValidScope(query.simulation_scope)
+  ? Object.freeze({ scope: query.simulation_scope, label: `Périmètre de recette ${query.simulation_scope} : faits simulés, pas une activité réelle de l'entreprise.` })
+  : null);
 const { justifiedRealSql, finalMarginReadySql } = require('./cost-allocation/cost-expectation');
 const metrics = require('./dashboard-metrics');
 const pricingMarketCorridor = require('./pricing-market-corridor');
@@ -67,6 +73,7 @@ function buildPeriodFilters(query = {}, marketId = null, now = new Date()) {
       from: from.toISOString(),
       to: to.toISOString(),
       ...(marketId ? { market_id: marketId } : {}),
+      ...(isValidScope(query.simulation_scope) ? { simulation_scope: query.simulation_scope } : {}),
     },
   };
 }
@@ -567,6 +574,7 @@ async function buildCommerce(query = {}, options = {}) {
 
   return Object.freeze({
     scope: publicScope(market),
+    simulation: SIMULATION_VIEW(query),
     period,
     kpis: Object.freeze([ca, commandes, panier, marge, produitsActifsVendus]),
     top_products: publicTopProducts,

@@ -19,6 +19,7 @@
 'use strict';
 
 const express = require('express');
+const { isValidScope } = require('../services/simulation-scope-service');
 const db = require('../db');
 const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
@@ -96,6 +97,8 @@ function parseFilters(req) {
     cost_status: req.query.cost_status || null,
     channel: req.query.channel || null,
     origin: req.query.origin || null,
+    // L3 — périmètre de recette explicite (faits simulés) ; sinon activité réelle seule.
+    simulation_scope: isValidScope(req.query.simulation_scope) ? req.query.simulation_scope : null,
     market_id: req.dashboardMarket.id,
   };
 }

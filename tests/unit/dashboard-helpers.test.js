@@ -32,14 +32,14 @@ describe('dashboard-metrics/_helpers', () => {
     }, 'ord');
 
     expect(result).toEqual({
-      where: '1=1 AND ord.created_at >= $1 AND ord.created_at <= $2 AND ord.destination_island = $3 AND ord.relais_id = $4 AND ord.status::text = $5 AND ord.payment_status::text = $6',
+      where: '1=1 AND ord.created_at >= $1 AND ord.created_at <= $2 AND ord.destination_island = $3 AND ord.relais_id = $4 AND ord.status::text = $5 AND ord.payment_status::text = $6 AND ord.simulation_scope IS NULL',
       params: ['2026-06-01', '2026-06-30', 'Anjouan', 'relais-001', 'available', 'paid'],
       nextParamIndex: 7,
     });
   });
 
   it('buildFiltersClause retourne une clause neutre sans filtre', () => {
-    expect(buildFiltersClause()).toEqual({ where: '1=1', params: [], nextParamIndex: 1 });
+    expect(buildFiltersClause()).toEqual({ where: '1=1 AND o.simulation_scope IS NULL', params: [], nextParamIndex: 1 });
   });
 
   it('buildPreviousPeriod retourne la periode precedente de meme duree', () => {

@@ -305,3 +305,11 @@ test('Commerce overview garde uniquement Hero + décisions + activité commercia
   expect(source).not.toContain("'Rentabilité produits'");
   expect(source).not.toContain("TrustFooter.render");
 });
+
+describe('L3 — périmètre de recette affiché (Commerce)', () => {
+  test('Commerce : libellé faits simulés', () => {
+    const t = commerceDecision.trust({ simulation: { scope: 'RCT1', label: 'Périmètre de recette RCT1 : faits simulés' } }, { formatNumber: (n) => String(n) });
+    expect(t.stateLabel).toBe('Recette RCT1 — faits simulés');
+    expect(t.simulationLabel).toMatch(/faits simulés/);
+  });
+});

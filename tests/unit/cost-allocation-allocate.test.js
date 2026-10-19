@@ -329,11 +329,19 @@ describe('relay : une commission non validée n’est jamais un coût réel (C2)
     expect(relayInsertParams(client)[0]).toContain(false);
   });
 
-  it('composant saisi par un opérateur → is_actual=true', async () => {
-    const client = build({ component_value: '600', component_updated_by: 'user-1', legacy_standard_value: '500' });
+  it('L3 : auteur SANS provenance → jamais un coût réel', async () => {
+    const client = build({ component_value: '600', component_updated_by: 'user-1', component_provenance: null, legacy_standard_value: '500' });
+    db.pool.connect.mockResolvedValue(client);
+    await allocateParcelRealCosts('parcel-001');
+    expect(relayInsertParams(client)[0]).not.toContain(true);
+  });
+
+  it('auteur ET provenance déclarée → is_actual=true, provenance recopiée sur l’allocation', async () => {
+    const client = build({ component_value: '600', component_updated_by: 'user-1', component_provenance: 'FICTIF recette', legacy_standard_value: '500' });
     db.pool.connect.mockResolvedValue(client);
     await allocateParcelRealCosts('parcel-001');
     expect(relayInsertParams(client)[0]).toContain(true);
+    expect(relayInsertParams(client)[0]).toContain('FICTIF recette');
   });
 });
 

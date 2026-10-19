@@ -84,7 +84,7 @@ describe('Catalogue pays decision-first', () => {
     const source = read('public/dashboards/canonical/js/market-catalog.js');
     const decisionSource = read('public/dashboards/canonical/js/market-catalog-decision.js');
     expect(html).toContain('/dashboards/canonical/js/primitives.js?v=1204');
-    expect(html).toContain('/dashboards/canonical/js/decision-primitives.js?v=1601');
+    expect(html).toContain('/dashboards/canonical/js/decision-primitives.js?v=261019-1');
     expect(html).toContain('/dashboards/canonical/js/market-catalog-decision.js?v=1612');
     expect(source).toContain('projection.metricItems(payload)');
     expect(decisionSource).toContain('payload.summary || {}');
