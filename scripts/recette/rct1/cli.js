@@ -21,6 +21,33 @@ async function introspect(db, tables) {
   });
 }
 
+// Inventaire lecture seule : une transaction par requete (une erreur n'invalide pas les autres).
+const INVENTORY = Object.freeze({
+  markets: "SELECT code, currency, minor_unit, is_active, lifecycle_status FROM markets ORDER BY code",
+  users_by_role: "SELECT role::text AS role, COUNT(*)::int AS n FROM users GROUP BY 1 ORDER BY 1",
+  rct1_users: "SELECT id, role::text AS role, full_name, relais_id FROM users WHERE full_name ILIKE 'RCT1%' OR email ILIKE 'rct1%' ORDER BY full_name",
+  admins: "SELECT id, full_name, role::text AS role, last_login_at FROM users WHERE role::text IN ('admin','superadmin','super_admin') ORDER BY created_at LIMIT 5",
+  relais_by_market: "SELECT m.code, COUNT(r.id)::int AS n, COUNT(*) FILTER (WHERE r.is_active)::int AS active FROM markets m LEFT JOIN relais r ON r.market_id=m.id GROUP BY m.code ORDER BY m.code",
+  rct1_relais: "SELECT id, name, market_id, is_active FROM relais WHERE name ILIKE 'RCT1%' OR id::text LIKE '5eed1000%'",
+  products: "SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE is_active)::int AS active, COUNT(*) FILTER (WHERE product_ref LIKE 'RCT1-%')::int AS rct1 FROM products",
+  rct1_products: "SELECT id, product_ref, name, price_kmf, is_active, is_available, lifecycle_status, sourcing_source, weight_kg FROM products WHERE product_ref LIKE 'RCT1-%' ORDER BY product_ref",
+  orders: "SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE simulation_scope IS NOT NULL)::int AS scoped FROM orders",
+  assignments: "SELECT m.code, a.status, a.id FROM market_operating_assignments a JOIN markets m ON m.id=a.market_id ORDER BY m.code",
+  rates: "SELECT * FROM exchange_rates ORDER BY 1 LIMIT 10",
+  cost_components_relay: "SELECT key, scope, scope_value, default_value, provenance, is_active FROM cost_components WHERE key ILIKE '%relay%' OR key ILIKE '%relais%' ORDER BY key LIMIT 20",
+  suppliers: "SELECT COUNT(*)::int AS n FROM suppliers",
+  shipments: "SELECT COUNT(*)::int AS n FROM shipments",
+  migrations_tail: "SELECT * FROM schema_migrations ORDER BY 1 DESC LIMIT 3",
+});
+async function inventory(db) {
+  const out = {};
+  for (const [k, q] of Object.entries(INVENTORY)) {
+    try { out[k] = await inTx(db, true, async (c) => (await c.query(q)).rows); }
+    catch (e) { out[k] = { error: String(e.message).slice(0, 120) }; }
+  }
+  return out;
+}
+
 async function main() {
   const phase = process.argv[2];
   const db = require('../../../db');
@@ -32,6 +59,12 @@ async function main() {
       process.stdout.write(JSON.stringify(await introspect(db, tables), null, 1) + '\n');
       return;
     }
+    if (phase === 'inventory') {
+      const v = await confirmTarget({ db });
+      if (!v.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
+      process.stdout.write(JSON.stringify(await inventory(db), null, 1) + '\n');
+      return;
+    }
     if (!PHASES.includes(phase)) throw new Error('RCT1_PHASE_UNKNOWN');
     const { steps } = require('./manifest');
     const only = process.env.RCT1_ONLY ? process.env.RCT1_ONLY.split(',') : null;
@@ -41,4 +74,4 @@ async function main() {
   } finally { if (db.pool && db.pool.end) await db.pool.end(); }
 }
 if (require.main === module) main().catch(e => { process.stderr.write('RCT1 REFUS: ' + e.message + '\n'); process.exitCode = 1; });
-module.exports = { introspect };
+module.exports = { introspect, inventory, INVENTORY };
