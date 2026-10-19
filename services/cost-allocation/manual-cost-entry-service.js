@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        order id, cost type, amount (KMF), provenance, reason, idempotency key, actor
  * @outputs       real cost allocations (manual_entry) distributed over order lines, append-only journal
- * @depends       services/cost-allocation/_helpers.js, services/simulation-scope-service.js
+ * @depends       services/cost-allocation/_helpers.js, services/cost-allocation/cost-expectation.js, services/simulation-scope-service.js
  * @used-by       routes/admin-costing.js
  * @db-read       orders, order_items, order_item_real_cost_allocations, order_cost_entry_events
  * @db-write      order_item_real_cost_allocations, order_cost_entry_events
@@ -19,6 +19,7 @@
 
 const { shareByWeight } = require('./_helpers');
 const { isSimulatedProvenance } = require('../simulation-scope-service');
+const { applicabilitySql, notApplicableMotif } = require('./cost-expectation');
 
 /**
  * L1 — Saisie manuelle TRAÇABLE d'un coût réel au niveau commande, pour les seuls types sans
@@ -28,6 +29,7 @@ const { isSimulatedProvenance } = require('../simulation-scope-service');
  * complété d'un journal append-only (ancienne et nouvelle valeur, auteur, motif).
  *
  * Garde-fous :
+ *  - jamais pour un coût non applicable à la commande (même règle que la complétude) ;
  *  - jamais pour un type alimenté automatiquement (fret, douane, port, achat, relais) → pas de double compte ;
  *  - refus si une allocation réelle NON manuelle existe déjà pour ce type sur la commande ;
  *  - une saisie existante ne se ressaisit pas : correction explicite, tracée ;
@@ -70,6 +72,17 @@ function assertProvenanceMatchesScope(order, provenance) {
   }
   if (!simulated && order.simulation_scope) {
     throw fail('REAL_FACT_ON_SIMULATED_ORDER', `Commande du périmètre de recette ${order.simulation_scope} : provenance FICTIF obligatoire`);
+  }
+}
+
+/** Même règle d'applicabilité que la complétude (D1/L2) : un coût non applicable ne se saisit pas. */
+async function assertApplicable(executor, orderId, costType) {
+  const { rows: [r] } = await executor.query(
+    `SELECT (${applicabilitySql(costType, 'o')}) AS applicable
+       FROM orders o
+      WHERE o.id = $1`, [orderId]);
+  if (r && r.applicable === false) {
+    throw fail('COST_NOT_APPLICABLE', `Coût ${costType} non applicable à cette commande : ${notApplicableMotif(costType)}`);
   }
 }
 
@@ -119,6 +132,7 @@ async function recordManualCost(executor, input = {}) {
   }
   const order = await loadOrder(executor, orderId, actorMarketId);
   assertProvenanceMatchesScope(order, provenance);
+  await assertApplicable(executor, orderId, costType);
   const { manual, automatic } = await existingRows(executor, orderId, costType);
   if (automatic.length) throw fail('AUTO_COLLECTED', `Un coût réel ${costType} existe déjà par un collecteur : saisie refusée (double compte)`);
   if (manual.length) throw fail('MANUAL_COST_EXISTS', 'Saisie déjà présente : utiliser la correction tracée');

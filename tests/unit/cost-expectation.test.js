@@ -103,3 +103,37 @@ describe('coûts applicables et attendus (D1) — règles et scénarios', () => 
     expect(final).toContain('NOT EXISTS');
   });
 });
+
+describe('L2 — applicabilité du Hub variable déduite du parcours', () => {
+  const base = { status: 'preparation', payment_mode: 'cash_relais', relay_beneficiary: true };
+
+  test('ligne IMPORT ou opération Hub : hub variable attendu en préparation', () => {
+    expect(ce.expectedTypes({ ...base, hub_route: true })).toContain('hub');
+  });
+
+  test('toutes lignes LOCAL_STOCK sans opération Hub : non applicable avec motif', () => {
+    expect(ce.expectedTypes({ ...base, hub_route: false })).not.toContain('hub');
+    const d = ce.describeOrderCosts({ ...base, hub_route: false, missing_cost_types: [] });
+    const na = d.not_applicable.find((x) => x.type === 'hub');
+    expect(na.motif).toMatch(/stock local/);
+    expect(na.motif).toMatch(/charge de période/);
+  });
+
+  test('parcours inconnu (drapeau absent) : jamais non applicable', () => {
+    expect(ce.expectedTypes({ ...base })).toContain('hub');
+    expect(ce.expectedTypes({ ...base, hub_route: null })).toContain('hub');
+  });
+
+  test('provenance de ligne inconnue : manquant signalé comme applicabilité présumée', () => {
+    const d = ce.describeOrderCosts({ ...base, hub_route: true, hub_route_unknown: true, missing_cost_types: ['hub'] });
+    expect(d.missing[0]).toMatchObject({ type: 'hub', applicability: 'presumed' });
+    expect(d.missing[0].applicability_note).toMatch(/donnée manquante/);
+  });
+
+  test('SQL : LOCAL_STOCK exclut, NULL ne prouve rien, opération Hub rend applicable', () => {
+    const sql = ce.expectedTypesSql('o');
+    expect(sql).toContain("fulfillment_source IS DISTINCT FROM 'LOCAL_STOCK'");
+    expect(sql).toContain('hub_preparation_at IS NOT NULL');
+    expect(ce.contextColumnsSql('o')).toContain('ctx_hub_route_unknown');
+  });
+});

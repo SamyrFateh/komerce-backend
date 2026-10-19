@@ -305,6 +305,8 @@ async function getCmdsCoutIncompletIds(filters = {}, options = {}) {
         imported: row.ctx_imported,
         customs_event: row.ctx_customs_event,
         relay_beneficiary: row.ctx_relay_beneficiary,
+        hub_route: row.ctx_hub_route,
+        hub_route_unknown: row.ctx_hub_route_unknown,
         customs_unknown: row.ctx_customs_unknown,
         missing_cost_types: row.missing_cost_types || [],
       }),

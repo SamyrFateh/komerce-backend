@@ -115,6 +115,17 @@ describe('dashboard-metrics/costing', () => {
     expect(out[0].cost_explanation.missing_estimate).toBe(false);
   });
 
+  it('L2 : parcours local sans opération Hub → hub variable non applicable ; provenance inconnue → présumé', async () => {
+    db.query.mockResolvedValueOnce({ rows: [
+      { id: 'local', status: 'preparation', payment_mode: 'cash_relais', missing_cost_types: ['packaging'], has_imputation: true, ctx_imported: false, ctx_customs_event: false, ctx_relay_beneficiary: true, ctx_customs_unknown: false, ctx_hub_route: false, ctx_hub_route_unknown: false },
+      { id: 'unknown', status: 'preparation', payment_mode: 'cash_relais', missing_cost_types: ['hub'], has_imputation: true, ctx_imported: true, ctx_customs_event: false, ctx_relay_beneficiary: true, ctx_customs_unknown: false, ctx_hub_route: true, ctx_hub_route_unknown: true },
+    ] });
+    const out = await costing.getCmdsCoutIncompletIds({}, {});
+    expect(db.query.mock.calls[0][0]).toContain('ctx_hub_route');
+    expect(out[0].cost_explanation.not_applicable.map(x => x.type)).toContain('hub');
+    expect(out[1].cost_explanation.missing[0]).toMatchObject({ type: 'hub', applicability: 'presumed' });
+  });
+
   it('getCoutMoyParCmd retourne provisional si aucune commande payee', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ value: '0', items_total: '0' }] });
 

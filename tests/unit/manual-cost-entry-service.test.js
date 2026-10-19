@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const svc = require('../../services/cost-allocation/manual-cost-entry-service');
 
-function executor({ order = { id: 'o1', market_id: 'm1', simulation_scope: 'RCT1' }, lines = [{ id: 'l1', price_kmf: 15000, quantity: 1 }], existing = [], event = null } = {}) {
+function executor({ order = { id: 'o1', market_id: 'm1', simulation_scope: 'RCT1' }, lines = [{ id: 'l1', price_kmf: 15000, quantity: 1 }], existing = [], event = null, applicable = true } = {}) {
   const calls = [];
   const query = jest.fn(async (sql, params) => {
     calls.push({ sql, params });
@@ -18,6 +18,7 @@ function executor({ order = { id: 'o1', market_id: 'm1', simulation_scope: 'RCT1
     if (/FROM orders WHERE id = \$1 FOR UPDATE/.test(sql)) return { rows: order ? [order] : [] };
     if (/SELECT order_item_id, amount_kmf, source, provenance, is_actual/.test(sql)) return { rows: existing };
     if (/FROM order_items WHERE order_id/.test(sql)) return { rows: lines };
+    if (/AS applicable/.test(sql)) return { rows: [{ applicable }] };
     return { rows: [] };
   });
   return { query, calls };
@@ -48,6 +49,15 @@ describe('L1 — saisie manuelle traçable', () => {
 
   test.each(['freight', 'customs', 'port_transitaire', 'product_purchase', 'relay', 'inconnu'])('type %s refusé (collecteur automatique ou inconnu)', async (t) => {
     await expect(svc.recordManualCost(executor(), { ...base, costType: t })).rejects.toMatchObject({ code: 'MANUAL_COST_TYPE_NOT_ALLOWED' });
+  });
+
+  test('coût non applicable (même règle que la complétude) : refus avec motif, aucune écriture', async () => {
+    const e = executor({ applicable: false });
+    await expect(svc.recordManualCost(e, { ...base, costType: 'hub' })).rejects.toMatchObject({ code: 'COST_NOT_APPLICABLE' });
+    await expect(svc.recordManualCost(executor({ applicable: false }), { ...base, costType: 'payment' })).rejects.toThrow(/espèces/);
+    expect(inserts(e)).toHaveLength(0);
+    const q = e.calls.find((c) => /AS applicable/.test(c.sql)).sql;
+    expect(q).toContain("fulfillment_source IS DISTINCT FROM 'LOCAL_STOCK'");
   });
 
   test('refus si un collecteur a déjà produit un réel de ce type (pas de double compte)', async () => {
