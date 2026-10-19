@@ -50,7 +50,7 @@ const META = Object.freeze({
 const UPDATE_FIELDS = [
   'label', 'emoji', 'description', 'family', 'category', 'economic_nature', 'allocation_perimeter',
   'default_value', 'unit', 'currency', 'scope', 'scope_value', 'allocation_method', 'source', 'confidence',
-  'channel', 'island', 'is_active', 'is_exceptional', 'active_from', 'active_until', 'notes',
+  'channel', 'island', 'is_active', 'is_exceptional', 'active_from', 'active_until', 'notes', 'provenance',
 ];
 
 function validateFamilyCategory(family, category) {
@@ -196,6 +196,12 @@ async function updateComponent(selector, body = {}, actorId = null, q = db) {
     }
   }
   if (!sets.length) throw new CostComponentAdminError(400, 'Aucun champ à modifier', 'cost_component_no_changes');
+  // L3 — une provenance décrit UNE valeur : changer la valeur sans nouvelle provenance l'efface
+  // (la nouvelle valeur n'a pas de provenance déclarée ; elle ne peut pas fonder un coût réel).
+  if (body.default_value !== undefined && body.provenance === undefined
+      && Number(body.default_value) !== Number(oldComp.default_value)) {
+    sets.push('provenance = NULL');
+  }
   sets.push(`updated_by = $${i++}`);
   params.push(actorId || null);
   params.push(oldComp.id);

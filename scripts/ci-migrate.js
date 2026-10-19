@@ -47,6 +47,15 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  // Migration de DONNÉES (règles applicatives) : un dump de schéma ne contient pas ses lignes.
+  // Sans cette sonde, un rafraîchissement du dump la baseline et la CI perd les règles du writer.
+  '302_canonical_margin_writer_rules.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT COUNT(*)::int = 2 AS ok
+        FROM business_rules
+       WHERE key IN ('CANONICAL_MARGIN_WRITER_ENABLED', 'CANONICAL_MARGIN_WRITE_PROVISIONAL')`);
+    return Boolean(row && row.ok);
+  },
   '276_market_delegation_operating_governance.sql': async (client) => {
     const { rows: [row] } = await client.query(`
       SELECT

@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        authenticated_central_actor, product_ref, category_key, catalog_action_payload
  * @outputs       catalog_work_queue, delegated_catalog_mutations
- * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js
+ * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, finance_config, currency_parities, exchange_rates, cost_components
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
@@ -27,6 +27,7 @@ const { certifyCatalogProduct } = require('./catalog-certification');
 const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
+const { getPricingParameterStatus } = require('./pricing-parameters-status');
 
 const CATALOG_CAP_FALLBACK = 120;
 const APPROVAL_CONTENT_SOURCES = Object.freeze(['connector_raw', 'ai_enriched', 'manual']);
@@ -149,6 +150,20 @@ function sourcingDecisionOrderSql(alias = 'sc') {
   END`;
 }
 
+// C4 — un repli technique vers « autre » n'est pas une classification validée.
+// Sans migration : le verdict se déduit de la catégorie portée par le candidat
+// sourcing (absente = repli de createDraftProductFromSourcingCandidate).
+function classificationStatus(row = {}) {
+  const supplierCategory = row.supplier_category || null;
+  if (row.has_candidate === false) return { status: 'not_from_sourcing', supplier_category: supplierCategory };
+  const candidateCategory = String(row.candidate_komerce_category || '').trim();
+  const category = String(row.category || '').trim().toLowerCase();
+  if (!candidateCategory && category === 'autre') {
+    return { status: 'fallback_unresolved', supplier_category: supplierCategory };
+  }
+  return { status: 'classified', supplier_category: supplierCategory };
+}
+
 async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const safeOffset = Math.max(Number.parseInt(offset, 10) || 0, 0);
@@ -171,6 +186,9 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
            p.enrichment_confidence, p.created_at,
            sc.supplier_name,
            sc.supplier_product_id,
+           sc.candidate_id,
+           sc.candidate_komerce_category,
+           sc.supplier_category,
            sc.stock_available AS supplier_stock,
            sc.confidence AS sourcing_confidence,
            UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) AS sourcing_decision,
@@ -185,7 +203,10 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
                candidate.confidence,
                candidate.scan_result,
                candidate.updated_at,
-               candidate.created_at
+               candidate.created_at,
+               candidate.id AS candidate_id,
+               candidate.komerce_category AS candidate_komerce_category,
+               candidate.supplier_category AS supplier_category
           FROM sourcing_candidates candidate
          WHERE candidate.product_id = p.id
            AND candidate.state = 'imported_to_catalog'
@@ -217,6 +238,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
     description_source: row.description_source || null,
     category: row.category,
     fragility: row.fragility || null,
+    classification: classificationStatus({ ...row, has_candidate: Boolean(row.candidate_id) }),
     emoji: row.emoji || null,
     price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
     cost_kmf: row.cost_kmf == null ? null : Number(row.cost_kmf),
@@ -326,7 +348,7 @@ async function buildWorkspace(query = {}) {
   const approvalLimit = Math.min(Math.max(Number(query.approval_limit) || 50, 1), 100);
   const approvalOffset = Math.max(Number.parseInt(query.approval_offset, 10) || 0, 0);
   const approvalProductRef = String(query.product_ref || '').trim() || null;
-  const [summary, catalogCap, categories, products, approval, approvalBreakdown, focusedHandoff] = await Promise.all([
+  const [summary, catalogCap, categories, products, approval, approvalBreakdown, focusedHandoff, pricingParameters] = await Promise.all([
     querySummary(),
     queryCatalogCap(),
     taxonomy.listCategories(),
@@ -338,6 +360,7 @@ async function buildWorkspace(query = {}) {
     queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset, productRef: approvalProductRef }),
     queryApprovalBreakdown(),
     queryFocusedMarketHandoff(approvalProductRef),
+    getPricingParameterStatus(db).catch(() => ({ items: [], has_unvalidated: false, unavailable: true })),
   ]);
   // La projection Raffinerie expose le vrai verdict du moteur de certification,
   // sans déclencher de validation, publication ni mutation.
@@ -373,6 +396,7 @@ async function buildWorkspace(query = {}) {
     products,
     approval: approvalWithReadiness,
     focused_handoff: focusedHandoff,
+    pricing_parameters: pricingParameters,
     approval_breakdown: approvalBreakdown,
     approval_strategy: {
       authority: 'human_approval',
@@ -564,6 +588,7 @@ module.exports = {
     queryProducts,
     queryApprovalQueue,
     queryApprovalBreakdown,
+    classificationStatus,
     queryFocusedMarketHandoff,
     sourcingDecisionOrderSql,
     queryCatalogCap,

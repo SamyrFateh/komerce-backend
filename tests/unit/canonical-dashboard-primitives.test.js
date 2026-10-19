@@ -240,4 +240,13 @@ describe('DASHBOARD DECISION VISUAL V1 — primitives', () => {
     expect(footer.children[0].children[1].textContent).toBe('Données à jour');
     expect(footer.children[0].children[2].textContent).toBe('KM · Comores');
   });
+
+  test('TrustFooter affiche le libellé de périmètre de recette (faits simulés) quand il est fourni', () => {
+    const doc = fakeDocument();
+    const { TrustFooter } = createDecisionPrimitives(doc);
+    const host = container(doc);
+    TrustFooter.render(host, { stateLabel: 'Recette RCT1 — faits simulés', simulationLabel: 'Périmètre de recette RCT1 : faits simulés' });
+    const right = host.children[0].children[1];
+    expect(right.children.map((c) => c.textContent)).toContain('Périmètre de recette RCT1 : faits simulés');
+  });
 });

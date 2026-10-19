@@ -8,7 +8,7 @@
  * @outputs       canonical_finance_projection
  * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais
+ * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, parcel_items, parcels, customs_shipments, customs_shipment_parcels
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, finance_event_date_is_authoritative
@@ -19,6 +19,13 @@
 'use strict';
 
 const db = require('../db');
+const { isValidScope } = require('./simulation-scope-service');
+
+// L3 — vue d'un périmètre de recette : mêmes calculs, sélection explicite, libellé obligatoire.
+const SIMULATION_VIEW = (query = {}) => (isValidScope(query.simulation_scope)
+  ? Object.freeze({ scope: query.simulation_scope, label: `Périmètre de recette ${query.simulation_scope} : faits simulés, pas une activité réelle de l'entreprise.` })
+  : null);
+const { justifiedRealSql, finalMarginReadySql, missingTypesArraySql } = require('./cost-allocation/cost-expectation');
 const metrics = require('./dashboard-metrics');
 const { getSupplierPaymentReview } = require('./supplier-payment-review');
 const {
@@ -55,6 +62,7 @@ function buildPeriod(query = {}, marketId = null, now = new Date()) {
       from: from.toISOString(),
       to: to.toISOString(),
       ...(marketId ? { market_id: marketId } : {}),
+      ...(isValidScope(query.simulation_scope) ? { simulation_scope: query.simulation_scope } : {}),
     }),
   });
 }
@@ -175,13 +183,11 @@ function trendBucket(period) {
 async function getFinanceTrend(filters = {}, period = 30) {
   const bucket = trendBucket(period);
   const { where, params } = buildFiltersClause(filters, 'o');
-  const expectedIndex = params.length + 1;
-  const queryParams = [...params, EXPECTED_COST_TYPES];
-  const expectedCount = EXPECTED_COST_TYPES.length;
+  const queryParams = params;
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
-      SELECT o.id, o.created_at, o.total_kmf
+      SELECT o.id, o.created_at, o.total_kmf, o.status, o.payment_mode, o.relais_id
       FROM orders o
       WHERE ${where}
         AND o.payment_status = 'paid'
@@ -194,18 +200,12 @@ async function getFinanceTrend(filters = {}, period = 30) {
           SELECT SUM(alc.amount_kmf)
           FROM order_item_real_cost_allocations alc
           WHERE alc.order_id = so.id
-            AND alc.is_actual = TRUE
+            AND ${justifiedRealSql('alc')}
         ), 0)::bigint AS real_cost_kmf,
         EXISTS (
           SELECT 1 FROM order_item_cost_imputations imp WHERE imp.order_id = so.id
         ) AS has_imputation,
-        (
-          SELECT COUNT(DISTINCT alc.cost_type::text)
-          FROM order_item_real_cost_allocations alc
-          WHERE alc.order_id = so.id
-            AND alc.is_actual = TRUE
-            AND alc.cost_type::text = ANY($${expectedIndex}::text[])
-        )::int AS expected_cost_types
+        ${finalMarginReadySql('so')} AS final_ready
       FROM scoped_orders so
     )
     SELECT
@@ -214,11 +214,11 @@ async function getFinanceTrend(filters = {}, period = 30) {
       COALESCE(SUM(total_kmf), 0)::bigint AS revenue_kmf,
       COALESCE(SUM(real_cost_kmf), 0)::bigint AS real_cost_kmf,
       COUNT(*) FILTER (
-        WHERE has_imputation = TRUE AND expected_cost_types = ${expectedCount}
+        WHERE has_imputation = TRUE AND final_ready
       )::int AS actual_orders,
       COALESCE(SUM(
         CASE
-          WHEN has_imputation = TRUE AND expected_cost_types = ${expectedCount}
+          WHEN has_imputation = TRUE AND final_ready
           THEN total_kmf - real_cost_kmf
           ELSE 0
         END
@@ -254,7 +254,7 @@ async function getCostFamilyBreakdown(filters = {}) {
     JOIN orders o ON o.id = alc.order_id
     WHERE ${where}
       AND o.status NOT IN ('cancelled', 'refunded')
-      AND alc.is_actual = TRUE
+      AND ${justifiedRealSql('alc')}
     GROUP BY alc.cost_type::text
     ORDER BY amount_kmf DESC, cost_type ASC
   `, params);
@@ -269,10 +269,8 @@ async function getCostFamilyBreakdown(filters = {}) {
 async function getRecentCostingOrders(filters = {}, options = {}) {
   const limit = Math.min(50, Math.max(1, Number(options.limit) || 20));
   const { where, params } = buildFiltersClause(filters, 'o');
-  const expectedIndex = params.length + 1;
-  const limitIndex = params.length + 2;
-  const queryParams = [...params, EXPECTED_COST_TYPES, limit];
-  const expectedCount = EXPECTED_COST_TYPES.length;
+  const limitIndex = params.length + 1;
+  const queryParams = [...params, limit];
 
   const { rows } = await db.query(`
     SELECT
@@ -286,15 +284,12 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
        WHERE imp.order_id = o.id) AS estimated_cost_kmf,
       (SELECT SUM(alc.amount_kmf)
        FROM order_item_real_cost_allocations alc
-       WHERE alc.order_id = o.id AND alc.is_actual = TRUE) AS real_cost_kmf,
+       WHERE alc.order_id = o.id AND ${justifiedRealSql('alc')}) AS real_cost_kmf,
       EXISTS (
         SELECT 1 FROM order_item_cost_imputations imp WHERE imp.order_id = o.id
       ) AS has_imputation,
-      (SELECT COUNT(DISTINCT alc.cost_type::text)
-       FROM order_item_real_cost_allocations alc
-       WHERE alc.order_id = o.id
-         AND alc.is_actual = TRUE
-         AND alc.cost_type::text = ANY($${expectedIndex}::text[]))::int AS expected_cost_types
+      ${finalMarginReadySql('o')} AS final_ready,
+      ${missingTypesArraySql('o')} AS missing_cost_types
     FROM orders o
     WHERE ${where}
       AND o.status NOT IN ('cancelled', 'refunded')
@@ -306,11 +301,10 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
     const sale = Number(row.total_kmf) || 0;
     const estimated = row.estimated_cost_kmf == null ? null : Number(row.estimated_cost_kmf);
     const real = row.real_cost_kmf == null ? null : Number(row.real_cost_kmf);
-    const expectedTypes = Number(row.expected_cost_types) || 0;
     const hasImputation = row.has_imputation === true || row.has_imputation === 'true';
     const costStatus = !hasImputation
       ? 'incomplete'
-      : (expectedTypes === expectedCount ? 'actual' : (real != null ? 'partial_real' : 'estimated'));
+      : (row.final_ready === true ? 'actual' : (real != null ? 'partial_real' : 'estimated'));
 
     return Object.freeze({
       reference: row.reference,
@@ -323,6 +317,7 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
       estimated_margin_kmf: estimated != null ? sale - estimated : null,
       consolidated_margin_kmf: costStatus === 'actual' && real != null ? sale - real : null,
       cost_status: costStatus,
+      missing_cost_types: Array.isArray(row.missing_cost_types) ? row.missing_cost_types : [],
       created_at: row.created_at,
     });
   });
@@ -330,13 +325,11 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
 
 async function getRelayProfitability(filters = {}) {
   const { where, params } = buildFiltersClause(filters, 'o');
-  const expectedIndex = params.length + 1;
-  const queryParams = [...params, EXPECTED_COST_TYPES];
-  const expectedCount = EXPECTED_COST_TYPES.length;
+  const queryParams = params;
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
-      SELECT o.id, o.relais_id, o.total_kmf
+      SELECT o.id, o.relais_id, o.total_kmf, o.status, o.payment_mode
       FROM orders o
       WHERE ${where}
         AND o.payment_status = 'paid'
@@ -352,17 +345,11 @@ async function getRelayProfitability(filters = {}) {
         (SELECT SUM(alc.amount_kmf)
          FROM order_item_real_cost_allocations alc
          WHERE alc.order_id = so.id
-           AND alc.is_actual = TRUE) AS real_cost_kmf,
+           AND ${justifiedRealSql('alc')}) AS real_cost_kmf,
         EXISTS (
           SELECT 1 FROM order_item_cost_imputations imp WHERE imp.order_id = so.id
         ) AS has_imputation,
-        (
-          SELECT COUNT(DISTINCT alc.cost_type::text)
-          FROM order_item_real_cost_allocations alc
-          WHERE alc.order_id = so.id
-            AND alc.is_actual = TRUE
-            AND alc.cost_type::text = ANY($${expectedIndex}::text[])
-        )::int AS expected_cost_types
+        ${finalMarginReadySql('so')} AS final_ready
       FROM scoped_orders so
     )
     SELECT
@@ -371,13 +358,13 @@ async function getRelayProfitability(filters = {}) {
       COALESCE(SUM(ct.total_kmf), 0)::bigint AS revenue_kmf,
       SUM(ct.estimated_cost_kmf)::bigint AS estimated_cost_kmf,
       COUNT(*) FILTER (
-        WHERE ct.has_imputation = TRUE AND ct.expected_cost_types = ${expectedCount}
+        WHERE ct.has_imputation = TRUE AND ct.final_ready
       )::int AS actual_orders,
       SUM(ct.total_kmf) FILTER (
-        WHERE ct.has_imputation = TRUE AND ct.expected_cost_types = ${expectedCount}
+        WHERE ct.has_imputation = TRUE AND ct.final_ready
       )::bigint AS actual_revenue_kmf,
       SUM(ct.real_cost_kmf) FILTER (
-        WHERE ct.has_imputation = TRUE AND ct.expected_cost_types = ${expectedCount}
+        WHERE ct.has_imputation = TRUE AND ct.final_ready
       )::bigint AS real_cost_kmf
     FROM cost_truth ct
     JOIN relais r ON r.id = ct.relais_id
@@ -455,6 +442,7 @@ async function buildFinance(query = {}, options = {}) {
 
   return Object.freeze({
     scope: publicScope(market),
+    simulation: SIMULATION_VIEW(query),
     period: window.period,
     kpis: Object.freeze([
       ca,
@@ -487,6 +475,8 @@ async function buildFinance(query = {}, options = {}) {
       payment_status: row.payment_status,
       total_kmf: Number(row.total_kmf) || 0,
       created_at: row.created_at,
+      missing_cost_types: Object.freeze([...(row.missing_cost_types || [])]),
+      cost_explanation: row.cost_explanation ? Object.freeze({ ...row.cost_explanation }) : null,
     }))),
     ...(supplierPaymentReview ? { supplier_payment_review: supplierPaymentReview } : {}),
     data_quality: Object.freeze({

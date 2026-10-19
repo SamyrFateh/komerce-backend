@@ -8,7 +8,7 @@
  * @outputs       canonical_commerce_projection, market_product_viability, market_product_availability, server_decision_signals
  * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, pricing-market-corridor, local-stock-decision-projection
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, order_items, products, order_item_cost_imputations, order_item_real_cost_allocations
+ * @db-read       orders, order_items, products, order_item_cost_imputations, order_item_real_cost_allocations, parcel_items, parcels, customs_shipments, customs_shipment_parcels
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, decision_support_reuses_canonical_economic_engine, local_stock_projection_is_availability_authority
@@ -19,6 +19,13 @@
 'use strict';
 
 const db = require('../db');
+const { isValidScope } = require('./simulation-scope-service');
+
+// L3 — vue d'un périmètre de recette : mêmes calculs, sélection explicite, libellé obligatoire.
+const SIMULATION_VIEW = (query = {}) => (isValidScope(query.simulation_scope)
+  ? Object.freeze({ scope: query.simulation_scope, label: `Périmètre de recette ${query.simulation_scope} : faits simulés, pas une activité réelle de l'entreprise.` })
+  : null);
+const { justifiedRealSql, finalMarginReadySql } = require('./cost-allocation/cost-expectation');
 const metrics = require('./dashboard-metrics');
 const pricingMarketCorridor = require('./pricing-market-corridor');
 const localStockDecision = require('./local-stock-decision-projection');
@@ -66,6 +73,7 @@ function buildPeriodFilters(query = {}, marketId = null, now = new Date()) {
       from: from.toISOString(),
       to: to.toISOString(),
       ...(marketId ? { market_id: marketId } : {}),
+      ...(isValidScope(query.simulation_scope) ? { simulation_scope: query.simulation_scope } : {}),
     },
   };
 }
@@ -134,14 +142,12 @@ function publicTopProduct(product = {}) {
 async function getProductProfitability(filters, options = {}) {
   const limit = Math.min(50, Math.max(1, Number(options.limit) || 10));
   const { where, params } = buildFiltersClause(filters, 'o');
-  const expectedIndex = params.length + 1;
-  const limitIndex = params.length + 2;
-  const queryParams = [...params, EXPECTED_COST_TYPES, limit];
-  const expectedCount = EXPECTED_COST_TYPES.length;
+  const limitIndex = params.length + 1;
+  const queryParams = [...params, limit];
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
-      SELECT o.id
+      SELECT o.id, o.status, o.payment_mode, o.relais_id
       FROM orders o
       WHERE ${where}
         AND o.payment_status = 'paid'
@@ -155,13 +161,7 @@ async function getProductProfitability(filters, options = {}) {
           FROM order_item_cost_imputations imp
           WHERE imp.order_id = so.id
         ) AS has_imputation,
-        (
-          SELECT COUNT(DISTINCT alc.cost_type::text)
-          FROM order_item_real_cost_allocations alc
-          WHERE alc.order_id = so.id
-            AND alc.is_actual = TRUE
-            AND alc.cost_type::text = ANY($${expectedIndex}::text[])
-        )::int AS expected_cost_types
+        ${finalMarginReadySql('so')} AS final_ready
       FROM scoped_orders so
     ),
     item_truth AS (
@@ -179,8 +179,8 @@ async function getProductProfitability(filters, options = {}) {
         (SELECT SUM(alc.amount_kmf)
          FROM order_item_real_cost_allocations alc
          WHERE alc.order_item_id = oi.id
-           AND alc.is_actual = TRUE) AS real_cost_kmf,
-        (ocs.has_imputation = TRUE AND ocs.expected_cost_types = ${expectedCount}) AS is_actual_order
+           AND ${justifiedRealSql('alc')}) AS real_cost_kmf,
+        (ocs.has_imputation = TRUE AND ocs.final_ready) AS is_actual_order
       FROM scoped_orders so
       JOIN order_cost_status ocs ON ocs.id = so.id
       JOIN order_items oi ON oi.order_id = so.id
@@ -574,6 +574,7 @@ async function buildCommerce(query = {}, options = {}) {
 
   return Object.freeze({
     scope: publicScope(market),
+    simulation: SIMULATION_VIEW(query),
     period,
     kpis: Object.freeze([ca, commandes, panier, marge, produitsActifsVendus]),
     top_products: publicTopProducts,

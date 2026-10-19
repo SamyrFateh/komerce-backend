@@ -46,7 +46,10 @@
 
 const express = require('express');
 const db = require('../db');
+const { notLegacyUnjustifiedSql } = require('../services/cost-allocation/cost-expectation');
+const { realActivityByOrderIdSql, assignOrderSimulationScope } = require('../services/simulation-scope-service');
 const costAllocation = require('../services/cost-allocation');
+const manualCostEntry = require('../services/cost-allocation/manual-cost-entry-service');
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
 const productMarginSteering = require('../services/cost-allocation/product-margin-steering');
 const dashboardCache = require('../services/dashboard-cache');
@@ -90,8 +93,9 @@ router.get('/orders', authenticate, requireAdmin, async (req, res, next) => {
         (SELECT COUNT(*)
          FROM order_item_cost_imputations WHERE order_id = o.id) AS imputations_count,
         (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS items_count,
-        (SELECT SUM(amount_kmf)
-         FROM order_item_real_cost_allocations WHERE order_id = o.id) AS real_total
+        (SELECT SUM(alc.amount_kmf)
+         FROM order_item_real_cost_allocations alc
+         WHERE alc.order_id = o.id AND ${notLegacyUnjustifiedSql('alc')}) AS real_total
       FROM orders o
       LEFT JOIN relais r ON r.id = o.relais_id
       WHERE ${where.join(' AND ')}
@@ -311,11 +315,14 @@ router.get('/products', authenticate, requireAdmin, async (req, res, next) => {
           FROM order_item_real_cost_allocations alc
           JOIN order_items oi ON oi.id = alc.order_item_id
           WHERE oi.product_id = imp.product_id
+            AND ${notLegacyUnjustifiedSql('alc')}
+            AND ${realActivityByOrderIdSql('alc')}
         ), 0) AS total_real_kmf,
         COUNT(DISTINCT imp.order_id)::int AS orders_count
       FROM order_item_cost_imputations imp
       LEFT JOIN products p ON p.id = imp.product_id
       WHERE ${where.join(' AND ')}
+        AND ${realActivityByOrderIdSql('imp')}
       GROUP BY imp.product_id, p.name, p.category
       ORDER BY total_estimated_business_kmf DESC NULLS LAST
       LIMIT $${limitIdx}
@@ -404,8 +411,9 @@ router.get('/relais', authenticate, requireAdmin, async (req, res, next) => {
         FROM order_item_cost_imputations imp WHERE imp.order_id = o.id
       ) imp_agg ON TRUE
       LEFT JOIN LATERAL (
-        SELECT SUM(amount_kmf) AS sum_real, COUNT(*)::int AS real_count
-        FROM order_item_real_cost_allocations WHERE order_id = o.id
+        SELECT SUM(alc.amount_kmf) AS sum_real, COUNT(*)::int AS real_count
+        FROM order_item_real_cost_allocations alc
+        WHERE alc.order_id = o.id AND ${notLegacyUnjustifiedSql('alc')}
       ) real_agg ON TRUE
       WHERE ${where.join(' AND ')}
       GROUP BY o.relais_id, r.name
@@ -725,5 +733,53 @@ router.get('/products/margin-steering', authenticate, requireAdmin, async (req, 
     next(err);
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+// L1 — POST /api/admin/costing/orders/:orderId/manual-costs : saisie manuelle traçable
+//      POST /api/admin/costing/orders/:orderId/manual-costs/:costType/correct : correction tracée
+// Types sans collecteur automatique uniquement ; provenance + motif + clé d'idempotence obligatoires.
+// ═══════════════════════════════════════════════════════════════════════
+async function runCostTransaction(req, res, next, fn, extra = {}) {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const b = req.body || {};
+    const result = await fn(client, {
+      orderId: req.params.orderId,
+      costType: extra.costType || b.cost_type,
+      amountKmf: b.amount_kmf,
+      provenance: b.provenance,
+      reason: b.reason,
+      idempotencyKey: b.idempotency_key,
+      eventDate: b.event_date || null,
+      actorId: req.user && req.user.id,
+    });
+    await client.query('COMMIT');
+    dashboardCache.invalidateAllDashboards();
+    res.status(result.already ? 200 : 201).json({ ok: true, ...result });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err && err.code && err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+    next(err);
+  } finally {
+    client.release();
+  }
+}
+
+// L3 — POST /api/admin/costing/orders/:orderId/simulation-scope : rattache une commande à un périmètre
+// de recette (faits simulés). Tracé, immuable, refusé en production.
+router.post('/orders/:orderId/simulation-scope', authenticate, requireAdmin, (req, res, next) =>
+  runCostTransaction(req, res, next, (client) => assignOrderSimulationScope(client, {
+    orderId: req.params.orderId,
+    scope: (req.body || {}).scope,
+    reason: (req.body || {}).reason,
+    actorId: req.user && req.user.id,
+  })));
+
+router.post('/orders/:orderId/manual-costs', authenticate, requireAdmin, (req, res, next) =>
+  runCostTransaction(req, res, next, manualCostEntry.recordManualCost));
+
+router.post('/orders/:orderId/manual-costs/:costType/correct', authenticate, requireAdmin, (req, res, next) =>
+  runCostTransaction(req, res, next, manualCostEntry.correctManualCost, { costType: req.params.costType }));
 
 module.exports = router;

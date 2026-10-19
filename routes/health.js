@@ -32,6 +32,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { getMetrics } = require('../services/monitoring');
+const { computeDbFingerprint, readRuntimeIdentity } = require('../services/target-identity');
 const { authenticate, requireRole } = require('../middleware/auth');
 
 // ── GET /health — Basic health ──────────────────────────────────────────────
@@ -42,6 +43,13 @@ router.get('/', async (req, res, next) => {
     await db.query('SELECT 1');
     const dbLatency = Date.now() - start;
 
+    // Identité NON secrète de la cible (empreinte hashée + environnement déclaré) : jamais bloquante.
+    let target = null;
+    try {
+      const { fingerprint, parts } = await computeDbFingerprint(db);
+      target = { db_fingerprint: fingerprint, parts, identity: readRuntimeIdentity() };
+    } catch { target = null; }
+
     res.json({
       status: 'ok',
       db: 'connected',
@@ -50,6 +58,7 @@ router.get('/', async (req, res, next) => {
       version: process.env.npm_package_version || 'unknown',
       node_env: process.env.NODE_ENV || 'development',
       komerce_env: process.env.KOMERCE_ENV || 'unknown',
+      target,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {

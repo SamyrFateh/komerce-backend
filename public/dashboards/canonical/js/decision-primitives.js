@@ -348,6 +348,7 @@
       if (config.generatedAt) right.appendChild(text(doc, 'span', 'kmc-trust-meta', `Dernière mise à jour : ${config.generatedAt}`));
       if (config.qualityLabel) right.appendChild(text(doc, 'span', 'kmc-trust-meta', config.qualityLabel));
       if (config.warningLabel) right.appendChild(text(doc, 'span', 'kmc-trust-warning', config.warningLabel));
+      if (config.simulationLabel) right.appendChild(text(doc, 'span', 'kmc-trust-warning', config.simulationLabel));
       footer.appendChild(right);
 
       container.appendChild(footer);

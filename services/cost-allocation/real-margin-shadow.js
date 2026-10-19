@@ -55,6 +55,7 @@
 'use strict';
 
 const db = require('../../db');
+const { LEGACY_UNJUSTIFIED_SOURCE } = require('./cost-expectation');
 const { SNAPSHOT_LANDED_TO_REAL_COST_TYPE } = require('./cost-types');
 const { customsExpectedSql, customsUnknownForLinesSql } = require('../finance-metrics/customs-unknown');
 const { shareByWeight } = require('./_helpers');
@@ -275,9 +276,12 @@ function _splitReal(rows) {
   const byType = {};
   const catalog = { amount: 0 };
   const ignored = [];
+  let legacyExcluded = 0;
   for (const r of rows) {
     const amount = num(r.amount) || 0;
     const t = r.cost_type;
+    // D2b : anciennes lignes hub/risque non justifiées = ni réelles ni zéro ; exclues et signalées.
+    if (r.source === LEGACY_UNJUSTIFIED_SOURCE) { legacyExcluded += amount; continue; }
     const slot = (byType[t] = byType[t] || { real: 0, sources: new Set(), fallback: 0 });
     if (t === 'product_purchase' && r.source === CATALOG_SOURCE) { catalog.amount += amount; continue; }
     if (!r.is_actual) { slot.fallback += amount; continue; }
@@ -289,7 +293,7 @@ function _splitReal(rows) {
   for (const t of Object.keys(byType)) {
     if (![...N1_TYPES, PAYMENT, RISK].includes(t)) ignored.push(t);
   }
-  return { byType, catalog, ignored };
+  return { byType, catalog, ignored, legacyExcluded };
 }
 
 function _revenue(o, refunds) {
@@ -426,6 +430,7 @@ async function computeOrderRealMarginShadow(orderId, opts = {}) {
     purchaseInfo: { confirmedLines }, purchaseReal,
   });
   if (realSplit.ignored.length) revenue.flags.push(`real_cost_types_ignored:${realSplit.ignored.join('|')}`);
+  if (realSplit.legacyExcluded) revenue.flags.push(`legacy_unjustified_lines_excluded:${Math.round(realSplit.legacyExcluded)}`);
 
   const noImputations = !est.imputations_count || est.missing_snapshot_count > 0;
   if (noImputations) revenue.flags.push('cost_imputations_missing_or_partial');
@@ -545,4 +550,4 @@ async function listRealMarginShadow({ marketId, limit = 50, offset = 0, sinceDay
   };
 }
 
-module.exports = { computeOrderRealMarginShadow, listRealMarginShadow, computePurchaseReal };
+module.exports = { computeOrderRealMarginShadow, listRealMarginShadow, computePurchaseReal, _splitReal };

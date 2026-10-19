@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const { notLegacyUnjustifiedSql } = require('./cost-allocation/cost-expectation');
 const capabilityEvidence = require('./suppliers/provider-capability-certifications');
 
 const PRODUCT_REF = /^KPR-\d{6,}$/i;
@@ -133,6 +134,7 @@ async function loadProduct360(product, options = {}) {
     LEFT JOIN markets m ON m.id = o.market_id
     WHERE oi.product_id = $1::uuid
       AND o.status NOT IN ('cancelled', 'refunded')
+      AND o.simulation_scope IS NULL
       ${perfScope.sql}
     GROUP BY m.code, m.name, m.currency
     ORDER BY revenue_kmf DESC
@@ -151,6 +153,7 @@ async function loadProduct360(product, options = {}) {
     FROM order_item_cost_imputations imp
     JOIN orders o ON o.id = imp.order_id
     WHERE imp.product_id = $1::uuid
+      AND o.simulation_scope IS NULL
       ${costScope.sql}
   `, [productId, ...costScope.params]);
 
@@ -164,6 +167,8 @@ async function loadProduct360(product, options = {}) {
     JOIN order_items oi ON oi.id = alc.order_item_id
     JOIN orders o ON o.id = alc.order_id
     WHERE oi.product_id = $1::uuid
+      AND ${notLegacyUnjustifiedSql('alc')}
+      AND o.simulation_scope IS NULL
       ${realScope.sql}
   `, [productId, ...realScope.params]);
 

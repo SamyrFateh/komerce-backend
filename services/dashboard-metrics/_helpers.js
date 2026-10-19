@@ -37,10 +37,7 @@
 
 'use strict';
 
-const {
-  VARIABLE_COST_TYPES,
-  ORDER_ALLOCATION_STRUCTURE_COST_TYPES,
-} = require('../cost-allocation/cost-types');
+const { VARIABLE_COST_TYPES } = require('../cost-allocation/cost-types');
 
 const ACTIVE_ORDER_STATUSES = Object.freeze([
   'confirmed', 'ordered', 'preparation', 'shipped', 'in_transit', 'available',
@@ -72,7 +69,10 @@ const EXCLUDED_FROM_REVENUE = Object.freeze(['cancelled', 'refunded']);
 const EXPECTED_VARIABLE_COSTS = Object.freeze(
   VARIABLE_COST_TYPES.filter((type) => type !== 'payment')
 );
-const EXPECTED_FIXED_COSTS = ORDER_ALLOCATION_STRUCTURE_COST_TYPES;
+// D1 : les charges de structure (fixed_overhead, forfait Hub) ne sont JAMAIS exigées
+// par commande — elles relèvent de la période. Voir cost-allocation/cost-expectation.js
+// pour les coûts applicables et attendus selon le stade.
+const EXPECTED_FIXED_COSTS = Object.freeze([]);
 const EXPECTED_PAYMENT_COSTS = Object.freeze(['payment']);
 const EXPECTED_ALL_COSTS = Object.freeze([
   ...EXPECTED_VARIABLE_COSTS,
@@ -119,13 +119,22 @@ function buildFiltersClause(filters = {}, orderAlias = 'o') {
     params.push(filters.market_id);
   }
 
+  // L3 — un seul moteur, sélection explicite : par défaut l'activité RÉELLE seule ; un périmètre de
+  // recette (faits simulés) n'est inclus que s'il est demandé, et alors seul.
+  if (filters.simulation_scope) {
+    where.push(`${orderAlias}.simulation_scope = $${i++}`);
+    params.push(filters.simulation_scope);
+  } else {
+    where.push(`${orderAlias}.simulation_scope IS NULL`);
+  }
+
   const whereSql = where.join(' AND ');
   return { where: assertParameterizedWhereClause(whereSql), params, nextParamIndex: i };
 }
 
 function assertParameterizedWhereClause(where) {
   const clause = String(where || '');
-  const safePart = /^(?:1=1|[A-Za-z_][A-Za-z0-9_]*\.(?:created_at|destination_island|relais_id|status::text|payment_status::text|market_id)\s*(?:=|>=|<=)\s*\$\d+)$/;
+  const safePart = /^(?:1=1|[A-Za-z_][A-Za-z0-9_]*\.(?:created_at|destination_island|relais_id|status::text|payment_status::text|market_id|simulation_scope)\s*(?:=|>=|<=)\s*\$\d+|[A-Za-z_][A-Za-z0-9_]*\.simulation_scope IS NULL)$/;
   const parts = clause.split(' AND ');
   if (!parts.length || parts.some((part) => !safePart.test(part))) {
     throw new Error('Unsafe dashboard WHERE clause');
@@ -220,6 +229,7 @@ function makeKpi(key, label, value, unit, options = {}) {
       items_total: options.itemsTotal != null ? options.itemsTotal : null,
       items_with_data: options.itemsWithData != null ? options.itemsWithData : null,
       warning: options.warning || null,
+      ...(options.extra || {}),
     },
     drill_to: options.drillTo || null,
   };

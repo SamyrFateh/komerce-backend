@@ -269,6 +269,28 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(items[0]).toEqual(expect.objectContaining({ title: 'CMD-I1', value: finance.formatKmf(5000) }));
   });
 
+  test('incompleteCostOrderItems explique ce qui manque, ce qui n’est pas encore attendu et l’absence de collecte (D1)', () => {
+    const payload = payloadFixture();
+    payload.incomplete_cost_orders = [{
+      reference: 'CMD-I2', status: 'preparation', payment_status: 'paid', total_kmf: 5000, created_at: '2026-08-20T00:00:00.000Z',
+      cost_explanation: {
+        missing: [
+          { type: 'packaging', label: 'Emballage', state: 'unknown', collection_mechanism: false },
+          { type: 'product_purchase', label: 'Achat produit', state: 'unknown', collection_mechanism: true },
+        ],
+        not_yet_expected: [{ type: 'customs', label: 'Douane', expected_from: 'available' }],
+        not_applicable: [],
+        missing_estimate: false,
+        costs_complete_at_stage: false,
+        margin: { final_computable: false, reason: 'not_final_stage', label: 'Marge réelle finale non calculable : la commande n’est pas encore remise au client.' },
+      },
+    }];
+    const [item] = financeDecision.incompleteCostOrderItems(payload, finance);
+    expect(item.helper).toContain('Manque : Emballage (mécanisme de collecte absent), Achat produit');
+    expect(item.helper).toContain('Pas encore attendu : Douane');
+    expect(item.helper).toContain('Marge réelle finale non calculable');
+  });
+
   test('varianceItems exclut les commandes à variance nulle — correspondance exacte avec le compte du bandeau de décision', () => {
     const payload = payloadFixture();
     payload.costing_orders = [
@@ -375,4 +397,36 @@ test('Finance overview garde uniquement Hero + décisions + situation financièr
 test('Finance précise que les paiements en attente sont bornés par la période', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/finance.js'), 'utf8');
   expect(src).toContain("label: 'Paiements en attente (période)'");
+});
+
+describe('L3 — périmètre de recette affiché', () => {
+  test('Finance : faits simulés jamais présentés comme source réelle', () => {
+    const t = financeDecision.trust({ simulation: { scope: 'RCT1', label: 'Périmètre de recette RCT1 : faits simulés' } }, { formatNumber: (n) => String(n) });
+    expect(t.stateLabel).toBe('Recette RCT1 — faits simulés');
+    expect(t.simulationLabel).toMatch(/faits simulés/);
+    expect(financeDecision.trust({}, { formatNumber: String }).stateLabel).toBe('Source canonique');
+  });
+});
+
+describe('L1 — coût sans collecteur automatique', () => {
+  test('le manque indique la saisie manuelle requise, jamais un zéro', () => {
+    const payload = { incomplete_cost_orders: [{ reference: 'RCT1-E1', status: 'collected', missing_cost_types: ['sourcing'],
+      cost_explanation: { missing: [{ type: 'sourcing', label: 'Sourcing', collection_mechanism: true, mechanism: 'manual_entry' }], not_yet_expected: [], margin: { label: 'Marge réelle finale non calculable : des coûts attendus manquent.' } } }] };
+    const items = financeDecision.incompleteCostOrderItems(payload, finance);
+    expect(JSON.stringify(items)).toContain('Sourcing (saisie manuelle requise)');
+  });
+});
+
+describe('L3 — périmètre de recette transmis depuis l’URL de la page (finance)', () => {
+  const run = async (search) => {
+    const fetch = jest.fn().mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payloadFixture()) });
+    await finance.mount({ root: {}, document: {}, ui: {}, fetch, renderer: { createRenderer: () => ({ render: jest.fn() }) },
+      adminContext: marketContext(), contextContract: adminContextContract, user: { role: 'admin' }, location: { search } });
+    return fetch.mock.calls[0][0];
+  };
+  test('périmètre valide transmis ; invalide ou absent ignoré (activité réelle)', async () => {
+    expect(await run('?simulation_scope=RCT1')).toBe('/api/admin/dashboard/finance/market/CM?period=30&simulation_scope=RCT1');
+    expect(await run("?simulation_scope=rct1'--")).toBe('/api/admin/dashboard/finance/market/CM?period=30');
+    expect(await run('')).toBe('/api/admin/dashboard/finance/market/CM?period=30');
+  });
 });

@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 202 | Vérifié sur le dump live Railway. |
+| Tables | 203 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 486 | Performance + contraintes uniques |
+| Index | 489 | Performance + contraintes uniques |
 | Foreign keys | 393 | Cohérence relationnelle |
-| Fonctions | 83 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 94 | Triggers présents dans le dump live Railway. |
+| Fonctions | 84 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 95 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -84,15 +84,17 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Table | Rôle |
 |---|---|
-| `orders` | Commande client (table maîtresse, 60+ colonnes). |
+| `orders` | Commande client (table maîtresse, 60+ colonnes). **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `simulation_scope` TEXT nullable (NULL = activité réelle ; sinon périmètre de recette, ex. `RCT1`, format contrôlé, immuable une fois posé par trigger). Exclu par défaut des agrégats d'activité réelle ; inclus seulement quand le périmètre est demandé. |
 | `order_items` | Lignes de commande. **Migration 091 (2026-06-25)** : 6 colonnes de classification douanière figées à la création — `customs_category_key`, `sh_code`, `douane_pct`, `tva_pct`, `taxe_add_pct`, `classification_defaulted`. Immuables comme `price_kmf`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. Invariant I-DOUANE-1. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `sku_id` UUID nullable, FK vers `product_skus(id)` avec `ON DELETE SET NULL`. `variant_combo` reste snapshot d'affichage/historique ; le pilotage stock cible passe par `sku_id`. Doctrine : `docs/specs/DECISION_MODELE_STOCK_SKU.md`. **Migration 162 (2026-09-04, `intended_migration_schema`)** : + `fulfillment_source` TEXT nullable, snapshot immuable du verdict transactionnel `LOCAL_STOCK | IMPORT` pour les nouvelles lignes ; `NULL` reste réservé aux lignes historiques/synthétiques sans provenance fiable et ne vaut jamais `IMPORT`. Doctrine : `docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md`. |
 | `order_status_history` | Trace immutable des transitions (invariant I-04). |
 | `order_comments` | Commentaires opérationnels. |
 | `order_incidents` | Incidents commande. |
+| `order_cost_entry_events` | Journal append-only des saisies/corrections manuelles de coûts (L1) et des affectations de périmètre de recette (L3) : ancienne/nouvelle valeur, provenance, motif, auteur, clé d'idempotence. **Migration 303 — promue le 2026-10-19 (schema-promote, dump live verifie).** |
 
 > **Ajouté** : migration 071 (A-BE-18, 26 mai 2026). Ces tables étaient auparavant créées au runtime par `ensureRelayTables()` dans `routes/relay-dashboard.js`. Elles sont désormais versionnées dans `migrations/071_relay_dashboard_tables.sql` (idempotent). Colonnes : voir migration pour le DDL complet (types incidents, priorités, statuts, résolution). Index : `idx_incidents_order`, `idx_incidents_status`, `idx_comments_order`.
 | `order_item_cost_imputations` | Imputations de coûts par item (audit). **Migration 164 (2026-09-06, `intended_migration_schema`)** : + `estimated_business_variable_cost_kmf` NUMERIC(12,2) nullable pour figer les coûts variables business (paiement + provision risque) et + `estimated_fixed_overhead_kmf` NUMERIC(12,2) nullable comme allocation analytique historique des charges fixes. `estimated_business_complete_cost_kmf` est conservé pour compatibilité legacy. Cette allocation fixe n'est jamais une dette intrinsèque du SKU ni une autorité de prix. Le backfill reste NULL lorsqu'un snapshot historique ne permet pas une reconstruction fiable ; aucune valeur 0 n'est inventée. |
-| `order_item_real_cost_allocations` | Allocations coût réel (post-livraison). |
+| `order_item_real_cost_allocations` | Allocations coût réel (post-livraison). **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `provenance` TEXT nullable — provenance déclarée du coût (ex. `FICTIF recette`, pièce) ; NULL = non déclarée (historique). Saisie manuelle L1 : `source='manual_entry'`, `allocation_method='manual'`. |
+
 
 ### 4.2 Logistique colis (5 tables)
 
@@ -225,7 +227,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `pricing_category_dims` | Dimensions catégorie. |
 | `pricing_category_taxes` | Taxes par catégorie. |
 | `pricing_matrices_audit` | Audit matrices. |
-| `cost_components` | Composantes de coûts. **Migration 191 (2026-09-08, `intended_migration_schema`)** : + `economic_nature` pour distinguer `VARIABLE` / `FIXED`, et + `allocation_perimeter` pour distinguer `DIRECT` / `MUTUALIZED`. Ces deux axes sont indépendants de la base d'allocation ; `MUTUALIZED` n'est ni une nature économique ni un synonyme de commande/colis. |
+| `cost_components` | Composantes de coûts. **Migration 191 (2026-09-08, `intended_migration_schema`)** : + `economic_nature` pour distinguer `VARIABLE` / `FIXED`, et + `allocation_perimeter` pour distinguer `DIRECT` / `MUTUALIZED`. Ces deux axes sont indépendants de la base d'allocation ; `MUTUALIZED` n'est ni une nature économique ni un synonyme de commande/colis. **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `provenance` TEXT nullable — provenance déclarée de la valeur saisie ; un coût réel dérivé (commission relais) exige auteur ET provenance ; changer la valeur sans nouvelle provenance l'efface. |
 | `cost_component_events` | Événements composantes coût. |
 | `cost_component_market_overrides` | Overrides market-scoped de valeur/activation sur le modèle global `cost_components`; absence de ligne = héritage global. **Migration 159 — `verified_live_schema` (confirmé par dump Railway 2026-09-04).** |
 | `cost_component_market_override_events` | Journal append-only des créations, mises à jour et resets d'overrides de composantes de coûts par marché. **Migration 159 — `verified_live_schema` (confirmé par dump Railway 2026-09-04).** |
