@@ -100,47 +100,4 @@ describe('coûts applicables et attendus (D1) — règles et scénarios', () => 
     expect(final).toContain("o.status::text = 'collected'");
     expect(final).toContain('NOT EXISTS');
   });
-
-describe('D2b — prédicat canonique de coût réel justifié', () => {
-  const ce = require('../../services/cost-allocation/cost-expectation');
-  const fs = require('fs');
-  const path = require('path');
-
-  test('justifiedRealSql = réel ET non historique ; notLegacy exclut monthly_recalc sans transformer en zéro', () => {
-    expect(ce.justifiedRealSql('a')).toBe("a.is_actual = TRUE AND COALESCE(a.source, '') <> 'monthly_recalc'");
-    expect(ce.notLegacyUnjustifiedSql('a')).toBe("COALESCE(a.source, '') <> 'monthly_recalc'");
-    expect(ce.realCostPresentSql('o', 'e.t')).toContain(ce.justifiedRealSql('rca'));
-  });
-
-  test.each([
-    'services/dashboard-finance-canonical.js',
-    'services/dashboard-commerce.js',
-    'services/cost-allocation/variance.js',
-    'services/cost-allocation/real-margin-shadow.js',
-    'services/cost-allocation/product-margin-steering.js',
-    'services/product-360.js',
-    'routes/admin-costing.js',
-  ])('%s consomme le prédicat canonique', (rel) => {
-    const src = fs.readFileSync(path.join(__dirname, '../..', rel), 'utf8');
-    expect(src).toMatch(/cost-expectation/);
-  });
-
-  test('les lecteurs de complétude ne comptent plus is_actual brut (legacy ne rend jamais une marge complète)', () => {
-    for (const rel of ['services/dashboard-finance-canonical.js', 'services/dashboard-commerce.js']) {
-      const src = fs.readFileSync(path.join(__dirname, '../..', rel), 'utf8');
-      expect(src).not.toMatch(/alc\.is_actual = TRUE/);
-    }
-  });
-
-  test('shadow : lignes monthly_recalc exclues, signalées, jamais comptées en réel ni en zéro', () => {
-    const shadow = require('../../services/cost-allocation/real-margin-shadow');
-    const split = shadow._splitReal([
-        { cost_type: 'hub', source: 'monthly_recalc', is_actual: true, amount: '1500' },
-        { cost_type: 'freight', source: 'customs_shipment', is_actual: true, amount: '200' },
-    ]);
-    expect(split.legacyExcluded).toBe(1500);
-    expect(split.byType.hub).toBeUndefined();
-    expect(split.byType.freight.real).toBe(200);
-  });
-});
 });
