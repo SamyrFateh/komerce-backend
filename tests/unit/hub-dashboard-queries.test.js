@@ -253,3 +253,34 @@ describe("getValidation", () => {
     expect(v.can_prepare).toBe(true);
   });
 });
+
+describe("colis groupés : lignes rattachées par order_items.order_id (S7b)", () => {
+  test("getQueue compte les articles assignés par la commande de la ligne, pas par la commande porteuse", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] })
+      .mockResolvedValueOnce({ rows: [] });
+    const svc = loadService();
+    await svc.getQueue();
+    const sql = mockQuery.mock.calls.map(c => String(c[0])).join('\n');
+    expect(sql).toContain('JOIN order_items assigned_oi ON assigned_oi.id = pi.order_item_id');
+    expect(sql).toContain('assigned_oi.order_id = o.id');
+    expect(sql).not.toMatch(/FROM parcel_items pi\s+JOIN parcels p ON p\.id = pi\.parcel_id\s+WHERE p\.order_id = o\.id/);
+  });
+
+  test("getValidation compte les articles assignés par la commande de la ligne", async () => {
+    const order = { id: 'ord-9', status: 'confirmed', payment_mode: 'stripe', payment_status: 'paid', total_kmf: 1 };
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ cnt: '1' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ cnt: '1' }] })
+      .mockResolvedValueOnce({ rows: [{ cnt: '0' }] });
+    const svc = loadService();
+    await svc.getValidation('ord-9');
+    const assignedSql = mockQuery.mock.calls.map(c => String(c[0])).find(s => s.includes('COUNT(DISTINCT pi.order_item_id)'));
+    expect(assignedSql).toContain('JOIN order_items assigned_oi ON assigned_oi.id = pi.order_item_id');
+    expect(assignedSql).toContain('assigned_oi.order_id = $1');
+    expect(assignedSql).not.toContain('WHERE p.order_id = $1');
+  });
+});
