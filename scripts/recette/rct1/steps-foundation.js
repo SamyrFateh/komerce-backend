@@ -60,7 +60,7 @@ const relayStep = (r) => ({
 });
 
 const actorStep = (a) => ({
-  id: `actor.${a.key}`, deps: ['admin.resolve', ...(a.relay ? [`relay.${a.relay}`] : [])],
+  id: `actor.${a.key}`, deps: ['admin.resolve', ...(a.relay ? [`relay.${a.relay}`] : []), ...(a.lead_of ? [`market.${a.lead_of}`] : [])],
   inspect: async ({ db }) => {
     const u = await q1(db, 'SELECT id, role::text AS role, relais_id FROM users WHERE email=$1', [a.email]);
     if (!u) return { done: false, detail: null };
@@ -172,7 +172,7 @@ const productStep = (key, p) => ({
 const steps = [
   adminStep,
   ...RELAYS.map(relayStep),
-  ...ACTORS.map(actorStep),
+  ...ACTORS.filter(a => !a.lead_of).map(actorStep),
   ...Object.entries(PRODUCTS).map(([k, p]) => productStep(k, p)),
 ];
 module.exports = { steps, adminStep, relayStep, actorStep, productStep };
