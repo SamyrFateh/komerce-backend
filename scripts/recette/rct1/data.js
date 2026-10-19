@@ -38,7 +38,7 @@ const MARKET_PROVISIONING = Object.freeze({
     relay: { name: 'Relais Komerce Brazzaville Centre', phone: '+242060000001', address: 'Brazzaville Centre, République du Congo', zone: 'Brazzaville', latitude: -4.2634, longitude: 15.2429 } },
 });
 const MARKET_PROVISIONING_PARAMS = Object.freeze({
-  financial_limits: Object.freeze({ 'execution.cash.confirm': FICTIF_LIMIT, 'finance.act': FICTIF_LIMIT, 'settlement.receive': FICTIF_LIMIT }),
+  financial_limits: Object.freeze({ 'execution.cash.confirm': FICTIF_LIMIT, 'finance.act': FICTIF_LIMIT, 'settlement.receive': FICTIF_LIMIT, 'cash.custody.receive': FICTIF_LIMIT }),
   payment_provider: Object.freeze({ provider: 'mtn_momo' }),
   cash_policy: Object.freeze({ cash_enabled: true, confirmation_mode: 'SINGLE' }),
 });
