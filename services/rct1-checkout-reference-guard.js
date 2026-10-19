@@ -1,0 +1,22 @@
+/**
+ * @komerce-arch-lite
+ * @role          rct1-checkout-reference-guard
+ * @domain        orders
+ * @layer         service
+ * @owner         backend-core
+ * @purpose       Serialiser les checkouts RCT1 et refuser une reference deja creee.
+ * @impact-areas  orders, recette
+ */
+'use strict';
+const ALLOWED = new Set(['RCT1-E1', 'RCT1-G']);
+async function reserveRct1OrderReference(client, reference) {
+  if (!ALLOWED.has(reference)) throw Error('RCT1_REFERENCE_NOT_ALLOWED');
+  await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [reference]);
+  const { rows } = await client.query('SELECT id, reference, simulation_scope FROM orders WHERE reference=$1', [reference]);
+  if (rows.length) {
+    if (rows[0].simulation_scope !== 'RCT1') throw Error('RCT1_REFERENCE_COLLIDES_WITH_REAL_ORDER');
+    return { already: true, order: rows[0] };
+  }
+  return { already: false };
+}
+module.exports = { reserveRct1OrderReference };
