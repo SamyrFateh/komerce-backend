@@ -51,6 +51,24 @@ async function inventory(db) {
   return out;
 }
 
+// Tables de reference rejouables localement (jamais de donnees personnes ni de secrets).
+const DUMP_ALLOWLIST = Object.freeze(['business_rules', 'boutique_categories', 'boutique_subcategories', 'cost_components',
+  'exchange_rates', 'markets', 'market_operating_assignments', 'assignment_capability_ceiling', 'capability_registry',
+  'finance_config', 'loyalty_tiers', 'customs_categories', 'customs_rates', 'transport_rails', 'logistics_rails']);
+async function dump(db, tables) {
+  const out = {};
+  for (const t of tables) {
+    if (!DUMP_ALLOWLIST.includes(t)) { out[t] = { error: 'not_allowlisted' }; continue; }
+    try { out[t] = await inTx(db, true, async (c) => (await c.query(`SELECT * FROM ${t} LIMIT 2000`)).rows); }
+    catch (e) { out[t] = { error: String(e.message).slice(0, 100) }; }
+  }
+  return out;
+}
+async function tableCounts(db) {
+  return inTx(db, true, async (c) => (await c.query(
+    `SELECT relname AS t, n_live_tup::int AS n FROM pg_stat_user_tables WHERE n_live_tup > 0 ORDER BY relname`)).rows);
+}
+
 async function main() {
   const phase = process.argv[2];
   const db = require('../../../db');
@@ -60,6 +78,13 @@ async function main() {
       const v = await confirmTarget({ db });
       if (!v.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
       process.stdout.write(JSON.stringify(await introspect(db, tables), null, 1) + '\n');
+      return;
+    }
+    if (phase === 'dump' || phase === 'tables') {
+      const v = await confirmTarget({ db });
+      if (!v.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
+      const tables = String(process.env.RCT1_TABLES || '').split(',').filter(t => /^[a-z_0-9]+$/.test(t));
+      process.stdout.write('RCT1JSON' + JSON.stringify(phase === 'dump' ? await dump(db, tables) : await tableCounts(db)) + '\n');
       return;
     }
     if (phase === 'inventory') {
@@ -77,4 +102,4 @@ async function main() {
   } finally { if (db.pool && db.pool.end) await db.pool.end(); }
 }
 if (require.main === module) main().catch(e => { process.stderr.write('RCT1 REFUS: ' + e.message + '\n'); process.exitCode = 1; });
-module.exports = { introspect, inventory, INVENTORY };
+module.exports = { introspect, inventory, INVENTORY, dump, DUMP_ALLOWLIST };
