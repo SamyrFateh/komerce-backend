@@ -151,6 +151,56 @@ function assertSameDestination(parcel, itemRelaisId) {
 }
 
 /**
+ * Un colis ne mélange que des lignes du MÊME marché (marché de la commande
+ * porteuse du colis = marché de la commande de la ligne). Vaut aussi quand
+ * relais_id est NULL (la garde de destination est alors sautée) et quand les
+ * relais ne portent aucun marché. Marché inconnu d'un côté ⇒ refus (jamais
+ * traité comme « même marché »). Même commande ⇒ toujours autorisé.
+ * Ne touche à aucune donnée existante : les violations historiques sont
+ * seulement signalées (findParcelMarketViolations).
+ */
+async function assertSameMarket(executor, parcel, itemOrderId) {
+  if (!parcel.order_id || parcel.order_id === itemOrderId) return;
+  const { rows } = await executor.query(
+    'SELECT id, market_id FROM orders WHERE id = ANY($1::uuid[])',
+    [[parcel.order_id, itemOrderId]]
+  );
+  const carrier = rows.find((r) => r.id === parcel.order_id);
+  const line = rows.find((r) => r.id === itemOrderId);
+  if (!carrier || !line || !carrier.market_id || !line.market_id) {
+    throw mutationError('MARKET_UNKNOWN', 409,
+      'Marché inconnu pour le colis ou la commande : groupage refusé tant que le marché n’est pas renseigné');
+  }
+  if (carrier.market_id !== line.market_id) {
+    throw mutationError('MARKET_MISMATCH', 409,
+      'Article d’un autre marché que ce colis : groupage entre marchés interdit');
+  }
+}
+
+/** Signalement lecture seule des colis existants mélangeant des marchés (aucune modification). */
+const PARCEL_MARKET_VIOLATIONS_SQL = `
+  SELECT p.id AS parcel_id, p.reference, p.relais_id, p.order_id AS carrier_order_id,
+         co.market_id AS carrier_market_id,
+         ARRAY_AGG(DISTINCT lo.market_id::text) FILTER (WHERE lo.market_id IS NOT NULL) AS line_markets,
+         BOOL_OR(lo.market_id IS NULL) AS has_unknown_market,
+         COUNT(*) AS lines
+    FROM parcels p
+    JOIN parcel_items pi ON pi.parcel_id = p.id
+    JOIN order_items oi ON oi.id = pi.order_item_id
+    JOIN orders lo ON lo.id = oi.order_id
+    LEFT JOIN orders co ON co.id = p.order_id
+   WHERE oi.order_id IS DISTINCT FROM p.order_id
+     AND (co.market_id IS NULL OR lo.market_id IS NULL OR lo.market_id <> co.market_id)
+   GROUP BY p.id, p.reference, p.relais_id, p.order_id, co.market_id
+   ORDER BY p.reference`;
+
+async function findParcelMarketViolations(executor) {
+  assertExecutor(executor);
+  const { rows } = await executor.query(PARCEL_MARKET_VIOLATIONS_SQL);
+  return rows;
+}
+
+/**
  * Ajoute un article d'une commande quelconque (multi-commandes) avec trace.
  * Refuse un article déjà affecté à un autre colis (→ réaffectation explicite).
  */
@@ -166,6 +216,7 @@ async function addParcelItemTraced(executor, { parcelId, orderItemId, quantity, 
   );
   if (!item) throw mutationError('ORDER_ITEM_NOT_FOUND', 404, 'Article introuvable');
   assertSameDestination(parcel, item.relais_id);
+  await assertSameMarket(executor, parcel, item.order_id);
 
   const qty = quantity || item.quantity;
   if (qty > item.quantity) {
@@ -228,6 +279,7 @@ async function reassignParcelItem(executor, { fromParcelId, toParcelId, orderIte
   );
   if (!item) throw mutationError('ORDER_ITEM_NOT_FOUND', 404, 'Article introuvable');
   assertSameDestination(to, item.relais_id);
+  await assertSameMarket(executor, to, item.order_id);
 
   const { rows: [moved] } = await executor.query(
     `UPDATE parcel_items SET parcel_id = $1
@@ -273,5 +325,8 @@ module.exports = {
   addParcelItemTraced,
   removeParcelItemTraced,
   reassignParcelItem,
+  assertSameMarket,
+  findParcelMarketViolations,
+  PARCEL_MARKET_VIOLATIONS_SQL,
   MUTABLE_PARCEL_STATUSES,
 };

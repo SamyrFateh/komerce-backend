@@ -453,7 +453,7 @@ describe('routes/hub-dashboard', () => {
 
     test("accepte l'article d'une autre commande de même destination (colis multi-commandes)", async () => {
       const client = makeClient([
-        { rows: [parcelRow] }, { rows: [{ ...itemRow, order_id: 'order-2' }] }, { rows: [] },
+        { rows: [parcelRow] }, { rows: [{ ...itemRow, order_id: 'order-2' }] }, { rows: [{ id: 'order-1', market_id: 'm1' }, { id: 'order-2', market_id: 'm1' }] }, { rows: [] },
         { rows: [{ id: 'pi2', quantity: 3 }] }, { rows: [] },
       ]);
       const res = await run(client);
@@ -496,6 +496,7 @@ describe('routes/hub-dashboard', () => {
       const client = makeClient([
         { rows: [p1] }, { rows: [p2] },
         { rows: [{ id: 'oi1', order_id: 'order-1', relais_id: 'r1' }] },
+        { rows: [{ id: 'order-1', market_id: 'm1' }, { id: 'order-2', market_id: 'm1' }] },
         { rows: [moved] }, { rows: [] }, { rows: [] },
       ]);
       const res = await run(client);
@@ -504,6 +505,18 @@ describe('routes/hub-dashboard', () => {
       expectTransactionCommitted(client);
       const traces = client.query.mock.calls.filter(c => /INSERT INTO parcel_events/.test(c[0]));
       expect(traces.map(t => t[1][1]).sort()).toEqual(['item_reassigned_in', 'item_reassigned_out']);
+    });
+
+    test('409 si marché différent (même relais, relais NULL toléré) : MARKET_MISMATCH', async () => {
+      const client = makeClient([
+        { rows: [p1] }, { rows: [p2] },
+        { rows: [{ id: 'oi1', order_id: 'order-1', relais_id: 'r1' }] },
+        { rows: [{ id: 'order-1', market_id: 'm1' }, { id: 'order-2', market_id: 'm2' }] },
+      ]);
+      const res = await run(client);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('MARKET_MISMATCH');
+      expectTransactionRolledBack(client);
     });
 
     test('409 si un colis est expédié', async () => {
@@ -528,6 +541,7 @@ describe('routes/hub-dashboard', () => {
       const client = makeClient([
         { rows: [p1] }, { rows: [p2] },
         { rows: [{ id: 'oi1', order_id: 'order-1', relais_id: 'r1' }] },
+        { rows: [{ id: 'order-1', market_id: 'm1' }, { id: 'order-2', market_id: 'm1' }] },
         { rows: [] },
       ]);
       const res = await run(client);
