@@ -67,22 +67,23 @@ const FLAG_SQL = Object.freeze({
 });
 
 // applicable : conditions cumulatives. expected : stage (statut mini) OU flag événement.
-// collector : un écrivain de ce coût réel existe aujourd'hui.
+// collector : un écrivain de ce coût réel existe aujourd'hui ; mechanism 'manual_entry' = saisie manuelle
+// traçable L1 (manual-cost-entry-service), aucun collecteur automatique.
 const COST_RULES = Object.freeze([
-  { type: 'payment', label: 'Frais du prestataire de paiement', collector: false,
+  { type: 'payment', label: 'Frais du prestataire de paiement', collector: true, mechanism: 'manual_entry',
     applicable: { paymentModeNot: { cash_relais: 'Paiement en espèces au relais : aucun prestataire de paiement n’intervient (commission relais et frais de collecte ou de transfert restent des coûts distincts)' } },
     expected: { stage: 'confirmed' } },
   { type: 'product_purchase', label: 'Achat produit', collector: true, expected: { stage: 'ordered' } },
-  { type: 'sourcing', label: 'Sourcing', collector: false, expected: { stage: 'ordered' } },
-  { type: 'packaging', label: 'Emballage', collector: false, expected: { stage: 'preparation' } },
-  { type: 'hub', label: 'Hub (variable)', collector: false, expected: { stage: 'preparation' } },
+  { type: 'sourcing', label: 'Sourcing', collector: true, mechanism: 'manual_entry', expected: { stage: 'ordered' } },
+  { type: 'packaging', label: 'Emballage', collector: true, mechanism: 'manual_entry', expected: { stage: 'preparation' } },
+  { type: 'hub', label: 'Hub (variable)', collector: true, mechanism: 'manual_entry', expected: { stage: 'preparation' } },
   { type: 'freight', label: 'Fret', collector: true,
     applicable: { flag: 'imported', motif: 'Aucune ligne importée : pas d’expédition internationale' }, expected: { flag: 'customs_event' } },
   { type: 'customs', label: 'Douane', collector: true,
     applicable: { flag: 'imported', motif: 'Aucune ligne importée : pas de dédouanement' }, expected: { flag: 'customs_event' } },
   { type: 'port_transitaire', label: 'Port / transitaire', collector: true,
     applicable: { flag: 'imported', motif: 'Aucune ligne importée : pas de transitaire' }, expected: { flag: 'customs_event' } },
-  { type: 'local_distribution', label: 'Distribution locale', collector: false, expected: { stage: 'available' } },
+  { type: 'local_distribution', label: 'Distribution locale', collector: true, mechanism: 'manual_entry', expected: { stage: 'available' } },
   { type: 'relay', label: 'Commission relais (due à la remise au client)', collector: true,
     applicable: { flag: 'relay_beneficiary', motif: 'Aucun relais identifié sur la commande : pas de bénéficiaire' }, expected: { stage: 'collected' } },
 ]);
@@ -126,7 +127,12 @@ function describeOrderCosts(input = {}) {
       label: rule ? rule.label : type,
       state: 'unknown',
       collection_mechanism: rule ? rule.collector : null,
-      note: rule && !rule.collector ? 'Mécanisme de collecte absent : manque fonctionnel à résoudre, pas un coût nul.' : 'Coût attendu, non encore enregistré.',
+      mechanism: rule ? (rule.mechanism || 'automatic') : null,
+      note: !rule || !rule.collector
+        ? 'Mécanisme de collecte absent : manque fonctionnel à résoudre, pas un coût nul.'
+        : (rule.mechanism === 'manual_entry'
+          ? 'Coût attendu non saisi : saisie manuelle traçable requise (aucun collecteur automatique). Inconnu, jamais zéro.'
+          : 'Coût attendu, non encore enregistré.'),
     };
   });
   const notYet = []; const notApplicable = [];

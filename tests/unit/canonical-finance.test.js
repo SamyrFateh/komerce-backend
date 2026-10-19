@@ -407,3 +407,12 @@ describe('L3 — périmètre de recette affiché', () => {
     expect(financeDecision.trust({}, { formatNumber: String }).stateLabel).toBe('Source canonique');
   });
 });
+
+describe('L1 — coût sans collecteur automatique', () => {
+  test('le manque indique la saisie manuelle requise, jamais un zéro', () => {
+    const payload = { incomplete_cost_orders: [{ reference: 'RCT1-E1', status: 'collected', missing_cost_types: ['sourcing'],
+      cost_explanation: { missing: [{ type: 'sourcing', label: 'Sourcing', collection_mechanism: true, mechanism: 'manual_entry' }], not_yet_expected: [], margin: { label: 'Marge réelle finale non calculable : des coûts attendus manquent.' } } }] };
+    const items = financeDecision.incompleteCostOrderItems(payload, finance);
+    expect(JSON.stringify(items)).toContain('Sourcing (saisie manuelle requise)');
+  });
+});

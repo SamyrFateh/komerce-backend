@@ -49,6 +49,7 @@ const db = require('../db');
 const { notLegacyUnjustifiedSql } = require('../services/cost-allocation/cost-expectation');
 const { realActivityByOrderIdSql } = require('../services/simulation-scope-service');
 const costAllocation = require('../services/cost-allocation');
+const manualCostEntry = require('../services/cost-allocation/manual-cost-entry-service');
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
 const productMarginSteering = require('../services/cost-allocation/product-margin-steering');
 const dashboardCache = require('../services/dashboard-cache');
@@ -732,5 +733,43 @@ router.get('/products/margin-steering', authenticate, requireAdmin, async (req, 
     next(err);
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+// L1 — POST /api/admin/costing/orders/:orderId/manual-costs : saisie manuelle traçable
+//      POST /api/admin/costing/orders/:orderId/manual-costs/:costType/correct : correction tracée
+// Types sans collecteur automatique uniquement ; provenance + motif + clé d'idempotence obligatoires.
+// ═══════════════════════════════════════════════════════════════════════
+async function runManualCost(req, res, next, fn, extra = {}) {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const b = req.body || {};
+    const result = await fn(client, {
+      orderId: req.params.orderId,
+      costType: extra.costType || b.cost_type,
+      amountKmf: b.amount_kmf,
+      provenance: b.provenance,
+      reason: b.reason,
+      idempotencyKey: b.idempotency_key,
+      eventDate: b.event_date || null,
+      actorId: req.user && req.user.id,
+    });
+    await client.query('COMMIT');
+    dashboardCache.invalidateAllDashboards();
+    res.status(result.already ? 200 : 201).json({ ok: true, ...result });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err && err.code && err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+    next(err);
+  } finally {
+    client.release();
+  }
+}
+
+router.post('/orders/:orderId/manual-costs', authenticate, requireAdmin, (req, res, next) =>
+  runManualCost(req, res, next, manualCostEntry.recordManualCost));
+
+router.post('/orders/:orderId/manual-costs/:costType/correct', authenticate, requireAdmin, (req, res, next) =>
+  runManualCost(req, res, next, manualCostEntry.correctManualCost, { costType: req.params.costType }));
 
 module.exports = router;

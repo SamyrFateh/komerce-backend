@@ -35,7 +35,15 @@ jest.mock('../../middleware/auth', () => ({
 jest.mock('../../utils/logger', () => ({ child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }) }));
 
 const mockQuery = jest.fn();
-jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
+const mockClient = { query: jest.fn().mockResolvedValue({ rows: [] }), release: jest.fn() };
+jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args), pool: { connect: () => Promise.resolve(mockClient) } }));
+
+const mockRecordManualCost = jest.fn();
+const mockCorrectManualCost = jest.fn();
+jest.mock('../../services/cost-allocation/manual-cost-entry-service', () => ({
+  recordManualCost: (...args) => mockRecordManualCost(...args),
+  correctManualCost: (...args) => mockCorrectManualCost(...args),
+}));
 
 const mockGetOrderCostTruth = jest.fn();
 const mockAllocateShipmentRealCosts = jest.fn();
@@ -220,5 +228,40 @@ describe('admin-costing — POST /recalibration-apply (AUD-07 allowlist)', () =>
     expect(res.status).toBe(200);
     expect(res.body.applied).toEqual({ allocation_confidence: 'high' });
     expect(mockInvalidateAllDashboards).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('L1 — routes de saisie manuelle traçable', () => {
+  test('POST manual-costs : transaction, auteur transmis, cache invalidé', async () => {
+    mockRecordManualCost.mockResolvedValue({ order_id: 'o1', cost_type: 'sourcing', amount_kmf: 300, already: false });
+    const res = await request(app).post('/api/admin/costing/orders/o1/manual-costs')
+      .send({ cost_type: 'sourcing', amount_kmf: 300, provenance: 'FICTIF recette', reason: 'E1', idempotency_key: 'k1' });
+    expect(res.status).toBe(201);
+    expect(mockRecordManualCost.mock.calls[0][1]).toMatchObject({ orderId: 'o1', costType: 'sourcing', amountKmf: 300, provenance: 'FICTIF recette', idempotencyKey: 'k1', actorId: 'admin-1' });
+    expect(mockClient.query.mock.calls.map((c) => c[0])).toEqual(expect.arrayContaining(['BEGIN', 'COMMIT']));
+    expect(mockInvalidateAllDashboards).toHaveBeenCalled();
+  });
+
+  test('refus métier : code et statut transmis, rollback, rien d’invalidé', async () => {
+    mockRecordManualCost.mockRejectedValue(Object.assign(new Error('double compte'), { code: 'AUTO_COLLECTED', status: 409 }));
+    const res = await request(app).post('/api/admin/costing/orders/o1/manual-costs').send({ cost_type: 'sourcing' });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('AUTO_COLLECTED');
+    expect(mockClient.query.mock.calls.map((c) => c[0])).toContain('ROLLBACK');
+    expect(mockInvalidateAllDashboards).not.toHaveBeenCalled();
+  });
+
+  test('correction : type pris dans l’URL', async () => {
+    mockCorrectManualCost.mockResolvedValue({ corrected: true });
+    const res = await request(app).post('/api/admin/costing/orders/o1/manual-costs/packaging/correct')
+      .send({ amount_kmf: 250, provenance: 'FICTIF recette', reason: 'correction', idempotency_key: 'k2' });
+    expect(res.status).toBe(201);
+    expect(mockCorrectManualCost.mock.calls[0][1]).toMatchObject({ costType: 'packaging', amountKmf: 250 });
+  });
+
+  test('non admin : 403', async () => {
+    currentUser = { id: 'u', role: 'client' };
+    const res = await request(app).post('/api/admin/costing/orders/o1/manual-costs').send({});
+    expect(res.status).toBe(403);
   });
 });
