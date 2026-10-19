@@ -261,6 +261,12 @@ router.get('/version', (req, res) => {
   res.json({
     version: process.env.npm_package_version || 'unknown',
     commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || 'local',
+    // Etat de configuration non secret (jamais de valeur de cle) : preuve de ce que le service deploye execute reellement.
+    flags: {
+      order_cost_snapshot_active: String(process.env.ORDER_COST_SNAPSHOT_ACTIVE || '').toLowerCase() === 'true',
+      stripe_mode: /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY || '') ? 'test'
+        : /^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY || '') ? 'live' : 'absent',
+    },
   });
 });
 

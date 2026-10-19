@@ -13,7 +13,7 @@ const { ORDERS, SHIPMENTS, MANUAL_COSTS, ACTORS, RELAY_COMMISSION_KMF } = requir
 const q1 = async (c, sql, params = []) => (await c.query(sql, params)).rows[0] || null;
 const actorId = async (db, key) => (await q1(db, 'SELECT id FROM users WHERE email=$1', [ACTORS.find(a => a.key === key).email])).id;
 const PROVENANCE = 'FICTIF recette RCT1';
-const IMPORT_ORDERS = ORDERS.filter(o => o.lines.some(l => l.product === 'P1')).map(o => o.ref);
+const IMPORT_ORDERS = ORDERS.filter(o => !o.split && o.lines.some(l => l.product === 'P1')).map(o => o.ref);
 
 // Un acteur canonique par transition : admin existant pour l'encaissement et les expeditions, agent hub / relais pour les scans.
 const confirmCashStep = (o) => ({

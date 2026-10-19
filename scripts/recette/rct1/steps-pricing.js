@@ -8,14 +8,15 @@
  * @impact-areas  staging-only, pricing, catalog, recette
  */
 'use strict';
-const { PRODUCTS, ACTORS } = require('./data');
+const { PRODUCTS, ACTORS, P3_PRICE_KMF } = require('./data');
 
 const q1 = async (c, sql, params = []) => (await c.query(sql, params)).rows[0] || null;
 
 // Memes appels que la route admin-pricing-workspace (draft -> activation -> exposition marche).
 const LOCAL_PRICES = Object.freeze([
   { market: 'KM', product: 'P1', amount: 15000 },
-  { market: 'KM', product: 'P3', amount: 6000 },
+  { market: 'KM', product: 'P2', amount: 25000 },
+  { market: 'KM', product: 'P3', amount: P3_PRICE_KMF },
 ]);
 
 const localPriceStep = (lp) => {
