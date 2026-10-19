@@ -391,6 +391,16 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       }
     }
 
+    // RCT1 E1: aucun frais de vente ou remise implicite ne peut changer le
+    // montant attendu. L'echec annule la transaction avant toute insertion.
+    if (internalSimulation && internalSimulation.reference === 'RCT1-E1' &&
+        (payment_mode !== 'cash_relais' || Number(total_kmf) !== 15000 ||
+         Number(discountKmf) !== 0 || Number(creditApplied) !== 0)) {
+      await client.query('ROLLBACK');
+      return fail(409, { code: 'RCT1_E1_CHECKOUT_TOTAL_MISMATCH',
+        expected_kmf: 15000, observed_kmf: total_kmf });
+    }
+
     const cash_ref_code = payment_mode === 'cash_relais'
       ? generateCashCode()
       : null;
