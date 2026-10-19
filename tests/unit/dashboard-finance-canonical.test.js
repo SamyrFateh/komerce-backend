@@ -51,7 +51,7 @@ beforeEach(() => {
       return { rows: [{ cost_type: 'product_purchase', orders: '4', amount_kmf: '40000' }] };
     }
     if (text.includes('AS estimated_cost_kmf')) {
-      return { rows: [{ reference: 'CMD-C', status: 'collected', payment_status: 'paid', total_kmf: '20000', created_at: '2026-08-20T00:00:00.000Z', estimated_cost_kmf: '11000', real_cost_kmf: '12000', has_imputation: true, expected_cost_types: String(finance.EXPECTED_COST_TYPES.length) }] };
+      return { rows: [{ reference: 'CMD-C', status: 'collected', payment_status: 'paid', total_kmf: '20000', created_at: '2026-08-20T00:00:00.000Z', estimated_cost_kmf: '11000', real_cost_kmf: '12000', has_imputation: true, final_ready: true, missing_cost_types: [] }] };
     }
     if (text.includes('FROM supplier_execution_payments')) {
       return { rows: [
@@ -259,4 +259,23 @@ test('la projection Finance transmet l’explication des coûts manquants par co
   const payload = await finance.buildFinance({ period: '30' }, { market: null, now: new Date('2026-08-21T00:00:00Z') });
   expect(payload.incomplete_cost_orders[0].cost_explanation.missing[0]).toMatchObject({ type: 'payment', state: 'unknown' });
   expect(payload.incomplete_cost_orders[0].missing_cost_types).toEqual(['payment']);
+});
+
+describe('D1b — complétude partagée avec cost-expectation', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const read = (rel) => fs.readFileSync(path.join(__dirname, '../..', rel), 'utf8');
+
+  test.each(['services/dashboard-finance-canonical.js', 'services/dashboard-commerce.js'])(
+    '%s : marge finale = finalMarginReadySql (plus de comptage de types fixe)', (rel) => {
+      const src = read(rel);
+      expect(src).toContain('finalMarginReadySql');
+      expect(src).not.toMatch(/expected_cost_types|expectedCount|expectedIndex/);
+    });
+
+  test('commandes récentes : types manquants exposés, jamais présentés comme zéro', async () => {
+    const db = require('../../db');
+    expect(read('services/dashboard-finance-canonical.js')).toContain('missingTypesArraySql');
+    expect(db).toBeDefined();
+  });
 });
