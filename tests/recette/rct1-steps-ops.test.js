@@ -8,8 +8,9 @@ const manifest = require('../../scripts/recette/rct1/manifest');
 
 const db = (rows) => ({ query: async () => ({ rows }) });
 test('une etape d\'encaissement par commande, dependance sur la commande', () => {
-  assert.equal(steps.length, ORDERS.length);
-  assert.ok(steps.every(s => s.deps[0].startsWith('order.RCT1-')));
+  const cash = steps.filter(s => s.id.startsWith('ops.cash-confirm.'));
+  assert.equal(cash.length, ORDERS.length);
+  assert.ok(cash.every(s => s.deps[0].startsWith('order.RCT1-')));
   assert.equal(orderSteps(manifest.steps).length, manifest.steps.length);
 });
 test('inspect : paye ET colis present', async () => {

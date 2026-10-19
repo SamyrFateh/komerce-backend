@@ -32,6 +32,18 @@ describe('RCT1 checkout transactional reference protection', () => {
     expect(isAllowedRct1Reference('RCT1-F')).toBe(true);
     expect(isAllowedRct1Reference('RCT1-E2')).toBe(false);
   });
+  test('I3 : 2 lignes IMPORT, total produit 40 000 attendu independamment', () => {
+    expect(expectedProductTotalKmf('RCT1-I3')).toBe(40000);
+    expect(isAllowedRct1Reference('RCT1-I3')).toBe(true);
+  });
+  test('arbitrage P3 : le total attendu de G suit RCT1_P3_PRICE_KMF (defaut 6 000)', () => {
+    jest.resetModules();
+    process.env.RCT1_P3_PRICE_KMF = '7000';
+    expect(require('../../services/rct1-checkout-reference-guard').expectedProductTotalKmf('RCT1-G')).toBe(7000);
+    delete process.env.RCT1_P3_PRICE_KMF;
+    jest.resetModules();
+    expect(require('../../services/rct1-checkout-reference-guard').expectedProductTotalKmf('RCT1-G')).toBe(6000);
+  });
   test('non RCT1 references cannot obtain a reservation', async () => {
     const client={query:jest.fn()};
     await expect(reserveRct1OrderReference(client,'RCT1-E2')).rejects.toThrow('RCT1_REFERENCE_NOT_ALLOWED');

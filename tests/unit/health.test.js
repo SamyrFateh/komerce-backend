@@ -348,3 +348,17 @@ test('GET /health/version utilise le SHA du déploiement Railway pour identifier
   expect(res.status).toBe(200);
   expect(res.body.commit).toBe('c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad');
 });
+
+test('GET /health/version expose l\'etat non secret des flags (snapshot de cout, mode Stripe) sans valeur de cle', async () => {
+  const prev = { snap: process.env.ORDER_COST_SNAPSHOT_ACTIVE, key: process.env.STRIPE_SECRET_KEY };
+  process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
+  process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
+  let res = await request(buildApp()).get('/health/version');
+  expect(res.body.flags).toEqual({ order_cost_snapshot_active: true, stripe_mode: 'test' });
+  expect(JSON.stringify(res.body)).not.toContain('sk_test_dummy');
+  delete process.env.ORDER_COST_SNAPSHOT_ACTIVE; delete process.env.STRIPE_SECRET_KEY;
+  res = await request(buildApp()).get('/health/version');
+  expect(res.body.flags).toEqual({ order_cost_snapshot_active: false, stripe_mode: 'absent' });
+  if (prev.snap !== undefined) process.env.ORDER_COST_SNAPSHOT_ACTIVE = prev.snap;
+  if (prev.key !== undefined) process.env.STRIPE_SECRET_KEY = prev.key;
+});

@@ -46,4 +46,7 @@ jobs:
           # Corps d'issue : lignes TABLES=a,b / ONLY=id1,id2 (liste blanche de caracteres)
           export RCT1_TABLES="$(printf '%s' "$ISSUE_BODY" | sed -n 's/^TABLES=\([a-z_0-9,]*\)\r\?$/\1/p' | head -1)"
           export RCT1_ONLY="$(printf '%s' "$ISSUE_BODY" | sed -n 's/^ONLY=\([A-Za-z0-9_,.-]*\)\r\?$/\1/p' | head -1)"
+          # Arbitrage metier du prix local P3 (entier positif uniquement) : ligne P3_PRICE=7000 dans le corps d'issue.
+          p3="$(printf '%s' "$ISSUE_BODY" | sed -n 's/^P3_PRICE=\([0-9]\{3,7\}\)\r\?$/\1/p' | head -1)"
+          if [ -n "$p3" ]; then export RCT1_P3_PRICE_KMF="$p3"; fi
           node scripts/recette/rct1/cli.js "$phase"
