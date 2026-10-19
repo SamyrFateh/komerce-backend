@@ -162,9 +162,15 @@ function ruleConditionSql(rule, alias) {
   return conds.length ? conds.join(' AND ') : 'TRUE';
 }
 
+/** Littéral de type de coût issu de la table COST_RULES (constante interne, jamais une entrée utilisateur). */
+function typeSelectSql(type) {
+  if (!/^[a-z_]+$/.test(type)) throw new Error('type de coût invalide');
+  return "SELECT '" + type + "'::text AS t";
+}
+
 /** Sous-requête : types attendus pour la commande `alias` (colonnes requises : id, status, payment_mode, relais_id). */
 function expectedTypesSql(alias) {
-  const parts = COST_RULES.map((rule) => `SELECT '${rule.type}'::text AS t WHERE ${ruleConditionSql(rule, alias)}`);
+  const parts = COST_RULES.map((rule) => typeSelectSql(rule.type) + ' WHERE ' + ruleConditionSql(rule, alias));
   return `(${parts.join(' UNION ALL ')})`;
 }
 
