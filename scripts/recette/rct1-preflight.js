@@ -1,3 +1,12 @@
+/**
+ * @komerce-arch-lite
+ * @role          rct1-staging-preflight
+ * @domain        economic-engine
+ * @layer         script
+ * @owner         backend-core
+ * @purpose       Inventorier en lecture seule les commandes RCT1 et confirmer le périmètre simulation.
+ * @impact-areas  staging-only, economic-engine, recette
+ */
 'use strict';
 
 // RCT1 preflight: strictly read-only. No installation and no state transitions.
