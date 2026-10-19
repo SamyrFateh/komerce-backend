@@ -49,7 +49,7 @@ describe('identité de cible', () => {
   });
 
   test('readRuntimeIdentity ne remonte que des noms', () => {
-    expect(readRuntimeIdentity({ KOMERCE_ENV: 'staging', RAILWAY_ENVIRONMENT_NAME: 'staging', DATABASE_URL: 'postgres://secret' }))
-      .toEqual({ komerce_env: 'staging', railway_environment: 'staging', railway_service: null, railway_project: null });
+    expect(readRuntimeIdentity({ KOMERCE_ENV: 'staging', RAILWAY_ENVIRONMENT_NAME: 'staging', RAILWAY_SERVICE_NAME: 'svc', DATABASE_URL: 'postgres://secret' }))
+      .toEqual({ komerce_env: 'staging', railway_environment: 'staging' });
   });
 });

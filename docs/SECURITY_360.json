@@ -1,15 +1,22 @@
 {
-  "generatedAt": "2026-10-18T13:41:25.042Z",
+  "generatedAt": "2026-10-19T10:05:17.144Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 741,
+    "total": 742,
     "protected": 686,
     "public": 55,
-    "unprotected": 0,
+    "unprotected": 1,
     "admin_no_guard": 0,
     "unknown": 0
   },
-  "flagged": [],
+  "flagged": [
+    {
+      "key": "GET /health/target",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    }
+  ],
   "dispositions": [
     {
       "key": "POST /api/auth/admin-reset",
@@ -5350,6 +5357,11 @@
     {
       "key": "GET /health/ready",
       "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "GET /health/target",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {

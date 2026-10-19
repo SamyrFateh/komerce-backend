@@ -1,3 +1,5 @@
 {
-  "flagged": []
+  "flagged": [
+    "GET /health/target"
+  ]
 }

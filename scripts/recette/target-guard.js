@@ -6,8 +6,7 @@
  * déployé (GET <STAGING_BASE_URL>/health/target) et exige komerce_env=staging.
  * N'affiche jamais l'URL ni de secret. Sortie 1 si la cible n'est pas confirmée.
  *
- * Variables : DATABASE_URL, STAGING_BASE_URL, optionnelles EXPECTED_RAILWAY_ENVIRONMENT /
- * EXPECTED_RAILWAY_SERVICE (épinglage non secret).
+ * Variables : DATABASE_URL, STAGING_BASE_URL, optionnelle EXPECTED_RAILWAY_ENVIRONMENT (épinglage non secret).
  */
 
 const { computeDbFingerprint, assertSameTarget } = require('../../services/target-identity');
@@ -31,7 +30,6 @@ async function confirmTarget({ db, fetchImpl = fetch, env = process.env } = {}) 
     local, remote,
     expected: {
       railway_environment: env.EXPECTED_RAILWAY_ENVIRONMENT || null,
-      railway_service: env.EXPECTED_RAILWAY_SERVICE || null,
     },
   });
 }

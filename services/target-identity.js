@@ -4,7 +4,7 @@
  * @domain        infrastructure
  * @layer         service
  * @criticality   high
- * @inputs        db executor, runtime env (KOMERCE_ENV, RAILWAY_*)
+ * @inputs        db executor, runtime env (KOMERCE_ENV, RAILWAY_ENVIRONMENT_NAME)
  * @outputs       non-secret target identity + fail-closed comparison
  * @depends       none
  * @used-by       routes/health.js, scripts/recette/target-guard.js
@@ -39,8 +39,6 @@ function readRuntimeIdentity(env = process.env) {
   return {
     komerce_env: env.KOMERCE_ENV || null,
     railway_environment: env.RAILWAY_ENVIRONMENT_NAME || null,
-    railway_service: env.RAILWAY_SERVICE_NAME || null,
-    railway_project: env.RAILWAY_PROJECT_NAME || null,
   };
 }
 
