@@ -62,6 +62,7 @@
  */
 
 const db      = require('../db');
+const { assignOrderSimulationScope } = require('./simulation-scope-service');
 const { getLoyaltyDiscount }             = require('./loyalty-service');
 const { getRule }                        = require('../utils/rules');
 const { getRates }                       = require('../utils/rates');
@@ -95,7 +96,17 @@ function fail(status, body) {
   return { ok: false, status, body };
 }
 
-async function runOrderCheckout({ user, body }) {
+async function runOrderCheckout({ user, body, internalSimulation = null }) {
+  // Paramètre serveur uniquement : routes/orders/create.js ne transmet jamais ce contexte.
+  // Validation avant tout accès DB ; un payload client simulation_scope n'est jamais lu.
+  if (internalSimulation !== null) {
+    if (process.env.KOMERCE_ENV !== 'staging' ||
+        internalSimulation.scope !== 'RCT1' ||
+        !internalSimulation.actorId || !internalSimulation.reason ||
+        typeof internalSimulation.reason !== 'string') {
+      throw Object.assign(new Error('RCT1_INTERNAL_CHECKOUT_FORBIDDEN'), { code: 'RCT1_INTERNAL_CHECKOUT_FORBIDDEN' });
+    }
+  }
   const client = await db.getClient();
 
   try {
@@ -403,6 +414,15 @@ async function runOrderCheckout({ user, body }) {
       marketId: relais?.market_id || null,
     });
 
+    // Dans la MEME transaction que la naissance de la commande : aucune
+    // fenêtre de visibilité comme activité réelle avant le COMMIT.
+    if (internalSimulation !== null) {
+      await assignOrderSimulationScope(client, {
+        orderId: order.id, scope: 'RCT1', actorId: internalSimulation.actorId,
+        reason: internalSimulation.reason, env: { KOMERCE_ENV: 'staging' },
+      });
+      order.simulation_scope = 'RCT1';
+    }
     await recordInitialHistory(client, order.id, user.id);
 
     if (creditApplied > 0) {
