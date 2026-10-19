@@ -70,3 +70,14 @@ test('dump : liste blanche de tables de reference, jamais de personnes', async (
   const refused = await cli.dump(fakeDb(), ['users']);
   assert.equal(refused.users.error, 'not_allowlisted');
 });
+
+test('un echec bloque ses seuls dependants, les scenarios independants continuent', async () => {
+  const done = new Set();
+  const st = (id, deps, fail) => ({ id, deps, inspect: async () => ({ done: done.has(id) }), apply: async () => { if (fail) throw new Error('boom'); done.add(id); return { writes: 1 }; } });
+  const rep = await run({ db: fakeDb(), phase: 'apply', steps: [st('a', []), st('b', ['a'], true), st('c', ['b']), st('d', ['a'])], env: { KOMERCE_ENV: 'staging', NODE_ENV: 'test' }, confirm: async () => ({ confirmed: true }) });
+  assert.equal(rep.ok, false);
+  const by = Object.fromEntries(rep.steps.map(r => [r.id, r]));
+  assert.equal(by.b.error, 'boom');
+  assert.equal(by.c.error, 'BLOCKED_BY:b');
+  assert.equal(by.d.done, true);
+});
