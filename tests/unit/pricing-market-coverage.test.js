@@ -148,6 +148,14 @@ describe('pricing-market-coverage — numérateur de contribution', () => {
     });
     expect(ids).toEqual([ORDER_1]);
   });
+
+  test('la selection exclut les faits simules et caste le statut enum en texte', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    await _loadMatureOrderIds(MARKET_ID, { from: new Date(FROM), to: new Date(TO) });
+    const sql = db.query.mock.calls[db.query.mock.calls.length - 1][0];
+    expect(sql).toContain('o.simulation_scope IS NULL');
+    expect(sql).toContain("COALESCE(o.status::text, '')");
+  });
 });
 
 describe('pricing-market-coverage — gate', () => {

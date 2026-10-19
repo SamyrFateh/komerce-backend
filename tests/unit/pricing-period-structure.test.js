@@ -437,7 +437,9 @@ describe('pricing-period-structure — mutualisation GROUP gouvernée', () => {
 
     const [basisSql] = db.query.mock.calls[2];
     expect(basisSql).toContain("o.payment_status = 'paid'");
-    expect(basisSql).toContain("COALESCE(o.status, '') NOT IN ('cancelled', 'refunded')");
+    expect(basisSql).toContain("COALESCE(o.status::text, '') NOT IN ('cancelled', 'refunded')");
+    // Fait simule jamais compte dans l'assiette d'activite reelle (isolation RCT1).
+    expect(basisSql).toContain('o.simulation_scope IS NULL');
     expect(basisSql).toContain('o.created_at >= $1');
   });
 

@@ -54,7 +54,7 @@ async function inventory(db) {
 // Tables de reference rejouables localement (jamais de donnees personnes ni de secrets).
 const DUMP_ALLOWLIST = Object.freeze(['business_rules', 'boutique_categories', 'boutique_subcategories', 'cost_components',
   'exchange_rates', 'markets', 'market_operating_assignments', 'assignment_capability_ceiling', 'capability_registry',
-  'finance_config', 'loyalty_tiers', 'customs_categories', 'customs_rates', 'transport_rails', 'logistics_rails']);
+  'finance_config', 'currency_parities', 'loyalty_tiers', 'customs_categories', 'customs_rates', 'transport_rails', 'logistics_rails']);
 async function dump(db, tables) {
   const out = {};
   for (const t of tables) {
@@ -103,6 +103,17 @@ async function main() {
         const r = await engine.recommend({ product_id: pr.id, current_price_kmf: lp.amount, final_price_kmf: lp.amount, pricing_strategy: 'market_local' }, { config });
         out.push({ market: lp.market, product: lp.product, price: lp.amount, strategy_risk: r.strategy_risk, variable_cost_complete_kmf: r.variable_cost_complete_kmf, cdr_kmf: r.fully_loaded_cost_reference_kmf, margin_pct: r.estimated_margin_pct });
       }
+      // Balayage P3 : plus petit prix hors zone « contributive_low_buffer » (donnee de decision, aucune ecriture).
+      const p3 = (await db.query('SELECT id FROM products WHERE product_ref=$1', [PRODUCTS.P3.ref])).rows[0];
+      const km = (await db.query("SELECT id FROM markets WHERE code='KM'")).rows[0];
+      const cfg = await cdr.loadGlobalConfig({ marketId: km.id });
+      const sweep = [];
+      for (let price = 6000; price <= 14000; price += 500) {
+        const r = await engine.recommend({ product_id: p3.id, current_price_kmf: price, final_price_kmf: price, pricing_strategy: 'market_local' }, { config: cfg });
+        sweep.push([price, r.strategy_risk]);
+        if (r.strategy_risk === 'contributive' || r.strategy_risk === 'covered') break;
+      }
+      out.push({ p3_sweep: sweep });
       process.stdout.write(JSON.stringify(out, null, 1) + '\n');
       return;
     }

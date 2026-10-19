@@ -136,7 +136,8 @@ async function loadMatureOrderIds(marketId, period) {
         AND o.created_at >= $2
         AND o.created_at < $3
         AND o.payment_status = 'paid'
-        AND COALESCE(o.status, '') NOT IN ('cancelled', 'refunded')
+        AND COALESCE(o.status::text, '') NOT IN ('cancelled', 'refunded')
+        AND o.simulation_scope IS NULL
       ORDER BY o.created_at ASC, o.id ASC`,
     [marketId, period.from.toISOString(), period.to.toISOString()]
   );
@@ -171,7 +172,8 @@ async function loadMatureContributionTruth(marketId, period, matureOrderIds) {
           AND o.created_at < $3
           AND o.id = ANY($4::uuid[])
           AND o.payment_status = 'paid'
-          AND COALESCE(o.status, '') NOT IN ('cancelled', 'refunded')
+          AND COALESCE(o.status::text, '') NOT IN ('cancelled', 'refunded')
+        AND o.simulation_scope IS NULL
      ),
      actual_costs AS (
        SELECT

@@ -124,7 +124,7 @@ const productStep = (key, p) => ({
     if (!row) {
       const res = await svc.productAdmin().createProduct(require('../../../db'), {
         product_ref: p.ref, name: p.name, category: p.category, subcategory: p.subcategory, description: p.description,
-        price_kmf: p.price_kmf, weight_kg: p.weight_kg, stock: p.stock,
+        price_kmf: p.price_kmf, ...(p.price_eur ? { price_eur: p.price_eur } : {}), weight_kg: p.weight_kg, stock: p.stock,
         is_active: true, is_available: true,
       }, { id: shared.adminId });
       if (res.status >= 400) throw new Error('RCT1_PRODUCT_CREATE_REFUSED: ' + JSON.stringify(res.body).slice(0, 300));
