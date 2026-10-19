@@ -23,6 +23,7 @@ test('Finance possède un Hero contextuel propre',()=>{
   expect(css).not.toContain('[data-dashboard-id="finance"] > .kmc-dashboard-header {');
   expect(css).toContain('.kmc-finance-essential-metrics');
   expect(css).toContain('.kmc-finance-review-title');
+  ['.kmc-fin-order', '.kmc-fin-classes', '.kmc-fin-table-wrap', '.kmc-fin-notes'].forEach(selector => expect(css).toContain(selector));
 });
 
 

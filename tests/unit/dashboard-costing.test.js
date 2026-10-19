@@ -99,6 +99,7 @@ describe('dashboard-metrics/costing', () => {
 
     expect(result).toMatchObject({ key: 'cmds_cout_incomplet', value: 4, unit: 'count', drill_to: '/admin/finance#finance-incomplete-costs' });
     expect(result.data_quality.warning).toBe('Cliquer pour voir le detail');
+    expect(result.label).toBe('Commandes aux coûts restant à établir');
   });
 
   it('getCmdsCoutIncompletIds borne la limite a 1000', async () => {
