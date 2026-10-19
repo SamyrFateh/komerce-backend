@@ -44,6 +44,14 @@ test('Suite marché : un prix local absent est expliqué, jamais un code brut',(
   expect(workspace).toContain('Prix local en brouillon, à activer');
 });
 
+test('C4 : le repli « autre » est signalé comme non validé, avec la catégorie fournisseur conservée',()=>{
+  expect(workspace).toContain('function classificationNote');
+  expect(workspace).toContain('data-classification-status');
+  expect(workspace).toContain('Classement non validé');
+  expect(workspace).toContain('Catégorie fournisseur');
+  expect(workspace).toContain("'fallback_unresolved'");
+});
+
 test('Bandeau paramètres : provenance, usage, conséquence et accès à la configuration',()=>{
   expect(workspace).toContain('function renderPricingParameters');
   expect(workspace).toContain('data-pricing-parameters');
