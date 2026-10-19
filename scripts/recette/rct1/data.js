@@ -28,6 +28,10 @@ const DESCRIPTION_SUFFIX = ' Produit de recette RCT1, donnee de test sans valeur
 const PRODUCTS = Object.freeze({
   P1: { ref: 'RCT1-P1', name: 'Theiere en fonte (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 15000, cost_kmf: 6000, stock: 100, weight_kg: 1, origin: 'IMPORT' },
   P3: { ref: 'RCT1-P3', name: 'Panier tisse local (recette RCT1)', category: 'Maison', subcategory: 'Rangement', price_kmf: 6000, cost_kmf: 3000, stock: 100, weight_kg: 1, origin: 'LOCAL_STOCK', local_stock_qty: 5, stock_market: 'KM' },
+  P2: { ref: 'RCT1-P2', name: 'Lampe a huile importee (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 25000, cost_kmf: 12000, stock: 100, weight_kg: 1, origin: 'IMPORT' },
+  P4: { ref: 'RCT1-P4', name: 'Set de verres importe (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 10000, cost_kmf: 5000, stock: 100, weight_kg: 1, origin: 'IMPORT' },
+  P5: { ref: 'RCT1-P5', name: 'Service a the importe, prix EUR (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 49197, price_eur: 100, cost_kmf: 20000, stock: 100, weight_kg: 1, origin: 'IMPORT',
+    expected_conversion: { KMF: 49197, XAF: 65596 } },
 });
 for (const p of Object.values(PRODUCTS)) p.description = `${p.name}.${DESCRIPTION_SUFFIX}`;
 

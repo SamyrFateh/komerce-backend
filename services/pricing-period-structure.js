@@ -613,7 +613,8 @@ async function loadPaidOrderCountBasis(period) {
         AND o.created_at < $2
         AND o.market_id IS NOT NULL
         AND o.payment_status = 'paid'
-        AND COALESCE(o.status, '') NOT IN ('cancelled', 'refunded')
+        AND COALESCE(o.status::text, '') NOT IN ('cancelled', 'refunded')
+        AND o.simulation_scope IS NULL
       GROUP BY o.market_id
       ORDER BY o.market_id ASC`,
     [period.from.toISOString(), period.to.toISOString()]

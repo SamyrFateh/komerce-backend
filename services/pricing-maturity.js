@@ -698,6 +698,7 @@ async function computeMarketMaturityWatermark(marketId, options = {}) {
         AND created_at < $3
         AND payment_status = 'paid'
         AND status NOT IN ('cancelled', 'refunded')
+        AND simulation_scope IS NULL
       ORDER BY created_at ASC, id ASC`,
     [marketId, options.from, options.to]
   );

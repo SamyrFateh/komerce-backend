@@ -1,6 +1,8 @@
-# Recette staging : cadrage exécutable (pour GPT), v3
+# Recette staging : cadrage exécutable (pour GPT), v4
 
-**Statut.** La cible staging est confirmée et l'inventaire est propre (#2667) : ne pas refaire ces vérifications. Rien n'est installé et rien n'est recetté.
+**Statut.** La cible staging est confirmée et l'inventaire est propre (#2667) : ne pas refaire ces vérifications. Installation RCT1 en cours via le moteur `scripts/recette/rct1` (rien n'est recetté).
+
+**v4 — amendement (checkout canonique).** Le checkout ajoute le transport commercial aux lignes IMPORT (65 KMF/kg SEA) : une commande de 1 article P1 (1 kg) est vendue **15 065 KMF**, pas 15 000. Le scénario E1 est corrigé, l'attendu n'est pas ajusté à l'observé : vente 15 065, coûts 10 300 (inchangés), **marge 4 765 KMF (31,63 %)**. G (LOCAL_STOCK, transport 0) reste à 6 000 de vente, recalcul indépendant confirmé en réplique locale ; à reprouver sur staging. Consolidé : 4 765 + 1 850 = **6 615 KMF**. E2 : vente 15 065, coûts 10 750, marge **4 315 KMF** ; consolidé avec E2 : 10 930. Le moteur de gouvernance marché exclut désormais les commandes simulées (RCT1) des assiettes de couverture/maturité/N3.
 
 **Règles.**
 - Aucun RESET ni purge.
@@ -110,13 +112,13 @@ Chaque colis appartient à une commande différente, d'où une répartition 50/5
 | Frais de paiement | — | non applicable (cash) |
 | **Total** | | **10 300** |
 
-Attendu E1 : **marge finale 15 000 − 10 300 = 4 700 KMF (31,33 %)**, statut « calculable », tous les coûts marqués « fait simulé (recette) ».
+Attendu E1 (v4) : **vente 15 065 (15 000 + transport 65) − 10 300 = 4 765 KMF (31,63 %)**, statut « calculable », tous les coûts marqués « fait simulé (recette) ».
 
 Si le checkout impose des frais ou une remise, le scénario ne remplit plus sa condition : corriger le scénario, ne pas ajuster l'attendu.
 
 **E2 — Stripe** (seulement si B6 est vérifié)
 - Mêmes coûts que E1, plus des frais de paiement saisis via L1 : 450.
-- Total 10 750 ; attendu **4 250 KMF (28,33 %)**.
+- Total 10 750 ; attendu (v4) **15 065 − 10 750 = 4 315 KMF (28,64 %)**.
 - Si B6 n'est pas vérifié : « Stripe non couvert ».
 
 **F — relais sans provenance** (joué avant la saisie L3)
@@ -147,9 +149,9 @@ Si le checkout impose des frais ou une remise, le scénario ne remplit plus sa c
 | Control Tower | `final_margin_ready` = 2 (E1, G), ou 3 avec E2 |
 | Control Tower | F et C restent incomplètes, avec la raison exacte |
 | Finance — tendance | `actual_orders` = 2 (3 avec E2) |
-| Finance — marge consolidée | 4 700 + 1 850 = **6 550 KMF** (10 800 avec E2) |
+| Finance — marge consolidée | 4 765 + 1 850 = **6 615 KMF** (10 930 avec E2) |
 | Finance — commandes récentes | E1 et G `actual` ; F et C `partial_real` ; manquants conformes |
-| Commerce — P1 | marge réelle sur E1 uniquement : 4 700 (4 250 de plus avec E2) |
+| Commerce — P1 | marge réelle sur E1 uniquement : 4 765 (4 315 de plus avec E2) |
 | Commerce — P3 | 1 850 |
 | Tous les écrans (avec `?simulation_scope=RCT1`) | bandeau « Recette RCT1 — faits simulés » ; valeurs ci-dessus |
 | Tous les écrans (sans paramètre) | **aucune** commande RCT1, aucun coût FICTIF dans les totaux (activité réelle seule) |

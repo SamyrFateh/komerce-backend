@@ -14,4 +14,6 @@ for (const s of steps) {
 for (const s of [...pricing.steps, ...costs.steps]) assert.ok(ids.includes(s.id), `${s.id} absent du manifeste`);
 assert.ok(ids.some((i) => i.startsWith('cost.manual.RCT1-E1.')));
 assert.ok(!ids.includes('cost.manual.RCT1-F.relay'), 'relais F jamais saisi : cas incomplet voulu');
+for (const id of ['product.P2', 'product.P4', 'product.P5', 'check.P5.conversion', 'check.P4.no-km-price', 'check.classification']) assert.ok(ids.includes(id), id);
+assert.ok(!ids.some((i) => i === 'price.KM.P4'), 'P4 : aucun prix KM');
 process.stdout.write('RCT1 manifest graph PASS\n');
