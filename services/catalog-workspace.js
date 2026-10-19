@@ -149,6 +149,20 @@ function sourcingDecisionOrderSql(alias = 'sc') {
   END`;
 }
 
+// C4 — un repli technique vers « autre » n'est pas une classification validée.
+// Sans migration : le verdict se déduit de la catégorie portée par le candidat
+// sourcing (absente = repli de createDraftProductFromSourcingCandidate).
+function classificationStatus(row = {}) {
+  const supplierCategory = row.supplier_category || null;
+  if (row.has_candidate === false) return { status: 'not_from_sourcing', supplier_category: supplierCategory };
+  const candidateCategory = String(row.candidate_komerce_category || '').trim();
+  const category = String(row.category || '').trim().toLowerCase();
+  if (!candidateCategory && category === 'autre') {
+    return { status: 'fallback_unresolved', supplier_category: supplierCategory };
+  }
+  return { status: 'classified', supplier_category: supplierCategory };
+}
+
 async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const safeOffset = Math.max(Number.parseInt(offset, 10) || 0, 0);
@@ -171,6 +185,9 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
            p.enrichment_confidence, p.created_at,
            sc.supplier_name,
            sc.supplier_product_id,
+           sc.candidate_id,
+           sc.candidate_komerce_category,
+           sc.supplier_category,
            sc.stock_available AS supplier_stock,
            sc.confidence AS sourcing_confidence,
            UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) AS sourcing_decision,
@@ -185,7 +202,10 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
                candidate.confidence,
                candidate.scan_result,
                candidate.updated_at,
-               candidate.created_at
+               candidate.created_at,
+               candidate.id AS candidate_id,
+               candidate.komerce_category AS candidate_komerce_category,
+               candidate.supplier_category AS supplier_category
           FROM sourcing_candidates candidate
          WHERE candidate.product_id = p.id
            AND candidate.state = 'imported_to_catalog'
@@ -217,6 +237,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
     description_source: row.description_source || null,
     category: row.category,
     fragility: row.fragility || null,
+    classification: classificationStatus({ ...row, has_candidate: Boolean(row.candidate_id) }),
     emoji: row.emoji || null,
     price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
     cost_kmf: row.cost_kmf == null ? null : Number(row.cost_kmf),
@@ -564,6 +585,7 @@ module.exports = {
     queryProducts,
     queryApprovalQueue,
     queryApprovalBreakdown,
+    classificationStatus,
     queryFocusedMarketHandoff,
     sourcingDecisionOrderSql,
     queryCatalogCap,

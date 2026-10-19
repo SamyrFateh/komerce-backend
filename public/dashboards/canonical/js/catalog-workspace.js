@@ -295,6 +295,13 @@
     return Number.isFinite(price) && price > 0;
   }
 
+  function classificationNote(row = {}) {
+    const c = row.classification || {};
+    if (c.status !== 'fallback_unresolved') return null;
+    const supplier = c.supplier_category ? ` Catégorie fournisseur : ${c.supplier_category}.` : '';
+    return `Classement non validé : aucune catégorie Komerce n’a été attribuée, le produit est resté en « autre » par repli technique.${supplier} À classer avant validation (responsable : curation catalogue).`;
+  }
+
   function priceExplanation(row = {}) {
     const cost = Number(row.cost_kmf);
     const costText = Number.isFinite(cost) && cost > 0
@@ -953,6 +960,12 @@
         stateContent.appendChild(details);
       }
 
+      const classNote = classificationNote(row);
+      if (classNote) {
+        const flag = text(doc, 'small', 'kmc-workspace-subtitle', classNote);
+        flag.setAttribute('data-classification-status', 'fallback_unresolved');
+        stateContent.appendChild(flag);
+      }
       const priceNote = text(doc, 'small', 'kmc-workspace-subtitle', priceExplanation(row));
       priceNote.setAttribute('data-price-explanation', '');
       stateContent.appendChild(priceNote);
