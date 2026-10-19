@@ -13,9 +13,9 @@
 
 | # | Décision | Traduction dans ce cadrage |
 |---|---|---|
-| B1 | « Tout manquant » n'est acceptable qu'en **phase 1 (diagnostic)** | Le livrable final doit contenir au moins une commande à **marge finale calculable**, avec un attendu chiffré indépendamment (§5, E1). Prérequis : lot L1 (saisie manuelle traçable) |
-| B2 | Pas d'exclusion générale du hub | Dans le code, `hub` = **Hub VARIABLE causé par le flux** (`cost-types.js`), à distinguer de `hub_structure`, qui est une charge de structure de période, hors commande. Lot L2 : le hub variable n'est applicable que si l'estimation de la commande en contient (`cost_breakdown.landed_relay.hub > 0`), sinon il est non applicable avec motif |
-| B3 | La commission relais est saisie par un admin de test, avec la provenance « FICTIF recette » | Lot L3 : un coût réel exige une provenance explicite, propagée à l'allocation et affichée. `updated_by` seul ne suffit plus |
+| B1 | « Tout manquant » = phase 1 diagnostique seulement | Livrable final : au moins une commande à marge finale calculable avec attendu chiffré indépendant (E1, G). Mécanisme : L1 (saisie manuelle traçable). Aucun remplissage SQL |
+| B2 | Pas d'exclusion générale du hub | `hub` = Hub VARIABLE causé par le flux (`cost-types.js`), distinct de `hub_structure` (charge de période, hors commande). Applicabilité déduite du parcours et des opérations canoniques (L2) ; l'absence de donnée ne prouve jamais la non-applicabilité |
+| B3 | Commission relais saisie par un admin de test, provenance « FICTIF recette » conservée | L3 : coût réel = auteur ET provenance ; provenance recopiée et affichée. Les coûts restent des faits simulés du scénario, jamais des dépenses réelles |
 | B5 | Un prix saisi en devise locale teste le prix local, pas la conversion | Ajout du scénario de conversion P5, avec un attendu calculé indépendamment (§4). L'écart éventuel est classé, jamais « lu puis validé » |
 | B6 | Mode test Stripe à vérifier avant exécution | Si le mode test n'est pas confirmé, Stripe est **non couvert**. Les scénarios cash ne le remplacent pas |
 | Admin | Réutiliser l'admin staging existant | Aucun second administrateur créé. La session ou l'accès est fourni hors du chat |
