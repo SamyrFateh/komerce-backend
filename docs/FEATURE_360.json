@@ -53,15 +53,15 @@
   },
   "summary": {
     "features": 40,
-    "healthy": 34,
+    "healthy": 33,
     "attention": 6,
-    "blocked": 0,
+    "blocked": 1,
     "businessDependencies": 309,
-    "directCrossFeatureImports": 0,
+    "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 10,
+    "debtItemsTotal": 11,
     "gateHealthy": 37,
     "gateBlocked": 2
   },
@@ -10560,7 +10560,7 @@
             ]
           },
           "services": {
-            "count": 45,
+            "count": 49,
             "files": [
               {
                 "declared": "scripts/market-cost-attribution-conservation-check.js",
@@ -10588,6 +10588,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/cost-allocation/cost-expectation.js",
+                "resolvedPath": "services/cost-allocation/cost-expectation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/cost-allocation/cost-types.js",
                 "resolvedPath": "services/cost-allocation/cost-types.js",
                 "status": "resolved-in-technical-graph"
@@ -10595,6 +10600,11 @@
               {
                 "declared": "services/cost-allocation/index.js",
                 "resolvedPath": "services/cost-allocation/index.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/cost-allocation/manual-cost-entry-service.js",
+                "resolvedPath": "services/cost-allocation/manual-cost-entry-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -10738,6 +10748,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pricing-parameters-status.js",
+                "resolvedPath": "services/pricing-parameters-status.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pricing-period-structure.js",
                 "resolvedPath": "services/pricing-period-structure.js",
                 "status": "resolved-in-technical-graph"
@@ -10768,6 +10783,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/simulation-scope-service.js",
+                "resolvedPath": "services/simulation-scope-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/sourcing-analysis.js",
                 "resolvedPath": "services/sourcing-analysis.js",
                 "status": "resolved-in-technical-graph"
@@ -10790,7 +10810,7 @@
             ]
           },
           "tests": {
-            "count": 95,
+            "count": 100,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -10938,6 +10958,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/cost-expectation.test.js",
+                "resolvedPath": "tests/unit/cost-expectation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/d2b-justified-readers.test.js",
+                "resolvedPath": "tests/unit/d2b-justified-readers.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/dashboard-finance-metrics.test.js",
                 "resolvedPath": "tests/unit/dashboard-finance-metrics.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11025,6 +11055,11 @@
               {
                 "declared": "tests/unit/finance-summary.test.js",
                 "resolvedPath": "tests/unit/finance-summary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/manual-cost-entry-service.test.js",
+                "resolvedPath": "tests/unit/manual-cost-entry-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -11148,6 +11183,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pricing-parameters-status.test.js",
+                "resolvedPath": "tests/unit/pricing-parameters-status.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pricing-period-structure-allocate-pool.test.js",
                 "resolvedPath": "tests/unit/pricing-period-structure-allocate-pool.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11238,6 +11278,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/simulation-scope-service.test.js",
+                "resolvedPath": "tests/unit/simulation-scope-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/sourcing-analysis-density.test.js",
                 "resolvedPath": "tests/unit/sourcing-analysis-density.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11290,7 +11335,7 @@
             ]
           }
         },
-        "totalFiles": 194,
+        "totalFiles": 203,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12242,8 +12287,8 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
-        "directCrossFeatureImports": 0,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -12267,8 +12312,14 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 0,
-        "debtItems": []
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DIRECT_CROSS_FEATURE_IMPORT",
+            "severity": "high",
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -14520,7 +14571,7 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "services/outbox-producer.js",
@@ -14531,11 +14582,16 @@
                 "declared": "services/outbox-worker.js",
                 "resolvedPath": "services/outbox-worker.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/target-identity.js",
+                "resolvedPath": "services/target-identity.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 94,
+            "count": 95,
             "files": [
               {
                 "declared": "tests/integration/groupe-paiement.manual.js",
@@ -14988,6 +15044,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/target-identity.test.js",
+                "resolvedPath": "tests/unit/target-identity.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/touched-tests-gate-coverage-thresholds.test.js",
                 "resolvedPath": "tests/unit/touched-tests-gate-coverage-thresholds.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15050,7 +15111,7 @@
             ]
           }
         },
-        "totalFiles": 381,
+        "totalFiles": 383,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -22710,7 +22771,7 @@
             ]
           },
           "services": {
-            "count": 19,
+            "count": 20,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -22800,6 +22861,11 @@
               {
                 "declared": "services/qr-collection-core.js",
                 "resolvedPath": "services/qr-collection-core.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/rct1-checkout-reference-guard.js",
+                "resolvedPath": "services/rct1-checkout-reference-guard.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -23080,7 +23146,7 @@
             ]
           }
         },
-        "totalFiles": 86,
+        "totalFiles": 87,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 17,
@@ -24087,7 +24153,7 @@
             ]
           },
           "migrations": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "migrations/079_paypal_payment_mode.sql",
@@ -24127,6 +24193,11 @@
               {
                 "declared": "migrations/288_cash_custody_recipients.sql",
                 "resolvedPath": "migrations/288_cash_custody_recipients.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/304_cash_custody_provenance_edges.sql",
+                "resolvedPath": "migrations/304_cash_custody_provenance_edges.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -24182,7 +24253,7 @@
             ]
           },
           "services": {
-            "count": 21,
+            "count": 22,
             "files": [
               {
                 "declared": "services/cash-confirmation-control-service.js",
@@ -24202,6 +24273,11 @@
               {
                 "declared": "services/cash-operations.js",
                 "resolvedPath": "services/cash-operations.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/cash-order-provenance-readonly.js",
+                "resolvedPath": "services/cash-order-provenance-readonly.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -24292,7 +24368,7 @@
             ]
           },
           "tests": {
-            "count": 34,
+            "count": 35,
             "files": [
               {
                 "declared": "public/boutique/tests/unit/b-mobile-money.test.js",
@@ -24337,6 +24413,11 @@
               {
                 "declared": "tests/unit/cash-operations-service.test.js",
                 "resolvedPath": "tests/unit/cash-operations-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cash-order-provenance-readonly.test.js",
+                "resolvedPath": "tests/unit/cash-order-provenance-readonly.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -24467,7 +24548,7 @@
             ]
           }
         },
-        "totalFiles": 75,
+        "totalFiles": 78,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 6,

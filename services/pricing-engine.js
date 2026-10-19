@@ -138,8 +138,16 @@ async function recommend(input, options = {}) {
     volume_m3: inputVolumeM3 ?? productVolumeM3,
     price_kmf: input.current_price_kmf != null ? input.current_price_kmf : product?.price_kmf,
   };
+  let provenance = null;
+  if (product && config.market_id) {
+    try {
+      const { isStockExposable } = require('./local-stock-service');
+      if (await isStockExposable(product.id, config.market_id)) provenance = 'LOCAL_STOCK';
+    } catch (_) { provenance = null; }
+  }
   const ctx = {
     config,
+    provenance,
     volume_m3: merged.volume_m3,
     channel: input.channel || 'cash_relais',
   };

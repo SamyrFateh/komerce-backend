@@ -164,6 +164,7 @@ async function loadGlobalConfig(options = {}) {
     boutique_customs_affinities: affinityRes.rows,
     components,
     components_source: componentsSource,
+    market_id: options.marketId || null,
     provisions: provRes.rows,
     charges: chargesRes.rows,
     cost_benchmarks: costBenchmarks,
@@ -244,11 +245,17 @@ function computeCDR(product, ctx = {}) {
     payment: 0, risks: 0, fixed_costs: 0,
   };
 
-  const freightEstimated = volM3 * fretEUR * taxEUR;
+  // L2 : chaîne import (fret/douane/port) NON APPLICABLE quand le produit est servi
+  // depuis un stock local exposé (provenance LOCAL_STOCK). Inapplicable ≠ zéro d'un
+  // inconnu : sans signal de provenance, la chaîne import reste estimée.
+  const localStock = ctx.provenance === 'LOCAL_STOCK';
+  const IMPORT_CHAIN = new Set(['freight', 'transit', 'customs', 'douane', 'port_transitary']);
+  const freightEstimated = localStock ? 0 : volM3 * fretEUR * taxEUR;
   details.freight = r(freightEstimated);
   let runningSubtotal = productCostKmf + freightEstimated;
 
   for (const c of cfg.components) {
+    if (localStock && IMPORT_CHAIN.has(c.category)) continue;
     const v = Number(c.default_value || 0);
     const a = c.applies_to || 'all';
     if (a !== 'all' && !a.startsWith('category:' + categoryKey) && !a.startsWith('channel:' + channel)) continue;
@@ -384,6 +391,7 @@ function computeCDR(product, ctx = {}) {
     target_orders_per_month:      fixedAlloc.target_orders_per_month,
     details,
     customs_estimate_status: customsEstimateStatus,
+    import_chain_not_applicable: localStock,
     warnings,
     _meta: {
       taxAED, taxEUR, fretEUR, category: categoryKey, channel,

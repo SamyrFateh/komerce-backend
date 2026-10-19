@@ -116,6 +116,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     ...ALLOWED_WRITE_CONSUMERS, ...ALLOWED_ROUTE_FILE_CONSUMERS,
     ...ALLOWED_COMPOSITION_CONSUMERS, ...ALLOWED_BOOTSTRAP_CONSUMERS,
     ...ALLOWED_WAVE3_ROUTE_CONSUMERS, ...ALLOWED_WAVE3_SERVICE_CONSUMERS,
+    'services/pricing-engine.js', // L2 : provenance LOCAL_STOCK du CDR (lecture seule isStockExposable), revu RCT1
   ];
 
   test('aucune route (routes/) ne require() les services shadow, sauf les points d\'intégration D2/D4 revus', () => {

@@ -7936,6 +7936,27 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/cost-allocation/cost-expectation.js",
+        "resolvedPath": "services/cost-allocation/cost-expectation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/simulation-scope-service.js",
+        "resolvedPath": "services/simulation-scope-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/cost-allocation/manual-cost-entry-service.js",
+        "resolvedPath": "services/cost-allocation/manual-cost-entry-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/cost-allocation/product-margin-steering.js",
         "resolvedPath": "services/cost-allocation/product-margin-steering.js",
         "status": "resolved-in-technical-graph"
@@ -7980,6 +8001,13 @@
         "category": "services",
         "declared": "services/pricing-rates.js",
         "resolvedPath": "services/pricing-rates.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/pricing-parameters-status.js",
+        "resolvedPath": "services/pricing-parameters-status.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -8608,6 +8636,34 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/cost-expectation.test.js",
+        "resolvedPath": "tests/unit/cost-expectation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/simulation-scope-service.test.js",
+        "resolvedPath": "tests/unit/simulation-scope-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/manual-cost-entry-service.test.js",
+        "resolvedPath": "tests/unit/manual-cost-entry-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/d2b-justified-readers.test.js",
+        "resolvedPath": "tests/unit/d2b-justified-readers.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/product-margin-steering.test.js",
         "resolvedPath": "tests/unit/product-margin-steering.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9091,6 +9147,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/pricing-parameters-status.test.js",
+        "resolvedPath": "tests/unit/pricing-parameters-status.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/pricing-strategy-service.test.js",
         "resolvedPath": "tests/unit/pricing-strategy-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9388,6 +9451,13 @@
         "declared": "tests/integration/parcel-transition-guard-real-db.test.js",
         "resolvedPath": "tests/integration/parcel-transition-guard-real-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "services",
+        "declared": "services/target-identity.js",
+        "resolvedPath": "services/target-identity.js",
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "infrastructure",
@@ -11410,6 +11480,13 @@
         "category": "tests",
         "declared": "tests/unit/require-non-production.test.js",
         "resolvedPath": "tests/unit/require-non-production.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/target-identity.test.js",
+        "resolvedPath": "tests/unit/target-identity.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14838,6 +14915,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/rct1-checkout-reference-guard.js",
+        "resolvedPath": "services/rct1-checkout-reference-guard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/order-checkout-item-resolution.js",
         "resolvedPath": "services/order-checkout-item-resolution.js",
         "status": "resolved-in-technical-graph"
@@ -15461,6 +15545,13 @@
       {
         "feature": "payments",
         "category": "services",
+        "declared": "services/cash-order-provenance-readonly.js",
+        "resolvedPath": "services/cash-order-provenance-readonly.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
         "declared": "services/reconciliation-service.js",
         "resolvedPath": "services/reconciliation-service.js",
         "status": "resolved-in-technical-graph"
@@ -15603,6 +15694,13 @@
         "category": "migrations",
         "declared": "migrations/288_cash_custody_recipients.sql",
         "resolvedPath": "migrations/288_cash_custody_recipients.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
+        "declared": "migrations/304_cash_custody_provenance_edges.sql",
+        "resolvedPath": "migrations/304_cash_custody_provenance_edges.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15792,6 +15890,13 @@
         "category": "tests",
         "declared": "tests/unit/cash-deposit-service.test.js",
         "resolvedPath": "tests/unit/cash-deposit-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/cash-order-provenance-readonly.test.js",
+        "resolvedPath": "tests/unit/cash-order-provenance-readonly.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -26931,6 +27036,12 @@
       },
       {
         "from": "economic-engine",
+        "to": "local-stock",
+        "raw": "local-stock (provenance LOCAL_STOCK : applicabilité de la chaîne import au CDR ; preuve: services/pricing-engine.js -> services/local-stock-service.js)",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
         "to": "refunds",
         "raw": "refunds (dépendance data cross-feature observée et gouvernée par O5)",
         "resolved": true
@@ -31934,6 +32045,10 @@
                 "targetFile": "services/transport-pricing.js"
               },
               {
+                "sourceFileId": "services/catalog-workspace.js",
+                "targetFile": "services/pricing-parameters-status.js"
+              },
+              {
                 "sourceFileId": "tests/unit/supplier-catalog-scanner.test.js",
                 "targetFile": "services/pricing-engine.js"
               },
@@ -33307,6 +33422,10 @@
                 "targetFile": "services/cost-allocation/index.js"
               },
               {
+                "sourceFileId": "tests/unit/customs-shipment-service.test.js",
+                "targetFile": "services/cost-allocation/canonical-margin-writer.js"
+              },
+              {
                 "sourceFileId": "tests/unit/customs-shipment-fee-service.test.js",
                 "targetFile": "services/cost-allocation/index.js"
               },
@@ -33752,12 +33871,48 @@
                 "targetFile": "services/cost-allocation/cost-types.js"
               },
               {
+                "sourceFileId": "services/dashboard-metrics/control-tower.js",
+                "targetFile": "services/cost-allocation/cost-expectation.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-metrics/costing.js",
+                "targetFile": "services/cost-allocation/cost-expectation.js"
+              },
+              {
                 "sourceFileId": "services/dashboard-ops-queries.js",
                 "targetFile": "services/economic-config.js"
               },
               {
                 "sourceFileId": "services/dashboard-commerce.js",
+                "targetFile": "services/simulation-scope-service.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-commerce.js",
+                "targetFile": "services/cost-allocation/cost-expectation.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-commerce.js",
                 "targetFile": "services/pricing-market-corridor.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-finance-canonical.js",
+                "targetFile": "services/simulation-scope-service.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-finance-canonical.js",
+                "targetFile": "services/cost-allocation/cost-expectation.js"
+              },
+              {
+                "sourceFileId": "services/product-360.js",
+                "targetFile": "services/cost-allocation/cost-expectation.js"
+              },
+              {
+                "sourceFileId": "routes/admin-dashboard.js",
+                "targetFile": "services/simulation-scope-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-dashboard-market.js",
+                "targetFile": "services/simulation-scope-service.js"
               },
               {
                 "sourceFileId": "routes/dashboard.js",
@@ -34215,6 +34370,10 @@
               },
               {
                 "sourceFileId": "tests/unit/dashboard-commerce.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/dashboard-finance-canonical.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -35582,6 +35741,38 @@
                 "targetFile": "services/dashboard-cache.js"
               },
               {
+                "sourceFileId": "tests/unit/simulation-scope-service.test.js",
+                "targetFile": "services/dashboard-finance-canonical.js"
+              },
+              {
+                "sourceFileId": "tests/unit/simulation-scope-service.test.js",
+                "targetFile": "services/dashboard-commerce.js"
+              },
+              {
+                "sourceFileId": "tests/unit/simulation-scope-service.test.js",
+                "targetFile": "services/product-360.js"
+              },
+              {
+                "sourceFileId": "tests/unit/simulation-scope-service.test.js",
+                "targetFile": "routes/admin-dashboard.js"
+              },
+              {
+                "sourceFileId": "tests/unit/simulation-scope-service.test.js",
+                "targetFile": "routes/admin-dashboard-market.js"
+              },
+              {
+                "sourceFileId": "tests/unit/d2b-justified-readers.test.js",
+                "targetFile": "services/dashboard-finance-canonical.js"
+              },
+              {
+                "sourceFileId": "tests/unit/d2b-justified-readers.test.js",
+                "targetFile": "services/dashboard-commerce.js"
+              },
+              {
+                "sourceFileId": "tests/unit/d2b-justified-readers.test.js",
+                "targetFile": "services/product-360.js"
+              },
+              {
                 "sourceFileId": "tests/unit/finance-annulations.test.js",
                 "targetFile": "routes/dashboard-shared.js"
               },
@@ -36052,6 +36243,22 @@
               {
                 "sourceFileId": "tests/integration/sourcing-flow-g5.test.js",
                 "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
+        "to": "local-stock",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/pricing-engine.js",
+                "targetFile": "services/local-stock-service.js"
               }
             ]
           }
@@ -40257,6 +40464,10 @@
               },
               {
                 "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/simulation-scope-service.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "services/transport-pricing.js"
               },
               {
@@ -42473,6 +42684,10 @@
               {
                 "sourceFileId": "routes/health.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/health.js",
+                "targetFile": "services/target-identity.js"
               },
               {
                 "sourceFileId": "routes/ops-api.js",
@@ -45751,7 +45966,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2068
+        "filesObserved": 2082
       },
       "boutique": {
         "filesObserved": 214,
@@ -48947,8 +49162,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 623,
-        "technicalNodesOwned": 623,
+        "technicalNodesTotal": 630,
+        "technicalNodesOwned": 630,
         "technicalOrphans": 0
       },
       "dash": {
