@@ -47,6 +47,7 @@
 const express = require('express');
 const db = require('../db');
 const { notLegacyUnjustifiedSql } = require('../services/cost-allocation/cost-expectation');
+const { realActivityByOrderIdSql } = require('../services/simulation-scope-service');
 const costAllocation = require('../services/cost-allocation');
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
 const productMarginSteering = require('../services/cost-allocation/product-margin-steering');
@@ -314,11 +315,13 @@ router.get('/products', authenticate, requireAdmin, async (req, res, next) => {
           JOIN order_items oi ON oi.id = alc.order_item_id
           WHERE oi.product_id = imp.product_id
             AND ${notLegacyUnjustifiedSql('alc')}
+            AND ${realActivityByOrderIdSql('alc')}
         ), 0) AS total_real_kmf,
         COUNT(DISTINCT imp.order_id)::int AS orders_count
       FROM order_item_cost_imputations imp
       LEFT JOIN products p ON p.id = imp.product_id
       WHERE ${where.join(' AND ')}
+        AND ${realActivityByOrderIdSql('imp')}
       GROUP BY imp.product_id, p.name, p.category
       ORDER BY total_estimated_business_kmf DESC NULLS LAST
       LIMIT $${limitIdx}

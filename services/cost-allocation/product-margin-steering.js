@@ -245,6 +245,7 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
          LEFT JOIN products p ON p.id = oi.product_id
          LEFT JOIN customs_categories cc ON cc.key = p.category
         WHERE o.market_id = $1
+          AND o.simulation_scope IS NULL
           AND o.status::text <> ALL($2::text[])
           AND o.created_at >= NOW() - ($3::int * INTERVAL '1 day')
           AND ($4::uuid IS NULL OR oi.product_id = $4)

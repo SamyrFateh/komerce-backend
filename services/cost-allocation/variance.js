@@ -262,6 +262,7 @@ async function computeProductCostVariance(productId, options = {}) {
       FROM order_item_cost_imputations imp
       JOIN orders o ON o.id = imp.order_id
       WHERE ${impWhere.join(' AND ')}
+        AND o.simulation_scope IS NULL
     ),
     scoped_real AS (
       SELECT alc.cost_type, alc.amount_kmf
@@ -270,6 +271,7 @@ async function computeProductCostVariance(productId, options = {}) {
       JOIN orders ro ON ro.id = oi.order_id
       WHERE ${realWhere.join(' AND ')}
         AND ${notLegacyUnjustifiedSql('alc')}
+        AND ro.simulation_scope IS NULL
     )
     SELECT
       imp.product_id,

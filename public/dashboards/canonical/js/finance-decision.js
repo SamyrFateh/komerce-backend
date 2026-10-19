@@ -361,7 +361,11 @@
       if (!Number.isNaN(date.getTime())) generatedAt = date.toLocaleString('fr-FR');
     }
     return {
-      stateLabel: quality.scope_enforced === false ? 'Scope à vérifier' : 'Source canonique',
+      // L3 — périmètre de recette : faits simulés, jamais présentés comme activité réelle.
+      stateLabel: payload && payload.simulation
+        ? `Recette ${payload.simulation.scope} — faits simulés`
+        : (quality.scope_enforced === false ? 'Scope à vérifier' : 'Source canonique'),
+      ...(payload && payload.simulation ? { simulationLabel: payload.simulation.label } : {}),
       scopeLabel: scope && scope.mode === 'market' && scope.market ? `${scope.market.code} · ${scope.market.name || ''}`.trim() : 'Vue autorisée',
       generatedAt,
       qualityLabel: payload && payload.period != null ? `Période : ${base.formatNumber(payload.period, 0)} jours` : undefined,

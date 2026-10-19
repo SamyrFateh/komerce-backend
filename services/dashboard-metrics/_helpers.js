@@ -119,13 +119,22 @@ function buildFiltersClause(filters = {}, orderAlias = 'o') {
     params.push(filters.market_id);
   }
 
+  // L3 — un seul moteur, sélection explicite : par défaut l'activité RÉELLE seule ; un périmètre de
+  // recette (faits simulés) n'est inclus que s'il est demandé, et alors seul.
+  if (filters.simulation_scope) {
+    where.push(`${orderAlias}.simulation_scope = $${i++}`);
+    params.push(filters.simulation_scope);
+  } else {
+    where.push(`${orderAlias}.simulation_scope IS NULL`);
+  }
+
   const whereSql = where.join(' AND ');
   return { where: assertParameterizedWhereClause(whereSql), params, nextParamIndex: i };
 }
 
 function assertParameterizedWhereClause(where) {
   const clause = String(where || '');
-  const safePart = /^(?:1=1|[A-Za-z_][A-Za-z0-9_]*\.(?:created_at|destination_island|relais_id|status::text|payment_status::text|market_id)\s*(?:=|>=|<=)\s*\$\d+)$/;
+  const safePart = /^(?:1=1|[A-Za-z_][A-Za-z0-9_]*\.(?:created_at|destination_island|relais_id|status::text|payment_status::text|market_id|simulation_scope)\s*(?:=|>=|<=)\s*\$\d+|[A-Za-z_][A-Za-z0-9_]*\.simulation_scope IS NULL)$/;
   const parts = clause.split(' AND ');
   if (!parts.length || parts.some((part) => !safePart.test(part))) {
     throw new Error('Unsafe dashboard WHERE clause');

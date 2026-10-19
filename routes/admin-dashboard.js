@@ -40,6 +40,7 @@
 'use strict';
 
 const express = require('express');
+const { isValidScope } = require('../services/simulation-scope-service');
 const db = require('../db');
 const metrics = require('../services/dashboard-metrics');
 const cache = require('../services/dashboard-cache');
@@ -64,6 +65,8 @@ function parseFilters(req) {
     cost_status: req.query.cost_status || null,
     channel: req.query.channel || null,
     origin: req.query.origin || null,
+    // L3 — périmètre de recette explicite (faits simulés) ; sinon activité réelle seule.
+    simulation_scope: isValidScope(req.query.simulation_scope) ? req.query.simulation_scope : null,
   };
 }
 
@@ -72,7 +75,12 @@ function makeDataQuality(filters, sourceTables, options = {}) {
     generated_at: new Date().toISOString(),
     cache_ttl_seconds: 120,
     filters,
-    warnings: options.warnings || [],
+    warnings: [
+      ...(options.warnings || []),
+      ...(filters && filters.simulation_scope
+        ? [`Périmètre de recette ${filters.simulation_scope} : faits simulés, pas une activité réelle de l'entreprise.`]
+        : []),
+    ],
     incomplete_fields: options.incompleteFields || [],
     source_tables: sourceTables,
     // is_cached et cache_age_seconds seront ajoutes par le middleware cache

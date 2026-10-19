@@ -46,3 +46,17 @@ test('hard delete reste interdit pour un composant non supprimable', async () =>
     .rejects.toMatchObject({ status: 403, code: 'cost_component_not_deletable' });
   expect(mockQuery).toHaveBeenCalledTimes(1);
 });
+
+test('L3 : changer la valeur sans nouvelle provenance efface la provenance ; avec provenance, elle est posée', async () => {
+  const oldComp = { id: 'cc', key: 'commission_relais_kmf', family: 'landed_relay', category: 'relay', default_value: 500, provenance: 'ancienne', is_active: true, scope: 'global' };
+  mockQuery.mockResolvedValueOnce({ rows: [oldComp] }).mockResolvedValueOnce({ rows: [oldComp] }).mockResolvedValueOnce({ rows: [] });
+  await service.updateComponent({ key: 'commission_relais_kmf' }, { default_value: 600 }, 'admin-1').catch(() => {});
+  expect(mockQuery.mock.calls[1][0]).toContain('provenance = NULL');
+
+  jest.clearAllMocks();
+  mockQuery.mockResolvedValueOnce({ rows: [oldComp] }).mockResolvedValueOnce({ rows: [oldComp] }).mockResolvedValueOnce({ rows: [] });
+  await service.updateComponent({ key: 'commission_relais_kmf' }, { default_value: 600, provenance: 'FICTIF recette' }, 'admin-1').catch(() => {});
+  expect(mockQuery.mock.calls[1][0]).toContain('provenance = $');
+  expect(mockQuery.mock.calls[1][0]).not.toContain('provenance = NULL');
+  expect(mockQuery.mock.calls[1][1]).toContain('FICTIF recette');
+});

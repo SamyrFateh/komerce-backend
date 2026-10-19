@@ -55,14 +55,14 @@ describe('constantes', () => {
 describe('buildFiltersClause', () => {
   it('aucun filtre → where "1=1", params vides, nextParamIndex 1', () => {
     const result = buildFiltersClause({});
-    expect(result.where).toBe('1=1');
+    expect(result.where).toBe('1=1 AND o.simulation_scope IS NULL');
     expect(result.params).toEqual([]);
     expect(result.nextParamIndex).toBe(1);
   });
 
   it('filtres absents (appel sans argument) → meme resultat par defaut', () => {
     const result = buildFiltersClause();
-    expect(result.where).toBe('1=1');
+    expect(result.where).toBe('1=1 AND o.simulation_scope IS NULL');
     expect(result.params).toEqual([]);
   });
 
@@ -73,7 +73,7 @@ describe('buildFiltersClause', () => {
     });
     expect(result.where).toBe(
       '1=1 AND o.created_at >= $1 AND o.created_at <= $2 AND o.destination_island = $3 ' +
-      'AND o.relais_id = $4 AND o.status::text = $5 AND o.payment_status::text = $6'
+      'AND o.relais_id = $4 AND o.status::text = $5 AND o.payment_status::text = $6 AND o.simulation_scope IS NULL'
     );
     expect(result.params).toEqual(['2026-01-01', '2026-01-31', 'Ngazidja', 'r1', 'shipped', 'paid']);
     expect(result.nextParamIndex).toBe(7);
@@ -81,12 +81,12 @@ describe('buildFiltersClause', () => {
 
   it('alias personnalise → utilise dans toutes les clauses', () => {
     const result = buildFiltersClause({ island: 'Anjouan' }, 'ord');
-    expect(result.where).toBe('1=1 AND ord.destination_island = $1');
+    expect(result.where).toBe('1=1 AND ord.destination_island = $1 AND ord.simulation_scope IS NULL');
   });
 
   it('filtre partiel → seuls les params fournis generent une clause', () => {
     const result = buildFiltersClause({ status: 'paid' });
-    expect(result.where).toBe('1=1 AND o.status::text = $1');
+    expect(result.where).toBe('1=1 AND o.status::text = $1 AND o.simulation_scope IS NULL');
     expect(result.params).toEqual(['paid']);
   });
 });
@@ -98,6 +98,7 @@ describe('assertParameterizedWhereClause', () => {
 
   it('rejette une clause hors grammaire ou contenant du SQL additionnel', () => {
     expect(() => assertParameterizedWhereClause('1=1; DROP TABLE orders')).toThrow(/Unsafe dashboard WHERE clause/);
+    expect(() => assertParameterizedWhereClause("1=1 AND o.simulation_scope = 'RCT1'")).toThrow(/Unsafe dashboard WHERE clause/);
     expect(() => assertParameterizedWhereClause("1=1 AND o.status::text = 'paid'")) .toThrow(/Unsafe dashboard WHERE clause/);
   });
 });
@@ -209,4 +210,13 @@ describe('makeKpi', () => {
 test('LATE_THRESHOLDS est gelé (une seule source de seuils)', () => {
   const { LATE_THRESHOLDS } = require('../../services/dashboard-metrics/_helpers');
   expect(Object.isFrozen(LATE_THRESHOLDS)).toBe(true);
+});
+
+describe('L3 — périmètre de recette (faits simulés)', () => {
+  it('par défaut : activité réelle seule ; périmètre demandé : ce périmètre seul, paramétré', () => {
+    expect(buildFiltersClause({}).where).toContain('o.simulation_scope IS NULL');
+    const scoped = buildFiltersClause({ simulation_scope: 'RCT1' });
+    expect(scoped.where).toBe('1=1 AND o.simulation_scope = $1');
+    expect(scoped.params).toEqual(['RCT1']);
+  });
 });
