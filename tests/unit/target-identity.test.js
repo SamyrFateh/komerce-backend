@@ -9,22 +9,35 @@
 const { computeDbFingerprint, readRuntimeIdentity, assertSameTarget } = require('../../services/target-identity');
 const { confirmTarget } = require('../../scripts/recette/target-guard');
 
-const dbRow = (o = {}) => ({ query: jest.fn().mockResolvedValue({ rows: [{ name: 'railway', oid: '16384', addr: '10.0.0.1', port: '5432', ...o }] }) });
+const dbRow = (o = {}, sysid = '7000') => ({
+  query: jest.fn(async (sql) => {
+    if (/pg_control_system/.test(sql)) {
+      if (sysid === null) throw new Error('permission denied');
+      return { rows: [{ sysid }] };
+    }
+    return { rows: [{ name: 'railway', oid: '16384', started: '1700000000', ...o }] };
+  }),
+});
 
 describe('identité de cible', () => {
-  test('empreinte stable, différente si l\'adresse serveur diffère (oid identiques)', async () => {
+  test('empreinte stable, indépendante du chemin réseau, différente si le cluster diffère', async () => {
     const a = await computeDbFingerprint(dbRow());
     const b = await computeDbFingerprint(dbRow());
-    const c = await computeDbFingerprint(dbRow({ addr: '10.0.0.2' }));
+    const other = await computeDbFingerprint(dbRow({ started: '1800000000' }));
+    const otherSys = await computeDbFingerprint(dbRow({}, '7001'));
+    const noSys = await computeDbFingerprint(dbRow({}, null));
     expect(a.fingerprint).toBe(b.fingerprint);
-    expect(a.fingerprint).not.toBe(c.fingerprint);
+    expect(a.fingerprint).not.toBe(other.fingerprint);
+    expect(a.fingerprint).not.toBe(otherSys.fingerprint);
+    expect(noSys.parts.sysid).toBe(a.parts.sysid === noSys.parts.sysid ? a.parts.sysid : noSys.parts.sysid);
+    expect(Object.keys(a.parts).sort()).toEqual(['name', 'oid', 'sysid', 'started'].sort());
     expect(a.fingerprint).toMatch(/^[0-9a-f]{24}$/);
   });
 
   test('assertSameTarget : confirme seulement empreintes égales ET service déclaré staging', () => {
     const remote = { db_fingerprint: 'abc', identity: { komerce_env: 'staging', railway_environment: 'staging' } };
     expect(assertSameTarget({ local: { fingerprint: 'abc' }, remote }).confirmed).toBe(true);
-    expect(() => assertSameTarget({ local: { fingerprint: 'zzz' }, remote })).toThrow(/pas celle du service/);
+    expect(() => assertSameTarget({ local: { fingerprint: 'zzz', parts: { a: '1', b: '2' } }, remote: { ...remote, parts: { a: '1', b: '9' } } })).toThrow(/composants différents : b/);
     expect(() => assertSameTarget({ local: { fingerprint: 'abc' }, remote: { ...remote, identity: { komerce_env: 'production' } } })).toThrow(/non déclaré staging/);
     expect(() => assertSameTarget({ local: { fingerprint: 'abc' }, remote, expected: { railway_environment: 'production' } })).toThrow(/attendu/);
     expect(() => assertSameTarget({ local: null, remote: null })).toThrow(/absente/);

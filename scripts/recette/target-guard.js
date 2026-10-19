@@ -28,7 +28,7 @@ async function confirmTarget({ db, fetchImpl = fetch, env = process.env } = {}) 
   const body = await res.json();
   const remote = body && body.target ? body.target : {};
   return assertSameTarget({
-    local, remote,
+    local: { fingerprint: local.fingerprint, parts: local.parts }, remote,
     expected: {
       railway_environment: env.EXPECTED_RAILWAY_ENVIRONMENT || null,
     },

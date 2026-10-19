@@ -110,7 +110,8 @@ describe('GET /health — basic', () => {
 describe('GET /health — cible', () => {
   test('publie empreinte hashée + identité sans secret', async () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [{ 1: 1 }] })
-      .mockResolvedValueOnce({ rows: [{ name: 'railway', oid: '1', addr: 'a', port: '5432' }] });
+      .mockResolvedValueOnce({ rows: [{ name: 'railway', oid: '1', started: '1700000000' }] })
+      .mockResolvedValueOnce({ rows: [{ sysid: '7' }] });
     const res = await request(buildApp()).get('/health/');
     expect(res.status).toBe(200);
     expect(res.body.target.db_fingerprint).toMatch(/^[0-9a-f]{24}$/);

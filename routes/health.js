@@ -46,8 +46,8 @@ router.get('/', async (req, res, next) => {
     // Identité NON secrète de la cible (empreinte hashée + environnement déclaré) : jamais bloquante.
     let target = null;
     try {
-      const { fingerprint } = await computeDbFingerprint(db);
-      target = { db_fingerprint: fingerprint, identity: readRuntimeIdentity() };
+      const { fingerprint, parts } = await computeDbFingerprint(db);
+      target = { db_fingerprint: fingerprint, parts, identity: readRuntimeIdentity() };
     } catch { target = null; }
 
     res.json({
