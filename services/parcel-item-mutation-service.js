@@ -317,6 +317,7 @@ async function assignSingleOrderItemToParcel(executor, {
 }
 
 module.exports = {
+  assertSameMarket,
   assignWholeOrderItemToParcel,
   assignParcelItem,
   addParcelItem,

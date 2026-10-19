@@ -145,3 +145,21 @@ describe('parcel-item-mutation-service', () => {
     });
   });
 });
+
+describe('assertSameMarket (garde canonique exportée, lecture seule)', () => {
+  const { assertSameMarket } = require('../../services/parcel-item-mutation-service');
+  const exec = rows => ({ query: jest.fn(async () => ({ rows })) });
+  test('même commande : aucune requête, accepté', async () => {
+    const e = exec([]);
+    await expect(assertSameMarket(e, { order_id: 'o1' }, 'o1')).resolves.toBeUndefined();
+    expect(e.query).not.toHaveBeenCalled();
+  });
+  test('marchés différents : 409 MARKET_MISMATCH', async () => {
+    const e = exec([{ id: 'o1', market_id: 'm1' }, { id: 'o2', market_id: 'm2' }]);
+    await expect(assertSameMarket(e, { order_id: 'o1' }, 'o2')).rejects.toMatchObject({ code: 'MARKET_MISMATCH', status: 409 });
+  });
+  test('marché inconnu : 409 MARKET_UNKNOWN', async () => {
+    const e = exec([{ id: 'o1', market_id: 'm1' }, { id: 'o2', market_id: null }]);
+    await expect(assertSameMarket(e, { order_id: 'o1' }, 'o2')).rejects.toMatchObject({ code: 'MARKET_UNKNOWN', status: 409 });
+  });
+});

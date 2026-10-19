@@ -95,27 +95,20 @@ const marketOrderStep = (o) => {
   };
 };
 
-// J : ajouter une ligne CM dans un colis KM => 409 MARKET_MISMATCH. Preuve sous SAVEPOINT : rien n'est conserve.
-const jCheck = check('check.J.market-mismatch', ['order.RCT1-CM1', 'ops.cash-confirm.RCT1-E1'], async ({ db, shared }) => {
-  const items = require('../../../services/parcel-item-mutation-service');
-  const { createHubParcel } = require('../../../services/parcel-mutation-service');
-  const { generateParcelRef } = require('../../../utils/reference');
-  const km = await q1(db, "SELECT id FROM orders WHERE reference='RCT1-E1'");
-  const line = await q1(db, "SELECT oi.id FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.reference='RCT1-CM1' LIMIT 1");
-  if (!km) return { ok: false, error: 'commande KM introuvable' };
-  if (!line) return { ok: false, error: 'ligne CM introuvable' };
-  const before = (await q1(db, "SELECT COUNT(*)::int AS n FROM parcel_items WHERE order_item_id=$1", [line.id])).n;
-  await db.query('SAVEPOINT rct1_j');
-  let observed = null;
-  try {
-    const parcel = await createHubParcel(db, { reference: await generateParcelRef(db), orderId: km.id, type: 'partial', notes: 'RCT1 J (preuve sous savepoint)' });
-    try {
-      await items.addParcelItemTraced(db, { parcelId: parcel.id, orderItemId: line.id, quantity: 1, actorId: shared.adminId });
-      observed = { accepted: true };
-    } catch (e) { observed = { code: e.code, status: e.status }; }
-  } finally { await db.query('ROLLBACK TO SAVEPOINT rct1_j'); await db.query('RELEASE SAVEPOINT rct1_j'); }
-  const after = (await q1(db, "SELECT COUNT(*)::int AS n FROM parcel_items WHERE order_item_id=$1", [line.id])).n;
-  return { ok: observed.code === 'MARKET_MISMATCH' && observed.status === 409 && before === after, observed, parcel_items_before: before, parcel_items_after: after, expected: '409 MARKET_MISMATCH, rien conserve' };
+// J : une ligne CM ne peut pas rejoindre un colis KM => 409 MARKET_MISMATCH. Preuve par la garde canonique
+// assertSameMarket (lecture seule : aucune ecriture, aucun colis cree), utilisable en phase verify.
+const jCheck = check('check.J.market-mismatch', ['order.RCT1-CM1', 'ops.cash-confirm.RCT1-E1'], async ({ db }) => {
+  const { assertSameMarket } = require('../../../services/parcel-item-mutation-service');
+  const km = await q1(db, "SELECT id, market_id FROM orders WHERE reference='RCT1-E1'");
+  const cm = await q1(db, "SELECT id, market_id FROM orders WHERE reference='RCT1-CM1'");
+  if (!km || !cm) return { ok: false, error: 'commande KM ou CM introuvable' };
+  const probe = async (carrier, line) => {
+    try { await assertSameMarket(db, { order_id: carrier }, line); return { accepted: true }; } catch (e) { return { code: e.code, status: e.status }; }
+  };
+  const cross = await probe(km.id, cm.id);
+  const same = await probe(km.id, km.id);
+  const ok = cross.code === 'MARKET_MISMATCH' && cross.status === 409 && same.accepted === true && km.market_id !== cm.market_id;
+  return { ok, cross_market: cross, same_order_control: same, writes: 0, expected: '409 MARKET_MISMATCH ; meme commande acceptee ; aucune ecriture' };
 });
 
 // K : l'operateur KM ne voit ni CM ni CG (scope canonique + 403 du middleware) ; la commande CM est affichee en XAF.
