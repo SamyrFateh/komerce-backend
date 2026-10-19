@@ -52,8 +52,15 @@ async function run({ db, phase, steps, env = process.env, confirm, only = null }
   const ordered = orderSteps(steps);
   const ctx = { env, scope: 'RCT1', shared: {} };
   const report = { phase, scope: 'RCT1', target_confirmed: true, steps: [], writes: 0, ok: true };
+  const failed = new Set();
   for (const step of ordered) {
     const row = { id: step.id };
+    const blockedBy = (step.deps || []).filter(d => failed.has(d));
+    if (blockedBy.length && !only) {
+      // Dependance en echec : etape non executee, jamais comptee comme PASS ; les scenarios independants continuent.
+      row.ok = false; row.skipped = true; row.error = 'BLOCKED_BY:' + blockedBy.join(','); report.ok = false;
+      failed.add(step.id); report.steps.push(row); continue;
+    }
     if (only && !only.includes(step.id)) {
       // Hors selection : inspection seule (alimente ctx.shared pour les etapes selectionnees), jamais d'ecriture.
       await inTx(db, true, c => step.inspect({ ...ctx, db: c }));
@@ -66,7 +73,12 @@ async function run({ db, phase, steps, env = process.env, confirm, only = null }
       if (!pre.done) {
         if (phase === 'replay') { row.ok = false; row.error = 'REPLAY_WOULD_WRITE'; report.ok = false; }
         else {
-          const r = await inTx(db, false, c => step.apply({ ...ctx, db: c }));
+          let r;
+          try { r = await inTx(db, false, c => step.apply({ ...ctx, db: c })); }
+          catch (e) {
+            row.ok = false; row.error = String(e && e.message || e).slice(0, 200); report.ok = false;
+            failed.add(step.id); report.steps.push(row); continue;
+          }
           row.writes = r.writes || 0; report.writes += row.writes;
           const post = await inTx(db, true, c => step.inspect({ ...ctx, db: c }));
           row.done = !!post.done; row.detail = post.detail;
@@ -80,7 +92,7 @@ async function run({ db, phase, steps, env = process.env, confirm, only = null }
     }
     void readOnly;
     report.steps.push(row);
-    if (row.ok === false && phase !== 'report' && phase !== 'verify') break; // dependances : ne pas poursuivre
+    if (row.ok === false) failed.add(step.id);
   }
   return report;
 }
