@@ -1,0 +1,38 @@
+name: Golden two orders — staging inventory only
+on:
+  workflow_dispatch: {}
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: golden-two-orders-inventory
+  cancel-in-progress: false
+jobs:
+  inventory:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] golden-two-orders-inventory')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Require staging secret
+        run: test -n "$DATABASE_URL"
+      - name: Confirm staging identity
+        run: node scripts/recette/target-guard.js
+      - name: Inventory Golden candidate orders read-only
+        run: node scripts/recette/golden-two-orders-inventory.js
