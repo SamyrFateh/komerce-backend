@@ -65,7 +65,7 @@
         { key: 'cout-reel', label: 'Coût réel' },
         { key: 'marge', label: 'Marge consolidée' },
         { key: 'completude', label: 'Complétude coûts' },
-        { key: 'cout-incomplet', label: 'Coûts incomplets' },
+        { key: 'cout-incomplet', label: 'Coûts restant à établir' },
         { key: 'paiement-attente', label: 'Paiements en attente (période)' },
         { key: 'remboursements', label: 'Remboursements' },
       ],
@@ -103,8 +103,8 @@
       },
       {
         id: 'variances-costing',
-        title: 'Variances récentes',
-        description: 'Écart entre coût estimé et coût réel sur les commandes de la période. Une marge consolidée n’est affichable que quand le coût est complet.',
+        title: 'Écarts entre coûts prévus et constatés',
+        description: 'Écart de coût = réel − estimé figé, sur le périmètre canonique. Seuls les écarts à coûts complets sont des surcoûts ou économies confirmés ; les autres sont provisoires ou non comparables.',
         type: 'table',
         source: 'finance.costing-orders',
         columns: [
@@ -113,7 +113,7 @@
           { key: 'vente', label: 'Vente', align: 'right' },
           { key: 'estime', label: 'Estimé', align: 'right' },
           { key: 'reel', label: 'Réel', align: 'right' },
-          { key: 'variance', label: 'Variance', align: 'right' },
+          { key: 'variance', label: 'Écart de coût', align: 'right' },
           { key: 'marge', label: 'Marge réelle', align: 'right' },
         ],
         emptyText: 'Aucune commande à comparer sur la période.',
@@ -314,6 +314,18 @@
     });
   }
 
+  const VARIANCE_CLASS_LABELS = Object.freeze({
+    overrun: 'Surcoût confirmé', saving: 'Économie confirmée', provisional: 'Provisoire',
+    not_comparable: 'Non comparable', none: 'Sans écart',
+  });
+
+  function varianceCell(row) {
+    const v = row && row.variance;
+    if (!v) return '—';
+    const label = VARIANCE_CLASS_LABELS[v.class] || '—';
+    return v.cost_variance_kmf == null ? label : `${formatSignedKmf(v.cost_variance_kmf)} · ${label}`;
+  }
+
   function projectCostingOrders(payload) {
     return (Array.isArray(payload && payload.costing_orders) ? payload.costing_orders : []).map(row => ({
       commande: row.reference || '—',
@@ -321,7 +333,7 @@
       vente: formatKmf(row.sale_total_kmf),
       estime: formatKmf(row.estimated_cost_kmf),
       reel: formatKmf(row.real_cost_kmf),
-      variance: formatSignedKmf(row.variance_kmf),
+      variance: varianceCell(row),
       marge: formatKmf(row.consolidated_margin_kmf),
     }));
   }
@@ -478,6 +490,7 @@
     visibleDrillSchema,
     KPI_KEYS,
     COST_STATUS_LABELS,
+    VARIANCE_CLASS_LABELS,
     normalizePeriod,
     formatNumber,
     formatKmf,

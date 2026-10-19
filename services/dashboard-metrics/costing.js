@@ -266,7 +266,7 @@ async function getCmdsCoutIncompletCount(filters = {}) {
   const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
 
-  return makeKpi('cmds_cout_incomplet', 'Commandes coût incomplet', value, 'count', {
+  return makeKpi('cmds_cout_incomplet', 'Commandes aux coûts restant à établir', value, 'count', {
     drillTo: '/admin/finance#finance-incomplete-costs',
     warning: value > 0 ? 'Cliquer pour voir le detail' : null,
   });
@@ -281,6 +281,7 @@ async function getCmdsCoutIncompletIds(filters = {}, options = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     SELECT o.id, o.reference, o.status, o.payment_status, o.payment_mode::text AS payment_mode, o.total_kmf, o.created_at,
+           (SELECT m.code FROM markets m WHERE m.id = o.market_id) AS market_code,
            ${costExpectation.contextColumnsSql('o')},
            ${costExpectation.missingTypesArraySql('o')} AS missing_cost_types,
            EXISTS (SELECT 1 FROM order_item_cost_imputations WHERE order_id = o.id) AS has_imputation

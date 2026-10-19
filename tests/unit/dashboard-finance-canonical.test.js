@@ -284,3 +284,67 @@ describe('D1b — complétude partagée avec cost-expectation', () => {
     expect(db).toBeDefined();
   });
 });
+
+describe('RCT1-FIN-01 — écarts coûts prévus / constatés et coûts restant à établir', () => {
+  const truth = (over = {}) => ({
+    estimated: { variable_total_kmf: 9000, by_cost_type: { product_purchase: 6000, freight: 1500, customs: 0, relay: 500, payment: 80 }, ...(over.estimated || {}) },
+    real: { by_cost_type: { product_purchase: 6000, freight: 2000, relay: 600 }, variable_by_cost_type: { product_purchase: 6000, freight: 2000, relay: 600 }, variable_total_kmf: 8600, expected_unknown_cost_types: [], ...(over.real || {}) },
+    variance: over.variance === undefined ? { total_kmf: -400 } : over.variance,
+  });
+
+  test('coûts complets : surcoût, économie, sans écart ; signe de la marge opposé', () => {
+    expect(finance.classifyOrderVariance(truth({ variance: { total_kmf: 300 } }), 'actual')).toMatchObject({ class: 'overrun', cost_variance_kmf: 300, margin_variance_kmf: -300 });
+    expect(finance.classifyOrderVariance(truth({ variance: { total_kmf: -400 } }), 'actual')).toMatchObject({ class: 'saving', cost_variance_kmf: -400, margin_variance_kmf: 400 });
+    expect(finance.classifyOrderVariance(truth({ variance: { total_kmf: 0 } }), 'actual')).toMatchObject({ class: 'none', cost_variance_kmf: 0 });
+  });
+
+  test('un réel partiel inférieur à l’estimé n’est jamais une économie', () => {
+    const verdict = finance.classifyOrderVariance(truth({ variance: { total_kmf: -400 } }), 'partial_real');
+    expect(verdict.class).toBe('provisional');
+    expect(verdict.margin_variance_kmf).toBeUndefined();
+  });
+
+  test('non comparable : estimation absente, aucun réel, coût attendu inconnu', () => {
+    expect(finance.classifyOrderVariance(truth({ estimated: { variable_total_kmf: null } }), 'actual')).toMatchObject({ class: 'not_comparable', reason: 'estimate_absent' });
+    expect(finance.classifyOrderVariance(truth({ real: { by_cost_type: {}, variable_by_cost_type: {} } }), 'estimated')).toMatchObject({ class: 'not_comparable', reason: 'no_real_cost' });
+    expect(finance.classifyOrderVariance(truth({ variance: null, real: { expected_unknown_cost_types: ['customs'] } }), 'partial_real')).toMatchObject({ class: 'not_comparable', reason: 'expected_cost_unknown' });
+  });
+
+  test('composantes : inconnu ≠ zéro ≠ non applicable, delta seulement quand prévu et constaté existent', () => {
+    const explanation = {
+      missing: [{ type: 'customs', label: 'Douane', note: 'Coût attendu, non encore enregistré.' }],
+      not_yet_expected: [],
+      not_applicable: [{ type: 'payment', label: 'Frais du prestataire de paiement', motif: 'Paiement en espèces au relais' }],
+    };
+    const t = truth({ real: { by_cost_type: { product_purchase: 6000, freight: 2000, relay: 0 }, variable_by_cost_type: { product_purchase: 6000, freight: 2000, relay: 0 } } });
+    const rows = Object.fromEntries(finance.buildVarianceComponents(t, explanation).map(c => [c.type, c]));
+    expect(rows.freight).toMatchObject({ state: 'confirmed', estimated_kmf: 1500, real_kmf: 2000, delta_kmf: 500 });
+    expect(rows.relay).toMatchObject({ state: 'zero_confirmed', real_kmf: 0, delta_kmf: -500 });
+    expect(rows.customs).toMatchObject({ state: 'unknown', real_kmf: null, delta_kmf: null });
+    expect(rows.payment).toMatchObject({ state: 'not_applicable', delta_kmf: null, motif: 'Paiement en espèces au relais' });
+    expect(rows.customs.owner.label).toBe('Expéditions & Douane');
+  });
+
+  test('synthèse : montants par classe, non comparables sans montant, provisoires non mêlés aux confirmés', () => {
+    const rows = [
+      { variance: { class: 'overrun', cost_variance_kmf: 300 } },
+      { variance: { class: 'saving', cost_variance_kmf: -100 } },
+      { variance: { class: 'provisional', cost_variance_kmf: -900 } },
+      { variance: { class: 'not_comparable', reason: 'no_real_cost' } },
+    ];
+    const s = finance.summarizeVariances(rows);
+    expect(s.overrun).toEqual({ orders: 1, amount_kmf: 300 });
+    expect(s.saving).toEqual({ orders: 1, amount_kmf: -100 });
+    expect(s.provisional).toEqual({ orders: 1, amount_kmf: -900 });
+    expect(s.not_comparable).toEqual({ orders: 1, amount_kmf: null });
+  });
+
+  test('suivi : à établir (inconnu) distinct de pas encore dû, avec responsable', () => {
+    const fu = finance.buildFollowUp({ cost_explanation: {
+      missing: [{ type: 'relay', label: 'Commission relais', note: 'Coût attendu, non encore enregistré.' }],
+      not_yet_expected: [{ type: 'customs', label: 'Douane', expected_when: 'expédition douane déclarée' }],
+    } });
+    expect(fu.to_establish[0]).toMatchObject({ type: 'relay', state: 'unknown', owner: { label: 'Relais' } });
+    expect(fu.not_yet_due[0]).toMatchObject({ type: 'customs', state: 'expected', reason: 'Attendu à : expédition douane déclarée' });
+  });
+});

@@ -685,3 +685,33 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] .kmc-orders-fl
   font-size: 13.5px;
   font-weight: 800;
 }
+
+/* RCT1-FIN-01 — Finance : coûts à établir, écarts, notes de définition */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-notes { display: grid; gap: 8px; margin: 0 0 14px; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-notes-item { display: grid; gap: 2px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-notes-title { color: #1e293b; font-size: 13px; font-weight: 800; overflow-wrap: anywhere; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-notes-text,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-note { color: #475569; font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; margin: 6px 0; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-classes { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-bottom: 8px; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-class { display: grid; gap: 2px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-class.is-overrun { border-color: #fbbf24; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-class.is-saving { border-color: #6ee7b7; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-class-title { font-size: 12.5px; font-weight: 800; color: #1e293b; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-class-value { font-size: 15px; font-weight: 800; color: #0f172a; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-class-amount,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-class-help { font-size: 12px; color: #64748b; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-order { border: 1px solid #e2e8f0; border-radius: 10px; margin: 6px 0; background: #fff; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-order-summary { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; padding: 9px 12px; cursor: pointer; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-ref { color: #0f172a; font-size: 13.5px; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-meta,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-count { color: #64748b; font-size: 12.5px; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-badge { padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: #f1f5f9; color: #334155; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-badge.is-overrun { background: #fef3c7; color: #92400e; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-badge.is-saving { background: #d1fae5; color: #065f46; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-order-body { padding: 0 12px 12px; display: grid; gap: 8px; min-width: 0; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-table-wrap { max-width: 100%; overflow-x: auto; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-table th,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-table td { padding: 5px 8px; border-bottom: 1px solid #eef2f7; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-table .is-num { text-align: right; white-space: nowrap; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-link { color: #0b5cab; font-weight: 700; font-size: 12.5px; text-decoration: none; }

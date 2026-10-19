@@ -45,14 +45,236 @@
     return base.formatNumber(item.value, 0);
   }
 
+  const CLASS_LABELS = Object.freeze({
+    overrun: 'Surcoût confirmé', saving: 'Économie confirmée', provisional: 'Écart provisoire',
+    not_comparable: 'Non comparable', none: 'Sans écart',
+  });
+  const CLASS_HELP = Object.freeze({
+    overrun: 'Réel supérieur à l’estimé, coûts complets',
+    saving: 'Réel inférieur à l’estimé, coûts complets',
+    provisional: 'Coûts réels encore incomplets : pas une économie ni un surcoût',
+    not_comparable: 'Estimation absente, coût attendu inconnu ou périmètre différent',
+    none: 'Valeurs comparables et identiques',
+  });
+  const REASON_LABELS = Object.freeze({
+    estimate_absent: 'Estimation absente',
+    no_real_cost: 'Aucun coût réel établi',
+    expected_cost_unknown: 'Coût attendu encore inconnu (ex. douane)',
+    scope_not_comparable: 'Périmètres non comparables',
+    real_incomplete: 'Coûts réels incomplets',
+  });
+  const STATE_LABELS = Object.freeze({
+    unknown: 'Inconnu — à établir', expected: 'Attendu, pas encore dû', confirmed: 'Confirmé',
+    zero_confirmed: 'Zéro confirmé', not_applicable: 'Non applicable',
+  });
+  const STATUS_LABELS = Object.freeze({
+    pending: 'En attente', pending_group_payment: 'Paiement groupé en attente', confirmed: 'Confirmée',
+    ordered: 'Commandée au fournisseur', preparation: 'En préparation', shipped: 'Expédiée',
+    in_transit: 'En transit', available: 'Disponible au relais', collected: 'Remise au client',
+  });
+  const VARIANCE_ORDER = Object.freeze(['overrun', 'saving', 'provisional', 'not_comparable', 'none']);
+
+  function varianceHelper(summary) {
+    const parts = [];
+    if (summary.overrun.orders) parts.push(`${summary.overrun.orders} surcoût(s) confirmé(s)`);
+    if (summary.saving.orders) parts.push(`${summary.saving.orders} économie(s) confirmée(s)`);
+    if (summary.provisional.orders) parts.push(`${summary.provisional.orders} provisoire(s)`);
+    if (summary.not_comparable.orders) parts.push(`${summary.not_comparable.orders} non comparable(s)`);
+    if (summary.none.orders) parts.push(`${summary.none.orders} sans écart`);
+    return parts.join(' · ');
+  }
+
+  function orderHref(base, reference) {
+    const loc = typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location : null;
+    const returnTo = loc ? `${loc.pathname || '/admin/finance'}${loc.search || ''}` : '/admin/finance';
+    return base.contextualHref(`/admin/orders/${encodeURIComponent(reference)}`, returnTo, 'Retour à Finance');
+  }
+
+  function ownerHref(base, owner) {
+    if (!owner || !owner.href) return null;
+    const loc = typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location : null;
+    const returnTo = loc ? `${loc.pathname || '/admin/finance'}${loc.search || ''}` : '/admin/finance';
+    return base.contextualHref(owner.href, returnTo, 'Retour à Finance');
+  }
+
+  // Notes de définition : numérateur, dénominateur, périmètre — jamais un pourcentage orphelin.
+  function indicatorNotes(payload, base) {
+    const notes = [];
+    const comp = kpi(payload, 'taux_completude_couts');
+    const q = comp && comp.data_quality ? comp.data_quality : {};
+    if (comp && comp.value != null && q.items_total != null) {
+      notes.push({
+        key: 'completeness',
+        title: `Complétude des coûts : ${base.formatNumber(comp.value)} %`,
+        text: `${base.formatNumber(q.items_with_data, 0)} commande(s) sur ${base.formatNumber(q.items_total, 0)} ont tous leurs coûts attendus à leur stade d’avancement (commandes pas encore démarrées exclues). `
+          + `Ce n’est pas la marge finale : seules ${base.formatNumber(q.final_margin_ready == null ? 0 : q.final_margin_ready, 0)} commande(s) remises au client, sans coût manquant ni douane inconnue, ont une marge réelle finale calculable.`,
+      });
+    }
+    const split = payload && payload.margin_scope && payload.margin_scope.real_cost_split;
+    const real = kpi(payload, 'cout_reel');
+    if (real && real.value != null && split) {
+      notes.push({
+        key: 'real-cost',
+        title: `Coût réel : ${base.formatKmf(real.value)} — coûts partiels inclus`,
+        text: `${base.formatKmf(split.final.amount_kmf)} sur ${base.formatNumber(split.final.orders, 0)} commande(s) aux coûts finalisés `
+          + `+ ${base.formatKmf(split.partial.amount_kmf)} sur ${base.formatNumber(split.partial.orders, 0)} commande(s) aux coûts encore partiels. `
+          + 'Un coût partiel n’est pas un coût complet : ne pas en déduire une marge.',
+      });
+    }
+    const scope = payload && payload.margin_scope;
+    const margin = kpi(payload, 'marge_consolidee');
+    if (margin && margin.value != null && scope) {
+      const refs = (scope.eligible_references || []).join(' + ') || '—';
+      const excluded = (scope.excluded || []).map(e => `${base.formatNumber(e.count, 0)} · ${e.label.toLowerCase()}`).join(' ; ');
+      notes.push({
+        key: 'margin',
+        title: `Marge consolidée : ${base.formatKmf(margin.value)} — ${base.formatNumber(scope.eligible_orders, 0)} commande(s) éligible(s) sur ${base.formatNumber(scope.paid_orders, 0)} encaissée(s)`,
+        text: `Périmètre : ${refs} (seules commandes à marge réelle finale). Exclues : ${excluded || 'aucune'}.`,
+      });
+    }
+    return notes;
+  }
+
+  function followUpRows(row) {
+    const fu = row.follow_up || { to_establish: [], not_yet_due: [] };
+    return [
+      ...fu.to_establish.map(c => ({ ...c, group: 'to_establish' })),
+      ...fu.not_yet_due.map(c => ({ ...c, group: 'not_yet_due' })),
+    ];
+  }
+
+  function el(doc, tag, className, content) {
+    const node = doc.createElement(tag);
+    if (className) node.className = className;
+    if (content != null) node.textContent = String(content);
+    return node;
+  }
+
+  function actionLink(doc, href, label) {
+    if (!href) return null;
+    const a = el(doc, 'a', 'kmc-fin-link', label);
+    a.setAttribute('href', href);
+    return a;
+  }
+
+  function simpleTable(doc, headers, rows, numericFrom) {
+    const wrap = el(doc, 'div', 'kmc-fin-table-wrap');
+    const table = el(doc, 'table', 'kmc-fin-table');
+    const head = doc.createElement('tr');
+    headers.forEach((h, i) => { const th = el(doc, 'th', numericFrom != null && i >= numericFrom && i < numericFrom + 3 ? 'is-num' : '', h); head.appendChild(th); });
+    const thead = doc.createElement('thead'); thead.appendChild(head); table.appendChild(thead);
+    const tbody = doc.createElement('tbody');
+    rows.forEach(cells => {
+      const tr = doc.createElement('tr');
+      cells.forEach((cell, i) => {
+        const td = el(doc, 'td', numericFrom != null && i >= numericFrom && i < numericFrom + 3 ? 'is-num' : '');
+        if (cell && typeof cell === 'object' && cell.nodeType) td.appendChild(cell); else td.textContent = cell == null ? '—' : String(cell);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  function renderIncompleteOrders(doc, body, payload, base) {
+    const rows = Array.isArray(payload && payload.incomplete_cost_orders) ? payload.incomplete_cost_orders : [];
+    if (!rows.length) {
+      body.appendChild(el(doc, 'p', 'kmc-finance-review-empty', 'Aucune commande n’a de coût attendu non enregistré à ce stade.'));
+      return;
+    }
+    rows.forEach(row => {
+      const items = followUpRows(row);
+      const due = items.filter(i => i.group === 'to_establish');
+      const later = items.filter(i => i.group === 'not_yet_due');
+      const details = el(doc, 'details', 'kmc-fin-order');
+      details.setAttribute('data-order-ref', row.reference || '');
+      const summary = el(doc, 'summary', 'kmc-fin-order-summary');
+      summary.appendChild(el(doc, 'strong', 'kmc-fin-ref', row.reference || 'Commande'));
+      summary.appendChild(el(doc, 'span', 'kmc-fin-meta', `${row.market_code || 'marché —'} · ${STATUS_LABELS[row.status] || row.status || '—'}`));
+      summary.appendChild(el(doc, 'span', 'kmc-fin-count', `${due.length} à établir · ${later.length} pas encore dû(s)`));
+      details.appendChild(summary);
+      const content = el(doc, 'div', 'kmc-fin-order-body');
+      const e = row.cost_explanation || {};
+      if (e.missing_estimate) content.appendChild(el(doc, 'p', 'kmc-fin-note', 'Estimation de coût absente pour cette commande.'));
+      content.appendChild(simpleTable(doc, ['Composante', 'État', 'Motif', 'Responsable'], items.map(i => [
+        i.label,
+        i.group === 'to_establish' ? STATE_LABELS.unknown : STATE_LABELS.expected,
+        i.reason || '—',
+        i.owner ? (actionLink(doc, ownerHref(base, i.owner), `${i.owner.label} →`) || i.owner.label) : 'À identifier',
+      ])));
+      content.appendChild(el(doc, 'p', 'kmc-fin-note', `Conséquence : ${e.margin && e.margin.label ? e.margin.label : 'marge finale non évaluée'} Les coûts inconnus ne sont jamais comptés comme zéro.`));
+      const link = actionLink(doc, orderHref(base, row.reference), 'Ouvrir la commande 360 →');
+      if (link) content.appendChild(link);
+      details.appendChild(content);
+      body.appendChild(details);
+    });
+  }
+
+  function renderVariances(doc, body, payload, base) {
+    const vs = payload && payload.variance_summary;
+    const orders = Array.isArray(payload && payload.costing_orders) ? payload.costing_orders : [];
+    if (!vs || !orders.length) {
+      body.appendChild(el(doc, 'p', 'kmc-finance-review-empty', 'Aucune commande à comparer sur la période.'));
+      return;
+    }
+    const grid = el(doc, 'div', 'kmc-fin-classes');
+    VARIANCE_ORDER.forEach(key => {
+      const entry = vs[key];
+      const card = el(doc, 'div', `kmc-fin-class is-${key}`);
+      card.appendChild(el(doc, 'strong', 'kmc-fin-class-title', CLASS_LABELS[key]));
+      card.appendChild(el(doc, 'span', 'kmc-fin-class-value', `${base.formatNumber(entry.orders, 0)} commande(s)`));
+      if (entry.orders > 0 && entry.amount_kmf != null && key !== 'none') {
+        card.appendChild(el(doc, 'span', 'kmc-fin-class-amount', `${base.formatSignedKmf(entry.amount_kmf)} d’écart de coût`));
+      }
+      card.appendChild(el(doc, 'span', 'kmc-fin-class-help', CLASS_HELP[key]));
+      grid.appendChild(card);
+    });
+    body.appendChild(grid);
+    body.appendChild(el(doc, 'p', 'kmc-fin-note', `Écart de coût = réel − estimé figé à la commande, sur le périmètre achat/transport/douane/Hub/relais + frais de paiement (${base.formatNumber(vs.orders_considered, 0)} commande(s) récentes). Écart de marge variable = −écart de coût. Les écarts provisoires et non comparables ne sont pas additionnés aux écarts confirmés.`));
+    orders.forEach(row => {
+      const v = row.variance;
+      if (!v) return;
+      const details = el(doc, 'details', `kmc-fin-order is-${v.class}`);
+      details.setAttribute('data-order-ref', row.reference || '');
+      const summary = el(doc, 'summary', 'kmc-fin-order-summary');
+      summary.appendChild(el(doc, 'strong', 'kmc-fin-ref', row.reference || 'Commande'));
+      summary.appendChild(el(doc, 'span', 'kmc-fin-meta', `${row.market_code || 'marché —'} · ${STATUS_LABELS[row.status] || row.status || '—'}`));
+      summary.appendChild(el(doc, 'span', `kmc-fin-badge is-${v.class}`, CLASS_LABELS[v.class]));
+      summary.appendChild(el(doc, 'span', 'kmc-fin-count', v.cost_variance_kmf == null ? (REASON_LABELS[v.reason] || '—') : `${base.formatSignedKmf(v.cost_variance_kmf)}${v.class === 'provisional' ? ' (provisoire)' : ''}`));
+      details.appendChild(summary);
+      const content = el(doc, 'div', 'kmc-fin-order-body');
+      const facts = [
+        ['Prévision (snapshot figé)', base.formatKmf(v.estimated_variable_kmf)],
+        ['Constaté', base.formatKmf(v.real_variable_kmf)],
+        ['Écart de coût', v.cost_variance_kmf == null ? '—' : base.formatSignedKmf(v.cost_variance_kmf)],
+        ['Écart de marge variable', v.margin_variance_kmf == null ? '—' : base.formatSignedKmf(v.margin_variance_kmf)],
+        ['Complétude', v.class === 'overrun' || v.class === 'saving' || v.class === 'none' ? 'Comparaison finale' : (v.class === 'provisional' ? 'Comparaison provisoire : coûts réels incomplets' : (REASON_LABELS[v.reason] || 'Non comparable'))],
+        ['Explication', 'À analyser — aucune cause documentée dans les données'],
+      ];
+      content.appendChild(simpleTable(doc, ['Information', 'Valeur'], facts));
+      content.appendChild(simpleTable(doc, ['Composante', 'État', 'Prévu', 'Constaté', 'Écart', 'Responsable'], (v.components || []).map(c => [
+        c.label,
+        STATE_LABELS[c.state] || c.state,
+        base.formatKmf(c.estimated_kmf),
+        c.real_kmf == null ? '—' : base.formatKmf(c.real_kmf),
+        c.delta_kmf == null ? '—' : base.formatSignedKmf(c.delta_kmf),
+        c.owner ? (actionLink(doc, ownerHref(base, c.owner), `${c.owner.label} →`) || c.owner.label) : '—',
+      ]), 2));
+      const link = actionLink(doc, orderHref(base, row.reference), 'Ouvrir la commande 360 →');
+      if (link) content.appendChild(link);
+      details.appendChild(content);
+      body.appendChild(details);
+    });
+  }
+
   function decisionItems(payload, base) {
     const items = [];
     const pendingPayments = kpi(payload, 'paiements_en_attente');
     const incompleteCosts = kpi(payload, 'cmds_cout_incomplet');
     const refunds = kpi(payload, 'remboursements');
     const supplierReview = payload && payload.supplier_payment_review;
-    const variances = (Array.isArray(payload && payload.costing_orders) ? payload.costing_orders : [])
-      .filter(row => row && Number.isFinite(Number(row.variance_kmf)) && Number(row.variance_kmf) !== 0);
 
     if (pendingPayments && Number(pendingPayments.value) > 0) {
       items.push({
@@ -69,8 +291,8 @@
     if (incompleteCosts && Number(incompleteCosts.value) > 0) {
       items.push({
         key: 'incomplete-costs',
-        label: 'Coûts incomplets',
-        helper: 'Commandes dont le coût n’est pas encore complet',
+        label: 'Coûts restant à établir',
+        helper: 'Commandes où un coût attendu à ce stade n’est pas encore enregistré — inconnu, pas zéro',
         value: displayMetric(base, incompleteCosts),
         tone: 'warning',
         icon: '!',
@@ -78,13 +300,14 @@
         actionLabel: 'Voir les commandes →',
       });
     }
-    if (variances.length > 0) {
+    const vs = payload && payload.variance_summary;
+    if (vs && vs.orders_considered > 0 && (vs.overrun.orders + vs.saving.orders + vs.provisional.orders + vs.none.orders) > 0) {
       items.push({
         key: 'observed-variances',
-        label: 'Variances observées',
-        helper: 'Écarts non nuls, sans seuil « élevé » inventé côté navigateur',
-        value: base.formatNumber(variances.length, 0),
-        tone: 'warning',
+        label: 'Écarts entre coûts prévus et constatés',
+        helper: varianceHelper(vs),
+        value: base.formatNumber(vs.overrun.orders + vs.saving.orders, 0),
+        tone: vs.overrun.orders > 0 ? 'warning' : 'info',
         icon: '↔',
         href: '#finance-variances',
         actionLabel: 'Voir les écarts →',
@@ -125,7 +348,7 @@
       'cout-reel': 'Coût réel',
       marge: 'Marge consolidée',
       completude: 'Complétude coûts',
-      'cout-incomplet': 'Coûts incomplets',
+      'cout-incomplet': 'Coûts restant à établir',
       'paiement-attente': 'Paiements en attente',
       remboursements: 'Remboursements',
     };
@@ -154,7 +377,7 @@
       },
       {
         key: 'costing', title: 'Vérité des coûts', tone: 'warning',
-        metrics: [pair(payload, base, 'cout_reel', 'Coût réel'), pair(payload, base, 'taux_completude_couts', 'Complétude'), pair(payload, base, 'cmds_cout_incomplet', 'Coûts incomplets')],
+        metrics: [pair(payload, base, 'cout_reel', 'Coût réel'), pair(payload, base, 'taux_completude_couts', 'Complétude'), pair(payload, base, 'cmds_cout_incomplet', 'Coûts restant à établir')],
       },
       {
         key: 'margin', title: 'Marge', tone: 'positive',
@@ -209,21 +432,16 @@
   }
 
   function varianceItems(payload, base) {
-    // Filtré sur variance_kmf !== 0 — exactement la même condition que le
-    // compte "Variances observées" du bandeau de décision (decisionItems
-    // ci-dessus). Avant : cette section montrait TOUTES les commandes
-    // costées, y compris celles à variance nulle — la liste ne
-    // correspondait pas au chiffre affiché sur la carte de décision.
+    // Mêmes classes que le bandeau : surcoût/économie confirmés, provisoires. Un écart non nul n'est pas une anomalie.
     return (Array.isArray(payload && payload.costing_orders) ? payload.costing_orders : [])
-      .filter(row => row && Number.isFinite(Number(row.variance_kmf)) && Number(row.variance_kmf) !== 0)
+      .filter(row => row && row.variance && ['overrun', 'saving', 'provisional'].includes(row.variance.class))
       .map(row => {
-        const realMargin = row.consolidated_margin_kmf;
-        const incomplete = row.cost_status && row.cost_status !== 'actual';
+        const v = row.variance;
         return {
           title: row.reference || 'Commande',
-          helper: `${base.COST_STATUS_LABELS[row.cost_status] || row.cost_status || 'Costing inconnu'} · vente ${base.formatKmf(row.sale_total_kmf)} · réel ${base.formatKmf(row.real_cost_kmf)} · marge ${base.formatKmf(realMargin)}`,
-          value: base.formatSignedKmf(row.variance_kmf),
-          tone: realMargin != null && Number(realMargin) < 0 ? 'critical' : (incomplete ? 'warning' : 'neutral'),
+          helper: `${CLASS_LABELS[v.class]} · vente ${base.formatKmf(row.sale_total_kmf)} · réel ${base.formatKmf(row.real_cost_kmf)} · marge ${base.formatKmf(row.consolidated_margin_kmf)}`,
+          value: base.formatSignedKmf(v.cost_variance_kmf),
+          tone: v.class === 'overrun' ? 'warning' : 'neutral',
         };
       });
   }
@@ -472,7 +690,40 @@
       situation.body.appendChild(text(doc, 'p', 'kmc-finance-review-empty', state.message));
     }
 
+    const notes = indicatorNotes(payload, base);
+    if (notes.length) {
+      const notesHost = el(doc, 'div', 'kmc-fin-notes');
+      notes.forEach(note => {
+        const block = el(doc, 'div', 'kmc-fin-notes-item');
+        block.setAttribute('data-indicator-note', note.key);
+        block.appendChild(el(doc, 'strong', 'kmc-fin-notes-title', note.title));
+        block.appendChild(el(doc, 'span', 'kmc-fin-notes-text', note.text));
+        notesHost.appendChild(block);
+      });
+      situation.body.insertBefore(notesHost, reviewTitle);
+    }
+
     dashboard.appendChild(situation.section);
+
+    const incomplete = cardSection(
+      doc,
+      'Coûts restant à établir',
+      'Commandes dont un coût attendu à leur stade n’est pas encore enregistré. Une attente normale n’est pas une anomalie : « pas encore dû » reste distinct de « inconnu ».',
+      'finance-incomplete-costs'
+    );
+    incomplete.section.setAttribute('data-dashboard-role', 'secondary');
+    renderIncompleteOrders(doc, incomplete.body, payload, base);
+    dashboard.appendChild(incomplete.section);
+
+    const variances = cardSection(
+      doc,
+      'Écarts entre coûts prévus et constatés',
+      'Surcoûts et économies confirmés, écarts provisoires et commandes non comparables, avec la décomposition par composante.',
+      'finance-variances'
+    );
+    variances.section.setAttribute('data-dashboard-role', 'secondary');
+    renderVariances(doc, variances.body, payload, base);
+    dashboard.appendChild(variances.section);
 
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };
@@ -524,6 +775,8 @@
     costingItems,
     incompleteCostOrderItems,
     varianceItems,
+    indicatorNotes,
+    varianceHelper,
     paymentItems,
     relayItems,
     refundItems,
