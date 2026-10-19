@@ -26,4 +26,10 @@ describe('order-checkout-service market lifecycle', () => {
     expect(scopeAt).toBeGreaterThan(0);
     expect(commitAt).toBeGreaterThan(scopeAt);
   });
+  test('serializes RCT1 E1/G references and refuses duplicate checkout', () => {
+    expect(source).toMatch(/pg_advisory_xact_lock\(hashtext\(\$1\)\)/);
+    expect(source).toMatch(/RCT1_ORDER_ALREADY_EXISTS/);
+    expect(source).toMatch(/internalSimulation \? internalSimulation.reference : await getUniqueRef\(db\)/);
+    expect(source).toMatch(/RCT1-\(E1\|G\)/);
+  });
 });
