@@ -103,7 +103,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     if (process.env.KOMERCE_ENV !== 'staging' ||
         internalSimulation.scope !== 'RCT1' ||
         !internalSimulation.actorId || !internalSimulation.reason ||
-        typeof internalSimulation.reason !== 'string') {
+        typeof internalSimulation.reason !== 'string' ||
+        !/^RCT1-(E1|G)$/.test(internalSimulation.reference || '')) {
       throw Object.assign(new Error('RCT1_INTERNAL_CHECKOUT_FORBIDDEN'), { code: 'RCT1_INTERNAL_CHECKOUT_FORBIDDEN' });
     }
   }
@@ -111,6 +112,19 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
 
   try {
     await client.query('BEGIN');
+
+    if (internalSimulation) {
+      // Transaction-level lock serializes same-reference checkouts (even concurrent requests).
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [internalSimulation.reference]);
+      const { rows: existing } = await client.query(
+        'SELECT id, reference, simulation_scope FROM orders WHERE reference=$1',
+        [internalSimulation.reference]);
+      if (existing.length) {
+        await client.query('ROLLBACK');
+        return fail(409, { code: 'RCT1_ORDER_ALREADY_EXISTS', reference: internalSimulation.reference,
+          error: 'Commande RCT1 déjà créée : utiliser la référence existante, ne pas rejouer le checkout' });
+      }
+    }
 
     const rates = await getRates();
     const eurKmf = rates?.eur_kmf;
@@ -383,7 +397,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       ? generateCashCode()
       : null;
 
-    const reference = await getUniqueRef(db);
+    const reference = internalSimulation ? internalSimulation.reference : await getUniqueRef(db);
 
     // ── P3 : snapshot du montant PRÉSENTÉ au client (freeze 22-08-2026) ──
     // Logique complète dans services/order-display-snapshot.js (extraite
