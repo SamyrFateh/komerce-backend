@@ -310,12 +310,12 @@ describe('allocateMonthlyFixedCosts', () => {
     await expect(allocateMonthlyFixedCosts('26-06')).rejects.toThrow('yearMonth must be YYYY-MM');
   });
 
-  it('dryRun : retourne la proposition sans BEGIN ni écriture', async () => {
+  it('dryRun : retourne la proposition sans BEGIN ni écriture, hub non alloué, provision = hypothèse', async () => {
     const client = makeClient([
       { rows: [{ items_count: 10, orders_count: 4 }] },          // count items
       { rows: [{ taux_aed_kmf: '138', hub_monthly_cost_aed: '7000', provision_risque_pct: '0.01' }] }, // finance_config
       { rows: [{ revenue: '200000' }] },                          // revenue du mois
-      // Pas de DELETE ni d'INSERT car dryRun
+      { rows: [{ legacy_count: 0 }] },                            // lignes monthly_recalc héritées
     ]);
     db.pool.connect.mockResolvedValue(client);
 
@@ -323,9 +323,10 @@ describe('allocateMonthlyFixedCosts', () => {
 
     expect(result.dry_run).toBe(true);
     expect(result.proposal.items_count).toBe(10);
-    expect(result.proposal.hub_monthly_kmf).toBe(7000 * 138);
+    expect(result.proposal.hub_structure).toEqual({ monthly_kmf: 7000 * 138, treatment: 'period_structure_not_allocated', validated: false });
     expect(result.proposal.risk_monthly_kmf).toBe(Math.round(200000 * 0.01));
-    // Pas de transaction en dryRun
+    expect(result.proposal.risk_is_actual).toBe(false);
+    expect(result.legacy_allocations_present).toBe(0);
     const sqls = client.calls.map(c => String(c.sql).trim());
     expect(sqls).not.toContain('BEGIN');
     expect(sqls).not.toContain('COMMIT');
@@ -345,24 +346,62 @@ describe('allocateMonthlyFixedCosts', () => {
     expectTransactionCommitted(client);
   });
 
-  it('nominal : 1 item → 2 allocations (hub + risk)', async () => {
-    const client = makeClient([
+  function monthlyClient(legacy, extra = []) {
+    return makeClient([
       { rows: [{ items_count: 1, orders_count: 1 }] },
       { rows: [{ taux_aed_kmf: '138', hub_monthly_cost_aed: '7000', provision_risque_pct: '0.01' }] },
       { rows: [{ revenue: '100000' }] },
-      { rows: [], rowCount: 0 },  // DELETE allocations existantes
+      { rows: [{ legacy_count: legacy }] },
+      ...extra,
+    ]);
+  }
+  const insertsOf = (client) => client.calls.filter(c => String(c.sql).includes('INSERT INTO order_item_real_cost_allocations'));
+
+  it('nominal : 1 item → 1 allocation de provision (hypothèse), aucune allocation hub', async () => {
+    const client = monthlyClient(0, [
+      { rows: [], rowCount: 0 },  // DELETE de la seule source monthly_recalc_provision
       { rows: [{ order_item_id: 'oi-001', order_id: 'order-001' }] }, // SELECT items du mois
-      { rows: [], rowCount: 1 },  // INSERT hub
       { rows: [], rowCount: 1 },  // INSERT risk_provision
     ]);
     db.pool.connect.mockResolvedValue(client);
 
     const result = await allocateMonthlyFixedCosts('2026-05');
 
-    expect(result.year_month).toBe('2026-05');
-    expect(result.allocations_count).toBe(2);
-    expect(result.items_count).toBe(1);
+    expect(result.allocations_count).toBe(1);
     expect(result.dry_run).toBe(false);
+    expect(result.hub_structure.treatment).toBe('period_structure_not_allocated');
+    const inserts = insertsOf(client);
+    expect(inserts).toHaveLength(1);
+    const sql = String(inserts[0].sql);
+    expect(sql).toContain("'risk_provision'");
+    expect(sql).toContain("'monthly_recalc_provision'");
+    expect(sql).toContain('FALSE');
+    expect(sql).not.toContain("'hub'");
+    expectTransactionCommitted(client);
+  });
+
+  it('idempotence : ne supprime que la source monthly_recalc_provision, jamais les anciennes lignes monthly_recalc', async () => {
+    const client = monthlyClient(0, [
+      { rows: [], rowCount: 0 },
+      { rows: [], rowCount: 0 },
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+    await allocateMonthlyFixedCosts('2026-05');
+    const deletes = client.calls.filter(c => String(c.sql).includes('DELETE FROM order_item_real_cost_allocations'));
+    expect(deletes).toHaveLength(1);
+    expect(String(deletes[0].sql)).toContain("'monthly_recalc_provision'");
+    expect(String(deletes[0].sql)).not.toMatch(/source = 'monthly_recalc'\s/);
+  });
+
+  it('mois déjà alloué selon l’ancienne règle : aucune écriture, aucune suppression, signalé', async () => {
+    const client = monthlyClient(42);
+    db.pool.connect.mockResolvedValue(client);
+    const result = await allocateMonthlyFixedCosts('2026-05');
+    expect(result.skipped).toBe('legacy_allocations_present');
+    expect(result.legacy_allocations_present).toBe(42);
+    expect(result.allocations_count).toBe(0);
+    expect(insertsOf(client)).toHaveLength(0);
+    expect(client.calls.some(c => String(c.sql).includes('DELETE FROM'))).toBe(false);
     expectTransactionCommitted(client);
   });
 });

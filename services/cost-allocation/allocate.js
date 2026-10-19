@@ -415,8 +415,11 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
  * @param {object} options - { dryRun: false, costTypes: [...] }
  * @returns {Promise<{year_month, allocations_count, total_fixed_kmf, ...}>}
  *
- * REGLE : si on appelle 2x sur le meme mois, le 2e appel REMPLACE les
- * allocations precedentes (DELETE + INSERT). Idempotent.
+ * D2/D3 (19/10/2026) : le forfait Hub n'est plus alloue aux commandes (charge de
+ * structure = periode) ; la provision de risque est ecrite en is_actual=FALSE
+ * (source monthly_recalc_provision). Les anciennes lignes source='monthly_recalc'
+ * ne sont jamais supprimees ; un mois qui en contient est ignore et signale.
+ * Idempotence : seule la source monthly_recalc_provision est remplacee.
  */
 async function allocateMonthlyFixedCosts(yearMonth, options = {}) {
   const dryRun = !!options.dryRun;
@@ -481,37 +484,71 @@ async function allocateMonthlyFixedCosts(yearMonth, options = {}) {
     const riskPct = Number(fc.provision_risque_pct) || 0.01;
     const riskMonthlyKmf = Math.round(monthRevenue * riskPct);
 
-    // Allocation par order_item
-    const hubPerItem  = Math.round(hubMonthlyKmf / itemsCount);
+    // D2/D3 — le forfait Hub (structure, sans source validée) n'alimente PLUS
+    // aucune allocation commande « réelle » ; la provision de risque est une
+    // hypothèse (is_actual=FALSE). Les anciennes lignes `monthly_recalc`
+    // (hub/risque déclarés réels) sont conservées telles quelles : jamais
+    // supprimées ni requalifiées ici (inventaire et plan de correction d'abord).
     const riskPerItem = Math.round(riskMonthlyKmf / itemsCount);
+    const hubStructure = {
+      monthly_kmf: hubMonthlyKmf,
+      treatment: 'period_structure_not_allocated',
+      validated: false,
+    };
 
-    // 4. Idempotence : supprimer les allocations fixes deja faites pour ce mois
-    if (!dryRun) {
-      await client.query(
-        `DELETE FROM order_item_real_cost_allocations
-         WHERE source = 'monthly_recalc'
-           AND created_at >= $1 AND created_at < $2`,
-        [monthStart, monthEnd]
-      );
-    }
+    const legacyRes = await client.query(
+      `SELECT COUNT(*)::int AS legacy_count
+         FROM order_item_real_cost_allocations a
+         JOIN orders o ON o.id = a.order_id
+        WHERE a.source = 'monthly_recalc'
+          AND o.created_at >= $1 AND o.created_at < $2`,
+      [monthStart, monthEnd]
+    );
+    const legacyCount = Number((legacyRes.rows[0] || {}).legacy_count) || 0;
 
     if (dryRun) {
       // FIX: pas de BEGIN en dryRun → pas de ROLLBACK à appeler (évite warning PostgreSQL)
       return {
         year_month: yearMonth,
         dry_run: true,
+        legacy_allocations_present: legacyCount,
         proposal: {
           orders_count: ordersCount,
           items_count: itemsCount,
-          hub_monthly_kmf: hubMonthlyKmf,
+          hub_structure: hubStructure,
           risk_monthly_kmf: riskMonthlyKmf,
-          hub_per_item: hubPerItem,
           risk_per_item: riskPerItem,
+          risk_is_actual: false,
         },
       };
     }
 
-    // 5. INSERT pour chaque order_item du mois
+    if (legacyCount > 0) {
+      // Mois déjà alloué selon l'ancienne règle : ne rien écrire (double comptage
+      // de la provision) et ne rien supprimer (historique préservé).
+      await client.query('COMMIT');
+      return {
+        year_month: yearMonth,
+        allocations_count: 0,
+        items_count: itemsCount,
+        orders_count: ordersCount,
+        skipped: 'legacy_allocations_present',
+        legacy_allocations_present: legacyCount,
+        hub_structure: hubStructure,
+        dry_run: false,
+      };
+    }
+
+    // Idempotence limitée à la nouvelle source (hypothèse de provision).
+    await client.query(
+      `DELETE FROM order_item_real_cost_allocations a
+        USING orders o
+        WHERE o.id = a.order_id
+          AND a.source = 'monthly_recalc_provision'
+          AND o.created_at >= $1 AND o.created_at < $2`,
+      [monthStart, monthEnd]
+    );
+
     const itemsRes = await client.query(
       `SELECT oi.id AS order_item_id, oi.order_id
        FROM orders o
@@ -524,20 +561,11 @@ async function allocateMonthlyFixedCosts(yearMonth, options = {}) {
 
     let allocations = 0;
     for (const it of itemsRes.rows) {
-      if (hubPerItem > 0) {
-        await client.query(
-          `INSERT INTO order_item_real_cost_allocations
-             (order_id, order_item_id, cost_type, amount_kmf, allocation_method, source, is_actual, confidence)
-           VALUES ($1, $2, 'hub', $3, 'per_item', 'monthly_recalc', TRUE, 'medium')`,
-          [it.order_id, it.order_item_id, hubPerItem]
-        );
-        allocations++;
-      }
       if (riskPerItem > 0) {
         await client.query(
           `INSERT INTO order_item_real_cost_allocations
              (order_id, order_item_id, cost_type, amount_kmf, allocation_method, source, is_actual, confidence)
-           VALUES ($1, $2, 'risk_provision', $3, 'per_item', 'monthly_recalc', TRUE, 'medium')`,
+           VALUES ($1, $2, 'risk_provision', $3, 'per_item', 'monthly_recalc_provision', FALSE, 'low')`,
           [it.order_id, it.order_item_id, riskPerItem]
         );
         allocations++;
@@ -551,10 +579,10 @@ async function allocateMonthlyFixedCosts(yearMonth, options = {}) {
       allocations_count: allocations,
       items_count: itemsCount,
       orders_count: ordersCount,
-      hub_monthly_kmf: hubMonthlyKmf,
+      hub_structure: hubStructure,
       risk_monthly_kmf: riskMonthlyKmf,
-      hub_per_item: hubPerItem,
       risk_per_item: riskPerItem,
+      risk_is_actual: false,
       dry_run: false,
     };
   } catch (err) {
