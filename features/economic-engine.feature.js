@@ -104,6 +104,7 @@ module.exports = {
       'services/transport-pricing.js',
       'services/pricing-guards.js',
       'services/pricing-rates.js',
+      'services/pricing-parameters-status.js',
       'services/pricing-output.js',
       'services/economic-engine-queries.js',
       'services/economic-config.js',
@@ -275,6 +276,7 @@ module.exports = {
       'tests/unit/pricing-flow-contract.test.js',
       'tests/unit/pricing-guards.test.js',
       'tests/unit/pricing-rates.test.js',
+      'tests/unit/pricing-parameters-status.test.js',
       'tests/unit/pricing-strategy-service.test.js',
       'tests/unit/pricing-surcharge-benchmarks.test.js',
       // Rapatrié depuis features/payment.feature.js (doublon supprimé, audit
