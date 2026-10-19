@@ -3,52 +3,83 @@
 /**
  * Initialiseur de recette « prix » (C2) — STAGING UNIQUEMENT, rejouable.
  *
- * - Refuse de tourner hors KOMERCE_TARGET_ENV=staging.
- * - Ne contient AUCUNE valeur de taux : elles viennent d'un fichier fourni par
- *   le responsable (--params fichier.json) avec leur source justifiée.
- *   Sans fichier ou sans valeur : statut « à renseigner », aucune écriture.
- * - Passe par le service canonique services/pricing-rates.updateRates
- *   (finance_config + historique exchange_rates). N'écrase rien si la valeur
- *   demandée est déjà en place (rejouable sans doublon).
- * - Sans --apply : simulation (dry-run), rien n'est écrit.
- *
- * Format du fichier : { "exchange_rates": { "eur_kmf": n, "aed_kmf": n,
- *   "source": "texte justifiant l'origine" }, "recette_label": "..." }
+ * Garanties :
+ * - refuse hors KOMERCE_TARGET_ENV=staging ;
+ * - ne contient aucune valeur : elles viennent d'un fichier --params, qui doit
+ *   déclarer "is_test_data": true et une source pour chaque valeur ;
+ * - n'écrase JAMAIS une configuration saisie par un opérateur (updated_by non nul) ;
+ * - passe par les services canoniques (pricing-rates.updateRates,
+ *   cost-component-admin-service.updateComponent) qui journalisent ;
+ * - sans --apply : simulation ;
+ * - les valeurs écrites ici n'ont pas d'auteur (updated_by nul) : le système les
+ *   continue de présenter comme « non validées » et ne les qualifie pas de réelles ;
+ * - EUR/KMF n'est pas touché : la colonne finance_config est en 2 décimales et
+ *   ne peut pas porter la parité documentée (arbitrage séparé).
+ * - Un fichier absent ou sans valeur donne « à renseigner », jamais une
+ *   initialisation déclarée terminée.
  */
 
 const fs = require('fs');
 
-function isPositive(n) { return typeof n === 'number' && Number.isFinite(n) && n > 0; }
+const RELAY_KEY = 'commission_relais_kmf';
+const isPositive = (n) => typeof n === 'number' && Number.isFinite(n) && n > 0;
+const hasSource = (o) => Boolean(o && o.source && String(o.source).trim());
 
-async function runInit({ env = process.env, params = null, apply = false, db, ratesService, log = () => {} } = {}) {
+async function runInit({ env = process.env, params = null, apply = false, db, ratesService, componentService, log = () => {} } = {}) {
   if (env.KOMERCE_TARGET_ENV !== 'staging') {
     const err = new Error('init-pricing-recette refusé : KOMERCE_TARGET_ENV doit valoir "staging".');
     err.code = 'TARGET_ENV_NOT_STAGING';
     throw err;
   }
+  const report = { env: 'staging', mode: apply ? 'apply' : 'dry-run', complete: false, items: [] };
+  const add = (i) => report.items.push(i);
 
-  const report = { env: 'staging', mode: apply ? 'apply' : 'dry-run', items: [] };
-  const wanted = params && params.exchange_rates ? params.exchange_rates : null;
+  if (!params) {
+    add({ key: 'aed_kmf', status: 'a_renseigner', reason: 'Aucun fichier de valeurs fourni.' });
+    add({ key: 'relay_commission_kmf', status: 'a_renseigner', reason: 'Aucun fichier de valeurs fourni.' });
+    log(report);
+    return report;
+  }
+  if (params.is_test_data !== true) {
+    const err = new Error('Fichier refusé : "is_test_data": true est obligatoire (valeurs de recette uniquement).');
+    err.code = 'PARAMS_NOT_MARKED_TEST';
+    throw err;
+  }
 
-  const hasValues = wanted && isPositive(wanted.eur_kmf) && isPositive(wanted.aed_kmf);
-  if (!hasValues) {
-    report.items.push({ key: 'exchange_rates', status: 'a_renseigner', reason: 'Aucune valeur fournie (eur_kmf et aed_kmf) : aucune écriture.' });
-  } else if (!wanted.source || !String(wanted.source).trim()) {
-    report.items.push({ key: 'exchange_rates', status: 'a_renseigner', reason: 'Valeurs fournies sans source justifiée : refusées.' });
+  // ── AED/KMF (EUR/KMF conservé tel quel) ───────────────────────────────────
+  const aed = params.aed_kmf;
+  if (!aed || !isPositive(aed.value) || !hasSource(aed)) {
+    add({ key: 'aed_kmf', status: 'a_renseigner', reason: 'Valeur ou source absente : aucune écriture.' });
   } else {
-    const { rows: [cur] } = await db.query('SELECT taux_change_eur_kmf, taux_aed_kmf FROM finance_config WHERE id = 1');
-    const same = cur && Number(cur.taux_change_eur_kmf) === wanted.eur_kmf && Number(cur.taux_aed_kmf) === wanted.aed_kmf;
-    if (same) {
-      report.items.push({ key: 'exchange_rates', status: 'deja_en_place' });
-    } else if (!apply) {
-      report.items.push({ key: 'exchange_rates', status: 'a_appliquer', from: cur || null, to: { eur_kmf: wanted.eur_kmf, aed_kmf: wanted.aed_kmf }, source: wanted.source });
-    } else {
-      await ratesService.updateRates({ eur_kmf: wanted.eur_kmf, aed_kmf: wanted.aed_kmf }, null);
-      report.items.push({ key: 'exchange_rates', status: 'applique', from: cur || null, to: { eur_kmf: wanted.eur_kmf, aed_kmf: wanted.aed_kmf }, source: wanted.source, recette: params.recette_label || 'recette' });
+    const { rows: [cur] } = await db.query('SELECT taux_change_eur_kmf, taux_aed_kmf, updated_by FROM finance_config WHERE id = 1');
+    if (!cur) add({ key: 'aed_kmf', status: 'a_renseigner', reason: 'finance_config absent.' });
+    else if (cur.updated_by) add({ key: 'aed_kmf', status: 'configuration_presente_non_ecrasee', current: Number(cur.taux_aed_kmf) });
+    else if (Number(cur.taux_aed_kmf) === aed.value) add({ key: 'aed_kmf', status: 'deja_en_place' });
+    else if (!apply) add({ key: 'aed_kmf', status: 'a_appliquer', from: Number(cur.taux_aed_kmf), to: aed.value, source: aed.source });
+    else {
+      await ratesService.updateRates({ eur_kmf: Number(cur.taux_change_eur_kmf), aed_kmf: aed.value }, null);
+      add({ key: 'aed_kmf', status: 'applique', from: Number(cur.taux_aed_kmf), to: aed.value, source: aed.source, recette: params.recette_label });
     }
   }
 
-  report.items.push({ key: 'relay_commission', status: 'a_renseigner', reason: 'Valeur et source à fournir par le responsable ; édition via le composant de coût canonique (hors de ce script).' });
+  // ── Commission relais (composant canonique global) ────────────────────────
+  const rel = params.relay_commission_kmf;
+  if (!rel || !isPositive(rel.value) || !hasSource(rel)) {
+    add({ key: 'relay_commission_kmf', status: 'a_renseigner', reason: 'Valeur ou source absente : aucune écriture.' });
+  } else {
+    const { rows: [comp] } = await db.query('SELECT default_value, updated_by FROM cost_components WHERE key = $1 AND is_active = TRUE LIMIT 1', [RELAY_KEY]);
+    if (!comp) add({ key: 'relay_commission_kmf', status: 'a_renseigner', reason: 'Composant canonique absent.' });
+    else if (comp.updated_by) add({ key: 'relay_commission_kmf', status: 'configuration_presente_non_ecrasee', current: Number(comp.default_value) });
+    else if (Number(comp.default_value) === rel.value) add({ key: 'relay_commission_kmf', status: 'deja_en_place' });
+    else if (!apply) add({ key: 'relay_commission_kmf', status: 'a_appliquer', from: Number(comp.default_value), to: rel.value, source: rel.source });
+    else {
+      await componentService.updateComponent({ key: RELAY_KEY }, { default_value: rel.value }, null);
+      add({ key: 'relay_commission_kmf', status: 'applique', from: Number(comp.default_value), to: rel.value, source: rel.source, recette: params.recette_label });
+    }
+  }
+
+  report.complete = report.items.every((i) => ['applique', 'deja_en_place'].includes(i.status));
+  report.note = 'Valeurs de TEST : le système continue de les afficher comme non validées. Cet état n’est pas une initialisation métier.';
   log(report);
   return report;
 }
@@ -58,8 +89,11 @@ async function main(argv = process.argv.slice(2)) {
   const idx = argv.indexOf('--params');
   const params = idx >= 0 ? JSON.parse(fs.readFileSync(argv[idx + 1], 'utf8')) : null;
   const db = require('../../db');
-  const ratesService = require('../../services/pricing-rates');
-  const report = await runInit({ params, apply, db, ratesService });
+  const report = await runInit({
+    params, apply, db,
+    ratesService: require('../../services/pricing-rates'),
+    componentService: require('../../services/cost-component-admin-service'),
+  });
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   if (db.pool && db.pool.end) await db.pool.end();
 }

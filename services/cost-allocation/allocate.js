@@ -354,12 +354,25 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
             AND (active_until IS NULL OR active_until >= CURRENT_DATE)
           ORDER BY display_order, key
           LIMIT 1) AS component_value,
+        (SELECT updated_by
+           FROM cost_components
+          WHERE key = 'commission_relais_kmf'
+            AND is_active = TRUE
+            AND is_exceptional = FALSE
+            AND (active_from IS NULL OR active_from <= CURRENT_DATE)
+            AND (active_until IS NULL OR active_until >= CURRENT_DATE)
+          ORDER BY display_order, key
+          LIMIT 1) AS component_updated_by,
         (SELECT commission_relais_standard_kmf
            FROM finance_config
           WHERE id = 1) AS legacy_standard_value
     `);
     const relayCommission = resolveRelayCommissionCurrent(relayCfgRes.rows[0] || {});
     const commissionPerItem = relayCommission.amount_kmf;
+    // C2 : seul un montant saisi par un opérateur sur le composant canonique est
+    // un coût réel. Seed, repli finance_config ou littéral = estimation.
+    const relayIsActual = relayCommission.source === 'cost_components.commission_relais_kmf'
+      && Boolean((relayCfgRes.rows[0] || {}).component_updated_by);
 
     let allocations = 0;
 
@@ -371,8 +384,8 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
            (order_id, order_item_id, parcel_id,
             cost_type, amount_kmf, allocation_method,
             source, is_actual, confidence)
-         VALUES ($1,$2,$3,'relay',$4,'per_item',$5,TRUE,'medium')`,
-        [it.order_id || parcel.order_id, it.order_item_id, parcelId, amount, relayCommission.source]
+         VALUES ($1,$2,$3,'relay',$4,'per_item',$5,$6,'medium')`,
+        [it.order_id || parcel.order_id, it.order_item_id, parcelId, amount, relayCommission.source, relayIsActual]
       );
       allocations++;
     }

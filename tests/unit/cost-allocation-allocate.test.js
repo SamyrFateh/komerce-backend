@@ -300,6 +300,43 @@ describe('allocateParcelRealCosts', () => {
   });
 });
 
+describe('relay : une commission non validée n’est jamais un coût réel (C2)', () => {
+  function relayInsertParams(client) {
+    return client.query.mock.calls.filter(c => String(c[0]).includes("INSERT INTO order_item_real_cost_allocations") && String(c[0]).includes("'relay'")).map(c => c[1]);
+  }
+  function build(cfgRow) {
+    return makeClient([
+      { rows: [{ id: 'parcel-001', order_id: 'order-001', status: 'collected' }] },
+      { rows: [], rowCount: 0 },
+      { rows: [{ order_item_id: 'oi-001', quantity: '1', weight_kg: '0.5' }] },
+      { rows: [cfgRow] },
+      { rows: [], rowCount: 1 },
+    ]);
+  }
+
+  it('composant jamais saisi par un opérateur → estimation (is_actual=false)', async () => {
+    const client = build({ component_value: '500', component_updated_by: null, legacy_standard_value: '500' });
+    db.pool.connect.mockResolvedValue(client);
+    await allocateParcelRealCosts('parcel-001');
+    const params = relayInsertParams(client)[0];
+    expect(params).toContain(false);
+  });
+
+  it('repli finance_config ou littéral → estimation', async () => {
+    const client = build({ component_value: null, component_updated_by: null, legacy_standard_value: '500' });
+    db.pool.connect.mockResolvedValue(client);
+    await allocateParcelRealCosts('parcel-001');
+    expect(relayInsertParams(client)[0]).toContain(false);
+  });
+
+  it('composant saisi par un opérateur → is_actual=true', async () => {
+    const client = build({ component_value: '600', component_updated_by: 'user-1', legacy_standard_value: '500' });
+    db.pool.connect.mockResolvedValue(client);
+    await allocateParcelRealCosts('parcel-001');
+    expect(relayInsertParams(client)[0]).toContain(true);
+  });
+});
+
 // ════════════════════════════════════════════════════════════════
 // 3. allocateMonthlyFixedCosts
 // ════════════════════════════════════════════════════════════════
