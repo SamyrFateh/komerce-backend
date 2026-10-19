@@ -510,6 +510,7 @@ describe('computeMarketMaturityWatermark — bornes canoniques obligatoires', ()
     expect(result.coverage_status).toBeNull();
     expect(result.cohort.policy).toBe('externally_fixed_canonical_bounds');
     expect(db.query.mock.calls[0][0]).toContain('market_id = $1');
+    expect(db.query.mock.calls[0][0]).toContain('simulation_scope IS NULL');
     expect(db.query.mock.calls[0][1]).toEqual([
       'market-cm',
       '2026-09-01T00:00:00Z',

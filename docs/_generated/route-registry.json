@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-18T13:40:58.069Z",
+  "generatedAt": "2026-10-19T18:56:24.675Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 733,
+  "count": 731,
   "routes": [
     {
       "method": "GET",
@@ -948,16 +948,6 @@
       ]
     },
     {
-      "method": "POST",
-      "fullPath": "/api/admin/entities/golden-create",
-      "mountPrefix": "/api/admin/entities",
-      "localPath": "/golden-create",
-      "routeFile": "routes/admin-order-360.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
       "method": "GET",
       "fullPath": "/api/admin/entities/golden-upstream",
       "mountPrefix": "/api/admin/entities",
@@ -972,16 +962,6 @@
       "fullPath": "/api/admin/entities/orders/:orderReference",
       "mountPrefix": "/api/admin/entities",
       "localPath": "/orders/:orderReference",
-      "routeFile": "routes/admin-order-360.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/admin/entities/orders/:orderReference/golden-advance",
-      "mountPrefix": "/api/admin/entities",
-      "localPath": "/orders/:orderReference/golden-advance",
       "routeFile": "routes/admin-order-360.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
