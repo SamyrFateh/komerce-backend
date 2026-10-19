@@ -295,6 +295,25 @@
     return Number.isFinite(price) && price > 0;
   }
 
+  function priceExplanation(row = {}) {
+    const cost = Number(row.cost_kmf);
+    const costText = Number.isFinite(cost) && cost > 0
+      ? `Coût d’achat estimé : ${formatKmf(cost)} (estimation, pas un coût réel).`
+      : 'Coût d’achat estimé non renseigné.';
+    if (hasPublishablePrice(row)) return `Prix de vente global : ${formatKmf(row.price_kmf)}. ${costText}`;
+    return `Prix de vente global non défini : le produit ne peut pas être validé. ${costText} Responsable : décision prix — action « Définir le prix ».`;
+  }
+
+  function marketPriceLabel(market = {}) {
+    if (market.price_status === 'LOCAL_ACTIVE') {
+      return `Prix local actif · ${market.local_price_amount == null ? '—' : market.local_price_amount} ${market.local_price_currency || market.currency || ''}`.trim();
+    }
+    if (market.price_status === 'LOCAL_MARKET_DECISION') return 'Prix local en brouillon, à activer';
+    if (market.price_status === 'LOCAL_AUTHORIZED_PENDING_CUTOVER') return 'Prix local autorisé, bascule en attente';
+    if (!market.price_status) return 'Prix local non défini pour ce marché : non visible acheteur';
+    return market.price_status;
+  }
+
   function curationState(row = {}) {
     if (needsFrenchPreparation(row)) return { label: 'FR à préparer', tone: 'is-warning' };
     const prepared = row.content_source === 'ai_enriched' || row.content_source === 'manual';
@@ -934,12 +953,9 @@
         stateContent.appendChild(details);
       }
 
-      stateContent.appendChild(text(
-        doc,
-        'small',
-        'kmc-workspace-subtitle',
-        row.price_kmf == null ? 'Prix —' : formatKmf(row.price_kmf)
-      ));
+      const priceNote = text(doc, 'small', 'kmc-workspace-subtitle', priceExplanation(row));
+      priceNote.setAttribute('data-price-explanation', '');
+      stateContent.appendChild(priceNote);
       stateCell.appendChild(stateContent);
       tr.appendChild(stateCell);
 
@@ -1246,9 +1262,7 @@
       ));
       tr.appendChild(td(
         doc,
-        market.price_status === 'LOCAL_ACTIVE'
-          ? `LOCAL_ACTIVE · ${market.local_price_amount == null ? '—' : market.local_price_amount} ${market.local_price_currency || market.currency || ''}`
-          : market.price_status || 'À décider'
+        marketPriceLabel(market)
       ));
       tr.appendChild(td(doc, market.buyer_visible ? 'Visible' : 'Non visible'));
 
