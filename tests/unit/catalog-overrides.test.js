@@ -31,6 +31,9 @@ function mockDb({ product } = {}) {
   const q = {
     query: jest.fn(async (sql, params) => {
       calls.push({ sql, params });
+      if (sql.startsWith('SELECT content_source, source_locale FROM products')) {
+        return { rows: product ? [{ ...product }] : [] };
+      }
       if (sql.includes('INSERT INTO catalog_field_overrides')) {
         return { rows: [{ id: 'override-1', product_id: params[0], field_name: params[1], field_value: params[2], reason: params[3], set_by: params[4] }] };
       }
@@ -150,7 +153,7 @@ describe('upsertOverrides (batch)', () => {
       q, PRODUCT_ID, { name: 'Nom corrigé', description: 'Desc corrigée' }, { reason: 'lot', setBy: 'admin-1' }
     );
     expect(overridden).toEqual(['name', 'description']);
-    expect(calls).toHaveLength(4);
+    expect(calls).toHaveLength(5); // contrôle de langue (1 lecture) + 2 overrides × 2 requêtes
     expect(product).toBeDefined();
   });
 
@@ -170,13 +173,30 @@ describe('upsertOverrides (batch)', () => {
       { reason: 'traduction humaine', setBy: 'admin-1' }
     );
 
-    expect(calls).toHaveLength(5);
+    expect(calls).toHaveLength(6);
     const provenanceCall = calls.find((c) => c.sql.includes("SET content_source='manual'"));
     expect(provenanceCall).toBeDefined();
     expect(product.content_source).toBe('manual');
     expect(product.name_source).toBe('Wireless headphones');
     expect(product.description_source).toBe('Bluetooth headphones for daily use');
     expect(product.source_locale).toBe('en');
+  });
+
+  it('C3 : source étrangère + texte resté anglais → refus 422 avant toute écriture', async () => {
+    const source = { id: PRODUCT_ID, content_source: 'connector_raw', source_locale: 'en',
+      name_source: 'Wireless headphones', description_source: 'Bluetooth headphones for daily use' };
+    const { q, calls } = mockDb({ product: source });
+    await expect(upsertOverrides(q, PRODUCT_ID, {
+      name: 'Wireless headphones with microphone',
+      description: 'Bluetooth headphones for daily use with the best sound and the battery for all day.',
+    })).rejects.toMatchObject({ code: 'FRENCH_NOT_DETECTED', status: 422 });
+    expect(calls.filter((c) => /INSERT|UPDATE/.test(c.sql))).toHaveLength(0);
+  });
+
+  it('C3 : produit déjà français (locale fr) ou sans lignage connecteur → pas de contrôle de langue', async () => {
+    const { q, calls } = mockDb({ product: { id: PRODUCT_ID, content_source: 'manual', source_locale: 'fr' } });
+    await upsertOverrides(q, PRODUCT_ID, { name: 'Anything goes here', description: 'Free text' });
+    expect(calls.length).toBeGreaterThan(0);
   });
 
   it('lot vide : overridden vide, aucune requête', async () => {

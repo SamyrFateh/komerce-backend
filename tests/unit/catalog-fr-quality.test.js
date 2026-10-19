@@ -12,6 +12,8 @@ const {
   englishResidues,
   languageScores,
   looksFrench,
+  frenchLanguageProblems,
+  describeFrenchProblems,
   controlledClaims,
   evaluateFrenchCopy,
   MARKETING_NOISE,
@@ -112,5 +114,27 @@ describe('catalog FR quality contract', () => {
     expect(MARKETING_NOISE.every((pattern) => pattern instanceof RegExp)).toBe(true);
     expect(MARKETING_NOISE.some((pattern) => pattern.test('Hot Sale'))).toBe(true);
     expect(MARKETING_NOISE.some((pattern) => pattern.test('Free Shipping'))).toBe(true);
+  });
+});
+
+describe('C3 — frenchLanguageProblems', () => {
+  test('texte français correct : aucun problème', () => {
+    expect(frenchLanguageProblems({
+      title: 'Casque audio sans fil avec micro',
+      description: 'Casque audio Bluetooth sans fil pour un usage quotidien, avec un très bon son et une batterie qui tient toute la journée.',
+    })).toEqual([]);
+  });
+
+  test('texte resté anglais : signalé avec des motifs lisibles', () => {
+    const problems = frenchLanguageProblems({
+      title: 'Wireless headphones with microphone',
+      description: 'Bluetooth wireless headphones for daily use with the best sound and the battery for all day long.',
+    });
+    expect(problems).toContain('french_not_detected');
+    expect(describeFrenchProblems(problems)).toMatch(/pas être en français|mots anglais/);
+  });
+
+  test('sans description, seul le titre est contrôlé (pas de faux rejet d’un titre court)', () => {
+    expect(frenchLanguageProblems({ title: 'Coque iPhone silicone' })).toEqual([]);
   });
 });

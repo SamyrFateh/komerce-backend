@@ -454,15 +454,23 @@ async function prepareCandidateFrench(productRef, body = {}, actor) {
     );
   }
 
-  const result = await catalogOverrides.upsertOverrides(
-    db,
-    product.id,
-    { name, description },
-    {
-      reason: body.reason || 'Préparation FR manuelle/assistée hors runtime — zéro API IA payante',
-      setBy: actor?.id || null,
+  let result;
+  try {
+    result = await catalogOverrides.upsertOverrides(
+      db,
+      product.id,
+      { name, description },
+      {
+        reason: body.reason || 'Préparation FR manuelle/assistée hors runtime — zéro API IA payante',
+        setBy: actor?.id || null,
+      }
+    );
+  } catch (error) {
+    if (error.code === 'FRENCH_NOT_DETECTED') {
+      throw new CatalogWorkspaceError('catalog_fr_language_check_failed', error.message, 422);
     }
-  );
+    throw error;
+  }
 
   if (!result.product || result.product.content_source !== 'manual' || result.product.needs_review === true) {
     throw new CatalogWorkspaceError(

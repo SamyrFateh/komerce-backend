@@ -297,6 +297,19 @@ test('préparation FR résout product_ref puis applique des overrides manuels sa
   expect(JSON.stringify(result)).not.toContain('candidate-internal-id');
 });
 
+test('C3 : préparation FR dont le texte reste anglais → 422 catalog_fr_language_check_failed', async () => {
+  mockQuery.mockImplementation(async sql => {
+    if (String(sql).includes('WHERE product_ref = $1')) {
+      return { rows: [{ id: 'candidate-internal-id', product_ref: 'KPR-CJ', lifecycle_status: 'candidate', is_active: false }] };
+    }
+    return { rows: [] };
+  });
+  mockUpsertOverrides.mockRejectedValueOnce(Object.assign(new Error('Préparation française refusée : le texte ne semble pas être en français.'), { code: 'FRENCH_NOT_DETECTED' }));
+
+  await expect(workspace.prepareCandidateFrench('KPR-CJ', { name: 'Wireless dress', description: 'Pleated dress for women with the best fabric.' }, { id: 'central-admin' }))
+    .rejects.toMatchObject({ code: 'catalog_fr_language_check_failed', status: 422 });
+});
+
 test('préparation FR refuse un payload vide au lieu d’appeler une API payante', async () => {
   mockQuery.mockImplementation(async sql => {
     if (String(sql).includes('WHERE product_ref = $1')) {
