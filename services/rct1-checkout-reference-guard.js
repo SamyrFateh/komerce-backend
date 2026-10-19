@@ -5,6 +5,9 @@
  * @layer         service
  * @owner         backend-core
  * @purpose       Serialiser les checkouts RCT1 et refuser une reference deja creee.
+ * @db-read       orders
+ * @db-write      none
+ * @db-txn        caller_transaction_preserved
  * @impact-areas  orders, recette
  */
 'use strict';
