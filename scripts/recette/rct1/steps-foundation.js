@@ -102,13 +102,16 @@ const actorStep = (a) => ({
   },
 });
 
+// Le stock est consomme par les commandes RCT1 : une fois commande, il n'est plus compare ni reecrit.
+const consumedSql = `SELECT EXISTS(SELECT 1 FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE oi.product_id=$1 AND o.simulation_scope='RCT1') AS c`;
 const productStep = (key, p) => ({
   id: `product.${key}`, deps: ['admin.resolve'],
   inspect: async ({ db }) => {
-    const row = await q1(db, 'SELECT id, is_active, is_available, price_kmf, cost_kmf, weight_kg FROM products WHERE product_ref=$1', [p.ref]);
-    const ok = !!row && row.is_active && row.is_available && Number(row.price_kmf) === p.price_kmf && Number(row.weight_kg) === p.weight_kg && Number(row.cost_kmf) === p.cost_kmf;
+    const row = await q1(db, 'SELECT id, is_active, is_available, price_kmf, cost_kmf, weight_kg, stock FROM products WHERE product_ref=$1', [p.ref]);
+    const consumed = row ? (await q1(db, consumedSql, [row.id])).c : false;
+    const ok = !!row && row.is_active && row.is_available && Number(row.price_kmf) === p.price_kmf && Number(row.weight_kg) === p.weight_kg && Number(row.cost_kmf) === p.cost_kmf && (consumed ? Number(row.stock) <= p.stock : Number(row.stock) === p.stock);
     if (!ok) return { done: false, detail: row ? { id: row.id, price_kmf: Number(row.price_kmf) } : null };
-    if (p.origin === 'LOCAL_STOCK') {
+    if (p.origin === 'LOCAL_STOCK' && !consumed) {
       const mid = await marketId(db, p.stock_market);
       const s = await q1(db, 'SELECT qty_physical, commercial_exposure FROM local_stock WHERE product_id=$1 AND market_id=$2', [row.id, mid]);
       if (!s || Number(s.qty_physical) !== p.local_stock_qty || s.commercial_exposure !== 'ENABLED') return { done: false, detail: { id: row.id, local_stock: s } };
@@ -117,22 +120,29 @@ const productStep = (key, p) => ({
   },
   apply: async ({ db, shared }) => {
     let writes = 0;
-    let row = await q1(db, 'SELECT id, cost_kmf FROM products WHERE product_ref=$1', [p.ref]);
+    let row = await q1(db, 'SELECT id, cost_kmf, stock FROM products WHERE product_ref=$1', [p.ref]);
     if (!row) {
       const res = await svc.productAdmin().createProduct(require('../../../db'), {
         product_ref: p.ref, name: p.name, category: p.category, subcategory: p.subcategory, description: p.description,
-        price_kmf: p.price_kmf, weight_kg: p.weight_kg, stock: p.origin === 'IMPORT' ? 100 : 0,
+        price_kmf: p.price_kmf, weight_kg: p.weight_kg, stock: p.stock,
         is_active: true, is_available: true,
       }, { id: shared.adminId });
       if (res.status >= 400) throw new Error('RCT1_PRODUCT_CREATE_REFUSED: ' + JSON.stringify(res.body).slice(0, 300));
-      row = { id: res.body.id, cost_kmf: null }; writes++;
+      row = { id: res.body.id, cost_kmf: null, stock: p.stock }; writes++;
+    }
+    const consumed = (await q1(db, consumedSql, [row.id])).c;
+    if (!consumed && Number(row.stock) !== p.stock) {
+      // Stock catalogue (controle legacy du checkout) : mise a jour par le service proprietaire.
+      const up = await svc.productAdmin().updateProduct(require('../../../db'), row.id, { stock: p.stock }, { id: shared.adminId });
+      if (up.status >= 400) throw new Error('RCT1_PRODUCT_STOCK_REFUSED: ' + JSON.stringify(up.body).slice(0, 200));
+      writes++;
     }
     if (Number(row.cost_kmf) !== p.cost_kmf) {
       // Cout d'achat catalogue : source du collecteur d'achat (lock-purchase), donnee de test T.
       await svc.sourcing().updateSourcingFields(db, row.id, { cost_price_kmf: p.cost_kmf });
       writes++;
     }
-    if (p.origin === 'LOCAL_STOCK') {
+    if (p.origin === 'LOCAL_STOCK' && !consumed) {
       const mid = await marketId(db, p.stock_market);
       await svc.localStock().setLocalStock({ productId: row.id, marketId: mid, qtyPhysical: p.local_stock_qty, actorUserId: shared.adminId });
       await svc.localStock().setLocalStockExposure(row.id, mid, 'ENABLED');

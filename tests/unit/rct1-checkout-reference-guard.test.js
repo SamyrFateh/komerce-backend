@@ -2,7 +2,7 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 const { reserveRct1OrderReference, expectedProductTotalKmf, isAllowedRct1Reference } = require('../../services/rct1-checkout-reference-guard');
 describe('RCT1 checkout transactional reference protection', () => {
-  test.each(['RCT1-E1','RCT1-G','RCT1-F','RCT1-C'])('allows first canonical creation of %s', async reference => {
+  test.each(['RCT1-E1','RCT1-G','RCT1-F','RCT1-C','RCT1-C2'])('allows first canonical creation of %s', async reference => {
     const statements=[];
     const client={query:jest.fn(async(sql,params)=>{
       statements.push({sql,params});

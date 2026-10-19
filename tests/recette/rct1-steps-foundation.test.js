@@ -41,12 +41,12 @@ test('acteur : role, relais et scope operateur controles', async () => {
 });
 test('produit : prix, poids, publication et stock local controles', async () => {
   const p1 = productStep('P1', PRODUCTS.P1);
-  const good = [{ id: 'p', is_active: true, is_available: true, price_kmf: '15000', cost_kmf: '6000', weight_kg: '1' }];
+  const good = [{ id: 'p', is_active: true, is_available: true, price_kmf: '15000', cost_kmf: '6000', stock: 100, weight_kg: '1' }];
   assert.equal((await p1.inspect({ db: db(() => good) })).done, true);
   assert.equal((await p1.inspect({ db: db(() => [{ ...good[0], price_kmf: '15001' }]) })).done, false);
   assert.equal((await p1.inspect({ db: db(() => [{ ...good[0], cost_kmf: null }]) })).done, false);
   const p3 = productStep('P3', PRODUCTS.P3);
-  const p3rows = (sql) => /FROM products/.test(sql) ? [{ id: 'p', is_active: true, is_available: true, price_kmf: '6000', cost_kmf: '3000', weight_kg: '1' }]
+  const p3rows = (sql) => /FROM products/.test(sql) ? [{ id: 'p', is_active: true, is_available: true, price_kmf: '6000', cost_kmf: '3000', stock: 100, weight_kg: '1' }]
     : /FROM markets/.test(sql) ? [{ id: 'm' }] : [{ qty_physical: 5, commercial_exposure: 'ENABLED' }];
   assert.equal((await p3.inspect({ db: db(p3rows) })).done, true);
   const p3bad = (sql) => /local_stock/.test(sql) ? [{ qty_physical: 4, commercial_exposure: 'ENABLED' }] : p3rows(sql);
