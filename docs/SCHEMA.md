@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 202 | Vérifié sur le dump live Railway. |
+| Tables | 203 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 486 | Performance + contraintes uniques |
+| Index | 489 | Performance + contraintes uniques |
 | Foreign keys | 393 | Cohérence relationnelle |
-| Fonctions | 83 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 94 | Triggers présents dans le dump live Railway. |
+| Fonctions | 84 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 95 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -89,18 +89,12 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `order_status_history` | Trace immutable des transitions (invariant I-04). |
 | `order_comments` | Commentaires opérationnels. |
 | `order_incidents` | Incidents commande. |
+| `order_cost_entry_events` | Journal append-only des saisies/corrections manuelles de coûts (L1) et des affectations de périmètre de recette (L3) : ancienne/nouvelle valeur, provenance, motif, auteur, clé d'idempotence. **Migration 303 — promue le 2026-10-19 (schema-promote, dump live verifie).** |
 
 > **Ajouté** : migration 071 (A-BE-18, 26 mai 2026). Ces tables étaient auparavant créées au runtime par `ensureRelayTables()` dans `routes/relay-dashboard.js`. Elles sont désormais versionnées dans `migrations/071_relay_dashboard_tables.sql` (idempotent). Colonnes : voir migration pour le DDL complet (types incidents, priorités, statuts, résolution). Index : `idx_incidents_order`, `idx_incidents_status`, `idx_comments_order`.
 | `order_item_cost_imputations` | Imputations de coûts par item (audit). **Migration 164 (2026-09-06, `intended_migration_schema`)** : + `estimated_business_variable_cost_kmf` NUMERIC(12,2) nullable pour figer les coûts variables business (paiement + provision risque) et + `estimated_fixed_overhead_kmf` NUMERIC(12,2) nullable comme allocation analytique historique des charges fixes. `estimated_business_complete_cost_kmf` est conservé pour compatibilité legacy. Cette allocation fixe n'est jamais une dette intrinsèque du SKU ni une autorité de prix. Le backfill reste NULL lorsqu'un snapshot historique ne permet pas une reconstruction fiable ; aucune valeur 0 n'est inventée. |
 | `order_item_real_cost_allocations` | Allocations coût réel (post-livraison). **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `provenance` TEXT nullable — provenance déclarée du coût (ex. `FICTIF recette`, pièce) ; NULL = non déclarée (historique). Saisie manuelle L1 : `source='manual_entry'`, `allocation_method='manual'`. |
 
-<!-- schema-pending
-object: order_cost_entry_events
-kind: table
-migration: 303
-section: ### 4.1 Logistique commande (7 tables)
-role: Journal append-only des saisies/corrections manuelles de coûts (L1) et des affectations de périmètre de recette (L3) : ancienne/nouvelle valeur, provenance, motif, auteur, clé d'idempotence.
--->
 
 ### 4.2 Logistique colis (5 tables)
 
