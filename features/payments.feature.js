@@ -105,6 +105,7 @@ module.exports = {
       'migrations/285_market_payment_accounts.sql',
       'migrations/287_cash_custody_ledger.sql',
       'migrations/288_cash_custody_recipients.sql',
+      'migrations/304_cash_custody_provenance_edges.sql',
       'migrations/169_mobile_money_foundation.sql',
       'migrations/171_kartapay_km_mobile_money.sql',
       'migrations/199_cash_confirmation_control.sql',
