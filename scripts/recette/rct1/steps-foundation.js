@@ -39,12 +39,18 @@ const adminStep = {
 const relayStep = (r) => ({
   id: `relay.${r.name}`, deps: ['admin.resolve'],
   inspect: async ({ db }) => {
-    const row = await q1(db, 'SELECT id, is_active, market_id FROM relais WHERE name=$1', [r.name]);
-    return { done: !!row && row.is_active, detail: row ? { id: row.id } : null };
+    const row = await q1(db, 'SELECT id, is_active, market_id, island_code FROM relais WHERE name=$1', [r.name]);
+    return { done: !!row && row.is_active && row.island_code === r.island_code, detail: row ? { id: row.id, island_code: row.island_code } : null };
   },
   apply: async ({ db }) => {
     const mid = await marketId(db, r.market);
     if (!mid) throw new Error('RCT1_MARKET_MISSING: ' + r.market);
+    const existing = await q1(db, 'SELECT id FROM relais WHERE name=$1', [r.name]);
+    if (existing) {
+      // Code ile conforme aux destinations du checkout (ANJOUAN, MORONI, MOHELI, MAYOTTE).
+      await svc.relais().updateRelais(db, { marketId: mid, relaisId: existing.id, patch: { islandCode: r.island_code, island: r.island } });
+      return { writes: 1 };
+    }
     await svc.relais().createRelais(db, {
       marketId: mid, name: r.name, phone: r.phone, address: r.address, island: r.island, islandCode: r.island_code,
       agentName: null, zone: 'RCT1', hours: null, latitude: null, longitude: null, photoUrl: null,

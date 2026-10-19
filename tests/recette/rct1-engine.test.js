@@ -65,3 +65,8 @@ test('ONLY : etapes hors selection inspectees (contexte partage) sans ecriture',
   assert.deepEqual(r.steps.map(s => s.id), ['b']);
   assert.equal(applied, 0); assert.equal(r.ok, true);
 });
+test('dump : liste blanche de tables de reference, jamais de personnes', async () => {
+  assert.ok(!cli.DUMP_ALLOWLIST.some(t => /user|order|password|payment/.test(t)));
+  const refused = await cli.dump(fakeDb(), ['users']);
+  assert.equal(refused.users.error, 'not_allowlisted');
+});

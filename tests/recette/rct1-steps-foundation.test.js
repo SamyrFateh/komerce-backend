@@ -23,7 +23,8 @@ test('admin existant requis, jamais cree', async () => {
 });
 test('relais : inspect done si actif, apply exige le marche', async () => {
   const step = relayStep(RELAYS[0]);
-  assert.equal((await step.inspect({ db: db(() => [{ id: 'r', is_active: true }]) })).done, true);
+  assert.equal((await step.inspect({ db: db(() => [{ id: 'r', is_active: true, island_code: 'MORONI' }]) })).done, true);
+  assert.equal((await step.inspect({ db: db(() => [{ id: 'r', is_active: true, island_code: 'NGZ' }]) })).done, false);
   assert.equal((await step.inspect({ db: db(() => []) })).done, false);
   await assert.rejects(step.apply({ db: db(() => []) }), /MARKET_MISSING/);
 });
