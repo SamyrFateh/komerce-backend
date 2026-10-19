@@ -39,8 +39,20 @@ function payloadFixture() {
       { cost_type: 'product_purchase', orders: 4, amount_kmf: 40000 },
     ],
     costing_orders: [
-      { reference: 'CMD-C', sale_total_kmf: 20000, estimated_cost_kmf: 11000, real_cost_kmf: 12000, variance_kmf: 1000, consolidated_margin_kmf: 8000, cost_status: 'actual' },
+      { reference: 'CMD-C', market_code: 'KM', status: 'collected', sale_total_kmf: 20000, estimated_cost_kmf: 11000, real_cost_kmf: 12000, variance_kmf: 1000, consolidated_margin_kmf: 8000, cost_status: 'actual',
+        variance: { class: 'overrun', reason: null, cost_variance_kmf: 1000, margin_variance_kmf: -1000, estimated_variable_kmf: 11000, real_variable_kmf: 12000, scope: 'N1+paiement',
+          components: [{ type: 'freight', label: 'Fret', state: 'confirmed', estimated_kmf: 1000, real_kmf: 2000, delta_kmf: 1000, owner: { label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' } }] } },
     ],
+    variance_summary: {
+      orders_considered: 3, scope: 'N1+paiement',
+      overrun: { orders: 1, amount_kmf: 1000 }, saving: { orders: 0, amount_kmf: 0 },
+      provisional: { orders: 1, amount_kmf: -500 }, not_comparable: { orders: 1, amount_kmf: null }, none: { orders: 0, amount_kmf: 0 },
+    },
+    margin_scope: {
+      paid_orders: 5, eligible_orders: 2, eligible_references: ['CMD-C', 'CMD-D'],
+      excluded: [{ reason: 'not_final_stage', label: 'Commande pas encore remise au client', count: 3 }],
+      real_cost_split: { final: { orders: 2, amount_kmf: 30000 }, partial: { orders: 2, amount_kmf: 40000 } },
+    },
     relay_profitability: [
       { relais_name: 'Relais Centre', orders: 4, revenue_kmf: 120000, estimated_margin_kmf: 50000, consolidated_margin_kmf: 38000, cost_coverage_pct: 75 },
     ],
@@ -137,7 +149,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
       indicateur: 'Coût réel', valeur: '70 000 KMF', couverture: '3/4', qualite: 'Réel partiel',
     }));
     expect(sources['finance.costing-orders'][0]).toEqual(expect.objectContaining({
-      commande: 'CMD-C', costing: 'Réel complet', variance: '+1 000 KMF', marge: '8 000 KMF',
+      commande: 'CMD-C', costing: 'Réel complet', variance: '+1 000 KMF · Surcoût confirmé', marge: '8 000 KMF',
     }));
     expect(sources['finance.cost-families'][0]).toEqual({ famille: 'product_purchase', commandes: '4', montant: '40 000 KMF' });
     expect(sources['finance.relay-profitability'][0]).toEqual({
@@ -168,8 +180,8 @@ describe('LOT 2F-CANON — Finance vivant', () => {
 
     expect(decisions.map(item => item.label)).toEqual([
       'Paiements en attente',
-      'Coûts incomplets',
-      'Variances observées',
+      'Coûts restant à établir',
+      'Écarts entre coûts prévus et constatés',
       'Paiements fournisseur à revoir',
       'Remboursements période',
     ]);
@@ -197,8 +209,8 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     }));
     expect(financeDecision.varianceItems(payload, finance)[0]).toEqual(expect.objectContaining({
       title: 'CMD-C',
+      tone: 'warning',
       value: '+1 000 KMF',
-      tone: 'neutral',
     }));
     expect(financeDecision.paymentItems(payload, finance)[0]).toEqual(expect.objectContaining({
       title: 'stripe_eur',
@@ -291,15 +303,64 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(item.helper).toContain('Marge réelle finale non calculable');
   });
 
-  test('varianceItems exclut les commandes à variance nulle — correspondance exacte avec le compte du bandeau de décision', () => {
+  test('varianceItems ne retient que surcoûts/économies confirmés et provisoires — pas les sans écart ni non comparables', () => {
     const payload = payloadFixture();
     payload.costing_orders = [
       ...payload.costing_orders,
-      { reference: 'CMD-ZERO', sale_total_kmf: 10000, estimated_cost_kmf: 6000, real_cost_kmf: 6000, variance_kmf: 0, consolidated_margin_kmf: 4000, cost_status: 'actual' },
+      { reference: 'CMD-ZERO', sale_total_kmf: 10000, cost_status: 'actual', variance: { class: 'none', cost_variance_kmf: 0 } },
+      { reference: 'CMD-NC', sale_total_kmf: 10000, cost_status: 'estimated', variance: { class: 'not_comparable', reason: 'no_real_cost' } },
+      { reference: 'CMD-PROV', sale_total_kmf: 10000, cost_status: 'partial_real', variance: { class: 'provisional', cost_variance_kmf: -500 } },
     ];
     const items = financeDecision.varianceItems(payload, finance);
-    expect(items.map(item => item.title)).toEqual(['CMD-C']);
-    expect(items.map(item => item.title)).not.toContain('CMD-ZERO');
+    expect(items.map(item => item.title)).toEqual(['CMD-C', 'CMD-PROV']);
+    expect(items[1].helper).toContain('Écart provisoire');
+    expect(items[1].tone).toBe('neutral');
+  });
+
+  test('notes de définition : numérateur/dénominateur, coût réel partiel vs final, périmètre de la marge', () => {
+    const notes = financeDecision.indicatorNotes(payloadFixture(), finance);
+    const byKey = Object.fromEntries(notes.map(n => [n.key, n]));
+    expect(byKey.margin.title).toContain('2 commande(s) éligible(s) sur 5 encaissée(s)');
+    expect(byKey.margin.text).toContain('CMD-C + CMD-D');
+    expect(byKey.margin.text).toContain('3');
+    const flat = t => t.replace(/[\u00a0\u202f]/g, ' ');
+    expect(flat(byKey['real-cost'].text)).toContain('30 000 KMF');
+    expect(flat(byKey['real-cost'].text)).toContain('40 000 KMF');
+    expect(byKey['real-cost'].title).toContain('coûts partiels inclus');
+  });
+
+  test('rendu : sections « Coûts restant à établir » et « Écarts » réellement ancrées, détails repliés, liens avec retour Finance', () => {
+    class Node {
+      constructor(tag) { this.tag = tag; this.nodeType = 1; this.children = []; this.attrs = {}; this.className = ''; this.textContent = ''; }
+      appendChild(c) { this.children.push(c); return c; }
+      insertBefore(c, ref) { const i = this.children.indexOf(ref); this.children.splice(i < 0 ? this.children.length : i, 0, c); return c; }
+      replaceChildren() { this.children = []; }
+      setAttribute(k, v) { this.attrs[k] = v; }
+      addEventListener() {}
+      find(pred, out = []) { if (pred(this)) out.push(this); this.children.forEach(c => c.find(pred, out)); return out; }
+    }
+    const doc = { createElement: tag => new Node(tag) };
+    const noop = { render() {} };
+    const ui = { MetricStrip: noop };
+    const decisionUi = { DecisionStrip: noop, RankedList: noop };
+    const payload = payloadFixture();
+    payload.incomplete_cost_orders = [{
+      reference: 'CMD-F', market_code: 'KM', status: 'collected', cost_explanation: { missing_estimate: false, margin: { label: 'Marge réelle finale non calculable : des coûts attendus manquent.' } },
+      follow_up: { to_establish: [{ type: 'relay', label: 'Commission relais', state: 'unknown', reason: 'Coût attendu, non encore enregistré.', owner: { label: 'Relais', href: '/admin/relais-live' } }], not_yet_due: [] },
+    }];
+    const root = new Node('div');
+    financeDecision.render(root, payload, { document: doc, ui, period: '30' }, finance, decisionUi);
+    const all = root.find(() => true);
+    const ids = all.map(n => n.attrs.id).filter(Boolean);
+    expect(ids).toEqual(expect.arrayContaining(['finance-incomplete-costs', 'finance-variances']));
+    const details = all.filter(n => n.tag === 'details');
+    expect(details.length).toBeGreaterThanOrEqual(2);
+    expect(details.every(d => d.attrs.open === undefined)).toBe(true);
+    const hrefs = all.filter(n => n.tag === 'a').map(n => n.attrs.href);
+    expect(hrefs.some(h => h.startsWith('/admin/orders/CMD-F'))).toBe(true);
+    expect(hrefs.some(h => h.startsWith('/admin/relais-live'))).toBe(true);
+    expect(all.some(n => /Écarts entre coûts prévus et constatés/.test(n.textContent))).toBe(true);
+    expect(all.some(n => /Surcoût confirmé/.test(n.textContent))).toBe(true);
   });
 
   test('une marge réelle relais absente reste explicitement inconnue', () => {

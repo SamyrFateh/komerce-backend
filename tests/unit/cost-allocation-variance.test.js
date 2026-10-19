@@ -53,6 +53,24 @@ describe('cost-allocation/variance', () => {
       expect(result.reconciliation_status).toBe('comparable_scope');
     });
 
+    it('expose l’estimé figé par type de coût réel (base de la décomposition par composante)', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [{
+          landed: '3000', business_complete: '3500', business_variable: '80', risk_provision: '0', fixed_overhead: '0',
+          expected_product_purchase: '2000', expected_freight: '900', expected_port_transitary: '100', expected_relay: '0', expected_payment: '80',
+          imputations_count: 1, missing_variable_snapshot_count: 0,
+        }] })
+        .mockResolvedValueOnce({ rows: [{ cost_type: 'freight', amount: '1000', all_actual: true }] })
+        .mockResolvedValueOnce({ rows: [{ n: 0 }] });
+
+      const result = await computeOrderCostVariance('order-by-type');
+
+      expect(result.estimated.by_cost_type).toMatchObject({
+        product_purchase: 2000, freight: 900, port_transitaire: 100, relay: 0, payment: 80,
+      });
+      expect(result.real.variable_by_cost_type).toEqual({ freight: 1000 });
+    });
+
     it('retire la provision risque du périmètre de variance commande', async () => {
       db.query
         .mockResolvedValueOnce({ rows: [{

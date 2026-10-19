@@ -8,7 +8,7 @@
  * @outputs       canonical_finance_projection
  * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, parcel_items, parcels, customs_shipments, customs_shipment_parcels
+ * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, markets, parcel_items, parcels, customs_shipments, customs_shipment_parcels
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, finance_event_date_is_authoritative
@@ -25,7 +25,10 @@ const { isValidScope } = require('./simulation-scope-service');
 const SIMULATION_VIEW = (query = {}) => (isValidScope(query.simulation_scope)
   ? Object.freeze({ scope: query.simulation_scope, label: `Périmètre de recette ${query.simulation_scope} : faits simulés, pas une activité réelle de l'entreprise.` })
   : null);
-const { justifiedRealSql, finalMarginReadySql, missingTypesArraySql } = require('./cost-allocation/cost-expectation');
+const {
+  justifiedRealSql, finalMarginReadySql, missingTypesArraySql, contextColumnsSql, describeOrderCosts,
+} = require('./cost-allocation/cost-expectation');
+const { computeOrderCostVariance } = require('./cost-allocation/variance');
 const metrics = require('./dashboard-metrics');
 const { getSupplierPaymentReview } = require('./supplier-payment-review');
 const {
@@ -274,11 +277,15 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
 
   const { rows } = await db.query(`
     SELECT
+      o.id AS order_id,
       o.reference,
       o.status,
       o.payment_status,
+      o.payment_mode::text AS payment_mode,
       o.total_kmf,
       o.created_at,
+      (SELECT m.code FROM markets m WHERE m.id = o.market_id) AS market_code,
+      ${contextColumnsSql('o')},
       (SELECT SUM(imp.estimated_business_complete_cost_kmf)
        FROM order_item_cost_imputations imp
        WHERE imp.order_id = o.id) AS estimated_cost_kmf,
@@ -297,7 +304,7 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
     LIMIT $${limitIndex}
   `, queryParams);
 
-  return rows.map(row => {
+  return Promise.all(rows.map(async row => {
     const sale = Number(row.total_kmf) || 0;
     const estimated = row.estimated_cost_kmf == null ? null : Number(row.estimated_cost_kmf);
     const real = row.real_cost_kmf == null ? null : Number(row.real_cost_kmf);
@@ -305,21 +312,202 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
     const costStatus = !hasImputation
       ? 'incomplete'
       : (row.final_ready === true ? 'actual' : (real != null ? 'partial_real' : 'estimated'));
+    const missingTypes = Array.isArray(row.missing_cost_types) ? row.missing_cost_types : [];
+    const explanation = describeOrderCosts({
+      status: row.status,
+      payment_mode: row.payment_mode,
+      imported: row.ctx_imported,
+      customs_event: row.ctx_customs_event,
+      relay_beneficiary: row.ctx_relay_beneficiary,
+      hub_route: row.ctx_hub_route,
+      hub_route_unknown: row.ctx_hub_route_unknown,
+      customs_unknown: row.ctx_customs_unknown,
+      missing_cost_types: missingTypes,
+    });
+    const truth = await computeOrderCostVariance(row.order_id);
 
     return Object.freeze({
+      order_id: row.order_id,
       reference: row.reference,
+      market_code: row.market_code || null,
       status: row.status,
       payment_status: row.payment_status,
       sale_total_kmf: sale,
       estimated_cost_kmf: estimated,
       real_cost_kmf: real,
+      // Conservé pour compatibilité : écart brut estimé complet vs réel total. Ne qualifie rien.
       variance_kmf: estimated != null && real != null ? real - estimated : null,
       estimated_margin_kmf: estimated != null ? sale - estimated : null,
       consolidated_margin_kmf: costStatus === 'actual' && real != null ? sale - real : null,
       cost_status: costStatus,
-      missing_cost_types: Array.isArray(row.missing_cost_types) ? row.missing_cost_types : [],
+      missing_cost_types: missingTypes,
       created_at: row.created_at,
+      variance: buildOrderVariance(truth, costStatus, explanation),
     });
+  }));
+}
+
+
+// ── Écarts coûts prévus / constatés (RCT1-FIN-01) ──────────────────────
+// Écart de coût = réel − estimé sur le périmètre canonique N1 + paiement (variance.js).
+// Écart de marge variable = −écart de coût (même périmètre). Aucun seuil de gravité.
+const COST_OWNER = Object.freeze({
+  product_purchase: Object.freeze({ label: 'Achats', href: '/admin/workspaces/purchasing' }),
+  sourcing: Object.freeze({ label: 'Achats', href: '/admin/workspaces/purchasing' }),
+  packaging: Object.freeze({ label: 'Hub', href: '/admin/hub-live' }),
+  hub: Object.freeze({ label: 'Hub', href: '/admin/hub-live' }),
+  freight: Object.freeze({ label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' }),
+  customs: Object.freeze({ label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' }),
+  port_transitaire: Object.freeze({ label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' }),
+  local_distribution: Object.freeze({ label: 'Logistique', href: '/admin/orders-logistics' }),
+  relay: Object.freeze({ label: 'Relais', href: '/admin/relais-live' }),
+  payment: Object.freeze({ label: 'Comptabilité', href: '/admin/workspaces/accounting' }),
+});
+
+function classifyOrderVariance(truth, costStatus) {
+  const est = truth && truth.estimated;
+  const real = truth && truth.real;
+  if (!est || est.variable_total_kmf == null) return { class: 'not_comparable', reason: 'estimate_absent' };
+  if (!real || Object.keys(real.by_cost_type || {}).length === 0) return { class: 'not_comparable', reason: 'no_real_cost' };
+  if (!truth.variance) {
+    const unknownTypes = (real.expected_unknown_cost_types || []);
+    return { class: 'not_comparable', reason: unknownTypes.length ? 'expected_cost_unknown' : 'scope_not_comparable' };
+  }
+  const delta = Math.round(truth.variance.total_kmf);
+  if (costStatus !== 'actual') return { class: 'provisional', reason: 'real_incomplete', cost_variance_kmf: delta };
+  if (delta > 0) return { class: 'overrun', reason: null, cost_variance_kmf: delta, margin_variance_kmf: -delta };
+  if (delta < 0) return { class: 'saving', reason: null, cost_variance_kmf: delta, margin_variance_kmf: -delta };
+  return { class: 'none', reason: null, cost_variance_kmf: 0, margin_variance_kmf: 0 };
+}
+
+function buildVarianceComponents(truth, explanation) {
+  const estByType = (truth && truth.estimated && truth.estimated.by_cost_type) || {};
+  const realByType = (truth && truth.real && truth.real.variable_by_cost_type) || {};
+  const missing = new Map(((explanation && explanation.missing) || []).map(item => [item.type, item]));
+  const notYet = new Map(((explanation && explanation.not_yet_expected) || []).map(item => [item.type, item]));
+  const notApplicable = new Map(((explanation && explanation.not_applicable) || []).map(item => [item.type, item]));
+  const types = new Set([...Object.keys(estByType), ...Object.keys(realByType), ...missing.keys(), ...notYet.keys(), ...notApplicable.keys()]);
+  const order = Object.keys(COST_OWNER);
+  return [...types].filter(type => order.includes(type)).sort((a, b) => order.indexOf(a) - order.indexOf(b)).map(type => {
+    const estRaw = Number(estByType[type]);
+    const estimated = Number.isFinite(estRaw) && estRaw > 0 ? Math.round(estRaw) : null;
+    const realRaw = realByType[type];
+    const real = realRaw == null ? null : Math.round(Number(realRaw));
+    let state;
+    let motif = null;
+    if (real != null) state = real === 0 ? 'zero_confirmed' : 'confirmed';
+    else if (missing.has(type)) { state = 'unknown'; motif = missing.get(type).note || null; }
+    else if (notYet.has(type)) { state = 'expected'; motif = notYet.get(type).expected_when ? `Attendu à : ${notYet.get(type).expected_when}` : null; }
+    else if (notApplicable.has(type)) { state = 'not_applicable'; motif = notApplicable.get(type).motif || null; }
+    else { state = 'expected'; }
+    return {
+      type,
+      label: (missing.get(type) || notYet.get(type) || notApplicable.get(type) || {}).label || type,
+      state,
+      estimated_kmf: estimated,
+      real_kmf: real,
+      delta_kmf: real != null && estimated != null ? real - estimated : null,
+      motif,
+      owner: COST_OWNER[type] || null,
+    };
+  });
+}
+
+function buildOrderVariance(truth, costStatus, explanation) {
+  const verdict = classifyOrderVariance(truth, costStatus);
+  return Object.freeze({
+    ...verdict,
+    estimated_variable_kmf: truth && truth.estimated ? truth.estimated.variable_total_kmf : null,
+    real_variable_kmf: truth && truth.real ? truth.real.variable_total_kmf : null,
+    scope: 'N1+paiement',
+    components: Object.freeze(buildVarianceComponents(truth, explanation)),
+    margin: explanation ? explanation.margin : null,
+  });
+}
+
+function summarizeVariances(orders) {
+  const classes = ['overrun', 'saving', 'provisional', 'not_comparable', 'none'];
+  const summary = { orders_considered: orders.length, scope: 'N1+paiement' };
+  for (const key of classes) summary[key] = { orders: 0, amount_kmf: 0 };
+  for (const order of orders) {
+    const v = order.variance;
+    if (!v || !summary[v.class]) continue;
+    summary[v.class].orders += 1;
+    if (v.cost_variance_kmf != null) summary[v.class].amount_kmf += v.cost_variance_kmf;
+  }
+  summary.not_comparable.amount_kmf = null;
+  summary.none.amount_kmf = 0;
+  return Object.freeze(summary);
+}
+
+function buildFollowUp(row) {
+  const exp = row.cost_explanation || {};
+  const actions = new Map();
+  for (const item of exp.missing || []) {
+    const owner = COST_OWNER[item.type];
+    actions.set(item.type, {
+      type: item.type, label: item.label || item.type, state: 'unknown',
+      reason: item.note || null, owner: owner || null,
+    });
+  }
+  const pending = (exp.not_yet_expected || []).map(item => ({
+    type: item.type, label: item.label || item.type, state: 'expected',
+    reason: item.expected_when ? `Attendu à : ${item.expected_when}` : null, owner: COST_OWNER[item.type] || null,
+  }));
+  return { to_establish: [...actions.values()], not_yet_due: pending };
+}
+
+async function getMarginScope(filters = {}) {
+  const { where, params } = buildFiltersClause(filters, 'o');
+  const { rows } = await db.query(`
+    SELECT o.reference, o.status, o.payment_mode::text AS payment_mode,
+           ${contextColumnsSql('o')},
+           ${missingTypesArraySql('o')} AS missing_cost_types,
+           EXISTS (SELECT 1 FROM order_item_cost_imputations i WHERE i.order_id = o.id) AS has_imputation,
+           ${finalMarginReadySql('o')} AS final_ready,
+           (SELECT SUM(alc.amount_kmf) FROM order_item_real_cost_allocations alc
+             WHERE alc.order_id = o.id AND ${justifiedRealSql('alc')}) AS real_cost_kmf
+    FROM orders o
+    WHERE ${where}
+      AND o.payment_status = 'paid'
+      AND o.status NOT IN ('cancelled', 'refunded')
+    ORDER BY o.created_at ASC
+  `, params);
+  const REASONS = {
+    estimate_absent: 'Estimation absente',
+    not_final_stage: 'Commande pas encore remise au client',
+    costs_missing: 'Coûts attendus manquants',
+    customs_unknown: 'Douane encore inconnue',
+  };
+  const excluded = new Map();
+  const eligible = [];
+  const split = { final: { orders: 0, amount_kmf: 0 }, partial: { orders: 0, amount_kmf: 0 } };
+  for (const row of rows) {
+    const hasImp = row.has_imputation === true || row.has_imputation === 'true';
+    const ok = hasImp && row.final_ready === true;
+    const realCost = row.real_cost_kmf == null ? null : Number(row.real_cost_kmf);
+    if (realCost != null) {
+      const bucket = ok ? split.final : split.partial;
+      bucket.orders += 1;
+      bucket.amount_kmf += realCost;
+    }
+    if (ok) { eligible.push(row.reference); continue; }
+    const exp = describeOrderCosts({
+      status: row.status, payment_mode: row.payment_mode, imported: row.ctx_imported, customs_event: row.ctx_customs_event,
+      relay_beneficiary: row.ctx_relay_beneficiary, hub_route: row.ctx_hub_route, hub_route_unknown: row.ctx_hub_route_unknown,
+      customs_unknown: row.ctx_customs_unknown, missing_cost_types: row.missing_cost_types || [],
+    });
+    const reason = !hasImp ? 'estimate_absent' : (exp.margin.reason || 'costs_missing');
+    const entry = excluded.get(reason) || { reason, label: REASONS[reason] || reason, count: 0 };
+    entry.count += 1;
+    excluded.set(reason, entry);
+  }
+  return Object.freeze({
+    paid_orders: rows.length,
+    eligible_orders: eligible.length,
+    eligible_references: Object.freeze(eligible.slice(0, 20)),
+    excluded: Object.freeze([...excluded.values()]),
+    real_cost_split: Object.freeze({ final: Object.freeze(split.final), partial: Object.freeze(split.partial) }),
   });
 }
 
@@ -419,6 +607,7 @@ async function buildFinance(query = {}, options = {}) {
     costingOrders,
     relayProfitability,
     supplierPaymentReview,
+    marginScope,
   ] = await Promise.all([
     metrics.getCAEncaisse(window.filters),
     metrics.getCoutEstime(window.filters),
@@ -438,6 +627,7 @@ async function buildFinance(query = {}, options = {}) {
     getRecentCostingOrders(window.filters, { limit: 20 }),
     getRelayProfitability(window.filters),
     getSupplierPaymentReview({ limit: 50, ...(market && market.id ? { market_id: market.id } : {}) }),
+    getMarginScope(window.filters),
   ]);
 
   return Object.freeze({
@@ -463,6 +653,8 @@ async function buildFinance(query = {}, options = {}) {
     trend: Object.freeze(trend),
     cost_families: Object.freeze(costFamilies),
     costing_orders: Object.freeze(costingOrders),
+    variance_summary: summarizeVariances(costingOrders),
+    margin_scope: marginScope,
     relay_profitability: Object.freeze(relayProfitability),
     payment_mix: Object.freeze(paymentMix),
     refunds: Object.freeze({
@@ -471,6 +663,8 @@ async function buildFinance(query = {}, options = {}) {
     }),
     incomplete_cost_orders: Object.freeze(incompleteOrders.map(row => Object.freeze({
       reference: row.reference,
+      market_code: row.market_code || null,
+      follow_up: buildFollowUp(row),
       status: row.status,
       payment_status: row.payment_status,
       total_kmf: Number(row.total_kmf) || 0,
@@ -526,5 +720,10 @@ module.exports = {
   getRecentCostingOrders,
   getRelayProfitability,
   getSupplierPaymentReview,
+  classifyOrderVariance,
+  buildVarianceComponents,
+  summarizeVariances,
+  buildFollowUp,
+  getMarginScope,
   buildFinance,
 };

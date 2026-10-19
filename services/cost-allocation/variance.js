@@ -134,6 +134,16 @@ async function computeOrderCostVariance(orderId) {
        SUM(estimated_business_variable_cost_kmf) AS business_variable,
        SUM(estimated_fixed_overhead_kmf) AS fixed_overhead,
        SUM(COALESCE((cost_breakdown->'business'->>'risk_provision')::numeric, 0)) AS risk_provision,
+       SUM(COALESCE((cost_breakdown->'landed_relay'->>'product_purchase')::numeric, 0)) AS expected_product_purchase,
+       SUM(COALESCE((cost_breakdown->'landed_relay'->>'sourcing')::numeric, 0)) AS expected_sourcing,
+       SUM(COALESCE((cost_breakdown->'landed_relay'->>'hub')::numeric, 0)) AS expected_hub,
+       SUM(COALESCE((cost_breakdown->'landed_relay'->>'packaging')::numeric, 0)) AS expected_packaging,
+       SUM(COALESCE((cost_breakdown->'landed_relay'->>'freight')::numeric, 0)) AS expected_freight,
+       SUM(COALESCE((cost_breakdown->'landed_relay'->>'customs')::numeric, 0)) AS expected_customs,
+       SUM(COALESCE((cost_breakdown->'landed_relay'->>'port_transitary')::numeric, 0)) AS expected_port_transitary,
+       SUM(COALESCE((cost_breakdown->'landed_relay'->>'local_distribution')::numeric, 0)) AS expected_local_distribution,
+       SUM(COALESCE((cost_breakdown->'landed_relay'->>'relay')::numeric, 0)) AS expected_relay,
+       SUM(COALESCE((cost_breakdown->'business'->>'payment')::numeric, 0)) AS expected_payment,
        COUNT(*)::int AS imputations_count,
        COUNT(*) FILTER (
          WHERE estimated_landed_relay_cost_kmf IS NULL
@@ -193,6 +203,13 @@ async function computeOrderCostVariance(orderId) {
   const comparable = estimatedReconcilableVariable != null && real.unknownTotal === 0
     && expectedUnknownCostTypes.length === 0;
 
+  // Estimé par type de coût réel (snapshot figé) : base de la décomposition par composante.
+  const estimatedByType = {};
+  for (const [snapshotKey, realType] of Object.entries(SNAPSHOT_LANDED_TO_REAL_COST_TYPE)) {
+    estimatedByType[realType] = Math.round(Number(est[`expected_${snapshotKey}`]) || 0);
+  }
+  estimatedByType.payment = Math.round(Number(est.expected_payment) || 0);
+
   return {
     order_id: orderId,
     estimated: {
@@ -205,6 +222,7 @@ async function computeOrderCostVariance(orderId) {
       variable_total_kmf: _roundOrNull(estimatedReconcilableVariable),
       contribution_cost_total_kmf: _roundOrNull(estimatedContributionCost),
       missing_variable_snapshot_count: missingVariableSnapshotCount,
+      by_cost_type: estimatedByType,
     },
     real: {
       total_kmf: Math.round(real.total),
