@@ -8,7 +8,7 @@
  * @outputs       canonical_finance_projection
  * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, parcel_items, parcels, customs_shipments, customs_shipment_parcels
+ * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, markets, parcel_items, parcels, customs_shipments, customs_shipment_parcels
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, finance_event_date_is_authoritative

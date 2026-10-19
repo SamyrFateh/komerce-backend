@@ -53,15 +53,15 @@
   },
   "summary": {
     "features": 40,
-    "healthy": 33,
+    "healthy": 34,
     "attention": 6,
-    "blocked": 1,
-    "businessDependencies": 309,
-    "directCrossFeatureImports": 1,
+    "blocked": 0,
+    "businessDependencies": 310,
+    "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 11,
+    "debtItemsTotal": 10,
     "gateHealthy": 37,
     "gateBlocked": 2
   },
@@ -12117,6 +12117,13 @@
           ]
         },
         {
+          "provider": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -12287,8 +12294,8 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 1,
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -12312,14 +12319,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -16612,6 +16613,13 @@
       "consumedBy": [
         {
           "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
