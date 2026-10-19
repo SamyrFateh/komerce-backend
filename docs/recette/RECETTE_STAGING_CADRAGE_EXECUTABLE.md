@@ -4,6 +4,12 @@
 
 **v4 — amendement (checkout canonique).** Le checkout ajoute le transport commercial aux lignes IMPORT (65 KMF/kg SEA) : une commande de 1 article P1 (1 kg) est vendue **15 065 KMF**, pas 15 000. Le scénario E1 est corrigé, l'attendu n'est pas ajusté à l'observé : vente 15 065, coûts 10 300 (inchangés), **marge 4 765 KMF (31,63 %)**. G (LOCAL_STOCK, transport 0) reste à 6 000 de vente, recalcul indépendant confirmé en réplique locale ; à reprouver sur staging. Consolidé : 4 765 + 1 850 = **6 615 KMF**. E2 : vente 15 065, coûts 10 750, marge **4 315 KMF** ; consolidé avec E2 : 10 930. Le moteur de gouvernance marché exclut désormais les commandes simulées (RCT1) des assiettes de couverture/maturité/N3.
 
+**v4 — classification douane.** `customs_categories.key = products.category` est gelé sur la ligne de commande. Les produits RCT1 portent désormais une catégorie Komerce issue du classifieur canonique (P1/P3/P4/P5 → `mariage`, P2 → repli `autre`, nom sans terme configuré) et la taxonomie boutique « Maison ». Les commandes E1/F/C/C2/I3, passées avant, gardent des lignes figées en repli (immuable) ; G sera classée.
+
+**v4 — P3 / G.** Le prix local P3 de 6 000 KMF est refusé (`PRICE_BELOW_VARIABLE_COST` : coût variable estimé 6 439, dont 1 943 de chaîne import non applicable à LOCAL_STOCK selon L2). Le moteur accepte P3 à partir de 8 000 KMF. G est prête (`P3_PRICE=` dans l'issue) ; l'attendu de G = prix arbitré − 4 150.
+
+**v4 — I3 (envoi scindé).** RCT1-I3 : P1 + P2, vente 40 130 (40 000 + 130 de transport), 2 colis, SH3 (P1, fret 2 000) et SH4 (P2, fret 3 000) ; une allocation de fret par ligne, 0 doublon.
+
 **Règles.**
 - Aucun RESET ni purge.
 - Aucun remplissage SQL destiné à fabriquer un vert.
