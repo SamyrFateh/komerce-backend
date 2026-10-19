@@ -20,6 +20,7 @@
  * KOMERCE — Health Check + Metrics Endpoints (V3.2 enhanced)
  *
  * GET /health         — Basic health check (DB connectivity + latency)
+ * GET /health/target  — Identité non secrète de la cible (empreinte de base)
  * GET /health/ready   — Readiness check
  * GET /health/metrics — Full metrics dashboard (admin only)
  *
@@ -32,6 +33,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { getMetrics } = require('../services/monitoring');
+const { computeDbFingerprint, readRuntimeIdentity } = require('../services/target-identity');
 const { authenticate, requireRole } = require('../middleware/auth');
 
 // ── GET /health — Basic health ──────────────────────────────────────────────
@@ -59,6 +61,17 @@ router.get('/', async (req, res, next) => {
       error: err.message,
       timestamp: new Date().toISOString(),
     });
+  }
+});
+
+// ── GET /health/target — identité NON secrète de la cible (empreinte de base + environnement déclaré) ──
+
+router.get('/target', async (req, res) => {
+  try {
+    const { fingerprint } = await computeDbFingerprint(db);
+    res.json({ db_fingerprint: fingerprint, identity: readRuntimeIdentity() });
+  } catch {
+    res.status(503).json({ error: 'identité indisponible' });
   }
 });
 

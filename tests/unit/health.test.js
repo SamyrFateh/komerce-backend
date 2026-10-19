@@ -107,6 +107,21 @@ describe('GET /health — basic', () => {
   });
 });
 
+describe('GET /health/target', () => {
+  test('publie empreinte hashée + identité sans secret', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ name: 'railway', oid: '1', addr: 'a', port: '5432' }] });
+    const res = await request(buildApp()).get('/health/target');
+    expect(res.status).toBe(200);
+    expect(res.body.db_fingerprint).toMatch(/^[0-9a-f]{24}$/);
+    expect(JSON.stringify(res.body)).not.toMatch(/postgres|password/i);
+  });
+  test('503 si la base est injoignable', async () => {
+    mockDbQuery.mockRejectedValueOnce(new Error('down'));
+    const res = await request(buildApp()).get('/health/target');
+    expect(res.status).toBe(503);
+  });
+});
+
 describe('GET /health/ready', () => {
   it('DB ok → status ready', async () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [] });
