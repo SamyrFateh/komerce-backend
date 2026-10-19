@@ -106,5 +106,29 @@ const deployedFlagsCheck = check('check.deployed-flags', [], async () => {
   } catch (e) { return { ok: false, error: String(e.message).slice(0, 120) }; }
 });
 
-const steps = [conversionCheck, p4Check, classificationCheck, parcelsCheck, splitCheck, marketsCheck, deployedFlagsCheck];
+// Marges et completude : attendus independants (cadrage v4) vs finance canonique ; isolation hors perimetre.
+const marginsCheck = check('check.margins', [], async () => {
+  const { EXPECTED_MARGIN } = require('./data');
+  const fin = require('../../../services/dashboard-finance-canonical');
+  const scoped = await fin.buildFinance({ simulation_scope: 'RCT1', period: '90' }, {});
+  const real = await fin.buildFinance({ period: '90' }, {});
+  const by = Object.fromEntries((scoped.costing_orders || []).filter(o => String(o.reference).startsWith('RCT1-')).map(o => [o.reference, o]));
+  const results = {};
+  const verdict = (ref, ok, observed) => { results[ref] = { ok, observed }; };
+  const e1 = by['RCT1-E1']; const x1 = EXPECTED_MARGIN['RCT1-E1'];
+  verdict('RCT1-E1', !!e1 && e1.cost_status === 'actual' && Number(e1.consolidated_margin_kmf) === x1.margin_kmf && Number(e1.sale_total_kmf) === x1.revenue_kmf, e1 && { status: e1.cost_status, margin: e1.consolidated_margin_kmf, sale: e1.sale_total_kmf, expected: x1 });
+  const f = by['RCT1-F'];
+  verdict('RCT1-F', !!f && f.consolidated_margin_kmf == null && (f.missing_cost_types || []).join() === 'relay', f && { status: f.cost_status, missing: f.missing_cost_types });
+  const c = by['RCT1-C'];
+  verdict('RCT1-C', !!c && c.consolidated_margin_kmf == null && c.cost_status !== 'actual', c && { status: c.cost_status, missing: c.missing_cost_types, reason: 'douane inconnue (SH1 sans montant)' });
+  const c2 = by['RCT1-C2'];
+  verdict('RCT1-C2', !!c2 && c2.consolidated_margin_kmf == null && c2.cost_status === 'estimated', c2 && { status: c2.cost_status, missing: c2.missing_cost_types });
+  const g = by['RCT1-G']; const xg = EXPECTED_MARGIN['RCT1-G'];
+  if (g) verdict('RCT1-G', g.cost_status === 'actual' && Number(g.consolidated_margin_kmf) === xg.margin_kmf && Number(g.sale_total_kmf) === xg.revenue_kmf, { status: g.cost_status, margin: g.consolidated_margin_kmf, expected: xg });
+  const isolated = !(real.costing_orders || []).some(o => String(o.reference).startsWith('RCT1-')) && !(real.incomplete_cost_orders || []).some(o => String(o.reference).startsWith('RCT1-'));
+  const ok = Object.values(results).every(r => r.ok) && isolated;
+  return { ok, results, g_installed: !!g, isolated_from_real_activity: isolated };
+});
+
+const steps = [marginsCheck, conversionCheck, p4Check, classificationCheck, parcelsCheck, splitCheck, marketsCheck, deployedFlagsCheck];
 module.exports = { steps };

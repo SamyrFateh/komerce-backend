@@ -67,6 +67,6 @@ Cible : staging Komerce, `https://komerce-backend-production.up.railway.app`. Co
 5. Classification : commandes E1/F/C/C2/I3 passées **avant** la correction gardent des lignes figées « repli » (immuable, doctrine I-DOUANE-1) ; seules les nouvelles lignes sont classées. D4, commission relais globale 600 (FICTIF), provenance du cash : ouverts.
 
 ## G. Exécuter G dès l'arbitrage
-Ouvrir l'issue `[staging-op] rct1-apply` avec, dans le corps, la ligne `P3_PRICE=<prix arbitré>` (entier), puis `rct1-replay` (0 écriture attendue) et `rct1-verify`. Attendu : vente = prix arbitré, coûts réels 4 150, marge = prix − 4 150, *actual* ; consolidé = 4 765 + cette marge. Prouvé en réplique : prix 7 500 → G 7 500, marge 3 350, consolidé 8 115, rejeu 0 écriture.
+Ouvrir l'issue `[staging-op] rct1-apply` avec, dans le corps, la ligne `P3_PRICE=<prix arbitré>` (entier), puis `rct1-replay` (0 écriture attendue) et `rct1-verify`, **avec la même ligne `P3_PRICE=` dans chaque issue**. Attendu : vente = prix arbitré, coûts réels 4 150, marge = prix − 4 150, *actual* ; consolidé = 4 765 + cette marge. Prouvé en réplique : prix 7 500 → G 7 500, marge 3 350, consolidé 8 115, rejeu 0 écriture.
 
 **Verdict global : GO uniquement si A, B1–B5, C1–C5, D1–D3, E sont GO et si §F est tranché ; sinon NO GO, avec la liste des lignes en écart.**
