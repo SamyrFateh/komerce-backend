@@ -243,7 +243,7 @@
     const parts = [];
     if (e.missing_estimate) parts.push('Estimation absente');
     if (Array.isArray(e.missing) && e.missing.length) {
-      parts.push('Manque : ' + e.missing.map(m => (m.label || m.type) + (m.collection_mechanism === false ? ' (mécanisme de collecte absent)' : '')).join(', '));
+      parts.push('Manque : ' + e.missing.map(m => (m.label || m.type) + (m.collection_mechanism === false ? ' (mécanisme de collecte absent)' : (m.mechanism === 'manual_entry' ? ' (saisie manuelle requise)' : ''))).join(', '));
     }
     if (Array.isArray(e.not_yet_expected) && e.not_yet_expected.length) {
       parts.push('Pas encore attendu : ' + e.not_yet_expected.map(m => m.label || m.type).join(', '));

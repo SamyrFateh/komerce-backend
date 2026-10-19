@@ -60,11 +60,13 @@ describe('coûts applicables et attendus (D1) — règles et scénarios', () => 
     expect(d.not_applicable.find(x => x.type === 'relay').motif).toMatch(/bénéficiaire/);
   });
 
-  test('l’absence de mécanisme de collecte reste un manque fonctionnel, jamais « non applicable »', () => {
+  test('L1 : coût sans collecteur automatique = saisie manuelle traçable requise, inconnu jamais zéro ni « non applicable »', () => {
     const d = ce.describeOrderCosts({ ...IMPORTED, status: 'preparation', missing_cost_types: ['packaging', 'product_purchase'] });
     const packaging = d.missing.find(m => m.type === 'packaging');
-    expect(packaging).toMatchObject({ state: 'unknown', collection_mechanism: false });
-    expect(packaging.note).toMatch(/collecte absent/);
+    expect(packaging).toMatchObject({ state: 'unknown', collection_mechanism: true, mechanism: 'manual_entry' });
+    expect(packaging.note).toMatch(/saisie manuelle traçable/);
+    expect(packaging.note).toMatch(/jamais zéro/);
+    expect(d.missing.find(m => m.type === 'product_purchase').mechanism).toBe('automatic');
     expect(d.not_applicable.map(x => x.type)).not.toContain('packaging');
     expect(d.missing.find(m => m.type === 'product_purchase').collection_mechanism).toBe(true);
   });

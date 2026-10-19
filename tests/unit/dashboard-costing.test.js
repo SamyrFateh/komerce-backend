@@ -108,7 +108,7 @@ describe('dashboard-metrics/costing', () => {
     const out = await costing.getCmdsCoutIncompletIds({ relais_id: 'r1' }, { limit: 5000 });
     expect(db.query.mock.calls[0][1][0]).toBe('r1');
     expect(db.query.mock.calls[0][1].at(-1)).toBe(1000);
-    expect(out[0].cost_explanation.missing[0]).toMatchObject({ type: 'packaging', state: 'unknown', collection_mechanism: false });
+    expect(out[0].cost_explanation.missing[0]).toMatchObject({ type: 'packaging', state: 'unknown', mechanism: 'manual_entry' });
     expect(out[0].cost_explanation.not_yet_expected.map(x => x.type)).toContain('customs');
     expect(out[0].cost_explanation.costs_complete_at_stage).toBe(false);
     expect(out[0].cost_explanation.margin).toMatchObject({ final_computable: false, reason: 'not_final_stage' });

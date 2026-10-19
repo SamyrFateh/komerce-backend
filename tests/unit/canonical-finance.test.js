@@ -407,3 +407,26 @@ describe('L3 — périmètre de recette affiché', () => {
     expect(financeDecision.trust({}, { formatNumber: String }).stateLabel).toBe('Source canonique');
   });
 });
+
+describe('L1 — coût sans collecteur automatique', () => {
+  test('le manque indique la saisie manuelle requise, jamais un zéro', () => {
+    const payload = { incomplete_cost_orders: [{ reference: 'RCT1-E1', status: 'collected', missing_cost_types: ['sourcing'],
+      cost_explanation: { missing: [{ type: 'sourcing', label: 'Sourcing', collection_mechanism: true, mechanism: 'manual_entry' }], not_yet_expected: [], margin: { label: 'Marge réelle finale non calculable : des coûts attendus manquent.' } } }] };
+    const items = financeDecision.incompleteCostOrderItems(payload, finance);
+    expect(JSON.stringify(items)).toContain('Sourcing (saisie manuelle requise)');
+  });
+});
+
+describe('L3 — périmètre de recette transmis depuis l’URL de la page (finance)', () => {
+  const run = async (search) => {
+    const fetch = jest.fn().mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payloadFixture()) });
+    await finance.mount({ root: {}, document: {}, ui: {}, fetch, renderer: { createRenderer: () => ({ render: jest.fn() }) },
+      adminContext: marketContext(), contextContract: adminContextContract, user: { role: 'admin' }, location: { search } });
+    return fetch.mock.calls[0][0];
+  };
+  test('périmètre valide transmis ; invalide ou absent ignoré (activité réelle)', async () => {
+    expect(await run('?simulation_scope=RCT1')).toBe('/api/admin/dashboard/finance/market/CM?period=30&simulation_scope=RCT1');
+    expect(await run("?simulation_scope=rct1'--")).toBe('/api/admin/dashboard/finance/market/CM?period=30');
+    expect(await run('')).toBe('/api/admin/dashboard/finance/market/CM?period=30');
+  });
+});

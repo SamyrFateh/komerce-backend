@@ -194,6 +194,7 @@
    "market_settlements",
    "mobile_money_transactions",
    "order_item_real_cost_allocations",
+   "order_cost_entry_events",
    "paypal_events_processed",
    "refunds",
    "risk_provisions",
