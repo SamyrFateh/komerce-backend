@@ -12,6 +12,9 @@ const {
   addParcelItem,
   removeParcelItem,
   assignSingleOrderItemToParcel,
+  assertSameMarket,
+  findParcelMarketViolations,
+  addParcelItemTraced,
 } = require('../../services/parcel-item-mutation-service');
 
 describe('parcel-item-mutation-service', () => {
@@ -100,5 +103,45 @@ describe('parcel-item-mutation-service', () => {
         quantity: 1,
       })
     ).rejects.toThrow(/requires an executor/);
+  });
+
+  describe('garde même marché par colis', () => {
+    const mk = (rows) => ({ query: jest.fn().mockResolvedValue({ rows }) });
+    const parcel = { order_id: 'o1', relais_id: null };
+
+    test('même commande : autorisé sans requête', async () => {
+      const ex = mk([]);
+      await assertSameMarket(ex, parcel, 'o1');
+      expect(ex.query).not.toHaveBeenCalled();
+    });
+    test('même marché : autorisé', async () => {
+      await expect(assertSameMarket(mk([{ id: 'o1', market_id: 'm1' }, { id: 'o2', market_id: 'm1' }]), parcel, 'o2')).resolves.toBeUndefined();
+    });
+    test('marchés différents : refusé, y compris relais NULL', async () => {
+      await expect(assertSameMarket(mk([{ id: 'o1', market_id: 'm1' }, { id: 'o2', market_id: 'm2' }]), parcel, 'o2'))
+        .rejects.toMatchObject({ code: 'MARKET_MISMATCH', status: 409 });
+    });
+    test('marché inconnu : refusé (jamais assimilé à « même marché »)', async () => {
+      await expect(assertSameMarket(mk([{ id: 'o1', market_id: 'm1' }, { id: 'o2', market_id: null }]), parcel, 'o2'))
+        .rejects.toMatchObject({ code: 'MARKET_UNKNOWN' });
+    });
+    test('addParcelItemTraced applique la garde avant toute écriture', async () => {
+      const calls = [];
+      const ex = { query: jest.fn(async (sql) => {
+        calls.push(sql);
+        if (/FROM parcels WHERE id/.test(sql)) return { rows: [{ id: 'p1', order_id: 'o1', reference: 'P', status: 'draft', relais_id: null }] };
+        if (/FROM order_items oi JOIN orders/.test(sql)) return { rows: [{ id: 'i2', quantity: 1, product_id: 'x', order_id: 'o2', relais_id: 'r' }] };
+        if (/FROM orders WHERE id = ANY/.test(sql)) return { rows: [{ id: 'o1', market_id: 'm1' }, { id: 'o2', market_id: 'm2' }] };
+        return { rows: [] };
+      }) };
+      await expect(addParcelItemTraced(ex, { parcelId: 'p1', orderItemId: 'i2', actorId: 'u' })).rejects.toMatchObject({ code: 'MARKET_MISMATCH' });
+      expect(calls.some((q) => /INSERT INTO parcel_items/.test(q))).toBe(false);
+    });
+    test('findParcelMarketViolations est en lecture seule', async () => {
+      const ex = mk([{ parcel_id: 'p1' }]);
+      expect(await findParcelMarketViolations(ex)).toEqual([{ parcel_id: 'p1' }]);
+      expect(ex.query.mock.calls[0][0]).toMatch(/^\s*SELECT/);
+      expect(ex.query.mock.calls[0][0]).not.toMatch(/UPDATE|DELETE|INSERT/);
+    });
   });
 });
