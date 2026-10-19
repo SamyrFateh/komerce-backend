@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1794,
-    "edges": 9061,
+    "edges": 9063,
     "dbTables": 206,
     "doctrines": 653,
     "impactAreas": 201,
@@ -16925,6 +16925,7 @@
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
         "relais",
+        "markets",
         "parcel_items",
         "parcels",
         "customs_shipments",
@@ -17130,7 +17131,8 @@
       "dbRead": [
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
-        "orders"
+        "orders",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -66362,6 +66364,12 @@
     },
     {
       "from": "services/dashboard-finance-canonical.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/dashboard-finance-canonical.js",
       "to": "db:parcel_items",
       "type": "db-read",
       "label": "parcel_items"
@@ -66755,6 +66763,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/dashboard-metrics/costing.js",
@@ -112363,6 +112377,7 @@
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
         "relais",
+        "markets",
         "parcel_items",
         "parcels",
         "customs_shipments",
@@ -112385,6 +112400,7 @@
       "mustCheck": [
         "db:customs_shipment_parcels",
         "db:customs_shipments",
+        "db:markets",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:order_items",
@@ -112584,7 +112600,8 @@
       "dbRead": [
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
-        "orders"
+        "orders",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -112597,6 +112614,7 @@
         "admin-costing"
       ],
       "mustCheck": [
+        "db:markets",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:orders",
