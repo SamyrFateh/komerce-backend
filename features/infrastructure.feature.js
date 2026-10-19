@@ -48,6 +48,7 @@ module.exports = {
 
   files: {
     services: [
+      'services/target-identity.js',
       'services/outbox-producer.js',
       'services/outbox-worker.js',
     ],
@@ -364,6 +365,7 @@ module.exports = {
     tests: [
       'tests/unit/impact-check-security-conventions.test.js',
       'tests/unit/require-non-production.test.js',
+      'tests/unit/target-identity.test.js',
       'tests/unit/ensure-staging-market-relays.test.js',
       'tests/unit/relay-map-csp.test.js',
       'tests/unit/r5-prod-guard.test.js',
