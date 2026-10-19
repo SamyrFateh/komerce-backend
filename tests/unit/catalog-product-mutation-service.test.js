@@ -121,4 +121,23 @@ describe('catalog-product-mutation-service', () => {
     expect(client.query.mock.calls.map(([sql]) => sql)).toEqual(['BEGIN', 'ROLLBACK']);
     expect(client.release).toHaveBeenCalledTimes(1);
   });
+
+  test('assignKomerceCategory valide la cle douane active puis ecrit products.category uniquement', async () => {
+    const db = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ key: 'mariage' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'p1', category: 'mariage' }] }) };
+    await expect(service.assignKomerceCategory(db, 'p1', 'mariage')).resolves.toEqual({ id: 'p1', category: 'mariage' });
+    expect(db.query.mock.calls[0][0]).toContain('customs_categories');
+    expect(db.query.mock.calls[1][0]).toContain('UPDATE products SET category');
+    expect(db.query.mock.calls[1][1]).toEqual(['mariage', 'p1']);
+  });
+
+  test('assignKomerceCategory refuse une cle inconnue (aucune categorie inventee) et accepte le repli autre', async () => {
+    const unknown = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+    await expect(service.assignKomerceCategory(unknown, 'p1', 'inventee')).rejects.toMatchObject({ code: 'komerce_category_invalid', status: 422 });
+    expect(unknown.query).toHaveBeenCalledTimes(1);
+    const fallback = { query: jest.fn().mockResolvedValueOnce({ rows: [{ id: 'p1', category: 'autre' }] }) };
+    await expect(service.assignKomerceCategory(fallback, 'p1', 'autre')).resolves.toEqual({ id: 'p1', category: 'autre' });
+    await expect(service.assignKomerceCategory(fallback, 'p1', '')).rejects.toMatchObject({ code: 'komerce_category_required' });
+  });
 });

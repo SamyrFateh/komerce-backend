@@ -28,11 +28,11 @@ const DESCRIPTION_SUFFIX = ' Produit de recette RCT1, donnee de test sans valeur
 // Hypothese initiale P3 : 6 000 KMF. L'arbitrage metier (ex. 7 000) se passe par RCT1_P3_PRICE_KMF (corps d'issue P3_PRICE=...), jamais par SQL.
 const P3_PRICE_KMF = Number(process.env.RCT1_P3_PRICE_KMF) > 0 ? Math.round(Number(process.env.RCT1_P3_PRICE_KMF)) : 6000;
 const PRODUCTS = Object.freeze({
-  P1: { ref: 'RCT1-P1', name: 'Theiere en fonte (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 15000, cost_kmf: 6000, stock: 100, weight_kg: 1, origin: 'IMPORT' },
-  P3: { ref: 'RCT1-P3', name: 'Panier tisse local (recette RCT1)', category: 'Maison', subcategory: 'Rangement', price_kmf: 6000, cost_kmf: 3000, stock: 100, weight_kg: 1, origin: 'LOCAL_STOCK', local_stock_qty: 5, stock_market: 'KM' },
-  P2: { ref: 'RCT1-P2', name: 'Lampe a huile importee (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 25000, cost_kmf: 12000, stock: 100, weight_kg: 1, origin: 'IMPORT' },
-  P4: { ref: 'RCT1-P4', name: 'Set de verres importe (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 10000, cost_kmf: 5000, stock: 100, weight_kg: 1, origin: 'IMPORT' },
-  P5: { ref: 'RCT1-P5', name: 'Service a the importe, prix EUR (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 49197, price_eur: 100, cost_kmf: 20000, stock: 100, weight_kg: 1, origin: 'IMPORT',
+  P1: { ref: 'RCT1-P1', komerce_category: 'mariage', name: 'Vaisselle de mariage : theiere en fonte (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 15000, cost_kmf: 6000, stock: 100, weight_kg: 1, origin: 'IMPORT' },
+  P3: { ref: 'RCT1-P3', komerce_category: 'mariage', name: 'Panier decor tisse local (recette RCT1)', category: 'Maison', subcategory: 'Rangement', price_kmf: 6000, cost_kmf: 3000, stock: 100, weight_kg: 1, origin: 'LOCAL_STOCK', local_stock_qty: 5, stock_market: 'KM' },
+  P2: { ref: 'RCT1-P2', komerce_category: 'autre', name: 'Lampe a huile importee (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 25000, cost_kmf: 12000, stock: 100, weight_kg: 1, origin: 'IMPORT' },
+  P4: { ref: 'RCT1-P4', komerce_category: 'mariage', name: 'Set de verres vaisselle importe (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 10000, cost_kmf: 5000, stock: 100, weight_kg: 1, origin: 'IMPORT' },
+  P5: { ref: 'RCT1-P5', komerce_category: 'mariage', name: 'Vaisselle : service a the importe, prix EUR (recette RCT1)', category: 'Maison', subcategory: 'Cuisine', price_kmf: 49197, price_eur: 100, cost_kmf: 20000, stock: 100, weight_kg: 1, origin: 'IMPORT',
     expected_conversion: { KMF: 49197, XAF: 65596 } },
 });
 for (const p of Object.values(PRODUCTS)) p.description = `${p.name}.${DESCRIPTION_SUFFIX}`;

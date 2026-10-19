@@ -8,7 +8,7 @@
  * @outputs       updated catalog product state
  * @depends       db contract supplied by caller
  * @used-by       services/pricing-apply.js, services/apply-pricing-updates.js, services/pricing-strategy-service.js, services/sourcing-mutations.js, scripts/catalog-taxonomy-provenance-backfill.js
- * @db-read       boutique_categories, boutique_subcategories, order_items, orders, product_variants, products
+ * @db-read       boutique_categories, boutique_subcategories, customs_categories, order_items, orders, product_variants, products
  * @db-write      product_variants, products
  * @db-txn        caller transaction preserved; replaceVariantsForSourcing owns its legacy dedicated transaction
  * @doctrine      WRITES != OWNS — catalog owns products/product_variants lifecycle
@@ -101,6 +101,34 @@ async function assignBoutiqueTaxonomy(db, productId, categoryKey, subcategoryKey
       RETURNING id, product_ref, category, subcategory,
                 boutique_category_key, boutique_subcategory_key`,
     [valid.category, valid.subcategory, productId]
+  );
+  return updated || null;
+}
+
+// Categorie Komerce (cle douane) d'un produit : meme semantique que le pipeline candidat (products.category = komerce_category,
+// repli 'autre'). Cle validee contre le referentiel customs_categories actif ; aucune categorie n'est inventee ici.
+const KOMERCE_CATEGORY_FALLBACK = 'autre';
+async function assignKomerceCategory(db, productId, categoryKey) {
+  const key = String(categoryKey || '').trim();
+  if (!key) {
+    const error = new Error('Categorie Komerce requise');
+    error.status = 422;
+    error.code = 'komerce_category_required';
+    throw error;
+  }
+  if (key !== KOMERCE_CATEGORY_FALLBACK) {
+    const { rows: [valid] } = await db.query('SELECT key FROM customs_categories WHERE key = $1 AND is_active = TRUE', [key]);
+    if (!valid) {
+      const error = new Error(`Categorie Komerce inconnue ou inactive : ${key}`);
+      error.status = 422;
+      error.code = 'komerce_category_invalid';
+      throw error;
+    }
+  }
+  const { rows: [updated] } = await db.query(
+    `UPDATE products SET category = $1, updated_at = NOW() WHERE id = $2
+      RETURNING id, product_ref, category, subcategory, boutique_category_key, boutique_subcategory_key`,
+    [key, productId]
   );
   return updated || null;
 }
@@ -376,6 +404,8 @@ module.exports = {
   applyPrice,
   resolveBoutiqueTaxonomy,
   assignBoutiqueTaxonomy,
+  assignKomerceCategory,
+  KOMERCE_CATEGORY_FALLBACK,
   updateSourcingFields,
   bulkAssignSourcingRail,
   replaceVariantsForSourcing,
