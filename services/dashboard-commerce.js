@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const { justifiedRealSql } = require('./cost-allocation/cost-expectation');
 const metrics = require('./dashboard-metrics');
 const pricingMarketCorridor = require('./pricing-market-corridor');
 const localStockDecision = require('./local-stock-decision-projection');
@@ -159,7 +160,7 @@ async function getProductProfitability(filters, options = {}) {
           SELECT COUNT(DISTINCT alc.cost_type::text)
           FROM order_item_real_cost_allocations alc
           WHERE alc.order_id = so.id
-            AND alc.is_actual = TRUE
+            AND ${justifiedRealSql('alc')}
             AND alc.cost_type::text = ANY($${expectedIndex}::text[])
         )::int AS expected_cost_types
       FROM scoped_orders so
@@ -179,7 +180,7 @@ async function getProductProfitability(filters, options = {}) {
         (SELECT SUM(alc.amount_kmf)
          FROM order_item_real_cost_allocations alc
          WHERE alc.order_item_id = oi.id
-           AND alc.is_actual = TRUE) AS real_cost_kmf,
+           AND ${justifiedRealSql('alc')}) AS real_cost_kmf,
         (ocs.has_imputation = TRUE AND ocs.expected_cost_types = ${expectedCount}) AS is_actual_order
       FROM scoped_orders so
       JOIN order_cost_status ocs ON ocs.id = so.id

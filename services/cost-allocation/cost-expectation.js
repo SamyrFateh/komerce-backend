@@ -182,13 +182,29 @@ function contextColumnsSql(alias) {
            ${customsUnknownForLinesSql(alias)} AS ctx_customs_unknown`;
 }
 
+/** Source des anciennes lignes hub/risque (écrites « réelles » sans justification) : non certifiées. */
+const LEGACY_UNJUSTIFIED_SOURCE = 'monthly_recalc';
+
+/** Prédicat canonique : la ligne d'allocation `alias` n'est pas une ligne historique non justifiée. */
+function notLegacyUnjustifiedSql(alias) {
+  return `COALESCE(${alias}.source, '') <> '${LEGACY_UNJUSTIFIED_SOURCE}'`;
+}
+
+/**
+ * Prédicat canonique D2b : ligne de coût RÉEL justifiée (réelle ET non historique non justifiée).
+ * Une ligne exclue n'est jamais comptée comme 0 : le type reste absent (donc « manquant »/NULL),
+ * ce qui ne peut que baisser la complétude, jamais la rendre complète.
+ */
+function justifiedRealSql(alias) {
+  return `${alias}.is_actual = TRUE AND ${notLegacyUnjustifiedSql(alias)}`;
+}
+
 /** Condition : le coût `typeExpr` a une allocation réelle justifiée pour `alias`. */
 function realCostPresentSql(alias, typeExpr) {
   return `EXISTS (SELECT 1 FROM order_item_real_cost_allocations rca
                    WHERE rca.order_id = ${alias}.id
                      AND rca.cost_type::text = ${typeExpr}
-                     AND rca.is_actual = TRUE
-                     AND COALESCE(rca.source, '') <> 'monthly_recalc')`;
+                     AND ${justifiedRealSql('rca')})`;
 }
 
 /** Condition : au moins un coût attendu manque pour `alias`. */
@@ -221,6 +237,9 @@ module.exports = {
   expectedTypesSql,
   contextColumnsSql,
   realCostPresentSql,
+  justifiedRealSql,
+  notLegacyUnjustifiedSql,
+  LEGACY_UNJUSTIFIED_SOURCE,
   hasMissingExpectedSql,
   finalMarginReadySql,
   missingTypesArraySql,

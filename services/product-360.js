@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const { notLegacyUnjustifiedSql } = require('./cost-allocation/cost-expectation');
 const capabilityEvidence = require('./suppliers/provider-capability-certifications');
 
 const PRODUCT_REF = /^KPR-\d{6,}$/i;
@@ -164,6 +165,7 @@ async function loadProduct360(product, options = {}) {
     JOIN order_items oi ON oi.id = alc.order_item_id
     JOIN orders o ON o.id = alc.order_id
     WHERE oi.product_id = $1::uuid
+      AND ${notLegacyUnjustifiedSql('alc')}
       ${realScope.sql}
   `, [productId, ...realScope.params]);
 

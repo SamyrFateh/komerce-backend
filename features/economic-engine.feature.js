@@ -209,6 +209,7 @@ module.exports = {
       'tests/unit/cost-allocation-variance.test.js',
       'tests/unit/real-margin-shadow.test.js',
       'tests/unit/cost-expectation.test.js',
+      'tests/unit/d2b-justified-readers.test.js',
       'tests/unit/product-margin-steering.test.js',
       'tests/unit/canonical-margin-writer.test.js',
       'tests/unit/real-margin-shadow-settlements.test.js',

@@ -41,6 +41,7 @@
 'use strict';
 
 const db = require('../../db');
+const { justifiedRealSql, notLegacyUnjustifiedSql } = require('./cost-expectation');
 const { getRuleNumber } = require('../../utils/rules');
 const { SNAPSHOT_LANDED_TO_REAL_COST_TYPE } = require('./cost-types');
 const { shareByWeight } = require('./_helpers');
@@ -261,8 +262,8 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
   if (itemIds.length) {
     const { rows: alloc } = await db.query(
       `SELECT a.order_item_id, a.cost_type, a.shipment_id, cs.reference, cs.shipment_date, cs.status,
-              COALESCE(SUM(a.amount_kmf) FILTER (WHERE a.is_actual), 0) AS actual,
-              COALESCE(SUM(a.amount_kmf) FILTER (WHERE NOT a.is_actual), 0) AS non_actual
+              COALESCE(SUM(a.amount_kmf) FILTER (WHERE ${justifiedRealSql('a')}), 0) AS actual,
+              COALESCE(SUM(a.amount_kmf) FILTER (WHERE NOT a.is_actual AND ${notLegacyUnjustifiedSql('a')}), 0) AS non_actual
          FROM order_item_real_cost_allocations a
          LEFT JOIN customs_shipments cs ON cs.id = a.shipment_id
         WHERE a.order_item_id = ANY($1::uuid[])
