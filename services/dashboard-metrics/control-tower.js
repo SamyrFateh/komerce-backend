@@ -309,7 +309,7 @@ async function getTauxCompletudeCouts(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     WITH order_set AS (
-      SELECT o.id, o.status, o.payment_mode FROM orders o
+      SELECT o.id, o.status, o.payment_mode, o.relais_id FROM orders o
       WHERE ${where}
         AND o.status NOT IN ('cancelled', 'refunded')
         AND NOT ${costExpectation.nothingExpectedYetSql('o')}
@@ -322,16 +322,23 @@ async function getTauxCompletudeCouts(filters = {}) {
     )
     SELECT
       (SELECT COUNT(*) FROM order_set)::int AS items_total,
-      (SELECT COUNT(*) FROM actual_orders)::int AS items_with_data
+      (SELECT COUNT(*) FROM actual_orders)::int AS items_with_data,
+      (SELECT COUNT(*) FROM order_set os
+        WHERE EXISTS (SELECT 1 FROM order_item_cost_imputations WHERE order_id = os.id)
+          AND ${costExpectation.finalMarginReadySql('os')})::int AS final_margin_ready
   `;
   const r = await db.query(sql, params);
   const itemsTotal = Number(r.rows[0].items_total) || 0;
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
   const value = itemsTotal > 0 ? Number(((itemsWithData / itemsTotal) * 100).toFixed(2)) : null;
 
-  return makeKpi('taux_completude_couts', 'Taux complétude coûts', value, '%', {
+  const finalMarginReady = Number(r.rows[0].final_margin_ready) || 0;
+
+  return makeKpi('taux_completude_couts', 'Coûts attendus présents à leur stade', value, '%', {
     itemsTotal,
     itemsWithData,
+    // Notion distincte : avoir tous les coûts attendus à son stade ne rend pas la marge finale calculable.
+    extra: { final_margin_ready: finalMarginReady, final_margin_note: 'Marge réelle finale calculable : commande remise au client, coûts attendus présents, douane connue.' },
     completeness: itemsTotal > 0 ? (itemsWithData === itemsTotal ? 'complete' : 'partial') : 'provisional',
     warning: value != null && value < 50 ? 'Beaucoup de commandes sans coût consolidé' : null,
     drillTo: '/admin/finance#finance-incomplete-costs',

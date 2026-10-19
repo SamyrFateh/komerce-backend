@@ -220,6 +220,7 @@ function makeKpi(key, label, value, unit, options = {}) {
       items_total: options.itemsTotal != null ? options.itemsTotal : null,
       items_with_data: options.itemsWithData != null ? options.itemsWithData : null,
       warning: options.warning || null,
+      ...(options.extra || {}),
     },
     drill_to: options.drillTo || null,
   };

@@ -281,11 +281,14 @@ describe('LOT 2F-CANON — Finance vivant', () => {
         not_yet_expected: [{ type: 'customs', label: 'Douane', expected_from: 'available' }],
         not_applicable: [],
         missing_estimate: false,
+        costs_complete_at_stage: false,
+        margin: { final_computable: false, reason: 'not_final_stage', label: 'Marge réelle finale non calculable : la commande n’est pas encore remise au client.' },
       },
     }];
     const [item] = financeDecision.incompleteCostOrderItems(payload, finance);
     expect(item.helper).toContain('Manque : Emballage (mécanisme de collecte absent), Achat produit');
     expect(item.helper).toContain('Pas encore attendu : Douane');
+    expect(item.helper).toContain('Marge réelle finale non calculable');
   });
 
   test('varianceItems exclut les commandes à variance nulle — correspondance exacte avec le compte du bandeau de décision', () => {

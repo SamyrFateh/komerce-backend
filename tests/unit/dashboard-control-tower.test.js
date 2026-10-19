@@ -156,7 +156,8 @@ describe('dashboard-metrics/control-tower', () => {
     const sql = String(db.query.mock.calls[0][0]);
     expect(db.query.mock.calls[0][1]).toEqual(['available']);
     expect(sql).toContain('is_actual = TRUE');
-    expect(sql).toContain("('payment'");
+    expect(sql).toContain("SELECT 'payment'::text");
+    expect(sql).toContain("os.status::text = 'collected'"); // marge finale prête : notion distincte
     expect(sql).not.toContain('fixed_overhead');
     expect(sql).toContain('< 1'); // commandes sans coût encore attendu exclues du dénominateur
   });

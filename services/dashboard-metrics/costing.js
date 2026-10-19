@@ -201,12 +201,13 @@ async function getMargeVariableReelle(filters = {}) {
 async function getMargeConsolidee(filters = {}) {
   // Marge consolidee = CA - cout reel total
   // UNIQUEMENT sur cmds avec cost_status='actual'
-  // (tous les couts applicables et attendus au stade de la commande, en reel justifie ;
-  //  les charges de structure ne sont jamais exigees par commande — D1)
+  // (marge reelle FINALE calculable : commande remise au client, tous les couts applicables
+  //  et attendus presents en reel justifie, douane connue ; les charges de structure ne sont
+  //  jamais exigees par commande — D1)
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     WITH order_set AS (
-      SELECT o.id, o.total_kmf, o.status, o.payment_mode
+      SELECT o.id, o.total_kmf, o.status, o.payment_mode, o.relais_id
       FROM orders o
       WHERE ${where}
         AND o.payment_status = 'paid'
@@ -218,8 +219,7 @@ async function getMargeConsolidee(filters = {}) {
           WHERE order_id = os.id AND is_actual = TRUE AND COALESCE(source, '') <> 'monthly_recalc') AS real_total
       FROM order_set os
       WHERE EXISTS (SELECT 1 FROM order_item_cost_imputations WHERE order_id = os.id)
-        AND NOT ${costExpectation.nothingExpectedYetSql('os')}
-        AND NOT ${costExpectation.hasMissingExpectedSql('os')}
+        AND ${costExpectation.finalMarginReadySql('os')}
     )
     SELECT
       COALESCE(SUM(total_kmf - real_total), 0)::bigint AS margin_kmf,
@@ -281,6 +281,7 @@ async function getCmdsCoutIncompletIds(filters = {}, options = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     SELECT o.id, o.reference, o.status, o.payment_status, o.payment_mode::text AS payment_mode, o.total_kmf, o.created_at,
+           ${costExpectation.contextColumnsSql('o')},
            ${costExpectation.missingTypesArraySql('o')} AS missing_cost_types,
            EXISTS (SELECT 1 FROM order_item_cost_imputations WHERE order_id = o.id) AS has_imputation
     FROM orders o
@@ -298,7 +299,15 @@ async function getCmdsCoutIncompletIds(filters = {}, options = {}) {
   return r.rows.map((row) => ({
     ...row,
     cost_explanation: {
-      ...costExpectation.describeOrderCosts({ status: row.status, payment_mode: row.payment_mode, missing_cost_types: row.missing_cost_types || [] }),
+      ...costExpectation.describeOrderCosts({
+        status: row.status,
+        payment_mode: row.payment_mode,
+        imported: row.ctx_imported,
+        customs_event: row.ctx_customs_event,
+        relay_beneficiary: row.ctx_relay_beneficiary,
+        customs_unknown: row.ctx_customs_unknown,
+        missing_cost_types: row.missing_cost_types || [],
+      }),
       missing_estimate: row.has_imputation === false,
     },
   }));

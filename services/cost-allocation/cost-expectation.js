@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        order_status, payment_mode, real_cost_allocations
  * @outputs       response_or_domain_result
- * @depends       ./cost-types
+ * @depends       ../finance-metrics/customs-unknown
  * @used-by       services/dashboard-metrics/costing.js, services/dashboard-metrics/control-tower.js
- * @db-read       order_item_real_cost_allocations
+ * @db-read       order_item_real_cost_allocations, order_items, parcel_items, customs_shipment_parcels, customs_shipments, parcels, orders
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine, dashboard
  * @version       2026-10
@@ -17,63 +17,109 @@
 'use strict';
 
 /**
- * D1 — coûts APPLICABLES et ATTENDUS d'une commande selon son stade.
+ * D1 — coûts APPLICABLES et ATTENDUS d'une commande, selon son stade et les
+ * événements canoniques (douane : expédition douane déclarée ; relais : remise).
  *
  * États d'un coût pour une commande :
  *   inconnu | estimé | réel justifié | non applicable (motif) | zéro confirmé
- * Cette couche décide seulement « attendu / non encore attendu / non applicable » ;
- * « présent » = allocation is_actual=TRUE non héritée suspecte. Une ligne réelle de
- * montant 0 est un zéro confirmé (valeur connue), jamais un inconnu.
+ * Cette couche décide « applicable / attendu / non encore attendu ». « Présent » =
+ * allocation is_actual=TRUE hors lignes héritées suspectes ; un réel à 0 est un zéro
+ * confirmé (valeur connue), jamais un inconnu. Un coût inconnu reste VISIBLE : son
+ * caractère anormal dépend du stade (non encore attendu ≠ absent).
  *
- * Règles de stade et d'applicabilité = PROPOSITION TECHNIQUE à valider par le métier
- * (la correction technique ne vaut pas validation métier).
+ * Deux notions séparées : complétude des coûts attendus AU STADE, et marge réelle FINALE
+ * calculable (remise au client, aucun attendu manquant, douane connue).
+ * Relais : la remise rend la commission attendue ; elle n'en fait un coût RÉEL que si le
+ * tarif est validé (garde is_actual de l'allocation) et le bénéficiaire identifié (relais).
+ * Cash au relais : pas de frais de prestataire de paiement ; commission relais et frais de
+ * collecte/transfert restent distincts.
+ *
+ * Règles de stade/applicabilité = PROPOSITION TECHNIQUE à valider par le métier.
  * Les charges de structure (fixed_overhead, forfait Hub) ne sont jamais exigées par commande.
- * L'absence d'un mécanisme de collecte (`collector:false`) ne rend PAS un coût non
- * applicable : il reste inconnu et signalé « mécanisme de collecte absent ».
+ * Une absence de mécanisme de collecte (`collector:false`) ne rend PAS un coût non
+ * applicable : il reste inconnu, signalé « mécanisme de collecte absent ».
  */
+
+const { customsExpectedSql, customsUnknownForLinesSql } = require('../finance-metrics/customs-unknown');
 
 const STATUS_RANK = Object.freeze({
   pending: 0, pending_group_payment: 0,
   confirmed: 1, ordered: 2, preparation: 3, shipped: 4, in_transit: 5, available: 6, collected: 7,
 });
 
-// from : premier statut à partir duquel le coût est attendu.
-// collector : un écrivain de ce coût réel existe dans le code aujourd'hui.
-const COST_RULES = Object.freeze([
-  { type: 'payment', from: 'confirmed', collector: false, label: 'Frais de paiement',
-    notApplicable: { payment_mode: { cash_relais: 'Paiement en espèces au relais : aucun frais de processeur' } } },
-  { type: 'product_purchase', from: 'ordered', collector: true, label: 'Achat produit' },
-  { type: 'sourcing', from: 'ordered', collector: false, label: 'Sourcing' },
-  { type: 'packaging', from: 'preparation', collector: false, label: 'Emballage' },
-  { type: 'hub', from: 'preparation', collector: false, label: 'Hub (variable)' },
-  { type: 'freight', from: 'shipped', collector: true, label: 'Fret' },
-  { type: 'customs', from: 'available', collector: true, label: 'Douane' },
-  { type: 'port_transitaire', from: 'available', collector: true, label: 'Port / transitaire' },
-  { type: 'local_distribution', from: 'available', collector: false, label: 'Distribution locale' },
-  { type: 'relay', from: 'collected', collector: true, label: 'Commission relais (due à la remise au client)' },
-]);
-
 const rank = (status) => (Object.prototype.hasOwnProperty.call(STATUS_RANK, status) ? STATUS_RANK[status] : 0);
 
-function notApplicableMotif(rule, ctx) {
-  const map = rule.notApplicable && rule.notApplicable.payment_mode;
-  return map && ctx.payment_mode && map[ctx.payment_mode] ? map[ctx.payment_mode] : null;
+// Drapeaux de contexte (même définition en SQL et en JS) :
+//   imported          : au moins une ligne importée (fulfillment_source ≠ LOCAL_STOCK) → douane applicable
+//   customs_event     : une expédition douane ACTIVE et DÉCLARÉE contient une ligne de la commande
+//                       (événement canonique : customs_shipments.status = 'declared') → coûts de
+//                       l'expédition (douane, fret, port) attendus
+//   relay_beneficiary : la commande a un relais identifié (orders.relais_id) → commission relais applicable
+const FLAG_SQL = Object.freeze({
+  imported: (a) => customsExpectedSql(a),
+  customs_event: (a) => `EXISTS (
+        SELECT 1 FROM order_items ce_oi
+          JOIN parcel_items ce_pi ON ce_pi.order_item_id = ce_oi.id
+          JOIN customs_shipment_parcels ce_csp ON ce_csp.parcel_id = ce_pi.parcel_id
+          JOIN customs_shipments ce_cs ON ce_cs.id = ce_csp.shipment_id
+         WHERE ce_oi.order_id = ${a}.id AND ce_cs.is_active AND ce_cs.status = 'declared')`,
+  relay_beneficiary: (a) => `${a}.relais_id IS NOT NULL`,
+});
+
+// applicable : conditions cumulatives. expected : stage (statut mini) OU flag événement.
+// collector : un écrivain de ce coût réel existe aujourd'hui.
+const COST_RULES = Object.freeze([
+  { type: 'payment', label: 'Frais du prestataire de paiement', collector: false,
+    applicable: { paymentModeNot: { cash_relais: 'Paiement en espèces au relais : aucun prestataire de paiement n’intervient (commission relais et frais de collecte ou de transfert restent des coûts distincts)' } },
+    expected: { stage: 'confirmed' } },
+  { type: 'product_purchase', label: 'Achat produit', collector: true, expected: { stage: 'ordered' } },
+  { type: 'sourcing', label: 'Sourcing', collector: false, expected: { stage: 'ordered' } },
+  { type: 'packaging', label: 'Emballage', collector: false, expected: { stage: 'preparation' } },
+  { type: 'hub', label: 'Hub (variable)', collector: false, expected: { stage: 'preparation' } },
+  { type: 'freight', label: 'Fret', collector: true,
+    applicable: { flag: 'imported', motif: 'Aucune ligne importée : pas d’expédition internationale' }, expected: { flag: 'customs_event' } },
+  { type: 'customs', label: 'Douane', collector: true,
+    applicable: { flag: 'imported', motif: 'Aucune ligne importée : pas de dédouanement' }, expected: { flag: 'customs_event' } },
+  { type: 'port_transitaire', label: 'Port / transitaire', collector: true,
+    applicable: { flag: 'imported', motif: 'Aucune ligne importée : pas de transitaire' }, expected: { flag: 'customs_event' } },
+  { type: 'local_distribution', label: 'Distribution locale', collector: false, expected: { stage: 'available' } },
+  { type: 'relay', label: 'Commission relais (due à la remise au client)', collector: true,
+    applicable: { flag: 'relay_beneficiary', motif: 'Aucun relais identifié sur la commande : pas de bénéficiaire' }, expected: { stage: 'collected' } },
+]);
+
+function applicability(rule, ctx) {
+  const a = rule.applicable || {};
+  if (a.paymentModeNot && ctx.payment_mode && a.paymentModeNot[ctx.payment_mode]) {
+    return { applicable: false, motif: a.paymentModeNot[ctx.payment_mode] };
+  }
+  if (a.flag && !ctx[a.flag]) return { applicable: false, motif: a.motif };
+  return { applicable: true, motif: null };
 }
 
-/** Types attendus maintenant pour (status, payment_mode). */
-function expectedTypes({ status, payment_mode } = {}) {
-  const r = rank(status);
-  return COST_RULES.filter((rule) => r >= rank(rule.from) && !notApplicableMotif(rule, { payment_mode })).map((x) => x.type);
+function isExpected(rule, ctx) {
+  const e = rule.expected || {};
+  if (e.stage) return rank(ctx.status) >= rank(e.stage);
+  if (e.flag) return Boolean(ctx[e.flag]);
+  return false;
+}
+
+/** Types attendus maintenant pour un contexte {status, payment_mode, imported, customs_event, relay_beneficiary}. */
+function expectedTypes(ctx = {}) {
+  return COST_RULES.filter((r) => applicability(r, ctx).applicable && isExpected(r, ctx)).map((r) => r.type);
 }
 
 /**
- * Explication d'une commande : ce qui manque, ce qui n'est pas encore attendu,
- * ce qui n'est pas applicable (avec motif). `missing_cost_types` = types attendus
- * sans allocation réelle justifiée.
+ * Explication d'une commande. Deux notions SÉPARÉES :
+ *  - complétude au stade : tous les coûts attendus maintenant sont-ils présents ?
+ *  - marge réelle finale calculable : stade final (remise au client), aucun coût attendu manquant
+ *    et aucune douane inconnue. Avoir tous les coûts attendus à son stade ne rend PAS la marge finale
+ *    calculable.
+ * Un coût inconnu reste visible (missing ou not_yet_expected) ; son caractère anormal dépend du stade.
  */
-function describeOrderCosts({ status, payment_mode, missing_cost_types = [] } = {}) {
-  const r = rank(status);
-  const missing = missing_cost_types.map((type) => {
+function describeOrderCosts(input = {}) {
+  const ctx = input;
+  const missingTypes = input.missing_cost_types || [];
+  const missing = missingTypes.map((type) => {
     const rule = COST_RULES.find((x) => x.type === type);
     return {
       type,
@@ -83,29 +129,51 @@ function describeOrderCosts({ status, payment_mode, missing_cost_types = [] } = 
       note: rule && !rule.collector ? 'Mécanisme de collecte absent : manque fonctionnel à résoudre, pas un coût nul.' : 'Coût attendu, non encore enregistré.',
     };
   });
-  const notYet = COST_RULES.filter((x) => r < rank(x.from) && !notApplicableMotif(x, { payment_mode }))
-    .map((x) => ({ type: x.type, label: x.label, expected_from: x.from }));
-  const notApplicable = COST_RULES.map((x) => ({ x, motif: notApplicableMotif(x, { payment_mode }) }))
-    .filter((e) => e.motif).map((e) => ({ type: e.x.type, label: e.x.label, motif: e.motif }));
-  return { missing, not_yet_expected: notYet, not_applicable: notApplicable, nothing_expected_yet: r < 1 };
+  const notYet = []; const notApplicable = [];
+  for (const rule of COST_RULES) {
+    const ap = applicability(rule, ctx);
+    if (!ap.applicable) { notApplicable.push({ type: rule.type, label: rule.label, motif: ap.motif }); continue; }
+    if (!isExpected(rule, ctx)) {
+      notYet.push({ type: rule.type, label: rule.label, expected_when: rule.expected.stage ? `statut ${rule.expected.stage}` : 'expédition douane déclarée' });
+    }
+  }
+  let margin;
+  if (ctx.status !== 'collected') margin = { final_computable: false, reason: 'not_final_stage', label: 'Marge réelle finale non calculable : la commande n’est pas encore remise au client.' };
+  else if (missing.length) margin = { final_computable: false, reason: 'costs_missing', label: 'Marge réelle finale non calculable : des coûts attendus manquent.' };
+  else if (ctx.customs_unknown) margin = { final_computable: false, reason: 'customs_unknown', label: 'Marge réelle finale non calculable : coût de douane encore inconnu.' };
+  else margin = { final_computable: true, reason: null, label: 'Marge réelle finale calculable.' };
+  return { missing, not_yet_expected: notYet, not_applicable: notApplicable, nothing_expected_yet: rank(ctx.status) < 1, costs_complete_at_stage: missing.length === 0, margin };
 }
 
 // ── Fragments SQL (constantes internes uniquement : aucune entrée utilisateur) ──
 function statusRankSql(alias) {
-  const whens = Object.entries(STATUS_RANK).map(([s, n]) => `WHEN '${s}' THEN ${n}`).join(' ');
+  const whens = Object.entries(STATUS_RANK).map(([st, n]) => `WHEN '${st}' THEN ${n}`).join(' ');
   return `(CASE ${alias}.status::text ${whens} ELSE 0 END)`;
 }
 
-/** Sous-requête : types attendus pour la commande `alias`. */
+function ruleConditionSql(rule, alias) {
+  const conds = [];
+  const a = rule.applicable || {};
+  if (a.paymentModeNot) conds.push(`${alias}.payment_mode::text NOT IN (${Object.keys(a.paymentModeNot).map((m) => `'${m}'`).join(',')})`);
+  if (a.flag) conds.push(FLAG_SQL[a.flag](alias));
+  const e = rule.expected || {};
+  if (e.stage) conds.push(`${statusRankSql(alias)} >= ${rank(e.stage)}`);
+  if (e.flag) conds.push(FLAG_SQL[e.flag](alias));
+  return conds.length ? conds.join(' AND ') : 'TRUE';
+}
+
+/** Sous-requête : types attendus pour la commande `alias` (colonnes requises : id, status, payment_mode, relais_id). */
 function expectedTypesSql(alias) {
-  const values = COST_RULES.map((rule) => {
-    const na = rule.notApplicable && rule.notApplicable.payment_mode ? Object.keys(rule.notApplicable.payment_mode) : [];
-    const arr = na.length ? `ARRAY[${na.map((m) => `'${m}'`).join(',')}]::text[]` : 'ARRAY[]::text[]';
-    return `('${rule.type}', ${rank(rule.from)}, ${arr})`;
-  }).join(', ');
-  return `(SELECT exp.t FROM (VALUES ${values}) AS exp(t, from_rank, na_modes)
-            WHERE ${statusRankSql(alias)} >= exp.from_rank
-              AND NOT (${alias}.payment_mode::text = ANY(exp.na_modes)))`;
+  const parts = COST_RULES.map((rule) => `SELECT '${rule.type}'::text AS t WHERE ${ruleConditionSql(rule, alias)}`);
+  return `(${parts.join(' UNION ALL ')})`;
+}
+
+/** Indicateurs de contexte pour la liste (douane inconnue, drapeaux). */
+function contextColumnsSql(alias) {
+  return `${FLAG_SQL.imported(alias)} AS ctx_imported,
+           ${FLAG_SQL.customs_event(alias)} AS ctx_customs_event,
+           ${FLAG_SQL.relay_beneficiary(alias)} AS ctx_relay_beneficiary,
+           ${customsUnknownForLinesSql(alias)} AS ctx_customs_unknown`;
 }
 
 /** Condition : le coût `typeExpr` a une allocation réelle justifiée pour `alias`. */
@@ -127,6 +195,13 @@ function missingTypesArraySql(alias) {
   return `ARRAY(SELECT e.t FROM ${expectedTypesSql(alias)} e WHERE NOT ${realCostPresentSql(alias, 'e.t')} ORDER BY e.t)`;
 }
 
+/** Marge réelle FINALE calculable : remise au client, aucun attendu manquant, douane connue. */
+function finalMarginReadySql(alias) {
+  return `(${alias}.status::text = 'collected'
+        AND NOT ${hasMissingExpectedSql(alias)}
+        AND NOT ${customsUnknownForLinesSql(alias)})`;
+}
+
 /** Commande hors périmètre de complétude : rien n'est encore attendu. */
 function nothingExpectedYetSql(alias) {
   return `${statusRankSql(alias)} < 1`;
@@ -138,8 +213,10 @@ module.exports = {
   expectedTypes,
   describeOrderCosts,
   expectedTypesSql,
+  contextColumnsSql,
   realCostPresentSql,
   hasMissingExpectedSql,
+  finalMarginReadySql,
   missingTypesArraySql,
   nothingExpectedYetSql,
 };

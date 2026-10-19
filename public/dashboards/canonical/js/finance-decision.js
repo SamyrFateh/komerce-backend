@@ -248,6 +248,7 @@
     if (Array.isArray(e.not_yet_expected) && e.not_yet_expected.length) {
       parts.push('Pas encore attendu : ' + e.not_yet_expected.map(m => m.label || m.type).join(', '));
     }
+    if (e.margin && e.margin.label) parts.push(e.margin.label);
     return parts.length ? ' · ' + parts.join(' · ') : '';
   }
 

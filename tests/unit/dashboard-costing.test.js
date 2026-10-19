@@ -87,7 +87,8 @@ describe('dashboard-metrics/costing', () => {
     expect(db.query.mock.calls[0][1]).toEqual([]);
     expect(sql).toContain('is_actual = TRUE');
     expect(sql).toContain("<> 'monthly_recalc'");
-    expect(sql).toContain("('payment'");
+    expect(sql).toContain("SELECT 'payment'::text");
+    expect(sql).toContain("o.status::text = 'collected'".replace('o.','os.')); // marge réelle FINALE : remise au client
     expect(sql).not.toContain('fixed_overhead');
   });
 
@@ -101,7 +102,7 @@ describe('dashboard-metrics/costing', () => {
   });
 
   it('getCmdsCoutIncompletIds borne la limite a 1000', async () => {
-    const rows = [{ id: 'order-001', status: 'preparation', payment_mode: 'stripe_eur', missing_cost_types: ['packaging'], has_imputation: true }];
+    const rows = [{ id: 'order-001', status: 'preparation', payment_mode: 'stripe_eur', missing_cost_types: ['packaging'], has_imputation: true, ctx_imported: true, ctx_customs_event: false, ctx_relay_beneficiary: true, ctx_customs_unknown: true }];
     db.query.mockResolvedValueOnce({ rows });
 
     const out = await costing.getCmdsCoutIncompletIds({ relais_id: 'r1' }, { limit: 5000 });
@@ -109,6 +110,8 @@ describe('dashboard-metrics/costing', () => {
     expect(db.query.mock.calls[0][1].at(-1)).toBe(1000);
     expect(out[0].cost_explanation.missing[0]).toMatchObject({ type: 'packaging', state: 'unknown', collection_mechanism: false });
     expect(out[0].cost_explanation.not_yet_expected.map(x => x.type)).toContain('customs');
+    expect(out[0].cost_explanation.costs_complete_at_stage).toBe(false);
+    expect(out[0].cost_explanation.margin).toMatchObject({ final_computable: false, reason: 'not_final_stage' });
     expect(out[0].cost_explanation.missing_estimate).toBe(false);
   });
 
