@@ -5,15 +5,15 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 ## Global scorecard
 
 - Features : **40**
-- Healthy : **34**
+- Healthy : **33**
 - Attention : **6**
-- Blocked : **0**
+- Blocked : **1**
 - Business dependencies : **309**
-- Direct cross-feature imports : **0**
+- Direct cross-feature imports : **1**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
 - Ontology gaps : **0**
-- Debt items (total) : **10**
+- Debt items (total) : **11**
 - Gate health — healthy : **37** · blocked : **2**
 
 ## Gate findings — intégrité de projection
@@ -38,7 +38,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | dashboard | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | order_incidents, partners | auth, auth-identity, business-rules, catalog, customs, decision-signals, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, inventory, local-stock, logistics, market, market-autonomy, market-delegation, notifications, orders, payments, purchasing, shared-cart, sourcing, supplier-connectivity, wallet | admin-dashboard, economic-engine, infrastructure, market-control-plane, market-delegation, sourcing | 0 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | auth, business-rules, infrastructure, logistics, market-delegation, payments, purchasing | admin-dashboard, dashboard, incident-management, market-control-plane, orders | 0 |
 | documents | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | invoices, transaction_documents | auth, auth-identity, catalog, customs, infrastructure, logistics, orders, refunds, wallet | admin-dashboard, auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, refunds, wallet | 0 |
-| economic-engine | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_component_market_override_events, cost_component_market_overrides, cost_components, economic_risk_cost_events, economic_risk_watermark_events, economic_snapshots, economic_structure_cost_events, exchange_rates, finance_config, market_price_observation_events, market_price_observations, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_market_decision_policy_events, pricing_matrices_audit, pricing_maturity_disposition_events, pricing_strategies, pricing_strategy_history, risk_provisions | auth, auth-identity, business-rules, catalog, customs, dashboard, infrastructure, logistics, loyalty, market, market-autonomy, market-delegation, orders, platform-ops, refunds | admin-dashboard, catalog, customs, dashboard, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, purchasing, refunds, sourcing | 0 |
+| economic-engine | business-feature | 🔴 BLOCKED | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_component_market_override_events, cost_component_market_overrides, cost_components, economic_risk_cost_events, economic_risk_watermark_events, economic_snapshots, economic_structure_cost_events, exchange_rates, finance_config, market_price_observation_events, market_price_observations, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_market_decision_policy_events, pricing_matrices_audit, pricing_maturity_disposition_events, pricing_strategies, pricing_strategy_history, risk_provisions | auth, auth-identity, business-rules, catalog, customs, dashboard, infrastructure, logistics, loyalty, market, market-autonomy, market-delegation, orders, platform-ops, refunds | admin-dashboard, catalog, customs, dashboard, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, purchasing, refunds, sourcing | 1 |
 | external-provider-contracts | technical-transversal | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | _aucune_ | catalog, dashboard, purchasing, supplier-connectivity | 1 |
 | incident-management | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | incidents | decision-signals, infrastructure, logistics, orders | dashboard, logistics, notifications, payments, platform-ops | 0 |
 | infrastructure | technical-foundation | 🟢 HEALTHY | 🟢 HEALTHY | outbox_events, physical_outcome_receipts, schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notifications, orders, payments, platform-ops, recommendations, shared-cart, wallet | auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, inventory, local-stock, logistics, loyalty, market, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, settlement, shared-cart, sourcing, unsold-resolution, wallet | 0 |
@@ -764,19 +764,20 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
 
-**Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Boundary health** : 🔴 BLOCKED — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
 **Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
-**Architectural debt** : _aucune_
+**Architectural debt** (1) :
+- `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 194 fichier(s) déclaré(s)
+**Implementation** : 203 fichier(s) déclaré(s)
   - dash : 6
   - middleware : 1
   - migrations : 31
   - routes : 13
-  - services : 45
-  - tests : 95
+  - services : 49
+  - tests : 100
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="economic-engine"]_
@@ -981,7 +982,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 381 fichier(s) déclaré(s)
+**Implementation** : 383 fichier(s) déclaré(s)
   - assets : 33
   - bootstrap : 9
   - ci : 24
@@ -992,8 +993,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 9
   - routes : 1
   - scripts : 108
-  - services : 2
-  - tests : 94
+  - services : 3
+  - tests : 95
   - utils : 5
   - validators : 1
 
@@ -1884,10 +1885,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 86 fichier(s) déclaré(s), boutique: 17 fichier(s)
+**Implementation** : 87 fichier(s) déclaré(s), boutique: 17 fichier(s)
   - boutique : 3
   - routes : 12
-  - services : 19
+  - services : 20
   - tests : 51
   - utils : 1
 
@@ -1945,13 +1946,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 75 fichier(s) déclaré(s), boutique: 6 fichier(s)
+**Implementation** : 78 fichier(s) déclaré(s), boutique: 6 fichier(s)
   - boutique : 4
-  - migrations : 8
+  - migrations : 9
   - routes : 7
   - scripts : 1
-  - services : 21
-  - tests : 34
+  - services : 22
+  - tests : 35
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="payments"]_
 

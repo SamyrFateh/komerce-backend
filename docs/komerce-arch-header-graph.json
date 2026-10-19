@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 733,
+    "scannedCodeFiles": 734,
     "filesWithFullHeaders": 685,
-    "filesWithLiteHeaders": 48,
-    "filesWithAnyHeaders": 733,
+    "filesWithLiteHeaders": 49,
+    "filesWithAnyHeaders": 734,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1793,
-    "edges": 9054,
+    "graphNodes": 1794,
+    "edges": 9061,
     "dbTables": 206,
     "doctrines": 653,
     "impactAreas": 201,
-    "unresolvedCodeEdges": 884,
+    "unresolvedCodeEdges": 885,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 87
   },
@@ -60,7 +60,7 @@
     "market-control-plane": 4,
     "settlement": 2,
     "business-rules": 1,
-    "orders": 32,
+    "orders": 33,
     "documents": 15,
     "auth-identity": 7,
     "operations": 11,
@@ -109,7 +109,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 417,
+    "service": 418,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,7 +121,7 @@
     "critical": 97,
     "medium": 149,
     "high": 430,
-    "low": 57
+    "low": 58
   },
   "nodes": [
     {
@@ -14563,6 +14563,7 @@
       "dbRead": [
         "boutique_categories",
         "boutique_subcategories",
+        "customs_categories",
         "order_items",
         "orders",
         "product_variants",
@@ -15817,7 +15818,8 @@
       "depends": [
         "db",
         "_helpers (shareByWeight)",
-        "utils/relay-commission.js"
+        "utils/relay-commission.js",
+        "services/simulation-scope-service.js"
       ],
       "usedBy": [
         "services/cost-allocation/index.js"
@@ -27472,6 +27474,36 @@
       "version": "2026-06"
     },
     {
+      "id": "services/rct1-checkout-reference-guard.js",
+      "file": "services/rct1-checkout-reference-guard.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "rct1-checkout-reference-guard",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Serialiser les checkouts RCT1 et refuser une reference deja creee.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_transaction_preserved"
+      ],
+      "doctrine": [],
+      "impactAreas": [
+        "orders",
+        "recette"
+      ],
+      "version": null
+    },
+    {
       "id": "services/receive-purchase-order.js",
       "file": "services/receive-purchase-order.js",
       "type": "file",
@@ -33655,7 +33687,8 @@
       "dbRead": [
         "orders",
         "loyalty_tiers",
-        "users"
+        "users",
+        "relais"
       ],
       "dbWrite": [
         "users"
@@ -62420,6 +62453,12 @@
     },
     {
       "from": "services/catalog-product-mutation-service.js",
+      "to": "db:customs_categories",
+      "type": "db-read",
+      "label": "customs_categories"
+    },
+    {
+      "from": "services/catalog-product-mutation-service.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
@@ -64355,6 +64394,12 @@
       "to": "utils/relay-commission.js",
       "type": "depends",
       "label": "utils/relay-commission.js"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "services/simulation-scope-service.js",
+      "type": "depends",
+      "label": "services/simulation-scope-service.js"
     },
     {
       "from": "services/cost-allocation/index.js",
@@ -83636,6 +83681,30 @@
       "label": "unknown"
     },
     {
+      "from": "services/rct1-checkout-reference-guard.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/rct1-checkout-reference-guard.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/rct1-checkout-reference-guard.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/rct1-checkout-reference-guard.js",
+      "to": "impact:recette",
+      "type": "impact",
+      "label": "recette"
+    },
+    {
       "from": "services/receive-purchase-order.js",
       "to": "db",
       "type": "depends",
@@ -92456,6 +92525,12 @@
       "to": "db:users",
       "type": "db-read",
       "label": "users"
+    },
+    {
+      "from": "services/user-mutation-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
     },
     {
       "from": "services/user-mutation-service.js",
@@ -109914,6 +109989,7 @@
       "dbRead": [
         "boutique_categories",
         "boutique_subcategories",
+        "customs_categories",
         "order_items",
         "orders",
         "product_variants",
@@ -109934,6 +110010,7 @@
       "mustCheck": [
         "db:boutique_categories",
         "db:boutique_subcategories",
+        "db:customs_categories",
         "db:order_items",
         "db:orders",
         "db:product_variants",
@@ -111159,7 +111236,8 @@
       "directDependsOn": [
         "db",
         "_helpers (shareByWeight)",
-        "utils/relay-commission.js"
+        "utils/relay-commission.js",
+        "services/simulation-scope-service.js"
       ],
       "directUsedBy": [
         "services/cost-allocation/index.js"
@@ -111201,6 +111279,7 @@
         "impact:economic-engine",
         "services/cost-allocation/_helpers.js",
         "services/cost-allocation/index.js",
+        "services/simulation-scope-service.js",
         "utils/relay-commission.js"
       ]
     },
@@ -122933,6 +123012,33 @@
         "utils/rules.js"
       ]
     },
+    "services/rct1-checkout-reference-guard.js": {
+      "role": "rct1-checkout-reference-guard",
+      "domain": "orders",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Serialiser les checkouts RCT1 et refuser une reference deja creee.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "orders",
+        "recette"
+      ],
+      "mustCheck": [
+        "backend-core",
+        "db:orders",
+        "impact:orders",
+        "impact:recette"
+      ]
+    },
     "services/receive-purchase-order.js": {
       "role": "orders-receive-purchase-order",
       "domain": "purchasing",
@@ -124155,6 +124261,7 @@
         "impact:dashboards",
         "impact:finance",
         "impact:recette",
+        "services/cost-allocation/allocate.js",
         "services/cost-allocation/manual-cost-entry-service.js",
         "services/dashboard-metrics/_helpers.js"
       ]
@@ -128881,7 +128988,8 @@
       "dbRead": [
         "orders",
         "loyalty_tiers",
-        "users"
+        "users",
+        "relais"
       ],
       "dbWrite": [
         "users"
@@ -128898,6 +129006,7 @@
       "mustCheck": [
         "db:loyalty_tiers",
         "db:orders",
+        "db:relais",
         "db:users",
         "doctrine:lifecycle_owner_persistence_boundary",
         "impact:auth-identity",
@@ -135556,6 +135665,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/rct1-checkout-reference-guard.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
     },
     {
       "from": "services/receive-purchase-order.js",

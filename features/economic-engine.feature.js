@@ -524,6 +524,7 @@ module.exports = {
       { fn: 'recordProductPriceChange', file: 'services/economic-price-audit-service.js' },
     ],
     consumes: [
+      'local-stock (provenance LOCAL_STOCK : applicabilité de la chaîne import au CDR ; preuve: services/pricing-engine.js -> services/local-stock-service.js)',
       'refunds (dépendance data cross-feature observée et gouvernée par O5)',
       'platform-ops (dépendance data cross-feature observée et gouvernée par O5)',
       'customs (dépendance data cross-feature observée et gouvernée par O5)',
