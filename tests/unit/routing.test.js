@@ -214,3 +214,23 @@ describe('routing', () => {
     });
   });
 });
+
+describe('routing — marchés hors modèle insulaire (RCT1 J/K)', () => {
+  const relay = { id: 'r1', name: 'Relais Komerce Yaoundé Centre', island: null, island_code: null, zone: 'Yaoundé' };
+  it('CM/CG : destination = marché + ville du relais, champs insulaires hérités laissés NULL', () => {
+    const r = resolveRoutingFromRelais(relay, { marketCode: 'CM' });
+    expect(r).toEqual({ destination_island: null, routing_mode: null, transit_hub: null, destination_market: 'CM', destination_city: 'Yaoundé' });
+    expect(resolveRoutingFromRelais({ ...relay, zone: 'Brazzaville' }, { marketCode: 'cg' }).destination_city).toBe('Brazzaville');
+  });
+  it('fail-closed : ville/zone absente sur un marché hors îles', () => {
+    expect(() => resolveRoutingFromRelais({ ...relay, zone: ' ' }, { marketCode: 'CM' })).toThrow(expect.objectContaining({ code: 'RELAIS_ZONE_MISSING' }));
+  });
+  it('non-régression KM/YT : relais sans île toujours refusé, relais insulaire inchangé', () => {
+    expect(() => resolveRoutingFromRelais(relay, { marketCode: 'KM' })).toThrow(expect.objectContaining({ code: 'ISLAND_CODE_MISSING' }));
+    expect(() => resolveRoutingFromRelais(relay)).toThrow(expect.objectContaining({ code: 'ISLAND_CODE_MISSING' }));
+    expect(resolveRoutingFromRelais({ ...relay, island_code: 'MORONI' }, { marketCode: 'KM' })).toEqual({ destination_island: 'MORONI', routing_mode: ROUTING_MODES.INTER_ISLAND, transit_hub: TRANSIT_HUB });
+  });
+  it('un relais insulaire garde son routage même sous un marché non insulaire', () => {
+    expect(resolveRoutingFromRelais({ ...relay, island_code: 'ANJOUAN' }, { marketCode: 'CM' }).destination_island).toBe('ANJOUAN');
+  });
+});

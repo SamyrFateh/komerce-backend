@@ -118,7 +118,11 @@ function normalizeIsland(raw) {
 // ── Résolution routing depuis un relais ──────────────────────────────────────
 // Source de vérité unique — ne jamais dupliquer cette logique
 
-function resolveRoutingFromRelais(relais) {
+// Marchés dont la destination physique est une île (modèle historique KM / Mayotte). Les autres marchés sont
+// adressés par leur relais et sa ville/zone (référentiel relais) : aucun code île n'est inventé ni détourné.
+const ISLAND_ROUTED_MARKETS = Object.freeze(['KM', 'YT']);
+
+function resolveRoutingFromRelais(relais, options = {}) {
   // Règle 1 : relais obligatoire
   if (!relais) {
     throw new RoutingError(
@@ -129,6 +133,27 @@ function resolveRoutingFromRelais(relais) {
 
   // Résoudre le code : priorité à island_code (standardisé), fallback sur island (human)
   const code = relais.island_code || normalizeIsland(relais.island);
+
+  // Règle 2a : marché hors modèle insulaire → destination = relais + ville/zone du marché (fail-closed sans ville).
+  // Les champs hérités (destination_island / routing_mode / transit_hub) restent NULL : un relais valide ne vaut
+  // pas itinéraire de transport confirmé ni tarif (segments à configurer séparément).
+  const marketCode = options.marketCode ? String(options.marketCode).toUpperCase() : null;
+  if (!code && marketCode && !ISLAND_ROUTED_MARKETS.includes(marketCode)) {
+    const city = relais.zone ? String(relais.zone).trim() : '';
+    if (!city) {
+      throw new RoutingError(
+        `Relais "${relais.name}" (${relais.id}) sans ville/zone configurée pour le marché ${marketCode}`,
+        'RELAIS_ZONE_MISSING'
+      );
+    }
+    return {
+      destination_island: null,
+      routing_mode:       null,
+      transit_hub:        null,
+      destination_market: marketCode,
+      destination_city:   city,
+    };
+  }
 
   // Règle 2 : island_code obligatoire
   if (!code) {
@@ -243,6 +268,7 @@ module.exports = {
   ensureRoutingColumns,
   backfillRoutingData,
   RoutingError,
+  ISLAND_ROUTED_MARKETS,
   DESTINATIONS,
   ROUTING_MODES,
   TRANSIT_HUB,

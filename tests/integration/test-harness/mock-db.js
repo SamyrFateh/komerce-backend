@@ -28,9 +28,9 @@ function makeClient(script = []) {
       }
 
       if (
-        normalized === 'SELECT lifecycle_status FROM markets WHERE id=$1::uuid LIMIT 1'
+        normalized === 'SELECT lifecycle_status, code FROM markets WHERE id=$1::uuid LIMIT 1'
       ) {
-        return { rows: [{ lifecycle_status: 'ACTIVE' }], rowCount: 1 };
+        return { rows: [{ lifecycle_status: 'ACTIVE', code: 'KM' }], rowCount: 1 };
       }
 
       const next = queue.shift();

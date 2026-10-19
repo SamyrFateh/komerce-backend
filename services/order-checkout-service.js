@@ -194,7 +194,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     }
 
     const { rows: [checkoutMarket] } = await client.query(
-      'SELECT lifecycle_status FROM markets WHERE id=$1::uuid LIMIT 1',
+      'SELECT lifecycle_status, code FROM markets WHERE id=$1::uuid LIMIT 1',
       [relais.market_id]
     );
     if (!checkoutMarket || checkoutMarket.lifecycle_status !== 'ACTIVE') {
@@ -214,7 +214,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     let routing = { destination_island: null, routing_mode: null, transit_hub: null };
 
     try {
-      routing = resolveRoutingFromRelais(relais);
+      routing = resolveRoutingFromRelais(relais, { marketCode: checkoutMarket.code });
     } catch (e) {
       if (e instanceof RoutingError) {
         await client.query('ROLLBACK');
