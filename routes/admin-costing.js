@@ -46,6 +46,7 @@
 
 const express = require('express');
 const db = require('../db');
+const { notLegacyUnjustifiedSql } = require('../services/cost-allocation/cost-expectation');
 const costAllocation = require('../services/cost-allocation');
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
 const productMarginSteering = require('../services/cost-allocation/product-margin-steering');
@@ -90,8 +91,9 @@ router.get('/orders', authenticate, requireAdmin, async (req, res, next) => {
         (SELECT COUNT(*)
          FROM order_item_cost_imputations WHERE order_id = o.id) AS imputations_count,
         (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS items_count,
-        (SELECT SUM(amount_kmf)
-         FROM order_item_real_cost_allocations WHERE order_id = o.id) AS real_total
+        (SELECT SUM(alc.amount_kmf)
+         FROM order_item_real_cost_allocations alc
+         WHERE alc.order_id = o.id AND ${notLegacyUnjustifiedSql('alc')}) AS real_total
       FROM orders o
       LEFT JOIN relais r ON r.id = o.relais_id
       WHERE ${where.join(' AND ')}
@@ -311,6 +313,7 @@ router.get('/products', authenticate, requireAdmin, async (req, res, next) => {
           FROM order_item_real_cost_allocations alc
           JOIN order_items oi ON oi.id = alc.order_item_id
           WHERE oi.product_id = imp.product_id
+            AND ${notLegacyUnjustifiedSql('alc')}
         ), 0) AS total_real_kmf,
         COUNT(DISTINCT imp.order_id)::int AS orders_count
       FROM order_item_cost_imputations imp
@@ -404,8 +407,9 @@ router.get('/relais', authenticate, requireAdmin, async (req, res, next) => {
         FROM order_item_cost_imputations imp WHERE imp.order_id = o.id
       ) imp_agg ON TRUE
       LEFT JOIN LATERAL (
-        SELECT SUM(amount_kmf) AS sum_real, COUNT(*)::int AS real_count
-        FROM order_item_real_cost_allocations WHERE order_id = o.id
+        SELECT SUM(alc.amount_kmf) AS sum_real, COUNT(*)::int AS real_count
+        FROM order_item_real_cost_allocations alc
+        WHERE alc.order_id = o.id AND ${notLegacyUnjustifiedSql('alc')}
       ) real_agg ON TRUE
       WHERE ${where.join(' AND ')}
       GROUP BY o.relais_id, r.name

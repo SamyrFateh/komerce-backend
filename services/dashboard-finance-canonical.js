@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const { justifiedRealSql } = require('./cost-allocation/cost-expectation');
 const metrics = require('./dashboard-metrics');
 const { getSupplierPaymentReview } = require('./supplier-payment-review');
 const {
@@ -194,7 +195,7 @@ async function getFinanceTrend(filters = {}, period = 30) {
           SELECT SUM(alc.amount_kmf)
           FROM order_item_real_cost_allocations alc
           WHERE alc.order_id = so.id
-            AND alc.is_actual = TRUE
+            AND ${justifiedRealSql('alc')}
         ), 0)::bigint AS real_cost_kmf,
         EXISTS (
           SELECT 1 FROM order_item_cost_imputations imp WHERE imp.order_id = so.id
@@ -203,7 +204,7 @@ async function getFinanceTrend(filters = {}, period = 30) {
           SELECT COUNT(DISTINCT alc.cost_type::text)
           FROM order_item_real_cost_allocations alc
           WHERE alc.order_id = so.id
-            AND alc.is_actual = TRUE
+            AND ${justifiedRealSql('alc')}
             AND alc.cost_type::text = ANY($${expectedIndex}::text[])
         )::int AS expected_cost_types
       FROM scoped_orders so
@@ -254,7 +255,7 @@ async function getCostFamilyBreakdown(filters = {}) {
     JOIN orders o ON o.id = alc.order_id
     WHERE ${where}
       AND o.status NOT IN ('cancelled', 'refunded')
-      AND alc.is_actual = TRUE
+      AND ${justifiedRealSql('alc')}
     GROUP BY alc.cost_type::text
     ORDER BY amount_kmf DESC, cost_type ASC
   `, params);
@@ -286,14 +287,14 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
        WHERE imp.order_id = o.id) AS estimated_cost_kmf,
       (SELECT SUM(alc.amount_kmf)
        FROM order_item_real_cost_allocations alc
-       WHERE alc.order_id = o.id AND alc.is_actual = TRUE) AS real_cost_kmf,
+       WHERE alc.order_id = o.id AND ${justifiedRealSql('alc')}) AS real_cost_kmf,
       EXISTS (
         SELECT 1 FROM order_item_cost_imputations imp WHERE imp.order_id = o.id
       ) AS has_imputation,
       (SELECT COUNT(DISTINCT alc.cost_type::text)
        FROM order_item_real_cost_allocations alc
        WHERE alc.order_id = o.id
-         AND alc.is_actual = TRUE
+         AND ${justifiedRealSql('alc')}
          AND alc.cost_type::text = ANY($${expectedIndex}::text[]))::int AS expected_cost_types
     FROM orders o
     WHERE ${where}
@@ -352,7 +353,7 @@ async function getRelayProfitability(filters = {}) {
         (SELECT SUM(alc.amount_kmf)
          FROM order_item_real_cost_allocations alc
          WHERE alc.order_id = so.id
-           AND alc.is_actual = TRUE) AS real_cost_kmf,
+           AND ${justifiedRealSql('alc')}) AS real_cost_kmf,
         EXISTS (
           SELECT 1 FROM order_item_cost_imputations imp WHERE imp.order_id = so.id
         ) AS has_imputation,
@@ -360,7 +361,7 @@ async function getRelayProfitability(filters = {}) {
           SELECT COUNT(DISTINCT alc.cost_type::text)
           FROM order_item_real_cost_allocations alc
           WHERE alc.order_id = so.id
-            AND alc.is_actual = TRUE
+            AND ${justifiedRealSql('alc')}
             AND alc.cost_type::text = ANY($${expectedIndex}::text[])
         )::int AS expected_cost_types
       FROM scoped_orders so

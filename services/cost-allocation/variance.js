@@ -37,6 +37,7 @@
 'use strict';
 
 const db = require('../../db');
+const { notLegacyUnjustifiedSql } = require('./cost-expectation');
 const {
   SNAPSHOT_LANDED_TO_REAL_COST_TYPE,
   RECONCILIABLE_VARIABLE_COST_TYPES,
@@ -146,8 +147,9 @@ async function computeOrderCostVariance(orderId) {
 
   const realRes = await db.query(
     `SELECT cost_type, SUM(amount_kmf) AS amount, BOOL_AND(is_actual) AS all_actual
-     FROM order_item_real_cost_allocations
+     FROM order_item_real_cost_allocations alc
      WHERE order_id = $1
+       AND ${notLegacyUnjustifiedSql('alc')}
      GROUP BY cost_type`,
     [orderId]
   );
@@ -267,6 +269,7 @@ async function computeProductCostVariance(productId, options = {}) {
       JOIN order_items oi ON oi.id = alc.order_item_id
       JOIN orders ro ON ro.id = oi.order_id
       WHERE ${realWhere.join(' AND ')}
+        AND ${notLegacyUnjustifiedSql('alc')}
     )
     SELECT
       imp.product_id,
