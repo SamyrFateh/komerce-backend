@@ -8,7 +8,7 @@
  * @outputs       canonical_operations_projection
  * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, dashboard-orders, logistics-control-chain-projection
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, order_items, purchase_lines, purchase_orders, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, relais, signals, scan_events
+ * @db-read       orders, order_items, purchase_lines, purchase_orders, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, parcel_items, customs_shipment_parcels, customs_shipments, relais, signals, scan_events
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority
@@ -69,6 +69,13 @@ async function getActiveOrders(filters = {}) {
     FROM orders o
     LEFT JOIN relais r ON r.id = o.relais_id
     LEFT JOIN parcels p ON p.order_id = o.id
+      OR EXISTS (
+        SELECT 1
+          FROM parcel_items pi
+          JOIN order_items oi ON oi.id = pi.order_item_id
+         WHERE pi.parcel_id = p.id
+           AND oi.order_id = o.id
+      )
     WHERE ${where}
       AND o.status::text = ANY($${params.length + 1}::text[])
     GROUP BY

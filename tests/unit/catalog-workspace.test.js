@@ -504,3 +504,24 @@ test('Raffinerie: vrai moteur de certification côté serveur, sans publication 
   expect(commercial.approval[0]).not.toHaveProperty('product_id');
   expect(mockApprove).not.toHaveBeenCalled();
 });
+
+describe('C4 : un repli technique « autre » n’est pas une classification validée', () => {
+  const { classificationStatus } = workspace._test;
+
+  test('catégorie absente chez le candidat + produit en « autre » = repli non résolu', () => {
+    expect(classificationStatus({ category: 'autre', candidate_komerce_category: null, supplier_category: 'Phone Cases' }))
+      .toEqual(expect.objectContaining({ status: 'fallback_unresolved', supplier_category: 'Phone Cases' }));
+  });
+
+  test('« autre » choisi explicitement par le candidat reste une classification', () => {
+    expect(classificationStatus({ category: 'autre', candidate_komerce_category: 'autre', supplier_category: null }).status).toBe('classified');
+  });
+
+  test('catégorie résolue = classée', () => {
+    expect(classificationStatus({ category: 'maison', candidate_komerce_category: 'maison' }).status).toBe('classified');
+  });
+
+  test('produit sans candidat sourcing : pas de verdict de repli', () => {
+    expect(classificationStatus({ category: 'autre', candidate_komerce_category: undefined, has_candidate: false }).status).toBe('not_from_sourcing');
+  });
+});

@@ -1,0 +1,6 @@
+{
+  "is_test_data": true,
+  "recette_label": "RECETTE STAGING — valeurs fictives, jamais pour la production",
+  "aed_kmf": { "value": 140, "source": "FICTIF recette : aucune source métier validée" },
+  "relay_commission_kmf": { "value": 600, "source": "FICTIF recette : aucune source métier validée", "scope": "global (le calcul réel ne lit aucun montant par marché)" }
+}
