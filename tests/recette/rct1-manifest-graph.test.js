@@ -14,6 +14,6 @@ for (const s of steps) {
 for (const s of [...pricing.steps, ...costs.steps]) assert.ok(ids.includes(s.id), `${s.id} absent du manifeste`);
 assert.ok(ids.some((i) => i.startsWith('cost.manual.RCT1-E1.')));
 assert.ok(!ids.includes('cost.manual.RCT1-F.relay'), 'relais F jamais saisi : cas incomplet voulu');
-for (const id of ['product.P2', 'product.P4', 'product.P5', 'check.P5.conversion', 'check.P4.no-km-price', 'check.classification', 'check.I1-I2.parcels', 'check.I3.split', 'check.JK.markets', 'check.margins', 'check.deployed-flags', 'split.parcels', 'split.shipment.RCT1-SH3', 'split.shipment.RCT1-SH4', 'price.KM.P2', 'order.RCT1-I3']) assert.ok(ids.includes(id), id);
+for (const id of ['product.P2', 'product.P4', 'product.P5', 'check.P5.conversion', 'check.P4.no-km-price', 'check.classification', 'check.I1-I2.parcels', 'check.I3.split', 'check.JK.markets', 'check.margins', 'check.deployed-flags', 'split.parcels', 'split.shipment.RCT1-SH3', 'split.shipment.RCT1-SH4', 'price.KM.P2', 'order.RCT1-I3', 'lead.CM', 'lead.CG', 'market.CM', 'market.CG', 'price.CM.P4', 'order.RCT1-CM1', 'check.J.market-mismatch', 'check.K.isolation']) assert.ok(ids.includes(id), id);
 assert.ok(!ids.some((i) => i === 'price.KM.P4'), 'P4 : aucun prix KM');
 process.stdout.write('RCT1 manifest graph PASS\n');

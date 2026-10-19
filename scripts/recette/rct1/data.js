@@ -18,10 +18,33 @@ const ACTORS = Object.freeze([
   { key: 'agent-hub', role: 'agent_hub', market: 'KM', full_name: 'RCT1 Agent hub', phone: '+2690000104' },
   { key: 'client-wm', role: 'client', market: 'WM', full_name: 'RCT1 Client WM', phone: '+2370000101' },
   { key: 'operator-wm', role: 'market_operator', market: 'WM', scope_role: 'manager', full_name: 'RCT1 Operateur WM', phone: '+2370000103' },
+  { key: 'operator-cm', role: 'market_operator', market: 'CM', scope_role: 'manager', full_name: 'RCT1 Operateur CM', phone: '+2370000203', lead_of: 'CM' },
+  { key: 'operator-cg', role: 'market_operator', market: 'CG', scope_role: 'manager', full_name: 'RCT1 Operateur CG', phone: '+2420000203', lead_of: 'CG' },
+  { key: 'client-cm', role: 'client', market: 'CM', full_name: 'RCT1 Client CM', phone: '+2370000201' },
 ].map(a => Object.freeze({ ...a, email: `rct1.${a.key}@${EMAIL_DOMAIN}` })));
 
 const RELAYS = Object.freeze([
   { name: 'RCT1-REL-KM', market: 'KM', phone: '+2690000110', address: 'RCT1 recette - point relais fictif Moroni', island: 'Grande Comore', island_code: 'MORONI' },
+]);
+
+// Marches CM/CG (decision metier 2026-10-20) : provisioning canonique uniquement. Valeurs T « FICTIF recette » :
+// plafonds = defaut central cash (CASH_CUSTODY_DEFAULT_HOLDING_KMF), prestataire mtn_momo (Orange Cameroun mis de cote),
+// politique cash = defaut du service (SINGLE), relais = fixtures documentees (seed-staging-market-relays). Aucun prix ni parametre commercial invente.
+const FICTIF_LIMIT = 1000000;
+const MARKET_PROVISIONING = Object.freeze({
+  CM: { code: 'CM', name: 'Cameroun', currency: 'XAF', minor_unit: 0, lead: 'operator-cm',
+    relay: { name: 'Relais Komerce Yaoundé Centre', phone: '+237600000001', address: 'Yaoundé Centre, Cameroun', zone: 'Yaoundé', latitude: 3.8480, longitude: 11.5021 } },
+  CG: { code: 'CG', name: 'Congo', currency: 'XAF', minor_unit: 0, lead: 'operator-cg',
+    relay: { name: 'Relais Komerce Brazzaville Centre', phone: '+242060000001', address: 'Brazzaville Centre, République du Congo', zone: 'Brazzaville', latitude: -4.2634, longitude: 15.2429 } },
+});
+const MARKET_PROVISIONING_PARAMS = Object.freeze({
+  financial_limits: Object.freeze({ 'execution.cash.confirm': FICTIF_LIMIT, 'finance.act': FICTIF_LIMIT, 'settlement.receive': FICTIF_LIMIT }),
+  payment_provider: Object.freeze({ provider: 'mtn_momo' }),
+  cash_policy: Object.freeze({ cash_enabled: true, confirmation_mode: 'SINGLE' }),
+});
+// Commande CM (K : isolation + XAF). P4 a 20 000 XAF au CM (cadrage section 4) = 15 000 KMF a la parite documentee. Aucun prix CG documente : pas de commande CG.
+const MARKET_ORDERS = Object.freeze([
+  { ref: 'RCT1-CM1', market: 'CM', client: 'client-cm', lines: [{ product: 'P4', qty: 1 }], expected_product_total_kmf: 15000, expected_product_display: { amount: 20000, currency: 'XAF' } },
 ]);
 
 const DESCRIPTION_SUFFIX = ' Produit de recette RCT1, donnee de test sans valeur commerciale reelle.';
@@ -72,4 +95,4 @@ const MANUAL_COSTS = Object.freeze({
 const EXPECTED_MARGIN = Object.freeze({ 'RCT1-E1': { revenue_kmf: 15065, cost_kmf: 10300, margin_kmf: 4765 }, 'RCT1-G': { revenue_kmf: P3_PRICE_KMF, cost_kmf: 4150, margin_kmf: P3_PRICE_KMF - 4150 } });
 const RELAY_COMMISSION_KMF = 600;
 
-module.exports = { P3_PRICE_KMF, SPLIT, SHIPMENTS, MANUAL_COSTS, EXPECTED_MARGIN, RELAY_COMMISSION_KMF, ORDERS, EMAIL_DOMAIN, ACTORS, RELAYS, PRODUCTS };
+module.exports = { MARKET_PROVISIONING, MARKET_PROVISIONING_PARAMS, MARKET_ORDERS, P3_PRICE_KMF, SPLIT, SHIPMENTS, MANUAL_COSTS, EXPECTED_MARGIN, RELAY_COMMISSION_KMF, ORDERS, EMAIL_DOMAIN, ACTORS, RELAYS, PRODUCTS };
