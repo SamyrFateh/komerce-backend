@@ -269,6 +269,25 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(items[0]).toEqual(expect.objectContaining({ title: 'CMD-I1', value: finance.formatKmf(5000) }));
   });
 
+  test('incompleteCostOrderItems explique ce qui manque, ce qui n’est pas encore attendu et l’absence de collecte (D1)', () => {
+    const payload = payloadFixture();
+    payload.incomplete_cost_orders = [{
+      reference: 'CMD-I2', status: 'preparation', payment_status: 'paid', total_kmf: 5000, created_at: '2026-08-20T00:00:00.000Z',
+      cost_explanation: {
+        missing: [
+          { type: 'packaging', label: 'Emballage', state: 'unknown', collection_mechanism: false },
+          { type: 'product_purchase', label: 'Achat produit', state: 'unknown', collection_mechanism: true },
+        ],
+        not_yet_expected: [{ type: 'customs', label: 'Douane', expected_from: 'available' }],
+        not_applicable: [],
+        missing_estimate: false,
+      },
+    }];
+    const [item] = financeDecision.incompleteCostOrderItems(payload, finance);
+    expect(item.helper).toContain('Manque : Emballage (mécanisme de collecte absent), Achat produit');
+    expect(item.helper).toContain('Pas encore attendu : Douane');
+  });
+
   test('varianceItems exclut les commandes à variance nulle — correspondance exacte avec le compte du bandeau de décision', () => {
     const payload = payloadFixture();
     payload.costing_orders = [

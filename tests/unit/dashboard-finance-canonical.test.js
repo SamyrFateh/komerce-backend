@@ -21,7 +21,7 @@ const mockMetrics = {
   getCmdsCoutIncompletCount: jest.fn(async () => mockMetric('cmds_cout_incomplet')),
   getPaiementsEnAttente: jest.fn(async () => mockMetric('paiements_en_attente')),
   getCmdsCoutIncompletIds: jest.fn(async () => [
-    { reference: 'CMD-1', status: 'confirmed', payment_status: 'paid', total_kmf: '1000', created_at: '2026-08-20T00:00:00.000Z' },
+    { reference: 'CMD-1', status: 'confirmed', payment_status: 'paid', total_kmf: '1000', created_at: '2026-08-20T00:00:00.000Z', missing_cost_types: ['payment'], cost_explanation: { missing: [{ type: 'payment', state: 'unknown' }], not_yet_expected: [], not_applicable: [] } },
   ]),
 };
 jest.mock('../../services/dashboard-metrics', () => mockMetrics);
@@ -253,4 +253,10 @@ test('la file fournisseur utilise uniquement les états canoniques de revue, san
   expect(text).not.toContain('real_debit_verified = false');
   expect(text).not.toMatch(/proof/i);
   expect(params).toEqual([25]);
+});
+
+test('la projection Finance transmet l’explication des coûts manquants par commande (D1)', async () => {
+  const payload = await finance.buildFinance({ period: '30' }, { market: null, now: new Date('2026-08-21T00:00:00Z') });
+  expect(payload.incomplete_cost_orders[0].cost_explanation.missing[0]).toMatchObject({ type: 'payment', state: 'unknown' });
+  expect(payload.incomplete_cost_orders[0].missing_cost_types).toEqual(['payment']);
 });

@@ -487,6 +487,8 @@ async function buildFinance(query = {}, options = {}) {
       payment_status: row.payment_status,
       total_kmf: Number(row.total_kmf) || 0,
       created_at: row.created_at,
+      missing_cost_types: Object.freeze([...(row.missing_cost_types || [])]),
+      cost_explanation: row.cost_explanation ? Object.freeze({ ...row.cost_explanation }) : null,
     }))),
     ...(supplierPaymentReview ? { supplier_payment_review: supplierPaymentReview } : {}),
     data_quality: Object.freeze({

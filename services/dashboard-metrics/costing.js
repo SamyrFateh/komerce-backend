@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, ./_helpers, ./control-tower (getCAEncaisse, INV-1)
+ * @depends       db, ./_helpers, ../cost-allocation/cost-expectation, ./control-tower (getCAEncaisse, INV-1)
  * @used-by       services/dashboard-metrics/index.js
  * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, orders
  * @db-write      (none)
@@ -33,10 +33,12 @@
 
 'use strict';
 
+const costExpectation = require('../cost-allocation/cost-expectation');
+
 const db = require('../../db');
 const {
   buildFiltersClause, buildPreviousPeriod, computeDelta, makeKpi,
-  EXPECTED_VARIABLE_COSTS, EXPECTED_FIXED_COSTS, EXPECTED_PAYMENT_COSTS,
+  EXPECTED_VARIABLE_COSTS,
 } = require('./_helpers');
 const { getCAEncaisse } = require('./control-tower');
 
@@ -199,12 +201,12 @@ async function getMargeVariableReelle(filters = {}) {
 async function getMargeConsolidee(filters = {}) {
   // Marge consolidee = CA - cout reel total
   // UNIQUEMENT sur cmds avec cost_status='actual'
-  // (toutes les categories attendues alloues : variables + fixes + payment)
+  // (tous les couts applicables et attendus au stade de la commande, en reel justifie ;
+  //  les charges de structure ne sont jamais exigees par commande — D1)
   const { where, params } = buildFiltersClause(filters);
-  const expectedAll = [...EXPECTED_VARIABLE_COSTS, ...EXPECTED_FIXED_COSTS, ...EXPECTED_PAYMENT_COSTS];
   const sql = `
     WITH order_set AS (
-      SELECT o.id, o.total_kmf
+      SELECT o.id, o.total_kmf, o.status, o.payment_mode
       FROM orders o
       WHERE ${where}
         AND o.payment_status = 'paid'
@@ -212,16 +214,12 @@ async function getMargeConsolidee(filters = {}) {
     ),
     actual_orders AS (
       SELECT os.id, os.total_kmf,
-        (SELECT SUM(amount_kmf) FROM order_item_real_cost_allocations WHERE order_id = os.id) AS real_total
+        (SELECT SUM(amount_kmf) FROM order_item_real_cost_allocations
+          WHERE order_id = os.id AND is_actual = TRUE AND COALESCE(source, '') <> 'monthly_recalc') AS real_total
       FROM order_set os
       WHERE EXISTS (SELECT 1 FROM order_item_cost_imputations WHERE order_id = os.id)
-        AND NOT EXISTS (
-          SELECT 1 FROM unnest($${params.length + 1}::text[]) AS expected(t)
-          WHERE NOT EXISTS (
-            SELECT 1 FROM order_item_real_cost_allocations
-            WHERE order_id = os.id AND cost_type::text = expected.t
-          )
-        )
+        AND NOT ${costExpectation.nothingExpectedYetSql('os')}
+        AND NOT ${costExpectation.hasMissingExpectedSql('os')}
     )
     SELECT
       COALESCE(SUM(total_kmf - real_total), 0)::bigint AS margin_kmf,
@@ -230,7 +228,7 @@ async function getMargeConsolidee(filters = {}) {
       (SELECT COUNT(*) FROM order_set)::int AS items_total
     FROM actual_orders
   `;
-  const r = await db.query(sql, [...params, expectedAll]);
+  const r = await db.query(sql, params);
   const margin = Number(r.rows[0].margin_kmf) || 0;
   const revenue = Number(r.rows[0].revenue_kmf) || 0;
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
@@ -254,24 +252,18 @@ async function getCmdsCoutIncompletCount(filters = {}) {
   // Count des cmds dont cost_status != 'actual'
   // = cmds sans imputation OU avec couts attendus manquants
   const { where, params } = buildFiltersClause(filters);
-  const expectedAll = [...EXPECTED_VARIABLE_COSTS, ...EXPECTED_FIXED_COSTS, ...EXPECTED_PAYMENT_COSTS];
   const sql = `
     SELECT COUNT(*)::int AS value
     FROM orders o
     WHERE ${where}
       AND o.status NOT IN ('cancelled', 'refunded')
+      AND NOT ${costExpectation.nothingExpectedYetSql('o')}
       AND (
         NOT EXISTS (SELECT 1 FROM order_item_cost_imputations WHERE order_id = o.id)
-        OR EXISTS (
-          SELECT 1 FROM unnest($${params.length + 1}::text[]) AS expected(t)
-          WHERE NOT EXISTS (
-            SELECT 1 FROM order_item_real_cost_allocations
-            WHERE order_id = o.id AND cost_type::text = expected.t
-          )
-        )
+        OR ${costExpectation.hasMissingExpectedSql('o')}
       )
   `;
-  const r = await db.query(sql, [...params, expectedAll]);
+  const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('cmds_cout_incomplet', 'Commandes coût incomplet', value, 'count', {
@@ -287,27 +279,29 @@ async function getCmdsCoutIncompletCount(filters = {}) {
 async function getCmdsCoutIncompletIds(filters = {}, options = {}) {
   const limit = Math.min(1000, options.limit || 200);
   const { where, params } = buildFiltersClause(filters);
-  const expectedAll = [...EXPECTED_VARIABLE_COSTS, ...EXPECTED_FIXED_COSTS, ...EXPECTED_PAYMENT_COSTS];
   const sql = `
-    SELECT o.id, o.reference, o.status, o.payment_status, o.total_kmf, o.created_at
+    SELECT o.id, o.reference, o.status, o.payment_status, o.payment_mode::text AS payment_mode, o.total_kmf, o.created_at,
+           ${costExpectation.missingTypesArraySql('o')} AS missing_cost_types,
+           EXISTS (SELECT 1 FROM order_item_cost_imputations WHERE order_id = o.id) AS has_imputation
     FROM orders o
     WHERE ${where}
       AND o.status NOT IN ('cancelled', 'refunded')
+      AND NOT ${costExpectation.nothingExpectedYetSql('o')}
       AND (
         NOT EXISTS (SELECT 1 FROM order_item_cost_imputations WHERE order_id = o.id)
-        OR EXISTS (
-          SELECT 1 FROM unnest($${params.length + 1}::text[]) AS expected(t)
-          WHERE NOT EXISTS (
-            SELECT 1 FROM order_item_real_cost_allocations
-            WHERE order_id = o.id AND cost_type::text = expected.t
-          )
-        )
+        OR ${costExpectation.hasMissingExpectedSql('o')}
       )
     ORDER BY o.created_at DESC
-    LIMIT $${params.length + 2}
+    LIMIT $${params.length + 1}
   `;
-  const r = await db.query(sql, [...params, expectedAll, limit]);
-  return r.rows;
+  const r = await db.query(sql, [...params, limit]);
+  return r.rows.map((row) => ({
+    ...row,
+    cost_explanation: {
+      ...costExpectation.describeOrderCosts({ status: row.status, payment_mode: row.payment_mode, missing_cost_types: row.missing_cost_types || [] }),
+      missing_estimate: row.has_imputation === false,
+    },
+  }));
 }
 
 

@@ -153,6 +153,11 @@ describe('dashboard-metrics/control-tower', () => {
     expect(result.data_quality.completeness).toBe('partial');
     expect(result.data_quality.warning).toBe('Beaucoup de commandes sans coût consolidé');
     expect(db.query.mock.calls[0][1][0]).toBe('available');
-    expect(db.query.mock.calls[0][1][1]).toEqual(expect.arrayContaining(['product_purchase', 'fixed_overhead', 'payment']));
+    const sql = String(db.query.mock.calls[0][0]);
+    expect(db.query.mock.calls[0][1]).toEqual(['available']);
+    expect(sql).toContain('is_actual = TRUE');
+    expect(sql).toContain("('payment'");
+    expect(sql).not.toContain('fixed_overhead');
+    expect(sql).toContain('< 1'); // commandes sans coût encore attendu exclues du dénominateur
   });
 });

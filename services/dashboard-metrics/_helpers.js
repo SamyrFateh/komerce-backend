@@ -37,10 +37,7 @@
 
 'use strict';
 
-const {
-  VARIABLE_COST_TYPES,
-  ORDER_ALLOCATION_STRUCTURE_COST_TYPES,
-} = require('../cost-allocation/cost-types');
+const { VARIABLE_COST_TYPES } = require('../cost-allocation/cost-types');
 
 const ACTIVE_ORDER_STATUSES = Object.freeze([
   'confirmed', 'ordered', 'preparation', 'shipped', 'in_transit', 'available',
@@ -72,7 +69,10 @@ const EXCLUDED_FROM_REVENUE = Object.freeze(['cancelled', 'refunded']);
 const EXPECTED_VARIABLE_COSTS = Object.freeze(
   VARIABLE_COST_TYPES.filter((type) => type !== 'payment')
 );
-const EXPECTED_FIXED_COSTS = ORDER_ALLOCATION_STRUCTURE_COST_TYPES;
+// D1 : les charges de structure (fixed_overhead, forfait Hub) ne sont JAMAIS exigées
+// par commande — elles relèvent de la période. Voir cost-allocation/cost-expectation.js
+// pour les coûts applicables et attendus selon le stade.
+const EXPECTED_FIXED_COSTS = Object.freeze([]);
 const EXPECTED_PAYMENT_COSTS = Object.freeze(['payment']);
 const EXPECTED_ALL_COSTS = Object.freeze([
   ...EXPECTED_VARIABLE_COSTS,

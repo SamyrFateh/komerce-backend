@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, ./_helpers
+ * @depends       db, ./_helpers, ../cost-allocation/cost-expectation
  * @used-by       services/dashboard-metrics/index.js
  * @db-read       alerts, cash_collections, order_item_cost_imputations, order_item_real_cost_allocations, incidents, order_items, orders, parcels, scan_events, signals
  * @db-write      (none)
@@ -26,11 +26,12 @@
 
 'use strict';
 
+const costExpectation = require('../cost-allocation/cost-expectation');
+
 const db = require('../../db');
 const {
   buildFiltersClause, buildPreviousPeriod, computeDelta, makeKpi,
   ACTIVE_ORDER_STATUSES, TRANSIT_PARCEL_STATUSES,
-  EXPECTED_VARIABLE_COSTS, EXPECTED_FIXED_COSTS, EXPECTED_PAYMENT_COSTS,
 } = require('./_helpers');
 
 async function getCAEncaisse(filters = {}) {
@@ -308,28 +309,22 @@ async function getTauxCompletudeCouts(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     WITH order_set AS (
-      SELECT o.id FROM orders o
+      SELECT o.id, o.status, o.payment_mode FROM orders o
       WHERE ${where}
         AND o.status NOT IN ('cancelled', 'refunded')
+        AND NOT ${costExpectation.nothingExpectedYetSql('o')}
     ),
     actual_orders AS (
       SELECT os.id
       FROM order_set os
       WHERE EXISTS (SELECT 1 FROM order_item_cost_imputations WHERE order_id = os.id)
-        AND NOT EXISTS (
-          SELECT 1 FROM unnest($${params.length + 1}::text[]) AS expected(t)
-          WHERE NOT EXISTS (
-            SELECT 1 FROM order_item_real_cost_allocations alc
-            WHERE alc.order_id = os.id AND alc.cost_type::text = expected.t
-          )
-        )
+        AND NOT ${costExpectation.hasMissingExpectedSql('os')}
     )
     SELECT
       (SELECT COUNT(*) FROM order_set)::int AS items_total,
       (SELECT COUNT(*) FROM actual_orders)::int AS items_with_data
   `;
-  const expectedAll = [...EXPECTED_VARIABLE_COSTS, ...EXPECTED_FIXED_COSTS, ...EXPECTED_PAYMENT_COSTS];
-  const r = await db.query(sql, [...params, expectedAll]);
+  const r = await db.query(sql, params);
   const itemsTotal = Number(r.rows[0].items_total) || 0;
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
   const value = itemsTotal > 0 ? Number(((itemsWithData / itemsTotal) * 100).toFixed(2)) : null;
