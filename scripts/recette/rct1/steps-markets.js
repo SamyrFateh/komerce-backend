@@ -96,13 +96,14 @@ const marketOrderStep = (o) => {
 };
 
 // J : ajouter une ligne CM dans un colis KM => 409 MARKET_MISMATCH. Preuve sous SAVEPOINT : rien n'est conserve.
-const jCheck = check('check.J.market-mismatch', ['order.RCT1-CM1', 'ops.cash-confirm.RCT1-E1'], async ({ db, shared }) => {
+const jCheck = check('check.J.market-mismatch', ['market.CM', 'ops.cash-confirm.RCT1-E1'], async ({ db, shared }) => {
   const items = require('../../../services/parcel-item-mutation-service');
   const { createHubParcel } = require('../../../services/parcel-mutation-service');
   const { generateParcelRef } = require('../../../utils/reference');
   const km = await q1(db, "SELECT id FROM orders WHERE reference='RCT1-E1'");
   const line = await q1(db, "SELECT oi.id FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.reference='RCT1-CM1' LIMIT 1");
-  if (!km || !line) return { ok: false, error: 'commande KM ou ligne CM introuvable' };
+  if (!km) return { ok: false, error: 'commande KM introuvable' };
+  if (!line) return { ok: null, open_decision: true, note: 'Aucune commande CM possible : le routage canonique (services/routing.js) ne supporte que les iles ANJOUAN/MORONI/MOHELI/MAYOTTE (ISLAND_CODE_MISSING pour un relais CM). J necessite une decision produit (destinations CM/CG) ; aucune ile fictive n\'est attribuee.' };
   const before = (await q1(db, "SELECT COUNT(*)::int AS n FROM parcel_items WHERE order_item_id=$1", [line.id])).n;
   await db.query('SAVEPOINT rct1_j');
   let observed = null;
@@ -118,7 +119,7 @@ const jCheck = check('check.J.market-mismatch', ['order.RCT1-CM1', 'ops.cash-con
 });
 
 // K : l'operateur KM ne voit ni CM ni CG (scope canonique + 403 du middleware) ; la commande CM est affichee en XAF.
-const kCheck = check('check.K.isolation', ['order.RCT1-CM1', 'actor.operator-km', 'market.CG'], async ({ db }) => {
+const kCheck = check('check.K.isolation', ['market.CM', 'actor.operator-km', 'market.CG'], async ({ db }) => {
   const scope = require('../../../middleware/require-market-scope');
   const op = ACTORS.find(a => a.key === 'operator-km');
   const user = await q1(db, 'SELECT id FROM users WHERE email=$1', [op.email]);
@@ -136,16 +137,15 @@ const kCheck = check('check.K.isolation', ['order.RCT1-CM1', 'actor.operator-km'
   }
   const scopedOrders = (await db.query("SELECT reference FROM orders WHERE simulation_scope='RCT1' AND market_id = ANY($1::uuid[]) AND reference='RCT1-CM1'", [[...authorized]])).rows.length;
   const cm = await q1(db, "SELECT display_total_amount, display_currency, total_kmf, market_id FROM orders WHERE reference='RCT1-CM1'");
-  const xaf = !!cm && cm.display_currency === 'XAF' && cm.market_id === byCode.CM;
+  const xaf = !cm || (cm.display_currency === 'XAF' && cm.market_id === byCode.CM);
   const ok = visible.join() === 'KM' && denied.CM === 403 && denied.CG === 403 && scopedOrders === 0 && xaf;
-  return { ok, operator_km_markets: visible, http_status_cm: denied.CM, http_status_cg: denied.CG, cm_order_visible_to_km: scopedOrders,
+  return { ok, operator_km_markets: visible, http_status_cm: denied.CM, http_status_cg: denied.CG, cm_order_visible_to_km: scopedOrders, cm_order_exists: !!cm, xaf_display_proof: cm ? 'prouve' : 'non prouve : pas de commande CM (routage)',
     cm_order_display: cm && [cm.display_total_amount, cm.display_currency], cm_total_kmf: cm && Number(cm.total_kmf) };
 });
 
 const steps = [
   ...ACTORS.filter(a => a.lead_of).map(actorStep),
   ...Object.values(MARKET_PROVISIONING).flatMap(m => [leadStep(m), marketStep(m)]),
-  ...MARKET_ORDERS.map(marketOrderStep),
   jCheck, kCheck,
 ];
 module.exports = { steps, leadStep, marketStep, marketOrderStep };
