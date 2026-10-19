@@ -273,6 +273,11 @@ describe('D1b — complétude partagée avec cost-expectation', () => {
       expect(src).not.toMatch(/expected_cost_types|expectedCount|expectedIndex/);
     });
 
+  test('Commerce expose toujours sa liste de types attendus', () => {
+    const commerce = require('../../services/dashboard-commerce');
+    expect(Array.isArray(commerce.EXPECTED_COST_TYPES)).toBe(true);
+  });
+
   test('commandes récentes : types manquants exposés, jamais présentés comme zéro', async () => {
     const db = require('../../db');
     expect(read('services/dashboard-finance-canonical.js')).toContain('missingTypesArraySql');
