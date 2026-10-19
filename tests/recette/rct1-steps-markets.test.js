@@ -15,7 +15,7 @@ test('manifeste complet resolvable avec CM/CG, J et K', () => {
 });
 test('parametres de recette : fictifs, prestataire mtn_momo, plafonds 1 000 000, aucun prix CG', () => {
   const l = MARKET_PROVISIONING_PARAMS.financial_limits;
-  assert.deepEqual(Object.values(l), [1000000, 1000000, 1000000]);
+  assert.deepEqual(Object.values(l), [1000000, 1000000, 1000000, 1000000]);
   assert.equal(MARKET_PROVISIONING_PARAMS.payment_provider.provider, 'mtn_momo');
   assert.ok(MARKET_ORDERS.every(o => o.market === 'CM'));
   assert.ok(MARKET_PROVISIONING.CM.currency === 'XAF' && MARKET_PROVISIONING.CG.currency === 'XAF');
