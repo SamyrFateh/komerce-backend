@@ -87,6 +87,25 @@ async function main() {
       process.stdout.write('RCT1JSON' + JSON.stringify(phase === 'dump' ? await dump(db, tables) : await tableCounts(db)) + '\n');
       return;
     }
+    if (phase === 'pricing-probe') {
+      // Lecture seule : position de prix du moteur pour les prix locaux RCT1 (aucune ecriture).
+      const v = await confirmTarget({ db });
+      if (!v.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
+      const { LOCAL_PRICES } = require('./steps-pricing');
+      const { PRODUCTS } = require('./data');
+      const engine = require('../../../services/pricing-engine');
+      const cdr = require('../../../services/pricing-cdr');
+      const out = [];
+      for (const lp of LOCAL_PRICES) {
+        const pr = (await db.query('SELECT id FROM products WHERE product_ref=$1', [PRODUCTS[lp.product].ref])).rows[0];
+        const m = (await db.query('SELECT id FROM markets WHERE code=$1', [lp.market])).rows[0];
+        const config = await cdr.loadGlobalConfig({ marketId: m.id });
+        const r = await engine.recommend({ product_id: pr.id, current_price_kmf: lp.amount, final_price_kmf: lp.amount, pricing_strategy: 'market_local' }, { config });
+        out.push({ market: lp.market, product: lp.product, price: lp.amount, strategy_risk: r.strategy_risk, variable_cost_complete_kmf: r.variable_cost_complete_kmf, cdr_kmf: r.fully_loaded_cost_reference_kmf, margin_pct: r.estimated_margin_pct });
+      }
+      process.stdout.write(JSON.stringify(out, null, 1) + '\n');
+      return;
+    }
     if (phase === 'inventory') {
       const v = await confirmTarget({ db });
       if (!v.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
