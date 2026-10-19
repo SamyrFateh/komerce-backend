@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        before_product_row, patch_payload
  * @outputs       validation_result, side_effects
- * @depends       db.js
+ * @depends       db.js, services/catalog-fr-quality.js
  * @used-by       services/product-admin-service.js, services/catalog-approval.js
  * @db-read       none
  * @db-write      alerts
@@ -34,6 +34,7 @@
 const db = require('../db');
 const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'product-publication-guard' });
+const { frenchLanguageProblems, describeFrenchProblems } = require('./catalog-fr-quality');
 
 const CLIENT_TITLE_MAX_LENGTH = 80;
 const CLIENT_DESCRIPTION_MIN_LENGTH = 20;
@@ -169,6 +170,21 @@ function validatePublicationUpdate({ before, patch, context }) {
         code: 'description_required',
         error: `Publication refusée : description client ≥ ${CLIENT_DESCRIPTION_MIN_LENGTH} caractères requise`,
       };
+    }
+
+    // ── Gate langue (C3) ─────────────────────────────────────────────
+    // Une fiche issue d'une source étrangère ne peut être publiée avec un texte resté
+    // anglais, même marquée `manual` : mêmes règles que le FR Quality Pass.
+    const hasSourceLineage = Boolean(before.name_source || before.description_source);
+    if (sourceLocale && !isFrenchLocale(sourceLocale) && hasSourceLineage) {
+      const problems = frenchLanguageProblems({ title: name, description });
+      if (problems.length) {
+        return {
+          ok: false,
+          code: 'french_not_detected',
+          error: `Publication refusée : ${describeFrenchProblems(problems)}`,
+        };
+      }
     }
 
     // ── Gate média catalogue ─────────────────────────────────────────

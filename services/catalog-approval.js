@@ -311,7 +311,7 @@ async function overrideAndApprove(q = db, productId, { fields, reason } = {}, ad
     try {
       overrideResult = await upsertOverrides(tx, productId, fields, { reason: reason || null, setBy: adminUser?.id || null });
     } catch (err) {
-      if (err.code === 'OVERRIDE_FIELD_NOT_ALLOWED') {
+      if (err.code === 'OVERRIDE_FIELD_NOT_ALLOWED' || err.code === 'FRENCH_NOT_DETECTED') {
         return { status: 422, body: { error: err.message, code: err.code } };
       }
       throw err;

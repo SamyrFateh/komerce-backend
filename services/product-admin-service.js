@@ -333,11 +333,17 @@ async function updateProduct(db, productId, payload, adminUser) {
   if (overrideFields.length) {
     const overridePayload = {};
     for (const f of overrideFields) overridePayload[f] = payload[f];
-    const { product } = await upsertOverrides(db, productId, overridePayload, {
-      reason: payload.override_reason || null,
-      setBy: adminUser?.id || null,
-    });
-    updated = product;
+    let overrideResult;
+    try {
+      overrideResult = await upsertOverrides(db, productId, overridePayload, {
+        reason: payload.override_reason || null,
+        setBy: adminUser?.id || null,
+      });
+    } catch (err) {
+      if (err.code === 'FRENCH_NOT_DETECTED') return { status: 422, body: { error: err.message, code: err.code } };
+      throw err;
+    }
+    updated = overrideResult.product;
     log.info(`Overrides posés (${overrideFields.join(', ')}) — produit ${productId}`);
   }
 

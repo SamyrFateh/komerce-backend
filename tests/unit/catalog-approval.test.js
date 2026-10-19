@@ -285,6 +285,13 @@ describe('overrideAndApprove', () => {
     expect(result).toMatchObject({ status: 422, body: { code: 'OVERRIDE_FIELD_NOT_ALLOWED' } });
   });
 
+  it('C3 : 422 FRENCH_NOT_DETECTED quand le texte corrigé reste anglais', async () => {
+    const { q } = mockDb({ product: candidateRow() });
+    upsertOverrides.mockRejectedValue(Object.assign(new Error('Préparation française refusée'), { code: 'FRENCH_NOT_DETECTED' }));
+    const result = await approval.overrideAndApprove(q, PRODUCT_ID, { fields: { name: 'Wireless headphones' } }, { id: 'admin-1' });
+    expect(result).toMatchObject({ status: 422, body: { code: 'FRENCH_NOT_DETECTED' } });
+  });
+
   it('une correction humaine clôt une revue IA faible-confiance avant publication', async () => {
     const prepared = candidateRow({
       needs_review: true,
