@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 732,
-    "filesWithFullHeaders": 684,
+    "scannedCodeFiles": 733,
+    "filesWithFullHeaders": 685,
     "filesWithLiteHeaders": 48,
-    "filesWithAnyHeaders": 732,
+    "filesWithAnyHeaders": 733,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1789,
-    "edges": 9037,
+    "graphNodes": 1793,
+    "edges": 9054,
     "dbTables": 206,
-    "doctrines": 650,
+    "doctrines": 653,
     "impactAreas": 201,
-    "unresolvedCodeEdges": 885,
+    "unresolvedCodeEdges": 884,
     "dbWriteViaOverlapWarnings": 9,
-    "multiWriterTables": 86
+    "multiWriterTables": 87
   },
   "byDomain": {
     "infrastructure": 24,
@@ -40,7 +40,7 @@
     "decision-signals": 14,
     "market-delegation": 35,
     "market": 4,
-    "economic-engine": 64,
+    "economic-engine": 65,
     "sourcing": 37,
     "logistics": 53,
     "boutique": 22,
@@ -109,7 +109,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 416,
+    "service": 417,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -120,7 +120,7 @@
   "byCriticality": {
     "critical": 97,
     "medium": 149,
-    "high": 429,
+    "high": 430,
     "low": 57
   },
   "nodes": [
@@ -16050,6 +16050,65 @@
         "dashboard"
       ],
       "version": "2026-07"
+    },
+    {
+      "id": "services/cost-allocation/manual-cost-entry-service.js",
+      "file": "services/cost-allocation/manual-cost-entry-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "manual-cost-entry",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order id",
+        "cost type",
+        "amount (KMF)",
+        "provenance",
+        "reason",
+        "idempotency key",
+        "actor"
+      ],
+      "outputs": [
+        "real cost allocations (manual_entry) distributed over order lines",
+        "append-only journal"
+      ],
+      "depends": [
+        "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/cost-expectation.js",
+        "services/simulation-scope-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-costing.js"
+      ],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "order_item_real_cost_allocations",
+        "order_cost_entry_events"
+      ],
+      "dbWrite": [
+        "order_item_real_cost_allocations",
+        "order_cost_entry_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_transaction_preserved"
+      ],
+      "doctrine": [
+        "traceable_manual_entry",
+        "no_double_count",
+        "never_unknown_as_zero",
+        "simulated_facts_never_real_activity"
+      ],
+      "impactAreas": [
+        "finance",
+        "margin",
+        "recette"
+      ],
+      "version": "2026-10"
     },
     {
       "id": "services/cost-allocation/product-margin-steering.js",
@@ -36019,6 +36078,11 @@
       "table": "webauthn_credentials"
     },
     {
+      "id": "db:order_cost_entry_events",
+      "type": "db-table",
+      "table": "order_cost_entry_events"
+    },
+    {
       "id": "db:cost_component_events",
       "type": "db-table",
       "table": "cost_component_events"
@@ -36217,11 +36281,6 @@
       "id": "db:shared_cart_saved_access",
       "type": "db-table",
       "table": "shared_cart_saved_access"
-    },
-    {
-      "id": "db:order_cost_entry_events",
-      "type": "db-table",
-      "table": "order_cost_entry_events"
     },
     {
       "id": "db:sourcing_canonical_entity_refs",
@@ -37974,6 +38033,26 @@
       "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
     },
     {
+      "id": "doctrine:traceable_manual_entry",
+      "type": "doctrine",
+      "doctrine": "traceable_manual_entry"
+    },
+    {
+      "id": "doctrine:no_double_count",
+      "type": "doctrine",
+      "doctrine": "no_double_count"
+    },
+    {
+      "id": "doctrine:never_unknown_as_zero",
+      "type": "doctrine",
+      "doctrine": "never_unknown_as_zero"
+    },
+    {
+      "id": "doctrine:simulated_facts_never_real_activity",
+      "type": "doctrine",
+      "doctrine": "simulated_facts_never_real_activity"
+    },
+    {
       "id": "doctrine:browser_uses_component_key",
       "type": "doctrine",
       "doctrine": "browser_uses_component_key"
@@ -39112,11 +39191,6 @@
       "id": "doctrine:market_scope_is_server_authority",
       "type": "doctrine",
       "doctrine": "market_scope_is_server_authority"
-    },
-    {
-      "id": "doctrine:simulated_facts_never_real_activity",
-      "type": "doctrine",
-      "doctrine": "simulated_facts_never_real_activity"
     },
     {
       "id": "doctrine:single_margin_engine",
@@ -40374,6 +40448,11 @@
       "area": "reconciliation"
     },
     {
+      "id": "impact:recette",
+      "type": "impact-area",
+      "area": "recette"
+    },
+    {
       "id": "impact:admin-costing",
       "type": "impact-area",
       "area": "admin-costing"
@@ -40482,11 +40561,6 @@
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
-    },
-    {
-      "id": "impact:recette",
-      "type": "impact-area",
-      "area": "recette"
     },
     {
       "id": "impact:secrets",
@@ -64721,6 +64795,108 @@
       "label": "dashboard"
     },
     {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "services/cost-allocation/_helpers.js",
+      "type": "depends",
+      "label": "services/cost-allocation/_helpers.js"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "services/cost-allocation/cost-expectation.js",
+      "type": "depends",
+      "label": "services/cost-allocation/cost-expectation.js"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "services/simulation-scope-service.js",
+      "type": "depends",
+      "label": "services/simulation-scope-service.js"
+    },
+    {
+      "from": "routes/admin-costing.js",
+      "to": "services/cost-allocation/manual-cost-entry-service.js",
+      "type": "uses",
+      "label": "routes/admin-costing.js"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "db:order_cost_entry_events",
+      "type": "db-read",
+      "label": "order_cost_entry_events"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-write",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "db:order_cost_entry_events",
+      "type": "db-write",
+      "label": "order_cost_entry_events"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "doctrine:traceable_manual_entry",
+      "type": "doctrine",
+      "label": "traceable_manual_entry"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "doctrine:no_double_count",
+      "type": "doctrine",
+      "label": "no_double_count"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "doctrine:never_unknown_as_zero",
+      "type": "doctrine",
+      "label": "never_unknown_as_zero"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "doctrine:simulated_facts_never_real_activity",
+      "type": "doctrine",
+      "label": "simulated_facts_never_real_activity"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "impact:margin",
+      "type": "impact",
+      "label": "margin"
+    },
+    {
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
+      "to": "impact:recette",
+      "type": "impact",
+      "label": "recette"
+    },
+    {
       "from": "services/cost-allocation/product-margin-steering.js",
       "to": "db",
       "type": "depends",
@@ -85457,7 +85633,7 @@
       "label": "services/dashboard-metrics/_helpers.js"
     },
     {
-      "from": "services/manual-cost-entry-service.js",
+      "from": "services/cost-allocation/manual-cost-entry-service.js",
       "to": "services/simulation-scope-service.js",
       "type": "uses",
       "label": "services/manual-cost-entry-service.js"
@@ -101299,6 +101475,7 @@
         "impact:economic-engine",
         "middleware/auth.js",
         "services/cost-allocation/index.js",
+        "services/cost-allocation/manual-cost-entry-service.js",
         "services/cost-allocation/product-margin-steering.js",
         "services/cost-allocation/real-margin-shadow.js",
         "services/dashboard-cache.js",
@@ -110965,6 +111142,7 @@
         "impact:economic-engine",
         "services/cost-allocation/allocate.js",
         "services/cost-allocation/cost-types.js",
+        "services/cost-allocation/manual-cost-entry-service.js",
         "services/cost-allocation/product-margin-steering.js",
         "services/cost-allocation/real-margin-shadow.js",
         "services/customs-shipment-service.js",
@@ -111120,6 +111298,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:dashboard",
         "impact:economic-engine",
+        "services/cost-allocation/manual-cost-entry-service.js",
         "services/dashboard-metrics/control-tower.js",
         "services/dashboard-metrics/costing.js"
       ]
@@ -111234,6 +111413,62 @@
         "services/cost-allocation/variance.js",
         "services/customs-shipment-service.js",
         "services/transport-cost-allocation.js"
+      ]
+    },
+    "services/cost-allocation/manual-cost-entry-service.js": {
+      "role": "manual-cost-entry",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/cost-expectation.js",
+        "services/simulation-scope-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-costing.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "order_item_real_cost_allocations",
+        "order_cost_entry_events"
+      ],
+      "dbWrite": [
+        "order_item_real_cost_allocations",
+        "order_cost_entry_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "traceable_manual_entry",
+        "no_double_count",
+        "never_unknown_as_zero",
+        "simulated_facts_never_real_activity"
+      ],
+      "impactAreas": [
+        "finance",
+        "margin",
+        "recette"
+      ],
+      "mustCheck": [
+        "db:order_cost_entry_events",
+        "db:order_item_real_cost_allocations",
+        "db:order_items",
+        "db:orders",
+        "doctrine:never_unknown_as_zero",
+        "doctrine:no_double_count",
+        "doctrine:simulated_facts_never_real_activity",
+        "doctrine:traceable_manual_entry",
+        "impact:finance",
+        "impact:margin",
+        "impact:recette",
+        "routes/admin-costing.js",
+        "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/cost-expectation.js",
+        "services/simulation-scope-service.js"
       ]
     },
     "services/cost-allocation/product-margin-steering.js": {
@@ -123889,7 +124124,7 @@
       "directDependsOn": [],
       "directUsedBy": [
         "services/dashboard-metrics/_helpers.js",
-        "services/manual-cost-entry-service.js",
+        "services/cost-allocation/manual-cost-entry-service.js",
         "readers of cross-order aggregates"
       ],
       "ownedFiles": [],
@@ -123920,6 +124155,7 @@
         "impact:dashboards",
         "impact:finance",
         "impact:recette",
+        "services/cost-allocation/manual-cost-entry-service.js",
         "services/dashboard-metrics/_helpers.js"
       ]
     },
@@ -130692,6 +130928,17 @@
       ]
     },
     {
+      "table": "order_item_real_cost_allocations",
+      "writerCount": 5,
+      "writers": [
+        "services/cost-allocation/allocate.js",
+        "services/cost-allocation/index.js",
+        "services/cost-allocation/manual-cost-entry-service.js",
+        "services/customs-shipment-service.js",
+        "services/transport-cost-allocation.js"
+      ]
+    },
+    {
       "table": "shared_carts",
       "writerCount": 5,
       "writers": [
@@ -130783,16 +131030,6 @@
         "routes/hub-mark-ordered.js",
         "routes/relay-dashboard.js",
         "services/operations-workspace.js"
-      ]
-    },
-    {
-      "table": "order_item_real_cost_allocations",
-      "writerCount": 4,
-      "writers": [
-        "services/cost-allocation/allocate.js",
-        "services/cost-allocation/index.js",
-        "services/customs-shipment-service.js",
-        "services/transport-cost-allocation.js"
       ]
     },
     {
@@ -131072,6 +131309,14 @@
       "writers": [
         "routes/admin-loyalty.js",
         "services/loyalty-service.js"
+      ]
+    },
+    {
+      "table": "order_cost_entry_events",
+      "writerCount": 2,
+      "writers": [
+        "services/cost-allocation/manual-cost-entry-service.js",
+        "services/simulation-scope-service.js"
       ]
     },
     {
@@ -135449,12 +135694,6 @@
       "to": "db",
       "type": "depends",
       "label": "db"
-    },
-    {
-      "from": "services/manual-cost-entry-service.js",
-      "to": "services/simulation-scope-service.js",
-      "type": "uses",
-      "label": "services/manual-cost-entry-service.js"
     },
     {
       "from": "readers of cross-order aggregates",
