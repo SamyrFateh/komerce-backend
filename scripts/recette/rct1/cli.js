@@ -37,6 +37,9 @@ const INVENTORY = Object.freeze({
   cost_components_relay: "SELECT key, scope, scope_value, default_value, provenance, is_active FROM cost_components WHERE key ILIKE '%relay%' OR key ILIKE '%relais%' ORDER BY key LIMIT 20",
   suppliers: "SELECT COUNT(*)::int AS n FROM suppliers",
   shipments: "SELECT COUNT(*)::int AS n FROM shipments",
+  taxonomy: "SELECT c.key, c.db_keys, c.is_active, (SELECT string_agg(s.key, ',') FROM boutique_subcategories s WHERE s.category_key=c.key) AS subs FROM boutique_categories c ORDER BY c.display_order LIMIT 15",
+  sample_active_product: "SELECT product_ref, category, subcategory, price_kmf, weight_kg, stock, sourcing_source, lifecycle_status, inventory_model, image_url IS NOT NULL AS has_image FROM products WHERE is_active LIMIT 2",
+  transport_rules: "SELECT key, value FROM business_rules WHERE key IN ('SEA_KMF_PER_KG_COMMERCIAL','AIR_KMF_PER_KG_TAXABLE','FREIGHT_KMF_PER_KG','CUSTOMS_DEFAULT_PCT','AED_KMF_FALLBACK','CASH_PAYMENT_TIMEOUT_HOURS')",
   migrations_tail: "SELECT * FROM schema_migrations ORDER BY 1 DESC LIMIT 3",
 });
 async function inventory(db) {
