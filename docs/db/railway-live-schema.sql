@@ -854,6 +854,92 @@ $$;
 
 
 --
+-- Name: cash_provenance_enforce_insert(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cash_provenance_enforce_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  src cash_collections%ROWTYPE;
+  parent cash_custody_provenance_edges%ROWTYPE;
+  receipt cash_custody_receipts%ROWTYPE;
+  dep cash_deposits%ROWTYPE;
+  used numeric;
+  limit_amount numeric;
+  reversed_amount numeric;
+BEGIN
+  -- Verrou unique par collection pour sérialiser toutes les branches concurrentes.
+  SELECT * INTO src FROM cash_collections WHERE id = NEW.collection_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION '303: encaissement inconnu'; END IF;
+  IF NEW.market_id IS DISTINCT FROM cash_collection_market(src.relais_id, src.collected_by) THEN
+    RAISE EXCEPTION '303: Market différent de la collection';
+  END IF;
+  SELECT * INTO receipt FROM cash_custody_receipts WHERE id = NEW.receipt_id FOR UPDATE;
+  IF NOT FOUND OR receipt.kind NOT IN ('RECEIVED', 'CONTROL') THEN
+    RAISE EXCEPTION '303: événement de réception ou contrôle requis';
+  END IF;
+  SELECT * INTO dep FROM cash_deposits WHERE id = receipt.deposit_id FOR UPDATE;
+  IF dep.market_id IS DISTINCT FROM NEW.market_id
+     OR (receipt.kind = 'RECEIVED' AND dep.movement_kind <> 'TRANSFER')
+     OR (receipt.kind = 'CONTROL' AND dep.movement_kind <> 'FINAL') THEN
+    RAISE EXCEPTION '303: remise incompatible avec événement de provenance';
+  END IF;
+
+  IF NEW.parent_id IS NULL THEN
+    IF dep.agent_id <> src.collected_by THEN
+      RAISE EXCEPTION '303: la première remise doit partir du collecteur';
+    END IF;
+    SELECT COALESCE(SUM(amount_kmf),0) INTO used
+      FROM cash_custody_provenance_edges
+     WHERE collection_id = NEW.collection_id AND parent_id IS NULL;
+    IF used + NEW.amount_kmf > src.amount_kmf THEN
+      RAISE EXCEPTION '303: attribution racine excède encaissement';
+    END IF;
+  ELSE
+    SELECT * INTO parent FROM cash_custody_provenance_edges WHERE id = NEW.parent_id FOR UPDATE;
+    IF NOT FOUND OR parent.collection_id <> NEW.collection_id OR parent.market_id <> NEW.market_id THEN
+      RAISE EXCEPTION '303: parent absent ou hors collection/Market';
+    END IF;
+    IF parent.created_at > NEW.created_at THEN
+      RAISE EXCEPTION '303: chronologie inversée';
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM cash_custody_provenance_edges e
+      JOIN cash_custody_receipts r ON r.id = e.receipt_id
+      WHERE e.id = parent.id AND r.kind <> 'RECEIVED'
+    ) THEN
+      RAISE EXCEPTION '303: un contrôle final ne peut être retransféré';
+    END IF;
+    IF dep.agent_id IS DISTINCT FROM (
+      SELECT pd.recipient_user_id FROM cash_custody_receipts pr
+      JOIN cash_deposits pd ON pd.id = pr.deposit_id WHERE pr.id = parent.receipt_id
+    ) THEN
+      RAISE EXCEPTION '303: détenteur émetteur différent du précédent destinataire';
+    END IF;
+    SELECT COALESCE(SUM(amount_kmf),0) INTO used
+      FROM cash_custody_provenance_edges WHERE parent_id = NEW.parent_id;
+    IF used + NEW.amount_kmf > parent.amount_kmf THEN
+      RAISE EXCEPTION '303: consommation multiple de la portion parente';
+    END IF;
+  END IF;
+
+  -- Le plafond d'une réception/contrôle tient compte des contre-écritures.
+  SELECT COALESCE(SUM(rv.amount_kmf),0)
+    INTO reversed_amount FROM cash_custody_receipts rv
+    WHERE rv.reverses_id = receipt.id;
+  limit_amount := receipt.amount_kmf - reversed_amount;
+  SELECT COALESCE(SUM(amount_kmf),0) INTO used
+    FROM cash_custody_provenance_edges WHERE receipt_id = NEW.receipt_id;
+  IF used + NEW.amount_kmf > limit_amount THEN
+    RAISE EXCEPTION '303: provenance excède le reçu/contrôle net';
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+
+--
 -- Name: check_parcel_item_quantities(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3371,6 +3457,30 @@ UNION ALL
 --
 
 COMMENT ON VIEW public.cash_custody_movements IS 'Autorité unique des soldes de garde : encaissements (+), transferts acceptés (−/+), clôtures finales contrôlées (−), pertes décidées (−), contre-écritures. Une déclaration seule ne bouge rien.';
+
+
+--
+-- Name: cash_custody_provenance_edges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cash_custody_provenance_edges (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    collection_id uuid NOT NULL,
+    parent_id uuid,
+    receipt_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT cash_custody_provenance_edges_amount_kmf_check CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT cash_provenance_no_self_parent CHECK (((parent_id IS NULL) OR (parent_id <> id)))
+);
+
+
+--
+-- Name: TABLE cash_custody_provenance_edges; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.cash_custody_provenance_edges IS 'Golden 1D-B: revendications de provenance explicites, append-only; ne certifie pas la clôture financière. Les inversions de réception nécessitent une projection nette avant activation.';
 
 
 --
@@ -11249,6 +11359,14 @@ ALTER TABLE ONLY public.cash_custody_losses
 
 
 --
+-- Name: cash_custody_provenance_edges cash_custody_provenance_edges_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_provenance_edges
+    ADD CONSTRAINT cash_custody_provenance_edges_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: cash_custody_receipts cash_custody_receipts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13457,6 +13575,27 @@ CREATE INDEX idx_cash_dep_regularizes ON public.cash_deposits USING btree (regul
 --
 
 CREATE INDEX idx_cash_dep_status ON public.cash_deposits USING btree (status);
+
+
+--
+-- Name: idx_cash_provenance_collection; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_provenance_collection ON public.cash_custody_provenance_edges USING btree (collection_id);
+
+
+--
+-- Name: idx_cash_provenance_parent; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_provenance_parent ON public.cash_custody_provenance_edges USING btree (parent_id);
+
+
+--
+-- Name: idx_cash_provenance_receipt; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cash_provenance_receipt ON public.cash_custody_provenance_edges USING btree (receipt_id);
 
 
 --
@@ -16820,6 +16959,20 @@ CREATE TRIGGER trg_cash_policy_assignment_market BEFORE INSERT OR UPDATE OF assi
 
 
 --
+-- Name: cash_custody_provenance_edges trg_cash_provenance_enforce_insert; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_provenance_enforce_insert BEFORE INSERT ON public.cash_custody_provenance_edges FOR EACH ROW EXECUTE FUNCTION public.cash_provenance_enforce_insert();
+
+
+--
+-- Name: cash_custody_provenance_edges trg_cash_provenance_no_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_provenance_no_update BEFORE DELETE OR UPDATE ON public.cash_custody_provenance_edges FOR EACH ROW EXECUTE FUNCTION public.cash_ledger_prevent_mutation();
+
+
+--
 -- Name: catalog_media trg_catalog_media_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -17638,6 +17791,38 @@ ALTER TABLE ONLY public.cash_custody_losses
 
 ALTER TABLE ONLY public.cash_custody_losses
     ADD CONSTRAINT cash_custody_losses_reverses_id_fkey FOREIGN KEY (reverses_id) REFERENCES public.cash_custody_losses(id);
+
+
+--
+-- Name: cash_custody_provenance_edges cash_custody_provenance_edges_collection_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_provenance_edges
+    ADD CONSTRAINT cash_custody_provenance_edges_collection_id_fkey FOREIGN KEY (collection_id) REFERENCES public.cash_collections(id);
+
+
+--
+-- Name: cash_custody_provenance_edges cash_custody_provenance_edges_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_provenance_edges
+    ADD CONSTRAINT cash_custody_provenance_edges_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: cash_custody_provenance_edges cash_custody_provenance_edges_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_provenance_edges
+    ADD CONSTRAINT cash_custody_provenance_edges_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.cash_custody_provenance_edges(id);
+
+
+--
+-- Name: cash_custody_provenance_edges cash_custody_provenance_edges_receipt_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cash_custody_provenance_edges
+    ADD CONSTRAINT cash_custody_provenance_edges_receipt_id_fkey FOREIGN KEY (receipt_id) REFERENCES public.cash_custody_receipts(id);
 
 
 --

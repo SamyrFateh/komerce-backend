@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 732
-- Files with full headers: 684
+- Scanned code files: 733
+- Files with full headers: 685
 - Files with lite headers: 48
-- Files with any headers: 732
+- Files with any headers: 733
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1789
-- Edges: 9037
+- Graph nodes: 1793
+- Edges: 9054
 - DB tables: 206
-- Doctrines: 650
+- Doctrines: 653
 - Impact areas: 201
-- Unresolved code edges: 885
-- Tables multi-écrivains directs (>=2): 86
+- Unresolved code edges: 884
+- Tables multi-écrivains directs (>=2): 87
 - Avertissements db-write / db-write-via en chevauchement: 9
 
 ## Domains
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 29
 - decision-signals: 14
 - documents: 15
-- economic-engine: 64
+- economic-engine: 65
 - external-provider-contracts: 1
 - incident-management: 5
 - infrastructure: 24
@@ -89,7 +89,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 416
+- service: 417
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -396,6 +396,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cost-allocation/cost-expectation.js — economic-engine-cost-expectation (economic-engine, high, full)
 - services/cost-allocation/cost-types.js — economic-engine-cost-type-classification (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
+- services/cost-allocation/manual-cost-entry-service.js — manual-cost-entry (economic-engine, high, full)
 - services/cost-component-admin-service.js — economic-engine-cost-component-admin-service (economic-engine, high, full)
 - services/cost-component-market-service.js — economic-engine-market-cost-component-service (economic-engine, high, full)
 - services/customer-handoff-reconciliation.js — customer-handoff-reconciliation (logistics, high, full)
@@ -960,6 +961,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - supplier_execution_payments: 6 écrivains directs — services/supplier-payment-orchestrator.js, services/supplier-payment-proof-persistence.js, services/supplier-payment-state.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-payment-recovery.js, services/suppliers/cj-supplier-payment-runtime.js
 - transaction_documents: 6 écrivains directs — routes/documents.js, services/documents/customs-invoice.js, services/documents/document-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js, services/documents/wallet-receipt.js
 - invoices: 5 écrivains directs — routes/admin/system.js, routes/documents.js, routes/invoices.js, services/invoice-service.js, services/order-payment-confirmation.js
+- order_item_real_cost_allocations: 5 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/cost-allocation/manual-cost-entry-service.js, services/customs-shipment-service.js, services/transport-cost-allocation.js
 - shared_carts: 5 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
 - signals: 5 écrivains directs — bootstrap/crons.js, routes/agent-action-center.js, services/action-center-agent-scope.js, services/signal-admin-service.js, services/signal-service.js
 - sourcing_sources: 5 écrivains directs — services/provider-credential-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
@@ -969,7 +971,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - cash_confirmation_controls: 4 écrivains directs — services/cash-confirmation-control-service.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
 - market_delegation_audit: 4 écrivains directs — middleware/require-market-delegated-capability.js, middleware/require-market-execution-capability.js, services/cash-deposit-service.js, services/market-delegation-service.js
 - order_comments: 4 écrivains directs — routes/hub-dashboard.js, routes/hub-mark-ordered.js, routes/relay-dashboard.js, services/operations-workspace.js
-- order_item_real_cost_allocations: 4 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/customs-shipment-service.js, services/transport-cost-allocation.js
 - product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
