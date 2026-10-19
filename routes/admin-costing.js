@@ -47,7 +47,7 @@
 const express = require('express');
 const db = require('../db');
 const { notLegacyUnjustifiedSql } = require('../services/cost-allocation/cost-expectation');
-const { realActivityByOrderIdSql } = require('../services/simulation-scope-service');
+const { realActivityByOrderIdSql, assignOrderSimulationScope } = require('../services/simulation-scope-service');
 const costAllocation = require('../services/cost-allocation');
 const manualCostEntry = require('../services/cost-allocation/manual-cost-entry-service');
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
@@ -739,7 +739,7 @@ router.get('/products/margin-steering', authenticate, requireAdmin, async (req, 
 //      POST /api/admin/costing/orders/:orderId/manual-costs/:costType/correct : correction tracée
 // Types sans collecteur automatique uniquement ; provenance + motif + clé d'idempotence obligatoires.
 // ═══════════════════════════════════════════════════════════════════════
-async function runManualCost(req, res, next, fn, extra = {}) {
+async function runCostTransaction(req, res, next, fn, extra = {}) {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
@@ -766,10 +766,20 @@ async function runManualCost(req, res, next, fn, extra = {}) {
   }
 }
 
+// L3 — POST /api/admin/costing/orders/:orderId/simulation-scope : rattache une commande à un périmètre
+// de recette (faits simulés). Tracé, immuable, refusé en production.
+router.post('/orders/:orderId/simulation-scope', authenticate, requireAdmin, (req, res, next) =>
+  runCostTransaction(req, res, next, (client) => assignOrderSimulationScope(client, {
+    orderId: req.params.orderId,
+    scope: (req.body || {}).scope,
+    reason: (req.body || {}).reason,
+    actorId: req.user && req.user.id,
+  })));
+
 router.post('/orders/:orderId/manual-costs', authenticate, requireAdmin, (req, res, next) =>
-  runManualCost(req, res, next, manualCostEntry.recordManualCost));
+  runCostTransaction(req, res, next, manualCostEntry.recordManualCost));
 
 router.post('/orders/:orderId/manual-costs/:costType/correct', authenticate, requireAdmin, (req, res, next) =>
-  runManualCost(req, res, next, manualCostEntry.correctManualCost, { costType: req.params.costType }));
+  runCostTransaction(req, res, next, manualCostEntry.correctManualCost, { costType: req.params.costType }));
 
 module.exports = router;

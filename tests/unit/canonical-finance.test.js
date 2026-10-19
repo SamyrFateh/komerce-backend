@@ -416,3 +416,17 @@ describe('L1 — coût sans collecteur automatique', () => {
     expect(JSON.stringify(items)).toContain('Sourcing (saisie manuelle requise)');
   });
 });
+
+describe('L3 — périmètre de recette transmis depuis l’URL de la page (finance)', () => {
+  const run = async (search) => {
+    const fetch = jest.fn().mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payloadFixture()) });
+    await finance.mount({ root: {}, document: {}, ui: {}, fetch, renderer: { createRenderer: () => ({ render: jest.fn() }) },
+      adminContext: marketContext(), contextContract: adminContextContract, user: { role: 'admin' }, location: { search } });
+    return fetch.mock.calls[0][0];
+  };
+  test('périmètre valide transmis ; invalide ou absent ignoré (activité réelle)', async () => {
+    expect(await run('?simulation_scope=RCT1')).toBe('/api/admin/dashboard/finance/market/CM?period=30&simulation_scope=RCT1');
+    expect(await run("?simulation_scope=rct1'--")).toBe('/api/admin/dashboard/finance/market/CM?period=30');
+    expect(await run('')).toBe('/api/admin/dashboard/finance/market/CM?period=30');
+  });
+});

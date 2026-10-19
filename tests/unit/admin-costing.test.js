@@ -259,6 +259,17 @@ describe('L1 — routes de saisie manuelle traçable', () => {
     expect(mockCorrectManualCost.mock.calls[0][1]).toMatchObject({ costType: 'packaging', amountKmf: 250 });
   });
 
+  test('périmètre de recette : service canonique appelé dans la transaction', async () => {
+    mockClient.query.mockImplementation(async (sql) => (/SELECT id, simulation_scope FROM orders/.test(sql) ? { rows: [{ id: 'o1', simulation_scope: null }] } : { rows: [] }));
+    const prev = process.env.KOMERCE_ENV; process.env.KOMERCE_ENV = 'staging';
+    const res = await request(app).post('/api/admin/costing/orders/o1/simulation-scope').send({ scope: 'RCT1', reason: 'recette' });
+    process.env.KOMERCE_ENV = prev;
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ simulation_scope: 'RCT1' });
+    expect(mockClient.query.mock.calls.map((c) => c[0])).toEqual(expect.arrayContaining(['BEGIN', 'COMMIT']));
+    mockClient.query.mockReset(); mockClient.query.mockResolvedValue({ rows: [] });
+  });
+
   test('non admin : 403', async () => {
     currentUser = { id: 'u', role: 'client' };
     const res = await request(app).post('/api/admin/costing/orders/o1/manual-costs').send({});

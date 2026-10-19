@@ -261,6 +261,16 @@
     return MARKET_ENDPOINT_PREFIX + encodeURIComponent(view.marketCode);
   }
 
+  // L3 — périmètre de recette explicite (?simulation_scope=RCT1 dans l'URL de la page) : transmis à l'API,
+  // qui renvoie alors les faits simulés de ce seul périmètre, libellés comme tels. Sinon : activité réelle.
+  function simulationQuery(options = {}) {
+    const search = options.location && typeof options.location.search === 'string'
+      ? options.location.search
+      : (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
+    const scope = new URLSearchParams(search || '').get('simulation_scope');
+    return scope && /^[A-Z][A-Z0-9-]{1,31}$/.test(scope) ? `&simulation_scope=${encodeURIComponent(scope)}` : '';
+  }
+
   async function jsonRequest(fetchFn, url) {
     const response = await fetchFn(url, {
       method: 'GET',
@@ -294,7 +304,7 @@
       renderer.render(rootNode, schema, { state: 'loading', stateMessage: 'Chargement de Commerce…' });
 
       try {
-        const payload = await jsonRequest(fetchFn, `${endpoint}?period=${encodeURIComponent(period)}`);
+        const payload = await jsonRequest(fetchFn, `${endpoint}?period=${encodeURIComponent(period)}${simulationQuery(options)}`);
         const result = renderer.render(rootNode, schema, {
           data: resolveSources(payload),
           filters: { period },
