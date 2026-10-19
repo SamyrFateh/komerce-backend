@@ -106,6 +106,21 @@ async function main() {
       process.stdout.write(JSON.stringify(out, null, 1) + '\n');
       return;
     }
+    if (phase === 'finance-probe') {
+      // Lecture seule : finance canonique avec et sans perimetre RCT1 (preuve d'isolation).
+      const v = await confirmTarget({ db });
+      if (!v.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
+      const fin = require('../../../services/dashboard-finance-canonical');
+      const view = (r) => ({
+        trend: (r.trend || []).map(t => ({ paid_orders: t.paid_orders, revenue_kmf: t.revenue_kmf, consolidated_margin_kmf: t.consolidated_margin_kmf, actual_orders: t.actual_orders })),
+        orders: (r.costing_orders || []).filter(o => String(o.reference).startsWith('RCT1-')).map(o => ({ ref: o.reference, status: o.status, sale: o.sale_total_kmf, real_cost: o.real_cost_kmf, margin: o.consolidated_margin_kmf, cost_status: o.cost_status, missing: o.missing_cost_types })),
+        incomplete: (r.incomplete_cost_orders || []).filter(o => String(o.reference).startsWith('RCT1-')).map(o => o.reference),
+      });
+      const withScope = view(await fin.buildFinance({ simulation_scope: 'RCT1', period: '90' }, {}));
+      const noScope = view(await fin.buildFinance({ period: '90' }, {}));
+      process.stdout.write(JSON.stringify({ with_scope: withScope, without_scope: { ...noScope, rct1_orders_visible: noScope.orders.length } }, null, 1) + '\n');
+      return;
+    }
     if (phase === 'inventory') {
       const v = await confirmTarget({ db });
       if (!v.confirmed) throw new Error('RCT1_TARGET_NOT_CONFIRMED');
