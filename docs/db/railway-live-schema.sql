@@ -1957,6 +1957,21 @@ $$;
 
 
 --
+-- Name: prevent_order_simulation_scope_change(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_order_simulation_scope_change() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF OLD.simulation_scope IS NOT NULL AND NEW.simulation_scope IS DISTINCT FROM OLD.simulation_scope THEN
+    RAISE EXCEPTION 'orders.simulation_scope est immuable une fois posé (%)', OLD.simulation_scope;
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: prevent_orders_market_id_mutation(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -4026,6 +4041,7 @@ CREATE TABLE public.cost_components (
     updated_by uuid,
     economic_nature text,
     allocation_perimeter text DEFAULT 'direct'::text NOT NULL,
+    provenance text,
     CONSTRAINT cost_components_allocation_check CHECK ((allocation_method = ANY (ARRAY['none'::text, 'per_order'::text, 'per_item'::text, 'by_value'::text, 'by_weight'::text, 'by_volume'::text, 'by_taxable_weight'::text, 'by_quantity'::text, 'by_category_risk'::text, 'manual'::text]))),
     CONSTRAINT cost_components_allocation_perimeter_check CHECK ((allocation_perimeter = ANY (ARRAY['direct'::text, 'mutualized'::text]))),
     CONSTRAINT cost_components_category_check CHECK ((category = ANY (ARRAY['product_purchase'::text, 'sourcing'::text, 'hub'::text, 'packaging'::text, 'freight'::text, 'customs'::text, 'port_transitary'::text, 'local_distribution'::text, 'relay'::text, 'payment'::text, 'risk_provision'::text, 'fixed_overhead'::text, 'incident'::text, 'marketing_campaign'::text]))),
@@ -4053,6 +4069,13 @@ COMMENT ON COLUMN public.cost_components.economic_nature IS 'Nature economique c
 --
 
 COMMENT ON COLUMN public.cost_components.allocation_perimeter IS 'Perimetre canonique: direct ou mutualized. Independent de la nature economique.';
+
+
+--
+-- Name: COLUMN cost_components.provenance; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cost_components.provenance IS 'Provenance déclarée de la valeur saisie. Un coût réel dérivé exige auteur ET provenance.';
 
 
 --
@@ -6131,6 +6154,26 @@ CREATE TABLE public.order_comments (
 
 
 --
+-- Name: order_cost_entry_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.order_cost_entry_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    event_type text NOT NULL,
+    cost_type text,
+    idempotency_key text,
+    old_value jsonb,
+    new_value jsonb,
+    provenance text,
+    reason text,
+    actor_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT order_cost_entry_events_event_type_check CHECK ((event_type = ANY (ARRAY['simulation_scope_assigned'::text, 'manual_cost_entered'::text, 'manual_cost_corrected'::text])))
+);
+
+
+--
 -- Name: order_incidents; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6213,8 +6256,16 @@ CREATE TABLE public.order_item_real_cost_allocations (
     confidence text,
     notes text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    created_by uuid
+    created_by uuid,
+    provenance text
 );
+
+
+--
+-- Name: COLUMN order_item_real_cost_allocations.provenance; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_item_real_cost_allocations.provenance IS 'Provenance déclarée du coût (ex. FICTIF recette, pièce fournisseur). NULL = non déclarée (historique).';
 
 
 --
@@ -6532,9 +6583,11 @@ CREATE TABLE public.orders (
     display_total_amount numeric(14,2),
     display_currency text,
     display_parity_snapshot jsonb,
+    simulation_scope text,
     CONSTRAINT chk_orders_discount CHECK (((discount_pct >= (0)::numeric) AND (discount_pct <= (100)::numeric))),
     CONSTRAINT chk_orders_total CHECK ((total_kmf >= (0)::numeric)),
-    CONSTRAINT orders_pickup_code_recipient_check CHECK (((pickup_code_recipient)::text = ANY ((ARRAY['buyer'::character varying, 'organizer'::character varying])::text[])))
+    CONSTRAINT orders_pickup_code_recipient_check CHECK (((pickup_code_recipient)::text = ANY ((ARRAY['buyer'::character varying, 'organizer'::character varying])::text[]))),
+    CONSTRAINT orders_simulation_scope_format CHECK (((simulation_scope IS NULL) OR (simulation_scope ~ '^[A-Z][A-Z0-9-]{1,31}$'::text)))
 );
 
 
@@ -6816,6 +6869,13 @@ COMMENT ON COLUMN public.orders.display_currency IS 'Devise de display_total_amo
 --
 
 COMMENT ON COLUMN public.orders.display_parity_snapshot IS 'Métadonnée d''audit : parité(s) currency_parities utilisée(s) pour calculer display_total_amount, et la source du contexte marché (explicite ou fallback). Ne remplace JAMAIS display_total_amount comme source de vérité (freeze P3, invariant 5) — lecture humaine/debug uniquement.';
+
+
+--
+-- Name: COLUMN orders.simulation_scope; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.orders.simulation_scope IS 'NULL = activité réelle. Sinon identifiant du périmètre de recette (faits simulés) : exclu des agrégats d''activité réelle, inclus seulement quand ce périmètre est demandé explicitement. Immuable une fois posé.';
 
 
 --
@@ -11989,6 +12049,14 @@ ALTER TABLE ONLY public.order_comments
 
 
 --
+-- Name: order_cost_entry_events order_cost_entry_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_cost_entry_events
+    ADD CONSTRAINT order_cost_entry_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: order_incidents order_incidents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14379,6 +14447,13 @@ CREATE INDEX idx_operator_scope_market ON public.operator_market_scopes USING bt
 
 
 --
+-- Name: idx_order_cost_entry_events_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_order_cost_entry_events_order ON public.order_cost_entry_events USING btree (order_id, created_at);
+
+
+--
 -- Name: idx_order_items_allocated; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -14656,6 +14731,13 @@ CREATE INDEX idx_orders_shipment ON public.orders USING btree (shipment_id);
 --
 
 CREATE INDEX idx_orders_shipment_id ON public.orders USING btree (shipment_id) WHERE (shipment_id IS NOT NULL);
+
+
+--
+-- Name: idx_orders_simulation_scope; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_orders_simulation_scope ON public.orders USING btree (simulation_scope) WHERE (simulation_scope IS NOT NULL);
 
 
 --
@@ -16402,6 +16484,13 @@ CREATE UNIQUE INDEX uq_mobile_money_provider_external_tx ON public.mobile_money_
 
 
 --
+-- Name: uq_order_cost_entry_events_idem; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_order_cost_entry_events_idem ON public.order_cost_entry_events USING btree (idempotency_key) WHERE (idempotency_key IS NOT NULL);
+
+
+--
 -- Name: uq_orders_cash_ref_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -16994,6 +17083,13 @@ CREATE TRIGGER trg_orders_market_id_immutable BEFORE UPDATE ON public.orders FOR
 --
 
 CREATE TRIGGER trg_orders_relais_market_consistency BEFORE INSERT OR UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.prevent_orders_relais_market_mismatch();
+
+
+--
+-- Name: orders trg_orders_simulation_scope_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_orders_simulation_scope_immutable BEFORE UPDATE OF simulation_scope ON public.orders FOR EACH ROW EXECUTE FUNCTION public.prevent_order_simulation_scope_change();
 
 
 --
