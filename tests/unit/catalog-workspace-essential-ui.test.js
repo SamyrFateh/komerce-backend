@@ -43,3 +43,13 @@ test('Suite marché : un prix local absent est expliqué, jamais un code brut',(
   expect(workspace).toContain('Prix local non défini pour ce marché');
   expect(workspace).toContain('Prix local en brouillon, à activer');
 });
+
+test('Bandeau paramètres : provenance, usage, conséquence et accès à la configuration',()=>{
+  expect(workspace).toContain('function renderPricingParameters');
+  expect(workspace).toContain('data-pricing-parameters');
+  expect(workspace).toContain('Valeur par défaut non validée');
+  expect(workspace).toContain('Provenance : ');
+  expect(workspace).toContain('Conséquence : ');
+  expect(workspace).toContain('Configurer (');
+  expect(workspace).toContain('pas un prix publié ni un coût réel');
+});
