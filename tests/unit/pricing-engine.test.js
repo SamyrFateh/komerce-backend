@@ -161,6 +161,17 @@ describe('pricing-engine', () => {
     expect(result).not.toHaveProperty('n3_fixed_overhead_allocation_kmf');
   });
 
+  it('recommend : provenance LOCAL_STOCK transmise au CDR si stock local exposable au marché', async () => {
+    jest.doMock('../../services/local-stock-service', () => ({ isStockExposable: jest.fn().mockResolvedValue(true) }));
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'prod-001', category: 'food', cost_kmf: 900, price_kmf: 2400 }] })
+      .mockResolvedValueOnce({ rows: [{ paid_orders: '0', unique_buyers: '0', first_sale_at: null }] })
+      .mockResolvedValueOnce({ rows: [] });
+    await engine.recommend({ product_id: 'prod-001' }, { config: { ...baseConfig(), market_id: 'km' } });
+    expect(cdr.computeCDR).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({ provenance: 'LOCAL_STOCK' }));
+    jest.dontMock('../../services/local-stock-service');
+  });
+
   it('recommend : marge cible produit (target_margin_pct) prioritaire sur la catégorie', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{ id: 'prod-001', category: 'food', cost_kmf: 900, weight_kg: 1.2, price_kmf: 2400, target_margin_pct: '33' }] })
