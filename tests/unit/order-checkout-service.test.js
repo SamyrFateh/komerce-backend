@@ -32,4 +32,11 @@ describe('order-checkout-service market lifecycle', () => {
     expect(source).toMatch(/internalSimulation \? internalSimulation.reference : await getUniqueRef\(db\)/);
     expect(source).toMatch(/RCT1-\(E1\|G\)/);
   });
+  test('E1 refuses checkout total mismatch before inserting order', () => {
+    expect(source).toMatch(/RCT1_E1_CHECKOUT_TOTAL_MISMATCH/);
+    const totalGate = source.indexOf('RCT1_E1_CHECKOUT_TOTAL_MISMATCH');
+    const insertAt = source.indexOf('const order = await insertOrderRow(client, {');
+    expect(totalGate).toBeGreaterThan(0);
+    expect(insertAt).toBeGreaterThan(totalGate);
+  });
 });
