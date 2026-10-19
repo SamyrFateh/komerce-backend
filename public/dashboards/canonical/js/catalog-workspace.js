@@ -863,8 +863,47 @@
     return chain;
   }
 
+  const PARAMETER_STATUS_LABELS = {
+    documented: 'Documenté',
+    operator_set: 'Saisi, source non vérifiée',
+    default_unvalidated: 'Valeur par défaut non validée',
+    divergent: 'Deux valeurs concurrentes',
+    missing: 'Absent',
+  };
+
+  function renderPricingParameters(slot, doc, payload) {
+    const params = payload && payload.pricing_parameters;
+    if (!params || !Array.isArray(params.items)) return;
+    const flagged = params.items.filter(i => i.status !== 'documented' && i.status !== 'operator_set');
+    const box = doc.createElement('div');
+    box.className = 'kmc-workspace-notice';
+    box.setAttribute('data-pricing-parameters', flagged.length ? 'attention' : 'ok');
+    if (params.unavailable) {
+      box.appendChild(text(doc, 'strong', '', 'Paramètres économiques non vérifiables pour le moment.'));
+      slot.appendChild(box);
+      return;
+    }
+    if (!flagged.length) return;
+    box.appendChild(text(doc, 'strong', '', 'Paramètres économiques à valider avant de s’y fier'));
+    box.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Ces valeurs permettent une simulation, pas un prix publié ni un coût réel tant qu’elles ne sont pas validées.'));
+    flagged.forEach(item => {
+      const line = doc.createElement('div');
+      line.setAttribute('data-parameter-key', item.key);
+      line.appendChild(text(doc, 'strong', '', `${item.label} · ${PARAMETER_STATUS_LABELS[item.status] || item.status}`));
+      line.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', `Provenance : ${item.provenance} Usage : ${item.usage} Conséquence : ${item.consequence}`));
+      if (item.config && item.config.href) {
+        const link = text(doc, 'a', 'kmc-workspace-action', `Configurer (${item.config.role}) · ${item.config.label}`);
+        link.href = item.config.href;
+        line.appendChild(link);
+      }
+      box.appendChild(line);
+    });
+    slot.appendChild(box);
+  }
+
   function renderApproval(rootNode, ui, doc, payload, context) {
     const slot = createSection(rootNode, ui, 'Produits à finaliser', 'Préparez les fiches, définissez les prix et validez les produits proposés.');
+    renderPricingParameters(slot, doc, payload);
     const rows = payload.approval || [];
     const breakdown = payload.approval_breakdown || {};
     const strategy = payload.approval_strategy || {};

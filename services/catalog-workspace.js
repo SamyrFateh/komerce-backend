@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        authenticated_central_actor, product_ref, category_key, catalog_action_payload
  * @outputs       catalog_work_queue, delegated_catalog_mutations
- * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js
+ * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, finance_config, currency_parities, exchange_rates, cost_components
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
@@ -27,6 +27,7 @@ const { certifyCatalogProduct } = require('./catalog-certification');
 const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
+const { getPricingParameterStatus } = require('./pricing-parameters-status');
 
 const CATALOG_CAP_FALLBACK = 120;
 const APPROVAL_CONTENT_SOURCES = Object.freeze(['connector_raw', 'ai_enriched', 'manual']);
@@ -347,7 +348,7 @@ async function buildWorkspace(query = {}) {
   const approvalLimit = Math.min(Math.max(Number(query.approval_limit) || 50, 1), 100);
   const approvalOffset = Math.max(Number.parseInt(query.approval_offset, 10) || 0, 0);
   const approvalProductRef = String(query.product_ref || '').trim() || null;
-  const [summary, catalogCap, categories, products, approval, approvalBreakdown, focusedHandoff] = await Promise.all([
+  const [summary, catalogCap, categories, products, approval, approvalBreakdown, focusedHandoff, pricingParameters] = await Promise.all([
     querySummary(),
     queryCatalogCap(),
     taxonomy.listCategories(),
@@ -359,6 +360,7 @@ async function buildWorkspace(query = {}) {
     queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset, productRef: approvalProductRef }),
     queryApprovalBreakdown(),
     queryFocusedMarketHandoff(approvalProductRef),
+    getPricingParameterStatus(db).catch(() => ({ items: [], has_unvalidated: false, unavailable: true })),
   ]);
   // La projection Raffinerie expose le vrai verdict du moteur de certification,
   // sans déclencher de validation, publication ni mutation.
@@ -394,6 +396,7 @@ async function buildWorkspace(query = {}) {
     products,
     approval: approvalWithReadiness,
     focused_handoff: focusedHandoff,
+    pricing_parameters: pricingParameters,
     approval_breakdown: approvalBreakdown,
     approval_strategy: {
       authority: 'human_approval',
