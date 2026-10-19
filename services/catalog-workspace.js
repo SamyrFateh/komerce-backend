@@ -167,7 +167,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
   const { rows } = await db.query(`
     SELECT p.id AS product_id, p.product_ref, p.name, p.description, p.name_source, p.description_source,
            p.category, p.fragility, p.emoji,
-           p.price_kmf, p.stock, p.content_source, p.source_locale, p.needs_review,
+           p.price_kmf, p.cost_kmf, p.stock, p.content_source, p.source_locale, p.needs_review,
            p.enrichment_confidence, p.created_at,
            sc.supplier_name,
            sc.supplier_product_id,
@@ -219,6 +219,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
     fragility: row.fragility || null,
     emoji: row.emoji || null,
     price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
+    cost_kmf: row.cost_kmf == null ? null : Number(row.cost_kmf),
     stock: row.stock == null ? null : Number(row.stock),
     content_source: row.content_source,
     source_locale: row.source_locale || null,
