@@ -1,4 +1,4 @@
--- @migration 303_cash_custody_provenance_edges.sql
+-- @migration 304_cash_custody_provenance_edges.sql
 -- @domain payment
 -- Golden 1D-B: registre additif de provenance, sans modifier l'autorité des soldes.
 -- Aucun backfill, aucune attribution implicite, aucun branchement clôture 1C.
@@ -10,7 +10,7 @@ BEGIN
   IF to_regclass('public.cash_custody_receipts') IS NULL
      OR to_regclass('public.cash_collections') IS NULL
      OR to_regclass('public.cash_deposits') IS NULL THEN
-    RAISE EXCEPTION '303: migrations 287/289 requises';
+    RAISE EXCEPTION '304: migrations 287/289 requises';
   END IF;
 END
 $pre$;
