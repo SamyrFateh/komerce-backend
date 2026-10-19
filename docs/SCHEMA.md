@@ -669,3 +669,10 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 
 `customs_shipment_parcel_events` is an append-only journal of parcel attach/detach events on an open customs shipment (groupage). Every event carries actor, date and a mandatory reason; UPDATE/DELETE are refused. It deliberately has no foreign key (like `customs_shipment_financial_audit`) so the evidence survives deactivation. Cost lines are re-allocated by the existing conserving allocator in the same transaction; prices and margin writers are untouched.
+
+
+<!-- schema-pending -->
+### Cash custody provenance edges (migration 303 — intended_migration_schema)
+
+`cash_custody_provenance_edges` is a new, **not yet live** append-only table proposed by migration 303. It associates explicit collection-level cash portions with custody receipt events, with optional parent edges for multi-hop transfers, conservation ceilings and Market consistency. It is not a second custody balance authority and does not establish final financial closure. Migration remains draft and requires isolated PostgreSQL verification for reversals, losses, concurrency and end-to-end traceability before merge.
+<!-- /schema-pending -->
