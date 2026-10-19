@@ -8,7 +8,7 @@
  * @outputs       query_result_or_user_projection
  * @depends       none
  * @used-by       dashboard, loyalty
- * @db-read       orders, loyalty_tiers, users
+ * @db-read       orders, loyalty_tiers, users, relais
  * @db-write      users
  * @db-txn        caller-owned
  * @doctrine      lifecycle_owner_persistence_boundary
@@ -79,6 +79,29 @@ async function setUserRole(executor, {
      RETURNING id, full_name, email, role`,
     [role, userId],
   );
+}
+
+/**
+ * Rattache un agent relais a son relais (users.relais_id). Seul writer canonique :
+ * un agent_relais sans relais_id est refuse (403) par les controles cross-relais.
+ * Le relais doit exister et etre actif ; idempotent ; ne change jamais le role.
+ */
+async function assignAgentRelais(executor, { userId, relaisId }) {
+  const db = requireExecutor(executor);
+  const { rows: [relais] } = await db.query(
+    'SELECT id FROM relais WHERE id = $1::uuid AND is_active = TRUE', [relaisId]);
+  if (!relais) return { status: 'relais_not_found', user: null };
+  const { rows: [user] } = await db.query(
+    `UPDATE users SET relais_id = $2::uuid, updated_at = NOW()
+      WHERE id = $1::uuid AND role = 'agent_relais'
+        AND relais_id IS DISTINCT FROM $2::uuid
+      RETURNING id, relais_id`, [userId, relaisId]);
+  if (user) return { status: 'assigned', user };
+  const { rows: [current] } = await db.query(
+    "SELECT id, relais_id, role FROM users WHERE id = $1::uuid", [userId]);
+  if (!current) return { status: 'user_not_found', user: null };
+  if (current.role !== 'agent_relais') return { status: 'not_agent_relais', user: null };
+  return { status: 'already', user: current };
 }
 
 async function setUserPasswordHash(executor, {
@@ -161,6 +184,7 @@ async function recalculateUserLoyalty(executor, userId) {
 module.exports = {
   createAdminUser,
   setUserRole,
+  assignAgentRelais,
   setUserPasswordHash,
   anonymizeUser,
   deleteUser,

@@ -391,14 +391,16 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       }
     }
 
-    // RCT1 E1: aucun frais de vente ou remise implicite ne peut changer le
-    // montant attendu. L'echec annule la transaction avant toute insertion.
+    // RCT1 E1: ni remise ni credit ; le prix produit reste exactement 15 000 KMF et le seul
+    // supplement admis est le transport commercial du checkout (hypothese v4, attendu recalcule
+    // independamment : 15 000 + poids x tarif business_rules). L'echec annule la transaction
+    // avant toute insertion.
     if (internalSimulation && internalSimulation.reference === 'RCT1-E1' &&
-        (payment_mode !== 'cash_relais' || Number(total_kmf) !== 15000 ||
+        (payment_mode !== 'cash_relais' || Number(total_kmf) - Number(transport_price_kmf) !== 15000 ||
          Number(discountKmf) !== 0 || Number(creditApplied) !== 0)) {
       await client.query('ROLLBACK');
       return fail(409, { code: 'RCT1_E1_CHECKOUT_TOTAL_MISMATCH',
-        expected_kmf: 15000, observed_kmf: total_kmf });
+        expected_product_total_kmf: 15000, observed_total_kmf: total_kmf, transport_price_kmf });
     }
 
     const cash_ref_code = payment_mode === 'cash_relais'
