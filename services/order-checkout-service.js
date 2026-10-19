@@ -63,6 +63,7 @@
 
 const db      = require('../db');
 const { assignOrderSimulationScope } = require('./simulation-scope-service');
+const { reserveRct1OrderReference } = require('./rct1-checkout-reference-guard');
 const { getLoyaltyDiscount }             = require('./loyalty-service');
 const { getRule }                        = require('../utils/rules');
 const { getRates }                       = require('../utils/rates');
@@ -114,15 +115,12 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     await client.query('BEGIN');
 
     if (internalSimulation) {
-      // Transaction-level lock serializes same-reference checkouts (even concurrent requests).
-      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [internalSimulation.reference]);
-      const { rows: existing } = await client.query(
-        'SELECT id, reference, simulation_scope FROM orders WHERE reference=$1',
-        [internalSimulation.reference]);
-      if (existing.length) {
+      // Verrou transactionnel + controle du scope, avant toute autre ecriture.
+      const reservation = await reserveRct1OrderReference(client, internalSimulation.reference);
+      if (reservation.already) {
         await client.query('ROLLBACK');
         return fail(409, { code: 'RCT1_ORDER_ALREADY_EXISTS', reference: internalSimulation.reference,
-          error: 'Commande RCT1 déjà créée : utiliser la référence existante, ne pas rejouer le checkout' });
+          error: 'Commande RCT1 deja creee : utiliser la reference existante' });
       }
     }
 
