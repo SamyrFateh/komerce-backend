@@ -51,3 +51,7 @@ test('verify agrege et manifeste valide', async () => {
   assert.ok(Array.isArray(manifest.steps));
   assert.equal(typeof cli.introspect, 'function');
 });
+test('inventaire : requetes lecture seule uniquement', () => {
+  for (const q of Object.values(cli.INVENTORY)) assert.match(q, /^SELECT /);
+  assert.equal(typeof cli.inventory, 'function');
+});
