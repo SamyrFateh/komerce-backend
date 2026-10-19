@@ -348,3 +348,26 @@ describe('RCT1-FIN-01 — écarts coûts prévus / constatés et coûts restant 
     expect(fu.not_yet_due[0]).toMatchObject({ type: 'customs', state: 'expected', reason: 'Attendu à : expédition douane déclarée' });
   });
 });
+
+describe('FIN-03 — rapport marge/vente des commandes finalisées', () => {
+  test('marge % calculée côté serveur sur les seules commandes finalisées (jamais les six encaissées)', async () => {
+    mockQuery.mockReset();
+    mockQuery.mockResolvedValueOnce({ rows: [
+      { reference: 'A', status: 'collected', payment_mode: 'cash_relais', total_kmf: '15065', has_imputation: true, final_ready: true, real_cost_kmf: '10300', missing_cost_types: [] },
+      { reference: 'B', status: 'collected', payment_mode: 'cash_relais', total_kmf: '6000', has_imputation: true, final_ready: true, real_cost_kmf: '4150', missing_cost_types: [] },
+      { reference: 'C', status: 'in_transit', payment_mode: 'cash_relais', total_kmf: '15000', has_imputation: true, final_ready: false, real_cost_kmf: '5000', missing_cost_types: ['freight'] },
+    ] });
+    const scope = await finance.getMarginScope({});
+    expect(scope.paid_orders).toBe(3);
+    expect(scope.eligible_orders).toBe(2);
+    expect(scope.eligible_revenue_kmf).toBe(21065);
+    expect(scope.eligible_margin_pct).toBe(31.4);
+  });
+  test('aucune commande finalisée : pas de pourcentage', async () => {
+    mockQuery.mockReset();
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const scope = await finance.getMarginScope({});
+    expect(scope.eligible_revenue_kmf).toBe(0);
+    expect(scope.eligible_margin_pct).toBeNull();
+  });
+});

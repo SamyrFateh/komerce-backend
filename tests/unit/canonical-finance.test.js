@@ -331,7 +331,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
 
   test('rendu : sections « Coûts restant à établir » et « Écarts » réellement ancrées, détails repliés, liens avec retour Finance', () => {
     class Node {
-      constructor(tag) { this.tag = tag; this.nodeType = 1; this.children = []; this.attrs = {}; this.className = ''; this.textContent = ''; }
+      constructor(tag) { this.tag = tag; this.nodeType = 1; this.children = []; this.attrs = {}; this.className = ''; this.textContent = ''; this.style = {}; const cls = new Set(); this.classList = { add: c => cls.add(c), contains: c => cls.has(c) }; }
       appendChild(c) { this.children.push(c); return c; }
       insertBefore(c, ref) { const i = this.children.indexOf(ref); this.children.splice(i < 0 ? this.children.length : i, 0, c); return c; }
       replaceChildren() { this.children = []; }
@@ -352,7 +352,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     financeDecision.render(root, payload, { document: doc, ui, period: '30' }, finance, decisionUi);
     const all = root.find(() => true);
     const ids = all.map(n => n.attrs.id).filter(Boolean);
-    expect(ids).toEqual(expect.arrayContaining(['finance-incomplete-costs', 'finance-variances']));
+    expect(ids).toEqual(expect.arrayContaining(['finance-incomplete-costs', 'finance-variances', 'finance-incomplete-detail', 'finance-variance-detail', 'finance-indicator-help']));
     const details = all.filter(n => n.tag === 'details');
     expect(details.length).toBeGreaterThanOrEqual(2);
     expect(details.every(d => d.attrs.open === undefined)).toBe(true);
@@ -361,6 +361,45 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(hrefs.some(h => h.startsWith('/admin/relais-live'))).toBe(true);
     expect(all.some(n => /Écarts entre coûts prévus et constatés/.test(n.textContent))).toBe(true);
     expect(all.some(n => /Surcoût confirmé/.test(n.textContent))).toBe(true);
+    // FIN-03 : liens « Voir… » rattachés au détail canonique, aucun bouton inerte, pas d'encadré générique.
+    expect(all.filter(n => n.attrs['data-open-detail']).map(n => n.attrs['data-open-detail'])).toEqual(expect.arrayContaining(['finance-incomplete-detail', 'finance-variance-detail']));
+    expect(all.filter(n => n.attrs['data-variance-filter']).length).toBe(5);
+    expect(all.some(n => n.tag === 'h1' && n.textContent === 'Performance financière')).toBe(true);
+    expect(all.find(n => n.attrs['data-dashboard-visual'] === 'finance-mock-v1')).toBeTruthy();
+    expect(all.find(n => n.attrs['data-dashboard-hierarchy'])).toBeUndefined();
+    const help = all.find(n => n.attrs.id === 'finance-indicator-help');
+    expect(help.hidden).toBe(true);
+    const toggle = all.find(n => n.className === 'kmc-fin3-help-toggle');
+    expect(toggle.attrs['aria-expanded']).toBe('false');
+  });
+
+  test('FIN-03 : KPI du mock — marge finalisée avec son périmètre, jamais celle des commandes encaissées', () => {
+    const payload = payloadFixture();
+    payload.margin_scope = { ...payload.margin_scope, paid_orders: 6, eligible_orders: 2, eligible_margin_pct: 31.4 };
+    const cards = financeDecision.kpiCards(payload, finance);
+    expect(cards.map(c => c.key)).toEqual(['ca-encaisse', 'cout-reel', 'marge', 'completude']);
+    const margin = cards.find(c => c.key === 'marge');
+    expect(margin.label).toBe('Marge réelle finalisée');
+    expect(margin.badge).toBe('Finalisée');
+    expect(margin.helper.replace(/[\u00a0\u202f]/g, ' ')).toBe('31,4 % sur 2/6 commandes finalisées');
+    expect(cards.find(c => c.key === 'completude').ring).toBe(80);
+    payload.margin_scope.eligible_orders = 0;
+    payload.margin_scope.eligible_margin_pct = null;
+    expect(financeDecision.kpiCards(payload, finance).find(c => c.key === 'marge').badge).toBeNull();
+  });
+
+  test('FIN-03 : bandeaux — coûts à établir et écarts confirmés (singulier/pluriel, inconnu jamais zéro)', () => {
+    const payload = payloadFixture();
+    const [costs, variances] = financeDecision.banners(payload, finance);
+    expect(costs).toMatchObject({ key: 'incomplete-costs', value: '2 commandes', href: '#finance-incomplete-costs', actionLabel: 'Voir les commandes' });
+    expect(variances).toMatchObject({ key: 'observed-variances', value: '1 surcoût confirmé', href: '#finance-variances', actionLabel: 'Analyser les écarts' });
+    expect(variances.helper).toBe('1 provisoire(s) · 1 non comparable(s)');
+    payload.variance_summary.overrun.orders = 2;
+    payload.variance_summary.saving.orders = 1;
+    expect(financeDecision.banners(payload, finance)[1].value).toBe('3 écarts confirmés');
+    payload.variance_summary.overrun.orders = 0;
+    payload.variance_summary.saving.orders = 0;
+    expect(financeDecision.banners(payload, finance)[1].value).toBe('Aucun écart confirmé');
   });
 
   test('une marge réelle relais absente reste explicitement inconnue', () => {
@@ -436,7 +475,7 @@ describe('Finance — vérité d’affichage', () => {
 
 
 
-test('Finance overview garde uniquement Hero + décisions + situation financière', () => {
+test('Finance overview : Hero + KPI + fiabilité + bandeaux + panneaux (mock FIN-03)', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'finance-decision.js'),
     'utf8'
@@ -446,8 +485,9 @@ test('Finance overview garde uniquement Hero + décisions + situation financièr
   expect(renderSource).toContain("data-dashboard-role', 'hero");
   expect(renderSource).toContain("data-dashboard-role', 'attention");
   expect(renderSource).toContain("data-dashboard-role', 'primary");
-  expect(renderSource).toContain("'Situation financière'");
+  expect(renderSource).toContain("'Performance financière'");
   expect(renderSource).toContain("'Paiements fournisseurs à revoir'");
+  expect(renderSource).not.toContain('decorateDashboard');
   expect(renderSource).not.toContain("'Coûts incomplets'");
   expect(renderSource).not.toContain("'Variances observées'");
   expect(renderSource).not.toContain("'Trajectoire financière'");

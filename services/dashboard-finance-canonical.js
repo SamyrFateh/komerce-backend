@@ -460,7 +460,7 @@ function buildFollowUp(row) {
 async function getMarginScope(filters = {}) {
   const { where, params } = buildFiltersClause(filters, 'o');
   const { rows } = await db.query(`
-    SELECT o.reference, o.status, o.payment_mode::text AS payment_mode,
+    SELECT o.reference, o.status, o.payment_mode::text AS payment_mode, o.total_kmf,
            ${contextColumnsSql('o')},
            ${missingTypesArraySql('o')} AS missing_cost_types,
            EXISTS (SELECT 1 FROM order_item_cost_imputations i WHERE i.order_id = o.id) AS has_imputation,
@@ -482,6 +482,9 @@ async function getMarginScope(filters = {}) {
   const excluded = new Map();
   const eligible = [];
   const split = { final: { orders: 0, amount_kmf: 0 }, partial: { orders: 0, amount_kmf: 0 } };
+  // Rapport marge/vente sur les seules commandes finalisées (même périmètre que la marge consolidée).
+  let eligibleRevenue = 0;
+  let eligibleMargin = 0;
   for (const row of rows) {
     const hasImp = row.has_imputation === true || row.has_imputation === 'true';
     const ok = hasImp && row.final_ready === true;
@@ -491,7 +494,11 @@ async function getMarginScope(filters = {}) {
       bucket.orders += 1;
       bucket.amount_kmf += realCost;
     }
-    if (ok) { eligible.push(row.reference); continue; }
+    if (ok) {
+      eligible.push(row.reference);
+      if (realCost != null) { eligibleRevenue += Number(row.total_kmf) || 0; eligibleMargin += (Number(row.total_kmf) || 0) - realCost; }
+      continue;
+    }
     const exp = describeOrderCosts({
       status: row.status, payment_mode: row.payment_mode, imported: row.ctx_imported, customs_event: row.ctx_customs_event,
       relay_beneficiary: row.ctx_relay_beneficiary, hub_route: row.ctx_hub_route, hub_route_unknown: row.ctx_hub_route_unknown,
@@ -506,6 +513,8 @@ async function getMarginScope(filters = {}) {
     paid_orders: rows.length,
     eligible_orders: eligible.length,
     eligible_references: Object.freeze(eligible.slice(0, 20)),
+    eligible_revenue_kmf: eligibleRevenue,
+    eligible_margin_pct: eligibleRevenue > 0 ? Math.round((eligibleMargin / eligibleRevenue) * 1000) / 10 : null,
     excluded: Object.freeze([...excluded.values()]),
     real_cost_split: Object.freeze({ final: Object.freeze(split.final), partial: Object.freeze(split.partial) }),
   });
