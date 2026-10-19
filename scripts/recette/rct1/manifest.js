@@ -9,6 +9,7 @@
  */
 'use strict';
 const foundation = require('./steps-foundation');
+const orders = require('./steps-orders');
 
-const steps = [...foundation.steps];
+const steps = [...foundation.steps, ...orders.steps];
 module.exports = { steps };

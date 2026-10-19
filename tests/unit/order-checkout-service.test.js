@@ -30,12 +30,12 @@ describe('order-checkout-service market lifecycle', () => {
     expect(source).toMatch(/reserveRct1OrderReference\(client, internalSimulation.reference\)/);
     expect(source).toMatch(/RCT1_ORDER_ALREADY_EXISTS/);
     expect(source).toMatch(/internalSimulation \? internalSimulation.reference : await getUniqueRef\(db\)/);
-    expect(source).toMatch(/RCT1-\(E1\|G\)/);
+    expect(source).toMatch(/isAllowedRct1Reference/);
   });
   test('E1 refuses checkout total mismatch before inserting order', () => {
-    expect(source).toMatch(/RCT1_E1_CHECKOUT_TOTAL_MISMATCH/);
-    expect(source).toMatch(/Number\(total_kmf\) - Number\(transport_price_kmf\) !== 15000/);
-    const totalGate = source.indexOf('RCT1_E1_CHECKOUT_TOTAL_MISMATCH');
+    expect(source).toMatch(/RCT1_CHECKOUT_TOTAL_MISMATCH/);
+    expect(source).toMatch(/Number\(total_kmf\) - Number\(transport_price_kmf\) !== expectedProductTotal/);
+    const totalGate = source.indexOf('RCT1_CHECKOUT_TOTAL_MISMATCH');
     const insertAt = source.indexOf('const order = await insertOrderRow(client, {');
     expect(totalGate).toBeGreaterThan(0);
     expect(insertAt).toBeGreaterThan(totalGate);

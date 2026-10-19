@@ -31,4 +31,12 @@ const PRODUCTS = Object.freeze({
 });
 for (const p of Object.values(PRODUCTS)) p.description = `${p.name}.${DESCRIPTION_SUFFIX}`;
 
-module.exports = { EMAIL_DOMAIN, ACTORS, RELAYS, PRODUCTS };
+// Commandes via checkout canonique. expected_product_total_kmf = attendu independant (hors transport).
+const ORDERS = Object.freeze([
+  { ref: 'RCT1-E1', client: 'client-km', relay: 'RCT1-REL-KM', lines: [{ product: 'P1', qty: 1 }], expected_product_total_kmf: 15000 },
+  { ref: 'RCT1-F', client: 'client-km', relay: 'RCT1-REL-KM', lines: [{ product: 'P1', qty: 1 }], expected_product_total_kmf: 15000 },
+  { ref: 'RCT1-C', client: 'client-km', relay: 'RCT1-REL-KM', lines: [{ product: 'P1', qty: 1 }], expected_product_total_kmf: 15000 },
+  { ref: 'RCT1-G', client: 'client-km', relay: 'RCT1-REL-KM', lines: [{ product: 'P3', qty: 1 }], expected_product_total_kmf: 6000 },
+]);
+
+module.exports = { ORDERS, EMAIL_DOMAIN, ACTORS, RELAYS, PRODUCTS };
