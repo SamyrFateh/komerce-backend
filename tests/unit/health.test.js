@@ -107,18 +107,20 @@ describe('GET /health — basic', () => {
   });
 });
 
-describe('GET /health/target', () => {
+describe('GET /health — cible', () => {
   test('publie empreinte hashée + identité sans secret', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ name: 'railway', oid: '1', addr: 'a', port: '5432' }] });
-    const res = await request(buildApp()).get('/health/target');
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ 1: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ name: 'railway', oid: '1', addr: 'a', port: '5432' }] });
+    const res = await request(buildApp()).get('/health/');
     expect(res.status).toBe(200);
-    expect(res.body.db_fingerprint).toMatch(/^[0-9a-f]{24}$/);
+    expect(res.body.target.db_fingerprint).toMatch(/^[0-9a-f]{24}$/);
     expect(JSON.stringify(res.body)).not.toMatch(/postgres|password/i);
   });
-  test('503 si la base est injoignable', async () => {
-    mockDbQuery.mockRejectedValueOnce(new Error('down'));
-    const res = await request(buildApp()).get('/health/target');
-    expect(res.status).toBe(503);
+  test('identité indisponible : /health reste ok, target nul', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockRejectedValueOnce(new Error('x'));
+    const res = await request(buildApp()).get('/health/');
+    expect(res.status).toBe(200);
+    expect(res.body.target).toBeNull();
   });
 });
 

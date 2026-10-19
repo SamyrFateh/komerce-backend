@@ -3,7 +3,7 @@
 /**
  * Garde d'identité de cible — à exécuter AVANT toute écriture de recette.
  * Compare l'empreinte de la base atteinte par DATABASE_URL à celle publiée par le service
- * déployé (GET <STAGING_BASE_URL>/health/target) et exige komerce_env=staging.
+ * déployé (GET <STAGING_BASE_URL>/health) et exige komerce_env=staging.
  * N'affiche jamais l'URL ni de secret. Sortie 1 si la cible n'est pas confirmée.
  *
  * Variables : DATABASE_URL, STAGING_BASE_URL, optionnelle EXPECTED_RAILWAY_ENVIRONMENT (épinglage non secret).
@@ -19,13 +19,14 @@ async function confirmTarget({ db, fetchImpl = fetch, env = process.env } = {}) 
     throw err;
   }
   const local = await computeDbFingerprint(db);
-  const res = await fetchImpl(`${base}/health/target`);
+  const res = await fetchImpl(`${base}/health`);
   if (!res.ok) {
     const err = new Error(`service injoignable (${res.status})`);
     err.code = 'TARGET_NOT_CONFIRMED';
     throw err;
   }
-  const remote = await res.json();
+  const body = await res.json();
+  const remote = body && body.target ? body.target : {};
   return assertSameTarget({
     local, remote,
     expected: {

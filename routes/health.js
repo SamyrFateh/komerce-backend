@@ -20,7 +20,6 @@
  * KOMERCE — Health Check + Metrics Endpoints (V3.2 enhanced)
  *
  * GET /health         — Basic health check (DB connectivity + latency)
- * GET /health/target  — Identité non secrète de la cible (empreinte de base)
  * GET /health/ready   — Readiness check
  * GET /health/metrics — Full metrics dashboard (admin only)
  *
@@ -44,6 +43,13 @@ router.get('/', async (req, res, next) => {
     await db.query('SELECT 1');
     const dbLatency = Date.now() - start;
 
+    // Identité NON secrète de la cible (empreinte hashée + environnement déclaré) : jamais bloquante.
+    let target = null;
+    try {
+      const { fingerprint } = await computeDbFingerprint(db);
+      target = { db_fingerprint: fingerprint, identity: readRuntimeIdentity() };
+    } catch { target = null; }
+
     res.json({
       status: 'ok',
       db: 'connected',
@@ -52,6 +58,7 @@ router.get('/', async (req, res, next) => {
       version: process.env.npm_package_version || 'unknown',
       node_env: process.env.NODE_ENV || 'development',
       komerce_env: process.env.KOMERCE_ENV || 'unknown',
+      target,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -61,17 +68,6 @@ router.get('/', async (req, res, next) => {
       error: err.message,
       timestamp: new Date().toISOString(),
     });
-  }
-});
-
-// ── GET /health/target — identité NON secrète de la cible (empreinte de base + environnement déclaré) ──
-
-router.get('/target', async (req, res) => {
-  try {
-    const { fingerprint } = await computeDbFingerprint(db);
-    res.json({ db_fingerprint: fingerprint, identity: readRuntimeIdentity() });
-  } catch {
-    res.status(503).json({ error: 'identité indisponible' });
   }
 });
 

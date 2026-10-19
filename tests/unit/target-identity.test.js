@@ -38,7 +38,7 @@ describe('identité de cible', () => {
   test('confirmTarget OK quand le service publie la même empreinte', async () => {
     const db = dbRow();
     const { fingerprint } = await computeDbFingerprint(db);
-    const fetchImpl = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ db_fingerprint: fingerprint, identity: { komerce_env: 'staging' } }) });
+    const fetchImpl = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ target: { db_fingerprint: fingerprint, identity: { komerce_env: 'staging' } } }) });
     const v = await confirmTarget({ db, fetchImpl, env: { STAGING_BASE_URL: 'https://x.example' } });
     expect(v.confirmed).toBe(true);
     expect(JSON.stringify(v)).not.toMatch(/postgres/);
