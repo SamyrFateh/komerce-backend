@@ -55,3 +55,13 @@ test('inventaire : requetes lecture seule uniquement', () => {
   for (const q of Object.values(cli.INVENTORY)) assert.match(q, /^SELECT /);
   assert.equal(typeof cli.inventory, 'function');
 });
+test('ONLY : etapes hors selection inspectees (contexte partage) sans ecriture', async () => {
+  let applied = 0;
+  const steps = [
+    { id: 'a', inspect: async (c) => { c.shared.x = 1; return { done: true }; }, apply: async () => { applied++; return { writes: 1 }; } },
+    { id: 'b', deps: ['a'], inspect: async (c) => ({ done: c.shared.x === 1 }), apply: async () => ({ writes: 0 }) },
+  ];
+  const r = await run({ db: fakeDb(), phase: 'apply', steps, env, confirm, only: ['b'] });
+  assert.deepEqual(r.steps.map(s => s.id), ['b']);
+  assert.equal(applied, 0); assert.equal(r.ok, true);
+});

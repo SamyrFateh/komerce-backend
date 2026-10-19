@@ -17,6 +17,7 @@ const svc = {
   users: () => require('../../../services/user-mutation-service'),
   operators: () => require('../../../services/market-operator-provisioning'),
   productAdmin: () => require('../../../services/product-admin-service'),
+  sourcing: () => require('../../../services/catalog-product-mutation-service'),
   localStock: () => require('../../../services/local-stock-service'),
   bcrypt: () => require('bcryptjs'),
 };
@@ -98,8 +99,8 @@ const actorStep = (a) => ({
 const productStep = (key, p) => ({
   id: `product.${key}`, deps: ['admin.resolve'],
   inspect: async ({ db }) => {
-    const row = await q1(db, 'SELECT id, is_active, is_available, price_kmf, weight_kg FROM products WHERE product_ref=$1', [p.ref]);
-    const ok = !!row && row.is_active && row.is_available && Number(row.price_kmf) === p.price_kmf && Number(row.weight_kg) === p.weight_kg;
+    const row = await q1(db, 'SELECT id, is_active, is_available, price_kmf, cost_kmf, weight_kg FROM products WHERE product_ref=$1', [p.ref]);
+    const ok = !!row && row.is_active && row.is_available && Number(row.price_kmf) === p.price_kmf && Number(row.weight_kg) === p.weight_kg && Number(row.cost_kmf) === p.cost_kmf;
     if (!ok) return { done: false, detail: row ? { id: row.id, price_kmf: Number(row.price_kmf) } : null };
     if (p.origin === 'LOCAL_STOCK') {
       const mid = await marketId(db, p.stock_market);
@@ -110,7 +111,7 @@ const productStep = (key, p) => ({
   },
   apply: async ({ db, shared }) => {
     let writes = 0;
-    let row = await q1(db, 'SELECT id FROM products WHERE product_ref=$1', [p.ref]);
+    let row = await q1(db, 'SELECT id, cost_kmf FROM products WHERE product_ref=$1', [p.ref]);
     if (!row) {
       const res = await svc.productAdmin().createProduct(require('../../../db'), {
         product_ref: p.ref, name: p.name, category: p.category, subcategory: p.subcategory, description: p.description,
@@ -118,7 +119,12 @@ const productStep = (key, p) => ({
         is_active: true, is_available: true,
       }, { id: shared.adminId });
       if (res.status >= 400) throw new Error('RCT1_PRODUCT_CREATE_REFUSED: ' + JSON.stringify(res.body).slice(0, 300));
-      row = { id: res.body.id }; writes++;
+      row = { id: res.body.id, cost_kmf: null }; writes++;
+    }
+    if (Number(row.cost_kmf) !== p.cost_kmf) {
+      // Cout d'achat catalogue : source du collecteur d'achat (lock-purchase), donnee de test T.
+      await svc.sourcing().updateSourcingFields(db, row.id, { cost_price_kmf: p.cost_kmf });
+      writes++;
     }
     if (p.origin === 'LOCAL_STOCK') {
       const mid = await marketId(db, p.stock_market);
