@@ -196,10 +196,16 @@ async function getQueue(filters = {}, { authorizedMarkets = null } = {}) {
       r.name AS relais_name,
       (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS items_count,
       (SELECT COALESCE(SUM(oi.quantity), 0) FROM order_items oi WHERE oi.order_id = o.id) AS items_qty,
-      (SELECT COUNT(*) FROM parcels p WHERE p.order_id = o.id AND p.status != 'cancelled') AS parcels_count,
+      (SELECT COUNT(*) FROM parcels p
+       WHERE p.status != 'cancelled'
+         AND (p.order_id = o.id
+              OR EXISTS (SELECT 1 FROM parcel_items pc_pi
+                           JOIN order_items pc_oi ON pc_oi.id = pc_pi.order_item_id
+                          WHERE pc_pi.parcel_id = p.id AND pc_oi.order_id = o.id))) AS parcels_count,
       (SELECT COUNT(*) FROM parcel_items pi
        JOIN parcels p ON p.id = pi.parcel_id
-       WHERE p.order_id = o.id AND p.status != 'cancelled') AS items_assigned,
+       JOIN order_items assigned_oi ON assigned_oi.id = pi.order_item_id
+       WHERE assigned_oi.order_id = o.id AND p.status != 'cancelled') AS items_assigned,
       (SELECT COUNT(*) FROM order_incidents inc WHERE inc.order_id = o.id AND inc.status = 'open') AS open_incidents,
       EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 3600 AS age_hours,
       (o.status IN ('confirmed','ordered') AND o.created_at < NOW() - INTERVAL '48 hours') AS is_urgent,
@@ -207,12 +213,14 @@ async function getQueue(filters = {}, { authorizedMarkets = null } = {}) {
         WHEN (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) = 0 THEN 'empty'
         WHEN (SELECT COUNT(*) FROM parcel_items pi
               JOIN parcels p ON p.id = pi.parcel_id
-              WHERE p.order_id = o.id AND p.status != 'cancelled')
+              JOIN order_items assigned_oi ON assigned_oi.id = pi.order_item_id
+              WHERE assigned_oi.order_id = o.id AND p.status != 'cancelled')
              >= (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id)
         THEN 'complete'
         WHEN (SELECT COUNT(*) FROM parcel_items pi
               JOIN parcels p ON p.id = pi.parcel_id
-              WHERE p.order_id = o.id AND p.status != 'cancelled') > 0
+              JOIN order_items assigned_oi ON assigned_oi.id = pi.order_item_id
+              WHERE assigned_oi.order_id = o.id AND p.status != 'cancelled') > 0
         THEN 'partial'
         ELSE 'unassigned'
       END AS completeness
@@ -428,7 +436,8 @@ async function getValidation(orderId, { authorizedMarkets = null } = {}) {
     SELECT COUNT(DISTINCT pi.order_item_id) AS cnt
     FROM parcel_items pi
     JOIN parcels p ON p.id = pi.parcel_id
-    WHERE p.order_id = $1 AND p.status != 'cancelled'
+    JOIN order_items assigned_oi ON assigned_oi.id = pi.order_item_id
+    WHERE assigned_oi.order_id = $1 AND p.status != 'cancelled'
   `, [order.id]);
 
   if (parseInt(assignedCount.cnt) < parseInt(itemCount.cnt)) {
