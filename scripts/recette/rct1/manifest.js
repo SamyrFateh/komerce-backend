@@ -14,7 +14,8 @@ const orders = require('./steps-orders');
 const ops = require('./steps-ops');
 const costs = require('./steps-costs');
 const split = require('./steps-split');
+const markets = require('./steps-markets');
 const checks = require('./steps-checks');
 
-const steps = [...foundation.steps, ...pricing.steps, ...orders.steps, ...ops.steps, ...costs.steps, ...split.steps, ...checks.steps];
+const steps = [...foundation.steps, ...pricing.steps, ...orders.steps, ...ops.steps, ...costs.steps, ...split.steps, ...markets.steps, ...checks.steps];
 module.exports = { steps };

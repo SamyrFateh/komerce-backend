@@ -17,6 +17,8 @@ const LOCAL_PRICES = Object.freeze([
   { market: 'KM', product: 'P1', amount: 15000 },
   { market: 'KM', product: 'P2', amount: 25000 },
   { market: 'KM', product: 'P3', amount: P3_PRICE_KMF },
+  // CM : P4 a 20 000 XAF (cadrage section 4) = 15 000 KMF a la parite documentee.
+  { market: 'CM', product: 'P4', amount: 20000 },
 ]);
 
 const localPriceStep = (lp) => {

@@ -50,3 +50,11 @@ describe('RCT1 checkout transactional reference protection', () => {
     expect(client.query).not.toHaveBeenCalled();
   });
 });
+
+describe('RCT1 reference CM (J/K)', () => {
+  test('RCT1-CM1 autorisee, total produit attendu 15 000 KMF (20 000 XAF)', () => {
+    expect(isAllowedRct1Reference('RCT1-CM1')).toBe(true);
+    expect(expectedProductTotalKmf('RCT1-CM1')).toBe(15000);
+    expect(isAllowedRct1Reference('RCT1-CG1')).toBe(false);
+  });
+});

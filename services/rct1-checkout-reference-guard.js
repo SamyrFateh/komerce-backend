@@ -12,7 +12,7 @@
  */
 'use strict';
 // Totaux produit attendus (hors transport commercial), independants du resultat observe.
-const EXPECTED_PRODUCT_TOTAL_KMF = Object.freeze({ 'RCT1-E1': 15000, 'RCT1-F': 15000, 'RCT1-C': 15000, 'RCT1-C2': 15000, 'RCT1-I3': 40000, 'RCT1-G': Number(process.env.RCT1_P3_PRICE_KMF) > 0 ? Math.round(Number(process.env.RCT1_P3_PRICE_KMF)) : 6000 });
+const EXPECTED_PRODUCT_TOTAL_KMF = Object.freeze({ 'RCT1-E1': 15000, 'RCT1-F': 15000, 'RCT1-C': 15000, 'RCT1-C2': 15000, 'RCT1-CM1': 15000, 'RCT1-I3': 40000, 'RCT1-G': Number(process.env.RCT1_P3_PRICE_KMF) > 0 ? Math.round(Number(process.env.RCT1_P3_PRICE_KMF)) : 6000 });
 const ALLOWED = new Set(Object.keys(EXPECTED_PRODUCT_TOTAL_KMF));
 function expectedProductTotalKmf(reference) { return EXPECTED_PRODUCT_TOTAL_KMF[reference] ?? null; }
 async function reserveRct1OrderReference(client, reference) {

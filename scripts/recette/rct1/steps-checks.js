@@ -85,7 +85,7 @@ const splitCheck = check('check.I3.split', ['split.transit-done'].filter(() => f
 });
 
 // Marches : J/K exigent CM et CG (cadrage). Constat d'environnement ; substituer WM est une decision metier explicite.
-const marketsCheck = check('check.JK.markets', [], async ({ db }) => {
+const marketsCheck = check('check.JK.markets', ['market.CM', 'market.CG'], async ({ db }) => {
   const codes = (await db.query("SELECT code FROM markets WHERE is_active ORDER BY code")).rows.map(r => r.code);
   const missing = ['CM', 'CG'].filter(c => !codes.includes(c));
   return { ok: missing.length ? null : true, open_decision: missing.length > 0, active_markets: codes, missing_markets: missing,
