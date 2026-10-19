@@ -34,6 +34,7 @@ describe('order-checkout-service market lifecycle', () => {
   });
   test('E1 refuses checkout total mismatch before inserting order', () => {
     expect(source).toMatch(/RCT1_E1_CHECKOUT_TOTAL_MISMATCH/);
+    expect(source).toMatch(/Number\(total_kmf\) - Number\(transport_price_kmf\) !== 15000/);
     const totalGate = source.indexOf('RCT1_E1_CHECKOUT_TOTAL_MISMATCH');
     const insertAt = source.indexOf('const order = await insertOrderRow(client, {');
     expect(totalGate).toBeGreaterThan(0);

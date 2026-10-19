@@ -4,9 +4,11 @@
  * @domain        economic-engine
  * @layer         script
  * @owner         backend-core
- * @purpose       Manifeste declaratif des etapes RCT1 (donnees et references stables).
+ * @purpose       Manifeste declaratif des etapes RCT1 (assemble les modules d'etapes).
  * @impact-areas  staging-only, economic-engine, recette
  */
 'use strict';
-const steps = [];
+const foundation = require('./steps-foundation');
+
+const steps = [...foundation.steps];
 module.exports = { steps };

@@ -174,4 +174,28 @@ describe('user-mutation-service', () => {
       ['u1'],
     );
   });
+
+  describe('assignAgentRelais', () => {
+    function seq(...results) {
+      const q = jest.fn();
+      results.forEach(r => q.mockResolvedValueOnce({ rows: r }));
+      return { query: q };
+    }
+    test('relais inactif ou absent : refuse sans ecrire', async () => {
+      const q = seq([]);
+      await expect(mutations.assignAgentRelais(q, { userId: 'u', relaisId: 'r' }))
+        .resolves.toEqual({ status: 'relais_not_found', user: null });
+      expect(q.query).toHaveBeenCalledTimes(1);
+    });
+    test('affectation puis rejeu idempotent', async () => {
+      const first = await mutations.assignAgentRelais(seq([{ id: 'r' }], [{ id: 'u', relais_id: 'r' }]), { userId: 'u', relaisId: 'r' });
+      expect(first.status).toBe('assigned');
+      const again = await mutations.assignAgentRelais(seq([{ id: 'r' }], [], [{ id: 'u', relais_id: 'r', role: 'agent_relais' }]), { userId: 'u', relaisId: 'r' });
+      expect(again.status).toBe('already');
+    });
+    test('utilisateur absent ou non agent_relais', async () => {
+      expect((await mutations.assignAgentRelais(seq([{ id: 'r' }], [], []), { userId: 'u', relaisId: 'r' })).status).toBe('user_not_found');
+      expect((await mutations.assignAgentRelais(seq([{ id: 'r' }], [], [{ id: 'u', role: 'client' }]), { userId: 'u', relaisId: 'r' })).status).toBe('not_agent_relais');
+    });
+  });
 });
