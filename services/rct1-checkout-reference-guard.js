@@ -11,7 +11,10 @@
  * @impact-areas  orders, recette
  */
 'use strict';
-const ALLOWED = new Set(['RCT1-E1', 'RCT1-G']);
+// Totaux produit attendus (hors transport commercial), independants du resultat observe.
+const EXPECTED_PRODUCT_TOTAL_KMF = Object.freeze({ 'RCT1-E1': 15000, 'RCT1-F': 15000, 'RCT1-C': 15000, 'RCT1-G': 6000 });
+const ALLOWED = new Set(Object.keys(EXPECTED_PRODUCT_TOTAL_KMF));
+function expectedProductTotalKmf(reference) { return EXPECTED_PRODUCT_TOTAL_KMF[reference] ?? null; }
 async function reserveRct1OrderReference(client, reference) {
   if (!ALLOWED.has(reference)) throw Error('RCT1_REFERENCE_NOT_ALLOWED');
   await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [reference]);
@@ -22,4 +25,4 @@ async function reserveRct1OrderReference(client, reference) {
   }
   return { already: false };
 }
-module.exports = { reserveRct1OrderReference };
+module.exports = { reserveRct1OrderReference, expectedProductTotalKmf, isAllowedRct1Reference: (r) => ALLOWED.has(r) };

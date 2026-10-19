@@ -63,7 +63,7 @@
 
 const db      = require('../db');
 const { assignOrderSimulationScope } = require('./simulation-scope-service');
-const { reserveRct1OrderReference } = require('./rct1-checkout-reference-guard');
+const { reserveRct1OrderReference, expectedProductTotalKmf, isAllowedRct1Reference } = require('./rct1-checkout-reference-guard');
 const { getLoyaltyDiscount }             = require('./loyalty-service');
 const { getRule }                        = require('../utils/rules');
 const { getRates }                       = require('../utils/rates');
@@ -105,7 +105,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
         internalSimulation.scope !== 'RCT1' ||
         !internalSimulation.actorId || !internalSimulation.reason ||
         typeof internalSimulation.reason !== 'string' ||
-        !/^RCT1-(E1|G)$/.test(internalSimulation.reference || '')) {
+        !isAllowedRct1Reference(internalSimulation.reference)) {
       throw Object.assign(new Error('RCT1_INTERNAL_CHECKOUT_FORBIDDEN'), { code: 'RCT1_INTERNAL_CHECKOUT_FORBIDDEN' });
     }
   }
@@ -391,16 +391,17 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       }
     }
 
-    // RCT1 E1: ni remise ni credit ; le prix produit reste exactement 15 000 KMF et le seul
-    // supplement admis est le transport commercial du checkout (hypothese v4, attendu recalcule
-    // independamment : 15 000 + poids x tarif business_rules). L'echec annule la transaction
-    // avant toute insertion.
-    if (internalSimulation && internalSimulation.reference === 'RCT1-E1' &&
-        (payment_mode !== 'cash_relais' || Number(total_kmf) - Number(transport_price_kmf) !== 15000 ||
-         Number(discountKmf) !== 0 || Number(creditApplied) !== 0)) {
-      await client.query('ROLLBACK');
-      return fail(409, { code: 'RCT1_E1_CHECKOUT_TOTAL_MISMATCH',
-        expected_product_total_kmf: 15000, observed_total_kmf: total_kmf, transport_price_kmf });
+    // RCT1 : ni remise ni credit ; le prix produit reste exactement l'attendu independant de la reference
+    // et le seul supplement admis est le transport commercial du checkout (hypothese v4 : attendu =
+    // prix produit + poids x tarif business_rules). L'echec annule la transaction avant toute insertion.
+    if (internalSimulation) {
+      const expectedProductTotal = expectedProductTotalKmf(internalSimulation.reference);
+      if (payment_mode !== 'cash_relais' || Number(total_kmf) - Number(transport_price_kmf) !== expectedProductTotal ||
+          Number(discountKmf) !== 0 || Number(creditApplied) !== 0) {
+        await client.query('ROLLBACK');
+        return fail(409, { code: 'RCT1_CHECKOUT_TOTAL_MISMATCH', expected_product_total_kmf: expectedProductTotal,
+          observed_total_kmf: total_kmf, transport_price_kmf });
+      }
     }
 
     const cash_ref_code = payment_mode === 'cash_relais'
