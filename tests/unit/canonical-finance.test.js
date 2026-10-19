@@ -398,3 +398,12 @@ test('Finance précise que les paiements en attente sont bornés par la période
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/finance.js'), 'utf8');
   expect(src).toContain("label: 'Paiements en attente (période)'");
 });
+
+describe('L3 — périmètre de recette affiché', () => {
+  test('Finance : faits simulés jamais présentés comme source réelle', () => {
+    const t = financeDecision.trust({ simulation: { scope: 'RCT1', label: 'Périmètre de recette RCT1 : faits simulés' } }, { formatNumber: (n) => String(n) });
+    expect(t.stateLabel).toBe('Recette RCT1 — faits simulés');
+    expect(t.simulationLabel).toMatch(/faits simulés/);
+    expect(financeDecision.trust({}, { formatNumber: String }).stateLabel).toBe('Source canonique');
+  });
+});

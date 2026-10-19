@@ -6,7 +6,17 @@
  * @test-requires none
  */
 
+jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn(), pool: { connect: jest.fn() } }));
+
 const svc = require('../../services/simulation-scope-service');
+const financeCanonical = require('../../services/dashboard-finance-canonical');
+const commerce = require('../../services/dashboard-commerce');
+const product360 = require('../../services/product-360');
+const variance = require('../../services/cost-allocation/variance');
+const steering = require('../../services/cost-allocation/product-margin-steering');
+const adminCosting = require('../../routes/admin-costing');
+const adminDashboard = require('../../routes/admin-dashboard');
+const adminDashboardMarket = require('../../routes/admin-dashboard-market');
 
 const exec = (order) => ({ query: jest.fn(async (sql) => (/SELECT id, simulation_scope/.test(sql) ? { rows: order ? [order] : [] } : { rows: [] })) });
 
@@ -50,6 +60,25 @@ describe('L3 — périmètre de recette', () => {
     for (const rel of ['services/product-360.js', 'services/cost-allocation/variance.js', 'services/cost-allocation/product-margin-steering.js', 'routes/admin-costing.js']) {
       const src = fs.readFileSync(path.join(__dirname, '../..', rel), 'utf8');
       expect(src).toMatch(/simulation_scope IS NULL|realActivityByOrderIdSql/);
+    }
+  });
+});
+
+describe('L3 — lecteurs branchés sur le périmètre', () => {
+  test('modules chargés', () => {
+    for (const m of [financeCanonical, commerce, product360, variance, steering, adminCosting, adminDashboard, adminDashboardMarket]) expect(m).toBeDefined();
+  });
+
+  test('routes dashboard : seul un périmètre valide est transmis ; payload canonique libellé', () => {
+    const fs = require('fs'); const path = require('path');
+    const read = (rel) => fs.readFileSync(path.join(__dirname, '../..', rel), 'utf8');
+    for (const rel of ['routes/admin-dashboard.js', 'routes/admin-dashboard-market.js']) {
+      expect(read(rel)).toContain('simulation_scope: isValidScope(req.query.simulation_scope) ? req.query.simulation_scope : null');
+    }
+    for (const rel of ['services/dashboard-finance-canonical.js', 'services/dashboard-commerce.js']) {
+      const src = read(rel);
+      expect(src).toContain('simulation: SIMULATION_VIEW(query)');
+      expect(src).toContain('isValidScope(query.simulation_scope)');
     }
   });
 });
