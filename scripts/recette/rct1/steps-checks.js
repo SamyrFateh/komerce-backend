@@ -43,5 +43,19 @@ const classificationCheck = check('check.classification', ['product.P1', 'produc
   return { ok: out.P1 === 'CLASSE' && out.P2 === 'DEFAUT', observed: out };
 });
 
-const steps = [conversionCheck, p4Check, classificationCheck];
+// I1 : un colis par commande, lignes de colis = lignes de commande. I2 : expedition groupee de 2 commandes, fret reparti sans double compte.
+const parcelsCheck = check('check.I1-I2.parcels', ['ops.shipment.RCT1-SH2'], async ({ db }) => {
+  const { rows: parcels } = await db.query(`SELECT o.reference, COUNT(DISTINCT p.id)::int AS parcels,
+      (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id=o.id) AS lines, COUNT(pi.*)::int AS parcel_items
+      FROM orders o LEFT JOIN parcels p ON p.order_id=o.id LEFT JOIN parcel_items pi ON pi.parcel_id=p.id
+     WHERE o.simulation_scope='RCT1' AND o.reference IN ('RCT1-E1','RCT1-F') GROUP BY o.id, o.reference ORDER BY 1`);
+  const sh = (await db.query(`SELECT freight_kmf FROM customs_shipments WHERE reference='RCT1-SH2'`)).rows[0];
+  const { rows: alloc } = await db.query(`SELECT o.reference, SUM(a.amount_kmf)::numeric AS freight FROM order_item_real_cost_allocations a JOIN orders o ON o.id=a.order_id
+     WHERE a.cost_type='freight' AND o.reference IN ('RCT1-E1','RCT1-F') GROUP BY 1 ORDER BY 1`);
+  const total = alloc.reduce((t, r) => t + Number(r.freight), 0);
+  const ok = parcels.length === 2 && parcels.every(r => r.parcels === 1 && r.parcel_items === r.lines) && !!sh && Number(sh.freight_kmf) === total;
+  return { ok, parcels, shipment_freight_kmf: sh && Number(sh.freight_kmf), allocated_freight_kmf: total, note: 'I3 (envoi scinde) non installe' };
+});
+
+const steps = [conversionCheck, p4Check, classificationCheck, parcelsCheck];
 module.exports = { steps };
