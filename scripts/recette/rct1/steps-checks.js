@@ -35,20 +35,24 @@ const p4Check = check('check.P4.no-km-price', ['product.P4'], async ({ db }) => 
   return { ok: r.drafts === 0, km_price_drafts: r.drafts, expected: 'aucun prix KM : non achetable au marche KM' };
 });
 
-// Classification douane : le checkout fige customs_categories.key = products.category ; le chemin canonique d'edition produit
-// n'accepte que des categories boutique. Constat systemique (pas propre a RCT1), arbitrage metier : etat OPEN_DECISION (ni PASS ni FAIL).
+// Classification douane : le checkout fige customs_categories.key = products.category (semantique du pipeline candidat :
+// categorie Komerce = cle douane, repli 'autre'). Attendus independants issus des termes configures du referentiel.
 const classificationCheck = check('check.classification', ['product.P1', 'product.P2', 'product.P3'], async ({ db }) => {
   const { resolveFrozenClassification } = require('../../../services/customs-classification');
   const observed = {};
-  for (const k of ['P1', 'P2', 'P3']) observed[k] = (await resolveFrozenClassification(db, PRODUCTS[k].category)).classification_defaulted ? 'DEFAUT' : 'CLASSE';
-  const cust = (await db.query("SELECT key FROM customs_categories WHERE is_active")).rows.map(r => r.key);
-  const boutique = (await db.query('SELECT key FROM boutique_categories')).rows.map(r => r.key);
-  const common = boutique.filter(k => cust.includes(k));
-  const defaultPresent = cust.includes('default');
-  const real = (await db.query(`SELECT COUNT(*)::int AS n, COUNT(*) FILTER (WHERE category IN (SELECT key FROM customs_categories WHERE is_active))::int AS classified
-      FROM products WHERE product_ref NOT LIKE 'RCT1-%'`)).rows[0];
-  return { ok: null, open_decision: true, observed, boutique_customs_common_keys: common, customs_default_present: defaultPresent, real_products: real,
-    note: 'Aucune cle commune boutique/douane et categorie default absente : toute ligne de commande est figee en repli. Arbitrage metier (correspondance boutique -> douane) requis ; aucune categorie inventee.' };
+  let ok = true;
+  for (const k of ['P1', 'P2', 'P3']) {
+    const row = await q1(db, 'SELECT category FROM products WHERE product_ref=$1', [PRODUCTS[k].ref]);
+    const clf = await resolveFrozenClassification(db, row.category);
+    observed[k] = { category: row.category, expected: PRODUCTS[k].komerce_category, resolved_customs_key: clf.customs_category_key, defaulted: clf.classification_defaulted };
+    if (row.category !== PRODUCTS[k].komerce_category) ok = false;
+    if ((PRODUCTS[k].komerce_category === 'autre') !== clf.classification_defaulted) ok = false;
+  }
+  // Lignes de commande gelees AVANT la correction (immuables par doctrine I-DOUANE-1) : constat, pas de reecriture.
+  const frozen = (await db.query(`SELECT o.reference, BOOL_AND(oi.classification_defaulted) AS all_defaulted FROM order_items oi JOIN orders o ON o.id=oi.order_id
+      WHERE o.simulation_scope='RCT1' GROUP BY o.reference ORDER BY 1`)).rows;
+  return { ok, observed, customs_default_present: (await db.query("SELECT 1 FROM customs_categories WHERE key='default' AND is_active")).rows.length > 0,
+    order_lines_frozen_defaulted: frozen, note: 'Les commandes passees avant la correction gardent leur classification figee (immuable) ; les nouvelles lignes (G, ...) sont classees.' };
 });
 
 // I1 : un colis par commande, lignes de colis = lignes de commande. I2 : expedition groupee de 2 commandes, fret reparti sans double compte.

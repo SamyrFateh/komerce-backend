@@ -101,7 +101,7 @@ async function main() {
         const m = (await db.query('SELECT id FROM markets WHERE code=$1', [lp.market])).rows[0];
         const config = await cdr.loadGlobalConfig({ marketId: m.id });
         const r = await engine.recommend({ product_id: pr.id, current_price_kmf: lp.amount, final_price_kmf: lp.amount, pricing_strategy: 'market_local' }, { config });
-        out.push({ market: lp.market, product: lp.product, price: lp.amount, strategy_risk: r.strategy_risk, variable_cost_complete_kmf: r.variable_cost_complete_kmf, minimum_safe_price_kmf: r.minimum_safe_price_kmf, contribution_kmf: r.contribution_kmf, safety_margin_pct: r.safety_margin_pct, structure_allocation_kmf: r.structure_allocation_reference_kmf, monthly_fixed_costs_kmf: r.monthly_fixed_costs_kmf, cdr_kmf: r.fully_loaded_cost_reference_kmf, margin_pct: r.estimated_margin_pct });
+        out.push({ market: lp.market, product: lp.product, price: lp.amount, strategy_risk: r.strategy_risk, variable_cost_complete_kmf: r.variable_cost_complete_kmf, minimum_safe_price_kmf: r.minimum_safe_price_kmf, contribution_kmf: r.contribution_kmf, safety_margin_pct: r.safety_margin_pct, structure_allocation_kmf: r.structure_allocation_reference_kmf, monthly_fixed_costs_kmf: r.monthly_fixed_costs_kmf, cdr_kmf: r.fully_loaded_cost_reference_kmf, margin_pct: r.estimated_margin_pct, cost_lines: ((r.proportions && r.proportions.lines) || []).map(l => [l.cost_key, l.amount_kmf]), data_quality_sources: r.data_quality && r.data_quality.sources });
       }
       // Balayage P3 : plus petit prix hors zone « contributive_low_buffer » (donnee de decision, aucune ecriture).
       const p3 = (await db.query('SELECT id FROM products WHERE product_ref=$1', [PRODUCTS.P3.ref])).rows[0];
