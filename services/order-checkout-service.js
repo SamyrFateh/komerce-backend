@@ -62,6 +62,8 @@
  */
 
 const db      = require('../db');
+const { assignOrderSimulationScope } = require('./simulation-scope-service');
+const { reserveRct1OrderReference } = require('./rct1-checkout-reference-guard');
 const { getLoyaltyDiscount }             = require('./loyalty-service');
 const { getRule }                        = require('../utils/rules');
 const { getRates }                       = require('../utils/rates');
@@ -95,11 +97,32 @@ function fail(status, body) {
   return { ok: false, status, body };
 }
 
-async function runOrderCheckout({ user, body }) {
+async function runOrderCheckout({ user, body, internalSimulation = null }) {
+  // Paramètre serveur uniquement : routes/orders/create.js ne transmet jamais ce contexte.
+  // Validation avant tout accès DB ; un payload client simulation_scope n'est jamais lu.
+  if (internalSimulation !== null) {
+    if (process.env.KOMERCE_ENV !== 'staging' ||
+        internalSimulation.scope !== 'RCT1' ||
+        !internalSimulation.actorId || !internalSimulation.reason ||
+        typeof internalSimulation.reason !== 'string' ||
+        !/^RCT1-(E1|G)$/.test(internalSimulation.reference || '')) {
+      throw Object.assign(new Error('RCT1_INTERNAL_CHECKOUT_FORBIDDEN'), { code: 'RCT1_INTERNAL_CHECKOUT_FORBIDDEN' });
+    }
+  }
   const client = await db.getClient();
 
   try {
     await client.query('BEGIN');
+
+    if (internalSimulation) {
+      // Verrou transactionnel + controle du scope, avant toute autre ecriture.
+      const reservation = await reserveRct1OrderReference(client, internalSimulation.reference);
+      if (reservation.already) {
+        await client.query('ROLLBACK');
+        return fail(409, { code: 'RCT1_ORDER_ALREADY_EXISTS', reference: internalSimulation.reference,
+          error: 'Commande RCT1 deja creee : utiliser la reference existante' });
+      }
+    }
 
     const rates = await getRates();
     const eurKmf = rates?.eur_kmf;
@@ -368,11 +391,21 @@ async function runOrderCheckout({ user, body }) {
       }
     }
 
+    // RCT1 E1: aucun frais de vente ou remise implicite ne peut changer le
+    // montant attendu. L'echec annule la transaction avant toute insertion.
+    if (internalSimulation && internalSimulation.reference === 'RCT1-E1' &&
+        (payment_mode !== 'cash_relais' || Number(total_kmf) !== 15000 ||
+         Number(discountKmf) !== 0 || Number(creditApplied) !== 0)) {
+      await client.query('ROLLBACK');
+      return fail(409, { code: 'RCT1_E1_CHECKOUT_TOTAL_MISMATCH',
+        expected_kmf: 15000, observed_kmf: total_kmf });
+    }
+
     const cash_ref_code = payment_mode === 'cash_relais'
       ? generateCashCode()
       : null;
 
-    const reference = await getUniqueRef(db);
+    const reference = internalSimulation ? internalSimulation.reference : await getUniqueRef(db);
 
     // ── P3 : snapshot du montant PRÉSENTÉ au client (freeze 22-08-2026) ──
     // Logique complète dans services/order-display-snapshot.js (extraite
@@ -403,6 +436,15 @@ async function runOrderCheckout({ user, body }) {
       marketId: relais?.market_id || null,
     });
 
+    // Dans la MEME transaction que la naissance de la commande : aucune
+    // fenêtre de visibilité comme activité réelle avant le COMMIT.
+    if (internalSimulation !== null) {
+      await assignOrderSimulationScope(client, {
+        orderId: order.id, scope: 'RCT1', actorId: internalSimulation.actorId,
+        reason: internalSimulation.reason, env: { KOMERCE_ENV: 'staging' },
+      });
+      order.simulation_scope = 'RCT1';
+    }
     await recordInitialHistory(client, order.id, user.id);
 
     if (creditApplied > 0) {

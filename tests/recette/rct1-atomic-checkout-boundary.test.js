@@ -1,0 +1,15 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const checkout = fs.readFileSync(path.join(__dirname,'../../services/order-checkout-service.js'),'utf8');
+const route = fs.readFileSync(path.join(__dirname,'../../routes/orders/create.js'),'utf8');
+assert.match(checkout,/async function runOrderCheckout\(\{ user, body, internalSimulation = null \}\)/);
+assert.match(checkout,/process\.env\.KOMERCE_ENV !== 'staging'/);
+assert.match(checkout,/assignOrderSimulationScope\(client, \{/);
+const scopeIndex = checkout.indexOf('await assignOrderSimulationScope(client, {');
+const commitIndex = checkout.indexOf("await client.query('COMMIT')",scopeIndex);
+assert.ok(scopeIndex > 0 && commitIndex > scopeIndex, 'scope must be assigned before COMMIT');
+assert.doesNotMatch(route,/internalSimulation\s*:/, 'public checkout must not pass simulation context');
+assert.doesNotMatch(route,/req\.body\.simulation_scope/, 'public payload must not control simulation');
+process.stdout.write('RCT1 atomic checkout source boundary PASS\n');

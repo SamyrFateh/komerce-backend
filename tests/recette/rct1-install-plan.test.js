@@ -1,0 +1,14 @@
+'use strict';
+const assert = require('node:assert/strict');
+const { plan, SCENARIOS, PRODUCTS } = require('../../scripts/recette/rct1-install-plan');
+const p = plan();
+assert.equal(p.mode, 'PLAN_ONLY');
+assert.equal(p.installation_confirmed, false);
+assert.equal(p.writes, 0);
+assert.equal(p.consolidated_margin_kmf, 6550);
+assert.equal(p.scenarios.find(x => x.reference === 'RCT1-E1').expected_margin_kmf, 4700);
+assert.equal(p.scenarios.find(x => x.reference === 'RCT1-G').expected_margin_kmf, 1850);
+assert.equal(PRODUCTS.P5.expected_kmf, 49197);
+assert.equal(PRODUCTS.P5.expected_xaf, 65596);
+assert.equal(SCENARIOS.G.not_applicable.includes('hub'), true);
+process.stdout.write('RCT1 install plan contract PASS (no DB access)\n');
