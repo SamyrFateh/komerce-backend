@@ -43,3 +43,16 @@ test('Finance et Commandes ne redéfinissent plus leur Hero (propriété Layout 
 test('decision-visual.css : plancher typographique (aucun texte sous 10 px)', () => {
   expect(require('../helpers/fontFloor').tinyFonts('decision-visual.css')).toEqual([]);
 });
+
+describe('FIN-03 — Finance : composition du mock', () => {
+  test('quatre KPI sur une ligne desktop, marge en vert clair, jamais un fond bleu saturé', () => {
+    expect(css).toMatch(/\.kmc-fin3 \.kmc-fin3-kpis \{ display: grid; grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+    expect(css).toMatch(/\.kmc-fin3-kpi\.is-marge \{ background: #eefaf2; border-color: #8fd9ad;/);
+    expect(css).toContain('.kmc-fin3 .kmc-fin3-kpi.is-marge .kmc-fin3-kpi-value { color: #14532d; }');
+  });
+  test('deux bandeaux et deux panneaux en deux colonnes, empilés sous 1100 px, tableau en cartes sous 640 px', () => {
+    expect(css).toContain('.kmc-fin3 .kmc-fin3-banners, body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));');
+    expect(css).toMatch(/@media \(max-width: 1100px\)[\s\S]*kmc-fin3-panels[\s\S]*minmax\(0, 1fr\)\)?;/);
+    expect(css).toMatch(/@media \(max-width: 640px\)[\s\S]*kmc-fin3-table td::before \{ content: attr\(data-label\)/);
+  });
+});

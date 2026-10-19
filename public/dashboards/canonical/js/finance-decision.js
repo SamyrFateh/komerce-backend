@@ -70,9 +70,18 @@
   const STATUS_LABELS = Object.freeze({
     pending: 'En attente', pending_group_payment: 'Paiement groupé en attente', confirmed: 'Confirmée',
     ordered: 'Commandée au fournisseur', preparation: 'En préparation', shipped: 'Expédiée',
-    in_transit: 'En transit', available: 'Disponible au relais', collected: 'Remise au client',
+    in_transit: 'En transit', available: 'Disponible au relais', collected: 'Remise client',
   });
   const VARIANCE_ORDER = Object.freeze(['overrun', 'saving', 'provisional', 'not_comparable', 'none']);
+  const CLASS_TITLES = Object.freeze({
+    overrun: 'Surcoûts confirmés', saving: 'Économie confirmée', provisional: 'Écart provisoire',
+    not_comparable: 'Non comparable', none: 'Sans écart',
+  });
+  const CLASS_SHORT_HELP = Object.freeze({
+    overrun: 'Réel supérieur à l’estimé, coûts complets', saving: 'Réel inférieur à l’estimé, coûts complets',
+    provisional: 'Coûts réels encore incomplets', not_comparable: 'Estimation absente ou périmètre différent',
+    none: 'Valeurs comparables et identiques',
+  });
 
   function varianceHelper(summary) {
     const parts = [];
@@ -629,108 +638,441 @@
     return toolbar;
   }
 
+  // ── FIN-03 : composition du mock Finance validé (KPI, fiabilité, bandeaux, panneaux). Présentation seule. ──
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const ICON_PATHS = Object.freeze({
+    bars: 'M5 20V11M12 20V4M19 20v-6',
+    coins: 'M12 4c4.4 0 8 1.1 8 2.5S16.4 9 12 9 4 7.9 4 6.5 7.6 4 12 4zM4 6.5v4C4 11.9 7.6 13 12 13s8-1.1 8-2.5v-4M4 10.5v4c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-4',
+    trend: 'M4 17l5-5 4 4 7-8M15 8h5v5',
+    doc: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
+    swap: 'M7 8h12m0 0l-3-3m3 3l-3 3M17 16H5m0 0l3-3m-3 3l3 3',
+    up: 'M12 19V5m0 0l-6 6m6-6l6 6',
+    down: 'M12 5v14m0 0l-6-6m6 6l6-6',
+    clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z',
+    equals: 'M6 9h12M6 15h12',
+    minus: 'M7 12h10',
+    arrow: 'M5 12h14m0 0l-6-6m6 6l-6 6',
+    info: 'M12 11v5M12 8h.01M12 3a9 9 0 100 18 9 9 0 000-18z',
+    book: 'M4 5h6a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-6a2 2 0 00-2 2v12a2 2 0 012-2h6z',
+    chevron: 'M6 9l6 6 6-6',
+  });
+
+  function icon(doc, name, className) {
+    const wrap = el(doc, 'span', `kmc-fin3-icon${className ? ` ${className}` : ''}`);
+    wrap.setAttribute('aria-hidden', 'true');
+    if (typeof doc.createElementNS === 'function') {
+      const svg = doc.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('stroke', 'currentColor');
+      svg.setAttribute('stroke-width', '1.8');
+      svg.setAttribute('stroke-linecap', 'round');
+      svg.setAttribute('stroke-linejoin', 'round');
+      const path = doc.createElementNS(SVG_NS, 'path');
+      path.setAttribute('d', ICON_PATHS[name] || ICON_PATHS.info);
+      svg.appendChild(path);
+      wrap.appendChild(svg);
+    }
+    return wrap;
+  }
+
+  function plural(base, n, one, many) {
+    return `${base.formatNumber(n, 0)} ${Number(n) > 1 ? many : one}`;
+  }
+
+  function setWidth(node, percent) {
+    const bounded = Math.max(0, Math.min(100, Number(percent) || 0));
+    node.setAttribute('data-percent', String(bounded));
+    if (node.style) node.style.width = `${bounded}%`;
+  }
+
+  // Quatre KPI du mock. Valeurs et aides = projection canonique existante ; seule la marge reçoit son périmètre
+  // (commandes finalisées / commandes encaissées) fourni par le serveur — jamais recalculé ici.
+  function kpiCards(payload, base) {
+    const projected = base.projectMetrics(payload);
+    const scope = payload && payload.margin_scope ? payload.margin_scope : null;
+    const completeness = kpi(payload, 'taux_completude_couts');
+    let marginHelper = projected.marge && projected.marge.helper;
+    if (scope && scope.eligible_margin_pct != null) {
+      marginHelper = `${base.formatNumber(scope.eligible_margin_pct, 1)} % sur ${base.formatNumber(scope.eligible_orders, 0)}/${base.formatNumber(scope.paid_orders, 0)} commandes finalisées`;
+    }
+    const cards = [
+      { key: 'ca-encaisse', label: 'CA encaissé', icon: 'bars', tone: 'info', helper: 'Total des commandes payées', note: 'ca-encaisse' },
+      { key: 'cout-reel', label: 'Coût réel constaté', icon: 'coins', tone: 'warning', helper: projected['cout-reel'] && projected['cout-reel'].helper, note: 'cout-reel' },
+      {
+        key: 'marge', label: 'Marge réelle finalisée', icon: 'trend', tone: 'positive', helper: marginHelper, note: 'marge',
+        badge: scope && scope.eligible_orders > 0 ? 'Finalisée' : null,
+      },
+      {
+        key: 'completude', label: 'Complétude des coûts', ring: completeness && completeness.value != null ? Number(completeness.value) : null,
+        tone: 'warning', helper: projected.completude && projected.completude.helper, note: 'completude',
+      },
+    ];
+    return cards
+      .filter(card => projected[card.key])
+      .map(card => ({ ...card, value: projected[card.key].value }));
+  }
+
+  function renderKpiCard(doc, card, openHelp) {
+    const node = el(doc, 'div', `kmc-fin3-kpi is-${card.key} tone-${card.tone}`);
+    node.setAttribute('data-kpi', card.key);
+    if (card.badge) node.classList.add('has-badge');
+    if (card.ring != null) {
+      const ring = el(doc, 'span', 'kmc-fin3-ring');
+      ring.setAttribute('aria-hidden', 'true');
+      if (ring.style && ring.style.setProperty) ring.style.setProperty('--kmc-fin3-ring', `${Math.max(0, Math.min(100, card.ring))}%`);
+      node.appendChild(ring);
+    } else {
+      node.appendChild(icon(doc, card.icon, 'kmc-fin3-kpi-icon'));
+    }
+    const body = el(doc, 'div', 'kmc-fin3-kpi-body');
+    const label = el(doc, 'div', 'kmc-fin3-kpi-label');
+    label.appendChild(el(doc, 'span', '', card.label));
+    const info = el(doc, 'button', 'kmc-fin3-info');
+    info.setAttribute('type', 'button');
+    info.setAttribute('aria-label', `Comprendre : ${card.label}`);
+    info.appendChild(icon(doc, 'info'));
+    info.addEventListener('click', () => openHelp(card.note));
+    label.appendChild(info);
+    body.appendChild(label);
+    body.appendChild(el(doc, 'strong', 'kmc-fin3-kpi-value', card.value));
+    if (card.helper) body.appendChild(el(doc, 'span', 'kmc-fin3-kpi-helper', card.helper));
+    node.appendChild(body);
+    if (card.badge) node.appendChild(el(doc, 'span', 'kmc-fin3-badge', card.badge));
+    return node;
+  }
+
+  function renderReliability(doc, payload, base, notes) {
+    const row = el(doc, 'div', 'kmc-fin3-reliability');
+    const item = completenessProgress(payload, base)[0] || null;
+    const card = el(doc, 'div', 'kmc-fin3-reliability-card');
+    card.appendChild(el(doc, 'strong', 'kmc-fin3-reliability-title', 'Fiabilité des coûts'));
+    const track = el(doc, 'div', 'kmc-fin3-bar');
+    track.setAttribute('role', 'progressbar');
+    track.setAttribute('aria-label', 'Fiabilité des coûts');
+    track.setAttribute('aria-valuemin', '0');
+    track.setAttribute('aria-valuemax', '100');
+    const fill = el(doc, 'span', 'kmc-fin3-bar-fill');
+    if (item) { setWidth(fill, item.percent); track.setAttribute('aria-valuenow', String(Math.round(item.percent))); }
+    track.appendChild(fill);
+    card.appendChild(track);
+    card.appendChild(el(doc, 'span', 'kmc-fin3-reliability-meta', item ? (item.helper || item.value) : 'Non évaluée'));
+    row.appendChild(card);
+
+    const panel = el(doc, 'div', 'kmc-fin3-help');
+    panel.setAttribute('id', 'finance-indicator-help');
+    panel.hidden = true;
+    const notesHost = el(doc, 'div', 'kmc-fin-notes');
+    notes.forEach(note => {
+      const block = el(doc, 'div', 'kmc-fin-notes-item');
+      block.setAttribute('data-indicator-note', note.key);
+      block.appendChild(el(doc, 'strong', 'kmc-fin-notes-title', note.title));
+      block.appendChild(el(doc, 'span', 'kmc-fin-notes-text', note.text));
+      notesHost.appendChild(block);
+    });
+    panel.appendChild(notesHost);
+
+    const toggle = el(doc, 'button', 'kmc-fin3-help-toggle');
+    toggle.setAttribute('type', 'button');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', 'finance-indicator-help');
+    toggle.appendChild(icon(doc, 'book'));
+    toggle.appendChild(el(doc, 'span', '', 'Comprendre les indicateurs'));
+    toggle.appendChild(icon(doc, 'chevron', 'kmc-fin3-chevron'));
+    const setOpen = open => {
+      panel.hidden = !open;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    toggle.addEventListener('click', () => setOpen(panel.hidden));
+    row.appendChild(toggle);
+    const openHelp = key => {
+      setOpen(true);
+      const target = key && panel.querySelector ? panel.querySelector(`[data-indicator-note="${key}"]`) : null;
+      if (target && typeof target.scrollIntoView === 'function') target.scrollIntoView({ block: 'nearest' });
+    };
+    return { row, panel, openHelp, toggle };
+  }
+
+  function bannerNode(doc, spec) {
+    const node = el(doc, 'div', `kmc-fin3-banner tone-${spec.tone}`);
+    node.setAttribute('data-banner', spec.key);
+    node.appendChild(icon(doc, spec.icon, 'kmc-fin3-banner-icon'));
+    const body = el(doc, 'div', 'kmc-fin3-banner-body');
+    body.appendChild(el(doc, 'strong', 'kmc-fin3-banner-title', spec.title));
+    body.appendChild(el(doc, 'span', 'kmc-fin3-banner-value', spec.value));
+    if (spec.helper) body.appendChild(el(doc, 'span', 'kmc-fin3-banner-helper', spec.helper));
+    node.appendChild(body);
+    const link = el(doc, 'a', 'kmc-fin3-banner-action', spec.actionLabel);
+    link.setAttribute('href', spec.href);
+    link.appendChild(icon(doc, 'arrow'));
+    node.appendChild(link);
+    return node;
+  }
+
+  function varianceBannerValue(vs, base) {
+    const over = vs.overrun.orders;
+    const save = vs.saving.orders;
+    if (over && !save) return plural(base, over, 'surcoût confirmé', 'surcoûts confirmés');
+    if (save && !over) return plural(base, save, 'économie confirmée', 'économies confirmées');
+    if (over && save) return plural(base, over + save, 'écart confirmé', 'écarts confirmés');
+    return 'Aucun écart confirmé';
+  }
+
+  function varianceBannerHelper(vs) {
+    const parts = [];
+    if (vs.provisional.orders) parts.push(`${vs.provisional.orders} provisoire(s)`);
+    if (vs.not_comparable.orders) parts.push(`${vs.not_comparable.orders} non comparable(s)`);
+    if (vs.none.orders) parts.push(`${vs.none.orders} sans écart`);
+    return parts.join(' · ');
+  }
+
+  function banners(payload, base) {
+    const list = [];
+    const incomplete = kpi(payload, 'cmds_cout_incomplet');
+    if (incomplete && incomplete.value != null) {
+      const n = Number(incomplete.value);
+      list.push({
+        key: 'incomplete-costs', tone: n > 0 ? 'warning' : 'positive', icon: 'doc', title: 'Coûts restant à établir',
+        value: plural(base, n, 'commande', 'commandes'),
+        helper: n > 0 ? 'En attente d’un coût justifié à leur stade' : 'Aucun coût attendu non enregistré à ce stade',
+        href: '#finance-incomplete-costs', actionLabel: 'Voir les commandes',
+      });
+    }
+    const vs = payload && payload.variance_summary;
+    if (vs && vs.orders_considered > 0) {
+      list.push({
+        key: 'observed-variances', tone: vs.overrun.orders > 0 ? 'warning' : 'info', icon: 'swap', title: 'Écarts entre coûts prévus et constatés',
+        value: varianceBannerValue(vs, base), helper: varianceBannerHelper(vs),
+        href: '#finance-variances', actionLabel: 'Analyser les écarts',
+      });
+    }
+    return list;
+  }
+
+  function flagNode(doc, code) {
+    const wrap = el(doc, 'span', 'kmc-fin3-market');
+    if (code) {
+      const img = el(doc, 'img', 'kmc-fin3-flag');
+      img.setAttribute('src', `/dashboards/canonical/assets/flags/${encodeURIComponent(code)}.svg`);
+      img.setAttribute('alt', '');
+      img.setAttribute('width', '20');
+      img.setAttribute('height', '20');
+      img.addEventListener('error', () => { img.hidden = true; });
+      wrap.appendChild(img);
+    }
+    wrap.appendChild(el(doc, 'span', '', code || '—'));
+    return wrap;
+  }
+
+  const PANEL_ROWS = 5;
+
+  function renderFollowUpPanel(doc, payload, base) {
+    const rows = Array.isArray(payload && payload.incomplete_cost_orders) ? payload.incomplete_cost_orders : [];
+    const { section, body } = cardSection(doc, 'Coûts restant à établir', 'Commandes en attente d’un coût justifié à leur stade.', 'finance-incomplete-costs');
+    section.classList.add('kmc-fin3-panel');
+    section.setAttribute('data-dashboard-role', 'secondary');
+    const head = section.querySelector ? section.querySelector('h2') : null;
+    if (head) head.appendChild(el(doc, 'span', 'kmc-fin3-pill', plural(base, rows.length, 'commande', 'commandes')));
+    if (!rows.length) {
+      body.appendChild(el(doc, 'p', 'kmc-finance-review-empty', 'Aucune commande n’a de coût attendu non enregistré à ce stade.'));
+      return section;
+    }
+    const wrap = el(doc, 'div', 'kmc-fin3-table-wrap');
+    const table = el(doc, 'table', 'kmc-fin3-table');
+    const thead = doc.createElement('thead');
+    const hr = doc.createElement('tr');
+    ['Commande', 'Marché', 'Statut', 'Étape', 'Action'].forEach(h => hr.appendChild(el(doc, 'th', h === 'Action' ? 'is-action' : '', h)));
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    const tbody = doc.createElement('tbody');
+    rows.slice(0, PANEL_ROWS).forEach(row => {
+      const items = followUpRows(row);
+      const due = items.filter(i => i.group === 'to_establish').length;
+      const later = items.length - due;
+      const tr = doc.createElement('tr');
+      tr.setAttribute('data-order-ref', row.reference || '');
+      const cell = (label, node, className) => {
+        const td = el(doc, 'td', className || '');
+        td.setAttribute('data-label', label);
+        td.appendChild(node);
+        tr.appendChild(td);
+      };
+      cell('Commande', el(doc, 'strong', 'kmc-fin3-ref', row.reference || 'Commande'));
+      cell('Marché', flagNode(doc, row.market_code));
+      cell('Statut', el(doc, 'span', `kmc-fin3-status status-${row.status || 'unknown'}`, STATUS_LABELS[row.status] || row.status || '—'));
+      cell('Étape', el(doc, 'span', 'kmc-fin3-step', `${due} à établir · ${later} pas encore dû(s)`));
+      const go = actionLink(doc, orderHref(base, row.reference), '');
+      if (go) {
+        go.className = 'kmc-fin3-go';
+        go.setAttribute('aria-label', `Ouvrir la commande ${row.reference} (360)`);
+        go.appendChild(icon(doc, 'arrow'));
+      }
+      cell('Action', go || el(doc, 'span', '', '—'), 'is-action');
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    body.appendChild(wrap);
+    const foot = el(doc, 'a', 'kmc-fin3-footlink', 'Voir toutes les commandes');
+    foot.setAttribute('href', '#finance-incomplete-detail');
+    foot.setAttribute('data-open-detail', 'finance-incomplete-detail');
+    foot.appendChild(icon(doc, 'arrow'));
+    body.appendChild(foot);
+    return section;
+  }
+
+  const VARIANCE_ICONS = Object.freeze({ overrun: 'up', saving: 'down', provisional: 'clock', not_comparable: 'equals', none: 'minus' });
+
+  function renderVariancePanel(doc, payload, base) {
+    const vs = payload && payload.variance_summary;
+    const { section, body } = cardSection(doc, 'Écarts entre coûts prévus et constatés', 'Écarts confirmés et comparaisons encore provisoires.', 'finance-variances');
+    section.classList.add('kmc-fin3-panel');
+    section.setAttribute('data-dashboard-role', 'secondary');
+    if (!vs) {
+      body.appendChild(el(doc, 'p', 'kmc-finance-review-empty', 'Aucune commande à comparer sur la période.'));
+      return section;
+    }
+    const head = section.querySelector ? section.querySelector('h2') : null;
+    if (head) head.appendChild(el(doc, 'span', 'kmc-fin3-pill', `${base.formatNumber(vs.orders_considered, 0)} commandes analysées`));
+    const list = el(doc, 'ul', 'kmc-fin3-variance-list');
+    VARIANCE_ORDER.forEach(key => {
+      const entry = vs[key] || { orders: 0 };
+      const li = el(doc, 'li', `kmc-fin3-variance is-${key}`);
+      li.setAttribute('data-variance-class', key);
+      li.appendChild(icon(doc, VARIANCE_ICONS[key], 'kmc-fin3-variance-icon'));
+      const text = el(doc, 'div', 'kmc-fin3-variance-text');
+      text.appendChild(el(doc, 'strong', '', CLASS_TITLES[key]));
+      text.appendChild(el(doc, 'span', '', CLASS_SHORT_HELP[key]));
+      li.appendChild(text);
+      li.appendChild(el(doc, 'span', 'kmc-fin3-variance-count', plural(base, entry.orders, 'commande', 'commandes')));
+      const go = el(doc, 'a', 'kmc-fin3-go');
+      go.setAttribute('href', '#finance-variance-detail');
+      go.setAttribute('data-open-detail', 'finance-variance-detail');
+      go.setAttribute('data-variance-filter', key);
+      go.setAttribute('aria-label', `Voir les écarts : ${CLASS_TITLES[key]}`);
+      go.appendChild(icon(doc, 'arrow'));
+      li.appendChild(go);
+      list.appendChild(li);
+    });
+    body.appendChild(list);
+    const foot = el(doc, 'a', 'kmc-fin3-footlink', 'Voir l’analyse complète des écarts');
+    foot.setAttribute('href', '#finance-variance-detail');
+    foot.setAttribute('data-open-detail', 'finance-variance-detail');
+    foot.appendChild(icon(doc, 'arrow'));
+    body.appendChild(foot);
+    return section;
+  }
+
+  function detailBlock(doc, id, title) {
+    const details = el(doc, 'details', 'kmc-fin3-detail');
+    details.setAttribute('id', id);
+    details.appendChild(el(doc, 'summary', 'kmc-fin3-detail-summary', title));
+    const body = el(doc, 'div', 'kmc-fin3-detail-body');
+    details.appendChild(body);
+    return { details, body };
+  }
+
+  // Les liens « Voir … » ouvrent le détail canonique (composantes, responsables, commande 360) ; un filtre de classe
+  // masque simplement les commandes des autres classes (aucun recalcul).
+  function wireDetailLinks(root) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    root.querySelectorAll('[data-open-detail]').forEach(link => {
+      link.addEventListener('click', event => {
+        const target = root.querySelector(`#${link.getAttribute('data-open-detail')}`);
+        if (!target) return;
+        event.preventDefault();
+        target.open = true;
+        const filter = link.getAttribute('data-variance-filter');
+        target.querySelectorAll('details[data-order-ref]').forEach(order => {
+          order.hidden = !!filter && !order.classList.contains(`is-${filter}`);
+        });
+        if (typeof target.scrollIntoView === 'function') target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    });
+  }
+
+  function scopeLabel(payload) {
+    const sim = payload && payload.simulation;
+    return sim && sim.scope ? ` · ${sim.scope}` : '';
+  }
+
   function render(rootNode, payload, options, base, decisionUi) {
     const doc = options.document;
-    const ui = options.ui;
     rootNode.replaceChildren();
     rootNode.className = '';
 
     const dashboard = doc.createElement('article');
-    dashboard.className = 'kmc-dashboard kmc-decision-dashboard';
-    if (typeof globalThis !== 'undefined' && globalThis.KomerceCanonicalCockpitPattern) {
-      globalThis.KomerceCanonicalCockpitPattern.decorateDashboard(dashboard, 'finance');
-    }
+    dashboard.className = 'kmc-dashboard kmc-decision-dashboard kmc-domain-cockpit kmc-fin3';
+    // Pas de bandeau « À quoi sert cet écran » : le mock validé n'en comporte pas (l'aide vit dans « Comprendre les indicateurs »).
     dashboard.setAttribute('data-dashboard-id', 'finance');
-    dashboard.setAttribute('data-dashboard-visual', 'decision-first-v1');
-    dashboard.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
+    dashboard.setAttribute('data-dashboard-visual', 'finance-mock-v1');
 
+    const period = options.period || payload.period || '30';
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
     header.setAttribute('data-dashboard-role', 'hero');
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'FINANCE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Situation financière'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir où est l’argent et ce qui exige une action maintenant.'));
-    header.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Performance financière'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', `Vue consolidée des commandes · ${period} jours${scopeLabel(payload)}`));
+    header.appendChild(periodControl(doc, period, options.onPeriodChange));
     dashboard.appendChild(header);
 
-    const decisions = decisionItems(payload, base);
-    if (decisions.length) {
-      const host = doc.createElement('div');
-      host.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
+    const notes = indicatorNotes(payload, base);
+    const reliability = renderReliability(doc, payload, base, notes);
+
+    const kpis = el(doc, 'section', 'kmc-fin3-kpis');
+    kpis.setAttribute('id', 'finance-situation');
+    kpis.setAttribute('data-dashboard-role', 'primary');
+    kpiCards(payload, base).forEach(card => kpis.appendChild(renderKpiCard(doc, card, reliability.openHelp)));
+    dashboard.appendChild(kpis);
+
+    dashboard.appendChild(reliability.row);
+    dashboard.appendChild(reliability.panel);
+
+    const bannerSpecs = banners(payload, base);
+    if (bannerSpecs.length) {
+      const host = el(doc, 'div', 'kmc-fin3-banners');
       host.setAttribute('data-dashboard-role', 'attention');
-      decisionUi.DecisionStrip.render(host, { items: decisions });
+      bannerSpecs.forEach(spec => host.appendChild(bannerNode(doc, spec)));
       dashboard.appendChild(host);
     }
 
-    const situation = cardSection(
-      doc,
-      'Situation financière',
-      '',
-      'finance-situation'
-    );
-    situation.section.className += ' is-cockpit-truth';
-    situation.section.setAttribute('data-dashboard-role', 'primary');
+    // Autres alertes réelles (paiements en attente, paiements fournisseur à revoir, remboursements) : visibles seulement si présentes.
+    const extra = decisionItems(payload, base).filter(item => !['incomplete-costs', 'observed-variances'].includes(item.key));
+    if (extra.length) {
+      const host = el(doc, 'div', 'kmc-cockpit-decisions kmc-dashboard-attention-band kmc-fin3-extra');
+      decisionUi.DecisionStrip.render(host, { items: extra });
+      dashboard.appendChild(host);
+    }
 
-    const metricsHost = doc.createElement('div');
-    metricsHost.className = 'kmc-finance-essential-metrics';
-    ui.MetricStrip.render(metricsHost, { items: headlineMetrics(payload, base) });
-    situation.body.appendChild(metricsHost);
+    const panels = el(doc, 'div', 'kmc-fin3-panels');
+    panels.appendChild(renderFollowUpPanel(doc, payload, base));
+    panels.appendChild(renderVariancePanel(doc, payload, base));
+    dashboard.appendChild(panels);
 
+    const incompleteDetail = detailBlock(doc, 'finance-incomplete-detail', 'Détail des commandes à suivre');
+    renderIncompleteOrders(doc, incompleteDetail.body, payload, base);
+    const varianceDetail = detailBlock(doc, 'finance-variance-detail', 'Détail des écarts par commande');
+    renderVariances(doc, varianceDetail.body, payload, base);
+    const details = el(doc, 'div', 'kmc-fin3-details');
+    details.appendChild(incompleteDetail.details);
+    details.appendChild(varianceDetail.details);
+    dashboard.appendChild(details);
+
+    // File des paiements fournisseur à revoir : visible seulement quand elle contient des éléments.
     const supplierPayments = supplierPaymentReviewItems(payload, base);
-    const reviewTitle = text(doc, 'h3', 'kmc-finance-review-title', 'Paiements fournisseurs à revoir');
-    situation.body.appendChild(reviewTitle);
-
     if (supplierPayments.length) {
-      const reviewHost = doc.createElement('div');
-      reviewHost.className = 'kmc-finance-essential-review';
+      const review = cardSection(doc, 'Paiements fournisseurs à revoir', '', 'finance-supplier-payments');
+      review.section.setAttribute('data-dashboard-role', 'secondary');
+      const reviewHost = el(doc, 'div', 'kmc-finance-essential-review');
       decisionUi.RankedList.render(reviewHost, { items: supplierPayments });
-      situation.body.appendChild(reviewHost);
-    } else {
-      const state = supplierReviewState(payload);
-      situation.body.appendChild(text(doc, 'p', 'kmc-finance-review-empty', state.message));
+      review.body.appendChild(reviewHost);
+      dashboard.appendChild(review.section);
     }
-
-    const notes = indicatorNotes(payload, base);
-    if (notes.length) {
-      // The headline KPIs stay quiet; detailed definitions remain available on demand.
-      const details = el(doc, 'details', 'kmc-fin-indicator-help');
-      details.appendChild(el(doc, 'summary', 'kmc-fin-indicator-help-trigger', 'Comprendre les indicateurs'));
-      const notesHost = el(doc, 'div', 'kmc-fin-notes');
-      notes.forEach(note => {
-        const block = el(doc, 'div', 'kmc-fin-notes-item');
-        block.setAttribute('data-indicator-note', note.key);
-        block.appendChild(el(doc, 'strong', 'kmc-fin-notes-title', note.title));
-        block.appendChild(el(doc, 'span', 'kmc-fin-notes-text', note.text));
-        notesHost.appendChild(block);
-      });
-      details.appendChild(notesHost);
-      situation.body.insertBefore(details, reviewTitle);
-    }
-
-    dashboard.appendChild(situation.section);
-
-    const incomplete = cardSection(
-      doc,
-      'Coûts restant à établir',
-      'Commandes en attente d’un coût justifié à leur stade.',
-      'finance-incomplete-costs'
-    );
-    incomplete.section.setAttribute('data-dashboard-role', 'secondary');
-    renderIncompleteOrders(doc, incomplete.body, payload, base);
-    dashboard.appendChild(incomplete.section);
-
-    const variances = cardSection(
-      doc,
-      'Écarts entre coûts prévus et constatés',
-      'Écarts confirmés et comparaisons encore provisoires.',
-      'finance-variances'
-    );
-    variances.section.setAttribute('data-dashboard-role', 'secondary');
-    renderVariances(doc, variances.body, payload, base);
-    dashboard.appendChild(variances.section);
 
     rootNode.appendChild(dashboard);
-    return { element: dashboard, visual: 'decision-first-v1' };
+    wireDetailLinks(dashboard);
+    return { element: dashboard, visual: 'finance-mock-v1' };
   }
 
   function enhance(base, decisionUi) {
@@ -781,6 +1123,8 @@
     varianceItems,
     indicatorNotes,
     varianceHelper,
+    kpiCards,
+    banners,
     paymentItems,
     relayItems,
     refundItems,
