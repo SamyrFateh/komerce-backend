@@ -68,6 +68,14 @@ describe('ci-migrate — structural baseline reconciliation', () => {
     expect(probeSource).toContain('sourcing_candidate_observations');
   });
 
+  test('migration 302 (données) : sonde sur les deux règles du writer, absente ⇒ rejouée', async () => {
+    const probe = STRUCTURAL_PROBES['302_canonical_margin_writer_rules.sql'];
+    expect(String(probe)).toContain('CANONICAL_MARGIN_WRITER_ENABLED');
+    expect(String(probe)).toContain('CANONICAL_MARGIN_WRITE_PROVISIONAL');
+    await expect(probe({ query: jest.fn().mockResolvedValue({ rows: [{ ok: false }] }) })).resolves.toBe(false);
+    await expect(probe({ query: jest.fn().mockResolvedValue({ rows: [{ ok: true }] }) })).resolves.toBe(true);
+  });
+
   test('migration 225 probe checks the exact supplier PO snapshot structure', () => {
     const probeSource = String(STRUCTURAL_PROBES['225_purchase_orders_exact_supplier_identity.sql']);
 
