@@ -11,7 +11,7 @@ const db = (rows) => ({ query: async () => ({ rows: rows() }) });
 test('manifeste complet resolvable avec CM/CG, J et K', () => {
   assert.equal(orderSteps(manifest.steps).length, manifest.steps.length);
   const ids = steps.map(s => s.id);
-  for (const id of ['lead.CM', 'lead.CG', 'market.CM', 'market.CG', 'actor.operator-cm', 'actor.operator-cg', 'check.J.market-mismatch', 'check.K.isolation']) assert.ok(ids.includes(id), id);
+  for (const id of ['lead.CM', 'lead.CG', 'market.CM', 'market.CG', 'actor.operator-cm', 'actor.operator-cg', 'order.RCT1-CM1', 'check.J.market-mismatch', 'check.K.isolation']) assert.ok(ids.includes(id), id);
 });
 test('parametres de recette : fictifs, prestataire mtn_momo, plafonds 1 000 000, aucun prix CG', () => {
   const l = MARKET_PROVISIONING_PARAMS.financial_limits;
