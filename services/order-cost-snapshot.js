@@ -120,7 +120,7 @@ async function lockEstimatedCostsForOrder(orderId, dbClient, options = {}) {
   const itemsRes = await dbClient.query(
     `SELECT oi.id AS order_item_id, oi.product_id, oi.quantity, oi.price_kmf,
             p.category, p.weight_kg, p.cost_kmf AS product_cost_kmf,
-            p.volume_m3, o.market_id
+            (COALESCE(p.volume_cm3, 0) / 1000000.0) AS volume_m3, o.market_id
      FROM order_items oi
      JOIN orders o ON o.id = oi.order_id
      LEFT JOIN products p ON p.id = oi.product_id

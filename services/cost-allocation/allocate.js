@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, ./_helpers (shareByWeight), utils/relay-commission.js
+ * @depends       db, ./_helpers (shareByWeight), utils/relay-commission.js, services/simulation-scope-service.js
  * @used-by       services/cost-allocation/index.js
  * @db-read       cost_components, customs_shipment_parcels, customs_shipments, finance_config, order_items, orders, parcel_items, parcels, products
  * @db-write      order_item_real_cost_allocations
@@ -41,6 +41,7 @@
 const db = require('../../db');
 const { shareByWeight } = require('./_helpers');
 const { resolveRelayCommissionCurrent } = require('../../utils/relay-commission');
+const { isSimulatedProvenance } = require('../simulation-scope-service');
 
 // ═══════════════════════════════════════════════════════════════════════
 // 2. allocateShipmentRealCosts — ventile customs + freight + port d'un shipment
@@ -305,8 +306,9 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
 
     // Charger parcel + order
     const parcelRes = await client.query(
-      `SELECT p.id, p.order_id, p.status
+      `SELECT p.id, p.order_id, p.status, o.simulation_scope
        FROM parcels p
+       LEFT JOIN orders o ON o.id = p.order_id
        WHERE p.id = $1`,
       [parcelId]
     );
@@ -384,8 +386,10 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
     const relayCfg = relayCfgRes.rows[0] || {};
     const relayProvenance = relayCfg.component_provenance && String(relayCfg.component_provenance).trim()
       ? String(relayCfg.component_provenance).trim() : null;
+    // L3 : une valeur de composant « FICTIF » ne devient jamais un coût réel d'une commande d'activité réelle.
+    const simulatedValueOnRealOrder = isSimulatedProvenance(relayProvenance) && !parcel.simulation_scope;
     const relayIsActual = relayCommission.source === 'cost_components.commission_relais_kmf'
-      && Boolean(relayCfg.component_updated_by) && Boolean(relayProvenance);
+      && Boolean(relayCfg.component_updated_by) && Boolean(relayProvenance) && !simulatedValueOnRealOrder;
 
     let allocations = 0;
 

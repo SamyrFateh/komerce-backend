@@ -9,8 +9,10 @@
  */
 'use strict';
 const foundation = require('./steps-foundation');
+const pricing = require('./steps-pricing');
 const orders = require('./steps-orders');
 const ops = require('./steps-ops');
+const costs = require('./steps-costs');
 
-const steps = [...foundation.steps, ...orders.steps, ...ops.steps];
+const steps = [...foundation.steps, ...pricing.steps, ...orders.steps, ...ops.steps, ...costs.steps];
 module.exports = { steps };

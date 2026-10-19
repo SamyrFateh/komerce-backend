@@ -93,6 +93,15 @@ describe('order-cost-snapshot', () => {
     expect(pricingEngine.loadGlobalConfig).not.toHaveBeenCalled();
   });
 
+  it('lit le volume depuis products.volume_cm3 (la colonne volume_m3 n\'existe pas)', async () => {
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
+    const client = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+    await lockEstimatedCostsForOrder('order-1', client, { source: 'pricing-engine' });
+    const sql = String(client.query.mock.calls[0][0]);
+    expect(sql).not.toMatch(/p\.volume_m3/);
+    expect(sql).toMatch(/p\.volume_cm3\s*,\s*0\)\s*\/\s*1000000\.0\)\s+AS volume_m3/);
+  });
+
   it('fige N1/N2/N3 par item et garde le CDR legacy pour compatibilite', async () => {
     process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
     const items = [

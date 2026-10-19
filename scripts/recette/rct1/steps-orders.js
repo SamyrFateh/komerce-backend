@@ -24,7 +24,7 @@ async function expectedTransportKmf(db, lines) {
 }
 
 const orderStep = (o) => ({
-  id: `order.${o.ref}`, deps: [`actor.${o.client}`, `relay.${o.relay}`, ...o.lines.map(l => `product.${l.product}`)],
+  id: `order.${o.ref}`, deps: [`actor.${o.client}`, `relay.${o.relay}`, ...o.lines.map(l => `price.KM.${l.product}`)],
   inspect: async ({ db }) => {
     const row = await q1(db, 'SELECT id, total_kmf, simulation_scope, payment_mode::text AS pm, status::text AS status FROM orders WHERE reference=$1', [o.ref]);
     const expected = o.expected_product_total_kmf + await expectedTransportKmf(db, o.lines);

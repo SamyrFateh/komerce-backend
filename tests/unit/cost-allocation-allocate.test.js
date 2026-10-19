@@ -304,9 +304,9 @@ describe('relay : une commission non validée n’est jamais un coût réel (C2)
   function relayInsertParams(client) {
     return client.query.mock.calls.filter(c => String(c[0]).includes("INSERT INTO order_item_real_cost_allocations") && String(c[0]).includes("'relay'")).map(c => c[1]);
   }
-  function build(cfgRow) {
+  function build(cfgRow, simulationScope = null) {
     return makeClient([
-      { rows: [{ id: 'parcel-001', order_id: 'order-001', status: 'collected' }] },
+      { rows: [{ id: 'parcel-001', order_id: 'order-001', status: 'collected', simulation_scope: simulationScope }] },
       { rows: [], rowCount: 0 },
       { rows: [{ order_item_id: 'oi-001', quantity: '1', weight_kg: '0.5' }] },
       { rows: [cfgRow] },
@@ -336,8 +336,22 @@ describe('relay : une commission non validée n’est jamais un coût réel (C2)
     expect(relayInsertParams(client)[0]).not.toContain(true);
   });
 
-  it('auteur ET provenance déclarée → is_actual=true, provenance recopiée sur l’allocation', async () => {
+  it('L3 : valeur FICTIF sur une commande d’activité réelle → jamais un coût réel', async () => {
     const client = build({ component_value: '600', component_updated_by: 'user-1', component_provenance: 'FICTIF recette', legacy_standard_value: '500' });
+    db.pool.connect.mockResolvedValue(client);
+    await allocateParcelRealCosts('parcel-001');
+    expect(relayInsertParams(client)[0]).not.toContain(true);
+  });
+
+  it('provenance réelle déclarée sur une commande réelle → is_actual=true', async () => {
+    const client = build({ component_value: '600', component_updated_by: 'user-1', component_provenance: 'Contrat relais 2026-10', legacy_standard_value: '500' });
+    db.pool.connect.mockResolvedValue(client);
+    await allocateParcelRealCosts('parcel-001');
+    expect(relayInsertParams(client)[0]).toContain(true);
+  });
+
+  it('auteur ET provenance FICTIF sur une commande du périmètre de recette → is_actual=true, provenance recopiée', async () => {
+    const client = build({ component_value: '600', component_updated_by: 'user-1', component_provenance: 'FICTIF recette', legacy_standard_value: '500' }, 'RCT1');
     db.pool.connect.mockResolvedValue(client);
     await allocateParcelRealCosts('parcel-001');
     expect(relayInsertParams(client)[0]).toContain(true);
