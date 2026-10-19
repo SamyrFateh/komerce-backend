@@ -83,7 +83,7 @@ describe('dashboard-metrics/_helpers', () => {
     expect(TRANSIT_PARCEL_STATUSES).toContain('in_transit');
     expect(EXCLUDED_FROM_REVENUE).toEqual(['cancelled', 'refunded']);
     expect(EXPECTED_VARIABLE_COSTS).toEqual(expect.arrayContaining(['product_purchase', 'freight', 'customs']));
-    expect(EXPECTED_FIXED_COSTS).toContain('fixed_overhead');
+    expect(EXPECTED_FIXED_COSTS).toEqual([]); // D1 : structure jamais exigée par commande
     expect(EXPECTED_PAYMENT_COSTS).toEqual(['payment']);
   });
 });
