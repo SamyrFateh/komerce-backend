@@ -39,7 +39,7 @@ async function execute({ db, manifest, actorId, apply = false, targetConfirmed =
     const actions = [];
     for (const entry of manifest.orders) {
       const { rows } = await client.query(
-        'SELECT id, reference, simulation_scope FROM orders WHERE reference = $1 FOR ' + (apply ? 'UPDATE' : 'SHARE'),
+        'SELECT id, reference, simulation_scope FROM orders WHERE reference = $1' + (apply ? ' FOR UPDATE' : ''),
         [entry.reference]);
       if (rows.length !== 1) throw new Error('RCT1_ORDER_NOT_CREATED_CANONICALLY: ' + entry.reference);
       const order = rows[0];
