@@ -38,6 +38,7 @@ DECLARE
   dep cash_deposits%ROWTYPE;
   used numeric;
   limit_amount numeric;
+  reversed_amount numeric;
 BEGIN
   -- Verrou unique par collection pour sérialiser toutes les branches concurrentes.
   SELECT * INTO src FROM cash_collections WHERE id = NEW.collection_id FOR UPDATE;
@@ -95,9 +96,10 @@ BEGIN
   END IF;
 
   -- Le plafond d'une réception/contrôle tient compte des contre-écritures.
-  SELECT receipt.amount_kmf - COALESCE(SUM(rv.amount_kmf),0)
-    INTO limit_amount FROM cash_custody_receipts rv
+  SELECT COALESCE(SUM(rv.amount_kmf),0)
+    INTO reversed_amount FROM cash_custody_receipts rv
     WHERE rv.reverses_id = receipt.id;
+  limit_amount := receipt.amount_kmf - reversed_amount;
   SELECT COALESCE(SUM(amount_kmf),0) INTO used
     FROM cash_custody_provenance_edges WHERE receipt_id = NEW.receipt_id;
   IF used + NEW.amount_kmf > limit_amount THEN
