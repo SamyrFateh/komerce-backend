@@ -55,6 +55,18 @@ const rank = (status) => (Object.prototype.hasOwnProperty.call(STATUS_RANK, stat
 //                       (événement canonique : customs_shipments.status = 'declared') → coûts de
 //                       l'expédition (douane, fret, port) attendus
 //   relay_beneficiary : la commande a un relais identifié (orders.relais_id) → commission relais applicable
+//   hub_route         : L2 — le flux de la commande passe par le Hub, déduit du parcours et des opérations
+//                       canoniques : une ligne IMPORT, OU une ligne de provenance inconnue (NULL = donnée
+//                       manquante, jamais preuve de non-applicabilité), OU une opération Hub enregistrée
+//                       (orders.hub_preparation_at). Non applicable seulement si toutes les lignes sont
+//                       LOCAL_STOCK et qu'aucune opération Hub n'existe.
+//   hub_route_unknown : applicabilité seulement PRÉSUMÉE (aucune ligne IMPORT, au moins une provenance
+//                       inconnue, aucune opération Hub) → signalé comme donnée manquante.
+// `hub` = Hub VARIABLE causé par le flux (cost-types.js). La structure Hub (`hub_structure`) est une
+// charge de période, jamais attendue par commande.
+const HUB_OPERATION_SQL = (a) => `EXISTS (
+        SELECT 1 FROM orders hub_o
+         WHERE hub_o.id = ${a}.id AND hub_o.hub_preparation_at IS NOT NULL)`;
 const FLAG_SQL = Object.freeze({
   imported: (a) => customsExpectedSql(a),
   customs_event: (a) => `EXISTS (
@@ -64,6 +76,15 @@ const FLAG_SQL = Object.freeze({
           JOIN customs_shipments ce_cs ON ce_cs.id = ce_csp.shipment_id
          WHERE ce_oi.order_id = ${a}.id AND ce_cs.is_active AND ce_cs.status = 'declared')`,
   relay_beneficiary: (a) => `${a}.relais_id IS NOT NULL`,
+  hub_route: (a) => `(EXISTS (SELECT 1 FROM order_items hub_oi
+                               WHERE hub_oi.order_id = ${a}.id
+                                 AND hub_oi.fulfillment_source IS DISTINCT FROM 'LOCAL_STOCK')
+                      OR ${HUB_OPERATION_SQL(a)})`,
+  hub_route_unknown: (a) => `(NOT EXISTS (SELECT 1 FROM order_items hub_oi
+                                   WHERE hub_oi.order_id = ${a}.id AND hub_oi.fulfillment_source = 'IMPORT')
+                      AND EXISTS (SELECT 1 FROM order_items hub_oi
+                                   WHERE hub_oi.order_id = ${a}.id AND hub_oi.fulfillment_source IS NULL)
+                      AND NOT ${HUB_OPERATION_SQL(a)})`,
 });
 
 // applicable : conditions cumulatives. expected : stage (statut mini) OU flag événement.
@@ -75,7 +96,9 @@ const COST_RULES = Object.freeze([
   { type: 'product_purchase', label: 'Achat produit', collector: true, expected: { stage: 'ordered' } },
   { type: 'sourcing', label: 'Sourcing', collector: false, expected: { stage: 'ordered' } },
   { type: 'packaging', label: 'Emballage', collector: false, expected: { stage: 'preparation' } },
-  { type: 'hub', label: 'Hub (variable)', collector: false, expected: { stage: 'preparation' } },
+  { type: 'hub', label: 'Hub (variable)', collector: false,
+    applicable: { flag: 'hub_route', unknownIsApplicable: true, motif: 'Toutes les lignes sont servies depuis le stock local du marché et aucune opération Hub n’est enregistrée : pas de coût Hub variable (la structure Hub est une charge de période, hors commande)' },
+    expected: { stage: 'preparation' } },
   { type: 'freight', label: 'Fret', collector: true,
     applicable: { flag: 'imported', motif: 'Aucune ligne importée : pas d’expédition internationale' }, expected: { flag: 'customs_event' } },
   { type: 'customs', label: 'Douane', collector: true,
@@ -92,6 +115,10 @@ function applicability(rule, ctx) {
   if (a.paymentModeNot && ctx.payment_mode && a.paymentModeNot[ctx.payment_mode]) {
     return { applicable: false, motif: a.paymentModeNot[ctx.payment_mode] };
   }
+  // Donnée de parcours absente (drapeau non fourni) : jamais une preuve de non-applicabilité.
+  if (a.flag && a.unknownIsApplicable && (ctx[a.flag] === undefined || ctx[a.flag] === null)) {
+    return { applicable: true, motif: null, presumed: true };
+  }
   if (a.flag && !ctx[a.flag]) return { applicable: false, motif: a.motif };
   return { applicable: true, motif: null };
 }
@@ -103,7 +130,7 @@ function isExpected(rule, ctx) {
   return false;
 }
 
-/** Types attendus maintenant pour un contexte {status, payment_mode, imported, customs_event, relay_beneficiary}. */
+/** Types attendus maintenant pour un contexte {status, payment_mode, imported, customs_event, relay_beneficiary, hub_route}. */
 function expectedTypes(ctx = {}) {
   return COST_RULES.filter((r) => applicability(r, ctx).applicable && isExpected(r, ctx)).map((r) => r.type);
 }
@@ -127,6 +154,9 @@ function describeOrderCosts(input = {}) {
       state: 'unknown',
       collection_mechanism: rule ? rule.collector : null,
       note: rule && !rule.collector ? 'Mécanisme de collecte absent : manque fonctionnel à résoudre, pas un coût nul.' : 'Coût attendu, non encore enregistré.',
+      ...(type === 'hub' && ctx.hub_route_unknown
+        ? { applicability: 'presumed', applicability_note: 'Applicabilité présumée : provenance d’au moins une ligne inconnue (donnée manquante), aucune opération Hub enregistrée.' }
+        : {}),
     };
   });
   const notYet = []; const notApplicable = [];
@@ -179,6 +209,8 @@ function contextColumnsSql(alias) {
   return `${FLAG_SQL.imported(alias)} AS ctx_imported,
            ${FLAG_SQL.customs_event(alias)} AS ctx_customs_event,
            ${FLAG_SQL.relay_beneficiary(alias)} AS ctx_relay_beneficiary,
+           ${FLAG_SQL.hub_route(alias)} AS ctx_hub_route,
+           ${FLAG_SQL.hub_route_unknown(alias)} AS ctx_hub_route_unknown,
            ${customsUnknownForLinesSql(alias)} AS ctx_customs_unknown`;
 }
 
