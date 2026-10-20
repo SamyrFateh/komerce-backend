@@ -324,6 +324,10 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await page.locator('#scenarioSha').fill('c2f3c1d');
     await page.locator('#scenarioStart').click();
     await expect(page.locator('#scenarioCount')).toHaveText('Étape 1 / 14');
+    // La vérification admin vit en phase « Valider », pas en phase « Comprendre ».
+    await page.locator('#scenarioNext').click();
+    await page.locator('#scenarioNext').click();
+    await expect(page.locator('#scenarioStage')).toHaveAttribute('data-phase','validate');
     await page.locator('#scenarioAuthButton').click();
     await expect(page.locator('#scenarioAuth')).toContainText('BLOQUÉ : commit staging');
     await expect(page.locator('#scenarioObserved')).toBeDisabled();
