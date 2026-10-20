@@ -142,10 +142,11 @@ describe('dashboard-commerce', () => {
     expect(mockLocalStockDecision.getDecisionAvailabilityEvidence).toHaveBeenCalledWith('product-cm-1', 'market-cm-id');
 
     expect(result.kpis.map(item => item.key)).toEqual([
-      'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee', 'produits_actifs_vendus',
+      'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee', 'produits_actifs_vendus', 'quantites_vendues',
     ]);
     expect(result.kpis[2].drill_to).toBe('/admin/operations');
     expect(result.kpis[4].unit).toBe('count');
+    expect(result.kpis[5]).toMatchObject({ key: 'quantites_vendues', value: 3, unit: 'count' });
     expect(result.top_products[0]).toEqual({
       product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000,
     });
@@ -190,6 +191,13 @@ describe('dashboard-commerce', () => {
       destination: { kind: 'pricing_workspace', market_code: 'CM', product_ref: 'PRD-1' },
     });
     expect(result.funnel.steps.map(step => step.pct)).toEqual([100, 83.3, 66.7, 50, 33.3]);
+  });
+
+  test('aucune commande payée : le panier moyen est non calculable, pas 0 KMF', async () => {
+    db.query.mockReset().mockResolvedValueOnce({ rows: [{ value: null, items_total: 0 }] });
+    const result = await commerce.getPanierMoyen({ market_id: 'market-cm-id', simulation_scope: 'RCT1' });
+    expect(result).toMatchObject({ key: 'panier_moyen', value: null, data_quality: { completeness: 'provisional', items_total: 0 } });
+    expect(db.query.mock.calls[0][1]).toContain('market-cm-id');
   });
 
   test('une rentabilité sans costing actual ne fabrique jamais de marge réelle', async () => {
