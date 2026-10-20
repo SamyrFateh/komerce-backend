@@ -369,7 +369,7 @@
   }
 
   function headlineMetrics(payload, base) {
-    const keep = new Set(['ca-encaisse', 'cout-reel', 'marge', 'completude']);
+    const keep = new Set(['ca-encaisse', 'cout-reel', 'marge']);
     return metricItems(payload, base).filter(item => keep.has(item.key));
   }
 
@@ -691,22 +691,17 @@
   function kpiCards(payload, base) {
     const projected = base.projectMetrics(payload);
     const scope = payload && payload.margin_scope ? payload.margin_scope : null;
-    const completeness = kpi(payload, 'taux_completude_couts');
     let marginHelper = projected.marge && projected.marge.helper;
     if (scope && scope.eligible_margin_pct != null) {
       marginHelper = `${base.formatNumber(scope.eligible_margin_pct, 1)} % sur ${base.formatNumber(scope.eligible_orders, 0)}/${base.formatNumber(scope.paid_orders, 0)} commandes finalisées`;
     }
     const cards = [
       { key: 'ca-encaisse', label: 'CA encaissé', icon: 'bars', tone: 'info', helper: 'Total des commandes payées', note: 'ca-encaisse' },
-      { key: 'cout-reel', label: 'Coût réel constaté', icon: 'coins', tone: 'warning', helper: projected['cout-reel'] && projected['cout-reel'].helper, note: 'cout-reel' },
+      { key: 'cout-reel', label: 'Coûts constatés', icon: 'coins', tone: 'warning', helper: 'Coûts directement imputés aux commandes, selon les justificatifs disponibles ; engagements non constatés exclus.', note: 'cout-reel' },
       {
         key: 'marge', label: 'Marge réelle finalisée', icon: 'trend', tone: 'positive', helper: marginHelper, note: 'marge',
         badge: scope && scope.eligible_orders > 0 ? 'Finalisée' : null,
-      },
-      {
-        key: 'completude', label: 'Complétude des coûts', ring: completeness && completeness.value != null ? Number(completeness.value) : null,
-        tone: 'warning', helper: projected.completude && projected.completude.helper, note: 'completude',
-      },
+      },,
     ];
     return cards
       .filter(card => projected[card.key])
@@ -1026,10 +1021,10 @@
     kpiCards(payload, base).forEach(card => kpis.appendChild(renderKpiCard(doc, card, reliability.openHelp)));
     dashboard.appendChild(kpis);
 
-    dashboard.appendChild(reliability.row);
+    // Fiabilité et rapprochements restent dans les dossiers métier, non sur la synthèse Finance.
     dashboard.appendChild(reliability.panel);
 
-    const bannerSpecs = banners(payload, base);
+    const bannerSpecs = []; // Les coûts à établir et écarts sont traités dans les espaces opérationnels.
     if (bannerSpecs.length) {
       const host = el(doc, 'div', 'kmc-fin3-banners');
       host.setAttribute('data-dashboard-role', 'attention');
@@ -1045,19 +1040,14 @@
       dashboard.appendChild(host);
     }
 
-    const panels = el(doc, 'div', 'kmc-fin3-panels');
-    panels.appendChild(renderFollowUpPanel(doc, payload, base));
-    panels.appendChild(renderVariancePanel(doc, payload, base));
-    dashboard.appendChild(panels);
+    // Pas de tableaux de rapprochement sur la page principale Finance.
 
     const incompleteDetail = detailBlock(doc, 'finance-incomplete-detail', 'Détail des commandes à suivre');
     renderIncompleteOrders(doc, incompleteDetail.body, payload, base);
     const varianceDetail = detailBlock(doc, 'finance-variance-detail', 'Détail des écarts par commande');
     renderVariances(doc, varianceDetail.body, payload, base);
     const details = el(doc, 'div', 'kmc-fin3-details');
-    details.appendChild(incompleteDetail.details);
-    details.appendChild(varianceDetail.details);
-    dashboard.appendChild(details);
+    // Les composants détaillés sont conservés côté code pour migration vers leurs ateliers propriétaires.
 
     // Une file centrale absente de la projection marché n'est jamais assimilée à zéro.
     const supplierState = supplierReviewState(payload);
