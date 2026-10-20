@@ -38,6 +38,32 @@ const TRACKS=Object.freeze({
   e('Observer insuffisance et choix','Créateur / Finance','/admin/finance','Si le moteur actif prévoit 48 h et AWAITING_CHOICE/72 h, contrôler Compléter / Réduire / Annuler ; sinon consigner « ancien contrat / N/A justifié ».','Horodatages et choix enregistrés, preuve de version du contrat.','migrations/080_v41_shared_cart_state_machine.sql'),
   e('Boucler vers le client et le pilotage','Client / Pilotage','/admin/pilotage','Suivre statut final, communications et impact finance/commandes. Aucun parcours complet déclaré certifié sans chaque frontière.','Référence, notifications, écran client et comparaison aux APIs.','docs/audits/FULL_RECETTE_E2E_EVIDENCE_REGISTER.md')
  ]},
+ process:{label:'Parcours canonique · offre → commande → clôture',steps:[
+  e('Sourcing · origine fournisseur','Sourcing','/admin/workspaces/sourcing','Sélectionner une source et son passage réel : source fournisseur, product_ref, SKU, provenance et run identifié. Aucun import fictif déclaré réel.','Capture, run ID, source, supplier_unit_ref, date et réponse canonique.','services/sourcing-integrity-service.js'),
+  e('Sourcing live · synchronisation','Sourcing','/admin/import-runtime','Comparer le passage et son horodatage à Sourcing ; Live observe sans créer un deuxième statut. Erreurs et fraîcheur explicites.','Référence du même run, generated_at, erreurs et nombre de candidats.','public/dashboards/canonical/js/import-runtime.js'),
+  e('Raffinerie · qualification','Raffinerie','/admin/workspaces/sourcing','Dans le parcours Raffinerie, suivre la même unité importée : classée, à compléter ou refusée, avec motif. Aucune publication par déduction.','Produit/SKU, classification canonique, transformation, statut et arbitrage.','services/golden-upstream-evidence.js'),
+  e('Atelier des prix · décision économique','Admin / Prix','/admin/workspaces/pricing','Comparer coût d’achat source, transport, douane, coûts applicables, devise et prix par marché. Inconnu ne vaut jamais zéro ; activation manuelle seulement.','Unités, assiettes, parités KM/CM/CG, provenance et décision humaine.','features/economic-engine.feature.js'),
+  e('Catalogue global · offre validée','Catalogue','/admin/workspaces/catalog','Vérifier catégorie, SKU et décision de publication de la fiche canonique ; absence de prix ou approbation = non exposé, jamais vert présumé.','Product ref, SKU, état actif/exposé et preuves de décision.','features/catalog.feature.js'),
+  e('Marchés · projections locales','Responsable pays','/dashboards/canonical/access.html','Confronter visibilité, prix et disponibilité KM/CM/CG aux projections locales réelles ; un marché sans donnée ne devient pas automatiquement vendu.','Code Market, produit et source du prix local, réponse API et autorité.','docs/doctrine/DOCTRINE_AUTONOMIE_RESPONSABLE_PAYS.md'),
+  e('Liste, partage et engagement','Créateur / Participant','/admin/commerce','Contrôler la Liste figée, son partage, l’OTP et le paiement conforme au contrat actif, sans nouveau paiement réel ni état automatique supposé.','Liste et lignes, référence, version de contrat, paiements prouvés.','docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md'),
+  e('Commande · paiement et files','Opérations','/admin/operations','Rapprocher référence de commande, statut payé, valeur wallet comprise et files d’exécution. La date de création ne prouve pas la date d’encaissement.','Order 360, montant KMF, statut, Market et events de paiement.','services/dashboard-commerce.js'),
+  e('Achats · engagement fournisseur','Acheteur','/admin/workspaces/purchasing','Partir des lignes commandées et suivre PO, exécution et preuve fournisseur, sans transformer requested en réel payé.','PO/ligne, supplier_order_id, état d’exécution, preuve de débit vérifiée ou absente.','features/purchasing.feature.js'),
+  e('Hub · réception du fournisseur','Agent Hub','/admin/hub-live','Relier PO à réception et unités Hub : idempotence, quantité attendue/reçue, exceptions ; le Hub Live est une lecture, pas le propriétaire de la mutation.','PO, unités, date et statut d’opération, quarantaine éventuelle.','services/golden-checkout-thread.js'),
+  e('Transport · douane et groupage','Transitaire','/admin/workspaces/shipping-customs','Tracer regroupement, colis, transports, taxes et preuve de douane. Inconnu, zéro confirmé et montant payé doivent rester distincts.','Shipment, colis, frais typés, événements, montant et applicabilité.','features/customs.feature.js'),
+  e('Relais · remise client','Agent Relais','/admin/relais-live','Comparer colis arrivé, disponibilité, retrait et preuve de remise ; ne pas confondre commandes, colis et unités.','Référence commande, unité, relais/Market, horodatage de remise.','services/golden-checkout-thread.js'),
+  e('Finance · coûts et marge réels','Finance','/admin/finance','Rapprocher ventes, encaissements et coûts réels complets avec leur provenance. Marge inconnue ou partielle ≠ marge zéro.','Vente, coût estimé/réel, couverture, statut de complétude, période.','services/dashboard-finance-canonical.js'),
+  e('Pilotage · bilan partenaire','Admin / Responsable pays','/admin/pilotage','Consolider les décisions par Market sans agréger des monnaies différentes ni présenter RCT1 comme activité réelle. Capturer écarts, responsabilité et prochaine action.','Tableau pays, décision, responsables, captures et verdict humain distinct de CI.','features/dashboard.feature.js')
+ ]},
+ dashboards:{label:'Contrôle canonique · 5 décisions + 3 Live',steps:[
+  e('Pilotage · contexte et décisions','Admin / Responsable pays','/admin/pilotage','Vérifier indicateurs, source, âge, périmètre Market et liens vers Action Center. Ne pas transformer un signal en écriture automatique.','Capture 1440/1024/390, réponse API, période, Market, rôles et CTA.','public/dashboards/canonical/js/pilotage-decision.js'),
+  e('Commerce · quatre KPI','Admin / Responsable pays','/admin/commerce','Réconcilier ventes payées wallet inclus, commandes créées, panier moyen, quantités vendues, devises et vue RCT1 isolée.','Même période et scope : attendu vs JSON API vs écran, KMF/XAF ; source SQL RCT1.','services/dashboard-commerce.js'),
+  e('Commandes · files et Order 360','Opérations / Responsable pays','/admin/operations','Contrôler Cash à confirmer et Colis à créer ; /admin/orders redirige et Order 360 reste accessible par référence, sans statut parallèle.','Comptes des deux files, API, URL Order 360, retour et droits.','bootstrap/html-routes.js'),
+  e('Opérations · contrôle de chaîne','Opérations','/admin/operations','Ordre des étapes et situations de livraison, santé/cause de chaque commande, lien vers le propriétaire ; aucune donnée inventée.','Commande → étape → cause → propriétaire, action réalisable, retour contextuel.','public/dashboards/canonical/js/operations-decision.js'),
+  e('Finance · vérité économique','Finance / Admin','/admin/finance','Séparer encaissement, vente, coût réel, marge inconnue et dépenses estimées ; vérifier provenance et cohorte RCT1/réel.','KPI, unités, réconciliation source, complétude et vues marché.','services/dashboard-finance-canonical.js'),
+  e('Sourcing live · fraîcheur','Sourcing','/admin/import-runtime','Vérifier run fournisseur, heure du dernier relevé, erreur visible, polling unique et confidentialité.','URL live, generated_at, erreurs, scopes et rôle.','public/dashboards/canonical/js/import-runtime.js'),
+  e('Hub live · quantités','Agent Hub','/admin/hub-live','Confronter commandes, colis et unités reçues ; surveillance sans mutation du stock depuis le cockpit Live.','Identifiants PO/HUB, unités, statut, timestamp serveur.','public/dashboards/canonical/js/hub-live.js'),
+  e('Relais live · remise','Agent Relais','/admin/relais-live','Confronter colis disponibles, commandes remises, état de fraîcheur et autorisation du relais.','Market/relais, unités, horodatages et absence de fuite inter-marchés.','public/dashboards/canonical/js/relay-live.js')
+ ]},
  l1l10:{label:'Backoffice · remédiations L1 à L10',steps:[
   e('L1 · vérité des KPI','Pilotage / Opérations / Finance','/admin/pilotage','P-01, O-02, O-03, F-02 : actives/paiements/retards même propriétaire, scope et statut.','JSON propriétaire + période + Market + devise + capture.','docs/audits/BACKOFFICE_CANONICAL_GAP.md'),
   e('L2 · menu et capacités','Opérateur / Admin','/admin/pilotage','C-10, N-01, N-02, N-03 : menu cohérent avec les capacités serveur, pas de 403 promis.','Deux comptes de rôles distincts, écran menu + HTTP.','docs/audits/BACKOFFICE_CANONICAL_GAP.md'),
@@ -51,7 +77,7 @@ const TRACKS=Object.freeze({
   e('L10 · parité visuelle','UX / métier','/admin/commerce','U-01, U-02, C-06, C-11 : cinq références et 30 secondes métier ; Live inchangé visuellement.','Captures 1280/1440/1672, écarts, 4/4 réponses ≤30 s.','docs/audits/BACKOFFICE_CANONICAL_GAP.md')
  ]}
 });
-let run=null,stepIndex=0,phase=0,authReady=false,probeId=0,records=[];
+let run=null,stepIndex=0,phase=0,authReady=false,probeId=0,records=[],verifiedCommit=null;
 function key(){return PREFIX+JSON.stringify([RECIPE_VERSION,run.track,run.market,run.ref,run.sha]);}
 function save(){
  if(!run)return;
@@ -75,6 +101,17 @@ function restore(){
  }catch(_){}
 }
 function showMessage(value){$('scenarioMessage').textContent=value;}
+function hrefForStep(path){
+ if(!run||!/^RCT1(?:-|$)/.test(run.ref))return path;
+ if(!/^\/admin\/(?:commerce|finance)(?:\?|$)/.test(path))return path;
+ return path+(path.includes('?')?'&':'?')+'simulation_scope=RCT1';
+}
+function scopeNote(path){
+ if(!run||!/^RCT1(?:-|$)/.test(run.ref))return '';
+ return /^\/admin\/(?:commerce|finance)(?:\?|$)/.test(path)
+  ? ' · RCT1 : filtre explicite sur cet écran.'
+  : ' · RCT1 : écran sans filtre de simulation certifié ; rapprocher uniquement les références et faits canoniques.';
+}
 function record(status){
  if(!run)return;
  const note=$('scenarioNote').value.trim().slice(0,1600);
@@ -97,8 +134,8 @@ function render(){
  $('scenarioTitle').textContent=s.title;
  $('scenarioExpected').textContent=s.expected;
  $('scenarioActor').textContent='Acteur : '+s.actor;
- $('scenarioProofExpected').textContent=s.proof;
- $('scenarioOpen').href=s.path;
+ $('scenarioProofExpected').textContent=s.proof+scopeNote(s.path);
+ $('scenarioOpen').href=hrefForStep(s.path);
  $('scenarioSource').href=GITHUB+encodeURIComponent(run.sha)+'/'+s.source;
  $('scenarioState').textContent='Constat humain : '+(v.status==='observed'?'OBSERVÉ':v.status==='blocked'?'BLOQUÉ':'NON EXÉCUTÉ')+' · automatique : NON PROUVÉ';
  $('scenarioNote').value=v.note;
@@ -110,13 +147,26 @@ function render(){
  $('scenarioStage').dataset.phase=['guide','view','validate'][phase];
  $('scenarioPhases').textContent=['1 · Comprendre','2 · Visualiser','3 · Valider'][phase];
  $('scenarioProgress').textContent=records.filter(x=>x.status==='observed').length+' observation(s) / '+track.steps.length+' · jamais certifié';
- $('scenarioVersion').textContent='SHA déclaré : '+run.sha+' (à confronter au staging réellement déployé)';
+ $('scenarioVersion').textContent=verifiedCommit
+  ? 'SHA staging vérifié : '+verifiedCommit.slice(0,12)
+  : 'SHA déclaré : '+run.sha+' (NON VÉRIFIÉ contre staging)';
 }
 async function checkAuth(){
  if(!run)return;
  const expectedKey=key(),currentProbe=++probeId;
- authReady=false;$('scenarioAuth').textContent='Vérification de lecture en cours…';
+ authReady=false;verifiedCommit=null;$('scenarioAuth').textContent='Vérification de version et de lecture en cours…';
  try{
+  const v=await fetch('/health/version',{cache:'no-store',headers:{Accept:'application/json'}});
+  if(!run||key()!==expectedKey||currentProbe!==probeId)return;
+  if(!v.ok)throw new Error('version indisponible HTTP '+v.status);
+  const body=await v.json();
+  const actual=typeof body.commit==='string'?body.commit.toLowerCase():'';
+  if(!/^[0-9a-f]{7,40}$/.test(actual)||!(actual.startsWith(run.sha)||run.sha.startsWith(actual))){
+   $('scenarioAuth').textContent='BLOQUÉ : commit staging absent ou différent du SHA déclaré. Actualise le SHA déployé.';
+   showMessage('Version staging NON PROUVÉE : impossible d’enregistrer une observation pour ce run.');
+   render();return;
+  }
+  verifiedCommit=actual;
   const r=await fetch('/api/admin/entities/golden-upstream?market='+encodeURIComponent(run.market),{credentials:'include',headers:{Accept:'application/json'}});
   if(!run||key()!==expectedKey||currentProbe!==probeId)return;
   if(!r.ok){
@@ -125,9 +175,10 @@ async function checkAuth(){
    showMessage('Prérequis d’authentification NON PROUVÉ. Ouvre une session admin autorisée puis recommence.');
   }else{
    authReady=true;
-   $('scenarioAuth').textContent='Accès de lecture des preuves amont : autorisé. Accès aux autres marchés/surfaces NON prouvé.';
+   $('scenarioAuth').textContent='SHA staging vérifié ; lecture des preuves amont autorisée. Autorité des autres marchés/surfaces NON prouvée.';
   }
- }catch(_){if(!run||key()!==expectedKey||currentProbe!==probeId)return;$('scenarioAuth').textContent='Accès de lecture NON PROUVÉ : erreur réseau.';}
+ }catch(_){if(!run||key()!==expectedKey||currentProbe!==probeId)return;
+  $('scenarioAuth').textContent='Accès de lecture ou vérification SHA NON PROUVÉ : erreur réseau/version.';}
  render();
 }
 function begin(){
@@ -139,7 +190,7 @@ function begin(){
   return;
  }
  run={track,market,ref,sha};
- stepIndex=0;phase=0;authReady=false;++probeId;
+ stepIndex=0;phase=0;authReady=false;verifiedCommit=null;++probeId;
  $('extendedRecipe').open=true;
  restore();save();showMessage('Guide ouvert. Vérifie l’accès authentifié ; chaque observation exige une preuve datée.');
  $('scenarioAuth').textContent='Accès authentifié : NON VÉRIFIÉ';
@@ -161,7 +212,7 @@ $('scenarioBack').addEventListener('click',()=>{
 $('scenarioRestart').addEventListener('click',()=>{
  if(!run)return;
  try{localStorage.removeItem(key());localStorage.removeItem(PREFIX+'last')}catch(_){}
- run=null;authReady=false;++probeId;$('scenarioStage').hidden=true;
+ run=null;authReady=false;verifiedCommit=null;++probeId;$('scenarioStage').hidden=true;
  showMessage('Guide fermé ; les constats locaux de ce périmètre ont été effacés.');
 });
 try{
