@@ -1059,16 +1059,21 @@
     details.appendChild(varianceDetail.details);
     dashboard.appendChild(details);
 
-    // File des paiements fournisseur à revoir : visible seulement quand elle contient des éléments.
+    // Une file centrale absente de la projection marché n'est jamais assimilée à zéro.
+    const supplierState = supplierReviewState(payload);
     const supplierPayments = supplierPaymentReviewItems(payload, base);
-    if (supplierPayments.length) {
-      const review = cardSection(doc, 'Paiements fournisseurs à revoir', '', 'finance-supplier-payments');
-      review.section.setAttribute('data-dashboard-role', 'secondary');
+    const review = cardSection(doc, 'Paiements fournisseurs à revoir',
+      'File de rapprochement centrale, hors filtre de période.', 'finance-supplier-payments');
+    review.section.setAttribute('data-dashboard-role', 'secondary');
+    review.section.setAttribute('data-review-state', supplierState.state);
+    if (supplierState.state === 'rows') {
       const reviewHost = el(doc, 'div', 'kmc-finance-essential-review');
       decisionUi.RankedList.render(reviewHost, { items: supplierPayments });
       review.body.appendChild(reviewHost);
-      dashboard.appendChild(review.section);
+    } else {
+      review.body.appendChild(el(doc, 'p', 'kmc-finance-review-empty', supplierState.message));
     }
+    dashboard.appendChild(review.section);
 
     rootNode.appendChild(dashboard);
     wireDetailLinks(dashboard);

@@ -64,3 +64,14 @@ test('Commerce : classements produits et catégories lisibles sur desktop et mob
   expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?\.kmc-commerce-ranking-grid \{\s*grid-template-columns: minmax\(0, 1fr\);/);
   expect(css).toContain('align-items: stretch;');
 });
+
+
+test('Finance : file fournisseur distingue vide et projection non fournie', () => {
+  const source = fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','finance-decision.js'),'utf8');
+  expect(source).toContain('const supplierState = supplierReviewState(payload);');
+  expect(source).toContain("review.section.setAttribute('data-review-state', supplierState.state)");
+  expect(source).toContain("if (supplierState.state === 'rows')");
+  expect(source).toContain('supplierState.message');
+  expect(source).toContain('Non disponible dans cette vue');
+  expect(source).toContain('Aucun paiement fournisseur ambigu');
+});
