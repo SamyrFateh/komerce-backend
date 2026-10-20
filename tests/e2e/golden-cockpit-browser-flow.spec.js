@@ -289,6 +289,48 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await expect(page.locator('#scenarioAuth')).toContainText('NON VÉRIFIÉ');
   });
 
+  test('recette canonique : marché RCT1, cinq dashboards et trois Live gardent la vraie frontière de simulation',async({page})=>{
+    await mount(page);
+    await page.locator('#extendedRecipe summary').click();
+    await page.locator('#scenarioTrack').selectOption('dashboards');
+    await page.locator('#scenarioRef').fill('RCT1-E1');
+    await page.locator('#scenarioSha').fill('c2f3c1d');
+    await page.locator('#scenarioStart').click();
+    await expect(page.locator('#scenarioCount')).toHaveText('Étape 1 / 8');
+    await expect(page.locator('#scenarioTitle')).toContainText('Pilotage');
+    await expect(page.locator('#scenarioProofExpected')).toContainText('sans filtre de simulation certifié');
+    await page.locator('#scenarioNext').click();
+    await page.locator('#scenarioNext').click();
+    await page.route(ORIGIN+'/api/admin/entities/golden-upstream?market=KM',route=>
+      route.fulfill({status:200,contentType:'application/json',body:'{}'}));
+    await page.locator('#scenarioAuthButton').click();
+    await expect(page.locator('#scenarioAuth')).toContainText('SHA staging vérifié');
+    await page.locator('#scenarioNote').fill('Source SQL RCT1 vérifiée avec période, scope et Market.');
+    await page.locator('#scenarioProof').fill('proof-staging-sql-readonly');
+    await page.locator('#scenarioObserved').click();
+    await page.locator('#scenarioNext').click();
+    await expect(page.locator('#scenarioTitle')).toContainText('Commerce');
+    await expect(page.locator('#scenarioOpen')).toHaveAttribute('href','/admin/commerce?simulation_scope=RCT1');
+    await expect(page.locator('#scenarioProofExpected')).toContainText('filtre explicite');
+    await expect(page.locator('#scenarioProgress')).toContainText('1 observation');
+  });
+
+  test('garde SHA : refuse tout constat si la version réellement déployée diffère',async({page})=>{
+    const state=await mount(page);
+    state.version='a23456789b123456789012345678901234567890';
+    await page.locator('#extendedRecipe summary').click();
+    await page.locator('#scenarioTrack').selectOption('process');
+    await page.locator('#scenarioRef').fill('RCT1-E1');
+    await page.locator('#scenarioSha').fill('c2f3c1d');
+    await page.locator('#scenarioStart').click();
+    await expect(page.locator('#scenarioCount')).toHaveText('Étape 1 / 14');
+    await page.locator('#scenarioAuthButton').click();
+    await expect(page.locator('#scenarioAuth')).toContainText('BLOQUÉ : commit staging');
+    await expect(page.locator('#scenarioObserved')).toBeDisabled();
+    await expect(page.locator('#scenarioVersion')).toContainText('NON VÉRIFIÉ');
+    await expect(page.locator('#scenarioProgress')).toContainText('0 observation');
+  });
+
   test('projection de commande vide ou incomplète ne permet aucun Conforme',async({page})=>{
     const state=await mount(page);
     await page.locator('#createGolden').click();
