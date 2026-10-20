@@ -332,7 +332,7 @@ test('Commerce overview garde uniquement Hero + décisions + activité commercia
   expect(source).toContain("'Activité commerciale'");
   expect(source).toContain("'Parcours des commandes'");
   expect(source).toContain("funnelHost.id = 'commerce-funnel'");
-  expect(source).toContain("'Produits par montant des lignes (hors transport)'");
+  expect(source).toContain("'Produits par montant des lignes (hors transport et remises)'");
   expect(source).toContain('payload.simulation.scope');
   expect(source).toContain('faits simulés, pas une activité réelle');
   expect(source).toContain("dashboard.setAttribute('data-simulation-scope'");
