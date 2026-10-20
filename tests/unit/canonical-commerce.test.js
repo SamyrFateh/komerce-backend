@@ -321,7 +321,7 @@ test('commerce : la frontière Commerce / Commandes & logistique est énoncée d
 
 
 
-test('Commerce overview garde uniquement Hero + décisions + activité commerciale', () => {
+test('Commerce overview garde la vérité des quatre KPI, le funnel et expose les classements serveur', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'commerce-decision.js'),
     'utf8'
@@ -332,7 +332,14 @@ test('Commerce overview garde uniquement Hero + décisions + activité commercia
   expect(source).toContain("'Activité commerciale'");
   expect(source).toContain("'Parcours des commandes'");
   expect(source).toContain("funnelHost.id = 'commerce-funnel'");
-  expect(source).toContain("'Produits par montant des lignes (hors transport et remises)'");
+  expect(source).toContain("'Top produits'");
+  expect(source).toContain("'Répartition par catégorie'");
+  expect(source).toContain("data-dashboard-role', 'secondary");
+  expect(source).toContain('const top = rankedProducts(payload, base);');
+  expect(source).toContain('const categories = rankedCategories(payload, base);');
+  expect(source).not.toContain('rankedProducts(payload, base).slice(0, 3)');
+  expect(source).toContain('Aucune ligne produit payée sur la période sélectionnée.');
+  expect(source).toContain('Aucune catégorie vendue sur la période sélectionnée.');
   expect(source).toContain('payload.simulation.scope');
   expect(source).toContain('faits simulés, pas une activité réelle');
   expect(source).toContain("dashboard.setAttribute('data-simulation-scope'");
@@ -362,4 +369,20 @@ describe('L3 — périmètre de recette transmis depuis l’URL de la page (comm
     expect(await run("?simulation_scope=rct1'--")).toBe('/api/admin/dashboard/commerce/market/CM?period=30');
     expect(await run('')).toBe('/api/admin/dashboard/commerce/market/CM?period=30');
   });
+});
+
+test('Commerce : panel produits et catégories ne dérivent pas de montant de commande ni de tendances imaginaires', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/commerce-decision.js'), 'utf8');
+  expect(source).toContain('Les cinq meilleures lignes produit et les catégories viennent DIRECTEMENT');
+  expect(source).toContain('transport et remises');
+  const fixture = payloadFixture();
+  fixture.top_products = Array.from({ length:5 }, (_, i) => ({
+    name:'Produit '+(i+1), category:'Test', quantity:i+1, revenue_kmf:1000*(i+1),
+  }));
+  expect(commerceDecision.rankedProducts(fixture, commerce)).toHaveLength(5);
+  fixture.top_products = [];
+  fixture.categories = [];
+  expect(commerceDecision.rankedProducts(fixture, commerce)).toEqual([]);
+  expect(commerceDecision.rankedCategories(fixture, commerce)).toEqual([]);
+  expect(source).not.toContain("data-dashboard-role', 'tertiary");
 });

@@ -56,3 +56,11 @@ describe('FIN-03 — Finance : composition du mock', () => {
     expect(css).toMatch(/@media \(max-width: 640px\)[\s\S]*kmc-fin3-table td::before \{ content: attr\(data-label\)/);
   });
 });
+
+
+test('Commerce : classements produits et catégories lisibles sur desktop et mobile, sans nouveau dashboard', () => {
+  expect(css).toContain('.kmc-commerce-ranking-grid');
+  expect(css).toContain('.kmc-commerce-ranking-empty');
+  expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?\.kmc-commerce-ranking-grid \{\s*grid-template-columns: minmax\(0, 1fr\);/);
+  expect(css).toContain('align-items: stretch;');
+});

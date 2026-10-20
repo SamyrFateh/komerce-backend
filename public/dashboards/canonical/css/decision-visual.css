@@ -656,6 +656,26 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-commerc
   font-weight: 800;
 }
 
+/* Commerce — deux classements canoniques après la bande KPI et le funnel.
+ * Aucun axe temporel ni marché construit côté navigateur sans données API. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-commerce-ranking-grid {
+  margin-top: 16px;
+  align-items: stretch;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-commerce-ranking-grid > .kmc-decision-surface-card {
+  min-width: 0;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-commerce-ranking-empty {
+  margin: 10px 0;
+  font-size: 13px;
+  color: var(--kmc-muted);
+}
+@media (max-width: 760px) {
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-commerce-ranking-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Finance Hero (frame, kicker, title, illustration) is owned by Layout Canon + contextual-heroes-v2. */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-finance-essential-metrics {
   margin-bottom: 14px;
