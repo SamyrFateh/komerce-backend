@@ -740,7 +740,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-fin-link
 body.kmc-shell-v4 .kmc-fin3 { display: grid; gap: 16px; }
 body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-icon { display: inline-grid; place-items: center; flex: none; }
 body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-icon svg { width: 100%; height: 100%; }
-body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 0; }
+body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; }
 body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-kpi { position: relative; display: flex; align-items: center; gap: 14px; min-width: 0; padding: 20px 22px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
 body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-kpi-icon { width: 58px; height: 58px; border-radius: 50%; }
 body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-kpi-icon svg { width: 28px; height: 28px; }
