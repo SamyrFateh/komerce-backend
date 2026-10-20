@@ -67,7 +67,7 @@
         { key: 'ca-encaisse', label: 'CA encaissé' },
         { key: 'commandes', label: 'Commandes créées' },
         { key: 'panier-moyen', label: 'Panier moyen' },
-        { key: 'produits-actifs-vendus', label: 'Produits actifs vendus' },
+        { key: 'quantites-vendues', label: 'Quantités vendues' },
       ],
     },
     sections: [
@@ -143,6 +143,7 @@
     cmds_creees: 'commandes',
     panier_moyen: 'panier-moyen',
     produits_actifs_vendus: 'produits-actifs-vendus',
+    quantites_vendues: 'quantites-vendues',
   });
 
   function normalizePeriod(value) {
