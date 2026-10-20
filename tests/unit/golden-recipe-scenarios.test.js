@@ -34,7 +34,7 @@ test('session admin requise, preuve humaine indexée et retour entre marchés is
   expect(js).toContain('currentProbe!==probeId');
   expect(js).toContain('localStorage.setItem(key()');
   expect(js).toContain("GITHUB+encodeURIComponent(run.sha)+'/'+s.source");
-  expect(js).toContain("authReady=false;++probeId");
+  expect(js).toContain('authReady=false;verifiedCommit=null;++probeId');
   expect(html).toContain('href="/login.html"');
 });
 
