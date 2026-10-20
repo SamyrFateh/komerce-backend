@@ -208,6 +208,43 @@ test.describe('Operations — logistics control board', () => {
     ]);
   });
 
+  test('la synthèse du processus expose six phases, sans inventer une remise ni doubler les commandes', async ({ page }) => {
+    const overview = page.locator('.kmc-operations-process-overview');
+    await expect(overview).toBeVisible();
+    await expect(overview).toHaveAttribute('data-process-source', 'control_chain');
+    const phases = overview.locator('.kmc-flow-stage');
+    await expect(phases).toHaveCount(6);
+    expect(await phases.locator('.kmc-flow-stage-label').allTextContents()).toEqual([
+      'Commande', 'Achat fournisseur', 'Réception Hub',
+      'Transport / Douane', 'Relais', 'Remise client',
+    ]);
+    const helpers = await phases.locator('.kmc-flow-stage-helper').allTextContents();
+    expect(helpers).toEqual([
+      '2 commandes positionnées', '6 commandes positionnées',
+      '5 commandes positionnées', '6 commandes positionnées',
+      '2 commandes positionnées', 'Non projetée ici · voir Order 360',
+    ]);
+    await expect(phases.nth(1)).toHaveAttribute('href', /\/admin\/workspaces\/purchasing/);
+    await expect(phases.nth(2)).toHaveAttribute('href', /\/admin\/workspaces\/operations/);
+    await expect(phases.nth(3)).toHaveAttribute('href', /\/admin\/workspaces\/shipping-customs/);
+    await expect(phases.nth(5)).not.toHaveAttribute('href', /./);
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(9);
+    await expect(page.locator('#operations-stage-hub-receiving')).toBeAttached();
+  });
+
+  test('sur mobile le parcours est défilable sans retirer la Control Tower canonique', async ({ page }) => {
+    await page.setViewportSize({ width:390, height:844 });
+    const strip = page.locator('.kmc-operations-process-steps .kmc-flow-strip');
+    await expect(strip).toBeVisible();
+    const size = await strip.evaluate(el => ({
+      clientWidth:el.clientWidth, scrollWidth:el.scrollWidth,
+      overflowX:getComputedStyle(el).overflowX,
+    }));
+    expect(size.scrollWidth).toBeGreaterThan(size.clientWidth);
+    expect(size.overflowX).toBe('auto');
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(9);
+  });
+
   test('affiche les 9 étapes et la légende santé', async ({ page }) => {
     await expect(page.locator('.kmc-control-stage')).toHaveCount(9);
     await expect(page.locator('.kmc-control-chain-legend-item')).toHaveCount(4);
