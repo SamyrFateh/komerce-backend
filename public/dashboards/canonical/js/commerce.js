@@ -236,7 +236,7 @@
       categorie: row.category || '—',
       commandes: formatNumber(row.orders, 0),
       quantite: formatNumber(row.quantity, 0),
-      ca: formatKmf(row.revenue_kmf),
+      ca: row.revenue_display ? formatMoney(row.revenue_display.value, row.revenue_display.unit) : formatKmf(row.revenue_kmf),
     }));
   }
 
