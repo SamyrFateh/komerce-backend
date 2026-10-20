@@ -33,7 +33,7 @@ const {
   resolveDashboardAdminContext,
 } = require('../services/dashboard-admin-context');
 const pilotage = require('../services/dashboard-pilotage-market');
-const { projectMarketPayload } = require('../services/dashboard-metrics/market-currency');
+const { projectMarketPayload, projectCommerceMarketPayload } = require('../services/dashboard-metrics/market-currency');
 const commerce = require('../services/dashboard-commerce');
 const operations = require('../services/dashboard-operations');
 const finance = require('../services/dashboard-finance-canonical');
@@ -211,7 +211,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await projectMarketPayload(await commerce.buildCommerce(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
+      const payload = await projectCommerceMarketPayload(await commerce.buildCommerce(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] commerce market error');
