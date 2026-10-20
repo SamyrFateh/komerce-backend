@@ -347,7 +347,8 @@ describe('dashboard-commerce', () => {
     });
     expect(mockPricingMarketCorridor.buildMarketCorridor).not.toHaveBeenCalled();
     expect(mockLocalStockDecision.getDecisionAvailabilityEvidence).not.toHaveBeenCalled();
-    expect(mockMetrics.getCAEncaisse.mock.calls[0][0]).not.toHaveProperty('market_id');
+    expect(mockMetrics.getCAEncaisse).not.toHaveBeenCalled();
+    expect(mockMetrics.getCmdsCreees.mock.calls[0][0]).not.toHaveProperty('market_id');
     db.query.mock.calls.forEach(([sql, params]) => {
       expect(String(sql)).not.toContain('o.market_id =');
       expect(params).not.toContain('market-cm-id');
