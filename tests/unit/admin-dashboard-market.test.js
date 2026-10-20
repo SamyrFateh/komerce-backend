@@ -387,3 +387,10 @@ describe('devise du marché sur les vues de marché', () => {
     expect(source.kpis[0].unit).toBe('KMF');
   });
 });
+
+test('la route Commerce market projette seule les classements pays sans affecter les autres dashboards', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'routes', 'admin-dashboard-market.js'), 'utf8');
+  expect(source).toContain('projectCommerceMarketPayload(await commerce.buildCommerce');
+  expect(source).toContain('projectMarketPayload(await pilotage.buildMarketPilotage');
+  expect(source).toContain('requireCommerceMarketRead');
+});
