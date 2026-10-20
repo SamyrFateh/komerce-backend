@@ -792,6 +792,30 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Explain dashboard gate execution or reuse
+        env:
+          DASHBOARD_SCOPED: ${{ needs.changes.outputs.dashboard }}
+          DASHBOARD_RESULT: ${{ needs.dashboard.result }}
+          DASHBOARD_REUSED: ${{ needs.changes.outputs.reuse_dashboard }}
+          DASHBOARD_PREVIOUS_HEAD: ${{ needs.changes.outputs.reuse_previous_head }}
+          REBASE_NO_IMPACT: ${{ needs.changes.outputs.rebase_no_impact }}
+          UNIT_REPAIR_ONLY: ${{ needs.changes.outputs.unit_repair_only }}
+        shell: bash
+        run: |
+          {
+            echo '### Dashboard canonical gate'
+            echo "- In scope: $DASHBOARD_SCOPED"
+            echo "- Job result: $DASHBOARD_RESULT"
+            echo "- Previous proof reused: $DASHBOARD_REUSED"
+            echo "- Previous HEAD: ${DASHBOARD_PREVIOUS_HEAD:-none}"
+            echo "- Rebase no-impact: $REBASE_NO_IMPACT"
+            echo "- Unit-only repair: $UNIT_REPAIR_ONLY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$DASHBOARD_SCOPED" = 'true' ] && [ "$DASHBOARD_RESULT" = 'skipped' ] && [ "$DASHBOARD_REUSED" != 'true' ] && [ "$REBASE_NO_IMPACT" != 'true' ] && [ "$UNIT_REPAIR_ONLY" != 'true' ]; then
+            echo 'Dashboard gate skipped with no documented exemption' >&2
+            exit 1
+          fi
+
       - name: Aggregate scoped results
         id: aggregate
         env:
