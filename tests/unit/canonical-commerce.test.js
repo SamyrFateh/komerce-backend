@@ -24,6 +24,7 @@ function payloadFixture() {
       { key: 'panier_moyen', value: 10000, unit: 'KMF', data_quality: {} },
       { key: 'marge_consolidee', value: 24500, unit: 'KMF', data_quality: {} },
       { key: 'produits_actifs_vendus', value: 8, unit: 'count', data_quality: {} },
+      { key: 'quantites_vendues', value: 14, unit: 'count', data_quality: {} },
     ],
     top_products: [
       { product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000 },
@@ -61,7 +62,7 @@ function payloadFixture() {
         destination: { kind: 'pricing_workspace', market_code: 'CM', product_ref: 'PRD-1' },
       },
       {
-        key: 'orders-lost', kind: 'orders_lost', severity: 'critical', label: 'Commandes perdues',
+        key: 'orders-lost', kind: 'orders_lost', severity: 'critical', label: 'Commandes annulées ou remboursées',
         helper: 'Perte explicitement remontée par le funnel', value_count: 2,
         destination: { kind: 'commerce_funnel' },
       },
@@ -130,6 +131,10 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     expect(sources['commerce.metrics']['ca-encaisse'].value).toContain('KMF');
     expect(sources['commerce.metrics']['commandes'].value).toBe('12');
     expect(sources['commerce.metrics']['produits-actifs-vendus'].value).toBe('8');
+    expect(sources['commerce.metrics']['quantites-vendues'].value).toBe('14');
+    expect(commerce.COMMERCE_SCHEMA.metrics.pick.map(x => x.key)).toEqual([
+      'ca-encaisse', 'commandes', 'panier-moyen', 'quantites-vendues',
+    ]);
     // marge_consolidee reste dans le payload brut (le fallback historique de
     // decisionItems en a besoin, cf. test plus bas), mais n'est plus une
     // clé affichée dans la bande KPI — KPI_KEYS ne la mappe plus.
@@ -168,8 +173,7 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     expect(decisions.map(item => item.label)).toEqual([
       'Best-seller sans disponibilité immédiate',
       'SKU à renégocier / repositionner',
-      'Commandes perdues',
-      'Costing incomplet',
+      'Commandes annulées ou remboursées',
     ]);
     expect(decisions[0]).toMatchObject({
       tone: 'warning',
@@ -184,6 +188,8 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
       actionLabel: 'Ouvrir l’Atelier →',
     });
     expect(decisions.some(item => /rupture|prix à recalibrer|conversion|aujourd/i.test(item.label))).toBe(false);
+    expect(decisions.some(item => item.href === '#commerce-profitability')).toBe(false);
+    expect(decisions.find(item => item.key === 'orders-lost').href).toBe('#commerce-funnel');
 
     expect(commerceDecision.metricItems(payload, commerce)).toEqual(expect.arrayContaining([
       expect.objectContaining({ key: 'commandes-perdues', value: '2' }),
@@ -300,7 +306,9 @@ test('Commerce overview garde uniquement Hero + décisions + activité commercia
   expect(source).toContain("data-dashboard-role', 'attention");
   expect(source).toContain("data-dashboard-role', 'primary");
   expect(source).toContain("'Activité commerciale'");
-  expect(source).toContain("'Progression des commandes'");
+  expect(source).toContain("'Parcours des commandes'");
+  expect(source).toContain("funnelHost.id = 'commerce-funnel'");
+  expect(source).toContain("'Produits par chiffre d’affaires'");
   expect(source).not.toContain("'Viabilité des meilleures ventes'");
   expect(source).not.toContain("'Rentabilité produits'");
   expect(source).not.toContain("TrustFooter.render");
