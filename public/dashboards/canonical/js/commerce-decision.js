@@ -125,8 +125,8 @@
     if (Number.isFinite(lost) && lost > 0) {
       items.push({
         key: 'orders-lost',
-        label: 'Commandes perdues',
-        helper: 'Perte explicitement remontée par le funnel',
+        label: 'Commandes annulées ou remboursées',
+        helper: 'Statuts actuels, non un taux de conversion',
         value: base.formatNumber(lost, 0),
         tone: 'critical',
         icon: '↓',
@@ -166,7 +166,7 @@
 
   function metricItems(payload, base) {
     const labels = {
-      'ca-encaisse': 'CA encaissé',
+      'ca-encaisse': 'Ventes payées',
       commandes: 'Commandes créées',
       'panier-moyen': 'Panier moyen',
       'produits-actifs-vendus': 'Produits actifs vendus',
@@ -193,7 +193,7 @@
     return (Array.isArray(payload && payload.categories) ? payload.categories : []).map(row => ({
       title: row.category || 'Catégorie',
       helper: `${base.formatNumber(row.orders, 0)} commande(s) · ${base.formatNumber(row.quantity, 0)} unité(s)`,
-      value: base.formatKmf(row.revenue_kmf),
+      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit) : base.formatKmf(row.revenue_kmf),
       tone: 'info',
     }));
   }
@@ -202,7 +202,7 @@
     return (Array.isArray(payload && payload.top_products) ? payload.top_products : []).map(row => ({
       title: row.name || row.product_ref || 'Produit',
       helper: `${row.category || 'Sans catégorie'} · ${base.formatNumber(row.quantity, 0)} unité(s)`,
-      value: base.formatKmf(row.revenue_kmf),
+      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit) : base.formatKmf(row.revenue_kmf),
       tone: 'neutral',
     }));
   }
@@ -339,7 +339,12 @@
     header.setAttribute('data-dashboard-role', 'hero');
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'COMMERCE'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Activité commerciale'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui se vend, combien, et où les commandes se perdent.'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Ventes payées, volumes et situation des commandes créées pendant la période.'));
+    if (payload && payload.simulation && payload.simulation.scope) {
+      header.appendChild(text(doc, 'p', 'canonical-eyebrow',
+        `Recette ${payload.simulation.scope} — faits simulés, pas une activité réelle`));
+      dashboard.setAttribute('data-simulation-scope', String(payload.simulation.scope));
+    }
     header.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
     dashboard.appendChild(header);
 
@@ -355,7 +360,7 @@
     const activity = cardSection(
       doc,
       'Activité commerciale',
-      'Les chiffres essentiels et la progression réelle des commandes.',
+      'Montants payés wallet inclus ; cohorte selon la date de création des commandes.',
       'commerce-activity'
     );
     activity.section.className += ' is-cockpit-truth is-cockpit-flow';
@@ -382,7 +387,7 @@
 
     const top = rankedProducts(payload, base).slice(0, 3);
     if (top.length) {
-      activity.body.appendChild(text(doc, 'h3', 'kmc-commerce-flow-title', 'Produits par chiffre d’affaires'));
+      activity.body.appendChild(text(doc, 'h3', 'kmc-commerce-flow-title', 'Produits par montant des lignes (hors transport et remises)'));
       const productsHost = doc.createElement('div');
       productsHost.className = 'kmc-commerce-top-products';
       decisionUi.RankedList.render(productsHost, { items: top });

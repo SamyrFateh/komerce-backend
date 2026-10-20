@@ -78,10 +78,13 @@ function buildPeriodFilters(query = {}, marketId = null, now = new Date()) {
   };
 }
 
-async function getPanierMoyen(filters) {
+// Commerce business-sale basis: paid orders, before wallet tender; discounts already frozen
+// in total_kmf. Unlike Finance's cash-oriented projection this is NOT a cash receipt.
+async function getCommercePaidSales(filters) {
   const { where, params } = buildFiltersClause(filters);
   const { rows } = await db.query(`
-    SELECT AVG(o.total_kmf)::bigint AS value,
+    SELECT COALESCE(SUM(o.total_kmf + COALESCE(o.wallet_applied_kmf, 0)), 0)::bigint AS sales_kmf,
+           AVG(o.total_kmf + COALESCE(o.wallet_applied_kmf, 0))::bigint AS basket_kmf,
            COUNT(*)::int AS items_total
     FROM orders o
     WHERE ${where}
@@ -89,15 +92,20 @@ async function getPanierMoyen(filters) {
       AND o.status NOT IN ('cancelled', 'refunded')
   `, params);
 
-  const itemsTotal = Number(rows[0] && rows[0].items_total) || 0;
-  // An empty paid cohort has no average basket (NULL), not a 0 KMF basket.
-  const value = itemsTotal > 0 && rows[0] && rows[0].value != null ? Number(rows[0].value) : null;
-  return makeKpi('panier_moyen', 'Panier moyen encaissé', value, 'KMF', {
-    completeness: itemsTotal > 0 ? 'complete' : 'provisional',
-    itemsTotal,
-    itemsWithData: itemsTotal,
-    drillTo: '/admin/operations',
-  });
+  const row = rows[0] || {};
+  const itemsTotal = Number(row.items_total) || 0;
+  const basis = { sales_basis: 'paid_order_total_plus_wallet', period_basis: 'orders.created_at', cash_basis: false };
+  return {
+    ca: makeKpi('ca_encaisse', 'Ventes payées', Number(row.sales_kmf) || 0, 'KMF', {
+      itemsTotal, itemsWithData: itemsTotal, extra: basis, drillTo: '/admin/operations',
+    }),
+    panier: makeKpi('panier_moyen', 'Panier moyen des ventes payées',
+      itemsTotal > 0 && row.basket_kmf != null ? Number(row.basket_kmf) : null, 'KMF', {
+        itemsTotal, itemsWithData: itemsTotal,
+        completeness: itemsTotal ? 'complete' : 'provisional',
+        extra: basis, drillTo: '/admin/operations',
+      }),
+  };
 }
 
 async function getTopProducts(filters) {
@@ -544,10 +552,9 @@ async function buildCommerce(query = {}, options = {}) {
   const market = options.market || null;
   const { period, filters } = buildPeriodFilters(query, market && market.id, options.now || new Date());
 
-  const [ca, commandes, panier, marge, produitsActifsVendus, topProducts, productProfitability, categories, funnel] = await Promise.all([
-    metrics.getCAEncaisse(filters),
+  const [sales, commandes, marge, produitsActifsVendus, topProducts, productProfitability, categories, funnel] = await Promise.all([
+    getCommercePaidSales(filters),
     metrics.getCmdsCreees(filters),
-    getPanierMoyen(filters),
     metrics.getMargeConsolidee(filters),
     metrics.getProduitsActifsVendus(filters),
     getTopProducts(filters),
@@ -584,7 +591,7 @@ async function buildCommerce(query = {}, options = {}) {
     scope: publicScope(market),
     simulation: SIMULATION_VIEW(query),
     period,
-    kpis: Object.freeze([ca, commandes, panier, marge, produitsActifsVendus, quantitySold]),
+    kpis: Object.freeze([sales.ca, commandes, sales.panier, marge, produitsActifsVendus, quantitySold]),
     top_products: publicTopProducts,
     product_profitability: Object.freeze(productProfitability),
     product_viability: viability.items,
@@ -596,6 +603,8 @@ async function buildCommerce(query = {}, options = {}) {
       generated_at: new Date(options.now || Date.now()).toISOString(),
       scope_enforced: true,
       scope_mode: market ? 'market' : 'global',
+      commercial_sales_basis: 'orders_paid_created_in_period_total_plus_wallet_excluding_cancelled_refunded',
+      cash_basis: false,
       product_real_margin_basis: 'actual_cost_orders_only',
       product_viability_basis: market ? 'market_price_corridor_local_evidence' : 'not_applicable_global',
       product_availability_basis: market ? 'local_stock_exposure_and_active_allocations' : 'not_applicable_global',
@@ -621,7 +630,7 @@ module.exports = {
   LOCAL_AVAILABILITY_STATE,
   normalizePeriod,
   buildPeriodFilters,
-  getPanierMoyen,
+  getCommercePaidSales,
   getTopProducts,
   publicTopProduct,
   getProductProfitability,

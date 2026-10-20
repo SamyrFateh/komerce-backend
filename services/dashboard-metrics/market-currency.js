@@ -64,4 +64,27 @@ async function projectMarketPayload(payload, market) {
   return projectNode(structuredClone(payload), { currency: market.currency, minor_unit: Number.isInteger(market.minor_unit) ? market.minor_unit : 0 });
 }
 
-module.exports = { BASE_CURRENCY, isKmfKpi, projectMarketPayload };
+// Commerce-only display boundary: retain *_kmf facts in KMF; attach explicit
+// market-currency amounts for the visible product/category rankings.
+// Do not expand the generic recursive projection to arbitrary *_kmf fields.
+async function projectCommerceMarketPayload(payload, market) {
+  const projected = await projectMarketPayload(payload, market);
+  if (!market || !market.currency || market.currency === BASE_CURRENCY) return projected;
+
+  const minorUnit = Number.isInteger(market.minor_unit) ? market.minor_unit : 0;
+  for (const group of ['top_products', 'categories']) {
+    if (!Array.isArray(projected[group])) continue;
+    await Promise.all(projected[group].map(async (row) => {
+      if (row.revenue_kmf == null) return;
+      const value = await projectAmount(Number(row.revenue_kmf), BASE_CURRENCY, market.currency);
+      row.revenue_display = {
+        value: roundToMinorUnit(value, minorUnit),
+        unit: market.currency,
+        base_currency: BASE_CURRENCY,
+      };
+    }));
+  }
+  return projected;
+}
+
+module.exports = { BASE_CURRENCY, isKmfKpi, projectMarketPayload, projectCommerceMarketPayload };

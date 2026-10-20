@@ -74,7 +74,7 @@ beforeEach(() => {
   });
 
   db.query
-    .mockResolvedValueOnce({ rows: [{ value: '10000', items_total: '12' }] })
+    .mockResolvedValueOnce({ rows: [{ sales_kmf: '120000', basket_kmf: '10000', items_total: '12' }] })
     .mockResolvedValueOnce({ rows: [{ product_id: 'product-cm-1', product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: '3', revenue_kmf: '90000' }] })
     .mockResolvedValueOnce({ rows: [{
       product_ref: 'PRD-1',
@@ -125,7 +125,8 @@ describe('dashboard-commerce', () => {
     expect(JSON.stringify(result)).not.toContain('market-cm-id');
     expect(JSON.stringify(result)).not.toContain('product-cm-1');
 
-    for (const fn of [mockMetrics.getCAEncaisse, mockMetrics.getCmdsCreees, mockMetrics.getMargeConsolidee, mockMetrics.getProduitsActifsVendus]) {
+    expect(mockMetrics.getCAEncaisse).not.toHaveBeenCalled(); // Commerce != cash receipts
+    for (const fn of [mockMetrics.getCmdsCreees, mockMetrics.getMargeConsolidee, mockMetrics.getProduitsActifsVendus]) {
       expect(fn).toHaveBeenCalledWith(expect.objectContaining({
         market_id: 'market-cm-id',
         from: '2026-07-25T12:00:00.000Z',
@@ -144,6 +145,8 @@ describe('dashboard-commerce', () => {
     expect(result.kpis.map(item => item.key)).toEqual([
       'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee', 'produits_actifs_vendus', 'quantites_vendues',
     ]);
+    expect(result.kpis[0]).toMatchObject({ key: 'ca_encaisse', label: 'Ventes payées', value: 120000, data_quality: { cash_basis: false } });
+    expect(result.kpis[2]).toMatchObject({ key: 'panier_moyen', value: 10000 });
     expect(result.kpis[2].drill_to).toBe('/admin/operations');
     expect(result.kpis[4].unit).toBe('count');
     expect(result.kpis[5]).toMatchObject({ key: 'quantites_vendues', value: 3, unit: 'count' });
@@ -194,10 +197,25 @@ describe('dashboard-commerce', () => {
   });
 
   test('aucune commande payée : le panier moyen est non calculable, pas 0 KMF', async () => {
-    db.query.mockReset().mockResolvedValueOnce({ rows: [{ value: null, items_total: 0 }] });
-    const result = await commerce.getPanierMoyen({ market_id: 'market-cm-id', simulation_scope: 'RCT1' });
-    expect(result).toMatchObject({ key: 'panier_moyen', value: null, data_quality: { completeness: 'provisional', items_total: 0 } });
+    db.query.mockReset().mockResolvedValueOnce({ rows: [{ sales_kmf: '0', basket_kmf: null, items_total: 0 }] });
+    const result = await commerce.getCommercePaidSales({ market_id: 'market-cm-id', simulation_scope: 'RCT1' });
+    expect(result.panier).toMatchObject({ key: 'panier_moyen', value: null, data_quality: { completeness: 'provisional', items_total: 0 } });
+    expect(result.ca.value).toBe(0);
     expect(db.query.mock.calls[0][1]).toContain('market-cm-id');
+    expect(db.query.mock.calls[0][1]).toContain('RCT1');
+  });
+
+  test('ventes payées : wallet est une composante du règlement, jamais une déduction de CA', async () => {
+    db.query.mockReset().mockResolvedValueOnce({ rows: [{ sales_kmf: '18000', basket_kmf: '9000', items_total: 2 }] });
+    const metrics = await commerce.getCommercePaidSales({ market_id: 'market-cm-id' });
+    expect(metrics.ca.value).toBe(18000);
+    expect(metrics.panier.value).toBe(9000);
+    const [sql, params] = db.query.mock.calls[0];
+    expect(sql).toContain('o.total_kmf + COALESCE(o.wallet_applied_kmf, 0)');
+    expect(sql).toContain("o.payment_status = 'paid'");
+    expect(sql).toContain("o.status NOT IN ('cancelled', 'refunded')");
+    expect(sql).toContain('o.simulation_scope IS NULL');
+    expect(params).toContain('market-cm-id');
   });
 
   test('une rentabilité sans costing actual ne fabrique jamais de marge réelle', async () => {
@@ -329,7 +347,8 @@ describe('dashboard-commerce', () => {
     });
     expect(mockPricingMarketCorridor.buildMarketCorridor).not.toHaveBeenCalled();
     expect(mockLocalStockDecision.getDecisionAvailabilityEvidence).not.toHaveBeenCalled();
-    expect(mockMetrics.getCAEncaisse.mock.calls[0][0]).not.toHaveProperty('market_id');
+    expect(mockMetrics.getCAEncaisse).not.toHaveBeenCalled();
+    expect(mockMetrics.getCmdsCreees.mock.calls[0][0]).not.toHaveProperty('market_id');
     db.query.mock.calls.forEach(([sql, params]) => {
       expect(String(sql)).not.toContain('o.market_id =');
       expect(params).not.toContain('market-cm-id');

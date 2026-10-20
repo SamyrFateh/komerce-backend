@@ -9,7 +9,7 @@
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
-const { projectMarketPayload, isKmfKpi } = require('../../services/dashboard-metrics/market-currency');
+const { projectMarketPayload, projectCommerceMarketPayload, isKmfKpi } = require('../../services/dashboard-metrics/market-currency');
 const { invalidateCurrencyParityCache } = require('../../utils/currency');
 
 const RATES = { KMF: 491.96775, XAF: 655.957, EUR: 1 };
@@ -68,4 +68,31 @@ test('parité manquante : erreur explicite, jamais de repli silencieux en KMF', 
 test('minor_unit non entier : traité comme 0', async () => {
   const out = await projectMarketPayload({ k: kpi(491.96775)}, { currency: 'EUR' });
   expect(out.k).toMatchObject({ unit: 'EUR', value: 1 });
+});
+
+test('Commerce CM : KPI et top produits en XAF, données *_kmf inchangées', async () => {
+  const payload = {
+    kpis: [kpi(4919.6775)],
+    top_products: [{ name: 'Produit test', revenue_kmf: 4919.6775, quantity: 2 }],
+    categories: [{ category: 'Maison', revenue_kmf: 4919.6775 }],
+  };
+  const projected = await projectCommerceMarketPayload(payload, { currency: 'XAF', minor_unit: 0 });
+  expect(projected.kpis[0]).toMatchObject({ unit: 'XAF', value: Math.round(10 * 655.957) });
+  expect(projected.top_products[0].revenue_kmf).toBe(4919.6775);
+  expect(projected.top_products[0].revenue_display).toEqual({
+    value: Math.round(10 * 655.957), unit: 'XAF', base_currency: 'KMF',
+  });
+  expect(projected.categories[0].revenue_display.unit).toBe('XAF');
+  expect(payload.top_products[0].revenue_display).toBeUndefined();
+  expect(payload.kpis[0].unit).toBe('KMF');
+});
+
+test('Commerce KM : ne change aucun montant ni cohorte', async () => {
+  const payload = { kpis: [kpi(15)], top_products: [{ revenue_kmf: 5000 }] };
+  expect(await projectCommerceMarketPayload(payload, { currency: 'KMF' })).toBe(payload);
+});
+
+test('Commerce CM : parité manquante refuse la projection du classement', async () => {
+  const payload = { top_products: [{ revenue_kmf: 1000 }] };
+  await expect(projectCommerceMarketPayload(payload, { currency: 'ZZZ' })).rejects.toThrow(/parité/);
 });
