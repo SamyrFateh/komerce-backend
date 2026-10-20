@@ -161,6 +161,30 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     });
   });
 
+  test('CM : les KPI et les classements affichent explicitement XAF sans effacer KMF', () => {
+    const payload = payloadFixture();
+    payload.kpis[0] = { ...payload.kpis[0], value: 170000, unit: 'XAF' };
+    payload.kpis[2] = { ...payload.kpis[2], value: 14167, unit: 'XAF' };
+    payload.top_products[0].revenue_display = { value: 119000, unit: 'XAF', base_currency: 'KMF' };
+    payload.categories[0].revenue_display = { value: 119000, unit: 'XAF', base_currency: 'KMF' };
+    const metrics = commerce.projectMetrics(payload);
+    expect(metrics['ca-encaisse'].value).toContain('XAF');
+    expect(metrics['panier-moyen'].value).toContain('XAF');
+    expect(commerceDecision.metricItems(payload, commerce).find(item => item.key === 'ca-encaisse').label).toBe('Ventes payées');
+    expect(commerceDecision.rankedProducts(payload, commerce)[0].value).toContain('XAF');
+    expect(commerce.projectTopProducts(payload)[0].ca).toContain('XAF');
+    expect(commerce.projectCategories(payload)[0].ca).toContain('XAF');
+    expect(commerce.projectProductProfitability(payload)[0].ca).toContain('KMF');
+    expect(payload.top_products[0].revenue_kmf).toBe(90000);
+  });
+
+  test('KMF : la devise reste explicite sur les montants commerciaux', () => {
+    const payload = payloadFixture();
+    expect(commerce.projectMetrics(payload)['ca-encaisse'].value).toContain('KMF');
+    expect(commerceDecision.rankedProducts(payload, commerce)[0].value).toContain('KMF');
+    expect(commerce.formatMoney(null, 'XAF')).toBe('—');
+  });
+
   test('une marge réelle absente reste explicitement inconnue', () => {
     const sources = commerce.resolveSources({ product_profitability: [{ name: 'X', orders: 2, revenue_kmf: 10000, estimated_margin_kmf: 2000, consolidated_margin_kmf: null, cost_coverage_pct: 0 }] });
     expect(sources['commerce.product-profitability'][0]['marge-reelle']).toBe('—');
@@ -308,7 +332,11 @@ test('Commerce overview garde uniquement Hero + décisions + activité commercia
   expect(source).toContain("'Activité commerciale'");
   expect(source).toContain("'Parcours des commandes'");
   expect(source).toContain("funnelHost.id = 'commerce-funnel'");
-  expect(source).toContain("'Produits par chiffre d’affaires'");
+  expect(source).toContain("'Produits par montant des lignes (hors transport)'");
+  expect(source).toContain('payload.simulation.scope');
+  expect(source).toContain('faits simulés, pas une activité réelle');
+  expect(source).toContain("dashboard.setAttribute('data-simulation-scope'");
+
   expect(source).not.toContain("'Viabilité des meilleures ventes'");
   expect(source).not.toContain("'Rentabilité produits'");
   expect(source).not.toContain("TrustFooter.render");
