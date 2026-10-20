@@ -686,7 +686,7 @@
     if (node.style) node.style.width = `${bounded}%`;
   }
 
-  // Quatre KPI du mock. Valeurs et aides = projection canonique existante ; seule la marge reçoit son périmètre
+  // Trois KPI de synthèse validés (2026-10-21). Valeurs et aides = projection canonique existante ; seule la marge reçoit son périmètre
   // (commandes finalisées / commandes encaissées) fourni par le serveur — jamais recalculé ici.
   function kpiCards(payload, base) {
     const projected = base.projectMetrics(payload);
@@ -701,7 +701,7 @@
       {
         key: 'marge', label: 'Marge réelle finalisée', icon: 'trend', tone: 'positive', helper: marginHelper, note: 'marge',
         badge: scope && scope.eligible_orders > 0 ? 'Finalisée' : null,
-      },,
+      },
     ];
     return cards
       .filter(card => projected[card.key])
