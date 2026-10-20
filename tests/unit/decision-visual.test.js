@@ -45,7 +45,7 @@ test('decision-visual.css : plancher typographique (aucun texte sous 10 px)', ()
 });
 
 describe('FIN-03 — Finance : composition du mock', () => {
-  test('quatre KPI sur une ligne desktop, marge en vert clair, jamais un fond bleu saturé', () => {
+  test('trois KPI sur une ligne desktop, marge en vert clair, jamais un fond bleu saturé', () => {
     expect(css).toMatch(/\.kmc-fin3 \.kmc-fin3-kpis \{ display: grid; grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
     expect(css).toMatch(/\.kmc-fin3-kpi\.is-marge \{ background: #eefaf2; border-color: #8fd9ad;/);
     expect(css).toContain('.kmc-fin3 .kmc-fin3-kpi.is-marge .kmc-fin3-kpi-value { color: #14532d; }');
