@@ -81,7 +81,7 @@ function buildPeriodFilters(query = {}, marketId = null, now = new Date()) {
 async function getPanierMoyen(filters) {
   const { where, params } = buildFiltersClause(filters);
   const { rows } = await db.query(`
-    SELECT COALESCE(AVG(o.total_kmf), 0)::bigint AS value,
+    SELECT AVG(o.total_kmf)::bigint AS value,
            COUNT(*)::int AS items_total
     FROM orders o
     WHERE ${where}
@@ -89,9 +89,11 @@ async function getPanierMoyen(filters) {
       AND o.status NOT IN ('cancelled', 'refunded')
   `, params);
 
-  const value = Number(rows[0] && rows[0].value) || 0;
   const itemsTotal = Number(rows[0] && rows[0].items_total) || 0;
+  // An empty paid cohort has no average basket (NULL), not a 0 KMF basket.
+  const value = itemsTotal > 0 && rows[0] && rows[0].value != null ? Number(rows[0].value) : null;
   return makeKpi('panier_moyen', 'Panier moyen encaissé', value, 'KMF', {
+    completeness: itemsTotal > 0 ? 'complete' : 'provisional',
     itemsTotal,
     itemsWithData: itemsTotal,
     drillTo: '/admin/operations',
@@ -498,7 +500,7 @@ function buildDecisionSignals({ funnel, productProfitability, margin, productVia
       rank: 30,
       signal: projectDecisionSignal({
         key: 'orders-lost', kind: 'orders_lost', severity: 'critical',
-        label: 'Commandes perdues', helper: 'Perte explicitement remontée par le funnel', value_count: lost,
+        label: 'Commandes annulées ou remboursées', helper: 'Statuts actuels des commandes créées sur la période ; pas un taux de conversion', value_count: lost,
         source: 'commerce_funnel', destination: Object.freeze({ kind: 'commerce_funnel' }),
       }, market),
     });
@@ -569,6 +571,12 @@ async function buildCommerce(query = {}, options = {}) {
     productAvailability: availability.items,
     market,
   });
+  // Server-side projection from the complete category aggregate (not the top-5 products).
+  // Same paid/non-cancelled/non-refunded cohort as the revenue/product rankings.
+  const quantitySold = makeKpi('quantites_vendues', 'Quantités vendues',
+    categories.reduce((total, row) => total + row.quantity, 0), 'count', {
+      itemsTotal: categories.reduce((total, row) => total + row.quantity, 0),
+    });
   const publicTopProducts = Object.freeze(topProducts.map(publicTopProduct));
   const warnings = Object.freeze([...viability.warnings, ...availability.warnings]);
 
@@ -576,7 +584,7 @@ async function buildCommerce(query = {}, options = {}) {
     scope: publicScope(market),
     simulation: SIMULATION_VIEW(query),
     period,
-    kpis: Object.freeze([ca, commandes, panier, marge, produitsActifsVendus]),
+    kpis: Object.freeze([ca, commandes, panier, marge, produitsActifsVendus, quantitySold]),
     top_products: publicTopProducts,
     product_profitability: Object.freeze(productProfitability),
     product_viability: viability.items,
