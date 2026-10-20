@@ -385,16 +385,43 @@
     activity.body.appendChild(text(doc, 'p', 'kmc-decision-dashboard-section-copy',
       'État observé des commandes créées sur la période ; ce n’est pas un taux de conversion.'));
 
-    const top = rankedProducts(payload, base).slice(0, 3);
-    if (top.length) {
-      activity.body.appendChild(text(doc, 'h3', 'kmc-commerce-flow-title', 'Produits par montant des lignes (hors transport et remises)'));
-      const productsHost = doc.createElement('div');
-      productsHost.className = 'kmc-commerce-top-products';
-      decisionUi.RankedList.render(productsHost, { items: top });
-      activity.body.appendChild(productsHost);
-    }
-
     dashboard.appendChild(activity.section);
+
+    // Les cinq meilleures lignes produit et les catégories viennent DIRECTEMENT
+    // des agrégats serveur. Ne jamais en déduire la vente payée de commande :
+    // transport, remises et wallet ont des assiettes distinctes.
+    const top = rankedProducts(payload, base);
+    const categories = rankedCategories(payload, base);
+    const rankings = doc.createElement('div');
+    rankings.className = 'kmc-decision-dashboard-grid-2 kmc-commerce-ranking-grid';
+    rankings.setAttribute('data-dashboard-role', 'secondary');
+
+    const products = cardSection(
+      doc, 'Top produits',
+      'Montants des lignes produit, hors transport et remises · cinq premiers produits.',
+      'commerce-top-products'
+    );
+    if (top.length) {
+      decisionUi.RankedList.render(products.body, { items: top });
+    } else {
+      products.body.appendChild(text(doc, 'p', 'kmc-commerce-ranking-empty',
+        'Aucune ligne produit payée sur la période sélectionnée.'));
+    }
+    rankings.appendChild(products.section);
+
+    const categoriesCard = cardSection(
+      doc, 'Répartition par catégorie',
+      'Volume et montant des lignes produit · pas une répartition des ventes payées par marché.',
+      'commerce-categories'
+    );
+    if (categories.length) {
+      decisionUi.RankedList.render(categoriesCard.body, { items: categories });
+    } else {
+      categoriesCard.body.appendChild(text(doc, 'p', 'kmc-commerce-ranking-empty',
+        'Aucune catégorie vendue sur la période sélectionnée.'));
+    }
+    rankings.appendChild(categoriesCard.section);
+    dashboard.appendChild(rankings);
 
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };
