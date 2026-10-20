@@ -604,3 +604,45 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
   font-size: 13px;
   color: #64748b;
 }
+
+/* Résumé contextuel des phases : même projection serveur que les neuf colonnes.
+ * Aucun faux statut GREEN, aucune deuxième file opérationnelle. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-process-overview {
+  border: 1px solid var(--ocb-line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 16px 0 14px;
+  background: var(--kmc-brand-canvas);
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-process-title {
+  margin: 0 0 3px;
+  color: var(--ocb-ink);
+  font-size: 15px;
+  font-weight: 800;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-process-caption {
+  color: var(--ocb-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+  margin: 0 0 11px;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-process-steps .kmc-flow-strip {
+  align-items: stretch;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 2px 0 8px;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-process-steps .kmc-flow-stage {
+  flex: 1 0 145px;
+  min-width: 145px;
+  padding: 10px;
+  background: var(--ocb-card);
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-process-steps a.kmc-flow-stage:focus-visible {
+  outline: 3px solid var(--ocb-blue);
+  outline-offset: 2px;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-process-steps .kmc-flow-arrow {
+  align-self: center;
+  flex: 0 0 auto;
+}
