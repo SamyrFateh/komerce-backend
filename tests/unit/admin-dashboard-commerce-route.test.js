@@ -101,6 +101,39 @@ describe('routes Commerce Canonical', () => {
     expect(JSON.stringify(res.body)).not.toContain('market-cm-id');
   });
 
+  test('commerce CM projette les KPI et les produits en XAF sans muter le KMF source ni RCT1', async () => {
+    const { invalidateCurrencyParityCache } = require('../../utils/currency');
+    invalidateCurrencyParityCache();
+    const originalQuery = mockQuery.getMockImplementation();
+    mockQuery.mockImplementation(async (sql, params) => {
+      if (String(sql).includes('currency_parities')) {
+        const rates = { KMF: 491.96775, XAF: 655.957 };
+        return { rows: rates[params[0]] ? [{ eur_rate: rates[params[0]] }] : [] };
+      }
+      return originalQuery(sql, params);
+    });
+    const source = {
+      simulation: { scope: 'RCT1', label: 'Faits simulés' },
+      kpis: [{ key: 'ca_encaisse', label: 'Ventes payées', value: 4919.6775, unit: 'KMF' }],
+      top_products: [{ product_ref: 'PRD-1', revenue_kmf: 4919.6775, quantity: 2 }],
+      categories: [{ category: 'Maison', revenue_kmf: 4919.6775 }],
+    };
+    mockBuildCommerce.mockResolvedValue(source);
+    const res = await request(app()).get('/api/admin/dashboard/commerce/market/CM?simulation_scope=RCT1');
+    expect(res.status).toBe(200);
+    expect(res.body.kpis[0]).toMatchObject({ unit: 'XAF', base_currency: 'KMF', value: Math.round(6559.57) });
+    expect(res.body.top_products[0]).toMatchObject({
+      revenue_kmf: 4919.6775,
+      revenue_display: { value: Math.round(6559.57), unit: 'XAF', base_currency: 'KMF' },
+    });
+    expect(res.body.categories[0].revenue_display.unit).toBe('XAF');
+    expect(res.body.simulation.scope).toBe('RCT1');
+    expect(mockBuildCommerce).toHaveBeenCalledWith(expect.objectContaining({ simulation_scope: 'RCT1' }),
+      { market: expect.objectContaining({ code: 'CM' }) });
+    expect(source.kpis[0].unit).toBe('KMF');
+    expect(source.top_products[0].revenue_display).toBeUndefined();
+  });
+
   test('opérateur CM ne peut pas lire Commerce CG', async () => {
     const res = await request(app()).get('/api/admin/dashboard/commerce/market/CG');
 
