@@ -75,12 +75,14 @@
       return { href: `/dashboards/canonical/market-catalog.html${suffix}`, actionLabel: 'Voir le Catalogue pays →' };
     }
     if (destination.kind === 'commerce_funnel') return { href: '#commerce-funnel', actionLabel: 'Voir le funnel →' };
-    if (destination.kind === 'commerce_profitability') return { href: '#commerce-profitability', actionLabel: 'Voir la rentabilité →' };
     return {};
   }
 
   function serverDecisionItems(payload, base) {
-    return (Array.isArray(payload && payload.decision_signals) ? payload.decision_signals : []).map(signal => {
+    // Reconciliation signals remain in the canonical API; they are not sales alerts.
+    return (Array.isArray(payload && payload.decision_signals) ? payload.decision_signals : [])
+      .filter(signal => signal && signal.kind !== 'costing_incomplete')
+      .map(signal => {
       const severity = signal && signal.severity;
       const tone = severity === 'critical' ? 'critical' : (severity === 'warning' ? 'warning' : 'info');
       let value = signal && signal.value;
@@ -133,18 +135,7 @@
       });
     }
 
-    if (incomplete.length) {
-      items.push({
-        key: 'profitability-incomplete',
-        label: 'Costing incomplet',
-        helper: 'Produits sans marge réelle complète',
-        value: base.formatNumber(incomplete.length, 0),
-        tone: 'warning',
-        icon: '¤',
-        href: '#commerce-profitability',
-        actionLabel: 'Voir la rentabilité →',
-      });
-    }
+    // No incomplete-cost warning on the sales dashboard: see economic reconciliation.
 
     if (margin && Number.isFinite(Number(margin.value)) && Number(margin.value) < 0) {
       items.push({
@@ -179,6 +170,7 @@
       commandes: 'Commandes créées',
       'panier-moyen': 'Panier moyen',
       'produits-actifs-vendus': 'Produits actifs vendus',
+      'quantites-vendues': 'Quantités vendues',
     };
     const items = Object.entries(base.projectMetrics(payload)).map(([key, item]) => ({
       key,
@@ -189,7 +181,7 @@
     if (Number.isFinite(lost)) {
       items.push({
         key: 'commandes-perdues',
-        label: 'Commandes perdues',
+        label: 'Annulées ou remboursées',
         value: base.formatNumber(lost, 0),
         tone: lost > 0 ? 'critical' : 'neutral',
       });
@@ -369,7 +361,8 @@
     activity.section.className += ' is-cockpit-truth is-cockpit-flow';
     activity.section.setAttribute('data-dashboard-role', 'primary');
 
-    const headline = metricItems(payload, base).slice(0, 4);
+    const salesKeys = new Set(['ca-encaisse', 'commandes', 'panier-moyen', 'quantites-vendues']);
+    const headline = metricItems(payload, base).filter(item => salesKeys.has(item.key));
     if (headline.length) {
       const metricsHost = doc.createElement('div');
       metricsHost.className = 'kmc-commerce-essential-metrics';
@@ -377,12 +370,24 @@
       activity.body.appendChild(metricsHost);
     }
 
-    const flowTitle = text(doc, 'h3', 'kmc-commerce-flow-title', 'Progression des commandes');
+    const flowTitle = text(doc, 'h3', 'kmc-commerce-flow-title', 'Parcours des commandes');
     activity.body.appendChild(flowTitle);
     const funnelHost = doc.createElement('div');
     funnelHost.className = 'kmc-commerce-essential-funnel';
+    funnelHost.id = 'commerce-funnel';
     decisionUi.Funnel.render(funnelHost, { stages: funnelStages(payload, base) });
     activity.body.appendChild(funnelHost);
+    activity.body.appendChild(text(doc, 'p', 'kmc-decision-dashboard-section-copy',
+      'État observé des commandes créées sur la période ; ce n’est pas un taux de conversion.'));
+
+    const top = rankedProducts(payload, base).slice(0, 3);
+    if (top.length) {
+      activity.body.appendChild(text(doc, 'h3', 'kmc-commerce-flow-title', 'Produits par chiffre d’affaires'));
+      const productsHost = doc.createElement('div');
+      productsHost.className = 'kmc-commerce-top-products';
+      decisionUi.RankedList.render(productsHost, { items: top });
+      activity.body.appendChild(productsHost);
+    }
 
     dashboard.appendChild(activity.section);
 
