@@ -80,3 +80,67 @@ test('une chaîne sans commandes ni alertes se replie sans attribuer un état de
   expect(SRC).toContain("isEmpty ? 'kmc-control-chain is-empty' : 'kmc-control-chain is-active'");
   expect(SRC).toContain('Aucune commande dans la chaîne pour le périmètre sélectionné.');
 });
+
+
+test('les six phases ne reprennent que les positions serveur et ne fabriquent aucun statut de remise', () => {
+  const view = require('../../public/dashboards/canonical/js/operations-decision');
+  const one = (reference) => ({ order_reference: reference, health: 'UNKNOWN' });
+  const model = {
+    control_chain: {
+      stages: ['ORDER', 'PURCHASING', 'SUPPLIER', 'HUB_RECEIVING',
+        'HUB_CONTROL', 'FORWARDER', 'TRANSPORT', 'CUSTOMS', 'RELAY']
+        .map(key => ({ key, label: key })),
+      by_stage: {
+        ORDER: [one('A'), one('B')], PURCHASING: [one('C')], SUPPLIER: [one('D')],
+        HUB_RECEIVING: [one('E')], HUB_CONTROL: [], FORWARDER: [],
+        TRANSPORT: [one('F')], CUSTOMS: [one('G')], RELAY: [one('H')],
+      },
+    },
+  };
+  const base = {
+    OPERATIONS_SCHEMA: {},
+    visibleDrillSchema: (_schema, user) => ({ drill: user.role === 'admin' ? [
+      { id: 'operations-workspace', href: '/admin/workspaces/operations' },
+      { id: 'shipping-customs-workspace', href: '/admin/workspaces/shipping-customs' },
+    ] : [
+      { id: 'operations-workspace', href: '/admin/workspaces/operations' },
+    ] }),
+  };
+  const admin = view.projectProcessPhases(model, { role: 'admin' }, base);
+  expect(admin.map(p => p.label)).toEqual([
+    'Commande', 'Achat fournisseur', 'Réception Hub',
+    'Transport / Douane', 'Relais', 'Remise client',
+  ]);
+  expect(admin.map(p => p.helper)).toEqual([
+    '2 commandes positionnées', '2 commandes positionnées',
+    '1 commande positionnée', '2 commandes positionnées',
+    '1 commande positionnée', 'Non projetée ici · voir Order 360',
+  ]);
+  expect(admin.map(p => p.tone)).toEqual(Array(6).fill('neutral'));
+  expect(admin[1].href).toContain('/admin/workspaces/purchasing');
+  expect(admin[2].href).toContain('/admin/workspaces/operations');
+  expect(admin[3].href).toContain('/admin/workspaces/shipping-customs');
+  expect(admin[5].href).toBeUndefined();
+  expect(admin[5].observed).toBe(false);
+
+  const marketOperator = view.projectProcessPhases(model, { role: 'market_operator' }, base);
+  expect(marketOperator[1].href).toBe('#operations-stage-purchasing');
+  expect(marketOperator[3].href).toBe('#operations-stage-forwarder');
+  expect(marketOperator[2].href).toContain('/admin/workspaces/operations');
+});
+
+test('données incomplètes : aucune fausse position zéro ni phase valide sans la chaîne', () => {
+  const view = require('../../public/dashboards/canonical/js/operations-decision');
+  const base = { OPERATIONS_SCHEMA:{}, visibleDrillSchema:()=>({drill:[]}) };
+  expect(view.projectProcessPhases({}, {role:'admin'}, base)).toEqual([]);
+  const subset = view.projectProcessPhases({
+    control_chain: {
+      stages:[{key:'ORDER',label:'Commande'}],
+      by_stage:{ORDER:[{order_reference:'R1'}]},
+    },
+  }, {role:'admin'}, base);
+  expect(subset[0].helper).toBe('1 commande positionnée');
+  expect(subset[1].helper).toBe('Position indisponible');
+  expect(subset[1].href).toBeUndefined();
+  expect(subset[5].helper).toContain('Non projetée');
+});
