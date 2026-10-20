@@ -117,7 +117,7 @@
     if (incomplete) items.push({
       key: 'costing-incomplete', label: 'Problèmes costing', helper: incomplete.label || 'Coûts incomplets',
       value: display(base, incomplete), tone: Number(incomplete.value) > 0 ? 'violet' : 'positive', icon: '◇',
-      href: '/admin/finance#finance-incomplete-costs', actionLabel: 'Voir les coûts →',
+      href: '/admin/operations', actionLabel: 'Examiner les commandes →',
     });
     if (activeOrders) items.push({
       key: 'active-orders', label: 'Commandes actives', helper: 'En cours dans la chaîne',
