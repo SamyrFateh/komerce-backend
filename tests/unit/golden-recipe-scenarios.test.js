@@ -37,3 +37,31 @@ test('session admin requise, preuve humaine indexée et retour entre marchés is
   expect(js).toContain("authReady=false;++probeId");
   expect(html).toContain('href="/login.html"');
 });
+
+test('processus et dashboards canoniques : parcours complets sans faux propriétaire ni droit UI',()=>{
+  expect(html).toContain('<option value="process">');
+  expect(html).toContain('<option value="dashboards">');
+  expect(js).toContain("process:{label:'Parcours canonique");
+  expect(js).toContain("dashboards:{label:'Contrôle canonique");
+  for (const route of [
+    '/admin/workspaces/sourcing','/admin/import-runtime','/admin/workspaces/pricing',
+    '/admin/workspaces/catalog','/dashboards/canonical/access.html',
+    '/admin/commerce','/admin/operations','/admin/workspaces/purchasing',
+    '/admin/hub-live','/admin/workspaces/shipping-customs','/admin/relais-live',
+    '/admin/finance','/admin/pilotage',
+  ]) expect(js).toContain("'"+route+"'");
+  expect(js).toContain('Marge inconnue ou partielle ≠ marge zéro');
+  expect(js).toContain('Inconnu, zéro confirmé et montant payé');
+  expect(js).toContain('5 décisions + 3 Live');
+});
+
+test('garde anti-contamination : RCT1 préservé sur les vues filtrées, SHA staging vérifié',()=>{
+  expect(js).toContain("simulation_scope=RCT1");
+  expect(js).toContain("function hrefForStep(path)");
+  expect(js).toContain("function scopeNote(path)");
+  expect(js).toContain("fetch('/health/version',{cache:'no-store'");
+  expect(js).toContain("actual.startsWith(run.sha)||run.sha.startsWith(actual)");
+  expect(js).toContain("BLOQUÉ : commit staging absent ou différent");
+  expect(js).toContain('verifiedCommit=actual');
+  expect(js).not.toMatch(/method\\s*:\\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
+});
