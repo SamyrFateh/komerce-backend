@@ -387,7 +387,7 @@
 
     const top = rankedProducts(payload, base).slice(0, 3);
     if (top.length) {
-      activity.body.appendChild(text(doc, 'h3', 'kmc-commerce-flow-title', 'Produits par montant des lignes (hors transport)'));
+      activity.body.appendChild(text(doc, 'h3', 'kmc-commerce-flow-title', 'Produits par montant des lignes (hors transport et remises)'));
       const productsHost = doc.createElement('div');
       productsHost.className = 'kmc-commerce-top-products';
       decisionUi.RankedList.render(productsHost, { items: top });
