@@ -64,7 +64,7 @@
     metrics: {
       source: 'commerce.metrics',
       pick: [
-        { key: 'ca-encaisse', label: 'CA encaissé' },
+        { key: 'ca-encaisse', label: 'Ventes payées' },
         { key: 'commandes', label: 'Commandes créées' },
         { key: 'panier-moyen', label: 'Panier moyen' },
         { key: 'quantites-vendues', label: 'Quantités vendues' },
@@ -157,14 +157,22 @@
     return new Intl.NumberFormat('fr-FR', { maximumFractionDigits }).format(numeric);
   }
 
-  function formatKmf(value) {
+  function formatMoney(value, unit = 'KMF') {
     if (value == null || value === '') return '—';
-    return `${formatNumber(value, 0)} KMF`;
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '—';
+    return `${formatNumber(numeric, 0)} ${unit}`;
+  }
+
+  function formatKmf(value) {
+    return formatMoney(value, 'KMF');
   }
 
   function metricValue(metric) {
     if (!metric || metric.value == null) return '—';
-    if (metric.unit === 'KMF') return formatKmf(metric.value);
+    if (typeof metric.unit === 'string' && /^[A-Z]{3}$/.test(metric.unit)) {
+      return formatMoney(metric.value, metric.unit);
+    }
     if (metric.unit === '%') return `${formatNumber(metric.value)} %`;
     return formatNumber(metric.value, 0);
   }
@@ -207,7 +215,7 @@
       produit: row.name || '—',
       categorie: row.category || '—',
       quantite: formatNumber(row.quantity, 0),
-      ca: formatKmf(row.revenue_kmf),
+      ca: row.revenue_display ? formatMoney(row.revenue_display.value, row.revenue_display.unit) : formatKmf(row.revenue_kmf),
     }));
   }
 
@@ -335,6 +343,7 @@
     normalizePeriod,
     formatNumber,
     formatKmf,
+    formatMoney,
     projectMetrics,
     projectTopProducts,
     projectProductProfitability,
