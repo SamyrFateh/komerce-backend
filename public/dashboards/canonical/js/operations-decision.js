@@ -154,6 +154,69 @@
     }));
   }
 
+  // Lecture courte du processus validé. Les valeurs ci-dessous sont uniquement
+  // les positions ACTUELLES de commandes déjà projetées par la Control Tower.
+  // Elles ne constituent ni des étapes terminées, ni un workflow concurrent.
+  const PROCESS_PHASES = Object.freeze([
+    Object.freeze({ key: 'ORDER', label: 'Commande', stages: Object.freeze(['ORDER']), anchor: 'ORDER' }),
+    Object.freeze({ key: 'PURCHASING', label: 'Achat fournisseur', stages: Object.freeze(['PURCHASING', 'SUPPLIER']), anchor: 'PURCHASING', workspace: 'purchasing' }),
+    Object.freeze({ key: 'HUB', label: 'Réception Hub', stages: Object.freeze(['HUB_RECEIVING', 'HUB_CONTROL']), anchor: 'HUB_RECEIVING', workspace: 'operations-workspace' }),
+    Object.freeze({ key: 'CUSTOMS', label: 'Transport / Douane', stages: Object.freeze(['FORWARDER', 'TRANSPORT', 'CUSTOMS']), anchor: 'FORWARDER', workspace: 'shipping-customs-workspace' }),
+    Object.freeze({ key: 'RELAY', label: 'Relais', stages: Object.freeze(['RELAY']), anchor: 'RELAY', workspace: 'operations-workspace' }),
+    // La remise client n'est PAS une étape des neuf positions de ce contrat.
+    // Ne jamais lui attribuer artificiellement 0, GREEN ou "terminée".
+    Object.freeze({ key: 'HANDOFF', label: 'Remise client', stages: Object.freeze([]) }),
+  ]);
+
+  function projectProcessPhases(payload, user, base) {
+    const columns = controlChainColumns(payload);
+    if (!columns.length) return [];
+    const byKey = new Map(columns.map(column => [column.key, column]));
+    const visibleDrill = base && typeof base.visibleDrillSchema === 'function'
+      ? base.visibleDrillSchema(base.OPERATIONS_SCHEMA, user).drill : [];
+    const allowedWorkspaces = new Map((visibleDrill || []).map(item => [item.id, item.href]));
+    const role = user && user.role;
+
+    return PROCESS_PHASES.map(phase => {
+      if (!phase.stages.length) {
+        return { key: phase.key, label: phase.label, helper: 'Non projetée ici · voir Order 360',
+          tone: 'neutral', href: undefined, observed: false };
+      }
+      const available = phase.stages.every(stage => byKey.has(stage));
+      const count = available ? phase.stages.reduce((sum, stage) => sum + byKey.get(stage).orders.length, 0) : null;
+      const fallback = `#operations-stage-${phase.anchor.toLowerCase().replace(/_/g, '-')}`;
+      const ownerHref = phase.workspace === 'purchasing' && role === 'admin'
+        ? '/admin/workspaces/purchasing'
+        : allowedWorkspaces.get(phase.workspace);
+      return {
+        key: phase.key, label: phase.label,
+        helper: count == null ? 'Position indisponible'
+          : `${count} commande${count > 1 ? 's' : ''} positionnée${count > 1 ? 's' : ''}`,
+        tone: 'neutral', observed: available,
+        href: available ? (ownerHref
+          ? contextualHref(ownerHref, '/admin/operations', 'Retour aux opérations')
+          : fallback) : undefined,
+      };
+    });
+  }
+
+  function renderProcessPhases(doc, payload, user, base, decisionUi) {
+    if (!decisionUi || !decisionUi.FlowStrip) return null;
+    const phases = projectProcessPhases(payload, user, base);
+    if (!phases.length) return null;
+    const wrapper = doc.createElement('div');
+    wrapper.className = 'kmc-operations-process-overview';
+    wrapper.setAttribute('data-process-source', 'control_chain');
+    wrapper.appendChild(text(doc, 'h3', 'kmc-operations-process-title', 'Parcours des commandes'));
+    wrapper.appendChild(text(doc, 'p', 'kmc-operations-process-caption',
+      'Positions actuelles dans la chaîne canonique · une commande comptée une seule fois · aucune étape présumée terminée.'));
+    const host = doc.createElement('div');
+    host.className = 'kmc-operations-process-steps';
+    decisionUi.FlowStrip.render(host, { stages: phases });
+    wrapper.appendChild(host);
+    return wrapper;
+  }
+
   function renderControlChain(doc, host, payload) {
     const columns = controlChainColumns(payload);
     const hasOrders = columns.some(column => column.orders.length > 0);
@@ -166,6 +229,7 @@
       const stage = doc.createElement('section');
       stage.className = 'kmc-control-stage';
       stage.setAttribute('data-control-stage', column.key);
+      stage.id = `operations-stage-${String(column.key).toLowerCase().replace(/_/g, '-')}`;
 
       const heading = doc.createElement('div');
       heading.className = 'kmc-control-stage-heading';
@@ -597,6 +661,8 @@
       );
       chain.section.className += ' kmc-control-chain-card';
       chain.section.setAttribute('data-dashboard-role', 'primary');
+      const process = renderProcessPhases(doc, payload, options.user, base, decisionUi);
+      if (process) chain.section.insertBefore(process, chain.body);
       chain.section.insertBefore(renderControlLegend(doc), chain.body);
       renderControlChain(doc, chain.body, payload);
       if (chain.body.getAttribute('data-chain-state') === 'empty') {
@@ -644,6 +710,7 @@
       controlStageMeta,
       projectDecisionItems: payload => decisionItems(payload, base),
       projectControlChainColumns: controlChainColumns,
+      projectProcessPhases: payload => projectProcessPhases(payload, null, base),
       projectMetricItems: payload => metricItems(payload, base),
       projectWorkspaceSummary: payload => workspaceSummary(payload, base),
       projectNetworkProgress: payload => networkProgress(payload, base),
@@ -667,6 +734,9 @@
     decisionItems,
     controlHealthClass,
     controlChainColumns,
+    PROCESS_PHASES,
+    projectProcessPhases,
+    renderProcessPhases,
     controlHealthSummary,
     renderControlHealthSummary,
     renderControlChain,
