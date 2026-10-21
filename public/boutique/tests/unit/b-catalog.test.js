@@ -154,6 +154,8 @@ jest.mock('../../js/product-store.js', () => ({
   getAllProducts: mockGetAllProducts,
   getPromoProducts: jest.fn(() => []),
   writeCache: mockWriteCache,
+  readCache: jest.fn(() => []),
+  currentMarketCode: jest.fn(() => 'CM'),
 }));
 
 const catalog = require('../../js/b-catalog.js');
@@ -528,12 +530,30 @@ describe('b-catalog — chargement produits', () => {
 
     await catalog.loadProducts();
 
-    expect(global.K.products.list).toHaveBeenCalledWith({ limit: 1000 });
+    expect(global.K.products.list).toHaveBeenCalledWith({ limit: 1000, market: 'CM' });
     expect(mockWriteCache).toHaveBeenCalledWith([raw[0]]);
     expect(mockState.products).toEqual([raw[0]]);
     expect(mockMarkAllCartButtons).toHaveBeenCalled();
     expect(mockPruneObsoleteCart).toHaveBeenCalledWith(new Set(['1']));
     expect(mockShowToast).toHaveBeenCalledWith('1 produit obsolète retiré du panier', 'info');
+  });
+});
+
+describe('b-catalog — grille par marché', () => {
+  test('API KO : le repli lit le cache indexé par marché, jamais la clé globale', async () => {
+    const productStore = require('../../js/product-store.js');
+    productStore.readCache.mockReturnValueOnce([product(7)]);
+    localStorage.setItem('komerce_products_cache', JSON.stringify([product(99)]));
+    global.K.products.list.mockRejectedValue(new Error('offline'));
+    mockSetProducts.mockImplementation((items) => { mockState.products = items; return items; });
+    mockGetAllProducts.mockImplementation(() => mockState.products);
+    await catalog.loadProducts();
+    expect(mockState.products.map(p => p.id)).toEqual([7]);
+  });
+
+  test('le source ne lit plus la clé de cache non scopée', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../js/b-catalog.js'), 'utf8');
+    expect(src).not.toMatch(/getItem\('komerce_products_cache'\)/);
   });
 });
 

@@ -81,7 +81,7 @@ import {
 } from './controllers/home-controller.js';
 import { isDesktop, clearInlinePagerStyles, ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
 import {
-  setProducts, getAllProducts, getPromoProducts, writeCache,
+  setProducts, getAllProducts, getPromoProducts, writeCache, readCache, currentMarketCode,
 }                             from './product-store.js';
 
 'use strict';
@@ -207,15 +207,17 @@ async function loadProducts() {
   let products;
   try {
     if (typeof K === 'undefined' || !K.products) throw new Error('K non disponible');
-    const data = await K.products.list({ limit: 1000 });
+    // Marché explicite (jamais de grille sans contexte marché) ; cache indexé par marché.
+    const market = currentMarketCode();
+    const data = await K.products.list({ limit: 1000, ...(market ? { market } : {}) });
     const raw = (Array.isArray(data) ? data : data.products || []).filter(p => p.is_available !== false);
     writeCache(raw);                       // FIX BUG-C2 : persistance offline
     products = setProducts(raw);           // product-store normalise + met en cache
   } catch (e) {
     console.warn('[loadProducts] API KO → fallback cache product-store');
-    const cached = localStorage.getItem('komerce_products_cache');
-    if (cached) {
-      products = setProducts(JSON.parse(cached).filter(p => p.is_available !== false));
+    const cached = readCache();
+    if (cached.length) {
+      products = setProducts(cached.filter(p => p.is_available !== false));
     } else {
       _showCatalogLoadError(e);
       return;

@@ -136,3 +136,12 @@ describe('market local price buyer boundary', () => {
     expect(p2.market_price_source).toBe('NOT_DECISIONAL');
   });
 });
+
+describe('catalogue sans contexte marché', () => {
+  test('markMarketContextRequired : aucune ligne achetable, prix global non présenté comme local', () => {
+    const { markMarketContextRequired } = require('../../services/market-local-price-resolution-service');
+    const rows = markMarketContextRequired([{ id: 'p1', price_kmf: 1000 }]);
+    expect(rows[0]).toMatchObject({ purchasable: false, market_price_source: 'NO_MARKET_CONTEXT' });
+    expect(markMarketContextRequired(null)).toEqual([]);
+  });
+});

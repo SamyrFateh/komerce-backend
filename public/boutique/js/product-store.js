@@ -19,7 +19,7 @@ import { getDbKeysForCategory, matchesSubcategory, normalizeCategoryKey } from '
 const CACHE_KEY = 'komerce_products_cache';
 let productCache = [];
 
-function currentMarketCode() {
+export function currentMarketCode() {
   if (typeof window === 'undefined' || !window.KomerceMarket) return null;
   const api = window.KomerceMarket;
   return (api.getPreviewOverride && api.getPreviewOverride()) || api.DEFAULT || null;
@@ -127,7 +127,7 @@ export function getRecommendedProducts(product, limit = 12) {
     .slice(0, limit);
 }
 
-function readCache() {
+export function readCache() {
   const cached = localStorage.getItem(cacheKey());
   if (!cached) return [];
   try {
