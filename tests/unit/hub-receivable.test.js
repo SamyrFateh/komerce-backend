@@ -24,7 +24,7 @@ describe('hub-receivable — lecture minimale pour la réception', () => {
   });
 
   test('SQL : brouillons, annulées et soldées exclus ; aucun prix, coût ni credential ; lecture seule', () => {
-    expect(RECEIVABLE_SQL).toContain("NOT IN ('draft', 'cancelled')");
+    expect(RECEIVABLE_SQL).toContain("NOT IN ('draft', 'cancelled', 'hub_received')");
     expect(RECEIVABLE_SQL).toContain('HAVING SUM(v.effective_quantity) > SUM(v.received_quantity)');
     expect(RECEIVABLE_SQL).not.toMatch(/price|cost|api_key|secret|credential|password/i);
     expect(RECEIVABLE_SQL).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/i);

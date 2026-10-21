@@ -50,7 +50,10 @@ try {
 
 const RECEIVABLE_PO_STATUSES = ['notified', 'confirmed', 'shipped'];
 
-/** Une PO regroupée (order_id NULL) dont toutes les lignes non annulées sont reçues passe en hub_received. */
+/**
+ * Une PO (regroupée OU historique) dont toutes les lignes non annulées sont physiquement reçues (vue = custody)
+ * passe en hub_received. Seule la réception physique ferme une PO : plus de compteur déclaratif.
+ */
 async function closeReceivedGroupedPurchaseOrders(client, poIds) {
   const closed = [];
   const ids = [...new Set(poIds)].sort();
@@ -59,7 +62,7 @@ async function closeReceivedGroupedPurchaseOrders(client, poIds) {
       'SELECT id, order_id, status FROM purchase_orders WHERE id = $1 FOR UPDATE',
       [poId]
     );
-    if (!po || po.order_id !== null || !RECEIVABLE_PO_STATUSES.includes(po.status)) continue;
+    if (!po || !RECEIVABLE_PO_STATUSES.includes(po.status)) continue;
     const { rows: progress } = await client.query(`
       SELECT effective_quantity, received_quantity
         FROM v_purchase_line_progress
@@ -70,7 +73,9 @@ async function closeReceivedGroupedPurchaseOrders(client, poIds) {
     await client.query(`
       UPDATE purchase_orders
          SET status = 'hub_received', hub_received_at = COALESCE(hub_received_at, NOW()), updated_at = NOW(),
-             notes = CONCAT(COALESCE(notes, ''), E'\\n[GROUPED] toutes les lignes sont reçues au Hub')
+             notes = CONCAT(COALESCE(notes, ''), CASE WHEN order_id IS NULL
+                                                       THEN E'\\n[GROUPED] toutes les lignes sont reçues au Hub'
+                                                       ELSE E'\\n[HUB] réception physique complète (custody)' END)
        WHERE id = $1
     `, [poId]);
     closed.push(poId);
@@ -147,12 +152,13 @@ async function evaluateOrderProcurementCompletion(orderId, { actor = null } = {}
   return { ...verdict, transition: 'preparation' };
 }
 
-/** Commandes distinctes touchées par des lignes regroupées (allocation.purchase_line_id renseigné). */
+/** Commandes distinctes touchées par une réception (allocations regroupées et historiques). */
 function groupedOrderIdsFrom(allocations) {
   const ids = new Set();
   for (const entry of allocations || []) {
     const allocation = entry && entry.allocation ? entry.allocation : entry;
-    if (allocation && allocation.purchase_line_id && allocation.order_id) ids.add(allocation.order_id);
+    // Formes regroupée ET historique (purchase_line_id NULL) : la vue lit la custody pour les deux.
+    if (allocation && allocation.order_id) ids.add(allocation.order_id);
   }
   return [...ids].sort();
 }

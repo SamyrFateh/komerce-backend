@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const { getOrderPhysicalCoverage } = require('../../services/order-physical-coverage-service');
 const {
   HubPhysicalError,
   snapshotPurchaseAllocation,
@@ -234,7 +235,7 @@ beforeAll(async () => {
       );
     `);
     await client.query(migrationSql);
-    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql']) {
+    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
     }
   } finally {
@@ -689,5 +690,94 @@ describe('HUB-001 — réception par ligne d\'achat (PO regroupée)', () => {
        VALUES ($1,$2,$3,$4,$5,$6,'UNIT-G','{}'::jsonb,1,$7,'x')`,
       [g.po, g.lines[0].line, g.lines[1].order, g.lines[1].item, g.sku, g.supplier, g.lines[1].market]
     )).rejects.toThrow(/hub_allocation_line_mismatch/);
+  });
+});
+
+
+describe('C2 — couverture physique quantitative avant préparation (PO historiques)', () => {
+  beforeAll(async () => {
+    await query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS simulation_scope text');
+    await query('ALTER TABLE order_items ADD COLUMN IF NOT EXISTS fulfillment_source text');
+  });
+
+  const coverage = (orderId) => transact((client) => getOrderPhysicalCoverage(client, orderId));
+  const usableOnView = async (po) => (await query('SELECT COALESCE(SUM(received_quantity),0)::int AS n FROM v_purchase_line_progress WHERE purchase_order_id=$1', [po])).rows[0].n;
+  async function seedHistorical(qty) {
+    const purchase = await seedPurchase({ qty });
+    await query('UPDATE order_items SET quantity=$2 WHERE id=$1', [purchase.item, qty]);
+    return purchase;
+  }
+  const receive = (purchase, quantity, reference) => transact((client) => receiveSupplierPackage(client, {
+    reference, contents: [{ purchase_order_id: purchase.po, quantity }],
+  }));
+
+  test('le compteur déclaratif received_qty ne prouve rien : aucune couverture sans placement physique', async () => {
+    const purchase = await seedHistorical(2);
+    await query('UPDATE purchase_orders SET received_qty = 2, status = $2, hub_received_at = now() WHERE id = $1', [purchase.po, 'hub_received']);
+    const c = await coverage(purchase.order);
+    expect(c.covered).toBe(false);
+    expect(c.uncovered[0]).toMatchObject({ needed: 2, usable: 0, missing: 2 });
+    expect(await usableOnView(purchase.po)).toBe(0);
+  });
+
+  test('réception physique complète : couverte ; rejouer la même référence ne double rien (idempotence)', async () => {
+    const purchase = await seedHistorical(2);
+    await receive(purchase, 2, 'C2-FULL-1');
+    expect((await coverage(purchase.order)).covered).toBe(true);
+    await receive(purchase, 2, 'C2-FULL-1').catch(() => null);
+    expect(await usableOnView(purchase.po)).toBe(2);
+    expect((await coverage(purchase.order)).covered).toBe(true);
+  });
+
+  test('réception partielle préservée : manquant exact, puis couverture au complément', async () => {
+    const purchase = await seedHistorical(3);
+    await receive(purchase, 1, 'C2-PART-1');
+    const partial = await coverage(purchase.order);
+    expect(partial.covered).toBe(false);
+    expect(partial.uncovered[0]).toMatchObject({ needed: 3, usable: 1, missing: 2 });
+    await receive(purchase, 2, 'C2-PART-2');
+    expect((await coverage(purchase.order)).covered).toBe(true);
+  });
+
+  test('unité en quarantaine ou perdue : exclue de la couverture', async () => {
+    const quarantined = await seedHistorical(1);
+    const inbound = await receive(quarantined, 1, 'C2-QUAR-1');
+    expect((await coverage(quarantined.order)).covered).toBe(true);
+    await query("UPDATE hub_physical_units SET state='QUARANTINED' WHERE id=$1", [inbound.unit.id]);
+    expect((await coverage(quarantined.order)).covered).toBe(false);
+
+    const lost = await seedHistorical(1);
+    const inbound2 = await receive(lost, 1, 'C2-LOST-1');
+    await transact((client) => recordPhysicalUnitOutcome(client, { unitId: inbound2.unit.id, outcomeType: 'LOST', details: { reason: 'c2' } }));
+    expect((await coverage(lost.order)).covered).toBe(false);
+  });
+
+  test('SPLIT : la matière déplacée n\'est comptée qu\'une fois ; l\'unité fille perdue retire sa part', async () => {
+    const purchase = await seedHistorical(2);
+    const inbound = await receive(purchase, 2, 'C2-SPLIT-1');
+    const allocation = inbound.allocations[0].allocation;
+    await advanceToPicked(inbound.unit.id);
+    const target = await transact((client) => createPhysicalUnit(client, { reference: 'C2-OUT-1', unitType: 'MARKET_PARCEL', initialState: 'RECEIVED' }));
+    await advanceToPicked(target.id);
+    await transact((client) => moveAllocationQuantity(client, {
+      fromUnitId: inbound.unit.id, toUnitId: target.id, allocationId: allocation.id, quantity: 1, operationType: 'SPLIT',
+    }));
+    expect(await usableOnView(purchase.po)).toBe(2);
+    expect((await coverage(purchase.order)).covered).toBe(true);
+    await transact((client) => recordPhysicalUnitOutcome(client, { unitId: target.id, outcomeType: 'DAMAGED_UNUSABLE', details: { reason: 'c2' } }));
+    const after = await coverage(purchase.order);
+    expect(after.covered).toBe(false);
+    expect(after.uncovered[0]).toMatchObject({ needed: 2, usable: 1, missing: 1 });
+  });
+
+  test('LOCAL_STOCK exclu ; ligne importée sans aucun achat = couverture 0 ; commande de simulation hors périmètre', async () => {
+    const purchase = await seedHistorical(1);
+    await query("UPDATE order_items SET fulfillment_source='LOCAL_STOCK' WHERE id=$1", [purchase.item]);
+    expect((await coverage(purchase.order)).covered).toBe(true);
+    await query("UPDATE order_items SET fulfillment_source='IMPORT' WHERE id=$1", [purchase.item]);
+    await query('DELETE FROM purchase_orders WHERE id=$1', [purchase.po]);
+    expect((await coverage(purchase.order)).uncovered[0]).toMatchObject({ needed: 1, usable: 0 });
+    await query("UPDATE orders SET simulation_scope='RCT1' WHERE id=$1", [purchase.order]);
+    expect((await coverage(purchase.order)).covered).toBe(true);
   });
 });

@@ -457,49 +457,14 @@ describe('POST /api/purchasing/:order_id/confirm', () => {
   });
 });
 
-describe('POST /api/purchasing/:id/receive', () => {
-  it('qty_recue absent → null transmis, délégation à processReceive', async () => {
-    processReceive.mockResolvedValueOnce({ received: true });
-    const res = await request(app).post('/api/purchasing/po1/receive').send({});
-    expect(res.status).toBe(200);
-    expect(processReceive).toHaveBeenCalledWith({ id: 'po1', qty_recue: null, actor: currentUser });
-  });
-
-  it('qty_recue vide/null → null transmis', async () => {
-    processReceive.mockResolvedValueOnce({ received: true });
-    await request(app).post('/api/purchasing/po1/receive').send({ qty_recue: '' });
-    expect(processReceive).toHaveBeenCalledWith({ id: 'po1', qty_recue: null, actor: currentUser });
-  });
-
-  it('qty_recue valide → parseInt transmis', async () => {
-    processReceive.mockResolvedValueOnce({ received: true });
-    await request(app).post('/api/purchasing/po1/receive').send({ qty_recue: '7' });
-    expect(processReceive).toHaveBeenCalledWith({ id: 'po1', qty_recue: 7, actor: currentUser });
-  });
-
-  it('qty_recue non-numérique → 400, processReceive jamais appelé', async () => {
-    const res = await request(app).post('/api/purchasing/po1/receive').send({ qty_recue: 'abc' });
-    expect(res.status).toBe(400);
+describe('POST /api/purchasing/:id/receive — fermée (C2)', () => {
+  it.each([
+    [{}], [{ qty_recue: '7' }], [{ qty_recue: 'abc' }], [{ qty_recue: -1 }],
+  ])('toute forme de PO / payload %j → 410 DECLARATIVE_RECEIVE_CLOSED, aucune écriture', async (body) => {
+    const res = await request(app).post('/api/purchasing/po1/receive').send(body);
+    expect(res.status).toBe(410);
+    expect(res.body).toMatchObject({ code: 'DECLARATIVE_RECEIVE_CLOSED', canonical: 'POST /api/scans/hub/receive' });
     expect(processReceive).not.toHaveBeenCalled();
-  });
-
-  it('qty_recue négatif → 400', async () => {
-    const res = await request(app).post('/api/purchasing/po1/receive').send({ qty_recue: -1 });
-    expect(res.status).toBe(400);
-    expect(processReceive).not.toHaveBeenCalled();
-  });
-
-  it('result.httpError → status/error relayés', async () => {
-    processReceive.mockResolvedValueOnce({ httpError: { status: 400, error: 'PO déjà entièrement reçue' } });
-    const res = await request(app).post('/api/purchasing/po1/receive').send({ qty_recue: '3' });
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'PO déjà entièrement reçue' });
-  });
-
-  it('erreur (throw) → next(err) → 500', async () => {
-    processReceive.mockRejectedValueOnce(new Error('db down'));
-    const res = await request(app).post('/api/purchasing/po1/receive').send({});
-    expect(res.status).toBe(500);
   });
 });
 
@@ -697,16 +662,14 @@ describe('forme regroupée — routes (PR 4)', () => {
     expect((await request(app).post('/api/purchasing/lines/L1/settle').send({})).status).toBe(500);
   });
 
-  it('routes historiques : le code PURCHASE_ORDER_GROUPED_USE_PO_ROUTES est relayé (confirm, receive, delete)', async () => {
+  it('routes historiques : le code PURCHASE_ORDER_GROUPED_USE_PO_ROUTES est relayé (confirm, delete)', async () => {
     const err = Object.assign(new Error('regroupée'), { status: 409, code: 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES' });
     confirmPurchaseOrder.mockRejectedValueOnce(err);
     cancelPurchaseOrder.mockRejectedValueOnce(err);
-    processReceive.mockResolvedValueOnce({ httpError: { status: 409, error: 'regroupée', code: 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES' } });
 
     const confirm = await request(app).post('/api/purchasing/o1/confirm').send({ purchase_order_id: PO });
     const del = await request(app).delete(`/api/purchasing/po/${PO}`);
-    const receive = await request(app).post(`/api/purchasing/${PO}/receive`).send({});
-    for (const res of [confirm, del, receive]) {
+    for (const res of [confirm, del]) {
       expect(res.status).toBe(409);
       expect(res.body.code).toBe('PURCHASE_ORDER_GROUPED_USE_PO_ROUTES');
     }

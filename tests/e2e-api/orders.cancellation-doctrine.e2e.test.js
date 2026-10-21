@@ -38,7 +38,7 @@ const request = require('supertest');
 const express = require('express');
 const { signAuthToken } = require('../../utils/auth-session');
 
-const { describeE2E, createCleanup, activateLocalPrice, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
+const { describeE2E, createCleanup, activateLocalPrice, seedPhysicalReceiptForTest, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
 jest.setTimeout(60000);
 
@@ -264,7 +264,14 @@ describeE2E('E2E-P0-ORDERS — orders · annulation, référence, snapshot', ({ 
     const productId = await seedProduct('cutoff');
     const order = await createOrder(productId);
 
-    // On amène la commande au-delà du cutoff par la machine de statut réelle.
+    // On amène la commande au-delà du cutoff par la machine de statut réelle. Ce test porte sur le cutoff
+    // d'annulation, pas sur la réception : la matière est reçue par fixture pour franchir le gate C2.
+    const { rows: [ctx] } = await db.query(
+      `SELECT o.market_id, o.relais_id, oi.id AS item_id, oi.product_id
+         FROM orders o JOIN order_items oi ON oi.order_id = o.id WHERE o.id = $1 LIMIT 1`, [order.id]);
+    await seedPhysicalReceiptForTest(db, cleanup, {
+      orderId: order.id, itemId: ctx.item_id, productId: ctx.product_id, marketId: ctx.market_id, relaisId: ctx.relais_id, quantity: 1,
+    });
     const { transitionOrderStatus } = require('../../services/order-status-machine');
     const client = await db.pool.connect();
     try {

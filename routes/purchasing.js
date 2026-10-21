@@ -21,7 +21,6 @@
  *
  * Routes HTTP admin uniquement — logique métier déléguée aux services :
  *   • triggerPurchasing   → services/purchasing-trigger-service.js
- *   • processReceive      → services/purchasing-receive-service.js
  *
  * module.exports.triggerPurchasing est ré-exporté pour la compatibilité
  * avec payments.js, pickup-secret.js, repair-ordered-without-purchase-orders.js.
@@ -35,7 +34,7 @@
  *   GET  /api/purchasing/order/:order_id/completeness → état de réception d'une commande [v8.2]
  *   GET  /api/purchasing/:order_id                    → achats liés à une commande
  *   POST /api/purchasing/:order_id/confirm            → confirmer manuellement un achat
- *   POST /api/purchasing/:id/receive                  → marquer reçu au Hub Dubai [v8.2]
+ *   POST /api/purchasing/:id/receive                  → 410 DECLARATIVE_RECEIVE_CLOSED (réception = POST /api/scans/hub/receive)
  *   DELETE /api/purchasing/po/:po_id                  → annuler une purchase order
  *
  * Forme regroupée (PR 4, KOMERCE_GROUPED_PURCHASING=1 ; sinon 409 GROUPED_PURCHASING_DISABLED) :
@@ -65,7 +64,6 @@ const log = require('../utils/logger').child({ module: 'purchasing' });
 
 const { triggerPurchasing } = require('../services/purchasing-trigger-service');
 const { resolveCanonicalMappingMoney } = require('../services/purchasing-canonical-money');
-const { processReceive }    = require('../services/purchasing-receive-service');
 const { deleteSupplier, confirmPurchaseOrder, cancelPurchaseOrder } = require('../services/purchasing-admin-service');
 const grouped = require('../services/purchasing-grouped-service');
 const { getPurchaseOrderDetail } = require('../services/purchasing-order-detail');
@@ -396,25 +394,16 @@ router.post('/:order_id/confirm', ...guard, async (req, res, next) => {
   }
 });
 
-// ─── POST /api/purchasing/:id/receive [v8.2] ─────────────────────────────────
-// Délègue à services/purchasing-receive-service.js
-
-router.post('/:id/receive', ...guard, async (req, res, next) => {
-  const { id } = req.params;
-  const qty_recue = req.body.qty_recue !== undefined && req.body.qty_recue !== null && req.body.qty_recue !== ''
-    ? parseInt(req.body.qty_recue)
-    : null;
-  if (qty_recue !== null && (isNaN(qty_recue) || qty_recue < 0)) {
-    return res.status(400).json({ error: 'qty_recue invalide' });
-  }
-
-  try {
-    const result = await processReceive({ id, qty_recue, actor: req.user });
-    if (result.httpError) {
-      return res.status(result.httpError.status).json({ error: result.httpError.error, ...(result.httpError.code ? { code: result.httpError.code } : {}) });
-    }
-    res.json(result);
-  } catch(err) { next(err); }
+// ─── POST /api/purchasing/:id/receive — FERMÉ (C2) ───────────────────────────
+// La réception déclarative (incrément de purchase_orders.received_qty) n'est plus une preuve : la seule
+// réception valable est physique (POST /api/scans/hub/receive → placement RECEIVE, quarantaine, idempotence).
+// Aucune écriture received_qty de remplacement : 410 contrôlé avec le chemin canonique.
+router.post('/:id/receive', ...guard, (req, res) => {
+  res.status(410).json({
+    error: 'Réception déclarative fermée : réceptionner le colis fournisseur via le parcours hub physique.',
+    code: 'DECLARATIVE_RECEIVE_CLOSED',
+    canonical: 'POST /api/scans/hub/receive',
+  });
 });
 
 // ─── DELETE /api/purchasing/po/:po_id — annuler une purchase order ────────────
