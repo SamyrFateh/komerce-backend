@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-19T11:35:15.056Z",
+  "generatedAt": "2026-10-21T10:07:51.270Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 744,
-    "protected": 689,
+    "total": 745,
+    "protected": 690,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2226,6 +2226,11 @@
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/decision-policy/preview",
       "level": "PROTECTED",
       "roles": []
     },

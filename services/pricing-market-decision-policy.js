@@ -427,7 +427,9 @@ async function evaluateMarketDecision(marketId, options = {}) {
   // de ce mois plutôt qu'à "maintenant" — cohérent avec l'idée qu'on évalue une
   // période passée avec la politique qui s'appliquait alors.
   const evaluationAt = parseInstant(calendarPeriod ? calendarPeriod.to : (options.at || new Date()), 'evaluation_at');
-  const policy = await getCurrentMarketDecisionPolicy(marketId, { at: evaluationAt });
+  // policyOverride : simulation en lecture seule d'une politique candidate déjà
+  // normalisée ; jamais persistée, même moteur, mêmes seuils.
+  const policy = options.policyOverride || await getCurrentMarketDecisionPolicy(marketId, { at: evaluationAt });
 
   if (!policy) {
     return {
@@ -481,7 +483,29 @@ async function evaluateMarketDecision(marketId, options = {}) {
   };
 }
 
+const POLICY_COMPARED_FIELDS = ['window_days', 'maturity_threshold', 'coverage_threshold', 'max_disposition_ratio'];
+
+// Aperçu d'impact AVANT enregistrement : lecture seule, aucune écriture.
+async function previewMarketDecisionPolicy(marketId, input = {}, actorId, options = {}) {
+  if (!marketId) throw new Error('marketId is required');
+  const candidate = normalizePolicyInput(input, actorId, options);
+  const current = await evaluateMarketDecision(marketId);
+  const simulated = await evaluateMarketDecision(marketId, { policyOverride: candidate });
+  const base = current.policy;
+  return {
+    read_only: true,
+    persisted: false,
+    candidate_policy: candidate,
+    current_policy: base,
+    changed_fields: POLICY_COMPARED_FIELDS.filter(f => !base || Number(base[f]) !== Number(candidate[f])),
+    current_decision: { decision_status: current.decision_status, authorization: current.authorization, reason: current.reason, canonical_period: current.canonical_period, coverage: current.coverage },
+    candidate_decision: { decision_status: simulated.decision_status, authorization: simulated.authorization, reason: simulated.reason, canonical_period: simulated.canonical_period, coverage: simulated.coverage },
+    evaluated_at: simulated.evaluated_at,
+  };
+}
+
 module.exports = {
+  previewMarketDecisionPolicy,
   DISPOSED_TREATMENT,
   normalizePolicyInput,
   recordMarketDecisionPolicy,

@@ -33,6 +33,15 @@ function isKmfKpi(node) {
     && Number.isFinite(Number(node.value));
 }
 
+function isKmfKpiWithoutValue(node) {
+  return node !== null
+    && typeof node === 'object'
+    && !Array.isArray(node)
+    && node.unit === BASE_CURRENCY
+    && 'value' in node
+    && (node.value === null || node.value === undefined);
+}
+
 async function projectNode(node, market) {
   if (Array.isArray(node)) {
     for (let i = 0; i < node.length; i += 1) node[i] = await projectNode(node[i], market);
@@ -40,7 +49,12 @@ async function projectNode(node, market) {
   }
   if (node === null || typeof node !== 'object') return node;
 
-  if (isKmfKpi(node)) {
+  if (isKmfKpiWithoutValue(node)) {
+    // KPI indisponible (valeur nulle) : l'unité affichée suit tout de même le marché,
+    // sinon un libellé KMF fuit sur un marché XAF.
+    node.unit = market.currency;
+    node.base_currency = BASE_CURRENCY;
+  } else if (isKmfKpi(node)) {
     const projected = await projectAmount(Number(node.value), BASE_CURRENCY, market.currency);
     node.value = roundToMinorUnit(projected, market.minor_unit);
     node.unit = market.currency;

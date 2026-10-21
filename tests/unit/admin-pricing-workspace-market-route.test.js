@@ -113,6 +113,7 @@ const mockDecisionPolicy = {
   })),
   isValidCalendarMonth: jest.fn((value) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(value || '').trim())),
   listMarketDecisionPolicyHistory: jest.fn(async () => []),
+  previewMarketDecisionPolicy: jest.fn(async () => ({ read_only: true, persisted: false })),
   recordMarketDecisionPolicy: jest.fn(async () => ({
     version: 'CM-V1', window_days: 30, maturity_threshold: 0.9, coverage_threshold: 1, max_disposition_ratio: 0.05,
   })),
@@ -226,6 +227,15 @@ test('manager peut enregistrer une nouvelle politique append-only sur son march�
   const res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/decision-policy').send(body);
   expect(res.status).toBe(201);
   expect(mockDecisionPolicy.recordMarketDecisionPolicy).toHaveBeenCalledWith('market-cm', body, 'partner-1');
+});
+
+test('l’aperçu d’impact de politique est en lecture seule et ne persiste rien', async () => {
+  const body = { version: 'CM-V2', window_days: 30 };
+  const res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/decision-policy/preview').send(body);
+  expect(res.status).toBe(200);
+  expect(res.body.persisted).toBe(false);
+  expect(mockDecisionPolicy.previewMarketDecisionPolicy).toHaveBeenCalledWith('market-cm', body, 'partner-1');
+  expect(mockDecisionPolicy.recordMarketDecisionPolicy).not.toHaveBeenCalled();
 });
 
 test('historique de politique est lisible par les rôles autorisés du marché', async () => {

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-19T18:56:24.675Z",
+  "generatedAt": "2026-10-21T10:07:34.998Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 731,
+  "count": 732,
   "routes": [
     {
       "method": "GET",
@@ -2636,6 +2636,16 @@
       "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/decision-policy/history",
       "mountPrefix": "/api/admin/workspaces/pricing",
       "localPath": "/market/:marketCode/decision-policy/history",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/decision-policy/preview",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/decision-policy/preview",
       "routeFile": "routes/admin-pricing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
