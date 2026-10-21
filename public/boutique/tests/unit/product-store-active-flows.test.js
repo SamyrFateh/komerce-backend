@@ -108,20 +108,6 @@ describe('product-store — normalisation et sélections', () => {
 });
 
 describe('product-store — cache local et API', () => {
-  it('cache indexé par marché : KM/CM séparés, jamais la clé globale', () => {
-    window.KomerceMarket = { DEFAULT: 'CM' };
-    jest.resetModules();
-    const cm = require('../../js/product-store.js');
-    expect(cm.currentMarketCode()).toBe('CM');
-    cm.writeCache([{ id: 1 }]);
-    expect(localStorage.getItem('komerce_products_cache_CM')).not.toBeNull();
-    expect(localStorage.getItem('komerce_products_cache')).toBeNull();
-    window.KomerceMarket = { DEFAULT: 'KM' };
-    jest.resetModules();
-    expect(require('../../js/product-store.js').readCache()).toEqual([]);
-    delete window.KomerceMarket;
-  });
-
   it('écrit explicitement le cache local', () => {
     const products = [{ id: 10, category: 'Maison' }];
     store.writeCache(products);

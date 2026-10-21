@@ -15,10 +15,9 @@
  *                components.css bloqué en preload pour toujours.
  * @version       2026-09
  */
-'use strict';
-
 (function () {
-  const link = document.getElementById('k-components-preload');
+  'use strict';
+  var link = document.getElementById('k-components-preload');
   if (!link) return;
 
   function activate() {
@@ -32,7 +31,7 @@
   // quasi sans styles. La Resource Timing API, elle, voit le fichier chargé.
   function alreadyLoaded() {
     try {
-      const entries = window.performance && performance.getEntriesByName
+      var entries = window.performance && performance.getEntriesByName
         ? performance.getEntriesByName(link.href) : [];
       return entries.length > 0 && entries[entries.length - 1].responseEnd > 0;
     } catch (_) {

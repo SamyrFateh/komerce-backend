@@ -7393,7 +7393,7 @@
             ]
           },
           "services": {
-            "count": 41,
+            "count": 40,
             "files": [
               {
                 "declared": "public/golden-e2e-cockpit.html",
@@ -7506,11 +7506,6 @@
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "services/dashboard-pilotage-markets.js",
-                "resolvedPath": "services/dashboard-pilotage-markets.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
                 "declared": "services/finance-accounting-workspace.js",
                 "resolvedPath": "services/finance-accounting-workspace.js",
                 "status": "resolved-in-technical-graph"
@@ -7603,7 +7598,7 @@
             ]
           },
           "tests": {
-            "count": 187,
+            "count": 186,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8286,11 +8281,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/dashboard-pilotage-markets.test.js",
-                "resolvedPath": "tests/unit/dashboard-pilotage-markets.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/dashboard-route.test.js",
                 "resolvedPath": "tests/unit/dashboard-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8543,7 +8533,7 @@
             ]
           }
         },
-        "totalFiles": 419,
+        "totalFiles": 417,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

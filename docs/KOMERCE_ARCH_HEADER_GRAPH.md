@@ -6,26 +6,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 736
-- Files with full headers: 687
+- Scanned code files: 735
+- Files with full headers: 686
 - Files with lite headers: 49
-- Files with any headers: 736
+- Files with any headers: 735
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1800
-- Edges: 9097
+- Graph nodes: 1797
+- Edges: 9080
 - DB tables: 206
-- Doctrines: 655
-- Impact areas: 203
-- Unresolved code edges: 889
+- Doctrines: 654
+- Impact areas: 202
+- Unresolved code edges: 887
 - Tables multi-écrivains directs (>=2): 87
 - Avertissements db-write / db-write-via en chevauchement: 9
 
 ## Domains
 
 - account: 2
-- admin-dashboard: 36
+- admin-dashboard: 35
 - auth: 14
 - auth-identity: 7
 - auth-passkey: 7
@@ -89,7 +89,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 420
+- service: 419
 - service-policy: 1
 - state: 1
 - state-store: 1

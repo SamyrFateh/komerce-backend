@@ -4807,13 +4807,6 @@
       {
         "feature": "dashboard",
         "category": "services",
-        "declared": "services/dashboard-pilotage-markets.js",
-        "resolvedPath": "services/dashboard-pilotage-markets.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
-        "category": "services",
         "declared": "services/operations-workspace.js",
         "resolvedPath": "services/operations-workspace.js",
         "status": "resolved-in-technical-graph"
@@ -7315,13 +7308,6 @@
         "category": "tests",
         "declared": "tests/unit/dashboard-pilotage-alert-aggregation.test.js",
         "resolvedPath": "tests/unit/dashboard-pilotage-alert-aggregation.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "dashboard",
-        "category": "tests",
-        "declared": "tests/unit/dashboard-pilotage-markets.test.js",
-        "resolvedPath": "tests/unit/dashboard-pilotage-markets.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -34164,10 +34150,6 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "services/dashboard-pilotage-markets.js",
-                "targetFile": "db.js"
-              },
-              {
                 "sourceFileId": "services/operations-workspace.js",
                 "targetFile": "db.js"
               },
@@ -34445,10 +34427,6 @@
               },
               {
                 "sourceFileId": "tests/unit/dashboard-finance-canonical.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/dashboard-pilotage-markets.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -46061,7 +46039,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2091
+        "filesObserved": 2089
       },
       "boutique": {
         "filesObserved": 214,
@@ -49257,8 +49235,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 632,
-        "technicalNodesOwned": 632,
+        "technicalNodesTotal": 631,
+        "technicalNodesOwned": 631,
         "technicalOrphans": 0
       },
       "dash": {
