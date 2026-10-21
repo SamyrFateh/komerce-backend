@@ -32,5 +32,6 @@ test('les liens du Pilotage vers fiches 360 / PO portent le retour vers le Pilot
   expect(src).toContain("href: withReturn(row.href || '/admin/operations#operations-control-chain')");
   expect(src).toContain("href: withReturn(projected.href || '/admin/action-center')");
   expect(src).not.toContain('cost_status=');
-  expect(src).toContain("'/admin/finance#finance-incomplete-costs'");
+  expect(src).not.toContain("'/admin/finance#finance-incomplete-costs'");
+  expect(src).toContain("href: '/admin/operations', actionLabel: 'Examiner les commandes →'");
 });
