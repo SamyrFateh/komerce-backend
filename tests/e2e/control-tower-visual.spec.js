@@ -33,7 +33,8 @@ const payload = {
       ],
     },
   ],
-  economic_flow: { stages: [] },
+  economic_flow: { stages: [{ key: 'order', label: 'Commande' }, { key: 'payment', label: 'Paiement' }, { key: 'real_margin', label: 'Marge consolidée' }] },
+  markets_supervision: [{ market_code: 'CM', market_name: 'Cameroun', orders_active: 12, cash_to_confirm: 3, open_incidents: 1 }],
   principles: [],
   control_chain: {
     stages: [
@@ -193,18 +194,20 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(metrics.firstTop).toBeGreaterThanOrEqual(metrics.top);
   });
 
-  test('structure visuelle : Hero + décisions + santé de la chaîne uniquement', async ({ page }) => {
+  test('structure visuelle : Hero + décisions + chaîne, puis alertes, marchés et accès', async ({ page }) => {
     await expect(page.locator('.kmc-admin-navigation')).toBeVisible();
     await expect(page.locator('.kmc-decision-card')).toHaveCount(4);
     await expect(page.locator('#pilotage-flow-health.is-control-tower-flow')).toBeVisible();
     await expect(page.locator('.is-control-tower-flow .kmc-flow-stage')).toHaveCount(9);
     await expect(page.locator('#pilotage-causes')).toHaveCount(0);
-    await expect(page.locator('#pilotage-alerts')).toHaveCount(0);
+    await expect(page.locator('#pilotage-alerts')).toHaveCount(1);
+    await expect(page.locator('#pilotage-markets')).toHaveCount(1);
+    await expect(page.locator('#pilotage-access')).toHaveCount(1);
     await expect(page.getByText('Causes structurelles', { exact:true })).toHaveCount(0);
     await expect(page.locator('[data-dashboard-id="pilotage"]').getByText('À traiter', { exact:true })).toHaveCount(0);
   });
 
-  test('hiérarchie Canonical : Hero → Attention → Objet principal, sans secondaire', async ({ page }) => {
+  test('hiérarchie Canonical : Hero → Attention → Objet principal → secondaires', async ({ page }) => {
     const dashboard = page.locator('[data-dashboard-id="pilotage"]');
     await expect(dashboard).toHaveAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
 
@@ -224,7 +227,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(hero).toBeGreaterThanOrEqual(0);
     expect(attention).toBeGreaterThan(hero);
     expect(primary).toBeGreaterThan(attention);
-    expect(secondary).toBe(-1);
+    expect(secondary).toBeGreaterThan(primary);
 
     const attentionBox = order[attention];
     expect(attentionBox.top).toBeLessThan(520);

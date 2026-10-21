@@ -75,3 +75,8 @@ test('Shell : la largeur de la navigation suit la variable responsive (72 px tab
   expect(css).toMatch(/max-width: 980px\) \{\s*body\.kmc-shell-v4 \{ --kmc-shell-sidebar-width: 72px/);
   expect(css).toMatch(/max-width: 680px\) \{\s*body\.kmc-shell-v4 \{ --kmc-shell-sidebar-width: 58px/);
 });
+
+test('Pilotage : actions des listes en lien orange discret sur fond blanc', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/control-tower-visual-v1.css'), 'utf8');
+  expect(css).toMatch(/\.kmc-priority-action \{[^}]*background: #fff;[^}]*color: #c2410c/);
+});
