@@ -45,6 +45,16 @@ describe('admin market control plane — lecture centrale + provisioning', () =>
 });
 
 
+describe('attestation centrale de livrabilité', () => {
+  test('deux mutations admin déclarées, sans SQL direct dans la route, via le service propriétaire', () => {
+    expect(source).toMatch(/router\.post\('\/:marketCode\/delivery-attestations', \.\.\.centralAdmin/);
+    expect(source).toMatch(/router\.post\('\/:marketCode\/delivery-attestations\/:attestationId\/revoke', \.\.\.centralAdmin/);
+    expect(source).toMatch(/deliveryProof\.attestDelivery/);
+    expect(source).toMatch(/deliveryProof\.revokeDeliveryAttestation/);
+    expect(source).not.toMatch(/db\.query/);
+  });
+});
+
 describe('historical market reprovision route', () => {
   test('exposes one guarded central reprovision mutation', () => {
     const fs = require('fs');

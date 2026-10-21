@@ -139,6 +139,11 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
       }
     });
   } catch (err) {
+    // Refus métier explicite (market_product_not_exposed, shared_cart_product_not_purchasable_in_market…) :
+    // code et statut propagés, jamais reclassés en erreur interne.
+    if (err.status && err.code && err.code !== 'open_list_exists') {
+      return res.status(err.status).json({ error: err.message, code: err.code });
+    }
     // Règle V1 — liste OPEN existante : 409 avec existing_token pour que
     // le frontend propose « Ouvrir ma liste » (arbitrage A2).
     if (err.code === 'open_list_exists') {

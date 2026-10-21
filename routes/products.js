@@ -40,7 +40,7 @@ const {
   publicProductColumns,
   toPublicProduct,
 } = require('../services/catalog-public-view');
-const { applyActiveMarketPricesToCatalogRows } = require('../services/market-local-price-resolution-service');
+const { applyActiveMarketPricesToCatalogRows, markMarketContextRequired } = require('../services/market-local-price-resolution-service');
 const { readCatalogProductSource } = require('../services/catalog-product-source-read-service');
 const log = require('../utils/logger').child({ module: 'products' });
 
@@ -120,14 +120,13 @@ router.get('/', async (req, res, next) => {
         LIMIT $${pi} OFFSET $${pi + 1}`,
       [...params, safeLimit, Number(offset)]
     );
-    const priced = await applyActiveMarketPricesToCatalogRows(db, {
-      marketCode: market,
-      products: rows,
-    });
+    const priced = marketCode
+      ? await applyActiveMarketPricesToCatalogRows(db, { marketCode, products: rows })
+      : markMarketContextRequired(rows);
     // Défense en profondeur : le SQL marché a déjà exclu les produits sans
     // LOCAL_ACTIVE avant pagination. Le filtre mémoire interdit néanmoins de
     // réexposer un NOT_DECISIONAL si le resolver évolue indépendamment.
-    const projectedRows = market
+    const projectedRows = marketCode
       ? priced.filter((p) => p.purchasable !== false)
       : priced;
 

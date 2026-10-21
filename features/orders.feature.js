@@ -301,6 +301,7 @@ module.exports = {
       { fn: 'makeInput', file: 'public/boutique/js/b-checkout.js' },
     ],
     consumes: [
+      'market-control-plane (preuve de livrabilité du marché : assertMarketDeliverable, garde checkout Lot B ; refus 409 MARKET_DELIVERY_NOT_PROVEN sans preuve)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'decision-signals (sink durable Action Center pour le signal de clôture financière en attente des faits économiques via signal-service)',

@@ -63,6 +63,7 @@ describe('market local price buyer boundary', () => {
   test('checkout total is recomputed after the active market override', async () => {
     const executor = {
       query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ commercial_exposure: 'ENABLED' }] }) // exposition ENABLED
         .mockResolvedValueOnce({ rows: [{
           amount: '10000', currency: 'XAF', status: 'LOCAL_ACTIVE', active_at: null, market_currency: 'XAF',
         }] })
@@ -83,7 +84,7 @@ describe('market local price buyer boundary', () => {
   });
 
   test('checkout refuses a resolved market without LOCAL_ACTIVE — never falls back to products.price_kmf', async () => {
-    const executor = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    const executor = { query: jest.fn().mockResolvedValueOnce({ rows: [{ commercial_exposure: 'ENABLED' }] }).mockResolvedValue({ rows: [] }) };
     const items = [{ product_id: 'p2', quantity: 1, _effective_unit_price_kmf: 5000 }];
     await expect(service.applyActiveMarketPricesToCheckoutItems(executor, {
       marketId: 'market-cm',
@@ -134,5 +135,38 @@ describe('market local price buyer boundary', () => {
     expect(p1.market_price_source).toBe('LOCAL_ACTIVE');
     expect(p2.purchasable).toBe(false);
     expect(p2.market_price_source).toBe('NOT_DECISIONAL');
+  });
+});
+
+describe('exposition ENABLED obligatoire à la transaction (fail-closed)', () => {
+  const run = (executor) => service.applyActiveMarketPricesToCheckoutItems(executor, {
+    marketId: 'market-cm',
+    items: [{ product_id: 'p1', quantity: 1 }],
+    productMap: { p1: { id: 'p1', price_kmf: 9000 } },
+  });
+
+  test('DISABLED + LOCAL_ACTIVE → 409 market_product_not_exposed, aucun prix lu', async () => {
+    const executor = { query: jest.fn().mockResolvedValueOnce({ rows: [{ commercial_exposure: 'DISABLED' }] }) };
+    await expect(run(executor)).rejects.toMatchObject({ code: 'market_product_not_exposed', status: 409 });
+    expect(executor.query).toHaveBeenCalledTimes(1);
+  });
+
+  test('aucune ligne d’exposition (absence = DISABLED) → refus', async () => {
+    const executor = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+    await expect(run(executor)).rejects.toMatchObject({ code: 'market_product_not_exposed' });
+  });
+
+  test('ENABLED sans LOCAL_ACTIVE → toujours refusé (market_price_not_purchasable)', async () => {
+    const executor = { query: jest.fn().mockResolvedValueOnce({ rows: [{ commercial_exposure: 'ENABLED' }] }).mockResolvedValue({ rows: [] }) };
+    await expect(run(executor)).rejects.toMatchObject({ code: 'market_price_not_purchasable' });
+  });
+});
+
+describe('catalogue sans contexte marché', () => {
+  test('markMarketContextRequired : aucune ligne achetable, prix global non présenté comme local', () => {
+    const { markMarketContextRequired } = require('../../services/market-local-price-resolution-service');
+    const rows = markMarketContextRequired([{ id: 'p1', price_kmf: 1000 }]);
+    expect(rows[0]).toMatchObject({ purchasable: false, market_price_source: 'NO_MARKET_CONTEXT' });
+    expect(markMarketContextRequired(null)).toEqual([]);
   });
 });

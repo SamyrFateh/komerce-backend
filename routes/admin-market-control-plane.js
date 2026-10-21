@@ -6,12 +6,13 @@
  * @criticality   medium
  * @inputs        central admin actor, canonical market code in path
  * @outputs       market list/control view, provisioning/reprovisioning/lifecycle and assignment-status mutations, exit-readiness read, central authority overview
- * @depends       db.js, middleware/auth.js, services/market-control-plane.js, services/central-authority.js
+ * @depends       db.js, middleware/auth.js, services/market-control-plane.js, services/market-delivery-proof-service.js, services/central-authority.js
  * @used-by       bootstrap/api-routes.js, central admin workspace
  * @db-read       none
  * @db-write      none
+ * @db-write-via:market-delivery-proof-service market_delivery_attestations, market_delegation_audit
  * @db-write-via:market-provisioning-service markets, market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, market_cash_control_policies, market_payment_providers, relais
- * @db-read-via:market-control-plane markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais
+ * @db-read-via:market-control-plane markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations, orders
  * @db-txn        explicit for mutation routes
  * @doctrine      control_plane_orchestrates_owned_writers, central_by_role_declared, no_second_authorization_engine
  * @impact-areas  market-delegation, market, authorization
@@ -24,6 +25,7 @@ const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const controlPlane = require('../services/market-control-plane');
+const deliveryProof = require('../services/market-delivery-proof-service');
 const centralAuthority = require('../services/central-authority');
 const { provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
 
@@ -101,6 +103,45 @@ router.post('/:marketCode/lifecycle', ...centralAdmin, async (req, res, next) =>
       actorUserId: req.user.id,
       marketCode: req.params.marketCode,
       targetStatus: req.body && req.body.status,
+      correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
+    }));
+    res.json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+// Attestation centrale de livrabilité (liaison + tarif + preuve documentaire), révocable, auditée.
+router.post('/:marketCode/delivery-attestations', ...centralAdmin, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const result = await withTransaction(client => deliveryProof.attestDelivery(client, {
+      actorUserId: req.user.id,
+      marketCode: req.params.marketCode,
+      carrierId: body.carrier_id,
+      mode: body.mode,
+      originRef: body.origin_ref,
+      freightRate: body.freight_rate,
+      rateCurrency: body.rate_currency,
+      rateUnit: body.rate_unit,
+      transitDays: body.transit_days,
+      evidenceRef: body.evidence_ref,
+      validUntil: body.valid_until,
+      correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
+    }));
+    res.status(201).json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+router.post('/:marketCode/delivery-attestations/:attestationId/revoke', ...centralAdmin, async (req, res, next) => {
+  try {
+    const result = await withTransaction(client => deliveryProof.revokeDeliveryAttestation(client, {
+      actorUserId: req.user.id,
+      attestationId: req.params.attestationId,
+      marketCode: req.params.marketCode,
+      reason: req.body && req.body.reason,
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
     }));
     res.json(result);

@@ -41,3 +41,11 @@ describe('order-checkout-service market lifecycle', () => {
     expect(insertAt).toBeGreaterThan(totalGate);
   });
 });
+
+describe('order-checkout-service — livrabilité du marché', () => {
+  test('le checkout importe la garde de livrabilité (preuve : tests/unit/order-checkout-delivery-proof.test.js)', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/order-checkout-service.js'), 'utf8');
+    expect(src).toMatch(/require\('\.\/market-delivery-proof-service'\)/);
+    expect(src).toMatch(/assertMarketDeliverable\(client, relais\.market_id\)/);
+  });
+});

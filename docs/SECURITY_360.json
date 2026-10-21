@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-21T15:07:05.977Z",
+  "generatedAt": "2026-10-21T21:23:19.513Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 746,
-    "protected": 691,
+    "total": 748,
+    "protected": 693,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1266,6 +1266,20 @@
     },
     {
       "key": "GET /api/admin/markets/{marketCode}/control-plane",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/markets/{marketCode}/delivery-attestations/{attestationId}/revoke",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/markets/{marketCode}/delivery-attestations",
       "level": "PROTECTED",
       "roles": [
         "admin"
