@@ -31,6 +31,7 @@ jest.mock('../../middleware/auth', () => ({
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
+jest.mock('../../services/dashboard-pilotage-markets', () => ({ getMarketsSupervision: jest.fn().mockResolvedValue([{ market_code: 'CM', market_name: 'Cameroun', orders_active: 2, cash_to_confirm: 0, open_incidents: 0 }]) }));
 jest.mock('../../services/dashboard-cache', () => ({
   cacheMiddleware: () => (req, res, next) => next(),
   clear: jest.fn(() => 3),
@@ -212,6 +213,13 @@ describe('GET /logistics', () => {
 });
 
 describe('GET /unified', () => {
+  it('supervision des marchés indisponible → null (Non disponible), jamais 0 ni 500', async () => {
+    require('../../services/dashboard-pilotage-markets').getMarketsSupervision.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).get('/api/admin/dashboard/unified');
+    expect(res.status).toBe(200);
+    expect(res.body.markets_supervision).toBeNull();
+  });
+
   it('nominal → 200 avec kpis_global, view_blocks (3 vues), economic_flow, principles', async () => {
     const res = await request(app).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(200);
@@ -223,6 +231,7 @@ describe('GET /unified', () => {
       stages: expect.any(Array),
       structural_alerts: expect.any(Array),
     }));
+    expect(res.body.markets_supervision).toEqual([expect.objectContaining({ market_code: 'CM', orders_active: 2 })]);
     expect(Array.isArray(res.body.system_alerts)).toBe(true);
     expect(mockControlChain).toHaveBeenCalledWith({ market: null });
   });
