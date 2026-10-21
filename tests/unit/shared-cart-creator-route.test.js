@@ -144,6 +144,15 @@ describe('POST /from-cart-items', () => {
     expect(res.body.error).toMatch(/liste ouverte/i);
   });
 
+  it('refus d’exposition → 409 market_product_not_exposed propagé (jamais « erreur interne »)', async () => {
+    const err = Object.assign(new Error('Produit non exposé sur ce marché.'), { status: 409, code: 'market_product_not_exposed' });
+    engine.createSharedCartFromCartItems.mockRejectedValue(err);
+    const res = await request(app).post('/api/shared-carts/from-cart-items')
+      .send({ cart_items: [{ product_id: 'p1', quantity: 1 }] });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('market_product_not_exposed');
+  });
+
   it('erreur inconnue → next(err) → 500', async () => {
     engine.createSharedCartFromCartItems.mockRejectedValue(new Error('boom inattendu'));
     const res = await request(app).post('/api/shared-carts/from-cart-items')

@@ -222,6 +222,15 @@ async function activateLocalPrice(db, cleanup, { marketId, productId, amount, cu
     [id, marketId, productId, amount, currency]
   );
   cleanup.track('product_market_price_drafts', 'id', id);
+  // Exposition ENABLED : obligatoire à la transaction (checkout/panier partagé), en plus de LOCAL_ACTIVE.
+  const exposureId = uuid();
+  await db.query(
+    `INSERT INTO product_market_exposure (id, product_id, market_id, commercial_exposure)
+     VALUES ($1,$2,$3,'ENABLED')
+     ON CONFLICT (product_id, market_id) DO UPDATE SET commercial_exposure = 'ENABLED', updated_at = NOW()`,
+    [exposureId, productId, marketId]
+  );
+  cleanup.track('product_market_exposure', 'product_id', productId);
   return { id, market_id: marketId, product_id: productId, amount, currency };
 }
 
