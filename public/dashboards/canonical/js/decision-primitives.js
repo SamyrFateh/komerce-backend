@@ -100,7 +100,10 @@
 
         const valueRow = doc.createElement('div');
         valueRow.className = 'kmc-decision-card-value-row';
-        valueRow.appendChild(text(doc, 'strong', 'kmc-decision-card-value', item && item.value != null ? item.value : '—'));
+        const valueNode = text(doc, 'strong', 'kmc-decision-card-value', item && item.value != null ? item.value : '—');
+        // Valeur textuelle (nom de produit, libellé) : taille réduite, jamais le gros chiffre d'un KPI.
+        if (item && item.value != null && !/^[\s\d.,%+\-−–—KMFkmf/]*$/.test(String(item.value))) valueNode.className += ' is-text';
+        valueRow.appendChild(valueNode);
         if (item && item.delta) {
           const delta = text(doc, 'span', `kmc-decision-delta is-${tone(item.deltaTone)}`, item.delta);
           valueRow.appendChild(delta);

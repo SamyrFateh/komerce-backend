@@ -69,3 +69,7 @@ describe('dashboard-hierarchy-v1 — canon visuel validé (parité mocks)', () =
 test('dashboard-hierarchy-v1.css : plancher typographique (aucun texte sous 10 px)', () => {
   expect(require('../helpers/fontFloor').tinyFonts('dashboard-hierarchy-v1.css')).toEqual([]);
 });
+
+test('dashboard-hierarchy-v1.css : valeur textuelle de carte de décision (is-text) réduite, pas un gros chiffre', () => {
+  expect(css).toMatch(/\.kmc-decision-card-value\.is-text[\s\S]*?font-size:\s*20px/);
+});

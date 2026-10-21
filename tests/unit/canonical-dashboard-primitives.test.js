@@ -209,6 +209,19 @@ describe('DASHBOARD DECISION VISUAL V1 — primitives', () => {
     expect(card.children[2].attributes.href).toBe('#alerts');
   });
 
+  test('DecisionStrip : valeur textuelle marquée is-text, chiffre/montant inchangé', () => {
+    const doc = fakeDocument();
+    const { DecisionStrip } = createDecisionPrimitives(doc);
+    const host = container(doc);
+    DecisionStrip.render(host, { items: [
+      { key: 'a', label: 'Best-seller', value: 'Téléphone' }, { key: 'b', label: 'Ventes', value: '120 000 KMF' }, { key: 'c', label: 'N', value: 7 },
+    ] });
+    const cls = i => host.children[0].children[i].children[1].children[0].className;
+    expect(cls(0)).toContain('is-text');
+    expect(cls(1)).not.toContain('is-text');
+    expect(cls(2)).not.toContain('is-text');
+  });
+
   test('Funnel conserve les valeurs et pertes déjà calculées', () => {
     const doc = fakeDocument();
     const { Funnel } = createDecisionPrimitives(doc);
