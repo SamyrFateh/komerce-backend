@@ -332,6 +332,15 @@
       return contextContract.resolveMarketView(adminContext, preferred).marketCode;
     }
 
+    // Contexte transporté par l'URL (?market=) : retenu seulement s'il fait partie des marchés autorisés par le serveur.
+    try {
+      const requested = String(new URLSearchParams(String(global.location?.search || '')).get('market') || '').toUpperCase();
+      const allowed = adminContext && adminContext.access && adminContext.access.allowedMarkets;
+      if (requested && Array.isArray(allowed) && allowed.includes(requested)) {
+        return contextContract.resolveMarketView(adminContext, requested).marketCode;
+      }
+    } catch (_) { /* repli sur le défaut serveur */ }
+
     return contextContract.resolveMarketView(adminContext).marketCode;
   }
 
@@ -410,6 +419,9 @@
       select.disabled = true;
       try {
         await onChange(resolved.marketCode);
+        if (global.KomerceCanonicalNavigation && typeof global.KomerceCanonicalNavigation.syncContext === 'function') {
+          global.KomerceCanonicalNavigation.syncContext({ market: resolved.marketCode });
+        }
         selectedMarket = resolved.marketCode;
         description.textContent = scopeDescription(selectedMarket);
       } catch (error) {

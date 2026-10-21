@@ -447,7 +447,11 @@
     const ui = options.ui;
     const fetchFn = options.fetch;
     const endpoint = endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
-    let period = normalizePeriod(options.period);
+    const nav = (typeof globalThis !== 'undefined' && globalThis.KomerceCanonicalNavigation) || null;
+    const urlContext = nav && typeof nav.readContext === 'function'
+      ? nav.readContext(options.location && typeof options.location.search === 'string' ? options.location.search : (globalThis.location ? globalThis.location.search : ''))
+      : {};
+    let period = normalizePeriod(options.period != null ? options.period : urlContext.period);
 
     if (!rootNode) throw new Error('canonical_finance_root_missing');
     if (!rendererContract || typeof rendererContract.createRenderer !== 'function') {
@@ -471,6 +475,7 @@
             load(value).catch(() => {});
           },
         });
+        if (nav && typeof nav.syncContext === 'function' && !options.location) nav.syncContext({ period });
         return Object.freeze({ payload, result, endpoint, period });
       } catch (error) {
         renderer.render(rootNode, schema, { state: 'error', stateMessage: error.message });

@@ -329,6 +329,23 @@ describe('canonical admin app — market selector', () => {
     expect(select.disabled).toBe(false);
   });
 
+  test('le marché de l’URL (?market=) est repris s’il est autorisé, ignoré sinon', async () => {
+    const user = { id: 'hq-admin', role: 'admin' };
+    const adminContext = {
+      actor: user,
+      access: { mode: 'global', allowedMarkets: ['KM', 'CM'], defaultMarket: null, capabilities: ['dashboard.global.read'] },
+    };
+    const first = loadCanonicalApp();
+    first.window.location.search = '?market=CM&period=7';
+    await first.api.renderPilotageShell(first.root, user, adminContext);
+    expect(first.pilotageMount).toHaveBeenNthCalledWith(1, expect.objectContaining({ requestedMarket: 'CM' }));
+
+    const second = loadCanonicalApp();
+    second.window.location.search = '?market=ZZ';
+    await second.api.renderPilotageShell(second.root, user, adminContext);
+    expect(second.pilotageMount).toHaveBeenNthCalledWith(1, expect.objectContaining({ requestedMarket: null }));
+  });
+
   test('Pricing change de Market par swap atomique sans exposer le rendu intermédiaire', async () => {
     const env = loadCanonicalApp();
     const user = { id: 'hq-admin', role: 'admin' };

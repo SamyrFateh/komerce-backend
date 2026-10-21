@@ -519,4 +519,13 @@ describe('L3 — périmètre de recette transmis depuis l’URL de la page (fina
     expect(await run("?simulation_scope=rct1'--")).toBe('/api/admin/dashboard/finance/market/CM?period=30');
     expect(await run('')).toBe('/api/admin/dashboard/finance/market/CM?period=30');
   });
+  test('la période de l’URL est reprise (valide) ou ignorée (invalide) via la navigation partagée', async () => {
+    jest.isolateModules(() => require('../../public/dashboards/canonical/js/navigation-policy-v4.js'));
+    try {
+      expect(await run('?period=90')).toBe('/api/admin/dashboard/finance/market/CM?period=90');
+      expect(await run('?period=15&simulation_scope=RCT1')).toBe('/api/admin/dashboard/finance/market/CM?period=30&simulation_scope=RCT1');
+    } finally {
+      delete global.KomerceCanonicalNavigation;
+    }
+  });
 });
