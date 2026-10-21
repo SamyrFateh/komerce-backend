@@ -10,7 +10,7 @@ const path=require('path');
 const SRC=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','pilotage-decision.js'),'utf8');
 
 describe('pilotage-decision visual hierarchy contract',()=>{
-  test('keeps Pilotage to hero attention and one primary object only',()=>{
+  test('Pilotage : hero → attention → objet principal → blocs secondaires du mock (alertes, marchés, accès)',()=>{
     expect(SRC).toContain("data-dashboard-hierarchy', 'hero-attention-primary-secondary");
     const renderStart=SRC.indexOf('function render(rootNode');
     const renderSource=SRC.slice(renderStart);
@@ -20,7 +20,9 @@ describe('pilotage-decision visual hierarchy contract',()=>{
     expect(hero).toBeGreaterThanOrEqual(0);
     expect(attention).toBeGreaterThan(hero);
     expect(primary).toBeGreaterThan(attention);
-    expect(renderSource).not.toContain("data-dashboard-role', 'secondary");
+    const secondary=renderSource.indexOf("data-dashboard-role', 'secondary");
+    expect(secondary).toBeGreaterThan(primary);
+    ['pilotage-alerts','pilotage-markets','pilotage-access','pilotage-value-chain'].forEach(id=>expect(renderSource).toContain(id));
     expect(renderSource).not.toContain("cardSection(\n        doc,\n        'Causes structurelles'");
     expect(renderSource).not.toContain("cardSection(\n        doc,\n        'À traiter'");
   });
@@ -73,4 +75,10 @@ describe('Pilotage — liens avec contexte (marché, période, scope) et retour 
     expect(nav.withNavContext(undefined, 'Retour')).toBeUndefined();
     expect(nav.withNavContext('/admin/workspaces/pricing', 'Retour')).toBe('/admin/workspaces/pricing');
   });
+});
+
+test('supervision des marchés : null → « Non disponible », liste vide ≠ donnée inconnue, zéros servis conservés', () => {
+  expect(SRC).toContain("supervision ? 'Aucun marché actif à superviser.' : 'Non disponible'");
+  expect(SRC).toContain('Array.isArray(payload && payload.markets_supervision) ? payload.markets_supervision : null');
+  expect(SRC).toContain('active: r.orders_active, cash: r.cash_to_confirm, incidents: r.open_incidents');
 });

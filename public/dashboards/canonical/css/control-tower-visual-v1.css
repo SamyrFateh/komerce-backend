@@ -424,3 +424,9 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-trust-f
   }
 }
 
+
+/* Pilotage — actions des listes (alertes & arbitrages) : lien orange discret sur fond blanc. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-priority-action {
+  background: #fff; color: #c2410c; border: 1px solid #fed7aa; border-radius: 8px; padding: 5px 10px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-priority-action:hover { background: #fff7ed; }

@@ -288,6 +288,53 @@
       dashboard.appendChild(flowSection.section);
     }
 
+    // Chaîne de valeur : étapes économiques servies par le serveur (economic_flow), sans valeur recalculée.
+    const valueStages = flowStages(payload, base);
+    if (valueStages.length) {
+      const value = cardSection(doc, 'Chaîne de valeur Komerce', 'De l’estimation du prix au recalibrage : où ouvrir le détail.', 'pilotage-value-chain');
+      value.section.setAttribute('data-dashboard-role', 'secondary');
+      decisionUi.FlowStrip.render(value.body, { stages: valueStages });
+      dashboard.appendChild(value.section);
+    }
+
+    // Alertes & arbitrages : causes structurelles de la chaîne d'abord, puis signaux résiduels
+    // (residualActions exclut déjà les alertes structurelles : aucun doublon).
+    const arbitrations = [...structuralCauses(payload), ...residualActions(payload, base)].slice(0, 5);
+    if (arbitrations.length) {
+      const alerts = cardSection(doc, 'Alertes & arbitrages', 'Ce qui demande une décision, avec l’endroit où agir.', 'pilotage-alerts');
+      alerts.section.setAttribute('data-dashboard-role', 'secondary');
+      decisionUi.PriorityList.render(alerts.body, { items: arbitrations });
+      dashboard.appendChild(alerts.section);
+    }
+
+    // Supervision des marchés : lecture serveur (markets_supervision) ; absence = « Non disponible », jamais 0.
+    const supervision = Array.isArray(payload && payload.markets_supervision) ? payload.markets_supervision : null;
+    const market = cardSection(doc, 'Supervision des marchés', 'Marchés actifs · périmètre et période du Pilotage ; 0 = aucune commande ou incident sur la période.', 'pilotage-markets');
+    market.section.setAttribute('data-dashboard-role', 'secondary');
+    if (supervision && supervision.length) {
+      decisionUi.DenseTable.render(market.body, {
+        columns: [{ key: 'market', label: 'Marché' }, { key: 'active', label: 'Commandes actives', numeric: true },
+          { key: 'cash', label: 'Cash à confirmer', numeric: true }, { key: 'incidents', label: 'Incidents ouverts', numeric: true }],
+        rows: supervision.map(r => ({
+          market: `${r.market_code} · ${r.market_name || ''}`.trim(),
+          active: r.orders_active, cash: r.cash_to_confirm, incidents: r.open_incidents,
+        })),
+      });
+    } else {
+      market.body.appendChild(text(doc, 'p', 'kmc-decision-dashboard-section-copy',
+        supervision ? 'Aucun marché actif à superviser.' : 'Non disponible'));
+    }
+    dashboard.appendChild(market.section);
+
+    // Accès contextualisés : view_blocks serveur, liens avec retour au pilotage.
+    const access = summaryCards(payload, base);
+    if (access.length) {
+      const links = cardSection(doc, 'Accès aux dashboards', 'Analyse détaillée par domaine.', 'pilotage-access');
+      links.section.setAttribute('data-dashboard-role', 'secondary');
+      decisionUi.SummaryCards.render(links.body, { items: access });
+      dashboard.appendChild(links.section);
+    }
+
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'control-tower-v2' };
   }
