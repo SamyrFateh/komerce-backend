@@ -76,3 +76,9 @@ describe('Pilotage — liens avec contexte (marché, période, scope) et retour 
     expect(nav.withNavContext('/admin/workspaces/pricing', 'Retour')).toBe('/admin/workspaces/pricing');
   });
 });
+
+test('supervision des marchés : null → « Non disponible », liste vide ≠ donnée inconnue, zéros servis conservés', () => {
+  expect(SRC).toContain("supervision ? 'Aucun marché actif à superviser.' : 'Non disponible'");
+  expect(SRC).toContain('Array.isArray(payload && payload.markets_supervision) ? payload.markets_supervision : null');
+  expect(SRC).toContain('active: r.orders_active, cash: r.cash_to_confirm, incidents: r.open_incidents');
+});

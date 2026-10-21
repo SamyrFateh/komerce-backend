@@ -309,7 +309,7 @@
 
     // Supervision des marchés : lecture serveur (markets_supervision) ; absence = « Non disponible », jamais 0.
     const supervision = Array.isArray(payload && payload.markets_supervision) ? payload.markets_supervision : null;
-    const market = cardSection(doc, 'Supervision des marchés', 'Marchés ayant des commandes actives · activité réelle uniquement.', 'pilotage-markets');
+    const market = cardSection(doc, 'Supervision des marchés', 'Marchés actifs · périmètre et période du Pilotage ; 0 = aucune commande ou incident sur la période.', 'pilotage-markets');
     market.section.setAttribute('data-dashboard-role', 'secondary');
     if (supervision && supervision.length) {
       decisionUi.DenseTable.render(market.body, {
@@ -322,7 +322,7 @@
       });
     } else {
       market.body.appendChild(text(doc, 'p', 'kmc-decision-dashboard-section-copy',
-        supervision ? 'Aucun marché avec commande active.' : 'Non disponible'));
+        supervision ? 'Aucun marché actif à superviser.' : 'Non disponible'));
     }
     dashboard.appendChild(market.section);
 
