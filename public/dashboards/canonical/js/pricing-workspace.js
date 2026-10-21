@@ -250,6 +250,25 @@
     slot.appendChild(policyCard);
   }
 
+  // Distingue « enregistrée » (décision humaine versionnée) de « devenue décisionnelle »
+  // (fenêtre d'évaluation entièrement couverte). Dates fournies par le serveur.
+  function appendPolicyLifecycle(doc, slot, decision) {
+    const policy = decision && decision.policy;
+    const line = doc.createElement('div');
+    line.className = 'kmc-market-policy-lifecycle';
+    line.dataset.policyLifecycle = '';
+    if (!policy) {
+      line.appendChild(text(doc, 'strong', '', 'Politique : aucune version enregistrée'));
+    } else if (decision.decisional_from) {
+      line.appendChild(text(doc, 'strong', '', `Enregistrée : ${policy.version || 'version non libellée'} · effet ${formatDateTime(policy.effective_from)}`));
+      line.appendChild(text(doc, 'span', '', `Décisionnelle à partir du ${formatDateTime(decision.decisional_from)}`));
+    } else {
+      line.appendChild(text(doc, 'strong', '', `Enregistrée : ${policy.version || 'version non libellée'} · effet ${formatDateTime(policy.effective_from)}`));
+      line.appendChild(text(doc, 'span', '', 'La fenêtre d’évaluation est couverte par cette politique.'));
+    }
+    slot.appendChild(line);
+  }
+
   function appendPolicyHistory(doc, slot, policies = []) {
     const details = doc.createElement('details');
     details.className = 'kmc-market-policy-history';
@@ -404,6 +423,7 @@
       periodLine.appendChild(text(doc, 'small', '', isCalendar ? 'Période bornée sur le mois calendaire sélectionné.' : 'Période dérivée côté serveur depuis la politique active.'));
       slot.appendChild(periodLine);
     }
+    appendPolicyLifecycle(doc, slot, decision);
     appendPolicySummary(doc, slot, policy, payload.capabilities?.manage_decision_policy === true);
     appendPolicyHistory(doc, slot, marketData.history?.policies || []);
     if (payload.capabilities?.manage_decision_policy === true) appendPolicyForm(doc, slot, policy);

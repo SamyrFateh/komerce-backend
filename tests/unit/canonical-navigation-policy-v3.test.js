@@ -137,8 +137,8 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(nav.activePrimarySurface('client-360')).toBe('orders');
     expect(nav.activePrimarySurface('product-360')).toBe('catalog');
     expect(nav.activePrimarySurface('market-catalog')).toBe('markets');
-    // Le suivi des commandes vit dans Opérations : plus d'espace « orders-overview ».
-    expect(nav.activeSpaceFor('orders')).toBeNull();
+    // Commandes : vue distincte sous la rubrique Commandes.
+    expect(nav.activeSpaceFor('orders')).toBe('orders');
     expect(nav.activeSpaceFor('client-index')).toBe('commerce');
   });
 
