@@ -15,3 +15,8 @@ test('rail étroit : le retour contextuel se réduit à une flèche (libellé po
   expect(narrow).toMatch(/\.kmc-admin-back\[data-back-context="contextual"\]\s*\{[^}]*font-size:\s*0/);
   expect(narrow).toMatch(/\.kmc-admin-back\[data-back-context="contextual"\]::before\s*\{\s*content:\s*'←'/);
 });
+
+test('palette Komerce : onglet de domaine actif et bandeau d’aide en orange, plus d’indigo', () => {
+  expect(css).not.toMatch(/#4053e8|#2563eb|#1d4ed8/i);
+  expect(css).toContain('.kmc-admin-domain-tab.is-active');
+});

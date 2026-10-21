@@ -22,7 +22,7 @@ body.kmc-shell-v4 .kmc-admin-home-label {
   max-width: 100%;
   overflow: visible;
   color: #071A3D;
-  background: linear-gradient(90deg, #071A3D 0 44%, #2563EB 44% 100%);
+  background: linear-gradient(90deg, #071A3D 0 44%, #EA580C 44% 100%);
   background-clip: text;
   -webkit-background-clip: text;
   text-indent: 0;
@@ -49,15 +49,15 @@ body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible {
 body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible,
 body.kmc-shell-v4 .kmc-admin-logout:focus-visible,
 body.kmc-shell-v4 .kmc-admin-home:focus-visible {
-  outline: 2px solid #3B82F6;
+  outline: 2px solid #F97316;
   outline-offset: -2px;
 }
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active:hover {
-  color: #174EA6;
-  background: #EAF2FF;
+  color: #9A3412;
+  background: #FFF4EB;
   font-weight: 750;
-  box-shadow: inset 3px 0 0 #3B82F6;
+  box-shadow: inset 3px 0 0 #F97316;
 }
 /* Selected dashboard destination: restrained luminous blue, visible without motion.
  * Current destination remains driven solely by navigation-policy's is-active state. */
@@ -65,10 +65,10 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active:hover {
   position: relative;
   isolation: isolate;
-  color: #0B3F94;
-  background: linear-gradient(100deg, #DAE9FF 0%, #EEF5FF 64%, #FFFFFF 100%);
-  box-shadow: inset 4px 0 0 #2563EB, inset 0 0 0 1px rgb(59 130 246 / .22),
-              0 0 16px rgb(59 130 246 / .13);
+  color: #9A3412;
+  background: linear-gradient(100deg, #FFEDD5 0%, #FFF7ED 64%, #FFFFFF 100%);
+  box-shadow: inset 4px 0 0 #EA580C, inset 0 0 0 1px rgb(234 88 12 / .22),
+              0 0 16px rgb(234 88 12 / .13);
   font-weight: 800;
 }
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active::before {
@@ -79,13 +79,13 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active::before {
   left: 0;
   width: 4px;
   border-radius: 0 4px 4px 0;
-  background: #60A5FA;
-  box-shadow: 0 0 10px 2px rgb(59 130 246 / .52);
+  background: #FB923C;
+  box-shadow: 0 0 10px 2px rgb(234 88 12 / .52);
   pointer-events: none;
 }
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active .kmc-admin-primary-icon {
-  color: #1559C2;
-  filter: drop-shadow(0 0 3px rgb(59 130 246 / .35));
+  color: #C2410C;
+  filter: drop-shadow(0 0 3px rgb(234 88 12 / .35));
 }
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after {
   display: none;
@@ -194,8 +194,8 @@ body.kmc-shell-v4 .kmc-import-runtime .kir-domain-nav {
 }
 body.kmc-shell-v4 .kmc-import-runtime .kir-domain-nav a.is-active {
   border-color: #A9C9F8;
-  background: #EAF2FF;
-  color: #174EA6;
+  background: #FFF4EB;
+  color: #9A3412;
 }
 body.kmc-shell-v4 .kmc-import-runtime .kir-domain-nav a:hover {
   background: #EFF6FF;
@@ -206,8 +206,8 @@ body.kmc-shell-v4 .kmc-import-runtime .kir-domain-nav a:hover {
    * a visible K mark instead of leaving an empty identity block. */
   body.kmc-shell-v4 .kmc-admin-home-mark {
     display: inline-flex;
-    background: #EAF2FF;
-    color: #174EA6;
+    background: #FFF4EB;
+    color: #9A3412;
     border: 1px solid #A9C9F8;
   }
   body.kmc-shell-v4 .kmc-admin-home::after {
@@ -326,8 +326,8 @@ body.kmc-shell-v4 .kmc-markets-decision-overview > .kmc-dashboard-header[data-da
   background:
     radial-gradient(circle at 50% 50%, rgba(59,130,246,.18) 0 26px, transparent 27px),
     radial-gradient(circle at 18% 24%, #0D2A52 0 9px, transparent 10px),
-    radial-gradient(circle at 82% 24%, #3B82F6 0 9px, transparent 10px),
-    radial-gradient(circle at 20% 78%, #3B82F6 0 9px, transparent 10px),
+    radial-gradient(circle at 82% 24%, #F97316 0 9px, transparent 10px),
+    radial-gradient(circle at 20% 78%, #F97316 0 9px, transparent 10px),
     radial-gradient(circle at 80% 78%, #0D2A52 0 9px, transparent 10px);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 35%);
   mask-image: linear-gradient(90deg, transparent, #000 35%);
@@ -455,3 +455,7 @@ body.kmc-shell-v4 .kmc-import-runtime .kir-hero > * {
     font-size: 21px;
   }
 }
+
+/* Palette Komerce : CTA de recherche en orange (le navy reste réservé au texte et au logo). */
+body.kmc-shell-v4 .kmc-admin-reference-submit { background: #EA580C; color: #fff; }
+body.kmc-shell-v4 .kmc-admin-reference-submit:hover { background: #C2410C; }

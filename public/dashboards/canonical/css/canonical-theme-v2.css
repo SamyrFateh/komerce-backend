@@ -14,8 +14,8 @@
   --kmc-canon-muted: #7685a2;
   --kmc-canon-line: #dfe7f2;
   --kmc-canon-line-strong: #cfd9e8;
-  --kmc-canon-blue: #4f67ff;
-  --kmc-canon-blue-soft: #eef2ff;
+  --kmc-canon-blue: #ea580c;
+  --kmc-canon-blue-soft: #fff4eb;
   --kmc-canon-green: #18b86a;
   --kmc-canon-green-soft: #ebfbf3;
   --kmc-canon-orange: #fb7a24;
@@ -111,7 +111,7 @@ body[data-admin-generation="canonical"] {
 
 .kmc-admin-secondary-link.is-active {
   color: #4053e8;
-  border-color: #d8dfff;
+  border-color: #fed7aa;
   background: var(--kmc-canon-blue-soft);
   box-shadow: none;
 }
