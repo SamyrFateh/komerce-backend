@@ -11,3 +11,10 @@ test('Hub live : chaque référence de commande porte un lien 360 direct avec re
   // La liaison reste interne au cockpit (data-cockpit-nav) : le lien 360 s'y ajoute sans le remplacer.
   expect(src).toContain('data-cockpit-nav>${esc(order.reference)}</a>');
 });
+
+test('Hub live : vue Flux Hub en lecture seule, indisponible affiché sans zéro inventé', () => {
+  expect(src).toContain("api('/api/hub-dash/dubai')");
+  expect(src).toContain("const NA = 'Non disponible'");
+  expect(src).toContain("g.key === 'expeditions_ready'");
+  expect(src).not.toMatch(/method:\s*'(POST|PUT|PATCH|DELETE)'/);
+});
