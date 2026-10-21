@@ -627,7 +627,8 @@ jobs:
     name: Dashboard canonical gates
     needs: changes
     if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_dashboard != 'true' && needs.changes.outputs.dashboard == 'true'
-    runs-on: ubuntu-latest
+    # Playwright ne supporte pas chromium sur ubuntu-26.04 (ubuntu-latest depuis le 2026-10-19).
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
