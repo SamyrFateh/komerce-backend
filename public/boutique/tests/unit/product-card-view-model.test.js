@@ -348,3 +348,19 @@ describe('buildProductCardViewModel — options diverses', () => {
     expect(() => buildProductCardViewModel({ image_url: 'https://x/i.png' })).not.toThrow();
   });
 });
+
+describe('buildProductCardViewModel — purchasable (marché sans prix local)', () => {
+  it('purchasable:false → libellé pays, aucun prix ni équivalent EUR', () => {
+    const vm = buildProductCardViewModel({ id: 'p', name: 'X', price_kmf: 1000, old_price_kmf: 2000, purchasable: false });
+    expect(vm.purchasable).toBe(false);
+    expect(vm.priceLabel).toBe('Non disponible dans votre pays');
+    expect(vm.priceEurLabel).toBe('');
+    expect(vm.oldPriceLabel).toBe('');
+  });
+  it('purchasable:true ou champ absent → prix affiché', () => {
+    expect(buildProductCardViewModel({ id: 'p', name: 'X', price_kmf: 1000, purchasable: true }).priceLabel).toMatch(/1\s?000/);
+    const legacy = buildProductCardViewModel({ id: 'p', name: 'X', price_kmf: 1000 });
+    expect(legacy.purchasable).toBe(true);
+    expect(legacy.priceLabel).toMatch(/1\s?000/);
+  });
+});

@@ -177,8 +177,13 @@ export function buildProductCardViewModel(product = {}, options = {}) {
 
   const badges = buildBadges({ promoPct, fulfillmentType, availabilityStatus, hasVariants });
 
+  // Serveur : purchasable === false → aucun prix local actif sur le marché (ou marché absent).
+  // Champ absent (anciens payloads/tests) = achetable ; jamais de prix global affiché sinon.
+  const purchasable = product.purchasable !== false;
+
   return {
     id,
+    purchasable,
     raw: product,
     variant: options.variant || 'grid',
     name,
@@ -193,10 +198,10 @@ export function buildProductCardViewModel(product = {}, options = {}) {
     optimizedImageUrl: optimizeImgUrl(imageUrl, options.imageSize || 400),
     imageAlt: sanitize(normalizeString(product.image_alt || product.imageAlt, name)),
     priceKmf,
-    priceLabel: priceKmf > 0 ? fmtPrice(priceKmf) : 'Prix à confirmer',
-    priceEurLabel: priceKmf > 0 ? `≈ ${fmt(priceKmf, 'EUR')}` : '',
+    priceLabel: !purchasable ? 'Non disponible dans votre pays' : (priceKmf > 0 ? fmtPrice(priceKmf) : 'Prix à confirmer'),
+    priceEurLabel: purchasable && priceKmf > 0 ? `≈ ${fmt(priceKmf, 'EUR')}` : '',
     oldPriceKmf,
-    oldPriceLabel: oldPriceKmf > 0 ? fmtPrice(oldPriceKmf) : '',
+    oldPriceLabel: purchasable && oldPriceKmf > 0 ? fmtPrice(oldPriceKmf) : '',
     promoPct,
     promoLabel: promoPct > 0 ? `-${promoPct}%` : '',
     badges,
