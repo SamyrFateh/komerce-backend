@@ -6418,7 +6418,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 156,
+            "count": 160,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6976,6 +6976,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/commerce-decision.js",
+                "resolvedPath": "public/dashboards/canonical/js/commerce-decision.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/commerce.js",
                 "resolvedPath": "public/dashboards/canonical/js/commerce.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7066,8 +7071,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/orders.js",
+                "resolvedPath": "public/dashboards/canonical/js/orders.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/pilotage-decision.js",
                 "resolvedPath": "public/dashboards/canonical/js/pilotage-decision.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/pricing-decision-chain.js",
+                "resolvedPath": "public/dashboards/canonical/js/pricing-decision-chain.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7098,6 +7113,11 @@
               {
                 "declared": "dashboards/canonical/js/primitives.js",
                 "resolvedPath": "public/dashboards/canonical/js/primitives.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/product-360.js",
+                "resolvedPath": "public/dashboards/canonical/js/product-360.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7578,7 +7598,7 @@
             ]
           },
           "tests": {
-            "count": 185,
+            "count": 186,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8028,6 +8048,11 @@
               {
                 "declared": "tests/unit/canonical-order-360.test.js",
                 "resolvedPath": "tests/unit/canonical-order-360.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-orders.test.js",
+                "resolvedPath": "tests/unit/canonical-orders.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8508,7 +8533,7 @@
             ]
           }
         },
-        "totalFiles": 412,
+        "totalFiles": 417,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -16970,7 +16995,7 @@
             ]
           },
           "services": {
-            "count": 31,
+            "count": 32,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -16980,6 +17005,11 @@
               {
                 "declared": "services/customer-handoff-reconciliation.js",
                 "resolvedPath": "services/customer-handoff-reconciliation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-dubai-projection.js",
+                "resolvedPath": "services/hub-dubai-projection.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -17130,7 +17160,7 @@
             ]
           },
           "tests": {
-            "count": 59,
+            "count": 60,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -17200,6 +17230,11 @@
               {
                 "declared": "tests/unit/hub-authority-gate.test.js",
                 "resolvedPath": "tests/unit/hub-authority-gate.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-dubai-projection.test.js",
+                "resolvedPath": "tests/unit/hub-dubai-projection.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17450,7 +17485,7 @@
             ]
           }
         },
-        "totalFiles": 124,
+        "totalFiles": 126,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

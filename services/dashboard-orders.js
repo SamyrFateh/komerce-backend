@@ -8,7 +8,7 @@
  * @outputs       canonical decision-first orders payload (files de travail, cycle de vie, mix paiement)
  * @depends       db, services/dashboard-operations.js (publicScope helper via re-export)
  * @used-by       routes/admin-dashboard.js, routes/admin-dashboard-market.js
- * @db-read       orders, order_incidents, disputes, relais, users
+ * @db-read       orders, order_incidents, disputes, relais, users, markets, order_items, products, parcels
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_acts_dashboard_observes, browser_never_recomputes_truth, missing_data_never_means_zero, client_market_id_never_authority
@@ -127,6 +127,44 @@ async function getReadyForParcel(mid, limit = 25) {
   return Object.freeze({ items, count_total: Number(countRows[0]?.value) || 0 });
 }
 
+// Lecture canonique des relations d'une page de commandes déjà sélectionnées :
+// marché (orders.market_id → markets.code), produits (order_items → products)
+// et colis (parcels.order_id). Aucune taxonomie ni calcul métier : valeurs
+// brutes des relations existantes. Un lien absent reste null (« Non disponible »),
+// jamais 0 inventé ; le nombre de colis est un COUNT réel de la relation.
+async function getOrderRelations(ids) {
+  const list = [...new Set((ids || []).filter(Boolean))];
+  if (!list.length) return new Map();
+  const { rows } = await db.query(
+    `SELECT o.id,
+            m.code AS market_code,
+            (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS product_lines,
+            (SELECT pr.name FROM order_items oi JOIN products pr ON pr.id = oi.product_id
+              WHERE oi.order_id = o.id ORDER BY oi.id ASC LIMIT 1) AS first_product_name,
+            (SELECT COUNT(*)::int FROM parcels p WHERE p.order_id = o.id) AS parcel_count
+       FROM orders o
+       LEFT JOIN markets m ON m.id = o.market_id
+      WHERE o.id = ANY($1::uuid[])`,
+    [list],
+  );
+  return new Map(rows.map(r => [r.id, Object.freeze({
+    market_code: r.market_code || null,
+    product_lines: r.product_lines,
+    first_product_name: r.first_product_name || null,
+    parcel_count: r.parcel_count,
+  })]));
+}
+
+function withRelations(items, rel) {
+  return items.map(it => Object.freeze({
+    ...it,
+    market_code: rel.get(it.id)?.market_code ?? null,
+    product_lines: rel.get(it.id)?.product_lines ?? null,
+    first_product_name: rel.get(it.id)?.first_product_name ?? null,
+    parcel_count: rel.get(it.id)?.parcel_count ?? null,
+  }));
+}
+
 function kpi(key, label, value) {
   return Object.freeze({ key, label, value });
 }
@@ -243,6 +281,7 @@ async function getPriorityOrders(mid, limit = 20) {
           : 'Retrait relais en retard';
     const days = Math.floor((Date.now() - new Date(row.since_at).getTime()) / 86400000);
     return Object.freeze({
+      id: row.id,
       reference: row.reference,
       client_name: row.client_name,
       status: row.status,
@@ -363,6 +402,13 @@ async function buildOrders(options = {}) {
     getPriorityOrders(mid),
   ]);
 
+  const rel = await getOrderRelations([
+    ...pendingCash.items.map(i => i.id), ...readyForParcel.items.map(i => i.id), ...priorityOrders.map(i => i.id),
+  ]);
+  const pendingCashItems = withRelations(pendingCash.items, rel);
+  const readyItems = withRelations(readyForParcel.items, rel);
+  const priorityItems = withRelations(priorityOrders, rel);
+
   const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
   // « Commandes actives » = définition unique partagée avec le Pilotage (ACTIVE_ORDER_STATUSES).
   const active = ACTIVE_ORDER_STATUSES.reduce((a, s) => a + (byStatus[s] || 0), 0);
@@ -381,7 +427,7 @@ async function buildOrders(options = {}) {
     }),
     signals,
     funnel,
-    priority_orders: Object.freeze(priorityOrders),
+    priority_orders: Object.freeze(priorityItems),
     kpis: Object.freeze([
       kpi('total_orders', 'Commandes', total),
       kpi('active_orders', 'Commandes actives', active),
@@ -392,17 +438,17 @@ async function buildOrders(options = {}) {
     lifecycle: Object.freeze(lifecycle),
     payment_mix: Object.freeze(paymentMix),
     work_queues: Object.freeze({
-      pending_cash: pendingCash.items,
+      pending_cash: pendingCashItems,
       pending_cash_shown: pendingCash.items.length,
       pending_cash_total: pendingCash.count_total,
-      ready_for_parcel: readyForParcel.items,
+      ready_for_parcel: readyItems,
       ready_for_parcel_shown: readyForParcel.items.length,
       ready_for_parcel_total: readyForParcel.count_total,
     }),
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),
       scope_mode: market ? 'market' : 'global',
-      source_tables: Object.freeze(['orders', 'order_incidents', 'disputes']),
+      source_tables: Object.freeze(['orders', 'order_incidents', 'disputes', 'markets', 'order_items', 'products', 'parcels']),
     }),
   });
 }

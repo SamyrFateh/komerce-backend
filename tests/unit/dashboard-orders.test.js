@@ -66,5 +66,22 @@ describe('dashboard-orders — files de travail partagées avec Opérations', ()
     expect(queues.pending_cash_total).toBe(0);
     expect(db.query.mock.calls.every(([, params]) => params[0] === null)).toBe(true);
   });
+  it('les files portent marché, produits et colis depuis les relations existantes (null si lien absent)', async () => {
+    db.query.mockImplementation(async sql => {
+      if (/GROUP BY o\.status/.test(sql)) return { rows: [] };
+      if (/GROUP BY o\.payment_mode/.test(sql)) return { rows: [] };
+      if (/AS paiements_en_attente/.test(sql)) return { rows: [{}] };
+      if (/AS creees/.test(sql)) return { rows: [{}] };
+      if (/AS market_code/.test(sql)) return { rows: [{ id: 'o1', market_code: 'KM', product_lines: 3, first_product_name: 'Coque', parcel_count: 0 }] };
+      if (/FROM orders o\s+WHERE[\s\S]*payment_status = 'paid'/.test(sql) && /LIMIT/.test(sql)) {
+        return { rows: [{ id: 'o1', reference: 'KMC-1', status: 'confirmed' }, { id: 'o2', reference: 'KMC-2', status: 'confirmed' }] };
+      }
+      return { rows: [{ n: 0, value: 2 }], rowCount: 1 };
+    });
+    const { work_queues: q } = await buildOrders({});
+    const [a, b] = q.ready_for_parcel;
+    expect(a).toMatchObject({ market_code: 'KM', product_lines: 3, first_product_name: 'Coque', parcel_count: 0 });
+    expect(b).toMatchObject({ market_code: null, product_lines: null, parcel_count: null });
+  });
 });
 
