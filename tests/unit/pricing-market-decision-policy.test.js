@@ -302,3 +302,21 @@ test('previewMarketDecisionPolicy simule la politique candidate sans aucune écr
 test('previewMarketDecisionPolicy applique la même validation que l’enregistrement', async () => {
   await expect(previewMarketDecisionPolicy(MARKET, { version: 'x' }, 'actor-1')).rejects.toThrow(/^policy\./);
 });
+
+test('politique fraîchement décidée : NOT_DECISIONAL explicite (pas une panne), politique et date de décision exposées', async () => {
+  db.query.mockResolvedValueOnce({ rows: [policyRow()] });
+  computeMarketCoverage.mockRejectedValueOnce(new Error('coverage policy does not cover canonical period'));
+  const out = await evaluateMarketDecision(MARKET);
+  expect(out.decision_status).toBe('NOT_DECISIONAL');
+  expect(out.authorization).toBe('DENY_NEW_UNDER_CDR_POSITION');
+  expect(out.reason).toBe('POLICY_DOES_NOT_COVER_CANONICAL_PERIOD');
+  expect(out.policy).toBeTruthy();
+  expect(out.coverage).toBeNull();
+  expect(out.decisional_from).toEqual(expect.any(String));
+});
+
+test('toute autre erreur du moteur de couverture reste une vraie erreur', async () => {
+  db.query.mockResolvedValueOnce({ rows: [policyRow()] });
+  computeMarketCoverage.mockRejectedValueOnce(new Error('boom'));
+  await expect(evaluateMarketDecision(MARKET)).rejects.toThrow('boom');
+});
