@@ -177,6 +177,7 @@ async function getControlChain(options = {}) {
              o.updated_at
         FROM orders o
        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+         AND o.simulation_scope IS NULL
          AND o.status::text = ANY($2::text[])
          AND ($4::uuid IS NULL OR o.id = $4::uuid)
     ),

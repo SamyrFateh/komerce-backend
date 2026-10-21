@@ -53,10 +53,10 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
         COUNT(*) FILTER (WHERE status = 'pending') AS pending,
         COUNT(*) AS total_active
       FROM orders
-      WHERE status NOT IN ('cancelled','collected','pending')${marketClause}
+      WHERE simulation_scope IS NULL AND status NOT IN ('cancelled','collected','pending')${marketClause}
     `, params);
     const { rows: [t] } = await db.query(
-      `SELECT COUNT(*) AS c FROM orders WHERE created_at >= CURRENT_DATE${marketClause}`,
+      `SELECT COUNT(*) AS c FROM orders WHERE simulation_scope IS NULL AND created_at >= CURRENT_DATE${marketClause}`,
       params
     );
     // « Expédiées aujourd'hui » = commandes dont la TRANSITION vers shipped date d'aujourd'hui
@@ -65,7 +65,7 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
       `SELECT COUNT(DISTINCT h.order_id) AS c
          FROM order_status_history h
          JOIN orders o ON o.id = h.order_id
-        WHERE h.status = 'shipped' AND h.created_at >= CURRENT_DATE${scoped ? ' AND o.market_id = ANY($1::uuid[])' : ''}`,
+        WHERE o.simulation_scope IS NULL AND h.status = 'shipped' AND h.created_at >= CURRENT_DATE${scoped ? ' AND o.market_id = ANY($1::uuid[])' : ''}`,
       params
     );
     ordersData = {
@@ -83,7 +83,7 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
 
   try {
     const params = scoped ? [marketIds] : [];
-    const marketWhere = scoped ? 'WHERE o.market_id = ANY($1::uuid[])' : '';
+    const marketWhere = `WHERE (o.id IS NULL OR o.simulation_scope IS NULL)${scoped ? ' AND o.market_id = ANY($1::uuid[])' : ''}`;
     // « En transit » et « Au relais » : projection unique du workspace Opérations (LIVE-06).
     const shared = await countRelayParcels({ marketIds: scoped ? marketIds : null });
     const { rows: [r] } = await db.query(`
@@ -106,8 +106,8 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
 
   try {
     const params = scoped ? [marketIds] : [];
-    const marketJoin = scoped ? 'JOIN orders o ON o.id = i.order_id' : '';
-    const marketWhere = scoped ? 'WHERE o.market_id = ANY($1::uuid[])' : '';
+    const marketJoin = 'JOIN orders o ON o.id = i.order_id';
+    const marketWhere = `WHERE o.simulation_scope IS NULL${scoped ? ' AND o.market_id = ANY($1::uuid[])' : ''}`;
     const { rows: [r] } = await db.query(`
       SELECT
         COUNT(*) FILTER (WHERE i.status = 'open') AS open_count,
@@ -158,7 +158,7 @@ async function getQueue(filters = {}, { authorizedMarkets = null } = {}) {
   }
 
   let searchClause = '';
-  let marketClause = '';
+  let marketClause = 'AND o.simulation_scope IS NULL';
   const params = [];
   let idx = 1;
 
@@ -168,7 +168,7 @@ async function getQueue(filters = {}, { authorizedMarkets = null } = {}) {
     idx++;
   }
   if (scoped) {
-    marketClause = `AND o.market_id = ANY($${idx}::uuid[])`;
+    marketClause += ` AND o.market_id = ANY($${idx}::uuid[])`;
     params.push(marketIds);
     idx++;
   }
