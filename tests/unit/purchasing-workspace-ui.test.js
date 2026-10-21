@@ -22,3 +22,9 @@ test('l\'en-tête du workspace porte le rôle hero (cadre et illustration commun
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/purchasing-workspace.js'), 'utf8');
   expect(src).toContain("header.setAttribute('data-dashboard-role', 'hero')");
 });
+
+test('Achats : le nom du fournisseur ouvre la fiche Fournisseur 360 (admin) avec retour vers les achats', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/purchasing-workspace.js'), 'utf8');
+  expect(src).toContain("context.user.role === 'admin'");
+  expect(src).toContain("nav.withEntityReturnTo(`/admin/suppliers/${encodeURIComponent(group.supplier_id)}`, nav.currentReturnTarget(null), 'Retour aux achats')");
+});

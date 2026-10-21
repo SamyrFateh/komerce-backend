@@ -71,6 +71,31 @@ body.kmc-shell-v4 .kmc-admin-back {
   display: none;
 }
 
+/* Retour contextuel (return_to) : visible dans la coque pour revenir à l'écran d'origine avec son contexte.
+   Le repli canonique (non contextuel) reste masqué. */
+body.kmc-shell-v4 .kmc-admin-navigation-identity { flex-wrap: wrap; }
+body.kmc-shell-v4 .kmc-admin-back[data-back-context="contextual"] {
+  display: inline-flex;
+  align-items: center;
+  margin: 8px 20px 0;
+  padding: 6px 10px;
+  border: 1px solid #fdba74;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: normal;
+}
+body.kmc-shell-v4 .kmc-admin-back[data-back-context="contextual"]:hover,
+body.kmc-shell-v4 .kmc-admin-back[data-back-context="contextual"]:focus-visible {
+  background: #ffedd5;
+  border-color: #fb923c;
+  color: #7c2d12;
+}
+
 body.kmc-shell-v4 .kmc-admin-primary-nav {
   width: 100%;
   height: auto;
@@ -391,6 +416,21 @@ body.kmc-shell-v4 .kmc-ctl-stage {
   body.kmc-shell-v4 .kmc-admin-home {
     justify-content: center;
     padding-inline: 0;
+  }
+
+  /* Rail étroit : le retour contextuel devient une flèche seule (libellé conservé en aria-label). */
+  body.kmc-shell-v4 .kmc-admin-back[data-back-context="contextual"] {
+    width: 40px;
+    height: 36px;
+    margin: 8px auto 0;
+    padding: 0;
+    justify-content: center;
+    font-size: 0;
+  }
+  body.kmc-shell-v4 .kmc-admin-back[data-back-context="contextual"]::before {
+    content: '←';
+    font-size: 18px;
+    line-height: 1;
   }
 
   body.kmc-shell-v4 .kmc-admin-home-label,

@@ -22,7 +22,7 @@
 (function initRelayLive(global) {
   const kit = global.KomerceLiveKit;
   if (!kit) throw new Error('live_kit_missing');
-  const { esc, num, fmtDate, fmtKmf, ageLabel, queryString, processBoard, tiles, table } = kit;
+  const { order360Link, esc, num, fmtDate, fmtKmf, ageLabel, queryString, processBoard, tiles, table } = kit;
 
   const BASE = '/admin/relais-live';
   const PAGE_SIZE = 25;
@@ -64,7 +64,7 @@
     const waiting = order.status === 'available' ? ageLabel(order.heures_attente) : ageLabel(num(order.age_jours) * 24);
     const late = order.urgence === 'haute' || order.urgence === 'critique';
     return `<tr>
-      <td><a href="${orderUrl(order.id, from)}" data-cockpit-nav>${esc(order.reference)}</a></td>
+      <td><a href="${orderUrl(order.id, from)}" data-cockpit-nav>${esc(order.reference)}</a>${order360Link(order.reference, 'Retour au Relais live')}</td>
       <td>${esc(order.client_nom || order.user_name || '—')}</td>
       <td>${esc(order.relais_nom || '—')}${order.ile ? ` <small>${esc(order.ile)}</small>` : ''}</td>
       <td>${esc(STATUS[order.status] || order.status)}</td>
@@ -172,7 +172,7 @@
     return {
       title:o.reference || 'Colis',
       copy:`${STATUS[o.status] || o.status || ''} · ${data?.client?.nom || 'client'} · ${relais.nom || 'relais non défini'}`,
-      body:`<div class="lk-facts">
+      body:`<p class="lk-360-line">${order360Link(o.reference, 'Retour au Relais live')}</p><div class="lk-facts">
           ${card(o.status === 'available' ? 'Attente au relais' : 'Âge', wait)}
           ${card('Relais', [relais.nom, relais.ile].filter(Boolean).join(' · ') || '—')}
           ${card('Articles', items.length)}

@@ -269,6 +269,12 @@
     return value;
   }
 
+  // Fiches 360 : le serveur les réserve à admin et market_operator ; le lien est masqué pour les autres rôles.
+  const ENTITY_360_ROLES = Object.freeze(['admin', 'market_operator']);
+  function canOpenEntity360(user) {
+    return Boolean(user && ENTITY_360_ROLES.includes(user.role));
+  }
+
   function resolveBackTarget(surface, search) {
     let requestedHref = null;
     let requestedLabel = null;
@@ -1438,6 +1444,7 @@
     currentReturnTarget,
     syncContext,
     withNavContext,
+    canOpenEntity360,
     resolveBackTarget,
     runtimeIsStaging,
     mountStagingAdminTools,

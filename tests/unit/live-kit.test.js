@@ -245,3 +245,31 @@ test('Le moteur Live évite un deuxième rail quand le shell canonique fournit l
   const source = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/live-kit.js'), 'utf8');
   expect(source).toContain("if (global.document?.querySelector?.('#canonical-admin-domain-tabs')) return '';");
 });
+
+describe('order360Link — lien direct vers la fiche Commande 360 avec retour vers le cockpit', () => {
+  const navSource = fs.readFileSync(require.resolve('../../public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
+  function kitWithNav(search) {
+    const { kit, win } = loadKit({ location:{ pathname:'/admin/hub-live', search } });
+    vm.runInNewContext(navSource, win);
+    return kit;
+  }
+
+  test('admin / market_operator : lien avec return_to = vue courante (view, tab, from, page conservés)', () => {
+    const kit = kitWithNav('?view=queue&tab=blocked&page=2');
+    const html = kit.order360Link('KMC-0001', 'Retour au Hub live', { role:'admin' });
+    const href = html.match(/href="([^"]+)"/)[1].replace(/&amp;/g, '&');
+    const url = new URL(href, 'http://x.test');
+    expect(url.pathname).toBe('/admin/orders/KMC-0001');
+    expect(url.searchParams.get('return_to')).toBe('/admin/hub-live?view=queue&tab=blocked&page=2');
+    expect(url.searchParams.get('return_label')).toBe('Retour au Hub live');
+    expect(kit.order360Link('KMC-0001', 'x', { role:'market_operator' })).toContain('/admin/orders/KMC-0001');
+  });
+
+  test('agent_hub, agent_relais, sans utilisateur ou sans référence : aucun lien (habilitations inchangées)', () => {
+    const kit = kitWithNav('?view=queue');
+    expect(kit.order360Link('KMC-0001', 'x', { role:'agent_hub' })).toBe('');
+    expect(kit.order360Link('KMC-0001', 'x', { role:'agent_relais' })).toBe('');
+    expect(kit.order360Link('KMC-0001', 'x', null)).toBe('');
+    expect(kit.order360Link('', 'x', { role:'admin' })).toBe('');
+  });
+});

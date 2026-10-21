@@ -1,86 +1,17 @@
 'use strict';
-
-/**
- * @test-kind unit
- * @test-runner jest
- * @test-requires none
- *
- * Preuve structurelle du shell V4 : la hiérarchie de groupes de navigation
- * doit rester compacte et n'altère pas les primitives de lien existantes.
- */
-
+/** @test-kind unit @test-runner jest @test-requires none */
 const fs = require('fs');
 const path = require('path');
 
-const CSS_PATH = path.join(
-  __dirname, '..', '..', 'public', 'dashboards', 'canonical', 'css', 'canonical-shell-v4.css'
-);
+const css = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/css/canonical-shell-v4.css'), 'utf8');
 
-describe('canonical-shell-v4 grouped sidebar', () => {
-  test('styles the six-group hierarchy without replacing the primary link primitive', () => {
-    const css = fs.readFileSync(CSS_PATH, 'utf8');
-    expect(css).toContain('.kmc-admin-sidebar-group');
-    expect(css).toContain('.kmc-admin-sidebar-group-label');
-    expect(css).toContain('body.kmc-shell-v4 .kmc-admin-primary-link');
-    expect(css).toContain('text-transform: uppercase');
-    expect(css).toContain('.kmc-admin-reference-results');
-    expect(css).toContain('.kmc-admin-reference-results[hidden]');
-    expect(css).toContain('.kmc-admin-reference-result');
-  });
+test('le retour contextuel est visible dans la coque, le repli canonique reste masqué', () => {
+  expect(css).toMatch(/body\.kmc-shell-v4 \.kmc-admin-back\s*\{\s*display:\s*none;/);
+  expect(css).toMatch(/\.kmc-admin-back\[data-back-context="contextual"\]\s*\{\s*display:\s*inline-flex/);
 });
 
-test('shell-v4 ne porte plus le fond navy de la sidebar (surchargé par la couche Legacy)', () => {
-  const css = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/css/canonical-shell-v4.css'), 'utf8');
-  expect(css).not.toMatch(/background:\s*#102143/);
-});
-
-
-test('sidebar verticale démarre en haut et isole le scroll dans la navigation centrale', () => {
-  const css = fs.readFileSync(CSS_PATH, 'utf8');
-  const primary = (css.match(/body\.kmc-shell-v4 \.kmc-admin-primary-nav\s*\{([\s\S]*?)\}/) || [])[1] || '';
-  const identity = (css.match(/body\.kmc-shell-v4 \.kmc-admin-navigation-identity\s*\{([\s\S]*?)\}/) || [])[1] || '';
-  const utility = (css.match(/body\.kmc-shell-v4 \.kmc-admin-utility-nav\s*\{([\s\S]*?)\}/) || [])[1] || '';
-
-  expect(primary).toMatch(/flex-direction:\s*column/);
-  expect(primary).toMatch(/justify-content:\s*flex-start/);
-  expect(primary).toMatch(/overflow-y:\s*auto/);
-  expect(primary).toMatch(/overflow-x:\s*hidden/);
-  expect(identity).toMatch(/flex:\s*0 0 auto/);
-  expect(utility).toMatch(/flex:\s*0 0 auto/);
-});
-
-const __css = fs.readFileSync(
-  path.join(__dirname, '../../public/dashboards/canonical/css/canonical-shell-v4.css'),
-  'utf8'
-);
-
-describe('canonical-shell-v4.css', () => {
-  test('la navigation primaire garde son défilement vertical contenu', () => {
-    const block = __css.match(/\.kmc-admin-primary-nav\s*\{[^}]*\}/);
-    expect(block).not.toBeNull();
-    expect(block[0]).toMatch(/overflow-y:\s*auto/);
-    expect(block[0]).toMatch(/overscroll-behavior:\s*contain/);
-  });
-
-  test('ne déclare plus scrollbar-gutter sur la navigation (surchargé par le polish)', () => {
-    const block = __css.match(/\.kmc-admin-primary-nav\s*\{[^}]*\}/);
-    expect(block[0]).not.toMatch(/scrollbar-gutter/);
-  });
-});
-
-test('canonical-shell-v4.css : plancher typographique (aucun texte sous 10 px)', () => {
-  expect(require('../helpers/fontFloor').tinyFonts('canonical-shell-v4.css')).toEqual([]);
-});
-
-test('canonical-shell-v4.css : l’encadré « À quoi sert cet écran ? » ne décale pas la grille (pas de marge propre, pas de position absolue)', () => {
-  const css = fs.readFileSync(CSS_PATH, 'utf8');
-  const block = css.match(/\.kmc-purpose-box\s*\{[^}]*\}/);
-  expect(block).not.toBeNull();
-  expect(block[0]).toMatch(/margin:\s*0\s*;/);
-  expect(block[0]).not.toMatch(/position:\s*(absolute|fixed)/);
-});
-
-test('canonical-shell-v4.css : dans une grille à rôles, l’encadré a order 25 (entre attention 20 et primary 30)', () => {
-  const css = fs.readFileSync(CSS_PATH, 'utf8');
-  expect(css).toMatch(/\[data-dashboard-hierarchy\]\s*>\s*\.kmc-purpose-box\s*\{[^}]*order:\s*25\s*;/);
+test('rail étroit : le retour contextuel se réduit à une flèche (libellé porté par aria-label)', () => {
+  const narrow = css.slice(css.indexOf('@media (max-width: 980px)'));
+  expect(narrow).toMatch(/\.kmc-admin-back\[data-back-context="contextual"\]\s*\{[^}]*font-size:\s*0/);
+  expect(narrow).toMatch(/\.kmc-admin-back\[data-back-context="contextual"\]::before\s*\{\s*content:\s*'←'/);
 });

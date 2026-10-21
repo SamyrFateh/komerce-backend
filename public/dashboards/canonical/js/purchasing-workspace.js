@@ -171,7 +171,19 @@
 
     const head = doc.createElement('header');
     head.className = 'kmc-purchasing-group-head';
-    head.appendChild(text(doc, 'h3', 'kmc-purchasing-group-title', group.supplier_name));
+    const title = text(doc, 'h3', 'kmc-purchasing-group-title', group.supplier_name);
+    const nav = globalThis.KomerceCanonicalNavigation;
+    // Fournisseur 360 : réservé admin côté serveur ; lien direct avec retour vers les achats (po / filtres conservés).
+    if (group.supplier_id && context.user && context.user.role === 'admin' && nav && typeof nav.withEntityReturnTo === 'function') {
+      const link = doc.createElement('a');
+      link.className = 'kmc-purchasing-supplier-link';
+      link.setAttribute('href', nav.withEntityReturnTo(`/admin/suppliers/${encodeURIComponent(group.supplier_id)}`, nav.currentReturnTarget(null), 'Retour aux achats'));
+      link.setAttribute('aria-label', `Fiche fournisseur ${group.supplier_name}`);
+      link.textContent = group.supplier_name;
+      title.textContent = '';
+      title.appendChild(link);
+    }
+    head.appendChild(title);
     head.appendChild(text(doc, 'span', 'kmc-purchasing-hub', `Hub ${group.procurement_hub_ref}`));
     if ((group.currencies || []).length) {
       head.appendChild(text(doc, 'span', 'kmc-purchasing-currency', group.currencies.join(' / ')));
