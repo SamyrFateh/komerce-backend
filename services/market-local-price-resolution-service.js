@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        server_market_id_or_code, canonical_product_rows, checkout_items
  * @outputs       effective_kmf_price, local_price_metadata, repriced_checkout_total
- * @depends       db.js, utils/currency.js, services/product-sellable-service.js
+ * @depends       db.js, utils/currency.js, services/product-sellable-service.js, services/catalog-market-exposure-service.js
  * @used-by       routes/products.js, routes/catalog-product-detail.js, services/order-checkout-service.js, services/shared-cart-creation.js, services/market-local-price-activation-service.js
- * @db-read       markets, products, product_market_price_drafts, product_skus, product_variants
+ * @db-read       markets, products, product_market_price_drafts, product_skus, product_variants, product_market_exposure
  * @db-write      none
  * @db-txn        participates_in_caller_transaction_when_executor_is_provided
  * @doctrine      only_LOCAL_ACTIVE_is_buyer_effective, market_from_server_context, granular_sku_prices_fail_closed
@@ -22,6 +22,7 @@ const db = require('../db');
 const { projectAmount } = require('../utils/currency');
 const { applyCanonicalPromotion } = require('./product-sellable-service');
 const { PRICE_STATUSES, MarketCommercialPriceError } = require('./market-commercial-price-service');
+const { getExposure, EXPOSURE } = require('./catalog-market-exposure-service');
 
 const MARKET_CODE = /^[A-Z]{2}$/;
 
@@ -133,6 +134,17 @@ async function resolveActiveProductMarketPricingById(executor = db, { marketId, 
   return resolveActiveProductMarketPricing(executor, { marketId, product });
 }
 
+async function assertProductExposedForMarket(executor, { marketId, productId }) {
+  const exposure = await getExposure(productId, marketId, executor);
+  if (exposure !== EXPOSURE.ENABLED) {
+    throw new MarketCommercialPriceError(
+      409,
+      'market_product_not_exposed',
+      `Produit ${productId} non exposé sur ce marché.`
+    );
+  }
+}
+
 /**
  * Doctrine (2026-09, décision L1) : `products.price_kmf` reste une référence
  * globale / legacy / atelier (Pipeline A), mais elle ne devient JAMAIS
@@ -156,6 +168,10 @@ async function applyActiveMarketPricesToCheckoutItems(executor = db, { marketId,
 
     let pricing = cache.get(product.id);
     if (pricing === undefined) {
+      // Exposition ENABLED obligatoire à la transaction (fail-closed : absence = DISABLED),
+      // en plus de LOCAL_ACTIVE. Rejouée à chaque checkout, y compris pour les lignes
+      // d'un panier partagé ancien (lignes figées jamais modifiées ici).
+      if (marketId) await assertProductExposedForMarket(executor, { marketId, productId: product.id });
       pricing = await resolveActiveProductMarketPricing(executor, { marketId, product });
       cache.set(product.id, pricing || null);
     }
