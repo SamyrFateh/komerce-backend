@@ -43,7 +43,7 @@ async function getStatusCounts(mid) {
   const { rows } = await db.query(
     `SELECT o.status, COUNT(*)::int AS n
        FROM orders o
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)
+      WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
       GROUP BY o.status`,
     [mid],
   );
@@ -56,7 +56,7 @@ async function getPaymentMix(mid) {
   const { rows } = await db.query(
     `SELECT o.payment_mode AS mode, COUNT(*)::int AS n
        FROM orders o
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)
+      WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
         AND o.payment_mode IS NOT NULL
       GROUP BY o.payment_mode
       ORDER BY n DESC`,
@@ -71,7 +71,7 @@ async function getPendingCash(mid, limit = 25) {
     db.query(
       `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.cash_ref_code, o.created_at
          FROM orders o
-        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+        WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
           AND o.payment_status = 'pending'
           AND o.status NOT IN ('cancelled', 'collected', 'refunded')
         ORDER BY o.created_at ASC
@@ -81,7 +81,7 @@ async function getPendingCash(mid, limit = 25) {
     db.query(
       `SELECT COUNT(*)::int AS value
          FROM orders o
-        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+        WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
           AND o.payment_status = 'pending'
           AND o.status NOT IN ('cancelled', 'collected', 'refunded')`,
       [mid],
@@ -104,7 +104,7 @@ async function getReadyForParcel(mid, limit = 25) {
     db.query(
       `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.created_at
          FROM orders o
-        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+        WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
           AND o.payment_status = 'paid'
           AND o.status IN ('confirmed', 'ordered')
         ORDER BY o.created_at ASC
@@ -114,7 +114,7 @@ async function getReadyForParcel(mid, limit = 25) {
     db.query(
       `SELECT COUNT(*)::int AS value
          FROM orders o
-        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+        WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
           AND o.payment_status = 'paid'
           AND o.status IN ('confirmed', 'ordered')`,
       [mid],
@@ -255,7 +255,7 @@ async function getPriorityOrders(mid, limit = 20) {
              WHERE order_id = o.id AND status IN ('open', 'processing')
              ORDER BY created_at DESC LIMIT 1
           ) d ON TRUE
-         WHERE ($1::uuid IS NULL OR o.market_id = $1)
+         WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
            AND o.status NOT IN ('cancelled', 'refunded')
            AND (
              oi.id IS NOT NULL
@@ -308,7 +308,7 @@ async function getDecisionSignals(mid) {
         AVG(EXTRACT(EPOCH FROM (o.collected_at - o.created_at)) / 86400)
           FILTER (WHERE o.status = 'collected' AND o.collected_at IS NOT NULL)::numeric AS delai_moyen_jours
        FROM orders o
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)`,
+      WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL`,
     [mid]
   );
 
@@ -316,7 +316,7 @@ async function getDecisionSignals(mid) {
     `SELECT COUNT(DISTINCT oi.order_id)::int AS n
        FROM order_incidents oi
        JOIN orders o ON o.id = oi.order_id
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)
+      WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
         AND oi.status IN ('open', 'in_progress')`,
     [mid]
   );
@@ -325,7 +325,7 @@ async function getDecisionSignals(mid) {
     `SELECT COUNT(*)::int AS n
        FROM disputes d
        JOIN orders o ON o.id = d.order_id
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)
+      WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
         AND d.status IN ('open', 'processing')`,
     [mid]
   );
@@ -360,7 +360,7 @@ async function getBusinessFunnel(mid) {
         COUNT(*) FILTER (WHERE o.status = 'collected')::int AS retirees,
         COUNT(*) FILTER (WHERE o.status IN ('cancelled', 'refunded'))::int AS perdues
        FROM orders o
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)`,
+      WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL`,
     [mid]
   );
   return Object.freeze({
