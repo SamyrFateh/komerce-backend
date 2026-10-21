@@ -128,7 +128,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     ]);
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
-    expect(labels('commerce')).toEqual(['Vue commerce', 'Clients', 'Prix & économie', 'Raffinerie', 'Catalogue']);
+    expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients', 'Prix & économie', 'Raffinerie', 'Catalogue']);
     expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Achats fournisseurs']);
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
@@ -139,8 +139,9 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     // « Produits » n'est plus une entrée de menu : onglet local du Catalogue uniquement.
     expect(all.some(item => item.id === 'entity-products')).toBe(false);
     expect(all.filter(item => item.id === 'settings')).toHaveLength(1);
-    // « Commandes » est absorbé par Opérations : plus d'entrée ni de lien vers l'ancien écran.
-    expect(all.some(item => item.id === 'entity-orders' || item.href === '/admin/orders')).toBe(false);
+    // « Commandes » est une vue distincte : une seule entrée, l'ancien id entity-orders reste absent.
+    expect(all.some(item => item.id === 'entity-orders')).toBe(false);
+    expect(all.filter(item => item.href === '/admin/orders')).toHaveLength(1);
     expect(labels('operations')).toContain('Vue opérations');
     expect(groups.find(group => group.id === 'operations').items[0].surfaces).toContain('order-360');
   });

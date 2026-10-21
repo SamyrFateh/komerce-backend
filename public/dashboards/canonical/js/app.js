@@ -25,6 +25,7 @@
   const SURFACES = Object.freeze({
     PILOTAGE: 'pilotage',
     COMMERCE: 'commerce',
+    ORDERS: 'orders',
     OPERATIONS: 'operations',
     FINANCE: 'finance',
     OPERATIONS_WORKSPACE: 'operations-workspace',
@@ -54,6 +55,7 @@
   // Une surface absente de cette table n'affiche pas d'encadré (pas de texte inventé).
   const SCREEN_PURPOSE = Object.freeze({
     [SURFACES.PILOTAGE]: 'Cet écran montre en un coup d’œil si l’activité va bien : ventes encaissées, commandes en cours, alertes. Il indique aussi quoi regarder en premier.',
+    [SURFACES.ORDERS]: 'Cet écran liste les commandes qui attendent une action : paiement à confirmer, colis à créer, commandes à suivre ou bloquées.',
     [SURFACES.COMMERCE]: 'Cet écran montre ce qui se vend, combien ça rapporte, et à quelle étape des commandes se perdent.',
     [SURFACES.OPERATIONS]: 'Cet écran suit les commandes en route : celles qui avancent, celles qui sont en retard et celles qui sont bloquées.',
     [SURFACES.FINANCE]: 'Cet écran montre où en est l’argent : ce qui est encaissé, ce que ça a coûté et ce qu’il reste en marge. Un chiffre « estimé » n’est pas un chiffre « réel ».',
@@ -233,8 +235,7 @@
 
   function surfaceForPath(pathname) {
     const path = String(pathname || '');
-    // Le suivi des commandes vit dans Opérations (files Cash à confirmer / Colis à créer).
-    if (path === '/admin/orders' || path === '/admin-next/orders') return SURFACES.OPERATIONS;
+    if (path === '/admin/orders' || path === '/admin-next/orders') return SURFACES.ORDERS;
     if (/^\/admin\/orders\/[^/]+$/.test(path)) return SURFACES.ORDER_360;
     if (path === '/admin/clients' || path === '/admin-next/clients') return SURFACES.CLIENT_INDEX;
     if (/^\/admin\/clients\/[^/]+$/.test(path)) return SURFACES.CLIENT_360;
@@ -473,6 +474,10 @@
 
   function renderCommerce(root, user, adminContext, requestedMarket) {
     return canonicalMount(global.KomerceCanonicalCommerce, 'canonical_commerce_module_missing', root, user, adminContext, requestedMarket);
+  }
+
+  function renderOrders(root, user, adminContext, requestedMarket) {
+    return canonicalMount(global.KomerceCanonicalOrders, 'canonical_orders_module_missing', root, user, adminContext, requestedMarket);
   }
 
   function renderOperations(root, user, adminContext, requestedMarket) {
@@ -747,6 +752,14 @@
     });
   }
 
+  function renderOrdersShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'orders',
+      title: 'Commandes',
+      render: renderOrders,
+    });
+  }
+
   function renderClientIndexShell(root, user, adminContext) {
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'client-index',
@@ -874,6 +887,7 @@
     if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
+    if (surface === SURFACES.ORDERS) return renderOrdersShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
     if (surface === SURFACES.FINANCE) return renderFinanceShell(root, user, adminContext);
     return renderPilotageShell(root, user, adminContext);

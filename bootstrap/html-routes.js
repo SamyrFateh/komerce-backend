@@ -107,10 +107,6 @@ function mountHtmlRoutes(app, rootDir) {
     sendCanonicalAdmin(res);
   });
 
-  // « Suivi des commandes » a été absorbé par Opérations (files Cash à confirmer / Colis à créer).
-  // Les signets existants arrivent sur l'écran qui porte désormais ces files ; /admin/orders/:ref est inchangé.
-  app.get('/admin/orders', (req, res) => res.redirect(302, '/admin/operations'));
-
   // Golden E2E cockpit — guide de recette humaine, lecture/navigation uniquement.
   // Il ne porte aucune autorité métier et ne modifie aucun état applicatif.
   app.get('/admin/golden-e2e', (_req, res) => {
@@ -120,6 +116,7 @@ function mountHtmlRoutes(app, rootDir) {
   [
     '/admin',
     '/admin/commerce',
+    '/admin/orders',
     '/admin/operations',
     '/admin/finance',
     '/admin/workspaces/operations',
@@ -176,6 +173,7 @@ function mountHtmlRoutes(app, rootDir) {
   const CANONICAL_BUILD_ALIASES = Object.freeze({
     '/admin-next': '/admin/pilotage',
     '/admin-next/commerce': '/admin/commerce',
+    '/admin-next/orders': '/admin/orders',
     '/admin-next/operations': '/admin/operations',
     '/admin-next/finance': '/admin/finance',
     '/admin-next/workspaces/operations': '/admin/workspaces/operations',
