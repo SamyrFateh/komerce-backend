@@ -124,8 +124,8 @@ test('les six phases ne reprennent que les positions serveur et ne fabriquent au
   expect(admin[5].observed).toBe(false);
 
   const marketOperator = view.projectProcessPhases(model, { role: 'market_operator' }, base);
-  expect(marketOperator[1].href).toBe('#operations-stage-purchasing');
-  expect(marketOperator[3].href).toBe('#operations-stage-forwarder');
+  expect(marketOperator[1].href).toBe('?stage=PURCHASING');
+  expect(marketOperator[3].href).toBe('?stage=CUSTOMS');
   expect(marketOperator[2].href).toContain('/admin/workspaces/operations');
 });
 
@@ -159,5 +159,22 @@ test('Opérations : le retour depuis une commande restitue la page courante avec
   } finally {
     delete globalThis.location;
     delete globalThis.KomerceCanonicalNavigation;
+  }
+});
+
+test('Opérations : le filtre stage est lu depuis l’URL, conserve marché et période, et ignore une valeur inconnue', () => {
+  jest.resetModules();
+  globalThis.location = { pathname: '/admin/operations', search: '?market=CM&period=90&stage=CUSTOMS' };
+  try {
+    const mod = require('../../public/dashboards/canonical/js/operations-decision.js');
+    expect(mod.stageFilterKey()).toBe('CUSTOMS');
+    expect(mod.stageHref('HUB')).toBe('/admin/operations?market=CM&period=90&stage=HUB');
+    expect(mod.stageHref(null)).toBe('/admin/operations?market=CM&period=90');
+    globalThis.location.search = '?stage=HANDOFF';
+    expect(mod.stageFilterKey()).toBeNull();
+    globalThis.location.search = '?stage=nimporte';
+    expect(mod.stageFilterKey()).toBeNull();
+  } finally {
+    delete globalThis.location;
   }
 });
