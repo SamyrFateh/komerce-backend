@@ -23,7 +23,7 @@ const RELAY_USER = { id: 2, role: 'agent_relais', relais_id: 7 };
 const MARKET_OPERATOR = { id: 3, role: 'market_operator', relais_id: null };
 const MARKETS_KM = new Set(['km-uuid']);
 
-beforeEach(() => { jest.clearAllMocks(); });
+beforeEach(() => { jest.clearAllMocks(); db.query.mockResolvedValue({ rows: [] }); });
 
 describe('getDashboardKPIs', () => {
   const KPI_ROW = {
@@ -315,5 +315,23 @@ describe('getOrderDetail — éléments complémentaires', () => {
     db.query.mockReset();
     db.query.mockResolvedValueOnce({ rows: [{ ...ORDER, user_id: 5, market_id: 'km-uuid' }] });
     expect(await relayQueries.getOrderDetail(MARKET_OPERATOR, '100')).toEqual({ forbidden: true });
+  });
+});
+
+describe('cash à encaisser par devise du marché', () => {
+  const ADM = { id: 1, role: 'admin' };
+  it('CM : somme XAF séparée du KMF, aucune addition inter-devises', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ cash_a_encaisser: 3, montant_cash_pending: 99999, en_attente_72h: 0, total_actives: 3, collectes_aujourd_hui: 0, collectes_7j: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ c: 0 }] })
+      .mockResolvedValueOnce({ rows: [
+        { total_kmf: 1000, market_currency: 'KMF' },
+        { total_kmf: 2000, display_total_amount: '3000', display_currency: 'XAF', market_currency: 'XAF' },
+        { total_kmf: 2000, market_currency: 'XAF' },
+      ] });
+    const res = await relayQueries.getDashboardKPIs(ADM);
+    expect(res.kpi.montant_cash_par_devise).toEqual([{ currency: 'KMF', amount: 1000 }, { currency: 'XAF', amount: 3000 }]);
+    expect(res.kpi.cash_sans_montant_local).toBe(1);
+    expect(res.alertes[0].message).toMatch(/XAF/);
   });
 });
