@@ -184,7 +184,7 @@
       }
       const available = phase.stages.every(stage => byKey.has(stage));
       const count = available ? phase.stages.reduce((sum, stage) => sum + byKey.get(stage).orders.length, 0) : null;
-      const fallback = `#operations-stage-${phase.anchor.toLowerCase().replace(/_/g, '-')}`;
+      const fallback = stageHref(phase.key);
       const ownerHref = phase.workspace === 'purchasing' && role === 'admin'
         ? '/admin/workspaces/purchasing'
         : allowedWorkspaces.get(phase.workspace);
@@ -218,7 +218,9 @@
   }
 
   function renderControlChain(doc, host, payload) {
-    const columns = controlChainColumns(payload);
+    const activeKey = stageFilterKey();
+    const activePhase = activeKey ? PROCESS_PHASES.find(phase => phase.key === activeKey) : null;
+    const columns = controlChainColumns(payload).filter(column => !activePhase || activePhase.stages.includes(column.key));
     const hasOrders = columns.some(column => column.orders.length > 0);
     const hasAlerts = columns.some(column => column.alerts.length > 0);
     const isEmpty = !hasOrders && !hasAlerts;
@@ -558,6 +560,24 @@
     }));
   }
 
+  // Filtre de phase (?stage=ORDER|PURCHASING|HUB|CUSTOMS|RELAY) : lit/écrit l'URL, ne recalcule rien.
+  function stageFilterKey() {
+    try {
+      const key = new URLSearchParams(globalThis.location.search).get('stage');
+      return PROCESS_PHASES.some(phase => phase.key === key && phase.stages.length) ? key : null;
+    } catch (_error) { return null; }
+  }
+
+  function stageHref(key) {
+    try {
+      const loc = globalThis.location;
+      const params = new URLSearchParams(loc.search);
+      if (key) params.set('stage', key); else params.delete('stage');
+      const query = params.toString();
+      return `${loc.pathname}${query ? `?${query}` : ''}`;
+    } catch (_error) { return key ? `?stage=${encodeURIComponent(key)}` : '?'; }
+  }
+
   function contextualHref(path, returnTo, label) {
     const nav = globalThis.KomerceCanonicalNavigation;
     if (!nav || typeof nav.withReturnTo !== 'function') return path;
@@ -665,6 +685,19 @@
       const process = renderProcessPhases(doc, payload, options.user, base, decisionUi);
       if (process) chain.section.insertBefore(process, chain.body);
       chain.section.insertBefore(renderControlLegend(doc), chain.body);
+      const activeKey = stageFilterKey();
+      if (activeKey) {
+        const phase = PROCESS_PHASES.find(item => item.key === activeKey);
+        const chip = doc.createElement('p');
+        chip.className = 'kmc-operations-stage-filter';
+        chip.setAttribute('data-stage-filter', activeKey);
+        chip.appendChild(doc.createTextNode(`Filtre : ${phase.label} · `));
+        const clear = doc.createElement('a');
+        clear.href = stageHref(null);
+        clear.textContent = 'Voir toutes les étapes';
+        chip.appendChild(clear);
+        chain.section.insertBefore(chip, chain.body);
+      }
       renderControlChain(doc, chain.body, payload);
       if (chain.body.getAttribute('data-chain-state') === 'empty') {
         chain.section.setAttribute('data-chain-state', 'empty');
@@ -724,6 +757,8 @@
   }
 
   return Object.freeze({
+    stageFilterKey,
+    stageHref,
     CONTROL_STAGE_META,
     CONTROL_ENVELOPE_LABEL,
     controlStageMeta,
