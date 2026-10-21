@@ -184,6 +184,62 @@
     return base + (base.includes('?') ? '&' : '?') + q.toString();
   }
 
+  // Contexte transporté entre écrans (marché, période, périmètre de recette) : lu depuis l'URL, validé,
+  // jamais une autorité — le serveur re-valide marché et scope. Une valeur invalide est ignorée.
+  const CONTEXT_PERIODS = Object.freeze(['7', '30', '90']);
+  const CONTEXT_MARKET = /^[A-Z]{2}$/;
+  const CONTEXT_SCOPE = /^[A-Z][A-Z0-9-]{1,31}$/;
+
+  function readContext(search) {
+    const out = {};
+    try {
+      const params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+      const market = String(params.get('market') || '').toUpperCase();
+      if (CONTEXT_MARKET.test(market)) out.market = market;
+      const period = String(params.get('period') || '');
+      if (CONTEXT_PERIODS.includes(period)) out.period = period;
+      const scope = String(params.get('simulation_scope') || '');
+      if (CONTEXT_SCOPE.test(scope)) out.simulation_scope = scope;
+    } catch (_) { /* contexte absent : défauts serveur */ }
+    return out;
+  }
+
+  // Ajoute market / period / simulation_scope à un chemin sans écraser un paramètre déjà présent ; conserve l'ancre.
+  function withContext(path, ctx) {
+    const base = String(path || '');
+    const hashAt = base.indexOf('#');
+    const hash = hashAt >= 0 ? base.slice(hashAt) : '';
+    const beforeHash = hashAt >= 0 ? base.slice(0, hashAt) : base;
+    const queryAt = beforeHash.indexOf('?');
+    const pathname = queryAt >= 0 ? beforeHash.slice(0, queryAt) : beforeHash;
+    const params = new URLSearchParams(queryAt >= 0 ? beforeHash.slice(queryAt + 1) : '');
+    const clean = readContext(new URLSearchParams(Object.entries(ctx || {}).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])).toString());
+    Object.entries(clean).forEach(([key, value]) => { if (!params.has(key)) params.set(key, value); });
+    const query = params.toString();
+    return pathname + (query ? `?${query}` : '') + hash;
+  }
+
+  // Cible de retour = page courante avec sa query (contexte restauré au retour) ; repli sûr sinon.
+  function currentReturnTarget(fallback, loc = global.location) {
+    const here = loc && typeof loc.pathname === 'string' ? `${loc.pathname}${loc.search || ''}` : '';
+    return safeReturnTarget(here) || fallback || null;
+  }
+
+  // Reflète le contexte choisi dans l'URL (replaceState) pour que lien, retour et rechargement le conservent.
+  // market === null = vue globale (paramètre retiré).
+  function syncContext(ctx, loc = global.location, hist = global.history) {
+    if (!loc || !hist || typeof hist.replaceState !== 'function') return;
+    try {
+      const url = new URL(loc.href);
+      if (ctx && Object.prototype.hasOwnProperty.call(ctx, 'market')) {
+        if (ctx.market && CONTEXT_MARKET.test(ctx.market)) url.searchParams.set('market', ctx.market);
+        else url.searchParams.delete('market');
+      }
+      if (ctx && ctx.period != null && CONTEXT_PERIODS.includes(String(ctx.period))) url.searchParams.set('period', String(ctx.period));
+      hist.replaceState(hist.state, '', url.pathname + url.search + url.hash);
+    } catch (_) { /* URL non modifiable : sans effet */ }
+  }
+
   // Fiches 360 (commande, client, produit, fournisseur) et bons de commande : seuls liens qui
   // doivent ramener à l'écran d'origine. Les autres destinations (dashboards, workspaces) restent telles quelles.
   const ENTITY_HREF = /^\/admin\/(?:orders|clients|products|suppliers)\/[^/?#]+|^\/admin\/workspaces\/purchasing\?(?:[^#]*&)?po=/;
@@ -1357,6 +1413,10 @@
     safeReturnTarget,
     withReturnTo,
     withEntityReturnTo,
+    readContext,
+    withContext,
+    currentReturnTarget,
+    syncContext,
     resolveBackTarget,
     runtimeIsStaging,
     mountStagingAdminTools,

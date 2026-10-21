@@ -124,3 +124,44 @@ test('Hub live expose l’onglet Exécution (vue execute) sans toucher aux autre
   expect(src).toContain("{ id: 'hub-execution', label: 'Exécution', href: '/admin/hub-live?view=execute' }");
   expect(src).toContain("if (search.get('view') === 'execute') return 'hub-execution';");
 });
+
+describe('contexte transporté (marché, période, périmètre)', () => {
+  let nav;
+  beforeEach(() => {
+    jest.resetModules();
+    delete global.KomerceCanonicalNavigation;
+    require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+    nav = global.KomerceCanonicalNavigation;
+  });
+
+  test('readContext valide et ignore les valeurs invalides', () => {
+    expect(nav.readContext('?market=km&period=90&simulation_scope=RCT1')).toEqual({ market: 'KM', period: '90', simulation_scope: 'RCT1' });
+    expect(nav.readContext('?market=KMF1&period=15&simulation_scope=x y')).toEqual({});
+    expect(nav.readContext('')).toEqual({});
+  });
+
+  test('withContext ajoute le contexte, garde l’ancre et n’écrase pas un paramètre existant', () => {
+    const ctx = { market: 'KM', period: '7', simulation_scope: 'RCT1' };
+    expect(nav.withContext('/admin/finance', ctx)).toBe('/admin/finance?market=KM&period=7&simulation_scope=RCT1');
+    expect(nav.withContext('/admin/operations#operations-control-chain', { period: '30' })).toBe('/admin/operations?period=30#operations-control-chain');
+    expect(nav.withContext('/admin/workspaces/pricing?product_ref=P1&market=CM', ctx)).toBe('/admin/workspaces/pricing?product_ref=P1&market=CM&period=7&simulation_scope=RCT1');
+    expect(nav.withContext('/admin/finance', { period: '15', simulation_scope: 'bad scope', market: null })).toBe('/admin/finance');
+  });
+
+  test('currentReturnTarget conserve la query de la page et se replie si non sûr', () => {
+    expect(nav.currentReturnTarget('/admin/pilotage', { pathname: '/admin/commerce', search: '?market=KM&period=7' })).toBe('/admin/commerce?market=KM&period=7');
+    expect(nav.currentReturnTarget('/admin/pilotage', { pathname: '/login.html', search: '' })).toBe('/admin/pilotage');
+  });
+
+  test('syncContext reflète marché et période dans l’URL sans toucher au reste', () => {
+    const calls = [];
+    const hist = { state: null, replaceState: (_s, _t, u) => calls.push(u) };
+    const loc = { href: 'https://x.test/admin/finance?simulation_scope=RCT1&market=CM#a' };
+    nav.syncContext({ period: '90' }, loc, hist);
+    nav.syncContext({ market: null }, loc, hist);
+    nav.syncContext({ market: 'KM', period: '15' }, loc, hist);
+    expect(calls[0]).toBe('/admin/finance?simulation_scope=RCT1&market=CM&period=90#a');
+    expect(calls[1]).toBe('/admin/finance?simulation_scope=RCT1#a');
+    expect(calls[2]).toBe('/admin/finance?simulation_scope=RCT1&market=KM#a');
+  });
+});
