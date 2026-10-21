@@ -579,12 +579,12 @@ describe('bootstrap/html-routes', () => {
     expect(app._allRegistrations[app._allRegistrations.length - 1]).toBe('*'); // catch-all monté en dernier
   });
 
-  describe('/admin/orders — absorbé par Opérations', () => {
-    test('redirige en 302 vers /admin/operations (signets conservés)', () => {
+  describe('/admin/orders — vue Commandes distincte', () => {
+    test('sert le shell canonique (plus de redirection vers Opérations)', () => {
       const res = fakeRes();
       app._routes['/admin/orders']({ query: {} }, res);
-      expect(res.redirect).toHaveBeenCalledWith(302, '/admin/operations');
-      expect(res.sendFile).not.toHaveBeenCalled();
+      expect(res.redirect).not.toHaveBeenCalled();
+      expect(res.sendFile).toHaveBeenCalled();
     });
 
     test('la fiche /admin/orders/:orderReference reste servie par le shell canonique', () => {
