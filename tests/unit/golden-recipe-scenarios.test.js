@@ -55,6 +55,18 @@ test('processus et dashboards canoniques : parcours complets sans faux propriét
   expect(js).toContain('5 décisions + 3 Live');
 });
 
+test('Golden RCT1 : piste P1–P7 sans moteur secondaire, Commandes distinctes et scope honnête',()=>{
+  expect(html).toContain('<option value="rct1">');
+  expect(js).toContain("rct1:{label:'RCT1 × Golden");
+  expect(js).toContain("e('P3 · achats fournisseurs'");
+  expect(js).toContain("e('P4 · réception au Hub Dubaï'");
+  expect(js).toContain("e('P5 · encaissement et garde cash'");
+  expect(js).toContain("e('P7 · Pilotage et marché'");
+  expect(js).toContain("e('Commandes · files et Order 360','Opérations / Responsable pays','/admin/orders'");
+  expect(js).not.toContain('/admin/orders redirige');
+  expect(js).toContain('écran sans filtre de simulation certifié');
+});
+
 test('garde anti-contamination : RCT1 préservé sur les vues filtrées, SHA staging vérifié',()=>{
   expect(js).toContain("simulation_scope=RCT1");
   expect(js).toContain("function hrefForStep(path)");
