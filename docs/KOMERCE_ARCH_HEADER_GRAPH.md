@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 737
-- Files with full headers: 688
+- Scanned code files: 738
+- Files with full headers: 689
 - Files with lite headers: 49
-- Files with any headers: 737
+- Files with any headers: 738
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1806
-- Edges: 9124
+- Graph nodes: 1810
+- Edges: 9134
 - DB tables: 207
-- Doctrines: 659
+- Doctrines: 662
 - Impact areas: 203
 - Unresolved code edges: 889
 - Tables multi-écrivains directs (>=2): 87
@@ -44,7 +44,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 24
 - inventory: 2
 - local-stock: 4
-- logistics: 54
+- logistics: 55
 - loyalty: 3
 - market: 4
 - market-autonomy: 4
@@ -89,7 +89,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 421
+- service: 422
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -178,6 +178,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/order-cost-snapshot.js — orders-order-cost-snapshot (orders, critical, full)
 - services/order-mutation-service.js — orders-cross-feature-mutation-boundary (orders, critical, full)
 - services/order-payment-confirmation.js — payment-to-stock-single-entry (orders, critical, full)
+- services/order-physical-coverage-service.js — order-physical-coverage-service (logistics, critical, full)
 - services/order-status-machine.js — order-status-state-machine (orders, critical, full)
 - services/outbox-producer.js — outbox-producer (infrastructure, critical, full)
 - services/outbox-worker.js — outbox-worker (infrastructure, critical, full)

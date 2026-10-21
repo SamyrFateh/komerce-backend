@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 737,
-    "filesWithFullHeaders": 688,
+    "scannedCodeFiles": 738,
+    "filesWithFullHeaders": 689,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 737,
+    "filesWithAnyHeaders": 738,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1806,
-    "edges": 9124,
+    "graphNodes": 1810,
+    "edges": 9134,
     "dbTables": 207,
-    "doctrines": 659,
+    "doctrines": 662,
     "impactAreas": 203,
     "unresolvedCodeEdges": 889,
     "dbWriteViaOverlapWarnings": 9,
@@ -42,7 +42,7 @@
     "market": 4,
     "economic-engine": 65,
     "sourcing": 37,
-    "logistics": 54,
+    "logistics": 55,
     "boutique": 22,
     "checkout": 3,
     "shared-cart": 25,
@@ -109,7 +109,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 421,
+    "service": 422,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -118,7 +118,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 98,
+    "critical": 99,
     "medium": 151,
     "high": 430,
     "low": 58
@@ -23163,6 +23163,51 @@
       "version": "2026-06"
     },
     {
+      "id": "services/order-physical-coverage-service.js",
+      "file": "services/order-physical-coverage-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "order-physical-coverage-service",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order id",
+        "db executor"
+      ],
+      "outputs": [
+        "couverture physique quantitative par ligne attendue",
+        "verdict fail-closed"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/order-status-machine.js"
+      ],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "v_purchase_line_progress"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "physical_coverage_before_preparation",
+        "fail_closed_without_physical_proof",
+        "single_reception_definition"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "purchasing"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/order-post-commit-hooks.js",
       "file": "services/order-post-commit-hooks.js",
       "type": "file",
@@ -39087,6 +39132,21 @@
       "id": "doctrine:inventory_model_dispatch_no_fallback",
       "type": "doctrine",
       "doctrine": "inventory_model_dispatch_no_fallback"
+    },
+    {
+      "id": "doctrine:physical_coverage_before_preparation",
+      "type": "doctrine",
+      "doctrine": "physical_coverage_before_preparation"
+    },
+    {
+      "id": "doctrine:fail_closed_without_physical_proof",
+      "type": "doctrine",
+      "doctrine": "fail_closed_without_physical_proof"
+    },
+    {
+      "id": "doctrine:single_reception_definition",
+      "type": "doctrine",
+      "doctrine": "single_reception_definition"
     },
     {
       "id": "doctrine:wallet_applique_une_fois",
@@ -77262,6 +77322,66 @@
       "to": "impact:loyalty",
       "type": "impact",
       "label": "loyalty"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "services/order-physical-coverage-service.js",
+      "type": "uses",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/order-physical-coverage-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/order-physical-coverage-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/order-physical-coverage-service.js",
+      "to": "db:v_purchase_line_progress",
+      "type": "db-read",
+      "label": "v_purchase_line_progress"
+    },
+    {
+      "from": "services/order-physical-coverage-service.js",
+      "to": "doctrine:physical_coverage_before_preparation",
+      "type": "doctrine",
+      "label": "physical_coverage_before_preparation"
+    },
+    {
+      "from": "services/order-physical-coverage-service.js",
+      "to": "doctrine:fail_closed_without_physical_proof",
+      "type": "doctrine",
+      "label": "fail_closed_without_physical_proof"
+    },
+    {
+      "from": "services/order-physical-coverage-service.js",
+      "to": "doctrine:single_reception_definition",
+      "type": "doctrine",
+      "label": "single_reception_definition"
+    },
+    {
+      "from": "services/order-physical-coverage-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/order-physical-coverage-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/order-physical-coverage-service.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "services/order-post-commit-hooks.js",
@@ -119388,6 +119508,48 @@
         "utils/logger.js"
       ]
     },
+    "services/order-physical-coverage-service.js": {
+      "role": "order-physical-coverage-service",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/order-status-machine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "v_purchase_line_progress"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "physical_coverage_before_preparation",
+        "fail_closed_without_physical_proof",
+        "single_reception_definition"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "db:order_items",
+        "db:orders",
+        "db:v_purchase_line_progress",
+        "doctrine:fail_closed_without_physical_proof",
+        "doctrine:physical_coverage_before_preparation",
+        "doctrine:single_reception_definition",
+        "impact:logistics",
+        "impact:orders",
+        "impact:purchasing",
+        "services/order-status-machine.js"
+      ]
+    },
     "services/order-post-commit-hooks.js": {
       "role": "orders-post-commit-hooks",
       "domain": "orders",
@@ -119560,6 +119722,7 @@
         "services/operations-workspace.js",
         "services/order-checkout-persistence.js",
         "services/order-payment-confirmation.js",
+        "services/order-physical-coverage-service.js",
         "services/parcel-auto-create-service.js",
         "services/parcel-operations.js",
         "services/payment-status-validator.js",
