@@ -144,3 +144,20 @@ test('données incomplètes : aucune fausse position zéro ni phase valide sans 
   expect(subset[1].href).toBeUndefined();
   expect(subset[5].helper).toContain('Non projetée');
 });
+
+test('Opérations : le retour depuis une commande restitue la page courante avec marché et période', () => {
+  jest.resetModules();
+  globalThis.location = { pathname: '/admin/operations', search: '?market=CM&period=90' };
+  try {
+    require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+    const mod = require('../../public/dashboards/canonical/js/operations-decision.js');
+    const [item] = mod.workQueueItems([{ reference: 'CMD-1', status: 'pending' }], { formatNumber: v => String(v) });
+    const url = new URL(item.href, 'http://x.test');
+    expect(url.pathname).toBe('/admin/orders/CMD-1');
+    expect(url.searchParams.get('return_to')).toBe('/admin/operations?market=CM&period=90');
+    expect(url.searchParams.get('return_label')).toBe('Retour aux opérations');
+  } finally {
+    delete globalThis.location;
+    delete globalThis.KomerceCanonicalNavigation;
+  }
+});

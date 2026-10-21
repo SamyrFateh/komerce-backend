@@ -198,9 +198,17 @@
     }));
   }
 
+  // Fiche Produit 360 avec retour vers Commerce (marché et période conservés).
+  function productHref(productRef) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    const href = `/admin/products/${encodeURIComponent(productRef)}`;
+    return nav && typeof nav.withNavContext === 'function' ? nav.withNavContext(href, 'Retour au commerce') : href;
+  }
+
   function rankedProducts(payload, base) {
     return (Array.isArray(payload && payload.top_products) ? payload.top_products : []).map(row => ({
       title: row.name || row.product_ref || 'Produit',
+      ...(row.product_ref ? { href: productHref(row.product_ref), actionLabel: 'Fiche produit →' } : {}),
       helper: `${row.category || 'Sans catégorie'} · ${base.formatNumber(row.quantity, 0)} unité(s)`,
       value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit) : base.formatKmf(row.revenue_kmf),
       tone: 'neutral',

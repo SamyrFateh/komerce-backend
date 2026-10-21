@@ -180,8 +180,11 @@
     const q = new URLSearchParams();
     q.set('return_to', target);
     if (label) q.set('return_label', String(label));
-    const base = String(path || '');
-    return base + (base.includes('?') ? '&' : '?') + q.toString();
+    const value = String(path || '');
+    const hashAt = value.indexOf('#');
+    const base = hashAt >= 0 ? value.slice(0, hashAt) : value;
+    const hash = hashAt >= 0 ? value.slice(hashAt) : '';
+    return base + (base.includes('?') ? '&' : '?') + q.toString() + hash;
   }
 
   // Contexte transporté entre écrans (marché, période, périmètre de recette) : lu depuis l'URL, validé,
@@ -247,6 +250,23 @@
   function withEntityReturnTo(href, returnTo, label) {
     const value = String(href || '');
     return ENTITY_HREF.test(value) && !/[?&]return_to=/.test(value) ? withReturnTo(value, returnTo, label) : value;
+  }
+
+  // Lien depuis un dashboard : fiche 360 / PO (retour vers la page courante, query comprise) ou autre dashboard
+  // (marché, période, périmètre transportés + retour). Toute autre destination reste inchangée.
+  const DASHBOARD_HREF = /^\/admin\/(?:pilotage|commerce|operations|finance)(?:[?#]|$)/;
+
+  function withNavContext(href, label, loc = global.location) {
+    if (href == null || href === '') return href;
+    const value = String(href);
+    if (/[?&]return_to=/.test(value)) return value;
+    const target = currentReturnTarget(null, loc);
+    if (ENTITY_HREF.test(value)) return target ? withReturnTo(value, target, label) : value;
+    if (DASHBOARD_HREF.test(value)) {
+      const linked = withContext(value, readContext(loc && loc.search));
+      return target ? withReturnTo(linked, target, label) : linked;
+    }
+    return value;
   }
 
   function resolveBackTarget(surface, search) {
@@ -1417,6 +1437,7 @@
     withContext,
     currentReturnTarget,
     syncContext,
+    withNavContext,
     resolveBackTarget,
     runtimeIsStaging,
     mountStagingAdminTools,

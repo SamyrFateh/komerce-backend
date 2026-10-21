@@ -107,22 +107,22 @@
     if (critical) items.push({
       key: 'critical-open', label: 'Critiques ouvertes', helper: 'Nécessitent une action immédiate',
       value: display(base, critical), tone: Number(critical.value) > 0 ? 'critical' : 'positive', icon: '!',
-      href: critical.drill_to || '#pilotage-alerts', actionLabel: 'Voir les critiques →',
+      href: withReturn(critical.drill_to || '#pilotage-alerts'), actionLabel: 'Voir les critiques →',
     });
     if (attention && Number(attention.value) > 0) items.push({
       key: 'attention-open', label: 'Points d’attention', helper: 'À surveiller de près',
       value: display(base, attention), tone: 'warning', icon: '•',
-      href: attention.drill_to || '#pilotage-alerts', actionLabel: 'Voir les signaux →',
+      href: withReturn(attention.drill_to || '#pilotage-alerts'), actionLabel: 'Voir les signaux →',
     });
     if (incomplete) items.push({
       key: 'costing-incomplete', label: 'Problèmes costing', helper: incomplete.label || 'Coûts incomplets',
       value: display(base, incomplete), tone: Number(incomplete.value) > 0 ? 'violet' : 'positive', icon: '◇',
-      href: '/admin/operations', actionLabel: 'Examiner les commandes →',
+      href: withReturn('/admin/operations'), actionLabel: 'Examiner les commandes →',
     });
     if (activeOrders) items.push({
       key: 'active-orders', label: 'Commandes actives', helper: 'En cours dans la chaîne',
       value: display(base, activeOrders), tone: 'info', icon: '▣',
-      href: '/admin/operations', actionLabel: 'Voir le flux →',
+      href: withReturn('/admin/operations'), actionLabel: 'Voir le flux →',
     });
     return items.slice(0, 4);
   }
@@ -135,7 +135,7 @@
       title: block.title || 'Vue de décision',
       subtitle: block.subtitle || undefined,
       tone: ['info', 'positive', 'violet'][index % 3],
-      href: typeof base.canonicalAdminHref === 'function' ? base.canonicalAdminHref(block.url) : block.url,
+      href: withReturn(typeof base.canonicalAdminHref === 'function' ? base.canonicalAdminHref(block.url) : block.url),
       metrics: (Array.isArray(block.kpis_summary) ? block.kpis_summary : []).slice(0, 4).map(item => ({
         label: item.label || 'Indicateur', value: display(base, item),
       })),
@@ -153,8 +153,8 @@
 
   function withReturn(href) {
     const nav = globalThis.KomerceCanonicalNavigation;
-    return nav && typeof nav.withEntityReturnTo === 'function'
-      ? nav.withEntityReturnTo(href, '/admin/pilotage', 'Retour au pilotage')
+    return nav && typeof nav.withNavContext === 'function'
+      ? nav.withNavContext(href, 'Retour au pilotage')
       : href;
   }
 
@@ -187,7 +187,7 @@
         label: humanLabel('stages', stage.key, stage.label || 'Étape'),
         helper,
         tone: stage.health === 'RED' ? 'critical' : (stage.health === 'ORANGE' ? 'warning' : (stage.health === 'GREEN' ? 'positive' : 'neutral')),
-        href: '/admin/operations#operations-control-chain',
+        href: withReturn('/admin/operations#operations-control-chain'),
       };
     });
   }

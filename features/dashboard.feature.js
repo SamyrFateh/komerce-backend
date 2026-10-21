@@ -512,6 +512,7 @@ module.exports = {
       'dashboards/canonical/js/providers-admin.js',
       'dashboards/canonical/js/users-admin.js',
       'dashboards/canonical/js/commerce.js',
+      'dashboards/canonical/js/commerce-decision.js',
       'dashboards/canonical/js/finance-decision.js',
       'dashboards/canonical/js/order-360.js',
       'dashboards/canonical/js/decision-primitives.js',
