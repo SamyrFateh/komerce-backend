@@ -75,3 +75,12 @@ test('Finance : file fournisseur distingue vide et projection non fournie', () =
   expect(source).toContain('Non disponible dans cette vue');
   expect(source).toContain('Aucun paiement fournisseur ambigu');
 });
+
+test('Finance : accès utiles (commandes à finaliser, analyse) sans nouveau KPI ni recalcul', () => {
+  expect(css).toContain('.kmc-fin3-links');
+  const source = fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','finance-decision.js'),'utf8');
+  expect(source).toContain("data-finance-link', 'orders-to-finalize'");
+  expect(source).toContain("data-finance-link', 'economic-analysis'");
+  expect(source).toContain('Commandes à finaliser : non disponible');
+  expect(source).toContain('const known = Array.isArray(payload && payload.incomplete_cost_orders);');
+});
