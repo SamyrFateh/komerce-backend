@@ -17,3 +17,11 @@ test('file fournisseurs Finance : rows, empty et not-provided restent distincts'
   expect(src).toContain('Non disponible dans cette vue');
   expect(src).toContain('Aucun paiement fournisseur ambigu');
 });
+
+test('Finance : accès utiles vers commandes à finaliser et analyse, absence = non disponible (jamais zéro)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/finance-decision.js'), 'utf8');
+  expect(src).toContain("data-finance-link', 'orders-to-finalize'");
+  expect(src).toContain("data-finance-link', 'economic-analysis'");
+  expect(src).toContain('const known = Array.isArray(payload && payload.incomplete_cost_orders);');
+  expect(src).toContain('Commandes à finaliser : non disponible');
+});
