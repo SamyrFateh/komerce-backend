@@ -336,7 +336,8 @@ test('Hub et Relais Live utilisent leur navigation locale sans onglets concurren
 describe('Navigation Live — trois métiers, onglets contextuels uniques', () => {
   afterEach(() => { delete global.location; });
   test.each([
-    ['/admin/hub-live', '', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-suivi'],
+    ['/admin/hub-live', '', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-flux'],
+    ['/admin/hub-live', '?view=overview', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-suivi'],
     ['/admin/hub-live', '?view=flux', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-flux'],
     ['/admin/hub-live', '?view=queue&tab=all', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-commandes'],
     ['/admin/relais-live', '', ['Suivi', 'Colis'], 'relais-suivi'],

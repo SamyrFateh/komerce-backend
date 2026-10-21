@@ -30,7 +30,7 @@ const back = h => { const m = h.match(/<a href="([^"]+)" data-cockpit-nav class=
 const activeTab = h => (h.match(/is-active[^>]*>([^<]+)</) || [])[1];
 
 test('Suivi : flux, chiffres cliquables vers la liste exacte, signaux et file à traiter en premier', () => {
-  const h = html('', OVERVIEW);
+  const h = html('?view=overview', OVERVIEW);
   expect(h).toContain('OPÉRATIONS · HUB');
   expect(h).toContain('2 commandes en attente depuis plus de 48 h');
   expect(h).toContain('href="/admin/hub-live?view=queue&tab=to_prepare"');
@@ -46,7 +46,7 @@ test('Suivi : flux, chiffres cliquables vers la liste exacte, signaux et file à
 });
 
 test('Suivi : aucune commande → état calme sans fausse alerte', () => {
-  const h = html('', { dash:{ orders:{}, parcels:{}, incidents:{} }, first:{ data:[] }, blocked:{ pagination:{ total:0 } } });
+  const h = html('?view=overview', { dash:{ orders:{}, parcels:{}, incidents:{} }, first:{ data:[] }, blocked:{ pagination:{ total:0 } } });
   expect(h).toContain('Aucune commande à traiter');
   expect(h).toContain('rien à faire');
   expect(h).not.toContain('is-attention');
@@ -56,7 +56,7 @@ test('Suivi : aucune commande → état calme sans fausse alerte', () => {
 test('population : Hub › Suivi › file, retour au suivi, onglet Suivi actif ; pagination qui garde la file', () => {
   const h = html('?view=queue&tab=preparation', QUEUE);
   expect(crumbs(h)).toBe('Hub > Suivi > En préparation');
-  expect(back(h)).toEqual({ href:'/admin/hub-live', label:'← Retour au suivi' });
+  expect(back(h)).toEqual({ href:'/admin/hub-live?view=overview', label:'← Retour au suivi' });
   expect(activeTab(h)).toBe('Suivi');
   expect(h).toContain('60 au total');
   expect(h).toContain('href="/admin/hub-live?view=queue&tab=preparation&page=2"');
@@ -80,7 +80,7 @@ test('commande : retour à sa file d’origine, jamais au Suivi quand elle vient
   expect(back(fromAll)).toEqual({ href:'/admin/hub-live?view=queue&tab=all', label:'← Retour à Commandes' });
   expect(activeTab(fromAll)).toBe('Commandes');
   const direct = html('?view=order&order=o-1', DETAIL);
-  expect(back(direct)).toEqual({ href:'/admin/hub-live', label:'← Retour au suivi' });
+  expect(back(direct)).toEqual({ href:'/admin/hub-live?view=overview', label:'← Retour au suivi' });
 });
 
 test('commande : articles, colis, incidents, chronologie ; aucune donnée personnelle de contact, aucune action', () => {
@@ -90,10 +90,10 @@ test('commande : articles, colis, incidents, chronologie ; aucune donnée person
   expect(h).not.toMatch(/<button|data-source-|phone|email|@/);
 });
 
-test('vue inconnue → Suivi ; le KIR/les ids ne deviennent jamais un niveau du fil', () => {
+test('vue inconnue → Flux Hub (défaut) ; le KIR/les ids ne deviennent jamais un niveau du fil', () => {
   const h = html('?view=nimporte', OVERVIEW);
   expect(h).toContain('OPÉRATIONS · HUB');
-  expect(activeTab(h)).toBe('Suivi');
+  expect(activeTab(h)).toBe('Flux Hub');
 });
 
 test('le module Hub est en lecture seule : aucune méthode d’écriture, aucun endpoint d’action', () => {
@@ -114,4 +114,12 @@ test('LIVE-02/07 : l’écran lit les endpoints en projection Live et affiche l�
   expect(src).toContain('fetched_at:dash?.generated_at');
   expect((src.match(/projection=live|projection:'live'/g) || []).length).toBeGreaterThanOrEqual(4);
   expect(src).toContain("/api/hub-dash/dashboard'"); // KPI : aucun contact, pas de projection nécessaire
+});
+
+test('Flux Hub par défaut ; Suivi, Commandes et Exécution restent accessibles', () => {
+  const h = html('', OVERVIEW);
+  expect(activeTab(h)).toBe('Flux Hub');
+  ['Suivi', 'Commandes'].forEach((l) => expect(h).toContain('>' + l + '</a>'));
+  expect(h).toContain('href="/admin/hub-live?view=overview"');
+  expect(html('?view=overview', OVERVIEW)).toContain('Suivi');
 });
