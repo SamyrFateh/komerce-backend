@@ -16,3 +16,9 @@ test('les listes vides ne réservent pas une grande hauteur et le pipeline actif
   expect(css).toContain('.kmc-control-chain.is-empty .kmc-control-stage');
   expect(css).not.toContain('.kmc-control-chain.is-active .kmc-control-order-list { display: none; }');
 });
+
+test('légende de la chaîne : pas de marge négative qui déborde sur le cadre', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/operations-control-board-v1.css'), 'utf8');
+  const rule = css.match(/\.kmc-control-chain-legend \{[^}]*\}/)[0];
+  expect(rule).not.toMatch(/margin:\s*-/);
+});
