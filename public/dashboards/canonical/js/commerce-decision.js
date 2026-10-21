@@ -327,6 +327,146 @@
     return toolbar;
   }
 
+  // Séries servies par le serveur (/commerce) : le navigateur ne fait que les dessiner.
+  // Barres : hauteur = valeur / max affiché (mise à l'échelle graphique, pas un indicateur).
+  function salesSeriesBars(payload, base) {
+    const rows = Array.isArray(payload && payload.sales_series) ? payload.sales_series : [];
+    const max = rows.reduce((m, r) => Math.max(m, Number(r && r.sales_kmf) || 0), 0);
+    return rows.map(r => ({
+      day: r.day,
+      label: String(r.day || '').slice(5).split('-').reverse().join('/'),
+      value: base.formatKmf(r.sales_kmf),
+      heightPct: max > 0 ? Math.max(2, Math.round(((Number(r.sales_kmf) || 0) / max) * 100)) : 0,
+    }));
+  }
+
+  const MARKET_COLORS = Object.freeze(['#ea580c', '#0f766e', '#7c3aed', '#d97706', '#64748b', '#0369a1', '#be123c', '#4d7c0f']);
+
+  function marketShares(payload, base) {
+    const rows = Array.isArray(payload && payload.sales_by_market) ? payload.sales_by_market : [];
+    return rows.map((r, i) => ({
+      code: r.market_code, name: r.market_name || r.market_code,
+      value: base.formatKmf(r.sales_kmf),
+      share: r.share_pct == null ? null : Number(r.share_pct),
+      color: MARKET_COLORS[i % MARKET_COLORS.length],
+    }));
+  }
+
+  function recentOrderRows(payload, base) {
+    const labels = (globalThis.KomerceCanonicalOrders && globalThis.KomerceCanonicalOrders.STATUS_LABELS) || {};
+    return (Array.isArray(payload && payload.recent_orders) ? payload.recent_orders : []).map(r => {
+      const d = r.created_at ? new Date(r.created_at) : null;
+      return {
+        reference: r.reference,
+        date: d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString('fr-FR') : 'Non disponible',
+        market: r.market_code || '—',
+        client: r.client_name || '—',
+        amount: r.total_kmf == null ? 'Non disponible' : base.formatKmf(r.total_kmf),
+        status: labels[r.status] || r.status || 'Non disponible',
+      };
+    });
+  }
+
+  function seriesSection(doc, payload, base) {
+    const card = cardSection(doc, 'Évolution des ventes payées',
+      'Ventes payées par jour de création · jours sans vente non représentés.', 'commerce-sales-series');
+    const bars = salesSeriesBars(payload, base);
+    if (!bars.length) {
+      card.body.appendChild(text(doc, 'p', 'kmc-commerce-ranking-empty', 'Aucune vente payée sur la période sélectionnée.'));
+      return card.section;
+    }
+    const chart = doc.createElement('div');
+    chart.className = 'kmc-com-bars';
+    chart.setAttribute('role', 'img');
+    chart.setAttribute('aria-label', 'Ventes payées par jour');
+    bars.forEach(b => {
+      const col = doc.createElement('div');
+      col.className = 'kmc-com-bar';
+      col.setAttribute('title', `${b.label} · ${b.value}`);
+      const fill = doc.createElement('span');
+      fill.className = 'kmc-com-bar-fill';
+      fill.style.height = `${b.heightPct}%`;
+      col.appendChild(fill);
+      chart.appendChild(col);
+    });
+    card.body.appendChild(chart);
+    const axis = doc.createElement('div');
+    axis.className = 'kmc-com-bars-axis';
+    axis.appendChild(text(doc, 'span', '', bars[0].label));
+    axis.appendChild(text(doc, 'span', '', bars[bars.length - 1].label));
+    card.body.appendChild(axis);
+    return card.section;
+  }
+
+  function marketSection(doc, payload, base) {
+    const card = cardSection(doc, 'Répartition des ventes par marché',
+      'Ventes payées de la période, wallet inclus.', 'commerce-market-share');
+    const shares = marketShares(payload, base);
+    if (!shares.length) {
+      card.body.appendChild(text(doc, 'p', 'kmc-commerce-ranking-empty', 'Aucune vente payée par marché sur la période.'));
+      return card.section;
+    }
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-com-market';
+    let acc = 0;
+    const stops = shares.filter(m => m.share != null).map(m => { const from = acc; acc += m.share; return `${m.color} ${from}% ${acc}%`; });
+    const donut = doc.createElement('div');
+    donut.className = 'kmc-com-donut';
+    donut.setAttribute('aria-hidden', 'true');
+    donut.style.background = `conic-gradient(${stops.join(', ')}${acc < 100 ? `, #e2e8f0 ${acc}% 100%` : ''})`;
+    wrap.appendChild(donut);
+    const legend = doc.createElement('ul');
+    legend.className = 'kmc-com-legend';
+    shares.forEach(m => {
+      const li = doc.createElement('li');
+      const dot = doc.createElement('i');
+      dot.style.background = m.color;
+      li.appendChild(dot);
+      li.appendChild(text(doc, 'span', '', m.name));
+      li.appendChild(text(doc, 'b', '', m.value));
+      li.appendChild(text(doc, 'em', '', m.share == null ? '—' : `${String(m.share).replace('.', ',')} %`));
+      legend.appendChild(li);
+    });
+    wrap.appendChild(legend);
+    card.body.appendChild(wrap);
+    return card.section;
+  }
+
+  function recentSection(doc, payload, base) {
+    const card = cardSection(doc, 'Dernières commandes', 'Les cinq commandes créées les plus récentes de la période.', 'commerce-recent-orders');
+    const rows = recentOrderRows(payload, base);
+    if (!rows.length) {
+      card.body.appendChild(text(doc, 'p', 'kmc-commerce-ranking-empty', 'Aucune commande sur la période sélectionnée.'));
+      return card.section;
+    }
+    const table = doc.createElement('table');
+    table.className = 'kmc-com-table';
+    const head = doc.createElement('tr');
+    ['Commande', 'Date', 'Marché', 'Client', 'Montant', 'Statut'].forEach(h => head.appendChild(text(doc, 'th', '', h)));
+    const thead = doc.createElement('thead');
+    thead.appendChild(head);
+    table.appendChild(thead);
+    const tbody = doc.createElement('tbody');
+    rows.forEach(r => {
+      const tr = doc.createElement('tr');
+      const ref = doc.createElement('td');
+      const a = text(doc, 'a', '', r.reference);
+      a.setAttribute('href', withReturn(`/admin/orders/${encodeURIComponent(r.reference)}`));
+      ref.appendChild(a);
+      tr.appendChild(ref);
+      [r.date, r.market, r.client, r.amount, r.status].forEach(v => tr.appendChild(text(doc, 'td', '', v)));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    card.body.appendChild(table);
+    return card.section;
+  }
+
+  function withReturn(href) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withNavContext === 'function' ? nav.withNavContext(href, 'Retour à Commerce') : href;
+  }
+
   function render(rootNode, payload, options, base, decisionUi) {
     const doc = options.document;
     const ui = options.ui;
@@ -395,6 +535,13 @@
 
     dashboard.appendChild(activity.section);
 
+    const trends = doc.createElement('div');
+    trends.className = 'kmc-decision-dashboard-grid-2 kmc-com-trends';
+    trends.setAttribute('data-dashboard-role', 'secondary');
+    trends.appendChild(seriesSection(doc, payload, base));
+    trends.appendChild(marketSection(doc, payload, base));
+    dashboard.appendChild(trends);
+
     // Les cinq meilleures lignes produit et les catégories viennent DIRECTEMENT
     // des agrégats serveur. Ne jamais en déduire la vente payée de commande :
     // transport, remises et wallet ont des assiettes distinctes.
@@ -430,6 +577,9 @@
     }
     rankings.appendChild(categoriesCard.section);
     dashboard.appendChild(rankings);
+    const recent = recentSection(doc, payload, base);
+    recent.setAttribute('data-dashboard-role', 'secondary');
+    dashboard.appendChild(recent);
 
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };
@@ -461,6 +611,9 @@
       projectViabilityItems: payload => viabilityItems(payload, base),
       projectProfitabilityItems: payload => profitabilityItems(payload, base),
       projectFunnelStages: payload => funnelStages(payload, base),
+      projectSalesSeries: payload => salesSeriesBars(payload, base),
+      projectMarketShares: payload => marketShares(payload, base),
+      projectRecentOrders: payload => recentOrderRows(payload, base),
       projectTrust: payload => trust(payload, base),
     };
     return Object.freeze(enhanced);
@@ -469,6 +622,9 @@
   return Object.freeze({
     kpi,
     metricDisplay,
+    salesSeriesBars,
+    marketShares,
+    recentOrderRows,
     overallWarningCount,
     incompleteProfitability,
     destinationForSignal,

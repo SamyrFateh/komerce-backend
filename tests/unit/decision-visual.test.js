@@ -86,3 +86,8 @@ test('Commandes : styles de la vue distincte, palette Komerce orange et responsi
   expect(css).toContain('#ea580c');
   expect(css).toMatch(/@media \(max-width: 980px\)[\s\S]*kmc-ord-main/);
 });
+
+test('Commerce : styles série / marché / dernières commandes présents', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/decision-visual.css'), 'utf8');
+  ['.kmc-com-bars', '.kmc-com-donut', '.kmc-com-legend', '.kmc-com-table'].forEach(sel => expect(css).toContain(sel));
+});
