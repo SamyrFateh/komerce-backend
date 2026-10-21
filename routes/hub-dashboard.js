@@ -204,6 +204,9 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
     });
     if (!_prepResult.success) {
       log.warn(`[HUB] transitionOrderStatus failed for ${order.id}: ${_prepResult.error}`);
+      if (_prepResult.code === 'PHYSICAL_RECEPTION_INCOMPLETE') {
+        return res.status(409).json({ error: _prepResult.error, code: _prepResult.code, coverage: _prepResult.coverage });
+      }
     }
 
     const scanCodePrep = `HUB-PREP-${order.id.slice(0, 8).toUpperCase()}`;
@@ -311,13 +314,17 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
     }
 
     if (['confirmed', 'ordered'].includes(order.status)) {
-      await transitionOrderStatus({
+      const _autoPrep = await transitionOrderStatus({
         orderId: order.id,
         newStatus: 'preparation',
         actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
         source: 'hub_auto_prepare',
         dbClient: client,
       });
+      if (!_autoPrep.success && _autoPrep.code === 'PHYSICAL_RECEPTION_INCOMPLETE') {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: _autoPrep.error, code: _autoPrep.code, coverage: _autoPrep.coverage });
+      }
     }
 
     const reference = await generateParcelRef(client);

@@ -17,7 +17,7 @@
  * Aucune fixture n'écrit le statut : seul l'écrivain canonique le change.
  */
 
-const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
+const { describeE2E, createCleanup, seedPhysicalReceiptForTest, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
 jest.setTimeout(90000);
 
@@ -82,8 +82,11 @@ describeE2E('E2E-LOOP — écrivain canonique → vues consommatrices', ({ db })
     orderId = uuid();
     await q(`INSERT INTO orders (id, user_id, relais_id, market_id, reference, status, payment_status, payment_mode, total_kmf, total_eur)
              VALUES ($1,$2,$3,$4,$5,'confirmed','paid','cash_relais',25000,50)`, [orderId, userId, relaisId, marketId, REF]);
+    const itemId = uuid();
     await q(`INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf, fulfillment_source) VALUES ($1,$2,$3,1,25000,'IMPORT')`,
-      [uuid(), orderId, productId]);
+      [itemId, orderId, productId]);
+    // C2 : l'entrée en preparation exige une couverture physique ; ce spec teste les vues, pas la réception.
+    await seedPhysicalReceiptForTest(db, cleanup, { orderId, itemId, productId, marketId, relaisId, quantity: 1 });
   });
 
   afterAll(async () => { if (cleanup) await cleanup.run(); });
@@ -92,7 +95,8 @@ describeE2E('E2E-LOOP — écrivain canonique → vues consommatrices', ({ db })
   // Hub Live : file d'exécution jusqu'au transit ; Opérations : chaîne active ; Relais Live : jusqu'à la remise.
   const EXPECTED = [
     { target: 'ordered',     stage: 'PURCHASING', ops: true,  hub: true,  relay: true },
-    { target: 'preparation', stage: 'HUB_CONTROL', ops: true, hub: true,  relay: true },
+    // Avec la matière réellement reçue (C2), la projection lit l'unité physique : HUB_RECEIVING (et non plus HUB_CONTROL).
+    { target: 'preparation', stage: 'HUB_RECEIVING', ops: true, hub: true,  relay: true },
     { target: 'shipped',     stage: 'FORWARDER',  ops: true,  hub: true,  relay: true },
     { target: 'in_transit',  stage: 'TRANSPORT',  ops: true,  hub: true,  relay: true },
     { target: 'available',   stage: 'RELAY',      ops: true,  hub: false, relay: true },

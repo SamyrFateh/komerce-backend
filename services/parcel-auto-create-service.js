@@ -193,12 +193,19 @@ async function autoCreateParcel(client, orderId, actor) {
     }).catch(() => {});
   }
 
-  await transitionOrderStatus({
+  const prepResult = await transitionOrderStatus({
     orderId, newStatus: 'preparation',
     actor: { id: actor.id, role: actor.role || 'system' },
     source: 'auto_parcel', note: `Auto: colis ${parcelRef} → préparation`,
     dbClient: client,
-  }).catch(() => {});
+  });
+  if (prepResult && prepResult.success === false && prepResult.code === 'PHYSICAL_RECEPTION_INCOMPLETE') {
+    // Pas de colis sans matière reçue : l'appelant annule sa transaction.
+    const err = new Error(prepResult.error);
+    err.code = prepResult.code;
+    err.status = 409;
+    throw err;
+  }
 
   log.info(`📦 AUTO-PARCEL: ${parcelRef} created for ${order.reference}`);
 
@@ -300,6 +307,11 @@ async function createParcelInOwnTransaction(orderId, actor) {
     return parcelResult;
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
+    if (err && err.code === 'PHYSICAL_RECEPTION_INCOMPLETE') {
+      // Attendu : l'encaissement est acté, le colis attend la réception physique au hub (pas une erreur).
+      log.warn({ order_id: orderId }, '[CASH-CONFIRM] colis différé : réception physique incomplète');
+      return { success: false, reason: 'physical_reception_incomplete' };
+    }
     log.error({ err, order_id: orderId }, '[CASH-CONFIRM] création colis après encaissement échouée — rejouer confirm-cash ou create-parcel');
     return { success: false, reason: 'parcel_creation_failed' };
   } finally {

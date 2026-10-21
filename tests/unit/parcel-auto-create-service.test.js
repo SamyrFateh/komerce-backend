@@ -238,6 +238,22 @@ describe('autoCreateParcel', () => {
     );
     expect(toPrep).toHaveLength(1);
   });
+
+  test('couverture physique incomplète (C2) : le colis n\'est pas créé silencieusement, erreur 409 PHYSICAL_RECEPTION_INCOMPLETE', async () => {
+    mockTransitionOrderStatus.mockResolvedValue({ success: false, code: 'PHYSICAL_RECEPTION_INCOMPLETE', error: 'Réception physique incomplète' });
+    const client = makeClient([
+      { rows: [ORDER_ORDERED] },
+      { rows: [] },
+      { rows: [ITEM] },
+      { rows: [{ max_seq: 1 }] },
+      { rows: [] },
+      { rows: [] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    await expect(autoCreateParcel(client, ORDER_ORDERED.id, ACTOR))
+      .rejects.toMatchObject({ code: 'PHYSICAL_RECEPTION_INCOMPLETE', status: 409 });
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

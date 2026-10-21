@@ -267,6 +267,17 @@ describe('routes/hub-dashboard', () => {
       const res = await request(buildApp()).post('/api/hub-dashboard/orders/o1/start-prep');
       expect(res.status).toBe(200);
     });
+
+    test('couverture physique incomplète (C2) : 409 PHYSICAL_RECEPTION_INCOMPLETE, aucune trace de préparation', async () => {
+      transitionOrderStatus.mockResolvedValueOnce({ success: false, code: 'PHYSICAL_RECEPTION_INCOMPLETE', error: 'Réception physique incomplète', coverage: [{ missing: 2 }] });
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'o1', status: 'ordered', reference: 'CMD-1' }] });
+
+      const res = await request(buildApp()).post('/api/hub-dashboard/orders/o1/start-prep');
+
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: 'PHYSICAL_RECEPTION_INCOMPLETE', coverage: [{ missing: 2 }] });
+      expect(mockDbQuery).toHaveBeenCalledTimes(1); // aucun scan ni commentaire de préparation
+    });
   });
 
   describe('POST /orders/:id/create-parcel', () => {
@@ -324,6 +335,21 @@ describe('routes/hub-dashboard', () => {
       const res = await request(buildApp()).post('/api/hub-dashboard/orders/o1/auto-prepare');
 
       expect(res.status).toBe(400);
+      expectTransactionRolledBack(client);
+    });
+
+    test('couverture physique incomplète (C2) : rollback, 409, aucun colis créé', async () => {
+      transitionOrderStatus.mockResolvedValueOnce({ success: false, code: 'PHYSICAL_RECEPTION_INCOMPLETE', error: 'Réception physique incomplète', coverage: [{ missing: 1 }] });
+      const client = makeClient([
+        { rows: [{ id: 'o1', reference: 'CMD-1', status: 'ordered' }] },
+        { rows: [{ id: 'oi1', quantity: 1, product_id: 'p1', product_name: 'A', weight_kg: 0.3 }] },
+      ]);
+      mockGetClient.mockResolvedValue(client);
+
+      const res = await request(buildApp()).post('/api/hub-dashboard/orders/o1/auto-prepare');
+
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('PHYSICAL_RECEPTION_INCOMPLETE');
       expectTransactionRolledBack(client);
     });
 

@@ -44,7 +44,7 @@ const RECEIVABLE_SQL = `
     LEFT JOIN products p2            ON p2.id = psk.product_id
     LEFT JOIN suppliers sup          ON sup.id = po.supplier_id
    WHERE NOT v.cancelled
-     AND po.status NOT IN ('draft', 'cancelled')
+     AND po.status NOT IN ('draft', 'cancelled', 'hub_received')
    GROUP BY po.id, po.status, po.supplier_order_id, po.created_at, po.order_id,
             sup.id, sup.name, pl.product_sku_id, p.name, p2.name
   HAVING SUM(v.effective_quantity) > SUM(v.received_quantity)

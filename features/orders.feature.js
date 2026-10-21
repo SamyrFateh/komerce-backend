@@ -308,7 +308,7 @@ module.exports = {
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)",
 'wallet (application credit)',
       'economic-engine (cout figure a la commande)',
-      'logistics (rattachement colis)',
+      'logistics (rattachement colis ; couverture physique de réception : order-physical-coverage-service, gate C2 vers preparation)',
       'catalog (lecture produit)',
       'market-autonomy (prix LOCAL_ACTIVE résolu depuis le market_id serveur du relais avant snapshot de commande)',
       'local-stock (Vague 2 D2 — allocateForOrderItem à la création de commande, ' +
