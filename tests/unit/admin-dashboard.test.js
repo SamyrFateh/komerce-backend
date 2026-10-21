@@ -213,6 +213,13 @@ describe('GET /logistics', () => {
 });
 
 describe('GET /unified', () => {
+  it('supervision des marchés indisponible → null (Non disponible), jamais 0 ni 500', async () => {
+    require('../../services/dashboard-pilotage-markets').getMarketsSupervision.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).get('/api/admin/dashboard/unified');
+    expect(res.status).toBe(200);
+    expect(res.body.markets_supervision).toBeNull();
+  });
+
   it('nominal → 200 avec kpis_global, view_blocks (3 vues), economic_flow, principles', async () => {
     const res = await request(app).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(200);
