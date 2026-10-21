@@ -77,14 +77,14 @@ Pour **Pilotage, Commerce, Commandes, Opérations, Finance, Sourcing Live, Hub L
 | A2 — exposition ENABLED + prix LOCAL_ACTIVE recontrôlés à l'engagement, panier partagé ancien inclus (lignes figées inchangées) | #2802 | fusionnée |
 | B — preuve de livrabilité par marché (attestation centrale ; base historique réservée à KM) | #2804 | fusionnée (0cf71c912, GO Opus) |
 | C1 — audit autorité physique de réception hub | #2803 | fusionnée (doc) |
-| C2 — couverture physique quantitative avant préparation, PO historiques raccordées à la custody | #2807 | en contre-revue Opus ; non fusionnée sans GO + CI verte |
+| C2 — couverture physique quantitative avant préparation, PO historiques raccordées à la custody | #2807 | fusionnée (GO Opus) |
 
 État d'exploitation constaté (lecture seule) : staging sur le commit c24405533, aucun lot ci-dessus déployé ; `ORDER_COST_SNAPSHOT_ACTIVE=true` sur staging (`stripe_mode: test`) ; production non touchée ; aucun flag modifié.
 
 Préconditions avant la recette Golden :
 1. Déployer main sur staging et vérifier le commit via `/health/version`.
 2. CM/CG ne sont pas attestés : le checkout les refuse (`MARKET_DELIVERY_NOT_PROVEN`) tant qu'une attestation centrale (transporteur, tarif, preuve, validité) n'existe pas. KM repose sur la base historique (commandes KM réelles collectées) : vérifier ce compte avant déploiement, sinon attester KM.
-3. Réception hub (C2, #2807) : la préparation exige une couverture physique quantitative ; `POST /api/purchasing/:id/receive` passe en 410. Dette historique : requête `scripts/diagnostics/order-physical-coverage-exceptions.sql` à exécuter par un humain ; nombre d'exceptions non vérifié ; aucun statut réécrit.
+3. Réception hub (C2, #2807 fusionnée) : la préparation (et tout saut de rang au-delà) exige une couverture physique quantitative ; `POST /api/purchasing/:id/receive` passe en 410. Dette historique : requête `scripts/diagnostics/order-physical-coverage-exceptions.sql` à exécuter par un humain ; nombre d'exceptions non vérifié ; aucun statut réécrit.
 4. Moteur RCT1 inchangé.
 
 ## Références conservées
