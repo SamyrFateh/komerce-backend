@@ -60,13 +60,21 @@ Pour **Pilotage, Commerce, Commandes, Opérations, Finance, Sourcing Live, Hub L
 ## 5. Exécution graduée / acceptation
 
 1. **Gel des preuves historiques.** Ne réécrire ni la contre-recette ni les anciens runs ; ne jamais les qualifier de GO visuel.
-2. **Préflight lecture seule sur le staging actualisé :** `/health/version`, migrations/flags (dont `ORDER_COST_SNAPSHOT_ACTIVE`), inventaire scope RCT1 et cohorte 30 jours, droits des acteurs et activité réelle sans RCT1.
+2. **Préflight lecture seule sur le staging actualisé :** `/health/version` (staging actuellement à c24405533 : aucun des six lots déployé), migrations 305/306 appliquées, attestations de livrabilité CM/CG et compte KM, migrations/flags (dont `ORDER_COST_SNAPSHOT_ACTIVE`), inventaire scope RCT1 et cohorte 30 jours, droits des acteurs et activité réelle sans RCT1.
 3. **Rejouer les observations humaines** dans le **Golden existant** (nouvelle piste « RCT1 × P1–P7 »), sur écrans desktop et mobile, sans nouvelles commandes : identifiant commun, état, provenance, captures.
 4. **Compléter par les parcours P1–P7 manquants**, sans affirmer que les fixtures indépendantes ont le même ancêtre : sourcing/CJ, PO/Hub Dubaï, trajets CM/CG, P5, clôture cash, revue de prix.
 5. **Décider scénario par scénario :** GO / NO GO / NON COUVERT avec motif, propriétaire, prochaine action. Les cas P3 (LOCAL_STOCK vs coût import), conversion D4, J/K, Stripe E2 et flag snapshot restent à confirmer selon version, pas à gommer.
 6. **GO global uniquement** si chaîne démontrée par les mêmes références ou lien de provenance explicite, observée sur vrais écrans, API cohérentes, cas négatifs et séparation RCT1/réel prouvés, décision humaine signée. Si blocage : **NO GO limité et documenté**, ne pas inventer de moteur ni purger staging.
 
 **Livrable attendu de la recette :** pour chaque étape, identifiants, acteur, version / période / marché / scope, objectif, attendu indépendant, réponse canonique, observé sur desktop/mobile, capture/URL/trace, écart et criticité, validation humaine, suite. Le Golden conserve seulement ces observations locales ; il n'écrit pas la vérité métier.
+
+## Réconciliation avec les six lots fusionnés (D, A1, A2, B, C1, C2)
+
+- **Isolation RCT1 (D, #2800).** Commandes, chaîne de contrôle (Opérations), Hub Live et Relais Live lisent le **réel par défaut** (`orders.simulation_scope IS NULL`) : les commandes RCT1 n'y figurent **pas** en liste. Une commande RCT1 s'observe **par sa référence** dans Order 360, qui l'ouvre et la marque `simulation_scope`. Seuls Commerce et Finance acceptent `?simulation_scope=RCT1` (cf. `hrefForStep`). Écart résiduel : la table des signaux (Pilotage) n'a pas de colonne de scope. Ne plus attendre de commandes RCT1 dans les listes Commandes/Hub/Relais.
+- **Catalogue et achat (A1, A2).** Sans marché explicite, aucune ligne achetable ; à l'engagement/paiement, exposition ENABLED **et** prix LOCAL_ACTIVE sont recontrôlés (panier partagé ancien inclus, lignes figées inchangées). Un produit non exposé ou sans prix local actif est refusé : c'est le comportement attendu, pas une anomalie.
+- **Livrabilité (B, #2804).** Le checkout refuse un marché sans preuve de livraison (`MARKET_DELIVERY_NOT_PROVEN`), y compris pour les commandes de simulation. CM/CG exigent une attestation centrale (transporteur, tarif, preuve, validité) ; KM repose sur ses commandes réelles collectées. Les cas J/K CM/CG de RCT1 ne peuvent donc pas être rejoués tant que l'attestation n'est pas posée par un humain.
+- **Réception physique (C1/C2, #2803, #2807).** Une commande **réelle** n'entre en `preparation` (ni au-delà) qu'avec une couverture physique quantitative de chaque ligne attendue (quarantaine et unités inutilisables exclues) ; la réception déclarative est fermée (410). Les commandes RCT1 (`simulation_scope` renseigné) sont **exclues** du gate et n'ont aucune preuve physique : elles ne prouvent pas la réception hub. **Limite historique non masquée :** le nombre de commandes réelles déjà avancées sans couverture est **non vérifié** (requête `scripts/diagnostics/order-physical-coverage-exceptions.sql` à lancer par un humain) ; aucune réception n'est inventée.
+- **Golden.** Le guide reste une observation humaine, sans moteur parallèle : il oriente vers les écrans propriétaires et ne remplace aucune preuve ci-dessus. Les chiffres 7 / 6 / 106 390 KMF restent des constats datés du 20/10, pas des attendus.
 
 ## Préalables à la recette Golden (remédiation audit Opus P1–P7)
 
