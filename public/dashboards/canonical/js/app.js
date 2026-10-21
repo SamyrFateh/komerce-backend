@@ -663,11 +663,12 @@
     });
   }
 
-  function renderProduct360(root, user) {
+  function renderProduct360(root, user, adminContext) {
     if (!global.KomerceCanonicalProduct360) throw new Error('canonical_product_360_module_missing');
     return global.KomerceCanonicalProduct360.mount({
       root,
       user,
+      adminContext: adminContext || null,
       pathname: global.location.pathname,
       document: global.document,
       fetch: global.fetch.bind(global),
@@ -858,7 +859,7 @@
     if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
     if (surface === SURFACES.CLIENT_INDEX) return renderClientIndexShell(root, user, adminContext);
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user, adminContext);
-    if (surface === SURFACES.PRODUCT_360) return renderProduct360(root, user);
+    if (surface === SURFACES.PRODUCT_360) return renderProduct360(root, user, adminContext);
     if (surface === SURFACES.SUPPLIER_360) return renderSupplier360(root, user);
     if (surface === SURFACES.OPERATIONS_WORKSPACE) return renderOperationsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.SHIPPING_CUSTOMS_WORKSPACE) return renderShippingCustomsWorkspaceShell(root, user, adminContext);
