@@ -1105,8 +1105,8 @@
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub-live') {
       return [
-        { id: 'hub-flux', label: 'Flux Hub', href: '/admin/hub-live?view=flux' },
-        { id: 'hub-suivi', label: 'Suivi', href: '/admin/hub-live' },
+        { id: 'hub-flux', label: 'Flux Hub', href: '/admin/hub-live' },
+        { id: 'hub-suivi', label: 'Suivi', href: '/admin/hub-live?view=overview' },
         { id: 'hub-commandes', label: 'Commandes', href: '/admin/hub-live?view=queue&tab=all' },
         { id: 'hub-execution', label: 'Exécution', href: '/admin/hub-live?view=execute' },
       ];
@@ -1143,7 +1143,7 @@
     }
     if (domainId === 'live' && path === '/admin/hub-live') {
       if (search.get('view') === 'execute') return 'hub-execution';
-      if (search.get('view') === 'flux') return 'hub-flux';
+      if (!search.get('view') || search.get('view') === 'flux') return 'hub-flux';
       return search.get('view') === 'queue' && search.get('tab') === 'all' || search.get('view') === 'order' && search.get('from') === 'all' ? 'hub-commandes' : 'hub-suivi';
     }
     if (domainId === 'live' && path === '/admin/relais-live') {

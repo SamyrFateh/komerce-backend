@@ -58,12 +58,13 @@
     ? (o.payment_status === 'paid' ? 'Cash encaissé' : 'Cash à encaisser')
     : (o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente'));
 
-  const fluxUrl = () => `${BASE}${queryString({ view:'flux' })}`;
+  const fluxUrl = () => BASE;
+  const suiviUrl = () => `${BASE}${queryString({ view:'overview' })}`;
 
   function hubTabs() {
     return [
       { key:'flux', label:'Flux Hub', href:fluxUrl() },
-      { key:'suivi', label:'Suivi', href:BASE },
+      { key:'suivi', label:'Suivi', href:suiviUrl() },
       { key:'commandes', label:'Commandes', href:queueUrl('all') },
     ];
   }
@@ -163,8 +164,8 @@
     const tab = tabOf(p);
     if (tab === 'all') return { crumbs:[{ label:'Hub', plain:true }, { label:'Commandes' }], back:null };
     return {
-      crumbs:[{ label:'Hub', plain:true }, { label:'Suivi', href:BASE }, { label:QUEUE_TABS[tab] }],
-      back:{ href:BASE, label:'← Retour au suivi' },
+      crumbs:[{ label:'Hub', plain:true }, { label:'Suivi', href:suiviUrl() }, { label:QUEUE_TABS[tab] }],
+      back:{ href:suiviUrl(), label:'← Retour au suivi' },
     };
   }
 
@@ -204,12 +205,12 @@
   function navOrder(p, data) {
     const from = fromOf(p);
     const ref = data?.reference || 'Commande';
-    if (!from) return { crumbs:[{ label:'Hub', plain:true }, { label:'Suivi', href:BASE }, { label:ref }], back:{ href:BASE, label:'← Retour au suivi' } };
+    if (!from) return { crumbs:[{ label:'Hub', plain:true }, { label:'Suivi', href:suiviUrl() }, { label:ref }], back:{ href:suiviUrl(), label:'← Retour au suivi' } };
     if (from === 'all') {
       return { crumbs:[{ label:'Hub', plain:true }, { label:'Commandes', href:queueUrl('all') }, { label:ref }], back:{ href:queueUrl('all'), label:'← Retour à Commandes' } };
     }
     return {
-      crumbs:[{ label:'Hub', plain:true }, { label:'Suivi', href:BASE }, { label:QUEUE_TABS[from], href:queueUrl(from) }, { label:ref }],
+      crumbs:[{ label:'Hub', plain:true }, { label:'Suivi', href:suiviUrl() }, { label:QUEUE_TABS[from], href:queueUrl(from) }, { label:ref }],
       back:{ href:queueUrl(from), label:`← Retour à ${QUEUE_TABS[from]}` },
     };
   }
@@ -300,7 +301,7 @@
     },
   };
 
-  const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Hub', tabs:hubTabs(), views, defaultView:'overview' });
+  const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Hub', tabs:hubTabs(), views, defaultView:'flux' });
 
   global.KomerceCanonicalHubLive = Object.freeze({
     mount:options => cockpit.mount(options),
