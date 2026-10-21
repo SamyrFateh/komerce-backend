@@ -290,3 +290,15 @@ test('workspace absorbe la vérité économique globale sans exposer les ids int
   expect(result.economic).toMatchObject({ scope: 'global_pricing', source_of_truth: 'economic-engine', executive: { status: 'surveiller' } });
   expect(JSON.stringify(result.economic)).not.toMatch(/exec-internal|var-internal|charge-internal/);
 });
+
+describe('Atelier — contrat UI de la politique de décision (source)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const ui = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'pricing-workspace.js'), 'utf8');
+  test('un motif « politique pas encore couvrante » a un libellé métier', () => {
+    expect(ui).toContain('POLICY_DOES_NOT_COVER_CANONICAL_PERIOD:');
+  });
+  test('l’aperçu d’impact passe par la route serveur en lecture seule', () => {
+    expect(ui).toContain('/decision-policy/preview');
+  });
+});
