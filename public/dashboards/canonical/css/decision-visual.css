@@ -897,3 +897,22 @@ body.kmc-shell-v4 .kmc-ord .kmc-ord-error { padding: 14px; border: 1px solid #fe
   body.kmc-shell-v4 .kmc-ord .kmc-ord-main, body.kmc-shell-v4 .kmc-ord .kmc-ord-foot { grid-template-columns: 1fr; }
   body.kmc-shell-v4 .kmc-ord .kmc-ord-funnel-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Commerce — évolution, répartition par marché, dernières commandes (valeurs servies par le serveur). */
+body.kmc-shell-v4 .kmc-com-bars { display: flex; align-items: flex-end; gap: 3px; height: 160px; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+body.kmc-shell-v4 .kmc-com-bar { flex: 1 1 0; min-width: 3px; height: 100%; display: flex; align-items: flex-end; }
+body.kmc-shell-v4 .kmc-com-bar-fill { display: block; width: 100%; background: #fdba74; border-radius: 3px 3px 0 0; min-height: 2px; }
+body.kmc-shell-v4 .kmc-com-bar:hover .kmc-com-bar-fill { background: #ea580c; }
+body.kmc-shell-v4 .kmc-com-bars-axis { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; padding-top: 6px; }
+body.kmc-shell-v4 .kmc-com-market { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+body.kmc-shell-v4 .kmc-com-donut { width: 148px; height: 148px; border-radius: 50%; flex: none; -webkit-mask: radial-gradient(circle 46px at center, transparent 98%, #000 100%); mask: radial-gradient(circle 46px at center, transparent 98%, #000 100%); }
+body.kmc-shell-v4 .kmc-com-legend { list-style: none; margin: 0; padding: 0; flex: 1 1 220px; display: grid; gap: 8px; font-size: 13px; }
+body.kmc-shell-v4 .kmc-com-legend li { display: grid; grid-template-columns: 12px 1fr auto 52px; gap: 8px; align-items: center; }
+body.kmc-shell-v4 .kmc-com-legend i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+body.kmc-shell-v4 .kmc-com-legend b { font-weight: 600; }
+body.kmc-shell-v4 .kmc-com-legend em { font-style: normal; color: #64748b; text-align: right; }
+body.kmc-shell-v4 .kmc-com-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+body.kmc-shell-v4 .kmc-com-table th { text-align: left; color: #64748b; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+body.kmc-shell-v4 .kmc-com-table td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; }
+body.kmc-shell-v4 .kmc-com-table a { color: #c2410c; font-weight: 600; text-decoration: none; }
+body.kmc-shell-v4 #commerce-recent-orders { overflow-x: auto; }
