@@ -163,3 +163,27 @@ describe('relais — GET /:id', () => {
     expect(res.body).toEqual({ error: 'Relais introuvable' });
   });
 });
+
+
+// ── Garde app relais (public/relais/js/relais.js) : encaissement en devise du marché ──
+describe('public/relais/js/relais.js — encaissement en devise du marché', () => {
+  const fsG = require('fs');
+  const pathG = require('path');
+  const src = fsG.readFileSync(pathG.join(__dirname, '../../public/relais/js/relais.js'), 'utf8');
+
+  test("n'affiche aucun montant depuis total_kmf ni en dur 'KMF'", () => {
+    expect(src).not.toMatch(/total_kmf/);
+    expect(src).not.toMatch(/montant_cash_pending/);
+    expect(src).not.toMatch(/\+\s*' KMF'/);
+  });
+  test('utilise a_encaisser et la répartition par devise', () => {
+    expect(src).toMatch(/a_encaisser/);
+    expect(src).toMatch(/montant_cash_par_devise/);
+  });
+  test("refuse d'ouvrir l'encaissement sans montant local disponible", () => {
+    expect(src).toMatch(/a_encaisser\?\.available/);
+  });
+  test('syntaxe valide', () => {
+    expect(() => new Function(src)).not.toThrow();
+  });
+});
