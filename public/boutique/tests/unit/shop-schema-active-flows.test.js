@@ -178,3 +178,16 @@ describe('shop-schema — chargement DB', () => {
     expect(schema.getCategoryByKey('Maison')).not.toBeNull();
   });
 });
+
+describe('shop-schema — heroImage de repli', () => {
+  it('pointe un asset existant (jamais hero_banner.png absent du disque)', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(path.join(__dirname, '../../js/shop-schema.js'), 'utf8');
+    const m = src.match(/heroImage:\s*'([^']+)'/);
+    expect(m).not.toBeNull();
+    expect(m[1]).not.toMatch(/hero_banner\.png/);
+    expect(fs.existsSync(path.join(__dirname, '../../../images', path.basename(m[1])))
+      || fs.existsSync(path.join(__dirname, '../..', m[1]))).toBe(true);
+  });
+});
