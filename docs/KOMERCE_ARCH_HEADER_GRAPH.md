@@ -6,11 +6,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 738
+- Scanned code files: 739
 - Files with full headers: 689
 - Files with lite headers: 49
 - Files with any headers: 738
-- Files without headers: 0
+- Files without headers: 1
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 1810
@@ -1142,7 +1142,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Files Still Without Headers Or Aggregation
 
-- none
+- services/relay-collect-amount.js
 
 ## Files With Misplaced Headers (Shebang/Code Before Block)
 

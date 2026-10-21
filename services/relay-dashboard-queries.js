@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js
+ * @depends       db, services/relay-collect-amount.js, utils/logger.js
  * @used-by       routes/relay-dashboard.js
- * @db-read       order_comments, order_incidents, order_items, order_status_history, orders, products, recipients, relais, sms_log, users
+ * @db-read       markets, order_comments, order_incidents, order_items, order_status_history, orders, products, recipients, relais, sms_log, users
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change, market_operator_scoping (GAP-2)
@@ -50,6 +50,7 @@
 const db  = require('../db');
 const { maskLast4 } = require('./pickup-secret-service');
 const { countRelayParcels } = require('./operations-relay-projection');
+const { resolveCollectAmount } = require('./relay-collect-amount');
 const log = require('../utils/logger').child({ module: 'relay-dashboard-queries' });
 
 async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
@@ -107,11 +108,29 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
     incidents_ouverts = inc.c;
   } catch(e) { log.error({ err: e }, '[RELAY-DASH] Incidents KPI error'); throw e; }
 
+  // Cash à encaisser par devise du MARCHÉ (jamais une somme KMF mélangeant les pays).
+  const { rows: cashRows } = await db.query(`
+    SELECT total_kmf, display_total_amount, display_currency,
+           (SELECT m.currency FROM markets m WHERE m.id = orders.market_id) AS market_currency
+    FROM orders ${kpiWhere}
+      AND status = 'available' AND payment_mode = 'cash_relais' AND payment_status = 'pending'
+  `, kpiParams);
+  const cashByCurrency = new Map();
+  let cashSansMontantLocal = 0;
+  for (const row of cashRows || []) {
+    const a = resolveCollectAmount(row);
+    if (!a.available) { cashSansMontantLocal += 1; continue; }
+    cashByCurrency.set(a.currency, (cashByCurrency.get(a.currency) || 0) + a.amount);
+  }
+  const montantCashParDevise = Array.from(cashByCurrency, ([currency, amount]) => ({ currency, amount }));
+  const cashLabel = montantCashParDevise.map(c => `${c.amount.toLocaleString('fr-FR')} ${c.currency}`).join(' + ')
+    + (cashSansMontantLocal ? `${montantCashParDevise.length ? ' + ' : ''}${cashSansMontantLocal} sans montant local` : '');
+
   const alertes = [];
   if (Number(kpi.en_attente_72h) > 0)
     alertes.push({ type: 'warning', message: `${kpi.en_attente_72h} colis en attente depuis +72h` });
   if (Number(kpi.cash_a_encaisser) > 0)
-    alertes.push({ type: 'info', message: `${kpi.cash_a_encaisser} paiements cash à encaisser (${Number(kpi.montant_cash_pending).toLocaleString('fr-FR')} KMF)` });
+    alertes.push({ type: 'info', message: `${kpi.cash_a_encaisser} paiements cash à encaisser (${cashLabel || '—'})` });
   if (incidents_ouverts > 0)
     alertes.push({ type: 'danger', message: `${incidents_ouverts} incident(s) non résolu(s)` });
 
@@ -120,7 +139,10 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
       en_transit: shared.in_transit,
       disponibles: shared.available,
       cash_a_encaisser: Number(kpi.cash_a_encaisser),
+      // Pivot interne KMF — NE PAS afficher à un agent : utiliser montant_cash_par_devise.
       montant_cash_pending: Math.round(Number(kpi.montant_cash_pending)),
+      montant_cash_par_devise: montantCashParDevise,
+      cash_sans_montant_local: cashSansMontantLocal,
       collectes_aujourd_hui: Number(kpi.collectes_aujourd_hui),
       collectes_7j: Number(kpi.collectes_7j),
       en_attente_72h: Number(kpi.en_attente_72h),
@@ -170,6 +192,8 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }, { aut
   const { rows } = await db.query(`
     SELECT
       o.id, o.reference, o.status, o.total_kmf,
+      o.display_total_amount, o.display_currency,
+      (SELECT m.currency FROM markets m WHERE m.id = o.market_id) AS market_currency,
       o.payment_mode, o.payment_status, o.pickup_secret_last4,
       o.created_at, o.ordered_at, o.shipped_at, o.in_transit_at,
       o.available_at, o.collected_at, o.cancelled_at, o.updated_at,
@@ -212,6 +236,7 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }, { aut
       ...o,
       pickup_code: maskLast4(o.pickup_secret_last4),
       total_kmf: Number(o.total_kmf),
+      a_encaisser: resolveCollectAmount(o),
       heures_attente: heures,
       age_jours: Math.round(Number(o.age_jours)),
       urgence,
@@ -235,6 +260,7 @@ async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) 
       u.email AS client_email, u.full_name AS user_name, u.phone AS user_phone,
       r.name AS relais_nom, r.island AS ile, r.address AS relais_adresse,
       r.phone AS relais_phone,
+      (SELECT m.currency FROM markets m WHERE m.id = o.market_id) AS market_currency,
       EXTRACT(EPOCH FROM (NOW() - COALESCE(o.available_at, o.updated_at))) / 3600 AS heures_attente,
       EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS age_jours
     FROM orders o
@@ -330,6 +356,7 @@ async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) 
     is_paid: order.payment_status === 'paid',
     cash_pending: order.payment_mode === 'cash_relais' && order.payment_status !== 'paid',
     total_kmf: Number(order.total_kmf),
+    a_encaisser: resolveCollectAmount(order),
     total_eur: order.total_eur ? Number(order.total_eur) : null,
     wallet_applied: order.wallet_applied_kmf ? Number(order.wallet_applied_kmf) : 0,
     bloquant_pour_remise: order.payment_mode === 'cash_relais' && order.payment_status !== 'paid',

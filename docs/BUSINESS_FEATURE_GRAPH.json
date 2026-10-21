@@ -4709,6 +4709,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/relay-collect-amount.js",
+        "resolvedPath": "services/relay-collect-amount.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/live-projection.js",
         "resolvedPath": "services/live-projection.js",
         "status": "resolved-in-technical-graph"
@@ -4809,7 +4816,7 @@
         "category": "services",
         "declared": "services/dashboard-pilotage-markets.js",
         "resolvedPath": "services/dashboard-pilotage-markets.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "dashboard",
@@ -7553,6 +7560,13 @@
         "category": "tests",
         "declared": "tests/unit/relay-dashboard-queries.test.js",
         "resolvedPath": "tests/unit/relay-dashboard-queries.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/relay-collect-amount.test.js",
+        "resolvedPath": "tests/unit/relay-collect-amount.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12570,6 +12584,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/order-physical-coverage-service.js",
+        "resolvedPath": "services/order-physical-coverage-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/hub-inbound-reconciliation.js",
         "resolvedPath": "services/hub-inbound-reconciliation.js",
         "status": "resolved-in-technical-graph"
@@ -12768,6 +12789,20 @@
         "category": "tests",
         "declared": "tests/integration/hub-physical-identity-postgres.test.js",
         "resolvedPath": "tests/integration/hub-physical-identity-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/order-physical-coverage-gate.test.js",
+        "resolvedPath": "tests/unit/order-physical-coverage-gate.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13727,7 +13762,7 @@
         "category": "services",
         "declared": "services/market-delivery-proof-service.js",
         "resolvedPath": "services/market-delivery-proof-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "market-control-plane",
@@ -27847,7 +27882,7 @@
       {
         "from": "orders",
         "to": "logistics",
-        "raw": "logistics (rattachement colis)",
+        "raw": "logistics (rattachement colis ; couverture physique de réception : order-physical-coverage-service, gate C2 vers preparation)",
         "resolved": true
       },
       {
@@ -38658,6 +38693,14 @@
                 "targetFile": "services/order-mutation-service.js"
               },
               {
+                "sourceFileId": "tests/unit/order-physical-coverage-gate.test.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
                 "sourceFileId": "tests/unit/pickup-secret-issuer.test.js",
                 "targetFile": "services/order-mutation-service.js"
               },
@@ -40952,6 +40995,10 @@
               {
                 "sourceFileId": "services/qr-collection-core.js",
                 "targetFile": "utils/parcelSync.js"
+              },
+              {
+                "sourceFileId": "services/order-status-machine.js",
+                "targetFile": "services/order-physical-coverage-service.js"
               },
               {
                 "sourceFileId": "services/order-status-machine.js",
@@ -46139,7 +46186,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2094
+        "filesObserved": 2099
       },
       "boutique": {
         "filesObserved": 214,
@@ -49336,8 +49383,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 631,
-        "technicalNodesOwned": 631,
+        "technicalNodesTotal": 634,
+        "technicalNodesOwned": 634,
         "technicalOrphans": 0
       },
       "dash": {

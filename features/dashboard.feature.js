@@ -415,6 +415,7 @@ module.exports = {
       'services/dashboard-ops-queries.js',
       'services/hub-dashboard-queries.js',
       'services/relay-dashboard-queries.js',
+      'services/relay-collect-amount.js',
       'services/live-projection.js',
       'services/finance-accounting-workspace.js',
       'services/partner-admin-service.js',
@@ -847,6 +848,7 @@ module.exports = {
       'tests/unit/dashboard-metrics.test.js',
       'tests/unit/dashboard-ops-queries.test.js',
       'tests/unit/relay-dashboard-queries.test.js',
+      'tests/unit/relay-collect-amount.test.js',
     ],
   },
 

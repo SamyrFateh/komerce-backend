@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 310,
+    "businessDependencies": 312,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -7393,7 +7393,7 @@
             ]
           },
           "services": {
-            "count": 40,
+            "count": 42,
             "files": [
               {
                 "declared": "public/golden-e2e-cockpit.html",
@@ -7506,6 +7506,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/dashboard-pilotage-markets.js",
+                "resolvedPath": "services/dashboard-pilotage-markets.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/finance-accounting-workspace.js",
                 "resolvedPath": "services/finance-accounting-workspace.js",
                 "status": "resolved-in-technical-graph"
@@ -7581,6 +7586,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/relay-collect-amount.js",
+                "resolvedPath": "services/relay-collect-amount.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/relay-dashboard-queries.js",
                 "resolvedPath": "services/relay-dashboard-queries.js",
                 "status": "resolved-in-technical-graph"
@@ -7598,7 +7608,7 @@
             ]
           },
           "tests": {
-            "count": 186,
+            "count": 188,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8281,6 +8291,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/dashboard-pilotage-markets.test.js",
+                "resolvedPath": "tests/unit/dashboard-pilotage-markets.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/dashboard-route.test.js",
                 "resolvedPath": "tests/unit/dashboard-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8471,6 +8486,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relay-collect-amount.test.js",
+                "resolvedPath": "tests/unit/relay-collect-amount.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/relay-dashboard-queries.test.js",
                 "resolvedPath": "tests/unit/relay-dashboard-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8533,7 +8553,7 @@
             ]
           }
         },
-        "totalFiles": 417,
+        "totalFiles": 421,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -16995,7 +17015,7 @@
             ]
           },
           "services": {
-            "count": 32,
+            "count": 33,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -17040,6 +17060,11 @@
               {
                 "declared": "services/hub-reference.js",
                 "resolvedPath": "services/hub-reference.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-physical-coverage-service.js",
+                "resolvedPath": "services/order-physical-coverage-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -17160,7 +17185,7 @@
             ]
           },
           "tests": {
-            "count": 60,
+            "count": 62,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -17170,6 +17195,11 @@
               {
                 "declared": "tests/e2e-api/hub-multi-order-parcels.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/hub-multi-order-parcels.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17265,6 +17295,11 @@
               {
                 "declared": "tests/unit/logistics.test.js",
                 "resolvedPath": "tests/unit/logistics.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-physical-coverage-gate.test.js",
+                "resolvedPath": "tests/unit/order-physical-coverage-gate.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17485,7 +17520,7 @@
             ]
           }
         },
-        "totalFiles": 126,
+        "totalFiles": 129,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19800,7 +19835,7 @@
             ]
           },
           "services": {
-            "count": 3,
+            "count": 4,
             "files": [
               {
                 "declared": "services/central-authority.js",
@@ -19813,6 +19848,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/market-delivery-proof-service.js",
+                "resolvedPath": "services/market-delivery-proof-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/market-provisioning-service.js",
                 "resolvedPath": "services/market-provisioning-service.js",
                 "status": "resolved-in-technical-graph"
@@ -19820,7 +19860,7 @@
             ]
           },
           "tests": {
-            "count": 9,
+            "count": 11,
             "files": [
               {
                 "declared": "tests/e2e-api/market-control-plane.provision-to-first-order.e2e.test.js",
@@ -19858,6 +19898,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/market-delivery-proof-service.test.js",
+                "resolvedPath": "tests/unit/market-delivery-proof-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/market-provisioning-service.test.js",
                 "resolvedPath": "tests/unit/market-provisioning-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19866,11 +19911,16 @@
                 "declared": "tests/unit/market-reprovisioning-service.test.js",
                 "resolvedPath": "tests/unit/market-reprovisioning-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-checkout-delivery-proof.test.js",
+                "resolvedPath": "tests/unit/order-checkout-delivery-proof.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 14,
+        "totalFiles": 17,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19878,8 +19928,20 @@
         }
       },
       "ownership": {
-        "ownsTables": [],
-        "writesTables": [],
+        "ownsTables": [
+          {
+            "table": "market_delivery_attestations",
+            "resolution": "single-writer"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "market_delivery_attestations",
+            "mode": "RW",
+            "lifecycleOwner": "market-control-plane",
+            "ownershipStatus": "owner"
+          }
+        ],
         "readsTables": [
           {
             "table": "assignment_capability_ceiling",
@@ -19888,6 +19950,10 @@
           {
             "table": "assignment_memberships",
             "lifecycleOwner": "market-delegation"
+          },
+          {
+            "table": "carriers",
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "catalog_global_access_grants",
@@ -19920,6 +19986,10 @@
           {
             "table": "membership_capabilities",
             "lifecycleOwner": "market-delegation"
+          },
+          {
+            "table": "orders",
+            "lifecycleOwner": "orders"
           },
           {
             "table": "pricing_global_access_grants",
@@ -19936,8 +20006,20 @@
         ]
       },
       "data": {
-        "ownsTables": [],
-        "writesTables": [],
+        "ownsTables": [
+          {
+            "table": "market_delivery_attestations",
+            "resolution": "single-writer"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "market_delivery_attestations",
+            "mode": "RW",
+            "lifecycleOwner": "market-control-plane",
+            "ownershipStatus": "owner"
+          }
+        ],
         "readsTables": [
           {
             "table": "assignment_capability_ceiling",
@@ -19946,6 +20028,10 @@
           {
             "table": "assignment_memberships",
             "lifecycleOwner": "market-delegation"
+          },
+          {
+            "table": "carriers",
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "catalog_global_access_grants",
@@ -19978,6 +20064,10 @@
           {
             "table": "membership_capabilities",
             "lifecycleOwner": "market-delegation"
+          },
+          {
+            "table": "orders",
+            "lifecycleOwner": "orders"
           },
           {
             "table": "pricing_global_access_grants",
@@ -20113,6 +20203,14 @@
           ]
         },
         {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
           "provider": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -20128,20 +20226,23 @@
           ]
         }
       ],
-      "consumedBy": [],
+      "consumedBy": [
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "projections": {
         "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "orders",
-            "family": "NON_RUNTIME_TEST"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -23832,6 +23933,13 @@
           ]
         },
         {
+          "provider": "market-control-plane",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -23973,6 +24081,14 @@
           "consumer": "loyalty",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "market-control-plane",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
             "data-read"
           ]
         },

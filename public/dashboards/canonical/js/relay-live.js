@@ -22,7 +22,15 @@
 (function initRelayLive(global) {
   const kit = global.KomerceLiveKit;
   if (!kit) throw new Error('live_kit_missing');
-  const { order360Link, esc, num, fmtDate, fmtKmf, ageLabel, queryString, processBoard, tiles, table } = kit;
+  const { order360Link, esc, num, fmtDate, ageLabel, queryString, processBoard, tiles, table } = kit;
+
+  // Montant à encaisser dans la devise du MARCHÉ (API a_encaisser) — jamais le pivot interne KMF.
+  const fmtCollect = a => (a && a.available) ? `${Math.round(Number(a.amount)).toLocaleString('fr-FR')} ${a.currency}` : 'montant local indisponible';
+  const fmtCollectTotals = (list, missing) => {
+    const parts = (list || []).map(c => `${Math.round(Number(c.amount)).toLocaleString('fr-FR')} ${c.currency}`);
+    if (missing) parts.push(`${missing} sans montant local`);
+    return parts.length ? parts.join(' + ') : '0';
+  };
 
   const BASE = '/admin/relais-live';
   const PAGE_SIZE = 25;
@@ -99,7 +107,7 @@
         ${fact('Client', detail.client?.nom || '—')}
         ${fact('Relais', [relais.nom, relais.ile].filter(Boolean).join(' · ') || '—')}
         ${fact(o.status === 'available' ? 'Attente au relais' : 'Âge', wait)}
-        ${fact('Paiement', `${pay.cash_pending ? 'Cash à encaisser' : pay.is_paid ? 'Payée' : 'En attente'} · ${fmtKmf(pay.total_kmf)}`)}
+        ${fact('Paiement', `${pay.cash_pending ? 'Cash à encaisser' : pay.is_paid ? 'Payée' : 'En attente'} · ${fmtCollect(pay.a_encaisser)}`)}
         ${fact('Incidents ouverts', incidents.filter(i => i.status !== 'resolved').length)}
       </div>
       <p><a href="${orderUrl(detail.order?.id || sel, '')}" data-cockpit-nav>Ouvrir la fiche complète →</a>${order360Link(o.reference, 'Retour au Relais live')}</p>
@@ -152,7 +160,7 @@
         ${tiles('RÉSULTAT DES RELAIS', [
           { label:'En transit', value:num(k.en_transit), sub:'en route vers les relais', href:listUrl('in_transit'), cls:'is-received' },
           { label:'Disponibles', value:num(k.disponibles), sub:late > 0 ? `dont ${late} depuis +72 h` : 'à retirer', href:listUrl('available'), cls:late > 0 ? 'is-delivered is-attention' : 'is-delivered' },
-          { label:'Cash à encaisser', value:num(k.cash_a_encaisser), sub:fmtKmf(k.montant_cash_pending), cls:'is-discarded' },
+          { label:'Cash à encaisser', value:num(k.cash_a_encaisser), sub:fmtCollectTotals(k.montant_cash_par_devise, k.cash_sans_montant_local), cls:'is-discarded' },
           { label:'Incidents ouverts', value:incidents, sub:incidents > 0 ? 'à traiter' : 'rien à faire', cls:incidents > 0 ? 'is-review is-attention' : 'is-review' },
         ])}
         <p class="kir-run-proof lk-signals">${signals}</p>
@@ -207,10 +215,10 @@
           ${card(o.status === 'available' ? 'Attente au relais' : 'Âge', wait)}
           ${card('Relais', [relais.nom, relais.ile].filter(Boolean).join(' · ') || '—')}
           ${card('Articles', items.length)}
-          ${card('Paiement', `${pay.cash_pending ? 'Cash à encaisser' : pay.is_paid ? 'Payée' : 'En attente'} · ${fmtKmf(pay.total_kmf)}`)}
+          ${card('Paiement', `${pay.cash_pending ? 'Cash à encaisser' : pay.is_paid ? 'Payée' : 'En attente'} · ${fmtCollect(pay.a_encaisser)}`)}
         </div>
         <section class="lk-block"><span class="kir-section-kicker">ARTICLES</span>
-          ${table(['Produit', 'Quantité', 'Prix'], items.map(item => `<tr><td>${esc(item.produit || '—')}</td><td>${num(item.quantity)}</td><td>${esc(fmtKmf(item.prix_kmf))}</td></tr>`), { empty:'Aucun article.' })}
+          ${table(['Produit', 'Quantité'], items.map(item => `<tr><td>${esc(item.produit || '—')}</td><td>${num(item.quantity)}</td></tr>`), { empty:'Aucun article.' })}
         </section>
         <section class="lk-block"><span class="kir-section-kicker">INCIDENTS</span>
           ${table(['Type', 'Priorité', 'Statut', 'Signalé le'], incidents.map(i => `<tr><td>${esc(INCIDENT[i.type] || i.type)}</td><td>${esc(i.priority)}</td><td>${esc(i.status)}</td><td>${esc(fmtDate(i.created_at))}</td></tr>`), { empty:'Aucun incident.' })}

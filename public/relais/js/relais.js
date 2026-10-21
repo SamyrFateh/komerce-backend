@@ -49,7 +49,16 @@ const R = (() => {
     e.textContent = msg; e.className = 'show ' + (type || '');
     clearTimeout(e._t); e._t = setTimeout(() => { e.className = ''; }, dur);
   }
-  function kmf(n) { return Number(n||0).toLocaleString('fr-FR') + ' KMF'; }
+  // Montant à encaisser : devise du MARCHÉ fournie par l'API (a_encaisser). Jamais le pivot KMF.
+  function money(a) {
+    if (!a || !a.available) return 'Montant local indisponible';
+    return Number(a.amount).toLocaleString('fr-FR') + ' ' + a.currency;
+  }
+  function moneyByCurrency(list, missing) {
+    const parts = (list || []).map(c => Number(c.amount).toLocaleString('fr-FR') + ' ' + c.currency);
+    if (missing) parts.push(missing + ' sans montant local');
+    return parts.length ? parts.join(' + ') : '0';
+  }
   function ago(dt) { const h=(Date.now()-new Date(dt))/3600000; if(h<1)return Math.round(h*60)+'min'; if(h<24)return Math.round(h)+'h'; return Math.round(h/24)+'j'; }
   function slbl(s) { return {confirmed:'confirmé',ordered:'commandé',preparation:'prépa',shipped:'expédié',in_transit:'transit',available:'disponible',collected:'retiré',cancelled:'annulé'}[s]||s; }
   function urgClass(o) { return o.urgence==='critique'?'urgent':o.cash_pending?'cash-pending':''; }
@@ -86,7 +95,7 @@ const R = (() => {
         ac.textContent = '⚠ '+k.incidents_ouverts+' incident'+(k.incidents_ouverts>1?'s':'');
         ac.className = 'on';
       } else if (k.cash_a_encaisser > 0) {
-        ac.textContent = '💰 '+kmf(k.montant_cash_pending);
+        ac.textContent = '💰 '+moneyByCurrency(k.montant_cash_par_devise, k.cash_sans_montant_local);
         ac.className = 'cash';
       } else {
         ac.className = '';
@@ -250,7 +259,7 @@ const R = (() => {
       <div class="section" style="border-color:rgba(255,171,64,.35)">
         <div class="section-head" style="color:var(--amber)">💰 Cash à encaisser</div>
         <div class="section-body">
-          <div class="info-row"><span class="info-label">Montant</span><span class="info-val" style="color:var(--amber);font-size:18px">${kmf(p.total_kmf)}</span></div>
+          <div class="info-row"><span class="info-label">Montant</span><span class="info-val" style="color:var(--amber);font-size:18px">${money(p.a_encaisser)}</span></div>
           <div class="info-row"><span class="info-label">Code PIN</span><span class="info-val"><div class="pin-display">${o.pickup_code||'—'}</div></span></div>
         </div>
       </div>` : '';
@@ -291,7 +300,7 @@ const R = (() => {
         <div class="section-body">
           <div class="info-row"><span class="info-label">Mode</span><span class="info-val">${p.mode||'—'}</span></div>
           <div class="info-row"><span class="info-label">Statut</span><span class="info-val">${p.is_paid?'<span class="badge green">payé</span>':'<span class="badge amber">en attente</span>'}</span></div>
-          <div class="info-row"><span class="info-label">Total</span><span class="info-val">${kmf(p.total_kmf)}</span></div>
+          <div class="info-row"><span class="info-label">Total</span><span class="info-val">${money(p.a_encaisser)}</span></div>
         </div>
       </div>
       ${tlHtml}
@@ -304,7 +313,7 @@ const R = (() => {
     let html = '';
     if (o.status === 'available') {
       if (p.cash_pending) {
-        html += `<button class="btn btn-amber" data-act="open-cash">💰 Encaisser ${kmf(p.total_kmf)}</button>`;
+        html += `<button class="btn btn-amber" data-act="open-cash">💰 Encaisser ${money(p.a_encaisser)}</button>`;
       }
       html += `<button class="btn btn-secondary" data-act="open-inc">🚨 Signaler incident</button>`;
       html += `<button class="btn btn-secondary" data-act="client-absent">👤 Client absent</button>`;
@@ -326,10 +335,11 @@ const R = (() => {
   function openCash() {
     if (!_order) return;
     _cashOrderId = _order.order.id;
-    _cashAmount = _order.paiement?.total_kmf || 0;
+    if (!_order.paiement?.a_encaisser?.available) { toast('Montant local indisponible — contactez le responsable pays', 'error'); return; }
+    _cashAmount = _order.paiement.a_encaisser.amount;
     document.getElementById('cash-detail').innerHTML = `
       Commande <strong>${_order.order.reference}</strong><br>
-      Montant à encaisser : <strong style="color:var(--amber)">${kmf(_cashAmount)}</strong><br>
+      Montant à encaisser : <strong style="color:var(--amber)">${money(_order.paiement.a_encaisser)}</strong><br>
       Client : ${_order.client?.nom||'—'}
     `;
     document.getElementById('cash-modal').classList.add('open');
