@@ -54,13 +54,13 @@ const log = require('../utils/logger').child({ module: 'relay-dashboard-queries'
 
 async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
   const kpiParams = [];
-  let kpiWhere = '';
+  let kpiWhere = 'WHERE simulation_scope IS NULL';
   if (user.role === 'agent_relais') {
     kpiParams.push(user.relais_id);
-    kpiWhere = 'WHERE relais_id = $1';
+    kpiWhere = 'WHERE simulation_scope IS NULL AND relais_id = $1';
   } else if (user.role === 'market_operator') {
     kpiParams.push(authorizedMarkets ? Array.from(authorizedMarkets) : []);
-    kpiWhere = 'WHERE market_id = ANY($1::uuid[])';
+    kpiWhere = 'WHERE simulation_scope IS NULL AND market_id = ANY($1::uuid[])';
   }
 
   const { rows: [kpi] } = await db.query(`
@@ -92,15 +92,15 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
     if (user.role === 'agent_relais') {
       incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents oi
          JOIN orders o ON o.id = oi.order_id
-         WHERE oi.status IN ('open','in_progress') AND o.relais_id = $1`;
+         WHERE oi.status IN ('open','in_progress') AND o.simulation_scope IS NULL AND o.relais_id = $1`;
       incParams = [user.relais_id];
     } else if (user.role === 'market_operator') {
       incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents oi
          JOIN orders o ON o.id = oi.order_id
-         WHERE oi.status IN ('open','in_progress') AND o.market_id = ANY($1::uuid[])`;
+         WHERE oi.status IN ('open','in_progress') AND o.simulation_scope IS NULL AND o.market_id = ANY($1::uuid[])`;
       incParams = [authorizedMarkets ? Array.from(authorizedMarkets) : []];
     } else {
-      incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents WHERE status IN ('open','in_progress')`;
+      incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents oi JOIN orders o ON o.id = oi.order_id WHERE oi.status IN ('open','in_progress') AND o.simulation_scope IS NULL`;
       incParams = [];
     }
     const { rows: [inc] } = await db.query(incQuery, incParams);
@@ -134,7 +134,7 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
 }
 
 async function getOrders(user, { status, search, limit = 50, offset = 0 }, { authorizedMarkets = null } = {}) {
-  let where = 'WHERE 1=1';
+  let where = 'WHERE o.simulation_scope IS NULL';
   const params = [];
   let pi = 1;
 
