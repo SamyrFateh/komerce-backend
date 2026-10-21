@@ -140,6 +140,7 @@ router.post('/:marketCode/delivery-attestations/:attestationId/revoke', ...centr
     const result = await withTransaction(client => deliveryProof.revokeDeliveryAttestation(client, {
       actorUserId: req.user.id,
       attestationId: req.params.attestationId,
+      marketCode: req.params.marketCode,
       reason: req.body && req.body.reason,
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
     }));

@@ -7,7 +7,7 @@ const svc = require('../../services/market-delivery-proof-service');
 const { audit } = require('../../services/market-delegation-service');
 
 const valid = () => ({
-  actorUserId: 'admin-1', marketId: 'm-cm', carrierId: 'car-1', mode: 'SEA', originRef: 'DXB',
+  actorUserId: 'admin-1', marketId: '22222222-2222-4222-8222-222222222222', carrierId: '11111111-1111-4111-8111-111111111111', mode: 'SEA', originRef: 'DXB',
   freightRate: 3.2, rateCurrency: 'usd', rateUnit: 'PER_KG', transitDays: 35,
   evidenceRef: 'CONTRAT-2026-014', validUntil: new Date(Date.now() + 86400000 * 90).toISOString(),
 });
@@ -50,6 +50,14 @@ describe('getDeliveryProof — fail-closed', () => {
     expect(proof).toMatchObject({ proven: true, basis: 'HISTORY', collected_orders: 12 });
     expect(d.calls[1]).toMatch(/simulation_scope IS NULL/);
     expect(d.calls[1]).toMatch(/status = 'collected'/);
+  });
+
+  test('HISTORY réservée aux marchés hérités listés (KM) : jamais CM/CG', async () => {
+    expect(svc.HISTORY_LEGACY_MARKET_CODES).toEqual(['KM']);
+    const d = db([['FROM orders', [{ n: 0 }]]]);
+    await svc.getDeliveryProof(d, 'm-cm');
+    expect(d.calls[1]).toMatch(/m\.code = ANY\(\$2::text\[\]\)/);
+    expect(d.query.mock.calls[1][1][1]).toEqual(['KM']);
   });
 });
 
@@ -95,15 +103,27 @@ describe('attestDelivery — pas de simple booléen', () => {
 });
 
 describe('revokeDeliveryAttestation', () => {
+  test('identifiant non UUID : 400 (pas de 500 PG)', async () => {
+    await expect(svc.revokeDeliveryAttestation(db([]), { actorUserId: 'a', attestationId: 'x', reason: 'motif ok' }))
+      .rejects.toMatchObject({ code: 'ATTESTATION_ID_INVALID', status: 400 });
+  });
+
+  test('révocation bornée au marché du chemin', async () => {
+    const d = db([['UPDATE market_delivery_attestations', [{ id: 'x', market_id: 'm', revoked_at: 'now' }]]]);
+    await svc.revokeDeliveryAttestation(d, { actorUserId: 'a', attestationId: '11111111-1111-4111-8111-111111111111', reason: 'motif ok', marketCode: 'cm' });
+    expect(d.calls[0]).toMatch(/market_id = \(SELECT id FROM markets WHERE code = \$4\)/);
+    expect(d.query.mock.calls[0][1][3]).toBe('CM');
+  });
+
   test('motif obligatoire', async () => {
     await expect(svc.revokeDeliveryAttestation(db([]), { actorUserId: 'a', attestationId: 'x', reason: '' }))
       .rejects.toMatchObject({ code: 'ATTESTATION_REVOKE_REASON_REQUIRED' });
   });
   test('révocation auditée ; inconnue/déjà révoquée → 404', async () => {
     const d = db([['UPDATE market_delivery_attestations', [{ id: 'att-1', market_id: 'm-cm', revoked_at: 'now' }]]]);
-    await svc.revokeDeliveryAttestation(d, { actorUserId: 'a', attestationId: 'att-1', reason: 'contrat résilié' });
+    await svc.revokeDeliveryAttestation(d, { actorUserId: 'a', attestationId: '11111111-1111-4111-8111-111111111111', reason: 'contrat résilié' });
     expect(audit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'MARKET_DELIVERY_ATTESTATION_REVOKED' }));
-    await expect(svc.revokeDeliveryAttestation(db([]), { actorUserId: 'a', attestationId: 'zz', reason: 'motif ok' }))
+    await expect(svc.revokeDeliveryAttestation(db([]), { actorUserId: 'a', attestationId: '11111111-1111-4111-8111-111111111111', reason: 'motif ok' }))
       .rejects.toMatchObject({ code: 'ATTESTATION_NOT_FOUND', status: 404 });
   });
 });
