@@ -74,6 +74,13 @@
     if (v == null || v === '' || !Number.isFinite(Number(v))) return 'Non disponible';
     return `${new Intl.NumberFormat('fr-FR').format(Math.round(Number(v)))} KMF`;
   }
+  function productsLabel(r) {
+    if (!isNumber(r.product_lines)) return 'Non disponible';
+    if (!r.product_lines) return 'Aucun produit';
+    const first = r.first_product_name || 'Produit';
+    return r.product_lines > 1 ? `${first} +${r.product_lines - 1}` : first;
+  }
+  function parcelsLabel(r) { return isNumber(r.parcel_count) ? String(r.parcel_count) : 'Non disponible'; }
   function statusLabel(s) { return STATUS_LABELS[s] || s || 'Non disponible'; }
 
   // Fusionne les trois files serveur en lignes de lecture. Dédoublonnage par référence ;
@@ -88,7 +95,8 @@
       const row = { reference: item.reference, status: item.status, payment_mode: item.payment_mode || null,
         payment_status: item.payment_status || (kind === 'cash' ? 'pending' : kind === 'parcel' ? 'paid' : null),
         total_kmf: item.total_kmf, client_name: item.client_name || null, relais_name: item.relais_name || null,
-        problem: item.problem || null, since_days: item.since_days, action, queues: [kind], ...extra };
+        market_code: item.market_code || null, product_lines: item.product_lines, first_product_name: item.first_product_name || null,
+        parcel_count: item.parcel_count, problem: item.problem || null, since_days: item.since_days, action, queues: [kind], ...extra };
       seen.set(key, row);
       rows.push(row);
     }
@@ -177,7 +185,8 @@
     [['Client', row.client_name || 'Non disponible'], ['Statut', statusLabel(row.status)],
       ['Paiement', PAYMENT_LABELS[row.payment_status] || 'Non disponible'],
       ['Mode de paiement', row.payment_mode || 'Non disponible'], ['Montant', money(row.total_kmf)],
-      ['Relais', row.relais_name || 'Non disponible']].forEach(([k, v]) => {
+      ['Relais', row.relais_name || 'Non disponible'],
+      ['Marché', row.market_code || 'Non disponible'], ['Produits', productsLabel(row)], ['Colis', parcelsLabel(row)]].forEach(([k, v]) => {
       dl.appendChild(el(doc, 'dt', '', k));
       dl.appendChild(el(doc, 'dd', '', v));
     });
@@ -222,14 +231,14 @@
     const table = el(doc, 'table', 'kmc-ord-table');
     const thead = el(doc, 'thead');
     const hr = el(doc, 'tr');
-    ['Référence', 'Client', 'Statut', 'Paiement', 'Montant', 'Action'].forEach(h => hr.appendChild(el(doc, 'th', '', h)));
+    ['Référence', 'Marché', 'Client', 'Produits', 'Colis', 'Statut', 'Paiement', 'Montant', 'Action'].forEach(h => hr.appendChild(el(doc, 'th', '', h)));
     thead.appendChild(hr);
     table.appendChild(thead);
     const tbody = el(doc, 'tbody');
     if (!visible.length) {
       const tr = el(doc, 'tr');
       const td = el(doc, 'td', 'kmc-ord-empty', 'Aucune commande dans cette file.');
-      td.colSpan = 6;
+      td.colSpan = 9;
       tr.appendChild(td);
       tbody.appendChild(tr);
     }
@@ -241,7 +250,7 @@
       const pick = () => { state.selected = r.reference; render(doc, rootNode, payload, state); };
       tr.addEventListener('click', pick);
       tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
-      [r.reference, r.client_name || '—', statusLabel(r.status), PAYMENT_LABELS[r.payment_status] || '—',
+      [r.reference, r.market_code || '—', r.client_name || '—', productsLabel(r), parcelsLabel(r), statusLabel(r.status), PAYMENT_LABELS[r.payment_status] || '—',
         money(r.total_kmf), r.action].forEach((v, i) => tr.appendChild(el(doc, 'td', i === 0 ? 'kmc-ord-ref' : '', v)));
       tbody.appendChild(tr);
     });

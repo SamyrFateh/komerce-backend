@@ -39,4 +39,12 @@ describe('canonical orders view (lecture seule sur la projection dashboard-order
     expect(src).not.toMatch(/method:\s*'(POST|PUT|PATCH|DELETE)'/);
     expect(Object.keys(orders.STATUS_LABELS)).toEqual(expect.arrayContaining(['pending', 'confirmed', 'collected']));
   });
+  test('buildRows relaie marché, produits et colis tels que servis (null conservé, jamais 0)', () => {
+    const rows = orders.buildRows({ work_queues: { ready_for_parcel: [
+      { reference: 'A', status: 'confirmed', market_code: 'KM', product_lines: 2, first_product_name: 'Coque', parcel_count: 0 },
+      { reference: 'B', status: 'confirmed' },
+    ] } });
+    expect(rows[0]).toMatchObject({ market_code: 'KM', product_lines: 2, first_product_name: 'Coque', parcel_count: 0 });
+    expect(rows[1]).toMatchObject({ market_code: null, parcel_count: undefined });
+  });
 });
