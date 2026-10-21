@@ -8,7 +8,7 @@
  * @outputs       canonical_commerce_projection, market_product_viability, market_product_availability, server_decision_signals
  * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, pricing-market-corridor, local-stock-decision-projection
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, order_items, products, order_item_cost_imputations, order_item_real_cost_allocations, parcel_items, parcels, customs_shipments, customs_shipment_parcels
+ * @db-read       orders, order_items, products, order_item_cost_imputations, order_item_real_cost_allocations, parcel_items, parcels, customs_shipments, customs_shipment_parcels, markets, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, decision_support_reuses_canonical_economic_engine, local_stock_projection_is_availability_authority
@@ -264,6 +264,70 @@ async function getCategoryPerformance(filters) {
     orders: Number(row.orders) || 0,
     quantity: Number(row.quantity) || 0,
     revenue_kmf: Number(row.revenue_kmf) || 0,
+  }));
+}
+
+// Séries de lecture du cockpit Commerce — même cohorte payée que getCommercePaidSales
+// (total + wallet, hors annulées/remboursées, date de création de la commande).
+// Aucun jour sans vente n'est inventé à 0 ; les parts sont calculées ici, côté serveur.
+async function getPaidSalesSeries(filters) {
+  const { where, params } = buildFiltersClause(filters);
+  const { rows } = await db.query(`
+    SELECT to_char(date_trunc('day', o.created_at), 'YYYY-MM-DD') AS day,
+           COALESCE(SUM(o.total_kmf + COALESCE(o.wallet_applied_kmf, 0)), 0)::bigint AS sales_kmf,
+           COUNT(*)::int AS orders
+    FROM orders o
+    WHERE ${where}
+      AND o.payment_status = 'paid'
+      AND o.status NOT IN ('cancelled', 'refunded')
+    GROUP BY date_trunc('day', o.created_at)
+    ORDER BY date_trunc('day', o.created_at) ASC
+  `, params);
+  return rows.map(r => ({ day: r.day, sales_kmf: Number(r.sales_kmf) || 0, orders: Number(r.orders) || 0 }));
+}
+
+async function getPaidSalesByMarket(filters) {
+  const { where, params } = buildFiltersClause(filters);
+  const { rows } = await db.query(`
+    SELECT m.code AS market_code, m.name AS market_name,
+           COALESCE(SUM(o.total_kmf + COALESCE(o.wallet_applied_kmf, 0)), 0)::bigint AS sales_kmf
+    FROM orders o
+    JOIN markets m ON m.id = o.market_id
+    WHERE ${where}
+      AND o.payment_status = 'paid'
+      AND o.status NOT IN ('cancelled', 'refunded')
+    GROUP BY m.code, m.name
+    ORDER BY sales_kmf DESC
+    LIMIT 8
+  `, params);
+  const total = rows.reduce((sum, r) => sum + (Number(r.sales_kmf) || 0), 0);
+  return rows.map(r => ({
+    market_code: r.market_code,
+    market_name: r.market_name,
+    sales_kmf: Number(r.sales_kmf) || 0,
+    share_pct: total > 0 ? Math.round((Number(r.sales_kmf) / total) * 1000) / 10 : null,
+  }));
+}
+
+async function getRecentOrders(filters, limit = 5) {
+  const { where, params } = buildFiltersClause(filters);
+  const { rows } = await db.query(`
+    SELECT o.reference, o.created_at, o.status, o.total_kmf,
+           m.code AS market_code, u.full_name AS client_name
+    FROM orders o
+    LEFT JOIN markets m ON m.id = o.market_id
+    LEFT JOIN users u ON u.id = o.user_id
+    WHERE ${where}
+    ORDER BY o.created_at DESC
+    LIMIT ${Number(limit) || 5}
+  `, params);
+  return rows.map(r => ({
+    reference: r.reference,
+    created_at: r.created_at instanceof Date ? r.created_at.toISOString() : r.created_at,
+    status: r.status,
+    total_kmf: r.total_kmf != null ? Number(r.total_kmf) : null,
+    market_code: r.market_code || null,
+    client_name: r.client_name || null,
   }));
 }
 
@@ -552,7 +616,7 @@ async function buildCommerce(query = {}, options = {}) {
   const market = options.market || null;
   const { period, filters } = buildPeriodFilters(query, market && market.id, options.now || new Date());
 
-  const [sales, commandes, marge, produitsActifsVendus, topProducts, productProfitability, categories, funnel] = await Promise.all([
+  const [sales, commandes, marge, produitsActifsVendus, topProducts, productProfitability, categories, funnel, salesSeries, salesByMarket, recentOrders] = await Promise.all([
     getCommercePaidSales(filters),
     metrics.getCmdsCreees(filters),
     metrics.getMargeConsolidee(filters),
@@ -561,6 +625,9 @@ async function buildCommerce(query = {}, options = {}) {
     getProductProfitability(filters, { limit: 10 }),
     getCategoryPerformance(filters),
     getOrderFunnel(filters),
+    getPaidSalesSeries(filters),
+    getPaidSalesByMarket(filters),
+    getRecentOrders(filters),
   ]);
   const [viability, availability] = await Promise.all([
     getTopProductViability(topProducts, market, {
@@ -599,6 +666,9 @@ async function buildCommerce(query = {}, options = {}) {
     decision_signals: decisionSignals,
     categories: Object.freeze(categories),
     funnel: Object.freeze(funnel),
+    sales_series: Object.freeze(salesSeries),
+    sales_by_market: Object.freeze(salesByMarket),
+    recent_orders: Object.freeze(recentOrders),
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),
       scope_enforced: true,

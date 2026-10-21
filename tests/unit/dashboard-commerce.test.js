@@ -89,7 +89,10 @@ beforeEach(() => {
       real_cost_kmf: '35000',
     }] })
     .mockResolvedValueOnce({ rows: [{ category: 'Électronique', orders: '3', quantity: '3', revenue_kmf: '90000' }] })
-    .mockResolvedValueOnce({ rows: [{ created: '12', paid: '10', shipped: '8', available: '6', collected: '4', lost: '2' }] });
+    .mockResolvedValueOnce({ rows: [{ created: '12', paid: '10', shipped: '8', available: '6', collected: '4', lost: '2' }] })
+    .mockResolvedValueOnce({ rows: [{ day: '2026-08-20', sales_kmf: '50000', orders: 5 }, { day: '2026-08-22', sales_kmf: '70000', orders: 7 }] })
+    .mockResolvedValueOnce({ rows: [{ market_code: 'CM', market_name: 'Cameroun', sales_kmf: '90000' }, { market_code: 'CG', market_name: 'Congo', sales_kmf: '30000' }] })
+    .mockResolvedValueOnce({ rows: [{ reference: 'CMD-1', created_at: new Date('2026-08-23T10:00:00Z'), status: 'confirmed', total_kmf: '10000', market_code: 'CM', client_name: null }] });
 });
 
 describe('dashboard-commerce', () => {
@@ -111,6 +114,9 @@ describe('dashboard-commerce', () => {
       market: { code: 'CM', name: 'Cameroun', currency: 'XAF' },
     });
     expect(result.period).toBe(30);
+    expect(result.sales_series).toEqual([{ day: '2026-08-20', sales_kmf: 50000, orders: 5 }, { day: '2026-08-22', sales_kmf: 70000, orders: 7 }]);
+    expect(result.sales_by_market.map(m => [m.market_code, m.share_pct])).toEqual([['CM', 75], ['CG', 25]]);
+    expect(result.recent_orders[0]).toMatchObject({ reference: 'CMD-1', market_code: 'CM', client_name: null, total_kmf: 10000 });
     expect(result.data_quality).toMatchObject({
       scope_enforced: true,
       scope_mode: 'market',
@@ -134,7 +140,7 @@ describe('dashboard-commerce', () => {
       }));
     }
 
-    expect(db.query).toHaveBeenCalledTimes(5);
+    expect(db.query).toHaveBeenCalledTimes(8);
     db.query.mock.calls.forEach(([sql, params]) => {
       expect(String(sql)).toContain('o.market_id =');
       expect(params).toContain('market-cm-id');
