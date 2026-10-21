@@ -58,7 +58,7 @@ body.kmc-shell-v4 .kmc-control-chain-legend {
   justify-content: flex-end;
   align-items: center;
   gap: 14px;
-  margin: -26px 2px 16px auto;
+  margin: 10px 2px 12px auto; flex-wrap: wrap;
   color: var(--ocb-muted);
   font-size: 12.5px;
 }
