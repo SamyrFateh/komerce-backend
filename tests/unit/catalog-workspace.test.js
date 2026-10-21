@@ -525,3 +525,9 @@ describe('C4 : un repli technique « autre » n’est pas une classification val
     expect(classificationStatus({ category: 'autre', candidate_komerce_category: undefined, has_candidate: false }).status).toBe('not_from_sourcing');
   });
 });
+
+test('Catalogue/Raffinerie : « Définir le prix » transporte marché, période et périmètre de la page quand ils existent', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/catalog-workspace.js'), 'utf8');
+  expect(src).toContain('nav.withContext(basePricingPath, nav.readContext(globalThis.location && globalThis.location.search))');
+  expect(src).toContain("/admin/workspaces/pricing?product_ref=${encodeURIComponent(row.product_ref)}");
+});

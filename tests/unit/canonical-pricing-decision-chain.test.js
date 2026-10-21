@@ -13,7 +13,7 @@ test('la chaîne économique canonical consomme les projections serveur sans rec
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-decision-chain.css'), 'utf8');
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-decision-chain.js?v=1302');
+  expect(index).toContain('/dashboards/canonical/js/pricing-decision-chain.js?v=261021-4');
   expect(index).toContain('/dashboards/canonical/css/pricing-decision-chain.css?v=261010-9');
   expect(source).toContain('/corridor?product_ref=');
   expect(source).toContain('`${endpoint}/decision`');
@@ -56,4 +56,31 @@ test('les mutations de preuve marché et de prix restent des actions Workspace p
   expect(route).toContain("router.post('/market/:marketCode/products/:productRef/local-price', requireLocalStrategyCapability('pricing.decide')");
   expect(route).toContain("router.post('/market/:marketCode/products/:productRef/local-price/activate', requireLocalStrategyCapability('pricing.activate')");
   expect(route).toContain('manage_market_price_observations');
+});
+
+describe('fil P1 : prix pays actif → exposition au Catalogue pays', () => {
+  afterEach(() => { delete globalThis.KomerceCanonicalNavigation; });
+  const chain = () => {
+    jest.resetModules();
+    require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+    return require('../../public/dashboards/canonical/js/pricing-decision-chain.js');
+  };
+  const corridor = (source = 'LOCAL_ACTIVE') => ({ market: { code: 'CM' }, product: { product_ref: 'PRD-1' }, selected: { source } });
+  const globalCtx = { access: { mode: 'global', allowedMarkets: ['CM'] } };
+
+  test('lien market-catalog.html?market=&product_ref= seulement si LOCAL_ACTIVE et capability accordée', () => {
+    const { exposureLink } = chain();
+    expect(exposureLink(corridor(), { adminContext: globalCtx })).toBe('/dashboards/canonical/market-catalog.html?market=CM&product_ref=PRD-1');
+    const delegated = { access: { mode: 'market', defaultMarket: 'CM', allowedMarkets: ['CM'], delegatedCapabilities: { CM: ['catalog.expose'] } } };
+    expect(exposureLink(corridor(), { adminContext: delegated })).toContain('market=CM');
+  });
+
+  test('aucun lien : prix pas LOCAL_ACTIVE, capability absente, contexte absent ou marché inconnu', () => {
+    const { exposureLink } = chain();
+    expect(exposureLink(corridor('BASE_CATALOG'), { adminContext: globalCtx })).toBeNull();
+    const without = { access: { mode: 'market', defaultMarket: 'CM', allowedMarkets: ['CM'], delegatedCapabilities: { CM: ['pricing.decide'] } } };
+    expect(exposureLink(corridor(), { adminContext: without })).toBeNull();
+    expect(exposureLink(corridor(), {})).toBeNull();
+    expect(exposureLink({ selected: { source: 'LOCAL_ACTIVE' }, product: { product_ref: 'P' } }, { adminContext: globalCtx })).toBeNull();
+  });
 });

@@ -161,7 +161,7 @@
     return block;
   }
 
-  function selectedPriceBlock(doc, corridor, canManage) {
+  function selectedPriceBlock(doc, corridor, canManage, exposureHref) {
     const selected = corridor?.selected || {};
     const economics = selected.economics || {};
     const block = el(doc, 'div', 'kmc-decision-chain-selected');
@@ -172,6 +172,13 @@
       : formatKmf(selected.price_kmf)));
     if (selected.local_amount != null && selected.local_currency !== 'KMF') current.appendChild(el(doc, 'small', '', `≈ ${formatKmf(selected.price_kmf)} · conversion serveur`));
     current.appendChild(el(doc, 'small', '', selected.source === 'LOCAL_ACTIVE' ? 'Décision pays active' : 'Base catalogue actuellement effective'));
+    // Étape suivante du fil P1 : prix pays actif → exposition au Catalogue pays (lien direct, masqué sans capability).
+    if (exposureHref) {
+      const next = el(doc, 'a', 'kmc-workspace-action kmc-decision-chain-next', 'Continuer → Catalogue pays');
+      next.setAttribute('href', exposureHref);
+      next.setAttribute('data-next-step', 'market-catalog');
+      current.appendChild(next);
+    }
     block.appendChild(current);
 
     const candidate = corridor?.candidate || null;
@@ -303,6 +310,18 @@
     return details;
   }
 
+  // Lien vers `market-catalog.html?market=&product_ref=` : seulement si le prix pays est LOCAL_ACTIVE et que la
+  // capability catalog.expose est accordée sur ce marché.
+  function exposureLink(corridor, options) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    const market = corridor?.market?.code;
+    const productRef = corridor?.product?.product_ref;
+    if (corridor?.selected?.source !== 'LOCAL_ACTIVE' || !market || !productRef) return null;
+    if (!nav || typeof nav.hasCapability !== 'function' || !nav.hasCapability(options && options.adminContext, 'catalog.expose', market)) return null;
+    const params = new URLSearchParams({ market, product_ref: productRef });
+    return `/dashboards/canonical/market-catalog.html?${params.toString()}`;
+  }
+
   function renderLoaded(doc, workspace, host, corridor, decision, payload, options) {
     host.replaceChildren();
     const canManage = payload.capabilities?.local_strategy_owner === true;
@@ -321,7 +340,7 @@
     unit.appendChild(arrow(doc));
     unit.appendChild(corridorBlock(doc, corridor));
     unit.appendChild(arrow(doc));
-    unit.appendChild(selectedPriceBlock(doc, corridor, canManage));
+    unit.appendChild(selectedPriceBlock(doc, corridor, canManage, exposureLink(corridor, options)));
     unit.appendChild(arrow(doc));
     unit.appendChild(step(doc, 'unit-contribution', 'Contribution unitaire', formatKmf(economics.contribution_unit_kmf), `Position ${economics.strategy_risk || '—'} · moteur serveur`, Number(economics.contribution_unit_kmf) >= 0 ? 'positive' : 'critical'));
     host.appendChild(unit);
@@ -515,6 +534,7 @@
     createPanel,
     corridorBlock,
     flowBlock,
+    exposureLink,
     renderLoaded,
     fetchChain,
     enhance,

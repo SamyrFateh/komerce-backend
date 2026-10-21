@@ -1045,7 +1045,12 @@
       } else if (!priceReady) {
         const pricing = text(doc, 'a', 'kmc-workspace-action is-price', 'Définir le prix');
         pricing.setAttribute('data-workspace-action', 'define-price');
-        const pricingPath = `/admin/workspaces/pricing?product_ref=${encodeURIComponent(row.product_ref)}`;
+        const nav = globalThis.KomerceCanonicalNavigation;
+        const basePricingPath = `/admin/workspaces/pricing?product_ref=${encodeURIComponent(row.product_ref)}`;
+        // Marché / période / périmètre de la page transportés quand ils existent (aucun paramètre inventé).
+        const pricingPath = nav && typeof nav.withContext === 'function'
+          ? nav.withContext(basePricingPath, nav.readContext(globalThis.location && globalThis.location.search))
+          : basePricingPath;
         const returnTo = `/admin/workspaces/catalog?product_ref=${encodeURIComponent(row.product_ref)}`;
         pricing.href = `${contextualHref(pricingPath, returnTo, 'Retour à la curation')}#pricing-products`;
         actionContent.appendChild(pricing);
