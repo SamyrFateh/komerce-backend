@@ -34,6 +34,8 @@
 const { makeClient, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
 
 jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
+// Livrabilité du marché : couverte par order-checkout-delivery-proof.test.js ; neutre ici (mocks de requêtes positionnels).
+jest.mock('../../services/market-delivery-proof-service', () => ({ assertMarketDeliverable: jest.fn(() => Promise.resolve({ proven: true })) }));
 
 jest.mock('../../middleware/auth-guest', () => ({
   authenticateOrCreateGuest: (req, _res, next) => {

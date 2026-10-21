@@ -6,9 +6,9 @@
  * @criticality   medium
  * @inputs        canonical market code (server-validated), read-only DB executor
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
- * @depends       db.js, services/market-delegation-service.js
+ * @depends       db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
  * @used-by       routes/admin-market-control-plane.js
- * @db-read       market_settlements, disputes, orders, markets, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais
+ * @db-read       market_settlements, disputes, orders, markets, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
  * @db-write      none
  * @db-txn        none
  * @doctrine      control_plane_is_read_only, gaps_are_reported_never_repaired, no_second_authorization_engine
@@ -25,6 +25,7 @@
  */
 
 const { delegationError, normalizeMarketCode } = require('./market-delegation-service');
+const { getDeliveryProof } = require('./market-delivery-proof-service');
 
 const TEAM_GRANT = 'team.grant';
 
@@ -41,6 +42,7 @@ const GAP_MESSAGES = Object.freeze({
   NO_PAYMENT_PROVIDER: 'Aucun fournisseur de paiement activé pour ce marché.',
   NO_CASH_POLICY: 'Aucune politique de contrôle de caisse n’est définie.',
   NO_RELAIS: 'Aucun relais actif n’est rattaché au marché.',
+  NO_DELIVERY_PROOF: 'Aucune liaison de transport ni tarification attestée (ni livraison réelle abouties) : le marché ne peut pas accepter de commande payante.',
 });
 
 /** Pure : transforme un instantané en liste d'écarts ordonnée et stable. */
@@ -65,11 +67,12 @@ function computeGaps(snapshot) {
   if (!snapshot.paymentProviders.some(provider => provider.is_enabled)) add('NO_PAYMENT_PROVIDER');
   if (!snapshot.cashPolicy) add('NO_CASH_POLICY');
   if (!snapshot.relaisActive) add('NO_RELAIS');
+  if (!snapshot.deliveryProof || !snapshot.deliveryProof.proven) add('NO_DELIVERY_PROOF');
   return gaps;
 }
 
 const PLATFORM_BLOCKERS = new Set(['NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY']);
-const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS']);
+const OPERATIONS_BLOCKERS = new Set(['NO_DELIVERY_PROOF','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS']);
 
 function readinessFromGaps(gaps) {
   const platform = gaps.filter(gap => PLATFORM_BLOCKERS.has(gap.code));
@@ -163,7 +166,8 @@ async function getControlPlane(executor, marketCode) {
     'SELECT COUNT(*)::int AS n FROM relais WHERE market_id = $1 AND is_active', [market.id]
   )).rows[0].n;
 
-  const snapshot = { market, assignment, ceiling, team, paymentProviders, cashPolicy, relaisActive };
+  const deliveryProof = await getDeliveryProof(db, market.id);
+  const snapshot = { market, assignment, ceiling, team, paymentProviders, cashPolicy, relaisActive, deliveryProof };
   const gaps = computeGaps(snapshot);
   return { ...snapshot, gaps, readiness: readinessFromGaps(gaps) };
 }

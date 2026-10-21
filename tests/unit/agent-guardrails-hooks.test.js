@@ -1,6 +1,9 @@
 'use strict';
 
 const cp = require('child_process');
+
+// Isolation : sous un hook git, GIT_INDEX_FILE/GIT_DIR pointent le dépôt hôte (corruption d'index).
+function cleanEnv() { return Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_'))); }
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -11,14 +14,14 @@ const stamp = require('../../scripts/lib/preflight-stamp');
 
 function tempRepo() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'komerce-hooks-'));
-  const git = (...args) => cp.execFileSync('git', args, { cwd: dir, encoding: 'utf8' }).trim();
+  const git = (...args) => cp.execFileSync('git', args, { cwd: dir, encoding: 'utf8', env: cleanEnv() }).trim();
   git('init', '-q');
   git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'x');
   return { dir, git, head: git('rev-parse', 'HEAD') };
 }
 
 function prePush(dir, stdin) {
-  return cp.spawnSync('sh', [path.join(ROOT, 'scripts/hooks/pre-push')], { cwd: dir, input: stdin, encoding: 'utf8' });
+  return cp.spawnSync('sh', [path.join(ROOT, 'scripts/hooks/pre-push')], { cwd: dir, input: stdin, encoding: 'utf8', env: cleanEnv() });
 }
 
 describe('hook pre-push : tampon pr:preflight vert', () => {
@@ -48,7 +51,7 @@ describe('setup-hooks.sh : installation du pre-push léger', () => {
     const repo = tempRepo();
     fs.mkdirSync(path.join(repo.dir, 'scripts/hooks'), { recursive: true });
     fs.copyFileSync(path.join(ROOT, 'scripts/hooks/pre-push'), path.join(repo.dir, 'scripts/hooks/pre-push'));
-    const run = () => cp.execFileSync('bash', [path.join(ROOT, 'scripts/setup-hooks.sh')], { cwd: repo.dir, encoding: 'utf8' });
+    const run = () => cp.execFileSync('bash', [path.join(ROOT, 'scripts/setup-hooks.sh')], { cwd: repo.dir, encoding: 'utf8', env: cleanEnv() });
     return { ...repo, run, hook: path.join(repo.dir, '.git/hooks/pre-push') };
   }
 

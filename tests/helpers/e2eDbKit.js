@@ -188,6 +188,29 @@ function describeE2E(title, body) {
 
 // ── 5. Prix local actif (achat marché) ──────────────────────────────────────
 /**
+ * Fixture E2E : preuve de livrabilité minimale (attestation) pour que le checkout accepte le marché de test.
+ * Insertion directe, comme activateLocalPrice : vérité d'état minimale, pas le workflow central complet.
+ */
+async function attestMarketDeliveryForTest(db, cleanup, marketId) {
+  const existing = await db.query(
+    `SELECT 1 FROM market_delivery_attestations WHERE market_id = $1 AND revoked_at IS NULL AND valid_until > NOW() LIMIT 1`,
+    [marketId]
+  );
+  if (existing.rows.length) return;
+  const carrierId = uuid();
+  await db.query(`INSERT INTO carriers (id, name, type, is_active) VALUES ($1,'E2E carrier','maritime',TRUE)`, [carrierId]);
+  const attId = uuid();
+  await db.query(
+    `INSERT INTO market_delivery_attestations
+       (id, market_id, carrier_id, mode, origin_ref, freight_rate, rate_currency, rate_unit, transit_days, evidence_ref, attested_by, valid_until)
+     VALUES ($1,$2,$3,'SEA','E2E-ORIGIN',1,'KMF','PER_KG',30,'E2E-EVIDENCE',(SELECT id FROM users ORDER BY created_at LIMIT 1), NOW() + INTERVAL '30 days')`,
+    [attId, marketId, carrierId]
+  );
+  cleanup.track('market_delivery_attestations', 'id', attId);
+  cleanup.track('carriers', 'id', carrierId);
+}
+
+/**
  * Insertion directe d'un `product_market_price_drafts` en statut LOCAL_ACTIVE.
  *
  * Doctrine (2026-09, décision L1, services/market-local-price-resolution-
@@ -231,11 +254,13 @@ async function activateLocalPrice(db, cleanup, { marketId, productId, amount, cu
     [exposureId, productId, marketId]
   );
   cleanup.track('product_market_exposure', 'product_id', productId);
+  await attestMarketDeliveryForTest(db, cleanup, marketId);
   return { id, market_id: marketId, product_id: productId, amount, currency };
 }
 
 module.exports = {
   activateLocalPrice,
+  attestMarketDeliveryForTest,
   assertTestDatabase,
   createCleanup,
   describeE2E,

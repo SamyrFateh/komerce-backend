@@ -14,7 +14,10 @@ const cp = require('child_process');
 const SOURCE_GATE = path.resolve(__dirname, '../../scripts/concept-impact-gate.js');
 
 function run(cmd, cwd) {
-  return cp.execSync(cmd, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  // Isolation : sous un hook git (pre-commit), GIT_INDEX_FILE/GIT_DIR pointent le dépôt hôte et un
+  // `git add .` dans le dépôt temporaire corromprait l'index de l'appelant.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
+  return cp.execSync(cmd, { cwd, encoding: 'utf8', env, stdio: ['ignore', 'pipe', 'pipe'] });
 }
 
 function writeJson(root, rel, value) {

@@ -76,6 +76,7 @@ const { runOrderPostCommitHooks } = require('./order-post-commit-hooks');
 const { resolveCheckoutItems } = require('./order-checkout-item-resolution');
 const { applyActiveMarketPricesToCheckoutItems } = require('./market-local-price-resolution-service');
 const { MarketCommercialPriceError } = require('./market-commercial-price-service');
+const { assertMarketDeliverable } = require('./market-delivery-proof-service');
 const {
   FULFILLMENT_SOURCE,
   resolveCheckoutFulfillmentSources,
@@ -209,6 +210,18 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
         error: 'Ce marché n’est pas ouvert aux commandes.',
         code: 'MARKET_NOT_ACTIVE',
       });
+    }
+
+    // Livrabilité prouvée (liaison de transport + tarification) : sans preuve, aucune nouvelle commande
+    // payante, y compris en API directe. Les commandes historiques ne sont jamais réécrites.
+    try {
+      await assertMarketDeliverable(client, relais.market_id);
+    } catch (e) {
+      if (e && e.code === 'MARKET_DELIVERY_NOT_PROVEN') {
+        await client.query('ROLLBACK');
+        return fail(409, { error: e.message, code: e.code });
+      }
+      throw e;
     }
 
     let routing = { destination_island: null, routing_mode: null, transit_hub: null };
