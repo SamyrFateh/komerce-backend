@@ -206,8 +206,9 @@ async function attestMarketDeliveryForTest(db, cleanup, marketId) {
      VALUES ($1,$2,$3,'SEA','E2E-ORIGIN',1,'KMF','PER_KG',30,'E2E-EVIDENCE',(SELECT id FROM users ORDER BY created_at LIMIT 1), NOW() + INTERVAL '30 days')`,
     [attId, marketId, carrierId]
   );
-  cleanup.track('market_delivery_attestations', 'id', attId);
+  // LIFO : le transporteur (parent) est empilé AVANT l'attestation (enfant) pour être supprimé après elle.
   cleanup.track('carriers', 'id', carrierId);
+  cleanup.track('market_delivery_attestations', 'id', attId);
 }
 
 /**
