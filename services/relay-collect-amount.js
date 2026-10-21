@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          dashboard-relay-collect-amount
+ * @domain        dashboard
+ * @layer         service
+ * @criticality   high
+ * @inputs        order_row
+ * @outputs       collect_amount
+ * @depends       none
+ * @used-by       services/relay-dashboard-queries.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      market_currency_collection, fail_closed
+ * @impact-areas  dashboard, market
+ * @version       2026-10
+ */
+/**
  * relay-collect-amount — montant À ENCAISSER affiché à l'agent relais,
  * dans la devise DU MARCHÉ (jamais le pivot interne KMF pour CM/CG).
  *
@@ -11,7 +28,6 @@
  * le snapshot est dans la devise du marché. Sinon `available:false` — l'UI
  * n'invente ni conversion ni repli KMF.
  *
- * @used-by services/relay-dashboard-queries.js
  */
 'use strict';
 

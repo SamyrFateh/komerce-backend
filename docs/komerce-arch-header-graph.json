@@ -13,11 +13,11 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 738,
+    "scannedCodeFiles": 739,
     "filesWithFullHeaders": 689,
     "filesWithLiteHeaders": 49,
     "filesWithAnyHeaders": 738,
-    "filesWithoutHeaders": 0,
+    "filesWithoutHeaders": 1,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1810,
@@ -137943,7 +137943,9 @@
       "label": "routes/*"
     }
   ],
-  "filesWithoutHeaders": [],
+  "filesWithoutHeaders": [
+    "services/relay-collect-amount.js"
+  ],
   "filesWithMisplacedHeaders": [],
   "liteWithoutOwner": []
 }
