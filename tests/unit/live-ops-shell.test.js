@@ -64,3 +64,8 @@ test('candidats sourcing : en-têtes non coupés et pastilles qui passent à la 
   expect(css).toMatch(/\.kmc-sourcing-candidates-table th \{ overflow-wrap: normal; word-break: normal;/);
   expect(css).toMatch(/\.kmc-sourcing-candidates-table \.kmc-pill \{ white-space: normal;/);
 });
+
+test('palette Komerce : plus de bleu d’accent dans les états actifs du shell Live', () => {
+  expect(css).not.toMatch(/#3B82F6|#1D5CD6|rgb\(59 130 246/i);
+  expect(css).toContain('#F97316');
+});

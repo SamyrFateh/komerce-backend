@@ -263,7 +263,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(colors.decisionGradient).toContain('linear-gradient');
     expect(colors.decisionBorderLeft).toBe('5px');
     expect(colors.activeNavBg).toContain('linear-gradient');
-    expect(colors.activeNavText).toBe('rgb(11, 63, 148)');
+    expect(colors.activeNavText).toBe('rgb(154, 52, 18)');
     expect(new Set([colors.red, colors.warning, colors.green, colors.unknown]).size).toBe(4);
   });
 

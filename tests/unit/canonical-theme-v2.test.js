@@ -36,7 +36,7 @@ describe('Canonical Theme V2 — convergence visuelle', () => {
     const css = read('public/dashboards/canonical/css/canonical-theme-v2.css');
     expect(css).toContain('--kmc-canon-bg: #f8fbff');
     expect(css).toContain('--kmc-canon-ink: #102143');
-    expect(css).toContain('--kmc-canon-blue: #4f67ff');
+    expect(css).toContain('--kmc-canon-blue: #ea580c');
     expect(css).toContain('.kmc-dashboard-header');
     expect(css).toContain('.kmc-workspace-header');
     expect(css).toContain('.kmc-decision-surface-card');
