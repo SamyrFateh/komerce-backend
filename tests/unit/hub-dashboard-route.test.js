@@ -88,6 +88,7 @@ jest.mock('../../services/hub-dashboard-queries', () => ({
   getValidation: jest.fn(),
 }));
 
+jest.mock('../../services/hub-dubai-projection', () => ({ buildHubDubai: jest.fn() }));
 jest.mock('../../services/order-status-machine', () => ({ transitionOrderStatus: jest.fn() }));
 jest.mock('../../utils/parcelSync', () => ({ safeSyncScanToParcels: jest.fn().mockResolvedValue({ synced: true }) }));
 jest.mock('../../utils/reference', () => ({ generateParcelRef: jest.fn().mockResolvedValue('COL-000123') }));
@@ -920,5 +921,26 @@ describe('routes/hub-dashboard', () => {
 
       expect(res.status).toBe(200);
     });
+  });
+});
+
+
+describe('GET /dubai — flux Hub Dubaï (lecture seule)', () => {
+  const hubDubai = require('../../services/hub-dubai-projection');
+  beforeEach(() => { hubDubai.buildHubDubai.mockReset(); mockUser = { id: 'op-1', role: 'agent_hub' }; });
+
+  test('hub global : aucun périmètre marché imposé', async () => {
+    hubDubai.buildHubDubai.mockResolvedValue({ units: {} });
+    const res = await request(buildApp()).get('/api/hub-dashboard/dubai');
+    expect(res.status).toBe(200);
+    expect(hubDubai.buildHubDubai).toHaveBeenCalledWith({});
+  });
+
+  test('market_operator : périmètre serveur transmis, jamais celui du client', async () => {
+    mockUser = { id: 'mo-1', role: 'market_operator' };
+    hubDubai.buildHubDubai.mockResolvedValue({ units: {} });
+    const res = await request(buildApp()).get('/api/hub-dashboard/dubai?market_id=autre');
+    expect(res.status).toBe(200);
+    expect([...hubDubai.buildHubDubai.mock.calls[0][0].authorizedMarkets]).toEqual([CM_MARKET]);
   });
 });

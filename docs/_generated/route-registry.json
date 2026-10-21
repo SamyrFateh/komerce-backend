@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-21T10:07:34.998Z",
+  "generatedAt": "2026-10-21T15:06:38.954Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 732,
+  "count": 733,
   "routes": [
     {
       "method": "GET",
@@ -4112,6 +4112,16 @@
       "fullPath": "/api/hub-dash/dashboard",
       "mountPrefix": "/api/hub-dash",
       "localPath": "/dashboard",
+      "routeFile": "routes/hub-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/hub-dash/dubai",
+      "mountPrefix": "/api/hub-dash",
+      "localPath": "/dubai",
       "routeFile": "routes/hub-dashboard.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

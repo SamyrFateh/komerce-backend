@@ -58,8 +58,11 @@
     ? (o.payment_status === 'paid' ? 'Cash encaissé' : 'Cash à encaisser')
     : (o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente'));
 
+  const fluxUrl = () => `${BASE}${queryString({ view:'flux' })}`;
+
   function hubTabs() {
     return [
+      { key:'flux', label:'Flux Hub', href:fluxUrl() },
       { key:'suivi', label:'Suivi', href:BASE },
       { key:'commandes', label:'Commandes', href:queueUrl('all') },
     ];
@@ -211,7 +214,63 @@
     };
   }
 
+
+  // ── Flux Hub : réceptions fournisseur, unités par marché, groupages (lecture seule, /api/hub-dash/dubai) ──
+  const NA = 'Non disponible';
+  const dash = v => (Number.isFinite(Number(v)) && v !== null && v !== undefined ? num(v) : NA);
+
+  function renderFlux(p, data) {
+    const d = data || {};
+    const rec = d.receptions || {};
+    const units = d.units || {};
+    const gaps = Array.isArray(d.gaps) ? d.gaps : [];
+        const recOk = rec.available === true;
+    const markets = Array.isArray(units.by_market) ? units.by_market : [];
+    const pos = Array.isArray(rec.purchase_orders) ? rec.purchase_orders : [];
+    return {
+      hero: `<header class="kir-hero kir-live-hero">
+        <div>
+          <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · HUB DUBAÏ</span></div>
+          <div class="kir-live-titlerow"><h1>Flux du Hub — Réceptions, groupages, expéditions</h1><span class="kir-live-badge is-live">LIVE</span></div>
+          <p>Lecture en direct · mis à jour ${esc(fmtDate(d.generated_at))}</p>
+        </div>
+      </header>`,
+      body: `${tiles('FLUX MUTUALISÉ DU HUB', [
+          { label:'Réceptions attendues', value:recOk ? dash(rec.expected_purchase_orders) : NA, sub:recOk ? `dont ${num(rec.partial_purchase_orders)} partielle(s)` : 'source non disponible' },
+          { label:'Unités reçues aujourd’hui', value:dash(units.received_today), sub:'unités physiques' },
+          { label:'Unités contrôlées', value:dash(units.controlled), sub:'contrôle qualité fait' },
+          { label:'Groupages en cours', value:recOk ? dash(rec.grouped_purchase_orders) : NA, sub:recOk ? 'achats groupés à réceptionner' : 'source non disponible' },
+        ])}
+        ${tiles('SORTIES', [
+          { label:'Unités expédiées', value:dash(units.dispatched), sub:'état Expédiée' },
+          { label:'Unités en quarantaine', value:dash(units.quarantined), sub:'à traiter' },
+          { label:'Expéditions prêtes', value:NA, sub:'source absente' },
+          { label:'Groupage transport', value:NA, sub:'source absente' },
+        ])}
+        <section class="lk-block" aria-label="Sources non disponibles"><span class="kir-section-kicker">SOURCES NON DISPONIBLES</span>
+          ${table(['Indicateur', 'Raison'], [
+            ...gaps.map(g => `<tr><td>${esc(g.key === 'expeditions_ready' ? 'Expéditions prêtes' : g.key === 'groupage_en_cours' ? 'Groupage transport' : g.key)}</td><td>${esc(g.reason)}</td></tr>`),
+            ...(recOk ? [] : [`<tr><td>Réceptions fournisseur</td><td>${esc(rec.reason || NA)}</td></tr>`]),
+          ], { empty:'Toutes les sources sont disponibles.' })}
+        </section>
+        <section class="lk-block" aria-label="Unités par marché"><span class="kir-section-kicker">PAR MARCHÉ</span>
+          ${table(['Marché', 'Reçues aujourd’hui', 'Contrôlées', 'Expédiées', 'Quarantaine'], markets.map(m => `<tr><td>${esc(m.market_name || m.market_code)}</td><td>${num(m.received_today)}</td><td>${num(m.controlled)}</td><td>${num(m.dispatched)}</td><td>${num(m.quarantined)}</td></tr>`), { empty:'Aucune unité physique enregistrée.' })}
+        </section>
+        <section class="lk-block" aria-label="Réceptions fournisseur"><span class="kir-section-kicker">RÉCEPTIONS FOURNISSEUR ATTENDUES</span>
+          ${recOk
+            ? table(['Fournisseur', 'Référence', 'Type', 'Attendu', 'Reçu'], pos.map(po => `<tr><td>${esc(po.supplier_name || '—')}</td><td>${esc(po.supplier_order_ref || po.purchase_order_id)}</td><td>${po.shape === 'grouped' ? 'Achat groupé' : 'Commande'}</td><td>${num(po.expected_quantity)}</td><td>${num(po.received_quantity)}</td></tr>`), { empty:'Aucune réception attendue.' })
+            : `<div class="kir-empty">${esc(rec.reason || NA)}</div>`}
+        </section>`,
+    };
+  }
+
   const views = {
+    flux:{
+      tab:() => 'flux',
+      load:(p, api) => api('/api/hub-dash/dubai'),
+      render:renderFlux,
+      nav:() => ({ crumbs:[], back:null }),
+    },
     overview:{
       tab:() => 'suivi',
       async load(p, api) {
