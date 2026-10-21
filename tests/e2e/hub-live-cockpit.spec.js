@@ -23,7 +23,7 @@ const detail = (n) => ({ ...order(n), status:'preparation', total_kmf:15000, met
   items:[{ product_name:'Coque', quantity:2, stock_status:'ok' }], parcels:[{ reference:'P-1', status:'draft', items:[{}], shipped_at:null }],
   timeline:[{ step:'prep_start', scanned_by_name:'Agent', created_at:new Date().toISOString() }], incidents:[] });
 
-async function mountHub(page, search = '') {
+async function mountHub(page, search = '?view=overview') {
   const state = { calls:[], writes:[] };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const req = route.request();
@@ -59,6 +59,15 @@ async function mountHub(page, search = '') {
 const crumb = (page) => page.locator('.kir-breadcrumb').innerText().then((s) => s.replace(/\s*›\s*/g, ' > ').replace(/\s+/g, ' ').trim());
 
 test.describe('Cockpit Hub — navigation canonique', () => {
+  test('Défaut : Flux Hub actif ; Suivi accessible puis retour contextuel', async ({ page }) => {
+    await mountHub(page, '');
+    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Flux Hub');
+    await page.locator('.kir-domain-nav a', { hasText:'Suivi' }).click();
+    await expect(page).toHaveURL(/view=overview/);
+    await expect(page.locator('.kir-hero h1')).toContainText('Suivi du Hub');
+    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
+  });
+
   test('Suivi : flux, chiffres, signaux, file à traiter en premier', async ({ page }) => {
     await mountHub(page);
     await expect(page.locator('.kir-hero h1')).toContainText('Suivi du Hub');
