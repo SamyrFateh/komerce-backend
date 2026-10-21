@@ -6,24 +6,24 @@
 
 /* Repères décoratifs : barre de titre, en-tête de tableau, onglet actif, lien actif */
 body .kmc-section-title::before {
-  background: linear-gradient(180deg, #3B82F6, #1D5CD6);
+  background: linear-gradient(180deg, #F97316, #C2410C);
   box-shadow: 0 0 0 4px rgb(29 92 214 / .10);
 }
 body .kmc-data-table th:first-child,
 body .kmc-workspace-table th:first-child { border-left: 0; }
 body .kmc-admin-domain-tab.is-active { background: linear-gradient(180deg, transparent 0%, rgb(29 92 214 / .07) 100%); }
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
-body .kmc-admin-primary-link.is-active { box-shadow: inset 3px 0 0 #3B82F6; }
+body .kmc-admin-primary-link.is-active { box-shadow: inset 3px 0 0 #F97316; }
 
 /* Actions : principale bleue, validation verte, destructive rouge discrète, secondaire blanche */
 body .kmc-workspace-action:not(.is-secondary) {
-  border-color: #1D5CD6;
-  background: linear-gradient(180deg, #3B82F6, #1D5CD6);
+  border-color: #C2410C;
+  background: linear-gradient(180deg, #F97316, #C2410C);
   color: #fff;
   box-shadow: 0 2px 8px rgb(29 92 214 / .22);
 }
 body .kmc-workspace-action:not(.is-secondary):hover:not(:disabled) { box-shadow: 0 5px 14px rgb(29 92 214 / .30); }
-body .kmc-workspace-action:focus-visible { box-shadow: 0 0 0 3px rgb(59 130 246 / .30); }
+body .kmc-workspace-action:focus-visible { box-shadow: 0 0 0 3px rgb(234 88 12 / .30); }
 body .kmc-workspace-action.is-approve {
   border-color: #15803D;
   background: linear-gradient(180deg, #22A559, #15803D);
@@ -41,10 +41,10 @@ body .kmc-workspace-action.is-danger:hover:not(:disabled) { background: #FEF2F3;
 .kmc-sourcing-candidates-table td:nth-child(5), .kmc-sourcing-candidates-table td:nth-child(6) { padding-right: 18px; }
 .kmc-pill { display: inline-block; padding: 3px 10px; border: 1px solid #E2E8F0; border-radius: 999px; background: #F8FAFC; color: #475569; font-size: 11px; font-weight: 800; letter-spacing: .03em; white-space: nowrap; }
 .kmc-pill.is-state-imported-to-catalog, .kmc-pill.is-decision-priority { border-color: #BBE5C8; background: #F0FAF3; color: #15803D; }
-.kmc-pill.is-decision-test { border-color: #BFD4F8; background: #F3F8FF; color: #1D5CD6; }
+.kmc-pill.is-decision-test { border-color: #BFD4F8; background: #F3F8FF; color: #C2410C; }
 .kmc-pill.is-decision-watch { border-color: #D9D2F5; background: #F7F5FF; color: #6D4FD3; }
 .kmc-pill.is-state-rejected, .kmc-pill.is-decision-avoid, .kmc-pill.is-decision-loss { border-color: #F6C9CE; background: #FEF2F3; color: #B42318; }
-.kmc-sourcing-candidates-table td:last-child .kmc-workspace-nav-link { color: #1D5CD6; font-weight: 700; }
+.kmc-sourcing-candidates-table td:last-child .kmc-workspace-nav-link { color: #C2410C; font-weight: 700; }
 
 /* Tarification produit (focus) : carte lisible, KPI en grille, actions sur une ligne */
 .kmc-pricing-product-focus .kmc-section-body { display: grid; gap: 14px; }

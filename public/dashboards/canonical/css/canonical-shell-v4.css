@@ -348,12 +348,12 @@ a.kmc-admin-reference-result:focus-visible { background: #edf2ff; }
 
 .kmc-admin-domain-tab:hover,
 .kmc-admin-domain-tab:focus-visible {
-  color: #4053e8;
+  color: #C2410C;
   outline: none;
 }
 
 .kmc-admin-domain-tab.is-active {
-  color: #4053e8;
+  color: #C2410C;
 }
 
 .kmc-admin-domain-tab.is-active::after {
@@ -524,7 +524,7 @@ body.kmc-shell-v4 .kmc-ctl-stage {
   padding: 10px 16px;
   background: #fff;
   border: 1px solid #dbe4f3;
-  border-left: 4px solid #2563eb;
+  border-left: 4px solid #EA580C;
   border-radius: 6px;
   color: #1f2937;
   font-size: 14px;
@@ -534,7 +534,7 @@ body.kmc-shell-v4 .kmc-ctl-stage {
 .kmc-purpose-box > summary {
   cursor: pointer;
   font-weight: 600;
-  color: #1d4ed8;
+  color: #9A3412;
 }
 
 .kmc-purpose-box > p {
