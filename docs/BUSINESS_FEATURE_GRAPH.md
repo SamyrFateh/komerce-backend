@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 631 | 631 | 0 |
+| backend | 36 | 36 | 632 | 632 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -219,11 +219,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Exposer les agrégats de pilotage et porter un portail interne Canonical unifié accessible depuis /admin, dont la navigation et les workspaces sont adaptés au rôle, aux scopes marché et aux capabilities résolus côté serveur, sans réutiliser les deux générations historiques de dashboards.
 
 - middleware: 1
-- services: 40
+- services: 41
 - routes: 28
 - migrations: 2
 - dash: 160
-- tests: 186
+- tests: 187
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 14
 - interfaces exposed: 90
@@ -2235,7 +2235,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2089 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2091 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2311,7 +2311,7 @@ Meta Graph monté : oui.
 | dashboard | economic-engine | static-code, data-read | 18 | **DECLARED_AND_OBSERVED** |
 | dashboard | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 109 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 111 | **DECLARED_AND_OBSERVED** |
 | dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code, data-read, data-write | 30 | **DECLARED_AND_OBSERVED** |

@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 735,
-    "filesWithFullHeaders": 686,
+    "scannedCodeFiles": 736,
+    "filesWithFullHeaders": 687,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 735,
+    "filesWithAnyHeaders": 736,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1797,
-    "edges": 9080,
+    "graphNodes": 1800,
+    "edges": 9097,
     "dbTables": 206,
-    "doctrines": 654,
-    "impactAreas": 202,
-    "unresolvedCodeEdges": 887,
+    "doctrines": 655,
+    "impactAreas": 203,
+    "unresolvedCodeEdges": 889,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 87
   },
@@ -36,7 +36,7 @@
     "auth": 14,
     "platform-ops": 2,
     "catalog": 129,
-    "admin-dashboard": 35,
+    "admin-dashboard": 36,
     "decision-signals": 14,
     "market-delegation": 35,
     "market": 4,
@@ -109,7 +109,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 419,
+    "service": 420,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -119,7 +119,7 @@
   },
   "byCriticality": {
     "critical": 97,
-    "medium": 150,
+    "medium": 151,
     "high": 430,
     "low": 58
   },
@@ -16870,7 +16870,9 @@
         "parcel_items",
         "parcels",
         "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "markets",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -17441,7 +17443,11 @@
         "order_incidents",
         "disputes",
         "relais",
-        "users"
+        "users",
+        "markets",
+        "order_items",
+        "products",
+        "parcels"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -17544,6 +17550,50 @@
         "market-authorization"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/dashboard-pilotage-markets.js",
+      "file": "services/dashboard-pilotage-markets.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-pilotage-markets-overview",
+      "domain": "admin-dashboard",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "dashboard_filters (période",
+        "simulation_scope)"
+      ],
+      "outputs": [
+        "global_markets_supervision_projection"
+      ],
+      "depends": [
+        "db",
+        "services/dashboard-metrics"
+      ],
+      "usedBy": [
+        "routes/admin-dashboard.js"
+      ],
+      "dbRead": [
+        "orders",
+        "markets",
+        "order_incidents"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "missing_data_never_means_zero",
+        "simulation_scope_separated_from_real"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "pilotage"
+      ],
+      "version": "2026-10"
     },
     {
       "id": "services/discovery-rail-composer.js",
@@ -38267,6 +38317,11 @@
       "doctrine": "DOCTRINE_LOGISTICS_CONTROL_CHAIN"
     },
     {
+      "id": "doctrine:simulation_scope_separated_from_real",
+      "type": "doctrine",
+      "doctrine": "simulation_scope_separated_from_real"
+    },
+    {
       "id": "doctrine:lifecycle_owner_persistence_boundary",
       "type": "doctrine",
       "doctrine": "lifecycle_owner_persistence_boundary"
@@ -40570,6 +40625,11 @@
       "id": "impact:orders-logistics",
       "type": "impact-area",
       "area": "orders-logistics"
+    },
+    {
+      "id": "impact:pilotage",
+      "type": "impact-area",
+      "area": "pilotage"
     },
     {
       "id": "impact:admin-economic",
@@ -66302,6 +66362,18 @@
     },
     {
       "from": "services/dashboard-commerce.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
       "to": "doctrine:dashboard_no_business_recompute",
       "type": "doctrine",
       "label": "dashboard_no_business_recompute"
@@ -67406,6 +67478,30 @@
     },
     {
       "from": "services/dashboard-orders.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/dashboard-orders.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/dashboard-orders.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/dashboard-orders.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/dashboard-orders.js",
       "to": "doctrine:workspace_acts_dashboard_observes",
       "type": "doctrine",
       "label": "workspace_acts_dashboard_observes"
@@ -67577,6 +67673,72 @@
       "to": "impact:market-authorization",
       "type": "impact",
       "label": "market-authorization"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "services/dashboard-metrics",
+      "type": "depends",
+      "label": "services/dashboard-metrics"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "services/dashboard-pilotage-markets.js",
+      "type": "uses",
+      "label": "routes/admin-dashboard.js"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db:order_incidents",
+      "type": "db-read",
+      "label": "order_incidents"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "doctrine:dashboard_no_business_recompute",
+      "type": "doctrine",
+      "label": "dashboard_no_business_recompute"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "doctrine:missing_data_never_means_zero",
+      "type": "doctrine",
+      "label": "missing_data_never_means_zero"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "doctrine:simulation_scope_separated_from_real",
+      "type": "doctrine",
+      "label": "simulation_scope_separated_from_real"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "impact:pilotage",
+      "type": "impact",
+      "label": "pilotage"
     },
     {
       "from": "services/discovery-rail-composer.js",
@@ -101963,6 +102125,7 @@
         "services/dashboard-metrics/index.js",
         "services/dashboard-orders.js",
         "services/dashboard-pilotage-alert-aggregation.js",
+        "services/dashboard-pilotage-markets.js",
         "utils/logger.js"
       ]
     },
@@ -112478,7 +112641,9 @@
         "parcel_items",
         "parcels",
         "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "markets",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -112499,6 +112664,7 @@
       "mustCheck": [
         "db:customs_shipment_parcels",
         "db:customs_shipments",
+        "db:markets",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:order_items",
@@ -112506,6 +112672,7 @@
         "db:parcel_items",
         "db:parcels",
         "db:products",
+        "db:users",
         "doctrine:dashboard_no_business_recompute",
         "doctrine:decision_support_reuses_canonical_economic_engine",
         "doctrine:local_stock_projection_is_availability_authority",
@@ -113084,7 +113251,11 @@
         "order_incidents",
         "disputes",
         "relais",
-        "users"
+        "users",
+        "markets",
+        "order_items",
+        "products",
+        "parcels"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -113100,8 +113271,12 @@
       ],
       "mustCheck": [
         "db:disputes",
+        "db:markets",
         "db:order_incidents",
+        "db:order_items",
         "db:orders",
+        "db:parcels",
+        "db:products",
         "db:relais",
         "db:users",
         "doctrine:browser_never_recomputes_truth",
@@ -113200,6 +113375,49 @@
         "impact:market-authorization",
         "routes/admin-dashboard-market.js",
         "services/dashboard-pilotage-alert-aggregation.js"
+      ]
+    },
+    "services/dashboard-pilotage-markets.js": {
+      "role": "dashboard-pilotage-markets-overview",
+      "domain": "admin-dashboard",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/dashboard-metrics"
+      ],
+      "directUsedBy": [
+        "routes/admin-dashboard.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "markets",
+        "order_incidents"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "dashboard_no_business_recompute",
+        "missing_data_never_means_zero",
+        "simulation_scope_separated_from_real"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "pilotage"
+      ],
+      "mustCheck": [
+        "db:markets",
+        "db:order_incidents",
+        "db:orders",
+        "doctrine:dashboard_no_business_recompute",
+        "doctrine:missing_data_never_means_zero",
+        "doctrine:simulation_scope_separated_from_real",
+        "impact:admin-dashboard",
+        "impact:pilotage",
+        "routes/admin-dashboard.js"
       ]
     },
     "services/discovery-rail-composer.js": {
@@ -134688,6 +134906,18 @@
       "to": "services/dashboard-metrics/_helpers",
       "type": "depends",
       "label": "services/dashboard-metrics/_helpers"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "services/dashboard-metrics",
+      "type": "depends",
+      "label": "services/dashboard-metrics"
     },
     {
       "from": "services/discovery-rail-composer.js",
