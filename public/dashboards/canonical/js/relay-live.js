@@ -51,6 +51,7 @@
   const offsetOf = p => Math.max(0, num(p.offset));
   const listUrl = (list, offset = 0) => `${BASE}${queryString({ view:'orders', list, offset:offset > 0 ? offset : '' })}`;
   const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from })}`;
+  const previewUrl = id => `${BASE}${queryString({ sel:id })}`;
   const paymentLabel = o => (o.cash_pending ? 'Cash à encaisser' : o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente');
 
   function relayTabs() {
@@ -60,7 +61,7 @@
     ];
   }
 
-  function orderRow(order, from) {
+  function orderRow(order, from, selectedId) {
     const waiting = order.status === 'available' ? ageLabel(order.heures_attente) : ageLabel(num(order.age_jours) * 24);
     const late = order.urgence === 'haute' || order.urgence === 'critique';
     return `<tr>
@@ -72,9 +73,38 @@
       <td>${num(order.nb_items)}</td>
       <td>${esc(paymentLabel(order))}</td>
       <td>${num(order.incidents_ouverts) > 0 ? `<b class="lk-late">${num(order.incidents_ouverts)}</b>` : '—'}</td>
+      ${selectedId !== undefined ? `<td><a href="${previewUrl(order.id)}" data-cockpit-nav data-relay-preview="${esc(order.id)}"${String(order.id) === String(selectedId) ? ' aria-current="true"' : ''}>Aperçu</a></td>` : ''}
     </tr>`;
   }
   const ORDER_COLUMNS = ['Commande', 'Client', 'Relais', 'Statut', 'Attente', 'Articles', 'Paiement', 'Incidents'];
+
+
+  // Détail dans la même vue : lecture seule sur /api/relay/orders/:id (même endpoint, mêmes droits que la fiche).
+  function renderPreview(sel, detail) {
+    if (!sel) return '';
+    if (!detail) {
+      return `<aside class="lk-block lk-relay-detail" data-relay-detail aria-label="Détail du retrait"><span class="kir-section-kicker">DÉTAIL DU RETRAIT</span>
+        <div class="kir-empty">Détail non disponible pour ce colis.</div></aside>`;
+    }
+    const o = detail.order || {};
+    const relais = detail.relais || {};
+    const pay = detail.paiement || {};
+    const incidents = Array.isArray(detail.incidents) ? detail.incidents : [];
+    const wait = o.status === 'available' ? ageLabel(o.heures_attente) : ageLabel(num(o.age_jours) * 24);
+    const fact = (label, value) => `<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+    return `<aside class="lk-block lk-relay-detail" data-relay-detail aria-label="Détail du retrait"><span class="kir-section-kicker">DÉTAIL DU RETRAIT</span>
+      <h3>${esc(o.reference || 'Colis')}</h3>
+      <div class="lk-facts">
+        ${fact('Statut', STATUS[o.status] || o.status || '—')}
+        ${fact('Client', detail.client?.nom || '—')}
+        ${fact('Relais', [relais.nom, relais.ile].filter(Boolean).join(' · ') || '—')}
+        ${fact(o.status === 'available' ? 'Attente au relais' : 'Âge', wait)}
+        ${fact('Paiement', `${pay.cash_pending ? 'Cash à encaisser' : pay.is_paid ? 'Payée' : 'En attente'} · ${fmtKmf(pay.total_kmf)}`)}
+        ${fact('Incidents ouverts', incidents.filter(i => i.status !== 'resolved').length)}
+      </div>
+      <p><a href="${orderUrl(detail.order?.id || sel, '')}" data-cockpit-nav>Ouvrir la fiche complète →</a>${order360Link(o.reference, 'Retour au Relais live')}</p>
+    </aside>`;
+  }
 
   // ── Suivi ───────────────────────────────────────────────────────────────────
   function renderOverview(p, data) {
@@ -128,8 +158,9 @@
         <p class="kir-run-proof lk-signals">${signals}</p>
         <section class="lk-block" aria-label="À retirer en premier">
           <div class="lk-block-head"><span class="kir-section-kicker">À RETIRER EN PREMIER</span><a href="${listUrl('available')}" data-cockpit-nav class="kir-subtle-link">Voir tous les colis disponibles →</a></div>
-          ${table(ORDER_COLUMNS, first.map(order => orderRow(order, 'available')), { empty:'Aucun colis disponible au retrait.' })}
-        </section>`,
+          ${table([...ORDER_COLUMNS, 'Détail'], first.map(order => orderRow(order, 'available', p.sel || '')), { empty:'Aucun colis disponible au retrait.' })}
+        </section>
+        ${renderPreview(p.sel, data?.detail)}`,
     };
   }
 
@@ -206,12 +237,13 @@
     overview:{
       tab:() => 'suivi',
       async load(p, api) {
-        const [dash, first, transit] = await Promise.all([
+        const [dash, first, transit, detail] = await Promise.all([
           api('/api/relay/dashboard'),
           api('/api/relay/orders?status=available&limit=5&projection=live'),
           api('/api/relay/orders?status=in_transit&limit=5&projection=live'),
+          p.sel ? api(`/api/relay/orders/${encodeURIComponent(p.sel)}?projection=live`).catch(() => null) : null,
         ]);
-        return { dash, first, transit, fetched_at:dash?.generated_at || new Date().toISOString() };
+        return { dash, first, transit, detail, fetched_at:dash?.generated_at || new Date().toISOString() };
       },
       render:renderOverview,
       nav:() => ({ crumbs:[], back:null }),
