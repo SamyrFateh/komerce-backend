@@ -34,6 +34,8 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
       const url = new URL(href, 'https://komerce.test');
       expect(router.canonicalPath(url.pathname)).toBe(true);
     });
+    // Vue Commandes distincte : routable côté client comme Commerce.
+    expect(router.canonicalPath('/admin/orders')).toBe(true);
   });
 
   test('/admin/suppliers n’est plus une route canonique (aucune liste fournisseurs, NAV-08)', () => {

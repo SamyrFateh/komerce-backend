@@ -79,3 +79,10 @@ test('Finance : file fournisseur distingue vide et projection non fournie', () =
 test('Finance : style des accès utiles', () => {
   expect(css).toContain('.kmc-fin3-links');
 });
+
+test('Commandes : styles de la vue distincte, palette Komerce orange et responsive', () => {
+  expect(css).toContain('.kmc-ord-kpis');
+  expect(css).toContain('.kmc-ord-tab.is-active');
+  expect(css).toContain('#ea580c');
+  expect(css).toMatch(/@media \(max-width: 980px\)[\s\S]*kmc-ord-main/);
+});
