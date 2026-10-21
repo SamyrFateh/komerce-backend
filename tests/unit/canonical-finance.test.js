@@ -188,7 +188,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(decisions.some(item => /variances élevées|à suivre|non rapprochés/i.test(item.label))).toBe(false);
 
     expect(financeDecision.headlineMetrics(payload, finance).map(item => item.key)).toEqual([
-      'ca-encaisse', 'cout-reel', 'marge', 'completude',
+      'ca-encaisse', 'cout-reel', 'marge',
     ]);
     expect(financeDecision.overviewCards(payload, finance)).toHaveLength(4);
     expect(financeDecision.completenessProgress(payload, finance)[0]).toEqual({
