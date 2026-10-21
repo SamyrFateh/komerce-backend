@@ -4807,6 +4807,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/dashboard-pilotage-markets.js",
+        "resolvedPath": "services/dashboard-pilotage-markets.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/operations-workspace.js",
         "resolvedPath": "services/operations-workspace.js",
         "status": "resolved-in-technical-graph"
@@ -7308,6 +7315,13 @@
         "category": "tests",
         "declared": "tests/unit/dashboard-pilotage-alert-aggregation.test.js",
         "resolvedPath": "tests/unit/dashboard-pilotage-alert-aggregation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/dashboard-pilotage-markets.test.js",
+        "resolvedPath": "tests/unit/dashboard-pilotage-markets.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13710,6 +13724,13 @@
       },
       {
         "feature": "market-control-plane",
+        "category": "services",
+        "declared": "services/market-delivery-proof-service.js",
+        "resolvedPath": "services/market-delivery-proof-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market-control-plane",
         "category": "routes",
         "declared": "routes/admin-market-control-plane.js",
         "resolvedPath": "routes/admin-market-control-plane.js",
@@ -13741,6 +13762,20 @@
         "category": "tests",
         "declared": "tests/unit/market-provisioning-service.test.js",
         "resolvedPath": "tests/unit/market-provisioning-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-control-plane",
+        "category": "tests",
+        "declared": "tests/unit/market-delivery-proof-service.test.js",
+        "resolvedPath": "tests/unit/market-delivery-proof-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-control-plane",
+        "category": "tests",
+        "declared": "tests/unit/order-checkout-delivery-proof.test.js",
+        "resolvedPath": "tests/unit/order-checkout-delivery-proof.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -27517,6 +27552,12 @@
       },
       {
         "from": "market-control-plane",
+        "to": "orders",
+        "raw": "orders (commandes réelles collectées lues pour la base HISTORY de la preuve de livrabilité : simulation_scope IS NULL)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
         "to": "market",
         "raw": "market (markets comme référentiel lu)",
         "resolved": true
@@ -27759,6 +27800,12 @@
         "from": "notifications",
         "to": "auth",
         "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
+        "to": "market-control-plane",
+        "raw": "market-control-plane (preuve de livrabilité du marché : assertMarketDeliverable, garde checkout Lot B ; refus 409 MARKET_DELIVERY_NOT_PROVEN sans preuve)",
         "resolved": true
       },
       {
@@ -34150,6 +34197,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/dashboard-pilotage-markets.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/operations-workspace.js",
                 "targetFile": "db.js"
               },
@@ -34427,6 +34478,10 @@
               },
               {
                 "sourceFileId": "tests/unit/dashboard-finance-canonical.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/dashboard-pilotage-markets.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -38984,6 +39039,10 @@
               {
                 "sourceFileId": "services/market-local-price-resolution-service.js",
                 "targetFile": "services/product-sellable-service.js"
+              },
+              {
+                "sourceFileId": "services/market-local-price-resolution-service.js",
+                "targetFile": "services/catalog-market-exposure-service.js"
               }
             ]
           },
@@ -39211,6 +39270,10 @@
               {
                 "table": "relais",
                 "mode": "R"
+              },
+              {
+                "table": "carriers",
+                "mode": "R"
               }
             ]
           }
@@ -39278,8 +39341,16 @@
                 "targetFile": "services/market-cash-control-policy-service.js"
               },
               {
+                "sourceFileId": "services/market-delivery-proof-service.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/central-authority.test.js",
                 "targetFile": "config/market-delegation-capabilities.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-delivery-proof-service.test.js",
+                "targetFile": "services/market-delegation-service.js"
               }
             ]
           },
@@ -39323,9 +39394,18 @@
                 "targetFile": "routes/orders.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "orders",
+                "mode": "R"
+              }
+            ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "market-control-plane",
@@ -41060,6 +41140,22 @@
               {
                 "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "services/market-commercial-price-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
+        "to": "market-control-plane",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/market-delivery-proof-service.js"
               }
             ]
           }
@@ -44585,6 +44681,10 @@
               {
                 "sourceFileId": "services/shared-cart-creation.js",
                 "targetFile": "services/product-admin-service.js"
+              },
+              {
+                "sourceFileId": "services/shared-cart-creation.js",
+                "targetFile": "services/catalog-market-exposure-service.js"
               }
             ]
           },
@@ -46039,7 +46139,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2089
+        "filesObserved": 2094
       },
       "boutique": {
         "filesObserved": 214,
@@ -46075,7 +46175,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 20,
-      "NON_RUNTIME_TEST": 16,
+      "NON_RUNTIME_TEST": 15,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -46415,21 +46515,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "market-control-plane",
-        "to": "orders",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "market-delegation",
         "to": "market-operator-dashboard",
         "family": "NON_RUNTIME_TEST",
@@ -46634,7 +46719,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 5,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
@@ -46808,6 +46893,7 @@
         "inventory",
         "logistics",
         "loyalty",
+        "market-control-plane",
         "notifications",
         "payments",
         "platform-ops",
@@ -48325,7 +48411,9 @@
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "market-control-plane"
+      ],
       "lifecycleOwner": "logistics",
       "resolution": "single-writer"
     },
@@ -48552,6 +48640,19 @@
       ],
       "lifecycleOwner": "market-delegation",
       "resolution": "declared-table-owner"
+    },
+    "market_delivery_attestations": {
+      "writers": [
+        {
+          "feature": "market-control-plane",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market-control-plane",
+      "resolution": "single-writer"
     },
     "dashboard_global_access_grants": {
       "writers": [],
@@ -49460,11 +49561,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "market-control-plane -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market-control-plane\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "market-delegation -> market-operator-dashboard",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market-delegation\" vers \"market-operator-dashboard\""
       },
@@ -49639,9 +49735,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 47,
+      "expectedTopology": 46,
       "generatorLimitations": 12,
-      "classifiedCandidates": 59
+      "classifiedCandidates": 58
     }
   }
 }

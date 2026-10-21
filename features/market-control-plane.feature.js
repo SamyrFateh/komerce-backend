@@ -137,6 +137,7 @@ module.exports = {
       'overview()',
     ],
     consumes: [
+      'orders (commandes réelles collectées lues pour la base HISTORY de la preuve de livrabilité : simulation_scope IS NULL)',
       'market (markets comme référentiel lu)',
       'market-delegation (affectation, équipe, plafond, politique de caisse lus ; normalizeMarketCode)',
       'providers-services (fournisseurs de paiement du marché lus)',
