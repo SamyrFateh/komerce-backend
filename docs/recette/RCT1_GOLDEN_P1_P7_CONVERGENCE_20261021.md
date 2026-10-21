@@ -68,6 +68,24 @@ Pour **Pilotage, Commerce, Commandes, Opérations, Finance, Sourcing Live, Hub L
 
 **Livrable attendu de la recette :** pour chaque étape, identifiants, acteur, version / période / marché / scope, objectif, attendu indépendant, réponse canonique, observé sur desktop/mobile, capture/URL/trace, écart et criticité, validation humaine, suite. Le Golden conserve seulement ces observations locales ; il n'écrit pas la vérité métier.
 
+## Préalables à la recette Golden (remédiation audit Opus P1–P7)
+
+| Lot | PR | Statut |
+|---|---|---|
+| D — signaux/tableaux de bord limités au réel (`simulation_scope IS NULL`) | #2800 | fusionnée |
+| A1 — contexte marché requis sur le catalogue | #2801 | fusionnée (serveur ; durcissement front boutique bloqué par dette de gates boutique sur main) |
+| A2 — exposition ENABLED + prix LOCAL_ACTIVE recontrôlés à l'engagement, panier partagé ancien inclus (lignes figées inchangées) | #2802 | fusionnée |
+| B — preuve de livrabilité par marché (attestation centrale ou historique réel) | #2804 | en contre-revue Opus ; non fusionnée sans verdict |
+| C1 — audit autorité physique de réception hub | #2803 | fusionnée (doc) ; C2 en attente de décision humaine |
+
+État d'exploitation constaté (lecture seule) : staging sur le commit c24405533, aucun lot ci-dessus déployé ; `ORDER_COST_SNAPSHOT_ACTIVE=true` sur staging (`stripe_mode: test`) ; production non touchée ; aucun flag modifié.
+
+Préconditions avant la recette Golden :
+1. Déployer main sur staging et vérifier le commit via `/health/version`.
+2. CM/CG ne sont pas attestés : le checkout les refuse (`MARKET_DELIVERY_NOT_PROVEN`) tant qu'une attestation centrale (transporteur, tarif, preuve, validité) n'existe pas. KM repose sur la base historique (commandes réelles collectées).
+3. Réception hub : la déclaration reste non adossée à la custody physique tant que C2 n'est pas décidé ; les commandes déjà en `preparation` sans couverture physique restent un écart connu.
+4. Moteur RCT1 inchangé.
+
 ## Références conservées
 
 - `docs/recette/RECETTE_STAGING_CADRAGE_EXECUTABLE.md` (hypothèses et cas historiques).
