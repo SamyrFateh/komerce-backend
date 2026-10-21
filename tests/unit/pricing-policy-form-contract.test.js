@@ -24,3 +24,7 @@ test('un seul chemin d’enregistrement de la politique : POST /decision-policy'
   const posts = src.match(/\/decision-policy`/g) || [];
   expect(posts.length).toBe(1);
 });
+
+test('le motif POLICY_DOES_NOT_COVER_CANONICAL_PERIOD a un libellé métier dans l’Atelier', () => {
+  expect(src).toContain('POLICY_DOES_NOT_COVER_CANONICAL_PERIOD:');
+});
