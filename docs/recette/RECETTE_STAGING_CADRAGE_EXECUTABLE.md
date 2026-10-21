@@ -1,5 +1,7 @@
 # Recette staging : cadrage exécutable (pour GPT), v4
 
+> **Référence historique v4 (hypothèses et scénarios).** Pour la convergence actuelle vers les processus P1–P7, les huit dashboards et le Golden E2E, lire [RCT1 × Golden P1–P7](RCT1_GOLDEN_P1_P7_CONVERGENCE_20261021.md). Les preuves du 20 octobre sont dans [la contre-recette](CONTRE_RECETTE_CANONIQUE_STAGING_20261020.md) ; ne pas interpréter les chiffres ou statuts ici comme état actuel sans lecture staging et `/health/version`.
+
 **Statut.** La cible staging est confirmée et l'inventaire est propre (#2667) : ne pas refaire ces vérifications. Installation RCT1 en cours via le moteur `scripts/recette/rct1` (rien n'est recetté).
 
 **v4 — amendement (checkout canonique).** Le checkout ajoute le transport commercial aux lignes IMPORT (65 KMF/kg SEA) : une commande de 1 article P1 (1 kg) est vendue **15 065 KMF**, pas 15 000. Le scénario E1 est corrigé, l'attendu n'est pas ajusté à l'observé : vente 15 065, coûts 10 300 (inchangés), **marge 4 765 KMF (31,63 %)**. G (LOCAL_STOCK, transport 0) reste à 6 000 de vente, recalcul indépendant confirmé en réplique locale ; à reprouver sur staging. Consolidé : 4 765 + 1 850 = **6 615 KMF**. E2 : vente 15 065, coûts 10 750, marge **4 315 KMF** ; consolidé avec E2 : 10 930. Le moteur de gouvernance marché exclut désormais les commandes simulées (RCT1) des assiettes de couverture/maturité/N3.
