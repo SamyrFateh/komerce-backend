@@ -520,6 +520,8 @@ describe('canonical admin app — encadré « À quoi sert cet écran ? »', () 
     expect(box.attributes['data-purpose-surface']).toBe('finance');
     expect(box.children[0].textContent).toBe('À quoi sert cet écran ?');
     expect(box.children[1].textContent).toBe(api.SCREEN_PURPOSE.finance);
+    // Lot 8 : replié par défaut, l'utilisateur l'ouvre s'il en a besoin.
+    expect(box.open).toBe(false);
   });
 
   test('Action Center : se place après la bande de métriques', () => {
