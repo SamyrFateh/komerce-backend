@@ -1,5 +1,7 @@
 # RCT1 — guide de recette sur écrans réels (desktop + mobile)
 
+> **Archive de scénario / attendus historiques.** Pour la version actuelle des huit dashboards et du Golden E2E, commencer par [RCT1 × Golden P1–P7](RCT1_GOLDEN_P1_P7_CONVERGENCE_20261021.md). Les 5 commandes payées / 100 390 KMF et « G non installée » ci-dessous datent d'un instant antérieur à la [contre-recette du 20 octobre](CONTRE_RECETTE_CANONIQUE_STAGING_20261020.md), qui constate 7 créées, 6 payées et 106 390 KMF. La mention de la redirection de `/admin/orders` est également obsolète depuis #2786 ; c'est désormais une vue Commandes distincte. Conserver ce fichier pour les cas et arbitrages non encore recettés, pas comme mesure actuelle.
+
 Cible : staging Komerce, `https://komerce-backend-production.up.railway.app`. Compte : **admin staging existant** (identifiants fournis hors chat, jamais ici). Toutes les données RCT1 sont des **faits simulés** : ne jamais les présenter comme activité réelle.
 
 **Preuves automatiques vs actions humaines.** Les colonnes *Preuve auto* renvoient à une phase du moteur (issue `[staging-op] rct1-verify` → étape `check.*`) : elles valent preuve technique. Les colonnes *Observé* et les **captures** sont des actions humaines : lire la valeur à l'écran (jamais recopier l'attendu), capturer, puis **GO** ou **NO GO**. Une observation n'est pas une validation métier.
