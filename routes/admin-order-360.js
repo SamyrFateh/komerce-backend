@@ -24,6 +24,7 @@ const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-d
 const { attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const order360 = require('../services/order-360');
+const { listAuthorizedMarketsForCapability } = require('../services/market-delegation-service');
 const { projectGoldenEvidence } = require('../services/golden-e2e-cockpit');
 const { projectUpstreamEvidence } = require('../services/golden-upstream-evidence');
 const db = require('../db');
@@ -80,6 +81,22 @@ function requireOrderMarketRead(req, res, next) {
   return next();
 }
 
+// Section Coûts & écarts : finance.read exigé (autorité globale, ou capability déléguée sur le marché de la commande).
+// Fail-closed : toute erreur de résolution retire la section au lieu d'élargir l'accès.
+async function canReadOrderCosts(req) {
+  if (req.dashboardGlobalAuthority === true) return true;
+  try {
+    const rows = await listAuthorizedMarketsForCapability(db, {
+      userId: req.user && req.user.id,
+      requiredCapability: 'finance.read',
+    });
+    const marketId = req.order360Order && req.order360Order.market_id;
+    return Boolean(marketId) && rows.some(row => row.market_id === marketId);
+  } catch (_) {
+    return false;
+  }
+}
+
 router.get(
   '/orders/:orderReference',
   authenticate,
@@ -95,6 +112,7 @@ router.get(
       // que pour un acteur déjà admis par le guard requireRole(['admin']).
       const payload = await order360.loadOrder360(req.order360Order, {
         includePurchasing: Boolean(req.user && req.user.role === 'admin'),
+        includeCosts: await canReadOrderCosts(req),
       });
       return res.json(payload);
     } catch (err) {
@@ -162,4 +180,5 @@ module.exports._test = {
   resolveOrderReference,
   attachOrder360Authority,
   requireOrderMarketRead,
+  canReadOrderCosts,
 };

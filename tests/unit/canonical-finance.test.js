@@ -529,3 +529,9 @@ describe('L3 — périmètre de recette transmis depuis l’URL de la page (fina
     }
   });
 });
+
+
+test('Finance → Commande 360 : le lien d’une commande ouvre la section Coûts & écarts (#couts) avec retour à Finance', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/finance-decision.js'), 'utf8');
+  expect(src).toContain("base.contextualHref(`/admin/orders/${encodeURIComponent(reference)}#couts`, returnTo, 'Retour à Finance')");
+});

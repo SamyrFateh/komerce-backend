@@ -96,7 +96,8 @@
   function orderHref(base, reference) {
     const loc = typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location : null;
     const returnTo = loc ? `${loc.pathname || '/admin/finance'}${loc.search || ''}` : '/admin/finance';
-    return base.contextualHref(`/admin/orders/${encodeURIComponent(reference)}`, returnTo, 'Retour à Finance');
+    // Ancre #couts : la fiche 360 ouvre sa section Coûts & écarts (présente si finance.read).
+    return base.contextualHref(`/admin/orders/${encodeURIComponent(reference)}#couts`, returnTo, 'Retour à Finance');
   }
 
   function ownerHref(base, owner) {
