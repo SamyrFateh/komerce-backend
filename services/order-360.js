@@ -40,7 +40,7 @@ async function resolveOrder(reference) {
       o.payment_status::text AS payment_status,
       o.payment_mode::text AS payment_mode,
       o.total_kmf, o.destination_island, o.routing_mode, o.transit_hub,
-      o.created_at, o.updated_at,
+      o.created_at, o.updated_at, o.simulation_scope,
       u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
       r.name AS relais_name, r.address AS relais_address, r.phone AS relais_phone,
       r.island AS relais_island,
@@ -60,6 +60,8 @@ function publicOrder(order) {
   return Object.freeze({
     reference: order.reference,
     status: order.status,
+    // Commande de recette (RCT1) : ouverte par référence, jamais masquée, toujours marquée.
+    simulation_scope: order.simulation_scope || null,
     payment: Object.freeze({
       status: order.payment_status,
       mode: order.payment_mode,

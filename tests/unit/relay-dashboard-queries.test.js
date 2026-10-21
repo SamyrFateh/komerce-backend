@@ -36,7 +36,7 @@ describe('getDashboardKPIs', () => {
     db.query.mockResolvedValueOnce({ rows: [KPI_ROW] }).mockResolvedValueOnce({ rows: [{ c: 0 }] });
     await relayQueries.getDashboardKPIs(RELAY_USER);
     const [kpiSql, kpiParams] = db.query.mock.calls[0];
-    expect(kpiSql).toContain('WHERE relais_id = $1');
+    expect(kpiSql).toContain('WHERE simulation_scope IS NULL AND relais_id = $1');
     expect(kpiParams).toEqual([7]);
     const [incSql, incParams] = db.query.mock.calls[1];
     expect(incSql).toContain('o.relais_id = $1');
@@ -55,7 +55,7 @@ describe('getDashboardKPIs', () => {
   it('GAP-2 : scope KPI et incidents par market_id pour market_operator', async () => {
     db.query.mockResolvedValueOnce({ rows: [KPI_ROW] }).mockResolvedValueOnce({ rows: [{ c: 0 }] });
     await relayQueries.getDashboardKPIs(MARKET_OPERATOR, { authorizedMarkets: MARKETS_KM });
-    expect(db.query.mock.calls[0][0]).toContain('WHERE market_id = ANY($1::uuid[])');
+    expect(db.query.mock.calls[0][0]).toContain('WHERE simulation_scope IS NULL AND market_id = ANY($1::uuid[])');
     expect(db.query.mock.calls[0][1]).toEqual([['km-uuid']]);
     expect(db.query.mock.calls[1][0]).toContain('o.market_id = ANY($1::uuid[])');
     expect(db.query.mock.calls[1][1]).toEqual([['km-uuid']]);
