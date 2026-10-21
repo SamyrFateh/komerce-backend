@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 735,
-    "filesWithFullHeaders": 686,
+    "scannedCodeFiles": 737,
+    "filesWithFullHeaders": 688,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 735,
+    "filesWithAnyHeaders": 737,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1797,
-    "edges": 9080,
-    "dbTables": 206,
-    "doctrines": 654,
-    "impactAreas": 202,
-    "unresolvedCodeEdges": 887,
+    "graphNodes": 1806,
+    "edges": 9124,
+    "dbTables": 207,
+    "doctrines": 659,
+    "impactAreas": 203,
+    "unresolvedCodeEdges": 889,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 87
   },
@@ -36,7 +36,7 @@
     "auth": 14,
     "platform-ops": 2,
     "catalog": 129,
-    "admin-dashboard": 35,
+    "admin-dashboard": 36,
     "decision-signals": 14,
     "market-delegation": 35,
     "market": 4,
@@ -57,7 +57,7 @@
     "customs": 8,
     "dashboard": 29,
     "loyalty": 3,
-    "market-control-plane": 4,
+    "market-control-plane": 5,
     "settlement": 2,
     "business-rules": 1,
     "orders": 33,
@@ -109,7 +109,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 419,
+    "service": 421,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -118,8 +118,8 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 97,
-    "medium": 150,
+    "critical": 98,
+    "medium": 151,
     "high": 430,
     "low": 58
   },
@@ -6456,6 +6456,7 @@
         "db.js",
         "middleware/auth.js",
         "services/market-control-plane.js",
+        "services/market-delivery-proof-service.js",
         "services/central-authority.js"
       ],
       "usedBy": [
@@ -6465,6 +6466,13 @@
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [
+        {
+          "via": "market-delivery-proof-service",
+          "tables": [
+            "market_delivery_attestations",
+            "market_delegation_audit"
+          ]
+        },
         {
           "via": "market-provisioning-service",
           "tables": [
@@ -16870,7 +16878,9 @@
         "parcel_items",
         "parcels",
         "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "markets",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -17441,7 +17451,11 @@
         "order_incidents",
         "disputes",
         "relais",
-        "users"
+        "users",
+        "markets",
+        "order_items",
+        "products",
+        "parcels"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -17544,6 +17558,50 @@
         "market-authorization"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/dashboard-pilotage-markets.js",
+      "file": "services/dashboard-pilotage-markets.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-pilotage-markets-overview",
+      "domain": "admin-dashboard",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "dashboard_filters (période",
+        "simulation_scope)"
+      ],
+      "outputs": [
+        "global_markets_supervision_projection"
+      ],
+      "depends": [
+        "db",
+        "services/dashboard-metrics"
+      ],
+      "usedBy": [
+        "routes/admin-dashboard.js"
+      ],
+      "dbRead": [
+        "orders",
+        "markets",
+        "order_incidents"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "missing_data_never_means_zero",
+        "simulation_scope_separated_from_real"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "pilotage"
+      ],
+      "version": "2026-10"
     },
     {
       "id": "services/discovery-rail-composer.js",
@@ -20086,7 +20144,8 @@
       ],
       "depends": [
         "db.js",
-        "services/market-delegation-service.js"
+        "services/market-delegation-service.js",
+        "services/market-delivery-proof-service.js"
       ],
       "usedBy": [
         "routes/admin-market-control-plane.js"
@@ -20103,7 +20162,8 @@
         "assignment_capability_ceiling",
         "market_payment_providers",
         "market_cash_control_policies",
-        "relais"
+        "relais",
+        "market_delivery_attestations"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -20868,6 +20928,74 @@
       "version": "2026-10"
     },
     {
+      "id": "services/market-delivery-proof-service.js",
+      "file": "services/market-delivery-proof-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delivery-proof-service",
+      "domain": "market-control-plane",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market id",
+        "central actor",
+        "attestation evidence (carrier",
+        "mode",
+        "origin",
+        "rate",
+        "transit",
+        "evidence_ref",
+        "validity)"
+      ],
+      "outputs": [
+        "delivery proof verdict (HISTORY | ATTESTATION)",
+        "auditable attestation/revocation"
+      ],
+      "depends": [
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [
+        "services/order-checkout-service.js",
+        "services/market-control-plane.js",
+        "routes/admin-market-control-plane.js"
+      ],
+      "dbRead": [
+        "market_delivery_attestations",
+        "carriers",
+        "orders",
+        "markets"
+      ],
+      "dbWrite": [
+        "market_delivery_attestations"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "no_boolean_readiness_bypass",
+        "global_tariffs_never_prove_delivery",
+        "fail_closed_without_proof",
+        "missing_is_not_zero"
+      ],
+      "impactAreas": [
+        "market-control-plane",
+        "orders",
+        "checkout",
+        "logistics"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/market-lifecycle-service.js",
       "file": "services/market-lifecycle-service.js",
       "type": "file",
@@ -20991,7 +21119,8 @@
       "depends": [
         "db.js",
         "utils/currency.js",
-        "services/product-sellable-service.js"
+        "services/product-sellable-service.js",
+        "services/catalog-market-exposure-service.js"
       ],
       "usedBy": [
         "routes/products.js",
@@ -21005,7 +21134,8 @@
         "products",
         "product_market_price_drafts",
         "product_skus",
-        "product_variants"
+        "product_variants",
+        "product_market_exposure"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -28155,7 +28285,8 @@
         "db.js",
         "services/shared-cart-internals.js",
         "services/product-admin-service.js",
-        "services/market-local-price-resolution-service.js"
+        "services/market-local-price-resolution-service.js",
+        "services/catalog-market-exposure-service.js"
       ],
       "usedBy": [
         "routes/shared-cart.js"
@@ -28164,6 +28295,7 @@
         "basket_items",
         "baskets",
         "product_skus",
+        "product_market_exposure",
         "products",
         "relais",
         "shared_carts",
@@ -35607,6 +35739,11 @@
       "table": "loyalty_rewards"
     },
     {
+      "id": "db:market_delivery_attestations",
+      "type": "db-table",
+      "table": "market_delivery_attestations"
+    },
+    {
       "id": "db:market_cash_control_policies",
       "type": "db-table",
       "table": "market_cash_control_policies"
@@ -38267,6 +38404,11 @@
       "doctrine": "DOCTRINE_LOGISTICS_CONTROL_CHAIN"
     },
     {
+      "id": "doctrine:simulation_scope_separated_from_real",
+      "type": "doctrine",
+      "doctrine": "simulation_scope_separated_from_real"
+    },
+    {
       "id": "doctrine:lifecycle_owner_persistence_boundary",
       "type": "doctrine",
       "doctrine": "lifecycle_owner_persistence_boundary"
@@ -38635,6 +38777,26 @@
       "id": "doctrine:invitation_revalidated_on_acceptance",
       "type": "doctrine",
       "doctrine": "invitation_revalidated_on_acceptance"
+    },
+    {
+      "id": "doctrine:no_boolean_readiness_bypass",
+      "type": "doctrine",
+      "doctrine": "no_boolean_readiness_bypass"
+    },
+    {
+      "id": "doctrine:global_tariffs_never_prove_delivery",
+      "type": "doctrine",
+      "doctrine": "global_tariffs_never_prove_delivery"
+    },
+    {
+      "id": "doctrine:fail_closed_without_proof",
+      "type": "doctrine",
+      "doctrine": "fail_closed_without_proof"
+    },
+    {
+      "id": "doctrine:missing_is_not_zero",
+      "type": "doctrine",
+      "doctrine": "missing_is_not_zero"
     },
     {
       "id": "doctrine:market_owns_market_lifecycle",
@@ -40570,6 +40732,11 @@
       "id": "impact:orders-logistics",
       "type": "impact-area",
       "area": "orders-logistics"
+    },
+    {
+      "id": "impact:pilotage",
+      "type": "impact-area",
+      "area": "pilotage"
     },
     {
       "id": "impact:admin-economic",
@@ -49925,6 +50092,12 @@
     },
     {
       "from": "routes/admin-market-control-plane.js",
+      "to": "services/market-delivery-proof-service.js",
+      "type": "depends",
+      "label": "services/market-delivery-proof-service.js"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
       "to": "services/central-authority.js",
       "type": "depends",
       "label": "services/central-authority.js"
@@ -49940,6 +50113,20 @@
       "to": "routes/admin-market-control-plane.js",
       "type": "uses",
       "label": "central admin workspace"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
+      "to": "db:market_delivery_attestations",
+      "type": "db-write-via",
+      "label": "market_delivery_attestations",
+      "via": "market-delivery-proof-service"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delivery-proof-service"
     },
     {
       "from": "routes/admin-market-control-plane.js",
@@ -66302,6 +66489,18 @@
     },
     {
       "from": "services/dashboard-commerce.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
       "to": "doctrine:dashboard_no_business_recompute",
       "type": "doctrine",
       "label": "dashboard_no_business_recompute"
@@ -67406,6 +67605,30 @@
     },
     {
       "from": "services/dashboard-orders.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/dashboard-orders.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/dashboard-orders.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/dashboard-orders.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/dashboard-orders.js",
       "to": "doctrine:workspace_acts_dashboard_observes",
       "type": "doctrine",
       "label": "workspace_acts_dashboard_observes"
@@ -67577,6 +67800,72 @@
       "to": "impact:market-authorization",
       "type": "impact",
       "label": "market-authorization"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "services/dashboard-metrics",
+      "type": "depends",
+      "label": "services/dashboard-metrics"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "services/dashboard-pilotage-markets.js",
+      "type": "uses",
+      "label": "routes/admin-dashboard.js"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db:order_incidents",
+      "type": "db-read",
+      "label": "order_incidents"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "doctrine:dashboard_no_business_recompute",
+      "type": "doctrine",
+      "label": "dashboard_no_business_recompute"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "doctrine:missing_data_never_means_zero",
+      "type": "doctrine",
+      "label": "missing_data_never_means_zero"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "doctrine:simulation_scope_separated_from_real",
+      "type": "doctrine",
+      "label": "simulation_scope_separated_from_real"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "impact:pilotage",
+      "type": "impact",
+      "label": "pilotage"
     },
     {
       "from": "services/discovery-rail-composer.js",
@@ -71943,6 +72232,12 @@
       "label": "services/market-delegation-service.js"
     },
     {
+      "from": "services/market-control-plane.js",
+      "to": "services/market-delivery-proof-service.js",
+      "type": "depends",
+      "label": "services/market-delivery-proof-service.js"
+    },
+    {
       "from": "routes/admin-market-control-plane.js",
       "to": "services/market-control-plane.js",
       "type": "uses",
@@ -72019,6 +72314,12 @@
       "to": "db:relais",
       "type": "db-read",
       "label": "relais"
+    },
+    {
+      "from": "services/market-control-plane.js",
+      "to": "db:market_delivery_attestations",
+      "type": "db-read",
+      "label": "market_delivery_attestations"
     },
     {
       "from": "services/market-control-plane.js",
@@ -73187,6 +73488,115 @@
       "label": "authorization"
     },
     {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "services/market-delivery-proof-service.js",
+      "type": "uses",
+      "label": "services/order-checkout-service.js"
+    },
+    {
+      "from": "services/market-control-plane.js",
+      "to": "services/market-delivery-proof-service.js",
+      "type": "uses",
+      "label": "services/market-control-plane.js"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
+      "to": "services/market-delivery-proof-service.js",
+      "type": "uses",
+      "label": "routes/admin-market-control-plane.js"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "db:market_delivery_attestations",
+      "type": "db-read",
+      "label": "market_delivery_attestations"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "db:carriers",
+      "type": "db-read",
+      "label": "carriers"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "db:market_delivery_attestations",
+      "type": "db-write",
+      "label": "market_delivery_attestations"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "doctrine:no_boolean_readiness_bypass",
+      "type": "doctrine",
+      "label": "no_boolean_readiness_bypass"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "doctrine:global_tariffs_never_prove_delivery",
+      "type": "doctrine",
+      "label": "global_tariffs_never_prove_delivery"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "doctrine:fail_closed_without_proof",
+      "type": "doctrine",
+      "label": "fail_closed_without_proof"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "doctrine:missing_is_not_zero",
+      "type": "doctrine",
+      "label": "missing_is_not_zero"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "impact:market-control-plane",
+      "type": "impact",
+      "label": "market-control-plane"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/market-delivery-proof-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
       "from": "services/market-provisioning-service.js",
       "to": "services/market-lifecycle-service.js",
       "type": "uses",
@@ -73367,6 +73777,12 @@
       "label": "services/product-sellable-service.js"
     },
     {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "services/catalog-market-exposure-service.js",
+      "type": "depends",
+      "label": "services/catalog-market-exposure-service.js"
+    },
+    {
       "from": "routes/products.js",
       "to": "services/market-local-price-resolution-service.js",
       "type": "uses",
@@ -73425,6 +73841,12 @@
       "to": "db:product_variants",
       "type": "db-read",
       "label": "product_variants"
+    },
+    {
+      "from": "services/market-local-price-resolution-service.js",
+      "to": "db:product_market_exposure",
+      "type": "db-read",
+      "label": "product_market_exposure"
     },
     {
       "from": "services/market-local-price-resolution-service.js",
@@ -84775,6 +85197,12 @@
       "label": "services/market-local-price-resolution-service.js"
     },
     {
+      "from": "services/shared-cart-creation.js",
+      "to": "services/catalog-market-exposure-service.js",
+      "type": "depends",
+      "label": "services/catalog-market-exposure-service.js"
+    },
+    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-creation.js",
       "type": "uses",
@@ -84797,6 +85225,12 @@
       "to": "db:product_skus",
       "type": "db-read",
       "label": "product_skus"
+    },
+    {
+      "from": "services/shared-cart-creation.js",
+      "to": "db:product_market_exposure",
+      "type": "db-read",
+      "label": "product_market_exposure"
     },
     {
       "from": "services/shared-cart-creation.js",
@@ -101963,6 +102397,7 @@
         "services/dashboard-metrics/index.js",
         "services/dashboard-orders.js",
         "services/dashboard-pilotage-alert-aggregation.js",
+        "services/dashboard-pilotage-markets.js",
         "utils/logger.js"
       ]
     },
@@ -102132,6 +102567,7 @@
         "db.js",
         "middleware/auth.js",
         "services/market-control-plane.js",
+        "services/market-delivery-proof-service.js",
         "services/central-authority.js"
       ],
       "directUsedBy": [
@@ -102142,6 +102578,13 @@
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [
+        {
+          "via": "market-delivery-proof-service",
+          "tables": [
+            "market_delivery_attestations",
+            "market_delegation_audit"
+          ]
+        },
         {
           "via": "market-provisioning-service",
           "tables": [
@@ -102171,6 +102614,8 @@
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
         "db:market_cash_control_policies",
+        "db:market_delegation_audit",
+        "db:market_delivery_attestations",
         "db:market_operating_assignments",
         "db:market_payment_providers",
         "db:markets",
@@ -102185,6 +102630,7 @@
         "middleware/auth.js",
         "services/central-authority.js",
         "services/market-control-plane.js",
+        "services/market-delivery-proof-service.js",
         "services/market-provisioning-service.js"
       ]
     },
@@ -110011,7 +110457,9 @@
         "services/catalog-public-view.js",
         "services/discovery-rail-composer.js",
         "services/market-delegation-catalog-service.js",
-        "services/product-publication-guard.js"
+        "services/market-local-price-resolution-service.js",
+        "services/product-publication-guard.js",
+        "services/shared-cart-creation.js"
       ]
     },
     "services/catalog-media-visual-fr-proof.js": {
@@ -112478,7 +112926,9 @@
         "parcel_items",
         "parcels",
         "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "markets",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -112499,6 +112949,7 @@
       "mustCheck": [
         "db:customs_shipment_parcels",
         "db:customs_shipments",
+        "db:markets",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:order_items",
@@ -112506,6 +112957,7 @@
         "db:parcel_items",
         "db:parcels",
         "db:products",
+        "db:users",
         "doctrine:dashboard_no_business_recompute",
         "doctrine:decision_support_reuses_canonical_economic_engine",
         "doctrine:local_stock_projection_is_availability_authority",
@@ -113084,7 +113536,11 @@
         "order_incidents",
         "disputes",
         "relais",
-        "users"
+        "users",
+        "markets",
+        "order_items",
+        "products",
+        "parcels"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -113100,8 +113556,12 @@
       ],
       "mustCheck": [
         "db:disputes",
+        "db:markets",
         "db:order_incidents",
+        "db:order_items",
         "db:orders",
+        "db:parcels",
+        "db:products",
         "db:relais",
         "db:users",
         "doctrine:browser_never_recomputes_truth",
@@ -113200,6 +113660,49 @@
         "impact:market-authorization",
         "routes/admin-dashboard-market.js",
         "services/dashboard-pilotage-alert-aggregation.js"
+      ]
+    },
+    "services/dashboard-pilotage-markets.js": {
+      "role": "dashboard-pilotage-markets-overview",
+      "domain": "admin-dashboard",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/dashboard-metrics"
+      ],
+      "directUsedBy": [
+        "routes/admin-dashboard.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "markets",
+        "order_incidents"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "dashboard_no_business_recompute",
+        "missing_data_never_means_zero",
+        "simulation_scope_separated_from_real"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "pilotage"
+      ],
+      "mustCheck": [
+        "db:markets",
+        "db:order_incidents",
+        "db:orders",
+        "doctrine:dashboard_no_business_recompute",
+        "doctrine:missing_data_never_means_zero",
+        "doctrine:simulation_scope_separated_from_real",
+        "impact:admin-dashboard",
+        "impact:pilotage",
+        "routes/admin-dashboard.js"
       ]
     },
     "services/discovery-rail-composer.js": {
@@ -115782,7 +116285,8 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/market-delegation-service.js"
+        "services/market-delegation-service.js",
+        "services/market-delivery-proof-service.js"
       ],
       "directUsedBy": [
         "routes/admin-market-control-plane.js"
@@ -115800,7 +116304,8 @@
         "assignment_capability_ceiling",
         "market_payment_providers",
         "market_cash_control_policies",
-        "relais"
+        "relais",
+        "market_delivery_attestations"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -115821,6 +116326,7 @@
         "db:capability_registry",
         "db:disputes",
         "db:market_cash_control_policies",
+        "db:market_delivery_attestations",
         "db:market_operating_assignments",
         "db:market_payment_providers",
         "db:market_settlements",
@@ -115838,6 +116344,7 @@
         "routes/admin-market-control-plane.js",
         "services/central-authority.js",
         "services/market-delegation-service.js",
+        "services/market-delivery-proof-service.js",
         "services/market-provisioning-service.js"
       ]
     },
@@ -116405,6 +116912,7 @@
         "services/market-delegation-settlement-service.js",
         "services/market-delegation-structure-event-service.js",
         "services/market-delegation-team-service.js",
+        "services/market-delivery-proof-service.js",
         "services/market-operator-provisioning.js",
         "services/market-payment-account-service.js",
         "services/market-provisioning-service.js"
@@ -116608,6 +117116,71 @@
         "services/market-provisioning-service.js"
       ]
     },
+    "services/market-delivery-proof-service.js": {
+      "role": "market-delivery-proof-service",
+      "domain": "market-control-plane",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-service.js"
+      ],
+      "directUsedBy": [
+        "services/order-checkout-service.js",
+        "services/market-control-plane.js",
+        "routes/admin-market-control-plane.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "market_delivery_attestations",
+        "carriers",
+        "orders",
+        "markets"
+      ],
+      "dbWrite": [
+        "market_delivery_attestations"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "no_boolean_readiness_bypass",
+        "global_tariffs_never_prove_delivery",
+        "fail_closed_without_proof",
+        "missing_is_not_zero"
+      ],
+      "impactAreas": [
+        "market-control-plane",
+        "orders",
+        "checkout",
+        "logistics"
+      ],
+      "mustCheck": [
+        "db:carriers",
+        "db:market_delegation_audit",
+        "db:market_delivery_attestations",
+        "db:markets",
+        "db:orders",
+        "doctrine:fail_closed_without_proof",
+        "doctrine:global_tariffs_never_prove_delivery",
+        "doctrine:missing_is_not_zero",
+        "doctrine:no_boolean_readiness_bypass",
+        "impact:checkout",
+        "impact:logistics",
+        "impact:market-control-plane",
+        "impact:orders",
+        "routes/admin-market-control-plane.js",
+        "services/market-control-plane.js",
+        "services/market-delegation-service.js",
+        "services/order-checkout-service.js"
+      ]
+    },
     "services/market-lifecycle-service.js": {
       "role": "market-lifecycle-writer",
       "domain": "market",
@@ -116717,7 +117290,8 @@
       "directDependsOn": [
         "db.js",
         "utils/currency.js",
-        "services/product-sellable-service.js"
+        "services/product-sellable-service.js",
+        "services/catalog-market-exposure-service.js"
       ],
       "directUsedBy": [
         "routes/products.js",
@@ -116732,7 +117306,8 @@
         "products",
         "product_market_price_drafts",
         "product_skus",
-        "product_variants"
+        "product_variants",
+        "product_market_exposure"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -116750,6 +117325,7 @@
       ],
       "mustCheck": [
         "db:markets",
+        "db:product_market_exposure",
         "db:product_market_price_drafts",
         "db:product_skus",
         "db:product_variants",
@@ -116764,6 +117340,7 @@
         "impact:shared-cart",
         "routes/catalog-product-detail.js",
         "routes/products.js",
+        "services/catalog-market-exposure-service.js",
         "services/discovery-rail-composer.js",
         "services/market-local-price-activation-service.js",
         "services/market-ready-to-sell-projection.js",
@@ -118417,6 +118994,7 @@
         "impact:shared-cart",
         "routes/orders/create.js",
         "services/cart-share-service.js",
+        "services/market-delivery-proof-service.js",
         "services/market-local-price-resolution-service.js",
         "services/order-checkout-item-resolution.js",
         "services/order-checkout-persistence.js",
@@ -123845,7 +124423,8 @@
         "db.js",
         "services/shared-cart-internals.js",
         "services/product-admin-service.js",
-        "services/market-local-price-resolution-service.js"
+        "services/market-local-price-resolution-service.js",
+        "services/catalog-market-exposure-service.js"
       ],
       "directUsedBy": [
         "routes/shared-cart.js"
@@ -123855,6 +124434,7 @@
         "basket_items",
         "baskets",
         "product_skus",
+        "product_market_exposure",
         "products",
         "relais",
         "shared_carts",
@@ -123881,6 +124461,7 @@
       "mustCheck": [
         "db:basket_items",
         "db:baskets",
+        "db:product_market_exposure",
         "db:product_skus",
         "db:products",
         "db:relais",
@@ -123895,6 +124476,7 @@
         "impact:creator-flow",
         "impact:market-autonomy",
         "routes/shared-cart.js",
+        "services/catalog-market-exposure-service.js",
         "services/market-local-price-resolution-service.js",
         "services/product-admin-service.js",
         "services/shared-cart-internals.js"
@@ -134688,6 +135270,18 @@
       "to": "services/dashboard-metrics/_helpers",
       "type": "depends",
       "label": "services/dashboard-metrics/_helpers"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-pilotage-markets.js",
+      "to": "services/dashboard-metrics",
+      "type": "depends",
+      "label": "services/dashboard-metrics"
     },
     {
       "from": "services/discovery-rail-composer.js",
