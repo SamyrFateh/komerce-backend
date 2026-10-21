@@ -75,3 +75,10 @@ test('Finance : file fournisseur distingue vide et projection non fournie', () =
   expect(source).toContain('Non disponible dans cette vue');
   expect(source).toContain('Aucun paiement fournisseur ambigu');
 });
+
+test('Commandes : styles de la vue distincte, palette Komerce orange et responsive', () => {
+  expect(css).toContain('.kmc-ord-kpis');
+  expect(css).toContain('.kmc-ord-tab.is-active');
+  expect(css).toContain('#ea580c');
+  expect(css).toMatch(/@media \(max-width: 980px\)[\s\S]*kmc-ord-main/);
+});
