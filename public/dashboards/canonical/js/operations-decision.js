@@ -560,9 +560,10 @@
 
   function contextualHref(path, returnTo, label) {
     const nav = globalThis.KomerceCanonicalNavigation;
-    return nav && typeof nav.withReturnTo === 'function'
-      ? nav.withReturnTo(path, returnTo, label)
-      : path;
+    if (!nav || typeof nav.withReturnTo !== 'function') return path;
+    // Retour = page courante avec sa query (marché, période, filtres) ; chemin fourni en repli seulement.
+    const target = typeof nav.currentReturnTarget === 'function' ? nav.currentReturnTarget(returnTo) : returnTo;
+    return nav.withReturnTo(path, target, label);
   }
 
   // Files d'action commandes (ex-écran « Suivi des commandes ») — ordre serveur conservé.

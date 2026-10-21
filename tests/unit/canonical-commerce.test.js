@@ -395,3 +395,24 @@ test('Commerce : panel produits et catégories ne dérivent pas de montant de co
   expect(commerceDecision.rankedCategories(fixture, commerce)).toEqual([]);
   expect(source).not.toContain("data-dashboard-role', 'tertiary");
 });
+
+describe('Commerce — top produits cliquables vers la fiche Produit 360', () => {
+  afterEach(() => { delete globalThis.location; delete globalThis.KomerceCanonicalNavigation; });
+
+  test('le lien porte le retour vers Commerce avec marché et période ; sans product_ref, pas de lien', () => {
+    jest.resetModules();
+    globalThis.location = { pathname: '/admin/commerce', search: '?market=KM&period=7' };
+    require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+    const decision = require('../../public/dashboards/canonical/js/commerce-decision');
+    const base = { formatNumber: v => String(v), formatKmf: v => `${v} KMF`, formatMoney: (v, u) => `${v} ${u}` };
+    const rows = decision.rankedProducts({ top_products: [
+      { product_ref: 'PRD-1', name: 'A', quantity: 2, revenue_kmf: 100 },
+      { name: 'B', quantity: 1, revenue_kmf: 50 },
+    ] }, base);
+    const url = new URL(rows[0].href, 'http://x.test');
+    expect(url.pathname).toBe('/admin/products/PRD-1');
+    expect(url.searchParams.get('return_to')).toBe('/admin/commerce?market=KM&period=7');
+    expect(url.searchParams.get('return_label')).toBe('Retour au commerce');
+    expect(rows[1].href).toBeUndefined();
+  });
+});
