@@ -5325,6 +5325,20 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/orders.js",
+        "resolvedPath": "public/dashboards/canonical/js/orders.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/commerce-decision.js",
+        "resolvedPath": "public/dashboards/canonical/js/commerce-decision.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/finance-decision.js",
         "resolvedPath": "public/dashboards/canonical/js/finance-decision.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5334,6 +5348,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/order-360.js",
         "resolvedPath": "public/dashboards/canonical/js/order-360.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/product-360.js",
+        "resolvedPath": "public/dashboards/canonical/js/product-360.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5607,6 +5628,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/pricing-economic-cockpit.js",
         "resolvedPath": "public/dashboards/canonical/js/pricing-economic-cockpit.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/pricing-decision-chain.js",
+        "resolvedPath": "public/dashboards/canonical/js/pricing-decision-chain.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6573,6 +6601,13 @@
         "category": "tests",
         "declared": "tests/unit/canonical-commerce.test.js",
         "resolvedPath": "tests/unit/canonical-commerce.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-orders.test.js",
+        "resolvedPath": "tests/unit/canonical-orders.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12500,6 +12535,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-dubai-projection.js",
+        "resolvedPath": "services/hub-dubai-projection.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/hub-receive-idempotency.js",
         "resolvedPath": "services/hub-receive-idempotency.js",
         "status": "resolved-in-technical-graph"
@@ -12691,6 +12733,13 @@
         "category": "dash",
         "declared": "dashboards/admin/js/views/OrdersLogisticsView.js",
         "resolvedPath": "public/dashboards/admin/js/views/OrdersLogisticsView.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-dubai-projection.test.js",
+        "resolvedPath": "tests/unit/hub-dubai-projection.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -34546,6 +34595,10 @@
               },
               {
                 "sourceFileId": "routes/hub-dashboard.js",
+                "targetFile": "services/hub-dubai-projection.js"
+              },
+              {
+                "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "services/parcel-security.js"
               },
               {
@@ -34559,6 +34612,10 @@
               {
                 "sourceFileId": "tests/unit/hub-dashboard-route.test.js",
                 "targetFile": "utils/parcelSync.js"
+              },
+              {
+                "sourceFileId": "tests/unit/hub-dashboard-route.test.js",
+                "targetFile": "services/hub-dubai-projection.js"
               }
             ]
           },
@@ -34637,6 +34694,10 @@
               {
                 "sourceFileId": "routes/admin/users.js",
                 "targetFile": "services/market-scope-admin-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/admin-dashboard-commerce-route.test.js",
+                "targetFile": "utils/currency.js"
               },
               {
                 "sourceFileId": "tests/unit/market-currency.test.js",
@@ -34750,6 +34811,10 @@
               {
                 "sourceFileId": "routes/admin-order-360.js",
                 "targetFile": "middleware/require-market-delegated-capability.js"
+              },
+              {
+                "sourceFileId": "routes/admin-order-360.js",
+                "targetFile": "services/market-delegation-service.js"
               },
               {
                 "sourceFileId": "routes/admin-product-360.js",
@@ -38067,6 +38132,10 @@
               },
               {
                 "sourceFileId": "services/hub-receivable.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/hub-dubai-projection.js",
                 "targetFile": "db.js"
               },
               {
@@ -45970,7 +46039,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2082
+        "filesObserved": 2089
       },
       "boutique": {
         "filesObserved": 214,
@@ -49166,8 +49235,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 630,
-        "technicalNodesOwned": 630,
+        "technicalNodesTotal": 631,
+        "technicalNodesOwned": 631,
         "technicalOrphans": 0
       },
       "dash": {

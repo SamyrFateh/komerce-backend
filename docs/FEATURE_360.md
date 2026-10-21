@@ -593,13 +593,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 412 fichier(s) déclaré(s)
-  - dash : 156
+**Implementation** : 417 fichier(s) déclaré(s)
+  - dash : 160
   - middleware : 1
   - migrations : 2
   - routes : 28
   - services : 40
-  - tests : 185
+  - tests : 186
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -1237,15 +1237,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 124 fichier(s) déclaré(s)
+**Implementation** : 126 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 6
   - middleware : 1
   - migrations : 3
   - routes : 18
-  - services : 31
-  - tests : 59
+  - services : 32
+  - tests : 60
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_

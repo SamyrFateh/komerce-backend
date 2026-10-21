@@ -8,7 +8,7 @@
  * @outputs       canonical decision-first orders payload (files de travail, cycle de vie, mix paiement)
  * @depends       db, services/dashboard-operations.js (publicScope helper via re-export)
  * @used-by       routes/admin-dashboard.js, routes/admin-dashboard-market.js
- * @db-read       orders, order_incidents, disputes, relais, users
+ * @db-read       orders, order_incidents, disputes, relais, users, markets, order_items, products, parcels
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_acts_dashboard_observes, browser_never_recomputes_truth, missing_data_never_means_zero, client_market_id_never_authority
