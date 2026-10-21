@@ -1817,7 +1817,30 @@
     }).join('');
   }
 
-  function renderPassages(run, passages, page = {}) {
+
+  // Bande KPI agrégée des passages : uniquement des comptages sur les lots et sources déjà fournis par le serveur.
+  // Une donnée non fournie s'affiche « Non disponible », jamais 0 (candidats détectés : aucun agrégat canonique).
+  function passagesKpis(sourceControls, lots) {
+    const sources = Array.isArray(sourceControls) ? sourceControls.filter(source => source.state !== 'archived' && source.archived !== true) : null;
+    const list = Array.isArray(lots) ? lots : null;
+    const NA = 'Non disponible';
+    const last = list && list.length
+      ? list.map(lot => lot.finished_at || lot.started_at).filter(Boolean).sort().pop()
+      : null;
+    const active = list ? list.filter(lot => lot.technical_status === 'RUNNING').length : null;
+    const errors = list ? list.filter(lot => lot.technical_status === 'FAILED' || lot.business_status === 'BLOCKED').length : null;
+    const cards = [
+      ['last', 'Dernière synchro', last ? fmtDate(last) : NA, list ? `sur les ${list.length} derniers passages` : ''],
+      ['active', 'Passages actifs', active == null ? NA : String(active), 'en cours (LIVE)'],
+      ['sources', 'Sources suivies', sources ? String(sources.length) : NA, 'fournisseurs configurés'],
+      ['candidates', 'Candidats détectés', NA, 'agrégat non fourni par le serveur'],
+      ['errors', 'Passages en erreur', errors == null ? NA : String(errors), list ? `sur les ${list.length} derniers passages` : ''],
+    ];
+    return `<section class="kir-passages-kpis" data-passages-kpis aria-label="Indicateurs Sourcing">${cards.map(([key, label, value, sub]) =>
+      `<article data-kpi="${key}"><span>${esc(label)}</span><strong${value === NA ? ' class="is-na"' : ''}>${esc(value)}</strong><small>${esc(sub)}</small></article>`).join('')}</section>`;
+  }
+
+  function renderPassages(run, passages, page = {}, sourceControls = null, lots = null) {
     const { back } = viewNav(run, params());
     const list = Array.isArray(passages) ? passages : null;
     const providers = [...new Set((list || []).map(item => item.provider).filter(Boolean))];
@@ -1837,6 +1860,7 @@
         <h2>Historique des passages</h2>
         <p>Les passages Sourcing : ce qui a été reçu, ce qui est prêt pour le Catalogue et ce qui demande une action.</p>
       </div></div>
+      ${passagesKpis(sourceControls, lots)}
       <div class="kir-passage-filters" data-passage-filters>
         <select data-passage-filter="source" aria-label="Source">${option('', 'Toutes les sources', passageFilters.source)}${providers.map(name => option(name, name, passageFilters.source)).join('')}</select>
         <select data-passage-filter="state" aria-label="État">${Object.entries(states).map(([value, label]) => option(value, label, passageFilters.state)).join('')}</select>
@@ -1903,7 +1927,7 @@
     if (view === 'passages' || view === 'sources') {
       root.innerHTML = `<section class="kir-page">
         ${domainNav(view, run)}
-        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page) : renderSourcesView(run, sourceControls, lots, Array.isArray(payload?.source_requests) ? payload.source_requests : [])}</main>
+        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page, payload?.source_controls, payload?.lots) : renderSourcesView(run, sourceControls, lots, Array.isArray(payload?.source_requests) ? payload.source_requests : [])}</main>
       </section>`;
       bindAll(root, payload);
       return;

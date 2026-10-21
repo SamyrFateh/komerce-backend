@@ -3334,3 +3334,12 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 .kmc-import-runtime .kir-category-buttons [type="submit"]:disabled{opacity:.5;cursor:wait}
 .kmc-import-runtime .kir-category-success{margin:0 0 18px;padding:14px 16px;border:1px solid #9BD6B8;border-left:4px solid #16865B;border-radius:9px;background:#F1FBF6;color:#13583C;font-weight:700;font-size:13.5px}
 @media(max-width:650px){.kmc-import-runtime .kir-category-form,.kmc-import-runtime .kir-category-dialog-inner{padding:18px}.kmc-import-runtime .kir-category-product img{width:56px;height:56px}.kmc-import-runtime .kir-category-buttons{flex-wrap:wrap}.kmc-import-runtime .kir-category-buttons button{flex:1 1 auto}}
+
+/* Passages : bande KPI agrégée (lecture seule, « Non disponible » jamais 0) */
+.kir-passages-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+.kir-passages-kpis article { display: grid; gap: 4px; padding: 14px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; }
+.kir-passages-kpis span { color: #475569; font-size: 12px; font-weight: 600; }
+.kir-passages-kpis strong { color: #0f172a; font-size: 24px; font-weight: 800; line-height: 1.15; }
+.kir-passages-kpis strong.is-na { color: #64748b; font-size: 15px; font-weight: 600; }
+.kir-passages-kpis small { color: #64748b; font-size: 11px; }
+@media (max-width: 980px) { .kir-passages-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

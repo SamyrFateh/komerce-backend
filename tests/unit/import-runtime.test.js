@@ -45,3 +45,11 @@ test('manual source update navigates to the actual returned KIR, never a guessed
   expect(handler).toContain('if (runRef) goto(urlFor(runRef));');
   expect(handler).toContain('Aucune référence de passage retournée');
 });
+
+test('Sourcing Live : bande KPI agrégée des passages, lecture seule, non disponible jamais zéro', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
+  expect(src).toContain('function passagesKpis(sourceControls, lots)');
+  expect(src).toContain("const NA = 'Non disponible';");
+  expect(src).toContain("['candidates', 'Candidats détectés', NA, 'agrégat non fourni par le serveur']");
+  expect(src).toContain('renderPassages(run, payload?.passages, payload?.passages_page, payload?.source_controls, payload?.lots)');
+});
