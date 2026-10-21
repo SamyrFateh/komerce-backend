@@ -848,6 +848,11 @@ body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-detail-body { display: grid; gap: 10px; pa
   body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-variance .kmc-fin3-go { grid-column: 3; grid-row: 1 / span 2; }
 }
 
+/* Finance : accès utiles (liens vers commandes à finaliser et analyse) */
+body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-links { display: flex; flex-wrap: wrap; gap: 10px 22px; margin: 0; padding: 0 4px; font-size: 14px; }
+body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-links a { color: #c2410c; font-weight: 700; text-decoration: none; }
+body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-links a:hover { text-decoration: underline; }
+body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-links-muted { color: #64748b; }
 /* ── Commandes (vue distincte) — structure du mock validé, palette Komerce ── */
 body.kmc-shell-v4 .kmc-ord { display: grid; gap: 16px; }
 body.kmc-shell-v4 .kmc-ord .kmc-ord-title { margin: 0; font-size: 26px; font-weight: 800; color: #0f172a; }

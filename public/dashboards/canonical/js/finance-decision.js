@@ -992,6 +992,31 @@
     return sim && sim.scope ? ` · ${sim.scope}` : '';
   }
 
+
+  // Liens utiles (P1 léger) : aucun nouveau KPI, aucune nouvelle logique — passages vers les lieux qui portent déjà la suite.
+  function renderUsefulLinks(doc, payload, base, user) {
+    const nav = el(doc, 'nav', 'kmc-fin3-links');
+    nav.setAttribute('data-finance-links', '');
+    nav.setAttribute('aria-label', 'Accès utiles Finance');
+    const loc = typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location : null;
+    const returnTo = loc ? `${loc.pathname || '/admin/finance'}${loc.search || ''}` : '/admin/finance';
+    const known = Array.isArray(payload && payload.incomplete_cost_orders);
+    const rows = known ? payload.incomplete_cost_orders : [];
+    const first = rows.length ? rows[0].reference : null;
+    const toFinalize = first
+      ? actionLink(doc, orderHref(base, first), `Commandes à finaliser (${rows.length}) →`)
+      : el(doc, 'span', 'kmc-fin3-links-muted', known ? 'Aucune commande à finaliser' : 'Commandes à finaliser : non disponible');
+    if (first) toFinalize.setAttribute('data-finance-link', 'orders-to-finalize');
+    nav.appendChild(toFinalize);
+    const role = user && user.role;
+    if (!role || ['admin', 'market_operator'].includes(role)) {
+      const analysis = actionLink(doc, base.contextualHref('/admin/workspaces/pricing', returnTo, 'Retour à Finance'), 'Analyse économique par produit →');
+      analysis.setAttribute('data-finance-link', 'economic-analysis');
+      nav.appendChild(analysis);
+    }
+    return nav;
+  }
+
   function render(rootNode, payload, options, base, decisionUi) {
     const doc = options.document;
     rootNode.replaceChildren();
@@ -1021,6 +1046,7 @@
     kpis.setAttribute('data-dashboard-role', 'primary');
     kpiCards(payload, base).forEach(card => kpis.appendChild(renderKpiCard(doc, card, reliability.openHelp)));
     dashboard.appendChild(kpis);
+    dashboard.appendChild(renderUsefulLinks(doc, payload, base, options.user));
 
     // Fiabilité et rapprochements restent dans les dossiers métier, non sur la synthèse Finance.
     dashboard.appendChild(reliability.panel);
