@@ -204,6 +204,20 @@ async function applyActiveMarketPricesToCheckoutItems(executor = db, { marketId,
   return { total_kmf: totalKmf };
 }
 
+/**
+ * Lecture catalogue SANS contexte marché (navigation anonyme, API directe) :
+ * `price_kmf` reste une référence globale, jamais un prix acheteur local.
+ * Aucune ligne n'est achetable tant qu'un marché explicite n'est pas fourni.
+ */
+function markMarketContextRequired(products) {
+  return (products || []).map(product => ({
+    ...product,
+    purchasable: false,
+    market_price_source: 'NO_MARKET_CONTEXT',
+    market_price_reason: 'MARKET_REQUIRED_FOR_PURCHASABLE_PRICE',
+  }));
+}
+
 async function applyActiveMarketPricesToCatalogRows(executor = db, { marketCode, products }) {
   const market = await resolveMarketByCode(executor, marketCode);
   if (!market || !Array.isArray(products) || products.length === 0) return products || [];
@@ -286,4 +300,5 @@ module.exports = {
   resolveActiveProductMarketPricingById,
   applyActiveMarketPricesToCheckoutItems,
   applyActiveMarketPricesToCatalogRows,
+  markMarketContextRequired,
 };

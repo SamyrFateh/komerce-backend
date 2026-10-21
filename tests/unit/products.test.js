@@ -120,10 +120,26 @@ describe('GET /api/products — liste', () => {
       .mockResolvedValueOnce({ rows: [{ count: '1' }] });
     const res = await request(buildApp()).get('/api/products');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ products: [{ id: 'p1', name: 'Produit A' }], total: 1, limit: 100, offset: 0 });
+    expect(res.body).toEqual({
+      products: [{
+        id: 'p1', name: 'Produit A', purchasable: false,
+        market_price_source: 'NO_MARKET_CONTEXT',
+        market_price_reason: 'MARKET_REQUIRED_FOR_PURCHASABLE_PRICE',
+      }],
+      total: 1, limit: 100, offset: 0,
+    });
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain('p.is_active = TRUE');
     expect(params).toEqual([100, 0]);
+  });
+
+  it('sans ?market (navigation anonyme) → aucune ligne achetable, prix global jamais présenté comme local', async () => {
+    mockUser = null;
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'p1', price_kmf: 1000 }, { id: 'p2', price_kmf: 2000 }] })
+      .mockResolvedValueOnce({ rows: [{ count: '2' }] });
+    const res = await request(buildApp()).get('/api/products');
+    expect(res.body.products.every(p => p.purchasable === false && p.market_price_source === 'NO_MARKET_CONTEXT')).toBe(true);
   });
 
   it('sans ?market → aucune clause d\'exposition dans le SQL (comportement historique préservé, cutover LOT 4)', async () => {
