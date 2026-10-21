@@ -270,6 +270,24 @@ async function transitionOrderStatus({
     }
   }
 
+  // ── 3b. Gate réception physique (C2) : point d'étranglement unique vers `preparation` ──
+  // Hub, Purchasing, création automatique de colis et scans passent tous ici : aucune préparation
+  // sans couverture physique quantitative (quarantaine et unités inutilisables exclues).
+  // Seule l'ENTRÉE en preparation est gardée : annulations, remboursements et états déjà avancés
+  // (historique) ne sont jamais bloqués ni réécrits.
+  if (newStatus === 'preparation') {
+    const { getOrderPhysicalCoverage } = require('./order-physical-coverage-service');
+    const coverage = await getOrderPhysicalCoverage(q, orderId);
+    if (!coverage.covered) {
+      return {
+        success: false, previousStatus, newStatus,
+        code: 'PHYSICAL_RECEPTION_INCOMPLETE',
+        error: 'Réception physique incomplète : réceptionner les colis fournisseur via le parcours hub canonique avant la préparation.',
+        coverage: coverage.uncovered,
+      };
+    }
+  }
+
   // ── 4. Build UPDATE query ────────────────────────────────────────────────
   const setParts = ['status = $1::order_status', 'updated_at = NOW()'];
   const values = [newStatus];

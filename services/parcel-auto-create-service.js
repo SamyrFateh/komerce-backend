@@ -193,12 +193,19 @@ async function autoCreateParcel(client, orderId, actor) {
     }).catch(() => {});
   }
 
-  await transitionOrderStatus({
+  const prepResult = await transitionOrderStatus({
     orderId, newStatus: 'preparation',
     actor: { id: actor.id, role: actor.role || 'system' },
     source: 'auto_parcel', note: `Auto: colis ${parcelRef} → préparation`,
     dbClient: client,
-  }).catch(() => {});
+  }).catch(() => null);
+  if (prepResult && prepResult.success === false && prepResult.code === 'PHYSICAL_RECEPTION_INCOMPLETE') {
+    // Pas de colis sans matière reçue : l'appelant annule sa transaction.
+    const err = new Error(prepResult.error);
+    err.code = prepResult.code;
+    err.status = 409;
+    throw err;
+  }
 
   log.info(`📦 AUTO-PARCEL: ${parcelRef} created for ${order.reference}`);
 

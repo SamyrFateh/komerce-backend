@@ -212,6 +212,38 @@ async function attestMarketDeliveryForTest(db, cleanup, marketId) {
 }
 
 /**
+ * Fixture E2E (C2) : réception PHYSIQUE complète d'une ligne de commande (PO historique + allocation + unité
+ * + placement RECEIVE), pour qu'un test qui fait avancer une commande réelle jusqu'à `preparation` respecte le
+ * gate de couverture physique. Insertion directe (vérité d'état minimale) ; nettoyage enregistré en LIFO sous
+ * session_replication_role=replica (journaux de custody append-only).
+ */
+async function seedPhysicalReceiptForTest(db, cleanup, { orderId, itemId, productId, marketId, relaisId, quantity = 1 }) {
+  const supplierId = uuid(); const skuId = uuid(); const poId = uuid(); const allocationId = uuid(); const unitId = uuid();
+  const ref = tag('c2-unit');
+  const soi = { provider: 'manual', version: 1, payload: { supplier_sku: ref } };
+  cleanup.trackSql(`
+    SET session_replication_role = replica;
+    DELETE FROM hub_physical_unit_placements WHERE allocation_id = '${allocationId}';
+    DELETE FROM hub_purchase_allocations WHERE id = '${allocationId}';
+    DELETE FROM hub_physical_units WHERE id = '${unitId}';
+    DELETE FROM purchase_orders WHERE id = '${poId}';
+    DELETE FROM product_skus WHERE id = '${skuId}';
+    DELETE FROM suppliers WHERE id = '${supplierId}';
+    SET session_replication_role = origin;
+  `);
+  await db.query(`INSERT INTO suppliers (id, name, platform) VALUES ($1,$2,'cj')`, [supplierId, `E2E C2 Supplier ${ref}`]);
+  await db.query(`INSERT INTO product_skus (id, product_id, sku, stock, is_active, source, supplier_sku, supplier_unit_ref, supplier_order_identity)
+                  VALUES ($1,$2,$3,0,true,'SUPPLIER',$4,$4,$5::jsonb)`, [skuId, productId, `K-${ref}`, ref, JSON.stringify(soi)]);
+  await db.query(`INSERT INTO purchase_orders (id, order_id, order_item_id, product_sku_id, supplier_id, supplier_sku, supplier_unit_ref, supplier_order_identity, qty, status)
+                  VALUES ($1,$2,$3,$4,$5,$6,$6,$7::jsonb,$8,'confirmed')`, [poId, orderId, itemId, skuId, supplierId, ref, JSON.stringify(soi), quantity]);
+  await db.query(`INSERT INTO hub_purchase_allocations (id, purchase_order_id, order_id, order_item_id, product_sku_id, supplier_id, supplier_unit_ref, supplier_order_identity, quantity, market_id, destination_ref)
+                  VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11)`,
+    [allocationId, poId, orderId, itemId, skuId, supplierId, ref, JSON.stringify(soi), quantity, marketId, `relais:${relaisId}`]);
+  await db.query(`INSERT INTO hub_physical_units (id, reference, unit_type, state, external_ref, current_location_ref) VALUES ($1,$2,'SUPPLIER_PACKAGE','RECEIVED',$2,'DXB-HUB')`, [unitId, ref]);
+  await db.query(`INSERT INTO hub_physical_unit_placements (physical_unit_id, allocation_id, quantity, operation_type) VALUES ($1,$2,$3,'RECEIVE')`, [unitId, allocationId, quantity]);
+}
+
+/**
  * Insertion directe d'un `product_market_price_drafts` en statut LOCAL_ACTIVE.
  *
  * Doctrine (2026-09, décision L1, services/market-local-price-resolution-
@@ -265,6 +297,7 @@ module.exports = {
   assertTestDatabase,
   createCleanup,
   describeE2E,
+  seedPhysicalReceiptForTest,
   RUN_TAG,
   tag,
   uuid,
