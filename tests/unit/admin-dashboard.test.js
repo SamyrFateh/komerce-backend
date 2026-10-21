@@ -31,6 +31,7 @@ jest.mock('../../middleware/auth', () => ({
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
+jest.mock('../../services/dashboard-pilotage-markets', () => ({ getMarketsSupervision: jest.fn().mockResolvedValue([{ market_code: 'CM', market_name: 'Cameroun', orders_active: 2, cash_to_confirm: 0, open_incidents: 0 }]) }));
 jest.mock('../../services/dashboard-cache', () => ({
   cacheMiddleware: () => (req, res, next) => next(),
   clear: jest.fn(() => 3),
@@ -223,6 +224,7 @@ describe('GET /unified', () => {
       stages: expect.any(Array),
       structural_alerts: expect.any(Array),
     }));
+    expect(res.body.markets_supervision).toEqual([expect.objectContaining({ market_code: 'CM', orders_active: 2 })]);
     expect(Array.isArray(res.body.system_alerts)).toBe(true);
     expect(mockControlChain).toHaveBeenCalledWith({ market: null });
   });

@@ -45,6 +45,7 @@ const db = require('../db');
 const metrics = require('../services/dashboard-metrics');
 const cache = require('../services/dashboard-cache');
 const controlChain = require('../services/logistics-control-chain-projection');
+const { getMarketsSupervision } = require('../services/dashboard-pilotage-markets');
 const { mergePilotageAlerts, summarizeControlChain } = require('../services/dashboard-pilotage-alert-aggregation');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { requireDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
@@ -308,7 +309,7 @@ router.get(
         ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts,
         coutReel, cmdsCoutIncomplet, coutMoyParCmd,
         cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
-        topAlerts, pointsAttention, controlChainProjection,
+        topAlerts, pointsAttention, controlChainProjection, marketsSupervision,
       ] = await Promise.all([
         metrics.getCAEncaisse(filters),
         metrics.getCmdsActives(filters),
@@ -326,6 +327,7 @@ router.get(
         _fetchTopAlerts(10),
         metrics.getPointsAttention(filters),
         controlChain.getControlChain({ market: null }),
+        getMarketsSupervision(filters),
       ]);
 
       // Resume par vue (5 KPIs chacune) — ZERO await ici
@@ -378,6 +380,7 @@ router.get(
         view_blocks,
         economic_flow,
         principles,
+        markets_supervision: marketsSupervision,
         control_chain: summarizeControlChain(controlChainProjection),
         system_alerts: mergePilotageAlerts(topAlerts, controlChainProjection, 10),
         data_quality: makeDataQuality(filters, ['(toutes)']),
