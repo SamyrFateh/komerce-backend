@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-21T10:07:51.270Z",
+  "generatedAt": "2026-10-21T15:07:05.977Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 745,
-    "protected": 690,
+    "total": 746,
+    "protected": 691,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3216,6 +3216,15 @@
     },
     {
       "key": "GET /api/hub-dash/dashboard",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/hub-dash/dubai",
       "level": "PROTECTED",
       "roles": [
         "admin",

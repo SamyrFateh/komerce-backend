@@ -67,6 +67,7 @@ const {
 } = require('../services/parcel-mutation-service');
 const log = require('../utils/logger').child({ module: 'hub-dashboard' });
 const hubQueries = require('../services/hub-dashboard-queries');
+const hubDubai = require('../services/hub-dubai-projection');
 const { applyLiveProjection } = require('../services/live-projection');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
@@ -135,6 +136,17 @@ router.get('/dashboard', ...hubRead, async (req, res, next) => {
       : await hubQueries.getDashboardKPIs();
     res.json(data);
   } catch(e) { next(e); }
+});
+
+// Flux Hub Dubaï : lecture seule (réceptions fournisseur, unités physiques par marché). Sources absentes déclarées dans `gaps`.
+router.get('/dubai', ...hubRead, async (req, res, next) => {
+  try {
+    const data = await hubDubai.buildHubDubai(
+      req.user.role === 'market_operator' ? { authorizedMarkets: req.authorizedMarkets } : {},
+    );
+    res.set('Cache-Control', 'private, no-store');
+    res.json(data);
+  } catch (e) { next(e); }
 });
 
 router.get('/queue', ...hubRead, async (req, res, next) => {

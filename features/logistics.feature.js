@@ -115,6 +115,7 @@ module.exports = {
       'services/parcel-service.js',
       'services/hub-operations.js',
       'services/hub-receivable.js',
+      'services/hub-dubai-projection.js',
       'services/hub-receive-idempotency.js',
       'services/hub-physical-identity.js',
       'services/hub-inbound-reconciliation.js',
@@ -151,6 +152,7 @@ module.exports = {
       'dashboards/admin/js/views/OrdersLogisticsView.js',
     ],
     tests: [
+      'tests/unit/hub-dubai-projection.test.js',
       'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js',
       'tests/integration/hub-physical-identity-postgres.test.js',
       'tests/integration/hub-physical-hardening-postgres.test.js',
