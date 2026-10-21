@@ -165,3 +165,19 @@ describe('contexte transporté (marché, période, périmètre)', () => {
     expect(calls[2]).toBe('/admin/finance?simulation_scope=RCT1&market=KM#a');
   });
 });
+
+test('canOpenEntity360 suit l’habilitation serveur (admin, market_operator) ; le retour contextuel est visible dans la coque', () => {
+  jest.resetModules();
+  delete global.KomerceCanonicalNavigation;
+  require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+  const nav = global.KomerceCanonicalNavigation;
+  expect(nav.canOpenEntity360({ role: 'admin' })).toBe(true);
+  expect(nav.canOpenEntity360({ role: 'market_operator' })).toBe(true);
+  ['agent_hub', 'agent_relais', 'agent_transitaire', 'finance', 'sourcing', 'support'].forEach(role => {
+    expect(nav.canOpenEntity360({ role })).toBe(false);
+  });
+  expect(nav.canOpenEntity360(null)).toBe(false);
+  const css = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/css/canonical-shell-v4.css'), 'utf8');
+  expect(css).toMatch(/\.kmc-admin-back\[data-back-context="contextual"\]\s*\{\s*display:\s*inline-flex/);
+  expect(css).toMatch(/body\.kmc-shell-v4 \.kmc-admin-back\s*\{\s*display:\s*none;/);
+});

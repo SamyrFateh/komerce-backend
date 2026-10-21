@@ -43,3 +43,9 @@ test('le formulaire douane est stylé dans canonical-legacy-theme-v1.css (unité
   ['.kmc-customs-form {', '.kmc-customs-unit', '.kmc-customs-form-error', '.kmc-customs-form-actions', 'tr.is-highlighted'].forEach(sel => expect(css).toContain(sel));
   expect(css).toMatch(/@media \(max-width: 680px\)\s*\{\s*\.kmc-customs-form/);
 });
+
+test('Expéditions & Douane : la colonne Commande ouvre la fiche 360 avec retour, réservée aux rôles autorisés', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/shipping-customs-workspace.js'), 'utf8');
+  expect(src).toContain('nav.canOpenEntity360(context.user)');
+  expect(src).toContain("nav.withEntityReturnTo(`/admin/orders/${encodeURIComponent(value)}`, nav.currentReturnTarget(null), 'Retour aux expéditions')");
+});

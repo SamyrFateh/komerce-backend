@@ -90,3 +90,9 @@
 @media (prefers-reduced-motion:reduce){
   .kmc-import-runtime .lk-pb-stage.is-current .lk-pb-circle,.kmc-import-runtime .lk-pb-stage.is-attention .lk-pb-circle{animation:none}
 }
+
+/* Lien direct vers la fiche Commande 360 (visible seulement pour admin / market_operator). */
+.kmc-import-runtime .lk-order360{margin-left:6px;font-size:12px;font-weight:700;color:#C2410C;text-decoration:none;white-space:nowrap}
+.kmc-import-runtime .lk-order360:hover,.kmc-import-runtime .lk-order360:focus-visible{text-decoration:underline}
+.kmc-import-runtime .lk-360-line{margin:0 0 8px}
+.kmc-import-runtime .lk-360-line:empty{display:none}

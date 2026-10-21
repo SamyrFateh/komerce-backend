@@ -22,7 +22,7 @@
 (function initHubLive(global) {
   const kit = global.KomerceLiveKit;
   if (!kit) throw new Error('live_kit_missing');
-  const { esc, num, fmtDate, fmtKmf, ageLabel, queryString, processBoard, tiles, table, pager } = kit;
+  const { order360Link, esc, num, fmtDate, fmtKmf, ageLabel, queryString, processBoard, tiles, table, pager } = kit;
 
   const BASE = '/admin/hub-live';
   const PAGE_SIZE = 25;
@@ -67,7 +67,7 @@
 
   function orderRow(order, from) {
     return `<tr>
-      <td><a href="${orderUrl(order.id, from)}" data-cockpit-nav>${esc(order.reference)}</a></td>
+      <td><a href="${orderUrl(order.id, from)}" data-cockpit-nav>${esc(order.reference)}</a>${order360Link(order.reference, 'Retour au Hub live')}</td>
       <td>${esc(order.client_name || '—')}</td>
       <td>${esc(order.relais_name || order.destination_island || '—')}</td>
       <td>${esc(STATUS[order.status] || order.status)}</td>
@@ -177,7 +177,7 @@
     return {
       title:o.reference || 'Commande',
       copy:`${STATUS[o.status] || o.status || ''} · ${o.client_name || 'client'} · ${o.relais_name || o.destination_island || 'relais non défini'}`,
-      body:`<div class="lk-facts">
+      body:`<p class="lk-360-line">${order360Link(o.reference, 'Retour au Hub live')}</p><div class="lk-facts">
           ${card('Âge', ageLabel(meta.age_hours))}
           ${card('Articles affectés', `${num(meta.items_assigned)}/${num(meta.items_count)}`)}
           ${card('Colis', num(meta.parcels_count))}

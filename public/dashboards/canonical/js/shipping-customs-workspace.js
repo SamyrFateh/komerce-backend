@@ -226,9 +226,18 @@
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
-      [row.reference, row.order_ref, row.client_name, row.relais_name || row.destination_island, row.weight_kg == null ? '—' : `${row.weight_kg} kg`, formatDate(row.shipped_at)].forEach(value => {
+      [row.reference, row.order_ref, row.client_name, row.relais_name || row.destination_island, row.weight_kg == null ? '—' : `${row.weight_kg} kg`, formatDate(row.shipped_at)].forEach((value, index) => {
         const td = doc.createElement('td');
-        td.textContent = value || '—';
+        const nav = globalThis.KomerceCanonicalNavigation;
+        // Colonne Commande : lien direct vers la fiche 360 (retour = cet écran) pour les rôles autorisés par le serveur.
+        if (index === 1 && value && nav && typeof nav.canOpenEntity360 === 'function' && nav.canOpenEntity360(context.user)) {
+          const link = doc.createElement('a');
+          link.setAttribute('href', nav.withEntityReturnTo(`/admin/orders/${encodeURIComponent(value)}`, nav.currentReturnTarget(null), 'Retour aux expéditions'));
+          link.textContent = value;
+          td.appendChild(link);
+        } else {
+          td.textContent = value || '—';
+        }
         tr.appendChild(td);
       });
       const actionCell = doc.createElement('td');

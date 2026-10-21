@@ -271,6 +271,7 @@
     async function mount(options = {}) {
       if (!options.root) throw new Error('live_cockpit_root_missing');
       mountedRoot = options.root;
+      viewer = options.user || null;
       applyShell(mountedRoot);
       last = null;
       lastOkAt = 0;
@@ -294,7 +295,17 @@
     return Object.freeze({ mount, renderHtml, urlFor, parseSearch });
   }
 
+  // Lien direct vers la fiche Commande 360 (retour = vue courante du cockpit : view, tab, from, page conservés).
+  // Masqué pour les rôles que le serveur n'autorise pas sur la fiche 360 (habilitations inchangées).
+  let viewer = null;
+  function order360Link(reference, backLabel, user = viewer) {
+    const nav = global.KomerceCanonicalNavigation;
+    if (!reference || !nav || typeof nav.canOpenEntity360 !== 'function' || !nav.canOpenEntity360(user)) return '';
+    const href = nav.withEntityReturnTo(`/admin/orders/${encodeURIComponent(reference)}`, nav.currentReturnTarget(null), backLabel || 'Retour');
+    return ` <a class="lk-order360" href="${esc(href)}" aria-label="Fiche commande 360 de ${esc(reference)}">360 ↗</a>`;
+  }
+
   global.KomerceLiveKit = Object.freeze({
-    createCockpit, esc, num, fmtDate, fmtKmf, ageLabel, queryString, flowTrack, processBoard, tiles, table, pager,
+    order360Link, createCockpit, esc, num, fmtDate, fmtKmf, ageLabel, queryString, flowTrack, processBoard, tiles, table, pager,
   });
 })(typeof window !== 'undefined' ? window : globalThis);
