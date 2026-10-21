@@ -13,6 +13,11 @@ jest.mock('../../services/logistics-control-chain-projection', () => ({
   getOrderControlSnapshot: (...args) => mockGetOrderControlSnapshot(...args),
 }));
 
+const mockGetOrderCosting = jest.fn();
+jest.mock('../../services/dashboard-finance-canonical', () => ({
+  getOrderCosting: (...args) => mockGetOrderCosting(...args),
+}));
+
 const service = require('../../services/order-360');
 
 beforeEach(() => {
@@ -162,4 +167,36 @@ test('loadOrder360 n’expose pas la projection Purchasing quand le caller n’a
   expect(JSON.stringify(payload.control_position)).not.toContain('33333333-3333-4333-8333-333333333333');
   expect(payload.data_quality.source_tables).not.toContain('purchase_orders');
   expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('FROM purchase_orders po'))).toBe(false);
+});
+
+describe('loadOrder360 — section Coûts & écarts (lecture seule, finance.read décidé par la route)', () => {
+  const order = { id: 'order-id', reference: 'RCT1-E1', status: 'collected', payment_status: 'paid', payment_mode: 'stripe_eur', total_kmf: '15065' };
+  const costing = {
+    order_id: 'order-id', reference: 'RCT1-E1', market_code: 'KM', status: 'collected', payment_status: 'paid',
+    sale_total_kmf: 15065, estimated_cost_kmf: 10000, real_cost_kmf: 10300, consolidated_margin_kmf: 4765,
+    cost_status: 'actual', missing_cost_types: [], variance: { class: 'overrun', cost_variance_kmf: 300 },
+  };
+
+  beforeEach(() => { mockQuery.mockResolvedValue({ rows: [] }); });
+
+  test('sans includeCosts : aucune clé costs et aucune lecture de coûts', async () => {
+    const payload = await service.loadOrder360(order, {});
+    expect(payload).not.toHaveProperty('costs');
+    expect(mockGetOrderCosting).not.toHaveBeenCalled();
+  });
+
+  test('avec includeCosts : projection Finance de cette commande, sans identifiant interne ; marge réelle inchangée', async () => {
+    mockGetOrderCosting.mockResolvedValue(costing);
+    const payload = await service.loadOrder360(order, { includeCosts: true });
+    expect(mockGetOrderCosting).toHaveBeenCalledWith('order-id');
+    expect(payload.costs.consolidated_margin_kmf).toBe(4765);
+    expect(payload.costs.real_cost_kmf).toBe(10300);
+    expect(JSON.stringify(payload.costs)).not.toContain('order-id');
+  });
+
+  test('commande annulée / remboursée : costs = null (non applicable), jamais 0', async () => {
+    mockGetOrderCosting.mockResolvedValue(null);
+    const payload = await service.loadOrder360(order, { includeCosts: true });
+    expect(payload).toHaveProperty('costs', null);
+  });
 });

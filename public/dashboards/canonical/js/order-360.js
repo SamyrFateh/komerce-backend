@@ -194,6 +194,183 @@
     }));
   }
 
+
+  // ── Fil de la commande (P2) : statut courant + historique de statut, tels que fournis par le serveur ──
+  const STATUS_LABELS = Object.freeze({
+    pending: 'En attente', confirmed: 'Confirmée', ordered: 'Commandée', preparation: 'En préparation', shipped: 'Expédiée',
+    in_transit: 'En transit', available: 'Disponible au relais', collected: 'Retirée', delivered: 'Livrée',
+    cancelled: 'Annulée', refunded: 'Remboursée',
+  });
+
+  function statusLabel(status) {
+    const key = String(status || '').trim();
+    return STATUS_LABELS[key] || key || '—';
+  }
+
+  // Historique serveur trié du plus récent au plus ancien : le fil l'affiche chronologiquement. Aucune étape inventée :
+  // sans historique, seul le statut courant est montré et le manque est dit (inconnu ≠ vide).
+  function threadSteps(payload) {
+    const current = payload && payload.order && payload.order.status;
+    const history = (Array.isArray(payload && payload.history) ? payload.history : [])
+      .filter(row => row && row.status)
+      .slice()
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const steps = history.map(row => ({ status: row.status, label: statusLabel(row.status), date: row.created_at, current: false }));
+    if (current) {
+      const last = steps[steps.length - 1];
+      if (last && last.status === current) last.current = true;
+      else steps.push({ status: current, label: statusLabel(current), date: null, current: true });
+    }
+    return steps;
+  }
+
+  function renderThread(rootNode, doc, payload) {
+    const steps = threadSteps(payload);
+    if (!steps.length) return;
+    const section = doc.createElement('section');
+    section.className = 'kmc-order-thread';
+    section.id = 'parcours';
+    const title = doc.createElement('h2');
+    title.className = 'kmc-order-thread-title';
+    title.textContent = 'Parcours de la commande';
+    section.appendChild(title);
+    const list = doc.createElement('ol');
+    list.className = 'kmc-order-thread-steps';
+    steps.forEach(step => {
+      const item = doc.createElement('li');
+      item.className = `kmc-order-thread-step${step.current ? ' is-current' : ''}`;
+      if (step.current) item.setAttribute('aria-current', 'step');
+      const label = doc.createElement('strong');
+      label.textContent = step.label;
+      item.appendChild(label);
+      const date = doc.createElement('span');
+      date.textContent = step.date ? formatDate(step.date) : 'Date non enregistrée';
+      item.appendChild(date);
+      list.appendChild(item);
+    });
+    section.appendChild(list);
+    if (!(Array.isArray(payload.history) && payload.history.length)) {
+      const note = doc.createElement('p');
+      note.className = 'kmc-order-thread-note';
+      note.textContent = 'Historique de statut non disponible : seul le statut actuel est connu.';
+      section.appendChild(note);
+    }
+    rootNode.appendChild(section);
+  }
+
+  // ── Coûts & écarts : projection Finance de cette commande, fournie par le serveur seulement si finance.read ──
+  const VARIANCE_LABELS = Object.freeze({
+    overrun: 'Surcoût', saving: 'Économie', provisional: 'Provisoire', not_comparable: 'Non comparable', none: 'Aucun écart',
+  });
+  const COMPONENT_STATE_LABELS = Object.freeze({ confirmed: 'Constaté', provisional: 'Provisoire', unknown: 'Inconnu', expected: 'Pas encore attendu' });
+
+  function signedKmf(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '—';
+    return `${n > 0 ? '+' : ''}${formatKmf(n)}`;
+  }
+
+  function costsSummaryRows(costs) {
+    const unknown = 'Non établi';
+    const variance = costs.variance || {};
+    return [
+      { poste: 'Prix de vente', valeur: formatKmf(costs.sale_total_kmf), note: '' },
+      { poste: 'Coûts estimés (figés à la commande)', valeur: costs.estimated_cost_kmf == null ? unknown : formatKmf(costs.estimated_cost_kmf), note: '' },
+      { poste: 'Coûts constatés', valeur: costs.real_cost_kmf == null ? unknown : formatKmf(costs.real_cost_kmf), note: 'Coûts directement imputés à la commande, selon les justificatifs disponibles.' },
+      {
+        poste: 'Marge réelle finalisée',
+        valeur: costs.consolidated_margin_kmf == null ? 'Non finalisée' : formatKmf(costs.consolidated_margin_kmf),
+        note: costs.consolidated_margin_kmf == null ? 'La marge réelle n’est calculée que sur une commande finalisée ; elle n’est jamais extrapolée.' : '',
+      },
+      {
+        poste: 'Écart de coût (constaté − estimé)',
+        valeur: variance.cost_variance_kmf == null ? (VARIANCE_LABELS[variance.class] || '—') : signedKmf(variance.cost_variance_kmf),
+        note: variance.cost_variance_kmf == null ? 'Non comparable à ce stade.' : (VARIANCE_LABELS[variance.class] || ''),
+      },
+    ];
+  }
+
+  function costComponentRows(costs) {
+    const components = costs && costs.variance && Array.isArray(costs.variance.components) ? costs.variance.components : [];
+    return components.map(row => ({
+      composante: row.label || row.type,
+      etat: COMPONENT_STATE_LABELS[row.state] || row.state || '—',
+      estime: row.estimated_kmf == null ? '—' : formatKmf(row.estimated_kmf),
+      constate: row.real_kmf == null ? '—' : formatKmf(row.real_kmf),
+      ecart: row.delta_kmf == null ? '—' : signedKmf(row.delta_kmf),
+      responsable: row.owner && row.owner.label ? row.owner.label : '—',
+    }));
+  }
+
+  // Espaces propriétaires des composantes (Achats, Expéditions & Douane, Hub…) : liens directs avec retour à la commande.
+  function costOwnerLinks(costs, orderReference) {
+    const components = costs && costs.variance && Array.isArray(costs.variance.components) ? costs.variance.components : [];
+    const seen = new Set();
+    return components.filter(row => row.owner && row.owner.href && !seen.has(row.owner.href) && seen.add(row.owner.href)).map(row => ({
+      label: row.owner.label || row.owner.href,
+      href: contextualHref(row.owner.href, `/admin/orders/${encodeURIComponent(orderReference)}#couts`, 'Retour à la commande'),
+    }));
+  }
+
+  function renderCosts(rootNode, ui, doc, payload) {
+    if (!Object.prototype.hasOwnProperty.call(payload, 'costs')) return;
+    const costs = payload.costs;
+    const section = ui.Section.create({
+      title: 'Coûts & écarts',
+      description: 'Projection Finance de cette commande : coûts constatés, marge réelle finalisée et écarts avec l’estimation figée.',
+    });
+    section.element.id = 'couts';
+    rootNode.appendChild(section.element);
+    if (!costs) {
+      const empty = doc.createElement('p');
+      empty.className = 'kmc-order-costs-note';
+      empty.textContent = 'Coûts non applicables : commande annulée ou remboursée.';
+      section.slot.appendChild(empty);
+      return;
+    }
+    ui.DataTable.render(section.slot, {
+      columns: [{ key: 'poste', label: 'Poste' }, { key: 'valeur', label: 'Valeur', align: 'right' }, { key: 'note', label: 'Lecture' }],
+      rows: costsSummaryRows(costs),
+      emptyText: 'Aucune donnée de coût.',
+    });
+    const missing = Array.isArray(costs.missing_cost_types) ? costs.missing_cost_types : [];
+    if (missing.length) {
+      const note = doc.createElement('p');
+      note.className = 'kmc-order-costs-note';
+      note.textContent = `Coûts restant à établir : ${missing.join(', ')}. Un coût non établi est inconnu, jamais zéro.`;
+      section.slot.appendChild(note);
+    }
+    const components = costComponentRows(costs);
+    if (components.length) {
+      const host = doc.createElement('div');
+      host.className = 'kmc-order-costs-components';
+      section.slot.appendChild(host);
+      ui.DataTable.render(host, {
+        columns: [
+          { key: 'composante', label: 'Composante' }, { key: 'etat', label: 'État' },
+          { key: 'estime', label: 'Estimé', align: 'right' }, { key: 'constate', label: 'Constaté', align: 'right' },
+          { key: 'ecart', label: 'Écart', align: 'right' }, { key: 'responsable', label: 'Responsable' },
+        ],
+        rows: components,
+        emptyText: 'Aucune composante.',
+      });
+    }
+    const owners = costOwnerLinks(costs, payload.order.reference);
+    const links = doc.createElement('p');
+    links.className = 'kmc-order-costs-links';
+    owners.forEach(owner => {
+      const a = doc.createElement('a');
+      a.setAttribute('href', owner.href);
+      a.textContent = `${owner.label} →`;
+      links.appendChild(a);
+    });
+    const finance = doc.createElement('a');
+    finance.setAttribute('href', contextualHref('/admin/finance', `/admin/orders/${encodeURIComponent(payload.order.reference)}#couts`, 'Retour à la commande'));
+    finance.textContent = 'Vue Finance →';
+    links.appendChild(finance);
+    section.slot.appendChild(links);
+  }
+
   function renderTableSection(rootNode, ui, doc, options) {
     const section = ui.Section.create({ title: options.title, description: options.description });
     rootNode.appendChild(section.element);
@@ -224,6 +401,8 @@
         items: [controlPosition],
       });
     }
+
+    renderThread(rootNode, doc, payload);
 
     renderTableSection(rootNode, ui, doc, {
       title: 'Commande',
@@ -260,6 +439,8 @@
       })),
       emptyText: 'Aucun article.',
     });
+
+    renderCosts(rootNode, ui, doc, payload);
 
     const products = doc.createElement('section');
     rootNode.appendChild(products);
@@ -401,6 +582,12 @@
       const endpoint = ENDPOINT_PREFIX + encodeURIComponent(reference);
       const payload = await jsonRequest(fetchFn, endpoint);
       renderPayload(rootNode, ui, doc, payload);
+      // Ancre #couts (lien depuis Finance) : la section n'existe qu'après le rendu, le navigateur ne peut pas y défiler seul.
+      const hash = options.location ? options.location.hash : (globalThis.location && globalThis.location.hash);
+      if (hash === '#couts') {
+        const target = rootNode.querySelector && rootNode.querySelector('#couts');
+        if (target && typeof target.scrollIntoView === 'function') target.scrollIntoView();
+      }
       return Object.freeze({ payload, endpoint, reference });
     } catch (error) {
       ui.UIState.render(rootNode, 'error', error.message);
@@ -418,6 +605,10 @@
     purchaseOrderDrills,
     metricItems,
     controlPositionItem,
+    threadSteps,
+    costsSummaryRows,
+    costComponentRows,
+    costOwnerLinks,
     renderPayload,
     jsonRequest,
     mount,

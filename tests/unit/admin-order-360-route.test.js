@@ -35,6 +35,11 @@ jest.mock('../../middleware/require-dashboard-global-authority', () => ({
   hasDashboardGlobalAuthority: jest.fn(async () => mockGlobalAllowed),
 }));
 
+const mockListCostMarkets = jest.fn();
+jest.mock('../../services/market-delegation-service', () => ({
+  listAuthorizedMarketsForCapability: (...args) => mockListCostMarkets(...args),
+}));
+
 const mockResolveOrder = jest.fn();
 const mockLoadOrder360 = jest.fn();
 jest.mock('../../services/order-360', () => ({
@@ -80,6 +85,7 @@ beforeEach(() => {
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
   mockRole = 'admin';
+  mockListCostMarkets.mockResolvedValue([]);
   mockResolveOrder.mockResolvedValue({ invalid: false, order: resolvedOrder() });
   mockLoadOrder360.mockResolvedValue({
     order: { reference: 'CMD-CM-001', market: { code: 'CM' } },
@@ -93,7 +99,7 @@ test('operations.read CM permet de lire une commande CM après résolution serve
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toContain('no-store');
   expect(mockResolveOrder).toHaveBeenCalledWith('CMD-CM-001');
-  expect(mockLoadOrder360).toHaveBeenCalledWith(expect.objectContaining({ market_id: 'market-cm-id' }), { includePurchasing: true });
+  expect(mockLoadOrder360).toHaveBeenCalledWith(expect.objectContaining({ market_id: 'market-cm-id' }), { includePurchasing: true, includeCosts: false });
   expect(JSON.stringify(res.body)).not.toContain('market-cm-id');
 });
 
@@ -105,8 +111,49 @@ test('market_operator garde Order 360 mais sans projection Achats admin-only', a
   expect(res.status).toBe(200);
   expect(mockLoadOrder360).toHaveBeenCalledWith(
     expect.objectContaining({ market_id: 'market-cm-id' }),
-    { includePurchasing: false }
+    { includePurchasing: false, includeCosts: false }
   );
+});
+
+describe('section Coûts & écarts : finance.read exigé (fail-closed)', () => {
+  const costsFlag = () => mockLoadOrder360.mock.calls[0][1].includeCosts;
+
+  test('autorité globale : section incluse sans interroger les délégations', async () => {
+    mockGlobalAllowed = true;
+    const res = await request(app()).get('/api/admin/entities/orders/CMD-CM-001');
+    expect(res.status).toBe(200);
+    expect(costsFlag()).toBe(true);
+    expect(mockListCostMarkets).not.toHaveBeenCalled();
+  });
+
+  test('market_operator avec finance.read sur le marché de la commande : section incluse', async () => {
+    mockRole = 'market_operator';
+    mockListCostMarkets.mockResolvedValue([{ market_id: 'market-cm-id' }]);
+    await request(app()).get('/api/admin/entities/orders/CMD-CM-001');
+    expect(mockListCostMarkets).toHaveBeenCalledWith(expect.anything(), { userId: 'user-1', requiredCapability: 'finance.read' });
+    expect(costsFlag()).toBe(true);
+  });
+
+  test('market_operator sans finance.read, ou finance.read sur un autre marché : section absente', async () => {
+    mockRole = 'market_operator';
+    mockListCostMarkets.mockResolvedValue([]);
+    await request(app()).get('/api/admin/entities/orders/CMD-CM-001');
+    expect(costsFlag()).toBe(false);
+    jest.clearAllMocks();
+    mockResolveOrder.mockResolvedValue({ invalid: false, order: resolvedOrder() });
+    mockLoadOrder360.mockResolvedValue({ order: {}, summary: {} });
+    mockListCostMarkets.mockResolvedValue([{ market_id: 'market-cg-id' }]);
+    await request(app()).get('/api/admin/entities/orders/CMD-CM-001');
+    expect(costsFlag()).toBe(false);
+  });
+
+  test('erreur de résolution des délégations : section retirée, lecture de la commande conservée', async () => {
+    mockRole = 'market_operator';
+    mockListCostMarkets.mockRejectedValue(new Error('db down'));
+    const res = await request(app()).get('/api/admin/entities/orders/CMD-CM-001');
+    expect(res.status).toBe(200);
+    expect(costsFlag()).toBe(false);
+  });
 });
 
 test('operations.read CM ne permet pas de lire une commande CG', async () => {

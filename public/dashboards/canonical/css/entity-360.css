@@ -112,3 +112,19 @@
 @media (prefers-reduced-motion: reduce) {
   .kmc-entity-nav-link { transition: none; }
 }
+
+/* Fil de la commande (P2) et section Coûts & écarts de Commande 360. */
+.kmc-order-thread { margin: 14px 0; padding: 14px 16px; border: 1px solid var(--kmc-line, #e2e8f0); border-radius: 12px; background: #fff; }
+.kmc-order-thread-title { margin: 0 0 10px; font-size: 16px; font-weight: 800; }
+.kmc-order-thread-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.kmc-order-thread-step { display: flex; flex-direction: column; gap: 2px; min-width: 120px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; font-size: 12.5px; color: #475569; }
+.kmc-order-thread-step strong { font-size: 13.5px; color: #0f172a; }
+.kmc-order-thread-step.is-current { border-color: #fb923c; background: #fff7ed; }
+.kmc-order-thread-step.is-current strong { color: #9a3412; }
+.kmc-order-thread-note, .kmc-order-costs-note { margin: 10px 0 0; font-size: 12.5px; color: #64748b; }
+.kmc-order-costs-components { margin-top: 12px; }
+.kmc-order-costs-links { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 0; font-weight: 700; font-size: 13px; }
+.kmc-order-costs-links a { color: #c2410c; text-decoration: none; }
+.kmc-order-costs-links a:hover, .kmc-order-costs-links a:focus-visible { text-decoration: underline; }
+@media (max-width: 680px) { .kmc-order-thread-step { flex: 1 1 100%; } }
+#couts, #parcours { scroll-margin-top: 96px; }

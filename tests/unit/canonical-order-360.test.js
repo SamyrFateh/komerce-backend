@@ -169,3 +169,83 @@ test('purchaseOrderDrills ouvre la PO dans Achats avec retour contextuel vers Or
     globalThis.KomerceCanonicalNavigation = previous;
   }
 });
+
+describe('Commande 360 — fil de la commande (P2)', () => {
+  test('statut + historique du serveur, en ordre chronologique ; le statut courant est marqué', () => {
+    const steps = order360.threadSteps({
+      order: { status: 'shipped' },
+      history: [
+        { status: 'shipped', created_at: '2026-10-03T10:00:00Z' },
+        { status: 'confirmed', created_at: '2026-10-01T10:00:00Z' },
+        { status: 'pending', created_at: '2026-10-01T09:00:00Z' },
+      ],
+    });
+    expect(steps.map(s => s.status)).toEqual(['pending', 'confirmed', 'shipped']);
+    expect(steps.map(s => s.current)).toEqual([false, false, true]);
+    expect(steps[2].label).toBe('Expédiée');
+  });
+
+  test('sans historique : seul le statut courant, aucune étape inventée ; sans statut : rien', () => {
+    expect(order360.threadSteps({ order: { status: 'confirmed' }, history: [] })).toEqual([
+      { status: 'confirmed', label: 'Confirmée', date: null, current: true },
+    ]);
+    expect(order360.threadSteps({ order: {}, history: [] })).toEqual([]);
+  });
+});
+
+describe('Commande 360 — section Coûts & écarts (projection Finance, lecture seule)', () => {
+  const costs = {
+    sale_total_kmf: 15065, estimated_cost_kmf: 10000, real_cost_kmf: 10300, consolidated_margin_kmf: 4765,
+    cost_status: 'actual', missing_cost_types: [],
+    variance: {
+      class: 'overrun', cost_variance_kmf: 300,
+      components: [
+        { type: 'freight', label: 'Fret', state: 'confirmed', estimated_kmf: 1000, real_kmf: 1300, delta_kmf: 300, owner: { label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' } },
+        { type: 'hub', label: 'Hub', state: 'unknown', estimated_kmf: 500, real_kmf: null, delta_kmf: null, owner: { label: 'Hub', href: '/admin/hub-live' } },
+        { type: 'customs', label: 'Douane', state: 'confirmed', estimated_kmf: 0, real_kmf: 0, delta_kmf: 0, owner: { label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' } },
+      ],
+    },
+  };
+
+  test('libellés fidèles : « Coûts constatés », marge réelle finalisée (4 765 RCT1-E1), écart signé', () => {
+    const rows = order360.costsSummaryRows(costs);
+    expect(rows.map(r => r.poste)).toEqual([
+      'Prix de vente', 'Coûts estimés (figés à la commande)', 'Coûts constatés', 'Marge réelle finalisée', 'Écart de coût (constaté − estimé)',
+    ]);
+    expect(rows[3].valeur.replace(/\s/g, ' ')).toBe('4 765 KMF');
+    expect(rows[4].valeur.replace(/\s/g, ' ')).toBe('+300 KMF');
+    expect(JSON.stringify(rows)).not.toContain('engagé');
+  });
+
+  test('inconnu ≠ zéro ; marge non finalisée jamais extrapolée', () => {
+    const rows = order360.costsSummaryRows({ ...costs, estimated_cost_kmf: null, real_cost_kmf: null, consolidated_margin_kmf: null, variance: { class: 'not_comparable', cost_variance_kmf: null } });
+    expect(rows[1].valeur).toBe('Non établi');
+    expect(rows[2].valeur).toBe('Non établi');
+    expect(rows[3].valeur).toBe('Non finalisée');
+    expect(rows[3].note).toContain('jamais extrapolée');
+    expect(rows[4].valeur).toBe('Non comparable');
+    expect(order360.costComponentRows(costs)[1]).toEqual(expect.objectContaining({ constate: '—', ecart: '—', etat: 'Inconnu' }));
+  });
+
+  test('liens vers les espaces propriétaires dédoublonnés, avec retour à la commande (#couts)', () => {
+    jest.resetModules();
+    require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+    const fresh = require('../../public/dashboards/canonical/js/order-360');
+    try {
+      const links = fresh.costOwnerLinks(costs, 'RCT1-E1');
+      expect(links.map(l => l.label)).toEqual(['Expéditions & Douane', 'Hub']);
+      const url = new URL(links[0].href, 'http://x.test');
+      expect(url.pathname).toBe('/admin/workspaces/shipping-customs');
+      expect(url.searchParams.get('return_to')).toBe('/admin/orders/RCT1-E1#couts');
+    } finally {
+      delete globalThis.KomerceCanonicalNavigation;
+    }
+  });
+
+  test('renderPayload : section #couts seulement si le serveur fournit costs (finance.read) ; null = non applicable', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/order-360.js'), 'utf8');
+    expect(src).toContain("if (!Object.prototype.hasOwnProperty.call(payload, 'costs')) return;");
+    expect(src).toContain("section.element.id = 'couts'");
+    expect(src).toContain('Coûts non applicables : commande annulée ou remboursée.');
+  });
+});

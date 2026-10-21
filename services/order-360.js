@@ -5,8 +5,8 @@
  * @layer         service
  * @criticality   high
  * @inputs        server_resolved_order, projection_options
- * @outputs       order_360_projection, authorized_purchasing_projection, logistics_control_position
- * @depends       db, logistics-control-chain-projection
+ * @outputs       order_360_projection, authorized_purchasing_projection, authorized_costs_projection, logistics_control_position
+ * @depends       db, logistics-control-chain-projection, dashboard-finance-canonical
  * @used-by       routes/admin-order-360.js
  * @db-read       orders, users, relais, markets, order_items, products, parcels, parcel_items, order_status_history, scans, order_incidents, order_comments, client_notifications, invoices, transaction_documents, purchase_orders, purchase_lines, suppliers
  * @db-write      none
@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const controlChain = require('./logistics-control-chain-projection');
+const financeCanonical = require('./dashboard-finance-canonical');
 
 const ORDER_REFERENCE = /^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$/;
 
@@ -90,6 +91,13 @@ function publicOrder(order) {
   });
 }
 
+// La projection Finance porte l'identifiant interne de la commande : il n'est jamais publié par Commande 360.
+function publicCosts(costing) {
+  if (!costing) return null;
+  const { order_id: _internalOrderId, ...visible } = costing;
+  return Object.freeze(visible);
+}
+
 function publicControlPosition(position, { includePurchasing = false } = {}) {
   if (!position) return null;
   const envelope = position.envelope || { type: 'ORDER', refs: [] };
@@ -117,7 +125,7 @@ function toSafeRefs(value) {
   return Array.isArray(value) ? value.filter(Boolean).map(String) : [];
 }
 
-async function loadOrder360(order, { includePurchasing = false } = {}) {
+async function loadOrder360(order, { includePurchasing = false, includeCosts = false } = {}) {
   if (!order || !order.id) throw new Error('order_360_resolved_order_required');
 
   const orderId = order.id;
@@ -328,6 +336,9 @@ async function loadOrder360(order, { includePurchasing = false } = {}) {
       created_at: row.created_at,
     }))),
     documents: Object.freeze(documents),
+    // Coûts & écarts : projection Finance canonique d'une seule commande, jamais recalculée ici. Présente seulement
+    // pour un acteur autorisé finance.read ; null = non applicable (commande annulée/remboursée).
+    ...(includeCosts ? { costs: publicCosts(await financeCanonical.getOrderCosting(order.id)) } : {}),
     ...(includePurchasing ? {
       purchasing: Object.freeze({
         purchase_orders: Object.freeze(purchaseOrders),

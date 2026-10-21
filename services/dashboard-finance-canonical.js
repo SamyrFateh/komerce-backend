@@ -269,14 +269,8 @@ async function getCostFamilyBreakdown(filters = {}) {
   }));
 }
 
-async function getRecentCostingOrders(filters = {}, options = {}) {
-  const limit = Math.min(50, Math.max(1, Number(options.limit) || 20));
-  const { where, params } = buildFiltersClause(filters, 'o');
-  const limitIndex = params.length + 1;
-  const queryParams = [...params, limit];
-
-  const { rows } = await db.query(`
-    SELECT
+// Colonnes de la projection coûts d'une commande : source unique pour la liste Finance et la section Coûts de Commande 360.
+const COSTING_ORDER_COLUMNS = `
       o.id AS order_id,
       o.reference,
       o.status,
@@ -296,7 +290,58 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
         SELECT 1 FROM order_item_cost_imputations imp WHERE imp.order_id = o.id
       ) AS has_imputation,
       ${finalMarginReadySql('o')} AS final_ready,
-      ${missingTypesArraySql('o')} AS missing_cost_types
+      ${missingTypesArraySql('o')} AS missing_cost_types`;
+
+async function projectCostingOrder(row) {
+  const sale = Number(row.total_kmf) || 0;
+  const estimated = row.estimated_cost_kmf == null ? null : Number(row.estimated_cost_kmf);
+  const real = row.real_cost_kmf == null ? null : Number(row.real_cost_kmf);
+  const hasImputation = row.has_imputation === true || row.has_imputation === 'true';
+  const costStatus = !hasImputation
+    ? 'incomplete'
+    : (row.final_ready === true ? 'actual' : (real != null ? 'partial_real' : 'estimated'));
+  const missingTypes = Array.isArray(row.missing_cost_types) ? row.missing_cost_types : [];
+  const explanation = describeOrderCosts({
+    status: row.status,
+    payment_mode: row.payment_mode,
+    imported: row.ctx_imported,
+    customs_event: row.ctx_customs_event,
+    relay_beneficiary: row.ctx_relay_beneficiary,
+    hub_route: row.ctx_hub_route,
+    hub_route_unknown: row.ctx_hub_route_unknown,
+    customs_unknown: row.ctx_customs_unknown,
+    missing_cost_types: missingTypes,
+  });
+  const truth = await computeOrderCostVariance(row.order_id);
+
+  return Object.freeze({
+    order_id: row.order_id,
+    reference: row.reference,
+    market_code: row.market_code || null,
+    status: row.status,
+    payment_status: row.payment_status,
+    sale_total_kmf: sale,
+    estimated_cost_kmf: estimated,
+    real_cost_kmf: real,
+    // Conservé pour compatibilité : écart brut estimé complet vs réel total. Ne qualifie rien.
+    variance_kmf: estimated != null && real != null ? real - estimated : null,
+    estimated_margin_kmf: estimated != null ? sale - estimated : null,
+    consolidated_margin_kmf: costStatus === 'actual' && real != null ? sale - real : null,
+    cost_status: costStatus,
+    missing_cost_types: missingTypes,
+    created_at: row.created_at,
+    variance: buildOrderVariance(truth, costStatus, explanation),
+  });
+}
+
+async function getRecentCostingOrders(filters = {}, options = {}) {
+  const limit = Math.min(50, Math.max(1, Number(options.limit) || 20));
+  const { where, params } = buildFiltersClause(filters, 'o');
+  const limitIndex = params.length + 1;
+  const queryParams = [...params, limit];
+
+  const { rows } = await db.query(`
+    SELECT${COSTING_ORDER_COLUMNS}
     FROM orders o
     WHERE ${where}
       AND o.status NOT IN ('cancelled', 'refunded')
@@ -304,47 +349,19 @@ async function getRecentCostingOrders(filters = {}, options = {}) {
     LIMIT $${limitIndex}
   `, queryParams);
 
-  return Promise.all(rows.map(async row => {
-    const sale = Number(row.total_kmf) || 0;
-    const estimated = row.estimated_cost_kmf == null ? null : Number(row.estimated_cost_kmf);
-    const real = row.real_cost_kmf == null ? null : Number(row.real_cost_kmf);
-    const hasImputation = row.has_imputation === true || row.has_imputation === 'true';
-    const costStatus = !hasImputation
-      ? 'incomplete'
-      : (row.final_ready === true ? 'actual' : (real != null ? 'partial_real' : 'estimated'));
-    const missingTypes = Array.isArray(row.missing_cost_types) ? row.missing_cost_types : [];
-    const explanation = describeOrderCosts({
-      status: row.status,
-      payment_mode: row.payment_mode,
-      imported: row.ctx_imported,
-      customs_event: row.ctx_customs_event,
-      relay_beneficiary: row.ctx_relay_beneficiary,
-      hub_route: row.ctx_hub_route,
-      hub_route_unknown: row.ctx_hub_route_unknown,
-      customs_unknown: row.ctx_customs_unknown,
-      missing_cost_types: missingTypes,
-    });
-    const truth = await computeOrderCostVariance(row.order_id);
+  return Promise.all(rows.map(projectCostingOrder));
+}
 
-    return Object.freeze({
-      order_id: row.order_id,
-      reference: row.reference,
-      market_code: row.market_code || null,
-      status: row.status,
-      payment_status: row.payment_status,
-      sale_total_kmf: sale,
-      estimated_cost_kmf: estimated,
-      real_cost_kmf: real,
-      // Conservé pour compatibilité : écart brut estimé complet vs réel total. Ne qualifie rien.
-      variance_kmf: estimated != null && real != null ? real - estimated : null,
-      estimated_margin_kmf: estimated != null ? sale - estimated : null,
-      consolidated_margin_kmf: costStatus === 'actual' && real != null ? sale - real : null,
-      cost_status: costStatus,
-      missing_cost_types: missingTypes,
-      created_at: row.created_at,
-      variance: buildOrderVariance(truth, costStatus, explanation),
-    });
-  }));
+// Section « Coûts & écarts » de Commande 360 : même projection que la liste Finance, pour une seule commande
+// (lecture seule). null = commande annulée/remboursée ou introuvable : coûts non applicables, jamais 0.
+async function getOrderCosting(orderId) {
+  const { rows } = await db.query(`
+    SELECT${COSTING_ORDER_COLUMNS}
+    FROM orders o
+    WHERE o.id = $1
+      AND o.status NOT IN ('cancelled', 'refunded')
+  `, [orderId]);
+  return rows.length ? projectCostingOrder(rows[0]) : null;
 }
 
 
@@ -727,6 +744,7 @@ module.exports = {
   getFinanceTrend,
   getCostFamilyBreakdown,
   getRecentCostingOrders,
+  getOrderCosting,
   getRelayProfitability,
   getSupplierPaymentReview,
   classifyOrderVariance,
