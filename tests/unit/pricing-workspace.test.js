@@ -298,6 +298,11 @@ describe('Atelier — contrat UI de la politique de décision (source)', () => {
   test('un motif « politique pas encore couvrante » a un libellé métier', () => {
     expect(ui).toContain('POLICY_DOES_NOT_COVER_CANONICAL_PERIOD:');
   });
+  test('l’Atelier distingue politique enregistrée et politique devenue décisionnelle (date serveur)', () => {
+    expect(ui).toContain('appendPolicyLifecycle');
+    expect(ui).toContain('Décisionnelle à partir du');
+    expect(ui).toContain('decision.decisional_from');
+  });
   test('l’aperçu d’impact passe par la route serveur en lecture seule', () => {
     expect(ui).toContain('/decision-policy/preview');
   });
