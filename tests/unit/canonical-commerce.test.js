@@ -415,4 +415,19 @@ describe('Commerce — top produits cliquables vers la fiche Produit 360', () =>
     expect(url.searchParams.get('return_label')).toBe('Retour au commerce');
     expect(rows[1].href).toBeUndefined();
   });
+  test('série, répartition par marché et dernières commandes : valeurs serveur dessinées telles quelles', () => {
+    const p = {
+      sales_series: [{ day: '2026-08-20', sales_kmf: 50000, orders: 5 }, { day: '2026-08-22', sales_kmf: 100000, orders: 9 }],
+      sales_by_market: [{ market_code: 'CM', market_name: 'Cameroun', sales_kmf: 90000, share_pct: 75 }, { market_code: 'CG', market_name: 'Congo', sales_kmf: 30000, share_pct: null }],
+      recent_orders: [{ reference: 'CMD-1', created_at: '2026-08-23T10:00:00Z', status: 'confirmed', total_kmf: null, market_code: null, client_name: null }],
+    };
+    const bars = commerceDecision.salesSeriesBars(p, commerce);
+    expect(bars.map(b => b.heightPct)).toEqual([50, 100]);
+    expect(bars[0].label).toBe('20/08');
+    const shares = commerceDecision.marketShares(p, commerce);
+    expect(shares.map(m => m.share)).toEqual([75, null]);
+    const [row] = commerceDecision.recentOrderRows(p, commerce);
+    expect(row).toMatchObject({ reference: 'CMD-1', market: '—', client: '—', amount: 'Non disponible' });
+    expect(commerceDecision.salesSeriesBars({}, commerce)).toEqual([]);
+  });
 });
