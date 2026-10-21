@@ -162,7 +162,107 @@
       }));
   }
 
-  function renderPayload(rootNode, ui, doc, payload) {
+
+  // ── Fil P1 par marché : prix pays → exposition, statuts lus tels que fournis par le serveur ──
+  const PRICE_STATUS_LABELS = Object.freeze({
+    DRAFT_PENDING_GATE: 'Brouillon · gate économique à passer',
+    LOCAL_AUTHORIZED_PENDING_CUTOVER: 'Autorisé · activation en attente',
+    LOCAL_ACTIVE: 'Actif',
+  });
+
+  function formatLocalPrice(price) {
+    const amount = price && price.amount;
+    if (amount == null || !Number.isFinite(Number(amount))) return '';
+    return `${formatNumber(amount, 2)} ${price.currency || ''}`.trim();
+  }
+
+  // Étape suivante : simple lecture de l'état serveur (aucun calcul). Le lien n'existe que si la capability de l'étape
+  // est accordée sur ce marché ; sinon l'état reste affiché sans action.
+  function marketThreadNextStep(row, productRef, adminContext) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    if (!nav || typeof nav.hasCapability !== 'function' || !row || !row.market || !row.market.code) return null;
+    const code = row.market.code;
+    const price = row.price || {};
+    const back = `/admin/products/${encodeURIComponent(productRef)}`;
+    if (price.status !== 'LOCAL_ACTIVE') {
+      if (!nav.hasCapability(adminContext, 'pricing.decide', code)) return null;
+      const href = `/admin/workspaces/pricing?${new URLSearchParams({ product_ref: productRef, market: code }).toString()}`;
+      return { label: price.status ? 'Continuer → Atelier des prix' : 'Définir le prix → Atelier des prix', href: contextualHref(href, back, 'Retour au produit') };
+    }
+    if (!(row.exposure && row.exposure.commercial_exposure === 'ENABLED')) {
+      if (!nav.hasCapability(adminContext, 'catalog.expose', code)) return null;
+      const href = `/dashboards/canonical/market-catalog.html?${new URLSearchParams({ market: code, product_ref: productRef }).toString()}`;
+      return { label: 'Continuer → Catalogue pays', href: contextualHref(href, back, 'Retour au produit') };
+    }
+    return null;
+  }
+
+  function marketThreadRows(payload, adminContext) {
+    const productRef = payload && payload.product && payload.product.product_ref;
+    return (Array.isArray(payload && payload.market_thread) ? payload.market_thread : []).map(row => {
+      const price = row.price || {};
+      const exposure = row.exposure || {};
+      const localPrice = formatLocalPrice(price);
+      return {
+        market: [row.market && row.market.code, row.market && row.market.name].filter(Boolean).join(' · '),
+        price: price.status
+          ? `${PRICE_STATUS_LABELS[price.status] || price.status}${localPrice ? ` · ${localPrice}` : ''}`
+          : 'Aucun prix pays',
+        exposure: exposure.commercial_exposure === 'ENABLED'
+          ? 'Exposé'
+          : (exposure.decision_recorded ? 'Non exposé (décision enregistrée)' : 'Pas encore décidée'),
+        buyerVisible: row.buyer_visible === true,
+        next: productRef ? marketThreadNextStep(row, productRef, adminContext) : null,
+      };
+    });
+  }
+
+  function renderMarketThread(rootNode, ui, doc, payload, adminContext) {
+    if (!Array.isArray(payload && payload.market_thread)) return;
+    const rows = marketThreadRows(payload, adminContext);
+    const section = ui.Section.create({
+      title: 'Fil produit par marché',
+      description: 'Prix pays puis exposition au Catalogue pays, tels que décidés dans chaque marché. Un marché sans décision est « pas encore décidé », jamais « refusé ».',
+    });
+    section.element.id = 'fil-marches';
+    rootNode.appendChild(section.element);
+    if (!rows.length) {
+      const empty = doc.createElement('p');
+      empty.className = 'kmc-product-thread-empty';
+      empty.textContent = 'Aucun marché actif dans votre périmètre.';
+      section.slot.appendChild(empty);
+      return;
+    }
+    const list = doc.createElement('div');
+    list.className = 'kmc-product-thread';
+    rows.forEach(row => {
+      const card = doc.createElement('article');
+      card.className = `kmc-product-thread-row${row.buyerVisible ? ' is-live' : ''}`;
+      const name = doc.createElement('strong');
+      name.textContent = row.market;
+      card.appendChild(name);
+      [['Prix pays', row.price], ['Exposition', row.exposure]].forEach(([label, value]) => {
+        const cell = doc.createElement('span');
+        const k = doc.createElement('small');
+        k.textContent = label;
+        cell.appendChild(k);
+        cell.appendChild(doc.createTextNode(value));
+        card.appendChild(cell);
+      });
+      if (row.next) {
+        const link = doc.createElement('a');
+        link.className = 'kmc-product-thread-next';
+        link.setAttribute('data-next-step', '');
+        link.setAttribute('href', row.next.href);
+        link.textContent = row.next.label;
+        card.appendChild(link);
+      }
+      list.appendChild(card);
+    });
+    section.slot.appendChild(list);
+  }
+
+  function renderPayload(rootNode, ui, doc, payload, adminContext) {
     const product = payload.product || {};
     const inventory = payload.inventory || {};
     const economics = payload.economics || {};
@@ -176,6 +276,8 @@
     metrics.className = 'kmc-entity-metrics';
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload) });
+
+    renderMarketThread(rootNode, ui, doc, payload, adminContext);
 
     renderTableSection(rootNode, ui, {
       title: 'Identité catalogue',
@@ -404,7 +506,7 @@
     try {
       const endpoint = ENDPOINT_PREFIX + encodeURIComponent(productRef);
       const payload = await jsonRequest(fetchFn, endpoint);
-      renderPayload(rootNode, ui, doc, payload);
+      renderPayload(rootNode, ui, doc, payload, options.adminContext || null);
       return Object.freeze({ payload, endpoint, productRef });
     } catch (error) {
       ui.UIState.render(rootNode, 'error', error.message);
@@ -424,6 +526,8 @@
     supplierDrills,
     purchasingModeLabel,
     metricItems,
+    marketThreadRows,
+    marketThreadNextStep,
     renderPayload,
     jsonRequest,
     mount,

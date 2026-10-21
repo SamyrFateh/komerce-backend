@@ -128,3 +128,14 @@
 .kmc-order-costs-links a:hover, .kmc-order-costs-links a:focus-visible { text-decoration: underline; }
 @media (max-width: 680px) { .kmc-order-thread-step { flex: 1 1 100%; } }
 #couts, #parcours { scroll-margin-top: 96px; }
+
+/* Fil produit par marché (Produit 360, P1). */
+.kmc-product-thread { display: grid; gap: 10px; }
+.kmc-product-thread-row { display: grid; grid-template-columns: minmax(150px, 1.1fr) minmax(0, 1.6fr) minmax(0, 1.2fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.kmc-product-thread-row.is-live { border-color: #86efac; background: #f0fdf4; }
+.kmc-product-thread-row span { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; color: #0f172a; }
+.kmc-product-thread-row small { font-size: 12px; color: #64748b; }
+.kmc-product-thread-next { justify-self: end; padding: 7px 12px; border: 1px solid #fdba74; border-radius: 8px; background: #fff7ed; color: #9a3412; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.kmc-product-thread-next:hover, .kmc-product-thread-next:focus-visible { background: #ffedd5; }
+.kmc-product-thread-empty { margin: 0; font-size: 13px; color: #64748b; }
+@media (max-width: 680px) { .kmc-product-thread-row { grid-template-columns: 1fr; } .kmc-product-thread-next { justify-self: stretch; text-align: center; } }

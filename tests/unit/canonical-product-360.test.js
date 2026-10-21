@@ -162,3 +162,70 @@ test('mount charge exclusivement l’endpoint Entity 360 dérivé de product_ref
   );
   expect(fakeUi.MetricStrip.render).toHaveBeenCalled();
 });
+
+describe('Produit 360 — fil P1 par marché', () => {
+  afterEach(() => { delete globalThis.KomerceCanonicalNavigation; });
+  const load = () => {
+    jest.resetModules();
+    require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+    return require('../../public/dashboards/canonical/js/product-360');
+  };
+  const payload = {
+    product: { product_ref: 'KPR-000123' },
+    market_thread: [
+      { market: { code: 'CM', name: 'Cameroun' }, price: { status: 'LOCAL_ACTIVE', amount: 20000, currency: 'XAF' }, exposure: { commercial_exposure: 'ENABLED', decision_recorded: true }, buyer_visible: true },
+      { market: { code: 'KM', name: 'Comores' }, price: { status: null, amount: null, currency: null }, exposure: { commercial_exposure: 'DISABLED', decision_recorded: false }, buyer_visible: false },
+    ],
+  };
+  const globalCtx = { access: { mode: 'global' } };
+
+  test('P4 : CM actif 20 000 XAF exposé sans action ; KM sans prix → « Définir le prix » vers l’Atelier du marché', () => {
+    const rows = load().marketThreadRows(payload, globalCtx);
+    expect(rows[0].price.replace(/\s/g, ' ')).toBe('Actif · 20 000 XAF');
+    expect(rows[0].exposure).toBe('Exposé');
+    expect(rows[0].next).toBeNull();
+    expect(rows[1].price).toBe('Aucun prix pays');
+    expect(rows[1].exposure).toBe('Pas encore décidée');
+    const url = new URL(rows[1].next.href, 'http://x.test');
+    expect(url.pathname).toBe('/admin/workspaces/pricing');
+    expect(url.searchParams.get('product_ref')).toBe('KPR-000123');
+    expect(url.searchParams.get('market')).toBe('KM');
+    expect(url.searchParams.get('return_to')).toBe('/admin/products/KPR-000123');
+    expect(rows[1].next.label).toContain('Atelier des prix');
+  });
+
+  test('prix actif mais non exposé → « Continuer → Catalogue pays » (market-catalog.html?market=&product_ref=)', () => {
+    const mod = load();
+    const row = { market: { code: 'CM' }, price: { status: 'LOCAL_ACTIVE' }, exposure: { commercial_exposure: 'DISABLED' } };
+    const next = mod.marketThreadNextStep(row, 'KPR-000123', globalCtx);
+    const url = new URL(next.href, 'http://x.test');
+    expect(url.pathname).toBe('/dashboards/canonical/market-catalog.html');
+    expect(url.searchParams.get('market')).toBe('CM');
+    expect(url.searchParams.get('product_ref')).toBe('KPR-000123');
+  });
+
+  test('prix en attente d’activation → Atelier ; statuts serveur libellés sans être recalculés', () => {
+    const mod = load();
+    const rows = mod.marketThreadRows({ product: { product_ref: 'KPR-1' }, market_thread: [
+      { market: { code: 'CG' }, price: { status: 'DRAFT_PENDING_GATE', amount: 5000, currency: 'XAF' }, exposure: { commercial_exposure: 'DISABLED', decision_recorded: true } },
+    ] }, globalCtx);
+    expect(rows[0].price).toContain('Brouillon');
+    expect(rows[0].exposure).toBe('Non exposé (décision enregistrée)');
+    expect(rows[0].next.label).toBe('Continuer → Atelier des prix');
+  });
+
+  test('habilitation : sans capability sur le marché ou sans contexte, aucun lien (état affiché, pas d’action)', () => {
+    const mod = load();
+    const delegated = { access: { mode: 'market', defaultMarket: 'KM', delegatedCapabilities: { KM: ['catalog.expose'], CM: [] } } };
+    const rows = mod.marketThreadRows(payload, delegated);
+    expect(rows[1].next).toBeNull();   // KM : pricing.decide absent
+    expect(mod.marketThreadRows(payload, null).every(r => r.next === null)).toBe(true);
+  });
+
+  test('payload sans market_thread : aucune section ; liste vide : message explicite', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/product-360.js'), 'utf8');
+    expect(src).toContain('if (!Array.isArray(payload && payload.market_thread)) return;');
+    expect(src).toContain('Aucun marché actif dans votre périmètre.');
+    expect(load().marketThreadRows({ product: { product_ref: 'X' } }, globalCtx)).toEqual([]);
+  });
+});

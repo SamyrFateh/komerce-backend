@@ -581,3 +581,12 @@ test('Prix (requireMarket) : le marché de l’URL est retenu s’il est autoris
   second.window.location.search = '?market=CG';
   expect(second.api.initialRequestedMarket(adminContext, second.window.KomerceAdminContext, { requireMarket: true })).toBe('KM');
 });
+
+test('Produit 360 reçoit le contexte admin (capabilities des liens du fil P1)', () => {
+  const env = loadCanonicalApp();
+  const mount = jest.fn().mockResolvedValue({});
+  env.window.KomerceCanonicalProduct360 = { mount };
+  const adminContext = { access: { mode: 'global', allowedMarkets: ['KM'] } };
+  env.api.renderProduct360(env.root, { role: 'admin' }, adminContext);
+  expect(mount).toHaveBeenCalledWith(expect.objectContaining({ adminContext }));
+});
