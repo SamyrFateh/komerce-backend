@@ -142,3 +142,9 @@ body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] 
     grid-template-columns: 1fr;
   }
 }
+
+/* Valeur textuelle d'une carte de décision (ex. nom de produit) : lisible, pas un gros chiffre de KPI. */
+body.kmc-shell-v4 [data-dashboard-hierarchy] [data-dashboard-role="attention"] .kmc-decision-card .kmc-decision-card-value.is-text,
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card .kmc-decision-card-value.is-text {
+  font-size: 20px; line-height: 1.25; font-weight: 700; overflow-wrap: anywhere;
+}
