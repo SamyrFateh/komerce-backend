@@ -69,6 +69,7 @@ function mockQueries(options = {}) {
 
   db.query.mockImplementation(async (sql) => {
     const text = String(sql);
+    if (text.includes('product_market_exposure pme')) return { rows: options.marketThread || [] };
     if (text.includes('FROM product_variants')) return { rows: variants };
     if (text.includes('FROM product_skus')) return { rows: skus };
     if (text.includes('FROM order_items oi') && text.includes('COUNT(DISTINCT o.id)')) return { rows: performance };
@@ -305,4 +306,41 @@ test('autorité centrale seule charge fournisseurs et audits sans exposer secret
   expect(serialized).not.toContain(PRODUCT_ID);
   expect(serialized).not.toContain('MUST-NOT-LEAK');
   expect(serialized).not.toContain('api_key');
+});
+
+describe('Product 360 — fil P1 par marché (prix pays → exposition)', () => {
+  const CM = { market_code: 'CM', market_name: 'Cameroun', market_currency: 'XAF', commercial_exposure: 'ENABLED', exposure_decision_recorded: true, price_status: 'LOCAL_ACTIVE', local_price_amount: '20000', local_price_currency: 'XAF' };
+  const KM = { market_code: 'KM', market_name: 'Comores', market_currency: 'KMF', commercial_exposure: 'DISABLED', exposure_decision_recorded: false, price_status: null, local_price_amount: null, local_price_currency: null };
+
+  test('P4 : CM actif 20 000 XAF visible acheteur, KM sans prix ni décision d’exposition', async () => {
+    mockQueries({ marketThread: [KM, CM] });
+    const result = await product360.loadProduct360(product(), { marketIds: null, includeCentral: false });
+    expect(result.market_thread).toHaveLength(2);
+    const cm = result.market_thread.find(r => r.market.code === 'CM');
+    const km = result.market_thread.find(r => r.market.code === 'KM');
+    expect(cm).toEqual(expect.objectContaining({ buyer_visible: true }));
+    expect(cm.price).toEqual({ status: 'LOCAL_ACTIVE', amount: 20000, currency: 'XAF' });
+    expect(km.price).toEqual({ status: null, amount: null, currency: null });
+    expect(km.exposure).toEqual({ commercial_exposure: 'DISABLED', decision_recorded: false });
+    expect(km.buyer_visible).toBe(false);
+    expect(result.data_quality.source_tables).toEqual(expect.arrayContaining(['product_market_price_drafts', 'product_market_exposure']));
+  });
+
+  test('périmètre marché de l’acteur appliqué au fil ; lecture seule ; aucun identifiant interne', async () => {
+    mockQueries({ marketThread: [CM] });
+    const result = await product360.loadProduct360(product(), { marketIds: ['market-cm-id'], includeCentral: false });
+    const call = db.query.mock.calls.find(([sql]) => String(sql).includes('product_market_exposure pme'));
+    expect(String(call[0])).toContain('AND m.id = ANY($2::uuid[])');
+    expect(call[1]).toEqual([PRODUCT_ID, ['market-cm-id']]);
+    expect(String(call[0])).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/i);
+    expect(JSON.stringify(result.market_thread)).not.toContain('market-cm-id');
+  });
+
+  test('acteur sans marché : aucune ligne (fail-closed), jamais tous les marchés', async () => {
+    mockQueries({ marketThread: [] });
+    const result = await product360.loadProduct360(product(), { marketIds: [], includeCentral: false });
+    const call = db.query.mock.calls.find(([sql]) => String(sql).includes('product_market_exposure pme'));
+    expect(String(call[0])).toContain('AND FALSE');
+    expect(result.market_thread).toEqual([]);
+  });
 });

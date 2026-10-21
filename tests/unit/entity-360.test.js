@@ -13,3 +13,9 @@ test('entity-360.css : fil de la commande, section Coûts & écarts et ancres d�
   // Aucun bleu saturé dominant : l'étape courante est orange (couleur d'action Komerce).
   expect(css).toMatch(/is-current \{ border-color: #fb923c; background: #fff7ed; \}/);
 });
+
+test('entity-360.css : fil produit par marché (lignes en grille, marché actif mis en évidence)', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/entity-360.css'), 'utf8');
+  expect(css).toContain('.kmc-product-thread-row');
+  expect(css).toContain('.kmc-product-thread-row.is-live');
+});

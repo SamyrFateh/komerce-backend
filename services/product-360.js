@@ -5,10 +5,10 @@
  * @layer         service
  * @criticality   high
  * @inputs        stable_product_ref, server_market_scope, global_authority
- * @outputs       product_360_projection, central_supplier_purchasing_mode_evidence
+ * @outputs       product_360_projection, market_p1_thread_projection, central_supplier_purchasing_mode_evidence
  * @depends       db, services/suppliers/provider-capability-certifications.js
  * @used-by       routes/admin-product-360.js
- * @db-read       products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts, users
+ * @db-read       products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts, users, product_market_price_drafts, product_market_exposure
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority, product_ref_is_business_identity, sourcing_and_audit_global_only
@@ -223,8 +223,27 @@ async function loadProduct360(product, options = {}) {
       `, [productId])
     : Promise.resolve({ rows: [] });
 
+  // Fil P1 par marché : statut du prix pays (product_market_price_drafts) et de l'exposition (product_market_exposure),
+  // lus tels quels (mêmes tables et mêmes valeurs que la Raffinerie/Catalogue) ; périmètre marché = celui de l'acteur.
+  const threadScope = marketIds === null
+    ? { sql: '', params: [] }
+    : (Array.isArray(marketIds) && marketIds.length
+      ? { sql: ' AND m.id = ANY($2::uuid[])', params: [marketIds] }
+      : { sql: ' AND FALSE', params: [] });
+  const marketThreadPromise = db.query(`
+    SELECT m.code AS market_code, m.name AS market_name, m.currency AS market_currency,
+           COALESCE(pme.commercial_exposure, 'DISABLED') AS commercial_exposure,
+           (pme.product_id IS NOT NULL) AS exposure_decision_recorded,
+           pmpd.status AS price_status, pmpd.amount AS local_price_amount, pmpd.currency AS local_price_currency
+      FROM markets m
+      LEFT JOIN product_market_exposure pme ON pme.product_id = $1::uuid AND pme.market_id = m.id
+      LEFT JOIN product_market_price_drafts pmpd ON pmpd.product_id = $1::uuid AND pmpd.market_id = m.id
+     WHERE m.is_active = TRUE${threadScope.sql}
+     ORDER BY CASE WHEN m.code = 'KM' THEN 0 ELSE 1 END, m.code
+  `, [productId, ...threadScope.params]);
+
   const [variantsResult, skusResult, performanceResult, economicsResult, realCostsResult,
-    suppliersResult, priceAuditResult, stockAuditResult] = await Promise.all([
+    suppliersResult, priceAuditResult, stockAuditResult, marketThreadResult] = await Promise.all([
     variantsPromise,
     skusPromise,
     performancePromise,
@@ -233,6 +252,7 @@ async function loadProduct360(product, options = {}) {
     suppliersPromise,
     priceAuditPromise,
     stockAuditPromise,
+    marketThreadPromise,
   ]);
 
   const variants = variantsResult.rows.map(row => Object.freeze({
@@ -353,6 +373,20 @@ async function loadProduct360(product, options = {}) {
   })));
   timeline.sort((a, b) => new Date(b.occurred_at || 0) - new Date(a.occurred_at || 0));
 
+  const marketThread = ((marketThreadResult && marketThreadResult.rows) || []).map(row => Object.freeze({
+    market: Object.freeze({ code: row.market_code, name: row.market_name || row.market_code, currency: row.market_currency || null }),
+    price: Object.freeze({
+      status: row.price_status || null,
+      amount: row.local_price_amount == null ? null : Number(row.local_price_amount),
+      currency: row.local_price_currency || null,
+    }),
+    exposure: Object.freeze({
+      commercial_exposure: row.commercial_exposure || 'DISABLED',
+      decision_recorded: row.exposure_decision_recorded === true || row.exposure_decision_recorded === 'true',
+    }),
+    buyer_visible: row.commercial_exposure === 'ENABLED' && row.price_status === 'LOCAL_ACTIVE',
+  }));
+
   return Object.freeze({
     product: publicIdentity(product),
     scope: buildScope(mode, performance.map(row => row.market)),
@@ -371,6 +405,7 @@ async function loadProduct360(product, options = {}) {
       skus: Object.freeze(skus),
     }),
     performance: Object.freeze(performance),
+    market_thread: Object.freeze(marketThread),
     economics: Object.freeze({
       imputation_lines: Number(e.imputation_lines) || 0,
       quantity_costed: Number(e.quantity_costed) || 0,
@@ -413,6 +448,7 @@ async function loadProduct360(product, options = {}) {
         'products', 'product_variants', 'product_skus', 'order_items', 'orders', 'markets',
         'order_item_cost_imputations', 'order_item_real_cost_allocations',
         'product_suppliers', 'suppliers', 'price_history', 'alerts', 'users',
+        'product_market_price_drafts', 'product_market_exposure',
       ]),
     }),
   });

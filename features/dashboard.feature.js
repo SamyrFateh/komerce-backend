@@ -515,6 +515,7 @@ module.exports = {
       'dashboards/canonical/js/commerce-decision.js',
       'dashboards/canonical/js/finance-decision.js',
       'dashboards/canonical/js/order-360.js',
+      'dashboards/canonical/js/product-360.js',
       'dashboards/canonical/js/decision-primitives.js',
       'dashboards/canonical/js/dashboard-schema.js',
       'dashboards/canonical/js/dashboard-renderer.js',
