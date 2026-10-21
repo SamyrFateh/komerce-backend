@@ -678,3 +678,9 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 `cash_custody_provenance_edges` is a new, **not yet live** append-only table proposed by migration 304. It associates explicit collection-level cash portions with custody receipt events, with optional parent edges for multi-hop transfers, conservation ceilings and Market consistency. It is not a second custody balance authority and does not establish final financial closure. Migration remains draft and requires isolated PostgreSQL verification for reversals, losses, concurrency and end-to-end traceability before merge.
 <!-- /schema-pending -->
+
+<!-- schema-pending: market_delivery_attestations (migration 305, not yet live) -->
+### Market delivery attestations (migration 305 — intended_migration_schema)
+
+`market_delivery_attestations` is a new, **not yet live** table proposed by migration 305 (Lot B, audit P1–P7). It carries the central proof that a Market is deliverable: a referenced carrier (`carriers`), mode, origin, strictly positive freight rate with currency/unit, transit days, documentary evidence reference, bounded validity and the central attestor; revocation is explicit (`revoked_at/by/reason`). It is not a boolean flag and has no backfill. Checkout refuses a Market without a valid attestation (or, for Markets with real collected-order history, the HISTORY basis). Writers: `services/market-delivery-proof-service.js` via central-admin routes only.
+<!-- /schema-pending -->

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-21T15:06:38.954Z",
+  "generatedAt": "2026-10-21T21:22:57.174Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 733,
+  "count": 735,
   "routes": [
     {
       "method": "GET",
@@ -1234,6 +1234,26 @@
       "fullPath": "/api/admin/markets/:marketCode/control-plane",
       "mountPrefix": "/api/admin/markets",
       "localPath": "/:marketCode/control-plane",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/markets/:marketCode/delivery-attestations",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/delivery-attestations",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/markets/:marketCode/delivery-attestations/:attestationId/revoke",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/delivery-attestations/:attestationId/revoke",
       "routeFile": "routes/admin-market-control-plane.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

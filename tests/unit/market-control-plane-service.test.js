@@ -2,7 +2,7 @@
 
 /** @test-kind unit @test-runner jest @test-requires none */
 
-const { GAP_MESSAGES, computeGaps, getControlPlane, listMarkets } = require('../../services/market-control-plane');
+const { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, listMarkets } = require('../../services/market-control-plane');
 
 const healthy = () => ({
   market: { id: 'm1', code: 'KM', is_active: true, lifecycle_status:'ACTIVE' },
@@ -15,6 +15,7 @@ const healthy = () => ({
   paymentProviders: [{ provider: 'orange_money', is_enabled: true }],
   cashPolicy: { cash_enabled: true, confirmation_mode: 'SINGLE' },
   relaisActive: 2,
+  deliveryProof: { proven: true, basis: 'ATTESTATION' },
 });
 
 const codes = snapshot => computeGaps(snapshot).map(gap => gap.code);
@@ -51,6 +52,15 @@ describe('computeGaps — rapport d’écarts du Control Plane', () => {
     s.cashPolicy = null;
     s.relaisActive = 0;
     expect(codes(s)).toEqual(['NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS']);
+  });
+
+  test('sans preuve de livrabilité : NO_DELIVERY_PROOF, bloquant côté exploitation', () => {
+    const s = healthy();
+    s.deliveryProof = { proven: false, basis: null };
+    expect(codes(s)).toEqual(['NO_DELIVERY_PROOF']);
+    expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
+    delete s.deliveryProof;
+    expect(codes(s)).toEqual(['NO_DELIVERY_PROOF']); // fail-closed : preuve absente ≠ preuve acquise
   });
 
   test('chaque écart porte son message', () => {
@@ -92,7 +102,7 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
     expect(view.assignment).toBeNull();
     expect(view.team).toEqual([]);
     expect(view.gaps.map(gap => gap.code)).toEqual(
-      ['MARKET_INACTIVE', 'NO_ASSIGNMENT', 'NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS']
+      ['MARKET_INACTIVE', 'NO_ASSIGNMENT', 'NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS', 'NO_DELIVERY_PROOF']
     );
   });
 
@@ -105,10 +115,11 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
       ['FROM market_payment_providers', [{ provider: 'orange_money', currency: 'KMF', is_enabled: true, priority: 1 }]],
       ['FROM market_cash_control_policies', [{ cash_enabled: true, confirmation_mode: 'SINGLE' }]],
       ['FROM relais', [{ n: 3 }]],
+      ['FROM market_delivery_attestations', [{ id: 'att1', mode: 'SEA', origin_ref: 'DXB', freight_rate: '2.5', rate_currency: 'USD', rate_unit: 'PER_KG', transit_days: 30, evidence_ref: 'CONTRAT-1', attested_at: 'x', valid_until: 'y', carrier_name: 'C' }]],
     ]);
     const view = await getControlPlane(db, 'KM');
     expect(Object.keys(view).sort()).toEqual(
-      ['assignment', 'cashPolicy', 'ceiling', 'gaps', 'market', 'paymentProviders', 'readiness', 'relaisActive', 'team']
+      ['assignment', 'cashPolicy', 'ceiling', 'deliveryProof', 'gaps', 'market', 'paymentProviders', 'readiness', 'relaisActive', 'team']
     );
     expect(view.gaps).toEqual([]);
     expect(view.team[0].capabilities).toEqual(['team.grant']);
