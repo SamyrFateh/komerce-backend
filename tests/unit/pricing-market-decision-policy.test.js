@@ -18,6 +18,7 @@ const {
   calendarMonthPeriod,
   isValidCalendarMonth,
   evaluateMarketDecision,
+  previewMarketDecisionPolicy,
   _buildBreakEvenTarget,
 } = require('../../services/pricing-market-decision-policy');
 
@@ -275,4 +276,29 @@ test('une couverture non décisionnelle ne déclenche aucune fausse projection d
     reason: 'COVERAGE_TRUTH_NOT_DECISIONAL',
   });
   expect(db.query).toHaveBeenCalledTimes(1);
+});
+
+test('previewMarketDecisionPolicy simule la politique candidate sans aucune écriture', async () => {
+  db.query.mockResolvedValue({ rows: [] }); // aucune politique active
+  computeMarketCoverage.mockResolvedValue({
+    coverage_status: 'COVERED',
+    authorization: 'ALLOW_NEW_UNDER_CDR_POSITION',
+    reason: 'COVERAGE_THRESHOLD_MET',
+  });
+  const input = {
+    version: 'CG-V1', window_days: 30, maturity_threshold: 0.9, coverage_threshold: 1, max_disposition_ratio: 0.05,
+    source: 'pricing-governance', evidence_ref: 'decision://pricing/CG-V1', rationale: 'Politique initiale du marché Congo.',
+  };
+  const out = await previewMarketDecisionPolicy(MARKET, input, 'actor-1');
+  expect(out.read_only).toBe(true);
+  expect(out.persisted).toBe(false);
+  expect(out.current_decision.reason).toBe('MARKET_DECISION_POLICY_REQUIRED');
+  expect(out.candidate_decision.decision_status).toBe('COVERED');
+  expect(out.changed_fields).toEqual(['window_days', 'maturity_threshold', 'coverage_threshold', 'max_disposition_ratio']);
+  expect(db.getClient).not.toHaveBeenCalled();
+  db.query.mock.calls.forEach(([sql]) => expect(String(sql)).not.toMatch(/INSERT|UPDATE|DELETE/i));
+});
+
+test('previewMarketDecisionPolicy applique la même validation que l’enregistrement', async () => {
+  await expect(previewMarketDecisionPolicy(MARKET, { version: 'x' }, 'actor-1')).rejects.toThrow(/^policy\./);
 });

@@ -258,6 +258,17 @@ router.get('/market/:marketCode/decision-policy/history', requirePricingReadCapa
   } catch (error) { handleError(error, res, next); }
 });
 
+router.post('/market/:marketCode/decision-policy/preview', requirePricingCapability('pricing.policy.set'), async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await marketDecisionPolicy.previewMarketDecisionPolicy(
+      req.workspaceMarket.id,
+      req.body || {},
+      req.user && req.user.id
+    ));
+  } catch (error) { handleDecisionPolicyError(error, res, next); }
+});
+
 router.post('/market/:marketCode/decision-policy', requirePricingCapability('pricing.policy.set'), async (req, res, next) => {
   try {
     sendAction(
