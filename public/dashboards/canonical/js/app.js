@@ -97,7 +97,7 @@
     }
     const box = doc.createElement('details');
     box.className = 'kmc-purpose-box';
-    box.open = true;
+    box.open = false; // replié par défaut : l’aide ne pousse pas le contenu métier sous la ligne de flottaison
     box.setAttribute('data-purpose-surface', surface);
     const title = doc.createElement('summary');
     title.textContent = 'À quoi sert cet écran ?';
