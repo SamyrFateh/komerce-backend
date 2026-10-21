@@ -92,6 +92,8 @@ test.describe.serial('Fil commande → encaissement → garde — routes réelle
     const product = (await q(`INSERT INTO products(name,price_kmf,stock) VALUES ($1,50000,50) RETURNING id`, [`${PREFIX} Produit thread ${tag}`])).rows[0].id;
     await q(`INSERT INTO product_market_price_drafts(market_id,product_id,amount,currency,status,reason,authorized_at,authorization_snapshot,active_at)
              VALUES ($1,$2,50000,(SELECT currency FROM markets WHERE id = $1),'LOCAL_ACTIVE','E2E thread — activation directe de test',NOW(),'{}'::jsonb,NOW())`, [fx.marketA.id, product]);
+    await q(`INSERT INTO product_market_exposure(product_id,market_id,commercial_exposure) VALUES ($1,$2,'ENABLED')
+             ON CONFLICT (product_id, market_id) DO UPDATE SET commercial_exposure='ENABLED'`, [product, fx.marketA.id]);
     ids.relais = relais; ids.product = product;
     report.fixtures = { market: M, tag, users: Object.fromEntries(Object.entries(who).map(([k, v]) => [k, v.email])) };
     for (const key of Object.keys(who)) {

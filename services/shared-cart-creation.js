@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        user_id, basket_id, cart_items, options
  * @outputs       shared_cart, items, token
- * @depends       db.js, services/shared-cart-internals.js, services/product-admin-service.js, services/market-local-price-resolution-service.js
+ * @depends       db.js, services/shared-cart-internals.js, services/product-admin-service.js, services/market-local-price-resolution-service.js, services/catalog-market-exposure-service.js
  * @used-by       routes/shared-cart.js
- * @db-read       basket_items, baskets, product_skus, products, relais, shared_carts, users
+ * @db-read       basket_items, baskets, product_skus, product_market_exposure, products, relais, shared_carts, users
  * @db-write      basket_items, baskets, shared_cart_events, shared_cart_items, shared_carts
  * @db-txn        required_for_state_transition, snapshot_consistency
  * @doctrine      domaine_minimal_boutique_first, snapshot_fige, relay_market_is_server_price_anchor, only_LOCAL_ACTIVE_is_buyer_effective
@@ -22,6 +22,7 @@ const db = require('../db');
 const { CONFIG, generateToken, r, withTransaction, addEvent } = require('./shared-cart-internals');
 const productAdminService = require('./product-admin-service');
 const { resolveActiveProductMarketPricingById } = require('./market-local-price-resolution-service');
+const { getExposure, EXPOSURE } = require('./catalog-market-exposure-service');
 
 function httpError(message, status = 400, code = null) {
   const e = new Error(message);
@@ -59,6 +60,11 @@ async function resolveRelayMarketId(client, relayId) {
  */
 async function effectiveUnitPriceForMarket(client, marketId, productId, fallbackKmf) {
   if (!marketId) return Number(fallbackKmf) || 0;
+  // Exposition ENABLED obligatoire (fail-closed), en plus de LOCAL_ACTIVE.
+  const exposure = await getExposure(productId, marketId, client);
+  if (exposure !== EXPOSURE.ENABLED) {
+    throw httpError('Produit non exposé sur ce marché.', 409, 'market_product_not_exposed');
+  }
   const local = await resolveActiveProductMarketPricingById(client, { marketId, productId });
   if (!local) {
     throw httpError(

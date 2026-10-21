@@ -706,9 +706,17 @@ describe('effectiveUnitPriceForMarket — doctrine L1 only_LOCAL_ACTIVE_is_buyer
     expect(client.query).not.toHaveBeenCalled();
   });
 
+  test('exposition DISABLED (même avec LOCAL_ACTIVE) → 409 market_product_not_exposed à la création', async () => {
+    const client = { query: jest.fn().mockResolvedValueOnce({ rows: [{ commercial_exposure: 'DISABLED' }] }) };
+    await expect(_effectiveUnitPriceForMarket(client, 'market-1', 'p1', 5000))
+      .rejects.toMatchObject({ code: 'market_product_not_exposed', status: 409 });
+    expect(client.query).toHaveBeenCalledTimes(1);
+  });
+
   test('marketId resolved but no LOCAL_ACTIVE → refuses, never falls back to the reference price', async () => {
     const client = {
       query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ commercial_exposure: 'ENABLED' }] }) // exposition ENABLED
         .mockResolvedValueOnce({ rows: [{ id: 'p1', price_kmf: 5000 }] }) // products SELECT
         .mockResolvedValueOnce({ rows: [] }),                             // no LOCAL_ACTIVE decision
     };
@@ -719,6 +727,7 @@ describe('effectiveUnitPriceForMarket — doctrine L1 only_LOCAL_ACTIVE_is_buyer
   test('marketId resolved with LOCAL_ACTIVE → uses the local effective price, not the reference', async () => {
     const client = {
       query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ commercial_exposure: 'ENABLED' }] }) // exposition ENABLED
         .mockResolvedValueOnce({ rows: [{ id: 'p1', price_kmf: 5000 }] }) // products SELECT
         .mockResolvedValueOnce({ rows: [{
           amount: '10000', currency: 'KMF', status: 'LOCAL_ACTIVE', active_at: null, market_currency: 'KMF',
