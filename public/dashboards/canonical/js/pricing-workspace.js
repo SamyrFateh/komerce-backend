@@ -167,6 +167,7 @@
 
   const MARKET_REASON_LABELS = Object.freeze({
     MARKET_DECISION_POLICY_REQUIRED: 'Aucune politique de décision active pour ce marché.',
+    POLICY_DOES_NOT_COVER_CANONICAL_PERIOD: 'La politique vient d’être décidée : elle ne gouverne pas encore toute la fenêtre d’évaluation. Aucune décision n’est fabriquée en attendant.',
     MATURITY_WATERMARK_NOT_READY: 'La maturité des commandes n’autorise pas encore la décision.',
     MATURITY_THRESHOLD_NOT_MET: 'Le seuil de maturité défini par la politique n’est pas atteint.',
     MARKET_N3_NOT_DECISIONAL: 'La couverture des charges de la période n’est pas encore décisionnelle.',

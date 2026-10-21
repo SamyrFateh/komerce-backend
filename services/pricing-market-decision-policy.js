@@ -446,14 +446,35 @@ async function evaluateMarketDecision(marketId, options = {}) {
   }
 
   const period = calendarPeriod || canonicalPeriod(policy, evaluationAt);
-  const coverage = await computeMarketCoverage({
-    marketId,
-    from: period.from,
-    to: period.to,
-    coveragePolicy: coveragePolicyFrom(policy),
-    dispositionPolicy: dispositionPolicyFrom(policy),
-    allocationPolicies: options.allocationPolicies == null ? null : options.allocationPolicies,
-  });
+  let coverage;
+  try {
+    coverage = await computeMarketCoverage({
+      marketId,
+      from: period.from,
+      to: period.to,
+      coveragePolicy: coveragePolicyFrom(policy),
+      dispositionPolicy: dispositionPolicyFrom(policy),
+      allocationPolicies: options.allocationPolicies == null ? null : options.allocationPolicies,
+    });
+  } catch (error) {
+    if (String(error && error.message || '') !== 'coverage policy does not cover canonical period') throw error;
+    // Une politique ne gouverne jamais rétroactivement : tant que sa date d'effet
+    // est postérieure au début de la fenêtre, le gate dit NOT_DECISIONAL (état
+    // métier, pas une panne). Aucun ratio n'est fabriqué.
+    const decisionalFrom = new Date(new Date(policy.effective_from).getTime() + Number(policy.window_days) * 86400000);
+    return {
+      market_id: marketId,
+      decision_status: 'NOT_DECISIONAL',
+      authorization: 'DENY_NEW_UNDER_CDR_POSITION',
+      reason: 'POLICY_DOES_NOT_COVER_CANONICAL_PERIOD',
+      policy,
+      canonical_period: period,
+      coverage: null,
+      flow_break_even: null,
+      decisional_from: Number.isFinite(decisionalFrom.getTime()) ? decisionalFrom.toISOString() : null,
+      evaluated_at: evaluationAt.toISOString(),
+    };
+  }
 
   let flowBreakEven;
   try {
