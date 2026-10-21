@@ -327,7 +327,8 @@ router.get(
         _fetchTopAlerts(10),
         metrics.getPointsAttention(filters),
         controlChain.getControlChain({ market: null }),
-        getMarketsSupervision(filters),
+        // null = lecture indisponible (affichée « Non disponible »), jamais converti en 0.
+        getMarketsSupervision(filters).catch((e) => { log.error('[admin-dashboard] markets_supervision:', e); return null; }),
       ]);
 
       // Resume par vue (5 KPIs chacune) — ZERO await ici
