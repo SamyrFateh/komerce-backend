@@ -56,7 +56,10 @@ test('valeurs nulles, vides, non numériques ou d’une autre unité : laissées
   expect(isKmfKpi(kpi(10, '%'))).toBe(false);
   expect(isKmfKpi(kpi('42.5'))).toBe(true);
   const out = await projectMarketPayload({ a: kpi(null), b: kpi(10, 'count') }, { currency: 'XAF', minor_unit: 0 });
-  expect(out.a.unit).toBe('KMF');
+  // KPI indisponible (null) : valeur inchangée, mais l'unité suit le marché (pas de fuite KMF).
+  expect(out.a.value).toBeNull();
+  expect(out.a.unit).toBe('XAF');
+  expect(out.a.base_currency).toBe('KMF');
   expect(out.b.unit).toBe('count');
 });
 
