@@ -270,12 +270,18 @@ async function transitionOrderStatus({
     }
   }
 
-  // ── 3b. Gate réception physique (C2) : point d'étranglement unique vers `preparation` ──
+  // ── 3b. Gate réception physique (C2) : point d'étranglement unique vers/au-delà de `preparation` ──
   // Hub, Purchasing, création automatique de colis et scans passent tous ici : aucune préparation
   // sans couverture physique quantitative (quarantaine et unités inutilisables exclues).
   // Seule l'ENTRÉE en preparation est gardée : annulations, remboursements et états déjà avancés
   // (historique) ne sont jamais bloqués ni réécrits.
-  if (newStatus === 'preparation') {
+  // Toute transition qui FRANCHIT le rang `preparation` est gardée (y compris les sauts scan/system/simulator
+  // confirmed|ordered → shipped|in_transit|available|collected) : sinon un saut de rang contournerait le gate.
+  const crossesPreparation = STATUS_RANK[previousStatus] !== undefined
+    && STATUS_RANK[newStatus] !== undefined
+    && STATUS_RANK[previousStatus] < STATUS_RANK.preparation
+    && STATUS_RANK[newStatus] >= STATUS_RANK.preparation;
+  if (crossesPreparation) {
     const { getOrderPhysicalCoverage } = require('./order-physical-coverage-service');
     const coverage = await getOrderPhysicalCoverage(q, orderId);
     if (!coverage.covered) {

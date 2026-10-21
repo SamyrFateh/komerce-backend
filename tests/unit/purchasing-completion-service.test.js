@@ -74,7 +74,7 @@ describe('computeCompletion', () => {
 });
 
 describe('groupedOrderIdsFrom', () => {
-  test('ne retient que les allocations par ligne, dédoublonnées et triées', () => {
+  test('retient les allocations regroupées ET historiques (C2), dédoublonnées et triées', () => {
     const ids = svc.groupedOrderIdsFrom([
       { allocation: { order_id: 'o2', purchase_line_id: 'l1' }, quantity: 1 },
       { allocation: { order_id: 'o1', purchase_line_id: 'l2' }, quantity: 1 },
@@ -83,7 +83,7 @@ describe('groupedOrderIdsFrom', () => {
       { order_id: 'o3', purchase_line_id: 'l4' },
       null,
     ]);
-    expect(ids).toEqual(['o1', 'o2', 'o3']);
+    expect(ids).toEqual(['o1', 'o2', 'o3', 'o9']);
     expect(svc.groupedOrderIdsFrom(undefined)).toEqual([]);
   });
 });
@@ -145,7 +145,6 @@ describe('evaluateOrderProcurementCompletion', () => {
   });
 
   test.each([
-    ['PO historique (order_id renseigné)', { id: PO, order_id: 'o1', status: 'confirmed' }],
     ['PO déjà hub_received', { id: PO, order_id: null, status: 'hub_received' }],
     ['PO annulée', { id: PO, order_id: null, status: 'cancelled' }],
     ['PO introuvable', undefined],
@@ -155,6 +154,28 @@ describe('evaluateOrderProcurementCompletion', () => {
       lines: [line('l1', 'i1', PO, 1, 1)],
       pos: po ? { [PO]: po } : {},
       poProgress: { [PO]: [{ effective_quantity: 1, received_quantity: 1 }] },
+    });
+    await svc.evaluateOrderProcurementCompletion(ORDER);
+    expect(world.updates).toEqual([]);
+  });
+
+  test('PO historique entièrement reçue PHYSIQUEMENT (vue = custody) : passe en hub_received (C2)', async () => {
+    const world = useClient({
+      items: [{ id: 'i1', quantity: 1 }],
+      lines: [line('l1', 'i1', PO, 1, 1)],
+      pos: { [PO]: { id: PO, order_id: 'o1', status: 'confirmed' } },
+      poProgress: { [PO]: [{ effective_quantity: 1, received_quantity: 1 }] },
+    });
+    await svc.evaluateOrderProcurementCompletion(ORDER);
+    expect(world.updates.length).toBe(1);
+  });
+
+  test('PO historique partiellement reçue physiquement : jamais fermée (C2)', async () => {
+    const world = useClient({
+      items: [{ id: 'i1', quantity: 2 }],
+      lines: [line('l1', 'i1', PO, 2, 1)],
+      pos: { [PO]: { id: PO, order_id: 'o1', status: 'confirmed' } },
+      poProgress: { [PO]: [{ effective_quantity: 2, received_quantity: 1 }] },
     });
     await svc.evaluateOrderProcurementCompletion(ORDER);
     expect(world.updates).toEqual([]);
@@ -187,11 +208,10 @@ describe('evaluateOrderProcurementCompletion', () => {
 describe('completeOrdersAfterHubReceipt', () => {
   const allocation = (orderId, lineId = 'l1') => ({ allocation: { order_id: orderId, purchase_line_id: lineId }, quantity: 1 });
 
-  test('une évaluation par commande touchée, jamais pour une allocation historique', async () => {
+  test('une évaluation par commande touchée, allocations historiques incluses (C2)', async () => {
     useClient({ items: [{ id: 'i1', quantity: 1 }], lines: [line('l1', 'i1', null, 1, 0)] });
     const results = await svc.completeOrdersAfterHubReceipt([allocation(ORDER), allocation(ORDER, 'l2'), { allocation: { order_id: 'o9', purchase_line_id: null } }]);
-    expect(results).toHaveLength(1);
-    expect(results[0]).toMatchObject({ order_id: ORDER, complete: false });
+    expect(results.map((r) => r.order_id).sort()).toEqual([ORDER, 'o9'].sort());
     expect(await svc.completeOrdersAfterHubReceipt([])).toEqual([]);
   });
 

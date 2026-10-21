@@ -157,6 +157,7 @@ module.exports = {
       'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js',
       'tests/integration/hub-physical-identity-postgres.test.js',
       'tests/unit/order-physical-coverage-gate.test.js',
+      'tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js',
       'tests/integration/hub-physical-hardening-postgres.test.js',
       'tests/integration/hub-volume-photo-contract.test.js',
       'tests/integration/txg05-parcel-items-product-id.test.js',

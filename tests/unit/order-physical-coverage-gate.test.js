@@ -44,6 +44,24 @@ describe('gate de couverture physique → preparation (C2)', () => {
     expect(query.mock.calls.some(([sql]) => /UPDATE orders/.test(sql))).toBe(false);
   });
 
+  test.each([['ordered', 'shipped'], ['confirmed', 'in_transit'], ['ordered', 'available'], ['confirmed', 'collected']])(
+    'saut de rang %s → %s (scan/système) : le gate franchi est appliqué, pas de contournement',
+    async (from, to) => {
+      order(from);
+      getOrderPhysicalCoverage.mockResolvedValue({ covered: false, uncovered: [{ missing: 1 }] });
+      const r = await transitionOrderStatus({ orderId: ORDER, newStatus: to, actor: admin, source: 'scan_engine_sync', dbClient: db });
+      expect(r).toMatchObject({ success: false, code: 'PHYSICAL_RECEPTION_INCOMPLETE' });
+      expect(query.mock.calls.some(([sql]) => /UPDATE orders/.test(sql))).toBe(false);
+    }
+  );
+
+  test('transition postérieure à preparation (shipped → in_transit) : jamais regardée par le gate', async () => {
+    order('shipped');
+    getOrderPhysicalCoverage.mockResolvedValue({ covered: false, uncovered: [{ missing: 9 }] });
+    await transitionOrderStatus({ orderId: ORDER, newStatus: 'in_transit', actor: admin, source: 'scan_engine_sync', dbClient: db });
+    expect(getOrderPhysicalCoverage).not.toHaveBeenCalled();
+  });
+
   test('couverture complète : la transition passe', async () => {
     order('ordered');
     getOrderPhysicalCoverage.mockResolvedValue({ covered: true, uncovered: [] });
