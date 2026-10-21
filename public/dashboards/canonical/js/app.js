@@ -329,6 +329,13 @@
         (Array.isArray(access.allowedMarkets) && access.allowedMarkets[0])
       );
       if (!preferred) throw new Error('canonical_workspace_market_required');
+      // ?market= de l'URL (lien « Continuer → » depuis un autre espace) : retenu seulement s'il est autorisé par le serveur.
+      try {
+        const requested = String(new URLSearchParams(String(global.location?.search || '')).get('market') || '').toUpperCase();
+        if (requested && Array.isArray(access.allowedMarkets) && access.allowedMarkets.includes(requested)) {
+          return contextContract.resolveMarketView(adminContext, requested).marketCode;
+        }
+      } catch (_) { /* repli sur le défaut serveur */ }
       return contextContract.resolveMarketView(adminContext, preferred).marketCode;
     }
 

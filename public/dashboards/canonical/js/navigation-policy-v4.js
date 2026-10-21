@@ -275,6 +275,17 @@
     return Boolean(user && ENTITY_360_ROLES.includes(user.role));
   }
 
+  // Capability d'un lien inter-espaces : autorité globale (le serveur re-valide) ou capability déléguée sur le marché.
+  // Contexte absent ou marché non déterminé : lien masqué.
+  function hasCapability(adminContext, capability, market) {
+    const access = adminContext && adminContext.access;
+    if (!access || !capability) return false;
+    if (access.mode === 'global') return true;
+    const code = market || access.defaultMarket;
+    const granted = access.delegatedCapabilities && code ? access.delegatedCapabilities[code] : null;
+    return Array.isArray(granted) && granted.includes(capability);
+  }
+
   function resolveBackTarget(surface, search) {
     let requestedHref = null;
     let requestedLabel = null;
@@ -1445,6 +1456,7 @@
     syncContext,
     withNavContext,
     canOpenEntity360,
+    hasCapability,
     resolveBackTarget,
     runtimeIsStaging,
     mountStagingAdminTools,

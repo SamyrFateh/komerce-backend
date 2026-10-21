@@ -181,3 +181,16 @@ test('canOpenEntity360 suit l’habilitation serveur (admin, market_operator) ; 
   expect(css).toMatch(/\.kmc-admin-back\[data-back-context="contextual"\]\s*\{\s*display:\s*inline-flex/);
   expect(css).toMatch(/body\.kmc-shell-v4 \.kmc-admin-back\s*\{\s*display:\s*none;/);
 });
+
+test('hasCapability : global = oui (le serveur re-valide) ; marché = capability déléguée ; sinon masqué', () => {
+  jest.resetModules();
+  delete global.KomerceCanonicalNavigation;
+  require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+  const nav = global.KomerceCanonicalNavigation;
+  expect(nav.hasCapability({ access: { mode: 'global' } }, 'catalog.expose', 'CM')).toBe(true);
+  const ctx = { access: { mode: 'market', defaultMarket: 'KM', delegatedCapabilities: { KM: ['catalog.expose'], CM: [] } } };
+  expect(nav.hasCapability(ctx, 'catalog.expose')).toBe(true);
+  expect(nav.hasCapability(ctx, 'catalog.expose', 'CM')).toBe(false);
+  expect(nav.hasCapability(null, 'catalog.expose', 'CM')).toBe(false);
+  expect(nav.hasCapability(ctx, '', 'KM')).toBe(false);
+});

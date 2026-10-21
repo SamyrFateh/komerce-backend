@@ -1646,8 +1646,11 @@
       : deferred ? 'Décision : mis de côté'
         : discarded ? 'Décision : écarté'
           : reviewed ? 'À examiner' : 'En cours ou en attente';
+    const refineryHref = trace.product_ref && viewer && viewer.role === 'admin'
+      ? withReturnTo(`/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(trace.product_ref)}`, itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')
+      : '';
     const catalogue = trace.product_ref
-      ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>`
+      ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>${refineryHref ? ` <a class="kir-subtle-link" data-next-step="refinery" href="${refineryHref}">Continuer → Raffinerie</a>` : ''}`
       : `<span class="kir-item-note">${halted ? 'Aucune fiche Catalogue créée pour ce passage.' : 'Aucune fiche Catalogue créée à ce stade.'}</span>`;
     return drillHeader(run, title, 'Détail métier de ce produit dans le passage sélectionné.')
       + itemVerdict(trace, situation)
@@ -2804,8 +2807,12 @@
     }
   }
 
+  // Utilisateur de la session : réserve le lien « Continuer → Raffinerie » au rôle qui a cet espace (admin).
+  let viewer = null;
+
   async function mount(options = {}) {
     if (!options.root) throw new Error('canonical_import_runtime_root_missing');
+    viewer = options.user || null;
     mountedRoot = options.root;
     lastPayload = null;
     // Invalide toute lecture encore en vol d'un montage précédent.

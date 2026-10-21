@@ -570,3 +570,14 @@ describe('canonical admin app — encadré « À quoi sert cet écran ? »', () 
     expect(Object.keys(api.SCREEN_PURPOSE).length).toBeGreaterThanOrEqual(15);
   });
 });
+
+test('Prix (requireMarket) : le marché de l’URL est retenu s’il est autorisé, sinon le défaut serveur', async () => {
+  const user = { id: 'cm-op', role: 'market_operator' };
+  const adminContext = { actor: user, access: { mode: 'market', allowedMarkets: ['KM', 'CM'], defaultMarket: 'KM', capabilities: ['pricing.decide'] } };
+  const first = loadCanonicalApp();
+  first.window.location.search = '?product_ref=PRD-1&market=CM';
+  expect(first.api.initialRequestedMarket(adminContext, first.window.KomerceAdminContext, { requireMarket: true })).toBe('CM');
+  const second = loadCanonicalApp();
+  second.window.location.search = '?market=CG';
+  expect(second.api.initialRequestedMarket(adminContext, second.window.KomerceAdminContext, { requireMarket: true })).toBe('KM');
+});
