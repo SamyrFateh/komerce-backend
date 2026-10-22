@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 312,
+    "businessDependencies": 313,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -9208,6 +9208,13 @@
           ]
         },
         {
+          "consumer": "decision-signals",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -9566,6 +9573,13 @@
         },
         {
           "provider": "business-rules",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -18847,7 +18861,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 10,
+            "count": 11,
             "files": [
               {
                 "declared": "migrations/135_markets_foundation.sql",
@@ -18898,6 +18912,11 @@
                 "declared": "migrations/278_market_lifecycle.sql",
                 "resolvedPath": "migrations/278_market_lifecycle.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/311_fx_chain_eur_usd_djf.sql",
+                "resolvedPath": "migrations/311_fx_chain_eur_usd_djf.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -18922,11 +18941,16 @@
             ]
           },
           "services": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "middleware/require-market-scope.js",
                 "resolvedPath": "middleware/require-market-scope.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/fx-chain-service.js",
+                "resolvedPath": "services/fx-chain-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -18947,7 +18971,7 @@
             ]
           },
           "tests": {
-            "count": 18,
+            "count": 19,
             "files": [
               {
                 "declared": "tests/integration/currency-boundary.test.js",
@@ -18962,6 +18986,11 @@
               {
                 "declared": "tests/integration/f1-market-integrity-destructive.test.js",
                 "resolvedPath": "tests/integration/f1-market-integrity-destructive.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/fx-chain-postgres.test.js",
+                "resolvedPath": "tests/integration/fx-chain-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19042,7 +19071,7 @@
             ]
           }
         },
-        "totalFiles": 35,
+        "totalFiles": 38,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

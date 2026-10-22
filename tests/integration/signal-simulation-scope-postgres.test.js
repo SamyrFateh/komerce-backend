@@ -47,6 +47,8 @@ describe('signaux de Pilotage — commandes de simulation exclues (lot 7)', () =
     ['services/dashboard-operations.js'],
     ['services/action-center-agent-scope.js'],
     ['routes/admin-dashboard.js'],
+    ['services/signal-admin-service.js'],
+    ['services/radar-queries.js'],
   ])('%s filtre les signaux de commandes simulées', (file) => {
     const source = fs.readFileSync(path.join(__dirname, '..', '..', file), 'utf8');
     expect(source).toMatch(/EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL/);

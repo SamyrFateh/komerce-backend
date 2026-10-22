@@ -136,3 +136,21 @@ test('findActiveByEntity includes market in active fact identity', async () => {
 test('financial_close_economic_facts_pending est classé dans la famille eco', () => {
   expect(require('../../services/signal-admin-service').familyForType('financial_close_economic_facts_pending')).toBe('eco');
 });
+
+describe('signaux de commandes de simulation (RCT1) exclus des lectures Action Center', () => {
+  beforeEach(() => { mockQuery.mockReset(); mockQuery.mockResolvedValue({ rows: [{ count: '0' }] }); });
+
+  test('listSignals : liste et total appliquent le prédicat réel/RCT1', async () => {
+    await service.listSignals({});
+    const sqls = mockQuery.mock.calls.map(c => String(c[0]));
+    expect(sqls).toHaveLength(2);
+    for (const sql of sqls) expect(sql).toMatch(/simulation_scope IS NOT NULL/);
+  });
+
+  test('getStats : sévérité, type et famille appliquent le prédicat réel/RCT1', async () => {
+    await service.getStats({});
+    const sqls = mockQuery.mock.calls.map(c => String(c[0]));
+    expect(sqls).toHaveLength(3);
+    for (const sql of sqls) expect(sql).toMatch(/simulation_scope IS NOT NULL/);
+  });
+});

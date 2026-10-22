@@ -13333,6 +13333,13 @@
       {
         "feature": "market",
         "category": "migrations",
+        "declared": "migrations/311_fx_chain_eur_usd_djf.sql",
+        "resolvedPath": "migrations/311_fx_chain_eur_usd_djf.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "migrations",
         "declared": "migrations/135_markets_foundation.sql",
         "resolvedPath": "migrations/135_markets_foundation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13403,6 +13410,13 @@
       {
         "feature": "market",
         "category": "services",
+        "declared": "services/fx-chain-service.js",
+        "resolvedPath": "services/fx-chain-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market",
+        "category": "services",
         "declared": "middleware/require-market-scope.js",
         "resolvedPath": "middleware/require-market-scope.js",
         "status": "resolved-in-technical-graph"
@@ -13433,6 +13447,13 @@
         "category": "tests",
         "declared": "tests/unit/require-market-scope.test.js",
         "resolvedPath": "tests/unit/require-market-scope.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/fx-chain-postgres.test.js",
+        "resolvedPath": "tests/integration/fx-chain-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -28707,6 +28728,12 @@
         "to": "payments",
         "raw": "payments (services/cash-deposit-service.js — couverture cash canonique UNCOVERED_COLLECTIONS_CTE : seul un depot verifie couvre un encaissement ; lecture seule, aucune mutation de depot)",
         "resolved": true
+      },
+      {
+        "from": "decision-signals",
+        "to": "dashboard",
+        "raw": "dashboard (services/signal-simulation-scope.js — predicat reel/RCT1 partage : les signaux de commandes de simulation sont exclus de l'Action Center et du compteur radar ; lecture seule)",
+        "resolved": true
       }
     ],
     "implementedIn": [
@@ -35381,6 +35408,26 @@
       },
       {
         "from": "decision-signals",
+        "to": "dashboard",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/radar-queries.js",
+                "targetFile": "services/signal-simulation-scope.js"
+              },
+              {
+                "sourceFileId": "services/signal-admin-service.js",
+                "targetFile": "services/signal-simulation-scope.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "decision-signals",
         "to": "infrastructure",
         "channels": [
           {
@@ -39115,11 +39162,19 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/fx-chain-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "middleware/require-market-scope.js",
                 "targetFile": "db.js"
               },
               {
                 "sourceFileId": "utils/currency.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/fx-chain-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -46317,7 +46372,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2108
+        "filesObserved": 2110
       },
       "boutique": {
         "filesObserved": 214,
@@ -49529,8 +49584,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 638,
-        "technicalNodesOwned": 638,
+        "technicalNodesTotal": 639,
+        "technicalNodesOwned": 639,
         "technicalOrphans": 0
       },
       "dash": {
