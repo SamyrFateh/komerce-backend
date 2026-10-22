@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 638 | 638 | 0 |
+| backend | 36 | 36 | 639 | 639 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -229,7 +229,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 90
 - internal APIs: 0
 - dependencies (consumes): 26 — shared-cart, incident-management, orders, infrastructure, payments, logistics, inventory, local-stock, economic-engine, wallet, auth, auth-identity, market-delegation, customs, documents, notifications, purchasing, supplier-connectivity, external-provider-contracts, business-rules, decision-signals, market, market-delegation, sourcing, catalog, market-autonomy
-- consumers: 7 — economic-engine, infrastructure, market-control-plane, market-delegation, market-operator-dashboard, sourcing, admin-dashboard
+- consumers: 8 — economic-engine, infrastructure, market-control-plane, market-delegation, market-operator-dashboard, sourcing, admin-dashboard, decision-signals
 
 ### decision-signals _(piloting-capability)_
 
@@ -244,7 +244,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 1
 - interfaces exposed: 9
 - internal APIs: 0
-- dependencies (consumes): 7 — auth, infrastructure, logistics, purchasing, business-rules, market-delegation, payments
+- dependencies (consumes): 8 — auth, infrastructure, logistics, purchasing, business-rules, market-delegation, payments, dashboard
 - consumers: 5 — dashboard, incident-management, market-control-plane, orders, admin-dashboard
 
 ### documents _(business-transversal)_
@@ -415,9 +415,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
 
 - scripts: 3
-- migrations: 10
-- services: 4
-- tests: 18
+- migrations: 11
+- services: 5
+- tests: 19
 - tables owned (lifecycle): 3 — `markets`, `operator_market_scopes`, `currency_parities`
 - tables written: 3
 - interfaces exposed: 0
@@ -2148,6 +2148,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | decision-signals | business-rules (`business-rules (lecture du referentiel de regles metier)`) | ✔ |
 | decision-signals | market-delegation (`market-delegation (resolution serveur du Market ID, capability dashboard.market.read / decision_signal.manage et audit des mutations pays)`) | ✔ |
 | decision-signals | payments (`payments (services/cash-deposit-service.js — couverture cash canonique UNCOVERED_COLLECTIONS_CTE : seul un depot verifie couvre un encaissement ; lecture seule, aucune mutation de depot)`) | ✔ |
+| decision-signals | dashboard (`dashboard (services/signal-simulation-scope.js — predicat reel/RCT1 partage : les signaux de commandes de simulation sont exclus de l'Action Center et du compteur radar ; lecture seule)`) | ✔ |
 
 ## Drifts
 
@@ -2238,7 +2239,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2108 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2110 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2333,6 +2334,7 @@ Meta Graph monté : oui.
 | dashboard | wallet | data-write | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | business-rules | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| decision-signals | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | decision-signals | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | decision-signals | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -2429,7 +2431,7 @@ Meta Graph monté : oui.
 | loyalty | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | loyalty | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | market | dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
-| market | infrastructure | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| market | infrastructure | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | market | market-delegation | static-code | 2 | **OBSERVED_UNDECLARED** |
 | market-autonomy | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |

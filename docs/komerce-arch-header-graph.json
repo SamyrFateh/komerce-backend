@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1831,
-    "edges": 9184,
+    "edges": 9188,
     "dbTables": 210,
     "doctrines": 672,
     "impactAreas": 206,
@@ -27809,7 +27809,8 @@
       "depends": [
         "db",
         "utils/parcels.js",
-        "utils/rules.js"
+        "utils/rules.js",
+        "services/signal-simulation-scope.js"
       ],
       "usedBy": [
         "routes/admin-radar.js"
@@ -28989,7 +28990,8 @@
         "lifecycle_transition_results"
       ],
       "depends": [
-        "db.js"
+        "db.js",
+        "services/signal-simulation-scope.js"
       ],
       "usedBy": [
         "routes/signals.js",
@@ -29108,6 +29110,8 @@
       "depends": [],
       "usedBy": [
         "services/dashboard-pilotage-market.js",
+        "services/signal-admin-service.js",
+        "services/radar-queries.js",
         "services/dashboard-metrics/control-tower.js",
         "services/dashboard-operations.js",
         "services/action-center-agent-scope.js",
@@ -84799,6 +84803,12 @@
       "label": "utils/rules.js"
     },
     {
+      "from": "services/radar-queries.js",
+      "to": "services/signal-simulation-scope.js",
+      "type": "depends",
+      "label": "services/signal-simulation-scope.js"
+    },
+    {
       "from": "routes/admin-radar.js",
       "to": "services/radar-queries.js",
       "type": "uses",
@@ -86688,6 +86698,12 @@
       "label": "db.js"
     },
     {
+      "from": "services/signal-admin-service.js",
+      "to": "services/signal-simulation-scope.js",
+      "type": "depends",
+      "label": "services/signal-simulation-scope.js"
+    },
+    {
       "from": "routes/signals.js",
       "to": "services/signal-admin-service.js",
       "type": "uses",
@@ -86956,6 +86972,18 @@
       "to": "services/signal-simulation-scope.js",
       "type": "uses",
       "label": "services/dashboard-pilotage-market.js"
+    },
+    {
+      "from": "services/signal-admin-service.js",
+      "to": "services/signal-simulation-scope.js",
+      "type": "uses",
+      "label": "services/signal-admin-service.js"
+    },
+    {
+      "from": "services/radar-queries.js",
+      "to": "services/signal-simulation-scope.js",
+      "type": "uses",
+      "label": "services/radar-queries.js"
     },
     {
       "from": "services/dashboard-metrics/control-tower.js",
@@ -124672,7 +124700,8 @@
       "directDependsOn": [
         "db",
         "utils/parcels.js",
-        "utils/rules.js"
+        "utils/rules.js",
+        "services/signal-simulation-scope.js"
       ],
       "directUsedBy": [
         "routes/admin-radar.js"
@@ -124717,6 +124746,7 @@
         "services/radar-alerts/logistics-signals.js",
         "services/radar-alerts/payment-signals.js",
         "services/radar-alerts/treasury-signals.js",
+        "services/signal-simulation-scope.js",
         "utils/parcels.js",
         "utils/rules.js"
       ]
@@ -125838,7 +125868,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js"
+        "db.js",
+        "services/signal-simulation-scope.js"
       ],
       "directUsedBy": [
         "routes/signals.js",
@@ -125877,7 +125908,8 @@
         "routes/signals.js",
         "services/action-center-agent-scope.js",
         "services/action-center-workspace.js",
-        "services/signal-service.js"
+        "services/signal-service.js",
+        "services/signal-simulation-scope.js"
       ]
     },
     "services/signal-service.js": {
@@ -125980,6 +126012,8 @@
       "directDependsOn": [],
       "directUsedBy": [
         "services/dashboard-pilotage-market.js",
+        "services/signal-admin-service.js",
+        "services/radar-queries.js",
         "services/dashboard-metrics/control-tower.js",
         "services/dashboard-operations.js",
         "services/action-center-agent-scope.js",
@@ -126013,7 +126047,9 @@
         "services/action-center-agent-scope.js",
         "services/dashboard-metrics/control-tower.js",
         "services/dashboard-operations.js",
-        "services/dashboard-pilotage-market.js"
+        "services/dashboard-pilotage-market.js",
+        "services/radar-queries.js",
+        "services/signal-admin-service.js"
       ]
     },
     "services/simulation-scope-service.js": {

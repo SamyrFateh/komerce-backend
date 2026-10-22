@@ -427,3 +427,15 @@ describe('getRadarSummary', () => {
     expect(result.alert_count).toBe(0);
   });
 });
+
+describe('getRadarSummary — signaux de commandes de simulation (RCT1) exclus', () => {
+  test('le compteur d’alertes applique le prédicat réel/RCT1', async () => {
+    db.query.mockReset();
+    db.query.mockResolvedValue({ rows: [{ c: 2 }] });
+    const summary = await radarQueries.getRadarSummary();
+    const sql = String(db.query.mock.calls[0][0]);
+    expect(sql).toMatch(/simulation_scope IS NOT NULL/);
+    expect(sql).toMatch(/FROM signals s/);
+    expect(summary.alert_count).toBe(2);
+  });
+});

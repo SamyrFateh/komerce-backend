@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        signal_filters, signal_internal_id_or_ref, authenticated_actor, server_resolved_market_id, optional_transaction_executor
  * @outputs       signal_projection_rows, lifecycle_transition_results
- * @depends       db.js
+ * @depends       db.js, services/signal-simulation-scope.js
  * @used-by       routes/signals.js, services/action-center-workspace.js, services/signal-service.js
  * @db-read       signals
  * @db-write      signals
@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('./signal-simulation-scope');
 
 const FAMILY_TYPES = Object.freeze({
   ops: Object.freeze(['parcel_blocked', 'cash_expiring', 'ordered_without_purchase_order', 'purchase_order_overreceived', 'purchase_order_receipt_stuck', 'pickup_overdue', 'preparation_stuck', 'sla_breach', 'hub_tension', 'relay_tension', 'loyalty_pending']),
@@ -103,6 +104,7 @@ async function listSignals(filters = {}) {
         AND ($4::text IS NULL OR s.owner_role = $4)
         AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
         AND s.market_id IS NOT DISTINCT FROM $6::uuid
+        AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
       ORDER BY
         CASE s.severity
           WHEN 'urgent' THEN 1
@@ -124,7 +126,8 @@ async function listSignals(filters = {}) {
         AND ($3::text IS NULL OR s.signal_type = $3)
         AND ($4::text IS NULL OR s.owner_role = $4)
         AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
-        AND s.market_id IS NOT DISTINCT FROM $6::uuid`,
+        AND s.market_id IS NOT DISTINCT FROM $6::uuid
+        AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}`,
     filterParams
   );
 
@@ -141,15 +144,17 @@ async function getStats(options = {}) {
   const [severityResult, typeResult, familyResult] = await Promise.all([
     db.query(`
       SELECT severity, COUNT(*) AS count
-        FROM signals
+        FROM signals s
        WHERE status IN ('open','acknowledged')
          AND market_id IS NOT DISTINCT FROM $1::uuid
+         AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
        GROUP BY severity`, [marketId]),
     db.query(`
       SELECT signal_type, COUNT(*) AS count
-        FROM signals
+        FROM signals s
        WHERE status IN ('open','acknowledged')
          AND market_id IS NOT DISTINCT FROM $1::uuid
+         AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
        GROUP BY signal_type
        ORDER BY count DESC`, [marketId]),
     db.query(`
@@ -162,9 +167,10 @@ async function getStats(options = {}) {
           ELSE 'other'
         END AS family,
         COUNT(*) AS count
-        FROM signals
+        FROM signals s
        WHERE status IN ('open','acknowledged')
          AND market_id IS NOT DISTINCT FROM $5::uuid
+         AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
        GROUP BY family
        ORDER BY count DESC`, [FAMILY_TYPES.ops, FAMILY_TYPES.eco, FAMILY_TYPES.sourcing, FAMILY_TYPES.disputes, marketId]),
   ]);
