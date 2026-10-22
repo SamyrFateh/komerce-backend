@@ -802,6 +802,63 @@ describe('C2 — couverture physique quantitative avant préparation (PO histori
     expect(after.uncovered[0]).toMatchObject({ needed: 2, usable: 1, missing: 1 });
   });
 
+  test('MERGE : unité consolidée perdue exclue de C2, remplacement reçu sans double comptage', async () => {
+    const purchase = await seedHistorical(2);
+    const first = await receive(purchase, 1, 'C2-MERGE-IN-1');
+    const second = await receive(purchase, 1, 'C2-MERGE-IN-2');
+    const allocationId = first.allocations[0].allocation.id;
+    expect(second.allocations[0].allocation.id).toBe(allocationId);
+
+    const target = await transact((client) => createPhysicalUnit(client, {
+      reference: 'C2-MERGE-OUT-1', unitType: 'MARKET_PARCEL', initialState: 'RECEIVED',
+    }));
+    for (const unitId of [first.unit.id, second.unit.id, target.id]) {
+      await advanceToPicked(unitId);
+    }
+
+    await transact((client) => moveAllocationQuantity(client, {
+      fromUnitId: first.unit.id, toUnitId: target.id,
+      allocationId, quantity: 1, operationType: 'SPLIT',
+    }));
+    const merged = await transact((client) => moveAllocationQuantity(client, {
+      fromUnitId: second.unit.id, toUnitId: target.id,
+      allocationId, quantity: 1, operationType: 'MERGE',
+    }));
+    expect(merged.source_state).toBe('SUPERSEDED');
+    expect(await usableOnView(purchase.po)).toBe(2);
+    expect((await coverage(purchase.order)).covered).toBe(true);
+
+    const { rows: [placementBeforeLoss] } = await query(
+      `SELECT COALESCE(SUM(quantity), 0)::integer AS qty
+         FROM hub_physical_unit_placements
+        WHERE allocation_id = $1 AND physical_unit_id = $2 AND removed_at IS NULL`,
+      [allocationId, target.id]
+    );
+    expect(placementBeforeLoss.qty).toBe(2);
+
+    await transact((client) => recordPhysicalUnitOutcome(client, {
+      unitId: target.id, outcomeType: 'LOST', details: { reason: 'c2-merge' },
+    }));
+    expect(await usableOnView(purchase.po)).toBe(0);
+    expect((await coverage(purchase.order)).uncovered[0])
+      .toMatchObject({ needed: 2, usable: 0, missing: 2 });
+
+    const replacement = await receive(purchase, 2, 'C2-MERGE-REPLACEMENT');
+    expect(replacement.quarantined).toBe(false);
+    expect(replacement.allocations[0].allocation.id).toBe(allocationId);
+    expect(await usableOnView(purchase.po)).toBe(2);
+    expect((await coverage(purchase.order)).covered).toBe(true);
+
+    const { rows: [activeQuantity] } = await query(
+      `SELECT COALESCE(SUM(p.quantity), 0)::integer AS qty
+         FROM hub_physical_unit_placements p
+         JOIN hub_physical_units u ON u.id = p.physical_unit_id
+        WHERE p.allocation_id = $1 AND p.removed_at IS NULL AND u.outcome_type IS NULL`,
+      [allocationId]
+    );
+    expect(activeQuantity.qty).toBe(2);
+  });
+
   test('LOCAL_STOCK exclu ; ligne importée sans aucun achat = couverture 0 ; commande de simulation hors périmètre', async () => {
     const purchase = await seedHistorical(1);
     await query("UPDATE order_items SET fulfillment_source='LOCAL_STOCK' WHERE id=$1", [purchase.item]);
