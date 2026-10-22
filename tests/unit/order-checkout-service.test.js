@@ -11,7 +11,7 @@ const source = fs.readFileSync(
 
 describe('order-checkout-service market lifecycle', () => {
   test('fails closed unless the relay market is ACTIVE', () => {
-    expect(source).toMatch(/SELECT lifecycle_status, code FROM markets WHERE id=\$1::uuid LIMIT 1/);
+    expect(source).toMatch(/SELECT lifecycle_status, code, currency FROM markets WHERE id=\$1::uuid LIMIT 1/);
     expect(source).toMatch(/checkoutMarket\.lifecycle_status !== 'ACTIVE'/);
     expect(source).toMatch(/MARKET_SUSPENDED/);
     expect(source).toMatch(/MARKET_NOT_ACTIVE/);
@@ -55,5 +55,13 @@ describe('order-checkout-service — livrabilité du marché', () => {
     expect(gate).toBeGreaterThan(delivery);
     expect(routing).toBeGreaterThan(gate);
     expect(source).toMatch(/e\.code === 'PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET'/);
+  });
+  test('lot 4 — tarif de transport global refusé hors devise du tarif, avant le devis', () => {
+    const gate = source.indexOf('assertTransportTariffApplicable({');
+    const quote = source.indexOf('quoteTransportPriceForOrder({');
+    expect(gate).toBeGreaterThan(0);
+    expect(quote).toBeGreaterThan(gate);
+    expect(source).toMatch(/SELECT lifecycle_status, code, currency FROM markets/);
+    expect(source).toMatch(/MARKET_TRANSPORT_TARIFF_MISSING/);
   });
 });

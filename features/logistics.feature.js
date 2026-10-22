@@ -92,6 +92,7 @@ module.exports = {
     ],
     services: [
       'services/parcel-operations.js',
+      'services/market-transport-tariff-gate.js',
       'services/parcel-item-mutation-service.js',
       'services/parcel-mutation-service.js',
       'services/parcel-order-membership.js',
@@ -153,6 +154,7 @@ module.exports = {
       'dashboards/admin/js/views/OrdersLogisticsView.js',
     ],
     tests: [
+      'tests/unit/market-transport-tariff-gate.test.js',
       'tests/unit/hub-dubai-projection.test.js',
       'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js',
       'tests/integration/hub-physical-identity-postgres.test.js',
