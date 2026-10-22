@@ -288,3 +288,12 @@ describe('selectDesktop — flat mixed rail', () => {
     expect(selectDesktop(pool)).toHaveLength(2);
   });
 });
+
+describe('lot 2 — cascade CSS sans déclaration morte (discovery-rail.css)', () => {
+  test('le groupe partagé du slot canonique ne redéclare pas background/box-shadow déjà surchargés par kind', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'css', 'discovery-rail.css'), 'utf8');
+    const group = css.slice(css.indexOf('.k-discovery-canonical-action-slot,'), css.indexOf('.k-discovery-canonical-cta {'));
+    expect(group).not.toMatch(/background:\s*var\(--action-commerce\)/);
+    expect(group).not.toMatch(/box-shadow:\s*var\(--action-commerce-shadow\)/);
+  });
+});
