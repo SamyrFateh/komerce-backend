@@ -220,6 +220,9 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
       const accepted=await request(app).post('/api/orders').set('Authorization',`Bearer ${buyerToken}`).send(orderBody);
       expect(accepted.status).toBe(201);
       orderId=accepted.body.order.id;
+      const {rows:[snap]}=await db.query('SELECT transport_pricing_snapshot AS s FROM orders WHERE id=$1',[orderId]);
+      expect(snap.s).toMatchObject({version:1,market_currency:'XAF',pivot_currency:'EUR',source:'market_transport_sale_rates'});
+      expect(snap.s.tariff_lines[0]).toMatchObject({rate_key:'SEA_KMF_PER_KG_COMMERCIAL',rate_per_kg_local:90,currency:'XAF',evidence_ref:'e2e-decision-locale'});
     } finally {
       await db.query('DELETE FROM market_transport_sale_rates WHERE evidence_ref IN ($1,$2)',['e2e-autre-marche','e2e-decision-locale']);
       await db.query("UPDATE markets SET currency='KMF' WHERE id=$1",[marketId]);

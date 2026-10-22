@@ -79,7 +79,7 @@ const { MarketCommercialPriceError } = require('./market-commercial-price-servic
 const { assertMarketDeliverable } = require('./market-delivery-proof-service');
 const { assertCentralCollectionAllowed } = require('./market-payment-collection-gate');
 const { assertTransportTariffApplicable, resolveEffectiveTransportRates } = require('./market-transport-tariff-gate');
-const { loadMarketTransportSaleRates } = require('./market-transport-sale-rates');
+const { loadMarketTransportSaleTariffs, assertEurKmfPivotConsistent } = require('./market-transport-sale-rates');
 const {
   FULFILLMENT_SOURCE,
   resolveCheckoutFulfillmentSources,
@@ -218,6 +218,20 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
         error: 'Ce marché n’est pas ouvert aux commandes.',
         code: 'MARKET_NOT_ACTIVE',
       });
+    }
+
+    // Marché non-KMF : le total EUR facturé (finance_config) doit reposer sur le même pivot EUR/KMF que les prix et
+    // le transport (currency_parities), sinon Stripe/PayPal factureraient un montant ≠ prix local.
+    if (String(checkoutMarket.currency || '').trim().toUpperCase() !== 'KMF') {
+      try {
+        await assertEurKmfPivotConsistent(eurKmfFinal);
+      } catch (e) {
+        if (e && e.code === 'EUR_KMF_PIVOT_DIVERGENCE') {
+          await client.query('ROLLBACK');
+          return fail(409, { error: e.message, code: e.code });
+        }
+        throw e;
+      }
     }
 
     // Livrabilité prouvée (liaison de transport + tarification) : sans preuve, aucune nouvelle commande
@@ -375,12 +389,14 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     // dans cost_estimated restent inchangés : ce lot ne modifie que le prix
     // commercial du transport de cette commande.
     let transport_price_kmf = 0;
+    let transportPricingSnapshot = null;
     try {
       // Lot 4 : les tarifs de transport globaux sont des tarifs de vente en KMF ; hors de cette devise,
       // refus tant qu'aucun tarif de vente du marché n'existe (le coût attesté n'est jamais un prix).
-      const marketTransportRates = importTransportItems.length > 0
-        ? await loadMarketTransportSaleRates(client, relais.market_id)
-        : {};
+      const marketTariffs = importTransportItems.length > 0
+        ? await loadMarketTransportSaleTariffs(client, relais.market_id)
+        : { rates: {}, lines: [] };
+      const marketTransportRates = marketTariffs.rates;
       assertTransportTariffApplicable({
         marketCurrency: checkoutMarket.currency,
         importItemCount: importTransportItems.length,
@@ -404,8 +420,23 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
         }),
       });
       transport_price_kmf = transportQuote.transport_price_kmf;
+      if (importTransportItems.length > 0) {
+        transportPricingSnapshot = {
+          version: 1,
+          market_id: relais.market_id,
+          market_currency: String(checkoutMarket.currency || '').trim().toUpperCase(),
+          pivot_currency: 'EUR',
+          source: marketTariffs.lines.length ? 'market_transport_sale_rates' : 'business_rules',
+          tariff_lines: marketTariffs.lines,
+          breakdown: transportQuote.breakdown,
+          transport_price_kmf,
+        };
+      }
     } catch (e) {
       await client.query('ROLLBACK');
+      if (e && e.code === 'fx_rate_unavailable') {
+        return fail(503, { error: e.message, code: e.code });
+      }
       if (e instanceof TransportPricingError || (e && e.code === 'MARKET_TRANSPORT_TARIFF_MISSING')) {
         return fail(409, { error: e.message, code: e.code });
       }
@@ -480,7 +511,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       costEstimatedKmf: cost_estimated, marginEstimatedPct: margin_est,
       discountPct, discountKmf, loyaltyLabel,
       destinationIsland: routing.destination_island, routingMode: routing.routing_mode, transitHub: routing.transit_hub,
-      transportPriceKmf: transport_price_kmf,
+      transportPriceKmf: transport_price_kmf, transportPricingSnapshot,
       pickupCodeRecipient: pickup_code_recipient, pickupCodeRecipientUserId,
       displayAmount: displaySnapshot.amount, displayCurrency: displaySnapshot.currency, displayMeta: displaySnapshot.meta,
       marketId: relais?.market_id || null,

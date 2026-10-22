@@ -6,7 +6,7 @@
 --            vers la base KMF par la seule voie gouvernée (parités fixes, chaîne FX DJF), jamais implicitement.
 --            Absence de ligne = refus fail-closed hors marché KMF.
 --            Le coût de fret attesté n'est jamais un prix. Chaque tarif porte sa pièce (evidence_ref) et son auteur.
---            Rollback : DROP TABLE market_transport_sale_rates (aucune donnée métier ne la référence).
+--            Rollback : ALTER TABLE orders DROP COLUMN transport_pricing_snapshot ; DROP TABLE market_transport_sale_rates.
 
 CREATE TABLE IF NOT EXISTS market_transport_sale_rates (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -26,3 +26,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_market_transport_sale_rates_active
 
 COMMENT ON TABLE market_transport_sale_rates IS
   'Tarif de vente transport par Market (devise du marché, par kg ; converti en KMF de base par voie gouvernée). Absent = refus hors KMF. Distinct du coût de fret attesté.';
+
+-- Snapshot figé du tarif de transport appliqué à la commande (montant local, devise, pivot EUR, références de ligne
+-- de tarif et jambes FX). Colonne dédiée : display_parity_snapshot reste réservé à l'affichage (jamais source de paiement).
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS transport_pricing_snapshot JSONB;
+COMMENT ON COLUMN orders.transport_pricing_snapshot IS
+  'Preuve figée du tarif de vente transport (devise marché, pivot EUR, ids de tarif, jambes FX). Nullable : commandes antérieures ou sans transport import.';
