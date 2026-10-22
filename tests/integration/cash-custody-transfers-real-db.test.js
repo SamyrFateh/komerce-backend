@@ -501,4 +501,20 @@ if (!process.env.DATABASE_URL) {
       expect(await uncovered(b.agent)).toBe(0);
     });
   });
+  describe('rapprochement : partition par Market', () => {
+    it('isolation inter-Markets : la décharge d\'un Market ne couvre jamais l\'encaissement d\'un autre', async () => {
+      const multi = await newAgent(relaisA);
+      extraAgents.push(multi);
+      await collect(multi, relaisB, fx.marketB.id, 7000, 9);   // Market B, le plus ancien
+      await collect(multi, relaisA, A(), 20000, 5);            // Market A
+      const dep = await declare(multi, toPerson(fx.managerA.id), 20000);
+      await receive(fx.managerA.id, dep.deposit_ref, { receivedAmount: 20000 });
+      const { rows } = await q(
+        `WITH ${deposits.UNCOVERED_COLLECTIONS_CTE}
+         SELECT market_id, SUM(uncovered_kmf)::int AS kmf FROM uncovered WHERE collected_by = $1 GROUP BY market_id`, [multi]);
+      const byMarket = Object.fromEntries(rows.map(r => [r.market_id, r.kmf]));
+      expect(byMarket[fx.marketB.id]).toBe(7000);
+      expect(byMarket[A()] || 0).toBe(0);
+    });
+  });
 }

@@ -332,11 +332,11 @@ describe('handleStripeSucceeded — chemins 1-4 : guards précoces', () => {
   test('chemin 3 : commande déjà payée → idempotent', async () => {
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
     db.query
-      .mockResolvedValueOnce({ rows: [{ payment_status: 'paid' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'order-paid', reference: 'REF-order-paid', total_eur: '10.00', payment_status: 'paid' }] })
       .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // markStripeEventProcessed
 
     const event  = { id: 'evt_already_paid', type: 'payment_intent.succeeded' };
-    const intent = { id: 'pi_already_paid', metadata: { order_id: 'order-paid' } };
+    const intent = { amount: 1000, currency: 'eur', id: 'pi_already_paid', metadata: { order_id: 'order-paid', order_reference: 'REF-order-paid', komerce: 'true' } };
 
     const result = await handleStripeSucceeded(event, intent, db);
 
@@ -346,7 +346,7 @@ describe('handleStripeSucceeded — chemins 1-4 : guards précoces', () => {
 
   test('chemin 4 : confirmPaymentCycle noop → commit + idempotent', async () => {
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-noop', reference: 'KOM-SB-1', total_eur: '10.00', payment_status: 'pending' }] });
     db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 }); // markStripeEventProcessed (après commit)
 
     const client = makeClient([
@@ -357,7 +357,7 @@ describe('handleStripeSucceeded — chemins 1-4 : guards précoces', () => {
     mockConfirmPaymentCycle.mockResolvedValueOnce({ noop: true });
 
     const event  = { id: 'evt_noop', type: 'payment_intent.succeeded' };
-    const intent = { id: 'pi_noop', metadata: { order_id: 'order-noop' } };
+    const intent = { amount: 1000, currency: 'eur', id: 'pi_noop', metadata: { order_id: 'order-noop', order_reference: 'KOM-SB-1', komerce: 'true' } };
 
     const result = await handleStripeSucceeded(event, intent, db);
 
@@ -377,7 +377,9 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
       intent: {
         id: 'pi_sb_1',
         receipt_email: null,
-        metadata: { order_id: 'order-sb-1', order_reference: 'KOM-SB-1' },
+        amount: 1000,
+        currency: 'eur',
+        metadata: { order_id: 'order-sb-1', order_reference: 'KOM-SB-1', komerce: 'true' },
         ...overrides.intent,
       },
     };
@@ -386,7 +388,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
   test('notes ajoutées, alerte critique insérée, code généré, commit — processedOk=false (pas de notif/loyalty/purchasing)', async () => {
     const { event, intent } = baseEventIntent();
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-sb-1', reference: 'KOM-SB-1', total_eur: '10.00', payment_status: 'pending' }] });
 
     const client = makeClient([
       { rows: [], rowCount: 1 }, // UPDATE orders SET notes
@@ -427,7 +429,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
   test('cacheCodeForReveal échoue après commit → catch non-bloquant (le code n\'est pas remis en cache mais le flux continue)', async () => {
     const { event, intent } = baseEventIntent({ event: { id: 'evt_sb_cache_fail' } });
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-sb-1', reference: 'KOM-SB-1', total_eur: '10.00', payment_status: 'pending' }] });
 
     const client = makeClient([
       { rows: [], rowCount: 1 }, // UPDATE orders SET notes
@@ -459,7 +461,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
   test('insertion alerte "critical" échoue → catch alertErr non-bloquant, transaction commit quand même', async () => {
     const { event, intent } = baseEventIntent({ event: { id: 'evt_sb_2' } });
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-sb-1', reference: 'KOM-SB-1', total_eur: '10.00', payment_status: 'pending' }] });
 
     const client = makeClient([
       { rows: [], rowCount: 1 }, // UPDATE orders SET notes
@@ -495,7 +497,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
       },
     });
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-sb-1', reference: 'KOM-SB-1', total_eur: '10.00', payment_status: 'pending' }] });
 
     const client = makeClient([
       { rows: [], rowCount: 1 }, // UPDATE orders SET notes
@@ -529,7 +531,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
   test('génération du code échoue (genErr) → revealCode reste null, pas de cacheCodeForReveal', async () => {
     const { event, intent } = baseEventIntent({ event: { id: 'evt_sb_4' } });
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-nom-1', reference: 'KOM-NOM-1', total_eur: '10.00', payment_status: 'pending' }] });
 
     const client = makeClient([
       { rows: [], rowCount: 1 }, // UPDATE orders SET notes
@@ -560,6 +562,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
 describe('handleStripeSucceeded — chemin 7 : nominal (processedOk=true)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockConfirmPaymentCycle.mockReset();
     const { generateAndStoreSecret, cacheCodeForReveal } = require('../../services/pickup-secret-service');
     generateAndStoreSecret.mockResolvedValue({ code: 'TEST-CODE' });
     cacheCodeForReveal.mockResolvedValue(undefined);
@@ -567,9 +570,9 @@ describe('handleStripeSucceeded — chemin 7 : nominal (processedOk=true)', () =
 
   function setupNominal(eventId) {
     const event = { id: eventId, type: 'payment_intent.succeeded' };
-    const intent = { id: 'pi_nom', receipt_email: null, metadata: { order_id: 'order-nom-1', order_reference: 'KOM-NOM-1' } };
+    const intent = { amount: 1000, currency: 'eur', id: 'pi_nom', receipt_email: null, metadata: { order_id: 'order-nom-1', order_reference: 'KOM-NOM-1', komerce: 'true' } };
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-nom-1', reference: 'KOM-NOM-1', total_eur: '10.00', payment_status: 'pending' }] });
     const client = makeClient([
       { rows: [{ relais_id: 'relais-nom' }] }, // SELECT relais_id
       { rows: [], rowCount: 1 },               // INSERT stripe_events_processed
@@ -645,11 +648,13 @@ describe('handleStripeSucceeded — chemin 7 : nominal (processedOk=true)', () =
 });
 
 describe('handleStripeSucceeded — cycle non réussi (rollback)', () => {
+  beforeEach(() => { mockConfirmPaymentCycle.mockReset(); });
+
   test('cycleResult.success=false → ROLLBACK + rejected:true, throw propagé si erreur DB', async () => {
     const event = { id: 'evt_rej_1', type: 'payment_intent.succeeded' };
-    const intent = { id: 'pi_rej', metadata: { order_id: 'order-rej-1', order_reference: 'KOM-REJ-1' } };
+    const intent = { amount: 1000, currency: 'eur', id: 'pi_rej', metadata: { order_id: 'order-rej-1', order_reference: 'KOM-REJ-1', komerce: 'true' } };
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-rej-1', reference: 'KOM-REJ-1', total_eur: '10.00', payment_status: 'pending' }] });
     db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 }); // markStripeEventProcessed (rejected)
 
     const client = makeClient([]);
@@ -667,9 +672,9 @@ describe('handleStripeSucceeded — cycle non réussi (rollback)', () => {
 
   test('erreur inattendue pendant la transaction → ROLLBACK puis throw propagé, client relâché', async () => {
     const event = { id: 'evt_err_1', type: 'payment_intent.succeeded' };
-    const intent = { id: 'pi_err', metadata: { order_id: 'order-err-1', order_reference: 'KOM-ERR-1' } };
+    const intent = { amount: 1000, currency: 'eur', id: 'pi_err', metadata: { order_id: 'order-err-1', order_reference: 'KOM-ERR-1', komerce: 'true' } };
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-err-1', reference: 'KOM-ERR-1', total_eur: '10.00', payment_status: 'pending' }] });
 
     const client = makeClient([]);
     db.pool.connect.mockResolvedValueOnce(client);
@@ -704,5 +709,44 @@ describe('markStripeEventProcessed', () => {
     const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
     await markStripeEventProcessed({ id: 'evt_z', type: 'x' }, undefined, db);
     expect(db.query).toHaveBeenCalledWith(expect.any(String), ['evt_z', 'x', '{}']);
+  });
+});
+
+describe('handleStripeSucceeded — contrat montant/devise/commande (fail-closed)', () => {
+  const order = { id: 'order-ct-1', reference: 'KOM-CT-1', total_eur: '10.00', payment_status: 'pending' };
+  const goodIntent = () => ({
+    id: 'pi_ct', amount: 1000, currency: 'eur',
+    metadata: { order_id: 'order-ct-1', order_reference: 'KOM-CT-1', komerce: 'true' },
+  });
+
+  test.each([
+    ['montant différent', { amount: 999 }],
+    ['devise différente', { currency: 'xaf' }],
+    ['devise absente', { currency: undefined }],
+    ['référence autre commande', { metadata: { order_id: 'order-ct-1', order_reference: 'AUTRE', komerce: 'true' } }],
+  ])('%s → jamais payé, alerte, événement ignoré', async (_label, override) => {
+    mockConfirmPaymentCycle.mockReset();
+    const db = { query: jest.fn(), pool: { connect: jest.fn() } };
+    db.query.mockResolvedValue({ rows: [], rowCount: 1 });
+    db.query.mockResolvedValueOnce({ rows: [order] });
+
+    const result = await handleStripeSucceeded({ id: 'evt_ct', type: 'payment_intent.succeeded' }, { ...goodIntent(), ...override }, db);
+
+    expect(result).toEqual({ received: true, ignored: true });
+    expect(mockConfirmPaymentCycle).not.toHaveBeenCalled();
+    expect(db.pool.connect).not.toHaveBeenCalled();
+  });
+
+  test('contrat respecté → le cycle de paiement est lancé', async () => {
+    mockConfirmPaymentCycle.mockReset();
+    const db = { query: jest.fn(), pool: { connect: jest.fn() } };
+    db.query.mockResolvedValueOnce({ rows: [order] });
+    const client = makeClient([{ rows: [], rowCount: 1 }]);
+    db.pool.connect.mockResolvedValueOnce(client);
+    mockConfirmPaymentCycle.mockResolvedValueOnce({ noop: true });
+    db.query.mockResolvedValue({ rows: [], rowCount: 1 });
+
+    await handleStripeSucceeded({ id: 'evt_ct_ok', type: 'payment_intent.succeeded' }, goodIntent(), db);
+    expect(mockConfirmPaymentCycle).toHaveBeenCalledTimes(1);
   });
 });

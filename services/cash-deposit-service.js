@@ -279,27 +279,30 @@ async function disputeDeposit({ depositId, verifierId, reason, correction = fals
  * contrôlée, perte décidée), appliquées du plus ancien au plus récent. Une remise historique
  * « vérifiée », une déclaration en attente ou une réception finale non contrôlée ne déchargent rien
  * (aucun faux vert). Les entrées par transfert reçu sont déduites des sorties avant d'en décharger
- * les encaissements propres de l'agent (lecture prudente). À préfixer par `WITH` ; expose la CTE
+ * les encaissements propres de l'agent (lecture prudente). Partitionné par (agent, Market) : la décharge d'un Market ne couvre jamais l'encaissement d'un autre. À préfixer par `WITH` ; expose la CTE
  * `uncovered` (colonnes inchangées).
  */
 const UNCOVERED_COLLECTIONS_CTE = `
   running AS (
     SELECT cc.id, cc.order_id, cc.collected_by, cc.relais_id, cc.amount_kmf, cc.confirmed_at,
-           SUM(cc.amount_kmf) OVER (PARTITION BY cc.collected_by ORDER BY cc.confirmed_at, cc.id) AS cumulative_kmf
+           cash_collection_market(cc.relais_id, cc.collected_by) AS market_id,
+           SUM(cc.amount_kmf) OVER (
+             PARTITION BY cc.collected_by, cash_collection_market(cc.relais_id, cc.collected_by)
+             ORDER BY cc.confirmed_at, cc.id) AS cumulative_kmf
       FROM cash_collections cc
   ),
   released AS (
-    SELECT holder_id AS collected_by,
+    SELECT holder_id AS collected_by, market_id,
            GREATEST(0, COALESCE(-SUM(delta_kmf) FILTER (WHERE source IN ('TRANSFER_OUT', 'FINAL_CLOSURE', 'LOSS')), 0)
                        - COALESCE(SUM(delta_kmf) FILTER (WHERE source = 'TRANSFER_IN'), 0)) AS released_kmf
       FROM cash_custody_movements
      WHERE source <> 'COLLECTION'
-     GROUP BY holder_id
+     GROUP BY holder_id, market_id
   ),
   uncovered AS (
     SELECT r.*, r.amount_kmf - LEAST(r.amount_kmf, GREATEST(0, COALESCE(rel.released_kmf, 0) - (r.cumulative_kmf - r.amount_kmf))) AS uncovered_kmf
       FROM running r
-      LEFT JOIN released rel ON rel.collected_by = r.collected_by
+      LEFT JOIN released rel ON rel.collected_by = r.collected_by AND rel.market_id IS NOT DISTINCT FROM r.market_id
      WHERE r.cumulative_kmf > COALESCE(rel.released_kmf, 0)
   )`;
 
