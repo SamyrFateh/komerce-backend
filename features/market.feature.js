@@ -76,6 +76,7 @@ module.exports = {
     ],
     migrations: [
       'migrations/311_fx_chain_eur_usd_djf.sql',
+      'migrations/312_fx_chain_hardening.sql',
       'migrations/135_markets_foundation.sql',
       'migrations/136_operator_market_scopes.sql',
       'migrations/137_relais_market_id.sql',

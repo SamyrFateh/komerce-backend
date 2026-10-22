@@ -117,5 +117,32 @@ if (!hasIntegrationEnv) {
       const { rows: par } = await db.query("SELECT 1 FROM currency_parities WHERE currency = 'DJF'");
       expect(par).toHaveLength(0);
     });
+
+    test('identités normalisées : " Alice " ne peut pas approuver la saisie de alice', async () => {
+      const asOf = new Date(Date.now() - DAY);
+      const { rows: [r] } = await db.query(
+        `INSERT INTO fx_rate_observations (rate, source_label, as_of, entered_by)
+         VALUES (1.1, 'test source', $1, '  Alice ') RETURNING id, entered_by`, [asOf]);
+      expect(r.entered_by).toBe('alice');
+      await expect(db.query("UPDATE fx_rate_observations SET approved_by = ' ALICE ' WHERE id = $1", [r.id]))
+        .rejects.toThrow(/fx_obs_two_person/);
+      await db.query("UPDATE fx_rate_observations SET approved_by = ' Bob ' WHERE id = $1", [r.id]);
+      const { rows: [a] } = await db.query('SELECT approved_by FROM fx_rate_observations WHERE id = $1', [r.id]);
+      expect(a.approved_by).toBe('bob');
+    });
+
+    test('bande de plausibilité du peg USD→DJF', async () => {
+      await expect(db.query(
+        "INSERT INTO fx_pegs (rate, source_label, valid_from) VALUES (1.77721, 'x', '2001-01-01')"
+      )).rejects.toThrow(/fx_peg_rate_band/);
+      await expect(db.query(
+        "INSERT INTO fx_pegs (rate, source_label, valid_from) VALUES (17772.1, 'x', '2001-01-01')"
+      )).rejects.toThrow(/fx_peg_rate_band/);
+    });
+
+    test('TRUNCATE interdit sur les deux tables', async () => {
+      await expect(db.query('TRUNCATE fx_rate_observations')).rejects.toThrow(/TRUNCATE interdit/);
+      await expect(db.query('TRUNCATE fx_pegs')).rejects.toThrow(/TRUNCATE interdit/);
+    });
   });
 }
