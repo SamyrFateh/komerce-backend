@@ -24,7 +24,10 @@
 'use strict';
 
 const mockDbQuery = jest.fn();
-jest.mock('../../db', () => ({ query: (...args) => mockDbQuery(...args) }));
+jest.mock('../../db', () => ({ query: (...args) => mockDbQuery(...args), pool: { tag: 'pool' } }));
+
+const mockPollOnce = jest.fn();
+jest.mock('../../services/outbox-worker', () => ({ pollOnce: (...args) => mockPollOnce(...args) }));
 
 const mockLog = { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() };
 jest.mock('../../utils/logger', () => ({ child: () => mockLog }));
@@ -63,6 +66,7 @@ describe('bootstrap/crons', () => {
     mockAutoConfirmExpired.mockResolvedValue({ auto_confirmed: 0 });
     mockGetRuleNumber.mockResolvedValue(60);
     mockGenerateSignals.mockResolvedValue({ expired: 0, retired_obsolete: 0, generators: {} });
+    mockPollOnce.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -71,6 +75,44 @@ describe('bootstrap/crons', () => {
   });
 
   // ── startSnapshotRetentionCron ──────────────────────────────────────────
+  describe('startOutboxWorkerCron', () => {
+    test('ne démarre pas avant le 1er intervalle (30 s), puis consomme un lot borné avec le pool', async () => {
+      crons.startOutboxWorkerCron();
+      await jest.advanceTimersByTimeAsync(29 * 1000);
+      expect(mockPollOnce).not.toHaveBeenCalled();
+      await jest.advanceTimersByTimeAsync(2 * 1000);
+      expect(mockPollOnce).toHaveBeenCalledWith({ tag: 'pool' }, { concurrency: 10 });
+    });
+
+    test('journalise les événements traités', async () => {
+      mockPollOnce.mockResolvedValueOnce([{ ok: true }, { ok: true }]);
+      crons.startOutboxWorkerCron();
+      await jest.advanceTimersByTimeAsync(46 * 1000);
+      expect(mockLog.info).toHaveBeenCalledWith({ processed: 2 }, 'Outbox worker pass done');
+    });
+
+    test('erreur avalée via log.error, le cron continue au tick suivant', async () => {
+      mockPollOnce.mockRejectedValueOnce(new Error('db down'));
+      crons.startOutboxWorkerCron({ intervalMs: 1000 });
+      await jest.advanceTimersByTimeAsync(1100);
+      expect(mockLog.error).toHaveBeenCalled();
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(mockPollOnce.mock.calls.length).toBeGreaterThanOrEqual(2);
+      mockPollOnce.mockClear();
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    test('pas de chevauchement : un passage lent n\'est pas doublé', async () => {
+      let release;
+      mockPollOnce.mockImplementationOnce(() => new Promise(r => { release = () => r([]); }));
+      crons.startOutboxWorkerCron({ intervalMs: 1000 });
+      await jest.advanceTimersByTimeAsync(46 * 1000);
+      await jest.advanceTimersByTimeAsync(5 * 1000);
+      expect(mockPollOnce).toHaveBeenCalledTimes(1);
+      release();
+    });
+  });
+
   describe('startSnapshotRetentionCron', () => {
     test('ne purge pas avant 5 minutes', async () => {
       crons.startSnapshotRetentionCron();

@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        timers, database_state, rules
  * @outputs       automatic_transitions, purges, reminders, incident_sla_escalations, continuous_decision_signals
- * @depends       services/cash-reminder-service.js, services/inventory-service.js,
+ * @depends       services/outbox-worker.js, services/cash-reminder-service.js, services/inventory-service.js,
  *                services/mobile-money-reconciliation.js, services/incident-escalation.js,
  *                services/signal-service.js, utils/rules.js
  * @db-write      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens, signals
@@ -143,6 +143,7 @@ function startOperationalCrons() {
   startMobileMoneyReconciliationCron(); // migration 169
   startIncidentSlaEscalationCron(); // HUB-000 F3
   startSignalGenerationCron(); // Control Tower / Action Center health feed
+  startOutboxWorkerCron(); // HUB-000 F0 — consommateur durable de l'outbox (reçus d'audit)
 }
 
 // HUB-000 F3 — SLA incident : composition root uniquement.
@@ -173,6 +174,34 @@ function startIncidentSlaEscalationCron() {
   setTimeout(run, 60 * 1000);
   setInterval(run, INTERVAL_MS);
   log.info({ interval_min: 5, batch_limit: BATCH_LIMIT }, 'Incident SLA escalation cron scheduled');
+}
+
+// HUB-000 F0 — Outbox : sans consommateur, les faits physiques (perte, vol, destruction, dommage) publiés par le Hub
+// restent en attente et n'ont aucun reçu d'audit. Composition root uniquement : le worker porte sa propre transaction
+// (claim SKIP LOCKED, un événement par agrégat, ACK atomique) ; ici on ne fait que le déclencher, par lot borné.
+function startOutboxWorkerCron({ intervalMs = 30 * 1000, concurrency = 10 } = {}) {
+  let running = false;
+
+  const run = async () => {
+    if (running) return;
+    running = true;
+    try {
+      const { pollOnce } = require('../services/outbox-worker');
+      const { pool } = require('../db');
+      const results = await pollOnce(pool, { concurrency });
+      if (results.length > 0) {
+        log.info({ processed: results.length }, 'Outbox worker pass done');
+      }
+    } catch (err) {
+      log.error({ err }, 'Outbox worker cron failed');
+    } finally {
+      running = false;
+    }
+  };
+
+  setTimeout(run, 45 * 1000);
+  setInterval(run, intervalMs);
+  log.info({ interval_s: intervalMs / 1000, concurrency }, 'Outbox worker cron scheduled');
 }
 
 // Mobile Money — callback provider non requis pour progresser : toutes les
@@ -298,6 +327,7 @@ module.exports = {
   startBackorderCron,
   startIncidentSlaEscalationCron,
   startSignalGenerationCron,
+  startOutboxWorkerCron,
   startMobileMoneyReconciliationCron,
   startSnapshotRetentionCron,
   startPickupTokenCleanupCron,
