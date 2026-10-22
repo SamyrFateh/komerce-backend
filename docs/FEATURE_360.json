@@ -7613,7 +7613,7 @@
             ]
           },
           "tests": {
-            "count": 189,
+            "count": 190,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8196,6 +8196,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/control-tower.test.js",
+                "resolvedPath": "tests/unit/control-tower.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/dashboard-admin-context.test.js",
                 "resolvedPath": "tests/unit/dashboard-admin-context.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8563,7 +8568,7 @@
             ]
           }
         },
-        "totalFiles": 423,
+        "totalFiles": 424,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
