@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_id, optional_market_code
  * @outputs       public_product_detail_v1
- * @depends       db.js, services/catalog-product-detail.js, services/catalog-public-view.js, services/market-local-price-resolution-service.js
+ * @depends       db.js, services/catalog-product-detail.js, services/market-transport-tariff-gate.js, services/catalog-public-view.js, services/market-local-price-resolution-service.js
  * @used-by       routes/products.js, public/boutique/js/b-modal-product-detail-bootstrap.js
  * @db-read       product_skus, product_variants, products, product_market_exposure, product_market_price_drafts, markets
  * @db-write      none
@@ -20,6 +20,7 @@
 
 const express = require('express');
 const db = require('../db');
+const { isTransportTariffApplicable } = require('../services/market-transport-tariff-gate');
 const { getProductDetail } = require('../services/catalog-product-detail');
 const { applyActiveMarketPricesToCatalogRows } = require('../services/market-local-price-resolution-service');
 const {
@@ -106,6 +107,23 @@ router.get('/:id/detail', async (req, res, next) => {
             price_kmf: marketProduct.price_kmf,
           }));
         }
+      }
+    }
+
+    // Même gate que le checkout : sans tarif de vente transport pour la devise du marché,
+    // la fiche n'affiche aucun prix de transport (jamais un tarif KMF global sur un marché non-KMF).
+    if (marketCode && Array.isArray(detail.delivery_options) && detail.delivery_options.length) {
+      const { rows: [market] } = await db.query(
+        'SELECT currency FROM markets WHERE UPPER(code) = $1 LIMIT 1',
+        [marketCode]
+      );
+      if (!isTransportTariffApplicable({ marketCurrency: market?.currency, importItemCount: 1 })) {
+        detail.delivery_options = detail.delivery_options.map(option => ({
+          ...option,
+          available: false,
+          price_kmf: null,
+          unavailable_reason: 'Livraison non tarifée sur ce marché',
+        }));
       }
     }
 
