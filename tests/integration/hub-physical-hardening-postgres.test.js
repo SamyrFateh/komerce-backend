@@ -373,6 +373,29 @@ describe('HUB-001 hardening — quarantaine gouvernée F2/F3', () => {
     )).rejects.toThrow(/hub_destructive_outcome_quarantine_terminal/);
   });
 
+  test('lot 6 (C2) : un remplacement arrivé avant la déclaration de perte sort de quarantaine après la perte', async () => {
+    const purchase = await seedPurchase();
+    const original = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'IN-REVAL-ORIGINAL',
+      contents: [{ purchase_order_id: purchase.po, quantity: 1 }],
+    }));
+    const early = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'IN-REVAL-EARLY',
+      contents: [{ purchase_order_id: purchase.po, quantity: 1 }],
+    }));
+    expect(early).toMatchObject({ quarantined: true, reason_code: 'HUB_ALLOCATION_OVERRECEIVED' });
+
+    await transact((client) => recordPhysicalUnitOutcome(client, { unitId: original.unit.id, outcomeType: 'LOST' }));
+
+    const result = await transact((client) => revalidateQuarantinedInbound(client, {
+      unitId: early.unit.id,
+      incidentId: early.incident.id,
+      notes: 'Perte de l\u2019unité d\u2019origine déclarée',
+    }));
+    expect(result.resolved).toBe(true);
+    expect(result.unit.state).toBe('RECEIVED');
+  });
+
   test('lot 6 (C2) : une unité perdue ne compte plus comme reçue, son remplacement n\u2019est pas mis en quarantaine', async () => {
     const purchase = await seedPurchase();
     const first = await transact((client) => receiveSupplierPackage(client, {

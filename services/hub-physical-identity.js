@@ -190,6 +190,7 @@ async function resolveGroupedLineEntries(db, content) {
               SELECT SUM(p.quantity)::integer
                 FROM hub_physical_unit_placements p
                 JOIN hub_purchase_allocations a ON a.id = p.allocation_id
+                JOIN hub_physical_units u ON u.id = p.physical_unit_id AND u.outcome_type IS NULL
                WHERE a.purchase_line_id = pl.id AND p.operation_type = 'RECEIVE'
             ), 0) AS received
        FROM purchase_lines pl
@@ -848,13 +849,8 @@ async function revalidateQuarantinedInbound(executor, {
             if (existing && !allocationMatches(existing, entry.snapshot)) return false;
 
             if (existing) {
-              const { rows: [placed] } = await sameDb.query(
-                `SELECT COALESCE(SUM(quantity),0)::integer AS quantity
-                   FROM hub_physical_unit_placements
-                  WHERE allocation_id = $1 AND removed_at IS NULL`,
-                [existing.id]
-              );
-              if (Number(placed.quantity) + Number(entry.content.quantity) > Number(entry.snapshot.quantity)) return false;
+              const placedQuantity = await placedQuantityExcludingOutcomes(sameDb, existing.id);
+              if (placedQuantity + Number(entry.content.quantity) > Number(entry.snapshot.quantity)) return false;
             }
             next.push(entry);
           }

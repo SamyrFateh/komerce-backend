@@ -235,7 +235,7 @@ beforeAll(async () => {
       );
     `);
     await client.query(migrationSql);
-    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql']) {
+    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql', '309_hub_placement_guard_exclude_outcomes.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
     }
   } finally {
@@ -639,6 +639,38 @@ describe('HUB-001 — réception par ligne d\'achat (PO regroupée)', () => {
     }));
     expect(result).toMatchObject({ quarantined: true, reason_code: 'HUB_ALLOCATION_OVERRECEIVED' });
     expect((await query('SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations')).rows[0].n).toBe(0);
+  });
+
+  test('lot 6 : PO regroupée — une unité perdue ne compte plus, son remplacement est reçu (garde service ET trigger)', async () => {
+    const g = await seedGroupedPurchase({ quantities: [1] });
+    const first = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GRP-LOST-1',
+      contents: [{ purchase_order_id: g.po, product_sku_id: g.sku, quantity: 1 }],
+    }));
+    expect(first.quarantined).toBeFalsy();
+
+    // Sans perte déclarée : refus (garde service). Le trigger SQL refuse aussi un placement direct en excès.
+    const over = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GRP-LOST-OVER',
+      contents: [{ purchase_order_id: g.po, product_sku_id: g.sku, quantity: 1 }],
+    }));
+    expect(over).toMatchObject({ quarantined: true, reason_code: 'HUB_ALLOCATION_OVERRECEIVED' });
+    const allocationId = (await query('SELECT id FROM hub_purchase_allocations LIMIT 1')).rows[0].id;
+    const extra = (await query(
+      `INSERT INTO hub_physical_units(reference, unit_type, state) VALUES ('SUP-GRP-DIRECT', 'SUPPLIER_PACKAGE', 'RECEIVED') RETURNING id`
+    )).rows[0].id;
+    await expect(query(
+      `INSERT INTO hub_physical_unit_placements(physical_unit_id, allocation_id, quantity, operation_id, operation_type)
+       VALUES ($1,$2,1,$3,'RECEIVE')`,
+      [extra, allocationId, id()]
+    )).rejects.toThrow(/hub_allocation_overplaced/);
+
+    await transact((client) => recordPhysicalUnitOutcome(client, { unitId: first.unit.id, outcomeType: 'LOST' }));
+    const replacement = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GRP-LOST-2',
+      contents: [{ purchase_order_id: g.po, product_sku_id: g.sku, quantity: 1 }],
+    }));
+    expect(replacement.quarantined).toBeFalsy();
   });
 
   test('la quantité confirmée réduite par le fournisseur plafonne la réception', async () => {
