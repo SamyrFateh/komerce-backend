@@ -204,7 +204,9 @@ test('trajectoire canonique : données réelles absentes => null, aucun faux 0 d
   const sql = String(mockQuery.mock.calls[0][0]);
   expect(sql).toContain('SUM(total_kmf - real_cost_kmf) FILTER');
   expect(sql).toContain('final_ready AND real_cost_kmf IS NOT NULL');
-  expect(sql).not.toContain('ELSE 0');
+  // Le CASE de finalMarginReadySql peut légitimement contenir ELSE 0 (étapes).
+  // On interdit seulement le repli inventé dans le calcul monétaire consolidé.
+  expect(sql).not.toMatch(/THEN\s+total_kmf\s*-\s*real_cost_kmf\s+ELSE\s+0/);
 });
 
 test('trajectoire canonique : une valeur réelle explicitement nulle reste 0', async () => {
