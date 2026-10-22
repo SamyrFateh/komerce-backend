@@ -365,13 +365,24 @@
     }));
   }
 
+  // Jour métier fourni par l'API (fuseau du marché) : affiché tel quel, jamais reconverti localement.
+  function businessDayLabel(day) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(day || ''));
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : 'Non disponible';
+  }
+
+  function seriesSubtitle(payload) {
+    const def = payload && payload.period_definition;
+    const base = 'Ventes payées par jour de création · jours sans vente non représentés.';
+    return def && def.timezone ? `${base} Jours civils ${def.timezone}.` : base;
+  }
+
   function recentOrderRows(payload, base) {
     const labels = (globalThis.KomerceCanonicalOrders && globalThis.KomerceCanonicalOrders.STATUS_LABELS) || {};
     return (Array.isArray(payload && payload.recent_orders) ? payload.recent_orders : []).map(r => {
-      const d = r.created_at ? new Date(r.created_at) : null;
       return {
         reference: r.reference,
-        date: d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString('fr-FR') : 'Non disponible',
+        date: businessDayLabel(r.business_day),
         market: r.market_code || '—',
         client: r.client_name || '—',
         amount: r.total_kmf == null ? 'Non disponible' : base.formatKmf(r.total_kmf),
@@ -382,7 +393,7 @@
 
   function seriesSection(doc, payload, base) {
     const card = cardSection(doc, 'Évolution des ventes payées',
-      'Ventes payées par jour de création · jours sans vente non représentés.', 'commerce-sales-series');
+      seriesSubtitle(payload), 'commerce-sales-series');
     const bars = salesSeriesBars(payload, base);
     if (!bars.length) {
       card.body.appendChild(text(doc, 'p', 'kmc-commerce-ranking-empty', 'Aucune vente payée sur la période sélectionnée.'));
@@ -638,6 +649,7 @@
     metricDisplay,
     salesSeriesBars,
     salesSeriesAxis,
+    businessDayLabel,
     salesSeriesNote,
     marketShares,
     recentOrderRows,

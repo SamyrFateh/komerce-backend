@@ -439,4 +439,21 @@ describe('Commerce — top produits cliquables vers la fiche Produit 360', () =>
     expect(row).toMatchObject({ reference: 'CMD-1', market: '—', client: '—', amount: 'Non disponible' });
     expect(commerceDecision.salesSeriesBars({}, commerce)).toEqual([]);
   });
+
+  test('dernières commandes : le jour métier de l\'API est affiché tel quel, sans reconversion du navigateur', () => {
+    const p = { recent_orders: [
+      { reference: 'A', created_at: '2026-10-17T22:30:00Z', business_day: '2026-10-18', status: 'confirmed' },
+      { reference: 'B', created_at: '2026-10-17T22:30:00Z', status: 'confirmed' },
+    ] };
+    const initial = process.env.TZ;
+    const dates = [];
+    try {
+      for (const z of ['Europe/Paris', 'Asia/Dubai', 'UTC']) {
+        process.env.TZ = z;
+        dates.push(commerceDecision.recentOrderRows(p, commerce).map(r => r.date));
+      }
+    } finally { if (initial === undefined) delete process.env.TZ; else process.env.TZ = initial; }
+    dates.forEach(d => expect(d).toEqual(['18/10/2026', 'Non disponible']));
+    expect(commerceDecision.businessDayLabel('x')).toBe('Non disponible');
+  });
 });
