@@ -75,6 +75,7 @@ module.exports = {
       'scripts/cm-cg-market-full-reset.js',
     ],
     migrations: [
+      'migrations/311_fx_chain_eur_usd_djf.sql',
       'migrations/135_markets_foundation.sql',
       'migrations/136_operator_market_scopes.sql',
       'migrations/137_relais_market_id.sql',
@@ -87,6 +88,7 @@ module.exports = {
       'migrations/278_market_lifecycle.sql',
     ],
     services: [
+      'services/fx-chain-service.js',
       'middleware/require-market-scope.js',
       'services/market-scope-admin-service.js',
       'utils/currency.js',
@@ -94,6 +96,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/require-market-scope.test.js',
+      'tests/integration/fx-chain-postgres.test.js',
       'tests/unit/market-scope-admin-service.test.js',
       'tests/integration/market-scope-isolation.test.js',
       'tests/unit/currency.test.js',
