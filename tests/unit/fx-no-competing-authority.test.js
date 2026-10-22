@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '../..');
-const DIRS = ['routes', 'services', 'utils', 'jobs', 'bootstrap', 'middleware'];
+const DIRS = ['routes', 'services', 'utils', 'jobs', 'bootstrap', 'middleware', 'scripts'];
 
 // Fichiers autorisés à mentionner ces motifs (justification obligatoire).
 const ALLOW = {
@@ -24,11 +24,14 @@ const ALLOW = {
   'services/pricing-recommend.js': 'config superposée par withAuthorityRates',
   'services/economic-config.js': 'aucun taux (paramètres économiques)',
   'routes/admin/system.js': 'générateur de démonstration, non transactionnel',
+  'scripts/finalize-ff-c1-c2.js': 'générateur de code historique à usage unique, non transactionnel (texte de patch)',
+  'scripts/fix-schema.js': 'amorçage historique de business_rules (clés inertes : plus aucune lecture applicative)',
+  'scripts/recette/rct1/cli.js': 'export de règles business_rules pour la recette, lecture seule, non transactionnel',
   'services/pricing-parameters-status.js': 'diagnostic : lit les parités et l\'autorité',
 };
 
 const FORBIDDEN = [
-  { re: /\|\|\s*(492|138)\b/, why: 'repli de taux codé en dur (|| 492 / || 138)' },
+  { re: /(\|\||\?\?)\s*(492|491\.96\d*|138)\b/, why: 'repli de taux codé en dur (|| 492 / || 138)' },
   { re: /\bUSD_EUR_CURRENT_RATIO\b|\bRATES_FALLBACK\b|\bAED_KMF_FALLBACK\b|\bEUR_KMF_FALLBACK\b/, why: 'constante de repli supprimée' },
   { re: /\*\s*0\.92\b|\b0\.92\s*\*/, why: 'ratio USD/EUR figé 0,92' },
   { re: /FROM finance_config[^`'"]*taux_(change_eur_kmf|aed_kmf)|SELECT\s+taux_(change_eur_kmf|aed_kmf)/i, why: 'lecture directe de finance_config.taux_*' },

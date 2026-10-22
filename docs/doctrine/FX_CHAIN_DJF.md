@@ -31,3 +31,11 @@ inconnues refusées. `currency_parities` est immuable en valeur. Les jambes sont
 - **Garde CI** : `tests/unit/fx-no-competing-authority.test.js` interdit tout repli 492/138, ratio 0,92 et lecture directe de `finance_config.taux_*` hors liste justifiée.
 - **Procédure d'initialisation (staging)** : la personne A saisit le taux publié (avec sa source et sa date), la personne B l'approuve ; sans cela, toute conversion USD/DJF/AED est refusée (503) par conception.
 
+
+### Limites connues (revue PR-D)
+
+- `scripts/fx-observation-cli.js` accepte `--by` en texte libre : la règle des deux personnes y est organisationnelle (deux opérateurs distincts, deux sessions). L'API admin, elle, prend l'identité de la session authentifiée. Utiliser l'API pour toute saisie courante ; le script est réservé à l'initialisation.
+- Le vidage du cache `utils/rates` à l'approbation ne touche que l'instance qui l'a traitée : sur plusieurs instances, un nouveau taux est vu au plus tard après l'expiration du cache (60 s). Le jeu incomplet n'est jamais mis en cache.
+- Une observation peut être datée dans le passé : elle ne modifie aucune commande existante (taux figés dans `orders.fx_snapshot`, migration 315) mais change le taux applicable à ces dates pour les conversions à `at` explicite.
+- Les définitions historiques de `finance_config` (`bootstrap/startup-migrations.js`, `db/schema.sql`) créent encore `taux_change_eur_kmf NOT NULL DEFAULT 491.96` sur une base neuve : la migration 316 les rend optionnelles, aucune lecture applicative ne les utilise (garde CI). Le DROP des colonnes est prévu dans une PR séparée.
+- Export financier : le taux EUR/KMF d'une commande est dérivé de ses montants figés (KMF d'origine / EUR encaissé) ; le taux AED n'est plus figé par commande.

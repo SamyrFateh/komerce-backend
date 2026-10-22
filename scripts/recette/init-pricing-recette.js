@@ -8,7 +8,7 @@
  * - ne contient aucune valeur : elles viennent d'un fichier --params, qui doit
  *   déclarer "is_test_data": true et une source pour chaque valeur ;
  * - n'écrase JAMAIS une configuration saisie par un opérateur (updated_by non nul) ;
- * - passe par les services canoniques (pricing-rates.updateRates,
+ * - passe par les services canoniques (le taux AED est retiré : observation FX à deux personnes ;
  *   cost-component-admin-service.updateComponent) qui journalisent ;
  * - sans --apply : simulation ;
  * - les valeurs écrites ici n'ont pas d'auteur (updated_by nul) : le système les
@@ -46,21 +46,9 @@ async function runInit({ env = process.env, params = null, apply = false, db, ra
     throw err;
   }
 
-  // ── AED/KMF (EUR/KMF conservé tel quel) ───────────────────────────────────
-  const aed = params.aed_kmf;
-  if (!aed || !isPositive(aed.value) || !hasSource(aed)) {
-    add({ key: 'aed_kmf', status: 'a_renseigner', reason: 'Valeur ou source absente : aucune écriture.' });
-  } else {
-    const { rows: [cur] } = await db.query('SELECT taux_change_eur_kmf, taux_aed_kmf, updated_by FROM finance_config WHERE id = 1');
-    if (!cur) add({ key: 'aed_kmf', status: 'a_renseigner', reason: 'finance_config absent.' });
-    else if (cur.updated_by) add({ key: 'aed_kmf', status: 'configuration_presente_non_ecrasee', current: Number(cur.taux_aed_kmf) });
-    else if (Number(cur.taux_aed_kmf) === aed.value) add({ key: 'aed_kmf', status: 'deja_en_place' });
-    else if (!apply) add({ key: 'aed_kmf', status: 'a_appliquer', from: Number(cur.taux_aed_kmf), to: aed.value, source: aed.source });
-    else {
-      await ratesService.updateRates({ eur_kmf: Number(cur.taux_change_eur_kmf), aed_kmf: aed.value }, null);
-      add({ key: 'aed_kmf', status: 'applique', from: Number(cur.taux_aed_kmf), to: aed.value, source: aed.source, recette: params.recette_label });
-    }
-  }
+  // ── AED/KMF : plus de saisie ici (autorité FX unique) ─────────────────────────────────────────
+  // AED = observation EUR/USD approuvée par deux personnes x peg USD/AED : scripts/fx-observation-cli.js.
+  add({ key: 'aed_kmf', status: 'gere_par_observation_fx', reason: 'Taux AED retiré de finance_config : saisir/approuver l\'observation EUR/USD (scripts/fx-observation-cli.js).' });
 
   // ── Commission relais (composant canonique global) ────────────────────────
   const rel = params.relay_commission_kmf;
@@ -78,7 +66,7 @@ async function runInit({ env = process.env, params = null, apply = false, db, ra
     }
   }
 
-  report.complete = report.items.every((i) => ['applique', 'deja_en_place'].includes(i.status));
+  report.complete = report.items.every((i) => ['applique', 'deja_en_place', 'gere_par_observation_fx'].includes(i.status));
   report.note = 'Valeurs de TEST : le système continue de les afficher comme non validées. Cet état n’est pas une initialisation métier.';
   log(report);
   return report;
