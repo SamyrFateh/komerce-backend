@@ -187,4 +187,19 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     const {rows:[stored]}=await db.query('SELECT market_id,relais_id,status,payment_status FROM orders WHERE id=$1',[orderId]);
     expect(stored).toMatchObject({market_id:marketId,relais_id:relayId,status:'pending',payment_status:'pending'});
   });
+
+  it('4 — lot 4 : hors devise du tarif de transport global, la commande est refusée (fail-closed)',async()=>{
+    await db.query("UPDATE markets SET currency='XAF' WHERE id=$1",[marketId]);
+    await db.query("UPDATE product_market_price_drafts SET currency='XAF' WHERE market_id=$1 AND product_id=$2",[marketId,productId]);
+    try {
+      const res=await request(app).post('/api/orders')
+        .set('Authorization',`Bearer ${buyerToken}`)
+        .send({items:[{product_id:productId,quantity:1}],relais_id:relayId,payment_mode:'stripe_eur',tracking_phone:'+269000999'});
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('MARKET_TRANSPORT_TARIFF_MISSING');
+    } finally {
+      await db.query("UPDATE markets SET currency='KMF' WHERE id=$1",[marketId]);
+      await db.query("UPDATE product_market_price_drafts SET currency='KMF' WHERE market_id=$1 AND product_id=$2",[marketId,productId]);
+    }
+  });
 });

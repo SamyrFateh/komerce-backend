@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 636 | 636 | 0 |
+| backend | 36 | 36 | 637 | 637 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -384,11 +384,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 3
 - docs: 6
 - utils: 3
-- services: 33
+- services: 34
 - routes: 18
 - boutique: 1
 - dash: 2
-- tests: 62
+- tests: 63
 - tables owned (lifecycle): 15 — `parcels`, `relais`, `parcel_items`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `carriers`, `hub_custody_events`, `parcel_events`, `pickup_verify_attempts`, `shipments`
 - tables written: 15
 - interfaces exposed: 78
@@ -2237,7 +2237,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2101 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2103 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2482,7 +2482,7 @@ Meta Graph monté : oui.
 | orders | economic-engine | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 62 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | logistics | static-code, interface, data-read | 29 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface, data-read | 30 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |

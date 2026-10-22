@@ -78,6 +78,7 @@ const { applyActiveMarketPricesToCheckoutItems } = require('./market-local-price
 const { MarketCommercialPriceError } = require('./market-commercial-price-service');
 const { assertMarketDeliverable } = require('./market-delivery-proof-service');
 const { assertCentralCollectionAllowed } = require('./market-payment-collection-gate');
+const { assertTransportTariffApplicable } = require('./market-transport-tariff-gate');
 const {
   FULFILLMENT_SOURCE,
   resolveCheckoutFulfillmentSources,
@@ -196,7 +197,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     }
 
     const { rows: [checkoutMarket] } = await client.query(
-      'SELECT lifecycle_status, code FROM markets WHERE id=$1::uuid LIMIT 1',
+      'SELECT lifecycle_status, code, currency FROM markets WHERE id=$1::uuid LIMIT 1',
       [relais.market_id]
     );
     if (!checkoutMarket || checkoutMarket.lifecycle_status !== 'ACTIVE') {
@@ -369,6 +370,12 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     // commercial du transport de cette commande.
     let transport_price_kmf = 0;
     try {
+      // Lot 4 : les tarifs de transport globaux sont des tarifs de vente en KMF ; hors de cette devise,
+      // refus tant qu'aucun tarif de vente du marché n'existe (le coût attesté n'est jamais un prix).
+      assertTransportTariffApplicable({
+        marketCurrency: checkoutMarket.currency,
+        importItemCount: importTransportItems.length,
+      });
       const transportQuote = quoteTransportPriceForOrder({
         items: importTransportItems.map(item => {
           const product = productMap[item.product_id];
@@ -385,7 +392,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       transport_price_kmf = transportQuote.transport_price_kmf;
     } catch (e) {
       await client.query('ROLLBACK');
-      if (e instanceof TransportPricingError) {
+      if (e instanceof TransportPricingError || (e && e.code === 'MARKET_TRANSPORT_TARIFF_MISSING')) {
         return fail(409, { error: e.message, code: e.code });
       }
       throw e;

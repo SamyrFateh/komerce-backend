@@ -17015,7 +17015,7 @@
             ]
           },
           "services": {
-            "count": 33,
+            "count": 34,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -17060,6 +17060,11 @@
               {
                 "declared": "services/hub-reference.js",
                 "resolvedPath": "services/hub-reference.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-transport-tariff-gate.js",
+                "resolvedPath": "services/market-transport-tariff-gate.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -17185,7 +17190,7 @@
             ]
           },
           "tests": {
-            "count": 62,
+            "count": 63,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -17295,6 +17300,11 @@
               {
                 "declared": "tests/unit/logistics.test.js",
                 "resolvedPath": "tests/unit/logistics.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-transport-tariff-gate.test.js",
+                "resolvedPath": "tests/unit/market-transport-tariff-gate.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17520,7 +17530,7 @@
             ]
           }
         },
-        "totalFiles": 129,
+        "totalFiles": 131,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

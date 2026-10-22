@@ -10,7 +10,7 @@ describe('orders checkout — market lifecycle guard', () => {
   const source = fs.readFileSync(path.join(ROOT, 'services', 'order-checkout-service.js'), 'utf8');
 
   test('checkout resolves lifecycle from the server-owned relay market', () => {
-    expect(source).toMatch(/SELECT lifecycle_status, code FROM markets WHERE id=\$1::uuid LIMIT 1/);
+    expect(source).toMatch(/SELECT lifecycle_status, code, currency FROM markets WHERE id=\$1::uuid LIMIT 1/);
     expect(source).toMatch(/\[relais\.market_id\]/);
     expect(source).not.toMatch(/body\.market_id/);
   });
@@ -22,7 +22,7 @@ describe('orders checkout — market lifecycle guard', () => {
   });
 
   test('guard executes before pricing and order persistence', () => {
-    const guard = source.indexOf("SELECT lifecycle_status, code FROM markets");
+    const guard = source.indexOf("SELECT lifecycle_status, code, currency FROM markets");
     expect(guard).toBeGreaterThan(0);
     expect(guard).toBeLessThan(source.indexOf('marketPricing = await applyActiveMarketPricesToCheckoutItems'));
     expect(guard).toBeLessThan(source.indexOf('const order = await insertOrderRow(client'));

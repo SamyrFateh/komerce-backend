@@ -12402,6 +12402,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/market-transport-tariff-gate.js",
+        "resolvedPath": "services/market-transport-tariff-gate.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/parcel-item-mutation-service.js",
         "resolvedPath": "services/parcel-item-mutation-service.js",
         "status": "resolved-in-technical-graph"
@@ -12768,6 +12775,13 @@
         "category": "dash",
         "declared": "dashboards/admin/js/views/OrdersLogisticsView.js",
         "resolvedPath": "public/dashboards/admin/js/views/OrdersLogisticsView.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/market-transport-tariff-gate.test.js",
+        "resolvedPath": "tests/unit/market-transport-tariff-gate.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -41034,6 +41048,10 @@
                 "targetFile": "services/routing.js"
               },
               {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/market-transport-tariff-gate.js"
+              },
+              {
                 "sourceFileId": "services/order-checkout-persistence.js",
                 "targetFile": "services/pickup-secret-service.js"
               },
@@ -46211,7 +46229,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2101
+        "filesObserved": 2103
       },
       "boutique": {
         "filesObserved": 214,
@@ -49408,8 +49426,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 636,
-        "technicalNodesOwned": 636,
+        "technicalNodesTotal": 637,
+        "technicalNodesOwned": 637,
         "technicalOrphans": 0
       },
       "dash": {

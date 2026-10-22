@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 740
-- Files with full headers: 691
+- Scanned code files: 741
+- Files with full headers: 692
 - Files with lite headers: 49
-- Files with any headers: 740
+- Files with any headers: 741
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1816
-- Edges: 9151
+- Graph nodes: 1819
+- Edges: 9158
 - DB tables: 208
-- Doctrines: 665
-- Impact areas: 203
+- Doctrines: 666
+- Impact areas: 204
 - Unresolved code edges: 889
 - Tables multi-écrivains directs (>=2): 87
 - Avertissements db-write / db-write-via en chevauchement: 9
@@ -44,7 +44,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 24
 - inventory: 2
 - local-stock: 4
-- logistics: 55
+- logistics: 56
 - loyalty: 3
 - market: 4
 - market-autonomy: 4
@@ -90,7 +90,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 424
+- service: 425
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -171,6 +171,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/market-local-price-resolution-service.js — market-active-local-price-buyer-boundary (market-autonomy, critical, full)
 - services/market-local-price-state-transition.js — market-local-price-active-state-transition (market-autonomy, critical, full)
 - services/market-payment-collection-gate.js — market-payment-collection-gate (payments, critical, full)
+- services/market-transport-tariff-gate.js — market-transport-tariff-gate (logistics, critical, full)
 - services/mobile-money/kartapay-km.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/mtn-momo-cg.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/orange-money-cm.js — mobile-money-provider-adapter (payment, critical, full)
