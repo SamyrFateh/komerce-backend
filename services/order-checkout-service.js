@@ -66,7 +66,7 @@ const { assignOrderSimulationScope } = require('./simulation-scope-service');
 const { reserveRct1OrderReference, expectedProductTotalKmf, isAllowedRct1Reference } = require('./rct1-checkout-reference-guard');
 const { getLoyaltyDiscount }             = require('./loyalty-service');
 const { getRule }                        = require('../utils/rules');
-const { getRates }                       = require('../utils/rates');
+const { getAuthoritativeRates }          = require('../utils/rates');
 const { getUniqueRef, generateCashCode } = require('./order-service');
 const walletService = require('./wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
@@ -127,14 +127,19 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       }
     }
 
-    const rates = await getRates();
-    const eurKmf = rates?.eur_kmf;
-    // PATCH P2-3 : log explicite si le taux EUR/KMF est indisponible en DB.
-    // Un prix EUR calculé sur un taux stale peut provoquer une divergence comptable.
-    if (!eurKmf) {
-      log.error('[ORDER-CREATE] getRates() n\'a pas retourné eur_kmf — fallback 492 utilisé. Prix EUR potentiellement inexact.');
+    // Taux EUR/KMF canonique (finance_config) uniquement : aucun taux de repli (492) ne peut servir à
+    // calculer un total EUR. Indisponible -> refus explicite 503, sans commande créée.
+    let rates;
+    try {
+      rates = await getAuthoritativeRates();
+    } catch (e) {
+      if (e && e.code === 'fx_rate_unavailable') {
+        await client.query('ROLLBACK');
+        return fail(503, { error: 'Taux de change temporairement indisponible', code: 'fx_rate_unavailable' });
+      }
+      throw e;
     }
-    const eurKmfFinal = eurKmf || 492;
+    const eurKmfFinal = rates.eur_kmf;
 
     const {
       items = [],

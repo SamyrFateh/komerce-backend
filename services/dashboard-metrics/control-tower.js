@@ -29,6 +29,7 @@
 const costExpectation = require('../cost-allocation/cost-expectation');
 
 const db = require('../../db');
+const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('../signal-simulation-scope');
 const {
   buildFiltersClause, buildPreviousPeriod, computeDelta, makeKpi,
   ACTIVE_ORDER_STATUSES, TRANSIT_PARCEL_STATUSES,
@@ -177,6 +178,7 @@ async function getAlertesCritiques(filters = {}) {
     FROM signals s
     WHERE s.severity IN ('critical', 'urgent')
       AND s.status IN ('open', 'acknowledged')
+      AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
       AND ${scope.where}
   `;
 
@@ -203,6 +205,7 @@ async function getPointsAttention(filters = {}) {
     FROM signals s
     WHERE s.severity = 'warning'
       AND s.status IN ('open', 'acknowledged')
+      AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
       AND ${scope.where}
   `;
 

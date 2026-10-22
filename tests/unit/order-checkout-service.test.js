@@ -64,4 +64,14 @@ describe('order-checkout-service — livrabilité du marché', () => {
     expect(source).toMatch(/SELECT lifecycle_status, code, currency FROM markets/);
     expect(source).toMatch(/MARKET_TRANSPORT_TARIFF_MISSING/);
   });
+  test('lot 7 — aucun taux de repli : taux canonique strict, refus 503 fx_rate_unavailable', () => {
+    expect(source).toMatch(/require\('\.\.\/utils\/rates'\)/);
+    expect(source).toMatch(/await getAuthoritativeRates\(\)/);
+    expect(source).not.toMatch(/\|\|\s*492/);
+    expect(source).not.toMatch(/\bgetRates\(/);
+    expect(source).toMatch(/fail\(503, \{ error: 'Taux de change temporairement indisponible', code: 'fx_rate_unavailable' \}\)/);
+    const rate = source.indexOf('await getAuthoritativeRates()');
+    const items = source.indexOf('resolveCheckoutItems({');
+    expect(items).toBeGreaterThan(rate);
+  });
 });

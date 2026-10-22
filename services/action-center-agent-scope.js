@@ -21,6 +21,7 @@
 const db = require('../db');
 const signalAdminService = require('./signal-admin-service');
 
+const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('./signal-simulation-scope');
 // Propriétaires de signaux ouverts à chaque rôle agent. Le rôle ne suffit pas :
 // agent_relais est borné à SON relais (users.relais_id) via l'entité du signal ;
 // agent_hub / agent_transitaire sont bornés aux marchés explicitement rattachés
@@ -92,6 +93,7 @@ function publicSignal(row) {
 const SCOPE_SQL = `
   s.owner_role = ANY($1::text[])
   AND s.status IN ('open','acknowledged')
+  AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
   AND ($3::uuid[] IS NULL OR s.market_id = ANY($3::uuid[]))
   AND (
     $2::uuid IS NULL
