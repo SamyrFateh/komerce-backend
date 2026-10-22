@@ -86,8 +86,8 @@ if (!hasIntegrationEnv) {
       expect(Date.now() - new Date(r.created_at).getTime()).toBeLessThan(60000);
     });
     test('approbation postérieure à la transaction : non utilisable pour une date antérieure (approved_at horodaté par la base)', async () => {
-      const before = new Date();
-      await new Promise(r => setTimeout(r, 20));
+      const before = new Date(Date.now() - 2000); // marge d'horloge Node/PostgreSQL
+      await new Promise(r => setTimeout(r, 400));
       const { rows: [r] } = await db.query(
         "INSERT INTO fx_rate_observations (rate, source_label, as_of, entered_by) VALUES (1.1, 's', now() - interval '1 hour', 'alice') RETURNING id");
       await db.query("UPDATE fx_rate_observations SET approved_by = 'bob', approved_at = now() - interval '5 days' WHERE id = $1", [r.id]);

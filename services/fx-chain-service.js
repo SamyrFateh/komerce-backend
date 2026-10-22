@@ -18,6 +18,7 @@
  * Chaîne EUR→USD→DJF. Le taux DJF/EUR est DÉRIVÉ à la résolution (jamais stocké) ; le résultat porte les ids
  * des jambes afin que le snapshot de transaction les fige. Aucun repli (ni 492, ni 138, ni dernier taux périmé).
  * Un seul arrondi, à la fin (DJF minor_unit = 0).
+ * `at` absent = heure de la base (jamais l'horloge du process, décalée de celle de PostgreSQL).
  */
 'use strict';
 
@@ -34,12 +35,13 @@ class FxChainUnavailableError extends Error {
   }
 }
 
-async function resolveChain({ at = new Date(), maxAgeDays = DEFAULT_MAX_AGE_DAYS, client = db } = {}) {
+async function resolveChain({ at = null, maxAgeDays = DEFAULT_MAX_AGE_DAYS, client = db } = {}) {
   const { rows: [obs] } = await client.query(
     `SELECT id, rate, as_of, source_label
        FROM fx_rate_observations
-      WHERE approved_by IS NOT NULL AND as_of <= $1 AND created_at <= $1 AND approved_at <= $1
-        AND as_of >= $1::timestamptz - make_interval(days => $2::int)
+      WHERE approved_by IS NOT NULL AND as_of <= COALESCE($1::timestamptz, now())
+        AND created_at <= COALESCE($1::timestamptz, now()) AND approved_at <= COALESCE($1::timestamptz, now())
+        AND as_of >= COALESCE($1::timestamptz, now()) - make_interval(days => $2::int)
       ORDER BY as_of DESC LIMIT 1`,
     [at, maxAgeDays]
   );
@@ -47,7 +49,7 @@ async function resolveChain({ at = new Date(), maxAgeDays = DEFAULT_MAX_AGE_DAYS
 
   const { rows: [peg] } = await client.query(
     `SELECT id, rate, valid_from, source_label FROM fx_pegs
-      WHERE valid_from <= $1 AND created_at <= $1 ORDER BY valid_from DESC LIMIT 1`,
+      WHERE valid_from <= COALESCE($1::timestamptz, now()) AND created_at <= COALESCE($1::timestamptz, now()) ORDER BY valid_from DESC LIMIT 1`,
     [at]
   );
   if (!peg) throw new FxChainUnavailableError('Aucun peg USD/DJF valide : conversion DJF refusée');
