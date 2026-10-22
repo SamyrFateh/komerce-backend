@@ -38,6 +38,10 @@ async function countRelayParcels(scope = {}, executor = db) {
        JOIN orders o ON o.id = p.order_id
        LEFT JOIN relais r ON r.id = p.relais_id
       WHERE p.status NOT IN ('cancelled', 'collected')
+        -- Vérité unique : un colis ne compte que s'il appartient à une commande réelle et encore vivante
+        -- (jamais une commande de simulation/recette ni une commande déjà clôturée) — comme les listes Live.
+        AND o.simulation_scope IS NULL
+        AND o.status::text NOT IN ('cancelled', 'refunded', 'collected')
         AND ($1::uuid[] IS NULL OR (
               o.market_id = ANY($1::uuid[])
               AND (p.relais_id IS NULL OR r.market_id = ANY($1::uuid[]))

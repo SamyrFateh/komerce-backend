@@ -706,7 +706,14 @@
     ];
     return cards
       .filter(card => projected[card.key])
-      .map(card => ({ ...card, value: projected[card.key].value }));
+      .map(card => {
+        const value = projected[card.key].value;
+        // Aucune commande finalisée : la marge réelle est INCONNUE, jamais « 0 KMF » (ni ton positif).
+        if (card.key === 'marge' && scope && Number(scope.eligible_orders) === 0) {
+          return { ...card, value: '—', tone: 'neutral', badge: null, unknown: true };
+        }
+        return { ...card, value };
+      });
   }
 
   function renderKpiCard(doc, card, openHelp) {

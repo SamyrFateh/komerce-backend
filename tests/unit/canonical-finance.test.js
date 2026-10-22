@@ -374,7 +374,12 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(margin.helper.replace(/[\u00a0\u202f]/g, ' ')).toBe('31,4 % sur 2/6 commandes finalisées');
     payload.margin_scope.eligible_orders = 0;
     payload.margin_scope.eligible_margin_pct = null;
-    expect(financeDecision.kpiCards(payload, finance).find(c => c.key === 'marge').badge).toBeNull();
+    const none = financeDecision.kpiCards(payload, finance).find(c => c.key === 'marge');
+    expect(none.badge).toBeNull();
+    // Inconnu jamais zéro : sans commande finalisée, ni « 0 KMF » ni ton positif.
+    expect(none.value).toBe('—');
+    expect(none.tone).toBe('neutral');
+    expect(none.unknown).toBe(true);
   });
 
   test('FIN-03 : bandeaux — coûts à établir et écarts confirmés (singulier/pluriel, inconnu jamais zéro)', () => {
