@@ -12359,6 +12359,13 @@
       },
       {
         "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/313_market_transport_sale_rates.sql",
+        "resolvedPath": "migrations/313_market_transport_sale_rates.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
         "category": "docs",
         "declared": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
         "resolvedPath": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
@@ -12432,6 +12439,13 @@
         "category": "services",
         "declared": "services/market-transport-tariff-gate.js",
         "resolvedPath": "services/market-transport-tariff-gate.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/market-transport-sale-rates.js",
+        "resolvedPath": "services/market-transport-sale-rates.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -12810,6 +12824,13 @@
         "category": "tests",
         "declared": "tests/unit/market-transport-tariff-gate.test.js",
         "resolvedPath": "tests/unit/market-transport-tariff-gate.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/market-transport-sale-rates-postgres.test.js",
+        "resolvedPath": "tests/integration/market-transport-sale-rates-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13340,6 +13361,20 @@
       {
         "feature": "market",
         "category": "migrations",
+        "declared": "migrations/312_fx_chain_hardening.sql",
+        "resolvedPath": "migrations/312_fx_chain_hardening.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/314_fx_authority_foundation.sql",
+        "resolvedPath": "migrations/314_fx_authority_foundation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "migrations",
         "declared": "migrations/135_markets_foundation.sql",
         "resolvedPath": "migrations/135_markets_foundation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13417,6 +13452,13 @@
       {
         "feature": "market",
         "category": "services",
+        "declared": "services/fx-authority.js",
+        "resolvedPath": "services/fx-authority.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market",
+        "category": "services",
         "declared": "middleware/require-market-scope.js",
         "resolvedPath": "middleware/require-market-scope.js",
         "status": "resolved-in-technical-graph"
@@ -13438,6 +13480,20 @@
       {
         "feature": "market",
         "category": "services",
+        "declared": "services/fx-engine-rates.js",
+        "resolvedPath": "services/fx-engine-rates.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market",
+        "category": "services",
+        "declared": "services/fx-observation-service.js",
+        "resolvedPath": "services/fx-observation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market",
+        "category": "services",
         "declared": "services/market-lifecycle-service.js",
         "resolvedPath": "services/market-lifecycle-service.js",
         "status": "resolved-in-technical-graph"
@@ -13454,6 +13510,55 @@
         "category": "tests",
         "declared": "tests/integration/fx-chain-postgres.test.js",
         "resolvedPath": "tests/integration/fx-chain-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/fx-authority-postgres.test.js",
+        "resolvedPath": "tests/integration/fx-authority-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/fx-engine-rates-postgres.test.js",
+        "resolvedPath": "tests/integration/fx-engine-rates-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/fx-observation-service-postgres.test.js",
+        "resolvedPath": "tests/integration/fx-observation-service-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/fx-no-competing-authority.test.js",
+        "resolvedPath": "tests/unit/fx-no-competing-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/order-fx-snapshot-postgres.test.js",
+        "resolvedPath": "tests/integration/order-fx-snapshot-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/fx-authority-decimal.test.js",
+        "resolvedPath": "tests/unit/fx-authority-decimal.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/fx-chain-service.test.js",
+        "resolvedPath": "tests/unit/fx-chain-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15141,6 +15246,13 @@
         "category": "services",
         "declared": "services/order-checkout-persistence.js",
         "resolvedPath": "services/order-checkout-persistence.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/order-fx-snapshot.js",
+        "resolvedPath": "services/order-fx-snapshot.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -27393,6 +27505,12 @@
       },
       {
         "from": "infrastructure",
+        "to": "market",
+        "raw": "market — utils/rates.js lit l'autorité de conversion FX unique (services/fx-authority.js), plus aucun taux propre",
+        "resolved": true
+      },
+      {
+        "from": "infrastructure",
         "to": "auth",
         "raw": "auth — bootstrap/api-routes.js monte les routes auth",
         "resolved": true
@@ -27659,6 +27777,12 @@
         "from": "market",
         "to": "infrastructure",
         "raw": "infrastructure (db.js — pool de connexion Postgres, seule dépendance de middleware/require-market-scope.js)",
+        "resolved": true
+      },
+      {
+        "from": "market",
+        "to": "notifications",
+        "raw": "notifications (utils/alerts.js — alerte d'écart EUR/USD créée à l'approbation par services/fx-observation-service.js)",
         "resolved": true
       },
       {
@@ -32778,6 +32902,10 @@
                 "targetFile": "services/transport-rails.js"
               },
               {
+                "sourceFileId": "routes/catalog-product-detail.js",
+                "targetFile": "services/market-transport-tariff-gate.js"
+              },
+              {
                 "sourceFileId": "tests/integration/catalog-approval-queue-contract.test.js",
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
@@ -36139,6 +36267,10 @@
               },
               {
                 "sourceFileId": "services/pricing-recommend.js",
+                "targetFile": "utils/rates.js"
+              },
+              {
+                "sourceFileId": "services/pricing-recommend.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -36176,6 +36308,10 @@
               {
                 "sourceFileId": "services/cost-allocation/allocate.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/cost-allocation/allocate.js",
+                "targetFile": "utils/rates.js"
               },
               {
                 "sourceFileId": "services/cost-allocation/variance.js",
@@ -36631,8 +36767,24 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/pricing-recommend.js",
+                "targetFile": "services/fx-engine-rates.js"
+              },
+              {
+                "sourceFileId": "services/pricing-parameters-status.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
+                "sourceFileId": "services/pricing-cdr.js",
+                "targetFile": "services/fx-engine-rates.js"
+              },
+              {
                 "sourceFileId": "services/pricing-market-corridor.js",
                 "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "routes/admin-finance-config.js",
+                "targetFile": "services/fx-observation-service.js"
               }
             ]
           }
@@ -36952,10 +37104,6 @@
           {
             "channel": "static-code",
             "evidence": [
-              {
-                "sourceFileId": "bootstrap/feature-wiring.js",
-                "targetFile": "utils/rules.js"
-              },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin-rules.js"
@@ -37388,6 +37536,22 @@
           }
         ],
         "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "infrastructure",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "utils/rates.js",
+                "targetFile": "services/fx-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "infrastructure",
@@ -38200,6 +38364,22 @@
       },
       {
         "from": "logistics",
+        "to": "economic-engine",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/unit/market-transport-tariff-gate.test.js",
+                "targetFile": "services/transport-pricing.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "logistics",
         "to": "incident-management",
         "channels": [
           {
@@ -38531,6 +38711,10 @@
                 "targetFile": "validators/index.js"
               },
               {
+                "sourceFileId": "tests/integration/market-transport-sale-rates-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/hub-volume-photo-contract.test.js",
                 "targetFile": "bootstrap/crons.js"
               },
@@ -38649,6 +38833,26 @@
       },
       {
         "from": "logistics",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-transport-sale-rates.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-transport-sale-rates-postgres.test.js",
+                "targetFile": "utils/currency.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "logistics",
         "to": "market-delegation",
         "channels": [
           {
@@ -38741,6 +38945,10 @@
               {
                 "sourceFileId": "utils/parcelSync.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "services/order-fx-snapshot.js"
               },
               {
                 "sourceFileId": "services/parcel-operations.js",
@@ -39166,6 +39374,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/fx-authority.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "middleware/require-market-scope.js",
                 "targetFile": "db.js"
               },
@@ -39174,7 +39386,43 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/fx-engine-rates.js",
+                "targetFile": "utils/rates.js"
+              },
+              {
+                "sourceFileId": "services/fx-observation-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/fx-observation-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/fx-observation-service.js",
+                "targetFile": "utils/rates.js"
+              },
+              {
                 "sourceFileId": "tests/integration/fx-chain-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/fx-authority-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/fx-engine-rates-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/fx-engine-rates-postgres.test.js",
+                "targetFile": "utils/rates.js"
+              },
+              {
+                "sourceFileId": "tests/integration/fx-observation-service-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/order-fx-snapshot-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -39212,6 +39460,38 @@
               {
                 "sourceFileId": "tests/integration/market-open-matrix.test.js",
                 "targetFile": "services/market-operator-provisioning.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "market",
+        "to": "notifications",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/fx-observation-service.js",
+                "targetFile": "utils/alerts.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/integration/order-fx-snapshot-postgres.test.js",
+                "targetFile": "services/order-fx-snapshot.js"
               }
             ]
           }
@@ -41001,10 +41281,6 @@
                 "targetFile": "validators/index.js"
               },
               {
-                "sourceFileId": "routes/orders/create.js",
-                "targetFile": "utils/rates.js"
-              },
-              {
                 "sourceFileId": "routes/orders/qr.js",
                 "targetFile": "db.js"
               },
@@ -41195,6 +41471,10 @@
                 "targetFile": "services/market-transport-tariff-gate.js"
               },
               {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/market-transport-sale-rates.js"
+              },
+              {
                 "sourceFileId": "services/order-checkout-persistence.js",
                 "targetFile": "services/pickup-secret-service.js"
               },
@@ -41345,6 +41625,10 @@
               {
                 "sourceFileId": "services/order-display-snapshot.js",
                 "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "services/order-fx-snapshot.js",
+                "targetFile": "services/fx-authority.js"
               },
               {
                 "sourceFileId": "tests/unit/order-display-snapshot.test.js",
@@ -42150,10 +42434,6 @@
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
               {
-                "sourceFileId": "tests/unit/payment-fx-authority.test.js",
-                "targetFile": "utils/rates.js"
-              },
-              {
                 "sourceFileId": "tests/unit/paypal-webhook.test.js",
                 "targetFile": "db.js"
               },
@@ -42374,10 +42654,6 @@
               },
               {
                 "sourceFileId": "services/cash-custody-service.js",
-                "targetFile": "utils/currency.js"
-              },
-              {
-                "sourceFileId": "services/payment-mobile-money.js",
                 "targetFile": "utils/currency.js"
               },
               {
@@ -44672,6 +44948,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/refund-service.js",
+                "targetFile": "services/order-fx-snapshot.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -46372,7 +46652,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2110
+        "filesObserved": 2123
       },
       "boutique": {
         "filesObserved": 214,
@@ -46408,7 +46688,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 20,
-      "NON_RUNTIME_TEST": 16,
+      "NON_RUNTIME_TEST": 18,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -46703,6 +46983,21 @@
         "exceptionReasons": []
       },
       {
+        "from": "logistics",
+        "to": "economic-engine",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "loyalty",
         "to": "logistics",
         "family": "NON_RUNTIME_TEST",
@@ -46735,6 +47030,21 @@
       {
         "from": "market",
         "to": "market-delegation",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "market",
+        "to": "orders",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
         "consumerKind": "business-feature",
@@ -46967,7 +47277,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 5,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 7,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
@@ -49584,8 +49894,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 639,
-        "technicalNodesOwned": 639,
+        "technicalNodesTotal": 644,
+        "technicalNodesOwned": 644,
         "technicalOrphans": 0
       },
       "dash": {
@@ -49720,7 +50030,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> business-rules",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"business-rules\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"business-rules\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -49794,6 +50104,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "logistics -> economic-engine",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"economic-engine\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "loyalty -> logistics",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"loyalty\" vers \"logistics\""
       },
@@ -49806,6 +50121,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "market -> market-delegation",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"market\" vers \"market-delegation\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "market -> orders",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market\" vers \"orders\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -49988,9 +50308,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 47,
+      "expectedTopology": 49,
       "generatorLimitations": 12,
-      "classifiedCandidates": 59
+      "classifiedCandidates": 61
     }
   }
 }

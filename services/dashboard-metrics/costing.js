@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, ./_helpers, ../cost-allocation/cost-expectation, ./control-tower (getCAEncaisse, INV-1)
  * @used-by       services/dashboard-metrics/index.js
- * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, orders, markets
+ * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, markets
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      resolve_before_behavior_change
