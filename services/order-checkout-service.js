@@ -65,6 +65,7 @@ const db      = require('../db');
 const { assignOrderSimulationScope } = require('./simulation-scope-service');
 const { reserveRct1OrderReference, expectedProductTotalKmf, isAllowedRct1Reference } = require('./rct1-checkout-reference-guard');
 const { getLoyaltyDiscount }             = require('./loyalty-service');
+const { getRates } = require('../utils/rates');
 const { getRule }                        = require('../utils/rules');
 const { getUniqueRef, generateCashCode } = require('./order-service');
 const walletService = require('./wallet-service');
@@ -268,12 +269,11 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     }
 
     const [
-      maxQty, fretPerKg, aedFallback, customsPct, cashTimeout,
+      maxQty, fretPerKg, customsPct, cashTimeout,
       seaKmfPerKgCommercial, airKmfPerKgTaxable, airVolumetricDivisor,
     ] = await Promise.all([
       getRule('MAX_QUANTITY_PER_ITEM', 100),
       getRule('FREIGHT_KMF_PER_KG', 65),
-      getRule('AED_KMF_FALLBACK', 138),
       getRule('CUSTOMS_DEFAULT_PCT', 20),
       getRule('CASH_PAYMENT_TIMEOUT_HOURS', 36),
       // §8 — tarifs commerciaux transport (distincts du coût interne fretPerKg)
@@ -292,12 +292,15 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     // Ce sous-service ne fait JAMAIS de ROLLBACK lui-même : sur échec, il
     // renvoie { ok:false, status, body } et c'est cet orchestrateur qui
     // exécute le ROLLBACK ci-dessous, comme avant l'extraction.
+    // Taux AED→KMF de l'autorité FX (estimation de coût uniquement) : absent = estimation inconnue, pas de repli 138.
+    let aedKmf = null;
+    try { aedKmf = (await getRates()).toJSON().aed_kmf; } catch (_) { aedKmf = null; }
     const itemsResolved = await resolveCheckoutItems({
       client,
       items,
       maxQty,
       fretPerKg,
-      aedFallback,
+      aedKmf,
       customsPct,
       pickupCodeRecipient: pickup_code_recipient,
       userId: user.id,
@@ -416,9 +419,9 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     }
     total_kmf += transport_price_kmf;
 
-    const margin_est = total_kmf > 0
+    const margin_est = cost_estimated == null ? null : (total_kmf > 0
       ? ((total_kmf - cost_estimated) / total_kmf * 100).toFixed(2)
-      : 0;
+      : 0);
 
     let discountPct = 0;
     let discountKmf = 0;

@@ -16,6 +16,7 @@
  */
 
 const mockGetRates = jest.fn();
+const fxj = (o) => ({ ...o, toJSON: () => o });
 jest.mock('../../utils/rates', () => ({ getRates: (...args) => mockGetRates(...args) }));
 
 const mockGetRule = jest.fn();
@@ -70,7 +71,7 @@ describe('cached / setCache', () => {
 
 describe('getEurKmf', () => {
   it('nominal → ne renvoie que eur_kmf et aed_kmf depuis getRates()', async () => {
-    mockGetRates.mockResolvedValue({ eur_kmf: 500, aed_kmf: 130, extra_field: 'ignore' });
+    mockGetRates.mockResolvedValue(fxj({ eur_kmf: 500, aed_kmf: 130, extra_field: 'ignore' }));
     const result = await dashboardShared.getEurKmf();
     expect(result).toEqual({ eur_kmf: 500, aed_kmf: 130 });
   });

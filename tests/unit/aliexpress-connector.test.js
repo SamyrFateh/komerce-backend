@@ -371,6 +371,7 @@ describe('aliexpress-connector', () => {
       finance: {
         taux_change_eur_kmf: 492,
         taux_aed_kmf: 138,
+        taux_usd_kmf: 452.64,
         target_marge_brute_pct: 40,
       },
       categories: {

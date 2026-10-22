@@ -33,6 +33,8 @@
  */
 
 const db            = require('../db');
+const { getRates, resolveFxRates } = require('../utils/rates');
+const { withAuthorityRates } = require('./fx-engine-rates');
 const pricingEngine = require('./pricing-engine');
 const log           = require('../utils/logger').child({ module: 'pricing-recommend' });
 
@@ -100,7 +102,7 @@ async function _loadGlobalParams() {
     db.query('SELECT * FROM charges            WHERE is_active = TRUE'),
   ]);
   return {
-    fc:       fcRes.rows[0]  || {},
+    fc:       await withAuthorityRates(fcRes.rows[0] || {}),
     comps:    compRes.rows,
     provs:    provRes.rows,
     charges:  chargesRes.rows,
@@ -178,8 +180,8 @@ async function computeRecommend(b = {}) {
   // Dériver prix AED
   let prixAed = Number(b.prix_aed) || 0;
   if (!prixAed && product?.cost_kmf) {
-    const fcRow = await db.query('SELECT taux_aed_kmf FROM finance_config WHERE id = 1').catch(() => null);
-    const taux  = Number(fcRow?.rows?.[0]?.taux_aed_kmf) || 138;
+    // Taux AED→KMF de l'autorité FX (observation approuvée) : indisponible = refus 503, jamais 138.
+    const taux  = (await getRates()).aed_kmf;
     prixAed     = Number(product.cost_kmf) / taux;
   }
   if (!prixAed || prixAed <= 0) {
@@ -195,8 +197,9 @@ async function computeRecommend(b = {}) {
   const cat = catRes.rows[0];
   if (!cat) warnings.push('Catégorie "' + category + '" introuvable → valeurs par défaut');
 
-  const taxAED        = Number(fc.taux_aed_kmf)         || 138;
-  const taxEUR        = Number(fc.taux_change_eur_kmf)   || 492;
+  const fxRates       = resolveFxRates(fc);
+  const taxAED        = fxRates.aed_kmf;
+  const taxEUR        = fxRates.eur_kmf;
   const fretEurM3     = Number(fc.fret_eur_per_m3)       || 180;
   const margeCiblePct = (cat?.default_margin_pct
     ? Number(cat.default_margin_pct)
@@ -414,8 +417,9 @@ async function computeRecommendBatch(b = {}) {
   const cats      = {};
   catsRes.rows.forEach(c => { cats[c.key] = c; });
 
-  const taxAED    = Number(fc.taux_aed_kmf)         || 138;
-  const taxEUR    = Number(fc.taux_change_eur_kmf)   || 492;
+  const fxRates   = resolveFxRates(fc);
+  const taxAED    = fxRates.aed_kmf;
+  const taxEUR    = fxRates.eur_kmf;
   const fretEurM3 = Number(fc.fret_eur_per_m3)       || 180;
   const margeGlob = (Number(fc.target_marge_brute_pct) || 40) / 100;
 

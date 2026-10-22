@@ -9,7 +9,7 @@ jest.mock('../../db', () => ({ query: jest.fn() }));
 const { computeCDR } = require('../../services/pricing-cdr');
 
 const config = {
-  finance: { fret_eur_per_m3: 180, eur_kmf: 491.97 },
+  finance: { fret_eur_per_m3: 180, taux_change_eur_kmf: 491.96775 },
   categories: { mariage: {} },
   provisions: [],
   charges: [],

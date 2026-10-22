@@ -4,85 +4,29 @@
  * @test-kind unit
  * @test-runner jest
  * @test-requires none
+ *
+ * Paiement & autorité FX : le montant EUR d'une commande vient du snapshot FX (autorité, pivot EUR),
+ * jamais d'une lecture finance_config ni d'un repli.
  */
-
 const fs = require('fs');
 const path = require('path');
 
-const mockDbQuery = jest.fn();
-jest.mock('../../db', () => ({ query: (...args) => mockDbQuery(...args) }));
+jest.mock('../../db', () => ({ query: jest.fn() }));
 
-const mockFallbackProvider = jest.fn();
-const mockWarn = jest.fn();
-const mockError = jest.fn();
-jest.mock('../../utils/logger', () => ({
-  child: () => ({
-    warn: (...args) => mockWarn(...args),
-    error: (...args) => mockError(...args),
-  }),
-}));
-
-let rates;
-
-beforeEach(() => {
-  jest.resetModules();
-  jest.clearAllMocks();
-  rates = require('../../utils/rates');
-  rates.configureRatesFallbackProvider(mockFallbackProvider);
-});
+const read = (p) => fs.readFileSync(path.join(__dirname, '../../', p), 'utf8');
 
 describe('Payment & FX Authority', () => {
-  test('getAuthoritativeRates lit uniquement finance_config et hydrate le cache partagé', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [{ taux_change_eur_kmf: '501.5', taux_aed_kmf: '139.25' }],
-    });
-
-    await expect(rates.getAuthoritativeRates()).resolves.toEqual({
-      eur_kmf: 501.5,
-      aed_kmf: 139.25,
-    });
-
-    // Le checkout appelle ensuite getRates(): même snapshot, aucune seconde
-    // lecture et aucune possibilité de basculer sur un fallback.
-    await expect(rates.getRates()).resolves.toEqual({
-      eur_kmf: 501.5,
-      aed_kmf: 139.25,
-    });
-    expect(mockDbQuery).toHaveBeenCalledTimes(1);
-    expect(mockFallbackProvider).not.toHaveBeenCalled();
+  test('getAuthoritativeRates ne lit plus finance_config : il s\'appuie sur l\'autorité FX', () => {
+    const src = read('utils/rates.js');
+    expect(src).toContain("require('../services/fx-authority')");
+    expect(src).not.toMatch(/FROM finance_config/);
   });
 
-  test('le chemin autoritatif refuse une finance_config inaccessible sans fallback silencieux', async () => {
-    mockDbQuery.mockRejectedValueOnce(new Error('finance db unavailable'));
-    mockFallbackProvider.mockResolvedValue(492);
-
-    await expect(rates.getAuthoritativeRates()).rejects.toMatchObject({
-      code: 'fx_rate_unavailable',
-      statusCode: 503,
-    });
-    expect(mockFallbackProvider).not.toHaveBeenCalled();
-  });
-
-  test('le chemin autoritatif refuse un taux canonique absent ou invalide', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [{ taux_change_eur_kmf: null, taux_aed_kmf: '138' }],
-    });
-
-    await expect(rates.getAuthoritativeRates()).rejects.toMatchObject({
-      code: 'fx_rate_unavailable',
-    });
-  });
-
-  test('le boundary checkout protège Stripe et PayPal mais pas le cash KMF', () => {
-    const source = fs.readFileSync(
-      path.join(__dirname, '../../routes/orders/create.js'),
-      'utf8'
-    );
-
-    // PR-B : la garde locale du route est remplacée par le snapshot FX du service de checkout (autorité unique).
-    expect(source).not.toContain('EUR_PAYMENT_MODES');
-    expect(source).not.toContain('getAuthoritativeRates');
-    const svc = fs.readFileSync(path.join(__dirname, '../../services/order-checkout-service.js'), 'utf8');
+  test('le boundary checkout passe par le snapshot FX du service (cash KMF compris), sans garde locale', () => {
+    const route = read('routes/orders/create.js');
+    expect(route).not.toContain('EUR_PAYMENT_MODES');
+    expect(route).not.toContain('getAuthoritativeRates');
+    const svc = read('services/order-checkout-service.js');
     expect(svc).toContain('buildOrderFxSnapshot(');
     expect(svc).toContain('fx_rate_unavailable');
   });

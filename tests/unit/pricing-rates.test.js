@@ -13,7 +13,7 @@
  * routes/pricing.js (GET/PUT /api/pricing/rates) :
  *
  *   ✅ getCurrentRates() → { current, history }
- *   ✅ getCurrentRates() fallback si finance_config vide
+ *   ✅ getCurrentRates() AED indisponible = null (pas de repli)
  *   ✅ updateRates() → finance_config + exchange_rates + invalidateCache
  *   ✅ updateRates() → ROLLBACK si erreur DB
  */
@@ -23,8 +23,10 @@ const { makeClient, expectTransactionCommitted, expectTransactionRolledBack } = 
 const mockInvalidateCache = jest.fn();
 
 jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
+const mockGetRates = jest.fn();
 jest.mock('../../utils/rates', () => ({
   invalidateCache: (...args) => mockInvalidateCache(...args),
+  getRates: (...args) => mockGetRates(...args),
 }));
 
 const db = require('../../db');
@@ -32,30 +34,25 @@ const { getCurrentRates, updateRates } = require('../../services/pricing-rates')
 
 describe('pricing-rates', () => {
   describe('getCurrentRates', () => {
-    it('retourne current + history depuis finance_config / exchange_rates', async () => {
-      db.query
-        .mockResolvedValueOnce({ rows: [{ taux_change_eur_kmf: '500', taux_aed_kmf: '140' }] })
-        .mockResolvedValueOnce({ rows: [{ eur_kmf: 500, aed_kmf: 140, valid_from: '2026-06-01' }] });
+    it('retourne current (autorité FX) + history (exchange_rates)', async () => {
+      mockGetRates.mockResolvedValueOnce({ toJSON: () => ({ eur_kmf: 491.96775, aed_kmf: 134, usd_kmf: 450 }) });
+      db.query.mockResolvedValueOnce({ rows: [{ eur_kmf: 500, aed_kmf: 140, valid_from: '2026-06-01' }] });
 
       const result = await getCurrentRates();
 
       expect(result).toEqual({
-        current: { eur_kmf: 500, aed_kmf: 140 },
+        current: { eur_kmf: 491.96775, aed_kmf: 134 },
         history: [{ eur_kmf: 500, aed_kmf: 140, valid_from: '2026-06-01' }],
       });
     });
 
-    it('applique les fallbacks 492/138 si finance_config vide', async () => {
-      db.query
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] });
+    it('AED sans observation approuvée : null, jamais 138', async () => {
+      mockGetRates.mockResolvedValueOnce({ toJSON: () => ({ eur_kmf: 491.96775, aed_kmf: null, usd_kmf: null }) });
+      db.query.mockResolvedValueOnce({ rows: [] });
 
       const result = await getCurrentRates();
 
-      expect(result).toEqual({
-        current: { eur_kmf: 492, aed_kmf: 138 },
-        history: [],
-      });
+      expect(result.current).toEqual({ eur_kmf: 491.96775, aed_kmf: null });
     });
   });
 

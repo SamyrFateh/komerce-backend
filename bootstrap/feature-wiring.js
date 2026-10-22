@@ -15,8 +15,6 @@
  */
 'use strict';
 
-const { configureRatesFallbackProvider } = require('../utils/rates');
-const { getRuleNumber } = require('../utils/rules');
 const { setNotificationOutcomeListener } = require('../services/notifications/internals');
 const signalService = require('../services/signal-service');
 
@@ -24,10 +22,6 @@ let wired = false;
 
 function wireFeatureBoundaries() {
   if (wired) return false;
-
-  // Infrastructure reçoit une fonction déjà résolue ; rates.js ne connaît pas
-  // business-rules et conserve le fallback legacy sans inversion de frontière.
-  configureRatesFallbackProvider(getRuleNumber);
 
   // Notifications émet un fait neutre. La traduction en signal de pilotage est
   // une responsabilité d'assemblage, pas du transporteur de message.
