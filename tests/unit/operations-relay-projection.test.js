@@ -19,6 +19,8 @@ test('LIVE-06 — une seule requête colis, global sans filtre', async () => {
   const [sql, params] = mockQuery.mock.calls[0];
   expect(sql).toContain("p.status NOT IN ('cancelled', 'collected')");
   expect(sql).toContain("COUNT(*) FILTER (WHERE p.status = 'available')");
+  expect(sql).toContain('o.simulation_scope IS NULL');
+  expect(sql).toContain("o.status::text NOT IN ('cancelled', 'refunded', 'collected')");
   expect(params).toEqual([null, null]);
 });
 

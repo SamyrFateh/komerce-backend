@@ -706,13 +706,21 @@
     ];
     return cards
       .filter(card => projected[card.key])
-      .map(card => ({ ...card, value: projected[card.key].value }));
+      .map(card => {
+        const value = projected[card.key].value;
+        // Aucune commande finalisée : la marge réelle est INCONNUE, jamais « 0 KMF » (ni ton positif).
+        if (card.key === 'marge' && scope && Number(scope.eligible_orders) === 0) {
+          return { ...card, value: '—', tone: 'neutral', badge: null, helper: `Aucune commande finalisée (0/${base.formatNumber(scope.paid_orders, 0)})`, unknown: true };
+        }
+        return { ...card, value };
+      });
   }
 
   function renderKpiCard(doc, card, openHelp) {
     const node = el(doc, 'div', `kmc-fin3-kpi is-${card.key} tone-${card.tone}`);
     node.setAttribute('data-kpi', card.key);
     if (card.badge) node.classList.add('has-badge');
+    if (card.unknown) node.classList.add('is-unknown');
     if (card.ring != null) {
       const ring = el(doc, 'span', 'kmc-fin3-ring');
       ring.setAttribute('aria-hidden', 'true');

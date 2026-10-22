@@ -86,6 +86,13 @@ test('buildWorkspace scope toutes ses lectures DB par le market id serveur', asy
   }
 });
 
+test('la file des colis a le même périmètre que le compteur relais : commandes réelles et vivantes', async () => {
+  await workspace.buildWorkspace({ market: MARKET });
+  const parcelSql = mockQuery.mock.calls.map(c => String(c[0])).find(sql => sql.includes('FROM parcels p') && sql.includes('p.recipient_name'));
+  expect(parcelSql).toContain('o.simulation_scope IS NULL');
+  expect(parcelSql).toContain("o.status::text NOT IN ('cancelled', 'refunded', 'collected')");
+});
+
 test('agrégat répartition groupe par commande et ne déduplique jamais sur le montant', async () => {
   await workspace.buildWorkspace({ market: MARKET });
 

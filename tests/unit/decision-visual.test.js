@@ -50,6 +50,10 @@ describe('FIN-03 — Finance : composition du mock', () => {
     expect(css).toMatch(/\.kmc-fin3-kpi\.is-marge \{ background: #eefaf2; border-color: #8fd9ad;/);
     expect(css).toContain('.kmc-fin3 .kmc-fin3-kpi.is-marge .kmc-fin3-kpi-value { color: #14532d; }');
   });
+  test('marge inconnue (aucune commande finalisée) : carte neutre, jamais le vert « marge réalisée »', () => {
+    expect(css).toContain('.kmc-fin3 .kmc-fin3-kpi.is-marge.is-unknown { background: #fff;');
+    expect(css).toContain('.kmc-fin3 .kmc-fin3-kpi.tone-neutral .kmc-fin3-kpi-icon');
+  });
   test('deux bandeaux et deux panneaux en deux colonnes, empilés sous 1100 px, tableau en cartes sous 640 px', () => {
     expect(css).toContain('.kmc-fin3 .kmc-fin3-banners, body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));');
     expect(css).toMatch(/@media \(max-width: 1100px\)[\s\S]*kmc-fin3-panels[\s\S]*minmax\(0, 1fr\)\)?;/);
