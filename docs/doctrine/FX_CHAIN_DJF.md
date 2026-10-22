@@ -18,3 +18,24 @@ Depuis la décision « EUR pivot, une seule autorité », `services/fx-authority
 KMF/XAF = `currency_parities` ; USD = observation EUR/USD approuvée et fraîche ; DJF et AED = observation × peg
 (`fx_pegs`). Calcul décimal exact, un seul arrondi half-even au minor_unit ISO de la devise cible ; CNY et devises
 inconnues refusées. `currency_parities` est immuable en valeur. Les jambes sont retournées pour figer le snapshot.
+
+## Gouvernance de l'observation EUR/USD (PR-D)
+
+- **Une seule entrée flottante** : l'observation EUR/USD (`fx_rate_observations`, append-only). Les parités KMF/XAF sont fixes (`currency_parities`), le peg USD/DJF et USD/AED est daté (`fx_pegs`).
+- **Saisie puis approbation par deux personnes différentes** (identités normalisées : trim + minuscules ; le saisissant ne peut pas approuver ; contrainte aussi en base).
+  - API (admin) : `POST /api/admin/finance-config/fx-observations` puis `POST /api/admin/finance-config/fx-observations/:id/approve`, `GET` pour lister.
+  - Hors interface : `node scripts/fx-observation-cli.js enter|approve|list` (voir l'en-tête ; aucun taux par défaut).
+- **Aucun taux inventé** : le taux, sa source (ex. taux de référence BCE) et sa date viennent d'une source publiée ; fraîcheur maximale 7 jours, date d'approbation ≤ date de la transaction.
+- **Alerte d'écart** : un écart > 3 % avec la précédente observation approuvée crée une alerte `fx_observation_gap` (l'approbation reste possible).
+- **Retiré** : l'édition de `finance_config.taux_*` et `PUT /api/pricing/rates` répondent 410 ; `exchange_rates` n'est plus qu'un journal historique en lecture seule.
+- **Garde CI** : `tests/unit/fx-no-competing-authority.test.js` interdit tout repli 492/138, ratio 0,92 et lecture directe de `finance_config.taux_*` hors liste justifiée.
+- **Procédure d'initialisation (staging)** : la personne A saisit le taux publié (avec sa source et sa date), la personne B l'approuve ; sans cela, toute conversion USD/DJF/AED est refusée (503) par conception.
+
+
+### Limites connues (revue PR-D)
+
+- `scripts/fx-observation-cli.js` accepte `--by` en texte libre : la règle des deux personnes y est organisationnelle (deux opérateurs distincts, deux sessions). L'API admin, elle, prend l'identité de la session authentifiée. Utiliser l'API pour toute saisie courante ; le script est réservé à l'initialisation.
+- Le vidage du cache `utils/rates` à l'approbation ne touche que l'instance qui l'a traitée : sur plusieurs instances, un nouveau taux est vu au plus tard après l'expiration du cache (60 s). Le jeu incomplet n'est jamais mis en cache.
+- Une observation peut être datée dans le passé : elle ne modifie aucune commande existante (taux figés dans `orders.fx_snapshot`, migration 315) mais change le taux applicable à ces dates pour les conversions à `at` explicite.
+- Les définitions historiques de `finance_config` (`bootstrap/startup-migrations.js`, `db/schema.sql`) créent encore `taux_change_eur_kmf NOT NULL DEFAULT 491.96` sur une base neuve : la migration 316 les rend optionnelles, aucune lecture applicative ne les utilise (garde CI). Le DROP des colonnes est prévu dans une PR séparée.
+- Export financier : le taux EUR/KMF d'une commande est dérivé de ses montants figés (KMF d'origine / EUR encaissé) ; le taux AED n'est plus figé par commande.

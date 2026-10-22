@@ -94,21 +94,13 @@ router.get('/export', ...adminOnly, async (req, res, next) => {
         u.full_name   AS client_name,
         u.phone       AS client_phone,
         r.name        AS relais_name,
-        er.eur_kmf    AS taux_eur_kmf,
-        er.aed_kmf    AS taux_aed_kmf
+        -- Taux figé à la commande : montant KMF d'origine / montant EUR encaissé (fx_snapshot, migration 315).
+        -- Plus de jointure sur exchange_rates (journal en lecture seule, non alimenté) ; AED non figé par commande.
+        ROUND(o.total_kmf::numeric / NULLIF(o.total_eur::numeric, 0), 6) AS taux_eur_kmf,
+        NULL::numeric AS taux_aed_kmf
       FROM orders o
       LEFT JOIN users         u  ON u.id  = o.user_id
       LEFT JOIN relais        r  ON r.id  = o.relais_id
-      -- Taux figé au moment de la commande (dernier taux avant la commande)
-      -- ADR-009 : usage légitime de exchange_rates en tant qu'historique d'audit.
-      -- finance_config porte le taux ACTUEL ; exchange_rates porte les taux PASSÉS.
-      LEFT JOIN LATERAL (
-        SELECT eur_kmf, aed_kmf
-        FROM exchange_rates
-        WHERE valid_from <= o.created_at::date
-        ORDER BY valid_from DESC
-        LIMIT 1
-      ) er ON TRUE
       WHERE o.created_at >= $1
         AND o.created_at <  $2
         AND o.status != 'cancelled'

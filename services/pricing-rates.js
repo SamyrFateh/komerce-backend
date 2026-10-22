@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/rates.js
  * @used-by       routes/pricing.js
- * @db-read       exchange_rates, finance_config
- * @db-write      exchange_rates, finance_config
+ * @db-read       exchange_rates
+ * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine
@@ -23,14 +23,14 @@
  *
  * Extraction iso-comportement depuis routes/pricing.js :
  *   GET /api/pricing/rates → getCurrentRates()
- *   PUT /api/pricing/rates → updateRates({ eur_kmf, aed_kmf }, userId)
+ *   PUT /api/pricing/rates → RETIRÉ (410) : observation EUR/USD à deux personnes
  *
- * Source de vérité : `finance_config` (singleton id=1).
+ * Source de vérité : services/fx-authority.js (pivot EUR).
  * `exchange_rates` reste un historique pur (cf. utils/rates.js).
  */
 
 const db = require('../db');
-const { invalidateCache, getRates } = require('../utils/rates');
+const { getRates } = require('../utils/rates');
 
 /**
  * Retourne les taux courants (finance_config) + les 5 derniers
@@ -50,39 +50,15 @@ async function getCurrentRates() {
 }
 
 /**
- * Met à jour finance_config (taux courants) et journalise dans
- * exchange_rates, puis invalide le cache utils/rates.
- *
- * @param {{ eur_kmf: number|string, aed_kmf: number|string }} data
- * @param {string|null} userId
- * @returns {Promise<{ message: string, rate: { eur_kmf, aed_kmf } }>}
+ * RETIRÉ (PR-D) : les taux ne s'éditent plus dans finance_config. EUR/KMF = parité fixe ; EUR/USD = observation
+ * saisie puis approuvée par deux personnes (POST /api/admin/finance-config/fx-observations). exchange_rates reste un
+ * journal historique en lecture seule.
  */
-async function updateRates({ eur_kmf, aed_kmf }, userId) {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-    await client.query(
-      `UPDATE finance_config
-          SET taux_change_eur_kmf = $1, taux_aed_kmf = $2,
-              updated_at = NOW(), updated_by = $3
-        WHERE id = 1`,
-      [eur_kmf, aed_kmf, userId || null]
-    );
-    await client.query(
-      'INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from) VALUES ($1, $2, CURRENT_DATE)',
-      [eur_kmf, aed_kmf]
-    );
-    await client.query('COMMIT');
-  } catch (e) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw e;
-  } finally {
-    client.release();
-  }
-
-  try { invalidateCache(); } catch (_) { /* best-effort */ }
-
-  return { message: 'Taux mis à jour dans finance_config + log historique', rate: { eur_kmf, aed_kmf } };
+async function updateRates() {
+  const err = new Error('Edition des taux retirée : utiliser l\'observation EUR/USD à deux personnes (/api/admin/finance-config/fx-observations).');
+  err.code = 'fx_rate_editor_retired';
+  err.statusCode = 410;
+  throw err;
 }
 
 module.exports = { getCurrentRates, updateRates };

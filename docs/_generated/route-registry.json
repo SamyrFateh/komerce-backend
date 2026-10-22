@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-21T21:22:57.174Z",
+  "generatedAt": "2026-10-22T18:18:25.470Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 735,
+  "count": 738,
   "routes": [
     {
       "method": "GET",
@@ -1012,6 +1012,36 @@
       "fullPath": "/api/admin/finance-config",
       "mountPrefix": "/api/admin/finance-config",
       "localPath": "/",
+      "routeFile": "routes/admin-finance-config.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/finance-config/fx-observations",
+      "mountPrefix": "/api/admin/finance-config",
+      "localPath": "/fx-observations",
+      "routeFile": "routes/admin-finance-config.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/finance-config/fx-observations",
+      "mountPrefix": "/api/admin/finance-config",
+      "localPath": "/fx-observations",
+      "routeFile": "routes/admin-finance-config.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/finance-config/fx-observations/:id/approve",
+      "mountPrefix": "/api/admin/finance-config",
+      "localPath": "/fx-observations/:id/approve",
       "routeFile": "routes/admin-finance-config.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

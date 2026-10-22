@@ -96,6 +96,7 @@ module.exports = {
       'services/market-scope-admin-service.js',
       'utils/currency.js',
       'services/fx-engine-rates.js',
+      'services/fx-observation-service.js',
       'services/market-lifecycle-service.js',
     ],
     tests: [
@@ -103,6 +104,8 @@ module.exports = {
       'tests/integration/fx-chain-postgres.test.js',
       'tests/integration/fx-authority-postgres.test.js',
       'tests/integration/fx-engine-rates-postgres.test.js',
+      'tests/integration/fx-observation-service-postgres.test.js',
+      'tests/unit/fx-no-competing-authority.test.js',
       'tests/integration/order-fx-snapshot-postgres.test.js',
       'tests/unit/fx-authority-decimal.test.js',
       'tests/unit/fx-chain-service.test.js',
@@ -160,6 +163,8 @@ module.exports = {
     consumes: [
       'infrastructure (db.js — pool de connexion Postgres, seule dépendance ' +
         'de middleware/require-market-scope.js)',
+      'notifications (utils/alerts.js — alerte d\'écart EUR/USD créée à l\'approbation par ' +
+        'services/fx-observation-service.js)',
     ],
   },
 

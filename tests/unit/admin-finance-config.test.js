@@ -40,6 +40,12 @@ jest.mock('../../services/loyalty-service', () => ({
 }));
 
 const mockInvalidateRatesCache = jest.fn();
+const mockFxObs = { enterObservation: jest.fn(), approveObservation: jest.fn(), listObservations: jest.fn() };
+jest.mock('../../services/fx-observation-service', () => ({
+  enterObservation: (...a) => mockFxObs.enterObservation(...a),
+  approveObservation: (...a) => mockFxObs.approveObservation(...a),
+  listObservations: (...a) => mockFxObs.listObservations(...a),
+}));
 jest.mock('../../utils/rates', () => ({
   invalidateCache: (...args) => mockInvalidateRatesCache(...args),
   getRates: jest.fn().mockResolvedValue({ eur_kmf: 491.96775, aed_kmf: 134, usd_kmf: 450, toJSON() { return { eur_kmf: 491.96775, aed_kmf: 134, usd_kmf: 450, usd_eur_ratio: 0.914 }; } }),
@@ -137,7 +143,7 @@ describe('admin-finance-config — GET /schema', () => {
   it('expose les champs variabilisables avec leurs métadonnées', async () => {
     const res = await request(app).get('/api/admin/finance-config/schema');
     expect(res.status).toBe(200);
-    expect(res.body.taux_change_eur_kmf).toMatchObject({ type: 'decimal', group: 'sourcing', min: 1 });
+    expect(res.body.taux_change_eur_kmf).toBeUndefined(); // retiré : autorité FX unique
     expect(res.body.loyalty_active).toMatchObject({ type: 'bool' });
     expect(mockQuery).not.toHaveBeenCalled();
   });
@@ -208,26 +214,26 @@ describe('admin-finance-config — PUT / validation', () => {
 });
 
 describe('admin-finance-config — PUT / effets de bord', () => {
-  it('succès : UPDATE + invalidation cache loyalty + invalidation cache taux', async () => {
+  it('succès : UPDATE + invalidation cache loyalty', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ ...baseCfg, cost_fixed_sourcing_kmf: 12000 }] });
 
     const res = await request(app).put('/api/admin/finance-config').send({ cost_fixed_sourcing_kmf: 12000 });
 
     expect(res.status).toBe(200);
     expect(mockInvalidateConfigCache).toHaveBeenCalledTimes(1);
-    expect(mockInvalidateRatesCache).toHaveBeenCalledTimes(1);
   });
 
-  it('insère un historique exchange_rates SEULEMENT si taux_change_eur_kmf est modifié', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ ...baseCfg, taux_change_eur_kmf: 510 }] }) // UPDATE
-      .mockResolvedValueOnce({ rows: [] });                                       // INSERT exchange_rates
-
+  it("l'édition du taux EUR/KMF est retirée : 410, aucune écriture", async () => {
     const res = await request(app).put('/api/admin/finance-config').send({ taux_change_eur_kmf: 510 });
+    expect(res.status).toBe(410);
+    expect(res.body).toMatchObject({ error: 'fx_rate_editor_retired', retired_fields: ['taux_change_eur_kmf'] });
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
 
-    expect(res.status).toBe(200);
-    expect(mockQuery).toHaveBeenCalledTimes(2);
-    expect(mockQuery.mock.calls[1][0]).toMatch(/INSERT INTO exchange_rates/);
+  it('taux AED / USD retirés eux aussi, même mélangés à un champ valide', async () => {
+    const res = await request(app).put('/api/admin/finance-config').send({ taux_aed_kmf: 140, cost_fixed_sourcing_kmf: 1 });
+    expect(res.status).toBe(410);
+    expect(mockQuery).not.toHaveBeenCalled();
   });
 
   it('n\'insère PAS d\'historique exchange_rates si seul un autre champ change', async () => {
@@ -239,14 +245,38 @@ describe('admin-finance-config — PUT / effets de bord', () => {
     expect(mockQuery).toHaveBeenCalledTimes(1); // pas de 2e appel INSERT
   });
 
-  it('un échec d\'insertion exchange_rates est best-effort et ne fait pas planter la requête', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ ...baseCfg, taux_change_eur_kmf: 520 }] }) // UPDATE
-      .mockRejectedValueOnce(new Error('insert exchange_rates failed'));          // INSERT échoue
-
-    const res = await request(app).put('/api/admin/finance-config').send({ taux_change_eur_kmf: 520 });
-
+  it("aucune écriture exchange_rates depuis finance_config (journal en lecture seule)", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ ...baseCfg, cost_fixed_sourcing_kmf: 14000 }] });
+    const res = await request(app).put('/api/admin/finance-config').send({ cost_fixed_sourcing_kmf: 14000 });
     expect(res.status).toBe(200);
     expect(res.body.sourcing.taux_change_eur_kmf).toBe(491.96775); // autorité FX, la colonne stockée n'est plus lue
+    expect(mockQuery.mock.calls.some(c => /exchange_rates/.test(c[0]))).toBe(false);
+  });
+});
+
+describe('admin-finance-config — observation EUR/USD (deux personnes)', () => {
+  beforeEach(() => Object.values(mockFxObs).forEach(f => f.mockReset()));
+
+  it('POST saisit avec l\'identité de la session et renvoie 201', async () => {
+    mockFxObs.enterObservation.mockResolvedValueOnce({ id: 'o1', rate: '1.0850', approved_by: null });
+    const res = await request(app).post('/api/admin/finance-config/fx-observations')
+      .send({ rate: 1.085, source_label: 'BCE taux de référence', source_ref: 'ecb:2026-10-21', as_of: '2026-10-21T14:15:00Z' });
+    expect(res.status).toBe(201);
+    expect(mockFxObs.enterObservation).toHaveBeenCalledWith(expect.objectContaining({ rate: 1.085, sourceLabel: 'BCE taux de référence', enteredBy: expect.anything() }));
+  });
+
+  it("POST /:id/approve : l'erreur métier est restituée avec son code", async () => {
+    const err = Object.assign(new Error('deux personnes'), { name: 'FxObservationError', code: 'fx_observation_two_person_required', statusCode: 409 });
+    mockFxObs.approveObservation.mockRejectedValueOnce(err);
+    const res = await request(app).post('/api/admin/finance-config/fx-observations/o1/approve').send({});
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('fx_observation_two_person_required');
+  });
+
+  it('GET liste les observations', async () => {
+    mockFxObs.listObservations.mockResolvedValueOnce([{ id: 'o1' }]);
+    const res = await request(app).get('/api/admin/finance-config/fx-observations');
+    expect(res.status).toBe(200);
+    expect(res.body.observations).toEqual([{ id: 'o1' }]);
   });
 });

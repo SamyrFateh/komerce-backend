@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-21T21:23:19.513Z",
+  "generatedAt": "2026-10-22T18:18:51.095Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 748,
-    "protected": 693,
+    "total": 751,
+    "protected": 696,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1109,6 +1109,27 @@
     },
     {
       "key": "GET /api/admin/entities/suppliers/{supplierId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/finance-config/fx-observations/{id}/approve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/finance-config/fx-observations",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/finance-config/fx-observations",
       "level": "PROTECTED",
       "roles": [
         "admin"

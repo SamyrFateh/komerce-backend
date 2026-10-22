@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context
  * @outputs       response_or_domain_result
- * @depends       db
+ * @depends       db, services/fx-authority.js
  * @used-by       services/catalog-workspace.js
  * @db-read       finance_config, currency_parities, exchange_rates, cost_components
  * @doctrine      resolve_before_behavior_change
@@ -15,6 +15,8 @@
  */
 
 'use strict';
+
+const fxAuthority = require('./fx-authority');
 
 /**
  * C2 — état des paramètres économiques AVANT application des valeurs de secours.
@@ -36,43 +38,35 @@ const CONFIG = Object.freeze({
 function item(base) { return { config: CONFIG, ...base }; }
 
 async function getPricingParameterStatus(db) {
-  const [fcRes, parRes, fxRes, relRes] = await Promise.all([
-    db.query(`SELECT taux_change_eur_kmf, taux_aed_kmf, hub_monthly_cost_aed, commission_relais_standard_kmf,
+  const [fcRes, parRes, relRes] = await Promise.all([
+    db.query(`SELECT hub_monthly_cost_aed, commission_relais_standard_kmf,
                      updated_at, updated_by FROM finance_config WHERE id = 1`),
     db.query(`SELECT currency, eur_rate, source_note FROM currency_parities WHERE currency IN ('KMF','XAF')`),
-    db.query(`SELECT eur_kmf, aed_kmf, valid_from FROM exchange_rates ORDER BY valid_from DESC, id DESC LIMIT 1`).catch(() => ({ rows: [] })),
     db.query(`SELECT default_value, updated_by FROM cost_components
                WHERE key = 'commission_relais_kmf' AND is_active = TRUE ORDER BY display_order, key LIMIT 1`).catch(() => ({ rows: [] })),
   ]);
   const fc = fcRes.rows[0] || null;
   const parity = Object.fromEntries(parRes.rows.map(r => [r.currency, r]));
-  const fx = fxRes.rows[0] || null;
   const rel = relRes.rows[0] || null;
   const operatorSet = Boolean(fc && fc.updated_by);
-  const fxJournalMatches = Boolean(fx && fc && Number(fx.aed_kmf) === Number(fc.taux_aed_kmf));
   const items = [];
 
-  // EUR/KMF : parité documentée vs taux du moteur de prix
+  // EUR/KMF : parité fixe = autorité FX unique (plus de taux parallèle dans finance_config)
   if (parity.KMF) {
     const legal = Number(parity.KMF.eur_rate);
-    const pricing = fc ? Number(fc.taux_change_eur_kmf) : null;
-    const diverges = pricing !== null && Math.abs(pricing - legal) > 0.0001;
     items.push(item({
       key: 'eur_kmf',
       label: 'Taux EUR → KMF',
-      value: pricing,
-      reference_value: legal,
-      status: diverges ? 'divergent' : 'documented',
-      provenance: `Parité documentée (currency_parities KMF) : ${legal} — ${parity.KMF.source_note || 'source non renseignée'}`,
-      usage: 'Estimation des prix et prix EUR au paiement. Conversion d’un achat réel : à saisir avec la date du taux réellement appliqué.',
-      consequence: diverges
-        ? `Le moteur de prix utilise ${pricing} alors que la parité documentée est ${legal} : les prix EUR et les marges estimées dérivent légèrement.`
-        : 'Aucune.',
+      value: legal,
+      status: 'documented',
+      provenance: `Parité fixe (currency_parities KMF) : ${legal} — ${parity.KMF.source_note || 'source non renseignée'}`,
+      usage: 'Autorité unique pour les prix EUR, paiements, remboursements et le moteur de prix. Conversion d’un achat réel : à saisir avec la date du taux réellement appliqué.',
+      consequence: 'Aucune.',
     }));
   } else {
-    items.push(item({ key: 'eur_kmf', label: 'Taux EUR → KMF', value: fc ? Number(fc.taux_change_eur_kmf) : null, status: 'missing',
-      provenance: 'Aucune parité documentée trouvée', usage: 'Estimation des prix et prix EUR au paiement.',
-      consequence: 'Le code applique alors une valeur de secours (492) sans l’annoncer.' }));
+    items.push(item({ key: 'eur_kmf', label: 'Taux EUR → KMF', value: null, status: 'missing',
+      provenance: 'Aucune parité fixe trouvée', usage: 'Prix EUR, paiements, remboursements.',
+      consequence: 'Toute conversion est refusée (503 fx_rate_unavailable) : aucune valeur de secours.' }));
   }
 
   if (parity.XAF) {
@@ -91,16 +85,25 @@ async function getPricingParameterStatus(db) {
       consequence: 'Les prix et coûts des marchés XAF ne sont pas calculables.' }));
   }
 
+  let aedKmf = null;
+  let aedReason = null;
+  try {
+    aedKmf = (await fxAuthority.convert({ amount: '1', from: 'AED', to: 'KMF', round: false, client: db })).amount;
+  } catch (err) {
+    aedReason = err && err.message ? err.message : 'indisponible';
+  }
   items.push(item({
     key: 'aed_kmf',
     label: 'Taux AED → KMF',
-    value: fc ? Number(fc.taux_aed_kmf) : null,
-    status: !fc ? 'missing' : (operatorSet && fxJournalMatches ? 'operator_set' : 'default_unvalidated'),
-    provenance: operatorSet && fxJournalMatches
-      ? `Saisi par un opérateur, journal exchange_rates du ${fx.valid_from}. Source non vérifiée par le système.`
-      : 'Valeur par défaut du schéma, sans saisie ni source.',
+    value: aedKmf,
+    status: aedKmf ? 'documented' : 'missing',
+    provenance: aedKmf
+      ? 'Observation EUR/USD approuvée par deux personnes × peg USD/AED (autorité FX)'
+      : `Aucun taux disponible : ${aedReason}`,
     usage: 'Estimation du coût d’achat des produits en AED et coût mensuel du Hub (7 000 AED). Ne doit pas qualifier un achat réel.',
-    consequence: 'Coûts d’achat AED et forfait Hub convertis avec un taux non justifié : simulation seulement, jamais un coût réel.',
+    consequence: aedKmf
+      ? 'Aucune.'
+      : 'Coûts d’achat AED, forfait Hub et recommandations en AED refusés (503) tant qu’aucune observation EUR/USD n’est approuvée.',
   }));
 
   items.push(item({

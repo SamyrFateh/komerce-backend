@@ -197,11 +197,11 @@ router.get('/rates', authenticate, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 router.put('/rates', ...adminOnly, async (req, res, next) => {
   try {
-    const { eur_kmf, aed_kmf } = req.body;
-    if (!eur_kmf || !aed_kmf) return res.status(400).json({ error: 'eur_kmf et aed_kmf requis' });
-
-    res.json(await pricingRates.updateRates({ eur_kmf, aed_kmf }, req.user?.id));
-  } catch (e) { next(e); }
+    await pricingRates.updateRates();
+  } catch (e) {
+    if (e && e.code === 'fx_rate_editor_retired') return res.status(410).json({ error: e.code, message: e.message });
+    next(e);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════

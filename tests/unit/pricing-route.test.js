@@ -274,23 +274,14 @@ describe('routes/pricing', () => {
       expect(res.status).toBe(403);
     });
 
-    test('exige eur_kmf et aed_kmf (admin)', async () => {
+    test('édition retirée (410) : le service refuse, aucun taux écrit', async () => {
       mockUser = { id: 'admin-1', role: 'admin' };
-      const res = await request(buildApp()).put('/api/pricing/rates').send({ eur_kmf: 490 });
-      expect(res.status).toBe(400);
-      expect(pricingRates.updateRates).not.toHaveBeenCalled();
-    });
+      pricingRates.updateRates.mockRejectedValueOnce(Object.assign(new Error('retiré'), { code: 'fx_rate_editor_retired', statusCode: 410 }));
 
-    test('met à jour les taux (admin)', async () => {
-      mockUser = { id: 'admin-1', role: 'admin' };
-      pricingRates.updateRates.mockResolvedValueOnce({ eur_kmf: 500, aed_kmf: 135 });
+      const res = await request(buildApp()).put('/api/pricing/rates').send({ eur_kmf: 500, aed_kmf: 135 });
 
-      const res = await request(buildApp())
-        .put('/api/pricing/rates')
-        .send({ eur_kmf: 500, aed_kmf: 135 });
-
-      expect(res.status).toBe(200);
-      expect(pricingRates.updateRates).toHaveBeenCalledWith({ eur_kmf: 500, aed_kmf: 135 }, 'admin-1');
+      expect(res.status).toBe(410);
+      expect(res.body.error).toBe('fx_rate_editor_retired');
     });
   });
 

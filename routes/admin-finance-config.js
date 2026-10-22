@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/fx-observation-service.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       finance_config
- * @db-write      exchange_rates, finance_config
+ * @db-write      finance_config, fx_rate_observations
  * @db-txn        resolve_before_behavior_change
  * @doctrine      lot1a_relay_commission_one_runtime_truth
  * @impact-areas  economic-engine, admin-dashboard
@@ -39,6 +39,7 @@ const log     = require('../utils/logger').forModule('admin-finance-config');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { invalidateConfigCache } = require('../services/loyalty-service');
 const { getRates } = require('../utils/rates');
+const fxObservations = require('../services/fx-observation-service');
 
 const adminOnly = [authenticate, requireAdmin];
 
@@ -71,7 +72,6 @@ const FIELD_SCHEMA = {
   margin_rail_d:                  { type: 'decimal', group: 'model',    label: 'Marge Rail D',              unit: '%', min: 0, max: 100 },
 
   // — Paramètres sourcing —
-  taux_change_eur_kmf:         { type: 'decimal', group: 'sourcing', label: 'Taux de change EUR→KMF',    unit: 'KMF/€', min: 1 },
   taux_pln_kmf: { type: 'decimal', group: 'sourcing', label: 'Taux de change PLN→KMF', unit: 'KMF/PLN', min: 0.000001 },
   markup_cible_pct:            { type: 'decimal', group: 'sourcing', label: 'Markup cible',              unit: '%',   min: 0, max: 1000 },
   cout_achat_moyen_eur:        { type: 'decimal', group: 'sourcing', label: 'Coût achat moyen',          unit: '€',   min: 0 },
@@ -90,6 +90,10 @@ const FIELD_SCHEMA = {
 };
 
 const ALLOWED_FIELDS = Object.keys(FIELD_SCHEMA);
+
+// Taux de change : plus aucune écriture ici (autorité FX unique, pivot EUR). EUR/KMF = currency_parities ;
+// EUR/USD = observation saisie puis approuvée par deux personnes (routes /fx-observations ci-dessous).
+const RETIRED_FX_RATE_FIELDS = new Set(['taux_change_eur_kmf', 'taux_aed_kmf', 'taux_usd_kmf']);
 
 const RETIRED_RELAY_COMMISSION_FIELDS = new Set([
   'commission_relais_pct',
@@ -133,6 +137,16 @@ router.put('/', adminOnly, async (req, res, next) => {
         source_of_truth: 'cost_components.commission_relais_kmf',
         component_key: 'commission_relais_kmf',
         message: 'LOT 1A-3 : la commission relais est éditée via le composant de coût canonique.',
+      });
+    }
+
+    const retiredFxFields = Object.keys(body).filter((field) => RETIRED_FX_RATE_FIELDS.has(field));
+    if (retiredFxFields.length) {
+      return res.status(410).json({
+        error: 'fx_rate_editor_retired',
+        retired_fields: retiredFxFields,
+        source_of_truth: 'services/fx-authority.js (currency_parities + fx_rate_observations)',
+        message: 'Les taux de change ne sont plus éditables dans finance_config : parité fixe EUR/KMF ou observation EUR/USD approuvée par deux personnes (POST /api/admin/finance-config/fx-observations).',
       });
     }
 
@@ -185,28 +199,40 @@ router.put('/', adminOnly, async (req, res, next) => {
     // Invalider le cache du service loyalty
     invalidateConfigCache();
 
-    // Invalider le cache des taux de change si les taux ont été modifiés
-    try {
-      const { invalidateCache } = require('../utils/rates');
-      invalidateCache();
-    } catch(_) {}
-
-    // Si les taux ont changé : log historique dans exchange_rates
-    // Aucun repli 492/138 : sans deux taux saisis valides, rien n'est journalisé (PR-D retire cette écriture).
-    if ((updates.taux_change_eur_kmf !== undefined || updates.taux_aed_kmf !== undefined)
-        && Number(updated.taux_change_eur_kmf) > 0 && Number(updated.taux_aed_kmf) > 0) {
-      try {
-        await db.query(
-          'INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from) VALUES ($1, $2, CURRENT_DATE)',
-          [Number(updated.taux_change_eur_kmf), Number(updated.taux_aed_kmf)]
-        );
-      } catch(_) { /* historique non bloquant */ }
-    }
-
     log.info({ updated_by: req.user.id, fields: Object.keys(updates) }, 'Finance config updated');
 
     res.json(await formatConfig(updated));
   } catch (err) { next(err); }
+});
+
+// ── Observation EUR/USD (seule entrée flottante de l'autorité FX) — saisie puis approbation par deux personnes ──
+// Identité = session authentifiée normalisée (email sinon id) : le saisissant ne peut pas approuver.
+function sessionIdentity(req) {
+  return (req.user && (req.user.email || req.user.id)) || '';
+}
+function fxObservationErrorHandler(err, res, next) {
+  if (err && err.name === 'FxObservationError') return res.status(err.statusCode).json({ error: err.message, code: err.code });
+  return next(err);
+}
+
+router.get('/fx-observations', adminOnly, async (req, res, next) => {
+  try { res.json({ observations: await fxObservations.listObservations({ limit: req.query.limit }) }); } catch (e) { next(e); }
+});
+
+router.post('/fx-observations', adminOnly, async (req, res, next) => {
+  try {
+    const { rate, source_label, source_ref, as_of } = req.body || {};
+    const row = await fxObservations.enterObservation({
+      rate, sourceLabel: source_label, sourceRef: source_ref, asOf: as_of, enteredBy: sessionIdentity(req),
+    });
+    res.status(201).json({ observation: row, next_step: 'approbation par une autre personne : POST /fx-observations/:id/approve' });
+  } catch (e) { fxObservationErrorHandler(e, res, next); }
+});
+
+router.post('/fx-observations/:id/approve', adminOnly, async (req, res, next) => {
+  try {
+    res.json({ observation: await fxObservations.approveObservation({ id: req.params.id, approvedBy: sessionIdentity(req) }) });
+  } catch (e) { fxObservationErrorHandler(e, res, next); }
 });
 
 // ── Formatter la réponse avec calculs dérivés ────────────────────────────────
