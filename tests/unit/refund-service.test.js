@@ -183,6 +183,13 @@ describe('refund-service', () => {
         .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNSUPPORTED' });
     });
 
+    it('devise KMF avec espaces/casse → toujours reconnue (pas de blocage à tort)', async () => {
+      walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx-2' } });
+      const client = makeClient([pendingInsert, { rows: [{ currency: ' kmf ' }] }, { rows: [], rowCount: 1 }]);
+      const r = await processRefund(client, makeCashOrder({ market_id: 'm-km' }), 5000, 7.6, 'cancel', 'x', 'admin-1');
+      expect(r.method).toBe('wallet_credit');
+    });
+
     it('marché KMF → wallet crédité comme avant', async () => {
       walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx-1' } });
       const client = makeClient([pendingInsert, { rows: [{ currency: 'KMF' }] }, { rows: [], rowCount: 1 }]);

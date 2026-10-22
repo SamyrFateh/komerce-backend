@@ -531,7 +531,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
   test('génération du code échoue (genErr) → revealCode reste null, pas de cacheCodeForReveal', async () => {
     const { event, intent } = baseEventIntent({ event: { id: 'evt_sb_4' } });
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-nom-1', reference: 'KOM-NOM-1', total_eur: '10.00', payment_status: 'pending' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'order-sb-1', reference: 'KOM-SB-1', total_eur: '10.00', payment_status: 'pending' }] });
 
     const client = makeClient([
       { rows: [], rowCount: 1 }, // UPDATE orders SET notes
@@ -735,6 +735,19 @@ describe('handleStripeSucceeded — contrat montant/devise/commande (fail-closed
     expect(result).toEqual({ received: true, ignored: true });
     expect(mockConfirmPaymentCycle).not.toHaveBeenCalled();
     expect(db.pool.connect).not.toHaveBeenCalled();
+  });
+
+  test('écart de contrat ET alerte non persistée → l\'événement n\'est pas acquitté (Stripe rejouera)', async () => {
+    mockConfirmPaymentCycle.mockReset();
+    const db = { query: jest.fn(), pool: { connect: jest.fn() } };
+    db.query.mockResolvedValueOnce({ rows: [order] });
+    db.query.mockRejectedValue(new Error('alerts insert failed'));
+
+    await expect(handleStripeSucceeded({ id: 'evt_ct_alert', type: 'payment_intent.succeeded' }, { ...goodIntent(), amount: 1 }, db))
+      .rejects.toThrow('alerts insert failed');
+    expect(mockConfirmPaymentCycle).not.toHaveBeenCalled();
+    const sqls = db.query.mock.calls.map(c => String(c[0]));
+    expect(sqls.some(q => /stripe_events_processed/.test(q))).toBe(false);
   });
 
   test('contrat respecté → le cycle de paiement est lancé', async () => {
