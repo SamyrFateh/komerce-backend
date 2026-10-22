@@ -290,3 +290,12 @@ test('la couverture canonique lit la vue unique et ne compte ni remise historiqu
   expect(service.UNCOVERED_COLLECTIONS_CTE).not.toContain('cash_deposit_allocations');
   expect(service.UNCOVERED_COLLECTIONS_CTE).toContain("'TRANSFER_OUT', 'FINAL_CLOSURE', 'LOSS'");
 });
+
+describe('UNCOVERED_COLLECTIONS_CTE — partition par Market', () => {
+  test('encaissements et décharges sont partitionnés par (agent, Market)', () => {
+    const cte = service.UNCOVERED_COLLECTIONS_CTE;
+    expect(cte).toMatch(/PARTITION BY cc\.collected_by, cash_collection_market\(cc\.relais_id, cc\.collected_by\)/);
+    expect(cte).toMatch(/GROUP BY holder_id, market_id/);
+    expect(cte).toMatch(/rel\.market_id IS NOT DISTINCT FROM r\.market_id/);
+  });
+});

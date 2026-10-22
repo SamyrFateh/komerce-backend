@@ -59,7 +59,7 @@ async function _refreshCanonicalMargin(dbClient, orderId) {
 async function assertWalletRefundCurrency(dbClient, order) {
   if (!order || !order.market_id) return;
   const { rows: [market] } = await dbClient.query('SELECT currency FROM markets WHERE id = $1', [order.market_id]);
-  if (!market || String(market.currency).toUpperCase() !== 'KMF') {
+  if (!market || String(market.currency ?? '').trim().toUpperCase() !== 'KMF') {
     const err = new Error('Remboursement wallet (KMF) impossible pour une commande d\'un marché dont la devise n\'est pas le KMF.');
     err.code = 'REFUND_WALLET_CURRENCY_UNSUPPORTED';
     err.statusCode = 409;
