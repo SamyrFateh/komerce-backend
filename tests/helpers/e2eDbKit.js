@@ -306,7 +306,25 @@ async function activateLocalPrice(db, cleanup, { marketId, productId, amount, cu
   return { id, market_id: marketId, product_id: productId, amount, currency };
 }
 
+/**
+ * FIXTURE DE TEST UNIQUEMENT — observation EUR/USD approuvée (deux identités fictives) pour les scénarios qui
+ * convertissent des prix USD/AED. Marquée non réelle ; jamais dans une seed partagée ni en staging/production.
+ * Idempotent : ne fait rien si une observation approuvée fraîche existe déjà.
+ */
+async function seedApprovedEurUsdObservationForTest(db) {
+  const { rows } = await db.query(
+    `SELECT 1 FROM fx_rate_observations
+      WHERE approved_by IS NOT NULL AND as_of > now() - interval '5 days' LIMIT 1`);
+  if (rows.length) return;
+  const { rows: [o] } = await db.query(
+    `INSERT INTO fx_rate_observations (rate, source_label, source_ref, as_of, entered_by)
+     VALUES (1.10, 'FIXTURE DE TEST — taux fictif non réel', 'e2e-fixture', now() - interval '1 hour', 'e2e-fixture-a')
+     RETURNING id`);
+  await db.query("UPDATE fx_rate_observations SET approved_by = 'e2e-fixture-b' WHERE id = $1", [o.id]);
+}
+
 module.exports = {
+  seedApprovedEurUsdObservationForTest,
   activateLocalPrice,
   attestMarketDeliveryForTest,
   authorizeCentralCollectionForTest,
