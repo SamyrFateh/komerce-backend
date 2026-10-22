@@ -275,6 +275,58 @@ describe('getCoutEstime', () => {
   });
 });
 
+describe('costing — inconnue ≠ zéro', () => {
+  it('getCoutEstime retourne null si aucun coût fournisseur estimé complet n’est observé', async () => {
+    mockQuery([{ value: null, items_with_data: 0, items_total: 3 }]);
+    const k = await getCoutEstime({});
+    expect(k.value).toBeNull();
+    expect(k.data_quality.items_with_data).toBe(0);
+    expect(k.data_quality.completeness).toBe('partial');
+    expect(k.data_quality.warning).toMatch(/3 commande/);
+    const sql = db.query.mock.calls.at(-1)[0];
+    expect(sql).toContain('lines_expected = lines_priced');
+    expect(sql).toContain('imp.order_item_id = oi.id');
+  });
+
+  it('getCoutEstime conserve zéro si le coût zéro est explicitement renseigné', async () => {
+    mockQuery([{ value: '0', items_with_data: 3, items_total: 3 }]);
+    const k = await getCoutEstime({});
+    expect(k.value).toBe(0);
+    expect(k.data_quality.completeness).toBe('complete');
+  });
+
+  it('getCoutReel ne représente pas une absence d’allocations comme zéro', async () => {
+    mockQuery([{ value: null, items_with_data: 0, items_total: 3 }]);
+    const k = await getCoutReel({});
+    expect(k.value).toBeNull();
+    expect(k.data_quality.completeness).toBe('partial');
+    expect(db.query.mock.calls.at(-1)[0]).not.toMatch(/COALESCE\(SUM\(alc\.amount_kmf\), 0\)/);
+  });
+
+  it('marges non déterminables restent null sans commande éligible', async () => {
+    const scenarios = [
+      ['marge_estimee', getMargeEstimee],
+      ['marge_variable_reelle', getMargeVariableReelle],
+      ['marge_consolidee', getMargeConsolidee],
+    ];
+    for (const [key, getter] of scenarios) {
+      mockQuery([{ margin_kmf: null, revenue_kmf: null, items_with_data: 0, items_total: 3 }]);
+      const k = await getter({});
+      expect(k.key).toBe(key);
+      expect(k.value).toBeNull();
+    }
+  });
+
+  it('getCoutMoyParCmd ne divise pas par des commandes dépourvues de coûts', async () => {
+    mockQuery([{ value: null, items_with_data: 0, items_total: 2 }]);
+    const k = await getCoutMoyParCmd({});
+    expect(k.value).toBeNull();
+    expect(k.data_quality.items_with_data).toBe(0);
+    expect(k.data_quality.warning).toMatch(/0\/2/);
+    expect(db.query.mock.calls.at(-1)[0]).toContain('AVG(cost_kmf) FILTER');
+  });
+});
+
 describe('getCoutReel', () => {
   it('retourne un KPI cout_reel en KMF — colonnes value/items_with_data/items_total', async () => {
     mockQuery([{ value: '45000', items_with_data: 6, items_total: 10 }]);
