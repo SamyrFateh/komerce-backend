@@ -124,6 +124,7 @@ module.exports = {
       'tests/unit/stripe-golden-p4.test.js',
       'tests/unit/market-payment-accounts.test.js',
       'tests/unit/market-payment-collection-gate.test.js',
+      'tests/unit/order-checkout-central-collection.test.js',
       'tests/unit/market-delegation-payment-accounts.test.js',
       'tests/unit/isweep-transactional-flows.test.js',
       'tests/unit/payment-fx-authority.test.js',
