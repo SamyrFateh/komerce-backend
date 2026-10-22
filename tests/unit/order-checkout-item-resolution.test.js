@@ -136,4 +136,13 @@ describe('order-checkout-item-resolution — estimation de coût et taux AED (au
     expect(r.ok).toBe(true);
     expect(r.cost_estimated).toBeNull();
   });
+
+  test.each([[null], [0]])('sans prix fournisseur (price_aed=%p) : coût inconnu (null), jamais fret seul', async (priceAed) => {
+    product.price_aed = priceAed;
+    try {
+      const r = await run(134);
+      expect(r.ok).toBe(true);
+      expect(r.cost_estimated).toBeNull();
+    } finally { product.price_aed = 10; }
+  });
 });
