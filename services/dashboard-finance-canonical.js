@@ -199,12 +199,12 @@ async function getFinanceTrend(filters = {}, period = 30) {
     cost_truth AS (
       SELECT
         so.*,
-        COALESCE((
+        (
           SELECT SUM(alc.amount_kmf)
           FROM order_item_real_cost_allocations alc
           WHERE alc.order_id = so.id
             AND ${justifiedRealSql('alc')}
-        ), 0)::bigint AS real_cost_kmf,
+        )::bigint AS real_cost_kmf,
         EXISTS (
           SELECT 1 FROM order_item_cost_imputations imp WHERE imp.order_id = so.id
         ) AS has_imputation,
@@ -215,17 +215,13 @@ async function getFinanceTrend(filters = {}, period = 30) {
       date_trunc('${bucket}', created_at) AS bucket,
       COUNT(*)::int AS paid_orders,
       COALESCE(SUM(total_kmf), 0)::bigint AS revenue_kmf,
-      COALESCE(SUM(real_cost_kmf), 0)::bigint AS real_cost_kmf,
+      SUM(real_cost_kmf)::bigint AS real_cost_kmf,
       COUNT(*) FILTER (
-        WHERE has_imputation = TRUE AND final_ready
+        WHERE has_imputation = TRUE AND final_ready AND real_cost_kmf IS NOT NULL
       )::int AS actual_orders,
-      COALESCE(SUM(
-        CASE
-          WHEN has_imputation = TRUE AND final_ready
-          THEN total_kmf - real_cost_kmf
-          ELSE 0
-        END
-      ), 0)::bigint AS consolidated_margin_kmf
+      SUM(total_kmf - real_cost_kmf) FILTER (
+        WHERE has_imputation = TRUE AND final_ready AND real_cost_kmf IS NOT NULL
+      )::bigint AS consolidated_margin_kmf
     FROM cost_truth
     GROUP BY date_trunc('${bucket}', created_at)
     ORDER BY bucket ASC
@@ -238,8 +234,8 @@ async function getFinanceTrend(filters = {}, period = 30) {
       bucket: row.bucket,
       paid_orders: paidOrders,
       revenue_kmf: Number(row.revenue_kmf) || 0,
-      real_cost_kmf: Number(row.real_cost_kmf) || 0,
-      consolidated_margin_kmf: Number(row.consolidated_margin_kmf) || 0,
+      real_cost_kmf: row.real_cost_kmf == null ? null : Number(row.real_cost_kmf),
+      consolidated_margin_kmf: row.consolidated_margin_kmf == null ? null : Number(row.consolidated_margin_kmf),
       actual_orders: actualOrders,
       cost_coverage_pct: paidOrders > 0 ? Number(((actualOrders / paidOrders) * 100).toFixed(1)) : null,
     });
