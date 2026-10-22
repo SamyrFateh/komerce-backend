@@ -16900,7 +16900,7 @@
             ]
           },
           "migrations": {
-            "count": 3,
+            "count": 4,
             "files": [
               {
                 "declared": "migrations/095_value_density_foundation.sql",
@@ -16915,6 +16915,11 @@
               {
                 "declared": "migrations/233_hub_physical_identity_allocation_custody.sql",
                 "resolvedPath": "migrations/233_hub_physical_identity_allocation_custody.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
+                "resolvedPath": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -17530,7 +17535,7 @@
             ]
           }
         },
-        "totalFiles": 131,
+        "totalFiles": 132,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

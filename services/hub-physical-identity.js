@@ -476,6 +476,22 @@ function normalizeInboundContents(contents) {
     : { purchase_order_id: entry.purchase_order_id, quantity: entry.quantity }));
 }
 
+/**
+ * Matière déjà placée pour une allocation, hors unités ayant un outcome terminal (LOST/STOLEN/DESTROYED/
+ * DAMAGED_UNUSABLE) : une unité perdue ou inutilisable n'est plus de la matière reçue (cf. v_purchase_line_progress,
+ * migration 306), ce qui permet de réceptionner son remplacement sans le mettre en quarantaine à tort.
+ */
+async function placedQuantityExcludingOutcomes(db, allocationId) {
+  const { rows: [row] } = await db.query(
+    `SELECT COALESCE(SUM(p.quantity), 0)::integer AS quantity
+       FROM hub_physical_unit_placements p
+       JOIN hub_physical_units u ON u.id = p.physical_unit_id
+      WHERE p.allocation_id = $1 AND p.removed_at IS NULL AND u.outcome_type IS NULL`,
+    [allocationId]
+  );
+  return Number(row.quantity);
+}
+
 async function receiveSupplierPackage(executor, {
   reference,
   externalRef = null,
@@ -517,12 +533,7 @@ async function receiveSupplierPackage(executor, {
         purchaseOrderId: entry.content.purchase_order_id,
       });
     }
-    const { rows: [placed] } = await db.query(
-      `SELECT COALESCE(SUM(quantity), 0)::integer AS quantity
-         FROM hub_physical_unit_placements
-        WHERE allocation_id = $1 AND removed_at IS NULL`,
-      [allocation.id]
-    );
+    const placed = { quantity: await placedQuantityExcludingOutcomes(db, allocation.id) };
     if (Number(placed.quantity) + entry.content.quantity > Number(allocation.quantity)) {
       return createQuarantinedInbound(db, {
         reference, externalRef, actorId, locationRef,
@@ -742,12 +753,7 @@ async function reconcileSupplierPackageContents(executor, {
       });
     }
 
-    const { rows: [placed] } = await db.query(
-      `SELECT COALESCE(SUM(quantity), 0)::integer AS quantity
-         FROM hub_physical_unit_placements
-        WHERE allocation_id = $1 AND removed_at IS NULL`,
-      [allocation.id]
-    );
+    const placed = { quantity: await placedQuantityExcludingOutcomes(db, allocation.id) };
     if (Number(placed.quantity) + entry.content.quantity > Number(allocation.quantity)) {
       return quarantineExistingInbound(db, {
         unit, actorId, locationRef,
