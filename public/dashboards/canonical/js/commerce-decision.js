@@ -340,6 +340,19 @@
     }));
   }
 
+  // Peu de jours observés (ex. un seul) : la série ne représente pas une tendance et ne doit pas saturer le cadre.
+  const SPARSE_SERIES_DAYS = 4;
+  function salesSeriesAxis(bars) {
+    if (!bars.length) return [];
+    return bars.length === 1 || bars[0].label === bars[bars.length - 1].label ? [bars[0].label] : [bars[0].label, bars[bars.length - 1].label];
+  }
+  function salesSeriesNote(bars) {
+    if (!bars.length || bars.length >= SPARSE_SERIES_DAYS) return null;
+    return bars.length === 1
+      ? `Un seul jour avec des ventes payées (${bars[0].label}) : pas de tendance à lire.`
+      : `${bars.length} jours avec des ventes payées sur la période : tendance peu significative.`;
+  }
+
   const MARKET_COLORS = Object.freeze(['#ea580c', '#0f766e', '#7c3aed', '#d97706', '#64748b', '#0369a1', '#be123c', '#4d7c0f']);
 
   function marketShares(payload, base) {
@@ -376,7 +389,7 @@
       return card.section;
     }
     const chart = doc.createElement('div');
-    chart.className = 'kmc-com-bars';
+    chart.className = bars.length < SPARSE_SERIES_DAYS ? 'kmc-com-bars is-sparse' : 'kmc-com-bars';
     chart.setAttribute('role', 'img');
     chart.setAttribute('aria-label', 'Ventes payées par jour');
     bars.forEach(b => {
@@ -392,9 +405,10 @@
     card.body.appendChild(chart);
     const axis = doc.createElement('div');
     axis.className = 'kmc-com-bars-axis';
-    axis.appendChild(text(doc, 'span', '', bars[0].label));
-    axis.appendChild(text(doc, 'span', '', bars[bars.length - 1].label));
+    salesSeriesAxis(bars).forEach(label => axis.appendChild(text(doc, 'span', '', label)));
     card.body.appendChild(axis);
+    const note = salesSeriesNote(bars);
+    if (note) card.body.appendChild(text(doc, 'p', 'kmc-com-bars-note', note));
     return card.section;
   }
 
@@ -623,6 +637,8 @@
     kpi,
     metricDisplay,
     salesSeriesBars,
+    salesSeriesAxis,
+    salesSeriesNote,
     marketShares,
     recentOrderRows,
     overallWarningCount,
