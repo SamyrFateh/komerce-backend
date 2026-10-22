@@ -163,6 +163,8 @@ module.exports = {
     consumes: [
       'infrastructure (db.js — pool de connexion Postgres, seule dépendance ' +
         'de middleware/require-market-scope.js)',
+      'notifications (utils/alerts.js — alerte d\'écart EUR/USD créée à l\'approbation par ' +
+        'services/fx-observation-service.js)',
     ],
   },
 
