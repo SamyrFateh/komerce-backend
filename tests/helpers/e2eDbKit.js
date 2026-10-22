@@ -212,6 +212,21 @@ async function attestMarketDeliveryForTest(db, cleanup, marketId) {
 }
 
 /**
+ * Fixture E2E (lot 3) : autorise explicitement un moyen d'encaissement central (stripe_eur / paypal_eur)
+ * pour un marché de test. Volontairement NON appelé par activateLocalPrice : l'autorisation est une décision
+ * de test explicite, jamais implicite (le gate est fail-closed).
+ */
+async function authorizeCentralCollectionForTest(db, cleanup, marketId, paymentMode = 'stripe_eur') {
+  await db.query(
+    `INSERT INTO market_central_collection_modes (market_id, payment_mode, evidence_ref)
+     VALUES ($1,$2,'E2E-EVIDENCE')
+     ON CONFLICT (market_id, payment_mode) DO UPDATE SET revoked_at = NULL`,
+    [marketId, paymentMode]
+  );
+  cleanup.trackSql(`DELETE FROM market_central_collection_modes WHERE market_id='${marketId}' AND payment_mode='${paymentMode}'`);
+}
+
+/**
  * Fixture E2E (C2) : réception PHYSIQUE complète d'une ligne de commande (PO historique + allocation + unité
  * + placement RECEIVE), pour qu'un test qui fait avancer une commande réelle jusqu'à `preparation` respecte le
  * gate de couverture physique. Insertion directe (vérité d'état minimale) ; nettoyage enregistré en LIFO sous
@@ -294,6 +309,7 @@ async function activateLocalPrice(db, cleanup, { marketId, productId, amount, cu
 module.exports = {
   activateLocalPrice,
   attestMarketDeliveryForTest,
+  authorizeCentralCollectionForTest,
   assertTestDatabase,
   createCleanup,
   describeE2E,

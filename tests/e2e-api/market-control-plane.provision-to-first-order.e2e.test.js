@@ -12,7 +12,7 @@
 const request=require('supertest');
 const express=require('express');
 const { signAuthToken }=require('../../utils/auth-session');
-const { describeE2E, createCleanup, activateLocalPrice, tag, uuid }=require('../helpers/e2eDbKit');
+const { describeE2E, createCleanup, activateLocalPrice, authorizeCentralCollectionForTest, tag, uuid }=require('../helpers/e2eDbKit');
 
 jest.setTimeout(30000);
 
@@ -153,14 +153,22 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     cleanup.track('products','id',productId);
     await activateLocalPrice(db,cleanup,{marketId,productId,amount:25000,currency:'KMF'});
 
+    const orderBody={
+      items:[{product_id:productId,quantity:1}],
+      relais_id:relayId,
+      payment_mode:'stripe_eur',
+      tracking_phone:'+269000999',
+    };
+    // Lot 3 : un nouveau marché n'a aucune autorisation d'encaissement central → refus fail-closed.
+    const refused=await request(app).post('/api/orders')
+      .set('Authorization',`Bearer ${buyerToken}`).send(orderBody);
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET');
+    await authorizeCentralCollectionForTest(db,cleanup,marketId,'stripe_eur');
+
     const res=await request(app).post('/api/orders')
       .set('Authorization',`Bearer ${buyerToken}`)
-      .send({
-        items:[{product_id:productId,quantity:1}],
-        relais_id:relayId,
-        payment_mode:'stripe_eur',
-        tracking_phone:'+269000999',
-      });
+      .send(orderBody);
 
     expect(res.status).toBe(201);
     expect(res.body.order).toMatchObject({status:'pending',payment_status:'pending'});

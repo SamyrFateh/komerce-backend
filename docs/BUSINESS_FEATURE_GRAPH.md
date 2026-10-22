@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 634 | 634 | 0 |
+| backend | 36 | 36 | 636 | 636 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -522,11 +522,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Encaisser un paiement (carte, PayPal, Mobile Money, especes au retrait) et confirmer son etat de facon idempotente.
 
 - scripts: 1
-- services: 22
+- services: 23
 - routes: 7
-- migrations: 9
+- migrations: 10
 - boutique: 4
-- tests: 35
+- tests: 36
 - tables owned (lifecycle): 9 — `market_payment_providers`, `cash_collections`, `cash_deposit_allocations`, `cash_deposits`, `market_cash_destinations`, `cash_confirmation_controls`, `mobile_money_transactions`, `paypal_events_processed`, `stripe_events_processed`
 - tables written: 9
 - interfaces exposed: 25
@@ -2237,7 +2237,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2099 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2101 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2488,7 +2488,7 @@ Meta Graph monté : oui.
 | orders | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | market-control-plane | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 12 | **DECLARED_AND_OBSERVED** |
-| orders | payments | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |
+| orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 38 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |

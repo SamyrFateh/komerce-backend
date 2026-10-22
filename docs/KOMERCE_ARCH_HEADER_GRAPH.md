@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 739
-- Files with full headers: 689
+- Scanned code files: 740
+- Files with full headers: 691
 - Files with lite headers: 49
-- Files with any headers: 738
-- Files without headers: 1
+- Files with any headers: 740
+- Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1810
-- Edges: 9134
-- DB tables: 207
-- Doctrines: 662
+- Graph nodes: 1816
+- Edges: 9151
+- DB tables: 208
+- Doctrines: 665
 - Impact areas: 203
 - Unresolved code edges: 889
 - Tables multi-écrivains directs (>=2): 87
@@ -35,7 +35,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - catalog: 129
 - checkout: 3
 - customs: 8
-- dashboard: 29
+- dashboard: 30
 - decision-signals: 14
 - documents: 15
 - economic-engine: 65
@@ -54,6 +54,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - operations: 11
 - orders: 33
 - payment: 30
+- payments: 1
 - platform-ops: 2
 - providers-services: 7
 - purchasing: 49
@@ -89,7 +90,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 422
+- service: 424
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -169,6 +170,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/market-local-price-activation-service.js — market-local-price-activation-orchestrator (market-autonomy, critical, full)
 - services/market-local-price-resolution-service.js — market-active-local-price-buyer-boundary (market-autonomy, critical, full)
 - services/market-local-price-state-transition.js — market-local-price-active-state-transition (market-autonomy, critical, full)
+- services/market-payment-collection-gate.js — market-payment-collection-gate (payments, critical, full)
 - services/mobile-money/kartapay-km.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/mtn-momo-cg.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/orange-money-cm.js — mobile-money-provider-adapter (payment, critical, full)
@@ -538,6 +540,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/purchasing-order-detail.js — purchasing-order-detail-reader (purchasing, high, full)
 - services/radar-alerts/cash-reconciliation-signals.js — radar-cash-reconciliation-signals (decision-signals, high, full)
 - services/relais-mutation-service.js — logistics-relais-mutation-service (logistics, high, full)
+- services/relay-collect-amount.js — dashboard-relay-collect-amount (dashboard, high, full)
 - services/relay-dashboard-queries.js — dashboard-relay-dashboard-queries (dashboard, high, full)
 - services/shared-cart-library.js — shared-cart-library-service (shared-cart, high, full)
 - services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
@@ -1142,7 +1145,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Files Still Without Headers Or Aggregation
 
-- services/relay-collect-amount.js
+- none
 
 ## Files With Misplaced Headers (Shebang/Code Before Block)
 

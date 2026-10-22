@@ -77,6 +77,7 @@ const { resolveCheckoutItems } = require('./order-checkout-item-resolution');
 const { applyActiveMarketPricesToCheckoutItems } = require('./market-local-price-resolution-service');
 const { MarketCommercialPriceError } = require('./market-commercial-price-service');
 const { assertMarketDeliverable } = require('./market-delivery-proof-service');
+const { assertCentralCollectionAllowed } = require('./market-payment-collection-gate');
 const {
   FULFILLMENT_SOURCE,
   resolveCheckoutFulfillmentSources,
@@ -218,6 +219,18 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       await assertMarketDeliverable(client, relais.market_id);
     } catch (e) {
       if (e && e.code === 'MARKET_DELIVERY_NOT_PROVEN') {
+        await client.query('ROLLBACK');
+        return fail(409, { error: e.message, code: e.code });
+      }
+      throw e;
+    }
+
+    // Moyen d'encaissement central (Stripe/PayPal EUR) : autorisé explicitement par marché, sinon refus.
+    // Doctrine « le Market encaisse » : aucun encaissement sur le compte central par défaut.
+    try {
+      await assertCentralCollectionAllowed(client, relais.market_id, payment_mode);
+    } catch (e) {
+      if (e && e.code === 'PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET') {
         await client.query('ROLLBACK');
         return fail(409, { error: e.message, code: e.code });
       }

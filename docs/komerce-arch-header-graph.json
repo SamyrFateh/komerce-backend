@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 739,
-    "filesWithFullHeaders": 689,
+    "scannedCodeFiles": 740,
+    "filesWithFullHeaders": 691,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 738,
-    "filesWithoutHeaders": 1,
+    "filesWithAnyHeaders": 740,
+    "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1810,
-    "edges": 9134,
-    "dbTables": 207,
-    "doctrines": 662,
+    "graphNodes": 1816,
+    "edges": 9151,
+    "dbTables": 208,
+    "doctrines": 665,
     "impactAreas": 203,
     "unresolvedCodeEdges": 889,
     "dbWriteViaOverlapWarnings": 9,
@@ -55,7 +55,7 @@
     "wallet": 3,
     "providers-services": 7,
     "customs": 8,
-    "dashboard": 29,
+    "dashboard": 30,
     "loyalty": 3,
     "market-control-plane": 5,
     "settlement": 2,
@@ -71,6 +71,7 @@
     "external-provider-contracts": 1,
     "incident-management": 5,
     "market-autonomy": 4,
+    "payments": 1,
     "refunds": 2,
     "supplier-connectivity": 4,
     "shared": 1
@@ -109,7 +110,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 422,
+    "service": 424,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -118,9 +119,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 99,
+    "critical": 100,
     "medium": 151,
-    "high": 430,
+    "high": 431,
     "low": 58
   },
   "nodes": [
@@ -21345,6 +21346,51 @@
       "version": "2026-10"
     },
     {
+      "id": "services/market-payment-collection-gate.js",
+      "file": "services/market-payment-collection-gate.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-payment-collection-gate",
+      "domain": "payments",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_id",
+        "payment_mode"
+      ],
+      "outputs": [
+        "allowed_boolean",
+        "PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/order-checkout-service.js",
+        "routes/payments.js",
+        "routes/payments-paypal.js"
+      ],
+      "dbRead": [
+        "market_central_collection_modes"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "reads_in_caller_transaction"
+      ],
+      "doctrine": [
+        "market_encaisse",
+        "fail_closed",
+        "no_country_branch"
+      ],
+      "impactAreas": [
+        "payments",
+        "market",
+        "checkout"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/market-payment-provider-config-service.js",
       "file": "services/market-payment-provider-config-service.js",
       "type": "file",
@@ -27937,6 +27983,41 @@
       "version": "2026-09"
     },
     {
+      "id": "services/relay-collect-amount.js",
+      "file": "services/relay-collect-amount.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-relay-collect-amount",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order_row"
+      ],
+      "outputs": [
+        "collect_amount"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/relay-dashboard-queries.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "market_currency_collection",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "market"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/relay-dashboard-queries.js",
       "file": "services/relay-dashboard-queries.js",
       "type": "file",
@@ -27957,12 +28038,14 @@
       ],
       "depends": [
         "db",
+        "services/relay-collect-amount.js",
         "utils/logger.js"
       ],
       "usedBy": [
         "routes/relay-dashboard.js"
       ],
       "dbRead": [
+        "markets",
         "order_comments",
         "order_incidents",
         "order_items",
@@ -36449,6 +36532,11 @@
       "table": "ceiling_template_capabilities"
     },
     {
+      "id": "db:market_central_collection_modes",
+      "type": "db-table",
+      "table": "market_central_collection_modes"
+    },
+    {
       "id": "db:central authority grant tables",
       "type": "db-table",
       "table": "central authority grant tables"
@@ -38919,6 +39007,21 @@
       "doctrine": "verification_is_separate_from_activation"
     },
     {
+      "id": "doctrine:market_encaisse",
+      "type": "doctrine",
+      "doctrine": "market_encaisse"
+    },
+    {
+      "id": "doctrine:fail_closed",
+      "type": "doctrine",
+      "doctrine": "fail_closed"
+    },
+    {
+      "id": "doctrine:no_country_branch",
+      "type": "doctrine",
+      "doctrine": "no_country_branch"
+    },
+    {
       "id": "doctrine:payment_provider_config_owned_by_payments",
       "type": "doctrine",
       "doctrine": "payment_provider_config_owned_by_payments"
@@ -39012,11 +39115,6 @@
       "id": "doctrine:secrets_env_only",
       "type": "doctrine",
       "doctrine": "secrets_env_only"
-    },
-    {
-      "id": "doctrine:fail_closed",
-      "type": "doctrine",
-      "doctrine": "fail_closed"
     },
     {
       "id": "doctrine:market_selects_provider",
@@ -39457,6 +39555,11 @@
       "id": "doctrine:idempotent_stripe_refund",
       "type": "doctrine",
       "doctrine": "idempotent_stripe_refund"
+    },
+    {
+      "id": "doctrine:market_currency_collection",
+      "type": "doctrine",
+      "doctrine": "market_currency_collection"
     },
     {
       "id": "doctrine:market_operator_scoping (GAP-2)",
@@ -74269,6 +74372,66 @@
       "label": "finance"
     },
     {
+      "from": "services/order-checkout-service.js",
+      "to": "services/market-payment-collection-gate.js",
+      "type": "uses",
+      "label": "services/order-checkout-service.js"
+    },
+    {
+      "from": "routes/payments.js",
+      "to": "services/market-payment-collection-gate.js",
+      "type": "uses",
+      "label": "routes/payments.js"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "services/market-payment-collection-gate.js",
+      "type": "uses",
+      "label": "routes/payments-paypal.js"
+    },
+    {
+      "from": "services/market-payment-collection-gate.js",
+      "to": "db:market_central_collection_modes",
+      "type": "db-read",
+      "label": "market_central_collection_modes"
+    },
+    {
+      "from": "services/market-payment-collection-gate.js",
+      "to": "doctrine:market_encaisse",
+      "type": "doctrine",
+      "label": "market_encaisse"
+    },
+    {
+      "from": "services/market-payment-collection-gate.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/market-payment-collection-gate.js",
+      "to": "doctrine:no_country_branch",
+      "type": "doctrine",
+      "label": "no_country_branch"
+    },
+    {
+      "from": "services/market-payment-collection-gate.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/market-payment-collection-gate.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-payment-collection-gate.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
       "from": "services/market-provisioning-service.js",
       "to": "services/market-payment-provider-config-service.js",
       "type": "uses",
@@ -84705,9 +84868,45 @@
     },
     {
       "from": "services/relay-dashboard-queries.js",
+      "to": "services/relay-collect-amount.js",
+      "type": "uses",
+      "label": "services/relay-dashboard-queries.js"
+    },
+    {
+      "from": "services/relay-collect-amount.js",
+      "to": "doctrine:market_currency_collection",
+      "type": "doctrine",
+      "label": "market_currency_collection"
+    },
+    {
+      "from": "services/relay-collect-amount.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/relay-collect-amount.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/relay-collect-amount.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
+      "to": "services/relay-collect-amount.js",
+      "type": "depends",
+      "label": "services/relay-collect-amount.js"
     },
     {
       "from": "services/relay-dashboard-queries.js",
@@ -84720,6 +84919,12 @@
       "to": "services/relay-dashboard-queries.js",
       "type": "uses",
       "label": "routes/relay-dashboard.js"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/relay-dashboard-queries.js",
@@ -107753,6 +107958,7 @@
         "impact:payment",
         "middleware/auth-guest.js",
         "middleware/auth.js",
+        "services/market-payment-collection-gate.js",
         "services/payment-paypal.js",
         "services/paypal-client.js",
         "utils/logger.js"
@@ -107813,6 +108019,7 @@
         "middleware/validate.js",
         "public/boutique/js/b-checkout.js",
         "routes/purchasing.js",
+        "services/market-payment-collection-gate.js",
         "services/monitoring.js",
         "services/payment-cash-confirm.js",
         "services/payment-stripe.js",
@@ -117656,6 +117863,48 @@
         "services/market-delegation-team-service.js"
       ]
     },
+    "services/market-payment-collection-gate.js": {
+      "role": "market-payment-collection-gate",
+      "domain": "payments",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/order-checkout-service.js",
+        "routes/payments.js",
+        "routes/payments-paypal.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "market_central_collection_modes"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "market_encaisse",
+        "fail_closed",
+        "no_country_branch"
+      ],
+      "impactAreas": [
+        "payments",
+        "market",
+        "checkout"
+      ],
+      "mustCheck": [
+        "db:market_central_collection_modes",
+        "doctrine:fail_closed",
+        "doctrine:market_encaisse",
+        "doctrine:no_country_branch",
+        "impact:checkout",
+        "impact:market",
+        "impact:payments",
+        "routes/payments-paypal.js",
+        "routes/payments.js",
+        "services/order-checkout-service.js"
+      ]
+    },
     "services/market-payment-provider-config-service.js": {
       "role": "market-payment-provider-config-writer",
       "domain": "payment",
@@ -119116,6 +119365,7 @@
         "services/cart-share-service.js",
         "services/market-delivery-proof-service.js",
         "services/market-local-price-resolution-service.js",
+        "services/market-payment-collection-gate.js",
         "services/order-checkout-item-resolution.js",
         "services/order-checkout-persistence.js",
         "services/order-post-commit-hooks.js"
@@ -124206,6 +124456,37 @@
         "services/market-provisioning-service.js"
       ]
     },
+    "services/relay-collect-amount.js": {
+      "role": "dashboard-relay-collect-amount",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/relay-dashboard-queries.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "market_currency_collection",
+        "fail_closed"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "market"
+      ],
+      "mustCheck": [
+        "doctrine:fail_closed",
+        "doctrine:market_currency_collection",
+        "impact:dashboard",
+        "impact:market",
+        "services/relay-dashboard-queries.js"
+      ]
+    },
     "services/relay-dashboard-queries.js": {
       "role": "dashboard-relay-dashboard-queries",
       "domain": "dashboard",
@@ -124215,6 +124496,7 @@
       "purpose": null,
       "directDependsOn": [
         "db",
+        "services/relay-collect-amount.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
@@ -124222,6 +124504,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "markets",
         "order_comments",
         "order_incidents",
         "order_items",
@@ -124245,6 +124528,7 @@
         "market"
       ],
       "mustCheck": [
+        "db:markets",
         "db:order_comments",
         "db:order_incidents",
         "db:order_items",
@@ -124262,6 +124546,7 @@
         "impact:market",
         "routes/relay-dashboard.js",
         "services/operations-relay-projection.js",
+        "services/relay-collect-amount.js",
         "utils/logger.js"
       ]
     },
@@ -137943,9 +138228,7 @@
       "label": "routes/*"
     }
   ],
-  "filesWithoutHeaders": [
-    "services/relay-collect-amount.js"
-  ],
+  "filesWithoutHeaders": [],
   "filesWithMisplacedHeaders": [],
   "liteWithoutOwner": []
 }

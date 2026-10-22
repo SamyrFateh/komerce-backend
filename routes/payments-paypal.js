@@ -30,6 +30,7 @@ const log              = require('../utils/logger').child({ module: 'payments-pa
 const { authenticate } = require('../middleware/auth');
 const { authenticateOrCreateGuest: authGuest } = require('../middleware/auth-guest');
 const paypal           = require('../services/paypal-client');
+const { isCentralCollectionAllowed } = require('../services/market-payment-collection-gate');
 const {
   createPaypalOrder,
   capturePaypalOrder,
@@ -49,7 +50,7 @@ router.post('/create-order', authGuest, async (req, res, next) => {
   try {
     const where = order_id ? 'id = $1' : 'reference = $1';
     const { rows } = await db.query(
-      `SELECT id, reference, total_eur, payment_status, payment_mode, user_id, guest_token
+      `SELECT id, reference, total_eur, payment_status, payment_mode, user_id, guest_token, market_id
          FROM orders WHERE ${where}`,
       [order_id || order_reference]
     );
@@ -65,6 +66,12 @@ router.post('/create-order', authGuest, async (req, res, next) => {
     }
     if (order.payment_status === 'paid') {
       return res.status(409).json({ error: 'Commande déjà payée' });
+    }
+    if (!(await isCentralCollectionAllowed(db, order.market_id, 'paypal_eur'))) {
+      return res.status(409).json({
+        error: 'Paiement PayPal non autorisé pour le marché de cette commande.',
+        code: 'PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET',
+      });
     }
     const amountEur = Number(order.total_eur);
     if (!amountEur || amountEur <= 0) {

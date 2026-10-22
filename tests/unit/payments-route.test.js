@@ -38,6 +38,10 @@ jest.mock('stripe', () => jest.fn(() => ({
 })));
 
 // ── Mock : db ──────────────────────────────────────────────────────────────
+const mockCentralAllowed = jest.fn();
+jest.mock('../../services/market-payment-collection-gate', () => ({
+  isCentralCollectionAllowed: (...a) => mockCentralAllowed(...a),
+}));
 const mockDbQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockDbQuery(...args) }));
 
@@ -117,12 +121,22 @@ describe('routes/payments', () => {
     // partageant les mêmes jest.fn() module-level (mockDbQuery, etc.), un
     // Once oublié dans un test fuit silencieusement vers le suivant.
     jest.resetAllMocks();
+    mockCentralAllowed.mockResolvedValue(true);
     mockUser = { id: 'user-1', role: 'client' };
     delete process.env.STRIPE_PUBLISHABLE_KEY;
   });
 
   // ── POST /stripe/intent ──────────────────────────────────────────────
   describe('POST /stripe/intent', () => {
+    test('409 PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET si le marché n\'autorise pas Stripe EUR (lot 3)', async () => {
+      mockCentralAllowed.mockResolvedValueOnce(false);
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'o1', market_id: 'm-cm', user_id: 'user-1', payment_mode: 'stripe_eur', payment_status: 'pending' }] });
+      const res = await request(buildApp()).post('/api/payments/stripe/intent').send({ order_reference: 'KOM-001' });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET');
+      expect(mockCreateStripeIntent).not.toHaveBeenCalled();
+    });
+
     test('400 si order_reference manquant', async () => {
       const res = await request(buildApp()).post('/api/payments/stripe/intent').send({});
       expect(res.status).toBe(400);

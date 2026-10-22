@@ -684,3 +684,9 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 `market_delivery_attestations` is a new, **not yet live** table proposed by migration 305 (Lot B, audit P1–P7). It carries the central proof that a Market is deliverable: a referenced carrier (`carriers`), mode, origin, strictly positive freight rate with currency/unit, transit days, documentary evidence reference, bounded validity and the central attestor; revocation is explicit (`revoked_at/by/reason`). It is not a boolean flag and has no backfill. Checkout refuses a Market without a valid attestation (or, for Markets with real collected-order history, the HISTORY basis). Writers: `services/market-delivery-proof-service.js` via central-admin routes only.
 <!-- /schema-pending -->
+
+<!-- schema-pending: market_central_collection_modes (migration 307, not yet live) -->
+### Market central collection modes (migration 307 — intended_migration_schema)
+
+`market_central_collection_modes` is a new, **not yet live** table proposed by migration 307 (lot 3, stabilisation multi-pays). It states, per Market, which central collection mode (`stripe_eur`, `paypal_eur`) is authorised, with a mandatory `evidence_ref`, the authoriser and an explicit `revoked_at`. Absence of a row means refusal (fail-closed). Backfill: KM only, to preserve current behaviour; CM/CG/DJ receive no authorisation until the owner defines the fund holder. Reader: `services/market-payment-collection-gate.js` (checkout, Stripe intent, PayPal create-order).
+<!-- /schema-pending -->

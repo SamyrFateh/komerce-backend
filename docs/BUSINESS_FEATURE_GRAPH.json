@@ -4711,7 +4711,7 @@
         "category": "services",
         "declared": "services/relay-collect-amount.js",
         "resolvedPath": "services/relay-collect-amount.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "dashboard",
@@ -15622,6 +15622,13 @@
       {
         "feature": "payments",
         "category": "services",
+        "declared": "services/market-payment-collection-gate.js",
+        "resolvedPath": "services/market-payment-collection-gate.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
         "declared": "services/confirm-pickup-cash-payment.js",
         "resolvedPath": "services/confirm-pickup-cash-payment.js",
         "status": "resolved-in-technical-graph"
@@ -15825,6 +15832,13 @@
       {
         "feature": "payments",
         "category": "migrations",
+        "declared": "migrations/307_market_central_collection_modes.sql",
+        "resolvedPath": "migrations/307_market_central_collection_modes.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
         "declared": "migrations/169_mobile_money_foundation.sql",
         "resolvedPath": "migrations/169_mobile_money_foundation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15883,6 +15897,13 @@
         "category": "tests",
         "declared": "tests/unit/market-payment-accounts.test.js",
         "resolvedPath": "tests/unit/market-payment-accounts.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/market-payment-collection-gate.test.js",
+        "resolvedPath": "tests/unit/market-payment-collection-gate.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -41281,6 +41302,10 @@
                 "targetFile": "services/payment-status-validator.js"
               },
               {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/market-payment-collection-gate.js"
+              },
+              {
                 "sourceFileId": "services/payment-service.js",
                 "targetFile": "services/payment-status-validator.js"
               },
@@ -46186,7 +46211,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2099
+        "filesObserved": 2101
       },
       "boutique": {
         "filesObserved": 214,
@@ -49383,8 +49408,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 634,
-        "technicalNodesOwned": 634,
+        "technicalNodesTotal": 636,
+        "technicalNodesOwned": 636,
         "technicalOrphans": 0
       },
       "dash": {
