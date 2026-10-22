@@ -75,3 +75,26 @@ describe('order-checkout-service — livrabilité du marché', () => {
     expect(items).toBeGreaterThan(rate);
   });
 });
+
+describe('order-checkout-service — unification monétaire (pivot EUR, snapshot transport)', () => {
+  const fs2 = require('fs');
+  const path2 = require('path');
+  const src = fs2.readFileSync(path2.join(__dirname, '..', '..', 'services', 'order-checkout-service.js'), 'utf8');
+
+  test('marché non-KMF : garde pivot EUR/KMF fail-closed avant livrabilité', () => {
+    expect(src).toMatch(/assertEurKmfPivotConsistent\(eurKmfFinal\)/);
+    expect(src).toMatch(/EUR_KMF_PIVOT_DIVERGENCE/);
+    expect(src.indexOf('assertEurKmfPivotConsistent(eurKmfFinal)')).toBeLessThan(src.indexOf('assertMarketDeliverable(client'));
+  });
+
+  test('tarifs transport : chargés pour le marché du relais serveur, jamais du corps de requête', () => {
+    expect(src).toMatch(/loadMarketTransportSaleTariffs\(client, relais\.market_id\)/);
+    expect(src).not.toMatch(/body\.market_id/);
+  });
+
+  test('snapshot transport figé et persisté avec la commande ; fx_rate_unavailable → 503', () => {
+    expect(src).toMatch(/transportPricingSnapshot = \{/);
+    expect(src).toMatch(/transportPriceKmf: transport_price_kmf, transportPricingSnapshot/);
+    expect(src).toMatch(/e\.code === 'fx_rate_unavailable'[\s\S]{0,120}fail\(503/);
+  });
+});

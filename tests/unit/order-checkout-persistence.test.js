@@ -19,6 +19,7 @@ const walletService = require('../../services/wallet-service');
 const {
   applyWalletDebit,
   insertOrderItemsWithStock,
+  insertOrderRow,
 } = require('../../services/order-checkout-persistence');
 
 beforeEach(() => jest.clearAllMocks());
@@ -57,5 +58,37 @@ describe('order-checkout-persistence', () => {
       'UPDATE orders SET wallet_applied_kmf = $1 WHERE id = $2',
       [2500, 'o1']
     );
+  });
+});
+
+function params(extra = {}) {
+  return {
+    reference: 'KOM-1', userId: 'u', recipientId: 'r', relaisId: 'rel', trackingPhone: '+269',
+    totalKmf: 1000, totalEur: 2.03, paymentMode: 'stripe_eur', stripePaymentIntent: null, cashRefCode: null,
+    confectionType: null, confectionDelayDays: 0, moduleRetouche: false,
+    costEstimatedKmf: 500, marginEstimatedPct: 10, discountPct: 0, discountKmf: 0, loyaltyLabel: null,
+    destinationIsland: 'GC', routingMode: 'direct', transitHub: null, transportPriceKmf: 90,
+    pickupCodeRecipient: null, pickupCodeRecipientUserId: null,
+    displayAmount: null, displayCurrency: null, displayMeta: null, marketId: 'm1',
+    ...extra,
+  };
+}
+
+describe('insertOrderRow — snapshot de tarif transport', () => {
+  test('persiste le snapshot en JSON dans la colonne dédiée (40e paramètre)', async () => {
+    const client = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'o1' }] }) };
+    const snap = { version: 1, pivot_currency: 'EUR', tariff_lines: [{ rate_id: 'x' }] };
+    await insertOrderRow(client, params({ transportPricingSnapshot: snap }));
+    const [sql, values] = client.query.mock.calls[0];
+    expect(sql).toMatch(/transport_pricing_snapshot/);
+    expect(values).toHaveLength(40);
+    expect(JSON.parse(values[39])).toEqual(snap);
+    expect(values[38]).toBe('m1');
+  });
+
+  test('sans snapshot (pas de ligne import) : NULL, jamais un objet vide inventé', async () => {
+    const client = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'o1' }] }) };
+    await insertOrderRow(client, params());
+    expect(client.query.mock.calls[0][1][39]).toBeNull();
   });
 });

@@ -84,7 +84,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Table | Rôle |
 |---|---|
-| `orders` | Commande client (table maîtresse, 60+ colonnes). **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `simulation_scope` TEXT nullable (NULL = activité réelle ; sinon périmètre de recette, ex. `RCT1`, format contrôlé, immuable une fois posé par trigger). Exclu par défaut des agrégats d'activité réelle ; inclus seulement quand le périmètre est demandé. |
+| `orders` | Commande client (table maîtresse, 60+ colonnes). **Migration 313 (2026-10-22, `intended_migration_schema`)** : + `transport_pricing_snapshot` JSONB nullable (preuve figée du tarif de vente transport appliqué : devise du marché, pivot EUR, ids de ligne de tarif, jambes FX ; distinct de `display_parity_snapshot`, réservé à l'affichage). **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `simulation_scope` TEXT nullable (NULL = activité réelle ; sinon périmètre de recette, ex. `RCT1`, format contrôlé, immuable une fois posé par trigger). Exclu par défaut des agrégats d'activité réelle ; inclus seulement quand le périmètre est demandé. |
 | `order_items` | Lignes de commande. **Migration 091 (2026-06-25)** : 6 colonnes de classification douanière figées à la création — `customs_category_key`, `sh_code`, `douane_pct`, `tva_pct`, `taxe_add_pct`, `classification_defaulted`. Immuables comme `price_kmf`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. Invariant I-DOUANE-1. **Migration 104 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `sku_id` UUID nullable, FK vers `product_skus(id)` avec `ON DELETE SET NULL`. `variant_combo` reste snapshot d'affichage/historique ; le pilotage stock cible passe par `sku_id`. Doctrine : `docs/specs/DECISION_MODELE_STOCK_SKU.md`. **Migration 162 (2026-09-04, `intended_migration_schema`)** : + `fulfillment_source` TEXT nullable, snapshot immuable du verdict transactionnel `LOCAL_STOCK | IMPORT` pour les nouvelles lignes ; `NULL` reste réservé aux lignes historiques/synthétiques sans provenance fiable et ne vaut jamais `IMPORT`. Doctrine : `docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md`. |
 | `order_status_history` | Trace immutable des transitions (invariant I-04). |
 | `order_comments` | Commentaires opérationnels. |
@@ -700,5 +700,11 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 <!-- schema-pending: fx_pegs (migration 311, not yet live) -->
 ### Pegs de change (migration 311 — intended_migration_schema)
 
-`fx_pegs` est une nouvelle table **not yet live** : seul peg admis USD→DJF (Banque centrale de Djibouti), daté, append-only. Lecteur : `services/fx-chain-service.js`. Migration 312 : bande 100–300, TRUNCATE interdit.
+`fx_pegs` est une nouvelle table **not yet live** : seul peg admis USD→DJF (Banque centrale de Djibouti), daté, append-only. Lecteur : `services/fx-chain-service.js`. Migration 312 : bande 100–300, TRUNCATE interdit. Migration 314 : 2e peg USD→AED (3,6725, bande 3–4,5), unicité (devise, valid_from).
+<!-- /schema-pending -->
+
+<!-- schema-pending: market_transport_sale_rates (migration 313, not yet live) -->
+### Tarifs de vente transport par Market (migration 313 — intended_migration_schema)
+
+`market_transport_sale_rates` est une nouvelle table **not yet live** : tarif de vente du transport par Market (clés `SEA_KMF_PER_KG_COMMERCIAL` / `AIR_KMF_PER_KG_TAXABLE` de `business_rules`, par kg dans la devise du marché, convertis en KMF de base par la voie gouvernée : parités fixes ou chaîne FX DJF), avec pièce justificative obligatoire, un seul tarif actif par (Market, clé), révocable. Absence de tarif = refus fail-closed hors marché KMF ; le coût de fret attesté n'est jamais un prix. Lecteur : `services/market-transport-sale-rates.js` (checkout).
 <!-- /schema-pending -->

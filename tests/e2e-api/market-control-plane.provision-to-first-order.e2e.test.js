@@ -202,4 +202,37 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
       await db.query("UPDATE product_market_price_drafts SET currency='KMF' WHERE market_id=$1 AND product_id=$2",[marketId,productId]);
     }
   });
+
+  it('5 — généralisation : le même checkout accepte un marché non-KMF dès qu’il a ses propres tarifs de vente',async()=>{
+    await db.query("UPDATE markets SET currency='XAF' WHERE id=$1",[marketId]);
+    await db.query("UPDATE product_market_price_drafts SET currency='XAF' WHERE market_id=$1 AND product_id=$2",[marketId,productId]);
+    const orderBody={items:[{product_id:productId,quantity:1}],relais_id:relayId,payment_mode:'stripe_eur',tracking_phone:'+269000999'};
+    let orderId=null;
+    try {
+      // Un tarif posé sur un AUTRE marché ne débloque pas celui-ci.
+      const { rows:[other] }=await db.query("SELECT id FROM markets WHERE id<>$1 AND code IN ('KM','CM','CG') LIMIT 1",[marketId]);
+      await db.query("INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_per_kg,currency,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'XAF','e2e-autre-marche')",[other.id]);
+      const stillRefused=await request(app).post('/api/orders').set('Authorization',`Bearer ${buyerToken}`).send(orderBody);
+      expect(stillRefused.status).toBe(409);
+      expect(stillRefused.body.code).toBe('MARKET_TRANSPORT_TARIFF_MISSING');
+
+      await db.query("INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_per_kg,currency,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'XAF','e2e-decision-locale')",[marketId]);
+      const accepted=await request(app).post('/api/orders').set('Authorization',`Bearer ${buyerToken}`).send(orderBody);
+      expect(accepted.status).toBe(201);
+      orderId=accepted.body.order.id;
+      const {rows:[snap]}=await db.query('SELECT transport_pricing_snapshot AS s FROM orders WHERE id=$1',[orderId]);
+      expect(snap.s).toMatchObject({version:1,market_currency:'XAF',pivot_currency:'EUR',source:'market_transport_sale_rates'});
+      expect(snap.s.tariff_lines[0]).toMatchObject({rate_key:'SEA_KMF_PER_KG_COMMERCIAL',rate_per_kg_local:90,currency:'XAF',evidence_ref:'e2e-decision-locale'});
+    } finally {
+      await db.query('DELETE FROM market_transport_sale_rates WHERE evidence_ref IN ($1,$2)',['e2e-autre-marche','e2e-decision-locale']);
+      await db.query("UPDATE markets SET currency='KMF' WHERE id=$1",[marketId]);
+      await db.query("UPDATE product_market_price_drafts SET currency='KMF' WHERE market_id=$1 AND product_id=$2",[marketId,productId]);
+      if(orderId){
+        cleanup.track('orders','id',orderId);
+        cleanup.trackSql('DELETE FROM invoices WHERE order_id=$1',[orderId]);
+        cleanup.trackSql('DELETE FROM order_items WHERE order_id=$1',[orderId]);
+        cleanup.trackSql('DELETE FROM order_status_history WHERE order_id=$1',[orderId]);
+      }
+    }
+  });
 });
