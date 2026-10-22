@@ -22,7 +22,6 @@
 
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'payment-mobile-money' });
-const { projectAmount, roundToMinorUnit } = require('../utils/currency');
 const { getAdapter } = require('./mobile-money/registry');
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
 const { appendOrderNote } = require('./order-mutation-service');
@@ -133,7 +132,7 @@ async function getAvailability(marketCode) {
 async function loadOrderForPayment(orderReference) {
   const { rows } = await db.query(
     `SELECT o.id, o.reference, o.user_id, o.payment_mode, o.payment_status,
-            o.total_kmf, o.market_id, o.relais_id,
+            o.total_kmf, o.market_id, o.relais_id, o.fx_snapshot,
             m.code AS market_code, m.name AS market_name,
             m.currency AS market_currency, m.minor_unit AS market_minor_unit
        FROM orders o
@@ -191,14 +190,19 @@ async function computeAuthoritativeAmount(order, provider) {
     throw new MobileMoneyError('mobile_money_amount_invalid', 'Montant commande invalide', 409);
   }
 
-  // Extension explicite de la Payment Boundary : la Currency Boundary sert
-  // seulement à projeter la vérité orders.total_kmf vers la devise native du
-  // rail. Le résultat est immédiatement figé dans mobile_money_transactions
-  // et ne sera plus jamais recalculé pour cette tentative.
-  const projected = await projectAmount(totalKmf, 'KMF', provider.currency);
-  const rounded = roundToMinorUnit(projected, provider.minor_unit);
+  // Une seule vérité monétaire de transaction : le montant attendu par l'opérateur est celui CONFIRMÉ et figé à la
+  // commande (orders.fx_snapshot.market, devise du marché du relais côté serveur). Jamais de reconversion au taux du
+  // jour : sans snapshot cohérent avec la devise du rail, refus explicite.
+  const snap = order.fx_snapshot && order.fx_snapshot.market;
+  if (!snap || !snap.amount_text) {
+    throw new MobileMoneyError('mobile_money_fx_snapshot_missing', 'Montant confirmé de la commande indisponible', 409);
+  }
+  if (String(snap.currency).toUpperCase() !== String(provider.currency).toUpperCase()
+      || Number(snap.minor_unit) !== (Number(provider.minor_unit) || 0)) {
+    throw new MobileMoneyError('mobile_money_fx_snapshot_mismatch', 'Devise du rail incohérente avec le montant confirmé de la commande', 409);
+  }
   const factor = Math.pow(10, Number(provider.minor_unit) || 0);
-  const amountMinor = Math.round(rounded * factor);
+  const amountMinor = Math.round(Number(snap.amount_text) * factor);
   if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
     throw new MobileMoneyError('mobile_money_amount_invalid', 'Montant Mobile Money invalide', 409);
   }

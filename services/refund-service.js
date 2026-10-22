@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        client, order, amountKmf, amountEur, refundType, reason, userId
  * @outputs       refund row, stripe/wallet refund result
- * @depends       db.js, stripe, services/wallet-service.js
+ * @depends       db.js, stripe, services/wallet-service.js, services/order-fx-snapshot.js
  * @used-by       routes/orders/cancel.js, services/admin-order-refund.js, services/cancel-shared-cart-with-refunds.js
  * @db-read       orders, refunds, wallets, markets
  * @db-write      refunds
@@ -34,6 +34,7 @@
 
 const stripe        = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const walletService = require('./wallet-service');
+const { assertRefundWithinCaptured, assertRefundRecordCompatible } = require('./order-fx-snapshot');
 const refundReceiptService = require('./documents/refund-receipt');
 const log = require('../utils/logger').child({ module: 'refund-service' });
 
@@ -72,6 +73,10 @@ async function assertWalletRefundCurrency(dbClient, order) {
  * Doit être appelé dans une transaction DB existante.
  */
 async function processRefund(dbClient, order, amountKmf, amountEur, refundType, reason, initiatedBy, parcelId = null) {
+  // Une seule vérité monétaire : jamais plus que le capturé, jamais un doublon silencieux de montant différent.
+  await assertRefundWithinCaptured(dbClient, order, amountKmf, amountEur, refundType);
+  await assertRefundRecordCompatible(dbClient, order, amountKmf, amountEur, refundType);
+
   let refundMethod, stripeRefundId = null, walletTxId = null;
   const idempotencyKey = _buildIdempotencyKey(order.id, refundType, parcelId);
 
@@ -170,6 +175,10 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
   if (!amountKmf && !amountEur) {
     return { method: 'none', skipped: true, reason: 'zero_amount', amountEur, amountKmf };
   }
+
+  // Une seule vérité monétaire : jamais plus que le capturé, jamais un doublon silencieux de montant différent.
+  await assertRefundWithinCaptured(dbClient, order, amountKmf, amountEur, refundType);
+  await assertRefundRecordCompatible(dbClient, order, amountKmf, amountEur, refundType);
 
   let refundMethod, stripeRefundId = null, walletTxId = null;
   const idempotencyKey = _buildIdempotencyKey(order.id, refundType, parcelId);

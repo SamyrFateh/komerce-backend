@@ -69,6 +69,7 @@ module.exports = {
       'services/rct1-checkout-reference-guard.js',
       'services/order-checkout-item-resolution.js',
       'services/order-checkout-persistence.js',
+      'services/order-fx-snapshot.js',
       'services/order-post-commit-hooks.js',
       'services/admin-order-refund.js',
       'services/dispute-mutation-service.js',

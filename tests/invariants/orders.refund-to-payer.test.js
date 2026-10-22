@@ -77,6 +77,10 @@ jest.mock('stripe', () =>
   jest.mock('../../services/wallet-service', () => ({
     credit: jest.fn().mockResolvedValue({ transaction: { id: 1 } }),
   }));
+  jest.mock('../../services/order-fx-snapshot', () => ({
+    assertRefundWithinCaptured: jest.fn().mockResolvedValue(undefined),
+    assertRefundRecordCompatible: jest.fn().mockResolvedValue(undefined),
+  }));
   jest.mock('../../services/documents/refund-receipt', () => ({ issue: jest.fn() }));
 
   const { makeClient } = require('../integration/test-harness/mock-db');

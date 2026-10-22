@@ -105,11 +105,11 @@ describe('initiateMobileMoney', () => {
     id: 'order-1', reference: 'K-CM-001', user_id: 'user-1',
     payment_mode: 'mobile_money', payment_status: 'pending',
     total_kmf: 10000, market_id: 'market-cm', relais_id: 'relay-cm',
+    fx_snapshot: { market: { currency: 'XAF', amount: 13334.1, amount_text: '13334.1', minor_unit: 0 } },
     market_code: 'CM', market_currency: 'XAF', market_minor_unit: 0,
   };
 
   test('projette côté serveur puis fige le montant avant appel provider', async () => {
-    currency.projectAmount.mockResolvedValueOnce(13334.1);
     mockAdapter.initiate.mockResolvedValueOnce({
       externalTransactionId: 'PAY-1', status: 'pending', providerStatus: 'PENDING',
       safePayload: {}, clientAction: { type: 'redirect', url: 'https://orange.test/pay/PAY-1' },
@@ -136,7 +136,7 @@ describe('initiateMobileMoney', () => {
 
     const result = await mobileMoney.initiateMobileMoney({ orderReference: 'K-CM-001' });
 
-    expect(currency.projectAmount).toHaveBeenCalledWith(10000, 'KMF', 'XAF');
+    expect(currency.projectAmount).not.toHaveBeenCalled(); // montant figé à la commande, jamais reconverti
     expect(mockAdapter.initiate).toHaveBeenCalledWith(expect.objectContaining({
       orderReference: 'K-CM-001',
       amount: 13334,

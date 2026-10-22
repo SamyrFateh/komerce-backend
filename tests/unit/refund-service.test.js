@@ -18,6 +18,11 @@ jest.mock('stripe', () => jest.fn(() => ({
   refunds: { create: mockStripeRefundsCreate },
 })));
 
+jest.mock('../../services/order-fx-snapshot', () => ({
+  assertRefundWithinCaptured: jest.fn().mockResolvedValue(undefined),
+  assertRefundRecordCompatible: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('../../services/wallet-service', () => ({
   credit: jest.fn(),
 }));

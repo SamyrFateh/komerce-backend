@@ -8,7 +8,7 @@
  * @outputs       market_transport_sale_rates
  * @depends       utils/currency.js, services/fx-authority.js
  * @used-by       services/order-checkout-service.js
- * @db-read       currency_parities, market_transport_sale_rates, markets
+ * @db-read       market_transport_sale_rates, markets
  * @db-write      none
  * @db-txn        none
  * @doctrine      fail_closed, no_country_branch, attested_cost_is_not_a_sale_price
@@ -17,13 +17,10 @@
  */
 'use strict';
 
-const { getCurrencyParity } = require('../utils/currency');
 const fxAuthority = require('./fx-authority');
 
 const RATE_KEYS = Object.freeze(['SEA_KMF_PER_KG_COMMERCIAL', 'AIR_KMF_PER_KG_TAXABLE']);
 const BASE_CURRENCY = 'KMF';
-// Écart relatif toléré entre le pivot EUR/KMF de finance_config (paiements) et la parité fixe (prix/transport).
-const EUR_KMF_PIVOT_TOLERANCE = 0.001;
 
 function conversionUnavailable(cause) {
   const err = new Error('Aucune conversion gouvernée du tarif de transport de ce marché vers la base KMF : commande refusée.');
@@ -85,21 +82,8 @@ async function loadMarketTransportSaleRates(client, marketId) {
   return (await loadMarketTransportSaleTariffs(client, marketId)).rates;
 }
 
-// Garde-fou paiements : total_eur = total_kmf / finance_config.eur_kmf ; prix et transport passent par la parité
-// fixe KMF. Les deux doivent être le même pivot, sinon Stripe/PayPal factureraient un montant ≠ prix local.
-async function assertEurKmfPivotConsistent(financeEurKmf) {
-  const parity = await getCurrencyParity(BASE_CURRENCY);
-  const finance = Number(financeEurKmf);
-  if (!(finance > 0) || !(parity > 0) || Math.abs(finance - parity) / parity > EUR_KMF_PIVOT_TOLERANCE) {
-    const err = new Error('Pivot EUR/KMF incohérent entre finance_config et currency_parities : commande refusée.');
-    err.code = 'EUR_KMF_PIVOT_DIVERGENCE';
-    err.statusCode = 409;
-    throw err;
-  }
-}
-
 module.exports = {
-  RATE_KEYS, EUR_KMF_PIVOT_TOLERANCE,
+  RATE_KEYS,
   loadMarketTransportSaleRates, loadMarketTransportSaleTariffs,
-  convertRateToKmfPerKg, rateToKmfPerKg, assertEurKmfPivotConsistent,
+  convertRateToKmfPerKg, rateToKmfPerKg,
 };

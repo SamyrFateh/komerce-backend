@@ -47,6 +47,7 @@ const { validate }                 = require('../../middleware/validate');
 const { orders }                   = require('../../validators');
 const { getRule }                  = require('../../utils/rules');
 const { processRefund }            = require('../../services/refund-service');
+const { computeRefundEurForOrder } = require('../../services/order-fx-snapshot');
 const { notifyCancellation }       = require('../../services/notification-service');
 const { transitionOrderStatus }    = require('../../services/order-status-machine');
 const refundReceiptService         = require('../../services/documents/refund-receipt');
@@ -142,10 +143,8 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       const refundPct   = inFreeWindow ? 100 : partialRefundPct;
       refundAmountKmf   = Math.round(Number(order.total_kmf) * refundPct / 100);
 
-      const eurKmfRate  = order.total_eur && order.total_kmf
-        ? Number(order.total_kmf) / Number(order.total_eur)
-        : 492;
-      refundAmountEur   = parseFloat((refundAmountKmf / eurKmfRate).toFixed(2));
+      // Part du montant EUR réellement encaissé (snapshot d'origine) : jamais de reconversion ni de taux de repli.
+      refundAmountEur   = await computeRefundEurForOrder(client, order, refundAmountKmf, inFreeWindow ? 'full' : 'partial');
       refundType        = inFreeWindow ? 'full' : 'partial';
     }
 
@@ -272,6 +271,9 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
 
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) {}
+    if (err && typeof err.code === 'string' && err.code.startsWith('REFUND_')) {
+      return res.status(err.statusCode || 409).json({ error: err.message, code: err.code });
+    }
     next(err);
   } finally {
     client.release();

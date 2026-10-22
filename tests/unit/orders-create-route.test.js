@@ -60,6 +60,12 @@ jest.mock('../../utils/rules', () => ({
   getRule: jest.fn(),
 }));
 
+jest.mock('../../services/order-fx-snapshot', () => ({
+  // Autorité unique mockée : total_eur dérivé du même taux fixe que les fixtures (492), snapshot opaque.
+  buildOrderFxSnapshot: jest.fn(async ({ totalKmf }) => ({
+    snapshot: { version: 1 }, totalEur: Number((totalKmf / 492).toFixed(2)), marketAmount: totalKmf,
+  })),
+}));
 jest.mock('../../utils/rates', () => {
   // getAuthoritativeRates (lot 7) : même source mockée que getRates ; aucun taux de repli côté checkout.
   const getRates = jest.fn();
@@ -1112,8 +1118,8 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
     // sans que ce test soit mis à jour — 6 paramètres finaux réels
     // (pickup_code_recipient, pickupCodeRecipientUserId, display_total_amount,
     // display_currency, display_parity_snapshot, market_id), pas 5.
-    // .slice(-7, -5) est le bon découpage pour ces deux valeurs précises.
-    expect(orderInsert.params.slice(-7, -5)).toEqual(['organizer', 'organizer-1']);
+    // .slice(-8, -6) est le bon découpage pour ces deux valeurs précises.
+    expect(orderInsert.params.slice(-8, -6)).toEqual(['organizer', 'organizer-1']);
     expect(res.body.order.pickup_code_recipient).toBe('organizer');
   });
 

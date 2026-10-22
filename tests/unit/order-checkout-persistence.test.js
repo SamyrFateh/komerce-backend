@@ -75,13 +75,13 @@ function params(extra = {}) {
 }
 
 describe('insertOrderRow — snapshot de tarif transport', () => {
-  test('persiste le snapshot en JSON dans la colonne dédiée (40e paramètre)', async () => {
+  test('persiste le snapshot en JSON dans la colonne dédiée (index 39 sur 41 paramètres)', async () => {
     const client = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'o1' }] }) };
     const snap = { version: 1, pivot_currency: 'EUR', tariff_lines: [{ rate_id: 'x' }] };
     await insertOrderRow(client, params({ transportPricingSnapshot: snap }));
     const [sql, values] = client.query.mock.calls[0];
     expect(sql).toMatch(/transport_pricing_snapshot/);
-    expect(values).toHaveLength(40);
+    expect(values).toHaveLength(41);
     expect(JSON.parse(values[39])).toEqual(snap);
     expect(values[38]).toBe('m1');
   });

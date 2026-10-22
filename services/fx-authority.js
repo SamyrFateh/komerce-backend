@@ -171,6 +171,19 @@ async function convert({ amount, from, to, at = null, client = db, maxAgeDays = 
   };
 }
 
+/**
+ * Prorata exact : amount × numerator / denominator, arrondi half-even à `minor` décimales (un seul arrondi).
+ * Sert aux remboursements : part d'un montant déjà converti et encaissé, SANS nouvelle conversion de devise.
+ */
+function prorate(amount, numerator, denominator, minor) {
+  const a = parseDecimal(amount);
+  const n = parseDecimal(numerator, 'numérateur');
+  const d = parseDecimal(denominator, 'dénominateur');
+  if (d.n <= 0n) throw new FxError('Dénominateur de prorata non positif', 'fx_amount_invalid', 422);
+  const q = roundHalfEven(a.n * n.n * d.d, a.d * n.d * d.n, minor);
+  return Number(formatScaled(q, minor));
+}
+
 /** Unités de `ccy` pour 1 EUR (nombre, compatibilité getCurrencyParity) — parités fixes uniquement. */
 async function fixedUnitsPerEur(ccy, client = db) {
   const c = String(ccy || '').trim().toUpperCase();
@@ -182,4 +195,4 @@ async function fixedUnitsPerEur(ccy, client = db) {
   return Number((await fixedParityLeg(c, client)).rate);
 }
 
-module.exports = { convert, fixedUnitsPerEur, FxError, MINOR_UNITS, roundHalfEven, parseDecimal };
+module.exports = { convert, prorate, fixedUnitsPerEur, FxError, MINOR_UNITS, roundHalfEven, parseDecimal };
