@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 741,
-    "filesWithFullHeaders": 692,
+    "scannedCodeFiles": 742,
+    "filesWithFullHeaders": 693,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 741,
+    "filesWithAnyHeaders": 742,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1819,
-    "edges": 9159,
+    "graphNodes": 1825,
+    "edges": 9171,
     "dbTables": 208,
-    "doctrines": 666,
-    "impactAreas": 204,
+    "doctrines": 669,
+    "impactAreas": 206,
     "unresolvedCodeEdges": 889,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 87
@@ -36,7 +36,7 @@
     "auth": 14,
     "platform-ops": 2,
     "catalog": 129,
-    "admin-dashboard": 36,
+    "admin-dashboard": 37,
     "decision-signals": 14,
     "market-delegation": 35,
     "market": 4,
@@ -110,7 +110,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 425,
+    "service": 426,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -120,7 +120,7 @@
   },
   "byCriticality": {
     "critical": 101,
-    "medium": 151,
+    "medium": 152,
     "high": 431,
     "low": 58
   },
@@ -29041,6 +29041,47 @@
       "version": "2026-09"
     },
     {
+      "id": "services/signal-simulation-scope.js",
+      "file": "services/signal-simulation-scope.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "signal-simulation-scope",
+      "domain": "admin-dashboard",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [],
+      "outputs": [
+        "EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/dashboard-pilotage-market.js",
+        "services/dashboard-metrics/control-tower.js",
+        "services/dashboard-operations.js",
+        "services/action-center-agent-scope.js",
+        "routes/admin-dashboard.js"
+      ],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "real_vs_simulation_predicate",
+        "fail_safe_filter",
+        "no_second_signal_authority"
+      ],
+      "impactAreas": [
+        "pilotage",
+        "action-center",
+        "rct1"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/simulation-scope-service.js",
       "file": "services/simulation-scope-service.js",
       "type": "file",
@@ -39657,6 +39698,21 @@
       "doctrine": "market_scope_is_server_authority"
     },
     {
+      "id": "doctrine:real_vs_simulation_predicate",
+      "type": "doctrine",
+      "doctrine": "real_vs_simulation_predicate"
+    },
+    {
+      "id": "doctrine:fail_safe_filter",
+      "type": "doctrine",
+      "doctrine": "fail_safe_filter"
+    },
+    {
+      "id": "doctrine:no_second_signal_authority",
+      "type": "doctrine",
+      "doctrine": "no_second_signal_authority"
+    },
+    {
       "id": "doctrine:single_margin_engine",
       "type": "doctrine",
       "doctrine": "single_margin_engine"
@@ -41040,6 +41096,16 @@
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
+    },
+    {
+      "id": "impact:action-center",
+      "type": "impact-area",
+      "area": "action-center"
+    },
+    {
+      "id": "impact:rct1",
+      "type": "impact-area",
+      "area": "rct1"
     },
     {
       "id": "impact:secrets",
@@ -86733,6 +86799,78 @@
       "label": "incident-management"
     },
     {
+      "from": "services/dashboard-pilotage-market.js",
+      "to": "services/signal-simulation-scope.js",
+      "type": "uses",
+      "label": "services/dashboard-pilotage-market.js"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "services/signal-simulation-scope.js",
+      "type": "uses",
+      "label": "services/dashboard-metrics/control-tower.js"
+    },
+    {
+      "from": "services/dashboard-operations.js",
+      "to": "services/signal-simulation-scope.js",
+      "type": "uses",
+      "label": "services/dashboard-operations.js"
+    },
+    {
+      "from": "services/action-center-agent-scope.js",
+      "to": "services/signal-simulation-scope.js",
+      "type": "uses",
+      "label": "services/action-center-agent-scope.js"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "services/signal-simulation-scope.js",
+      "type": "uses",
+      "label": "routes/admin-dashboard.js"
+    },
+    {
+      "from": "services/signal-simulation-scope.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/signal-simulation-scope.js",
+      "to": "doctrine:real_vs_simulation_predicate",
+      "type": "doctrine",
+      "label": "real_vs_simulation_predicate"
+    },
+    {
+      "from": "services/signal-simulation-scope.js",
+      "to": "doctrine:fail_safe_filter",
+      "type": "doctrine",
+      "label": "fail_safe_filter"
+    },
+    {
+      "from": "services/signal-simulation-scope.js",
+      "to": "doctrine:no_second_signal_authority",
+      "type": "doctrine",
+      "label": "no_second_signal_authority"
+    },
+    {
+      "from": "services/signal-simulation-scope.js",
+      "to": "impact:pilotage",
+      "type": "impact",
+      "label": "pilotage"
+    },
+    {
+      "from": "services/signal-simulation-scope.js",
+      "to": "impact:action-center",
+      "type": "impact",
+      "label": "action-center"
+    },
+    {
+      "from": "services/signal-simulation-scope.js",
+      "to": "impact:rct1",
+      "type": "impact",
+      "label": "rct1"
+    },
+    {
       "from": "services/dashboard-metrics/_helpers.js",
       "to": "services/simulation-scope-service.js",
       "type": "uses",
@@ -102821,6 +102959,7 @@
         "services/dashboard-orders.js",
         "services/dashboard-pilotage-alert-aggregation.js",
         "services/dashboard-pilotage-markets.js",
+        "services/signal-simulation-scope.js",
         "utils/logger.js"
       ]
     },
@@ -109401,7 +109540,8 @@
         "impact:decision-signals",
         "impact:relay-network",
         "routes/agent-action-center.js",
-        "services/signal-admin-service.js"
+        "services/signal-admin-service.js",
+        "services/signal-simulation-scope.js"
       ]
     },
     "services/action-center-workspace.js": {
@@ -113620,7 +113760,8 @@
         "impact:dashboard",
         "services/cost-allocation/cost-expectation.js",
         "services/dashboard-metrics/_helpers.js",
-        "services/dashboard-metrics/index.js"
+        "services/dashboard-metrics/index.js",
+        "services/signal-simulation-scope.js"
       ]
     },
     "services/dashboard-metrics/costing.js": {
@@ -113873,7 +114014,8 @@
         "impact:market-authorization",
         "impact:operations",
         "routes/admin-dashboard-market.js",
-        "services/logistics-control-chain-projection.js"
+        "services/logistics-control-chain-projection.js",
+        "services/signal-simulation-scope.js"
       ]
     },
     "services/dashboard-ops-queries.js": {
@@ -114084,7 +114226,8 @@
         "impact:dashboard",
         "impact:market-authorization",
         "routes/admin-dashboard-market.js",
-        "services/dashboard-pilotage-alert-aggregation.js"
+        "services/dashboard-pilotage-alert-aggregation.js",
+        "services/signal-simulation-scope.js"
       ]
     },
     "services/dashboard-pilotage-markets.js": {
@@ -125625,6 +125768,52 @@
         "services/supplier-payment-review.js",
         "utils/logger.js",
         "utils/rules.js"
+      ]
+    },
+    "services/signal-simulation-scope.js": {
+      "role": "signal-simulation-scope",
+      "domain": "admin-dashboard",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/dashboard-pilotage-market.js",
+        "services/dashboard-metrics/control-tower.js",
+        "services/dashboard-operations.js",
+        "services/action-center-agent-scope.js",
+        "routes/admin-dashboard.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "real_vs_simulation_predicate",
+        "fail_safe_filter",
+        "no_second_signal_authority"
+      ],
+      "impactAreas": [
+        "pilotage",
+        "action-center",
+        "rct1"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "doctrine:fail_safe_filter",
+        "doctrine:no_second_signal_authority",
+        "doctrine:real_vs_simulation_predicate",
+        "impact:action-center",
+        "impact:pilotage",
+        "impact:rct1",
+        "routes/admin-dashboard.js",
+        "services/action-center-agent-scope.js",
+        "services/dashboard-metrics/control-tower.js",
+        "services/dashboard-operations.js",
+        "services/dashboard-pilotage-market.js"
       ]
     },
     "services/simulation-scope-service.js": {

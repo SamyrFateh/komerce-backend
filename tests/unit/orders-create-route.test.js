@@ -60,9 +60,15 @@ jest.mock('../../utils/rules', () => ({
   getRule: jest.fn(),
 }));
 
-jest.mock('../../utils/rates', () => ({
-  getRates: jest.fn(),
-}));
+jest.mock('../../utils/rates', () => {
+  // getAuthoritativeRates (lot 7) : même source mockée que getRates ; aucun taux de repli côté checkout.
+  const getRates = jest.fn();
+  return {
+    getRates,
+    getAuthoritativeRates: (...a) => getRates(...a),
+    AuthoritativeRateUnavailableError: class AuthoritativeRateUnavailableError extends Error {},
+  };
+});
 
 jest.mock('../../services/order-service', () => ({
   getUniqueRef: jest.fn(),

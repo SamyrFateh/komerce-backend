@@ -78,3 +78,12 @@ test('publicSignal n’expose aucun identifiant interne', () => {
   expect(out.actions).toEqual([]);
   expect(service.publicSignal({ status: 'open' }).actions).toEqual(['acknowledge', 'snooze']);
 });
+
+
+describe('lot 7 — signaux de commandes simulées exclus (services/action-center-agent-scope.js)', () => {
+  test('le lecteur de signaux applique le prédicat réel/RCT1 canonique', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'services/action-center-agent-scope.js'), 'utf8');
+    expect(src).toMatch(/require\('[^']*signal-simulation-scope'\)/);
+    expect(src).toMatch(/\$\{EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL\}/);
+  });
+});

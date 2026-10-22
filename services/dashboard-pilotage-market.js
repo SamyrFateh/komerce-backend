@@ -23,6 +23,7 @@ const metrics = require('./dashboard-metrics');
 const controlChain = require('./logistics-control-chain-projection');
 const { mergePilotageAlerts, summarizeControlChain } = require('./dashboard-pilotage-alert-aggregation');
 const { buildSignalMarketClause } = require('./dashboard-metrics/_helpers');
+const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('./signal-simulation-scope');
 const log = require('../utils/logger').child({ module: 'dashboard-pilotage-market' });
 
 function publicFilters(filters) {
@@ -48,6 +49,7 @@ async function fetchTopAlerts(filters, limit = 10) {
      AND so.id::text = s.entity_id::text
     WHERE s.status IN ('open', 'acknowledged', 'snoozed')
       AND s.severity IN ('critical', 'urgent')
+      AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
       AND ${marketScope.where}
     ORDER BY
       CASE s.severity WHEN 'critical' THEN 1 WHEN 'urgent' THEN 2 ELSE 3 END,

@@ -22,6 +22,7 @@ const db = require('../db');
 const metrics = require('./dashboard-metrics');
 const controlChain = require('./logistics-control-chain-projection');
 const orders = require('./dashboard-orders');
+const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('./signal-simulation-scope');
 const {
   buildFiltersClause,
   buildSignalMarketClause,
@@ -149,6 +150,7 @@ async function getOperationalSignals(filters = {}) {
     FROM signals s
     WHERE s.status IN ('open', 'acknowledged', 'snoozed')
       AND s.signal_type = ANY($1::text[])
+      AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
       AND ${marketClause.where}
     ORDER BY
       CASE s.severity

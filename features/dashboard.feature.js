@@ -429,6 +429,7 @@ module.exports = {
       'services/canonical-reference-resolver.js',
       'services/dashboard-orders.js',
       'services/dashboard-pilotage-market.js',
+      'services/signal-simulation-scope.js',
       'services/dashboard-pilotage-alert-aggregation.js',
       'services/dashboard-pilotage-markets.js',
       'services/operations-workspace.js',
@@ -660,6 +661,8 @@ module.exports = {
       'css/ct-inventory.css',
     ],
     tests: [
+      'tests/integration/signal-simulation-scope-postgres.test.js',
+      'tests/unit/control-tower.test.js',
       'tests/integration/dashboard-admin-context-isolation.test.js',
       'tests/integration/dashboard-global-authority-isolation.test.js',
       'tests/integration/dashboard-market-scope-isolation.test.js',

@@ -49,6 +49,7 @@ const { getMarketsSupervision } = require('../services/dashboard-pilotage-market
 const { mergePilotageAlerts, summarizeControlChain } = require('../services/dashboard-pilotage-alert-aggregation');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { requireDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
+const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('../services/signal-simulation-scope');
 const log = require('../utils/logger').child({ module: 'admin-dashboard' });
 
 const router = express.Router();
@@ -711,6 +712,7 @@ async function _fetchTopAlerts(limit = 5) {
      AND so.id::text = s.entity_id::text
     WHERE s.status IN ('open', 'acknowledged', 'snoozed')
       AND s.severity IN ('critical', 'urgent', 'warning')
+      AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
     ORDER BY
       CASE s.severity WHEN 'critical' THEN 1 WHEN 'urgent' THEN 2 WHEN 'warning' THEN 3 ELSE 4 END,
       s.created_at DESC
