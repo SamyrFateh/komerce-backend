@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          fx-engine-rates
- * @domain        economic-engine
+ * @domain        market
  * @layer         service
  * @criticality   high
  * @inputs        finance_config_row
