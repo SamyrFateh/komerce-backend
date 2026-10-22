@@ -96,8 +96,8 @@ if (!hasIntegrationEnv) {
       const { convertRateToKmfPerKg } = require('../../services/market-transport-sale-rates');
       const r = await convertRateToKmfPerKg(1000, 'XAF');
       expect(r.conversion.pivot).toBe('EUR');
-      expect(r.conversion.legs.map(l => l.currency)).toEqual(['XAF', 'KMF']);
-      expect(r.kmf).toBeCloseTo(1000 / r.conversion.legs[0].eur_rate * r.conversion.legs[1].eur_rate, 6);
+      expect(r.conversion.legs.map(l => l.pair)).toEqual(['EUR/XAF', 'EUR/KMF']);
+      expect(r.kmf).toBeCloseTo(1000 / Number(r.conversion.legs[0].rate) * Number(r.conversion.legs[1].rate), 6);
       expect((await convertRateToKmfPerKg(65, 'KMF')).conversion).toEqual({ pivot: null, legs: [] });
     });
 
@@ -121,9 +121,12 @@ if (!hasIntegrationEnv) {
       await expect(assertEurKmfPivotConsistent(0)).rejects.toMatchObject({ code: 'EUR_KMF_PIVOT_DIVERGENCE' });
     });
 
-    test('DJ : le prix produit DJF n’a pas de parité fixe → la projection est refusée en amont (le transport DJF n’est donc pas atteignable de bout en bout)', async () => {
+    test('DJ : le prix DJF passe par la chaîne gouvernée — refusé sans observation approuvée, aucune parité fixe inventée', async () => {
       const { projectAmount } = require('../../utils/currency');
-      await expect(projectAmount(1000, 'DJF', 'KMF')).rejects.toThrow(/sans parité fixe/);
+      await db.query('ALTER TABLE fx_rate_observations DISABLE TRIGGER fx_rate_observations_append_only');
+      await db.query('DELETE FROM fx_rate_observations');
+      await db.query('ALTER TABLE fx_rate_observations ENABLE TRIGGER fx_rate_observations_append_only');
+      await expect(projectAmount(1000, 'DJF', 'KMF')).rejects.toMatchObject({ code: 'fx_rate_unavailable' });
       await expect(db.query("SELECT 1 FROM currency_parities WHERE currency = 'DJF'")).resolves.toMatchObject({ rowCount: 0 });
     });
   });

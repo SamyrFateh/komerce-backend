@@ -10,3 +10,11 @@ Statut : GO Opus sous conditions (lot 4, 2026-10-22). Périmètre PR1 : stockage
 - Arrondi : un seul, au plus proche, sur le total (DJF minor_unit = 0).
 - Distinct de `finance_config` (taux EUR/KMF, AED/KMF — ADR-009) et d'`exchange_rates` : le nouveau magasin ne les remplace ni ne les alimente.
 - PR2 : route de saisie finance avec validation à deux (+ alerte écart > 3 %), snapshot, paiements, control-plane. `projectAmount` et `NO_CURRENCY_PARITY` restent inchangés tant que le branchement n'est pas livré.
+
+## Autorité de conversion unique (migration 314, PR-A)
+
+Depuis la décision « EUR pivot, une seule autorité », `services/fx-authority.js` est le seul point de conversion
+(`utils/currency.js` n'en est plus qu'un relais). Chaque devise a des « unités pour 1 EUR » faites de jambes sourcées :
+KMF/XAF = `currency_parities` ; USD = observation EUR/USD approuvée et fraîche ; DJF et AED = observation × peg
+(`fx_pegs`). Calcul décimal exact, un seul arrondi half-even au minor_unit ISO de la devise cible ; CNY et devises
+inconnues refusées. `currency_parities` est immuable en valeur. Les jambes sont retournées pour figer le snapshot.

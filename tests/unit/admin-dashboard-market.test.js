@@ -373,7 +373,7 @@ describe('devise du marché sur les vues de marché', () => {
     const base = mockQuery.getMockImplementation();
     mockQuery.mockImplementation(async (sql, params) => {
       if (String(sql).includes('currency_parities')) {
-        return { rows: [{ eur_rate: { KMF: 491.96775, XAF: 655.957 }[params[0]] }] };
+        return { rows: [{ rate: String({ KMF: 491.96775, XAF: 655.957 }[params[0]]), updated_at: "2026-01-01T00:00:00.000Z" }] };
       }
       return base(sql, params);
     });

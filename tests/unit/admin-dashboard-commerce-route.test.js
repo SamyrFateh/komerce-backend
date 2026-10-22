@@ -108,7 +108,7 @@ describe('routes Commerce Canonical', () => {
     mockQuery.mockImplementation(async (sql, params) => {
       if (String(sql).includes('currency_parities')) {
         const rates = { KMF: 491.96775, XAF: 655.957 };
-        return { rows: rates[params[0]] ? [{ eur_rate: rates[params[0]] }] : [] };
+        return { rows: rates[params[0]] ? [{ rate: String(rates[params[0]]), updated_at: "2026-01-01T00:00:00.000Z" }] : [] };
       }
       return originalQuery(sql, params);
     });

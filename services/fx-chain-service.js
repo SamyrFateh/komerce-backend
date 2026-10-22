@@ -35,9 +35,9 @@ class FxChainUnavailableError extends Error {
   }
 }
 
-async function resolveChain({ at = null, maxAgeDays = DEFAULT_MAX_AGE_DAYS, client = db } = {}) {
+async function resolveObservation({ at = null, maxAgeDays = DEFAULT_MAX_AGE_DAYS, client = db } = {}) {
   const { rows: [obs] } = await client.query(
-    `SELECT id, rate, as_of, source_label
+    `SELECT id, rate, rate::text AS rate_text, as_of, source_label
        FROM fx_rate_observations
       WHERE approved_by IS NOT NULL AND as_of <= COALESCE($1::timestamptz, now())
         AND created_at <= COALESCE($1::timestamptz, now()) AND approved_at <= COALESCE($1::timestamptz, now())
@@ -45,15 +45,24 @@ async function resolveChain({ at = null, maxAgeDays = DEFAULT_MAX_AGE_DAYS, clie
       ORDER BY as_of DESC LIMIT 1`,
     [at, maxAgeDays]
   );
-  if (!obs) throw new FxChainUnavailableError('Aucun taux EUR/USD approuvé et frais : conversion DJF refusée');
+  if (!obs) throw new FxChainUnavailableError('Aucun taux EUR/USD approuvé et frais : conversion refusée');
+  return obs;
+}
 
+async function resolvePeg({ quote = 'DJF', at = null, client = db } = {}) {
   const { rows: [peg] } = await client.query(
-    `SELECT id, rate, valid_from, source_label FROM fx_pegs
-      WHERE valid_from <= COALESCE($1::timestamptz, now()) AND created_at <= COALESCE($1::timestamptz, now()) ORDER BY valid_from DESC LIMIT 1`,
-    [at]
+    `SELECT id, rate, rate::text AS rate_text, valid_from, source_label FROM fx_pegs
+      WHERE quote_ccy = $2 AND valid_from <= COALESCE($1::timestamptz, now())
+        AND created_at <= COALESCE($1::timestamptz, now()) ORDER BY valid_from DESC LIMIT 1`,
+    [at, quote]
   );
-  if (!peg) throw new FxChainUnavailableError('Aucun peg USD/DJF valide : conversion DJF refusée');
+  if (!peg) throw new FxChainUnavailableError(`Aucun peg USD/${quote} valide : conversion refusée`);
+  return peg;
+}
 
+async function resolveChain({ at = null, maxAgeDays = DEFAULT_MAX_AGE_DAYS, client = db } = {}) {
+  const obs = await resolveObservation({ at, maxAgeDays, client });
+  const peg = await resolvePeg({ quote: 'DJF', at, client });
   const eurUsd = Number(obs.rate);
   const usdDjf = Number(peg.rate);
   return {
@@ -76,4 +85,4 @@ function assertAmount(v) {
   return v;
 }
 
-module.exports = { resolveChain, convertEurToDjf, FxChainUnavailableError, DEFAULT_MAX_AGE_DAYS };
+module.exports = { resolveObservation, resolvePeg, resolveChain, convertEurToDjf, FxChainUnavailableError, DEFAULT_MAX_AGE_DAYS };

@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        amount, market_id, currency
  * @outputs       formatted_amount_string, projected_amount
- * @depends       db, markets (M0), currency_parities (P1)
+ * @depends       db, markets (M0), services/fx-authority.js
  * @db-write      none
  * @db-read       markets, currency_parities
  * @used-by       non câblé — M5/P1 livrent l'outil, ne migrent pas les affichages *_kmf existants (P2)
@@ -41,10 +41,10 @@
 'use strict';
 
 const db = require('../db');
+const fxAuthority = require('../services/fx-authority');
 
 const MARKET_CACHE_TTL = 5 * 60 * 1000; // 5 min — markets change rarement (M0 : ouverture = 1 INSERT)
 let _cache = new Map();
-let _parityCache = new Map(); // même TTL, séparé de _cache : clé = devise, pas market_id
 
 /**
  * Résout { currency, minor_unit } pour un market_id, avec cache court.
@@ -184,26 +184,8 @@ async function formatAmountForMarket(amount, marketId) {
  *   dans les deux cas, une erreur explicite vaut mieux qu'un calcul faux.
  */
 async function getCurrencyParity(currency) {
-  const cached = _parityCache.get(currency);
-  if (cached && Date.now() - cached.ts < MARKET_CACHE_TTL) {
-    return cached.eur_rate;
-  }
-
-  const { rows } = await db.query(
-    `SELECT eur_rate FROM currency_parities WHERE currency = $1`,
-    [currency]
-  );
-  if (!rows.length) {
-    throw new Error(
-      `getCurrencyParity: devise sans parité fixe enregistrée (${currency}). ` +
-      `Si c'est une devise de sourcing (USD/AED/CNY...), elle est hors ` +
-      `périmètre par construction (freeze §CURRENCY BOUNDARY, invariant 5).`
-    );
-  }
-
-  const eur_rate = Number(rows[0].eur_rate);
-  _parityCache.set(currency, { eur_rate, ts: Date.now() });
-  return eur_rate;
+  // Autorité unique : services/fx-authority.js (parités fixes uniquement ; USD/AED/DJF passent par convert()).
+  return fxAuthority.fixedUnitsPerEur(currency);
 }
 
 /**
@@ -211,8 +193,8 @@ async function getCurrencyParity(currency) {
  * @param {string} [currency]
  */
 function invalidateCurrencyParityCache(currency) {
-  if (currency) _parityCache.delete(currency);
-  else _parityCache.clear();
+  // Plus de cache de parité : l'autorité unique lit currency_parities à chaque conversion (compat : no-op).
+  void currency;
 }
 
 /**
@@ -235,16 +217,9 @@ function invalidateCurrencyParityCache(currency) {
  * @returns {Promise<number>}
  */
 async function projectAmount(amount, fromCurrency, toCurrency) {
-  const n = Number(amount) || 0;
-  if (fromCurrency === toCurrency) return n;
-
-  const [fromRate, toRate] = await Promise.all([
-    getCurrencyParity(fromCurrency),
-    getCurrencyParity(toCurrency),
-  ]);
-
-  const amountInEur = n / fromRate;
-  return amountInEur * toRate;
+  // Relais vers l'autorité unique (pivot EUR, calcul décimal exact, pleine précision, refus sans taux valide).
+  const out = await fxAuthority.convert({ amount, from: fromCurrency, to: toCurrency, round: false });
+  return out.amount;
 }
 
 /**

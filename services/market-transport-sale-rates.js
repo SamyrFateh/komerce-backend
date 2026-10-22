@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        client, market_id
  * @outputs       market_transport_sale_rates
- * @depends       utils/currency.js, services/fx-chain-service.js
+ * @depends       utils/currency.js, services/fx-authority.js
  * @used-by       services/order-checkout-service.js
  * @db-read       currency_parities, market_transport_sale_rates, markets
  * @db-write      none
@@ -17,8 +17,8 @@
  */
 'use strict';
 
-const { projectAmount, getCurrencyParity } = require('../utils/currency');
-const { resolveChain } = require('./fx-chain-service');
+const { getCurrencyParity } = require('../utils/currency');
+const fxAuthority = require('./fx-authority');
 
 const RATE_KEYS = Object.freeze(['SEA_KMF_PER_KG_COMMERCIAL', 'AIR_KMF_PER_KG_TAXABLE']);
 const BASE_CURRENCY = 'KMF';
@@ -40,28 +40,12 @@ function conversionUnavailable(cause) {
 async function convertRateToKmfPerKg(rate, currency, { client } = {}) {
   const ccy = String(currency || '').trim().toUpperCase();
   if (ccy === BASE_CURRENCY) return { kmf: rate, conversion: { pivot: null, legs: [] } };
-  if (ccy === 'DJF') {
-    const chain = await resolveChain({ client }); // FxChainUnavailableError (fx_rate_unavailable) propagée
-    try {
-      const kmfParity = await getCurrencyParity(BASE_CURRENCY);
-      const eur = rate / chain.eur_to_djf;
-      return {
-        kmf: eur * kmfParity,
-        conversion: { pivot: 'EUR', eur_amount: eur, legs: [...chain.legs, { kind: 'parity', currency: BASE_CURRENCY, eur_rate: kmfParity }] },
-      };
-    } catch (err) { throw conversionUnavailable(err); }
-  }
   try {
-    const [fromParity, kmfParity] = await Promise.all([getCurrencyParity(ccy), getCurrencyParity(BASE_CURRENCY)]);
-    const kmf = await projectAmount(rate, ccy, BASE_CURRENCY);
-    return {
-      kmf,
-      conversion: {
-        pivot: 'EUR', eur_amount: rate / fromParity,
-        legs: [{ kind: 'parity', currency: ccy, eur_rate: fromParity }, { kind: 'parity', currency: BASE_CURRENCY, eur_rate: kmfParity }],
-      },
-    };
+    const r = await fxAuthority.convert({ amount: String(rate), from: ccy, to: BASE_CURRENCY, round: false, client });
+    return { kmf: r.amount, conversion: { pivot: 'EUR', legs: r.legs } };
   } catch (err) {
+    // Taux indisponible (fx_rate_unavailable, 503) : propagé tel quel. Devise sans source gouvernée : tarif refusé.
+    if (err && err.code === 'fx_rate_unavailable') throw err;
     throw conversionUnavailable(err);
   }
 }

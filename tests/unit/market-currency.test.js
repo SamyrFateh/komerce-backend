@@ -18,7 +18,7 @@ beforeEach(() => {
   invalidateCurrencyParityCache();
   mockQuery.mockReset();
   mockQuery.mockImplementation(async (_sql, [currency]) => (
-    RATES[currency] ? { rows: [{ eur_rate: RATES[currency] }] } : { rows: [] }
+    RATES[currency] ? { rows: [{ rate: String(RATES[currency]), updated_at: "2026-01-01T00:00:00.000Z" }] } : { rows: [] }
   ));
 });
 

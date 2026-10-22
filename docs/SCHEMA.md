@@ -700,7 +700,7 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 <!-- schema-pending: fx_pegs (migration 311, not yet live) -->
 ### Pegs de change (migration 311 — intended_migration_schema)
 
-`fx_pegs` est une nouvelle table **not yet live** : seul peg admis USD→DJF (Banque centrale de Djibouti), daté, append-only. Lecteur : `services/fx-chain-service.js`. Migration 312 : bande 100–300, TRUNCATE interdit.
+`fx_pegs` est une nouvelle table **not yet live** : seul peg admis USD→DJF (Banque centrale de Djibouti), daté, append-only. Lecteur : `services/fx-chain-service.js`. Migration 312 : bande 100–300, TRUNCATE interdit. Migration 314 : 2e peg USD→AED (3,6725, bande 3–4,5), unicité (devise, valid_from).
 <!-- /schema-pending -->
 
 <!-- schema-pending: market_transport_sale_rates (migration 313, not yet live) -->

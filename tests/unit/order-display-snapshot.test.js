@@ -34,8 +34,8 @@ describe('invariant 3 : le serveur calcule lui-même, jamais un montant client',
   test('displayMarketCode est un CODE, jamais un montant — un code valide déclenche un vrai calcul serveur', async () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [{ id: 'cm-id', currency: 'XAF', minor_unit: 0 }] }) // getMarketCurrencyByCode
-      .mockResolvedValueOnce({ rows: [{ eur_rate: '491.96775' }] }) // KMF
-      .mockResolvedValueOnce({ rows: [{ eur_rate: '655.957' }] });  // XAF
+      .mockResolvedValueOnce({ rows: [{ rate: '491.96775', updated_at: '2026-01-01T00:00:00.000Z' }] }) // KMF
+      .mockResolvedValueOnce({ rows: [{ rate: '655.957', updated_at: '2026-01-01T00:00:00.000Z' }] });  // XAF
 
     const result = await resolveDisplaySnapshot({ totalKmf: 15000, displayMarketCode: 'CM' });
     expect(result.amount).toBe(20000);
@@ -49,8 +49,8 @@ describe('invariant 4 : ne suppose jamais que relaisMarketId == marché de navig
   test('un code client valide fait TOUJOURS foi avant le relais, même si les deux diffèrent', async () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [{ id: 'cm-id', currency: 'XAF', minor_unit: 0 }] }) // getMarketCurrencyByCode('CM')
-      .mockResolvedValueOnce({ rows: [{ eur_rate: '491.96775' }] })
-      .mockResolvedValueOnce({ rows: [{ eur_rate: '655.957' }] });
+      .mockResolvedValueOnce({ rows: [{ rate: '491.96775', updated_at: '2026-01-01T00:00:00.000Z' }] })
+      .mockResolvedValueOnce({ rows: [{ rate: '655.957', updated_at: '2026-01-01T00:00:00.000Z' }] });
 
     // relaisMarketId pointe vers un autre marché (KM) — ne doit JAMAIS être
     // consulté puisqu'un code client valide est fourni.
@@ -67,8 +67,8 @@ describe('invariant 4 : ne suppose jamais que relaisMarketId == marché de navig
   test('relais utilisé seulement si aucun code client valide fourni', async () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [{ currency: 'EUR', minor_unit: 2 }] }) // getMarketCurrency(relaisMarketId)
-      .mockResolvedValueOnce({ rows: [{ eur_rate: '491.96775' }] })
-      .mockResolvedValueOnce({ rows: [{ eur_rate: '1' }] });
+      .mockResolvedValueOnce({ rows: [{ rate: '491.96775', updated_at: '2026-01-01T00:00:00.000Z' }] })
+      .mockResolvedValueOnce({ rows: [{ rate: '1', updated_at: '2026-01-01T00:00:00.000Z' }] });
 
     const result = await resolveDisplaySnapshot({
       totalKmf: 15000, displayMarketCode: null, relaisMarketId: 'yt-market-id',
