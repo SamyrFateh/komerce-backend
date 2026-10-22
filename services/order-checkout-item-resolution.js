@@ -325,7 +325,8 @@ async function resolveCheckoutItems({
     total_kmf += item._effective_unit_price_kmf * qty;
 
     const fret_kmf = (product.weight_kg || 0.5) * qty * fretPerKg;
-    if ((product.price_aed || 0) > 0 && !(Number(aedKmf) > 0)) { costUnknown = true; continue; }
+    // Coût fournisseur absent ou non convertible = coût INCONNU (NULL), jamais 0 : une marge ne se déduit pas du seul fret.
+    if (!(Number(product.price_aed) > 0) || !(Number(aedKmf) > 0)) { costUnknown = true; continue; }
     const base_aed_kmf = (product.price_aed || 0) * (Number(aedKmf) || 0) * qty;
     const customs_est = base_aed_kmf * (customsPct / 100) * (product.customs_risk_coeff || 1.0);
     cost_estimated += base_aed_kmf + fret_kmf + customs_est;
