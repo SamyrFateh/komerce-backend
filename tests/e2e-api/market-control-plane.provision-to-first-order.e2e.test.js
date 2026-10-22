@@ -211,12 +211,12 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     try {
       // Un tarif posé sur un AUTRE marché ne débloque pas celui-ci.
       const { rows:[other] }=await db.query("SELECT id FROM markets WHERE id<>$1 AND code IN ('KM','CM','CG') LIMIT 1",[marketId]);
-      await db.query("INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_kmf_per_kg,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'e2e-autre-marche')",[other.id]);
+      await db.query("INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_per_kg,currency,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'XAF','e2e-autre-marche')",[other.id]);
       const stillRefused=await request(app).post('/api/orders').set('Authorization',`Bearer ${buyerToken}`).send(orderBody);
       expect(stillRefused.status).toBe(409);
       expect(stillRefused.body.code).toBe('MARKET_TRANSPORT_TARIFF_MISSING');
 
-      await db.query("INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_kmf_per_kg,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'e2e-decision-locale')",[marketId]);
+      await db.query("INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_per_kg,currency,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'XAF','e2e-decision-locale')",[marketId]);
       const accepted=await request(app).post('/api/orders').set('Authorization',`Bearer ${buyerToken}`).send(orderBody);
       expect(accepted.status).toBe(201);
       orderId=accepted.body.order.id;
