@@ -102,6 +102,7 @@ module.exports = {
       'tests/integration/fx-chain-postgres.test.js',
       'tests/integration/fx-authority-postgres.test.js',
       'tests/unit/fx-authority-decimal.test.js',
+      'tests/unit/fx-chain-service.test.js',
       'tests/unit/market-scope-admin-service.test.js',
       'tests/integration/market-scope-isolation.test.js',
       'tests/unit/currency.test.js',
