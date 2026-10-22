@@ -516,6 +516,7 @@ module.exports = {
       'bootstrap/* — démarrage Express, routage, crons, migrations',
     ],
     consumes: [
+      'market — utils/rates.js lit l\'autorité de conversion FX unique (services/fx-authority.js), plus aucun taux propre',
       'auth — bootstrap/api-routes.js monte les routes auth',
       'catalog — bootstrap/api-routes.js monte les routes catalog',
       'customs — bootstrap/api-routes.js monte les routes customs',
