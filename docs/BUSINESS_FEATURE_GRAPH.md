@@ -430,9 +430,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Permettre à un responsable pays explicitement scopé manager de décider un prix local, d’en voir l’impact économique, puis de l’activer sans approbation centrale lorsque les gates autorisent la position ; LOCAL_ACTIVE devient alors la seule vérité locale consommable par le buyer path.
 
 - services: 4
-- migrations: 2
+- migrations: 3
 - dash: 18
-- tests: 9
+- tests: 10
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
 - interfaces exposed: 0
@@ -2161,7 +2161,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 - none
 
-### TOPOLOGIE ATTENDUE — hors dette (46)
+### TOPOLOGIE ATTENDUE — hors dette (47)
 
 - **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
@@ -2187,6 +2187,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** loyalty -> logistics — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> dashboard — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market" vers "dashboard"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> market-delegation — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "market" vers "market-delegation"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market-autonomy -> market-control-plane — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "market-autonomy" vers "market-control-plane"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market-delegation -> market-operator-dashboard — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market-delegation" vers "market-operator-dashboard"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> auth-passkey — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> notifications — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "notifications"
@@ -2237,7 +2238,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2107 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2108 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2432,8 +2433,9 @@ Meta Graph monté : oui.
 | market | market-delegation | static-code | 2 | **OBSERVED_UNDECLARED** |
 | market-autonomy | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| market-autonomy | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| market-autonomy | market | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | market | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | market-control-plane | static-code | 2 | **OBSERVED_UNDECLARED** |
 | market-control-plane | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | dashboard | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -2620,6 +2622,7 @@ Meta Graph monté : oui.
 - `loyalty` → `logistics` (canaux: static-code)
 - `market` → `dashboard` (canaux: static-code)
 - `market` → `market-delegation` (canaux: static-code)
+- `market-autonomy` → `market-control-plane` (canaux: static-code)
 - `market-delegation` → `market-operator-dashboard` (canaux: static-code)
 - `platform-ops` → `auth-passkey` (canaux: static-code)
 - `platform-ops` → `notifications` (canaux: static-code)
@@ -2685,14 +2688,14 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 |---|---|---|
 | PROJECTION | 0 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 20 | application-wiring-not-consumption |
-| NON_RUNTIME_TEST | 15 | non-runtime-evidence |
+| NON_RUNTIME_TEST | 16 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **35** | |
+| **TOTAL** | **36** | |
 
 ### Projection dependencies
 
@@ -2734,6 +2737,7 @@ Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
 - `inventory` → `payments` — business-file-import, TEST_ONLY
 - `logistics` → `dashboard` — business-file-import, TEST_ONLY
 - `loyalty` → `logistics` — business-file-import, TEST_ONLY
+- `market-autonomy` → `market-control-plane` — business-file-import, TEST_ONLY
 - `market-delegation` → `market-operator-dashboard` — business-file-import, TEST_ONLY
 - `market` → `dashboard` — business-file-import, TEST_ONLY
 - `market` → `market-delegation` — business-file-import, TEST_ONLY

@@ -13592,6 +13592,13 @@
       {
         "feature": "market-autonomy",
         "category": "migrations",
+        "declared": "migrations/310_market_open_djibouti_provisioning.sql",
+        "resolvedPath": "migrations/310_market_open_djibouti_provisioning.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "migrations",
         "declared": "migrations/170_market_commercial_price_drafts.sql",
         "resolvedPath": "migrations/170_market_commercial_price_drafts.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13727,6 +13734,13 @@
         "category": "tests",
         "declared": "tests/unit/migration-308-suspend-unproven-markets.test.js",
         "resolvedPath": "tests/unit/migration-308-suspend-unproven-markets.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/integration/market-dj-provisioning-postgres.test.js",
+        "resolvedPath": "tests/integration/market-dj-provisioning-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -39230,6 +39244,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/market-dj-provisioning-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/market-local-price-state-transition-real-db.test.js",
                 "targetFile": "db.js"
               }
@@ -39248,6 +39266,14 @@
               {
                 "sourceFileId": "services/market-local-price-resolution-service.js",
                 "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-dj-provisioning-postgres.test.js",
+                "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-dj-provisioning-postgres.test.js",
+                "targetFile": "middleware/require-market-scope.js"
               }
             ]
           },
@@ -39266,6 +39292,26 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-autonomy",
+        "to": "market-control-plane",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/integration/market-dj-provisioning-postgres.test.js",
+                "targetFile": "services/market-control-plane.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-dj-provisioning-postgres.test.js",
+                "targetFile": "services/market-provisioning-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "market-control-plane",
@@ -46271,7 +46317,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2107
+        "filesObserved": 2108
       },
       "boutique": {
         "filesObserved": 214,
@@ -46307,7 +46353,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 20,
-      "NON_RUNTIME_TEST": 15,
+      "NON_RUNTIME_TEST": 16,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -46647,6 +46693,21 @@
         "exceptionReasons": []
       },
       {
+        "from": "market-autonomy",
+        "to": "market-control-plane",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "market-delegation",
         "to": "market-operator-dashboard",
         "family": "NON_RUNTIME_TEST",
@@ -46851,7 +46912,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 5,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
@@ -49693,6 +49754,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "market-autonomy -> market-control-plane",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"market-autonomy\" vers \"market-control-plane\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "market-delegation -> market-operator-dashboard",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market-delegation\" vers \"market-operator-dashboard\""
       },
@@ -49867,9 +49933,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 46,
+      "expectedTopology": 47,
       "generatorLimitations": 12,
-      "classifiedCandidates": 58
+      "classifiedCandidates": 59
     }
   }
 }
