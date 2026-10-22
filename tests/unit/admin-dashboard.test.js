@@ -197,6 +197,39 @@ describe('GET /costing', () => {
   });
 });
 
+describe('GET /costing — vérité des données financières', () => {
+  it('graphique : inconnue => null, coût zéro observé => 0 ; qualité visible', async () => {
+    mockQuery.mockImplementation((sql) => {
+      if (String(sql).includes('est_by_day AS')) {
+        return Promise.resolve({ rows: [
+          { day: '2026-10-21', ca_kmf: '25000', cost_estimated_kmf: null, cost_real_kmf: null },
+          { day: '2026-10-22', ca_kmf: '25000', cost_estimated_kmf: '0', cost_real_kmf: '0' },
+        ] });
+      }
+      if (String(sql).includes('GROUP BY alc.cost_type')) {
+        return Promise.resolve({ rows: [] });
+      }
+      return Promise.resolve({ rows: [{ count: 0, day: '2026-10-21', orders_count: 0, ca_kmf: 0 }] });
+    });
+
+    const res = await request(app).get('/api/admin/dashboard/costing');
+    expect(res.status).toBe(200);
+    const timeline = res.body.charts.ca_cost_margin_timeline;
+    expect(timeline.series.find(row => row.key === 'cost_est').values).toEqual([null, 0]);
+    expect(timeline.series.find(row => row.key === 'cost_real').values).toEqual([null, 0]);
+    expect(timeline.data_quality).toMatchObject({
+      estimated_days_unknown: 1,
+      real_days_unknown: 1,
+    });
+    expect(res.body.data_quality.warnings.join(' ')).toContain('série non disponible');
+
+    const costingSql = mockQuery.mock.calls.find(([sql]) => String(sql).includes('est_by_day AS'))[0];
+    expect(costingSql).toContain('est.lines_priced = est.lines_expected');
+    expect(costingSql).toContain('real.orders_with_real_allocations = real.orders_expected');
+    expect(costingSql).toContain('imp.order_item_id = oi.id');
+  });
+});
+
 describe('GET /logistics', () => {
   it('nominal → 200 avec kpis', async () => {
     const res = await request(app).get('/api/admin/dashboard/logistics');

@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 743,
-    "filesWithFullHeaders": 694,
+    "scannedCodeFiles": 748,
+    "filesWithFullHeaders": 699,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 743,
+    "filesWithAnyHeaders": 748,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1831,
-    "edges": 9188,
-    "dbTables": 210,
-    "doctrines": 672,
+    "graphNodes": 1847,
+    "edges": 9267,
+    "dbTables": 211,
+    "doctrines": 682,
     "impactAreas": 206,
-    "unresolvedCodeEdges": 891,
+    "unresolvedCodeEdges": 894,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 87
   },
@@ -39,10 +39,10 @@
     "admin-dashboard": 37,
     "decision-signals": 14,
     "market-delegation": 35,
-    "market": 5,
+    "market": 8,
     "economic-engine": 65,
     "sourcing": 37,
-    "logistics": 56,
+    "logistics": 57,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -60,7 +60,7 @@
     "market-control-plane": 5,
     "settlement": 2,
     "business-rules": 1,
-    "orders": 33,
+    "orders": 34,
     "documents": 15,
     "auth-identity": 7,
     "operations": 11,
@@ -110,7 +110,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 427,
+    "service": 432,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -119,9 +119,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 102,
+    "critical": 106,
     "medium": 152,
-    "high": 431,
+    "high": 432,
     "low": 58
   },
   "nodes": [
@@ -263,6 +263,7 @@
         "continuous_decision_signals"
       ],
       "depends": [
+        "services/outbox-worker.js",
         "services/cash-reminder-service.js",
         "services/inventory-service.js"
       ],
@@ -6358,6 +6359,7 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "services/fx-observation-service.js",
         "services/*"
       ],
       "usedBy": [
@@ -6367,8 +6369,8 @@
         "finance_config"
       ],
       "dbWrite": [
-        "exchange_rates",
-        "finance_config"
+        "finance_config",
+        "fx_rate_observations"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -8437,6 +8439,7 @@
       "depends": [
         "db.js",
         "services/catalog-product-detail.js",
+        "services/market-transport-tariff-gate.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js"
       ],
@@ -18587,6 +18590,61 @@
       "version": "2026-06"
     },
     {
+      "id": "services/fx-authority.js",
+      "file": "services/fx-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "fx-authority",
+      "domain": "market",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "amount",
+        "from_currency",
+        "to_currency",
+        "at",
+        "client"
+      ],
+      "outputs": [
+        "converted_amount",
+        "legs",
+        "rounding"
+      ],
+      "depends": [
+        "db",
+        "services/fx-chain-service.js"
+      ],
+      "usedBy": [
+        "utils/currency.js",
+        "services/market-transport-sale-rates.js"
+      ],
+      "dbRead": [
+        "currency_parities",
+        "fx_pegs",
+        "fx_rate_observations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "eur_is_the_pivot",
+        "single_conversion_authority",
+        "fail_closed",
+        "no_float_arithmetic",
+        "single_rounding"
+      ],
+      "impactAreas": [
+        "pricing",
+        "transport",
+        "orders",
+        "payments",
+        "finance"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/fx-chain-service.js",
       "file": "services/fx-chain-service.js",
       "type": "file",
@@ -18631,6 +18689,104 @@
         "market",
         "finance",
         "checkout"
+      ],
+      "version": "2026-10"
+    },
+    {
+      "id": "services/fx-engine-rates.js",
+      "file": "services/fx-engine-rates.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "fx-engine-rates",
+      "domain": "market",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "finance_config_row"
+      ],
+      "outputs": [
+        "finance_row_with_authority_rates"
+      ],
+      "depends": [
+        "utils/rates.js",
+        "services/fx-authority.js"
+      ],
+      "usedBy": [
+        "services/pricing-cdr.js",
+        "services/pricing-recommend.js",
+        "services/cost-allocation/allocate.js",
+        "services/economic-config.js"
+      ],
+      "dbRead": [
+        "currency_parities",
+        "fx_rate_observations",
+        "fx_pegs"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "eur_is_the_pivot",
+        "single_conversion_authority",
+        "finance_config_is_not_an_fx_authority"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "sourcing"
+      ],
+      "version": "2026-10"
+    },
+    {
+      "id": "services/fx-observation-service.js",
+      "file": "services/fx-observation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "fx-observation-service",
+      "domain": "market",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "rate",
+        "source_label",
+        "source_ref",
+        "as_of",
+        "actor_identity"
+      ],
+      "outputs": [
+        "fx_rate_observation"
+      ],
+      "depends": [
+        "db",
+        "utils/alerts.js",
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "routes/admin-finance-config.js",
+        "scripts/fx-observation-cli.js"
+      ],
+      "dbRead": [
+        "fx_rate_observations"
+      ],
+      "dbWrite": [
+        "fx_rate_observations"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "eur_is_the_pivot",
+        "two_person_rule",
+        "append_only_fx_observations",
+        "no_invented_rate"
+      ],
+      "impactAreas": [
+        "market",
+        "pricing",
+        "payments"
       ],
       "version": "2026-10"
     },
@@ -21789,6 +21945,50 @@
       "version": "2026-09"
     },
     {
+      "id": "services/market-transport-sale-rates.js",
+      "file": "services/market-transport-sale-rates.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-transport-sale-rates",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "client",
+        "market_id"
+      ],
+      "outputs": [
+        "market_transport_sale_rates"
+      ],
+      "depends": [
+        "utils/currency.js",
+        "services/fx-authority.js"
+      ],
+      "usedBy": [
+        "services/order-checkout-service.js"
+      ],
+      "dbRead": [
+        "market_transport_sale_rates",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "fail_closed",
+        "no_country_branch",
+        "attested_cost_is_not_a_sale_price"
+      ],
+      "impactAreas": [
+        "checkout",
+        "transport",
+        "market"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/market-transport-tariff-gate.js",
       "file": "services/market-transport-tariff-gate.js",
       "type": "file",
@@ -21801,7 +22001,8 @@
       "purpose": null,
       "inputs": [
         "market_currency",
-        "import_item_count"
+        "import_item_count",
+        "market_rates"
       ],
       "outputs": [
         "allowed_boolean",
@@ -22887,6 +23088,8 @@
         "side_effects"
       ],
       "depends": [
+        "services/market-transport-sale-rates.js",
+        "services/order-fx-snapshot.js",
         "db.js",
         "services/cart-share-service.js"
       ],
@@ -22894,6 +23097,7 @@
         "routes/orders/create.js"
       ],
       "dbRead": [
+        "market_transport_sale_rates",
         "orders",
         "product_skus",
         "product_variants",
@@ -23121,6 +23325,59 @@
       "impactAreas": [
         "orders",
         "decision-signals",
+        "finance"
+      ],
+      "version": "2026-10"
+    },
+    {
+      "id": "services/order-fx-snapshot.js",
+      "file": "services/order-fx-snapshot.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "order-fx-snapshot",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "total_kmf",
+        "market",
+        "client",
+        "order",
+        "refund_kmf"
+      ],
+      "outputs": [
+        "fx_snapshot",
+        "total_eur",
+        "refund_eur"
+      ],
+      "depends": [
+        "db",
+        "services/fx-authority.js"
+      ],
+      "usedBy": [
+        "services/order-checkout-service.js",
+        "routes/orders/cancel.js",
+        "services/parcel-operations.js",
+        "services/payment-mobile-money.js"
+      ],
+      "dbRead": [
+        "refunds"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "eur_is_the_pivot",
+        "one_transaction_truth",
+        "snapshot_is_read_never_reconverted",
+        "refund_from_captured_amount"
+      ],
+      "impactAreas": [
+        "orders",
+        "payments",
+        "refunds",
         "finance"
       ],
       "version": "2026-10"
@@ -25887,7 +26144,8 @@
         "response_or_domain_result"
       ],
       "depends": [
-        "db"
+        "db",
+        "services/fx-authority.js"
       ],
       "usedBy": [
         "services/catalog-workspace.js"
@@ -25993,13 +26251,9 @@
         "routes/pricing.js"
       ],
       "dbRead": [
-        "exchange_rates",
-        "finance_config"
+        "exchange_rates"
       ],
-      "dbWrite": [
-        "exchange_rates",
-        "finance_config"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -27996,7 +28250,8 @@
       "depends": [
         "db.js",
         "stripe",
-        "services/wallet-service.js"
+        "services/wallet-service.js",
+        "services/order-fx-snapshot.js"
       ],
       "usedBy": [
         "routes/orders/cancel.js",
@@ -34723,7 +34978,7 @@
       "depends": [
         "db",
         "markets (M0)",
-        "currency_parities (P1)"
+        "services/fx-authority.js"
       ],
       "usedBy": [
         "non câblé — M5/P1 livrent l'outil",
@@ -35503,29 +35758,31 @@
       ],
       "depends": [
         "db",
-        "utils/logger.js"
+        "services/fx-authority.js"
       ],
       "usedBy": [
         "routes/admin-finance-config.js",
         "routes/dashboard-shared.js",
         "routes/finance.js",
         "routes/modules.js",
-        "routes/orders/create.js",
         "routes/payments.js",
+        "services/fx-engine-rates.js",
         "services/pricing-cdr.js",
         "services/pricing-rates.js",
-        "services/shared-cart-lifecycle.js",
         "services/supplier-catalog-scanner.js"
       ],
       "dbRead": [
-        "finance_config"
+        "currency_parities",
+        "fx_rate_observations",
+        "fx_pegs"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "lot1a_fx_one_runtime_truth",
-        "payment_fx_authority"
+        "eur_is_the_pivot",
+        "single_conversion_authority",
+        "fail_closed"
       ],
       "impactAreas": [
         "economic-engine",
@@ -35534,7 +35791,7 @@
         "payment",
         "checkout"
       ],
-      "version": "2026-09"
+      "version": "2026-10"
     },
     {
       "id": "utils/reference.js",
@@ -35992,9 +36249,9 @@
       "table": "transaction_documents"
     },
     {
-      "id": "db:exchange_rates",
+      "id": "db:fx_rate_observations",
       "type": "db-table",
-      "table": "exchange_rates"
+      "table": "fx_rate_observations"
     },
     {
       "id": "db:loyalty_rewards",
@@ -36225,6 +36482,11 @@
       "id": "db:boutique_subcategories",
       "type": "db-table",
       "table": "boutique_subcategories"
+    },
+    {
+      "id": "db:exchange_rates",
+      "type": "db-table",
+      "table": "exchange_rates"
     },
     {
       "id": "db:order_comments",
@@ -36602,11 +36864,6 @@
       "table": "economic_variables"
     },
     {
-      "id": "db:fx_rate_observations",
-      "type": "db-table",
-      "table": "fx_rate_observations"
-    },
-    {
       "id": "db:fx_pegs",
       "type": "db-table",
       "table": "fx_pegs"
@@ -36685,6 +36942,11 @@
       "id": "db:central authority grant tables",
       "type": "db-table",
       "table": "central authority grant tables"
+    },
+    {
+      "id": "db:market_transport_sale_rates",
+      "type": "db-table",
+      "table": "market_transport_sale_rates"
     },
     {
       "id": "db:physical_outcome_receipts",
@@ -38747,9 +39009,29 @@
       "doctrine": "deposit_review_audited_in_same_transaction"
     },
     {
+      "id": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "doctrine": "eur_is_the_pivot"
+    },
+    {
+      "id": "doctrine:single_conversion_authority",
+      "type": "doctrine",
+      "doctrine": "single_conversion_authority"
+    },
+    {
       "id": "doctrine:fail_closed",
       "type": "doctrine",
       "doctrine": "fail_closed"
+    },
+    {
+      "id": "doctrine:no_float_arithmetic",
+      "type": "doctrine",
+      "doctrine": "no_float_arithmetic"
+    },
+    {
+      "id": "doctrine:single_rounding",
+      "type": "doctrine",
+      "doctrine": "single_rounding"
     },
     {
       "id": "doctrine:no_fallback_rate",
@@ -38765,6 +39047,26 @@
       "id": "doctrine:eur_is_pivot",
       "type": "doctrine",
       "doctrine": "eur_is_pivot"
+    },
+    {
+      "id": "doctrine:finance_config_is_not_an_fx_authority",
+      "type": "doctrine",
+      "doctrine": "finance_config_is_not_an_fx_authority"
+    },
+    {
+      "id": "doctrine:two_person_rule",
+      "type": "doctrine",
+      "doctrine": "two_person_rule"
+    },
+    {
+      "id": "doctrine:append_only_fx_observations",
+      "type": "doctrine",
+      "doctrine": "append_only_fx_observations"
+    },
+    {
+      "id": "doctrine:no_invented_rate",
+      "type": "doctrine",
+      "doctrine": "no_invented_rate"
     },
     {
       "id": "doctrine:projection_only_no_business_authority",
@@ -39370,6 +39672,21 @@
       "id": "doctrine:fail_closed_on_evaluation_error",
       "type": "doctrine",
       "doctrine": "fail_closed_on_evaluation_error"
+    },
+    {
+      "id": "doctrine:one_transaction_truth",
+      "type": "doctrine",
+      "doctrine": "one_transaction_truth"
+    },
+    {
+      "id": "doctrine:snapshot_is_read_never_reconverted",
+      "type": "doctrine",
+      "doctrine": "snapshot_is_read_never_reconverted"
+    },
+    {
+      "id": "doctrine:refund_from_captured_amount",
+      "type": "doctrine",
+      "doctrine": "refund_from_captured_amount"
     },
     {
       "id": "doctrine:transaction_existante_obligatoire",
@@ -40185,11 +40502,6 @@
       "id": "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026.",
       "type": "doctrine",
       "doctrine": "GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026."
-    },
-    {
-      "id": "doctrine:lot1a_fx_one_runtime_truth",
-      "type": "doctrine",
-      "doctrine": "lot1a_fx_one_runtime_truth"
     },
     {
       "id": "doctrine:API_CONTRACTS",
@@ -41097,6 +41409,11 @@
       "area": "external-provider-contracts"
     },
     {
+      "id": "impact:transport",
+      "type": "impact-area",
+      "area": "transport"
+    },
+    {
       "id": "impact:e2e-certification",
       "type": "impact-area",
       "area": "e2e-certification"
@@ -41135,11 +41452,6 @@
       "id": "impact:market-control-plane",
       "type": "impact-area",
       "area": "market-control-plane"
-    },
-    {
-      "id": "impact:transport",
-      "type": "impact-area",
-      "area": "transport"
     },
     {
       "id": "impact:pickup",
@@ -41539,6 +41851,12 @@
       "to": "impact:bootstrap",
       "type": "impact",
       "label": "bootstrap"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "services/outbox-worker.js",
+      "type": "depends",
+      "label": "services/outbox-worker.js"
     },
     {
       "from": "bootstrap/crons.js",
@@ -50312,6 +50630,12 @@
     },
     {
       "from": "routes/admin-finance-config.js",
+      "to": "services/fx-observation-service.js",
+      "type": "depends",
+      "label": "services/fx-observation-service.js"
+    },
+    {
+      "from": "routes/admin-finance-config.js",
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
@@ -50330,15 +50654,15 @@
     },
     {
       "from": "routes/admin-finance-config.js",
-      "to": "db:exchange_rates",
-      "type": "db-write",
-      "label": "exchange_rates"
-    },
-    {
-      "from": "routes/admin-finance-config.js",
       "to": "db:finance_config",
       "type": "db-write",
       "label": "finance_config"
+    },
+    {
+      "from": "routes/admin-finance-config.js",
+      "to": "db:fx_rate_observations",
+      "type": "db-write",
+      "label": "fx_rate_observations"
     },
     {
       "from": "routes/admin-finance-config.js",
@@ -53658,6 +53982,12 @@
       "to": "services/catalog-product-detail.js",
       "type": "depends",
       "label": "services/catalog-product-detail.js"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "services/market-transport-tariff-gate.js",
+      "type": "depends",
+      "label": "services/market-transport-tariff-gate.js"
     },
     {
       "from": "routes/catalog-product-detail.js",
@@ -69788,6 +70118,108 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/fx-authority.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "services/fx-chain-service.js",
+      "type": "depends",
+      "label": "services/fx-chain-service.js"
+    },
+    {
+      "from": "utils/currency.js",
+      "to": "services/fx-authority.js",
+      "type": "uses",
+      "label": "utils/currency.js"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "services/fx-authority.js",
+      "type": "uses",
+      "label": "services/market-transport-sale-rates.js"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "db:currency_parities",
+      "type": "db-read",
+      "label": "currency_parities"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "db:fx_pegs",
+      "type": "db-read",
+      "label": "fx_pegs"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "db:fx_rate_observations",
+      "type": "db-read",
+      "label": "fx_rate_observations"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "label": "eur_is_the_pivot"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "doctrine:single_conversion_authority",
+      "type": "doctrine",
+      "label": "single_conversion_authority"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "doctrine:no_float_arithmetic",
+      "type": "doctrine",
+      "label": "no_float_arithmetic"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "doctrine:single_rounding",
+      "type": "doctrine",
+      "label": "single_rounding"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "impact:transport",
+      "type": "impact",
+      "label": "transport"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/fx-authority.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
       "from": "services/fx-chain-service.js",
       "to": "db.js",
       "type": "depends",
@@ -69852,6 +70284,180 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "utils/rates.js",
+      "type": "depends",
+      "label": "utils/rates.js"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "services/pricing-cdr.js",
+      "to": "services/fx-engine-rates.js",
+      "type": "uses",
+      "label": "services/pricing-cdr.js"
+    },
+    {
+      "from": "services/pricing-recommend.js",
+      "to": "services/fx-engine-rates.js",
+      "type": "uses",
+      "label": "services/pricing-recommend.js"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "services/fx-engine-rates.js",
+      "type": "uses",
+      "label": "services/cost-allocation/allocate.js"
+    },
+    {
+      "from": "services/economic-config.js",
+      "to": "services/fx-engine-rates.js",
+      "type": "uses",
+      "label": "services/economic-config.js"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "db:currency_parities",
+      "type": "db-read",
+      "label": "currency_parities"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "db:fx_rate_observations",
+      "type": "db-read",
+      "label": "fx_rate_observations"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "db:fx_pegs",
+      "type": "db-read",
+      "label": "fx_pegs"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "label": "eur_is_the_pivot"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "doctrine:single_conversion_authority",
+      "type": "doctrine",
+      "label": "single_conversion_authority"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "doctrine:finance_config_is_not_an_fx_authority",
+      "type": "doctrine",
+      "label": "finance_config_is_not_an_fx_authority"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "utils/alerts.js",
+      "type": "depends",
+      "label": "utils/alerts.js"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "utils/logger.js",
+      "type": "depends",
+      "label": "utils/logger.js"
+    },
+    {
+      "from": "routes/admin-finance-config.js",
+      "to": "services/fx-observation-service.js",
+      "type": "uses",
+      "label": "routes/admin-finance-config.js"
+    },
+    {
+      "from": "scripts/fx-observation-cli.js",
+      "to": "services/fx-observation-service.js",
+      "type": "uses",
+      "label": "scripts/fx-observation-cli.js"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "db:fx_rate_observations",
+      "type": "db-read",
+      "label": "fx_rate_observations"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "db:fx_rate_observations",
+      "type": "db-write",
+      "label": "fx_rate_observations"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "label": "eur_is_the_pivot"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "doctrine:two_person_rule",
+      "type": "doctrine",
+      "label": "two_person_rule"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "doctrine:append_only_fx_observations",
+      "type": "doctrine",
+      "label": "append_only_fx_observations"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "doctrine:no_invented_rate",
+      "type": "doctrine",
+      "label": "no_invented_rate"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
     },
     {
       "from": "services/golden-checkout-thread.js",
@@ -75249,6 +75855,72 @@
       "label": "settlement"
     },
     {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "utils/currency.js",
+      "type": "depends",
+      "label": "utils/currency.js"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "services/market-transport-sale-rates.js",
+      "type": "uses",
+      "label": "services/order-checkout-service.js"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "db:market_transport_sale_rates",
+      "type": "db-read",
+      "label": "market_transport_sale_rates"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "doctrine:no_country_branch",
+      "type": "doctrine",
+      "label": "no_country_branch"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "doctrine:attested_cost_is_not_a_sale_price",
+      "type": "doctrine",
+      "label": "attested_cost_is_not_a_sale_price"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "impact:transport",
+      "type": "impact",
+      "label": "transport"
+    },
+    {
+      "from": "services/market-transport-sale-rates.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
       "from": "services/order-checkout-service.js",
       "to": "services/market-transport-tariff-gate.js",
       "type": "uses",
@@ -77001,6 +77673,18 @@
     },
     {
       "from": "services/order-checkout-service.js",
+      "to": "services/market-transport-sale-rates.js",
+      "type": "depends",
+      "label": "services/market-transport-sale-rates.js"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "services/order-fx-snapshot.js",
+      "type": "depends",
+      "label": "services/order-fx-snapshot.js"
+    },
+    {
+      "from": "services/order-checkout-service.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -77016,6 +77700,12 @@
       "to": "services/order-checkout-service.js",
       "type": "uses",
       "label": "routes/orders/create.js"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "db:market_transport_sale_rates",
+      "type": "db-read",
+      "label": "market_transport_sale_rates"
     },
     {
       "from": "services/order-checkout-service.js",
@@ -77470,6 +78160,96 @@
     },
     {
       "from": "services/order-financial-closure-signal.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "services/order-fx-snapshot.js",
+      "type": "uses",
+      "label": "services/order-checkout-service.js"
+    },
+    {
+      "from": "routes/orders/cancel.js",
+      "to": "services/order-fx-snapshot.js",
+      "type": "uses",
+      "label": "routes/orders/cancel.js"
+    },
+    {
+      "from": "services/parcel-operations.js",
+      "to": "services/order-fx-snapshot.js",
+      "type": "uses",
+      "label": "services/parcel-operations.js"
+    },
+    {
+      "from": "services/payment-mobile-money.js",
+      "to": "services/order-fx-snapshot.js",
+      "type": "uses",
+      "label": "services/payment-mobile-money.js"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "label": "eur_is_the_pivot"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "doctrine:one_transaction_truth",
+      "type": "doctrine",
+      "label": "one_transaction_truth"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "doctrine:snapshot_is_read_never_reconverted",
+      "type": "doctrine",
+      "label": "snapshot_is_read_never_reconverted"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "doctrine:refund_from_captured_amount",
+      "type": "doctrine",
+      "label": "refund_from_captured_amount"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
       "to": "impact:finance",
       "type": "impact",
       "label": "finance"
@@ -81774,6 +82554,12 @@
       "label": "db"
     },
     {
+      "from": "services/pricing-parameters-status.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
       "from": "services/catalog-workspace.js",
       "to": "services/pricing-parameters-status.js",
       "type": "uses",
@@ -81922,24 +82708,6 @@
       "to": "db:exchange_rates",
       "type": "db-read",
       "label": "exchange_rates"
-    },
-    {
-      "from": "services/pricing-rates.js",
-      "to": "db:finance_config",
-      "type": "db-read",
-      "label": "finance_config"
-    },
-    {
-      "from": "services/pricing-rates.js",
-      "to": "db:exchange_rates",
-      "type": "db-write",
-      "label": "exchange_rates"
-    },
-    {
-      "from": "services/pricing-rates.js",
-      "to": "db:finance_config",
-      "type": "db-write",
-      "label": "finance_config"
     },
     {
       "from": "services/pricing-rates.js",
@@ -85060,6 +85828,12 @@
       "to": "services/wallet-service.js",
       "type": "depends",
       "label": "services/wallet-service.js"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "services/order-fx-snapshot.js",
+      "type": "depends",
+      "label": "services/order-fx-snapshot.js"
     },
     {
       "from": "routes/orders/cancel.js",
@@ -94659,9 +95433,9 @@
     },
     {
       "from": "utils/currency.js",
-      "to": "currency_parities (P1)",
+      "to": "services/fx-authority.js",
       "type": "depends",
-      "label": "currency_parities (P1)"
+      "label": "services/fx-authority.js"
     },
     {
       "from": "non câblé — M5/P1 livrent l'outil",
@@ -96222,9 +96996,9 @@
     },
     {
       "from": "utils/rates.js",
-      "to": "utils/logger.js",
+      "to": "services/fx-authority.js",
       "type": "depends",
-      "label": "utils/logger.js"
+      "label": "services/fx-authority.js"
     },
     {
       "from": "routes/admin-finance-config.js",
@@ -96251,16 +97025,16 @@
       "label": "routes/modules.js"
     },
     {
-      "from": "routes/orders/create.js",
-      "to": "utils/rates.js",
-      "type": "uses",
-      "label": "routes/orders/create.js"
-    },
-    {
       "from": "routes/payments.js",
       "to": "utils/rates.js",
       "type": "uses",
       "label": "routes/payments.js"
+    },
+    {
+      "from": "services/fx-engine-rates.js",
+      "to": "utils/rates.js",
+      "type": "uses",
+      "label": "services/fx-engine-rates.js"
     },
     {
       "from": "services/pricing-cdr.js",
@@ -96275,12 +97049,6 @@
       "label": "services/pricing-rates.js"
     },
     {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "utils/rates.js",
-      "type": "uses",
-      "label": "services/shared-cart-lifecycle.js"
-    },
-    {
       "from": "services/supplier-catalog-scanner.js",
       "to": "utils/rates.js",
       "type": "uses",
@@ -96288,21 +97056,39 @@
     },
     {
       "from": "utils/rates.js",
-      "to": "db:finance_config",
+      "to": "db:currency_parities",
       "type": "db-read",
-      "label": "finance_config"
+      "label": "currency_parities"
     },
     {
       "from": "utils/rates.js",
-      "to": "doctrine:lot1a_fx_one_runtime_truth",
-      "type": "doctrine",
-      "label": "lot1a_fx_one_runtime_truth"
+      "to": "db:fx_rate_observations",
+      "type": "db-read",
+      "label": "fx_rate_observations"
     },
     {
       "from": "utils/rates.js",
-      "to": "doctrine:payment_fx_authority",
+      "to": "db:fx_pegs",
+      "type": "db-read",
+      "label": "fx_pegs"
+    },
+    {
+      "from": "utils/rates.js",
+      "to": "doctrine:eur_is_the_pivot",
       "type": "doctrine",
-      "label": "payment_fx_authority"
+      "label": "eur_is_the_pivot"
+    },
+    {
+      "from": "utils/rates.js",
+      "to": "doctrine:single_conversion_authority",
+      "type": "doctrine",
+      "label": "single_conversion_authority"
+    },
+    {
+      "from": "utils/rates.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
     },
     {
       "from": "utils/rates.js",
@@ -96913,6 +97699,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/outbox-worker.js",
         "services/cash-reminder-service.js",
         "services/inventory-service.js"
       ],
@@ -96974,6 +97761,7 @@
         "services/inventory-service.js",
         "services/mobile-money-reconciliation.js",
         "services/order-financial-closure-signal.js",
+        "services/outbox-worker.js",
         "utils/logger.js",
         "utils/rules.js"
       ]
@@ -103219,6 +104007,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "services/fx-observation-service.js",
         "services/*"
       ],
       "directUsedBy": [
@@ -103229,8 +104018,8 @@
         "finance_config"
       ],
       "dbWrite": [
-        "exchange_rates",
-        "finance_config"
+        "finance_config",
+        "fx_rate_observations"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -103242,12 +104031,13 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:exchange_rates",
         "db:finance_config",
+        "db:fx_rate_observations",
         "doctrine:lot1a_relay_commission_one_runtime_truth",
         "impact:admin-dashboard",
         "impact:economic-engine",
         "middleware/auth.js",
+        "services/fx-observation-service.js",
         "services/loyalty-service.js",
         "utils/logger.js",
         "utils/rates.js"
@@ -105261,6 +106051,7 @@
       "directDependsOn": [
         "db.js",
         "services/catalog-product-detail.js",
+        "services/market-transport-tariff-gate.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js"
       ],
@@ -105309,7 +106100,8 @@
         "routes/products.js",
         "services/catalog-product-detail.js",
         "services/catalog-public-view.js",
-        "services/market-local-price-resolution-service.js"
+        "services/market-local-price-resolution-service.js",
+        "services/market-transport-tariff-gate.js"
       ]
     },
     "routes/categories.js": {
@@ -107583,6 +108375,7 @@
         "impact:orders",
         "middleware/auth.js",
         "middleware/validate.js",
+        "services/order-fx-snapshot.js",
         "services/refund-service.js",
         "utils/logger.js",
         "utils/rules.js"
@@ -107663,7 +108456,6 @@
         "services/routing.js",
         "services/transport-pricing.js",
         "utils/logger.js",
-        "utils/rates.js",
         "utils/rules.js"
       ]
     },
@@ -112654,6 +113446,7 @@
         "impact:economic-engine",
         "services/cost-allocation/_helpers.js",
         "services/cost-allocation/index.js",
+        "services/fx-engine-rates.js",
         "services/simulation-scope-service.js",
         "utils/relay-commission.js"
       ]
@@ -114910,6 +115703,7 @@
         "impact:finance-config",
         "services/dashboard-ops-queries.js",
         "services/economic-engine-queries.js",
+        "services/fx-engine-rates.js",
         "utils/eco-bridge.js"
       ]
     },
@@ -115441,6 +116235,66 @@
         "utils/logger.js"
       ]
     },
+    "services/fx-authority.js": {
+      "role": "fx-authority",
+      "domain": "market",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/fx-chain-service.js"
+      ],
+      "directUsedBy": [
+        "utils/currency.js",
+        "services/market-transport-sale-rates.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "currency_parities",
+        "fx_pegs",
+        "fx_rate_observations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "eur_is_the_pivot",
+        "single_conversion_authority",
+        "fail_closed",
+        "no_float_arithmetic",
+        "single_rounding"
+      ],
+      "impactAreas": [
+        "pricing",
+        "transport",
+        "orders",
+        "payments",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:currency_parities",
+        "db:fx_pegs",
+        "db:fx_rate_observations",
+        "doctrine:eur_is_the_pivot",
+        "doctrine:fail_closed",
+        "doctrine:no_float_arithmetic",
+        "doctrine:single_conversion_authority",
+        "doctrine:single_rounding",
+        "impact:finance",
+        "impact:orders",
+        "impact:payments",
+        "impact:pricing",
+        "impact:transport",
+        "services/fx-chain-service.js",
+        "services/fx-engine-rates.js",
+        "services/market-transport-sale-rates.js",
+        "services/order-fx-snapshot.js",
+        "services/pricing-parameters-status.js",
+        "utils/currency.js",
+        "utils/rates.js"
+      ]
+    },
     "services/fx-chain-service.js": {
       "role": "fx-chain-service",
       "domain": "market",
@@ -115481,7 +116335,110 @@
         "doctrine:no_fallback_rate",
         "impact:checkout",
         "impact:finance",
-        "impact:market"
+        "impact:market",
+        "services/fx-authority.js"
+      ]
+    },
+    "services/fx-engine-rates.js": {
+      "role": "fx-engine-rates",
+      "domain": "market",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "utils/rates.js",
+        "services/fx-authority.js"
+      ],
+      "directUsedBy": [
+        "services/pricing-cdr.js",
+        "services/pricing-recommend.js",
+        "services/cost-allocation/allocate.js",
+        "services/economic-config.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "currency_parities",
+        "fx_rate_observations",
+        "fx_pegs"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "eur_is_the_pivot",
+        "single_conversion_authority",
+        "finance_config_is_not_an_fx_authority"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "sourcing"
+      ],
+      "mustCheck": [
+        "db:currency_parities",
+        "db:fx_pegs",
+        "db:fx_rate_observations",
+        "doctrine:eur_is_the_pivot",
+        "doctrine:finance_config_is_not_an_fx_authority",
+        "doctrine:single_conversion_authority",
+        "impact:economic-engine",
+        "impact:pricing",
+        "impact:sourcing",
+        "services/cost-allocation/allocate.js",
+        "services/economic-config.js",
+        "services/fx-authority.js",
+        "services/pricing-cdr.js",
+        "services/pricing-recommend.js",
+        "utils/rates.js"
+      ]
+    },
+    "services/fx-observation-service.js": {
+      "role": "fx-observation-service",
+      "domain": "market",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "utils/alerts.js",
+        "utils/logger.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-finance-config.js",
+        "scripts/fx-observation-cli.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "fx_rate_observations"
+      ],
+      "dbWrite": [
+        "fx_rate_observations"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "eur_is_the_pivot",
+        "two_person_rule",
+        "append_only_fx_observations",
+        "no_invented_rate"
+      ],
+      "impactAreas": [
+        "market",
+        "pricing",
+        "payments"
+      ],
+      "mustCheck": [
+        "db:fx_rate_observations",
+        "doctrine:append_only_fx_observations",
+        "doctrine:eur_is_the_pivot",
+        "doctrine:no_invented_rate",
+        "doctrine:two_person_rule",
+        "impact:market",
+        "impact:payments",
+        "impact:pricing",
+        "routes/admin-finance-config.js",
+        "utils/alerts.js",
+        "utils/logger.js"
       ]
     },
     "services/golden-checkout-thread.js": {
@@ -118718,6 +119675,51 @@
         "services/market-delegation-settlement-service.js"
       ]
     },
+    "services/market-transport-sale-rates.js": {
+      "role": "market-transport-sale-rates",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "utils/currency.js",
+        "services/fx-authority.js"
+      ],
+      "directUsedBy": [
+        "services/order-checkout-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "market_transport_sale_rates",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "fail_closed",
+        "no_country_branch",
+        "attested_cost_is_not_a_sale_price"
+      ],
+      "impactAreas": [
+        "checkout",
+        "transport",
+        "market"
+      ],
+      "mustCheck": [
+        "db:market_transport_sale_rates",
+        "db:markets",
+        "doctrine:attested_cost_is_not_a_sale_price",
+        "doctrine:fail_closed",
+        "doctrine:no_country_branch",
+        "impact:checkout",
+        "impact:market",
+        "impact:transport",
+        "services/fx-authority.js",
+        "services/order-checkout-service.js",
+        "utils/currency.js"
+      ]
+    },
     "services/market-transport-tariff-gate.js": {
       "role": "market-transport-tariff-gate",
       "domain": "logistics",
@@ -118750,6 +119752,7 @@
         "impact:checkout",
         "impact:market",
         "impact:transport",
+        "routes/catalog-product-detail.js",
         "services/order-checkout-service.js"
       ]
     },
@@ -119806,6 +120809,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/market-transport-sale-rates.js",
+        "services/order-fx-snapshot.js",
         "db.js",
         "services/cart-share-service.js"
       ],
@@ -119814,6 +120819,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "market_transport_sale_rates",
         "orders",
         "product_skus",
         "product_variants",
@@ -119845,6 +120851,7 @@
         "market-autonomy"
       ],
       "mustCheck": [
+        "db:market_transport_sale_rates",
         "db:markets",
         "db:order_items",
         "db:order_status_history",
@@ -119870,9 +120877,11 @@
         "services/market-delivery-proof-service.js",
         "services/market-local-price-resolution-service.js",
         "services/market-payment-collection-gate.js",
+        "services/market-transport-sale-rates.js",
         "services/market-transport-tariff-gate.js",
         "services/order-checkout-item-resolution.js",
         "services/order-checkout-persistence.js",
+        "services/order-fx-snapshot.js",
         "services/order-post-commit-hooks.js"
       ]
     },
@@ -120075,6 +121084,59 @@
         "impact:orders",
         "services/order-financial-closure-reconciliation.js",
         "services/signal-service.js"
+      ]
+    },
+    "services/order-fx-snapshot.js": {
+      "role": "order-fx-snapshot",
+      "domain": "orders",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/fx-authority.js"
+      ],
+      "directUsedBy": [
+        "services/order-checkout-service.js",
+        "routes/orders/cancel.js",
+        "services/parcel-operations.js",
+        "services/payment-mobile-money.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "refunds"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "eur_is_the_pivot",
+        "one_transaction_truth",
+        "snapshot_is_read_never_reconverted",
+        "refund_from_captured_amount"
+      ],
+      "impactAreas": [
+        "orders",
+        "payments",
+        "refunds",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:refunds",
+        "doctrine:eur_is_the_pivot",
+        "doctrine:one_transaction_truth",
+        "doctrine:refund_from_captured_amount",
+        "doctrine:snapshot_is_read_never_reconverted",
+        "impact:finance",
+        "impact:orders",
+        "impact:payments",
+        "impact:refunds",
+        "routes/orders/cancel.js",
+        "services/fx-authority.js",
+        "services/order-checkout-service.js",
+        "services/parcel-operations.js",
+        "services/payment-mobile-money.js",
+        "services/refund-service.js"
       ]
     },
     "services/order-item-availability-service.js": {
@@ -120588,6 +121650,7 @@
         "logistics"
       ],
       "mustCheck": [
+        "bootstrap/crons.js",
         "db:outbox_events",
         "db:physical_outcome_receipts",
         "doctrine:HUB-000 F0 (transactional outbox lite)",
@@ -120869,6 +121932,7 @@
         "impact:logistics",
         "routes/orders/parcels.js",
         "services/notification-service.js",
+        "services/order-fx-snapshot.js",
         "services/order-item-availability-service.js",
         "services/order-status-machine.js",
         "services/parcel-guards.js",
@@ -121281,6 +122345,7 @@
         "services/mobile-money/mtn-momo-cg.js",
         "services/mobile-money/orange-money-cm.js",
         "services/mobile-money/registry.js",
+        "services/order-fx-snapshot.js",
         "services/order-payment-confirmation.js",
         "utils/currency.js"
       ]
@@ -122316,6 +123381,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
         "services/cost-component-market-service.js",
+        "services/fx-engine-rates.js",
         "services/market-local-price-activation-service.js",
         "services/pricing-engine.js",
         "services/pricing-market-corridor.js",
@@ -122807,7 +123873,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db"
+        "db",
+        "services/fx-authority.js"
       ],
       "directUsedBy": [
         "services/catalog-workspace.js"
@@ -122836,7 +123903,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:catalog",
         "impact:economic-engine",
-        "services/catalog-workspace.js"
+        "services/catalog-workspace.js",
+        "services/fx-authority.js"
       ]
     },
     "services/pricing-period-structure.js": {
@@ -122906,13 +123974,9 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "exchange_rates",
-        "finance_config"
+        "exchange_rates"
       ],
-      "dbWrite": [
-        "exchange_rates",
-        "finance_config"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -122922,7 +123986,6 @@
       ],
       "mustCheck": [
         "db:exchange_rates",
-        "db:finance_config",
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
         "routes/pricing.js",
@@ -122972,6 +124035,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
         "routes/pricing.js",
+        "services/fx-engine-rates.js",
         "services/pricing-engine.js",
         "services/pricing-workspace.js",
         "utils/logger.js"
@@ -124879,7 +125943,8 @@
       "directDependsOn": [
         "db.js",
         "stripe",
-        "services/wallet-service.js"
+        "services/wallet-service.js",
+        "services/order-fx-snapshot.js"
       ],
       "directUsedBy": [
         "routes/orders/cancel.js",
@@ -124921,6 +125986,7 @@
         "routes/orders/cancel.js",
         "services/admin-order-refund.js",
         "services/cost-allocation/canonical-margin-writer.js",
+        "services/order-fx-snapshot.js",
         "services/parcel-operations.js",
         "services/wallet-service.js",
         "utils/logger.js"
@@ -125640,8 +126706,7 @@
         "routes/shared-cart.js",
         "services/routing.js",
         "services/shared-cart-internals.js",
-        "utils/logger.js",
-        "utils/rates.js"
+        "utils/logger.js"
       ]
     },
     "services/shared-cart-queries.js": {
@@ -131139,6 +132204,7 @@
         "impact:purchasing",
         "impact:refunds",
         "services/catalog-approval.js",
+        "services/fx-observation-service.js",
         "services/payment-cash-confirm.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
@@ -131372,7 +132438,7 @@
       "directDependsOn": [
         "db",
         "markets (M0)",
-        "currency_parities (P1)"
+        "services/fx-authority.js"
       ],
       "directUsedBy": [
         "non câblé — M5/P1 livrent l'outil",
@@ -131400,7 +132466,9 @@
         "impact:market",
         "services/cash-deposit-service.js",
         "services/dashboard-metrics/market-currency.js",
+        "services/fx-authority.js",
         "services/market-local-price-resolution-service.js",
+        "services/market-transport-sale-rates.js",
         "services/order-display-snapshot.js",
         "services/payment-mobile-money.js",
         "services/pricing-market-corridor.js"
@@ -131879,6 +132947,7 @@
         "services/finance-metrics/finance-summary.js",
         "services/finance-metrics/payments.js",
         "services/finance-metrics/sales-analysis.js",
+        "services/fx-observation-service.js",
         "services/hub-dashboard-queries.js",
         "services/loyalty-service.js",
         "services/monitoring.js",
@@ -132245,29 +133314,31 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "utils/logger.js"
+        "services/fx-authority.js"
       ],
       "directUsedBy": [
         "routes/admin-finance-config.js",
         "routes/dashboard-shared.js",
         "routes/finance.js",
         "routes/modules.js",
-        "routes/orders/create.js",
         "routes/payments.js",
+        "services/fx-engine-rates.js",
         "services/pricing-cdr.js",
         "services/pricing-rates.js",
-        "services/shared-cart-lifecycle.js",
         "services/supplier-catalog-scanner.js"
       ],
       "ownedFiles": [],
       "dbRead": [
-        "finance_config"
+        "currency_parities",
+        "fx_rate_observations",
+        "fx_pegs"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "lot1a_fx_one_runtime_truth",
-        "payment_fx_authority"
+        "eur_is_the_pivot",
+        "single_conversion_authority",
+        "fail_closed"
       ],
       "impactAreas": [
         "economic-engine",
@@ -132278,9 +133349,12 @@
       ],
       "mustCheck": [
         "bootstrap/feature-wiring.js",
-        "db:finance_config",
-        "doctrine:lot1a_fx_one_runtime_truth",
-        "doctrine:payment_fx_authority",
+        "db:currency_parities",
+        "db:fx_pegs",
+        "db:fx_rate_observations",
+        "doctrine:eur_is_the_pivot",
+        "doctrine:fail_closed",
+        "doctrine:single_conversion_authority",
         "impact:checkout",
         "impact:economic-engine",
         "impact:infrastructure",
@@ -132290,11 +133364,11 @@
         "routes/dashboard-shared.js",
         "routes/finance.js",
         "routes/modules.js",
-        "routes/orders/create.js",
         "routes/payments.js",
+        "services/fx-authority.js",
+        "services/fx-engine-rates.js",
         "services/pricing-cdr.js",
         "services/pricing-rates.js",
-        "services/shared-cart-lifecycle.js",
         "services/supplier-catalog-scanner.js",
         "utils/logger.js",
         "utils/rules.js"
@@ -132762,18 +133836,6 @@
       ]
     },
     {
-      "table": "finance_config",
-      "writerCount": 6,
-      "writers": [
-        "bootstrap/startup-migrations.js",
-        "routes/admin-costing.js",
-        "routes/admin-finance-config.js",
-        "services/economic-config.js",
-        "services/economic-engine-queries.js",
-        "services/pricing-rates.js"
-      ]
-    },
-    {
       "table": "pickup_print_tokens",
       "writerCount": 6,
       "writers": [
@@ -132855,6 +133917,17 @@
         "services/documents/pickup-proof.js",
         "services/documents/refund-receipt.js",
         "services/documents/wallet-receipt.js"
+      ]
+    },
+    {
+      "table": "finance_config",
+      "writerCount": 5,
+      "writers": [
+        "bootstrap/startup-migrations.js",
+        "routes/admin-costing.js",
+        "routes/admin-finance-config.js",
+        "services/economic-config.js",
+        "services/economic-engine-queries.js"
       ]
     },
     {
@@ -133229,11 +134302,11 @@
       ]
     },
     {
-      "table": "exchange_rates",
+      "table": "fx_rate_observations",
       "writerCount": 2,
       "writers": [
         "routes/admin-finance-config.js",
-        "services/pricing-rates.js"
+        "services/fx-observation-service.js"
       ]
     },
     {
@@ -136473,6 +137546,12 @@
       "label": "db.js"
     },
     {
+      "from": "services/fx-authority.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
       "from": "services/fx-chain-service.js",
       "to": "db.js",
       "type": "depends",
@@ -136483,6 +137562,18 @@
       "to": "services/fx-chain-service.js",
       "type": "uses",
       "label": "tests/integration/fx-chain-postgres.test.js"
+    },
+    {
+      "from": "services/fx-observation-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "scripts/fx-observation-cli.js",
+      "to": "services/fx-observation-service.js",
+      "type": "uses",
+      "label": "scripts/fx-observation-cli.js"
     },
     {
       "from": "services/golden-checkout-thread.js",
@@ -136975,6 +138066,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/order-fx-snapshot.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "customs",
@@ -138655,12 +139752,6 @@
       "to": "markets (M0)",
       "type": "depends",
       "label": "markets (M0)"
-    },
-    {
-      "from": "utils/currency.js",
-      "to": "currency_parities (P1)",
-      "type": "depends",
-      "label": "currency_parities (P1)"
     },
     {
       "from": "non câblé — M5/P1 livrent l'outil",

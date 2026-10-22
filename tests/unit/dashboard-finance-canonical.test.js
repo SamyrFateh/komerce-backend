@@ -188,6 +188,40 @@ test('les remboursements market utilisent la période et le marché serveur', as
   });
 });
 
+test('trajectoire canonique : données réelles absentes => null, aucun faux 0 de marge finale', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [{
+    bucket: '2026-10-19T00:00:00.000Z',
+    paid_orders: '3', revenue_kmf: '90000', real_cost_kmf: null,
+    actual_orders: '0', consolidated_margin_kmf: null,
+  }] });
+  const trend = await finance.getFinanceTrend({ market_id: 'market-cm-id' }, 30);
+  expect(trend).toHaveLength(1);
+  expect(trend[0]).toMatchObject({
+    paid_orders: 3, revenue_kmf: 90000,
+    real_cost_kmf: null, consolidated_margin_kmf: null,
+    actual_orders: 0, cost_coverage_pct: 0,
+  });
+  const sql = String(mockQuery.mock.calls[0][0]);
+  expect(sql).toContain('SUM(total_kmf - real_cost_kmf) FILTER');
+  expect(sql).toContain('final_ready AND real_cost_kmf IS NOT NULL');
+  // Le CASE de finalMarginReadySql peut légitimement contenir ELSE 0 (étapes).
+  // On interdit seulement le repli inventé dans le calcul monétaire consolidé.
+  expect(sql).not.toMatch(/THEN\s+total_kmf\s*-\s*real_cost_kmf\s+ELSE\s+0/);
+});
+
+test('trajectoire canonique : une valeur réelle explicitement nulle reste 0', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [{
+    bucket: '2026-10-19T00:00:00.000Z',
+    paid_orders: '1', revenue_kmf: '5000', real_cost_kmf: '0',
+    actual_orders: '1', consolidated_margin_kmf: '5000',
+  }] });
+  const trend = await finance.getFinanceTrend({}, 7);
+  expect(trend[0]).toMatchObject({
+    real_cost_kmf: 0, consolidated_margin_kmf: 5000,
+    actual_orders: 1, cost_coverage_pct: 100,
+  });
+});
+
 test('granularité de trajectoire dépend uniquement de la période normalisée', () => {
   expect(finance.trendBucket(7)).toBe('day');
   expect(finance.trendBucket(30)).toBe('week');

@@ -53,15 +53,15 @@
   },
   "summary": {
     "features": 40,
-    "healthy": 34,
-    "attention": 6,
+    "healthy": 35,
+    "attention": 5,
     "blocked": 0,
-    "businessDependencies": 313,
+    "businessDependencies": 316,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 10,
+    "debtItemsTotal": 9,
     "gateHealthy": 37,
     "gateBlocked": 2
   },
@@ -15428,6 +15428,13 @@
           ]
         },
         {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16929,7 +16936,7 @@
             ]
           },
           "migrations": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "migrations/095_value_density_foundation.sql",
@@ -16949,6 +16956,11 @@
               {
                 "declared": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
                 "resolvedPath": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/313_market_transport_sale_rates.sql",
+                "resolvedPath": "migrations/313_market_transport_sale_rates.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -17049,7 +17061,7 @@
             ]
           },
           "services": {
-            "count": 34,
+            "count": 35,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -17094,6 +17106,11 @@
               {
                 "declared": "services/hub-reference.js",
                 "resolvedPath": "services/hub-reference.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-transport-sale-rates.js",
+                "resolvedPath": "services/market-transport-sale-rates.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -17224,7 +17241,7 @@
             ]
           },
           "tests": {
-            "count": 63,
+            "count": 64,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -17259,6 +17276,11 @@
               {
                 "declared": "tests/integration/hub-volume-photo-contract.test.js",
                 "resolvedPath": "tests/integration/hub-volume-photo-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/market-transport-sale-rates-postgres.test.js",
+                "resolvedPath": "tests/integration/market-transport-sale-rates-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17564,7 +17586,7 @@
             ]
           }
         },
-        "totalFiles": 132,
+        "totalFiles": 135,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -18204,6 +18226,13 @@
           ]
         },
         {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -18411,24 +18440,26 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 2,
         "compositionRootRelations": 0,
         "details": [
           {
             "to": "dashboard",
             "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "economic-engine",
+            "family": "NON_RUNTIME_TEST"
           }
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "market"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -18448,14 +18479,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"market\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -18861,7 +18886,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 11,
+            "count": 13,
             "files": [
               {
                 "declared": "migrations/135_markets_foundation.sql",
@@ -18917,6 +18942,16 @@
                 "declared": "migrations/311_fx_chain_eur_usd_djf.sql",
                 "resolvedPath": "migrations/311_fx_chain_eur_usd_djf.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/312_fx_chain_hardening.sql",
+                "resolvedPath": "migrations/312_fx_chain_hardening.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/314_fx_authority_foundation.sql",
+                "resolvedPath": "migrations/314_fx_authority_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -18941,7 +18976,7 @@
             ]
           },
           "services": {
-            "count": 5,
+            "count": 8,
             "files": [
               {
                 "declared": "middleware/require-market-scope.js",
@@ -18949,8 +18984,23 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/fx-authority.js",
+                "resolvedPath": "services/fx-authority.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/fx-chain-service.js",
                 "resolvedPath": "services/fx-chain-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/fx-engine-rates.js",
+                "resolvedPath": "services/fx-engine-rates.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/fx-observation-service.js",
+                "resolvedPath": "services/fx-observation-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -18971,7 +19021,7 @@
             ]
           },
           "tests": {
-            "count": 19,
+            "count": 26,
             "files": [
               {
                 "declared": "tests/integration/currency-boundary.test.js",
@@ -18989,8 +19039,23 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/integration/fx-authority-postgres.test.js",
+                "resolvedPath": "tests/integration/fx-authority-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/integration/fx-chain-postgres.test.js",
                 "resolvedPath": "tests/integration/fx-chain-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/fx-engine-rates-postgres.test.js",
+                "resolvedPath": "tests/integration/fx-engine-rates-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/fx-observation-service-postgres.test.js",
+                "resolvedPath": "tests/integration/fx-observation-service-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19001,6 +19066,11 @@
               {
                 "declared": "tests/integration/market-scope-isolation.test.js",
                 "resolvedPath": "tests/integration/market-scope-isolation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/order-fx-snapshot-postgres.test.js",
+                "resolvedPath": "tests/integration/order-fx-snapshot-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19031,6 +19101,21 @@
               {
                 "declared": "tests/unit/f1-market-integrity-migration.test.js",
                 "resolvedPath": "tests/unit/f1-market-integrity-migration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/fx-authority-decimal.test.js",
+                "resolvedPath": "tests/unit/fx-authority-decimal.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/fx-chain-service.test.js",
+                "resolvedPath": "tests/unit/fx-chain-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/fx-no-competing-authority.test.js",
+                "resolvedPath": "tests/unit/fx-no-competing-authority.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19071,7 +19156,7 @@
             ]
           }
         },
-        "totalFiles": 38,
+        "totalFiles": 50,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19165,6 +19250,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -19191,10 +19283,24 @@
           ]
         },
         {
+          "consumer": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "local-stock",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -19269,7 +19375,7 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 2,
+        "testOnlyRelations": 3,
         "compositionRootRelations": 0,
         "details": [
           {
@@ -19278,6 +19384,10 @@
           },
           {
             "to": "market-delegation",
+            "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "orders",
             "family": "NON_RUNTIME_TEST"
           }
         ]
@@ -22756,6 +22866,13 @@
           ]
         },
         {
+          "consumer": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -22999,7 +23116,7 @@
             ]
           },
           "services": {
-            "count": 20,
+            "count": 21,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -23049,6 +23166,11 @@
               {
                 "declared": "services/order-financial-closure-signal.js",
                 "resolvedPath": "services/order-financial-closure-signal.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-fx-snapshot.js",
+                "resolvedPath": "services/order-fx-snapshot.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -23374,7 +23496,7 @@
             ]
           }
         },
-        "totalFiles": 87,
+        "totalFiles": 88,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 17,

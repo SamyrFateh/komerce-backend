@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, ./_helpers, ../cost-allocation/cost-expectation, ./control-tower (getCAEncaisse, INV-1)
  * @used-by       services/dashboard-metrics/index.js
- * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, orders, markets
+ * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, markets
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      resolve_before_behavior_change
@@ -52,39 +52,64 @@ async function getCAVendu(filters = {}) {
 }
 
 
+// Un coût non observé n'est pas un coût nul : garder NULL jusqu'au contrat KPI.
+function nullableKmf(value) {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+
 async function getCoutEstime(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
+    WITH order_set AS (
+      SELECT o.id FROM orders o
+      WHERE ${where} AND o.status NOT IN ('cancelled', 'refunded')
+    ),
+    by_order AS (
+      SELECT os.id,
+        COUNT(DISTINCT oi.id)::int AS lines_expected,
+        COUNT(DISTINCT oi.id) FILTER (
+          WHERE imp.estimated_business_complete_cost_kmf IS NOT NULL
+        )::int AS lines_priced,
+        SUM(imp.estimated_business_complete_cost_kmf) AS cost_kmf
+      FROM order_set os
+      LEFT JOIN order_items oi ON oi.order_id = os.id
+      LEFT JOIN order_item_cost_imputations imp
+        ON imp.order_id = os.id AND imp.order_item_id = oi.id
+      GROUP BY os.id
+    )
     SELECT
-      COALESCE(SUM(imp.estimated_business_complete_cost_kmf), 0)::bigint AS value,
-      COUNT(DISTINCT imp.order_id)::int AS items_with_data,
-      (SELECT COUNT(*)::int FROM orders o WHERE ${where} AND o.status NOT IN ('cancelled','refunded')) AS items_total
-    FROM order_item_cost_imputations imp
-    JOIN orders o ON o.id = imp.order_id
-    WHERE ${where}
-      AND o.status NOT IN ('cancelled', 'refunded')
+      SUM(cost_kmf) FILTER (
+        WHERE lines_expected > 0 AND lines_expected = lines_priced
+      )::bigint AS value,
+      COUNT(*) FILTER (
+        WHERE lines_expected > 0 AND lines_expected = lines_priced
+      )::int AS items_with_data,
+      COUNT(*)::int AS items_total
+    FROM by_order
   `;
   const r = await db.query(sql, params);
-  const value = Number(r.rows[0].value) || 0;
+  const value = nullableKmf(r.rows[0].value);
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
   const itemsTotal = Number(r.rows[0].items_total) || 0;
 
   return makeKpi('cout_estime', 'Coût estimé', value, 'KMF', {
     itemsTotal,
     itemsWithData,
-    completeness: itemsWithData === itemsTotal && itemsTotal > 0 ? 'complete' : 'partial',
+    completeness: itemsTotal === 0 ? 'provisional' : (itemsWithData === itemsTotal ? 'complete' : 'partial'),
     warning: itemsTotal > 0 && itemsWithData < itemsTotal
-      ? `${itemsTotal - itemsWithData} commande(s) sans snapshot pricing-engine`
+      ? `${itemsTotal - itemsWithData} commande(s) sans coût estimé complet`
       : null,
   });
 }
-
 
 async function getCoutReel(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     SELECT
-      COALESCE(SUM(alc.amount_kmf), 0)::bigint AS value,
+      SUM(alc.amount_kmf)::bigint AS value,
       COUNT(DISTINCT alc.order_id)::int AS items_with_data,
       (SELECT COUNT(*)::int FROM orders o WHERE ${where} AND o.status NOT IN ('cancelled','refunded')) AS items_total
     FROM order_item_real_cost_allocations alc
@@ -94,7 +119,7 @@ async function getCoutReel(filters = {}) {
       AND alc.is_actual = TRUE
   `;
   const r = await db.query(sql, params);
-  const value = Number(r.rows[0].value) || 0;
+  const value = nullableKmf(r.rows[0].value);
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
   const itemsTotal = Number(r.rows[0].items_total) || 0;
 
@@ -119,22 +144,35 @@ async function getMargeEstimee(filters = {}) {
       SELECT
         o.id,
         o.total_kmf,
-        COALESCE((SELECT SUM(estimated_business_complete_cost_kmf) FROM order_item_cost_imputations WHERE order_id = o.id), NULL) AS est_cost
+        CASE WHEN EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id)
+          AND NOT EXISTS (
+            SELECT 1 FROM order_items oi
+            WHERE oi.order_id = o.id
+              AND NOT EXISTS (
+                SELECT 1 FROM order_item_cost_imputations imp
+                WHERE imp.order_id = o.id AND imp.order_item_id = oi.id
+                  AND imp.estimated_business_complete_cost_kmf IS NOT NULL
+              )
+          )
+          THEN (SELECT SUM(imp.estimated_business_complete_cost_kmf)
+                FROM order_item_cost_imputations imp WHERE imp.order_id = o.id)
+          ELSE NULL
+        END AS est_cost
       FROM orders o
       WHERE ${where}
         AND o.payment_status = 'paid'
         AND o.status NOT IN ('cancelled', 'refunded')
     )
     SELECT
-      COALESCE(SUM(total_kmf - est_cost), 0)::bigint AS margin_kmf,
-      COALESCE(SUM(total_kmf) FILTER (WHERE est_cost IS NOT NULL), 0)::bigint AS revenue_kmf,
+      SUM(total_kmf - est_cost)::bigint AS margin_kmf,
+      SUM(total_kmf) FILTER (WHERE est_cost IS NOT NULL)::bigint AS revenue_kmf,
       COUNT(*) FILTER (WHERE est_cost IS NOT NULL)::int AS items_with_data,
       COUNT(*)::int AS items_total
     FROM order_aggs
   `;
   const r = await db.query(sql, params);
-  const margin = Number(r.rows[0].margin_kmf) || 0;
-  const revenue = Number(r.rows[0].revenue_kmf) || 0;
+  const margin = nullableKmf(r.rows[0].margin_kmf);
+  const revenue = nullableKmf(r.rows[0].revenue_kmf);
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
   const itemsTotal = Number(r.rows[0].items_total) || 0;
   const pct = revenue > 0 ? Number(((margin / revenue) * 100).toFixed(2)) : null;
@@ -174,15 +212,15 @@ async function getMargeVariableReelle(filters = {}) {
       )
     )
     SELECT
-      COALESCE(SUM(total_kmf - variable_real), 0)::bigint AS margin_kmf,
-      COALESCE(SUM(total_kmf), 0)::bigint AS revenue_kmf,
+      SUM(total_kmf - variable_real)::bigint AS margin_kmf,
+      SUM(total_kmf)::bigint AS revenue_kmf,
       COUNT(*)::int AS items_with_data,
       (SELECT COUNT(*) FROM order_set)::int AS items_total
     FROM orders_with_variable
   `;
   const r = await db.query(sql, [...params, EXPECTED_VARIABLE_COSTS]);
-  const margin = Number(r.rows[0].margin_kmf) || 0;
-  const revenue = Number(r.rows[0].revenue_kmf) || 0;
+  const margin = nullableKmf(r.rows[0].margin_kmf);
+  const revenue = nullableKmf(r.rows[0].revenue_kmf);
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
   const itemsTotal = Number(r.rows[0].items_total) || 0;
   const pct = revenue > 0 ? Number(((margin / revenue) * 100).toFixed(2)) : null;
@@ -222,15 +260,15 @@ async function getMargeConsolidee(filters = {}) {
         AND ${costExpectation.finalMarginReadySql('os')}
     )
     SELECT
-      COALESCE(SUM(total_kmf - real_total), 0)::bigint AS margin_kmf,
-      COALESCE(SUM(total_kmf), 0)::bigint AS revenue_kmf,
+      SUM(total_kmf - real_total)::bigint AS margin_kmf,
+      SUM(total_kmf)::bigint AS revenue_kmf,
       COUNT(*)::int AS items_with_data,
       (SELECT COUNT(*) FROM order_set)::int AS items_total
     FROM actual_orders
   `;
   const r = await db.query(sql, params);
-  const margin = Number(r.rows[0].margin_kmf) || 0;
-  const revenue = Number(r.rows[0].revenue_kmf) || 0;
+  const margin = nullableKmf(r.rows[0].margin_kmf);
+  const revenue = nullableKmf(r.rows[0].revenue_kmf);
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
   const itemsTotal = Number(r.rows[0].items_total) || 0;
   const pct = revenue > 0 ? Number(((margin / revenue) * 100).toFixed(2)) : null;
@@ -317,32 +355,50 @@ async function getCmdsCoutIncompletIds(filters = {}, options = {}) {
 }
 
 
+
 async function getCoutMoyParCmd(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     WITH order_set AS (
-      SELECT o.id
-      FROM orders o
+      SELECT o.id FROM orders o
       WHERE ${where}
         AND o.payment_status = 'paid'
         AND o.status NOT IN ('cancelled', 'refunded')
+    ),
+    by_order AS (
+      SELECT os.id,
+        COUNT(DISTINCT oi.id)::int AS lines_expected,
+        COUNT(DISTINCT oi.id) FILTER (
+          WHERE imp.estimated_business_complete_cost_kmf IS NOT NULL
+        )::int AS lines_priced,
+        SUM(imp.estimated_business_complete_cost_kmf) AS cost_kmf
+      FROM order_set os
+      LEFT JOIN order_items oi ON oi.order_id = os.id
+      LEFT JOIN order_item_cost_imputations imp
+        ON imp.order_id = os.id AND imp.order_item_id = oi.id
+      GROUP BY os.id
     )
     SELECT
-      COALESCE(AVG(
-        (SELECT COALESCE(SUM(estimated_business_complete_cost_kmf), 0)
-         FROM order_item_cost_imputations WHERE order_id = os.id)
-      ), 0)::bigint AS value,
-      COUNT(*)::int AS items_total
-    FROM order_set os
+      AVG(cost_kmf) FILTER (
+        WHERE lines_expected > 0 AND lines_expected = lines_priced
+      )::bigint AS value,
+      COUNT(*)::int AS items_total,
+      COUNT(*) FILTER (
+        WHERE lines_expected > 0 AND lines_expected = lines_priced
+      )::int AS items_with_data
+    FROM by_order
   `;
   const r = await db.query(sql, params);
-  const value = Number(r.rows[0].value) || 0;
+  const value = nullableKmf(r.rows[0].value);
   const itemsTotal = Number(r.rows[0].items_total) || 0;
+  const itemsWithData = Number(r.rows[0].items_with_data) || 0;
 
   return makeKpi('cout_moy_par_cmd', 'Coût moyen par commande', value, 'KMF', {
     itemsTotal,
-    itemsWithData: itemsTotal,
-    completeness: itemsTotal > 0 ? 'complete' : 'provisional',
+    itemsWithData,
+    completeness: itemsTotal === 0 ? 'provisional' : (itemsWithData === itemsTotal ? 'complete' : 'partial'),
+    warning: itemsTotal > itemsWithData
+      ? `Moyenne sur ${itemsWithData}/${itemsTotal} commandes aux coûts connus` : null,
   });
 }
 
