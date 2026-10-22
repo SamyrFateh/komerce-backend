@@ -1,4 +1,5 @@
 'use strict';
+const { stripeIntentFieldsForOrder } = require('../helpers/stripeIntentFields');
 
 
 /**
@@ -69,7 +70,7 @@ describeE2E('E2E-P0-STOCK — inventory · stock jamais négatif', ({ db }) => {
     };
   }
 
-  function intentSucceeded({ eventId, intentId, orderId }) {
+  function intentSucceeded({ eventId, intentId, fields }) {
     return {
       id: eventId,
       object: 'event',
@@ -79,19 +80,18 @@ describeE2E('E2E-P0-STOCK — inventory · stock jamais négatif', ({ db }) => {
         object: {
           id: intentId,
           object: 'payment_intent',
-          amount: 10000,
-          currency: 'eur',
+          ...fields,
           status: 'succeeded',
-          metadata: { order_id: orderId },
         },
       },
     };
   }
 
-  function payOrder(orderId, label) {
+  async function payOrder(orderId, label) {
     const eventId = `evt_${tag(label)}`;
+    const fields = await stripeIntentFieldsForOrder(db, orderId);
     const { raw, signature } = signedEvent(
-      intentSucceeded({ eventId, intentId: `pi_${tag(label)}`, orderId })
+      intentSucceeded({ eventId, intentId: `pi_${tag(label)}`, fields })
     );
     return request(app)
       .post('/api/payments/stripe/webhook')

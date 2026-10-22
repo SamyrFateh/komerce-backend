@@ -50,6 +50,8 @@ if (!hasIntegrationEnv) {
   function stripeIntent({ orderId, orderReference, id = 'pi_itest_1' }) {
     return {
       id,
+      amount: 2000, // total_eur = 20 → 2000 centimes (contrat montant/devise du webhook)
+      currency: 'eur',
       metadata: { order_id: orderId, order_reference: orderReference, komerce: 'true' },
       receipt_email: 'itest@stripe.test',
       latest_charge: null,

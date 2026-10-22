@@ -186,7 +186,7 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
 
   // Chemins 2-3 : commande introuvable ou déjà paid
   const { rows: [existing] } = await db.query(
-    'SELECT payment_status FROM orders WHERE id = $1', [orderId]
+    'SELECT id, reference, total_eur, payment_status FROM orders WHERE id = $1', [orderId]
   );
   if (!existing) {
     log.warn({ order_id: orderId }, '[STRIPE-WEBHOOK] order_id not found');
@@ -197,6 +197,29 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
     log.info({ order_id: orderId }, '[STRIPE-WEBHOOK] order already paid, skipping');
     await markStripeEventProcessed(event, { ignored: 'already_paid', order_id: orderId }, db);
     return { received: true, idempotent: true };
+  }
+
+  // Contrat montant/devise/commande : un PaymentIntent « succeeded » ne marque jamais une commande payée
+  // s'il ne correspond pas exactement à la commande (même contrat qu'à la création de l'intent).
+  try {
+    assertStripeIntentMatchesOrder(intent, existing);
+  } catch (e) {
+    log.error({ order_id: orderId, intent_id: intent.id, code: e.code }, '[STRIPE-WEBHOOK] contrat intent/commande violé — non payé');
+    try {
+      await createAlert(db, {
+        type: 'stripe_intent_contract_mismatch',
+        entityType: 'order',
+        entityId: existing.id,
+        severity: 'high',
+        title: `Paiement Stripe incohérent — ${existing.reference}`,
+        description: `intent=${intent.id} montant=${intent.amount} devise=${intent.currency || '<missing>'} ` +
+          `attendu=${Math.round(parseFloat(existing.total_eur) * 100)} eur`,
+      });
+    } catch (alertErr) {
+      log.error({ err: alertErr.message, order_id: orderId }, '[STRIPE-WEBHOOK] alert contract mismatch insert failed');
+    }
+    await markStripeEventProcessed(event, { ignored: 'contract_mismatch', order_id: orderId }, db);
+    return { received: true, ignored: true };
   }
 
   let processedOk          = false;

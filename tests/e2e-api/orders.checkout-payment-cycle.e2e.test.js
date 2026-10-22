@@ -65,7 +65,7 @@ describeE2E('E2E-L1-01 — orders · commande payée par webhook Stripe', ({ db 
     return { raw, signature };
   }
 
-  function paymentIntentSucceeded({ eventId, intentId, orderId, amountCents }) {
+  function paymentIntentSucceeded({ eventId, intentId, orderId, amountCents, orderReference = null }) {
     return {
       id: eventId,
       object: 'event',
@@ -78,7 +78,7 @@ describeE2E('E2E-L1-01 — orders · commande payée par webhook Stripe', ({ db 
           amount: amountCents,
           currency: 'eur',
           status: 'succeeded',
-          metadata: { order_id: orderId },
+          metadata: { order_id: orderId, order_reference: orderReference, komerce: 'true' },
         },
       },
     };
@@ -198,10 +198,10 @@ describeE2E('E2E-L1-01 — orders · commande payée par webhook Stripe', ({ db 
     const eventId = `evt_${tag('ok')}`;
     const intentId = `pi_${tag('ok')}`;
 
-    const { rows: [before] } = await db.query('SELECT total_eur FROM orders WHERE id = $1', [orderId]);
+    const { rows: [before] } = await db.query('SELECT reference, total_eur FROM orders WHERE id = $1', [orderId]);
     const amountCents = Math.round(Number(before.total_eur || 100) * 100);
 
-    const event = paymentIntentSucceeded({ eventId, intentId, orderId, amountCents });
+    const event = paymentIntentSucceeded({ eventId, intentId, orderId, amountCents, orderReference: before.reference });
     const { raw, signature } = signedWebhook(event);
 
     const res = await request(app)
