@@ -6,12 +6,12 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/cart-share-service.js,
+ * @depends       services/market-transport-sale-rates.js, db.js, services/cart-share-service.js,
  *                services/order-post-commit-hooks.js, services/order-checkout-item-resolution.js,
  *                services/order-checkout-persistence.js, services/local-stock-service.js,
  *                services/market-local-price-resolution-service.js
  * @used-by       routes/orders/create.js
- * @db-read       orders, product_skus, product_variants, products, recipients, relais, markets, shared_cart_items, shared_carts
+ * @db-read       market_transport_sale_rates, orders, product_skus, product_variants, products, recipients, relais, markets, shared_cart_items, shared_carts
  * @db-write      order_items, order_status_history, orders, recipients
  * @doctrine-note cart_shares n'est plus écrit ici directement (campagne WRITER-NOT-OWNER
  *                2026-08) — voir services/cart-share-service.js markShareConvertedToOrder
@@ -78,7 +78,8 @@ const { applyActiveMarketPricesToCheckoutItems } = require('./market-local-price
 const { MarketCommercialPriceError } = require('./market-commercial-price-service');
 const { assertMarketDeliverable } = require('./market-delivery-proof-service');
 const { assertCentralCollectionAllowed } = require('./market-payment-collection-gate');
-const { assertTransportTariffApplicable } = require('./market-transport-tariff-gate');
+const { assertTransportTariffApplicable, resolveEffectiveTransportRates } = require('./market-transport-tariff-gate');
+const { loadMarketTransportSaleRates } = require('./market-transport-sale-rates');
 const {
   FULFILLMENT_SOURCE,
   resolveCheckoutFulfillmentSources,
@@ -377,9 +378,13 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     try {
       // Lot 4 : les tarifs de transport globaux sont des tarifs de vente en KMF ; hors de cette devise,
       // refus tant qu'aucun tarif de vente du marché n'existe (le coût attesté n'est jamais un prix).
+      const marketTransportRates = importTransportItems.length > 0
+        ? await loadMarketTransportSaleRates(client, relais.market_id)
+        : {};
       assertTransportTariffApplicable({
         marketCurrency: checkoutMarket.currency,
         importItemCount: importTransportItems.length,
+        marketRates: marketTransportRates,
       });
       const transportQuote = quoteTransportPriceForOrder({
         items: importTransportItems.map(item => {
@@ -392,7 +397,11 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
             quantity: item.quantity,
           };
         }),
-        rates: transportRates,
+        rates: resolveEffectiveTransportRates({
+          marketCurrency: checkoutMarket.currency,
+          globalRates: transportRates,
+          marketRates: marketTransportRates,
+        }),
       });
       transport_price_kmf = transportQuote.transport_price_kmf;
     } catch (e) {

@@ -77,6 +77,7 @@ module.exports = {
       'migrations/096_quality_foundation.sql',
       'migrations/233_hub_physical_identity_allocation_custody.sql',
       'migrations/309_hub_placement_guard_exclude_outcomes.sql',
+      'migrations/313_market_transport_sale_rates.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
@@ -94,6 +95,7 @@ module.exports = {
     services: [
       'services/parcel-operations.js',
       'services/market-transport-tariff-gate.js',
+      'services/market-transport-sale-rates.js',
       'services/parcel-item-mutation-service.js',
       'services/parcel-mutation-service.js',
       'services/parcel-order-membership.js',
@@ -156,6 +158,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/market-transport-tariff-gate.test.js',
+      'tests/integration/market-transport-sale-rates-postgres.test.js',
       'tests/unit/hub-dubai-projection.test.js',
       'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js',
       'tests/integration/hub-physical-identity-postgres.test.js',

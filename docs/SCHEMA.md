@@ -702,3 +702,9 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 `fx_pegs` est une nouvelle table **not yet live** : seul peg admis USD→DJF (Banque centrale de Djibouti), daté, append-only. Lecteur : `services/fx-chain-service.js`. Migration 312 : bande 100–300, TRUNCATE interdit.
 <!-- /schema-pending -->
+
+<!-- schema-pending: market_transport_sale_rates (migration 313, not yet live) -->
+### Tarifs de vente transport par Market (migration 313 — intended_migration_schema)
+
+`market_transport_sale_rates` est une nouvelle table **not yet live** : tarif de vente du transport par Market (clés `SEA_KMF_PER_KG_COMMERCIAL` / `AIR_KMF_PER_KG_TAXABLE` de `business_rules`, KMF de base par kg), avec pièce justificative obligatoire, un seul tarif actif par (Market, clé), révocable. Absence de tarif = refus fail-closed hors marché KMF ; le coût de fret attesté n'est jamais un prix. Lecteur : `services/market-transport-sale-rates.js` (checkout).
+<!-- /schema-pending -->

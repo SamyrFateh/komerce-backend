@@ -1,6 +1,7 @@
 'use strict';
 const {
   isTransportTariffApplicable, assertTransportTariffApplicable, GLOBAL_TRANSPORT_TARIFF_CURRENCY,
+  resolveEffectiveTransportRates,
 } = require('../../services/market-transport-tariff-gate');
 
 describe('market-transport-tariff-gate (lot 4, fail-closed)', () => {
@@ -23,5 +24,30 @@ describe('market-transport-tariff-gate (lot 4, fail-closed)', () => {
     expect(() => assertTransportTariffApplicable({ marketCurrency: 'XAF', importItemCount: 1 }))
       .toThrow(expect.objectContaining({ code: 'MARKET_TRANSPORT_TARIFF_MISSING', statusCode: 409 }));
     expect(() => assertTransportTariffApplicable({ marketCurrency: 'KMF', importItemCount: 1 })).not.toThrow();
+  });
+
+  describe('tarifs de vente propres au Market', () => {
+    const globalRates = { SEA_KMF_PER_KG_COMMERCIAL: 65, AIR_KMF_PER_KG_TAXABLE: 2500, AIR_VOLUMETRIC_DIVISOR: 6000 };
+
+    test('Market non-KMF avec tarif propre : applicable', () => {
+      expect(isTransportTariffApplicable({ marketCurrency: 'XAF', importItemCount: 1, marketRates: { SEA_KMF_PER_KG_COMMERCIAL: 90 } })).toBe(true);
+    });
+
+    test.each([{}, null, { SEA_KMF_PER_KG_COMMERCIAL: 0 }, { OTHER: 5 }])('Market non-KMF sans tarif valide %p : refusé', (mr) => {
+      expect(isTransportTariffApplicable({ marketCurrency: 'DJF', importItemCount: 1, marketRates: mr })).toBe(false);
+    });
+
+    test('non-KMF : jamais de repli sur les tarifs globaux KMF', () => {
+      const r = resolveEffectiveTransportRates({ marketCurrency: 'XAF', globalRates, marketRates: { SEA_KMF_PER_KG_COMMERCIAL: 90 } });
+      expect(r).toEqual({ SEA_KMF_PER_KG_COMMERCIAL: 90, AIR_VOLUMETRIC_DIVISOR: 6000 });
+      expect(r.AIR_KMF_PER_KG_TAXABLE).toBeUndefined();
+    });
+
+    test('KMF : globaux surchargés clé par clé par le Market', () => {
+      expect(resolveEffectiveTransportRates({ marketCurrency: ' kmf ', globalRates, marketRates: { AIR_KMF_PER_KG_TAXABLE: 3000 } }))
+        .toEqual({ SEA_KMF_PER_KG_COMMERCIAL: 65, AIR_KMF_PER_KG_TAXABLE: 3000, AIR_VOLUMETRIC_DIVISOR: 6000 });
+      expect(resolveEffectiveTransportRates({ marketCurrency: 'KMF', globalRates, marketRates: {} }))
+        .toEqual(globalRates);
+    });
   });
 });
