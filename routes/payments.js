@@ -45,6 +45,7 @@ const { triggerPurchasing } = require('../services/purchasing-trigger-service');
 const { validate }          = require('../middleware/validate');
 const { confirmCashByReference } = require('../services/payment-cash-confirm');
 const { payments }          = require('../validators');
+const { isCentralCollectionAllowed } = require('../services/market-payment-collection-gate');
 const {
   createStripeIntent,
   handleStripeSucceeded,
@@ -74,6 +75,12 @@ router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), asy
     }
     if (order.payment_status === 'paid') {
       return res.status(400).json({ error: 'Commande déjà payée' });
+    }
+    if (!(await isCentralCollectionAllowed(db, order.market_id, 'stripe_eur'))) {
+      return res.status(409).json({
+        error: 'Paiement Stripe non autorisé pour le marché de cette commande.',
+        code: 'PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET',
+      });
     }
 
     const result = await createStripeIntent(order, stripe, db);

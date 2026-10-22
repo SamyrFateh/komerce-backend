@@ -73,6 +73,7 @@ module.exports = {
       'services/payment-paypal.js',
       'services/payment-cash-confirm.js',
       'services/payment-stripe.js',
+      'services/market-payment-collection-gate.js',
       'services/confirm-pickup-cash-payment.js',
       'services/payment-paypal-events.js',
       'services/cash-operations.js',
@@ -106,6 +107,7 @@ module.exports = {
       'migrations/287_cash_custody_ledger.sql',
       'migrations/288_cash_custody_recipients.sql',
       'migrations/304_cash_custody_provenance_edges.sql',
+      'migrations/307_market_central_collection_modes.sql',
       'migrations/169_mobile_money_foundation.sql',
       'migrations/171_kartapay_km_mobile_money.sql',
       'migrations/199_cash_confirmation_control.sql',
@@ -121,6 +123,7 @@ module.exports = {
     tests: [
       'tests/unit/stripe-golden-p4.test.js',
       'tests/unit/market-payment-accounts.test.js',
+      'tests/unit/market-payment-collection-gate.test.js',
       'tests/unit/market-delegation-payment-accounts.test.js',
       'tests/unit/isweep-transactional-flows.test.js',
       'tests/unit/payment-fx-authority.test.js',

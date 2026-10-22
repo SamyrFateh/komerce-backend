@@ -18,6 +18,10 @@ jest.mock('../../utils/logger', () => ({
 
 jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 
+const mockCentralAllowed = jest.fn();
+jest.mock('../../services/market-payment-collection-gate', () => ({
+  isCentralCollectionAllowed: (...a) => mockCentralAllowed(...a),
+}));
 jest.mock('../../services/paypal-client', () => ({}));
 
 jest.mock('../../services/payment-paypal', () => ({
@@ -95,7 +99,17 @@ describe('POST /api/payments/paypal/create-order', () => {
     expect(res.status).toBe(409);
   });
 
+  it('409 PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET si le marché n\'autorise pas PayPal EUR (lot 3)', async () => {
+    mockCentralAllowed.mockResolvedValueOnce(false);
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', market_id: 'm-cm', user_id: null, total_eur: 49.9, payment_status: 'pending' }] });
+    const res = await request(app).post('/api/payments/paypal/create-order').send({ order_id: 'o1' });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET');
+    expect(paymentPaypal.createPaypalOrder).not.toHaveBeenCalled();
+  });
+
   it('nominal → 200 et delegue a createPaypalOrder', async () => {
+    mockCentralAllowed.mockResolvedValue(true);
     db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', user_id: null, total_eur: 49.9, payment_status: 'pending' }] });
     paymentPaypal.createPaypalOrder.mockResolvedValue({ paypal_order_id: 'PP-1', approve_url: 'https://paypal.com/x' });
 
