@@ -19445,11 +19445,16 @@
             ]
           },
           "migrations": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "migrations/170_market_commercial_price_drafts.sql",
                 "resolvedPath": "migrations/170_market_commercial_price_drafts.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/308_suspend_unproven_active_markets.sql",
+                "resolvedPath": "migrations/308_suspend_unproven_active_markets.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -19480,7 +19485,7 @@
             ]
           },
           "tests": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "tests/e2e/market-readonly-views.spec.js",
@@ -19521,11 +19526,16 @@
                 "declared": "tests/unit/market-readonly-views.test.js",
                 "resolvedPath": "tests/unit/market-readonly-views.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/migration-308-suspend-unproven-markets.test.js",
+                "resolvedPath": "tests/unit/migration-308-suspend-unproven-markets.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 31,
+        "totalFiles": 33,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

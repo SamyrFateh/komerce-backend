@@ -119,8 +119,9 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
     ]);
     const view = await getControlPlane(db, 'KM');
     expect(Object.keys(view).sort()).toEqual(
-      ['assignment', 'cashPolicy', 'ceiling', 'deliveryProof', 'gaps', 'market', 'paymentProviders', 'readiness', 'relaisActive', 'team']
+      ['assignment', 'carriers', 'cashPolicy', 'ceiling', 'deliveryProof', 'gaps', 'market', 'paymentProviders', 'readiness', 'relaisActive', 'team']
     );
+    expect(view.carriers).toEqual([]);
     expect(view.gaps).toEqual([]);
     expect(view.team[0].capabilities).toEqual(['team.grant']);
     expect(view.readiness.ready_for_activation).toBe(true);

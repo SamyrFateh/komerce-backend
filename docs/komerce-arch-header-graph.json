@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1819,
-    "edges": 9158,
+    "edges": 9159,
     "dbTables": 208,
     "doctrines": 666,
     "impactAreas": 204,
@@ -20156,6 +20156,7 @@
         "disputes",
         "orders",
         "markets",
+        "carriers",
         "capability_registry",
         "market_operating_assignments",
         "assignment_memberships",
@@ -72481,6 +72482,12 @@
     },
     {
       "from": "services/market-control-plane.js",
+      "to": "db:carriers",
+      "type": "db-read",
+      "label": "carriers"
+    },
+    {
+      "from": "services/market-control-plane.js",
       "to": "db:capability_registry",
       "type": "db-read",
       "label": "capability_registry"
@@ -116715,6 +116722,7 @@
         "disputes",
         "orders",
         "markets",
+        "carriers",
         "capability_registry",
         "market_operating_assignments",
         "assignment_memberships",
@@ -116742,6 +116750,7 @@
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
         "db:capability_registry",
+        "db:carriers",
         "db:disputes",
         "db:market_cash_control_policies",
         "db:market_delivery_attestations",

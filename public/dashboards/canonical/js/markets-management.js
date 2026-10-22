@@ -5,8 +5,8 @@
  * @layer         ui-workspace
  * @criticality   high
  * @inputs        authenticated_admin, /api/admin/markets
- * @outputs       markets_list, readiness_gaps_view, lifecycle_open_suspend_actions
- * @depends       /api/admin/markets, /api/admin/markets/:marketCode/control-plane, /api/admin/markets/:marketCode/lifecycle
+ * @outputs       markets_list, readiness_gaps_view, lifecycle_open_suspend_actions, delivery_attestation_form
+ * @depends       /api/admin/markets, /api/admin/markets/:marketCode/control-plane, /api/admin/markets/:marketCode/lifecycle, /api/admin/markets/:marketCode/delivery-attestations
  * @used-by       /dashboards/canonical/access.html
  * @db-read       none
  * @db-write      none
@@ -71,6 +71,94 @@
     return node;
   }
 
+  const MODES = ['SEA', 'AIR', 'ROAD', 'MIXED'];
+  const RATE_UNITS = ['PER_KG', 'PER_PARCEL'];
+
+  function field(doc, form, name, label, type, choices) {
+    const wrap = el(doc, 'label', 'kmc-markets-mgmt-field', label);
+    const input = choices ? el(doc, 'select') : el(doc, 'input');
+    if (!choices) input.type = type || 'text';
+    input.name = name;
+    input.dataset.field = name;
+    if (choices) {
+      choices.forEach(choice => {
+        const option = el(doc, 'option', '', choice.label);
+        option.value = choice.value;
+        input.appendChild(option);
+      });
+    }
+    wrap.appendChild(input);
+    form.appendChild(wrap);
+    form.fields = form.fields || {};
+    form.fields[name] = input;
+    return input;
+  }
+
+  function attestationPayload(fields) {
+    const num = key => (fields[key].value === '' ? null : Number(fields[key].value));
+    return {
+      carrier_id: fields.carrier_id.value,
+      mode: fields.mode.value,
+      origin_ref: fields.origin_ref.value,
+      freight_rate: num('freight_rate'),
+      rate_currency: String(fields.rate_currency.value || '').toUpperCase(),
+      rate_unit: fields.rate_unit.value,
+      transit_days: num('transit_days'),
+      evidence_ref: fields.evidence_ref.value,
+      valid_until: fields.valid_until.value ? new Date(`${fields.valid_until.value}T23:59:59Z`).toISOString() : null,
+    };
+  }
+
+  // Preuve de livrabilité (lot B) : lecture de la readiness serveur, écriture via les routes centrales existantes.
+  // Le coût attesté n'est jamais un prix de vente ; l'écran ne montre que la preuve, pas un tarif client.
+  function renderDeliveryProof(doc, cell, state, market, options) {
+    const proof = state.gaps.deliveryProof || null;
+    const hasGap = state.gaps.items.some(gap => gap.code === 'NO_DELIVERY_PROOF');
+    const box = el(doc, 'div', 'kmc-markets-mgmt-proof');
+    box.dataset.deliveryProof = market.code;
+    if (proof && proof.proven && proof.attestation) {
+      const att = proof.attestation;
+      box.appendChild(el(doc, 'p', '',
+        `Livrabilité attestée : ${att.carrier_name} · ${att.mode} depuis ${att.origin_ref} · coût ${att.freight_rate} ${att.rate_currency}/${att.rate_unit === 'PER_KG' ? 'kg' : 'colis'} (coût, pas un prix de vente) · ${att.transit_days} j · valable jusqu’au ${String(att.valid_until).slice(0, 10)} · preuve : ${att.evidence_ref}`));
+      const revoke = el(doc, 'form', 'kmc-markets-mgmt-form');
+      field(doc, revoke, 'reason', 'Motif de révocation', 'text');
+      const submit = el(doc, 'button', 'kmc-access-button is-danger', 'Révoquer l’attestation');
+      submit.type = 'submit';
+      revoke.appendChild(submit);
+      revoke.addEventListener('submit', event => {
+        if (event && event.preventDefault) event.preventDefault();
+        options.onRevoke(market, att.id, revoke.fields.reason.value);
+      });
+      box.appendChild(revoke);
+    } else if (proof && proof.proven && proof.basis === 'HISTORY') {
+      box.appendChild(el(doc, 'p', '', `Livrabilité prouvée par l’historique (${proof.collected_orders} commandes remises). Aucune attestation à saisir.`));
+    } else if (hasGap) {
+      box.appendChild(el(doc, 'p', '', 'Aucune preuve de livrabilité : saisir une attestation centrale (transporteur, mode, coût de fret, validité, référence de la preuve documentaire).'));
+      const form = el(doc, 'form', 'kmc-markets-mgmt-form');
+      field(doc, form, 'carrier_id', 'Transporteur', null, [{ value: '', label: '—' }].concat(
+        (state.carriers || []).map(carrier => ({ value: carrier.id, label: carrier.name }))));
+      field(doc, form, 'mode', 'Mode', null, MODES.map(value => ({ value, label: value })));
+      field(doc, form, 'origin_ref', 'Origine', 'text');
+      field(doc, form, 'freight_rate', 'Coût de fret', 'number');
+      field(doc, form, 'rate_currency', 'Devise du coût', 'text');
+      field(doc, form, 'rate_unit', 'Unité', null, RATE_UNITS.map(value => ({ value, label: value === 'PER_KG' ? 'par kg' : 'par colis' })));
+      field(doc, form, 'transit_days', 'Délai (jours)', 'number');
+      field(doc, form, 'evidence_ref', 'Référence de la preuve', 'text');
+      field(doc, form, 'valid_until', 'Valable jusqu’au', 'date');
+      const submit = el(doc, 'button', 'kmc-access-button is-primary', 'Attester la livrabilité');
+      submit.type = 'submit';
+      form.appendChild(submit);
+      form.addEventListener('submit', event => {
+        if (event && event.preventDefault) event.preventDefault();
+        options.onAttest(market, attestationPayload(form.fields));
+      });
+      box.appendChild(form);
+    } else {
+      return;
+    }
+    cell.appendChild(box);
+  }
+
   function render(host, state, options) {
     const doc = options.document;
     host.replaceChildren();
@@ -126,6 +214,7 @@
           state.gaps.items.forEach(gap => list.appendChild(el(doc, 'li', '', gap.message || gap.code)));
           cell.appendChild(list);
         }
+        renderDeliveryProof(doc, cell, state, market, options);
         detail.appendChild(cell);
         body.appendChild(detail);
       }
@@ -149,7 +238,8 @@
     ctx.onGaps = async market => {
       try {
         const control = await request(fetchImpl, `/api/admin/markets/${encodeURIComponent(market.code)}/control-plane`);
-        state.gaps = { code: market.code, items: control.gaps || [] };
+        state.gaps = { code: market.code, items: control.gaps || [], deliveryProof: control.deliveryProof || null };
+        state.carriers = Array.isArray(control.carriers) ? control.carriers : [];
         state.feedback = '';
       } catch (error) {
         state.feedback = error.message;
@@ -170,6 +260,40 @@
         state.feedback = error.message;
         state.feedbackTone = 'critical';
         if (error.code === 'MARKET_NOT_READY_FOR_ACTIVATION') state.gaps = null;
+      }
+      paint();
+    };
+
+    ctx.onAttest = async (market, payload) => {
+      try {
+        await request(fetchImpl, `/api/admin/markets/${encodeURIComponent(market.code)}/delivery-attestations`, {
+          method: 'POST', body: payload,
+        });
+        await ctx.onGaps(market);
+        state.feedback = `Marché ${market.code} : livrabilité attestée.`;
+        state.feedbackTone = 'positive';
+        paint();
+        return;
+      } catch (error) {
+        state.feedback = error.message;
+        state.feedbackTone = 'critical';
+      }
+      paint();
+    };
+    ctx.onRevoke = async (market, attestationId, reason) => {
+      if (!confirmImpl(`Confirmer : révoquer l’attestation de livrabilité du marché ${market.code} ? Les nouvelles commandes seront refusées.`)) return;
+      try {
+        await request(fetchImpl, `/api/admin/markets/${encodeURIComponent(market.code)}/delivery-attestations/${encodeURIComponent(attestationId)}/revoke`, {
+          method: 'POST', body: { reason },
+        });
+        await ctx.onGaps(market);
+        state.feedback = `Marché ${market.code} : attestation révoquée.`;
+        state.feedbackTone = 'positive';
+        paint();
+        return;
+      } catch (error) {
+        state.feedback = error.message;
+        state.feedbackTone = 'critical';
       }
       paint();
     };

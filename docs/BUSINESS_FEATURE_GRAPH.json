@@ -13557,6 +13557,13 @@
       {
         "feature": "market-autonomy",
         "category": "migrations",
+        "declared": "migrations/308_suspend_unproven_active_markets.sql",
+        "resolvedPath": "migrations/308_suspend_unproven_active_markets.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "migrations",
         "declared": "migrations/170_market_commercial_price_drafts.sql",
         "resolvedPath": "migrations/170_market_commercial_price_drafts.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13685,6 +13692,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/team-invite.js",
         "resolvedPath": "public/dashboards/canonical/js/team-invite.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/unit/migration-308-suspend-unproven-markets.test.js",
+        "resolvedPath": "tests/unit/migration-308-suspend-unproven-markets.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -46229,7 +46243,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2103
+        "filesObserved": 2104
       },
       "boutique": {
         "filesObserved": 214,
