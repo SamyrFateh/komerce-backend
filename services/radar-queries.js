@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/parcels.js, utils/rules.js
+ * @depends       db, utils/parcels.js, utils/rules.js, services/signal-simulation-scope.js
  * @used-by       routes/admin-radar.js
  * @db-read       cash_collections, cash_deposits, finance_config, incidents, orders, parcels, products, signals, users, wallets
  * @db-write      none
@@ -33,6 +33,7 @@
  */
 
 const db = require('../db');
+const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('./signal-simulation-scope');
 const { getRuleNumber } = require('../utils/rules');
 const { checkCashOverdue, checkStripeFailed, checkCashPendingAtRelais } = require('./radar-alerts/payment-signals');
 const { checkWalletTotalHigh } = require('./radar-alerts/treasury-signals');
@@ -111,8 +112,9 @@ async function getRadarSummary() {
   let alertCount = 0;
   try {
     const { rows: [r] } = await db.query(
-      `SELECT COUNT(*)::int AS c FROM signals
-        WHERE severity IN ('critical','high') AND resolved_at IS NULL`
+      `SELECT COUNT(*)::int AS c FROM signals s
+        WHERE s.severity IN ('critical','high') AND s.resolved_at IS NULL
+          AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}`
     );
     alertCount = r ? r.c : 0;
   } catch (_) { /* table peut ne pas exister */ }

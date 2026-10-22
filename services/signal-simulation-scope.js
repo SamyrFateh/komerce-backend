@@ -7,7 +7,7 @@
  * @inputs        none
  * @outputs       EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL
  * @depends       none
- * @used-by       services/dashboard-pilotage-market.js, services/dashboard-metrics/control-tower.js, services/dashboard-operations.js, services/action-center-agent-scope.js, routes/admin-dashboard.js
+ * @used-by       services/dashboard-pilotage-market.js, services/signal-admin-service.js, services/radar-queries.js, services/dashboard-metrics/control-tower.js, services/dashboard-operations.js, services/action-center-agent-scope.js, routes/admin-dashboard.js
  * @db-read       orders
  * @db-write      none
  * @db-txn        none
