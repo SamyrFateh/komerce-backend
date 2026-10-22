@@ -192,14 +192,13 @@ router.put('/', adminOnly, async (req, res, next) => {
     } catch(_) {}
 
     // Si les taux ont changé : log historique dans exchange_rates
-    if (updates.taux_change_eur_kmf !== undefined || updates.taux_aed_kmf !== undefined) {
+    // Aucun repli 492/138 : sans deux taux saisis valides, rien n'est journalisé (PR-D retire cette écriture).
+    if ((updates.taux_change_eur_kmf !== undefined || updates.taux_aed_kmf !== undefined)
+        && Number(updated.taux_change_eur_kmf) > 0 && Number(updated.taux_aed_kmf) > 0) {
       try {
         await db.query(
           'INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from) VALUES ($1, $2, CURRENT_DATE)',
-          [
-            Number(updated.taux_change_eur_kmf) || 492,
-            Number(updated.taux_aed_kmf) || 138,
-          ]
+          [Number(updated.taux_change_eur_kmf), Number(updated.taux_aed_kmf)]
         );
       } catch(_) { /* historique non bloquant */ }
     }
