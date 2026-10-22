@@ -7393,7 +7393,7 @@
             ]
           },
           "services": {
-            "count": 42,
+            "count": 43,
             "files": [
               {
                 "declared": "public/golden-e2e-cockpit.html",
@@ -7601,6 +7601,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/signal-simulation-scope.js",
+                "resolvedPath": "services/signal-simulation-scope.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/supplier-360.js",
                 "resolvedPath": "services/supplier-360.js",
                 "status": "resolved-in-technical-graph"
@@ -7608,7 +7613,7 @@
             ]
           },
           "tests": {
-            "count": 188,
+            "count": 189,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -7723,6 +7728,11 @@
               {
                 "declared": "tests/integration/dashboard-orders-real-db.test.js",
                 "resolvedPath": "tests/integration/dashboard-orders-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/signal-simulation-scope-postgres.test.js",
+                "resolvedPath": "tests/integration/signal-simulation-scope-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8553,7 +8563,7 @@
             ]
           }
         },
-        "totalFiles": 421,
+        "totalFiles": 423,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

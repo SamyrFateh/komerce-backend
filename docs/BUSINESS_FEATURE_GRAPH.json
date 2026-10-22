@@ -4807,6 +4807,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/signal-simulation-scope.js",
+        "resolvedPath": "services/signal-simulation-scope.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/dashboard-pilotage-alert-aggregation.js",
         "resolvedPath": "services/dashboard-pilotage-alert-aggregation.js",
         "status": "resolved-in-technical-graph"
@@ -6251,6 +6258,13 @@
         "category": "dash",
         "declared": "css/ct-inventory.css",
         "resolvedPath": "public/css/ct-inventory.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/integration/signal-simulation-scope-postgres.test.js",
+        "resolvedPath": "tests/integration/signal-simulation-scope-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -46250,7 +46264,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2104
+        "filesObserved": 2106
       },
       "boutique": {
         "filesObserved": 214,
@@ -49447,8 +49461,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 637,
-        "technicalNodesOwned": 637,
+        "technicalNodesTotal": 638,
+        "technicalNodesOwned": 638,
         "technicalOrphans": 0
       },
       "dash": {
