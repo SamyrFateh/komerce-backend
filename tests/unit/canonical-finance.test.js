@@ -380,6 +380,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(none.value).toBe('—');
     expect(none.tone).toBe('neutral');
     expect(none.unknown).toBe(true);
+    expect(none.helper).toMatch(/^Aucune commande finalisée \(0\//);
   });
 
   test('FIN-03 : bandeaux — coûts à établir et écarts confirmés (singulier/pluriel, inconnu jamais zéro)', () => {
