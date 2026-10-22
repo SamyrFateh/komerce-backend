@@ -206,6 +206,13 @@ router.get(
         const missing = margeEstimee.data_quality.items_total - margeEstimee.data_quality.items_with_data;
         warnings.push(`${missing} commande(s) sans snapshot pricing-engine`);
       }
+      const chartQuality = charts.ca_cost_margin_timeline.data_quality;
+      if (chartQuality.estimated_days_unknown > 0) {
+        warnings.push(`${chartQuality.estimated_days_unknown} jour(s) sans coûts estimés complets : série non disponible`);
+      }
+      if (chartQuality.real_days_unknown > 0) {
+        warnings.push(`${chartQuality.real_days_unknown} jour(s) sans allocations réelles pour toutes les commandes : série non disponible`);
+      }
 
       const incompleteFields = [];
       if (margeConsolidee.data_quality.items_with_data === 0) {
@@ -517,24 +524,43 @@ async function _buildCostingCharts(filters) {
     est_by_day AS (
       SELECT
         os.day,
-        COALESCE(SUM(imp.estimated_business_complete_cost_kmf), 0)::bigint AS cost_estimated_kmf
+        COUNT(DISTINCT oi.id)::int AS lines_expected,
+        COUNT(DISTINCT oi.id) FILTER (
+          WHERE imp.estimated_business_complete_cost_kmf IS NOT NULL
+        )::int AS lines_priced,
+        SUM(imp.estimated_business_complete_cost_kmf)::bigint AS cost_estimated_kmf
       FROM order_set os
-      LEFT JOIN order_item_cost_imputations imp ON imp.order_id = os.id
+      LEFT JOIN order_items oi ON oi.order_id = os.id
+      LEFT JOIN order_item_cost_imputations imp
+        ON imp.order_id = os.id AND imp.order_item_id = oi.id
       GROUP BY os.day
     ),
     real_by_day AS (
       SELECT
         os.day,
-        COALESCE(SUM(alc.amount_kmf) FILTER (WHERE alc.is_actual = TRUE), 0)::bigint AS cost_real_kmf
+        COUNT(DISTINCT os.id)::int AS orders_expected,
+        COUNT(DISTINCT os.id) FILTER (
+          WHERE alc.id IS NOT NULL
+        )::int AS orders_with_real_allocations,
+        SUM(alc.amount_kmf)::bigint AS cost_real_kmf
       FROM order_set os
-      LEFT JOIN order_item_real_cost_allocations alc ON alc.order_id = os.id
+      LEFT JOIN order_item_real_cost_allocations alc
+        ON alc.order_id = os.id AND alc.is_actual = TRUE
       GROUP BY os.day
     )
     SELECT
       ca.day,
       ca.ca_kmf,
-      COALESCE(est.cost_estimated_kmf, 0)::bigint AS cost_estimated_kmf,
-      COALESCE(real.cost_real_kmf, 0)::bigint AS cost_real_kmf
+      CASE
+        WHEN est.lines_expected > 0 AND est.lines_priced = est.lines_expected
+        THEN est.cost_estimated_kmf
+        ELSE NULL
+      END AS cost_estimated_kmf,
+      CASE
+        WHEN real.orders_expected > 0 AND real.orders_with_real_allocations = real.orders_expected
+        THEN real.cost_real_kmf
+        ELSE NULL
+      END AS cost_real_kmf
     FROM ca_by_day ca
     LEFT JOIN est_by_day est ON est.day = ca.day
     LEFT JOIN real_by_day real ON real.day = ca.day
@@ -563,9 +589,16 @@ async function _buildCostingCharts(filters) {
       x: r.rows.map(row => row.day),
       series: [
         { key: 'ca', label: 'CA vendu', values: r.rows.map(row => Number(row.ca_kmf)) },
-        { key: 'cost_est', label: 'Coût estimé', values: r.rows.map(row => Number(row.cost_estimated_kmf)) },
-        { key: 'cost_real', label: 'Coût réel', values: r.rows.map(row => Number(row.cost_real_kmf)) },
+        { key: 'cost_est', label: 'Coût estimé (lignes complètes)', values: r.rows.map(row =>
+          row.cost_estimated_kmf == null ? null : Number(row.cost_estimated_kmf)) },
+        { key: 'cost_real', label: 'Coûts réels ventilés (non finaux)', values: r.rows.map(row =>
+          row.cost_real_kmf == null ? null : Number(row.cost_real_kmf)) },
       ],
+      data_quality: {
+        estimated_days_unknown: r.rows.filter(row => row.cost_estimated_kmf == null).length,
+        real_days_unknown: r.rows.filter(row => row.cost_real_kmf == null).length,
+        note: 'Une série de coûts incomplète vaut null, pas zéro. Réel ventilé ne signifie pas marge finale.',
+      },
     },
     real_cost_by_family: {
       type: 'donut',
