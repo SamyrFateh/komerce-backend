@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 742
-- Files with full headers: 693
+- Scanned code files: 743
+- Files with full headers: 694
 - Files with lite headers: 49
-- Files with any headers: 742
+- Files with any headers: 743
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1825
-- Edges: 9172
-- DB tables: 208
-- Doctrines: 669
+- Graph nodes: 1831
+- Edges: 9184
+- DB tables: 210
+- Doctrines: 672
 - Impact areas: 206
-- Unresolved code edges: 889
+- Unresolved code edges: 891
 - Tables multi-écrivains directs (>=2): 87
 - Avertissements db-write / db-write-via en chevauchement: 9
 
@@ -46,7 +46,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - local-stock: 4
 - logistics: 56
 - loyalty: 3
-- market: 4
+- market: 5
 - market-autonomy: 4
 - market-control-plane: 5
 - market-delegation: 35
@@ -90,7 +90,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 426
+- service: 427
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -161,6 +161,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-stock-sync-decision.js — catalog-stock-sync-decision (catalog, critical, full)
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
 - services/dispute-mutation-service.js — orders-dispute-mutation-boundary (orders, critical, full)
+- services/fx-chain-service.js — fx-chain-service (market, critical, full)
 - services/hub-operations.js — hub-operations (logistics, critical, full)
 - services/hub-physical-identity.js — hub-physical-identity (logistics, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
