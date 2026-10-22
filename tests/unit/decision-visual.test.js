@@ -99,3 +99,12 @@ test('Commerce : styles série / marché / dernières commandes présents', () =
   const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/decision-visual.css'), 'utf8');
   ['.kmc-com-bars', '.kmc-com-donut', '.kmc-com-legend', '.kmc-com-table'].forEach(sel => expect(css).toContain(sel));
 });
+
+test('liens d\'action des cartes décision et bouton Configurer : boutons lisibles, sans superposition', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/decision-visual.css'), 'utf8');
+  expect(src).toMatch(/body\.kmc-shell-v4 \.kmc-decision-link[\s\S]*?min-height: 32px/);
+  expect(src).toMatch(/\.kmc-param-line \{[\s\S]*?display: grid/);
+  expect(src).toMatch(/\.kmc-param-line > \.kmc-workspace-action \{[\s\S]*?position: static/);
+  const ws = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/catalog-workspace.js'), 'utf8');
+  expect(ws).toContain("line.className = 'kmc-param-line'");
+});
