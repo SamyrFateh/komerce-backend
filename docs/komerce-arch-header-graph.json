@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 742,
-    "filesWithFullHeaders": 693,
+    "scannedCodeFiles": 743,
+    "filesWithFullHeaders": 694,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 742,
+    "filesWithAnyHeaders": 743,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1825,
-    "edges": 9172,
-    "dbTables": 208,
-    "doctrines": 669,
+    "graphNodes": 1831,
+    "edges": 9184,
+    "dbTables": 210,
+    "doctrines": 672,
     "impactAreas": 206,
-    "unresolvedCodeEdges": 889,
+    "unresolvedCodeEdges": 891,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 87
   },
@@ -39,7 +39,7 @@
     "admin-dashboard": 37,
     "decision-signals": 14,
     "market-delegation": 35,
-    "market": 4,
+    "market": 5,
     "economic-engine": 65,
     "sourcing": 37,
     "logistics": 56,
@@ -110,7 +110,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 426,
+    "service": 427,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -119,7 +119,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 101,
+    "critical": 102,
     "medium": 152,
     "high": 431,
     "low": 58
@@ -18587,6 +18587,54 @@
       "version": "2026-06"
     },
     {
+      "id": "services/fx-chain-service.js",
+      "file": "services/fx-chain-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "fx-chain-service",
+      "domain": "market",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "at",
+        "max_age_days",
+        "amount_eur"
+      ],
+      "outputs": [
+        "chain{eur_to_djf",
+        "legs[observation_id",
+        "peg_id]}",
+        "FxChainUnavailableError"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "tests/integration/fx-chain-postgres.test.js"
+      ],
+      "dbRead": [
+        "fx_rate_observations",
+        "fx_pegs"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "fail_closed",
+        "no_fallback_rate",
+        "frozen_per_transaction",
+        "eur_is_pivot"
+      ],
+      "impactAreas": [
+        "market",
+        "finance",
+        "checkout"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/golden-checkout-thread.js",
       "file": "services/golden-checkout-thread.js",
       "type": "file",
@@ -27957,7 +28005,8 @@
       "dbRead": [
         "orders",
         "refunds",
-        "wallets"
+        "wallets",
+        "markets"
       ],
       "dbWrite": [
         "refunds"
@@ -36549,6 +36598,16 @@
       "table": "economic_variables"
     },
     {
+      "id": "db:fx_rate_observations",
+      "type": "db-table",
+      "table": "fx_rate_observations"
+    },
+    {
+      "id": "db:fx_pegs",
+      "type": "db-table",
+      "table": "fx_pegs"
+    },
+    {
       "id": "db:supplier_execution_fulfillments",
       "type": "db-table",
       "table": "supplier_execution_fulfillments"
@@ -38684,6 +38743,26 @@
       "doctrine": "deposit_review_audited_in_same_transaction"
     },
     {
+      "id": "doctrine:fail_closed",
+      "type": "doctrine",
+      "doctrine": "fail_closed"
+    },
+    {
+      "id": "doctrine:no_fallback_rate",
+      "type": "doctrine",
+      "doctrine": "no_fallback_rate"
+    },
+    {
+      "id": "doctrine:frozen_per_transaction",
+      "type": "doctrine",
+      "doctrine": "frozen_per_transaction"
+    },
+    {
+      "id": "doctrine:eur_is_pivot",
+      "type": "doctrine",
+      "doctrine": "eur_is_pivot"
+    },
+    {
       "id": "doctrine:projection_only_no_business_authority",
       "type": "doctrine",
       "doctrine": "projection_only_no_business_authority"
@@ -39092,11 +39171,6 @@
       "id": "doctrine:market_encaisse",
       "type": "doctrine",
       "doctrine": "market_encaisse"
-    },
-    {
-      "id": "doctrine:fail_closed",
-      "type": "doctrine",
-      "doctrine": "fail_closed"
     },
     {
       "id": "doctrine:no_country_branch",
@@ -69710,6 +69784,72 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/fx-chain-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "tests/integration/fx-chain-postgres.test.js",
+      "to": "services/fx-chain-service.js",
+      "type": "uses",
+      "label": "tests/integration/fx-chain-postgres.test.js"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "db:fx_rate_observations",
+      "type": "db-read",
+      "label": "fx_rate_observations"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "db:fx_pegs",
+      "type": "db-read",
+      "label": "fx_pegs"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "doctrine:no_fallback_rate",
+      "type": "doctrine",
+      "label": "no_fallback_rate"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "doctrine:frozen_per_transaction",
+      "type": "doctrine",
+      "label": "frozen_per_transaction"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "doctrine:eur_is_pivot",
+      "type": "doctrine",
+      "label": "eur_is_pivot"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
       "from": "services/golden-checkout-thread.js",
       "to": "services/golden-gate-kit",
       "type": "depends",
@@ -84946,6 +85086,12 @@
       "to": "db:wallets",
       "type": "db-read",
       "label": "wallets"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/refund-service.js",
@@ -115267,6 +115413,49 @@
         "utils/logger.js"
       ]
     },
+    "services/fx-chain-service.js": {
+      "role": "fx-chain-service",
+      "domain": "market",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "tests/integration/fx-chain-postgres.test.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "fx_rate_observations",
+        "fx_pegs"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "fail_closed",
+        "no_fallback_rate",
+        "frozen_per_transaction",
+        "eur_is_pivot"
+      ],
+      "impactAreas": [
+        "market",
+        "finance",
+        "checkout"
+      ],
+      "mustCheck": [
+        "db:fx_pegs",
+        "db:fx_rate_observations",
+        "doctrine:eur_is_pivot",
+        "doctrine:fail_closed",
+        "doctrine:frozen_per_transaction",
+        "doctrine:no_fallback_rate",
+        "impact:checkout",
+        "impact:finance",
+        "impact:market"
+      ]
+    },
     "services/golden-checkout-thread.js": {
       "role": "golden-checkout-thread-projection",
       "domain": "admin-dashboard",
@@ -124671,7 +124860,8 @@
       "dbRead": [
         "orders",
         "refunds",
-        "wallets"
+        "wallets",
+        "markets"
       ],
       "dbWrite": [
         "refunds"
@@ -124688,6 +124878,7 @@
         "wallet"
       ],
       "mustCheck": [
+        "db:markets",
         "db:orders",
         "db:refunds",
         "db:wallets",
@@ -136244,6 +136435,18 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "tests/integration/fx-chain-postgres.test.js",
+      "to": "services/fx-chain-service.js",
+      "type": "uses",
+      "label": "tests/integration/fx-chain-postgres.test.js"
     },
     {
       "from": "services/golden-checkout-thread.js",
