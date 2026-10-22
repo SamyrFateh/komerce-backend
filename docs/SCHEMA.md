@@ -690,3 +690,15 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 `market_central_collection_modes` is a new, **not yet live** table proposed by migration 307 (lot 3, stabilisation multi-pays). It states, per Market, which central collection mode (`stripe_eur`, `paypal_eur`) is authorised, with a mandatory `evidence_ref`, the authoriser and an explicit `revoked_at`. Absence of a row means refusal (fail-closed). Backfill: KM only, to preserve current behaviour; CM/CG/DJ receive no authorisation until the owner defines the fund holder. Reader: `services/market-payment-collection-gate.js` (checkout, Stripe intent, PayPal create-order).
 <!-- /schema-pending -->
+
+<!-- schema-pending: fx_rate_observations (migration 311, not yet live) -->
+### Taux EUR→USD observés (migration 311 — intended_migration_schema)
+
+`fx_rate_observations` est une nouvelle table **not yet live** : EUR→USD flottant, sourcé, daté, approuvé par une deuxième personne, append-only, aucune valeur pré-remplie. Lecteur : `services/fx-chain-service.js` (fail-closed `fx_rate_unavailable`). Doctrine : `docs/doctrine/FX_CHAIN_DJF.md`.
+<!-- /schema-pending -->
+
+<!-- schema-pending: fx_pegs (migration 311, not yet live) -->
+### Pegs de change (migration 311 — intended_migration_schema)
+
+`fx_pegs` est une nouvelle table **not yet live** : seul peg admis USD→DJF (Banque centrale de Djibouti), daté, append-only. Lecteur : `services/fx-chain-service.js`.
+<!-- /schema-pending -->
