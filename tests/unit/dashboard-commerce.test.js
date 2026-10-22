@@ -103,6 +103,19 @@ describe('dashboard-commerce', () => {
     expect(commerce.normalizePeriod('x')).toBe(30);
   });
 
+  test('buildPeriodFilters : N jours civils du marché incluant aujourd\'hui, fuseau exposé', () => {
+    const now = new Date('2026-10-17T22:30:00Z');
+    const km = commerce.buildPeriodFilters({ period: '7' }, 'mk', now, { code: 'KM' });
+    expect(km).toMatchObject({ period: 7, timezone: 'Indian/Comoro', timezone_source: 'market' });
+    expect(km.filters.from).toBe('2026-10-11T21:00:00.000Z'); // 12/10 00:00 UTC+3 = 11/10 21:00Z ; 18/10 - 6 j
+    expect(km.filters.to).toBe(now.toISOString());
+    const cm = commerce.buildPeriodFilters({ period: '7' }, 'mc', now, { code: 'CM' });
+    expect(cm.filters.from).toBe('2026-10-10T23:00:00.000Z'); // 11/10 00:00 UTC+1
+    const g = commerce.buildPeriodFilters({ period: '7' }, null, now);
+    expect(g).toMatchObject({ timezone: 'UTC', timezone_source: 'global_utc' });
+    expect(g.filters.from).toBe('2026-10-11T00:00:00.000Z');
+  });
+
   test('projection market-scoped injecte le market_id dans métriques et projette viabilité + disponibilité locale canoniques', async () => {
     const now = new Date('2026-08-24T12:00:00.000Z');
     const market = { id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' };
@@ -114,6 +127,9 @@ describe('dashboard-commerce', () => {
       market: { code: 'CM', name: 'Cameroun', currency: 'XAF' },
     });
     expect(result.period).toBe(30);
+    expect(result.business_timezone).toBe('Africa/Douala');
+    expect(result.period_definition).toMatchObject({ kind: 'civil_days_including_today', days: 30, timezone: 'Africa/Douala' });
+    expect(result.recent_orders[0].business_day).toBe('2026-08-23');
     expect(result.sales_series).toEqual([{ day: '2026-08-20', sales_kmf: 50000, orders: 5 }, { day: '2026-08-22', sales_kmf: 70000, orders: 7 }]);
     expect(result.sales_by_market.map(m => [m.market_code, m.share_pct])).toEqual([['CM', 75], ['CG', 25]]);
     expect(result.recent_orders[0]).toMatchObject({ reference: 'CMD-1', market_code: 'CM', client_name: null, total_kmf: 10000 });
@@ -135,7 +151,7 @@ describe('dashboard-commerce', () => {
     for (const fn of [mockMetrics.getCmdsCreees, mockMetrics.getMargeConsolidee, mockMetrics.getProduitsActifsVendus]) {
       expect(fn).toHaveBeenCalledWith(expect.objectContaining({
         market_id: 'market-cm-id',
-        from: '2026-07-25T12:00:00.000Z',
+        from: '2026-07-25T23:00:00.000Z', // 30 jours civils Douala incl. 24/08 -> 26/07 00:00 (ancien : now-30x24h UTC)
         to: '2026-08-24T12:00:00.000Z',
       }));
     }

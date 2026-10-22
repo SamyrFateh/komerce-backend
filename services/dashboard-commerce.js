@@ -27,6 +27,7 @@ const SIMULATION_VIEW = (query = {}) => (isValidScope(query.simulation_scope)
   : null);
 const { justifiedRealSql, finalMarginReadySql } = require('./cost-allocation/cost-expectation');
 const metrics = require('./dashboard-metrics');
+const { resolveBusinessTimezone, businessDayOf, civilDayPeriodBounds } = require('./market-business-day');
 const pricingMarketCorridor = require('./pricing-market-corridor');
 const localStockDecision = require('./local-stock-decision-projection');
 const {
@@ -61,14 +62,17 @@ function normalizePeriod(value) {
   return ALLOWED_PERIODS.includes(parsed) ? parsed : 30;
 }
 
-function buildPeriodFilters(query = {}, marketId = null, now = new Date()) {
+// Période = N jours civils incluant aujourd'hui, du minuit du marché (UTC en global) à l'instant
+// courant. Ancienne définition : fenêtre glissante now - N×24h (UTC), sans notion de jour civil.
+function buildPeriodFilters(query = {}, marketId = null, now = new Date(), market = null) {
   const period = normalizePeriod(query.period);
-  const to = new Date(now);
-  const from = new Date(to);
-  from.setUTCDate(from.getUTCDate() - period);
+  const { timezone, source } = resolveBusinessTimezone(market);
+  const { from, to } = civilDayPeriodBounds(now, period, timezone);
 
   return {
     period,
+    timezone,
+    timezone_source: source,
     filters: {
       from: from.toISOString(),
       to: to.toISOString(),
@@ -270,18 +274,20 @@ async function getCategoryPerformance(filters) {
 // Séries de lecture du cockpit Commerce — même cohorte payée que getCommercePaidSales
 // (total + wallet, hors annulées/remboursées, date de création de la commande).
 // Aucun jour sans vente n'est inventé à 0 ; les parts sont calculées ici, côté serveur.
-async function getPaidSalesSeries(filters) {
+async function getPaidSalesSeries(filters, timezone = 'UTC') {
   const { where, params } = buildFiltersClause(filters);
+  params.push(timezone);
+  const tz = `$${params.length}::text`;
   const { rows } = await db.query(`
-    SELECT to_char(date_trunc('day', o.created_at), 'YYYY-MM-DD') AS day,
+    SELECT to_char((o.created_at AT TIME ZONE ${tz})::date, 'YYYY-MM-DD') AS day,
            COALESCE(SUM(o.total_kmf + COALESCE(o.wallet_applied_kmf, 0)), 0)::bigint AS sales_kmf,
            COUNT(*)::int AS orders
     FROM orders o
     WHERE ${where}
       AND o.payment_status = 'paid'
       AND o.status NOT IN ('cancelled', 'refunded')
-    GROUP BY date_trunc('day', o.created_at)
-    ORDER BY date_trunc('day', o.created_at) ASC
+    GROUP BY (o.created_at AT TIME ZONE ${tz})::date
+    ORDER BY (o.created_at AT TIME ZONE ${tz})::date ASC
   `, params);
   return rows.map(r => ({ day: r.day, sales_kmf: Number(r.sales_kmf) || 0, orders: Number(r.orders) || 0 }));
 }
@@ -309,7 +315,7 @@ async function getPaidSalesByMarket(filters) {
   }));
 }
 
-async function getRecentOrders(filters, limit = 5) {
+async function getRecentOrders(filters, limit = 5, timezone = 'UTC') {
   const { where, params } = buildFiltersClause(filters);
   const { rows } = await db.query(`
     SELECT o.reference, o.created_at, o.status, o.total_kmf,
@@ -324,6 +330,7 @@ async function getRecentOrders(filters, limit = 5) {
   return rows.map(r => ({
     reference: r.reference,
     created_at: r.created_at instanceof Date ? r.created_at.toISOString() : r.created_at,
+    business_day: businessDayOf(r.created_at, timezone),
     status: r.status,
     total_kmf: r.total_kmf != null ? Number(r.total_kmf) : null,
     market_code: r.market_code || null,
@@ -614,7 +621,7 @@ function publicScope(market) {
 
 async function buildCommerce(query = {}, options = {}) {
   const market = options.market || null;
-  const { period, filters } = buildPeriodFilters(query, market && market.id, options.now || new Date());
+  const { period, filters, timezone, timezone_source: timezoneSource } = buildPeriodFilters(query, market && market.id, options.now || new Date(), market);
 
   const [sales, commandes, marge, produitsActifsVendus, topProducts, productProfitability, categories, funnel, salesSeries, salesByMarket, recentOrders] = await Promise.all([
     getCommercePaidSales(filters),
@@ -625,9 +632,9 @@ async function buildCommerce(query = {}, options = {}) {
     getProductProfitability(filters, { limit: 10 }),
     getCategoryPerformance(filters),
     getOrderFunnel(filters),
-    getPaidSalesSeries(filters),
+    getPaidSalesSeries(filters, timezone),
     getPaidSalesByMarket(filters),
-    getRecentOrders(filters),
+    getRecentOrders(filters, 5, timezone),
   ]);
   const [viability, availability] = await Promise.all([
     getTopProductViability(topProducts, market, {
@@ -658,6 +665,15 @@ async function buildCommerce(query = {}, options = {}) {
     scope: publicScope(market),
     simulation: SIMULATION_VIEW(query),
     period,
+    business_timezone: timezone,
+    period_definition: Object.freeze({
+      kind: 'civil_days_including_today',
+      days: period,
+      timezone,
+      timezone_source: timezoneSource,
+      from: filters.from,
+      to: filters.to,
+    }),
     kpis: Object.freeze([sales.ca, commandes, sales.panier, marge, produitsActifsVendus, quantitySold]),
     top_products: publicTopProducts,
     product_profitability: Object.freeze(productProfitability),
@@ -671,6 +687,8 @@ async function buildCommerce(query = {}, options = {}) {
     recent_orders: Object.freeze(recentOrders),
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),
+      business_timezone: timezone,
+      business_timezone_source: timezoneSource,
       scope_enforced: true,
       scope_mode: market ? 'market' : 'global',
       commercial_sales_basis: 'orders_paid_created_in_period_total_plus_wallet_excluding_cancelled_refunded',
