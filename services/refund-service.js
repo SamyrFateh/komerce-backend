@@ -52,6 +52,22 @@ async function _refreshCanonicalMargin(dbClient, orderId) {
 }
 
 /**
+ * Le wallet est un crédit en KMF. Rembourser une commande d'un Market dont la devise n'est pas le KMF
+ * sur ce wallet mélangerait les devises : refus fail-closed (409), jamais de conversion implicite.
+ * Commande sans market_id (historique pré-Markets) : comportement historique conservé.
+ */
+async function assertWalletRefundCurrency(dbClient, order) {
+  if (!order || !order.market_id) return;
+  const { rows: [market] } = await dbClient.query('SELECT currency FROM markets WHERE id = $1', [order.market_id]);
+  if (!market || String(market.currency).toUpperCase() !== 'KMF') {
+    const err = new Error('Remboursement wallet (KMF) impossible pour une commande d\'un marché dont la devise n\'est pas le KMF.');
+    err.code = 'REFUND_WALLET_CURRENCY_UNSUPPORTED';
+    err.statusCode = 409;
+    throw err;
+  }
+}
+
+/**
  * Traite un remboursement (Stripe ou wallet).
  * Doit être appelé dans une transaction DB existante.
  */
@@ -102,6 +118,7 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
     log.info(`[CANCEL] Stripe refund OK: ${stripeRefundId} — ${amountEur}€ pour ${order.reference}`);
   } else {
     refundMethod = 'wallet_credit';
+    await assertWalletRefundCurrency(dbClient, order);
     const result = await walletService.credit(dbClient, {
       userId:         order.user_id,
       amountKmf,
@@ -204,6 +221,7 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
 
   if (!refundMethod || refundMethod === 'wallet_credit') {
     refundMethod = 'wallet_credit';
+    await assertWalletRefundCurrency(dbClient, order);
     const result = await walletService.credit(dbClient, {
       userId:         order.user_id,
       amountKmf,

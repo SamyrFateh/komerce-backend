@@ -159,6 +159,39 @@ describe('refund-service', () => {
     });
   });
 
+  describe('garde devise du wallet (KMF) par marché', () => {
+    const pendingInsert = { rows: [{ id: 'refund-xaf' }] };
+
+    it('processRefund : commande d\'un marché XAF payée hors Stripe → 409, wallet jamais crédité', async () => {
+      const client = makeClient([pendingInsert, { rows: [{ currency: 'XAF' }] }]);
+      await expect(processRefund(client, makeCashOrder({ market_id: 'm-cm' }), 5000, 7.6, 'cancel', 'x', 'admin-1'))
+        .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNSUPPORTED', statusCode: 409 });
+      expect(walletService.credit).not.toHaveBeenCalled();
+    });
+
+    it('processRefundWithFallback : Stripe en échec sur un marché XAF → pas de repli wallet KMF', async () => {
+      mockStripeRefundsCreate.mockRejectedValueOnce(new Error('stripe down'));
+      const client = makeClient([pendingInsert, { rows: [{ currency: 'XAF' }] }]);
+      await expect(processRefundWithFallback(client, makeStripeOrder({ market_id: 'm-cm' }), 5000, 7.6, 'cancel', 'x', 'admin-1'))
+        .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNSUPPORTED' });
+      expect(walletService.credit).not.toHaveBeenCalled();
+    });
+
+    it('marché inconnu → refus fail-closed', async () => {
+      const client = makeClient([pendingInsert, { rows: [] }]);
+      await expect(processRefund(client, makeCashOrder({ market_id: 'm-ghost' }), 5000, 7.6, 'cancel', 'x', 'admin-1'))
+        .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNSUPPORTED' });
+    });
+
+    it('marché KMF → wallet crédité comme avant', async () => {
+      walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx-1' } });
+      const client = makeClient([pendingInsert, { rows: [{ currency: 'KMF' }] }, { rows: [], rowCount: 1 }]);
+      const r = await processRefund(client, makeCashOrder({ market_id: 'm-km' }), 5000, 7.6, 'cancel', 'x', 'admin-1');
+      expect(r.method).toBe('wallet_credit');
+      expect(walletService.credit).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('processRefund', () => {
     it('credite le wallet directement pour une commande cash', async () => {
       const client = makeClient([
