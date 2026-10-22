@@ -139,11 +139,14 @@ function makeSucceededEvent(overrides = {}) {
     data: {
       object: {
         id:              'pi_test_001',
+        amount:          1000,
+        currency:        'eur',
         receipt_email:   null,
         charges:         { data: [] },
         metadata: {
           order_id:        'order-uuid-001',
           order_reference: 'KOM-001',
+          komerce:         'true',
           ...overrides.metadata,
         },
         ...overrides.intent,
@@ -301,7 +304,7 @@ describe('_handleStripeSucceeded — chemin 4 : cycleResult.noop', () => {
 
     mockDbQuery
       .mockResolvedValueOnce({ rows: [] })                              // stripe_events_processed → vide
-      .mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] }) // SELECT payment_status
+      .mockResolvedValueOnce({ rows: [{ id: 'order-uuid-001', reference: 'KOM-001', total_eur: '10.00', payment_status: 'pending' }] }) // SELECT payment_status
       .mockResolvedValueOnce({ rows: [], rowCount: 0 });                // _markEventProcessed (après COMMIT)
 
     const req = makeWebhookReq(event);
@@ -332,7 +335,7 @@ describe('_handleStripeSucceeded — chemin 5 : cycleResult rejected', () => {
 
     mockDbQuery
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'order-uuid-001', reference: 'KOM-001', total_eur: '10.00', payment_status: 'pending' }] })
       .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // _markEventProcessed
 
     const req = makeWebhookReq(event);
@@ -383,7 +386,7 @@ describe('_handleStripeSucceeded — chemin 6 : stockBlocked', () => {
 
     mockDbQuery
       .mockResolvedValueOnce({ rows: [] })                              // stripe_events_processed
-      .mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] }) // SELECT payment_status
+      .mockResolvedValueOnce({ rows: [{ id: 'order-uuid-001', reference: 'KOM-001', total_eur: '10.00', payment_status: 'pending' }] }) // SELECT payment_status
       // Post-commit SELECT order + user_phone
       .mockResolvedValueOnce({ rows: [{ id: 'order-uuid-001', user_phone: '+26900000000', reference: 'KOM-001' }] })
       .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // éventuels
@@ -440,7 +443,7 @@ describe('_handleStripeSucceeded — chemin 7 : nominal', () => {
     mockDbQuery.mockReset();
     mockDbQuery
       .mockResolvedValueOnce({ rows: [] })                              // stripe_events_processed → vide
-      .mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] }) // SELECT payment_status
+      .mockResolvedValueOnce({ rows: [{ id: 'order-uuid-001', reference: 'KOM-001', total_eur: '10.00', payment_status: 'pending' }] }) // SELECT payment_status
       // Post-commit SELECT order + user_phone
       .mockResolvedValueOnce({ rows: [{ id: 'order-uuid-001', user_phone: '+26900000000', reference: 'KOM-001' }] })
       .mockResolvedValue({ rows: [], rowCount: 0 }); // fallback

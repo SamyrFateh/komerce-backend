@@ -1,4 +1,5 @@
 'use strict';
+const { stripeIntentFieldsForOrder } = require('../helpers/stripeIntentFields');
 
 
 /**
@@ -75,10 +76,8 @@ describeE2E('E2E-P0-REFUND — refunds · non-double application', ({ db }) => {
         object: {
           id: `pi_${tag(label)}`,
           object: 'payment_intent',
-          amount: 10000,
-          currency: 'eur',
+          ...(await stripeIntentFieldsForOrder(db, orderId)),
           status: 'succeeded',
-          metadata: { order_id: orderId },
         },
       },
     });
