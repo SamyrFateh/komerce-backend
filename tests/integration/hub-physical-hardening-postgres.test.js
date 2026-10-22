@@ -34,6 +34,11 @@ const migration234 = fs.readFileSync(
   'utf8'
 );
 
+const migration309 = fs.readFileSync(
+  path.join(__dirname, '../../migrations/309_hub_placement_guard_exclude_outcomes.sql'),
+  'utf8'
+);
+
 function id() { return crypto.randomUUID(); }
 
 async function clientInSchema() {
@@ -190,6 +195,7 @@ beforeAll(async () => {
     `);
     await client.query(migration233);
     await client.query(migration234);
+    await client.query(migration309);
     for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
     }
@@ -365,5 +371,62 @@ describe('HUB-001 hardening — quarantaine gouvernée F2/F3', () => {
       "UPDATE hub_physical_units SET state='RECEIVED' WHERE id=$1",
       [inbound.unit.id]
     )).rejects.toThrow(/hub_destructive_outcome_quarantine_terminal/);
+  });
+
+  test('lot 6 (C2) : un remplacement arrivé avant la déclaration de perte sort de quarantaine après la perte', async () => {
+    const purchase = await seedPurchase();
+    const original = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'IN-REVAL-ORIGINAL',
+      contents: [{ purchase_order_id: purchase.po, quantity: 1 }],
+    }));
+    const early = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'IN-REVAL-EARLY',
+      contents: [{ purchase_order_id: purchase.po, quantity: 1 }],
+    }));
+    expect(early).toMatchObject({ quarantined: true, reason_code: 'HUB_ALLOCATION_OVERRECEIVED' });
+
+    await transact((client) => recordPhysicalUnitOutcome(client, { unitId: original.unit.id, outcomeType: 'LOST' }));
+
+    const result = await transact((client) => revalidateQuarantinedInbound(client, {
+      unitId: early.unit.id,
+      incidentId: early.incident.id,
+      notes: 'Perte de l\u2019unité d\u2019origine déclarée',
+    }));
+    expect(result.resolved).toBe(true);
+    expect(result.unit.state).toBe('RECEIVED');
+  });
+
+  test('lot 6 (C2) : une unité perdue ne compte plus comme reçue, son remplacement n\u2019est pas mis en quarantaine', async () => {
+    const purchase = await seedPurchase();
+    const first = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'IN-LOST-ORIGINAL',
+      contents: [{ purchase_order_id: purchase.po, quantity: 1 }],
+    }));
+    expect(first.quarantined).toBeFalsy();
+
+    // Sans perte déclarée, une seconde réception de la même quantité reste un sur-reçu (garde inchangée).
+    const over = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'IN-LOST-OVER',
+      contents: [{ purchase_order_id: purchase.po, quantity: 1 }],
+    }));
+    expect(over).toMatchObject({ quarantined: true, reason_code: 'HUB_ALLOCATION_OVERRECEIVED' });
+
+    await transact((client) => recordPhysicalUnitOutcome(client, { unitId: first.unit.id, outcomeType: 'LOST' }));
+
+    const replacement = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'IN-LOST-REPLACEMENT',
+      contents: [{ purchase_order_id: purchase.po, quantity: 1 }],
+    }));
+    expect(replacement.quarantined).toBeFalsy();
+    expect(replacement.unit.state).not.toBe('QUARANTINED');
+
+    // Seule la matière utilisable est comptée (même définition que v_purchase_line_progress, migration 306).
+    const { rows: [usable] } = await query(
+      `SELECT COALESCE(SUM(p.quantity), 0)::integer AS usable
+         FROM hub_physical_unit_placements p
+         JOIN hub_physical_units u ON u.id = p.physical_unit_id
+        WHERE p.removed_at IS NULL AND u.outcome_type IS NULL AND u.state NOT IN ('QUARANTINED', 'SUPERSEDED')`
+    );
+    expect(usable.usable).toBe(1);
   });
 });

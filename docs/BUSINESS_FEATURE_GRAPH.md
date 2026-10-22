@@ -381,7 +381,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Faire transiter un colis du scan initial au retrait final, avec tracking client et transporteur.
 
 - middleware: 1
-- migrations: 3
+- migrations: 4
 - docs: 6
 - utils: 3
 - services: 34

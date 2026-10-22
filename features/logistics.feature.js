@@ -76,6 +76,7 @@ module.exports = {
       'migrations/095_value_density_foundation.sql',
       'migrations/096_quality_foundation.sql',
       'migrations/233_hub_physical_identity_allocation_custody.sql',
+      'migrations/309_hub_placement_guard_exclude_outcomes.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',

@@ -12331,6 +12331,13 @@
       },
       {
         "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
+        "resolvedPath": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
         "category": "docs",
         "declared": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
         "resolvedPath": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
