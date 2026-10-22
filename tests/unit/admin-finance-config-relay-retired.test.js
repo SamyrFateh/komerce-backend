@@ -15,6 +15,7 @@ jest.mock('../../middleware/auth', () => ({
   authenticate: (req, _res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
   requireAdmin: (_req, _res, next) => next(),
 }));
+jest.mock('../../services/fx-observation-service', () => ({}));
 jest.mock('../../services/loyalty-service', () => ({ invalidateConfigCache: jest.fn() }));
 jest.mock('../../utils/logger', () => ({ forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }) }));
 jest.mock('../../utils/rates', () => ({

@@ -57,52 +57,11 @@ describe('pricing-rates', () => {
   });
 
   describe('updateRates', () => {
-    it('met à jour finance_config + insère exchange_rates + invalide le cache', async () => {
-      const client = makeClient([
-        { rows: [], rowCount: 1 }, // UPDATE finance_config
-        { rows: [], rowCount: 1 }, // INSERT exchange_rates
-      ]);
-      db.getClient.mockResolvedValue(client);
-
-      const result = await updateRates({ eur_kmf: 510, aed_kmf: 142 }, 'user-admin-1');
-
-      expect(result).toEqual({
-        message: 'Taux mis à jour dans finance_config + log historique',
-        rate: { eur_kmf: 510, aed_kmf: 142 },
+    it("retiré : refus 410 fx_rate_editor_retired, aucune écriture", async () => {
+      await expect(updateRates({ eur_kmf: 510, aed_kmf: 142 }, 'user-admin-1')).rejects.toMatchObject({
+        code: 'fx_rate_editor_retired', statusCode: 410,
       });
-      expectTransactionCommitted(client);
-      expect(mockInvalidateCache).toHaveBeenCalledTimes(1);
-
-      // Vérifie les paramètres passés aux requêtes
-      const updateCall = client.calls.find(c => /UPDATE finance_config/.test(c.sql));
-      expect(updateCall.params).toEqual([510, 142, 'user-admin-1']);
-
-      const insertCall = client.calls.find(c => /INSERT INTO exchange_rates/.test(c.sql));
-      expect(insertCall.params).toEqual([510, 142]);
-    });
-
-    it('userId absent → updated_by NULL', async () => {
-      const client = makeClient([
-        { rows: [], rowCount: 1 },
-        { rows: [], rowCount: 1 },
-      ]);
-      db.getClient.mockResolvedValue(client);
-
-      await updateRates({ eur_kmf: 500, aed_kmf: 140 }, undefined);
-
-      const updateCall = client.calls.find(c => /UPDATE finance_config/.test(c.sql));
-      expect(updateCall.params).toEqual([500, 140, null]);
-    });
-
-    it("rollback + propage l'erreur si la transaction échoue", async () => {
-      const client = makeClient([
-        { error: new Error('db down') }, // UPDATE finance_config échoue
-      ]);
-      db.getClient.mockResolvedValue(client);
-
-      await expect(updateRates({ eur_kmf: 500, aed_kmf: 140 }, 'user-1')).rejects.toThrow('db down');
-
-      expectTransactionRolledBack(client);
+      expect(db.getClient).not.toHaveBeenCalled();
       expect(mockInvalidateCache).not.toHaveBeenCalled();
     });
   });

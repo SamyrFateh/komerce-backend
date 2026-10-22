@@ -5,7 +5,10 @@
  * @test-runner jest
  * @test-requires none
  */
+const mockConvert = jest.fn();
+jest.mock('../../services/fx-authority', () => ({ convert: (...a) => mockConvert(...a) }));
 const { getPricingParameterStatus } = require('../../services/pricing-parameters-status');
+beforeEach(() => mockConvert.mockReset().mockRejectedValue(new Error('aucune observation EUR/USD approuvée')));
 
 function mkDb({ fc, parities, fx, rel }) {
   return { query: jest.fn(async (sql) => {
@@ -22,25 +25,27 @@ const PAR = [
   { currency: 'XAF', eur_rate: '655.957', source_note: 'CEMAC' },
 ];
 
-test('défauts du schéma : AED et commission non validés, EUR divergent de la parité documentée', async () => {
+test("EUR/KMF = parité fixe de l'autorité ; AED sans observation approuvée : manquant, jamais 138", async () => {
   const r = await getPricingParameterStatus(mkDb({
-    fc: { taux_change_eur_kmf: '491.96', taux_aed_kmf: '138.00', commission_relais_standard_kmf: 500, updated_by: null },
+    fc: { commission_relais_standard_kmf: 500, updated_by: null },
     parities: PAR, rel: { default_value: '500', updated_by: null },
   }));
-  expect(by(r, 'eur_kmf').status).toBe('divergent');
-  expect(by(r, 'aed_kmf').status).toBe('default_unvalidated');
+  expect(by(r, 'eur_kmf')).toMatchObject({ status: 'documented', value: 491.96775 });
+  expect(by(r, 'aed_kmf')).toMatchObject({ status: 'missing', value: null });
+  expect(by(r, 'aed_kmf').consequence).toMatch(/refusés \(503\)/);
   expect(by(r, 'relay_commission_kmf').status).toBe('default_unvalidated');
   expect(by(r, 'xaf_parity').status).toBe('documented');
   expect(r.has_unvalidated).toBe(true);
   r.items.forEach(i => { expect(i.usage).toBeTruthy(); expect(i.consequence).toBeTruthy(); expect(i.config.role).toBe('admin'); });
 });
 
-test('AED saisi par un opérateur et présent au journal : saisi, source non vérifiée', async () => {
+test("AED avec observation approuvée : valeur de l'autorité (documentée)", async () => {
+  mockConvert.mockReset().mockResolvedValue({ amount: 134.5 });
   const r = await getPricingParameterStatus(mkDb({
-    fc: { taux_change_eur_kmf: '491.96775', taux_aed_kmf: '140.00', commission_relais_standard_kmf: 500, updated_by: 'u1' },
-    parities: PAR, fx: { aed_kmf: '140.00', valid_from: '2026-10-01' }, rel: { default_value: '600', updated_by: 'u1' },
+    fc: { commission_relais_standard_kmf: 500, updated_by: 'u1' },
+    parities: PAR, rel: { default_value: '600', updated_by: 'u1' },
   }));
-  expect(by(r, 'aed_kmf').status).toBe('operator_set');
+  expect(by(r, 'aed_kmf')).toMatchObject({ status: 'documented', value: 134.5 });
   expect(by(r, 'eur_kmf').status).toBe('documented');
   expect(by(r, 'relay_commission_kmf').status).toBe('operator_set');
 });
