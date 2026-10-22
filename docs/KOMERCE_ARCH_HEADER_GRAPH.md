@@ -30,9 +30,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 7
 - auth-passkey: 7
 - bootstrap: 2
-- boutique: 22
+- boutique: 21
 - business-rules: 1
-- catalog: 129
+- catalog: 130
 - checkout: 3
 - customs: 8
 - dashboard: 30

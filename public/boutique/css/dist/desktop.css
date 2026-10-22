@@ -402,6 +402,12 @@
     display: inline-flex;
     align-items: center;
   }
+  .k-sec-subchip-object {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 3px var(--border-text-06)) saturate(1.02) contrast(1.04);
+  }
 
   .k-sec-subchip-all:not(.active) {
     color: var(--text-muted);
@@ -1227,9 +1233,7 @@
 }
 
 @media (min-width: 1200px) {
-  .k-side-cart {
-    width: var(--sc-reserve-w, 296px);
-  }
+  /* .k-side-cart width : responsive-desktop-matrix.css (--sc-reserve-w). */
   /* Le panneau reparenté doit rester à 100% de .k-modal-cart-slot (largeur
      pilotée par la grille de la coque, modal-shell.css), pas à largeur fixe —
      sans cette override, la règle .k-side-cart de ce bloc gagnerait par ordre
@@ -2330,7 +2334,10 @@
 
   .k-grid,
   .k-sec-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    /* auto-fill conserve les pistes vides : avec 1 ou 2 produits, les cartes
+       gardent le module catalogue standard au lieu de s'étirer sur toute la
+       largeur disponible. */
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: clamp(14px, 1vw, 18px);
   }
 }

@@ -152,6 +152,13 @@ describe('b-cart', () => {
   });
 
   describe('addToCart', () => {
+    it('refuse fail-closed un produit purchasable:false (aucun prix local actif)', () => {
+      const line = addToCart(makeProduct({ purchasable: false }));
+      expect(line).toBeUndefined();
+      expect(state.cart).toHaveLength(0);
+      expect(saveCart).not.toHaveBeenCalled();
+    });
+
     it("ajoute un nouvel article au panier avec qty par défaut = 1", () => {
       const product = makeProduct();
       const line = addToCart(product);

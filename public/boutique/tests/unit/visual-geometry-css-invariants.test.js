@@ -337,7 +337,8 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(desktop).toMatch(/:root\s*\{\s*--sc-reserve-w:\s*296px/);
       expect(desktop).toMatch(/body:where\(:has\(\.k-side-cart\.has-items\)\),\s*body\.sc-reserve\s*\{[^}]*padding-right:\s*var\(--sc-reserve-w\)/s);
       expect(desktop).toMatch(/\.k-side-cart\s*\{[^}]*width:\s*296px/s);
-      expect(desktop).toMatch(/@media\s*\(min-width:\s*1200px\)[\s\S]*?\.k-side-cart\s*\{[^}]*width:\s*var\(--sc-reserve-w,\s*296px\)/);
+      // Largeur ≥1200px : portée par la matrice responsive (une seule source), pas par boutique-desktop.css.
+      expect(readCss('responsive-desktop-matrix.css')).toMatch(/\.k-side-cart\s*\{[^}]*width:\s*var\(--sc-reserve-w\)/s);
       expect(desktop).toMatch(/body\.modal-open,\s*body\.cart-open\s*\{[^}]*padding-right:\s*0/s);
     });
 

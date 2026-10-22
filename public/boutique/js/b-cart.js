@@ -240,6 +240,11 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
  * @param {Object} [opts] - { fromModal, qty }
  */
   function addToCart(product, qty, sourceBtn, options) {
+  // Fail-closed marché : le serveur marque purchasable:false sans prix local actif.
+  if (product && product.purchasable === false) {
+    showToast('Produit non disponible dans votre pays', 'error');
+    return;
+  }
   qty = qty || 1;
   options = options || {};
 

@@ -363,7 +363,7 @@ export function getLegacySubcatsMap() {
 }
 
 export const SHOP_SCHEMA = {
-  brand: { name: 'Komerce', tagline: 'Qui cherche bien trouve bien !', heroImage: '/images/hero_banner.png' },
+  brand: { name: 'Komerce', tagline: 'Qui cherche bien trouve bien !', heroImage: '/images/komerce_hero_catalog_canonical_v4.webp' },
   nav: [
     { k: 'home', label: 'Accueil', icon: 'home' },
     { k: 'tracking', label: 'Suivi', icon: 'map-pin' },

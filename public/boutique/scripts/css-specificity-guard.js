@@ -196,6 +196,19 @@ function stripGlobalClass(selector, className) {
   return out || null;
 }
 
+/* Deux @media sont disjoints (jamais actifs ensemble) quand l'un borne
+   max-width sous le min-width de l'autre : aucun override possible. */
+function widthRange(media) {
+  const mn = /\(min-width:\s*(\d+(?:\.\d+)?)px\)/.exec(media || '');
+  const mx = /\(max-width:\s*(\d+(?:\.\d+)?)px\)/.exec(media || '');
+  return { min: mn ? Number(mn[1]) : 0, max: mx ? Number(mx[1]) : Infinity };
+}
+function mediaDisjoint(a, b) {
+  if (a === b) return false;
+  const x = widthRange(a); const y = widthRange(b);
+  return x.max < y.min || y.max < x.min;
+}
+
 /* ── Scan principal ──────────────────────────────────────────────────── */
 
 function scan(globalClasses) {
@@ -227,6 +240,7 @@ function scan(globalClasses) {
     if (cmpSpecificity(specGlobal, specBase) <= 0) continue; // pas d'override garanti
 
     for (const baseRule of bySelector[baseSelector]) {
+      if (mediaDisjoint(r.media, baseRule.media)) continue;
       const sharedProps = Object.keys(r.props).filter(p => p in baseRule.props);
       for (const prop of sharedProps) {
         if (r.props[prop] === baseRule.props[prop]) continue;

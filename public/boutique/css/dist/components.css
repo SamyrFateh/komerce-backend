@@ -2018,13 +2018,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 }
 
-@media (min-width: 1200px) {
-  .k-grid,
-  .k-sec-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-}
 
 
 /* ── Pager mobile : #k-grid = rail horizontal, .k-cat-section = pages ── */
@@ -2287,7 +2280,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     padding-inline: 12px;
   }
   html.k-mobile-premium-v1 .k-card {
-    border-radius: 22px;
     overflow: hidden;
     box-shadow: 0 12px 30px var(--border-text-06);
   }
@@ -2300,10 +2292,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     line-height: 1.25;
     max-height: 2.5em;
     overflow: hidden;
-  }
-  html.k-mobile-premium-v1 .k-card-price {
-    font-size: 22px;
-    letter-spacing: -.035em;
   }
   html.k-mobile-premium-v1 .k-wa-fab {
     width: 50px;
@@ -2622,8 +2610,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   overflow: hidden;
   border: 1px solid var(--action-commerce-border);
   border-radius: 999px;
-  background: var(--action-commerce);
-  box-shadow: var(--action-commerce-shadow);
 }
 
 .k-discovery-canonical-cta {

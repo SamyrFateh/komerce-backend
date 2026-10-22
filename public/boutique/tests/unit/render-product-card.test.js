@@ -152,3 +152,25 @@ describe('renderAddControl — compatibilité', () => {
     expect(renderAddControl('1', 2, 'Chaise', 'grid')).toContain('k-add-qty');
   });
 });
+
+describe('renderProductCard — purchasable:false (aucun prix local actif)', () => {
+  it('grille : pas de CTA ni de data-add, bloc « Indisponible ici »', () => {
+    buildProductCardViewModel.mockReturnValue(baseVm({ purchasable: false, priceLabel: 'Non disponible dans votre pays' }));
+    const html = renderProductCard({ id: 1 });
+    expect(html).toContain('k-card-unavailable');
+    expect(html).not.toContain('data-add=');
+    expect(html).not.toContain('k-card-add-trigger');
+  });
+  it('suggestion : même fail-closed', () => {
+    buildProductCardViewModel.mockReturnValue(baseVm({ purchasable: false }));
+    const html = renderProductCard({ id: 1 }, { variant: 'suggestion' });
+    expect(html).toContain('k-card-unavailable');
+    expect(html).not.toContain('data-add=');
+  });
+  it('purchasable:true ou absent : CTA présent', () => {
+    buildProductCardViewModel.mockReturnValue(baseVm({ purchasable: true }));
+    expect(renderProductCard({ id: 1 })).toContain('data-add="1"');
+    buildProductCardViewModel.mockReturnValue(baseVm());
+    expect(renderProductCard({ id: 1 })).toContain('data-add="1"');
+  });
+});

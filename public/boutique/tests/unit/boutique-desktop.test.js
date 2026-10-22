@@ -27,3 +27,10 @@ describe('boutique desktop — surface du side cart', () => {
     );
   });
 });
+
+describe('lot 2 — cascade CSS sans déclaration morte (boutique-desktop.css)', () => {
+  test('la déclaration surchargée à l\u2019identique plus loin dans la cascade a été retirée', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'css', 'boutique-desktop.css'), 'utf8');
+    expect(css).not.toMatch(/width:\s*var\(--sc-reserve-w, 296px\)/);
+  });
+});

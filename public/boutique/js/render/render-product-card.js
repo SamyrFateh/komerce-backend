@@ -133,9 +133,11 @@ function renderGridCard(product, cartSummary) {
             ${vm.priceEurLabel ? `<span class="k-card-price-eur">${vm.priceEurLabel}</span>` : ''}
             ${vm.oldPriceLabel ? `<span class="k-card-old-price">${vm.oldPriceLabel}</span>` : ''}
           </div>
-          <div class="k-card-add${canAdjust ? ' in-cart' : ''}${hasQty && !canAdjust ? ' has-multiple-lines' : ''}" data-add="${vm.id}" data-has-variants="${vm.hasVariants ? '1' : '0'}" data-cart-lines="${cartSummary.lineCount}" role="group" aria-label="Quantité de ${vm.safeName}">
+          ${vm.purchasable !== false
+            ? `<div class="k-card-add${canAdjust ? ' in-cart' : ''}${hasQty && !canAdjust ? ' has-multiple-lines' : ''}" data-add="${vm.id}" data-has-variants="${vm.hasVariants ? '1' : '0'}" data-cart-lines="${cartSummary.lineCount}" role="group" aria-label="Quantité de ${vm.safeName}">
             ${renderAddControl(vm.id, cartSummary, vm.safeName, 'grid')}
-          </div>
+          </div>`
+            : `<div class="k-card-unavailable" data-unavailable="${vm.id}" role="note" aria-disabled="true" style="font-size:12px;opacity:.7;align-self:center">Indisponible ici</div>`}
         </div>
       </div>
     </div>`;
@@ -165,9 +167,11 @@ function renderSuggestionCard(product, cartSummary, actionVariant) {
       ${reasonHtml}
       <div class="k-sug-card-bottom">
         <div class="k-sug-card-price">${vm.priceLabel}</div>
-        <div class="k-sug-card-actions${canAdjust ? ' is-filled' : ''}${hasQty && !canAdjust ? ' has-multiple-lines' : ''}" data-add="${vm.id}" data-has-variants="${vm.hasVariants ? '1' : '0'}" data-cart-lines="${cartSummary.lineCount}" role="group" aria-label="Quantité de ${vm.safeName}">
+        ${vm.purchasable !== false
+          ? `<div class="k-sug-card-actions${canAdjust ? ' is-filled' : ''}${hasQty && !canAdjust ? ' has-multiple-lines' : ''}" data-add="${vm.id}" data-has-variants="${vm.hasVariants ? '1' : '0'}" data-cart-lines="${cartSummary.lineCount}" role="group" aria-label="Quantité de ${vm.safeName}">
           ${renderAddControl(vm.id, cartSummary, vm.safeName, controlVariant)}
-        </div>
+        </div>`
+          : `<div class="k-card-unavailable" data-unavailable="${vm.id}" role="note" aria-disabled="true" style="font-size:12px;opacity:.7;align-self:center">Indisponible ici</div>`}
       </div>
     </div>`;
 }

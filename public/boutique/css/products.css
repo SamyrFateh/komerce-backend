@@ -618,13 +618,6 @@
   }
 }
 
-@media (min-width: 1200px) {
-  .k-grid,
-  .k-sec-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-}
 
 
 /* ── Pager mobile : #k-grid = rail horizontal, .k-cat-section = pages ── */
@@ -887,7 +880,6 @@
     padding-inline: 12px;
   }
   html.k-mobile-premium-v1 .k-card {
-    border-radius: 22px;
     overflow: hidden;
     box-shadow: 0 12px 30px var(--border-text-06);
   }
@@ -900,10 +892,6 @@
     line-height: 1.25;
     max-height: 2.5em;
     overflow: hidden;
-  }
-  html.k-mobile-premium-v1 .k-card-price {
-    font-size: 22px;
-    letter-spacing: -.035em;
   }
   html.k-mobile-premium-v1 .k-wa-fab {
     width: 50px;

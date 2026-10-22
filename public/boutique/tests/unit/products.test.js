@@ -27,3 +27,10 @@ describe('products — hiérarchie des surfaces', () => {
     expect(css).not.toMatch(/\.spike-shell-vertical/);
   });
 });
+
+describe('lot 2 — cascade CSS sans déclaration morte (products.css)', () => {
+  test('la déclaration surchargée à l\u2019identique plus loin dans la cascade a été retirée', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'css', 'products.css'), 'utf8');
+    expect(css).not.toMatch(/html\.k-mobile-premium-v1 \.k-card-price \{\s*font-size: 22px/);
+  });
+});

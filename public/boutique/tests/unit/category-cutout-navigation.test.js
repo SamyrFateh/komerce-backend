@@ -82,7 +82,7 @@ describe('Komerce Shelf category navigation contract', () => {
   it('porte les huit cutouts HD dans le registre visuel unique', () => {
     expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MODE = '/boutique/categories/komerce-showcase-v1-mode.webp?v=3'");
     expect(visuals).toContain("all: '/boutique/categories/cat-all-v3.webp?v=1'");
-    expect(visuals).toContain("soldes: '/boutique/categories/cat-soldes-v3.webp?v=1'");
+    expect(visuals).toContain("soldes: '/boutique/categories/cat-soldes-badge-v2.svg?v=1'");
     expect(visuals).toContain("mode: '/boutique/categories/cat-mode-v3.webp?v=1'");
     expect(visuals).toContain("maison: '/boutique/categories/cat-maison-v3.webp?v=1'");
     expect(visuals).toContain("tech: '/boutique/categories/cat-tech-v3.webp?v=1'");

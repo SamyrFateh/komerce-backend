@@ -1,0 +1,74 @@
+{
+  "savedAt": "2026-10-22T08:38:40.623Z",
+  "totalAccepted": 12,
+  "accepted": [
+    {
+      "name": "brace-expansion",
+      "severity": "high",
+      "range": "<=1.1.20 || 2.0.0 - 2.1.6"
+    },
+    {
+      "name": "braces",
+      "severity": "high",
+      "range": "*"
+    },
+    {
+      "name": "compression",
+      "severity": "high",
+      "range": "<1.8.2"
+    },
+    {
+      "name": "fast-glob",
+      "severity": "high",
+      "range": "*"
+    },
+    {
+      "name": "fast-uri",
+      "severity": "high",
+      "range": "3.0.0 - 3.1.7"
+    },
+    {
+      "name": "globby",
+      "severity": "high",
+      "range": ">=8.0.0"
+    },
+    {
+      "name": "micromatch",
+      "severity": "high",
+      "range": ">=0.2.0"
+    },
+    {
+      "name": "serve",
+      "severity": "high",
+      "range": ">=10.1.0"
+    },
+    {
+      "name": "source-map-js",
+      "severity": "high",
+      "range": "1.0.0 - 1.2.1"
+    },
+    {
+      "name": "stylelint",
+      "severity": "high",
+      "range": ">=7.7.1"
+    },
+    {
+      "name": "stylelint-config-recommended",
+      "severity": "high",
+      "range": "*"
+    },
+    {
+      "name": "stylelint-config-standard",
+      "severity": "high",
+      "range": ">=16.0.0"
+    }
+  ],
+  "metadata": {
+    "info": 0,
+    "low": 0,
+    "moderate": 21,
+    "high": 12,
+    "critical": 0,
+    "total": 33
+  }
+}

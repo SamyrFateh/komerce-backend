@@ -23,3 +23,10 @@ describe('layout — hiérarchie des surfaces', () => {
     );
   });
 });
+
+describe('lot 2 — cascade CSS sans déclaration morte (layout.css)', () => {
+  test('la déclaration surchargée à l\u2019identique plus loin dans la cascade a été retirée', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'css', 'layout.css'), 'utf8');
+    expect(css).not.toMatch(/\.k-header \{ padding-right: 28px; \}/);
+  });
+});
