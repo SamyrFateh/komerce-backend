@@ -18951,7 +18951,7 @@
               {
                 "declared": "services/fx-chain-service.js",
                 "resolvedPath": "services/fx-chain-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/market-lifecycle-service.js",

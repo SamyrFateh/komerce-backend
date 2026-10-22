@@ -13412,7 +13412,7 @@
         "category": "services",
         "declared": "services/fx-chain-service.js",
         "resolvedPath": "services/fx-chain-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "market",
@@ -49584,8 +49584,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 638,
-        "technicalNodesOwned": 638,
+        "technicalNodesTotal": 639,
+        "technicalNodesOwned": 639,
         "technicalOrphans": 0
       },
       "dash": {
