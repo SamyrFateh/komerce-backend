@@ -38,7 +38,7 @@ const db      = require('../db');
 const log     = require('../utils/logger').forModule('admin-finance-config');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { invalidateConfigCache } = require('../services/loyalty-service');
-const { resolveFxRates, resolvePricingViewCurrentCompatRates } = require('../utils/rates');
+const { getRates } = require('../utils/rates');
 
 const adminOnly = [authenticate, requireAdmin];
 
@@ -114,10 +114,10 @@ router.get('/', adminOnly, async (req, res, next) => {
     if (!cfg) {
       await db.query('INSERT INTO finance_config (id) VALUES (1) ON CONFLICT DO NOTHING');
       const { rows: [cfg2] } = await db.query('SELECT * FROM finance_config WHERE id = 1');
-      return res.json(formatConfig(cfg2));
+      return res.json(await formatConfig(cfg2));
     }
 
-    res.json(formatConfig(cfg));
+    res.json(await formatConfig(cfg));
   } catch (err) { next(err); }
 });
 
@@ -192,26 +192,25 @@ router.put('/', adminOnly, async (req, res, next) => {
     } catch(_) {}
 
     // Si les taux ont changé : log historique dans exchange_rates
-    if (updates.taux_change_eur_kmf !== undefined || updates.taux_aed_kmf !== undefined) {
+    // Aucun repli 492/138 : sans deux taux saisis valides, rien n'est journalisé (PR-D retire cette écriture).
+    if ((updates.taux_change_eur_kmf !== undefined || updates.taux_aed_kmf !== undefined)
+        && Number(updated.taux_change_eur_kmf) > 0 && Number(updated.taux_aed_kmf) > 0) {
       try {
         await db.query(
           'INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from) VALUES ($1, $2, CURRENT_DATE)',
-          [
-            Number(updated.taux_change_eur_kmf) || 492,
-            Number(updated.taux_aed_kmf) || 138,
-          ]
+          [Number(updated.taux_change_eur_kmf), Number(updated.taux_aed_kmf)]
         );
       } catch(_) { /* historique non bloquant */ }
     }
 
     log.info({ updated_by: req.user.id, fields: Object.keys(updates) }, 'Finance config updated');
 
-    res.json(formatConfig(updated));
+    res.json(await formatConfig(updated));
   } catch (err) { next(err); }
 });
 
 // ── Formatter la réponse avec calculs dérivés ────────────────────────────────
-function formatConfig(cfg) {
+async function formatConfig(cfg) {
   if (!cfg) return null;
 
   const totalFixedCost =
@@ -226,7 +225,8 @@ function formatConfig(cfg) {
     ? Math.round(totalFixedCost / (margePct / 100))
     : 0;
 
-  const tauxChange = Number(cfg.taux_change_eur_kmf || 491.96);
+  const authorityRates = await getRates();
+  const tauxChange = authorityRates.eur_kmf; // parité fixe EUR/KMF (currency_parities), pas finance_config
   const coutAchatMoyen = Number(cfg.cout_achat_moyen_eur || 5);
   const markupPct = Number(cfg.markup_cible_pct || 250);
 
@@ -240,8 +240,7 @@ function formatConfig(cfg) {
   // Objectif mensuel
   const objCommandes = Number(cfg.objectif_commandes_mois || 100);
   const objCA = Number(cfg.objectif_ca_mensuel_kmf || 1500000);
-  const currentFx = resolveFxRates(cfg);
-  const pricingViewCurrentCompatFx = resolvePricingViewCurrentCompatRates();
+  const currentFx = authorityRates.toJSON();
 
   return {
     // Valeurs brutes (variabilisables)
@@ -262,8 +261,8 @@ function formatConfig(cfg) {
     },
     fx: {
       current: currentFx,
-      pricing_view_current_compat: pricingViewCurrentCompatFx,
-      usd_nature: 'DERIVED_CURRENT',
+      pricing_view_current_compat: null,
+      usd_nature: 'APPROVED_OBSERVATION',
     },
     sourcing: {
       taux_change_eur_kmf:  tauxChange,

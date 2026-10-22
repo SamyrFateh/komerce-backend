@@ -14,7 +14,7 @@
  * capacités, import, capture, certification) tourne contre Postgres.
  */
 
-const { describeE2E } = require('../helpers/e2eDbKit');
+const { describeE2E, seedApprovedEurUsdObservationForTest } = require('../helpers/e2eDbKit');
 
 jest.mock('../../services/suppliers/connectors/cj-connector', () => {
   const state = { counter: 0, products: [] };
@@ -69,6 +69,7 @@ describeE2E('Registre des sources — création → certification → activation
   let cj;
 
   beforeAll(async () => {
+    await seedApprovedEurUsdObservationForTest(db); // fixture : prix CJ en USD, conversion via l'autorité FX
     workspace = require('../../services/sourcing-workspace');
     autopilot = require('../../services/sourcing-source-autopilot');
     cj = require('../../services/suppliers/connectors/cj-connector');

@@ -335,7 +335,7 @@ router.get('/report', ...adminOnly, async (req, res, next) => {
     doc.fillColor(bleu).fontSize(13).font('Helvetica-Bold').text('Taux de change utilisés');
     doc.moveDown(0.4);
     doc.font('Helvetica').fontSize(9).fillColor('#333');
-    doc.text(`1 EUR = ${rates.eur_kmf} KMF  ·  1 AED = ${rates.aed_kmf} KMF`, { indent: 10 });
+    doc.text(`1 EUR = ${rates.eur_kmf} KMF  ·  1 AED = ${rates.toJSON().aed_kmf ?? 'n/d (aucune observation approuvée)'} KMF`, { indent: 10 });
     doc.moveDown();
 
     // ── Pied de page ──────────────────────────────────────────────────────────

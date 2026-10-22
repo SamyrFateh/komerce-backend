@@ -40,6 +40,7 @@ jest.mock('../../middleware/auth', () => ({
 }));
 
 const mockGetRates = jest.fn();
+const fxj = (o) => ({ ...o, toJSON: () => o });
 jest.mock('../../utils/rates', () => ({ getRates: (...args) => mockGetRates(...args) }));
 
 const mockRetrieveIntent = jest.fn();
@@ -191,7 +192,7 @@ describe('routes/finance', () => {
         payment_method: 'pm_123',
       });
       mockRetrievePM.mockResolvedValueOnce({ card: { last4: '4242' } });
-      mockGetRates.mockResolvedValueOnce({ eur_kmf: 492, aed_kmf: 138 });
+      mockGetRates.mockResolvedValueOnce(fxj({ eur_kmf: 492, aed_kmf: 138 }));
 
       const res = await request(buildApp()).get('/api/finance/stripe-proofs').query({ month: 3, year: 2026 });
 
@@ -216,7 +217,7 @@ describe('routes/finance', () => {
         }],
       });
       mockRetrieveIntent.mockRejectedValueOnce(new Error('No such payment_intent'));
-      mockGetRates.mockResolvedValueOnce({ eur_kmf: 492, aed_kmf: 138 });
+      mockGetRates.mockResolvedValueOnce(fxj({ eur_kmf: 492, aed_kmf: 138 }));
 
       const res = await request(buildApp()).get('/api/finance/stripe-proofs').query({ month: 3, year: 2026 });
 
@@ -236,7 +237,7 @@ describe('routes/finance', () => {
           created_at: '2026-03-10T00:00:00Z', client_name: 'X', client_email: 'x@example.com',
         }],
       });
-      mockGetRates.mockResolvedValueOnce({ eur_kmf: 492, aed_kmf: 138 });
+      mockGetRates.mockResolvedValueOnce(fxj({ eur_kmf: 492, aed_kmf: 138 }));
 
       const res = await request(buildApp()).get('/api/finance/stripe-proofs').query({ month: 3, year: 2026 });
 
@@ -250,7 +251,7 @@ describe('routes/finance', () => {
 
   describe('GET /report', () => {
     test('génère un PDF avec les en-têtes corrects', async () => {
-      mockGetRates.mockResolvedValueOnce({ eur_kmf: 492, aed_kmf: 138 });
+      mockGetRates.mockResolvedValueOnce(fxj({ eur_kmf: 492, aed_kmf: 138 }));
       mockDbQuery.mockResolvedValueOnce({
         rows: [{
           nb_commandes: 42, nb_cash: 30, nb_stripe: 12,
@@ -267,7 +268,7 @@ describe('routes/finance', () => {
     });
 
     test('propage une erreur DB au handler global', async () => {
-      mockGetRates.mockResolvedValueOnce({ eur_kmf: 492, aed_kmf: 138 });
+      mockGetRates.mockResolvedValueOnce(fxj({ eur_kmf: 492, aed_kmf: 138 }));
       mockDbQuery.mockRejectedValueOnce(new Error('db down'));
 
       const res = await request(buildApp()).get('/api/finance/report');

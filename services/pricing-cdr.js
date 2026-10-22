@@ -34,6 +34,7 @@
 
 const db = require('../db');
 const { resolveFxRates } = require('../utils/rates');
+const { withAuthorityRates } = require('./fx-engine-rates');
 const marketCostComponents = require('./cost-component-market-service');
 
 const DEFAULT_TARGET_ORDERS_PER_MONTH = 100;
@@ -159,7 +160,7 @@ async function loadGlobalConfig(options = {}) {
   }
 
   return {
-    finance: fcRes.rows[0] || {},
+    finance: await withAuthorityRates(fcRes.rows[0] || {}),
     categories,
     boutique_customs_affinities: affinityRes.rows,
     components,
@@ -211,9 +212,10 @@ function computeCDR(product, ctx = {}) {
   const warnings = [];
 
   const fx = resolveFxRates(fc);
-  const taxAED  = fx.aed_kmf;
+  // AED/USD : lus seulement à l'usage (fx.aed_kmf lève fx_rate_unavailable sans observation approuvée).
   const taxEUR  = fx.eur_kmf;
-  const taxUSD  = fx.usd_kmf;
+  const fxOut  = fx.toJSON();
+  const taxAED  = fxOut.aed_kmf;
   const fretEUR = Number(fc.fret_eur_per_m3) || 180;
 
   const categoryKey    = product.category || 'phones';
@@ -296,9 +298,9 @@ function computeCDR(product, ctx = {}) {
       case 'kmf_per_shipment':
         engagedAmount = v; allocationDivisor = avgArticlesPerShipment;
         amount = v / allocationDivisor; allocationLevel = 'shipment'; break;
-      case 'aed': amount = applyPhysicalBasis(v * taxAED); engagedAmount = amount; break;
+      case 'aed': amount = applyPhysicalBasis(v * fx.aed_kmf); engagedAmount = amount; break;
       case 'eur': amount = applyPhysicalBasis(v * taxEUR); engagedAmount = amount; break;
-      case 'usd': amount = applyPhysicalBasis(v * taxUSD); engagedAmount = amount; break;
+      case 'usd': amount = applyPhysicalBasis(v * fx.usd_kmf); engagedAmount = amount; break;
     }
 
     if (!details._allocations) details._allocations = [];

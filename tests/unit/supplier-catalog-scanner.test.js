@@ -25,6 +25,7 @@ const {
 const config = {
   finance: {
     taux_aed_kmf: 138,
+    taux_usd_kmf: 452.64,
     taux_change_eur_kmf: 492,
     target_marge_brute_pct: 40,
   },
@@ -50,7 +51,7 @@ describe('supplier-catalog-scanner', () => {
       expect(convertToKMF(10, 'USD', config.finance)).toBe(4526);
       expect(convertToKMF(1000, 'KMF', config.finance)).toBe(1000);
       expect(convertToKMF(10, 'AED', config.finance)).toBe(1380);
-      expect(convertToKMF(10, 'USD', { taux_change_eur_kmf: 495, taux_aed_kmf: 139 })).toBe(4554);
+      expect(convertToKMF(10, 'USD', { taux_change_eur_kmf: 495, taux_aed_kmf: 139, taux_usd_kmf: 455.4 })).toBe(4554);
     });
 
     it('retourne 0 pour un montant absent ou nul', () => {

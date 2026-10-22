@@ -6,42 +6,29 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js
+ * @depends       db, services/fx-authority.js
  * @db-write      none
- * @db-read       finance_config
- * @used-by       routes/admin-finance-config.js, routes/dashboard-shared.js, routes/finance.js, routes/modules.js, routes/orders/create.js, routes/payments.js, services/pricing-cdr.js, services/pricing-rates.js, services/shared-cart-lifecycle.js, services/supplier-catalog-scanner.js
- * @doctrine      lot1a_fx_one_runtime_truth, payment_fx_authority
+ * @db-read       currency_parities, fx_rate_observations, fx_pegs
+ * @used-by       routes/admin-finance-config.js, routes/dashboard-shared.js, routes/finance.js, routes/modules.js, routes/payments.js, services/fx-engine-rates.js, services/pricing-cdr.js, services/pricing-rates.js, services/supplier-catalog-scanner.js
+ * @doctrine      eur_is_the_pivot, single_conversion_authority, fail_closed
  * @impact-areas  economic-engine, sourcing, infrastructure, payment, checkout
- * @version       2026-09
+ * @version       2026-10
  */
 
 'use strict';
 /**
- * KOMERCE — Taux de change & paramètres financiers (utils/rates.js)
+ * KOMERCE — Taux « moteur » en KMF par unité de devise (facade de lecture, utils/rates.js)
  *
- * Source de vérité persistée : table `finance_config` (singleton id=1).
+ * Plus aucune autorité propre : tous les taux viennent de services/fx-authority.js (pivot EUR).
+ *   eur_kmf : parité fixe currency_parities (toujours disponible)
+ *   aed_kmf / usd_kmf : observation EUR/USD approuvée (+ peg AED) — sinon INDISPONIBLES
  *
- * Deux contrats sont volontairement séparés :
- *   - getRates() : lecture tolérante pour affichage, pilotage et calculs qui
- *     conservent les fallbacks historiques ;
- *   - getAuthoritativeRates() : lecture stricte pour engager un paiement en
- *     devise. Aucun fallback business_rules/hardcodé n'est accepté.
- *
- * Le chemin strict remplit le même cache mémoire que le chemin tolérant. Ainsi,
- * après validation autoritative au boundary checkout, le getRates() exécuté
- * immédiatement dans l'orchestrateur réutilise exactement ce snapshot issu de
- * finance_config et ne peut pas retomber silencieusement sur 492/138 pendant
- * cette création de commande.
- *
- * LOT 1A-2 : USD n'a PAS de colonne persistée aujourd'hui. Le comportement
- * CURRENT reste une dérivation : USD_KMF = 0.92 × EUR_KMF.
+ * Un taux indisponible n'est JAMAIS remplacé par un repli (492/138/0,92 supprimés) : la propriété lève
+ * `fx_rate_unavailable` (503) quand on la lit, et reste absente de la sérialisation.
  */
-
 const db = require('../db');
-const log = require('./logger').child({ module: 'rates' });
+const fx = require('../services/fx-authority');
 
-const RATES_FALLBACK = Object.freeze({ eur_kmf: 492, aed_kmf: 138 });
-const USD_EUR_CURRENT_RATIO = 0.92;
 const CACHE_TTL_MS = 60_000;
 
 class AuthoritativeRateUnavailableError extends Error {
@@ -53,110 +40,80 @@ class AuthoritativeRateUnavailableError extends Error {
   }
 }
 
+function positive(n) {
+  const v = Number(n);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+
+// Objet de taux : propriété disponible = valeur ; indisponible = getter non énumérable qui lève.
+function buildFxRates({ eur_kmf = null, aed_kmf = null, usd_kmf = null } = {}) {
+  const out = {};
+  const defs = { eur_kmf, aed_kmf, usd_kmf };
+  for (const [key, value] of Object.entries(defs)) {
+    const v = positive(value);
+    if (v !== null) {
+      out[key] = v;
+    } else {
+      Object.defineProperty(out, key, {
+        enumerable: false,
+        get() { throw new AuthoritativeRateUnavailableError(`Taux ${key} indisponible : aucune observation approuvée.`); },
+      });
+    }
+  }
+  const eur = positive(eur_kmf);
+  const usd = positive(usd_kmf);
+  if (eur && usd) out.usd_eur_ratio = Number((usd / eur).toFixed(6));
+  Object.defineProperty(out, 'toJSON', {
+    enumerable: false,
+    value() { return { eur_kmf: eur, aed_kmf: positive(aed_kmf), usd_kmf: usd, usd_eur_ratio: out.usd_eur_ratio ?? null }; },
+  });
+  return out;
+}
+
+// Lecture synchrone d'un objet finance DÉJÀ superposé par services/fx-engine-rates (jamais de repli).
 function resolveFxRates(finance) {
   const fc = finance || {};
-  const eurKmf = Number(fc.taux_change_eur_kmf) || RATES_FALLBACK.eur_kmf;
-  const aedKmf = Number(fc.taux_aed_kmf) || RATES_FALLBACK.aed_kmf;
-  return {
-    eur_kmf: eurKmf,
-    aed_kmf: aedKmf,
-    usd_kmf: Number((eurKmf * USD_EUR_CURRENT_RATIO).toFixed(6)),
-    usd_eur_ratio: USD_EUR_CURRENT_RATIO,
-  };
+  return buildFxRates({ eur_kmf: fc.taux_change_eur_kmf, aed_kmf: fc.taux_aed_kmf, usd_kmf: fc.taux_usd_kmf });
 }
 
-function resolvePricingViewCurrentCompatRates() {
-  return resolveFxRates({
-    taux_change_eur_kmf: RATES_FALLBACK.eur_kmf,
-    taux_aed_kmf: RATES_FALLBACK.aed_kmf,
-  });
-}
-
-let _ratesFallbackProvider = null;
 let _cache = null;
 let _cacheAt = 0;
 
-function configureRatesFallbackProvider(provider) {
-  if (provider !== null && typeof provider !== 'function') {
-    throw new TypeError('rates fallback provider must be a function or null');
-  }
-  _ratesFallbackProvider = provider;
-  invalidateCache();
-}
-
-function isFreshAuthoritativeCache() {
-  return Boolean(_cache && Date.now() - _cacheAt < CACHE_TTL_MS);
-}
-
-function normalizeAuthoritativeFinanceRow(row) {
-  if (!row) return null;
-  const eurKmf = Number(row.taux_change_eur_kmf);
-  const aedKmf = Number(row.taux_aed_kmf);
-  if (!Number.isFinite(eurKmf) || eurKmf <= 0) return null;
-  if (!Number.isFinite(aedKmf) || aedKmf <= 0) return null;
-  return { eur_kmf: eurKmf, aed_kmf: aedKmf };
-}
-
-/**
- * Lecture STRICTE de finance_config pour tout flux qui engage un paiement en
- * devise. Aucun fallback n'est autorisé : si la ligne ou un taux est absent,
- * invalide ou inaccessible, l'appel échoue explicitement en 503 côté boundary.
- */
-async function getAuthoritativeRates() {
-  if (isFreshAuthoritativeCache()) return _cache;
-
-  try {
-    const { rows } = await db.query(
-      'SELECT taux_change_eur_kmf, taux_aed_kmf FROM finance_config WHERE id = 1'
-    );
-    const resolved = normalizeAuthoritativeFinanceRow(rows && rows[0]);
-    if (!resolved) {
-      throw new AuthoritativeRateUnavailableError('finance_config ne contient pas de taux EUR/AED valides');
-    }
-    _cache = resolved;
-    _cacheAt = Date.now();
-    return _cache;
-  } catch (err) {
-    if (err instanceof AuthoritativeRateUnavailableError) throw err;
-    log.error?.({ err }, '[getAuthoritativeRates] finance_config indisponible');
-    throw new AuthoritativeRateUnavailableError();
-  }
-}
-
-/**
- * Lecture tolérante historique. Fallback : business_rules puis constantes.
- * Les fallback ne sont jamais mis en cache, afin qu'ils ne puissent pas être
- * confondus ensuite avec un snapshot autoritatif.
- */
-async function getRates() {
-  if (isFreshAuthoritativeCache()) return _cache;
-
-  try {
-    const { rows } = await db.query(
-      'SELECT taux_change_eur_kmf, taux_aed_kmf FROM finance_config WHERE id = 1'
-    );
-    if (rows[0] && rows[0].taux_change_eur_kmf) {
-      const resolved = resolveFxRates(rows[0]);
-      _cache = { eur_kmf: resolved.eur_kmf, aed_kmf: resolved.aed_kmf };
-      _cacheAt = Date.now();
-      return _cache;
-    }
-  } catch (_) { /* fallback */ }
-
-  if (_ratesFallbackProvider) {
+async function loadFromAuthority(client = db) {
+  const rates = {};
+  const unit = async (from) => {
     try {
-      const [eur, aed] = await Promise.all([
-        _ratesFallbackProvider('EUR_KMF_FALLBACK', RATES_FALLBACK.eur_kmf),
-        _ratesFallbackProvider('AED_KMF_FALLBACK', RATES_FALLBACK.aed_kmf),
-      ]);
-      return { eur_kmf: Number(eur), aed_kmf: Number(aed) };
+      const r = await fx.convert({ amount: '1', from, to: 'KMF', round: false, client });
+      return r.amount;
     } catch (err) {
-      log.warn({ err }, '[getRates] fallback métier injecté indisponible');
+      if (err && (err.code === 'fx_rate_unavailable' || err.code === 'fx_currency_unsupported')) return null;
+      throw err;
     }
-  }
+  };
+  rates.eur_kmf = await fx.fixedUnitsPerEur('KMF', client);
+  rates.aed_kmf = await unit('AED');
+  rates.usd_kmf = await unit('USD');
+  return rates;
+}
 
-  log.warn('[getRates] Fallback ultime activé — finance_config et business_rules inaccessibles. Taux figés utilisés.');
-  return RATES_FALLBACK;
+async function getRates() {
+  if (_cache && Date.now() - _cacheAt < CACHE_TTL_MS) return _cache;
+  let raw;
+  try {
+    raw = await loadFromAuthority();
+  } catch (err) {
+    throw err instanceof fx.FxError ? err : new AuthoritativeRateUnavailableError();
+  }
+  const rates = buildFxRates(raw);
+  // Un jeu incomplet n'est pas mis en cache : l'approbation d'une observation doit être vue immédiatement.
+  if (raw.aed_kmf && raw.usd_kmf) { _cache = rates; _cacheAt = Date.now(); }
+  return rates;
+}
+
+// Lecture stricte (paiement en devise) : EUR et AED requis, sinon 503.
+async function getAuthoritativeRates() {
+  const r = await getRates();
+  return { eur_kmf: r.eur_kmf, aed_kmf: r.aed_kmf };
 }
 
 function invalidateCache() {
@@ -168,10 +125,8 @@ module.exports = {
   getRates,
   getAuthoritativeRates,
   invalidateCache,
-  configureRatesFallbackProvider,
   AuthoritativeRateUnavailableError,
-  RATES_FALLBACK,
-  USD_EUR_CURRENT_RATIO,
+  buildFxRates,
+  loadFromAuthority,
   resolveFxRates,
-  resolvePricingViewCurrentCompatRates,
 };

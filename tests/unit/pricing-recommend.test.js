@@ -18,6 +18,13 @@ jest.mock('../../services/pricing-engine', () => ({
   loadGlobalConfig: (...args) => mockLoadGlobalConfig(...args),
 }));
 
+jest.mock('../../services/fx-engine-rates', () => ({
+  withAuthorityRates: async (fc) => ({ ...fc, taux_change_eur_kmf: 491.96775, taux_aed_kmf: 134, taux_usd_kmf: 450 }),
+}));
+jest.mock('../../utils/rates', () => ({
+  ...jest.requireActual('../../utils/rates'),
+  getRates: async () => jest.requireActual('../../utils/rates').buildFxRates({ eur_kmf: 491.96775, aed_kmf: 134, usd_kmf: 450 }),
+}));
 jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));
 
 const {

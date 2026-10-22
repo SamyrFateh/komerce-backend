@@ -92,6 +92,7 @@ jest.mock('../../services/payment-cash-confirm', () => ({
 }));
 
 const mockGetRates = jest.fn();
+const fxj = (o) => ({ ...o, toJSON: () => o });
 jest.mock('../../utils/rates', () => ({ getRates: (...a) => mockGetRates(...a) }));
 
 const mockTriggerPurchasing = jest.fn();
@@ -324,10 +325,10 @@ describe('routes/payments', () => {
   // ── GET /rates ────────────────────────────────────────────────────────
   describe('GET /rates', () => {
     test('délègue à getRates et ne renvoie que les 3 champs attendus', async () => {
-      mockGetRates.mockResolvedValueOnce({ eur_kmf: 500, aed_kmf: 136, other_field: 'ignored' });
+      mockGetRates.mockResolvedValueOnce(fxj({ eur_kmf: 500, aed_kmf: 136, other_field: 'ignored' }));
       const res = await request(buildApp()).get('/api/payments/rates');
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ eur_kmf: 500, aed_kmf: 136, source: 'finance_config' });
+      expect(res.body).toEqual({ eur_kmf: 500, aed_kmf: 136, source: 'fx_authority' });
     });
 
     test('propage une erreur au middleware next(err)', async () => {

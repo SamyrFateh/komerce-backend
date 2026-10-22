@@ -66,7 +66,8 @@ describe('order-checkout-service — livrabilité du marché', () => {
   });
   test('lot 7 — aucun taux de repli : snapshot FX par l\'autorité, refus 503 fx_rate_unavailable', () => {
     expect(source).not.toMatch(/\|\|\s*492/);
-    expect(source).not.toMatch(/\bgetRates\(/);
+    expect(source).not.toMatch(/\|\|\s*138/);
+    expect(source).not.toMatch(/AED_KMF_FALLBACK/);
     expect(source).not.toMatch(/getAuthoritativeRates/);
     expect(source).toMatch(/buildOrderFxSnapshot\(/);
     expect(source).toMatch(/fx_rate_unavailable/);

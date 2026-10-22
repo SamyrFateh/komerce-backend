@@ -237,12 +237,14 @@ async function lockEstimatedCostsForOrder(orderId, dbClient, options = {}) {
   if (inserted > 0) {
     await dbClient.query(
       `UPDATE orders
-         SET cost_estimated_kmf = (
-           SELECT COALESCE(SUM(estimated_business_complete_cost_kmf), 0)::int
-           FROM order_item_cost_imputations
+         SET cost_estimated_kmf = s.total
+        FROM (
+          SELECT SUM(estimated_business_complete_cost_kmf)::int AS total
+            FROM order_item_cost_imputations
            WHERE order_id = $1
-         )
-       WHERE id = $1`,
+          HAVING bool_and(estimated_business_complete_cost_kmf IS NOT NULL)
+        ) s
+       WHERE orders.id = $1 AND s.total IS NOT NULL`,
       [orderId]
     );
   }

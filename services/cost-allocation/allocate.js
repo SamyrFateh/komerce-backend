@@ -39,6 +39,7 @@
 'use strict';
 
 const db = require('../../db');
+const { getRates } = require('../../utils/rates');
 const { shareByWeight } = require('./_helpers');
 const { resolveRelayCommissionCurrent } = require('../../utils/relay-commission');
 const { isSimulatedProvenance } = require('../simulation-scope-service');
@@ -498,7 +499,8 @@ async function allocateMonthlyFixedCosts(yearMonth, options = {}) {
     const fc = fcRes.rows[0] || {};
 
     // 3. Calculer les enveloppes mensuelles
-    const taxAed = Number(fc.taux_aed_kmf) || 138;
+    // Taux AED→KMF de l'autorité FX : indisponible = refus (fx_rate_unavailable), jamais 138.
+    const taxAed = (await getRates()).aed_kmf;
     const hubMonthlyKmf = (Number(fc.hub_monthly_cost_aed) || 7000) * taxAed;
     // Provision risque : 1% du CA du mois (forfait raisonnable)
     const revenueRes = await client.query(

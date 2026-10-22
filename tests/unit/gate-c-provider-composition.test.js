@@ -17,7 +17,7 @@ const scanner = require('../../services/supplier-catalog-scanner');
 const { validateForPromotion } = require('../../services/catalog-promotion');
 
 const config = {
-  finance: { taux_change_eur_kmf: 492, taux_aed_kmf: 138, target_marge_brute_pct: 40 },
+  finance: { taux_change_eur_kmf: 492, taux_aed_kmf: 138, taux_usd_kmf: 452.64, target_marge_brute_pct: 40 },
   categories: {
     electronique: { key:'electronique', default_weight_kg:1, default_margin_pct:35, classification_terms:{ speaker:10, electronics:8, audio:8, wireless:6 } },
     sport: { key:'sport', default_weight_kg:0.5, default_margin_pct:35, classification_terms:{ gloves:10, sports:8, motorcycle:8 } },

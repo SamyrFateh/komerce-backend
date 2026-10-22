@@ -145,7 +145,8 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 router.get('/rates', authenticate, async (req, res, next) => {
   try {
     const rates = await getRates();
-    res.json({ eur_kmf: rates.eur_kmf, aed_kmf: rates.aed_kmf, source: 'finance_config' });
+    const r = rates.toJSON();
+    res.json({ eur_kmf: r.eur_kmf, aed_kmf: r.aed_kmf, source: 'fx_authority' });
   } catch (err) { next(err); }
 });
 

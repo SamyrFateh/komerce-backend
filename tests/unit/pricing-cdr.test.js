@@ -7,6 +7,9 @@
  * @test-requires none
  */
 jest.mock('../../db', () => ({ query: jest.fn() }));
+jest.mock('../../services/fx-engine-rates', () => ({
+  withAuthorityRates: async (fc) => ({ ...fc, taux_change_eur_kmf: 491.96775, taux_aed_kmf: 134, taux_usd_kmf: 450 }),
+}));
 
 const db = require('../../db');
 const {
@@ -151,7 +154,7 @@ describe('pricing-cdr', () => {
 
   it('computeCDR signale categorie inconnue, cout absent et allocation non calibree', () => {
     const cfg = {
-      finance: { allocation_confidence: 'low' },
+      finance: { taux_change_eur_kmf: 492, allocation_confidence: 'low' },
       categories: {},
       components: [{ key: 'parcel_fee', category: 'local_distribution', unit: 'kmf_per_parcel', default_value: 400, scope: 'global' }],
       provisions: [],

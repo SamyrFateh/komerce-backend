@@ -42,7 +42,8 @@ function setCache(key, data) {
 // ── Helper : taux EUR/KMF dynamique (jamais hardcodé) ───────────────────────
 async function getEurKmf() {
   const rates = await getRates();
-  return { eur_kmf: rates.eur_kmf, aed_kmf: rates.aed_kmf };
+  const r = rates.toJSON();
+  return { eur_kmf: r.eur_kmf, aed_kmf: r.aed_kmf };
 }
 
 // ── Config SLA & Compensations (chargée depuis business_rules) ──────────────

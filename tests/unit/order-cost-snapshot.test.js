@@ -225,3 +225,11 @@ describe('order-cost-snapshot', () => {
     expect(params[17]).toBe('fallback');
   });
 });
+
+describe('order-cost-snapshot — coût estimé de commande (PR-C)', () => {
+  test("une imputation sans coût (taux AED non approuvé) ne ramène jamais cost_estimated_kmf à 0", () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/order-cost-snapshot.js'), 'utf8');
+    expect(src).toMatch(/bool_and\(estimated_business_complete_cost_kmf IS NOT NULL\)/);
+    expect(src).not.toMatch(/COALESCE\(SUM\(estimated_business_complete_cost_kmf\), 0\)/);
+  });
+});

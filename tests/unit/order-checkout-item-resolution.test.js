@@ -24,7 +24,7 @@ describe('order-checkout-item-resolution', () => {
       items: [{ quantity: 1 }],
       maxQty: 10,
       fretPerKg: 0,
-      aedFallback: 0,
+      aedKmf: 0,
       customsPct: 0,
       pickupCodeRecipient: 'buyer',
       userId: 'u1',
@@ -44,7 +44,7 @@ describe('order-checkout-item-resolution', () => {
       items: [{ product_id: 'p1', quantity: 99 }],
       maxQty: 10,
       fretPerKg: 0,
-      aedFallback: 0,
+      aedKmf: 0,
       customsPct: 0,
       pickupCodeRecipient: 'buyer',
       userId: 'u1',
@@ -66,7 +66,7 @@ describe('order-checkout-item-resolution — total demandé par SKU exact', () =
     resolveActiveSku.mockReset().mockResolvedValue({ id: 'sku-1', stock, price_kmf: 1000 });
     const client = { query: jest.fn().mockResolvedValue({ rows: [product] }) };
     return {
-      client, items, maxQty: 10, fretPerKg: 0, aedFallback: 0, customsPct: 0,
+      client, items, maxQty: 10, fretPerKg: 0, aedKmf: 0, customsPct: 0,
       pickupCodeRecipient: 'buyer', userId: 'u1',
     };
   }
@@ -107,5 +107,33 @@ describe('order-checkout-item-resolution — total demandé par SKU exact', () =
     const result = await resolveCheckoutItems(input);
     expect(result.ok).toBe(true);
     expect(input.items.map(i => i._resolved_sku_id)).toEqual(['sku-A', 'sku-B']);
+  });
+});
+
+describe('order-checkout-item-resolution — estimation de coût et taux AED (autorité FX)', () => {
+  const { resolveActiveSku } = require('../../services/product-sku-service');
+  const product = {
+    id: 'p1', name: 'Produit AED', inventory_model: 'SKU', stock: 999, price_kmf: 1000,
+    price_aed: 10, weight_kg: 1, has_variants: false,
+  };
+  function run(aedKmf) {
+    resolveActiveSku.mockReset().mockResolvedValue({ id: 'sku-1', stock: 99, price_kmf: 1000 });
+    const client = { query: jest.fn().mockResolvedValue({ rows: [product] }) };
+    return resolveCheckoutItems({
+      client, items: [{ product_id: 'p1', quantity: 2 }], maxQty: 10, fretPerKg: 65, aedKmf, customsPct: 20,
+      pickupCodeRecipient: 'buyer', userId: 'u1',
+    });
+  }
+
+  test('avec un taux AED approuvé : estimation = achat + fret + douane', async () => {
+    const r = await run(134);
+    // achat 10×134×2 = 2680 ; fret 1×2×65 = 130 ; douane 2680×20 % = 536
+    expect(r.cost_estimated).toBe(3346);
+  });
+
+  test('sans taux AED approuvé : estimation inconnue (null), jamais valorisée avec un taux de repli', async () => {
+    const r = await run(null);
+    expect(r.ok).toBe(true);
+    expect(r.cost_estimated).toBeNull();
   });
 });

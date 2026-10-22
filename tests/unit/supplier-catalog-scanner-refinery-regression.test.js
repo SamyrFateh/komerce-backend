@@ -22,6 +22,7 @@ const {
 const config = {
   finance: {
     taux_aed_kmf: 138,
+    taux_usd_kmf: 452.64,
     taux_change_eur_kmf: 492,
     target_marge_brute_pct: 40,
   },

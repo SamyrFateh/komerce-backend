@@ -49,7 +49,7 @@
  * ont changé.
  *
  * Export :
- *   resolveCheckoutItems({ client, items, maxQty, fretPerKg, aedFallback,
+ *   resolveCheckoutItems({ client, items, maxQty, fretPerKg, aedKmf,
  *                           customsPct, pickupCodeRecipient, userId })
  *     → { ok: true, productMap, total_kmf, cost_estimated, pickupCodeRecipientUserId }
  *     | { ok: false, status, body }
@@ -64,7 +64,7 @@ async function resolveCheckoutItems({
   items,
   maxQty,
   fretPerKg,
-  aedFallback,
+  aedKmf,
   customsPct,
   pickupCodeRecipient,
   userId,
@@ -79,6 +79,7 @@ async function resolveCheckoutItems({
 
   let total_kmf = 0;
   let cost_estimated = 0;
+  let costUnknown = false; // coût d'achat AED sans taux approuvé : estimation inconnue, jamais un taux de repli
   let sharedCartId = null;
   let sharedListOrganizerUserId = null;
   let hasSharedListItems = false;
@@ -324,7 +325,8 @@ async function resolveCheckoutItems({
     total_kmf += item._effective_unit_price_kmf * qty;
 
     const fret_kmf = (product.weight_kg || 0.5) * qty * fretPerKg;
-    const base_aed_kmf = (product.price_aed || 0) * aedFallback * qty;
+    if ((product.price_aed || 0) > 0 && !(Number(aedKmf) > 0)) { costUnknown = true; continue; }
+    const base_aed_kmf = (product.price_aed || 0) * (Number(aedKmf) || 0) * qty;
     const customs_est = base_aed_kmf * (customsPct / 100) * (product.customs_risk_coeff || 1.0);
     cost_estimated += base_aed_kmf + fret_kmf + customs_est;
   }
@@ -350,7 +352,7 @@ async function resolveCheckoutItems({
     ok: true,
     productMap,
     total_kmf,
-    cost_estimated,
+    cost_estimated: costUnknown ? null : cost_estimated,
     pickupCodeRecipientUserId,
   };
 }

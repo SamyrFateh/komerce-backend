@@ -42,8 +42,7 @@ jest.mock('../../services/loyalty-service', () => ({
 const mockInvalidateRatesCache = jest.fn();
 jest.mock('../../utils/rates', () => ({
   invalidateCache: (...args) => mockInvalidateRatesCache(...args),
-  getRates: jest.fn(),
-  RATES_FALLBACK: { eur_kmf: 492, aed_kmf: 138 },
+  getRates: jest.fn().mockResolvedValue({ eur_kmf: 491.96775, aed_kmf: 134, usd_kmf: 450, toJSON() { return { eur_kmf: 491.96775, aed_kmf: 134, usd_kmf: 450, usd_eur_ratio: 0.914 }; } }),
   resolveFxRates: (cfg = {}) => {
     const eur = Number(cfg.taux_change_eur_kmf) || 492;
     const aed = Number(cfg.taux_aed_kmf) || 138;
@@ -111,25 +110,20 @@ describe('admin-finance-config — GET /', () => {
     // seuil_rentabilite = 21000 / (20/100) = 105000
     expect(res.body.derived.total_fixed_cost_kmf).toBe(21000);
     expect(res.body.derived.seuil_rentabilite_kmf).toBe(105000);
-    // prix_vente_estime = 10 * 500 * (1 + 200/100) = 15000
-    expect(res.body.derived.prix_vente_estime_kmf).toBe(15000);
-    // cout_achat_kmf = 10 * 500 = 5000 ; marge_brute_article = 15000 - 5000 = 10000
-    expect(res.body.derived.cout_achat_kmf).toBe(5000);
-    expect(res.body.derived.marge_brute_article_kmf).toBe(10000);
+    // Taux = parité fixe de l'autorité FX (491,96775), pas finance_config.taux_change_eur_kmf (500 stocké).
+    // prix_vente_estime = round(10 * 491.96775 * (1 + 200/100)) = 14759
+    expect(res.body.derived.prix_vente_estime_kmf).toBe(14759);
+    expect(res.body.derived.cout_achat_kmf).toBe(4920);
+    expect(res.body.derived.marge_brute_article_kmf).toBe(9839);
 
     expect(res.body.fx.current).toEqual({
-      eur_kmf: 500,
-      aed_kmf: 140,
-      usd_kmf: 460,
-      usd_eur_ratio: 0.92,
+      eur_kmf: 491.96775,
+      aed_kmf: 134,
+      usd_kmf: 450,
+      usd_eur_ratio: 0.914,
     });
-    expect(res.body.fx.pricing_view_current_compat).toEqual({
-      eur_kmf: 492,
-      aed_kmf: 138,
-      usd_kmf: 452.64,
-      usd_eur_ratio: 0.92,
-    });
-    expect(res.body.fx.usd_nature).toBe('DERIVED_CURRENT');
+    expect(res.body.fx.pricing_view_current_compat).toBeNull();
+    expect(res.body.fx.usd_nature).toBe('APPROVED_OBSERVATION');
   });
 
   it('seuil_rentabilite = 0 si marge cible est 0 (pas de division par zéro)', async () => {
@@ -253,6 +247,6 @@ describe('admin-finance-config — PUT / effets de bord', () => {
     const res = await request(app).put('/api/admin/finance-config').send({ taux_change_eur_kmf: 520 });
 
     expect(res.status).toBe(200);
-    expect(res.body.sourcing.taux_change_eur_kmf).toBe(520);
+    expect(res.body.sourcing.taux_change_eur_kmf).toBe(491.96775); // autorité FX, la colonne stockée n'est plus lue
   });
 });

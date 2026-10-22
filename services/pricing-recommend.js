@@ -33,6 +33,8 @@
  */
 
 const db            = require('../db');
+const { getRates, resolveFxRates } = require('../utils/rates');
+const { withAuthorityRates } = require('./fx-engine-rates');
 const pricingEngine = require('./pricing-engine');
 const log           = require('../utils/logger').child({ module: 'pricing-recommend' });
 
@@ -77,14 +79,15 @@ function _arrondiPsycho(x) {
 /**
  * Calcule la valeur d'un composant pricing dans l'unité donnée.
  */
-function _computeComponent(comp, baseKmf, { poidsKg, volumeM3, taxAED, taxEUR }) {
+// ctx.fx : taux autorité ; aed_kmf n'est lu que pour un composant en AED (indisponible = fx_rate_unavailable 503).
+function _computeComponent(comp, baseKmf, { poidsKg, volumeM3, taxEUR, fx }) {
   const v = Number(comp.default_value);
   switch (comp.unit) {
     case 'pct':         return baseKmf * (v / 100);
     case 'kmf':         return v;
     case 'kmf_per_kg':  return v * poidsKg;
     case 'kmf_per_m3':  return v * volumeM3;
-    case 'aed':         return v * taxAED;
+    case 'aed':         return v * fx.aed_kmf;
     case 'eur':         return v * taxEUR;
     default:            return 0;
   }
@@ -100,7 +103,7 @@ async function _loadGlobalParams() {
     db.query('SELECT * FROM charges            WHERE is_active = TRUE'),
   ]);
   return {
-    fc:       fcRes.rows[0]  || {},
+    fc:       await withAuthorityRates(fcRes.rows[0] || {}),
     comps:    compRes.rows,
     provs:    provRes.rows,
     charges:  chargesRes.rows,
@@ -178,8 +181,8 @@ async function computeRecommend(b = {}) {
   // Dériver prix AED
   let prixAed = Number(b.prix_aed) || 0;
   if (!prixAed && product?.cost_kmf) {
-    const fcRow = await db.query('SELECT taux_aed_kmf FROM finance_config WHERE id = 1').catch(() => null);
-    const taux  = Number(fcRow?.rows?.[0]?.taux_aed_kmf) || 138;
+    // Taux AED→KMF de l'autorité FX (observation approuvée) : indisponible = refus 503, jamais 138.
+    const taux  = (await getRates()).aed_kmf;
     prixAed     = Number(product.cost_kmf) / taux;
   }
   if (!prixAed || prixAed <= 0) {
@@ -195,17 +198,18 @@ async function computeRecommend(b = {}) {
   const cat = catRes.rows[0];
   if (!cat) warnings.push('Catégorie "' + category + '" introuvable → valeurs par défaut');
 
-  const taxAED        = Number(fc.taux_aed_kmf)         || 138;
-  const taxEUR        = Number(fc.taux_change_eur_kmf)   || 492;
+  const fxRates       = resolveFxRates(fc);
+  const taxEUR        = fxRates.eur_kmf;
+  const taxAED        = fxRates.toJSON().aed_kmf; // affichage ; le calcul lit fxRates.aed_kmf à l'usage
   const fretEurM3     = Number(fc.fret_eur_per_m3)       || 180;
   const margeCiblePct = (cat?.default_margin_pct
     ? Number(cat.default_margin_pct)
     : Number(fc.target_marge_brute_pct) || 40) / 100;
 
-  const unitCtx = { poidsKg, volumeM3, taxAED, taxEUR };
+  const unitCtx = { poidsKg, volumeM3, taxEUR, fx: fxRates };
 
   // ── 3. NIVEAU 1 : composants unitaires ──
-  const prixAchatKmf = prixAed * taxAED;
+  const prixAchatKmf = prixAed > 0 ? prixAed * fxRates.aed_kmf : 0;
   const fretKmf      = volumeM3 * fretEurM3 * taxEUR;
   let valCIF         = prixAchatKmf + fretKmf;
 
@@ -414,8 +418,8 @@ async function computeRecommendBatch(b = {}) {
   const cats      = {};
   catsRes.rows.forEach(c => { cats[c.key] = c; });
 
-  const taxAED    = Number(fc.taux_aed_kmf)         || 138;
-  const taxEUR    = Number(fc.taux_change_eur_kmf)   || 492;
+  const fxRates   = resolveFxRates(fc);
+  const taxEUR    = fxRates.eur_kmf;
   const fretEurM3 = Number(fc.fret_eur_per_m3)       || 180;
   const margeGlob = (Number(fc.target_marge_brute_pct) || 40) / 100;
 
@@ -435,7 +439,7 @@ async function computeRecommendBatch(b = {}) {
     const margeCible   = cat?.default_margin_pct
       ? Number(cat.default_margin_pct) / 100
       : margeGlob;
-    const unitCtx      = { poidsKg, volumeM3, taxAED, taxEUR };
+    const unitCtx      = { poidsKg, volumeM3, taxEUR, fx: fxRates };
     const itemCtx      = { ...ctx, category };
 
     // Niveau 1

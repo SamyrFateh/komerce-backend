@@ -30,7 +30,7 @@
  */
 
 const db = require('../db');
-const { invalidateCache } = require('../utils/rates');
+const { invalidateCache, getRates } = require('../utils/rates');
 
 /**
  * Retourne les taux courants (finance_config) + les 5 derniers
@@ -38,15 +38,13 @@ const { invalidateCache } = require('../utils/rates');
  * @returns {Promise<{ current: { eur_kmf: number, aed_kmf: number }, history: object[] }>}
  */
 async function getCurrentRates() {
-  const { rows } = await db.query(
-    'SELECT taux_change_eur_kmf, taux_aed_kmf FROM finance_config WHERE id = 1'
-  );
-  const fc = rows[0];
+  // Taux courants = autorité FX (pivot EUR) ; finance_config n'est plus une source de taux.
+  const current = (await getRates()).toJSON();
   const { rows: history } = await db.query(
     'SELECT eur_kmf, aed_kmf, valid_from FROM exchange_rates ORDER BY valid_from DESC LIMIT 5'
   );
   return {
-    current: { eur_kmf: Number(fc?.taux_change_eur_kmf) || 492, aed_kmf: Number(fc?.taux_aed_kmf) || 138 },
+    current: { eur_kmf: current.eur_kmf, aed_kmf: current.aed_kmf },
     history,
   };
 }
