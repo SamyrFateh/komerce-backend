@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1825,
-    "edges": 9171,
+    "edges": 9172,
     "dbTables": 208,
     "doctrines": 669,
     "impactAreas": 206,
@@ -20156,6 +20156,7 @@
         "disputes",
         "orders",
         "markets",
+        "currency_parities",
         "carriers",
         "capability_registry",
         "market_operating_assignments",
@@ -72548,6 +72549,12 @@
     },
     {
       "from": "services/market-control-plane.js",
+      "to": "db:currency_parities",
+      "type": "db-read",
+      "label": "currency_parities"
+    },
+    {
+      "from": "services/market-control-plane.js",
       "to": "db:carriers",
       "type": "db-read",
       "label": "carriers"
@@ -116865,6 +116872,7 @@
         "disputes",
         "orders",
         "markets",
+        "currency_parities",
         "carriers",
         "capability_registry",
         "market_operating_assignments",
@@ -116894,6 +116902,7 @@
         "db:assignment_memberships",
         "db:capability_registry",
         "db:carriers",
+        "db:currency_parities",
         "db:disputes",
         "db:market_cash_control_policies",
         "db:market_delivery_attestations",

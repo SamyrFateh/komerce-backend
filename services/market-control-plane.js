@@ -8,7 +8,7 @@
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
  * @depends       db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
  * @used-by       routes/admin-market-control-plane.js
- * @db-read       market_settlements, disputes, orders, markets, carriers, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
+ * @db-read       market_settlements, disputes, orders, markets, currency_parities, carriers, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
  * @db-write      none
  * @db-txn        none
  * @doctrine      control_plane_is_read_only, gaps_are_reported_never_repaired, no_second_authorization_engine
@@ -31,6 +31,7 @@ const TEAM_GRANT = 'team.grant';
 
 const GAP_MESSAGES = Object.freeze({
   MARKET_INACTIVE: 'Le marché est inactif (is_active = false).',
+  NO_CURRENCY_PARITY: 'La devise du marché n’a pas de parité canonique vers EUR (currency_parities) : décision propriétaire requise.',
   NO_ASSIGNMENT: 'Aucune affectation d’exploitation n’existe pour ce marché.',
   ASSIGNMENT_NOT_ACTIVE: 'L’affectation d’exploitation n’est pas ACTIVE.',
   EMPTY_CEILING: 'Le plafond de capacités de l’affectation est vide.',
@@ -50,6 +51,9 @@ function computeGaps(snapshot) {
   const gaps = [];
   const add = code => gaps.push({ code, message: GAP_MESSAGES[code] });
   if (!snapshot.market.is_active) add('MARKET_INACTIVE');
+  // Devise sans parité canonique vers EUR (currency_parities) : aucun total affichable ni conversion fiable.
+  // Explicite `=== false` : un snapshot sans l'information ne fabrique pas d'écart.
+  if (snapshot.market.has_currency_parity === false) add('NO_CURRENCY_PARITY');
   if (!snapshot.assignment) {
     add('NO_ASSIGNMENT');
   } else {
@@ -71,7 +75,7 @@ function computeGaps(snapshot) {
   return gaps;
 }
 
-const PLATFORM_BLOCKERS = new Set(['NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY']);
+const PLATFORM_BLOCKERS = new Set(['NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY']);
 const OPERATIONS_BLOCKERS = new Set(['NO_DELIVERY_PROOF','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS']);
 
 function readinessFromGaps(gaps) {
@@ -116,7 +120,9 @@ async function getControlPlane(executor, marketCode) {
   if (!code) throw delegationError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
 
   const market = (await db.query(
-    'SELECT id, code, name, currency, minor_unit, is_active, lifecycle_status, storefront_texts FROM markets WHERE code = $1', [code]
+    `SELECT id, code, name, currency, minor_unit, is_active, lifecycle_status, storefront_texts,
+            EXISTS (SELECT 1 FROM currency_parities cp WHERE cp.currency = markets.currency) AS has_currency_parity
+       FROM markets WHERE code = $1`, [code]
   )).rows[0];
   if (!market) throw delegationError('MARKET_NOT_FOUND', 'Marché introuvable.', 404);
 
