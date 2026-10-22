@@ -415,6 +415,15 @@ describe('Commerce — top produits cliquables vers la fiche Produit 360', () =>
     expect(url.searchParams.get('return_label')).toBe('Retour au commerce');
     expect(rows[1].href).toBeUndefined();
   });
+  test('série peu dense : un seul jour = un libellé d’axe, une note, jamais un bloc plein sans explication', () => {
+    const one = commerceDecision.salesSeriesBars({ sales_series: [{ day: '2026-10-17', sales_kmf: 25000, orders: 1 }] }, commerce);
+    expect(commerceDecision.salesSeriesAxis(one)).toEqual(['17/10']);
+    expect(commerceDecision.salesSeriesNote(one)).toMatch(/Un seul jour avec des ventes payées \(17\/10\)/);
+    const many = commerceDecision.salesSeriesBars({ sales_series: ['01', '02', '03', '04'].map(d => ({ day: `2026-10-${d}`, sales_kmf: 1000, orders: 1 })) }, commerce);
+    expect(commerceDecision.salesSeriesAxis(many)).toEqual(['01/10', '04/10']);
+    expect(commerceDecision.salesSeriesNote(many)).toBeNull();
+    expect(commerceDecision.salesSeriesAxis([])).toEqual([]);
+  });
   test('série, répartition par marché et dernières commandes : valeurs serveur dessinées telles quelles', () => {
     const p = {
       sales_series: [{ day: '2026-08-20', sales_kmf: 50000, orders: 5 }, { day: '2026-08-22', sales_kmf: 100000, orders: 9 }],

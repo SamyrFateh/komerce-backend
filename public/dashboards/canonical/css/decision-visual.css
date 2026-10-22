@@ -906,6 +906,9 @@ body.kmc-shell-v4 .kmc-com-bars { display: flex; align-items: flex-end; gap: 3px
 body.kmc-shell-v4 .kmc-com-bar { flex: 1 1 0; min-width: 3px; height: 100%; display: flex; align-items: flex-end; }
 body.kmc-shell-v4 .kmc-com-bar-fill { display: block; width: 100%; background: #fdba74; border-radius: 3px 3px 0 0; min-height: 2px; }
 body.kmc-shell-v4 .kmc-com-bar:hover .kmc-com-bar-fill { background: #ea580c; }
+body.kmc-shell-v4 .kmc-com-bar { max-width: 48px; }
+body.kmc-shell-v4 .kmc-com-bars.is-sparse { justify-content: flex-start; gap: 8px; }
+body.kmc-shell-v4 .kmc-com-bars-note { margin: 8px 0 0; font-size: 12px; color: #64748b; }
 body.kmc-shell-v4 .kmc-com-bars-axis { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; padding-top: 6px; }
 body.kmc-shell-v4 .kmc-com-market { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 body.kmc-shell-v4 .kmc-com-donut { width: 148px; height: 148px; border-radius: 50%; flex: none; -webkit-mask: radial-gradient(circle 46px at center, transparent 98%, #000 100%); mask: radial-gradient(circle 46px at center, transparent 98%, #000 100%); }
