@@ -1228,9 +1228,7 @@
 }
 
 @media (min-width: 1200px) {
-  .k-side-cart {
-    width: var(--sc-reserve-w, 296px);
-  }
+  /* .k-side-cart width : responsive-desktop-matrix.css (--sc-reserve-w). */
   /* Le panneau reparenté doit rester à 100% de .k-modal-cart-slot (largeur
      pilotée par la grille de la coque, modal-shell.css), pas à largeur fixe —
      sans cette override, la règle .k-side-cart de ce bloc gagnerait par ordre

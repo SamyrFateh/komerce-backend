@@ -144,8 +144,6 @@
   overflow: hidden;
   border: 1px solid var(--action-commerce-border);
   border-radius: 999px;
-  background: var(--action-commerce);
-  box-shadow: var(--action-commerce-shadow);
 }
 
 .k-discovery-canonical-cta {
