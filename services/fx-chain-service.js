@@ -38,7 +38,7 @@ async function resolveChain({ at = new Date(), maxAgeDays = DEFAULT_MAX_AGE_DAYS
   const { rows: [obs] } = await client.query(
     `SELECT id, rate, as_of, source_label
        FROM fx_rate_observations
-      WHERE approved_by IS NOT NULL AND as_of <= $1 AND created_at <= $1
+      WHERE approved_by IS NOT NULL AND as_of <= $1 AND created_at <= $1 AND approved_at <= $1
         AND as_of >= $1::timestamptz - make_interval(days => $2::int)
       ORDER BY as_of DESC LIMIT 1`,
     [at, maxAgeDays]
@@ -47,7 +47,7 @@ async function resolveChain({ at = new Date(), maxAgeDays = DEFAULT_MAX_AGE_DAYS
 
   const { rows: [peg] } = await client.query(
     `SELECT id, rate, valid_from, source_label FROM fx_pegs
-      WHERE valid_from <= $1 ORDER BY valid_from DESC LIMIT 1`,
+      WHERE valid_from <= $1 AND created_at <= $1 ORDER BY valid_from DESC LIMIT 1`,
     [at]
   );
   if (!peg) throw new FxChainUnavailableError('Aucun peg USD/DJF valide : conversion DJF refusée');

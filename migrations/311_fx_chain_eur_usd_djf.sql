@@ -49,12 +49,36 @@ BEGIN
        AND (NEW.id, NEW.base_ccy, NEW.quote_ccy, NEW.rate, NEW.source_label, NEW.source_ref, NEW.as_of, NEW.entered_by, NEW.created_at)
            IS NOT DISTINCT FROM
            (OLD.id, OLD.base_ccy, OLD.quote_ccy, OLD.rate, OLD.source_label, OLD.source_ref, OLD.as_of, OLD.entered_by, OLD.created_at) THEN
+      NEW.approved_at := now();
       RETURN NEW;
     END IF;
   END IF;
   RAISE EXCEPTION '% est append-only : modification interdite', TG_TABLE_NAME;
 END;
 $$ LANGUAGE plpgsql;
+
+-- À l'insertion : horodatage imposé par la base (jamais antidatable) ; une observation naît NON approuvée.
+CREATE OR REPLACE FUNCTION fx_insert_guard() RETURNS trigger AS $$
+BEGIN
+  NEW.created_at := now();
+  IF TG_TABLE_NAME = 'fx_rate_observations' THEN
+    IF NEW.approved_by IS NOT NULL OR NEW.approved_at IS NOT NULL THEN
+      RAISE EXCEPTION 'fx_rate_observations : une observation est insérée non approuvée (approbation = étape séparée)';
+    END IF;
+    IF NEW.as_of > NEW.created_at THEN
+      RAISE EXCEPTION 'fx_rate_observations : as_of dans le futur';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS fx_rate_observations_insert_guard ON fx_rate_observations;
+CREATE TRIGGER fx_rate_observations_insert_guard BEFORE INSERT ON fx_rate_observations
+  FOR EACH ROW EXECUTE FUNCTION fx_insert_guard();
+DROP TRIGGER IF EXISTS fx_pegs_insert_guard ON fx_pegs;
+CREATE TRIGGER fx_pegs_insert_guard BEFORE INSERT ON fx_pegs
+  FOR EACH ROW EXECUTE FUNCTION fx_insert_guard();
 
 DROP TRIGGER IF EXISTS fx_rate_observations_append_only ON fx_rate_observations;
 CREATE TRIGGER fx_rate_observations_append_only BEFORE UPDATE OR DELETE ON fx_rate_observations

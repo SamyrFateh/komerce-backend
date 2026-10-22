@@ -22,10 +22,13 @@ if (!hasIntegrationEnv) {
   async function insertObs({ rate, ageDays = 1, enteredBy = 'alice', approvedBy = 'bob' }) {
     const asOf = new Date(Date.now() - ageDays * DAY - 1000);
     const { rows: [r] } = await db.query(
-      `INSERT INTO fx_rate_observations (rate, source_label, as_of, entered_by, approved_by, approved_at)
-       VALUES ($1, 'test source', $2, $3, $4, CASE WHEN $4::text IS NULL THEN NULL ELSE now() END) RETURNING id`,
-      [rate, asOf, enteredBy, approvedBy]
+      `INSERT INTO fx_rate_observations (rate, source_label, as_of, entered_by)
+       VALUES ($1, 'test source', $2, $3) RETURNING id`,
+      [rate, asOf, enteredBy]
     );
+    if (approvedBy) {
+      await db.query('UPDATE fx_rate_observations SET approved_by = $2, approved_at = now() WHERE id = $1', [r.id, approvedBy]);
+    }
     return r.id;
   }
 
@@ -73,6 +76,25 @@ if (!hasIntegrationEnv) {
   });
 
   describe('contraintes DB', () => {
+    test('insertion déjà approuvée refusée ; created_at imposé par la base (non antidatable)', async () => {
+      await expect(db.query(
+        `INSERT INTO fx_rate_observations (rate, source_label, as_of, entered_by, approved_by, approved_at)
+         VALUES (1.1, 's', now() - interval '1 hour', 'alice', 'bob', now())`)).rejects.toThrow(/non approuvée/);
+      const { rows: [r] } = await db.query(
+        `INSERT INTO fx_rate_observations (rate, source_label, as_of, entered_by, created_at)
+         VALUES (1.1, 's', now() - interval '2 days', 'alice', now() - interval '30 days') RETURNING created_at`);
+      expect(Date.now() - new Date(r.created_at).getTime()).toBeLessThan(60000);
+    });
+    test('approbation postérieure à la transaction : non utilisable pour une date antérieure (approved_at horodaté par la base)', async () => {
+      const before = new Date();
+      await new Promise(r => setTimeout(r, 20));
+      const { rows: [r] } = await db.query(
+        "INSERT INTO fx_rate_observations (rate, source_label, as_of, entered_by) VALUES (1.1, 's', now() - interval '1 hour', 'alice') RETURNING id");
+      await db.query("UPDATE fx_rate_observations SET approved_by = 'bob', approved_at = now() - interval '5 days' WHERE id = $1", [r.id]);
+      const { rows: [o] } = await db.query('SELECT approved_at FROM fx_rate_observations WHERE id = $1', [r.id]);
+      expect(new Date(o.approved_at).getTime()).toBeGreaterThan(before.getTime());
+      await expect(resolveChain({ at: before })).rejects.toMatchObject({ code: 'fx_rate_unavailable' });
+    });
     test('même personne ne saisit et n’approuve pas', async () => {
       await expect(insertObs({ rate: 1.1, enteredBy: 'alice', approvedBy: 'alice' })).rejects.toThrow();
     });
