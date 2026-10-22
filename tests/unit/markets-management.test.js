@@ -91,6 +91,78 @@ describe('markets-management — montage', () => {
     expect(walk(host).some(n => n.textContent === 'Aucun relais actif.')).toBe(true);
   });
 
+  test('lot 5 : sans preuve, formulaire d\u2019attestation ; soumission via la route centrale existante', async () => {
+    const calls = [];
+    const fetchImpl = jest.fn((url, options) => {
+      calls.push([url, options.method]);
+      if (url.endsWith('/delivery-attestations')) return response({ attestation: { id: 'a1' } }, true, 201);
+      if (url.endsWith('/control-plane')) {
+        return response({
+          gaps: [{ code: 'NO_DELIVERY_PROOF', message: 'Aucune liaison de livraison attestée.' }],
+          carriers: [{ id: 'c1', name: 'Transitaire X' }],
+          deliveryProof: { proven: false, basis: null, attestation: null },
+        });
+      }
+      return response({ markets });
+    });
+    const host = fakeDoc().createElement('section');
+    await mgmt.mount(host, { document: fakeDoc(), fetch: fetchImpl, confirm: () => true });
+    await walk(host).find(n => n.textContent === 'Voir les écarts').listeners.click();
+    const form = walk(host).find(n => n.tag === 'form');
+    expect(form).toBeTruthy();
+    const f = form.fields;
+    expect(f.carrier_id.children.map(o => o.textContent)).toContain('Transitaire X');
+    Object.assign(f.carrier_id, { value: 'c1' });
+    Object.assign(f.mode, { value: 'SEA' });
+    Object.assign(f.origin_ref, { value: 'DXB' });
+    Object.assign(f.freight_rate, { value: '2.5' });
+    Object.assign(f.rate_currency, { value: 'usd' });
+    Object.assign(f.rate_unit, { value: 'PER_KG' });
+    Object.assign(f.transit_days, { value: '30' });
+    Object.assign(f.evidence_ref, { value: 'CONTRAT-1' });
+    Object.assign(f.valid_until, { value: '2027-01-31' });
+    await form.listeners.submit({ preventDefault() {} });
+    expect(calls).toContainEqual(['/api/admin/markets/CM/delivery-attestations', 'POST']);
+    const sent = JSON.parse(fetchImpl.mock.calls.find(c => c[0].endsWith('/delivery-attestations'))[1].body);
+    expect(sent).toMatchObject({ carrier_id: 'c1', mode: 'SEA', origin_ref: 'DXB', freight_rate: 2.5, rate_currency: 'USD', rate_unit: 'PER_KG', transit_days: 30, evidence_ref: 'CONTRAT-1' });
+    expect(sent.valid_until).toBe('2027-01-31T23:59:59.000Z');
+  });
+
+  test('lot 5 : attestation valide affichée comme un coût, révocable avec motif et confirmation', async () => {
+    const control = {
+      gaps: [],
+      deliveryProof: { proven: true, basis: 'ATTESTATION', attestation: {
+        id: 'a1', carrier_name: 'Transitaire X', mode: 'SEA', origin_ref: 'DXB', freight_rate: '2.5',
+        rate_currency: 'USD', rate_unit: 'PER_KG', transit_days: 30, evidence_ref: 'CONTRAT-1', valid_until: '2027-01-31T00:00:00Z',
+      } },
+    };
+    const fetchImpl = jest.fn((url) => (url.endsWith('/control-plane') ? response(control)
+      : url.endsWith('/revoke') ? response({ revoked: true }) : response({ markets })));
+    const host = fakeDoc().createElement('section');
+    const confirm = jest.fn(() => true);
+    await mgmt.mount(host, { document: fakeDoc(), fetch: fetchImpl, confirm });
+    await walk(host).find(n => n.textContent === 'Voir les écarts').listeners.click();
+    expect(walk(host).some(n => /coût 2\.5 USD\/kg \(coût, pas un prix de vente\)/.test(n.textContent))).toBe(true);
+    const form = walk(host).find(n => n.tag === 'form');
+    Object.assign(form.fields.reason, { value: 'contrat résilié' });
+    await form.listeners.submit({ preventDefault() {} });
+    expect(confirm).toHaveBeenCalled();
+    const revoke = fetchImpl.mock.calls.find(c => c[0].endsWith('/delivery-attestations/a1/revoke'));
+    expect(revoke).toBeTruthy();
+    expect(JSON.parse(revoke[1].body)).toEqual({ reason: 'contrat résilié' });
+  });
+
+  test('lot 5 : preuve par l\u2019historique → aucun formulaire à saisir', async () => {
+    const fetchImpl = jest.fn(url => (url.endsWith('/control-plane')
+      ? response({ gaps: [], deliveryProof: { proven: true, basis: 'HISTORY', collected_orders: 7, attestation: null } })
+      : response({ markets })));
+    const host = fakeDoc().createElement('section');
+    await mgmt.mount(host, { document: fakeDoc(), fetch: fetchImpl });
+    await walk(host).find(n => n.textContent === 'Voir les écarts').listeners.click();
+    expect(walk(host).some(n => n.tag === 'form')).toBe(false);
+    expect(walk(host).some(n => /historique \(7 commandes remises\)/.test(n.textContent))).toBe(true);
+  });
+
   test('access.html charge le script et il réutilise uniquement /api/admin/markets', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/access.html'), 'utf8');
     expect(html).toContain('/dashboards/canonical/js/markets-management.js');

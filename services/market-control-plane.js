@@ -8,7 +8,7 @@
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
  * @depends       db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
  * @used-by       routes/admin-market-control-plane.js
- * @db-read       market_settlements, disputes, orders, markets, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
+ * @db-read       market_settlements, disputes, orders, markets, carriers, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
  * @db-write      none
  * @db-txn        none
  * @doctrine      control_plane_is_read_only, gaps_are_reported_never_repaired, no_second_authorization_engine
@@ -169,7 +169,12 @@ async function getControlPlane(executor, marketCode) {
   const deliveryProof = await getDeliveryProof(db, market.id);
   const snapshot = { market, assignment, ceiling, team, paymentProviders, cashPolicy, relaisActive, deliveryProof };
   const gaps = computeGaps(snapshot);
-  return { ...snapshot, gaps, readiness: readinessFromGaps(gaps) };
+  // Choix du transporteur pour l'attestation de livrabilité : fourni uniquement quand la preuve manque
+  // (aucune nouvelle route, l'écran de gestion des marchés ne lit que /api/admin/markets).
+  const carriers = gaps.some(gap => gap.code === 'NO_DELIVERY_PROOF')
+    ? (await db.query('SELECT id, name FROM carriers WHERE is_active = TRUE ORDER BY name')).rows
+    : [];
+  return { ...snapshot, carriers, gaps, readiness: readinessFromGaps(gaps) };
 }
 
 /**
