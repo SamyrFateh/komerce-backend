@@ -48,4 +48,12 @@ describe('order-checkout-service — livrabilité du marché', () => {
     expect(src).toMatch(/require\('\.\/market-delivery-proof-service'\)/);
     expect(src).toMatch(/assertMarketDeliverable\(client, relais\.market_id\)/);
   });
+  test('lot 3 — encaissement central autorisé par marché, après livrabilité et avant routage', () => {
+    const delivery = source.indexOf('assertMarketDeliverable(client, relais.market_id)');
+    const gate = source.indexOf('assertCentralCollectionAllowed(client, relais.market_id, payment_mode)');
+    const routing = source.indexOf('resolveRoutingFromRelais(relais');
+    expect(gate).toBeGreaterThan(delivery);
+    expect(routing).toBeGreaterThan(gate);
+    expect(source).toMatch(/e\.code === 'PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET'/);
+  });
 });
