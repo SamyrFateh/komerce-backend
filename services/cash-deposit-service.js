@@ -280,7 +280,7 @@ async function disputeDeposit({ depositId, verifierId, reason, correction = fals
  * « vérifiée », une déclaration en attente ou une réception finale non contrôlée ne déchargent rien
  * (aucun faux vert). Les entrées par transfert reçu sont déduites des sorties avant d'en décharger
  * les encaissements propres de l'agent (lecture prudente). Partitionné par (agent, Market) : la décharge d'un Market ne couvre jamais l'encaissement d'un autre. À préfixer par `WITH` ; expose la CTE
- * `uncovered` (colonnes inchangées).
+ * `uncovered` (colonnes d'origine + `market_id`).
  */
 const UNCOVERED_COLLECTIONS_CTE = `
   running AS (

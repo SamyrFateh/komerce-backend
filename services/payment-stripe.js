@@ -205,19 +205,17 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
     assertStripeIntentMatchesOrder(intent, existing);
   } catch (e) {
     log.error({ order_id: orderId, intent_id: intent.id, code: e.code }, '[STRIPE-WEBHOOK] contrat intent/commande violé — non payé');
-    try {
-      await createAlert(db, {
-        type: 'stripe_intent_contract_mismatch',
-        entityType: 'order',
-        entityId: existing.id,
-        severity: 'high',
-        title: `Paiement Stripe incohérent — ${existing.reference}`,
-        description: `intent=${intent.id} montant=${intent.amount} devise=${intent.currency || '<missing>'} ` +
-          `attendu=${Math.round(parseFloat(existing.total_eur) * 100)} eur`,
-      });
-    } catch (alertErr) {
-      log.error({ err: alertErr.message, order_id: orderId }, '[STRIPE-WEBHOOK] alert contract mismatch insert failed');
-    }
+    // Sans alerte persistée, la décision humaine (remboursement/rapprochement) serait invisible :
+    // on n'acquitte pas l'événement et on laisse l'erreur remonter (5xx) pour que Stripe le rejoue.
+    await createAlert(db, {
+      type: 'stripe_intent_contract_mismatch',
+      entityType: 'order',
+      entityId: existing.id,
+      severity: 'high',
+      title: `Paiement Stripe incohérent — ${existing.reference}`,
+      description: `intent=${intent.id} montant=${intent.amount} devise=${intent.currency || '<missing>'} ` +
+        `attendu=${Math.round(parseFloat(existing.total_eur) * 100)} eur`,
+    });
     await markStripeEventProcessed(event, { ignored: 'contract_mismatch', order_id: orderId }, db);
     return { received: true, ignored: true };
   }
