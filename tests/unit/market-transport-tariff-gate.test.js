@@ -3,6 +3,7 @@ const {
   isTransportTariffApplicable, assertTransportTariffApplicable, GLOBAL_TRANSPORT_TARIFF_CURRENCY,
   resolveEffectiveTransportRates,
 } = require('../../services/market-transport-tariff-gate');
+const { quoteTransportPriceForOrder } = require('../../services/transport-pricing');
 
 describe('market-transport-tariff-gate (lot 4, fail-closed)', () => {
   test('tarif global = KMF', () => expect(GLOBAL_TRANSPORT_TARIFF_CURRENCY).toBe('KMF'));
@@ -48,6 +49,15 @@ describe('market-transport-tariff-gate (lot 4, fail-closed)', () => {
         .toEqual({ SEA_KMF_PER_KG_COMMERCIAL: 65, AIR_KMF_PER_KG_TAXABLE: 3000, AIR_VOLUMETRIC_DIVISOR: 6000 });
       expect(resolveEffectiveTransportRates({ marketCurrency: 'KMF', globalRates, marketRates: {} }))
         .toEqual(globalRates);
+    });
+
+    test('devis au tarif du Market : montant calculé, SEA seul + AIR demandé → refus (rail non exposé, et aucun tarif AIR de repli)', () => {
+      const rates = resolveEffectiveTransportRates({ marketCurrency: 'XAF', globalRates, marketRates: { SEA_KMF_PER_KG_COMMERCIAL: 90 } });
+      const sea = quoteTransportPriceForOrder({ items: [{ requested_transport_rail: 'SEA_STANDARD', weight_kg: 2, volume_cm3: 0, quantity: 3 }], rates });
+      expect(sea.transport_price_kmf).toBe(540); // 2 kg × 3 × 90, jamais 65 (global)
+      expect(() => quoteTransportPriceForOrder({ items: [{ requested_transport_rail: 'AIR_EXPRESS', weight_kg: 1, volume_cm3: 0, quantity: 1 }], rates }))
+        .toThrow(expect.objectContaining({ name: 'TransportPricingError' }));
+      expect(rates.AIR_KMF_PER_KG_TAXABLE).toBeUndefined();
     });
   });
 });
