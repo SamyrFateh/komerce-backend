@@ -93,6 +93,9 @@ async function queryParcels(marketId) {
       WHERE o.market_id = $1
         AND (p.relais_id IS NULL OR r.market_id = $1)
         AND p.status NOT IN ('cancelled', 'collected')
+        -- Même périmètre que countRelayParcels (compteur ⇔ file) : commandes réelles et vivantes uniquement.
+        AND o.simulation_scope IS NULL
+        AND o.status::text NOT IN ('cancelled', 'refunded', 'collected')
       ORDER BY p.created_at ASC`,
     [marketId]
   );
