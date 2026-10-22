@@ -68,6 +68,7 @@ module.exports = {
     ],
     migrations: [
       'migrations/308_suspend_unproven_active_markets.sql',
+      'migrations/310_market_open_djibouti_provisioning.sql',
       'migrations/170_market_commercial_price_drafts.sql',
     ],
     dash: [
@@ -92,6 +93,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/migration-308-suspend-unproven-markets.test.js',
+      'tests/integration/market-dj-provisioning-postgres.test.js',
       'tests/integration/market-local-price-state-transition-real-db.test.js',
       'tests/unit/market-commercial-price-service.test.js',
       'tests/unit/market-local-price-resolution-service.test.js',

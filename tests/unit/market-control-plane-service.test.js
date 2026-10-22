@@ -70,6 +70,25 @@ describe('computeGaps — rapport d’écarts du Control Plane', () => {
   });
 });
 
+describe('computeGaps — parité de devise (lot 8)', () => {
+  test('devise sans parité canonique → écart plate-forme bloquant, message dédié', () => {
+    const s = healthy();
+    s.market.has_currency_parity = false;
+    expect(codes(s)).toEqual(['NO_CURRENCY_PARITY']);
+    const readiness = readinessFromGaps(computeGaps(s));
+    expect(readiness.platform.blockers.map(g => g.code)).toEqual(['NO_CURRENCY_PARITY']);
+    expect(readiness.ready_for_activation).toBe(false);
+    expect(GAP_MESSAGES.NO_CURRENCY_PARITY).toMatch(/parité canonique/);
+  });
+
+  test('parité présente ou information absente → aucun écart fabriqué', () => {
+    const present = healthy();
+    present.market.has_currency_parity = true;
+    expect(codes(present)).toEqual([]);
+    expect(codes(healthy())).toEqual([]);
+  });
+});
+
 describe('getControlPlane / listMarkets — lecture seule', () => {
   function fakeDb(plan) {
     const calls = [];

@@ -19465,7 +19465,7 @@
             ]
           },
           "migrations": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "migrations/170_market_commercial_price_drafts.sql",
@@ -19475,6 +19475,11 @@
               {
                 "declared": "migrations/308_suspend_unproven_active_markets.sql",
                 "resolvedPath": "migrations/308_suspend_unproven_active_markets.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/310_market_open_djibouti_provisioning.sql",
+                "resolvedPath": "migrations/310_market_open_djibouti_provisioning.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -19505,11 +19510,16 @@
             ]
           },
           "tests": {
-            "count": 9,
+            "count": 10,
             "files": [
               {
                 "declared": "tests/e2e/market-readonly-views.spec.js",
                 "resolvedPath": "tests/e2e/market-readonly-views.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/market-dj-provisioning-postgres.test.js",
+                "resolvedPath": "tests/integration/market-dj-provisioning-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19555,7 +19565,7 @@
             ]
           }
         },
-        "totalFiles": 33,
+        "totalFiles": 35,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19761,9 +19771,14 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 0,
+        "testOnlyRelations": 1,
         "compositionRootRelations": 0,
-        "details": []
+        "details": [
+          {
+            "to": "market-control-plane",
+            "family": "NON_RUNTIME_TEST"
+          }
+        ]
       },
       "boundaryHealth": {
         "status": "ATTENTION",
