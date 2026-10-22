@@ -922,3 +922,47 @@ body.kmc-shell-v4 .kmc-com-table th { text-align: left; color: #64748b; font-wei
 body.kmc-shell-v4 .kmc-com-table td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; }
 body.kmc-shell-v4 .kmc-com-table a { color: #c2410c; font-weight: 600; text-decoration: none; }
 body.kmc-shell-v4 #commerce-recent-orders { overflow-x: auto; }
+
+/* Liens d'action des cartes décision : vrais boutons secondaires lisibles, cible tactile >= 32px. */
+body.kmc-shell-v4 .kmc-decision-link,
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 1px solid color-mix(in srgb, var(--decision-accent) 35%, #ffffff);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--decision-accent) 8%, #ffffff);
+  color: color-mix(in srgb, var(--decision-accent) 85%, #0f1f36);
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+}
+body.kmc-shell-v4 .kmc-decision-link:hover,
+body.kmc-shell-v4 .kmc-decision-link:focus-visible {
+  background: color-mix(in srgb, var(--decision-accent) 16%, #ffffff);
+  text-decoration: none;
+}
+
+/* Paramètres économiques à valider : texte, puis bouton sur sa propre ligne (plus de superposition). */
+body.kmc-shell-v4 .kmc-param-line {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  margin-top: 10px;
+}
+body.kmc-shell-v4 .kmc-param-line > small { display: block; max-width: 100%; line-height: 1.5; }
+body.kmc-shell-v4 .kmc-param-line > .kmc-workspace-action {
+  position: static;
+  float: none;
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  height: auto;
+  min-height: 36px;
+  margin: 4px 0 0;
+  padding: 8px 16px;
+  line-height: 1.2;
+  text-decoration: none;
+}

@@ -888,6 +888,7 @@
     box.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Ces valeurs permettent une simulation, pas un prix publié ni un coût réel tant qu’elles ne sont pas validées.'));
     flagged.forEach(item => {
       const line = doc.createElement('div');
+      line.className = 'kmc-param-line';
       line.setAttribute('data-parameter-key', item.key);
       line.appendChild(text(doc, 'strong', '', `${item.label} · ${PARAMETER_STATUS_LABELS[item.status] || item.status}`));
       line.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', `Provenance : ${item.provenance} Usage : ${item.usage} Conséquence : ${item.consequence}`));
