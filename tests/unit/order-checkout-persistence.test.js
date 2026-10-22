@@ -92,3 +92,14 @@ describe('insertOrderRow — snapshot de tarif transport', () => {
     expect(client.query.mock.calls[0][1][39]).toBeNull();
   });
 });
+
+describe('insertOrderRow — estimation de coût inconnue', () => {
+  test('coût et marge estimés NULL (taux AED non approuvé) : persistés NULL, pas 0', async () => {
+    const client = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'o1' }] }) };
+    await insertOrderRow(client, params({ costEstimatedKmf: null, marginEstimatedPct: null, discountPct: 7, discountKmf: 70 }));
+    const values = client.query.mock.calls[0][1];
+    const i = values.indexOf(7);
+    expect(values.slice(i - 2, i)).toEqual([null, null]); // coût et marge estimés
+    expect(values[i + 1]).toBe(70);
+  });
+});
