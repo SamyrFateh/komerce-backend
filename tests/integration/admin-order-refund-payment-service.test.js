@@ -21,6 +21,9 @@ const mockDb = {
 jest.mock('../../db', () => mockDb);
 
 const mockProcessRefund = jest.fn();
+jest.mock('../../services/order-fx-snapshot', () => ({
+  computeClosingRefund: jest.fn(async (_c, order) => ({ kmf: Number(order.total_kmf), eur: Number(order.total_eur), type: 'full' })),
+}));
 jest.mock('../../services/refund-service', () => ({
   processRefund: (...args) => mockProcessRefund(...args),
 }));

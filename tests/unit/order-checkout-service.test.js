@@ -64,15 +64,12 @@ describe('order-checkout-service — livrabilité du marché', () => {
     expect(source).toMatch(/SELECT lifecycle_status, code, currency FROM markets/);
     expect(source).toMatch(/MARKET_TRANSPORT_TARIFF_MISSING/);
   });
-  test('lot 7 — aucun taux de repli : taux canonique strict, refus 503 fx_rate_unavailable', () => {
-    expect(source).toMatch(/require\('\.\.\/utils\/rates'\)/);
-    expect(source).toMatch(/await getAuthoritativeRates\(\)/);
+  test('lot 7 — aucun taux de repli : snapshot FX par l\'autorité, refus 503 fx_rate_unavailable', () => {
     expect(source).not.toMatch(/\|\|\s*492/);
     expect(source).not.toMatch(/\bgetRates\(/);
-    expect(source).toMatch(/fail\(503, \{ error: 'Taux de change temporairement indisponible', code: 'fx_rate_unavailable' \}\)/);
-    const rate = source.indexOf('await getAuthoritativeRates()');
-    const items = source.indexOf('resolveCheckoutItems({');
-    expect(items).toBeGreaterThan(rate);
+    expect(source).not.toMatch(/getAuthoritativeRates/);
+    expect(source).toMatch(/buildOrderFxSnapshot\(/);
+    expect(source).toMatch(/fx_rate_unavailable/);
   });
 });
 
@@ -81,10 +78,11 @@ describe('order-checkout-service — unification monétaire (pivot EUR, snapshot
   const path2 = require('path');
   const src = fs2.readFileSync(path2.join(__dirname, '..', '..', 'services', 'order-checkout-service.js'), 'utf8');
 
-  test('marché non-KMF : garde pivot EUR/KMF fail-closed avant livrabilité', () => {
-    expect(src).toMatch(/assertEurKmfPivotConsistent\(eurKmfFinal\)/);
-    expect(src).toMatch(/EUR_KMF_PIVOT_DIVERGENCE/);
-    expect(src.indexOf('assertEurKmfPivotConsistent(eurKmfFinal)')).toBeLessThan(src.indexOf('assertMarketDeliverable(client'));
+  test('total_eur vient du snapshot de l’autorité unique : plus de finance_config ni de taux de repli', () => {
+    expect(src).not.toMatch(/getAuthoritativeRates|eurKmfFinal|assertEurKmfPivotConsistent/);
+    expect(src).toMatch(/buildOrderFxSnapshot\(\{[\s\S]{0,160}marketCurrency: checkoutMarket\.currency/);
+    expect(src).toMatch(/totalEur: fxSnapshotBuilt\.totalEur/);
+    expect(src).toMatch(/fxSnapshot: fxSnapshotBuilt\.snapshot/);
   });
 
   test('tarifs transport : chargés pour le marché du relais serveur, jamais du corps de requête', () => {

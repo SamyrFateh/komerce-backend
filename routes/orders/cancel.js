@@ -47,6 +47,7 @@ const { validate }                 = require('../../middleware/validate');
 const { orders }                   = require('../../validators');
 const { getRule }                  = require('../../utils/rules');
 const { processRefund }            = require('../../services/refund-service');
+const { computeClosingRefund } = require('../../services/order-fx-snapshot');
 const { notifyCancellation }       = require('../../services/notification-service');
 const { transitionOrderStatus }    = require('../../services/order-status-machine');
 const refundReceiptService         = require('../../services/documents/refund-receipt');
@@ -74,7 +75,8 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
        FROM orders o
        LEFT JOIN users      u  ON u.id  = o.user_id
        LEFT JOIN recipients rc ON rc.id = o.recipient_id
-       WHERE o.id = $1`,
+       WHERE o.id = $1
+       FOR UPDATE OF o`,
       [id]
     );
 
@@ -140,13 +142,12 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       inFreeWindow         = hoursSincePaid <= freeWindowHours;
 
       const refundPct   = inFreeWindow ? 100 : partialRefundPct;
-      refundAmountKmf   = Math.round(Number(order.total_kmf) * refundPct / 100);
 
-      const eurKmfRate  = order.total_eur && order.total_kmf
-        ? Number(order.total_kmf) / Number(order.total_eur)
-        : 492;
-      refundAmountEur   = parseFloat((refundAmountKmf / eurKmfRate).toFixed(2));
-      refundType        = inFreeWindow ? 'full' : 'partial';
+      // Reste remboursable du montant réellement encaissé (snapshot d'origine) : jamais de reconversion ni de repli.
+      const closing   = await computeClosingRefund(client, order, refundPct);
+      refundAmountKmf = closing.kmf;
+      refundAmountEur = closing.eur;
+      refundType      = closing.type;
     }
 
     // ── 6. Exécuter le remboursement Stripe AVANT le statut ────────────────
@@ -272,6 +273,9 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
 
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) {}
+    if (err && typeof err.code === 'string' && err.code.startsWith('REFUND_')) {
+      return res.status(err.statusCode || 409).json({ error: err.message, code: err.code });
+    }
     next(err);
   } finally {
     client.release();

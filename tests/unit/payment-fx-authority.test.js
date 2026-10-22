@@ -79,9 +79,11 @@ describe('Payment & FX Authority', () => {
       'utf8'
     );
 
-    expect(source).toContain("const EUR_PAYMENT_MODES = new Set(['stripe_eur', 'paypal_eur'])");
-    expect(source).toContain('await getAuthoritativeRates()');
-    expect(source).toContain("code: 'fx_rate_unavailable'");
-    expect(source).not.toContain("EUR_PAYMENT_MODES = new Set(['stripe_eur', 'paypal_eur', 'cash_relais'])");
+    // PR-B : la garde locale du route est remplacée par le snapshot FX du service de checkout (autorité unique).
+    expect(source).not.toContain('EUR_PAYMENT_MODES');
+    expect(source).not.toContain('getAuthoritativeRates');
+    const svc = fs.readFileSync(path.join(__dirname, '../../services/order-checkout-service.js'), 'utf8');
+    expect(svc).toContain('buildOrderFxSnapshot(');
+    expect(svc).toContain('fx_rate_unavailable');
   });
 });

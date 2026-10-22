@@ -61,7 +61,7 @@ async function insertOrderRow(client, params) {
     costEstimatedKmf, marginEstimatedPct, discountPct, discountKmf, loyaltyLabel,
     destinationIsland, routingMode, transitHub, transportPriceKmf,
     pickupCodeRecipient, pickupCodeRecipientUserId,
-    displayAmount, displayCurrency, displayMeta, marketId, transportPricingSnapshot,
+    displayAmount, displayCurrency, displayMeta, marketId, transportPricingSnapshot, fxSnapshot,
   } = params;
 
   const { rows: [order] } = await client.query(
@@ -84,7 +84,7 @@ async function insertOrderRow(client, params) {
      transport_price_kmf,
      pickup_code_recipient, pickup_code_recipient_user_id,
      display_total_amount, display_currency, display_parity_snapshot,
-     market_id, transport_pricing_snapshot
+     market_id, transport_pricing_snapshot, fx_snapshot
    ) VALUES (
      $1,$2,$3,$4,$5,
      $6,
@@ -103,7 +103,7 @@ async function insertOrderRow(client, params) {
      $33,
      $34,$35,
      $36,$37,$38,
-     $39,$40
+     $39,$40,$41
    ) RETURNING *`,
   [
     uuidv4(), reference, userId, recipientId, relaisId || null,
@@ -141,6 +141,7 @@ async function insertOrderRow(client, params) {
     displayMeta ? JSON.stringify(displayMeta) : null,
     marketId || null,
     transportPricingSnapshot ? JSON.stringify(transportPricingSnapshot) : null,
+    fxSnapshot ? JSON.stringify(fxSnapshot) : null,
   ]
 );
 

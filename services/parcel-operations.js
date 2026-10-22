@@ -51,6 +51,7 @@ const { notifyText, notifyParcelScan } = require('./notification-service');
 const { getRule, getRuleNumber }        = require('../utils/rules');
 const { generateParcelRef }             = require('../utils/reference');
 const { processRefundWithFallback }     = require('./refund-service');
+const { computeRefundEurForOrder }      = require('./order-fx-snapshot');
 const { PARCEL_SMS }                    = require('./parcel-service');
 const { transitionOrderStatus, appendOrderHistoryNote } = require('./order-status-machine');
 const {
@@ -463,7 +464,8 @@ async function cancelBackorder(orderId, body, user) {
       `SELECT o.*, u.phone AS user_phone
        FROM orders o
        LEFT JOIN users u ON u.id = o.user_id
-       WHERE o.id = $1`,
+       WHERE o.id = $1
+       FOR UPDATE OF o`,
       [orderId]
     );
     if (!order) {
@@ -530,10 +532,8 @@ async function cancelBackorder(orderId, body, user) {
     let refundAmountEur = 0;
 
     if (backorderValueKmf > 0 && order.payment_status === 'paid') {
-      const eurKmfRate = order.total_eur && order.total_kmf
-        ? Number(order.total_kmf) / Number(order.total_eur)
-        : 492;
-      refundAmountEur = parseFloat((backorderValueKmf / eurKmfRate).toFixed(2));
+      // Part du montant EUR réellement encaissé (snapshot d'origine) : jamais de reconversion ni de taux de repli.
+      refundAmountEur = await computeRefundEurForOrder(client, order, backorderValueKmf, 'partial');
 
       refundResult = await processRefundWithFallback(
         client, order,

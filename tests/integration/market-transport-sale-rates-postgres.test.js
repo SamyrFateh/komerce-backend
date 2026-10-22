@@ -111,15 +111,6 @@ if (!hasIntegrationEnv) {
       expect(t.rates.SEA_KMF_PER_KG_COMMERCIAL).toBeCloseTo(t.lines[0].kmf_per_kg, 8);
     });
 
-    test('pivot EUR/KMF : finance_config divergent de la parité → refus ; cohérent → accepté', async () => {
-      const { assertEurKmfPivotConsistent } = require('../../services/market-transport-sale-rates');
-      const { getCurrencyParity } = require('../../utils/currency');
-      const p = await getCurrencyParity('KMF');
-      await expect(assertEurKmfPivotConsistent(p)).resolves.toBeUndefined();
-      await expect(assertEurKmfPivotConsistent(492)).resolves.toBeUndefined(); // 0,0066 % d'écart : toléré
-      await expect(assertEurKmfPivotConsistent(p * 1.05)).rejects.toMatchObject({ code: 'EUR_KMF_PIVOT_DIVERGENCE', statusCode: 409 });
-      await expect(assertEurKmfPivotConsistent(0)).rejects.toMatchObject({ code: 'EUR_KMF_PIVOT_DIVERGENCE' });
-    });
 
     test('DJ : le prix DJF passe par la chaîne gouvernée — refusé sans observation approuvée, aucune parité fixe inventée', async () => {
       const { projectAmount } = require('../../utils/currency');

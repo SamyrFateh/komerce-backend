@@ -41,12 +41,6 @@ const { validate }                       = require('../../middleware/validate');
 const { orders }                         = require('../../validators');
 const { runOrderCheckout }               = require('../../services/order-checkout-service');
 const { closeCompletedSharedCartForOrderItems } = require('../../services/cart-share-service');
-const {
-  getAuthoritativeRates,
-  AuthoritativeRateUnavailableError,
-} = require('../../utils/rates');
-
-const EUR_PAYMENT_MODES = new Set(['stripe_eur', 'paypal_eur']);
 
 // Business Alignment Closure — un relais explicite est désormais une
 // précondition du checkout. Il fixe le marché, le routage et la résolution
@@ -58,25 +52,6 @@ const orderCreateSchema = {
 };
 
 router.post('/', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {
-  // Payment & FX Authority — toute commande qui sera encaissée en EUR doit
-  // d'abord obtenir le taux canonique finance_config. getAuthoritativeRates()
-  // hydrate le cache partagé de utils/rates ; l'orchestrateur checkout réutilise
-  // donc exactement ce snapshot au moment de calculer orders.total_eur.
-  // Aucun fallback 492/138 ne peut servir à créer une dette de paiement.
-  if (EUR_PAYMENT_MODES.has(req.body.payment_mode)) {
-    try {
-      await getAuthoritativeRates();
-    } catch (err) {
-      if (err instanceof AuthoritativeRateUnavailableError || err?.code === 'fx_rate_unavailable') {
-        return res.status(503).json({
-          error: 'Taux de change temporairement indisponible — paiement EUR suspendu',
-          code: 'fx_rate_unavailable',
-        });
-      }
-      return next(err);
-    }
-  }
-
   let result;
   try {
     result = await runOrderCheckout({ user: req.user, body: req.body });

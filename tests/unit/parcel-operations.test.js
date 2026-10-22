@@ -39,6 +39,9 @@ jest.mock('../../utils/rules', () => ({
 jest.mock('../../utils/reference', () => ({
   generateParcelRef: jest.fn().mockResolvedValue('COLIS-AUTO-001'),
 }));
+jest.mock('../../services/order-fx-snapshot', () => ({
+  computeRefundEurForOrder: jest.fn().mockResolvedValue(10),
+}));
 jest.mock('../../services/refund-service', () => ({
   processRefundWithFallback: jest.fn().mockResolvedValue({ method: 'store_credit', storeCreditId: 'sc-01' }),
 }));

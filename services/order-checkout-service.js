@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/market-transport-sale-rates.js, db.js, services/cart-share-service.js,
+ * @depends       services/market-transport-sale-rates.js, services/order-fx-snapshot.js, db.js, services/cart-share-service.js,
  *                services/order-post-commit-hooks.js, services/order-checkout-item-resolution.js,
  *                services/order-checkout-persistence.js, services/local-stock-service.js,
  *                services/market-local-price-resolution-service.js
@@ -66,7 +66,6 @@ const { assignOrderSimulationScope } = require('./simulation-scope-service');
 const { reserveRct1OrderReference, expectedProductTotalKmf, isAllowedRct1Reference } = require('./rct1-checkout-reference-guard');
 const { getLoyaltyDiscount }             = require('./loyalty-service');
 const { getRule }                        = require('../utils/rules');
-const { getAuthoritativeRates }          = require('../utils/rates');
 const { getUniqueRef, generateCashCode } = require('./order-service');
 const walletService = require('./wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
@@ -79,7 +78,8 @@ const { MarketCommercialPriceError } = require('./market-commercial-price-servic
 const { assertMarketDeliverable } = require('./market-delivery-proof-service');
 const { assertCentralCollectionAllowed } = require('./market-payment-collection-gate');
 const { assertTransportTariffApplicable, resolveEffectiveTransportRates } = require('./market-transport-tariff-gate');
-const { loadMarketTransportSaleTariffs, assertEurKmfPivotConsistent } = require('./market-transport-sale-rates');
+const { loadMarketTransportSaleTariffs } = require('./market-transport-sale-rates');
+const { buildOrderFxSnapshot } = require('./order-fx-snapshot');
 const {
   FULFILLMENT_SOURCE,
   resolveCheckoutFulfillmentSources,
@@ -127,20 +127,6 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
           error: 'Commande RCT1 deja creee : utiliser la reference existante' });
       }
     }
-
-    // Taux EUR/KMF canonique (finance_config) uniquement : aucun taux de repli (492) ne peut servir à
-    // calculer un total EUR. Indisponible -> refus explicite 503, sans commande créée.
-    let rates;
-    try {
-      rates = await getAuthoritativeRates();
-    } catch (e) {
-      if (e && e.code === 'fx_rate_unavailable') {
-        await client.query('ROLLBACK');
-        return fail(503, { error: 'Taux de change temporairement indisponible', code: 'fx_rate_unavailable' });
-      }
-      throw e;
-    }
-    const eurKmfFinal = rates.eur_kmf;
 
     const {
       items = [],
@@ -218,20 +204,6 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
         error: 'Ce marché n’est pas ouvert aux commandes.',
         code: 'MARKET_NOT_ACTIVE',
       });
-    }
-
-    // Marché non-KMF : le total EUR facturé (finance_config) doit reposer sur le même pivot EUR/KMF que les prix et
-    // le transport (currency_parities), sinon Stripe/PayPal factureraient un montant ≠ prix local.
-    if (String(checkoutMarket.currency || '').trim().toUpperCase() !== 'KMF') {
-      try {
-        await assertEurKmfPivotConsistent(eurKmfFinal);
-      } catch (e) {
-        if (e && e.code === 'EUR_KMF_PIVOT_DIVERGENCE') {
-          await client.query('ROLLBACK');
-          return fail(409, { error: e.message, code: e.code });
-        }
-        throw e;
-      }
     }
 
     // Livrabilité prouvée (liaison de transport + tarification) : sans preuve, aucune nouvelle commande
@@ -498,10 +470,27 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       relaisMarketId: relais?.market_id || null,
     });
 
+    // Une seule vérité monétaire de transaction : montant EUR autorisé, montant confirmé en devise du marché du
+    // relais (serveur) et jambes de taux, figés ici ; paiements et remboursements les lisent, sans reconversion.
+    // Aucun taux approuvé = refus 503 fx_rate_unavailable (jamais de repli).
+    let fxSnapshotBuilt;
+    try {
+      fxSnapshotBuilt = await buildOrderFxSnapshot({
+        totalKmf: total_kmf, marketId: relais?.market_id || null, marketCurrency: checkoutMarket.currency, client,
+      });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      if (e && e.code === 'fx_rate_unavailable') return fail(503, { error: e.message, code: e.code });
+      if (e && (e.code === 'fx_currency_unsupported' || e.code === 'ORDER_MARKET_CURRENCY_MISSING')) {
+        return fail(409, { error: e.message, code: e.code });
+      }
+      throw e;
+    }
+
     const order = await insertOrderRow(client, {
       reference, userId: user.id, recipientId: recipient_id, relaisId: relais?.id || null,
       trackingPhone: tracking_phone,
-      totalKmf: total_kmf, totalEur: parseFloat((total_kmf / eurKmfFinal).toFixed(2)),
+      totalKmf: total_kmf, totalEur: fxSnapshotBuilt.totalEur,
       paymentMode: payment_mode, stripePaymentIntent: stripe_payment_intent, cashRefCode: cash_ref_code,
       confectionType: confection_type, confectionInstructions: confection_instructions,
       confectionDelayDays: confection_delay_days, confectionArtisanId: confection_artisan_id,
@@ -511,7 +500,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       costEstimatedKmf: cost_estimated, marginEstimatedPct: margin_est,
       discountPct, discountKmf, loyaltyLabel,
       destinationIsland: routing.destination_island, routingMode: routing.routing_mode, transitHub: routing.transit_hub,
-      transportPriceKmf: transport_price_kmf, transportPricingSnapshot,
+      transportPriceKmf: transport_price_kmf, transportPricingSnapshot, fxSnapshot: fxSnapshotBuilt.snapshot,
       pickupCodeRecipient: pickup_code_recipient, pickupCodeRecipientUserId,
       displayAmount: displaySnapshot.amount, displayCurrency: displaySnapshot.currency, displayMeta: displaySnapshot.meta,
       marketId: relais?.market_id || null,

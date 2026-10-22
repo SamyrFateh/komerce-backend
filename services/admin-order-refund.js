@@ -29,6 +29,7 @@
  */
 
 const db = require('../db');
+const { computeClosingRefund } = require('./order-fx-snapshot');
 const { processRefund }       = require('./refund-service');
 const { transitionOrderStatus } = require('./order-status-machine');
 const { markRefunded }        = require('./payment-service');
@@ -97,8 +98,14 @@ async function refundCancelledOrder({ orderId, user, dryRun = true, reason = nul
       };
     }
 
-    const amountKmf = Number(order.total_kmf || 0);
-    const amountEur = Number(order.total_eur || 0);
+    // Reste remboursable du capturé (après d'éventuels remboursements partiels) : jamais le total brut.
+    const closing = await computeClosingRefund(client, order, 100);
+    if (!(closing.kmf > 0)) {
+      await client.query('ROLLBACK');
+      return { status: 409, body: { error: 'Aucun montant restant à rembourser pour cette commande' } };
+    }
+    const amountKmf = closing.kmf;
+    const amountEur = closing.eur;
     const plannedMethod = order.payment_mode === 'stripe_eur' && order.stripe_payment_id
       ? 'stripe'
       : (cashMode === 'wallet_credit' ? 'wallet_credit' : 'manual_cash');
