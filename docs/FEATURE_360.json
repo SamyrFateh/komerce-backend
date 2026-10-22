@@ -7588,7 +7588,7 @@
               {
                 "declared": "services/relay-collect-amount.js",
                 "resolvedPath": "services/relay-collect-amount.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/relay-dashboard-queries.js",
@@ -24312,7 +24312,7 @@
             ]
           },
           "migrations": {
-            "count": 9,
+            "count": 10,
             "files": [
               {
                 "declared": "migrations/079_paypal_payment_mode.sql",
@@ -24357,6 +24357,11 @@
               {
                 "declared": "migrations/304_cash_custody_provenance_edges.sql",
                 "resolvedPath": "migrations/304_cash_custody_provenance_edges.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/307_market_central_collection_modes.sql",
+                "resolvedPath": "migrations/307_market_central_collection_modes.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -24412,7 +24417,7 @@
             ]
           },
           "services": {
-            "count": 22,
+            "count": 23,
             "files": [
               {
                 "declared": "services/cash-confirmation-control-service.js",
@@ -24452,6 +24457,11 @@
               {
                 "declared": "services/market-payment-account-service.js",
                 "resolvedPath": "services/market-payment-account-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-payment-collection-gate.js",
+                "resolvedPath": "services/market-payment-collection-gate.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -24527,7 +24537,7 @@
             ]
           },
           "tests": {
-            "count": 35,
+            "count": 36,
             "files": [
               {
                 "declared": "public/boutique/tests/unit/b-mobile-money.test.js",
@@ -24612,6 +24622,11 @@
               {
                 "declared": "tests/unit/market-payment-accounts.test.js",
                 "resolvedPath": "tests/unit/market-payment-accounts.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-payment-collection-gate.test.js",
+                "resolvedPath": "tests/unit/market-payment-collection-gate.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -24707,7 +24722,7 @@
             ]
           }
         },
-        "totalFiles": 78,
+        "totalFiles": 81,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 6,
