@@ -430,9 +430,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Permettre à un responsable pays explicitement scopé manager de décider un prix local, d’en voir l’impact économique, puis de l’activer sans approbation centrale lorsque les gates autorisent la position ; LOCAL_ACTIVE devient alors la seule vérité locale consommable par le buyer path.
 
 - services: 4
-- migrations: 1
+- migrations: 2
 - dash: 18
-- tests: 8
+- tests: 9
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
 - interfaces exposed: 0
@@ -2237,7 +2237,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2103 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2104 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
