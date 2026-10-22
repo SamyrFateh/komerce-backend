@@ -8,6 +8,9 @@
  */
 const { makeClient, expectTransactionCommitted, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
 
+jest.mock('../../services/order-fx-snapshot', () => ({
+  computeClosingRefund: jest.fn(async (_c, order) => ({ kmf: Number(order.total_kmf), eur: Number(order.total_eur), type: 'full' })),
+}));
 jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
 jest.mock('../../services/refund-service', () => ({ processRefund: jest.fn() }));
 jest.mock('../../services/order-status-machine', () => ({ transitionOrderStatus: jest.fn() }));

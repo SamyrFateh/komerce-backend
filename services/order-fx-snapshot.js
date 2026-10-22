@@ -122,7 +122,28 @@ async function assertRefundRecordCompatible(client, order, amountKmf, amountEur,
   }
 }
 
+// Remboursement « de clôture » (annulation client, remboursement admin) : jamais plus que le reste remboursable
+// (le capturé moins tout remboursement déjà enregistré), montant EUR = part exacte du capturé.
+// Le type est 'full' pour 100 % ou si un 'partial' existe déjà (contrainte unique (order_id, refund_type)).
+async function computeClosingRefund(client, order, pct = 100) {
+  const prior = await loadPriorRefunds(client, order.id, null);
+  const totalKmf = Number(order?.total_kmf);
+  const totalEur = Number(order?.total_eur);
+  if (!(totalKmf > 0) || !(totalEur > 0)) {
+    throw refundError('Montant encaissé de la commande indisponible : remboursement refusé.', 'REFUND_ORDER_FX_MISSING');
+  }
+  const remainingKmf = totalKmf - Number(prior.kmf);
+  const target = Math.round(totalKmf * Number(pct) / 100);
+  const kmf = Math.max(0, Math.min(target, remainingKmf));
+  const { rows: [partial] } = await client.query(
+    "SELECT 1 FROM refunds WHERE order_id = $1 AND refund_type = 'partial' LIMIT 1", [order.id]);
+  const type = (Number(pct) >= 100 || partial) ? 'full' : 'partial';
+  const eur = kmf > 0 ? refundEurForKmf({ order, refundKmf: kmf, prior }) : 0;
+  return { kmf, eur, type };
+}
+
 module.exports = {
+  computeClosingRefund,
   assertRefundRecordCompatible,
   buildOrderFxSnapshot, loadPriorRefunds, refundEurForKmf, computeRefundEurForOrder, assertRefundWithinCaptured,
 };

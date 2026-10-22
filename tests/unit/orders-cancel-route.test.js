@@ -47,8 +47,10 @@ jest.mock('../../utils/rules', () => ({
 }));
 
 jest.mock('../../services/order-fx-snapshot', () => ({
-  computeRefundEurForOrder: jest.fn(async (_c, order, refundKmf) =>
-    jest.requireActual('../../services/order-fx-snapshot').refundEurForKmf({ order, refundKmf })),
+  computeClosingRefund: jest.fn(async (_c, order, pct) => {
+    const kmf = Math.round(Number(order.total_kmf) * pct / 100);
+    return { kmf, eur: jest.requireActual('../../services/order-fx-snapshot').refundEurForKmf({ order, refundKmf: kmf }), type: pct >= 100 ? 'full' : 'partial' };
+  }),
 }));
 jest.mock('../../services/refund-service', () => ({
   processRefund: jest.fn(),

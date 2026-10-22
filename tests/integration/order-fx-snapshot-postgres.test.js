@@ -18,7 +18,7 @@ if (!hasIntegrationEnv) {
 } else {
   const db = require('../../db');
   const {
-    buildOrderFxSnapshot, refundEurForKmf, assertRefundWithinCaptured, assertRefundRecordCompatible,
+    buildOrderFxSnapshot, refundEurForKmf, computeClosingRefund, assertRefundWithinCaptured, assertRefundRecordCompatible,
   } = require('../../services/order-fx-snapshot');
   const DAY = 24 * 3600 * 1000;
 
@@ -120,6 +120,32 @@ if (!hasIntegrationEnv) {
       await expect(assertRefundRecordCompatible(fake([{ kmf: '2500.00', eur: '5.08' }]), order, 3000, 6.1, 'partial'))
         .rejects.toMatchObject({ code: 'REFUND_ALREADY_RECORDED_DIFFERENT_AMOUNT', statusCode: 409 });
       await expect(assertRefundRecordCompatible(fake([]), order, 3000, 6.1, 'partial')).resolves.toBeUndefined();
+    });
+  
+    describe('remboursement de clôture après un partiel (backorder puis annulation)', () => {
+      function seq(prior, hasPartial) {
+        return { query: jest.fn()
+          .mockResolvedValueOnce({ rows: [prior] })
+          .mockResolvedValueOnce({ rows: hasPartial ? [{ '?column?': 1 }] : [] }) };
+      }
+      test('annulation 100 % : plafonnée au reste, type full (plus de 409)', async () => {
+        const r = await computeClosingRefund(seq({ kmf: '3000', eur: '6.10' }, true), order, 100);
+        expect(r).toEqual({ kmf: 7000, eur: 14.23, type: 'full' });
+      });
+      test('annulation 80 % avec partiel existant : min(80 %, reste), type full', async () => {
+        const r = await computeClosingRefund(seq({ kmf: '3000', eur: '6.10' }, true), order, 80);
+        expect(r.kmf).toBe(7000);
+        expect(r.type).toBe('full');
+      });
+      test('annulation 80 % sans remboursement antérieur : partiel de 80 %', async () => {
+        const r = await computeClosingRefund(seq({ kmf: '0', eur: '0' }, false), order, 80);
+        expect(r).toMatchObject({ kmf: 8000, type: 'partial' });
+        expect(r.eur).toBe(16.26);
+      });
+      test('déjà intégralement remboursé : montant nul', async () => {
+        const r = await computeClosingRefund(seq({ kmf: '10000', eur: '20.33' }, false), order, 100);
+        expect(r.kmf).toBe(0);
+      });
     });
   });
 }

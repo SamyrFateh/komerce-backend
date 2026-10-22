@@ -464,7 +464,8 @@ async function cancelBackorder(orderId, body, user) {
       `SELECT o.*, u.phone AS user_phone
        FROM orders o
        LEFT JOIN users u ON u.id = o.user_id
-       WHERE o.id = $1`,
+       WHERE o.id = $1
+       FOR UPDATE OF o`,
       [orderId]
     );
     if (!order) {
