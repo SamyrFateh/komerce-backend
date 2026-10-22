@@ -8,7 +8,7 @@
  * @outputs       refund row, stripe/wallet refund result
  * @depends       db.js, stripe, services/wallet-service.js
  * @used-by       routes/orders/cancel.js, services/admin-order-refund.js, services/cancel-shared-cart-with-refunds.js
- * @db-read       orders, refunds, wallets
+ * @db-read       orders, refunds, wallets, markets
  * @db-write      refunds
  * @db-txn        resolve_before_behavior_change
  * @doctrine      refund_confirmed_only, idempotent_stripe_refund, resolve_before_behavior_change
