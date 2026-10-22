@@ -36,6 +36,8 @@ const MARKETS = [
   { label: 'CG', currency: 'XAF', price: 41000, tariff: 95 },
   { label: 'DJ', currency: 'DJF', price: 9000, tariff: 450 },
 ];
+const EXPECTED_CROSS_CODE_STATUS = 409;
+const EXPECTED_CROSS_CODE = 'market_product_not_exposed';
 const CODES = ['GA', 'SN', 'BJ', 'TG', 'GH', 'KE', 'TZ', 'UG', 'RW', 'ML', 'NE', 'BF'];
 
 describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
@@ -166,9 +168,13 @@ describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
   });
 
   it('isolation — un produit actif sur un marché n’est pas achetable sur un autre', async () => {
+    // KM est d'abord autorisé à encaisser : le refus ne peut venir que de l'isolation produit/marché.
+    await authorizeCentralCollectionForTest(db, cleanup, ctx.KM.marketId, 'stripe_eur');
+    const ok = await post(ctx.KM);
+    expect(ok.status).toBe(201); trackOrder(ok.body.order.id);
     const res = await post({ ...ctx.KM, productId: ctx.CM.productId });
-    expect(res.status).toBeGreaterThanOrEqual(400);
-    expect(res.status).toBeLessThan(500);
+    expect(res.status).toBe(EXPECTED_CROSS_CODE_STATUS);
+    expect(res.body.code).toBe(EXPECTED_CROSS_CODE);
   });
 
   // ── Parcours nominal complet par marché ─────────────────────────────────────────────────────────────────────
@@ -259,7 +265,22 @@ describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
         .rejects.toThrow();
       // 4) Marge : l'économie reste calculable dans la base moteur (KMF) ; une absence de coût est NULL, jamais 0 inventé.
       const { rows: [m] } = await db.query('SELECT cost_estimated_kmf, margin_estimated_pct FROM orders WHERE id=$1', [c.orderId]);
-      if (m.margin_estimated_pct != null) expect(Number.isFinite(Number(m.margin_estimated_pct))).toBe(true);
+      // Aucun produit nominal n'a de prix fournisseur : coût et marge sont INCONNUS (NULL), jamais 0 ni « réels ».
+      expect(m.cost_estimated_kmf).toBeNull();
+      expect(m.margin_estimated_pct).toBeNull();
+      // Gel : un nouveau taux EUR/USD ne change pas le snapshot déjà figé (DJ dérive de l'observation).
+      if (c.currency === 'DJF') {
+        const frozen = o.s.market.amount_text;
+        const { rows: [obs] } = await db.query(
+          `INSERT INTO fx_rate_observations (rate, source_label, source_ref, as_of, entered_by)
+           VALUES ((SELECT rate * 1.1 FROM fx_rate_observations WHERE approved_by IS NOT NULL ORDER BY as_of DESC LIMIT 1),
+                   'FIXTURE DE TEST — taux fictif non réel', 'e2e-fixture-2', now(), 'e2e-fixture-c') RETURNING id`);
+        await db.query("UPDATE fx_rate_observations SET approved_by='e2e-fixture-d' WHERE id=$1", [obs.id]);
+        const now = await fx.convert({ amount: String(o.total_kmf), from: 'KMF', to: 'DJF' });
+        expect(now.amount_text).not.toBe(frozen);
+        const { rows: [again] } = await db.query('SELECT fx_snapshot AS s FROM orders WHERE id=$1', [c.orderId]);
+        expect(again.s.market.amount_text).toBe(frozen);
+      }
     });
   });
 
@@ -277,5 +298,27 @@ describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
       await client.query('ROLLBACK');
       client.release();
     }
+  });
+
+  // ── Qualification des coûts : manquant ≠ 0 ────────────────────────────────────────────────────────────────
+  it('coût/marge : sans prix fournisseur le coût et la marge sont NULL (jamais fret seul = marge ~100 %) ; avec prix AED ils sont calculés', async () => {
+    await seedApprovedEurUsdObservationForTest(db);
+    const c = ctx.KM;
+    await authorizeCentralCollectionForTest(db, cleanup, c.marketId, 'stripe_eur');
+    const { rows: [before] } = await db.query('SELECT price_aed FROM products WHERE id=$1', [c.productId]);
+    expect(before.price_aed == null || Number(before.price_aed) === 0).toBe(true);
+    const missing = await post(c);
+    expect(missing.status).toBe(201); trackOrder(missing.body.order.id);
+    const { rows: [m] } = await db.query('SELECT cost_estimated_kmf, margin_estimated_pct FROM orders WHERE id=$1', [missing.body.order.id]);
+    expect(m.cost_estimated_kmf).toBeNull();
+    expect(m.margin_estimated_pct).toBeNull();
+
+    await db.query('UPDATE products SET price_aed=120 WHERE id=$1', [c.productId]);
+    const known = await post(c);
+    expect(known.status).toBe(201); trackOrder(known.body.order.id);
+    const { rows: [k] } = await db.query('SELECT cost_estimated_kmf, margin_estimated_pct, total_kmf FROM orders WHERE id=$1', [known.body.order.id]);
+    expect(Number(k.cost_estimated_kmf)).toBeGreaterThan(0);
+    expect(Number(k.margin_estimated_pct)).toBeLessThan(100);
+    await db.query('UPDATE products SET price_aed=NULL WHERE id=$1', [c.productId]);
   });
 });
