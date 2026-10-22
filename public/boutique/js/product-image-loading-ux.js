@@ -1,7 +1,7 @@
 /**
  * @komerce-arch-lite
  * @role          boutique-product-image-loading-ux
- * @domain        boutique
+ * @domain        catalog
  * @layer         ui-behavior
  * @owner         public/boutique/js/render/render-product-card.js
  * @purpose       Keep product-card media visually occupied until lazy images are actually ready.

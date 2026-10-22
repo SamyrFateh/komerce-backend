@@ -14,7 +14,7 @@
 
 | Fichier | Lignes | Bundle(s) |
 |---|---:|---|
-| `boutique-desktop.css` | 1319 | desktop.css |
+| `boutique-desktop.css` | 1323 | desktop.css |
 | `cart.css` | 2145 | components.css |
 | `categories.css` | 983 | components.css |
 | `category-cutout-navigation.css` | 408 | components.css |
@@ -23,14 +23,14 @@
 | `checkout-vertical-rail.css` | 1281 | components.css |
 | `critical-home.css` | 1580 | critical-home.css |
 | `discovery-desktop-v2.css` | 165 | discovery-desktop-v2.css |
-| `discovery-rail.css` | 282 | components.css |
+| `discovery-rail.css` | 280 | components.css |
 | `hero.css` | 980 | base.css |
 | `hero-cart-proxy.css` | 22 | components.css |
 | `hero-ultra-mobile.css` | 98 | base.css |
 | `identity.css` | 346 | components.css |
 | `interactions.css` | 443 | components.css |
 | `komerce.css` | 330 | components.css |
-| `layout.css` | 1252 | base.css |
+| `layout.css` | 1249 | base.css |
 | `mobile-cart-convergence.css` | 109 | components.css |
 | `mobile-catalog-convergence.css` | 83 | components.css |
 | `mobile-money.css` | 97 | components.css |
@@ -50,9 +50,9 @@
 | `notifications.css` | 64 | components.css |
 | `paypal.css` | 102 | components.css |
 | `product-image-loading.css` | 64 | components.css |
-| `products.css` | 1010 | components.css |
+| `products.css` | 998 | components.css |
 | `reset.css` | 85 | base.css |
-| `responsive-desktop-matrix.css` | 140 | desktop.css |
+| `responsive-desktop-matrix.css` | 143 | desktop.css |
 | `service-detail.css` | 392 | service-detail.css |
 | `shared-list-library-remove.css` | 42 | components.css |
 | `shared-list-lists-tab.css` | 278 | components.css |
@@ -67,11 +67,11 @@
 Cascade réelle des bundles livrés :
 
 ```
- 1. /boutique/css/dist/base.css?v=265
+ 1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=644
- 4. /boutique/css/dist/components.css?v=644
- 5. /boutique/css/dist/desktop.css?v=153
+ 3. /boutique/css/dist/components.css?v=645
+ 4. /boutique/css/dist/components.css?v=645
+ 5. /boutique/css/dist/desktop.css?v=155
 ```
 
 ## 3. Cartographie des sélecteurs critiques
@@ -83,14 +83,14 @@ Cascade réelle des bundles livrés :
 | `.k-hero-cats-sticky` ⚠️ | `categories.css` (0/2)<br>`hero.css` (8/1) |
 | `#k-subcats-wrap` ⚠️ | `boutique-desktop.css` (12/30)<br>`categories.css` (7/0)<br>`responsive-desktop-matrix.css` (0/2) |
 | `.k-subchip` ⚠️ | `boutique-desktop.css` (19/12)<br>`categories.css` (6/0) |
-| `.k-grid` ⚠️ | `cart.css` (2/0)<br>`layout.css` (0/1)<br>`products.css` (11/3)<br>`responsive-desktop-matrix.css` (0/2) |
-| `.k-sec-grid` ⚠️ | `categories.css` (1/0)<br>`products.css` (3/3)<br>`responsive-desktop-matrix.css` (0/2) |
+| `.k-grid` ⚠️ | `cart.css` (2/0)<br>`layout.css` (0/1)<br>`products.css` (11/2)<br>`responsive-desktop-matrix.css` (0/2) |
+| `.k-sec-grid` ⚠️ | `categories.css` (1/0)<br>`products.css` (3/2)<br>`responsive-desktop-matrix.css` (0/2) |
 | `.k-card` ⚠️ | `boutique-desktop.css` (0/2)<br>`categories.css` (9/0)<br>`products.css` (8/16) |
 | `.k-card-add` ⚠️ | `cart.css` (0/2)<br>`products.css` (10/3) |
 | `.k-card-fav` ⚠️ | `cart.css` (0/1)<br>`products.css` (4/3) |
-| `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/7)<br>`layout.css` (2/0)<br>`responsive-desktop-matrix.css` (0/2) |
+| `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/6)<br>`layout.css` (2/0)<br>`responsive-desktop-matrix.css` (0/2) |
 | `#k-desktop-catalog-wrap` | `layout.css` (1/6) |
-| `.k-header` ⚠️ | `layout.css` (10/7)<br>`mobile-shell-convergence.css` (6/0) |
+| `.k-header` ⚠️ | `layout.css` (9/7)<br>`mobile-shell-convergence.css` (6/0) |
 | `.k-hero-media` ⚠️ | `hero.css` (2/7)<br>`hero-ultra-mobile.css` (5/0)<br>`mobile-catalog-convergence.css` (1/0) |
 | `.k-modal` ⚠️ | `modal-product.css` (0/1)<br>`modal-shell.css` (9/3) |
 
