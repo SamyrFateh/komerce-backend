@@ -662,6 +662,7 @@ module.exports = {
     ],
     tests: [
       'tests/integration/signal-simulation-scope-postgres.test.js',
+      'tests/unit/control-tower.test.js',
       'tests/integration/dashboard-admin-context-isolation.test.js',
       'tests/integration/dashboard-global-authority-isolation.test.js',
       'tests/integration/dashboard-market-scope-isolation.test.js',

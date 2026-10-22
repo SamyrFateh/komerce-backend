@@ -129,3 +129,12 @@ test('le payload Opérations publie ses seuils nommés et n\'a plus de 14 jours 
   expect(src).toContain('thresholds: LATE_THRESHOLDS');
   expect(src).not.toContain("INTERVAL '14 days'");
 });
+
+
+describe('lot 7 — signaux de commandes simulées exclus (services/dashboard-operations.js)', () => {
+  test('le lecteur de signaux applique le prédicat réel/RCT1 canonique', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'services/dashboard-operations.js'), 'utf8');
+    expect(src).toMatch(/require\('[^']*signal-simulation-scope'\)/);
+    expect(src).toMatch(/\$\{EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL\}/);
+  });
+});
