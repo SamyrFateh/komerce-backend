@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 740,
-    "filesWithFullHeaders": 691,
+    "scannedCodeFiles": 741,
+    "filesWithFullHeaders": 692,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 740,
+    "filesWithAnyHeaders": 741,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1816,
-    "edges": 9151,
+    "graphNodes": 1819,
+    "edges": 9158,
     "dbTables": 208,
-    "doctrines": 665,
-    "impactAreas": 203,
+    "doctrines": 666,
+    "impactAreas": 204,
     "unresolvedCodeEdges": 889,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 87
@@ -42,7 +42,7 @@
     "market": 4,
     "economic-engine": 65,
     "sourcing": 37,
-    "logistics": 55,
+    "logistics": 56,
     "boutique": 22,
     "checkout": 3,
     "shared-cart": 25,
@@ -110,7 +110,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 424,
+    "service": 425,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -119,7 +119,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 100,
+    "critical": 101,
     "medium": 151,
     "high": 431,
     "low": 58
@@ -21739,6 +21739,45 @@
       "version": "2026-09"
     },
     {
+      "id": "services/market-transport-tariff-gate.js",
+      "file": "services/market-transport-tariff-gate.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-transport-tariff-gate",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_currency",
+        "import_item_count"
+      ],
+      "outputs": [
+        "allowed_boolean",
+        "MARKET_TRANSPORT_TARIFF_MISSING"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/order-checkout-service.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "fail_closed",
+        "no_country_branch",
+        "attested_cost_is_not_a_sale_price"
+      ],
+      "impactAreas": [
+        "checkout",
+        "transport",
+        "market"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/mobile-money-reconciliation.js",
       "file": "services/mobile-money-reconciliation.js",
       "type": "file",
@@ -39092,6 +39131,11 @@
       "doctrine": "strict_ready_requested_paid_received_machine"
     },
     {
+      "id": "doctrine:attested_cost_is_not_a_sale_price",
+      "type": "doctrine",
+      "doctrine": "attested_cost_is_not_a_sale_price"
+    },
+    {
       "id": "doctrine:callback_not_required",
       "type": "doctrine",
       "doctrine": "callback_not_required"
@@ -40955,6 +40999,11 @@
       "id": "impact:market-control-plane",
       "type": "impact-area",
       "area": "market-control-plane"
+    },
+    {
+      "id": "impact:transport",
+      "type": "impact-area",
+      "area": "transport"
     },
     {
       "id": "impact:pickup",
@@ -74974,6 +75023,48 @@
       "to": "impact:settlement",
       "type": "impact",
       "label": "settlement"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "services/market-transport-tariff-gate.js",
+      "type": "uses",
+      "label": "services/order-checkout-service.js"
+    },
+    {
+      "from": "services/market-transport-tariff-gate.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/market-transport-tariff-gate.js",
+      "to": "doctrine:no_country_branch",
+      "type": "doctrine",
+      "label": "no_country_branch"
+    },
+    {
+      "from": "services/market-transport-tariff-gate.js",
+      "to": "doctrine:attested_cost_is_not_a_sale_price",
+      "type": "doctrine",
+      "label": "attested_cost_is_not_a_sale_price"
+    },
+    {
+      "from": "services/market-transport-tariff-gate.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/market-transport-tariff-gate.js",
+      "to": "impact:transport",
+      "type": "impact",
+      "label": "transport"
+    },
+    {
+      "from": "services/market-transport-tariff-gate.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "services/mobile-money-reconciliation.js",
@@ -118249,6 +118340,41 @@
         "services/market-delegation-settlement-service.js"
       ]
     },
+    "services/market-transport-tariff-gate.js": {
+      "role": "market-transport-tariff-gate",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/order-checkout-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "fail_closed",
+        "no_country_branch",
+        "attested_cost_is_not_a_sale_price"
+      ],
+      "impactAreas": [
+        "checkout",
+        "transport",
+        "market"
+      ],
+      "mustCheck": [
+        "doctrine:attested_cost_is_not_a_sale_price",
+        "doctrine:fail_closed",
+        "doctrine:no_country_branch",
+        "impact:checkout",
+        "impact:market",
+        "impact:transport",
+        "services/order-checkout-service.js"
+      ]
+    },
     "services/mobile-money-reconciliation.js": {
       "role": "mobile-money-reconciliation",
       "domain": "payment",
@@ -119366,6 +119492,7 @@
         "services/market-delivery-proof-service.js",
         "services/market-local-price-resolution-service.js",
         "services/market-payment-collection-gate.js",
+        "services/market-transport-tariff-gate.js",
         "services/order-checkout-item-resolution.js",
         "services/order-checkout-persistence.js",
         "services/order-post-commit-hooks.js"
