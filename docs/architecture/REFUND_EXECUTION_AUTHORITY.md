@@ -19,6 +19,16 @@
 - La clé d'idempotence PSP dépend de l'**intention précise**, pas simplement de la commande/capture : elle est réutilisée sur les vérifications du même événement, jamais pour un remboursement partiel ultérieur légitime.
 - Les PSP simulés ne prouvent pas un remboursement réellement réussi. Aucun test ne fait de call Stripe/PayPal réel.
 
+## Vérification de résultat provider — étape de préparation (lecture seule)
+
+`services/refund-evidence-verifier.js` n'exécute **aucun remboursement** et n'écrit **aucun statut**. Il lit une référence de remboursement déjà connue via Stripe `refunds.retrieve` ou PayPal `getRefund`, puis confronte son identifiant, la capture associée, le montant EUR et l'état du prestataire à l'intention persistée.
+
+- Stripe `succeeded` ou PayPal `COMPLETED` n'est confirmé que si la preuve porte sur la **même capture** et **le même montant en EUR**.
+- Preuve sans lien de capture, HTTP indisponible, référence ou statut non reconnu : `UNKNOWN`. Ne jamais confondre cela avec un remboursement confirmé ou échoué.
+- Capture, devise ou montant contradictoires : refus explicite et journal d'incident à prévoir lors de l'orchestration.
+- PayPal ne garantit pas que chaque réponse de remboursement expose `supplementary_data.related_ids.capture_id`. **En son absence, refus de certification** ; il faudra compléter par une preuve fiable côté capture et non assouplir la condition.
+- Le vérificateur ne change pas `refund_execution_intents`, `refunds`, `orders` ou les dashboards. Une étape de settlement indépendante, atomique et testée est encore nécessaire avant toute mise en service.
+
 ## Activation — conditions bloquantes
 
 Cette première PR **ajoute une table et un service non branché**, avec tests de fonctions et tests DB sur tables TEMP ; elle ne corrige pas RC-5 ou RC-9 en production. L'activation doit attendre des PR distinctes qui :
