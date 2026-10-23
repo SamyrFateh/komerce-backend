@@ -105,6 +105,7 @@
       { key: 'status', label: 'Statut', value: order.status || '—' },
       { key: 'payment', label: 'Paiement', value: order.payment && order.payment.status || '—', tone: order.payment && order.payment.status === 'paid' ? 'positive' : 'warning' },
       { key: 'total', label: 'Total', value: formatKmf(order.payment && order.payment.total_kmf) },
+      { key: 'assigned', label: 'Articles affectés', value: `${formatNumber(summary.items_assigned)}/${formatNumber(summary.items)}`, tone: Number(summary.items_assigned) >= Number(summary.items) && Number(summary.items) > 0 ? 'positive' : 'neutral' },
       { key: 'parcels', label: 'Colis', value: formatNumber(summary.parcels) },
       { key: 'incidents', label: 'Incidents ouverts', value: formatNumber(summary.open_incidents), tone: Number(summary.open_incidents) > 0 ? 'critical' : 'positive' },
       { key: 'documents', label: 'Documents', value: formatNumber(summary.documents) },
