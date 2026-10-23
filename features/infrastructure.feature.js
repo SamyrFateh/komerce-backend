@@ -369,6 +369,7 @@ module.exports = {
       'tests/unit/audit-logic.test.js',
       'tests/unit/logic-detectors.test.js',
       'tests/unit/logic-data-detectors.test.js',
+      'tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js',
       'tests/unit/feature-invariant-check.test.js',
       'tests/unit/impact-check-security-conventions.test.js',
       'tests/unit/require-non-production.test.js',
@@ -547,6 +548,8 @@ module.exports = {
   authority: 'backend — ces fichiers sont consommés par toutes les features. Tout changement ici a un impact potentiel global.',
 
   invariants: [
+    { statement: 'les neuf requêtes LD-01 à LD-07b sont vérifiées sur une base PostgreSQL de test par scénarios fautifs puis sains isolés en tables TEMP, avec rollback avant le scénario suivant',
+      test: 'tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js' },
     { statement: 'audit:logic --data contrôle explicitement les neuf règles LD-01 à LD-07b sans écriture PostgreSQL, dans une transaction READ ONLY avec rollback systématique, et rend visible NON EXÉCUTÉ sans base',
       test: 'tests/unit/logic-data-detectors.test.js' },
     { statement: 'le scan logique repère les motifs métiers risqués dans tous les fichiers applicatifs suivis, classe les détections comme suspicions statiques, signale toute nouveauté depuis le commit de base et ne confond jamais une absence de signal avec une certification métier',
