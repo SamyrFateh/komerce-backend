@@ -111,9 +111,9 @@ describe('diagnostic des erreurs de preuves E2E', () => {
     const result = gate.evaluateFileResult({
       status: 'failed',
       assertionResults: [{ status: 'failed' }],
-      message: '● nom du test\\n  Error: relation refund_execution_intents missing\\n    at line',
+      message: 'premier test' + String.fromCharCode(10) + 'Error: diagnostic visible',
     });
     expect(result.ok).toBe(false);
-    expect(result.reason).toContain('relation refund_execution_intents missing');
+    expect(result.reason).toContain('Error: diagnostic visible');
   });
 });

@@ -17,7 +17,7 @@ describeE2E('RC-5/RC-9 — intentions persistées PostgreSQL (sans PSP)', ({ db 
 
   beforeAll(async () => {
     client = await db.connect();
-    testDb = { connect: async () => client };
+    testDb = { connect: async () => ({ query: client.query.bind(client), release: () => {} }) };
     await client.query(
       'CREATE TEMP TABLE orders (id uuid PRIMARY KEY, market_id uuid NOT NULL, ' +
       'total_eur numeric(12,2), payment_status text, payment_mode text, ' +
