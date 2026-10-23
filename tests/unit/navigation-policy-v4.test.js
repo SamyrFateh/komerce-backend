@@ -195,6 +195,16 @@ test('hasCapability : global = oui (le serveur re-valide) ; marché = capability
   expect(nav.hasCapability(ctx, '', 'KM')).toBe(false);
 });
 
+describe('L7 — rattachement du workspace candidats à Live › Sourcing', () => {
+  test('la surface sourcing-workspace appartient au domaine live, espace Sourcing live', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
+    expect(src).toContain("'sourcing-workspace': 'live',");
+    expect(src).not.toContain("'sourcing-workspace': 'catalog'");
+    expect(src).toContain("'sourcing-workspace': 'import-runtime',");
+    expect(src).toContain("id: 'sourcing-candidats', label: 'Décisions candidates', href: '/admin/workspaces/sourcing'");
+  });
+});
+
 describe('L6 — autorité unique de navigation', () => {
   const vm = require('vm');
   function loadNav() {

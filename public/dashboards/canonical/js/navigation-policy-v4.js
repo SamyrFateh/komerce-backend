@@ -117,7 +117,7 @@
     'operations-workspace': 'operations',
     'shipping-customs-workspace': 'operations',
     'purchasing-workspace': 'operations',
-    'sourcing-workspace': 'catalog',
+    'sourcing-workspace': 'live',
     'import-runtime': 'live',
     'hub-live': 'live',
     'relais-live': 'live',
@@ -150,6 +150,7 @@
     'shipping-customs-workspace': 'shipping-customs-workspace',
     'purchasing-workspace': 'purchasing-workspace',
     'import-runtime': 'import-runtime',
+    'sourcing-workspace': 'import-runtime',
     'hub-live': 'hub-live',
     'relais-live': 'relais-live',
     finance: 'finance-overview',
@@ -1119,13 +1120,14 @@
   function localTabsFor(domainId, user, adminContext) {
     const role = roleOf(user);
     // La navigation N2 du Sourcing suit ses étapes, pas les autres métiers Live.
-    if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/import-runtime') {
+    if (domainId === 'live' && ['/admin/import-runtime', '/admin/workspaces/sourcing'].includes(String(global.location?.pathname || ''))) {
       const run = new URLSearchParams(String(global.location?.search || '')).get('run');
       const suffix = run ? `run=${encodeURIComponent(run)}&` : '';
       return [
         { id: 'sourcing-suivi', label: 'Suivi', href: '/admin/import-runtime' + (run ? `?run=${encodeURIComponent(run)}` : '') },
         { id: 'sourcing-passages', label: 'Passages', href: `/admin/import-runtime?${suffix}view=passages` },
         { id: 'sourcing-sources', label: 'Sources', href: `/admin/import-runtime?${suffix}view=sources` },
+        { id: 'sourcing-candidats', label: 'Décisions candidates', href: '/admin/workspaces/sourcing' },
       ];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub-live') {
@@ -1162,6 +1164,7 @@
     const hash = String(global.location?.hash || '').replace(/^#/, '');
     const search = new URLSearchParams(String(global.location?.search || ''));
 
+    if (domainId === 'live' && path === '/admin/workspaces/sourcing') return 'sourcing-candidats';
     if (domainId === 'live' && path === '/admin/import-runtime') {
       const view = search.get('view');
       return view === 'passages' ? 'sourcing-passages' : view === 'sources' ? 'sourcing-sources' : 'sourcing-suivi';
