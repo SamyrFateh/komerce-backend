@@ -10,14 +10,14 @@
 |---|---|
 | PROJECTION | 0 |
 | COMPOSITION_ROOT_WIRING | 20 |
-| NON_RUNTIME_TEST | 18 |
+| NON_RUNTIME_TEST | 19 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 |
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **38** |
+| **TOTAL** | **39** |
 
 ## The 94 pairs (from → to)
 
@@ -44,6 +44,7 @@
 | logistics → dashboard | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-transversal | static-code | business-file-import | non-runtime-evidence | — | `` |
 | logistics → economic-engine | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | loyalty → logistics | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
+| market → customs | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | market → dashboard | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-transversal | static-code | business-file-import | non-runtime-evidence | — | `` |
 | market → market-delegation | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | market → orders | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |

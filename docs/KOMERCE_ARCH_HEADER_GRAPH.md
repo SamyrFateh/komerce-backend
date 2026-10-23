@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 749
-- Files with full headers: 700
+- Scanned code files: 750
+- Files with full headers: 701
 - Files with lite headers: 49
-- Files with any headers: 749
+- Files with any headers: 750
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1851
-- Edges: 9276
+- Graph nodes: 1856
+- Edges: 9288
 - DB tables: 211
-- Doctrines: 685
-- Impact areas: 206
-- Unresolved code edges: 894
+- Doctrines: 688
+- Impact areas: 207
+- Unresolved code edges: 895
 - Tables multi-écrivains directs (>=2): 87
 - Avertissements db-write / db-write-via en chevauchement: 9
 
@@ -50,6 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - market-autonomy: 4
 - market-control-plane: 5
 - market-delegation: 35
+- markets: 1
 - notification: 21
 - operations: 11
 - orders: 34
@@ -90,7 +91,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 433
+- service: 434
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -471,6 +472,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/market-delegation-settlement-service.js — market-delegation-settlement-orchestration (market-delegation, high, full)
 - services/market-delegation-team-service.js — market-delegation-team-service (market-delegation, high, full)
 - services/market-lifecycle-service.js — market-lifecycle-writer (market, high, full)
+- services/market-operation-guard.js — market-operation-guard (markets, high, full)
 - services/market-operator-provisioning.js — market-operator-provisioning (market-delegation, high, full)
 - services/market-payment-account-service.js — market-payment-account-owner (payment, high, full)
 - services/market-payment-provider-config-service.js — market-payment-provider-config-writer (payment, high, full)

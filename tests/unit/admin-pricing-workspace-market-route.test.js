@@ -166,7 +166,7 @@ beforeEach(() => {
     if (String(sql).includes('FROM products p')) {
       return { rows: [{ id: 'product-1', commercial_exposure: 'DISABLED' }] };
     }
-    return { rows: [{ id: params[0] === 'CM' ? 'market-cm' : 'market-cg', code: params[0], name: params[0], currency: 'XAF' }] };
+    return { rows: [{ id: params[0] === 'CM' ? 'market-cm' : 'market-cg', code: params[0], name: params[0], currency: 'XAF', lifecycle_status: 'ACTIVE' }] };
   });
 });
 
