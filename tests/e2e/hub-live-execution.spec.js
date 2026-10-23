@@ -50,7 +50,7 @@ const WORKSPACE = {
   },
 };
 
-async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, view = '' } = {}) {
+async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, view = '', emptyDistribution = false } = {}) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -74,7 +74,7 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     }
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
-    if (url.pathname === API) return json(WORKSPACE);
+    if (url.pathname === API) return json(emptyDistribution ? { ...WORKSPACE, distribution: { unassigned: [] } } : WORKSPACE);
     if (url.pathname === RECEIVABLE) return receivable === 'forbidden' ? json({ error: 'Accès refusé' }, 403) : json(receivable);
     return route.fulfill({ status: 404, body: '' });
   });
@@ -95,6 +95,12 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-workspace-action="run-distribution"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="ship"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="confirm-cash"], [data-workspace-action="receive"], [data-workspace-action="collect"]')).toHaveCount(0);
+    });
+
+    test('L9a : « Répartir ce marché » est masqué quand aucune commande n’est à répartir', async ({ page }) => {
+      await mount(page, { emptyDistribution: true });
+      await expect(page.locator('[data-workspace-action="run-distribution"]')).toHaveCount(0);
+      await expect(page.getByText('Aucune commande à répartir.')).toBeVisible();
     });
 
     test('commander, répartir, expédier : une mutation par clic, routes canoniques du marché', async ({ page }) => {

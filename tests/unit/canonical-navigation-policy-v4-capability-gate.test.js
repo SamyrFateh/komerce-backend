@@ -341,17 +341,18 @@ test('Hub et Relais Live utilisent leur navigation locale sans onglets concurren
   expect(source).not.toContain("if (domainId === 'live' && (surface === 'hub-live' || surface === 'relais-live')) return null;");
   const hub = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/hub-live.js'), 'utf8');
   const relay = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/relay-live.js'), 'utf8');
-  expect(hub).toContain("label:'Commandes'");
+  expect(hub).not.toContain("key:'commandes'");
   expect(relay).toContain("label:'Colis'");
 });
 
 describe('Navigation Live — trois métiers, onglets contextuels uniques', () => {
   afterEach(() => { delete global.location; });
   test.each([
-    ['/admin/hub-live', '', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-flux'],
-    ['/admin/hub-live', '?view=overview', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-suivi'],
-    ['/admin/hub-live', '?view=flux', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-flux'],
-    ['/admin/hub-live', '?view=queue&tab=all', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-commandes'],
+    ['/admin/hub-live', '', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-flux'],
+    ['/admin/hub-live', '?view=overview', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-suivi'],
+    ['/admin/hub-live', '?view=flux', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-flux'],
+    ['/admin/hub-live', '?view=queue&tab=all', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-suivi'],
+    ['/admin/hub-live', '?view=execute', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-execution'],
     ['/admin/relais-live', '', ['Suivi', 'Colis'], 'relais-suivi'],
     ['/admin/relais-live', '?view=orders&list=all', ['Suivi', 'Colis'], 'relais-colis'],
   ])('%s %s respecte ses onglets métier', (pathname, search, labels, active) => {

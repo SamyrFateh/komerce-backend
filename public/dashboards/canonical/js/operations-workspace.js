@@ -573,14 +573,17 @@
     const distributionBar = doc.createElement('div');
     distributionBar.className = 'kmc-workspace-section-actions';
     const distributeButton = makeActionButton(doc, 'Répartir ce marché', 'run-distribution');
-    distributionBar.appendChild(distributeButton);
-    distribution.appendChild(distributionBar);
-    distributeButton.addEventListener('click', () => runAction(context, distributeButton, {
-      url: endpointFor(context.marketCode, 'distribution/run'),
-      confirmMessage: `Lancer la répartition automatique pour ${context.marketCode} ?`,
-      runningMessage: 'Répartition en cours…',
-      successMessage: 'Répartition terminée.',
-    }).catch(() => {}));
+    // L9a : « Répartir ce marché » n'est proposé que si le serveur fournit des commandes à répartir.
+    if (Array.isArray(payload.distribution && payload.distribution.unassigned) && payload.distribution.unassigned.length > 0) {
+      distributionBar.appendChild(distributeButton);
+      distribution.appendChild(distributionBar);
+      distributeButton.addEventListener('click', () => runAction(context, distributeButton, {
+        url: endpointFor(context.marketCode, 'distribution/run'),
+        confirmMessage: `Lancer la répartition automatique pour ${context.marketCode} ?`,
+        runningMessage: 'Répartition en cours…',
+        successMessage: 'Répartition terminée.',
+      }).catch(() => {}));
+    }
     const distributionTable = doc.createElement('div');
     distribution.appendChild(distributionTable);
     ui.DataTable.render(distributionTable, {
