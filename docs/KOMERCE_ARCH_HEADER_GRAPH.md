@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 748
-- Files with full headers: 699
+- Scanned code files: 749
+- Files with full headers: 700
 - Files with lite headers: 49
-- Files with any headers: 748
+- Files with any headers: 749
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1847
-- Edges: 9267
+- Graph nodes: 1851
+- Edges: 9275
 - DB tables: 211
-- Doctrines: 682
+- Doctrines: 685
 - Impact areas: 206
 - Unresolved code edges: 894
 - Tables multi-écrivains directs (>=2): 87
@@ -25,7 +25,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Domains
 
 - account: 2
-- admin-dashboard: 37
+- admin-dashboard: 38
 - auth: 14
 - auth-identity: 7
 - auth-passkey: 7
@@ -90,7 +90,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 432
+- service: 433
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -456,6 +456,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/local-stock-decision-projection.js — local-stock-decision-projection (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/logistics-control-chain-projection.js — logistics-control-chain-projection (admin-dashboard, high, full)
+- services/market-business-day.js — market-business-day-authority (admin-dashboard, high, full)
 - services/market-commercial-price-service.js — market-commercial-price-decision-owner (market-autonomy, high, full)
 - services/market-cost-attribution-service.js — economic-engine-market-cost-attribution (economic-engine, high, full)
 - services/market-delegation-catalog-service.js — market-delegation-catalog-service (market-delegation, high, full)

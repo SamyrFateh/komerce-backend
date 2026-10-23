@@ -7393,7 +7393,7 @@
             ]
           },
           "services": {
-            "count": 43,
+            "count": 44,
             "files": [
               {
                 "declared": "public/golden-e2e-cockpit.html",
@@ -7556,6 +7556,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/market-business-day.js",
+                "resolvedPath": "services/market-business-day.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/operations-relay-projection.js",
                 "resolvedPath": "services/operations-relay-projection.js",
                 "status": "resolved-in-technical-graph"
@@ -7613,7 +7618,7 @@
             ]
           },
           "tests": {
-            "count": 190,
+            "count": 192,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -7623,6 +7628,11 @@
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
                 "resolvedPath": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/commerce-business-day.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/commerce-business-day.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8381,6 +8391,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/market-business-day.test.js",
+                "resolvedPath": "tests/unit/market-business-day.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/market-catalog-decision.test.js",
                 "resolvedPath": "tests/unit/market-catalog-decision.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8568,7 +8583,7 @@
             ]
           }
         },
-        "totalFiles": 424,
+        "totalFiles": 427,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19509,7 +19524,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 18,
+            "count": 20,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -19559,6 +19574,16 @@
               {
                 "declared": "dashboards/canonical/js/market-cash-control.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-cash-control.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-catalog.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-catalog.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-prompt.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-prompt.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19704,7 +19729,7 @@
             ]
           }
         },
-        "totalFiles": 35,
+        "totalFiles": 37,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

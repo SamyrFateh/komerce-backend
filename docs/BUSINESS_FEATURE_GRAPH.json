@@ -4765,6 +4765,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/market-business-day.js",
+        "resolvedPath": "services/market-business-day.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/dashboard-finance-canonical.js",
         "resolvedPath": "services/dashboard-finance-canonical.js",
         "status": "resolved-in-technical-graph"
@@ -7322,6 +7329,20 @@
         "category": "tests",
         "declared": "tests/unit/dashboard-commerce.test.js",
         "resolvedPath": "tests/unit/dashboard-commerce.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/market-business-day.test.js",
+        "resolvedPath": "tests/unit/market-business-day.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e-api/commerce-business-day.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/commerce-business-day.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13755,6 +13776,20 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/market-autonomy.js",
         "resolvedPath": "public/dashboards/canonical/js/market-autonomy.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-catalog.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-catalog.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-prompt.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-prompt.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -46652,7 +46687,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2123
+        "filesObserved": 2128
       },
       "boutique": {
         "filesObserved": 214,
@@ -49894,8 +49929,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 644,
-        "technicalNodesOwned": 644,
+        "technicalNodesTotal": 645,
+        "technicalNodesOwned": 645,
         "technicalOrphans": 0
       },
       "dash": {

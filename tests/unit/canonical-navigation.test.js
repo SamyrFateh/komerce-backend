@@ -71,6 +71,7 @@ function loadNavigation(pathname, surface, options = {}) {
   global.window = {
     location: { pathname, search: '', href: `https://komerce.test${pathname}` },
     document,
+    KomerceAdminContext: require('../../public/dashboards/canonical/js/admin-context.js'),
     KomerceCanonicalAdmin: {
       surfaceForPath: jest.fn(() => surface),
       marketChoices: jest.fn((context, opts = {}) => {
@@ -405,48 +406,76 @@ describe('canonical admin navigation — N2 domaine Finance (doctrine V2 §4)', 
 });
 
 describe('canonical admin navigation — zone utilitaire et marché', () => {
-  test('le sélecteur Market ID est intégré à droite quand le contexte serveur est disponible', () => {
+  test('le sélecteur Market ID est intégré à droite : multi-marchés sans choix -> « Choisir un marché… » (L1)', () => {
     const env = loadNavigation('/admin/workspaces/pricing', 'pricing-workspace');
     const header = mountFor(env, '/admin/workspaces/pricing', 'pricing-workspace', { role: 'admin' }, {
       adminContext: {
+        actor: { id: 'o', role: 'market_operator' },
         access: {
           mode: 'market',
           defaultMarket: 'CM',
           allowedMarkets: ['CM', 'CG'],
+          capabilities: [],
         },
       },
     });
     const marketControl = utilitiesOf(header).children[0];
     const select = marketControl.children[1];
-    expect(select.value).toBe('CM');
-    expect(select.children.map(option => option.value)).toEqual(['CM', 'CG']);
+    expect(select.value).toBe('');
+    expect(select.children.map(option => option.value)).toEqual(['', 'CM', 'CG']);
+    expect(select.children[0].textContent).toBe('Choisir un marché…');
     expect(select.children.map(option => option.textContent)).not.toContain('Global · Tous les marchés');
   });
 
-  test('Catalogue pays exige lui aussi un Market ID explicite pour adminContext global', () => {
-    const env = loadNavigation('/dashboards/canonical/market-catalog.html', 'market-catalog');
-    const header = mountFor(env, '/dashboards/canonical/market-catalog.html', 'market-catalog', { role: 'market_operator' }, {
-      adminContext: {
-        access: {
-          mode: 'global',
-          defaultMarket: 'CG',
-          allowedMarkets: ['CM', 'CG'],
-        },
-      },
-    });
-    const select = utilitiesOf(header).children[0].children[1];
-    expect(select.value).toBe('CG');
-    expect(select.children.map(option => option.value)).toEqual(['CM', 'CG']);
-  });
-
-  test('le drapeau visible suit le Market ID sélectionné sans dépendre des emoji Windows', () => {
+  test('délégation mono-marché : le marché est sélectionné automatiquement (L1)', () => {
     const env = loadNavigation('/admin/workspaces/pricing', 'pricing-workspace');
     const header = mountFor(env, '/admin/workspaces/pricing', 'pricing-workspace', { role: 'admin' }, {
+      adminContext: { actor: { id: 'o', role: 'market_operator' }, access: { mode: 'market', defaultMarket: 'CM', allowedMarkets: ['CM'], capabilities: [] } },
+    });
+    const select = utilitiesOf(header).children[0].children[1];
+    expect(select.value).toBe('CM');
+    expect(select.children.map(option => option.value)).toEqual(['CM']);
+  });
+
+  test('Catalogue pays, Autonomie marché et Hub live › Exécution exigent un Market ID explicite (L1)', () => {
+    const globalCtx = {
+      actor: { id: 'a', role: 'admin' },
+      access: { mode: 'global', defaultMarket: null, allowedMarkets: ['CG', 'CM'], capabilities: [] },
+    };
+    [
+      ['/dashboards/canonical/market-catalog.html', 'market-catalog', ''],
+      ['/dashboards/canonical/market-autonomy.html', 'market-autonomy', ''],
+      ['/admin/hub-live', 'hub-live', '?view=execute'],
+    ].forEach(([pathname, surface, search]) => {
+      const env = loadNavigation(pathname, surface, { window: { location: { pathname, search, href: `https://komerce.test${pathname}${search}` } } });
+      const header = mountFor(env, pathname, surface, { role: 'admin' }, { adminContext: globalCtx });
+      const select = utilitiesOf(header).children[0].children[1];
+      expect(select.value).toBe('');
+      expect(select.children.map(option => option.value)).toEqual(['', 'CG', 'CM']);
+    });
+  });
+
+  test('Hub live hors Exécution reste en vue Global (pas de marché exigé)', () => {
+    const pathname = '/admin/hub-live';
+    const env = loadNavigation(pathname, 'hub-live', { window: { location: { pathname, search: '', href: `https://komerce.test${pathname}` } } });
+    const header = mountFor(env, pathname, 'hub-live', { role: 'admin' }, {
+      adminContext: { actor: { id: 'a', role: 'admin' }, access: { mode: 'global', defaultMarket: null, allowedMarkets: ['CG', 'CM'], capabilities: [] } },
+    });
+    const select = utilitiesOf(header).children[0].children[1];
+    expect(select.children.map(option => option.value)).toEqual(['', 'CG', 'CM']);
+  });
+
+  test('?market= autorisé est retenu ; le drapeau visible suit le Market ID sans dépendre des emoji Windows', () => {
+    const pathname = '/admin/workspaces/pricing';
+    const env = loadNavigation(pathname, 'pricing-workspace', { window: { location: { pathname, search: '?market=CM', href: `https://komerce.test${pathname}?market=CM` } } });
+    const header = mountFor(env, pathname, 'pricing-workspace', { role: 'admin' }, {
       adminContext: {
+        actor: { id: 'a', role: 'admin' },
         access: {
           mode: 'global',
-          defaultMarket: 'CM',
+          defaultMarket: null,
           allowedMarkets: ['CM', 'CG', 'KM'],
+          capabilities: [],
         },
       },
     });
@@ -454,6 +483,7 @@ describe('canonical admin navigation — zone utilitaire et marché', () => {
     const flag = marketControl.children[0];
     const select = marketControl.children[1];
 
+    expect(select.value).toBe('CM');
     expect(flag.src).toBe('/dashboards/canonical/assets/flags/CM.svg');
     select.value = 'CG';
     select.listeners.change();

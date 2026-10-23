@@ -966,3 +966,12 @@ body.kmc-shell-v4 .kmc-param-line > .kmc-workspace-action {
   line-height: 1.2;
   text-decoration: none;
 }
+
+/* L1 — invite « Choisir un marché » (aucune donnée marché chargée avant le choix) */
+.kmc-market-prompt { margin: 24px 0; padding: 20px 24px; border: 1px solid var(--kmc-border, #e3e0ee); border-radius: 12px; background: #fff; max-width: 640px; }
+.kmc-market-prompt-title { display: block; font-size: 1.05rem; color: #1b1740; }
+.kmc-market-prompt-text { margin: 8px 0 0; color: #4a4766; line-height: 1.5; }
+.kmc-market-prompt[data-market-prompt="unauthorized"], .kmc-market-prompt[data-market-prompt="no_access"] { border-color: #e0b4b4; }
+.kmc-market-prompt-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.kmc-market-prompt-choice { min-height: 36px; padding: 6px 16px; border: 1px solid #6b4fd8; border-radius: 8px; background: #fff; color: #4b32b0; font-weight: 600; cursor: pointer; }
+.kmc-market-prompt-choice:hover { background: #f3efff; }
