@@ -21,13 +21,14 @@ test('metricItems ne recalcule aucune vérité économique', () => {
       status: 'shipped',
       payment: { status: 'paid', total_kmf: 12000 },
     },
-    summary: { parcels: 2, open_incidents: 1, documents: 3 },
+    summary: { items: 2, items_assigned: 1, parcels: 2, open_incidents: 1, documents: 3 },
   });
 
   expect(metrics.map(metric => metric.value)).toEqual([
     'shipped',
     'paid',
     '12 000 KMF',
+    '1/2',
     '2',
     '1',
     '3',
