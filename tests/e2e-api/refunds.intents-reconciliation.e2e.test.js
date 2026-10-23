@@ -54,6 +54,6 @@ describeE2E('RC-5/RC-9 reconciliation durable SQL seul',({db})=>{
   expect((await reconcileRefundIntent(args())).status).toBe('confirmed');
   const q=await client.query('SELECT status,amount_eur FROM refund_execution_intents WHERE id=$1',[INTENT]);
   expect(q.rows[0].status).toBe('confirmed');
-  expect(q.rows[0].amount_eur).toBe('20.00');
+  expect(q.rows[0].amount_eur).toBe(20); // pg NUMERIC parser (db.js) => number
  });
 });
