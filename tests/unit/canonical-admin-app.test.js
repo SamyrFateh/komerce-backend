@@ -24,6 +24,10 @@ function fakeNode(tagName = 'div') {
     replaceChildren(...children) {
       this.children = children;
     },
+    removeChild(child) {
+      this.children = this.children.filter(node => node !== child);
+      return child;
+    },
     setAttribute(name, value) {
       this.attributes[name] = String(value);
     },
@@ -91,7 +95,9 @@ function loadCanonicalApp() {
     KomerceAdminContext: {
       validateAdminContext,
       resolveMarketView: resolveMarketViewMock,
+      resolveExplicitMarket: require('../../public/dashboards/canonical/js/admin-context.js').resolveExplicitMarket,
     },
+    KomerceMarketPrompt: require('../../public/dashboards/canonical/js/market-prompt.js'),
     KomerceCanonicalPilotage: { mount: pilotageMount },
     KomerceCanonicalPricingWorkspace: { mount: pricingMount },
     KomerceDemoOrderFlow: { mount: demoMount },
@@ -358,6 +364,7 @@ describe('canonical admin app — market selector', () => {
       },
     };
 
+    env.window.location.search = '?market=CM';
     await env.api.renderPricingWorkspaceShell(env.root, user, adminContext);
     const bar = env.root.children[0];
     const surface = env.root.children[1];
@@ -572,15 +579,83 @@ describe('canonical admin app — encadré « À quoi sert cet écran ? »', () 
   });
 });
 
-test('Prix (requireMarket) : le marché de l’URL est retenu s’il est autorisé, sinon le défaut serveur', async () => {
-  const user = { id: 'cm-op', role: 'market_operator' };
-  const adminContext = { actor: user, access: { mode: 'market', allowedMarkets: ['KM', 'CM'], defaultMarket: 'KM', capabilities: ['pricing.decide'] } };
-  const first = loadCanonicalApp();
-  first.window.location.search = '?product_ref=PRD-1&market=CM';
-  expect(first.api.initialRequestedMarket(adminContext, first.window.KomerceAdminContext, { requireMarket: true })).toBe('CM');
-  const second = loadCanonicalApp();
-  second.window.location.search = '?market=CG';
-  expect(second.api.initialRequestedMarket(adminContext, second.window.KomerceAdminContext, { requireMarket: true })).toBe('KM');
+test('L1 requireMarket : ?market= autorisé retenu, jamais de repli implicite', () => {
+  const op = { id: 'op', role: 'market_operator' };
+  const multi = { actor: op, access: { mode: 'market', allowedMarkets: ['KM', 'CM'], defaultMarket: 'KM', capabilities: ['pricing.decide'] } };
+  const init = (ctx, search) => {
+    const env = loadCanonicalApp();
+    env.window.location.search = search;
+    return env.api.initialRequestedMarket(ctx, env.window.KomerceAdminContext, { requireMarket: true });
+  };
+  // 1. explicite autorisé
+  expect(init(multi, '?product_ref=PRD-1&market=CM')).toBe('CM');
+  // 2. non autorisé : plus de repli sur le défaut serveur
+  expect(init(multi, '?market=CG')).toBeNull();
+  // 3. multi-marchés sans choix : invite
+  expect(init(multi, '')).toBeNull();
+  // 4. délégation mono-marché : sélection automatique
+  const mono = { actor: op, access: { mode: 'market', allowedMarkets: ['CM'], defaultMarket: 'CM', capabilities: [] } };
+  expect(init(mono, '')).toBe('CM');
+  // 5. admin global : jamais le premier marché (CG)
+  const global_ = { actor: { id: 'a', role: 'admin' }, access: { mode: 'global', allowedMarkets: ['CG', 'CM', 'KM'], defaultMarket: null, capabilities: ['dashboard.global.read'] } };
+  expect(init(global_, '')).toBeNull();
+  expect(init(global_, '?market=km')).toBe('KM');
+  // 6. aucun marché autorisé
+  const none = { actor: { id: 'a', role: 'admin' }, access: { mode: 'global', allowedMarkets: [], defaultMarket: null, capabilities: [] } };
+  expect(init(none, '')).toBeNull();
+});
+
+describe('L1 shell marché : aucune surface montée avant un choix explicite', () => {
+  const admin = { id: 'hq', role: 'admin' };
+  const ctx = { actor: admin, access: { mode: 'global', allowedMarkets: ['CG', 'CM', 'KM'], defaultMarket: null, capabilities: ['dashboard.global.read'] } };
+  const shells = [
+    ['renderPricingWorkspaceShell', 'pricingMount'],
+  ];
+
+  test.each(shells)('%s en Global : invite, aucun mount, sélecteur sur « Choisir un marché… »', async (shell, mountName) => {
+    const env = loadCanonicalApp();
+    await env.api[shell](env.root, admin, ctx);
+    expect(env[mountName]).not.toHaveBeenCalled();
+    const surface = env.root.children[1];
+    expect(surface.children[0].attributes['data-market-prompt']).toBe('prompt');
+    const select = env.root.children[0].children[1].children[1];
+    expect(select.value).toBe('');
+    expect(select.children[0].textContent).toBe('Choisir un marché…');
+    expect(select.children.map(o => o.value)).toEqual(['', 'CG', 'CM', 'KM']);
+  });
+
+  test('?market=XX non autorisé : invite « non autorisé », aucun mount', async () => {
+    const env = loadCanonicalApp();
+    env.window.location.search = '?market=XX';
+    await env.api.renderPricingWorkspaceShell(env.root, admin, ctx);
+    expect(env.pricingMount).not.toHaveBeenCalled();
+    const prompt = env.root.children[1].children[0];
+    expect(prompt.attributes['data-market-prompt']).toBe('unauthorized');
+    expect(JSON.stringify(prompt)).toContain('XX');
+  });
+
+  test('le choix monte la surface et retire l’invite ; shell = surface', async () => {
+    const env = loadCanonicalApp();
+    await env.api.renderPricingWorkspaceShell(env.root, admin, ctx);
+    const surface = env.root.children[1];
+    const select = env.root.children[0].children[1].children[1];
+    select.value = 'KM';
+    await select._listeners.change();
+    expect(env.pricingMount).toHaveBeenCalledTimes(1);
+    expect(env.pricingMount).toHaveBeenCalledWith(expect.objectContaining({ requestedMarket: 'KM' }));
+    expect(surface.children).toHaveLength(1);
+    expect(surface.children[0].className).toBe('kmc-market-surface-stage');
+    expect(surface.children[0].children[0].textContent).toBe('KM');
+    expect(select.children.map(o => o.value)).toEqual(['CG', 'CM', 'KM']);
+  });
+
+  test('délégation mono-marché : monte directement, sans invite', async () => {
+    const env = loadCanonicalApp();
+    const op = { id: 'op', role: 'market_operator' };
+    const monoCtx = { actor: op, access: { mode: 'market', allowedMarkets: ['CM'], defaultMarket: 'CM', capabilities: [] } };
+    await env.api.renderPricingWorkspaceShell(env.root, op, monoCtx);
+    expect(env.pricingMount).toHaveBeenCalledWith(expect.objectContaining({ requestedMarket: 'CM' }));
+  });
 });
 
 test('Produit 360 reçoit le contexte admin (capabilities des liens du fil P1)', () => {

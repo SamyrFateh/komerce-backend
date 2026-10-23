@@ -119,3 +119,23 @@ describe('LOT 2C-CANON — AdminContext et MarketScope', () => {
     expect(source).toContain('server_market_scope_is_authority');
   });
 });
+
+describe('L1 resolveExplicitMarket (contrat front)', () => {
+  const contract = require('../../public/dashboards/canonical/js/admin-context.js');
+  const g = markets => ({ actor: { id: 'a', role: 'admin' }, access: { mode: 'global', allowedMarkets: markets, defaultMarket: null, capabilities: [] } });
+  const m = (markets, def) => ({ actor: { id: 'o', role: 'market_operator' }, access: { mode: 'market', allowedMarkets: markets, defaultMarket: def, capabilities: [] } });
+
+  test.each([
+    ['global sans ?market', g(['CG', 'CM']), '', 'prompt', null],
+    ['global ?market autorisé (casse)', g(['CG', 'CM']), '?market=cm', 'selected', 'CM'],
+    ['global ?market=XX', g(['CG', 'CM']), '?market=XX', 'unauthorized', null],
+    ['multi-marchés sans choix', m(['KM', 'CM'], 'KM'), '', 'prompt', null],
+    ['mono-marché', m(['CM'], 'CM'), '', 'selected', 'CM'],
+    ['mono-marché ?market non autorisé', m(['CM'], 'CM'), '?market=KM', 'unauthorized', null],
+    ['global sans marché', g([]), '', 'no_access', null],
+  ])('%s', (_label, ctx, search, state, code) => {
+    const r = contract.resolveExplicitMarket(ctx, search);
+    expect(r.state).toBe(state);
+    expect(r.marketCode).toBe(code);
+  });
+});

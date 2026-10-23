@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 748,
-    "filesWithFullHeaders": 699,
+    "scannedCodeFiles": 749,
+    "filesWithFullHeaders": 700,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 748,
+    "filesWithAnyHeaders": 749,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1847,
-    "edges": 9267,
+    "graphNodes": 1851,
+    "edges": 9275,
     "dbTables": 211,
-    "doctrines": 682,
+    "doctrines": 685,
     "impactAreas": 206,
     "unresolvedCodeEdges": 894,
     "dbWriteViaOverlapWarnings": 9,
@@ -36,7 +36,7 @@
     "auth": 14,
     "platform-ops": 2,
     "catalog": 130,
-    "admin-dashboard": 37,
+    "admin-dashboard": 38,
     "decision-signals": 14,
     "market-delegation": 35,
     "market": 8,
@@ -110,7 +110,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 432,
+    "service": 433,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,7 +121,7 @@
   "byCriticality": {
     "critical": 106,
     "medium": 152,
-    "high": 432,
+    "high": 433,
     "low": 58
   },
   "nodes": [
@@ -6260,6 +6260,7 @@
         "customs_shipments",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
+        "order_items",
         "orders",
         "parcels",
         "relais",
@@ -17145,6 +17146,7 @@
       "dbRead": [
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
+        "order_items",
         "orders",
         "markets"
       ],
@@ -20204,6 +20206,46 @@
         "loyalty"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/market-business-day.js",
+      "file": "services/market-business-day.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-business-day-authority",
+      "domain": "admin-dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_code",
+        "period_days",
+        "instant"
+      ],
+      "outputs": [
+        "business_timezone",
+        "civil_day_period_bounds",
+        "business_day_of_instant"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/dashboard-commerce.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "business_day_belongs_to_market_not_browser_or_server",
+        "backend_is_time_authority",
+        "no_second_time_authority"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "commerce"
+      ],
+      "version": "2026-10"
     },
     {
       "id": "services/market-cash-control-policy-service.js",
@@ -39249,6 +39291,21 @@
       "doctrine": "decision_projection_never_reads_products_stock"
     },
     {
+      "id": "doctrine:business_day_belongs_to_market_not_browser_or_server",
+      "type": "doctrine",
+      "doctrine": "business_day_belongs_to_market_not_browser_or_server"
+    },
+    {
+      "id": "doctrine:backend_is_time_authority",
+      "type": "doctrine",
+      "doctrine": "backend_is_time_authority"
+    },
+    {
+      "id": "doctrine:no_second_time_authority",
+      "type": "doctrine",
+      "doctrine": "no_second_time_authority"
+    },
+    {
       "id": "doctrine:partner_controls_local_cash_policy",
       "type": "doctrine",
       "doctrine": "partner_controls_local_cash_policy"
@@ -50435,6 +50492,12 @@
       "to": "db:order_item_real_cost_allocations",
       "type": "db-read",
       "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
     },
     {
       "from": "routes/admin-dashboard.js",
@@ -67711,6 +67774,12 @@
     },
     {
       "from": "services/dashboard-metrics/costing.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
@@ -73043,6 +73112,42 @@
       "to": "impact:loyalty",
       "type": "impact",
       "label": "loyalty"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
+      "to": "services/market-business-day.js",
+      "type": "uses",
+      "label": "services/dashboard-commerce.js"
+    },
+    {
+      "from": "services/market-business-day.js",
+      "to": "doctrine:business_day_belongs_to_market_not_browser_or_server",
+      "type": "doctrine",
+      "label": "business_day_belongs_to_market_not_browser_or_server"
+    },
+    {
+      "from": "services/market-business-day.js",
+      "to": "doctrine:backend_is_time_authority",
+      "type": "doctrine",
+      "label": "backend_is_time_authority"
+    },
+    {
+      "from": "services/market-business-day.js",
+      "to": "doctrine:no_second_time_authority",
+      "type": "doctrine",
+      "label": "no_second_time_authority"
+    },
+    {
+      "from": "services/market-business-day.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/market-business-day.js",
+      "to": "impact:commerce",
+      "type": "impact",
+      "label": "commerce"
     },
     {
       "from": "services/market-cash-control-policy-service.js",
@@ -103896,6 +104001,7 @@
         "customs_shipments",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
+        "order_items",
         "orders",
         "parcels",
         "relais",
@@ -103915,6 +104021,7 @@
         "db:customs_shipments",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
+        "db:order_items",
         "db:orders",
         "db:parcels",
         "db:relais",
@@ -114508,7 +114615,8 @@
         "impact:local-stock",
         "impact:market-authorization",
         "routes/admin-dashboard-market.js",
-        "services/local-stock-decision-projection.js"
+        "services/local-stock-decision-projection.js",
+        "services/market-business-day.js"
       ]
     },
     "services/dashboard-finance-canonical.js": {
@@ -114759,6 +114867,7 @@
       "dbRead": [
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
+        "order_items",
         "orders",
         "markets"
       ],
@@ -114776,6 +114885,7 @@
         "db:markets",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
+        "db:order_items",
         "db:orders",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-costing",
@@ -117902,6 +118012,39 @@
         "services/payment-cash-confirm.js",
         "services/payment-stripe.js",
         "utils/logger.js"
+      ]
+    },
+    "services/market-business-day.js": {
+      "role": "market-business-day-authority",
+      "domain": "admin-dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/dashboard-commerce.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "business_day_belongs_to_market_not_browser_or_server",
+        "backend_is_time_authority",
+        "no_second_time_authority"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "commerce"
+      ],
+      "mustCheck": [
+        "doctrine:backend_is_time_authority",
+        "doctrine:business_day_belongs_to_market_not_browser_or_server",
+        "doctrine:no_second_time_authority",
+        "impact:admin-dashboard",
+        "impact:commerce",
+        "services/dashboard-commerce.js"
       ]
     },
     "services/market-cash-control-policy-service.js": {

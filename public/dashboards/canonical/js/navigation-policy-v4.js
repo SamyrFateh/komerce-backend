@@ -555,6 +555,16 @@
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) return null;
 
+    // L1 : sur une surface qui exige un marché, aucun repli implicite (ni défaut serveur, ni 1er marché).
+    // Seuls un ?market= autorisé ou la délégation mono-marché sélectionnent ; sinon invite « Choisir un marché ».
+    if (requireMarket) {
+      const contract = global.KomerceAdminContext;
+      if (contract && typeof contract.resolveExplicitMarket === 'function') {
+        try { return contract.resolveExplicitMarket(adminContext, (global.location && global.location.search) || '').marketCode; } catch (_) { return null; }
+      }
+      return null;
+    }
+
     try {
       const params = new URLSearchParams((global.location && global.location.search) || '');
       const requested = String(params.get('market') || '').toUpperCase();
@@ -563,7 +573,7 @@
       // Le contexte serveur reste l'autorité si URLSearchParams est absent.
     }
 
-    if (access.mode === 'global' && !requireMarket) return null;
+    if (access.mode === 'global') return null;
     if (access.defaultMarket && access.allowedMarkets.includes(access.defaultMarket)) return access.defaultMarket;
     return access.allowedMarkets[0] || null;
   }
@@ -643,7 +653,15 @@
       select.className = `kmc-admin-market-select${asset ? ' has-flag' : ''}`;
     };
 
+    if (requireMarket && !current) {
+      const placeholder = doc.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Choisir un marché…';
+      placeholder.selected = true;
+      select.appendChild(placeholder);
+    }
     choices.forEach(choice => {
+      if (choice.placeholder) return;
       const option = doc.createElement('option');
       option.value = choice.value;
       option.textContent = stripRegionalFlagPrefix(choice.label);
@@ -722,7 +740,8 @@
     const utilities = doc.createElement('div');
     utilities.className = 'kmc-admin-utility-nav';
 
-    const requireMarket = ['pricing-workspace', 'market-catalog', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface);
+    const requireMarket = ['pricing-workspace', 'market-catalog', 'market-autonomy', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface)
+      || (surface === 'hub-live' && new URLSearchParams(String((global.location && global.location.search) || '')).get('view') === 'execute');
     const marketControl = createMarketControl(doc, adminContext, requireMarket);
     if (marketControl) utilities.appendChild(marketControl);
 

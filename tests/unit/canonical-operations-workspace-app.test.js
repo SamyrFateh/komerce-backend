@@ -64,7 +64,9 @@ function loadApp() {
     KomerceAdminContext: {
       validateAdminContext: value => value,
       resolveMarketView: jest.fn(resolveMarketView),
+      resolveExplicitMarket: require('../../public/dashboards/canonical/js/admin-context.js').resolveExplicitMarket,
     },
+    KomerceMarketPrompt: require('../../public/dashboards/canonical/js/market-prompt.js'),
     KomerceCanonicalOperationsWorkspace: { mount: workspaceMount },
     KomerceDashboardRenderer: {},
     KomerceCanonicalUI: {},
@@ -86,7 +88,7 @@ test('surfaceForPath reconnaît le Workspace stable et son alias de construction
   expect(env.api.surfaceForPath('/admin-next/workspaces/operations')).toBe(env.api.SURFACES.OPERATIONS_WORKSPACE);
 });
 
-test('central ne reçoit jamais Global dans un Workspace et démarre sur un marché explicite', async () => {
+test('central ne reçoit jamais Global dans un Workspace : aucun marché implicite, le choix monte la surface (L1)', async () => {
   const env = loadApp();
   const user = { id: 'hq-admin', role: 'admin' };
   const context = {
@@ -104,8 +106,13 @@ test('central ne reçoit jamais Global dans un Workspace et démarre sur un marc
   const bar = env.root.children[0];
   const surface = env.root.children[1];
   const select = bar.children[1].children[1];
-  expect(select.children.map(option => option.value)).toEqual(['CM', 'CG']);
-  expect(select.value).toBe('CM');
+  expect(select.children.map(option => option.value)).toEqual(['', 'CM', 'CG']);
+  expect(select.value).toBe('');
+  expect(env.workspaceMount).not.toHaveBeenCalled();
+  expect(surface.children[0].attributes['data-market-prompt']).toBe('prompt');
+
+  select.value = 'CM';
+  await select._listeners.change();
   expect(env.workspaceMount).toHaveBeenCalledWith(expect.objectContaining({
     root: surface,
     requestedMarket: 'CM',

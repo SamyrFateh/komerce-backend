@@ -110,5 +110,32 @@
     return Object.freeze({ mode: 'market', marketCode: code, crossMarket: false });
   }
 
-  return Object.freeze({ SCOPE_MODES, validateAdminContext, resolveMarketView });
+  // L1 — contexte marché explicite. Aucun repli sur le premier marché autorisé :
+  // un admin global ou un opérateur multi-marchés doit choisir. Seule la délégation
+  // mono-marché sélectionne automatiquement. Le marché demandé (?market=) n'est retenu
+  // que s'il est autorisé par le serveur.
+  // États : selected | prompt | unauthorized | no_access.
+  function resolveExplicitMarket(rawContext, search) {
+    const context = validateAdminContext(rawContext);
+    const allowed = context.access.allowedMarkets;
+    let requested = null;
+    try {
+      const raw = new URLSearchParams(String(search || '').replace(/^\?/, '')).get('market');
+      requested = raw ? String(raw).trim().toUpperCase() || null : null;
+    } catch (_) { requested = null; }
+
+    const base = { requested, allowedMarkets: allowed };
+    if (allowed.length === 0) return Object.freeze({ ...base, state: 'no_access', marketCode: null });
+    if (requested) {
+      return allowed.includes(requested)
+        ? Object.freeze({ ...base, state: 'selected', marketCode: requested })
+        : Object.freeze({ ...base, state: 'unauthorized', marketCode: null });
+    }
+    if (context.access.mode === 'market' && allowed.length === 1) {
+      return Object.freeze({ ...base, state: 'selected', marketCode: allowed[0] });
+    }
+    return Object.freeze({ ...base, state: 'prompt', marketCode: null });
+  }
+
+  return Object.freeze({ SCOPE_MODES, validateAdminContext, resolveMarketView, resolveExplicitMarket });
 });
