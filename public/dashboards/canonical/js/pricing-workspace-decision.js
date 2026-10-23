@@ -310,7 +310,7 @@
       notice.setAttribute('data-dashboard-role', 'attention');
       notice.appendChild(text(doc, 'strong', 'kmc-pricing-configuration-title', 'Rentabilité du marché non encore évaluable'));
       notice.appendChild(text(doc, 'p', 'kmc-pricing-configuration-copy',
-        'La politique de décision de ce marché n’est pas encore définie. Les produits, coûts et prix disponibles restent consultables, mais Komerce ne peut pas encore conclure sur la rentabilité ni autoriser une nouvelle position sous CDR.'));
+        'La politique de décision de ce marché n’est pas encore définie. Les prix couvrant le CDR restent possibles ; seules les positions sous CDR sont refusées tant que la politique n’est pas définie. Produits, coûts et prix restent consultables.'));
       overview.appendChild(notice);
     }
 

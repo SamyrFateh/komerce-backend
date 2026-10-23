@@ -196,6 +196,11 @@ describe('Atelier des prix — politique marché non configurée', () => {
     expect(metrics.every(item => item.value !== '0')).toBe(true);
   });
 
+  test.each(['POLICY_DOES_NOT_COVER_CANONICAL_PERIOD', 'MATURITY_INSUFFICIENT'])('autre raison NOT_DECISIONAL (%s) : rendu inchangé, décision visible', reason => {
+    const items = decision.marketDecisionItems({ decision_status: 'NOT_DECISIONAL', reason, authorization: 'DENY_NEW_UNDER_CDR_POSITION', coverage: null });
+    expect(items.length).toBeGreaterThan(0);
+  });
+
   test('rend une seule information, sans CTA, avec le motif métier lisible', () => {
     const nodes = [];
     const doc = {
@@ -233,6 +238,7 @@ describe('Atelier des prix — politique marché non configurée', () => {
     expect(notice).toBeDefined();
     expect(notice.attributes.role).toBe('status');
     expect(notice.children.map(child => child.textContent).join(' ')).toContain('politique de décision');
+    expect(notice.children.map(child => child.textContent).join(' ')).toContain('Les prix couvrant le CDR restent possibles ; seules les positions sous CDR sont refusées');
     expect(notice.children.map(child => child.textContent).join(' ')).not.toMatch(/Voir la décision|Voir le gate/);
     expect(notice.children.every(child => child.tag !== 'a' && child.tag !== 'button')).toBe(true);
     expect(decisionUi.DecisionStrip.render).not.toHaveBeenCalled();

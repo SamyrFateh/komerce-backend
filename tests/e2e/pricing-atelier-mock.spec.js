@@ -66,6 +66,16 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('h1')).toHaveText('Atelier des prix · Comores');
     });
 
+    test('politique de marché absente : un seul avis neutre, aucun bouton ni code brut (L5)', async ({ page }) => {
+      await mount(page);
+      const notice = page.locator('[data-pricing-configuration-notice]');
+      await expect(notice).toHaveCount(1);
+      await expect(notice).toContainText('Les prix couvrant le CDR restent possibles');
+      await expect(notice.locator('a, button')).toHaveCount(0);
+      const body = await page.locator('body').innerText();
+      expect(body).not.toMatch(/Voir la décision|Voir le gate|MARKET_DECISION_POLICY_REQUIRED/);
+    });
+
     test('familles : onglets répartis sur la largeur du panneau actif', async ({ page }) => {
       await mount(page, { populated: true });
       if (viewport.width < 900) return; // mobile : défilement horizontal des onglets
