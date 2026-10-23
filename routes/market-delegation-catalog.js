@@ -23,6 +23,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { assertMarketOperationAllowed } = require('../services/market-operation-guard');
 const {
   resolveAuthorization,
   listExposure,
@@ -144,13 +145,17 @@ router.put('/markets/:marketCode/catalog/exposure/:productId', authenticate, asy
   try {
     rejectMarketId(req.body);
     const body = req.body || {};
-    const exposure = await withTransaction(client => setExposure(client, {
-      marketCode: req.params.marketCode,
-      actorUserId: req.user.id,
-      correlationId: correlationId(req),
-      productId: req.params.productId,
-      exposure: body.commercial_exposure,
-    }));
+    const exposure = await withTransaction(async client => {
+      // Q2 : une nouvelle exposition exige un marché actif ; masquer reste toujours possible.
+      if (body.commercial_exposure === 'ENABLED') await assertMarketOperationAllowed(client, req.params.marketCode, 'catalog_exposure_enable');
+      return setExposure(client, {
+        marketCode: req.params.marketCode,
+        actorUserId: req.user.id,
+        correlationId: correlationId(req),
+        productId: req.params.productId,
+        exposure: body.commercial_exposure,
+      });
+    });
     res.json({ success: true, exposure });
   } catch (error) {
     if (sendDelegationError(res, error)) return;

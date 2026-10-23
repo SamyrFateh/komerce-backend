@@ -22,6 +22,7 @@
 
 const express = require('express');
 const db = require('../db');
+const { assertMarketOperationAllowed } = require('../services/market-operation-guard');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
@@ -171,6 +172,15 @@ function requireLocalStrategyCapability(capability) {
 
 function sendAction(res, action, result, status = 200) {
   return res.status(status).json({ ok: true, action, result });
+}
+
+function requireMarketOperation(operation) {
+  return async (req, res, next) => {
+    try {
+      await assertMarketOperationAllowed(db, req.workspaceMarket.id, operation);
+      next();
+    } catch (error) { handleError(error, res, next); }
+  };
 }
 
 function handleError(error, res, next) {
@@ -342,7 +352,7 @@ router.get('/market/:marketCode/products/:productRef/local-price/activation-prev
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/products/:productRef/local-price', requireLocalStrategyCapability('pricing.decide'), async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price', requireLocalStrategyCapability('pricing.decide'), requireMarketOperation('local_price_draft'), async (req, res, next) => {
   try {
     sendAction(res, 'set_market_local_price_draft', await marketCommercialPrice.setMarketPriceDraft({
       market: req.workspaceMarket,
@@ -355,7 +365,7 @@ router.post('/market/:marketCode/products/:productRef/local-price', requireLocal
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/products/:productRef/local-price/activate', requireLocalStrategyCapability('pricing.activate'), requireLocalStrategyCapability('catalog.expose'), async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price/activate', requireLocalStrategyCapability('pricing.activate'), requireLocalStrategyCapability('catalog.expose'), requireMarketOperation('local_price_activate'), async (req, res, next) => {
     try {
       const activation = await marketLocalPriceActivation.activateLocalPrice({
         market: req.workspaceMarket,
@@ -410,7 +420,7 @@ router.post('/market/:marketCode/products/:productRef/local-price/activate', req
   }
 );
 
-router.post('/market/:marketCode/products/:productRef/local-price/reset', requireLocalStrategyCapability('pricing.decide'), async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price/reset', requireLocalStrategyCapability('pricing.decide'), requireMarketOperation('local_price_reset'), async (req, res, next) => {
   try {
     sendAction(res, 'reset_market_local_price_draft', await marketCommercialPrice.resetMarketPriceDraft({
       market: req.workspaceMarket,
