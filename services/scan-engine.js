@@ -837,7 +837,30 @@ async function syncOrderFromParcels(client, orderId) {
   if (!stats || parseInt(stats.active) === 0) {
     newStatus = null; // No change
   } else if (parseInt(stats.collected) === parseInt(stats.active)) {
-    newStatus = 'collected';        // ✅ Was 'delivered' (INVALID)
+    // RC-2 : tous les colis représentés collected ≠ toutes les lignes dues remises.
+    // Inclut les lignes jamais placées dans un colis et les quantités partielles.
+    // Les colis groupés multi-commandes restent autorisés : on agrège par
+    // order_item_id avec leur commande source, pas par parcels.order_id.
+    const { rows: [coverage] } = await client.query(`
+      SELECT COUNT(*)::int AS total_lines,
+             COUNT(*) FILTER (
+               WHERE COALESCE(qty.collected, 0) < oi.quantity
+             )::int AS still_due
+      FROM order_items oi
+      LEFT JOIN LATERAL (
+        SELECT SUM(pi.qty_collected) AS collected
+        FROM parcel_items pi
+        JOIN parcels p ON p.id = pi.parcel_id AND p.status <> 'cancelled'
+        WHERE pi.order_item_id = oi.id
+      ) qty ON TRUE
+      WHERE oi.order_id = $1
+    `, [orderId]);
+
+    if (coverage && Number(coverage.total_lines) > 0 &&
+        Number(coverage.still_due) === 0) {
+      newStatus = 'collected';
+    }
+    // Sinon, ne pas fabriquer de statut terminal : conserver le statut actuel.
   } else if (parseInt(stats.available) > 0) {
     newStatus = 'available';        // ✅ Valid
   } else if (parseInt(stats.in_transit) > 0) {
