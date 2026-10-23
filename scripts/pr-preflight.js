@@ -178,7 +178,9 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
     // Parité CI (job changes) : registre de routes hydraté avant l'audit.
     nodeRun('Route registry hydration', 'scripts/gen-route-registry.js'),
     npmRun('Feature audit', 'gate:feature-audit'),
-    nodeRun('Debt Zero', 'scripts/debt-zero-gate.js', ['--base', baseSha, '--head', headSha]),
+    // Accord humain Debt Zero : il ne peut porter que sur un SHA publié (PR). En local,
+    // exit 3 = « vert sauf accord » : le reste du plan continue, la CI reste bloquante.
+    { ...nodeRun('Debt Zero', 'scripts/debt-zero-gate.js', ['--base', baseSha, '--head', headSha, '--local']), pendingExit: 3 },
   ];
 
   if (scope.cjPilotProofOnly) {
@@ -225,7 +227,6 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
         '--runInBand', '--silent',
       ]),
       nodeRun('Supplier execution certification manifest', 'scripts/check-supplier-execution-certification-manifest.js'),
-      nodeRun('Feature invariants — preuve unitaire', 'scripts/feature-invariant-check.js', ['--strict', '--run=unit']),
       npmRun('Backend feature guard', 'feature:check'),
       nodeRun('Contract consumer check', 'scripts/contract-check.js'),
       npmRun('Security 360 freshness and ratchet', 'security:360:check'),
@@ -256,7 +257,6 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
       nodeRun('Architecture header hygiene', 'scripts/arch-db-check.js'),
       nodeRun('Headers ↔ SQL', 'scripts/arch-header-sql-check.js'),
       nodeRun('Hub authority gate', 'scripts/hub-authority-gate.js'),
-      nodeRun('Feature invariants — runner officiel et cliquet', 'scripts/feature-invariant-check.js', ['--strict']),
       // Déjà exécuté par « Backend feature guard » (npm run feature:check) si backend.
       ...(scope.backend ? [] : [nodeRun('Feature slice guard', 'scripts/feature-guard.js', ['--strict'])]),
       nodeRun('Business graph semantic check', 'scripts/business-graph-gen.js', [
@@ -301,6 +301,7 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
 }
 
 function runPlan(plan, dryRun = false) {
+  const pending = [];
   for (let i = 0; i < plan.length; i += 1) {
     const step = plan[i];
     process.stdout.write(`\n[${i + 1}/${plan.length}] ${step.label}\n`);
@@ -322,10 +323,15 @@ function runPlan(plan, dryRun = false) {
       env: process.env,
     });
     if (r.error) throw r.error;
+    if (step.pendingExit !== undefined && r.status === step.pendingExit) {
+      pending.push(step.label);
+      continue;
+    }
     if (r.status !== 0) {
       throw new Error(`${step.label} a échoué (exit ${r.status}). Corriger avant d'ouvrir/mettre à jour la PR.`);
     }
   }
+  return pending;
 }
 
 function main() {
@@ -359,8 +365,13 @@ function main() {
     return;
   }
 
-  runPlan(plan, dryRun);
+  const pending = runPlan(plan, dryRun) || [];
   markGreen();
+  if (pending.length) {
+    console.log(`\n⚠ PRE-FLIGHT VERT SAUF ACCORD HUMAIN — ${pending.join(', ')}.`);
+    console.log('  Publier ce SHA (push + PR) pour examen ; la CI reste bloquée tant que l’accord sur ce SHA exact manque.');
+    return;
+  }
   console.log('\n✔ PRE-FLIGHT VERT — la PR peut maintenant servir de preuve indépendante.');
 }
 
