@@ -39,8 +39,11 @@
       throw new Error('canonical_client_360_admin_context_contract_missing');
     }
     const view = contextContract.resolveMarketView(adminContext);
+    // L2 : périmètre de recette explicite (?simulation_scope=RCT1), transmis au serveur (vue globale).
+    const scope = new URLSearchParams(String((globalThis.location && globalThis.location.search) || '')).get('simulation_scope');
+    const simulation = scope && /^[A-Z][A-Z0-9-]{1,31}$/.test(scope) ? `?simulation_scope=${encodeURIComponent(scope)}` : '';
     return view.mode === 'global'
-      ? GLOBAL_ENDPOINT_PREFIX + encodeURIComponent(phone)
+      ? GLOBAL_ENDPOINT_PREFIX + encodeURIComponent(phone) + simulation
       : MARKET_ENDPOINT_PREFIX + encodeURIComponent(view.marketCode) + MARKET_ENDPOINT_SUFFIX + encodeURIComponent(phone);
   }
 
@@ -60,10 +63,12 @@
     return `${formatNumber(value)} KMF`;
   }
 
-  function formatDate(value) {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(date);
+  // L3 : fuseau métier du serveur (marché de l'objet), jamais celui du navigateur.
+  let activeTimezone = null;
+  function formatDate(value, timezone) {
+    return globalThis.KomerceBusinessDate
+      ? globalThis.KomerceBusinessDate.formatBusinessDate(value, timezone || activeTimezone, { time: true })
+      : (value ? String(value).slice(0, 10) : '—');
   }
 
   function text(doc, tag, className, value) {
@@ -137,6 +142,7 @@
   }
 
   function renderPayload(rootNode, ui, doc, payload) {
+    activeTimezone = payload.business_timezone || null;
     const client = payload.client || {};
     const scope = payload.scope || {};
     const security = payload.security || { visibility: 'restricted' };
@@ -187,7 +193,7 @@
         payment: row.payment_status,
         total: formatKmf(row.total_kmf),
         relais: row.relais && row.relais.name,
-        date: formatDate(row.created_at),
+        date: formatDate(row.created_at, row.business_timezone),
       })),
       emptyText: 'Aucune commande visible.',
     });

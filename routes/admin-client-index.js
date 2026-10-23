@@ -97,6 +97,7 @@ async function marketHandler(req, res, next) {
     const payload = await clientIndex.listClients(queryFor(req), {
       marketIds: [req.clientIndexMarket.id],
       market: req.clientIndexMarket,
+      simulationScope: req.query.simulation_scope,
     });
     return res.json(payload);
   } catch (err) {
@@ -108,7 +109,7 @@ async function marketHandler(req, res, next) {
 async function globalHandler(req, res, next) {
   try {
     res.set('Cache-Control', 'private, no-store');
-    const payload = await clientIndex.listClients(queryFor(req), { marketIds: null });
+    const payload = await clientIndex.listClients(queryFor(req), { marketIds: null, simulationScope: req.query.simulation_scope });
     return res.json(payload);
   } catch (err) {
     log.error({ err }, '[admin-client-index] global read failed');

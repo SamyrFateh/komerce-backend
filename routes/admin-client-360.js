@@ -63,7 +63,7 @@ async function resolveClientAccess(req, res, next) {
       });
     }
 
-    const resolved = await client360.resolveClient(phone, { marketIds });
+    const resolved = await client360.resolveClient(phone, { marketIds, simulationScope: req.query.simulation_scope });
     if (!resolved.client) {
       return res.status(404).json({
         error: 'Client introuvable dans le périmètre autorisé',
@@ -76,6 +76,7 @@ async function resolveClientAccess(req, res, next) {
       mode: globalAllowed ? 'global' : 'market',
       marketIds,
       includeSecurity: globalAllowed,
+      simulationScope: req.query.simulation_scope,
     });
     return next();
   } catch (err) {
@@ -96,6 +97,7 @@ router.get(
       const payload = await client360.loadClient360(req.client360Client, {
         marketIds: req.client360Access.marketIds,
         includeSecurity: req.client360Access.includeSecurity,
+        simulationScope: req.client360Access.simulationScope,
       });
       return res.json(payload);
     } catch (err) {

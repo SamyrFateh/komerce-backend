@@ -48,10 +48,12 @@
     return `${formatNumber(value)} KMF`;
   }
 
-  function formatDate(value) {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(date);
+  // L3 : fuseau métier du serveur (marché de l'objet), jamais celui du navigateur.
+  let activeTimezone = null;
+  function formatDate(value, timezone) {
+    return globalThis.KomerceBusinessDate
+      ? globalThis.KomerceBusinessDate.formatBusinessDate(value, timezone || activeTimezone, { time: true })
+      : (value ? String(value).slice(0, 10) : '—');
   }
 
   function text(doc, tag, className, value) {
@@ -382,6 +384,7 @@
   }
 
   function renderPayload(rootNode, ui, doc, payload) {
+    activeTimezone = (payload.order && payload.order.business_timezone) || payload.business_timezone || null;
     rootNode.className = 'kmc-admin-shell kmc-entity-shell';
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload));

@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const { resolveBusinessTimezone } = require('./market-business-day');
 const controlChain = require('./logistics-control-chain-projection');
 const financeCanonical = require('./dashboard-finance-canonical');
 
@@ -88,6 +89,7 @@ function publicOrder(order) {
       name: order.market_name || null,
       currency: order.market_currency || null,
     }),
+    business_timezone: resolveBusinessTimezone({ code: order.market_code }).timezone,
     created_at: order.created_at,
     updated_at: order.updated_at,
   });

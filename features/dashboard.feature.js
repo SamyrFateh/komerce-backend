@@ -525,6 +525,7 @@ module.exports = {
       'dashboards/canonical/js/dashboard-schema.js',
       'dashboards/canonical/js/dashboard-renderer.js',
       'dashboards/canonical/js/admin-context.js',
+      'dashboards/canonical/js/business-date.js',
       'dashboards/canonical/js/demo-order-flow.js',
       'dashboards/canonical/js/settings-workspace.js',
       'dashboards/canonical/js/finance-accounting-workspace.js',

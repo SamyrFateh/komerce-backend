@@ -43,12 +43,18 @@ test('normalise recherche, pagination et tri dans des bornes fermées', () => {
 });
 
 test('scopeFilter reste global avec null et échoue fermé sans marché', () => {
-  expect(service.scopeFilter(null, 1)).toEqual({ sql: '', params: [] });
+  // L2 : la vue réelle (simulation_scope IS NULL) est le défaut ; le périmètre de recette l'inverse.
+  expect(service.scopeFilter(null, 1)).toEqual({ sql: ' AND o.simulation_scope IS NULL', params: [] });
   expect(service.scopeFilter([], 1)).toEqual({ sql: ' AND FALSE', params: [] });
   expect(service.scopeFilter([MARKET_ID], 2)).toEqual({
-    sql: ' AND o.market_id = ANY($2::uuid[])',
+    sql: ' AND o.market_id = ANY($2::uuid[]) AND o.simulation_scope IS NULL',
     params: [[MARKET_ID]],
   });
+  expect(service.scopeFilter([MARKET_ID], 2, 'RCT1')).toEqual({
+    sql: ' AND o.market_id = ANY($2::uuid[]) AND o.simulation_scope = $3',
+    params: [[MARKET_ID], 'RCT1'],
+  });
+  expect(service.scopeFilter(null, 1, 'pas valide')).toEqual({ sql: ' AND o.simulation_scope IS NULL', params: [] });
 });
 
 test('index marché applique le scope avant agrégation et ne publie aucune UUID', async () => {
