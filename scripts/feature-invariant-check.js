@@ -194,7 +194,14 @@ function evaluateFileResult(result) {
   const passed = assertions.filter(a => a.status === 'passed').length;
   const skipped = assertions.filter(a => ['pending', 'skipped', 'todo', 'disabled'].includes(a.status)).length;
   const failed = assertions.filter(a => a.status === 'failed').length;
-  if (result.status === 'failed' || failed) return { ok: false, reason: `${failed} test(s) en échec${result.message ? ' — ' + String(result.message).split('\n')[0].slice(0, 160) : ''}` };
+  if (result.status === 'failed' || failed) {
+    const text = String(result.message || '');
+    const meaningful = text.split('\n').map(line => line.trim())
+      .find(line => /^(?:[A-Za-z]+Error:|error:|Error:|FAIL|TypeError:|SyntaxError:|ReferenceError:)/.test(line));
+    const detail = meaningful || text.split('\n').find(Boolean) || '';
+    return { ok: false, reason: failed + ' test(s) en échec' +
+      (detail ? ' — ' + detail.slice(0, 250) : '') };
+  }
   if (!passed) return { ok: false, reason: 'aucun test passé (succès à vide)' };
   if (skipped) return { ok: false, reason: `${skipped} test(s) ignoré(s) : preuve incomplète` };
   return { ok: true, reason: `${passed} test(s) passé(s)` };

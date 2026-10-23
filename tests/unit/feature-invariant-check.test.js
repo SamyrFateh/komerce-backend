@@ -104,3 +104,16 @@ describe('feature-invariant-check — jamais de succès à vide', () => {
     expect(() => gate.parseRunArg(['--run=playwright'])).toThrow(/inconnu/);
   });
 });
+
+
+describe('diagnostic des erreurs de preuves E2E', () => {
+  test('affiche la cause technique plutôt que le seul titre du test', () => {
+    const result = gate.evaluateFileResult({
+      status: 'failed',
+      assertionResults: [{ status: 'failed' }],
+      message: '● nom du test\\n  Error: relation refund_execution_intents missing\\n    at line',
+    });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain('relation refund_execution_intents missing');
+  });
+});
