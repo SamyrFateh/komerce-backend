@@ -189,6 +189,13 @@
 
   function renderClientTable(container, doc, payload) {
     container.replaceChildren();
+    if (payload && payload.simulation && payload.simulation.label) {
+      const note = doc.createElement('p');
+      note.className = 'kmc-recette-banner';
+      note.setAttribute('role', 'status');
+      note.textContent = payload.simulation.label;
+      container.appendChild(note);
+    }
     const rows = Array.isArray(payload && payload.clients) ? payload.clients : [];
     if (!rows.length) return null;
 

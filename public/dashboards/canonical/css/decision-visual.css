@@ -975,3 +975,4 @@ body.kmc-shell-v4 .kmc-param-line > .kmc-workspace-action {
 .kmc-market-prompt-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .kmc-market-prompt-choice { min-height: 36px; padding: 6px 16px; border: 1px solid #6b4fd8; border-radius: 8px; background: #fff; color: #4b32b0; font-weight: 600; cursor: pointer; }
 .kmc-market-prompt-choice:hover { background: #f3efff; }
+.kmc-recette-banner { margin: 0 0 16px; padding: 10px 16px; border: 1px solid #c9bff0; border-radius: 10px; background: #f3f0fc; color: #3b2f86; font-size: .9rem; line-height: 1.4; }
