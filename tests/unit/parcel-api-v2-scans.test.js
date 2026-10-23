@@ -138,7 +138,7 @@ describe('POST /:ref/scan — mapping event_type → scan-engine', () => {
 });
 
 describe('POST /:ref/scan — résolution actor', () => {
-  test('actor_role explicite dans le body est prioritaire sur le rôle déduit', async () => {
+  test('RC-4 : actor_role du body ne peut jamais usurper le rôle authentifié', async () => {
     setParcelQuery({ id: 'PID1', reference: 'P1', status: 'preparation' });
     scanEngine.processScan.mockResolvedValueOnce({ success: true, event_id: 'EV1', parcel: { status: 'shipped' } });
 
@@ -148,7 +148,21 @@ describe('POST /:ref/scan — résolution actor', () => {
       .send({ event_type: 'shipped', actor_role: 'override_role' });
 
     expect(scanEngine.processScan).toHaveBeenCalledWith(
-      expect.objectContaining({ actor_role: 'override_role' })
+      expect.objectContaining({ actor_role: 'hub_agent' })
+    );
+  });
+
+  test('role admin → acteur admin même si body prétend être relais', async () => {
+    setParcelQuery({ id: 'PID1', reference: 'P1', status: 'available' });
+    scanEngine.processScan.mockResolvedValueOnce({
+      success: true, event_id: 'EV1', parcel: { status: 'collected' },
+    });
+    const res = await request(app).post('/api/v2/parcels/P1/scan')
+      .set('x-test-role', 'admin')
+      .send({ event_type: 'collected', actor_role: 'relay_agent' });
+    expect(res.status).toBe(200);
+    expect(scanEngine.processScan).toHaveBeenCalledWith(
+      expect.objectContaining({ actor_role: 'admin' })
     );
   });
 
@@ -266,6 +280,40 @@ describe('POST /:ref/scan — succès', () => {
     await request(app).post('/api/v2/parcels/P1/scan').send({ event_type: 'shipped' });
 
     expect(notif.notifyParcelScan).toHaveBeenCalledWith('PID1', 'P1', 'shipped'); // engineEventType fallback
+  });
+});
+
+describe('RC-3/RC-4 — autorisations remontées au contrat HTTP', () => {
+  test('RC-3 : cash non payé → HTTP 409, code stable, sans notification', async () => {
+    setParcelQuery({ id: 'PID1', reference: 'P1', status: 'available' });
+    scanEngine.processScan.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'COLLECTION_PAYMENT_REQUIRED', message: 'Commande non payée' },
+    });
+    const res = await request(app).post('/api/v2/parcels/P1/scan')
+      .set('x-test-role', 'agent_relais')
+      .send({ event_type: 'collected', actor_role: 'admin' });
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({
+      error: 'Commande non payée', code: 'COLLECTION_PAYMENT_REQUIRED', incidents: [],
+    });
+    expect(notif.notifyParcelScan).not.toHaveBeenCalled();
+  });
+
+  test('RC-4 : agent hors relais → HTTP 403, aucune confirmation', async () => {
+    setParcelQuery({ id: 'PID1', reference: 'P1', status: 'available' });
+    scanEngine.processScan.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'COLLECTION_RELAY_FORBIDDEN', message: 'Autre relais' },
+    });
+    const res = await request(app).post('/api/v2/parcels/P1/scan')
+      .set('x-test-role', 'agent_relais')
+      .send({ event_type: 'collected', actor_role: 'admin' });
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({
+      error: 'Autre relais', code: 'COLLECTION_RELAY_FORBIDDEN', incidents: [],
+    });
+    expect(notif.notifyParcelScan).not.toHaveBeenCalled();
   });
 });
 

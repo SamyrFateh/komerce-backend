@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, services/incident-write-service.js, services/notification-service.js, services/order-status-machine.js, services/parcel-order-membership.js, utils/logger.js
  * @used-by       routes/parcel-api-v2/scans.js
- * @db-read       incidents, order_items, orders, parcel_items, parcels, products, relais, scan_events
+ * @db-read       incidents, order_items, orders, parcel_items, parcels, products, relais, scan_events, users
  * @db-write      order_items, parcel_items, parcels, scan_events
  * @db-write-via:incident-write-service incidents
  * @db-write-via:order-status-machine product_variants, order_status_history, products
@@ -269,6 +269,11 @@ async function _validateAndCatchup(client, params, parcel, parcelItems, result) 
     }
   }
 
+  // RC-3 / RC-4 : contrôle transactionnel avant toute mutation de remise.
+  if (params.event_type === 'customer_collected') {
+    await assertCollectionScanAuthorized(client, params, parcel);
+  }
+
   // ── 5. Smart Catchup — rattraper les étapes manquées ──
   const catchups = CATCHUP_MAP[params.event_type] || [];
   for (const catchupType of catchups) {
@@ -338,6 +343,60 @@ async function _validateAndCatchup(client, params, parcel, parcelItems, result) 
   }
 
   return { valid: true, flow };
+}
+
+/**
+ * RC-3/RC-4 — Paiement confirmé et relais autorisé AVANT la remise physique.
+ * Un colis peut contenir plusieurs commandes (même market/même relais).
+ * Chaque commande représentée doit être intégralement payée.
+ * Les rôles et relais proviennent de PostgreSQL, jamais du body.
+ */
+async function assertCollectionScanAuthorized(client, params, parcel) {
+  if (!params.scanned_by) {
+    throw new ScanError('COLLECTION_ACTOR_REQUIRED', 'Remise impossible sans agent authentifié');
+  }
+
+  const { rows: [actor] } = await client.query(
+    'SELECT id, role, relais_id FROM users WHERE id = $1',
+    [params.scanned_by]
+  );
+  if (!actor || !['admin', 'agent_hub', 'agent_relais'].includes(actor.role)) {
+    throw new ScanError('COLLECTION_ACTOR_FORBIDDEN', 'Agent non autorisé à remettre ce colis');
+  }
+
+  const { rows: representedOrders } = await client.query(
+    'SELECT o.id, o.payment_status, o.relais_id FROM orders o ' +
+    'WHERE o.id = $1 OR o.id IN (' +
+    'SELECT oi.order_id FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id ' +
+    'WHERE pi.parcel_id = $2) ORDER BY o.id FOR SHARE OF o',
+    [parcel.order_id, parcel.id]
+  );
+  if (!representedOrders.length) {
+    throw new ScanError('COLLECTION_ORDER_UNKNOWN', 'Aucune commande vérifiable pour ce colis');
+  }
+
+  if (representedOrders.some(order => order.payment_status !== 'paid')) {
+    throw new ScanError('COLLECTION_PAYMENT_REQUIRED',
+      'Remise refusée : au moins une commande du colis n’est pas intégralement payée');
+  }
+
+  if (actor.role === 'agent_relais') {
+    // Les deux colonnes historiques ne doivent pas se contredire.
+    const physicalRelays = [parcel.relay_id, parcel.relais_id].filter(Boolean).map(String);
+    if (physicalRelays.length > 1 && physicalRelays[0] !== physicalRelays[1]) {
+      throw new ScanError('COLLECTION_RELAY_CONFLICT',
+        'Destination de colis incohérente : remise bloquée');
+    }
+    const destination = physicalRelays[0] ||
+      (representedOrders.length === 1 ? String(representedOrders[0].relais_id || '') : '');
+    if (!actor.relais_id || !destination ||
+        String(actor.relais_id) !== destination ||
+        representedOrders.some(order => !order.relais_id ||
+          String(order.relais_id) !== destination)) {
+      throw new ScanError('COLLECTION_RELAY_FORBIDDEN',
+        'Colis hors du relais autorisé pour cet agent');
+    }
+  }
 }
 
 /**
@@ -996,6 +1055,7 @@ module.exports = {
   syncOrderFromParcels,
   ScanError,
   // @test-only — helpers internes exposés pour les tests de caractérisation
+  _assertCollectionScanAuthorized: assertCollectionScanAuthorized,
   _getStatusOrder: getStatusOrder,
   _checkSequence: checkSequence,
   _buildQtySnapshot: buildQtySnapshot,

@@ -48,7 +48,7 @@ const V2_TO_ENGINE_EVENT = {
 router.post('/:ref/scan', async (req, res, next) => {
   try {
     const { ref } = req.params;
-    const { event_type, location, notes, actor_name, actor_role } = req.body;
+    const { event_type, location, notes, actor_name } = req.body;
 
     if (!event_type) {
       return res.status(400).json({ error: 'event_type requis' });
@@ -71,10 +71,10 @@ router.post('/:ref/scan', async (req, res, next) => {
     }
 
     const actorId       = req.user?.id || null;
-    const actorRoleFinal = actor_role
-      || (req.user?.role === 'agent_hub'    ? 'hub_agent'
-        : req.user?.role === 'agent_relais' ? 'relay_agent'
-        : 'system');
+    // RC-4 : le rôle ne peut jamais être fourni par le body du client.
+    const actorRoleFinal = req.user?.role === 'agent_hub' ? 'hub_agent'
+      : req.user?.role === 'agent_relais' ? 'relay_agent'
+        : req.user?.role === 'admin' ? 'admin' : 'system';
 
     // Déléguer à scan-engine (gère sa propre transaction)
     const scanEngine = require('../../services/scan-engine');
@@ -90,8 +90,12 @@ router.post('/:ref/scan', async (req, res, next) => {
 
     if (!result.success) {
       const incident = result.incidents?.[0];
-      return res.status(409).json({
-        error:     incident?.title || 'Scan rejeté par le moteur de séquence',
+      const code = result.error?.code;
+      const forbidden = ['COLLECTION_RELAY_FORBIDDEN', 'COLLECTION_RELAY_CONFLICT',
+        'COLLECTION_ACTOR_FORBIDDEN', 'COLLECTION_ACTOR_REQUIRED'].includes(code);
+      return res.status(forbidden ? 403 : 409).json({
+        error: result.error?.message || incident?.title || 'Scan rejeté par le moteur de séquence',
+        ...(code ? { code } : {}),
         incidents: result.incidents || [],
       });
     }
