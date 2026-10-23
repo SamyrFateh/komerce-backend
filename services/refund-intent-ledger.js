@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @komerce-arch
  * @role          durable-refund-intent-reservation
@@ -18,6 +16,8 @@
  * Foundation RC-5/RC-9 only. Callers MUST NOT send payments until after commit.
  * The existing Stripe/PayPal refund flows are NOT rewired by this module.
  */
+'use strict';
+
 const defaultDb = require('../db');
 
 class RefundIntentError extends Error {
