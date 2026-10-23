@@ -363,6 +363,7 @@ module.exports = {
       'railway.toml',
     ],
     tests: [
+      'tests/unit/feature-invariant-check.test.js',
       'tests/unit/impact-check-security-conventions.test.js',
       'tests/unit/require-non-production.test.js',
       'tests/unit/target-identity.test.js',
@@ -537,6 +538,8 @@ module.exports = {
   authority: 'backend — ces fichiers sont consommés par toutes les features. Tout changement ici a un impact potentiel global.',
 
   invariants: [
+    { statement: 'un invariant exécutable de Feature Card n’est prouvé que par un runner officiel (jest unitaire, intégration, E2E API, Playwright enregistré, boutique) et jamais par un succès à vide (aucun test passé, test ignoré ou base absente) ; aucun nouvel invariant textuel n’est accepté par rapport au commit de base de la PR, sans fichier de tolérance',
+      test: 'tests/unit/feature-invariant-check.test.js' },
     'tout fichier middleware/ non-auth doit être listé ici',
     'tout fichier utils/ à @domain infrastructure doit être listé ici',
     'tout fichier bootstrap/ doit être listé ici',
