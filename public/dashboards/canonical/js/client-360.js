@@ -171,6 +171,15 @@
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload, revealContacts, () => renderPayload(rootNode, ui, doc, payload, !revealContacts)));
 
+    const recette = new URLSearchParams(String((globalThis.location && globalThis.location.search) || '')).get('simulation_scope');
+    if (recette && /^[A-Z][A-Z0-9-]{1,31}$/.test(recette)) {
+      const note = doc.createElement('p');
+      note.className = 'kmc-recette-banner';
+      note.setAttribute('role', 'status');
+      note.textContent = `Périmètre de recette ${recette} : faits simulés, pas une activité réelle de l'entreprise.`;
+      rootNode.appendChild(note);
+    }
+
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-entity-metrics';
     rootNode.appendChild(metrics);

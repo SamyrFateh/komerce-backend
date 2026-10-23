@@ -150,3 +150,13 @@ test('L12a : les téléphones de la liste sont masqués par défaut et révélab
   reveal.addEventListener.mock.calls.find(([event]) => event === 'click')[1]();
   expect(masked.textContent).toBe('•••• 4567');
 });
+
+test('L2 : la vue recette affiche un bandeau explicite, la vue réelle n’en affiche pas', () => {
+  const document = doc();
+  const container = node();
+  index.renderClientTable(container, document, { simulation: { scope: 'RCT1', label: 'Périmètre de recette RCT1 : faits simulés.' }, clients: [] });
+  expect(JSON.stringify(container.children.map(c => [c.className, c.textContent]))).toContain('kmc-recette-banner');
+  const real = node();
+  index.renderClientTable(real, document, { simulation: null, clients: [] });
+  expect(real.children.length).toBe(0);
+});

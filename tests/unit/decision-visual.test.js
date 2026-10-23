@@ -114,3 +114,8 @@ test('L1 : invite « Choisir un marché » stylée (composant unique market-prom
   expect(src).toContain('.kmc-market-prompt {');
   expect(src).toContain('.kmc-market-prompt[data-market-prompt="unauthorized"]');
 });
+
+test('L2 : le bandeau de recette est stylé', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/decision-visual.css'), 'utf8');
+  expect(css).toContain('.kmc-recette-banner');
+});
