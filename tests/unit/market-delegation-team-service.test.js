@@ -204,3 +204,10 @@ test('direct existing-user invitation forwards explicit capability limits', () =
   expect(source).toMatch(/capabilityLimits = \{\}/);
   expect(source).toMatch(/capabilityLimits,/);
 });
+
+describe('en-tête @komerce-arch — mode d’accès (Lot A2)', () => {
+  test('l’UPDATE direct de assignment_memberships est déclaré en @db-write', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/market-delegation-team-service.js'), 'utf8');
+    expect(src).toMatch(/@db-write\s+assignment_memberships\b/);
+  });
+});

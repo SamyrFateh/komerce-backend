@@ -198,6 +198,9 @@ module.exports = {
       'scan_events: R',
       'stripe_events_processed: RW',
       'users: R',
+      'cash_custody_losses: RW!',
+      'cash_custody_receipts: RW!',
+      'market_payment_accounts: RW!',
     ],
   },
 

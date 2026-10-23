@@ -241,6 +241,10 @@ module.exports = {
       'product_variants: R',
       'product_skus: R',
       'product_sku_media: R',
+      'import_runtime_item_events: RW!',
+      'provider_credentials: RW!',
+      'sourcing_source_requests: RW!',
+      'supplier_commercial_category_mappings: RW!',
     ],
   },
 

@@ -39,9 +39,10 @@ const core = require('./lib/arch-drift-core');
 const REPORT_ONLY = process.argv.includes('--report');
 
 function main() {
-  let r, budgetRaw;
+  let r, budgetRaw, cards;
   try {
     r = core.analyzeHeaderSql();
+    cards = core.analyzeCardWrites();
     budgetRaw = core.loadBudgetRaw();
   } catch (e) {
     console.error('FATAL: ' + e.message);
@@ -71,7 +72,25 @@ function main() {
     console.log('');
   }
 
+  // Mode et carte : aucun cliquet, toute occurrence bloque (stock historique reconcilie a 0).
+  if (r.writeModeFindings.length) {
+    console.log('--- MODE FAUX (ecriture SQL directe absente de @db-write) ---');
+    for (const f of r.writeModeFindings) console.log(`  ${f.file}\n      ecrit: ${f.tables.join(', ')}`);
+    console.log('');
+  }
+  if (cards.findings.length) {
+    console.log('--- CARTE <-> SQL (ecriture reelle non declaree en W/RW dans db.tables de la carte proprietaire) ---');
+    for (const f of cards.findings) console.log(`  [${f.feature}] ${f.file} -> ${f.table}`);
+    console.log('   Declarer la table en W/RW (! owner, ~ ecrivain technique) dans features/<feature>.feature.js.');
+    console.log('');
+  }
+  console.log(`Mode d'acces faux       : ${r.writeModeFindings.length}`);
+  console.log(`Ecritures hors carte    : ${cards.findings.length}`);
   console.log('============================================================');
+  if ((r.writeModeFindings.length || cards.findings.length) && !REPORT_ONLY) {
+    console.error('🚫 Ecriture non declaree (mode du header ou carte proprietaire).');
+    process.exit(1);
+  }
 
   if (!hasFloor) {
     console.log('OBSERVATION : cliquet non defini. Aucun blocage pour l\'instant.');

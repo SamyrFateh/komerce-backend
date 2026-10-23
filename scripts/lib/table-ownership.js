@@ -16,6 +16,9 @@
  *                    simulateur de démo, migration de démarrage — aucune
  *                    autorité métier) ; ne compte JAMAIS comme "extra
  *                    writer" concurrent d'un owner déjà résolu
+ * Convention RW ⊇ R : une entrée RW est rangée dans `writers` uniquement, avec
+ * mode:'RW' ; la dimension lecture se lit via writers[].mode (jamais dupliquée
+ * dans `readers`, qui ne contient que les entrées R pures).
  * Le booléen classification.signals.ownsTables + l'ancienne résolution
  * restent le fallback pour toute table qui n'a pas encore reçu de marqueur
  * explicite.
