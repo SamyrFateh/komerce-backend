@@ -15,9 +15,9 @@
  * @db-txn        none
  * @doctrine      invariant_executable_non_speculatif
  */
-const path = require('path');
-
 const RULES = Object.freeze({
+  'LS-01': { category: 'WF', priority: 'P1', title: 'Changement direct de statut commande hors machine canonique (suspect)' },
+  'LS-06': { category: 'FIN', priority: 'P2', title: 'Appel PSP externe : vérifier intention durable et rapprochement après réponse' },
   'LS-02': { category: 'FIN', priority: 'P1', title: 'Appel PSP potentiellement inclus dans une transaction SQL' },
   'LS-03': { category: 'FIN', priority: 'P1', title: 'Cle d idempotence derivee du temps (instable au rejeu)' },
   'LS-04': { category: 'DAT', priority: 'P1', title: 'Mutation directe de la composition des colis hors service canonique' },
@@ -48,15 +48,23 @@ function scanSource(source, name) {
       snippet, fingerprint,
     });
   }
+  // Contrôle plus large : un appel PSP est une frontière non atomique avec SQL.
   const externalCall = /\b(?:stripe\.refunds\.create|paypal\.refundCapture|paypal\.captureOrder)\s*\(/g;
   for (const match of source.matchAll(externalCall)) {
+    add('LS-06', match.index, match[0]);
     const recent = source.slice(Math.max(0, match.index - 3000), match.index);
     const begin = Math.max(recent.lastIndexOf("'BEGIN'"), recent.lastIndexOf('"BEGIN"'));
     const end = Math.max(recent.lastIndexOf("'COMMIT'"), recent.lastIndexOf("'ROLLBACK'"), recent.lastIndexOf('"COMMIT"'), recent.lastIndexOf('"ROLLBACK"'));
     if (begin >= 0 && begin > end) add('LS-02', match.index, match[0]);
   }
-  const transientKey = /(?:idempotencyKey|PayPal-Request-Id|Request-Id)[^\n]{0,180}\bDate\.now\s*\(/g;
+  // Autorise les valeurs sur plusieurs lignes ; évite de s'arrêter au premier \n.
+  const transientKey = /(?:idempotencyKey|PayPal-Request-Id|Request-Id)\s*['"`]?\s*[:=]\s*[\s\S]{0,240}?\bDate\.now\s*\(/g;
   for (const match of source.matchAll(transientKey)) add('LS-03', match.index, match[0]);
+  // SQL potentiellement caché dans un gabarit multi-lignes ; idem Opus, juste suspicion.
+  const directStatus = /\bUPDATE\s+(?:public\.)?orders(?:\s+(?:AS\s+)?[a-z_]+)?\s+SET\s+(?:status|payment_status)\s*=/gi;
+  for (const match of source.matchAll(directStatus)) {
+    if (!file.endsWith('services/order-status-machine.js')) add('LS-01', match.index, match[0]);
+  }
   const membership = /\b(?:INSERT\s+INTO|DELETE\s+FROM)\s+(?:public\.)?parcel_items\b/gi;
   for (const match of source.matchAll(membership)) {
     if (!file.endsWith('services/parcel-item-mutation-service.js')) add('LS-04', match.index, match[0]);

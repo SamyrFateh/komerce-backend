@@ -23,6 +23,27 @@ describe('audit:logic — detecteurs statiques, jamais des bugs confirmes', () =
     const sql = "INSERT INTO parcel_items (parcel_id, order_item_id) VALUES ($1,$2) ON CONFLICT DO NOTHING";
     expect(scanSource(sql, 'services/parcel-item-mutation-service.js').map(x => x.rule)).toContain('LS-05');
   });
+
+  test('LS-01 : repère la transition directe sans confondre une machine de statut', () => {
+    const sql = "await db.query('UPDATE orders SET status = $2 WHERE id=$1')";
+    expect(scanSource(sql, 'routes/orders/status.js').map(x => x.rule)).toContain('LS-01');
+    expect(scanSource(sql, 'services/order-status-machine.js').map(x => x.rule)).not.toContain('LS-01');
+  });
+
+  test('LS-06 : tout remboursement externe demande une intention et une preuve de réconciliation', () => {
+    const f = scanSource("await paypal.refundCapture(capture, options);", 'services/payment-paypal.js');
+    expect(f).toEqual(expect.arrayContaining([expect.objectContaining({
+      rule: 'LS-06', status: 'SUSPICION_STATIQUE', propagation: 'NON_ETABLIE',
+    })]));
+  });
+
+  test('LS-03 : détecte les clés PayPal et Stripe construites à Date.now sur plusieurs lignes', () => {
+    const paypal = "headers: { 'PayPal-Request-Id': \`refund-\${captureId}-\${Date.now()}\` }";
+    const stripe = "idempotencyKey:\\n  'refund_' + Date.now()";
+    expect(scanSource(paypal, 'services/paypal-client.js').map(x => x.rule)).toContain('LS-03');
+    expect(scanSource(stripe, 'services/refund-service.js').map(x => x.rule)).toContain('LS-03');
+  });
+
   test('la classification reste une suspicion avec preuve et empreinte', () => {
     const x = scanSource('const x = { idempotencyKey: "r" + Date.now() };', 'services/test.js')[0];
     expect(x).toMatchObject({ status: 'SUSPICION_STATIQUE', category: 'FIN', priority: 'P1', file: 'services/test.js' });

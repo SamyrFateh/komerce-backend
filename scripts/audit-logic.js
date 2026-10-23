@@ -53,10 +53,14 @@ function atBase(base, file) {
 function collectStatic(base) {
   const files = trackedFiles();
   const changed = new Set(git(['diff', '--name-only', base, 'HEAD']).split('\n').filter(Boolean));
+  if (!files.length) throw new Error('Aucun fichier applicatif suivi : audit incomplet (fail-closed)');
   const findings = [];
+  let scannedFiles = 0;
   for (const file of files) {
     let current;
-    try { current = fs.readFileSync(path.join(ROOT, file), 'utf8'); } catch { continue; }
+    try { current = fs.readFileSync(path.join(ROOT, file), 'utf8'); }
+    catch (error) { throw new Error('Fichier suivi illisible : ' + file + ' — ' + error.message); }
+    scannedFiles++;
     const currentFindings = scanSource(current, file);
     if (!currentFindings.length) continue;
     const historical = changed.has(file)
@@ -66,7 +70,7 @@ function collectStatic(base) {
       findings.push({ ...finding, novelty: historical && !historical.has(finding.fingerprint) ? 'NEW' : 'KNOWN' });
     }
   }
-  return { scannedFiles: files.length, changedFiles: changed.size, findings };
+  return { scannedFiles, trackedFiles: files.length, changedFiles: changed.size, findings };
 }
 const GATES = Object.freeze([
   ['Headers ↔ SQL', 'scripts/arch-header-sql-check.js'],
@@ -89,7 +93,8 @@ function markdown(result) {
   const lines = [
     '# Komerce — Audit logique statique et invariants de données', '',
     'SHA : ' + result.sha, 'Base : ' + result.base, '',
-    'Fichiers JavaScript/TypeScript suivis analysés : ' + result.scannedFiles,
+    'Fichiers JavaScript/TypeScript suivis analysés : ' + result.scannedFiles + ' / ' + result.trackedFiles,
+    'Répartition par règle : ' + Object.entries(result.byRule || {}).map(([rule, count]) => rule + '=' + count).join(' · '),
     'Fichiers modifiés depuis la base : ' + result.changedFiles,
     'Suspicion(s) statique(s) : ' + result.findings.length,
     'Nouvelles suspicions : ' + result.newFindings,
@@ -152,6 +157,8 @@ async function main() {
   const result = {
     contract: 'komerce-audit-logic-v1', sha, base,
     scannedFiles: staticResult.scannedFiles,
+    trackedFiles: staticResult.trackedFiles,
+    byRule: Object.fromEntries([...new Set(staticResult.findings.map(f => f.rule))].sort().map(rule => [rule, staticResult.findings.filter(f => f.rule === rule).length])),
     changedFiles: staticResult.changedFiles,
     findings: staticResult.findings,
     newFindings: staticResult.findings.filter(x => x.novelty === 'NEW').length,
@@ -164,7 +171,7 @@ async function main() {
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'audit.json'), JSON.stringify(result, null, 2) + '\n');
   fs.writeFileSync(path.join(outDir, 'audit.md'), markdown(result));
-  console.log('Audit logique Komerce — ' + result.scannedFiles + ' fichiers · ' +
+  console.log('Audit logique Komerce — ' + result.scannedFiles + '/' + result.trackedFiles + ' fichiers suivis · ' +
     result.findings.length + ' suspicions (' + result.newFindings + ' nouvelles).');
   console.log('Gates : ' + (gates.length ? gates.map(x => x.name + '=' + x.status).join(', ') : 'non lancés (--static-only)'));
   if (dataChecks) {

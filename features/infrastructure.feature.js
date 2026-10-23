@@ -548,6 +548,8 @@ module.exports = {
   authority: 'backend — ces fichiers sont consommés par toutes les features. Tout changement ici a un impact potentiel global.',
 
   invariants: [
+    { statement: 'A3/A4 contre-expertise : scanner suivi de bout en bout, fail-closed si périmètre vide/illisible, alerte LS-01 sur écriture de statut directe, LS-03 sur idempotence temporelle et LS-06 sur toute frontière PSP même hors transaction apparente',
+      test: 'tests/unit/logic-detectors.test.js' },
     { statement: 'les neuf requêtes LD-01 à LD-07b sont vérifiées sur une base PostgreSQL de test par scénarios fautifs puis sains isolés en tables TEMP, avec rollback avant le scénario suivant',
       test: 'tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js' },
     { statement: 'audit:logic --data contrôle explicitement les neuf règles LD-01 à LD-07b sans écriture PostgreSQL, dans une transaction READ ONLY avec rollback systématique, et rend visible NON EXÉCUTÉ sans base',
