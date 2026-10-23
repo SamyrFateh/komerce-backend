@@ -257,6 +257,7 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
       nodeRun('Governance projections hydration', 'scripts/ci-refresh-governance-projections.js'),
       nodeRun('Architecture header hygiene', 'scripts/arch-db-check.js'),
       nodeRun('Headers ↔ SQL', 'scripts/arch-header-sql-check.js'),
+      nodeRun('Audit logique statique', 'scripts/audit-logic.js', ['--static-only', '--strict', '--base', baseSha]),
       nodeRun('Hub authority gate', 'scripts/hub-authority-gate.js'),
       nodeRun('Feature invariants — runner officiel et cliquet', 'scripts/feature-invariant-check.js', ['--strict']),
       // Déjà exécuté par « Backend feature guard » (npm run feature:check) si backend.
