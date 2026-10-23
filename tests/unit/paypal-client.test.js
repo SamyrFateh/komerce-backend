@@ -165,6 +165,36 @@ describe('refundCapture', () => {
     expect(body.invoice_id).toBe('K-X');
   });
 
+  async function replayKeys() {
+    mockOAuthOnce();
+    mockFetchOnce({ id: 'REF-REPLAY', status: 'COMPLETED' });
+    mockFetchOnce({ id: 'REF-REPLAY', status: 'COMPLETED' });
+    let now = 1000000;
+    const spy = jest.spyOn(Date, 'now').mockImplementation(() => { now += 1000; return now; });
+    try {
+      await paypal.refundCapture('CAP-REPLAY', { amountEur: 15 });
+      await paypal.refundCapture('CAP-REPLAY', { amountEur: 15 });
+    } finally {
+      spy.mockRestore();
+    }
+    return global.fetch.mock.calls
+      .filter(([url]) => String(url).includes('/captures/CAP-REPLAY/refund'))
+      .map(([, options]) => options.headers['PayPal-Request-Id']);
+  }
+
+  test.failing('RC-9 : rejouer la même opération de remboursement préserve sa clé PayPal', async () => {
+    const keys = await replayKeys();
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBe(keys[1]);
+  });
+
+  test('RC-9 : témoin positif — le client fabrique actuellement deux clés distinctes', async () => {
+    const keys = await replayKeys();
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).not.toBe(keys[1]);
+    expect(keys[0]).toContain('refund-CAP-REPLAY');
+  });
+
   test('throw si captureId vide', async () => {
     await expect(paypal.refundCapture('')).rejects.toThrow('captureId requis');
   });
