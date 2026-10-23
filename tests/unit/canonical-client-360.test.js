@@ -16,6 +16,7 @@ function node() {
     appendChild(child) { this.children.push(child); return child; },
     replaceChildren(...children) { this.children = children; },
     setAttribute: jest.fn(),
+    addEventListener: jest.fn(),
   };
 }
 
@@ -145,4 +146,26 @@ test('mount sans contextContract refuse plutôt que de fabriquer un endpoint par
     adminContext: globalContext(),
   })).rejects.toThrow('canonical_client_360_admin_context_contract_missing');
   expect(fetchFn).not.toHaveBeenCalled();
+});
+
+
+test('L12a : Client 360 masque les coordonnées jusqu’à une action explicite', () => {
+  const root = node();
+  const fakeUi = ui();
+  const document = { createElement: jest.fn(() => node()) };
+  expect(client360.maskPhone('+2691234567')).toBe('•••• 4567');
+  expect(client360.maskEmail('amina@example.test')).toBe('•••@example.test');
+  client360.renderPayload(root, fakeUi, document, payload());
+  const identityRows = fakeUi.DataTable.render.mock.calls[0][1].rows;
+  expect(identityRows).toContainEqual({ champ: 'Téléphone', valeur: '•••• 4567' });
+  expect(identityRows).toContainEqual({ champ: 'Email', valeur: '•••@example.test' });
+  const firstHeader = root.children[0];
+  const reveal = firstHeader.children.find(child => child.textContent === 'Afficher les coordonnées');
+  expect(reveal).toBeDefined();
+  expect(reveal.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
+  fakeUi.DataTable.render.mockClear();
+  reveal.addEventListener.mock.calls.find(([event]) => event === 'click')[1]();
+  const revealedRows = fakeUi.DataTable.render.mock.calls[0][1].rows;
+  expect(revealedRows).toContainEqual({ champ: 'Téléphone', valeur: '+2691234567' });
+  expect(revealedRows).toContainEqual({ champ: 'Email', valeur: 'amina@example.test' });
 });

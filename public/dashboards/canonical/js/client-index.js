@@ -76,6 +76,34 @@
     return `${formatNumber(value)} KMF`;
   }
 
+  // L12a : coordonnées masquées par défaut. La permission client.read est
+  // vérifiée par l'API ; le bouton ne modifie aucune habilitation.
+  function maskPhone(value) {
+    const phone = String(value || '');
+    return phone ? `•••• ${phone.slice(-4)}` : '—';
+  }
+
+  function createPhoneCell(doc, phone) {
+    const cell = doc.createElement('td');
+    const label = text(doc, 'span', 'kmc-client-phone-masked', maskPhone(phone));
+    cell.appendChild(label);
+    if (!phone) return cell;
+
+    let revealed = false;
+    const button = text(doc, 'button', 'kmc-entity-nav-link', 'Afficher');
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Afficher ou masquer le téléphone');
+    button.setAttribute('aria-expanded', 'false');
+    button.addEventListener('click', () => {
+      revealed = !revealed;
+      label.textContent = revealed ? String(phone) : maskPhone(phone);
+      button.textContent = revealed ? 'Masquer' : 'Afficher';
+      button.setAttribute('aria-expanded', String(revealed));
+    });
+    cell.appendChild(button);
+    return cell;
+  }
+
   // L3 : fuseau métier du serveur (marché de l'objet), jamais celui du navigateur.
   let activeTimezone = null;
   function formatDate(value, timezone) {
@@ -181,9 +209,9 @@
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
+      tr.appendChild(text(doc, 'td', '', row.name || '—'));
+      tr.appendChild(createPhoneCell(doc, row.phone));
       [
-        row.name || '—',
-        row.phone || '—',
         formatNumber(row.orders_valid),
         formatKmf(row.ltv_kmf),
         formatKmf(row.average_basket_kmf),
@@ -287,6 +315,8 @@
     buildQueryUrl,
     formatNumber,
     formatKmf,
+    maskPhone,
+    createPhoneCell,
     formatDate,
     jsonRequest,
     createHeader,
