@@ -126,3 +126,22 @@ test('l\'en-tête de la page Clients est un hero au canon (kicker, titre, sous-t
   expect(src).toContain("'kmc-workspace-kicker', 'CLIENTS'");
   expect(src).not.toContain("['/admin/commerce', 'Commerce']");
 });
+
+
+test('L12a : les téléphones de la liste sont masqués par défaut et révélables sur demande', () => {
+  expect(index.maskPhone('+2691234567')).toBe('•••• 4567');
+  expect(index.maskPhone(null)).toBe('—');
+  const document = doc();
+  const container = node();
+  index.renderClientTable(container, document, {
+    clients: [{ name: 'Amina', phone: '+2691234567', orders_valid: 1, ltv_kmf: 50000,
+      average_basket_kmf: 50000, markets: ['KM'] }],
+  });
+  const all = [];
+  (function visit(element) { all.push(element); (element.children || []).forEach(visit); })(container);
+  const masked = all.find(element => element.tagName === 'SPAN' && element.className === 'kmc-client-phone-masked');
+  const reveal = all.find(element => element.tagName === 'BUTTON' && element.textContent === 'Afficher');
+  expect(masked.textContent).toBe('•••• 4567');
+  expect(reveal.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
+  expect(reveal.setAttribute).toHaveBeenCalledWith('aria-expanded', 'false');
+});
