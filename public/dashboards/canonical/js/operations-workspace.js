@@ -552,11 +552,14 @@
       renderPayload(rootNode, ui, doc, payload, context);
     }, views));
 
+    if ((view === 'hub' || view === 'inventory') && isHubReadOnly(context)) renderExecuteLink(rootNode, doc, context);
+
     if (view === 'hub') {
     renderOrderActionSection(rootNode, ui, doc, context, {
       title: 'Hub · Commander',
       description: 'Commandes confirmées à envoyer au sourcing. La transition reste exécutée par la state machine commande.',
       rows: payload.queues.hub.to_order,
+      hub: true,
       action: 'mark-ordered',
       actionLabel: 'Commander',
       suffix: row => `orders/${encodeURIComponent(row.reference)}/mark-ordered`,
@@ -574,7 +577,7 @@
     distributionBar.className = 'kmc-workspace-section-actions';
     const distributeButton = makeActionButton(doc, 'Répartir ce marché', 'run-distribution');
     // L9a : « Répartir ce marché » n'est proposé que si le serveur fournit des commandes à répartir.
-    if (Array.isArray(payload.distribution && payload.distribution.unassigned) && payload.distribution.unassigned.length > 0) {
+    if (!isHubReadOnly(context) && Array.isArray(payload.distribution && payload.distribution.unassigned) && payload.distribution.unassigned.length > 0) {
       distributionBar.appendChild(distributeButton);
       distribution.appendChild(distributionBar);
       distributeButton.addEventListener('click', () => runAction(context, distributeButton, {
@@ -602,6 +605,7 @@
       title: 'Hub · Expédier',
       description: 'Colis en préparation prêts pour le scan d’expédition.',
       rows: payload.queues.hub.to_ship,
+      hub: true,
       action: 'ship',
       actionLabel: 'Expédier',
       suffix: row => `parcels/${encodeURIComponent(row.reference)}/ship`,
@@ -650,6 +654,22 @@
     if (view === 'inventory') renderInventorySection(rootNode, ui, doc, payload, context);
   }
 
+  // L9c : le workspace Hub & Relais lit les files Hub ; les gestes Hub s'exécutent uniquement dans Hub live.
+  function isHubReadOnly(context) {
+    return context.mode !== 'execution';
+  }
+
+  function renderExecuteLink(rootNode, doc, context) {
+    const bar = doc.createElement('p');
+    bar.className = 'kmc-workspace-muted kmc-workspace-execute-link';
+    const link = doc.createElement('a');
+    link.href = `/admin/hub-live?view=execute&market=${encodeURIComponent(context.marketCode)}`;
+    link.textContent = 'Exécuter dans Hub live';
+    link.setAttribute('data-action', 'open-hub-live');
+    bar.appendChild(link);
+    rootNode.appendChild(bar);
+  }
+
   function renderOrderActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
     renderActionRows(slot, doc, context, config, 'order');
@@ -670,6 +690,7 @@
       const row = config.rows[index];
       const actionCell = rowNode.lastChild;
       actionCell.replaceChildren();
+      if (config.hub && isHubReadOnly(context)) return;
       const button = makeActionButton(doc, config.actionLabel, config.action);
       actionCell.appendChild(button);
       button.addEventListener('click', () => runAction(context, button, {
@@ -730,6 +751,7 @@
       });
       controls.appendChild(select);
 
+      if (isHubReadOnly(context)) { select.disabled = true; row.appendChild(controls); wrap.appendChild(row); return; }
       const button = makeActionButton(doc, 'Affecter', 'assign-inventory');
       button.disabled = parcels.length === 0;
       controls.appendChild(button);

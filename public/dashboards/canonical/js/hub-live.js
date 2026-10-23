@@ -60,6 +60,16 @@
 
   // L9a : la liste des commandes n'est plus un onglet Hub live ; elle vit dans Commandes.
   const ORDERS_URL = '/admin/orders';
+  // L9b : une commande livrée n'a plus rien à exécuter au Hub ; sa fiche vit dans Order 360 (retour vers Hub live).
+  let viewerUser = null;
+  function deliveredOrder360Url(order) {
+    if (!order || order.status !== 'collected' || !order.reference) return null;
+    const nav = global.KomerceCanonicalNavigation;
+    const path = `/admin/orders/${encodeURIComponent(order.reference)}`;
+    if (!nav || typeof nav.canOpenEntity360 !== 'function' || !nav.canOpenEntity360(viewerUser)) return null;
+    return nav.withEntityReturnTo(path, '/admin/hub-live', 'Retour au Hub live');
+  }
+
   function legacyOrdersRedirect(search) {
     const q = new URLSearchParams(String(search || ''));
     return q.get('view') === 'queue' && q.get('tab') === 'all' ? ORDERS_URL : null;
@@ -301,7 +311,11 @@
     },
     order:{
       tab:() => 'suivi',
-      load:(p, api) => api(`/api/hub-dash/orders/${encodeURIComponent(p.order || '')}?projection=live`),
+      load:(p, api) => api(`/api/hub-dash/orders/${encodeURIComponent(p.order || '')}?projection=live`).then(data => {
+        const target = deliveredOrder360Url(data);
+        if (target && global.location && typeof global.location.replace === 'function') global.location.replace(target);
+        return data;
+      }),
       render:renderOrder,
       nav:navOrder,
     },
@@ -311,6 +325,7 @@
 
   global.KomerceCanonicalHubLive = Object.freeze({
     mount:options => {
+      viewerUser = (options && options.user) || null;
       const target = legacyOrdersRedirect(global.location && global.location.search);
       if (target && global.location && typeof global.location.replace === 'function') {
         global.location.replace(target);
@@ -319,6 +334,7 @@
       return cockpit.mount(options);
     },
     legacyOrdersRedirect,
+    deliveredOrder360Url,
     renderHtml:cockpit.renderHtml,
     queueUrl,
     orderUrl,
