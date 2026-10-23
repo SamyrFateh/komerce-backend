@@ -48,3 +48,27 @@ describe('canonical orders view (lecture seule sur la projection dashboard-order
     expect(rows[1]).toMatchObject({ market_code: null, parcel_count: undefined });
   });
 });
+
+describe('L8 — trois files de prochaine action', () => {
+  const ordersModule = require('../../public/dashboards/canonical/js/orders.js');
+  const payload = { work_queues: {
+    to_order: [{ reference: 'CMD-A', status: 'confirmed', market_code: 'KM', next_action: { label: 'À commander' } }],
+    awaiting_hub_reception: [{ reference: 'CMD-B', status: 'ordered', next_action: { label: 'En attente de réception Hub (2/5)' } }],
+    ready_for_parcel: [{ reference: 'CMD-C', status: 'ordered', next_action: { label: 'Préparer le colis' } }],
+  } };
+
+  test('chaque commande porte l’action serveur ; l’attente n’est pas actionnable', () => {
+    const rows = ordersModule.buildRows(payload);
+    expect(rows.map(r => [r.reference, r.action, r.actionable, r.queues[0]])).toEqual([
+      ['CMD-A', 'À commander', true, 'to_order'],
+      ['CMD-B', 'En attente de réception Hub (2/5)', false, 'awaiting'],
+      ['CMD-C', 'Préparer le colis', true, 'parcel'],
+    ]);
+    expect(rows.some(r => /Créer le colis/.test(r.action))).toBe(false);
+  });
+
+  test('onglets et lien Hub live › Exécution avec le marché', () => {
+    expect(ordersModule.TABS.map(t => t.label)).toEqual(expect.arrayContaining(['À commander', 'En attente de réception Hub', 'Préparer le colis']));
+    expect(ordersModule.hubExecutionHref('KM')).toBe('/admin/hub-live?view=execute&market=KM');
+  });
+});

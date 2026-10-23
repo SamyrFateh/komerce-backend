@@ -318,11 +318,21 @@ describe('Sourcing — navigation locale du shell Canonical', () => {
     global.location = { pathname: '/admin/import-runtime', search, hash: '' };
     const nav = loadPolicy();
     expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.label))
-      .toEqual(['Suivi', 'Passages', 'Sources']);
+      .toEqual(['Suivi', 'Passages', 'Sources', 'Décisions candidates']);
     expect(nav._activeLocalTab('live', 'import-runtime')).toBe(active);
     expect(nav._localTabsFor('live', { role: 'admin' })[1].href)
       .toContain('view=passages');
   });
+});
+
+test('L7 : /admin/workspaces/sourcing est actif sur « Décisions candidates » dans Live › Sourcing', () => {
+  global.location = { pathname: '/admin/workspaces/sourcing', search: '', hash: '' };
+  try {
+    const nav = loadPolicy();
+    expect(nav.activePrimarySurface('sourcing-workspace')).toBe('live');
+    expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.id)).toContain('sourcing-candidats');
+    expect(nav._activeLocalTab('live', 'sourcing-workspace')).toBe('sourcing-candidats');
+  } finally { delete global.location; }
 });
 
 test('Hub et Relais Live utilisent leur navigation locale sans onglets concurrents du shell', () => {
