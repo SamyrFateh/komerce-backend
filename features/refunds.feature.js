@@ -73,6 +73,7 @@ module.exports = {
       // les arrondir à l'unité lui faisait perdre des centimes.
       'tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js',
       'tests/unit/refund-service.test.js',
+      'tests/unit/refund-stripe-txn-known-risk.test.js',
       'tests/unit/refunds-util.test.js',
       'tests/unit/refund-receipt-html.test.js',
     ],
@@ -125,6 +126,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'RC-5 — toute sortie PSP requiert une intention de remboursement committee avant appel externe ; le vrai service et le faux Stripe documentent provisoirement cette rupture sans prétendre la corriger',
+      test: 'tests/unit/refund-stripe-txn-known-risk.test.js' },
     'un remboursement n\'est jamais applique deux fois pour le meme evenement source',
     "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement",
   ],

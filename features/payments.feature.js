@@ -264,6 +264,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'RC-9 — une requête de remboursement PayPal rejouée exige une clé persistante identique ; test témoin du client PayPal courant avec échec attendu sur la clé temporelle',
+      test: 'tests/unit/paypal-client.test.js' },
     { statement: 'idempotence stricte sur tout webhook/callback externe',
       test: 'tests/invariants/payments.webhook-idempotency.test.js' },
     { statement: 'une capture PayPal ne confirme la commande que si elle est COMPLETED, en EUR et conforme au montant figé de la commande',
