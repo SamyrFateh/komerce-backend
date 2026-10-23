@@ -215,8 +215,18 @@ async function getOrder(paypalOrderId) {
  * @param {string} [opts.invoiceId] — Référence interne (orders.reference)
  * @returns {Promise<{ id: string, status: 'COMPLETED' | ... }>}
  */
-async function refundCapture(captureId, { amountEur, reason, invoiceId } = {}) {
+async function refundCapture(captureId, { amountEur, reason, invoiceId, providerRequestKey } = {}) {
   if (!captureId) throw new Error('captureId requis');
+  // RC-9 : only the durable-refund-intent orchestrator supplies this stable
+  // provider key, after a PostgreSQL COMMIT. Keep legacy callers unchanged
+  // until all refund writers have been migrated and reconciled.
+  if (providerRequestKey !== undefined &&
+      (typeof providerRequestKey !== 'string' ||
+        !/^kmr-ref-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(providerRequestKey))) {
+    const err = new Error('providerRequestKey doit provenir d’une intention financière persistée');
+    err.code = 'REFUND_PROVIDER_REQUEST_KEY_INVALID';
+    throw err;
+  }
 
   const payload = {};
   if (typeof amountEur === 'number' && amountEur > 0) {
@@ -225,8 +235,12 @@ async function refundCapture(captureId, { amountEur, reason, invoiceId } = {}) {
   if (reason)    payload.note_to_payer = reason.slice(0, 255);
   if (invoiceId) payload.invoice_id    = invoiceId.slice(0, 127);
 
+  // Until legacy writers migrate, preserve their existing key and the LS-03
+  // finding; the new ledger-based path overrides the outgoing header exactly.
+  const refundHeaders = { 'PayPal-Request-Id': `refund-${captureId}-${Date.now()}` };
+  if (providerRequestKey) refundHeaders['PayPal-Request-Id'] = providerRequestKey;
   return _api('POST', `/v2/payments/captures/${captureId}/refund`, {
-    headers: { 'PayPal-Request-Id': `refund-${captureId}-${Date.now()}` },
+    headers: refundHeaders,
     body: payload,
   });
 }

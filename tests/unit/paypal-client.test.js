@@ -195,6 +195,27 @@ describe('refundCapture', () => {
     expect(keys[0]).toContain('refund-CAP-REPLAY');
   });
 
+  test('RC-9 : l’intention persistée impose la même clé PayPal à deux appels factices', async () => {
+    mockOAuthOnce();
+    mockFetchOnce({ id: 'REF-STABLE', status: 'COMPLETED' });
+    mockFetchOnce({ id: 'REF-STABLE', status: 'COMPLETED' });
+    const key = 'kmr-ref-11111111-2222-4333-8444-555555555555';
+    await paypal.refundCapture('CAP-STABLE', { amountEur: 10, providerRequestKey: key });
+    await paypal.refundCapture('CAP-STABLE', { amountEur: 10, providerRequestKey: key });
+    const requests = global.fetch.mock.calls
+      .filter(([url]) => String(url).includes('/captures/CAP-STABLE/refund'));
+    expect(requests).toHaveLength(2);
+    expect(requests.map(([, opts]) => opts.headers['PayPal-Request-Id'])).toEqual([key, key]);
+  });
+
+  test.each(['custom-key', 'refund-CAP-1-111', '', 123])(
+    'RC-9 : une clé non issue du ledger est rejetée avant tout HTTP (%s)', async providerRequestKey => {
+      await expect(paypal.refundCapture('CAP-STRICT', { amountEur: 10, providerRequestKey }))
+        .rejects.toMatchObject({ code: 'REFUND_PROVIDER_REQUEST_KEY_INVALID' });
+      expect(global.fetch).not.toHaveBeenCalled();
+    }
+  );
+
   test('throw si captureId vide', async () => {
     await expect(paypal.refundCapture('')).rejects.toThrow('captureId requis');
   });
