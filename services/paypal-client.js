@@ -235,8 +235,12 @@ async function refundCapture(captureId, { amountEur, reason, invoiceId, provider
   if (reason)    payload.note_to_payer = reason.slice(0, 255);
   if (invoiceId) payload.invoice_id    = invoiceId.slice(0, 127);
 
+  // Until legacy writers migrate, preserve their existing key and the LS-03
+  // finding; the new ledger-based path overrides the outgoing header exactly.
+  const refundHeaders = { 'PayPal-Request-Id': `refund-${captureId}-${Date.now()}` };
+  if (providerRequestKey) refundHeaders['PayPal-Request-Id'] = providerRequestKey;
   return _api('POST', `/v2/payments/captures/${captureId}/refund`, {
-    headers: { 'PayPal-Request-Id': providerRequestKey || `refund-${captureId}-${Date.now()}` },
+    headers: refundHeaders,
     body: payload,
   });
 }
