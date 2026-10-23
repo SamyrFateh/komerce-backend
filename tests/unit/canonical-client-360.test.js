@@ -16,6 +16,7 @@ function node() {
     appendChild(child) { this.children.push(child); return child; },
     replaceChildren(...children) { this.children = children; },
     setAttribute: jest.fn(),
+    addEventListener: jest.fn(),
   };
 }
 
@@ -159,9 +160,11 @@ test('L12a : Client 360 masque les coordonnées jusqu’à une action explicite'
   expect(identityRows).toContainEqual({ champ: 'Téléphone', valeur: '•••• 4567' });
   expect(identityRows).toContainEqual({ champ: 'Email', valeur: '•••@example.test' });
   const firstHeader = root.children[0];
-  expect(firstHeader.children.some(child => child.textContent === 'Afficher les coordonnées')).toBe(true);
+  const reveal = firstHeader.children.find(child => child.textContent === 'Afficher les coordonnées');
+  expect(reveal).toBeDefined();
+  expect(reveal.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
   fakeUi.DataTable.render.mockClear();
-  client360.renderPayload(root, fakeUi, document, payload(), true);
+  reveal.addEventListener.mock.calls.find(([event]) => event === 'click')[1]();
   const revealedRows = fakeUi.DataTable.render.mock.calls[0][1].rows;
   expect(revealedRows).toContainEqual({ champ: 'Téléphone', valeur: '+2691234567' });
   expect(revealedRows).toContainEqual({ champ: 'Email', valeur: 'amina@example.test' });
