@@ -383,7 +383,7 @@ jobs:
         env:
           BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
         # Historique déjà approfondi par « Deepen git history » : le commit de base est présent.
-        run: node scripts/feature-invariant-check.js --strict --run=unit --verbose --base "$BASE_SHA"
+        run: node scripts/feature-invariant-check.js --strict --run=unit --base "$BASE_SHA"
       - name: Contract consumer check
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
         run: node scripts/contract-check.js

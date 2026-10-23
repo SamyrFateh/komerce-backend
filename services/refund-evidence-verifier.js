@@ -51,11 +51,11 @@ async function verifyRefundEvidence({ intent, providerRefundId, stripe, paypal }
   let evidence;
   try {
     if (intent.provider === 'stripe') {
-      assertEvidence(stripe?.refunds?.retrieve instanceof Function,
+      assertEvidence(typeof stripe?.refunds?.retrieve === 'function',
         'REFUND_PROVIDER_ADAPTER_MISSING', 'Client Stripe lecture manquant');
       evidence = await stripe.refunds.retrieve(providerRefundId);
     } else {
-      assertEvidence(paypal?.getRefund instanceof Function,
+      assertEvidence(typeof paypal?.getRefund === 'function',
         'REFUND_PROVIDER_ADAPTER_MISSING', 'Client PayPal lecture manquant');
       evidence = await paypal.getRefund(providerRefundId);
     }
