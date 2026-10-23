@@ -135,6 +135,7 @@ module.exports = {
       'tests/e2e-api/payments.paypal-amount-currency.e2e.test.js',
       'tests/unit/payment-cash-confirm.test.js',
       'tests/unit/payment-paypal.test.js',
+      'tests/unit/payment-paypal-known-logic-bugs.test.js',
       'tests/unit/payment-status-validator.test.js',
       'tests/unit/payment-stripe.test.js',
       'tests/unit/payments-webhook.test.js',
