@@ -129,7 +129,7 @@ describe('Canonical Navigation Policy V3.1', () => {
 
   test('les surfaces techniques restent parentées aux rubriques métier', () => {
     const nav = loadPolicy();
-    expect(nav.activePrimarySurface('sourcing-workspace')).toBe('catalog');
+    expect(nav.activePrimarySurface('sourcing-workspace')).toBe('live');
     expect(nav.activePrimarySurface('import-runtime')).toBe('live');
     expect(nav.activeSpaceFor('import-runtime')).toBe('import-runtime');
     expect(nav.activePrimarySurface('shipping-customs-workspace')).toBe('operations');
