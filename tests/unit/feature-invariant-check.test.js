@@ -104,3 +104,16 @@ describe('feature-invariant-check — jamais de succès à vide', () => {
     expect(() => gate.parseRunArg(['--run=playwright'])).toThrow(/inconnu/);
   });
 });
+
+
+describe('diagnostic des erreurs de preuves E2E', () => {
+  test('affiche la cause technique plutôt que le seul titre du test', () => {
+    const result = gate.evaluateFileResult({
+      status: 'failed',
+      assertionResults: [{ status: 'failed' }],
+      message: 'premier test' + String.fromCharCode(10) + 'Error: diagnostic visible',
+    });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain('Error: diagnostic visible');
+  });
+});

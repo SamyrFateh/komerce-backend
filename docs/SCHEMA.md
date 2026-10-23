@@ -708,3 +708,10 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 `market_transport_sale_rates` est une nouvelle table **not yet live** : tarif de vente du transport par Market (clés `SEA_KMF_PER_KG_COMMERCIAL` / `AIR_KMF_PER_KG_TAXABLE` de `business_rules`, par kg dans la devise du marché, convertis en KMF de base par la voie gouvernée : parités fixes ou chaîne FX DJF), avec pièce justificative obligatoire, un seul tarif actif par (Market, clé), révocable. Absence de tarif = refus fail-closed hors marché KMF ; le coût de fret attesté n'est jamais un prix. Lecteur : `services/market-transport-sale-rates.js` (checkout).
 <!-- /schema-pending -->
+
+
+<!-- schema-pending: refund_execution_intents (migration 317, not yet live) -->
+### Intentions de remboursement (migration 317 — intended_migration_schema)
+
+`refund_execution_intents` est une nouvelle table **not yet live**. Elle conserve l'intention avant tout appel PSP Stripe/PayPal : commande, marché, capture, événement stable, montant EUR et statut. Les anciennes lignes `refunds` sont à rapprocher avant activation. Service propriétaire : `services/refund-intent-ledger.js` (non activé). Contrat : `docs/architecture/REFUND_EXECUTION_AUTHORITY.md`.
+<!-- /schema-pending -->
