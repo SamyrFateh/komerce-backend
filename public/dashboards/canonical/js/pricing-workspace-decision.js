@@ -183,7 +183,7 @@
   }
 
   function marketDecisionItems(decision) {
-    if (!decision) return [];
+    if (!decision || decision.reason === 'MARKET_DECISION_POLICY_REQUIRED') return [];
     const meta = marketDecisionMeta(decision);
     const items = [{
       key: 'market-decision',
@@ -215,7 +215,7 @@
     // Quatre KPI prioritaires ; une valeur absente est déclarée indisponible, jamais remplacée par zéro.
     const known = value => (value == null || value === '—' ? 'Indisponible' : value);
     return [
-      { key: 'coverage', label: 'Couverture réelle', value: known(formatRatio(workspace, coverage.coverage_ratio)), tone: marketDecisionMeta(decision).tone },
+      { key: 'coverage', label: 'Couverture réelle', value: known(formatRatio(workspace, coverage.coverage_ratio)), tone: decision && decision.reason === 'MARKET_DECISION_POLICY_REQUIRED' ? 'neutral' : marketDecisionMeta(decision).tone },
       { key: 'contribution', label: 'Contribution reconnue', value: coverage.numerator_contribution_kmf == null ? 'Indisponible' : formatKmf(coverage.numerator_contribution_kmf), tone: 'neutral' },
       { key: 'structure', label: 'Structure à couvrir', value: coverage.denominator_n3_kmf == null ? 'Indisponible' : formatKmf(coverage.denominator_n3_kmf), tone: 'neutral' },
       { key: 'maturity', label: 'Maturité', value: known(formatPercentRatio(workspace, coverage.maturity && coverage.maturity.maturity_ratio)), tone: 'neutral' },
@@ -298,6 +298,21 @@
       ? 'Voir si le marché est économiquement sain et ce qui demande une décision.'
       : 'Voir la santé économique et ce qui demande une décision avant d’agir sur les prix.'));
     overview.appendChild(header);
+
+    // Configuration initiale : il ne s'agit ni de deux alertes distinctes ni d'une action disponible.
+    // Le serveur conserve son interdiction de positionner un nouveau prix sous CDR.
+    // Aucun bouton ne doit apparaître quand la politique du marché est absente.
+    if (marketMode && decision && decision.reason === 'MARKET_DECISION_POLICY_REQUIRED') {
+      const notice = doc.createElement('section');
+      notice.className = 'kmc-pricing-configuration-notice';
+      notice.dataset.pricingConfigurationNotice = '';
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('data-dashboard-role', 'attention');
+      notice.appendChild(text(doc, 'strong', 'kmc-pricing-configuration-title', 'Rentabilité du marché non encore évaluable'));
+      notice.appendChild(text(doc, 'p', 'kmc-pricing-configuration-copy',
+        'La politique de décision de ce marché n’est pas encore définie. Les produits, coûts et prix disponibles restent consultables, mais Komerce ne peut pas encore conclure sur la rentabilité ni autoriser une nouvelle position sous CDR.'));
+      overview.appendChild(notice);
+    }
 
     const decisions = marketMode ? marketDecisionItems(decision) : globalDecisionItems(payload);
     if (decisions.length) {
