@@ -73,3 +73,15 @@ test('mise à jour sans ligne retourne conflit et rollback',async()=>{
   await expect(reconcileRefundIntent(f.opts)).rejects.toMatchObject({code:'REFUND_RECONCILIATION_CONFLICT'});
   expect(f.log.at(-1)).toBe('ROLLBACK');
 });
+
+test('rejeu confirmé sans référence PSP persistée : refus fermé',async()=>{
+  const f=fixture({row:{...intent,status:'confirmed',provider_ref:null}});
+  await expect(reconcileRefundIntent(f.opts)).rejects.toMatchObject({code:'REFUND_CONFIRMED_REFERENCE_UNVERIFIED'});
+  expect(f.stripe.refunds.retrieve).not.toHaveBeenCalled();
+});
+test('course : confirmation concurrente sans référence PSP refuse le succès',async()=>{
+  const f=fixture({current:{...intent,status:'confirmed',provider_ref:null}});
+  await expect(reconcileRefundIntent(f.opts)).rejects.toMatchObject({code:'REFUND_CONFIRMED_REFERENCE_UNVERIFIED'});
+  expect(f.log.at(-1)).toBe('ROLLBACK');
+  expect(f.log.some(q=>String(q).startsWith('UPDATE'))).toBe(false);
+});

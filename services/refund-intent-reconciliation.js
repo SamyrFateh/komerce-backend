@@ -21,6 +21,15 @@ const { verifyRefundEvidence } = require('./refund-evidence-verifier');
 
 function fail(code, message) { throw new RefundIntentError(code, message); }
 
+// A persisted success is only attributable to a known, identical PSP operation.
+// Older/corrupt confirmed rows with no reference need manual reconciliation.
+function assertConfirmedReference(ref, expected) {
+  if (!ref || ref !== expected) {
+    fail('REFUND_CONFIRMED_REFERENCE_UNVERIFIED',
+      'Intention confirmée sans référence PSP identique et vérifiable');
+  }
+}
+
 /**
  * Reconciles the *ledger only*. It does NOT create refunds, release money,
  * change orders.payment_status, or transition orders.status.
@@ -50,6 +59,7 @@ async function reconcileRefundIntent({
   }
   if (snapshot.status === 'confirmed') {
     // Already persisted success: a replay never needs to contact the PSP.
+    assertConfirmedReference(snapshot.provider_ref, providerRefundId);
     return { intentId, status: 'confirmed', replayed: true, complete: true };
   }
 
@@ -89,7 +99,8 @@ async function reconcileRefundIntent({
       fail('REFUND_PROVIDER_REF_CONFLICT', 'Référence PSP contradictoire');
     }
     if (current.status === 'confirmed') {
-      // Concurrent verification won the race; no duplicate event or writer.
+      // Concurrent verification won the race; require its own proven reference.
+      assertConfirmedReference(current.provider_ref, providerRefundId);
       await client.query('COMMIT'); tx = false;
       return { intentId, status: 'confirmed', replayed: true, complete: true };
     }
