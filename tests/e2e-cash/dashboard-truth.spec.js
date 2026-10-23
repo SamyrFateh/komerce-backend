@@ -211,8 +211,13 @@ test.describe.serial('Vérité des dashboards — acteurs réels, deux Markets',
     const refsApi = list => list.map(x => x.reference).sort().join(',');
     prove('Opérations', 'File « Cash à confirmer » (paiement en attente, commande vivante)', M.A, 'manager A',
       await refsSql(`o.payment_status = 'pending' AND o.status NOT IN ('cancelled','collected','refunded')`), refsApi(o.work_queues.pending_cash), await queueRefs('Cash à confirmer'));
-    prove('Opérations', 'File « Colis à créer » (payée, confirmée, sans colis)', M.A, 'manager A',
-      await refsSql(`o.payment_status = 'paid' AND o.status IN ('confirmed','ordered') AND NOT EXISTS (SELECT 1 FROM parcels p WHERE p.order_id = o.id)`), refsApi(o.work_queues.ready_for_parcel), await queueRefs('Colis à créer'));
+    // L8 : la file unique est répartie en trois files (À commander / En attente de réception Hub / Préparer le colis) ;
+    // leur union reste exactement l'ensemble des commandes payées confirmées ou commandées.
+    const wq = o.work_queues;
+    const unionApi = refsApi([...(wq.to_order || []), ...(wq.awaiting_hub_reception || []), ...(wq.ready_for_parcel || [])]);
+    const unionUi = [(await queueRefs('À commander')), (await queueRefs('En attente de réception Hub')), (await queueRefs('Préparer le colis'))].filter(Boolean).join(',').split(',').filter(Boolean).sort().join(',');
+    prove('Opérations', 'Files « À commander » + « En attente de réception Hub » + « Préparer le colis » (payée, confirmée ou commandée, sans colis)', M.A, 'manager A',
+      await refsSql(`o.payment_status = 'paid' AND o.status IN ('confirmed','ordered') AND NOT EXISTS (SELECT 1 FROM parcels p WHERE p.order_id = o.id)`), unionApi, unionUi);
   });
 
   test('3 · Finance puis Comptabilité (Market A) : CA, attendu/collecté/détenu, lien entre les deux', async () => {

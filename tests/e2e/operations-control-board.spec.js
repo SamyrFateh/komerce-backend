@@ -41,6 +41,10 @@ const payload = {
     pending_cash_shown: 1, pending_cash_total: 3,
     ready_for_parcel: [{ id: 'o2', reference: 'CMD-PARCEL-1', status: 'confirmed', payment_mode: 'card', total_kmf: 8000 }],
     ready_for_parcel_shown: 1, ready_for_parcel_total: 1,
+    to_order: [{ id: 'o3', reference: 'CMD-ORDER-1', status: 'confirmed', payment_mode: 'card', total_kmf: 5000, next_action: { key: 'order', label: 'À commander', actionable: true } }],
+    to_order_shown: 1, to_order_total: 1,
+    awaiting_hub_reception: [{ id: 'o4', reference: 'CMD-WAIT-1', status: 'ordered', payment_mode: 'card', total_kmf: 6000, next_action: { key: 'await_hub_reception', label: 'En attente de réception Hub (2/5)', actionable: false } }],
+    awaiting_hub_reception_shown: 1, awaiting_hub_reception_total: 1,
   },
   signals: [],
   control_chain: {
@@ -180,10 +184,13 @@ test.describe('Operations — logistics control board', () => {
     expect(order.filter(x => x.role === 'secondary')).toHaveLength(1);
   });
 
-  test('les files Cash à confirmer et Colis à créer sont visibles et ouvrent Order 360 avec retour Opérations', async ({ page }) => {
+  test('les files Cash à confirmer, À commander, En attente de réception Hub et Préparer le colis sont visibles et ouvrent Order 360 avec retour Opérations', async ({ page }) => {
     await expect(page.locator('#orders-pending-cash')).toContainText('CMD-CASH-1');
     await expect(page.locator('#orders-pending-cash')).toContainText('1 sur 3 affichée(s)');
     await expect(page.locator('#orders-ready-for-parcel')).toContainText('CMD-PARCEL-1');
+    await expect(page.locator('#orders-to-order')).toContainText('CMD-ORDER-1');
+    await expect(page.locator('#orders-awaiting-hub-reception')).toContainText('En attente de réception Hub (2/5)');
+    await expect(page.locator('#orders-awaiting-hub-reception')).not.toContainText('Créer le colis');
     const href = await page.locator('#orders-pending-cash a').first().getAttribute('href');
     expect(href).toContain('/admin/orders/CMD-CASH-1');
     expect(decodeURIComponent(href)).toContain('/admin/operations');

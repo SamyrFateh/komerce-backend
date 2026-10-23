@@ -49,14 +49,16 @@ describe('dashboard-orders — vérité des statuts', () => {
 describe('dashboard-orders — files de travail partagées avec Opérations', () => {
   it('getWorkQueues borne les deux files au marché et garde le vrai total (pas la troncature)', async () => {
     db.query.mockImplementation(async (sql, params) => {
+      if (/BOOL_AND/.test(sql)) return { rows: [] };
       if (/COUNT\(\*\)::int AS value/.test(sql)) return { rows: [{ value: 40 }] };
-      return { rows: [{ id: 'o1', reference: 'CMD-1', status: 'pending', total_kmf: 1000, payment_mode: 'cash' }] };
+      return { rows: [{ id: 'o1', reference: 'CMD-1', status: 'confirmed', total_kmf: 1000, payment_mode: 'cash' }] };
     });
     const queues = await getWorkQueues({ id: '11111111-1111-1111-1111-111111111111', code: 'KM' });
     expect(queues.pending_cash_total).toBe(40);
     expect(queues.pending_cash_shown).toBe(1);
-    expect(queues.ready_for_parcel_total).toBe(40);
-    expect(queues.ready_for_parcel[0].reference).toBe('CMD-1');
+    expect(queues.to_order_total).toBe(1);
+    expect(queues.to_order[0].reference).toBe('CMD-1');
+    expect(queues.ready_for_parcel_total).toBe(0);
     expect(db.query.mock.calls.every(([, params]) => params[0] === '11111111-1111-1111-1111-111111111111')).toBe(true);
   });
 
@@ -73,8 +75,9 @@ describe('dashboard-orders — files de travail partagées avec Opérations', ()
       if (/AS paiements_en_attente/.test(sql)) return { rows: [{}] };
       if (/AS creees/.test(sql)) return { rows: [{}] };
       if (/AS market_code/.test(sql)) return { rows: [{ id: 'o1', market_code: 'KM', product_lines: 3, first_product_name: 'Coque', parcel_count: 0 }] };
-      if (/FROM orders o\s+WHERE[\s\S]*payment_status = 'paid'/.test(sql) && /LIMIT/.test(sql)) {
-        return { rows: [{ id: 'o1', reference: 'KMC-1', status: 'confirmed' }, { id: 'o2', reference: 'KMC-2', status: 'confirmed' }] };
+      if (/BOOL_AND/.test(sql)) return { rows: [] };
+      if (/FROM orders o\s+WHERE[\s\S]*payment_status = 'paid'/.test(sql)) {
+        return { rows: [{ id: 'o1', reference: 'KMC-1', status: 'ordered' }, { id: 'o2', reference: 'KMC-2', status: 'ordered' }] };
       }
       return { rows: [{ n: 0, value: 2 }], rowCount: 1 };
     });
@@ -85,3 +88,58 @@ describe('dashboard-orders — files de travail partagées avec Opérations', ()
   });
 });
 
+
+describe('dashboard-orders — L8 prochaine action réelle', () => {
+  const paid = [
+    { id: 'c1', reference: 'CMD-C', status: 'confirmed', total_kmf: 1, payment_mode: 'card' },
+    { id: 'p1', reference: 'CMD-PARTIEL', status: 'ordered', total_kmf: 1, payment_mode: 'card' },
+    { id: 'n1', reference: 'CMD-RIEN', status: 'ordered', total_kmf: 1, payment_mode: 'card' },
+    { id: 'f1', reference: 'CMD-COUVERT', status: 'ordered', total_kmf: 1, payment_mode: 'card' },
+  ];
+  function mockPipeline() {
+    let coverageIds = null;
+    db.query.mockImplementation(async (sql, params) => {
+      if (/BOOL_AND/.test(sql)) {
+        coverageIds = params[0];
+        return { rows: [
+          { order_id: 'p1', lines: 2, needed: 5, usable: 2, covered: false },
+          { order_id: 'n1', lines: 1, needed: 4, usable: 0, covered: false },
+          { order_id: 'f1', lines: 1, needed: 3, usable: 3, covered: true },
+        ] };
+      }
+      if (/payment_status = 'paid'/.test(sql)) return { rows: paid };
+      return { rows: [{ value: 0 }] };
+    });
+    return () => coverageIds;
+  }
+
+  it('trie les commandes payées en trois files selon l’état physique, avec n/N sans action pour l’attente', async () => {
+    const ids = mockPipeline();
+    const q = await getWorkQueues({ id: '11111111-1111-1111-1111-111111111111', code: 'KM' });
+    expect(q.to_order.map(o => o.reference)).toEqual(['CMD-C']);
+    expect(q.to_order[0].next_action).toMatchObject({ key: 'order', label: 'À commander', actionable: true });
+    expect(q.awaiting_hub_reception.map(o => o.reference)).toEqual(['CMD-PARTIEL', 'CMD-RIEN']);
+    expect(q.awaiting_hub_reception[0].next_action).toMatchObject({ label: 'En attente de réception Hub (2/5)', actionable: false, received_units: 2, needed_units: 5 });
+    expect(q.awaiting_hub_reception[1].next_action).toMatchObject({ label: expect.stringContaining('(0/'), actionable: false });
+    expect(q.ready_for_parcel.map(o => o.reference)).toEqual(['CMD-COUVERT']);
+    expect(q.ready_for_parcel[0].next_action).toMatchObject({ key: 'prepare_parcel', label: 'Préparer le colis' });
+    expect([q.to_order_total, q.awaiting_hub_reception_total, q.ready_for_parcel_total]).toEqual([1, 2, 1]);
+    // couverture lue par lot, en une requête, pour les seules commandes « ordered »
+    expect(ids()).toEqual(['p1', 'n1', 'f1']);
+    expect(db.query.mock.calls.filter(([sql]) => /BOOL_AND/.test(sql))).toHaveLength(1);
+  });
+
+  it('les KPI reprennent les mêmes définitions que les files', async () => {
+    mockPipeline();
+    const result = await buildOrders({});
+    expect(result.summary).toMatchObject({ orders_to_order: 1, awaiting_hub_reception: 2, parcels_to_create: 1 });
+    const kpis = Object.fromEntries(result.kpis.map(k => [k.key, k.value]));
+    expect(kpis).toMatchObject({ orders_to_order: 1, awaiting_hub_reception: 2, parcels_to_create: 1 });
+  });
+
+  it('aucune écriture : le service n’émet que des SELECT', async () => {
+    mockPipeline();
+    await getWorkQueues();
+    db.query.mock.calls.forEach(([sql]) => expect(String(sql).trim()).toMatch(/^(SELECT|WITH)/i));
+  });
+});
