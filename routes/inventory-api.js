@@ -49,7 +49,7 @@ router.post('/scan-assign', async (req, res, next) => {
     const result = await inv.scanIntoParcel(inventory_item_id, parcel_id);
     res.json({ ok: true, ...result });
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    res.status(e.status || 400).json({ error: e.message, ...(e.code ? { code: e.code } : {}) });
   }
 });
 
