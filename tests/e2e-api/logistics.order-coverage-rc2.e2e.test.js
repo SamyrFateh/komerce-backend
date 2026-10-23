@@ -13,6 +13,7 @@ jest.mock('../../services/order-status-machine', () => ({
 }));
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
+  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
 const crypto = require('crypto');
