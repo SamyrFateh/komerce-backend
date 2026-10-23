@@ -225,6 +225,7 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
         '--runInBand', '--silent',
       ]),
       nodeRun('Supplier execution certification manifest', 'scripts/check-supplier-execution-certification-manifest.js'),
+      nodeRun('Feature invariants — preuve unitaire', 'scripts/feature-invariant-check.js', ['--strict', '--run=unit']),
       npmRun('Backend feature guard', 'feature:check'),
       nodeRun('Contract consumer check', 'scripts/contract-check.js'),
       npmRun('Security 360 freshness and ratchet', 'security:360:check'),
@@ -255,6 +256,7 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
       nodeRun('Architecture header hygiene', 'scripts/arch-db-check.js'),
       nodeRun('Headers ↔ SQL', 'scripts/arch-header-sql-check.js'),
       nodeRun('Hub authority gate', 'scripts/hub-authority-gate.js'),
+      nodeRun('Feature invariants — runner officiel et cliquet', 'scripts/feature-invariant-check.js', ['--strict']),
       // Déjà exécuté par « Backend feature guard » (npm run feature:check) si backend.
       ...(scope.backend ? [] : [nodeRun('Feature slice guard', 'scripts/feature-guard.js', ['--strict'])]),
       nodeRun('Business graph semantic check', 'scripts/business-graph-gen.js', [
