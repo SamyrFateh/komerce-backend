@@ -73,7 +73,7 @@ describe('dashboard-pilotage-market', () => {
     expect(mockControlChain).toHaveBeenCalledWith({ market });
     expect(result.view_blocks.map(block => block.url)).toEqual([
       '/admin/pilotage',
-      '/admin/costing',
+      '/admin/finance',
       '/admin/operations',
     ]);
     expect(result.economic_flow.stages.map(stage => stage.url)).toEqual([

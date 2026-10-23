@@ -249,3 +249,8 @@ describe('Commande 360 — section Coûts & écarts (projection Finance, lecture
     expect(src).toContain('Coûts non applicables : commande annulée ou remboursée.');
   });
 });
+
+test('L6 : l’en-tête order-360 ne porte pas de lien « ← » concurrent du retour du shell', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/order-360.js'), 'utf8');
+  expect(src).not.toMatch(/'← (Opérations|Commerce)'/);
+});

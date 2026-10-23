@@ -93,7 +93,7 @@
       ? `/admin/workspaces/pricing?product_ref=${encodeURIComponent(product.product_ref)}`
       : '/admin/workspaces/pricing';
     [
-      ['/admin/commerce', '← Commerce'],
+      ['/admin/commerce', 'Commerce'],
       [catalogHref, 'Catalogue'],
       ['/admin/workspaces/sourcing', 'Sourcing'],
       [pricingHref, 'Pricing'],

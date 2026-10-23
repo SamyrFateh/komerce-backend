@@ -124,11 +124,12 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const groups = nav.sidebarGroupsFor({ role: 'admin' }, null);
     expect(groups.map(group => group.id)).toEqual([
-      'pilot', 'commerce', 'operations', 'finance', 'live', 'markets', 'administration',
+      'pilot', 'commerce', 'economy', 'operations', 'finance', 'live', 'markets', 'administration',
     ]);
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
-    expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients', 'Prix & économie', 'Raffinerie', 'Catalogue']);
+    expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients']);
+    expect(labels('economy')).toEqual(['Prix & économie', 'Raffinerie', 'Catalogue']);
     expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Achats fournisseurs']);
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
@@ -143,7 +144,8 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(all.some(item => item.id === 'entity-orders')).toBe(false);
     expect(all.filter(item => item.href === '/admin/orders')).toHaveLength(1);
     expect(labels('operations')).toContain('Vue opérations');
-    expect(groups.find(group => group.id === 'operations').items[0].surfaces).toContain('order-360');
+    expect(groups.find(group => group.id === 'operations').items[0].surfaces).not.toContain('order-360');
+    expect(groups.find(group => group.id === 'commerce').items.find(item => item.id === 'flow-orders').surfaces).toContain('order-360');
   });
 
   test('chaque entrée de menu d’un market_operator déclare la capability serveur qui la protège', () => {
