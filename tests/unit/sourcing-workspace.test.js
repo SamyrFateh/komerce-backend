@@ -188,3 +188,46 @@ test('le chemin import manuel présente un formulaire sans dialogue prompt navig
   expect(importUi).toContain("source_type: 'csv'");
   expect(importUi).not.toContain('context.prompt(');
 });
+
+describe('L7 — montage du workspace candidats : erreur, délai, diagnostic', () => {
+  const ui = require('../../public/dashboards/canonical/js/sourcing-workspace.js');
+  function fakeDoc() {
+    const make = () => ({ children: [], attrs: {}, textContent: '', className: '',
+      appendChild(c) { this.children.push(c); return c; }, replaceChildren() { this.children = []; },
+      setAttribute(k, v) { this.attrs[k] = v; }, addEventListener() {} });
+    return { createElement: make, root: make() };
+  }
+  const fullText = n => [n.textContent, ...n.children.map(fullText)].join(' ');
+
+  test('erreur API → message d’erreur affiché, pas de chargement infini', async () => {
+    const d = fakeDoc();
+    const fetch = jest.fn(async () => ({ ok: false, status: 503, json: async () => ({ error: 'Service indisponible' }) }));
+    await expect(ui.mount({ root: d.root, document: d, fetch, ui: {} })).rejects.toThrow('Service indisponible');
+    expect(fullText(d.root)).toContain('Accès Sourcing indisponible');
+    expect(fullText(d.root)).toContain('Service indisponible');
+  });
+
+  test('délai d’attente → message explicite', async () => {
+    jest.useFakeTimers();
+    try {
+      const d = fakeDoc();
+      const fetch = jest.fn((url, opts) => new Promise((_, reject) => {
+        opts.signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+      }));
+      const pending = ui.mount({ root: d.root, document: d, fetch, ui: {} });
+      const assertion = expect(pending).rejects.toThrow('prend trop de temps');
+      await jest.advanceTimersByTimeAsync(20001);
+      await assertion;
+      expect(fullText(d.root)).toContain('prend trop de temps');
+    } finally { jest.useRealTimers(); }
+  });
+
+  test('la santé n’est demandée qu’en mode diagnostic', async () => {
+    const urls = [];
+    const fetch = jest.fn(async url => { urls.push(url); throw new Error('stop'); });
+    const d = fakeDoc();
+    await ui.mount({ root: d.root, document: d, fetch, ui: {}, locationSearch: '' }).catch(() => {});
+    await ui.mount({ root: d.root, document: d, fetch, ui: {}, locationSearch: '?diagnostic=1' }).catch(() => {});
+    expect(urls).toEqual(['/api/admin/workspaces/sourcing', '/api/admin/workspaces/sourcing?include=health']);
+  });
+});

@@ -127,11 +127,19 @@ beforeEach(() => {
   mockCalls.recordUnitStockChange.mockResolvedValue({ status: 'recorded', capture_id: 'capture-1', observations: 1, application_status: 'NOT_EVALUATED' });
 });
 
-test('grant sourcing ouvre une projection globale incluant la santé canonique', async () => {
+test('grant sourcing ouvre une projection globale sans bloquer sur l’audit de santé (L7)', async () => {
   const res = await request(app()).get('/api/admin/workspaces/sourcing');
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toContain('no-store');
   expect(mockCalls.buildWorkspace).toHaveBeenCalledTimes(1);
+  expect(mockCalls.buildHealthDashboard).not.toHaveBeenCalled();
+  expect(res.body.health).toBeUndefined();
+  expect(res.body.scope).toEqual({ mode: 'global_sourcing' });
+});
+
+test('la santé canonique n’est calculée que sur demande explicite (?include=health)', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/sourcing?include=health');
+  expect(res.status).toBe(200);
   expect(mockCalls.buildHealthDashboard).toHaveBeenCalledTimes(1);
   expect(res.body.health).toMatchObject({ schema_version: 'sourcing-health-dashboard-v1', state: { global: 'HEALTHY' } });
   expect(res.headers['server-timing']).toContain('health;dur=');
