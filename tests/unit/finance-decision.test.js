@@ -25,3 +25,10 @@ test('Finance : accès utiles vers commandes à finaliser et analyse, absence = 
   expect(src).toContain('const known = Array.isArray(payload && payload.incomplete_cost_orders);');
   expect(src).toContain('Commandes à finaliser : non disponible');
 });
+
+test('L10 : Finance affiche « Commandes payées — part hors avoir », jamais « CA encaissé »', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/finance-decision.js'), 'utf8');
+  expect(src).not.toMatch(/CA encaissé/);
+  expect(src).toContain('Commandes payées — part hors avoir');
+  expect(src).toContain('Ni chiffre d’affaires comptable, ni encaissement attesté.');
+});

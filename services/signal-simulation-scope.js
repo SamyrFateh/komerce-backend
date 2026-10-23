@@ -8,7 +8,7 @@
  * @outputs       EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL
  * @depends       none
  * @used-by       services/dashboard-pilotage-market.js, services/signal-admin-service.js, services/radar-queries.js, services/dashboard-metrics/control-tower.js, services/dashboard-operations.js, services/action-center-agent-scope.js, routes/admin-dashboard.js
- * @db-read       orders
+ * @db-read       orders, parcels
  * @db-write      none
  * @db-txn        none
  * @doctrine      real_vs_simulation_predicate, fail_safe_filter, no_second_signal_authority
@@ -17,6 +17,7 @@
  */
 'use strict';
 
+// L2 : un signal d'entité colis (parcel) dont la commande est simulée est aussi exclu (colis sans commande : conservé).
 // Prédicat réel/RCT1 canonique : orders.simulation_scope IS NULL. La table des signaux n'a pas de scope propre :
 // un signal dont l'entité est une commande de simulation (RCT1) ne doit pas apparaître comme une alerte réelle
 // dans les surfaces de Pilotage. Les signaux non liés à une commande ne sont pas affectés. Alias requis : `s`.
@@ -25,6 +26,12 @@ const EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL = `NOT EXISTS (
      WHERE s.entity_type = 'order'
        AND sim_o.id::text = s.entity_id::text
        AND sim_o.simulation_scope IS NOT NULL
+  ) AND NOT EXISTS (
+    SELECT 1 FROM parcels sim_p
+      JOIN orders sim_po ON sim_po.id = sim_p.order_id
+     WHERE s.entity_type = 'parcel'
+       AND sim_p.id::text = s.entity_id::text
+       AND sim_po.simulation_scope IS NOT NULL
   )`;
 
 module.exports = { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL };

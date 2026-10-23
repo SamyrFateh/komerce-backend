@@ -17,7 +17,7 @@ describe('dashboard-metrics/control-tower', () => {
     const kpi = await control.getCAEncaisse({});
     expect(kpi).toMatchObject({
       key: 'ca_encaisse',
-      label: 'CA commandes payées',
+      label: 'Commandes payées — part hors avoir',
       value: 150000,
       unit: 'KMF',
     });

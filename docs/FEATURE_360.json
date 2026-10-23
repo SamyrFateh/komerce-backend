@@ -6418,7 +6418,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 160,
+            "count": 163,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6951,6 +6951,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/business-date.js",
+                "resolvedPath": "public/dashboards/canonical/js/business-date.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/canonical-client-router-v4.js",
                 "resolvedPath": "public/dashboards/canonical/js/canonical-client-router-v4.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7081,6 +7086,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/pilotage.js",
+                "resolvedPath": "public/dashboards/canonical/js/pilotage.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/pricing-decision-chain.js",
                 "resolvedPath": "public/dashboards/canonical/js/pricing-decision-chain.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7093,6 +7103,11 @@
               {
                 "declared": "dashboards/canonical/js/pricing-product-focus.js",
                 "resolvedPath": "public/dashboards/canonical/js/pricing-product-focus.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/pricing-structure-event-panel.js",
+                "resolvedPath": "public/dashboards/canonical/js/pricing-structure-event-panel.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8583,7 +8598,7 @@
             ]
           }
         },
-        "totalFiles": 427,
+        "totalFiles": 430,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

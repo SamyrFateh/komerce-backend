@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1851,
-    "edges": 9275,
+    "edges": 9276,
     "dbTables": 211,
     "doctrines": 685,
     "impactAreas": 206,
@@ -29415,7 +29415,8 @@
         "routes/admin-dashboard.js"
       ],
       "dbRead": [
-        "orders"
+        "orders",
+        "parcels"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -87896,6 +87897,12 @@
     },
     {
       "from": "services/signal-simulation-scope.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/signal-simulation-scope.js",
       "to": "doctrine:real_vs_simulation_predicate",
       "type": "doctrine",
       "label": "real_vs_simulation_predicate"
@@ -127229,7 +127236,8 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "orders"
+        "orders",
+        "parcels"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -127245,6 +127253,7 @@
       ],
       "mustCheck": [
         "db:orders",
+        "db:parcels",
         "doctrine:fail_safe_filter",
         "doctrine:no_second_signal_authority",
         "doctrine:real_vs_simulation_predicate",

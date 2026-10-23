@@ -166,7 +166,7 @@
 
   function metricItems(payload, base) {
     const labels = {
-      'ca-encaisse': 'Ventes payées',
+      'ca-encaisse': 'Ventes payées (avoir inclus)',
       commandes: 'Commandes créées',
       'panier-moyen': 'Panier moyen',
       'produits-actifs-vendus': 'Produits actifs vendus',

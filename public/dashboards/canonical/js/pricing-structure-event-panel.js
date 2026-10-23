@@ -46,7 +46,7 @@
   function formatKmf(value) {
     const n = Number(value);
     if (!Number.isFinite(n)) return '—';
-    return `${n.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA`;
+    return `${n.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} KMF`;
   }
 
   function formatDate(value) {

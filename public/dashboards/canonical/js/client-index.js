@@ -61,6 +61,9 @@
     params.set('sort', String(state.sort || 'recent'));
     params.set('page', String(state.page || 1));
     params.set('page_size', String(state.page_size || 25));
+    // L2 : périmètre de recette explicite (?simulation_scope=RCT1), transmis tel quel au serveur.
+    const scope = new URLSearchParams(String((globalThis.location && globalThis.location.search) || '')).get('simulation_scope');
+    if (scope && /^[A-Z][A-Z0-9-]{1,31}$/.test(scope)) params.set('simulation_scope', scope);
     return `${endpoint}?${params.toString()}`;
   }
 
@@ -73,10 +76,12 @@
     return `${formatNumber(value)} KMF`;
   }
 
-  function formatDate(value) {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' }).format(date);
+  // L3 : fuseau métier du serveur (marché de l'objet), jamais celui du navigateur.
+  let activeTimezone = null;
+  function formatDate(value, timezone) {
+    return globalThis.KomerceBusinessDate
+      ? globalThis.KomerceBusinessDate.formatBusinessDate(value, timezone || activeTimezone, { time: false })
+      : (value ? String(value).slice(0, 10) : '—');
   }
 
   function text(doc, tag, className, value) {
@@ -182,7 +187,7 @@
         formatNumber(row.orders_valid),
         formatKmf(row.ltv_kmf),
         formatKmf(row.average_basket_kmf),
-        formatDate(row.last_order_at),
+        formatDate(row.last_order_at, row.business_timezone),
         Array.isArray(row.markets) && row.markets.length ? row.markets.join(' · ') : '—',
       ].forEach(value => tr.appendChild(text(doc, 'td', '', value)));
       const actionCell = doc.createElement('td');

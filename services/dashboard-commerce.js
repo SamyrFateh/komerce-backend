@@ -100,7 +100,7 @@ async function getCommercePaidSales(filters) {
   const itemsTotal = Number(row.items_total) || 0;
   const basis = { sales_basis: 'paid_order_total_plus_wallet', period_basis: 'orders.created_at', cash_basis: false };
   return {
-    ca: makeKpi('ca_encaisse', 'Ventes payées', Number(row.sales_kmf) || 0, 'KMF', {
+    ca: makeKpi('ca_encaisse', 'Ventes payées (avoir inclus)', Number(row.sales_kmf) || 0, 'KMF', {
       itemsTotal, itemsWithData: itemsTotal, extra: basis, drillTo: '/admin/operations',
     }),
     panier: makeKpi('panier_moyen', 'Panier moyen des ventes payées',

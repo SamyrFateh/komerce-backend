@@ -354,7 +354,7 @@
 
   function metricItems(payload, base) {
     const labels = {
-      'ca-encaisse': 'CA encaissé',
+      'ca-encaisse': 'Commandes payées — part hors avoir',
       'cout-reel': 'Coût réel',
       marge: 'Marge consolidée',
       completude: 'Complétude coûts',
@@ -383,7 +383,7 @@
     const definitions = [
       {
         key: 'revenue', title: 'Encaissements', tone: 'info',
-        metrics: [pair(payload, base, 'ca_encaisse', 'CA encaissé'), pair(payload, base, 'paiements_en_attente', 'Paiements en attente')],
+        metrics: [pair(payload, base, 'ca_encaisse', 'Commandes payées — part hors avoir'), pair(payload, base, 'paiements_en_attente', 'Paiements en attente')],
       },
       {
         key: 'costing', title: 'Vérité des coûts', tone: 'warning',
@@ -697,7 +697,7 @@
       marginHelper = `${base.formatNumber(scope.eligible_margin_pct, 1)} % sur ${base.formatNumber(scope.eligible_orders, 0)}/${base.formatNumber(scope.paid_orders, 0)} commandes finalisées`;
     }
     const cards = [
-      { key: 'ca-encaisse', label: 'CA encaissé', icon: 'bars', tone: 'info', helper: 'Total des commandes payées', note: 'ca-encaisse' },
+      { key: 'ca-encaisse', label: 'Commandes payées — part hors avoir', icon: 'bars', tone: 'info', helper: 'Somme des commandes payées créées sur la période, hors part réglée par avoir. Ni chiffre d’affaires comptable, ni encaissement attesté.', note: 'ca-encaisse' },
       { key: 'cout-reel', label: 'Coûts constatés', icon: 'coins', tone: 'warning', helper: 'Coûts directement imputés aux commandes, selon les justificatifs disponibles ; engagements non constatés exclus.', note: 'cout-reel' },
       {
         key: 'marge', label: 'Marge réelle finalisée', icon: 'trend', tone: 'positive', helper: marginHelper, note: 'marge',

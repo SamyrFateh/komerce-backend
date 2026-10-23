@@ -252,3 +252,9 @@ describe('pricing-structure-event-panel', () => {
     expect(doc.body.children.length).toBe(0);
   });
 });
+
+test('L4 : les montants *_kmf du panneau d’événements portent l’unité KMF, jamais FCFA', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-structure-event-panel.js'), 'utf8');
+  expect(src).toContain("maximumFractionDigits: 0 })} KMF`");
+  expect(src).not.toContain('FCFA');
+});

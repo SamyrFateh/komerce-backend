@@ -222,7 +222,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 44
 - routes: 28
 - migrations: 2
-- dash: 160
+- dash: 163
 - tests: 192
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 14
@@ -2243,7 +2243,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2128 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2131 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2316,7 +2316,7 @@ Meta Graph monté : oui.
 | dashboard | customs | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | dashboard | decision-signals | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | documents | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
-| dashboard | economic-engine | static-code, data-read | 18 | **DECLARED_AND_OBSERVED** |
+| dashboard | economic-engine | static-code, data-read | 20 | **DECLARED_AND_OBSERVED** |
 | dashboard | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | infrastructure | static-code | 111 | **DECLARED_AND_OBSERVED** |

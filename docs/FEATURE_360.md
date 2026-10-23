@@ -593,8 +593,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 427 fichier(s) déclaré(s)
-  - dash : 160
+**Implementation** : 430 fichier(s) déclaré(s)
+  - dash : 163
   - middleware : 1
   - migrations : 2
   - routes : 28

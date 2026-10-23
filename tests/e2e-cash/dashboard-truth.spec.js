@@ -218,7 +218,7 @@ test.describe.serial('Vérité des dashboards — acteurs réels, deux Markets',
   test('3 · Finance puis Comptabilité (Market A) : CA, attendu/collecté/détenu, lien entre les deux', async () => {
     const A = fx.marketA.id;
     const { api: f, text } = await visit('managerA', `/admin/finance?market=${M.A}`, '/finance/market/');
-    prove('Finance', 'CA commandes payées (XAF = KMF × 4/3)', M.A, 'manager A', XAF(await paidKmf(A)), kpi(f.kpis, 'ca_encaisse'), after(text, 'CA ENCAISSÉ', { gap: 12 }));
+    prove('Finance', 'Commandes payées — part hors avoir (XAF = KMF × 4/3)', M.A, 'manager A', XAF(await paidKmf(A)), kpi(f.kpis, 'ca_encaisse'), after(text, 'COMMANDES PAYÉES — PART HORS AVOIR', { gap: 12 }));
     const uiPending = after(text, 'Paiements en attente', { gap: 90 });
     report.rows.push({ screen: 'Finance', indicator: 'Paiements en attente', market: M.A, role: 'manager A', sql: await orderN(A, `payment_status = 'pending' AND status NOT IN ('cancelled','refunded')`), ui: uiPending });
     expect(uiPending).toBe(report.rows[report.rows.length - 1].sql);
@@ -320,7 +320,7 @@ test.describe.serial('Vérité des dashboards — acteurs réels, deux Markets',
     prove('Pilotage', 'Alertes critiques ouvertes', M.B, 'manager B', await sigN(B, 'critical'), kpi(p.kpis_global, 'alertes_critiques'), after(pt, 'CRITIQUES OUVERTES'));
     prove('Pilotage', 'Commandes actives', M.B, 'manager B', await orderN(B, 'status::text = ANY($2)', [ACTIVE]), kpi(p.kpis_global, 'cmds_actives'), after(pt, 'COMMANDES ACTIVES'));
     const { api: f, text: ft } = await visit('managerB', `/admin/finance?market=${M.B}`, '/finance/market/');
-    prove('Finance', 'CA commandes payées (XAF = KMF × 4/3)', M.B, 'manager B', XAF(await paidKmf(B)), kpi(f.kpis, 'ca_encaisse'), after(ft, 'CA ENCAISSÉ', { gap: 12 }));
+    prove('Finance', 'Commandes payées — part hors avoir (XAF = KMF × 4/3)', M.B, 'manager B', XAF(await paidKmf(B)), kpi(f.kpis, 'ca_encaisse'), after(ft, 'COMMANDES PAYÉES — PART HORS AVOIR', { gap: 12 }));
     for (const forbidden of [String(XAF(await paidKmf(fx.marketA.id))).replace(/\B(?=(\d{3})+(?!\d))/g, ' '), `${PREFIX}-${tag}-A`]) {
       expect(ft.replace(/ | /g, ' '), `fuite A→B : ${forbidden}`).not.toContain(forbidden);
       expect(pt.replace(/ | /g, ' '), `fuite A→B : ${forbidden}`).not.toContain(forbidden);
