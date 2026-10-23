@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 645 | 645 | 0 |
+| backend | 36 | 36 | 646 | 646 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -211,7 +211,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 3
 - interfaces exposed: 20
 - internal APIs: 0
-- dependencies (consumes): 7 — catalog, orders, logistics, infrastructure, documents, auth, economic-engine
+- dependencies (consumes): 8 — catalog, orders, logistics, infrastructure, documents, auth, economic-engine, market
 - consumers: 8 — catalog, dashboard, documents, economic-engine, infrastructure, orders, sourcing, admin-dashboard
 
 ### dashboard _(business-transversal)_
@@ -416,14 +416,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - scripts: 3
 - migrations: 13
-- services: 8
-- tests: 26
+- services: 9
+- tests: 28
 - tables owned (lifecycle): 3 — `markets`, `operator_market_scopes`, `currency_parities`
 - tables written: 3
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 2 — infrastructure, notifications
-- consumers: 15 — catalog, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, settlement
+- consumers: 16 — catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, settlement
 
 ### market-autonomy _(business-feature)_
 
@@ -1869,6 +1869,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | customs | documents (`documents (facture douane generee)`) | ✔ |
 | customs | auth (`auth`) | ✔ |
 | customs | economic-engine (`economic-engine`) | ✔ |
+| customs | market (`market (garde Q2 market-operation-guard : nouvelle expédition refusée hors marché actif)`) | ✔ |
 | dashboard | shared-cart (`shared-cart (suppression des paniers utilisateur via API interne lifecycle-owned)`) | ✔ |
 | dashboard | incident-management (`incident-management (incident persistence via incident-write-service)`) | ✔ |
 | dashboard | orders (`orders (lecture commandes)`) | ✔ |
@@ -2164,7 +2165,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 - none
 
-### TOPOLOGIE ATTENDUE — hors dette (49)
+### TOPOLOGIE ATTENDUE — hors dette (50)
 
 - **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
@@ -2189,6 +2190,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> dashboard — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "dashboard"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> economic-engine — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "economic-engine"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** loyalty -> logistics — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "logistics"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> customs — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market" vers "customs"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> dashboard — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market" vers "dashboard"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> market-delegation — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "market" vers "market-delegation"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> orders — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market" vers "orders"
@@ -2243,7 +2245,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2131 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2134 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2308,6 +2310,7 @@ Meta Graph monté : oui.
 | customs | economic-engine | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | customs | infrastructure | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | customs | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| customs | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | customs | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | auth | static-code | 21 | **DECLARED_AND_OBSERVED** |
 | dashboard | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
@@ -2363,7 +2366,7 @@ Meta Graph monté : oui.
 | economic-engine | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | economic-engine | logistics | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| economic-engine | market | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | market-autonomy | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | economic-engine | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | economic-engine | orders | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
@@ -2437,6 +2440,7 @@ Meta Graph monté : oui.
 | loyalty | logistics | static-code | 1 | **OBSERVED_UNDECLARED** |
 | loyalty | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | loyalty | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| market | customs | static-code | 1 | **OBSERVED_UNDECLARED** |
 | market | dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
 | market | infrastructure | static-code | 21 | **DECLARED_AND_OBSERVED** |
 | market | market-delegation | static-code | 2 | **OBSERVED_UNDECLARED** |
@@ -2466,7 +2470,7 @@ Meta Graph monté : oui.
 | market-delegation | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | market-delegation | infrastructure | static-code | 23 | **DECLARED_AND_OBSERVED** |
 | market-delegation | logistics | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| market-delegation | market | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-operator-dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
 | market-delegation | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
@@ -2632,6 +2636,7 @@ Meta Graph monté : oui.
 - `logistics` → `dashboard` (canaux: static-code)
 - `logistics` → `economic-engine` (canaux: static-code)
 - `loyalty` → `logistics` (canaux: static-code)
+- `market` → `customs` (canaux: static-code)
 - `market` → `dashboard` (canaux: static-code)
 - `market` → `market-delegation` (canaux: static-code)
 - `market` → `orders` (canaux: static-code)
@@ -2700,14 +2705,14 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 |---|---|---|
 | PROJECTION | 0 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 20 | application-wiring-not-consumption |
-| NON_RUNTIME_TEST | 18 | non-runtime-evidence |
+| NON_RUNTIME_TEST | 19 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **38** | |
+| **TOTAL** | **39** | |
 
 ### Projection dependencies
 
@@ -2752,6 +2757,7 @@ Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
 - `loyalty` → `logistics` — business-file-import, TEST_ONLY
 - `market-autonomy` → `market-control-plane` — business-file-import, TEST_ONLY
 - `market-delegation` → `market-operator-dashboard` — business-file-import, TEST_ONLY
+- `market` → `customs` — business-file-import, TEST_ONLY
 - `market` → `dashboard` — business-file-import, TEST_ONLY
 - `market` → `market-delegation` — business-file-import, TEST_ONLY
 - `market` → `orders` — business-file-import, TEST_ONLY
