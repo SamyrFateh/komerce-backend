@@ -51,11 +51,8 @@ describe('porte headers/cartes <-> SQL — mode d’accès et carte propriétair
     expect(core.analyzeHeaderSql().writeModeFindings).toEqual([]);
   });
 
-  test('carte <-> SQL : seules restent les 6 écritures croisées mesurées (déclarées au commit suivant)', () => {
-    expect([...new Set(core.analyzeCardWrites().findings.map(f => `${f.feature}->${f.table}`))].sort()).toEqual([
-      'catalog->sourcing_candidates', 'customs->order_item_real_cost_allocations', 'economic-engine->orders',
-      'logistics->order_items', 'logistics->products', 'orders->signals',
-    ]);
+  test('toute écriture SQL d’un fichier de code est déclarée W/RW dans sa carte (39 couples réconciliés, porte stricte à 0)', () => {
+    expect(core.analyzeCardWrites().findings).toEqual([]);
   });
 
   test('scripts/ et tests/ restent hors du périmètre carte (outils et preuves)', () => {

@@ -215,6 +215,7 @@ module.exports = {
       'sms_log: W',
       'users: R',
       'scans: W~',
+      'signals: W',
     ],
   },
 

@@ -362,7 +362,7 @@ module.exports = {
       'order_item_cost_imputations: R',
       'order_item_real_cost_allocations: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — seul écrivain réel (via services/cost-allocation/*.js)
       'order_items: R',
-      'orders: R',
+      'orders: RW',
       'parcel_items: R',
       'parcels: R',
       'price_history: W!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)

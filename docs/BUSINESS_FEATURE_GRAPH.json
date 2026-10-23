@@ -33735,12 +33735,17 @@
             ]
           },
           {
-            "channel": "data-read",
+            "channel": "data-write",
             "evidence": [
               {
                 "table": "sourcing_candidates",
-                "mode": "R"
-              },
+                "mode": "RW"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
               {
                 "table": "import_runtime_runs",
                 "mode": "R"
@@ -33904,6 +33909,15 @@
               {
                 "sourceFileId": "tests/integration/customs-groupage-canonical-real-db.test.js",
                 "targetFile": "services/transport-cost-allocation.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "order_item_real_cost_allocations",
+                "mode": "W"
               }
             ]
           }
@@ -34420,11 +34434,11 @@
             "channel": "data-read",
             "evidence": [
               {
-                "table": "exchange_rates",
+                "table": "order_item_real_cost_allocations",
                 "mode": "R"
               },
               {
-                "table": "order_item_real_cost_allocations",
+                "table": "exchange_rates",
                 "mode": "R"
               }
             ]
@@ -36983,16 +36997,21 @@
                 "mode": "R"
               },
               {
-                "table": "orders",
-                "mode": "R"
-              },
-              {
                 "table": "order_item_cost_imputations",
                 "mode": "R"
               },
               {
                 "table": "recipients",
                 "mode": "R"
+              }
+            ]
+          },
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "orders",
+                "mode": "RW"
               }
             ]
           }
@@ -38434,12 +38453,17 @@
             ]
           },
           {
-            "channel": "data-read",
+            "channel": "data-write",
             "evidence": [
               {
                 "table": "products",
-                "mode": "R"
-              },
+                "mode": "RW"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
               {
                 "table": "product_variants",
                 "mode": "R"
@@ -39196,12 +39220,17 @@
             ]
           },
           {
-            "channel": "data-read",
+            "channel": "data-write",
             "evidence": [
               {
                 "table": "order_items",
-                "mode": "R"
-              },
+                "mode": "RW"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
               {
                 "table": "orders",
                 "mode": "R"
@@ -41176,6 +41205,15 @@
               {
                 "sourceFileId": "services/order-financial-closure-signal.js",
                 "targetFile": "services/signal-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "signals",
+                "mode": "W"
               }
             ]
           }
@@ -47568,6 +47606,12 @@
           "technical": true
         },
         {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        },
+        {
           "feature": "orders",
           "mode": "RW",
           "declaredOwner": true,
@@ -47581,7 +47625,6 @@
         "documents",
         "economic-engine",
         "inventory",
-        "logistics",
         "payments",
         "platform-ops",
         "purchasing",
@@ -47600,6 +47643,12 @@
           "technical": true
         },
         {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        },
+        {
           "feature": "orders",
           "mode": "RW",
           "declaredOwner": true,
@@ -47611,7 +47660,6 @@
         "catalog",
         "customs",
         "documents",
-        "economic-engine",
         "incident-management",
         "inventory",
         "logistics",
@@ -47693,6 +47741,12 @@
           "mode": "RW",
           "declaredOwner": false,
           "technical": true
+        },
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -47702,7 +47756,6 @@
         "economic-engine",
         "inventory",
         "local-stock",
-        "logistics",
         "market-autonomy",
         "market-delegation",
         "orders",
@@ -48053,6 +48106,12 @@
     "sourcing_candidates": {
       "writers": [
         {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        },
+        {
           "feature": "sourcing",
           "mode": "RW",
           "declaredOwner": true,
@@ -48060,7 +48119,6 @@
         }
       ],
       "readers": [
-        "catalog",
         "dashboard"
       ],
       "lifecycleOwner": "sourcing",
@@ -48328,6 +48386,27 @@
       "lifecycleOwner": "customs",
       "resolution": "declared-table-owner"
     },
+    "order_item_real_cost_allocations": {
+      "writers": [
+        {
+          "feature": "customs",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        },
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "dashboard"
+      ],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
     "client_notifications": {
       "writers": [
         {
@@ -48470,21 +48549,6 @@
       "lifecycleOwner": "orders",
       "resolution": "single-writer"
     },
-    "order_item_real_cost_allocations": {
-      "writers": [
-        {
-          "feature": "economic-engine",
-          "mode": "RW",
-          "declaredOwner": true,
-          "technical": false
-        }
-      ],
-      "readers": [
-        "dashboard"
-      ],
-      "lifecycleOwner": "economic-engine",
-      "resolution": "declared-table-owner"
-    },
     "order_status_history": {
       "writers": [
         {
@@ -48625,6 +48689,12 @@
     },
     "signals": {
       "writers": [
+        {
+          "feature": "orders",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        },
         {
           "feature": "decision-signals",
           "mode": "RW",
@@ -50498,8 +50568,70 @@
   },
   "drifts": {
     "error": [],
-    "warn": [],
-    "debt": [],
+    "warn": [
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_item_real_cost_allocations",
+        "msg": "table \"order_item_real_cost_allocations\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par customs"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_items",
+        "msg": "table \"order_items\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "orders",
+        "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par economic-engine"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "products",
+        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "signals",
+        "msg": "table \"signals\" : lifecycle owner = decision-signals (db.tables \"!\"), mais aussi écrite par orders"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "sourcing_candidates",
+        "msg": "table \"sourcing_candidates\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
+      }
+    ],
+    "debt": [
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_item_real_cost_allocations",
+        "msg": "table \"order_item_real_cost_allocations\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par customs"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_items",
+        "msg": "table \"order_items\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "orders",
+        "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par economic-engine"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "products",
+        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "signals",
+        "msg": "table \"signals\" : lifecycle owner = decision-signals (db.tables \"!\"), mais aussi écrite par orders"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "sourcing_candidates",
+        "msg": "table \"sourcing_candidates\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
+      }
+    ],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -50815,11 +50947,11 @@
       }
     ],
     "summary": {
-      "signals": 0,
-      "debt": 0,
+      "signals": 6,
+      "debt": 6,
       "expectedTopology": 50,
       "generatorLimitations": 12,
-      "classifiedCandidates": 62
+      "classifiedCandidates": 68
     }
   }
 }

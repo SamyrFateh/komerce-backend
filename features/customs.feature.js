@@ -150,6 +150,7 @@ module.exports = {
       // cette table en direct (voir MULTI_WRITER_TABLES.md).
       'customs_shipment_fees: RW!',
       'customs_shipment_parcel_events: RW!',
+      'order_item_real_cost_allocations: W',
     ],
   },
 

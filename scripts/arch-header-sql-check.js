@@ -87,7 +87,7 @@ function main() {
   console.log(`Mode d'acces faux       : ${r.writeModeFindings.length}`);
   console.log(`Ecritures hors carte    : ${cards.findings.length}`);
   console.log('============================================================');
-  if (r.writeModeFindings.length && !REPORT_ONLY) {
+  if ((r.writeModeFindings.length || cards.findings.length) && !REPORT_ONLY) {
     console.error('🚫 Ecriture non declaree (mode du header ou carte proprietaire).');
     process.exit(1);
   }

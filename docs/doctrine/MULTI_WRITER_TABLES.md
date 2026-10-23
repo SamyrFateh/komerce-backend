@@ -1,7 +1,7 @@
 # Dette architecturale — Tables multi-écrivains
 
 > Régénéré automatiquement le 2026-10-23 par `scripts/generate-multi-writer-report.js` — source de vérité : `features/*.feature.js` (db.tables) croisé avec `docs/komerce-arch-header-graph.json` (headers @db-write / @db-write-via réels).
-> 27 tables ont 2+ features déclarées en écriture directe (W/RW dans manifest).
+> 29 tables ont 2+ features déclarées en écriture directe (W/RW dans manifest).
 > Ce fichier remplace une version figée à la main (2026-07-07, 37 tables) devenue
 > stale après les corrections du §3 de `VERIFICATION_AUDIT_2026-07-07.md` (3 tables nouvellement multi-écrivains : `order_item_real_cost_allocations`, `sms_log`, `transaction_documents`).
 
@@ -11,8 +11,8 @@ Pour chaque `(feature, table)` déclaré `W`/`RW`, on vérifie si un fichier
 réellement possédé par la feature porte un `@db-write` direct sur cette
 table (pas seulement une délégation `@db-write-via`).
 
-- **212** couples (feature, table) en écriture au total
-- **200** confirmés par du vrai `@db-write` direct — ce ne sont PAS des erreurs de manifest, la multipropriété est réelle au niveau du code, vérifiée jusqu'au SQL brut (échantillon `orders` : 4 `UPDATE orders SET ...` retrouvés dans 4 features indépendantes).
+- **218** couples (feature, table) en écriture au total
+- **206** confirmés par du vrai `@db-write` direct — ce ne sont PAS des erreurs de manifest, la multipropriété est réelle au niveau du code, vérifiée jusqu'au SQL brut (échantillon `orders` : 4 `UPDATE orders SET ...` retrouvés dans 4 features indépendantes).
 - **0** délégation pure (déclaré W/RW mais seule preuve = `@db-write-via`) → candidats à correction de manifest.
 - **12** orphelin (W/RW déclaré, aucune preuve directe ni déléguée) → à examiner.
 
@@ -47,8 +47,11 @@ corriger côté déclaration, la dette est dans le code lui-même.
 
 | Table | Écrivains | Preuve |
 |---|---|---|
+| `order_items` (3) | dashboard, logistics, orders | ✅ tous confirmés directs |
+| `orders` (3) | dashboard, economic-engine, orders | ✅ tous confirmés directs |
 | `parcel_items` (3) | dashboard, logistics, platform-ops | ✅ tous confirmés directs |
 | `parcels` (3) | dashboard, logistics, platform-ops | ✅ tous confirmés directs |
+| `products` (3) | catalog, dashboard, logistics | ✅ tous confirmés directs |
 | `scans` (3) | logistics, orders, platform-ops | ✅ tous confirmés directs |
 
 ### Tier 3 — 2 écrivains directs
@@ -63,17 +66,16 @@ corriger côté déclaration, la dette est dans le code lui-même.
 | `invoices` (2) | dashboard, documents | ✅ tous confirmés directs |
 | `notification_log` (2) | notifications, platform-ops | ✅ tous confirmés directs |
 | `order_comments` (2) | dashboard, orders | ✅ tous confirmés directs |
-| `order_items` (2) | dashboard, orders | ✅ tous confirmés directs |
+| `order_item_real_cost_allocations` (2) | customs, economic-engine | ✅ tous confirmés directs |
 | `order_status_history` (2) | dashboard, orders | ✅ tous confirmés directs |
-| `orders` (2) | dashboard, orders | ✅ tous confirmés directs |
 | `pickup_print_tokens` (2) | infrastructure, logistics | ✅ tous confirmés directs |
 | `pickup_reveal_codes` (2) | infrastructure, logistics | ✅ tous confirmés directs |
-| `products` (2) | catalog, dashboard | ✅ tous confirmés directs |
 | `recipients` (2) | dashboard, orders | ✅ tous confirmés directs |
 | `relais` (2) | dashboard, logistics | ✅ tous confirmés directs |
 | `revoked_tokens` (2) | auth-identity, infrastructure | ✅ tous confirmés directs |
 | `scan_events` (2) | dashboard, logistics | ✅ tous confirmés directs |
 | `sms_log` (2) | dashboard, orders | ✅ tous confirmés directs |
+| `sourcing_candidates` (2) | catalog, sourcing | ✅ tous confirmés directs |
 | `users` (2) | auth-identity, infrastructure | ✅ tous confirmés directs |
 | `wallet_consumptions` (2) | dashboard, wallet | ✅ tous confirmés directs |
 | `wallet_credit_lots` (2) | dashboard, wallet | ✅ tous confirmés directs |

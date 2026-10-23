@@ -412,6 +412,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - les access/refresh tokens fournisseur sont persistés chiffrés ; l App Secret reste uniquement en variable serveur et aucun token n est exposé au navigateur
 
 **Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `catalog_field_sync_state`, `catalog_media`, `catalog_media_visual_fr_reviews`, `catalog_publication_decision_audit`, `catalog_stock_sync_state`, `catalog_taxonomy_audit`, `catalog_terminology_reference`, `product_attributes`, `product_content_profile`, `product_content_sections`, `product_market_exposure`, `product_sku_media`, `product_skus`, `product_variants`, `products`, `supplier_catalog_import_rejections`, `supplier_catalog_imports`, `supplier_catalog_sync_checkpoints`, `supplier_oauth_connections`
+**Writes (not owner)** : `sourcing_candidates` (writer-not-owner)
 
 **Exposes** : 10 internal API(s), 47 HTTP interface(s)
   - `applyPrice` (services/catalog-product-mutation-service.js) — resolved
@@ -481,6 +482,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - si le produit réel ne permet pas un classement suffisamment fiable, une affinité administrable portée par la sous-catégorie boutique peut fournir la catégorie douanière active la plus proche ; cette affinité ne prime jamais un match fournisseur medium/high
 
 **Owns** : `customs_categories`, `customs_shipment_fees`, `customs_shipment_parcel_events`, `customs_shipment_parcels`, `customs_shipments`
+**Writes (not owner)** : `order_item_real_cost_allocations` (writer-not-owner)
 
 **Exposes** : 0 internal API(s), 20 HTTP interface(s)
 
@@ -752,6 +754,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - une référence globale de concurrence reste informative et ne devient jamais silencieusement une preuve marché locale
 
 **Owns** : `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_structure_cost_events`, `exchange_rates`, `finance_config`, `market_cost_attributions`, `market_price_observation_events`, `market_price_observations`, `order_cost_entry_events`, `order_item_real_cost_allocations`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_market_decision_policy_events`, `pricing_matrices_audit`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
+**Writes (not owner)** : `orders` (writer-not-owner)
 
 **Exposes** : 2 internal API(s), 110 HTTP interface(s)
   - `recommend` (services/pricing-engine.js) — resolved
@@ -1209,6 +1212,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 
 **Owns** : `carriers`, `hub_custody_events`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `parcel_events`, `parcel_items`, `parcels`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `relais`, `scan_events`, `scans`, `shipments`
+**Writes (not owner)** : `order_items` (writer-not-owner), `products` (writer-not-owner)
 
 **Exposes** : 32 internal API(s), 78 HTTP interface(s)
   - `addParcelItem` (services/parcel-item-mutation-service.js) — resolved
@@ -1856,7 +1860,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - annulation libere les achats fournisseurs lies dans la meme transaction via purchasing
 
 **Owns** : `customs_history`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `orders`, `recipients`, `sms_log`
-**Writes (not owner)** : `scans` (writer-not-owner)
+**Writes (not owner)** : `scans` (writer-not-owner), `signals` (writer-not-owner)
 
 **Exposes** : 30 internal API(s), 27 HTTP interface(s)
   - `appendOrderNote` (services/order-mutation-service.js) — resolved

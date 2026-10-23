@@ -5117,6 +5117,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "sourcing_candidates",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "supplier_catalog_import_rejections",
             "mode": "RW",
             "lifecycleOwner": "catalog",
@@ -5169,10 +5175,6 @@
           {
             "table": "product_market_price_drafts",
             "lifecycleOwner": "market-autonomy"
-          },
-          {
-            "table": "sourcing_candidates",
-            "lifecycleOwner": "sourcing"
           }
         ]
       },
@@ -5387,6 +5389,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "sourcing_candidates",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "supplier_catalog_import_rejections",
             "mode": "RW",
             "lifecycleOwner": "catalog",
@@ -5439,10 +5447,6 @@
           {
             "table": "product_market_price_drafts",
             "lifecycleOwner": "market-autonomy"
-          },
-          {
-            "table": "sourcing_candidates",
-            "lifecycleOwner": "sourcing"
           }
         ]
       },
@@ -5617,6 +5621,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -5699,6 +5704,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -6152,6 +6158,12 @@
             "mode": "RW",
             "lifecycleOwner": "customs",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_item_real_cost_allocations",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -6234,6 +6246,12 @@
             "mode": "RW",
             "lifecycleOwner": "customs",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_item_real_cost_allocations",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -6295,7 +6313,8 @@
           "provider": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write"
           ]
         },
         {
@@ -9904,7 +9923,8 @@
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write"
           ]
         }
       ],
@@ -11890,6 +11910,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "orders",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "price_history",
             "mode": "W",
             "lifecycleOwner": "economic-engine",
@@ -11985,10 +12011,6 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "orders"
-          },
-          {
-            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -12262,6 +12284,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "orders",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "price_history",
             "mode": "W",
             "lifecycleOwner": "economic-engine",
@@ -12357,10 +12385,6 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "orders"
-          },
-          {
-            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -12527,7 +12551,8 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "data-read"
+            "data-read",
+            "data-write"
           ]
         },
         {
@@ -12564,7 +12589,8 @@
           "consumer": "customs",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write"
           ]
         },
         {
@@ -18013,6 +18039,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "order_items",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "parcel_events",
             "mode": "RW",
             "lifecycleOwner": "logistics",
@@ -18047,6 +18079,12 @@
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "products",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "relais",
@@ -18087,10 +18125,6 @@
             "lifecycleOwner": "documents"
           },
           {
-            "table": "order_items",
-            "lifecycleOwner": "orders"
-          },
-          {
             "table": "orders",
             "lifecycleOwner": "orders"
           },
@@ -18100,10 +18134,6 @@
           },
           {
             "table": "product_variants",
-            "lifecycleOwner": "catalog"
-          },
-          {
-            "table": "products",
             "lifecycleOwner": "catalog"
           },
           {
@@ -18215,6 +18245,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "order_items",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "parcel_events",
             "mode": "RW",
             "lifecycleOwner": "logistics",
@@ -18249,6 +18285,12 @@
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "products",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "relais",
@@ -18289,10 +18331,6 @@
             "lifecycleOwner": "documents"
           },
           {
-            "table": "order_items",
-            "lifecycleOwner": "orders"
-          },
-          {
             "table": "orders",
             "lifecycleOwner": "orders"
           },
@@ -18302,10 +18340,6 @@
           },
           {
             "table": "product_variants",
-            "lifecycleOwner": "catalog"
-          },
-          {
-            "table": "products",
             "lifecycleOwner": "catalog"
           },
           {
@@ -18518,6 +18552,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -18576,6 +18611,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -24079,6 +24115,12 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
+            "table": "signals",
+            "mode": "W",
+            "lifecycleOwner": "decision-signals",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "sms_log",
             "mode": "W",
             "lifecycleOwner": "orders",
@@ -24208,6 +24250,12 @@
             "table": "scans",
             "mode": "W",
             "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "signals",
+            "mode": "W",
+            "lifecycleOwner": "decision-signals",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -24448,7 +24496,8 @@
           "provider": "decision-signals",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write"
           ]
         },
         {
@@ -24623,7 +24672,8 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "data-read"
+            "data-read",
+            "data-write"
           ]
         },
         {
@@ -24653,6 +24703,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -32153,6 +32204,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },

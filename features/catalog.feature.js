@@ -580,7 +580,7 @@ module.exports = {
       'product_market_price_drafts: R',
       'product_attributes: RW',
       'products: RW!',
-      'sourcing_candidates: R',
+      'sourcing_candidates: RW',
       'import_runtime_runs: R',
       'markets: R',
       'supplier_catalog_imports: W',

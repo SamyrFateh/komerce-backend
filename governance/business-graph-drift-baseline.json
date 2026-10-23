@@ -3,14 +3,6 @@
   "generatedFrom": "docs/BUSINESS_FEATURE_GRAPH.json::drifts.debt — baseline de dette réelle uniquement ; les signaux informatifs hors dette sont exclus du budget.",
   "_comment_o5": "Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate. Les clés OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT, DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED::GENERATOR_LIMITATION, LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT sont NOUVELLES (canal code backend+boutique+dash + canal interface via META_GRAPH, absentes avant O5). Elles ne déplacent ni ne gonflent aucune clé O4/O4-2 ci-dessus (toutes stables à cette capture, cf. LOT_O5_LIVRABLE.md §12). Dette révélée maintenant, pas introduite par O5 : le code observé existait déjà, seule son observation est nouvelle.",
   "_comment_o5_reprise": "REPRISE FINALE O5 — Dash Interface Bridge. Le canal interface (Canal D) résolvait systématiquement les modules dashboards en INTERFACE-CONSUMER-FILE-UNRESOLVED (71 cas, classés GENERATOR_LIMITATION) faute de bridge module->fileId pour le scope dash, alors que docs/DASHBOARDS_360.json (modules[].id/.file, déjà généré) permettait cette résolution via les entrées 'views/' déjà gouvernées par implementedByEdges — même principe d'inversion de convention basename que le bridge boutique existant, aucune invention de chemin. Correction : buildDashViewToFileId() dans feature-dependency-conformance.js. Effet mesuré : INTERFACE-CONSUMER-FILE-UNRESOLVED::GENERATOR_LIMITATION passe de 71 à 0 (clé retirée de cette baseline, cf. règle de réduction ci-dessus) ; OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT passe de 85 à 94 (+9) — 9 dépendances cross-feature réelles et jusqu'ici invisibles, toutes admin-dashboard -> {catalog, customs, dashboard, decision-signals, economic-engine, inventory, logistics, orders, payments} via des vues admin dont l'appel API résout vers une route backend d'une autre feature canonique, sans contract.consumes déclaré côté admin-dashboard. Dette réelle et préexistante, révélée par la correction du bridge, pas introduite par elle (cf. docs/LOT_O5_LIVRABLE.md §6 pour le détail par paire).",
-  "baseline": {
-    "BOUTIQUE-FILE-MULTIPLE-OWNERS::ACTIONABLE_DRIFT": 0,
-    "CONSUMES-REFERENCE-UNRESOLVED::INVALID_DECLARATION": 0,
-    "EXPOSED-ROUTE-OWNER-MISMATCH::ACTIONABLE_DRIFT": 0,
-    "EXPOSED-ROUTE-OWNER-MISMATCH::KNOWN_DEBT": 0,
-    "EXPOSED-ROUTE-UNRESOLVED::ACTIONABLE_DRIFT": 0,
-    "LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT": 0
-  },
   "_comment_wno_lot0_20260817": "LOT0 post-#763 certifie par PR #764 : WRITER-NOT-OWNER ACTIONABLE_DRIFT passe de 1 a 0 (cle retiree de la baseline conformement a la doctrine du ratchet) et KNOWN_DEBT passe de 25 a 14. Aucun budget de dette augmente ; toute reapparition ACTIONABLE_DRIFT redeviendra une nouvelle cle et echouera.",
   "_comment_wno_lot1_20260817": "LOT1 certifie par PR #766 : le SQL d'annulation purchase_orders est désormais porté par purchasing, lifecycle owner, et orders ne conserve qu'une frontière d'appel sans SQL direct. WRITER-NOT-OWNER::KNOWN_DEBT resserré de 14 à 13, jamais relevé.",
   "_comment_wno_lots2_4_20260817": "LOTS2-4 certifiés par PR #768, #770 et #771 : price_history est revenu à economic-engine (13→12), les frontières catalog/sourcing ont supprimé trois WNO (12→9), puis economic-engine écrit products/product_variants via la frontière propriétaire catalog (9→8). Baseline resserrée de 13 à 8 après certification des graphes ; aucune exemption, aucun changement artificiel d'owner, aucune dette masquée.",
@@ -33,5 +25,15 @@
   "_comment_decision_signals_infra_20260817": "decision-signals déclare désormais explicitement infrastructure comme dépendance technique prouvée par db.js / utils/logger.js. Baseline OBSERVED-UNDECLARED resserrée 4→3, jamais relevée.",
   "_comment_recommendations_orders_boundary_20260817": "recommendations ne dépend plus des internes b-cart.js/cart-product-summary.js : cart-public-api.js, possédé par orders-client, est la frontière publique stable. Ancienne exception O6 supprimée ; baseline resserrée 3→2, jamais relevée.",
   "_comment_orders_shared_cart_boundary_20260817": "orders-client ne consomme plus directement group-side-cart.js/group-api.js/group-list-labels.js : deux frontières shared-cart étroites (surface + library) portent le contrat public. Exception O6 supprimée ; baseline resserrée 2→1, jamais relevée.",
-  "_comment_debt_zero_20260828": "Debt Zero absolute : OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT est certifié à 0 et la dernière allowance historique 1 est retirée. Toute réapparition devient une nouvelle clé non budgétisée et échoue."
+  "_comment_debt_zero_20260828": "Debt Zero absolute : OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT est certifié à 0 et la dernière allowance historique 1 est retirée. Toute réapparition devient une nouvelle clé non budgétisée et échoue.",
+  "_comment_writer_not_owner_a2_20261023": "Lot A2 (réconciliation cartes <-> SQL, contre-expertise passe 1 point D) : 6 écritures réelles d’une feature dans la table d’un autre owner, jusqu’ici invisibles car absentes de db.tables (le cliquet WRITER-NOT-OWNER ne voyait que les cartes). Rendues visibles, aucun runtime modifié : logistics -> order_items (scan-engine syncOrderFromParcels, qty_*), logistics -> products (hub-operations, dimensions de repack), economic-engine -> orders (canonical-margin-writer, simulation-scope-service), customs -> order_item_real_cost_allocations (customs-shipment-service, DELETE à la désactivation), catalog -> sourcing_candidates (suppliers/catalog-import-json), orders -> signals (order-financial-closure-signal, UPDATE direct hors signal-service). Dette réelle préexistante, à résorber par délégation au service owner ; jamais relevée.",
+  "baseline": {
+    "BOUTIQUE-FILE-MULTIPLE-OWNERS::ACTIONABLE_DRIFT": 0,
+    "CONSUMES-REFERENCE-UNRESOLVED::INVALID_DECLARATION": 0,
+    "EXPOSED-ROUTE-OWNER-MISMATCH::ACTIONABLE_DRIFT": 0,
+    "EXPOSED-ROUTE-OWNER-MISMATCH::KNOWN_DEBT": 0,
+    "EXPOSED-ROUTE-UNRESOLVED::ACTIONABLE_DRIFT": 0,
+    "LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT": 0,
+    "WRITER-NOT-OWNER::KNOWN_DEBT": 6
+  }
 }
