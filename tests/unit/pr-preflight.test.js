@@ -196,6 +196,20 @@ describe('contrôles en processus', () => {
     expect(() => preflight.assertTreeUnchanged(new Map([['services/b.js', 'x']]))).toThrow(/services\/b\.js/);
   });
 
+  test('runPlan : seul un code d’attente déclaré (accord Debt Zero) est mis en attente, tout autre échec bloque', () => {
+    const node = process.execPath;
+    expect(preflight.runPlan([{ label: 'DZ', file: node, argv: ['-e', 'process.exit(3)'], pendingExit: 3 }])).toEqual(['DZ']);
+    expect(() => preflight.runPlan([{ label: 'DZ', file: node, argv: ['-e', 'process.exit(1)'], pendingExit: 3 }])).toThrow(/DZ a échoué/);
+    expect(() => preflight.runPlan([{ label: 'X', file: node, argv: ['-e', 'process.exit(3)'] }])).toThrow(/X a échoué/);
+  });
+
+  test('le plan ne déclare un code d’attente que pour Debt Zero, en mode --local', () => {
+    const plan = preflight.buildPlan({ changedFiles: ['a'], backend: false, dashboard: false, boutique: false, migrations: false, governance: false }, 'b'.repeat(40), 'h'.repeat(40), { treeSnapshot: new Map() });
+    const waiting = plan.filter(s => s.pendingExit !== undefined);
+    expect(waiting.map(s => s.label)).toEqual(['Debt Zero']);
+    expect(waiting[0].argv).toContain('--local');
+  });
+
   test('runPlan exécute les étapes en processus et préfixe leur erreur', () => {
     const write = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const ok = jest.fn();
