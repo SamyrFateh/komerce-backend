@@ -61,6 +61,7 @@ module.exports = {
     ],
     services: [
       'services/refund-service.js',
+      'services/refund-intent-ledger.js',
     ],
     routes: [],
     tests: [
@@ -73,6 +74,8 @@ module.exports = {
       // les arrondir à l'unité lui faisait perdre des centimes.
       'tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js',
       'tests/unit/refund-service.test.js',
+      'tests/unit/refund-intent-ledger.test.js',
+      'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js',
       'tests/unit/refund-stripe-txn-known-risk.test.js',
       'tests/unit/refunds-util.test.js',
       'tests/unit/refund-receipt-html.test.js',
@@ -94,6 +97,7 @@ module.exports = {
     tables: [
       'orders: R',
       'refunds: RW',
+      'refund_execution_intents: RW',
       'wallets: R',
     ],
   },
@@ -126,6 +130,10 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'RC-5/RC-9 fondation : réservation durable avant PSP, clé de rejeu stable par UUID, refus des lignes refunds historiques, plafond de montant et exclusion des intentions non résolues — sans activer de paiement',
+      test: 'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js' },
+    { statement: 'RC-5/RC-9 : aucun remboursement externe ne sort du ledger de réservation, rollback et refus si paramètres de rejeu discordants ; statut processing/unknown non relançable',
+      test: 'tests/unit/refund-intent-ledger.test.js' },
     { statement: 'RC-5 — toute sortie PSP requiert une intention de remboursement committee avant appel externe ; le vrai service et le faux Stripe documentent provisoirement cette rupture sans prétendre la corriger',
       test: 'tests/unit/refund-stripe-txn-known-risk.test.js' },
     'un remboursement n\'est jamais applique deux fois pour le meme evenement source',
