@@ -40,7 +40,6 @@
     "schema:promote:write": "node scripts/schema-promote.js --write",
     "db:snapshot": "node scripts/db-snapshot.js",
     "db:sync": "npm run db:snapshot && npm run schema:promote:write && npm run arch:reconcile:write && npm run arch:gate",
-    "audit:logic": "node scripts/audit-logic.js",
     "arch:headers-sql": "node scripts/arch-header-sql-check.js",
     "arch:hub-authority": "node scripts/hub-authority-gate.js",
     "arch:enrich": "node scripts/enrich-komerce-arch-db-fields.js",
@@ -176,7 +175,7 @@
     "@playwright/test": "1.56.1",
     "dotenv": "^17.4.2",
     "jest": "^30.5.0",
-    "nodemon": "^3.1.4",
+    "nodemon": "^3.1.14",
     "supertest": "^7.2.2"
   },
   "engines": {
