@@ -229,3 +229,8 @@ describe('Produit 360 — fil P1 par marché', () => {
     expect(load().marketThreadRows({ product: { product_ref: 'X' } }, globalCtx)).toEqual([]);
   });
 });
+
+test('L6 : l’en-tête product-360 ne porte pas de lien « ← » concurrent du retour du shell', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/product-360.js'), 'utf8');
+  expect(src).not.toMatch(/'← (Opérations|Commerce)'/);
+});

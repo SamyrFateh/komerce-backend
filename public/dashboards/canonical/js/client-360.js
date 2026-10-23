@@ -113,7 +113,7 @@
     const nav = doc.createElement('nav');
     nav.className = 'kmc-entity-nav';
     [
-      ['/admin/commerce', '← Commerce'],
+      ['/admin/commerce', 'Commerce'],
       ['/admin/pilotage', 'Pilotage'],
       ['/admin/operations', 'Opérations'],
     ].forEach(([href, label]) => {

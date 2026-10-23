@@ -160,7 +160,7 @@
 
   const BACK_TARGETS = Object.freeze({
     'action-center': Object.freeze({ href:'/admin/pilotage', label:'Retour au pilotage' }),
-    'order-360': Object.freeze({ href:'/admin/operations', label:'Retour aux opérations' }),
+    'order-360': Object.freeze({ href:'/admin/orders', label:'Retour aux commandes' }),
     'client-index': Object.freeze({ href:'/admin/commerce', label:'Retour au commerce' }),
     'client-360': Object.freeze({ href:'/admin/clients', label:'Retour aux clients' }),
     'product-360': Object.freeze({ href:'/admin/workspaces/catalog', label:'Retour au catalogue' }),
@@ -875,6 +875,12 @@
         Object.freeze({ id: 'flow-commerce', label: 'Vue commerce', href: '/admin/commerce', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['commerce'] }),
         Object.freeze({ id: 'flow-orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['orders', 'order-360'] }),
         Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'economy',
+      label: 'Économie',
+      items: Object.freeze([
         Object.freeze({ id: 'workspace-pricing', label: 'Prix & économie', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read', surfaces: ['pricing-workspace'] }),
         Object.freeze({ id: 'workspace-refinery', label: 'Raffinerie', href: '/admin/workspaces/catalog?view=refinery', roles: ['admin'], surfaces: [] }),
         Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
@@ -884,7 +890,7 @@
       id: 'operations',
       label: 'Opérations',
       items: Object.freeze([
-        Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations', 'order-360'] }),
+        Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
         Object.freeze({ id: 'workspace-operations', label: 'Hub & Relais', href: '/admin/workspaces/operations', roles: ['admin', 'agent_hub', 'agent_relais', 'market_operator'], capability: 'operations.read', surfaces: ['operations-workspace'] }),
         Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
 

@@ -61,9 +61,9 @@ function payloadFixture() {
       },
       {
         view: 'costing',
-        title: 'Coût rendu relais',
+        title: 'Coûts & marge',
         subtitle: 'Dire la vérité économique',
-        url: '/admin/costing',
+        url: '/admin/finance',
         kpis_summary: [{ key: 'cmds_cout_incomplet', label: 'Commandes à coût incomplet', value: 3, unit: 'count' }],
       },
     ],
@@ -170,7 +170,7 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     expect(flowCards).toHaveLength(1);
     expect(flowCards[0]).toEqual(expect.objectContaining({
       key: 'costing',
-      title: 'Coût rendu relais',
+      title: 'Coûts & marge',
       href: '/admin/finance',
     }));
     expect(pilotageDecision.flowStages(payload, pilotage)[0]).toEqual(expect.objectContaining({
