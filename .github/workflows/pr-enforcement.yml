@@ -751,6 +751,7 @@ jobs:
         env:
           BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
         run: node scripts/debt-zero-gate.js --base "$BASE_SHA" --head "$HEAD_SHA"
       - name: Feature invariants — runner officiel et cliquet des invariants textuels
         env:
