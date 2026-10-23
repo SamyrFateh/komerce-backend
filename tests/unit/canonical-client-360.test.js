@@ -146,3 +146,23 @@ test('mount sans contextContract refuse plutôt que de fabriquer un endpoint par
   })).rejects.toThrow('canonical_client_360_admin_context_contract_missing');
   expect(fetchFn).not.toHaveBeenCalled();
 });
+
+
+test('L12a : Client 360 masque les coordonnées jusqu’à une action explicite', () => {
+  const root = node();
+  const fakeUi = ui();
+  const document = { createElement: jest.fn(() => node()) };
+  expect(client360.maskPhone('+2691234567')).toBe('•••• 4567');
+  expect(client360.maskEmail('amina@example.test')).toBe('•••@example.test');
+  client360.renderPayload(root, fakeUi, document, payload());
+  const identityRows = fakeUi.DataTable.render.mock.calls[0][1].rows;
+  expect(identityRows).toContainEqual({ champ: 'Téléphone', valeur: '•••• 4567' });
+  expect(identityRows).toContainEqual({ champ: 'Email', valeur: '•••@example.test' });
+  const firstHeader = root.children[0];
+  expect(firstHeader.children.some(child => child.textContent === 'Afficher les coordonnées')).toBe(true);
+  fakeUi.DataTable.render.mockClear();
+  client360.renderPayload(root, fakeUi, document, payload(), true);
+  const revealedRows = fakeUi.DataTable.render.mock.calls[0][1].rows;
+  expect(revealedRows).toContainEqual({ champ: 'Téléphone', valeur: '+2691234567' });
+  expect(revealedRows).toContainEqual({ champ: 'Email', valeur: 'amina@example.test' });
+});
