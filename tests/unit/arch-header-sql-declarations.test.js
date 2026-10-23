@@ -35,3 +35,31 @@ describe('en-têtes @db-read des services (déclarations de tables lues)', () =>
     });
   }
 });
+
+describe('porte headers/cartes <-> SQL — mode d’accès et carte propriétaire (Lot A2)', () => {
+  const core = require('../../scripts/lib/arch-drift-core');
+
+  test('extractSqlTableRefsRW sépare lectures et écritures (DELETE FROM n’est pas une lecture)', () => {
+    const { reads, writes } = core.extractSqlTableRefsRW(
+      "db.query('SELECT 1 FROM a JOIN b ON true'); db.query('UPDATE c SET x=1'); db.query('DELETE FROM d'); db.query('INSERT INTO e (x) VALUES (1)')"
+    );
+    expect([...reads].sort()).toEqual(['a', 'b']);
+    expect([...writes].sort()).toEqual(['c', 'd', 'e']);
+  });
+
+  test('aucune écriture SQL directe déclarée seulement en lecture ou en délégation (stock réconcilié à 0)', () => {
+    expect(core.analyzeHeaderSql().writeModeFindings).toEqual([]);
+  });
+
+  test('carte <-> SQL : seules restent les 6 écritures croisées mesurées (déclarées au commit suivant)', () => {
+    expect([...new Set(core.analyzeCardWrites().findings.map(f => `${f.feature}->${f.table}`))].sort()).toEqual([
+      'catalog->sourcing_candidates', 'customs->order_item_real_cost_allocations', 'economic-engine->orders',
+      'logistics->order_items', 'logistics->products', 'orders->signals',
+    ]);
+  });
+
+  test('scripts/ et tests/ restent hors du périmètre carte (outils et preuves)', () => {
+    expect(core.CARD_CODE_CATEGORIES).not.toContain('scripts');
+    expect(core.CARD_CODE_CATEGORIES).not.toContain('tests');
+  });
+});

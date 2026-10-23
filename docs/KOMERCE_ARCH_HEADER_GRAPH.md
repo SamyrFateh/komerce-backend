@@ -14,13 +14,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 1856
-- Edges: 9288
+- Edges: 9290
 - DB tables: 211
 - Doctrines: 688
 - Impact areas: 207
 - Unresolved code edges: 895
-- Tables multi-écrivains directs (>=2): 87
-- Avertissements db-write / db-write-via en chevauchement: 9
+- Tables multi-écrivains directs (>=2): 88
+- Avertissements db-write / db-write-via en chevauchement: 11
 
 ## Domains
 
@@ -734,6 +734,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE utils/parcelSync.js -> alerts
 - WRITE services/market-delegation-service.js -> assignment_capability_ceiling
 - WRITE services/market-delegation-service.js -> assignment_memberships
+- WRITE services/market-delegation-team-service.js -> assignment_memberships
 - WRITE routes/admin/system.js -> basket_items
 - WRITE services/shared-cart-creation.js -> basket_items
 - WRITE services/shared-cart-engine.js -> basket_items
@@ -830,7 +831,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/loyalty.js -> loyalty_tiers
 - WRITE services/market-cash-control-policy-service.js -> market_cash_control_policies
 - WRITE services/cash-custody-service.js -> market_cash_destinations
-- WRITE services/market-cost-attribution-service.js -> market_cost_attributions
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -973,13 +973,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - purchase_lines: 6 écrivains directs — services/purchase-line-snapshot.js, services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js, services/purchasing-trigger-service.js
 - scan_events: 6 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/transitaire-api.js, services/hub-operations.js, services/parcel-auto-create-service.js, services/scan-engine.js
 - shared_cart_events: 6 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-internals.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
+- signals: 6 écrivains directs — bootstrap/crons.js, routes/agent-action-center.js, services/action-center-agent-scope.js, services/order-financial-closure-signal.js, services/signal-admin-service.js, services/signal-service.js
 - supplier_execution_payments: 6 écrivains directs — services/supplier-payment-orchestrator.js, services/supplier-payment-proof-persistence.js, services/supplier-payment-state.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-payment-recovery.js, services/suppliers/cj-supplier-payment-runtime.js
 - transaction_documents: 6 écrivains directs — routes/documents.js, services/documents/customs-invoice.js, services/documents/document-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js, services/documents/wallet-receipt.js
 - finance_config: 5 écrivains directs — bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/economic-config.js, services/economic-engine-queries.js
 - invoices: 5 écrivains directs — routes/admin/system.js, routes/documents.js, routes/invoices.js, services/invoice-service.js, services/order-payment-confirmation.js
 - order_item_real_cost_allocations: 5 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/cost-allocation/manual-cost-entry-service.js, services/customs-shipment-service.js, services/transport-cost-allocation.js
 - shared_carts: 5 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
-- signals: 5 écrivains directs — bootstrap/crons.js, routes/agent-action-center.js, services/action-center-agent-scope.js, services/signal-admin-service.js, services/signal-service.js
 - sourcing_sources: 5 écrivains directs — services/provider-credential-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
 - users: 5 écrivains directs — bootstrap/startup-migrations.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/user-mutation-service.js
 - basket_items: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
@@ -1004,6 +1004,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - supplier_execution_payment_proofs: 3 écrivains directs — services/supplier-payment-proof-persistence.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-supplier-payment-runtime.js
 - wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
+- assignment_memberships: 2 écrivains directs — services/market-delegation-service.js, services/market-delegation-team-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
@@ -1016,12 +1017,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - customs_shipments: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 - disputes: 2 écrivains directs — routes/admin/delete-order-cascade.js, services/dispute-mutation-service.js
 - economic_snapshots: 2 écrivains directs — bootstrap/crons.js, services/economic-engine-queries.js
-- fx_rate_observations: 2 écrivains directs — routes/admin-finance-config.js, services/fx-observation-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 
 - routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates
 - services/customs-shipment-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> order_item_real_cost_allocations
+- services/market-delegation-team-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> assignment_memberships
+- services/order-financial-closure-signal.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> signals
 - services/pickup-collection-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> pickup_print_tokens, pickup_reveal_codes, scans
 - services/pickup-exceptional-collection-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> alerts
 - services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders

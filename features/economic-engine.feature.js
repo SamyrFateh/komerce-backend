@@ -384,6 +384,8 @@ module.exports = {
       'risk_provisions: RW',
       'store_credits: R',
       'users: R',
+      'market_cost_attributions: RW!',
+      'order_cost_entry_events: RW!',
     ],
   },
 

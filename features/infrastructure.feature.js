@@ -475,7 +475,6 @@ module.exports = {
       // business_rules — retiré : propriété business-rules (arbitrage B) — feature scindée le 2026-07-29
       // business_rules_history — retiré : propriété business-rules (arbitrage B)
       // charges — retiré : propriété economic-engine (arbitrage B)
-
       'economic_snapshots: W~',
       // finance_config — retiré : propriété economic-engine (arbitrage B).
       'pickup_print_tokens: W~',
@@ -486,6 +485,9 @@ module.exports = {
       // users — retiré : propriété auth-identity (arbitrage A)
       'outbox_events: W',   // producer écrit l'événement et la séquence ; worker écrit ACK/retry. Infrastructure reste le writer technique unique.
       'physical_outcome_receipts: W',   // reçu d'audit append-only du consumer minimal F0, écrit par outbox-worker.
+      'charges: W~',
+      'finance_config: W~',
+      'users: W~',
     ],
   },
 

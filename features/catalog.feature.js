@@ -586,6 +586,11 @@ module.exports = {
       'supplier_catalog_imports: W',
       'supplier_catalog_sync_checkpoints: RW',
       'supplier_oauth_connections: RW',
+      'catalog_field_sync_state: RW!',
+      'catalog_media_visual_fr_reviews: RW!',
+      'catalog_publication_decision_audit: RW!',
+      'catalog_stock_sync_state: RW!',
+      'supplier_catalog_import_rejections: RW!',
     ],
   },
 

@@ -148,6 +148,8 @@ module.exports = {
       // transaction_documents retiré (2026-07-07) : délégué à
       // services/documents/customs-invoice.js — customs ne lit/écrit jamais
       // cette table en direct (voir MULTI_WRITER_TABLES.md).
+      'customs_shipment_fees: RW!',
+      'customs_shipment_parcel_events: RW!',
     ],
   },
 
