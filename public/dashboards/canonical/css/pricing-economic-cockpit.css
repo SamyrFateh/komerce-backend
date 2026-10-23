@@ -1179,3 +1179,7 @@
 .kmc-cockpit-costs .kmc-cockpit-cost-table .kmc-cockpit-cell { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
 .kmc-autosave-status { min-width: 150px; color: #047857; font-size: 12px; }
 .kmc-autosave-status:empty { min-width: 0; }
+
+/* L4 — le signe de la contribution porte le ton : négative = critique, nulle = neutre (jamais vert). */
+.kmc-cockpit-product-row .kmc-cockpit-cell.is-contribution.is-negative { color: #b42318; }
+.kmc-cockpit-product-row .kmc-cockpit-cell.is-contribution.is-zero { color: #5b6b82; }

@@ -66,7 +66,7 @@
     metrics: {
       source: 'pilotage.metrics',
       pick: [
-        { key: 'ca-encaisse', label: 'CA encaissé' },
+        { key: 'ca-encaisse', label: 'Commandes payées — part hors avoir' },
         { key: 'commandes-actives', label: 'Commandes actives' },
         { key: 'marge-consolidee', label: 'Marge consolidée' },
         { key: 'alertes-critiques', label: 'Alertes critiques' },

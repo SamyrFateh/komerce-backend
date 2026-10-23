@@ -167,7 +167,7 @@ describe('dashboard-commerce', () => {
     expect(result.kpis.map(item => item.key)).toEqual([
       'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee', 'produits_actifs_vendus', 'quantites_vendues',
     ]);
-    expect(result.kpis[0]).toMatchObject({ key: 'ca_encaisse', label: 'Ventes payées', value: 120000, data_quality: { cash_basis: false } });
+    expect(result.kpis[0]).toMatchObject({ key: 'ca_encaisse', label: 'Ventes payées (avoir inclus)', value: 120000, data_quality: { cash_basis: false } });
     expect(result.kpis[2]).toMatchObject({ key: 'panier_moyen', value: 10000 });
     expect(result.kpis[2].drill_to).toBe('/admin/operations');
     expect(result.kpis[4].unit).toBe('count');

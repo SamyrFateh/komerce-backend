@@ -182,7 +182,10 @@
       table.appendChild(perimeterCell);
       table.appendChild(tableCell(doc, allocationLabel(component.allocation_method), 'is-derived'));
       table.appendChild(tableCell(doc, componentValue(component), 'is-derived'));
-      table.appendChild(tableCell(doc, component.inherited === false ? 'Surcharge pays' : component.inherited === true ? 'Global hérité' : '—', 'is-derived'));
+      const provenance = component.inherited === false ? 'Surcharge pays' : component.inherited === true ? 'Global hérité' : '—';
+      // L4/Q6 : un frais de paiement hérité du global n'est pas réputé applicable au marché tant que sa configuration n'est pas vérifiée.
+      const paymentNotVerified = component.inherited === true && component.category === 'payment';
+      table.appendChild(tableCell(doc, paymentNotVerified ? `${provenance} · Applicabilité non vérifiée pour ce marché` : provenance, 'is-derived'));
       table.appendChild(tableCell(doc, variableMarketShare(component), 'is-derived'));
     });
 
@@ -348,7 +351,8 @@
   function selectedAmount(corridor) {
     const selected = corridor?.selected || {};
     if (selected.local_amount != null) return formatMoney(selected.local_amount, selected.local_currency || corridor?.market?.currency);
-    return formatKmf(selected.price_kmf);
+    // L4 : aucun repli sur price_kmf (un prix KMF n'est pas le prix décidé du marché).
+    return 'Non décidé';
   }
 
   function createPortfolioShell(doc, payload) {
@@ -393,9 +397,10 @@
 
   function portfolioHeader(doc) {
     const headers = [
-      'SKU', 'Coût d\u2019achat\n(FCFA)', 'Coûts variables\nhors achat (FCFA)', 'Coût variable\ncomplet (FCFA)',
-      'Borne marché (FCFA)\nBasse', 'Cible', 'Haute',
-      'Prix retenu\n(FCFA)', 'Contribution\nunitaire (FCFA)', 'Qté vendue', 'Contribution totale\n(FCFA)', '',
+      // L4 : l'unité est portée par chaque valeur (KMF moteur, devise du marché pour bornes et prix) : aucun en-tête n'en impose une.
+      'SKU', 'Coût d\u2019achat', 'Coûts variables\nhors achat', 'Coût variable\ncomplet',
+      'Borne marché\nBasse', 'Cible', 'Haute',
+      'Prix retenu', 'Contribution\nunitaire', 'Qté vendue', 'Contribution totale', '',
     ];
     const row = el(doc, 'div', 'kmc-cockpit-product-row is-head');
     headers.forEach(label => row.appendChild(tableCell(doc, label)));
@@ -430,10 +435,13 @@
     priceButton.dataset.cockpitSelectProduct = product.product_ref;
     priceCell.appendChild(priceButton);
     row.appendChild(priceCell);
-    row.appendChild(tableCell(doc, formatKmf(economics.contribution_unit_kmf), 'is-derived is-contribution'));
-    const qtySold = finite(economics.quantity_sold) ?? finite(product.quantity_sold) ?? 0;
-    row.appendChild(tableCell(doc, formatNumber(qtySold), 'is-derived'));
-    const contribTotal = finite(economics.contribution_unit_kmf) != null && qtySold ? formatKmf(economics.contribution_unit_kmf * qtySold) : '\u2014';
+    const contribution = finite(economics.contribution_unit_kmf);
+    const tone = contribution == null ? '' : contribution < 0 ? ' is-negative' : contribution === 0 ? ' is-zero' : '';
+    row.appendChild(tableCell(doc, formatKmf(economics.contribution_unit_kmf), `is-derived is-contribution${tone}`));
+    const qtySold = finite(economics.quantity_sold) ?? finite(product.quantity_sold);
+    row.appendChild(tableCell(doc, qtySold == null ? '\u2014' : formatNumber(qtySold), 'is-derived'));
+    // L4 : la contribution totale du portefeuille est servie par le serveur (E5) ; aucun calcul côté navigateur.
+    const contribTotal = finite(economics.contribution_total_kmf) != null ? formatKmf(economics.contribution_total_kmf) : '\u2014';
     row.appendChild(tableCell(doc, contribTotal, 'is-derived is-contribution'));
     const menu = el(doc, 'button', 'kmc-cockpit-row-menu', '\u22ef');
     menu.type = 'button';
@@ -769,10 +777,6 @@
     note.dataset.cockpitFooterNote = '';
     info.appendChild(note);
     footer.appendChild(info);
-    const save = el(doc, 'button', 'kmc-cockpit-footer-save', '✓ Enregistrer maintenant');
-    save.type = 'button';
-    save.dataset.cockpitSaveAll = '';
-    footer.appendChild(save);
     return footer;
   }
 

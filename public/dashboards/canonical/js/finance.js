@@ -61,7 +61,7 @@
     metrics: {
       source: 'finance.metrics',
       pick: [
-        { key: 'ca-encaisse', label: 'CA encaissé' },
+        { key: 'ca-encaisse', label: 'Commandes payées — part hors avoir' },
         { key: 'cout-reel', label: 'Coût réel' },
         { key: 'marge', label: 'Marge consolidée' },
         { key: 'completude', label: 'Complétude coûts' },
@@ -74,7 +74,7 @@
       {
         id: 'trajectoire-financiere',
         title: 'Trajectoire financière',
-        description: 'CA encaissé, coût réel et marge consolidée par période. La couverture indique la part des commandes dont le coût est complet.',
+        description: 'Commandes payées (part hors avoir), coût réel et marge consolidée par période. La couverture indique la part des commandes dont le coût est complet.',
         type: 'table',
         source: 'finance.trend',
         columns: [

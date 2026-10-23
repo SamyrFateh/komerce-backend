@@ -170,7 +170,7 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     const metrics = commerce.projectMetrics(payload);
     expect(metrics['ca-encaisse'].value).toContain('XAF');
     expect(metrics['panier-moyen'].value).toContain('XAF');
-    expect(commerceDecision.metricItems(payload, commerce).find(item => item.key === 'ca-encaisse').label).toBe('Ventes payées');
+    expect(commerceDecision.metricItems(payload, commerce).find(item => item.key === 'ca-encaisse').label).toBe('Ventes payées (avoir inclus)');
     expect(commerceDecision.rankedProducts(payload, commerce)[0].value).toContain('XAF');
     expect(commerce.projectTopProducts(payload)[0].ca).toContain('XAF');
     expect(commerce.projectCategories(payload)[0].ca).toContain('XAF');
@@ -456,4 +456,16 @@ describe('Commerce — top produits cliquables vers la fiche Produit 360', () =>
     dates.forEach(d => expect(d).toEqual(['18/10/2026', 'Non disponible']));
     expect(commerceDecision.businessDayLabel('x')).toBe('Non disponible');
   });
+});
+
+test('L10 : aucun écran Finance/Pilotage n’affiche « CA encaissé » ; libellés Q3', () => {
+  const fs = require('fs');
+  const dir = require('path').join(__dirname, '../../public/dashboards/canonical/js');
+  ['finance.js', 'finance-decision.js', 'pilotage.js', 'commerce.js', 'commerce-decision.js'].forEach(f => {
+    expect(fs.readFileSync(require('path').join(dir, f), 'utf8')).not.toMatch(/CA encaissé/);
+  });
+  expect(fs.readFileSync(require('path').join(dir, 'finance-decision.js'), 'utf8')).toContain('Commandes payées — part hors avoir');
+  expect(fs.readFileSync(require('path').join(dir, 'finance-decision.js'), 'utf8')).toContain('Ni chiffre d’affaires comptable, ni encaissement attesté.');
+  expect(fs.readFileSync(require('path').join(dir, 'pilotage.js'), 'utf8')).toContain('Commandes payées — part hors avoir');
+  expect(fs.readFileSync(require('path').join(dir, 'commerce.js'), 'utf8')).toContain('Ventes payées (avoir inclus)');
 });
