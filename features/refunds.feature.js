@@ -62,6 +62,7 @@ module.exports = {
     services: [
       'services/refund-service.js',
       'services/refund-intent-ledger.js',
+      'services/refund-evidence-verifier.js',
     ],
     routes: [],
     tests: [
@@ -75,6 +76,7 @@ module.exports = {
       'tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js',
       'tests/unit/refund-service.test.js',
       'tests/unit/refund-intent-ledger.test.js',
+      'tests/unit/refund-evidence-verifier.test.js',
       'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js',
       'tests/unit/refund-stripe-txn-known-risk.test.js',
       'tests/unit/refunds-util.test.js',
@@ -130,6 +132,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'RC-5/RC-9 : vérification GET seule de la référence externe, capture, montant EUR et statut PSP. Toute preuve absente ou contradictoire interdit un succès implicite. Aucun writer financier nouveau.',
+      test: 'tests/unit/refund-evidence-verifier.test.js' },
     { statement: 'RC-5/RC-9 fondation : réservation durable avant PSP, clé de rejeu stable par UUID, refus des lignes refunds historiques, plafond de montant et exclusion des intentions non résolues — sans activer de paiement',
       test: 'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js' },
     { statement: 'RC-5/RC-9 : aucun remboursement externe ne sort du ledger de réservation, rollback et refus si paramètres de rejeu discordants ; statut processing/unknown non relançable',

@@ -245,6 +245,20 @@ async function refundCapture(captureId, { amountEur, reason, invoiceId, provider
   });
 }
 
+/**
+ * RC-9 — Read-only verification of a refund already issued by PayPal.
+ * Never creates or retries a refund. Only a trusted reconciliation caller
+ * may use the result as evidence; provider amount/capture must be checked.
+ */
+async function getRefund(refundId) {
+  if (typeof refundId !== 'string' || !/^[A-Za-z0-9_-]{3,127}$/.test(refundId)) {
+    const err = new Error('refundId PayPal invalide');
+    err.code = 'REFUND_PROVIDER_ID_INVALID';
+    throw err;
+  }
+  return _api('GET', `/v2/payments/refunds/${encodeURIComponent(refundId)}`);
+}
+
 // ─── 5. Verify Webhook Signature ─────────────────────────────────────────────
 
 /**
@@ -372,6 +386,7 @@ module.exports = {
   captureOrder,
   getOrder,
   refundCapture,
+  getRefund,
   verifyWebhookSignature,
   extractCaptureInfo,
   // Internals pour tests

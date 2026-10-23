@@ -221,6 +221,35 @@ describe('refundCapture', () => {
   });
 });
 
+// ─── getRefund : rapprochement lecture seule (RC-9) ────────────────────────
+
+describe('getRefund — aucune écriture PSP', () => {
+  test('utilise uniquement GET v2/payments/refunds et renvoie la preuve brute', async () => {
+    mockOAuthOnce();
+    const evidence = {
+      id: 'RF-EXAMPLE', status: 'COMPLETED',
+      amount: { currency_code: 'EUR', value: '25.00' },
+    };
+    mockFetchOnce(evidence);
+    const result = await paypal.getRefund('RF-EXAMPLE');
+    expect(result).toEqual(evidence);
+    const [url, args] = lastFetchCall();
+    expect(url).toContain('/v2/payments/refunds/RF-EXAMPLE');
+    expect(args.method).toBe('GET');
+    expect(args.body).toBeUndefined();
+    expect(args.headers['PayPal-Request-Id']).toBeUndefined();
+  });
+
+  test.each(['', '../captures/CAP', 'has space', 'a'])(
+    'refuse ID non fiable avant tout HTTP', async id => {
+      await expect(paypal.getRefund(id)).rejects.toMatchObject({
+        code: 'REFUND_PROVIDER_ID_INVALID',
+      });
+      expect(global.fetch).not.toHaveBeenCalled();
+    }
+  );
+});
+
 // ─── verifyWebhookSignature ─────────────────────────────────────────────────
 
 describe('verifyWebhookSignature', () => {
