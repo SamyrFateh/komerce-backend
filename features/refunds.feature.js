@@ -63,6 +63,7 @@ module.exports = {
       'services/refund-service.js',
       'services/refund-intent-ledger.js',
       'services/refund-evidence-verifier.js',
+      'services/refund-intent-reconciliation.js',
     ],
     routes: [],
     tests: [
@@ -77,6 +78,8 @@ module.exports = {
       'tests/unit/refund-service.test.js',
       'tests/unit/refund-intent-ledger.test.js',
       'tests/unit/refund-evidence-verifier.test.js',
+      'tests/unit/refund-intent-reconciliation.test.js',
+      'tests/e2e-api/refunds.intents-reconciliation.e2e.test.js',
       'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js',
       'tests/unit/refund-stripe-txn-known-risk.test.js',
       'tests/unit/refunds-util.test.js',
@@ -132,6 +135,10 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'RC-5/RC-9 : le rapprochement PSP relit la preuve hors transaction, verrouille ensuite commande puis intention, interdit changement de marché/capture/montant, ne marque confirmed que si preuve complète et ne modifie ni refunds ni orders',
+      test: 'tests/e2e-api/refunds.intents-reconciliation.e2e.test.js' },
+    { statement: 'RC-5/RC-9 : timeout PSP reste unknown, refus de capture/montant contradictoires, rejeu confirmed sans double effet et rollback en cas de conflit',
+      test: 'tests/unit/refund-intent-reconciliation.test.js' },
     { statement: 'RC-5/RC-9 : vérification GET seule de la référence externe, capture, montant EUR et statut PSP. Toute preuve absente ou contradictoire interdit un succès implicite. Aucun writer financier nouveau.',
       test: 'tests/unit/refund-evidence-verifier.test.js' },
     { statement: 'RC-5/RC-9 fondation : réservation durable avant PSP, clé de rejeu stable par UUID, refus des lignes refunds historiques, plafond de montant et exclusion des intentions non résolues — sans activer de paiement',
