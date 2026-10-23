@@ -63,11 +63,13 @@ test('population : Hub › Suivi › file, retour au suivi, onglet Suivi actif ;
   expect(h).toContain('from=preparation');
 });
 
-test('Commandes : vue de 1er niveau, onglet actif, aucun bouton retour', () => {
-  const h = html('?view=queue&tab=all', QUEUE);
-  expect(crumbs(h)).toBe('Hub > Commandes');
-  expect(back(h)).toBeNull();
-  expect(activeTab(h)).toBe('Commandes');
+test('L9a : l’onglet Commandes n’existe plus ; ?view=queue&tab=all redirige vers /admin/orders', () => {
+  const h = html('?view=overview', QUEUE);
+  expect(h).not.toContain('>Commandes<');
+  const hubApi = hub();
+  expect(hubApi.legacyOrdersRedirect('?view=queue&tab=all')).toBe('/admin/orders');
+  expect(hubApi.legacyOrdersRedirect('?view=queue&tab=to_prepare')).toBeNull();
+  expect(hubApi.legacyOrdersRedirect('')).toBeNull();
 });
 
 test('commande : retour à sa file d’origine, jamais au Suivi quand elle vient d’une file', () => {
@@ -77,8 +79,8 @@ test('commande : retour à sa file d’origine, jamais au Suivi quand elle vient
   expect(activeTab(fromQueue)).toBe('Suivi');
   const fromAll = html('?view=order&order=o-1&from=all', DETAIL);
   expect(crumbs(fromAll)).toBe('Hub > Commandes > KMC-0001');
-  expect(back(fromAll)).toEqual({ href:'/admin/hub-live?view=queue&tab=all', label:'← Retour à Commandes' });
-  expect(activeTab(fromAll)).toBe('Commandes');
+  expect(back(fromAll)).toEqual({ href:'/admin/orders', label:'← Retour à Commandes' });
+  expect(activeTab(fromAll)).toBe('Suivi');
   const direct = html('?view=order&order=o-1', DETAIL);
   expect(back(direct)).toEqual({ href:'/admin/hub-live?view=overview', label:'← Retour au suivi' });
 });
@@ -116,10 +118,11 @@ test('LIVE-02/07 : l’écran lit les endpoints en projection Live et affiche l�
   expect(src).toContain("/api/hub-dash/dashboard'"); // KPI : aucun contact, pas de projection nécessaire
 });
 
-test('Flux Hub par défaut ; Suivi, Commandes et Exécution restent accessibles', () => {
+test('Flux Hub par défaut ; Suivi et Exécution restent accessibles, sans onglet Commandes', () => {
   const h = html('', OVERVIEW);
   expect(activeTab(h)).toBe('Flux Hub');
-  ['Suivi', 'Commandes'].forEach((l) => expect(h).toContain('>' + l + '</a>'));
+  expect(h).toContain('>Suivi</a>');
+  expect(h).not.toContain('>Commandes</a>');
   expect(h).toContain('href="/admin/hub-live?view=overview"');
   expect(html('?view=overview', OVERVIEW)).toContain('Suivi');
 });

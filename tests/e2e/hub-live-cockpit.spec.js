@@ -111,18 +111,13 @@ test.describe('Cockpit Hub — navigation canonique', () => {
     await expect(page).toHaveURL(/view=queue.*tab=preparation/);
   });
 
-  test('Commandes : onglet de 1er niveau sans bouton retour, commande revient à Commandes', async ({ page }) => {
+  test('L9a : plus d’onglet Commandes ; l’ancienne URL ?view=queue&tab=all redirige vers /admin/orders', async ({ page }) => {
     await mountHub(page);
-    await page.locator('.kir-domain-nav a', { hasText:'Commandes' }).click();
-    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Commandes');
-    await expect(page.locator('.kir-back')).toHaveCount(0);
-    await page.locator('.lk-table a').first().click();
-    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Commandes');
-    await expect(page.locator('.kir-back')).toHaveText('← Retour à Commandes');
-    await page.locator('.kir-back').click();
-    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Commandes');
-    await page.locator('.kir-domain-nav a', { hasText:'Suivi' }).click();
-    await expect(page.locator('.kir-hero')).toHaveCount(1);
+    await expect(page.locator('.kir-domain-nav a', { hasText:'Commandes' })).toHaveCount(0);
+    await expect(page.locator('.kir-domain-nav a')).toHaveText(['Flux Hub', 'Suivi']);
+    await page.goto(`${page.url().split('/admin/')[0]}/admin/hub-live?view=queue&tab=all`);
+    await page.evaluate(() => window.KomerceCanonicalHubLive.mount({ root:document.getElementById('root') }));
+    await expect(page).toHaveURL(/\/admin\/orders$/);
   });
 
   test('pagination : plus anciens garde la file', async ({ page }) => {
