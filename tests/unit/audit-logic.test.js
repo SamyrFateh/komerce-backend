@@ -26,3 +26,57 @@ test('le rapport refuse de faire passer une suspicion pour un bug confirmé', ()
   expect(report).toContain('**Portée :**');
   expect(report).not.toContain('1 bug confirmé');
 });
+
+test('la lecture de données est transactionnelle READ ONLY, sans COMMIT', async () => {
+  const { readOnlyDataChecks } = require('../../scripts/audit-logic');
+  const sql = [];
+  const client = {
+    query: jest.fn(async (statement) => {
+      sql.push(statement);
+      return { rows: [] };
+    }),
+    release: jest.fn(),
+  };
+  const db = { connect: jest.fn().mockResolvedValue(client), pool: { end: jest.fn().mockResolvedValue() } };
+  const prior = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = 'postgres://explicit-readonly-contract';
+  try {
+    const results = await readOnlyDataChecks(db);
+    expect(results).toHaveLength(9);
+    expect(sql[0]).toBe('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    expect(sql[1]).toMatch(/^SET LOCAL statement_timeout/);
+    expect(sql.slice(2, -1).every(s => /^SELECT /i.test(s))).toBe(true);
+    expect(sql.at(-1)).toBe('ROLLBACK');
+    expect(sql).not.toContain('COMMIT');
+    expect(client.release).toHaveBeenCalledTimes(1);
+    expect(db.pool.end).toHaveBeenCalledTimes(1);
+  } finally {
+    if (prior === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = prior;
+  }
+});
+
+test('une requête SQL échouée laisse ROLLBACK et libère la connexion', async () => {
+  const { readOnlyDataChecks } = require('../../scripts/audit-logic');
+  const sql = [];
+  const client = {
+    query: jest.fn(async statement => {
+      sql.push(statement);
+      if (/^SELECT/.test(statement)) throw Error('statement timeout');
+      return { rows: [] };
+    }),
+    release: jest.fn(),
+  };
+  const db = { connect: async () => client, pool: { end: jest.fn().mockResolvedValue() } };
+  const prior = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = 'postgres://explicit-readonly-contract';
+  try {
+    await expect(readOnlyDataChecks(db)).rejects.toThrow('statement timeout');
+    expect(sql.at(-1)).toBe('ROLLBACK');
+    expect(client.release).toHaveBeenCalled();
+    expect(db.pool.end).toHaveBeenCalled();
+  } finally {
+    if (prior === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = prior;
+  }
+});

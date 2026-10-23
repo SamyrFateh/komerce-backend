@@ -114,6 +114,7 @@ module.exports = {
       'scripts/audit-backend-arch.js',
       'scripts/audit-logic.js',
       'scripts/lib/logic-detectors.js',
+      'scripts/lib/logic-data-detectors.js',
       'scripts/audit-komerce-arch-headers.js',
       'scripts/audit-sourcing.js',
       'scripts/backfill-boot-data.js',
@@ -367,6 +368,7 @@ module.exports = {
     tests: [
       'tests/unit/audit-logic.test.js',
       'tests/unit/logic-detectors.test.js',
+      'tests/unit/logic-data-detectors.test.js',
       'tests/unit/feature-invariant-check.test.js',
       'tests/unit/impact-check-security-conventions.test.js',
       'tests/unit/require-non-production.test.js',
@@ -545,6 +547,8 @@ module.exports = {
   authority: 'backend — ces fichiers sont consommés par toutes les features. Tout changement ici a un impact potentiel global.',
 
   invariants: [
+    { statement: 'audit:logic --data contrôle explicitement les neuf règles LD-01 à LD-07b sans écriture PostgreSQL, dans une transaction READ ONLY avec rollback systématique, et rend visible NON EXÉCUTÉ sans base',
+      test: 'tests/unit/logic-data-detectors.test.js' },
     { statement: 'le scan logique repère les motifs métiers risqués dans tous les fichiers applicatifs suivis, classe les détections comme suspicions statiques, signale toute nouveauté depuis le commit de base et ne confond jamais une absence de signal avec une certification métier',
       test: 'tests/unit/logic-detectors.test.js' },
     { statement: 'un accord humain Debt Zero ne vaut que pour un SHA exact publié et examiné : commentaire « DEBT-APPROVAL <sha> » de l’approbateur, PR pointant exactement sur ce SHA, aucune déduction par date de commit ; en local, l’accord en attente est un statut distinct (exit 3) qui laisse publier pour examen tandis que la CI reste bloquante',
