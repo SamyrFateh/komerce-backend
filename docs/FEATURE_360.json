@@ -19524,7 +19524,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 18,
+            "count": 20,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -19574,6 +19574,16 @@
               {
                 "declared": "dashboards/canonical/js/market-cash-control.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-cash-control.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-catalog.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-catalog.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-prompt.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-prompt.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19719,7 +19729,7 @@
             ]
           }
         },
-        "totalFiles": 35,
+        "totalFiles": 37,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

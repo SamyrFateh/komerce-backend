@@ -13781,6 +13781,20 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-catalog.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-catalog.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-prompt.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-prompt.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/js/market-access.js",
         "resolvedPath": "public/dashboards/canonical/js/market-access.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -46673,7 +46687,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2126
+        "filesObserved": 2128
       },
       "boutique": {
         "filesObserved": 214,
