@@ -126,3 +126,17 @@ test('Flux Hub par défaut ; Suivi et Exécution restent accessibles, sans ongle
   expect(h).toContain('href="/admin/hub-live?view=overview"');
   expect(html('?view=overview', OVERVIEW)).toContain('Suivi');
 });
+
+test('L9b : une commande livrée (collected) renvoie vers Order 360 avec retour Hub live ; les autres restent dans Hub live', () => {
+  const api = hub();
+  expect(api.deliveredOrder360Url({ reference:'KMC-0001', status:'collected' })).toBeNull(); // navigation absente : aucune redirection
+  const stub = { canOpenEntity360:() => true, withEntityReturnTo:(p, r, l) => `${p}?return_to=${r}&label=${l}` };
+  const withNav = (() => {
+    const context = { URLSearchParams, window:{ location:{ pathname:'/admin/hub-live', search:'' }, history:{ pushState:jest.fn() }, addEventListener:jest.fn(), KomerceCanonicalNavigation:stub } };
+    context.globalThis = context.window;
+    vm.runInNewContext(`${read('live-kit.js')}\n${read('hub-live.js')}`, Object.assign(context.window, { URLSearchParams, Date, Promise, Math, JSON, Number, String, Object, Array, Set, Map, Error, setInterval, clearInterval }));
+    return context.window.KomerceCanonicalHubLive;
+  })();
+  expect(withNav.deliveredOrder360Url({ reference:'KMC-0001', status:'collected' })).toBe('/admin/orders/KMC-0001?return_to=/admin/hub-live&label=Retour au Hub live');
+  expect(withNav.deliveredOrder360Url({ reference:'KMC-0001', status:'shipped' })).toBeNull();
+});
