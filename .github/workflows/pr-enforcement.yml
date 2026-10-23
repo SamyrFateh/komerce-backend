@@ -598,7 +598,7 @@ jobs:
       - name: Feature invariants — preuve sur base reconstruite (intégration + E2E API)
         env:
           BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
-        run: node scripts/feature-invariant-check.js --strict --run=db --base "$BASE_SHA"
+        run: node scripts/feature-invariant-check.js --strict --run=db --verbose --base "$BASE_SHA"
       - name: Integration DB proofs (targeted)
         if: needs.changes.outputs.integration_required == 'true' && steps.integration_scope.outputs.mode == 'targeted'
         env:
