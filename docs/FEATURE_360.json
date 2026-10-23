@@ -56,7 +56,7 @@
     "healthy": 35,
     "attention": 5,
     "blocked": 0,
-    "businessDependencies": 316,
+    "businessDependencies": 317,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -6171,6 +6171,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -19006,7 +19013,7 @@
             ]
           },
           "services": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "middleware/require-market-scope.js",
@@ -19039,6 +19046,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/market-operation-guard.js",
+                "resolvedPath": "services/market-operation-guard.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/market-scope-admin-service.js",
                 "resolvedPath": "services/market-scope-admin-service.js",
                 "status": "resolved-in-technical-graph"
@@ -19051,8 +19063,13 @@
             ]
           },
           "tests": {
-            "count": 26,
+            "count": 28,
             "files": [
+              {
+                "declared": "tests/e2e-api/market-operation-guard.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/market-operation-guard.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/currency-boundary.test.js",
                 "resolvedPath": "tests/integration/currency-boundary.test.js",
@@ -19169,6 +19186,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/market-operation-guard.test.js",
+                "resolvedPath": "tests/unit/market-operation-guard.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/market-operator-governance-gaps.test.js",
                 "resolvedPath": "tests/unit/market-operator-governance-gaps.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19186,7 +19208,7 @@
             ]
           }
         },
-        "totalFiles": 50,
+        "totalFiles": 53,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19298,6 +19320,13 @@
           ]
         },
         {
+          "consumer": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -19405,9 +19434,13 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 3,
+        "testOnlyRelations": 4,
         "compositionRootRelations": 0,
         "details": [
+          {
+            "to": "customs",
+            "family": "NON_RUNTIME_TEST"
+          },
           {
             "to": "dashboard",
             "family": "NON_RUNTIME_TEST"

@@ -98,9 +98,12 @@ module.exports = {
       'services/fx-engine-rates.js',
       'services/fx-observation-service.js',
       'services/market-lifecycle-service.js',
+      'services/market-operation-guard.js',
     ],
     tests: [
       'tests/unit/require-market-scope.test.js',
+      'tests/unit/market-operation-guard.test.js',
+      'tests/e2e-api/market-operation-guard.e2e.test.js',
       'tests/integration/fx-chain-postgres.test.js',
       'tests/integration/fx-authority-postgres.test.js',
       'tests/integration/fx-engine-rates-postgres.test.js',

@@ -67,3 +67,11 @@ describe('market-delegation catalog routes', () => {
     expect(mounts).toHaveLength(1);
   });
 });
+
+describe('L13 — garde Q2 sur la nouvelle exposition', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'routes/market-delegation-catalog.js'), 'utf8');
+  it('refuse une nouvelle exposition (ENABLED) hors marché actif, jamais un masquage', () => {
+    expect(src).toContain("assertMarketOperationAllowed(client, req.params.marketCode, 'catalog_exposure_enable')");
+    expect(src).toMatch(/body\.commercial_exposure === 'ENABLED'\) await assertMarketOperationAllowed/);
+  });
+});

@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 749,
-    "filesWithFullHeaders": 700,
+    "scannedCodeFiles": 750,
+    "filesWithFullHeaders": 701,
     "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 749,
+    "filesWithAnyHeaders": 750,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1851,
-    "edges": 9276,
+    "graphNodes": 1856,
+    "edges": 9288,
     "dbTables": 211,
-    "doctrines": 685,
-    "impactAreas": 206,
-    "unresolvedCodeEdges": 894,
+    "doctrines": 688,
+    "impactAreas": 207,
+    "unresolvedCodeEdges": 895,
     "dbWriteViaOverlapWarnings": 9,
     "multiWriterTables": 87
   },
@@ -71,6 +71,7 @@
     "external-provider-contracts": 1,
     "incident-management": 5,
     "market-autonomy": 4,
+    "markets": 1,
     "payments": 1,
     "refunds": 2,
     "supplier-connectivity": 4,
@@ -110,7 +111,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 433,
+    "service": 434,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,7 +122,7 @@
   "byCriticality": {
     "critical": 106,
     "medium": 152,
-    "high": 433,
+    "high": 434,
     "low": 58
   },
   "nodes": [
@@ -21458,6 +21459,53 @@
       "version": "2026-09"
     },
     {
+      "id": "services/market-operation-guard.js",
+      "file": "services/market-operation-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-operation-guard",
+      "domain": "markets",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_id_or_code",
+        "operation"
+      ],
+      "outputs": [
+        "allowed_or_typed_409_error"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js",
+        "routes/market-delegation-catalog.js",
+        "services/customs-shipment-service.js"
+      ],
+      "dbRead": [
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_executor"
+      ],
+      "doctrine": [
+        "market_status_matrix_q2",
+        "new_commitments_refused_when_not_active",
+        "existing_obligations_never_blocked"
+      ],
+      "impactAreas": [
+        "markets",
+        "pricing",
+        "catalog",
+        "customs"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/market-operator-provisioning.js",
       "file": "services/market-operator-provisioning.js",
       "type": "file",
@@ -39507,6 +39555,21 @@
       "doctrine": "amount_and_currency_are_frozen_across_cutover"
     },
     {
+      "id": "doctrine:market_status_matrix_q2",
+      "type": "doctrine",
+      "doctrine": "market_status_matrix_q2"
+    },
+    {
+      "id": "doctrine:new_commitments_refused_when_not_active",
+      "type": "doctrine",
+      "doctrine": "new_commitments_refused_when_not_active"
+    },
+    {
+      "id": "doctrine:existing_obligations_never_blocked",
+      "type": "doctrine",
+      "doctrine": "existing_obligations_never_blocked"
+    },
+    {
       "id": "doctrine:operator_market_scopes_is_market_owned_projection",
       "type": "doctrine",
       "doctrine": "operator_market_scopes_is_market_owned_projection"
@@ -41510,6 +41573,11 @@
       "id": "impact:market-control-plane",
       "type": "impact-area",
       "area": "market-control-plane"
+    },
+    {
+      "id": "impact:markets",
+      "type": "impact-area",
+      "area": "markets"
     },
     {
       "id": "impact:pickup",
@@ -75129,6 +75197,78 @@
       "label": "catalog"
     },
     {
+      "from": "services/market-operation-guard.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/market-operation-guard.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "routes/market-delegation-catalog.js",
+      "to": "services/market-operation-guard.js",
+      "type": "uses",
+      "label": "routes/market-delegation-catalog.js"
+    },
+    {
+      "from": "services/customs-shipment-service.js",
+      "to": "services/market-operation-guard.js",
+      "type": "uses",
+      "label": "services/customs-shipment-service.js"
+    },
+    {
+      "from": "services/market-operation-guard.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-operation-guard.js",
+      "to": "doctrine:market_status_matrix_q2",
+      "type": "doctrine",
+      "label": "market_status_matrix_q2"
+    },
+    {
+      "from": "services/market-operation-guard.js",
+      "to": "doctrine:new_commitments_refused_when_not_active",
+      "type": "doctrine",
+      "label": "new_commitments_refused_when_not_active"
+    },
+    {
+      "from": "services/market-operation-guard.js",
+      "to": "doctrine:existing_obligations_never_blocked",
+      "type": "doctrine",
+      "label": "existing_obligations_never_blocked"
+    },
+    {
+      "from": "services/market-operation-guard.js",
+      "to": "impact:markets",
+      "type": "impact",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-operation-guard.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/market-operation-guard.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/market-operation-guard.js",
+      "to": "impact:customs",
+      "type": "impact",
+      "label": "customs"
+    },
+    {
       "from": "services/market-operator-provisioning.js",
       "to": "services/market-delegation-service.js",
       "type": "depends",
@@ -104702,6 +104842,7 @@
         "services/market-commercial-price-service.js",
         "services/market-cost-attribution-service.js",
         "services/market-local-price-activation-service.js",
+        "services/market-operation-guard.js",
         "services/pricing-market-corridor.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
@@ -107463,7 +107604,8 @@
         "impact:delegation",
         "impact:market",
         "middleware/auth.js",
-        "services/market-delegation-catalog-service.js"
+        "services/market-delegation-catalog-service.js",
+        "services/market-operation-guard.js"
       ]
     },
     "routes/market-delegation-client-case.js": {
@@ -114406,6 +114548,7 @@
         "services/cost-allocation/canonical-margin-writer.js",
         "services/cost-allocation/index.js",
         "services/documents/customs-invoice.js",
+        "services/market-operation-guard.js",
         "services/order-status-machine.js",
         "services/parcel-mutation-service.js",
         "services/shipping-customs-workspace.js"
@@ -119302,6 +119445,52 @@
         "impact:pricing",
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js"
+      ]
+    },
+    "services/market-operation-guard.js": {
+      "role": "market-operation-guard",
+      "domain": "markets",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js",
+        "routes/market-delegation-catalog.js",
+        "services/customs-shipment-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "market_status_matrix_q2",
+        "new_commitments_refused_when_not_active",
+        "existing_obligations_never_blocked"
+      ],
+      "impactAreas": [
+        "markets",
+        "pricing",
+        "catalog",
+        "customs"
+      ],
+      "mustCheck": [
+        "db:markets",
+        "doctrine:existing_obligations_never_blocked",
+        "doctrine:market_status_matrix_q2",
+        "doctrine:new_commitments_refused_when_not_active",
+        "impact:catalog",
+        "impact:customs",
+        "impact:markets",
+        "impact:pricing",
+        "routes/admin-pricing-workspace.js",
+        "routes/market-delegation-catalog.js",
+        "services/customs-shipment-service.js"
       ]
     },
     "services/market-operator-provisioning.js": {
@@ -138074,6 +138263,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/market-operation-guard.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "scripts/provision-market-operator.js",

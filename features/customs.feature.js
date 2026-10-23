@@ -183,6 +183,7 @@ module.exports = {
       'documents (facture douane generee)',
       'auth',
       'economic-engine',
+      'market (garde Q2 market-operation-guard : nouvelle expédition refusée hors marché actif)',
     ],
   },
 

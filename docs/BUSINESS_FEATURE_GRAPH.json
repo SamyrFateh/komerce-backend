@@ -13542,9 +13542,30 @@
       },
       {
         "feature": "market",
+        "category": "services",
+        "declared": "services/market-operation-guard.js",
+        "resolvedPath": "services/market-operation-guard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market",
         "category": "tests",
         "declared": "tests/unit/require-market-scope.test.js",
         "resolvedPath": "tests/unit/require-market-scope.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/market-operation-guard.test.js",
+        "resolvedPath": "tests/unit/market-operation-guard.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-operation-guard.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-operation-guard.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -27224,6 +27245,12 @@
         "resolved": true
       },
       {
+        "from": "customs",
+        "to": "market",
+        "raw": "market (garde Q2 market-operation-guard : nouvelle expédition refusée hors marché actif)",
+        "resolved": true
+      },
+      {
         "from": "dashboard",
         "to": "shared-cart",
         "raw": "shared-cart (suppression des paniers utilisateur via API interne lifecycle-owned)",
@@ -33970,6 +33997,22 @@
       },
       {
         "from": "customs",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/customs-shipment-service.js",
+                "targetFile": "services/market-operation-guard.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "customs",
         "to": "orders",
         "channels": [
           {
@@ -36847,6 +36890,10 @@
                 "targetFile": "utils/currency.js"
               },
               {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "services/market-operation-guard.js"
+              },
+              {
                 "sourceFileId": "routes/admin-finance-config.js",
                 "targetFile": "services/fx-observation-service.js"
               }
@@ -39400,6 +39447,22 @@
       },
       {
         "from": "market",
+        "to": "customs",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/e2e-api/market-operation-guard.e2e.test.js",
+                "targetFile": "services/customs-shipment-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "market",
         "to": "dashboard",
         "channels": [
           {
@@ -40342,6 +40405,10 @@
               {
                 "sourceFileId": "services/market-operator-provisioning.js",
                 "targetFile": "services/market-scope-admin-service.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-catalog.js",
+                "targetFile": "services/market-operation-guard.js"
               },
               {
                 "sourceFileId": "tests/unit/market-operator-provisioning.test.js",
@@ -46716,7 +46783,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2131
+        "filesObserved": 2134
       },
       "boutique": {
         "filesObserved": 214,
@@ -46752,7 +46819,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 20,
-      "NON_RUNTIME_TEST": 18,
+      "NON_RUNTIME_TEST": 19,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -47078,6 +47145,21 @@
       },
       {
         "from": "market",
+        "to": "customs",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "market",
         "to": "dashboard",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
@@ -47341,7 +47423,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 7,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 8,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
@@ -49958,8 +50040,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 645,
-        "technicalNodesOwned": 645,
+        "technicalNodesTotal": 646,
+        "technicalNodesOwned": 646,
         "technicalOrphans": 0
       },
       "dash": {
@@ -50178,6 +50260,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "market -> customs",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market\" vers \"customs\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "market -> dashboard",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market\" vers \"dashboard\""
       },
@@ -50372,9 +50459,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 49,
+      "expectedTopology": 50,
       "generatorLimitations": 12,
-      "classifiedCandidates": 61
+      "classifiedCandidates": 62
     }
   }
 }
