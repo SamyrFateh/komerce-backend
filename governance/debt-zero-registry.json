@@ -4,6 +4,7 @@
   "files": {
     "governance/business-graph-drift-baseline.json": { "kind": "numeric-map", "path": "baseline" },
     "governance/test-exemptions.json": { "kind": "object-keys" },
+    "governance/writer-not-owner-debt.json": { "kind": "identity-array", "path": "entries", "identity": ["table", "writer"] },
     "governance/migration-slot-exemptions.json": { "kind": "entry-file-lists" },
     "governance/migration-guard-exemptions.json": { "kind": "nested-file-lists", "groups": ["no_prefix"] },
     "governance/feature-guard-test-coverage-exemptions.json": { "kind": "entry-file-lists" },

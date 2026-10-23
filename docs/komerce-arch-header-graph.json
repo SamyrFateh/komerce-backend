@@ -21,13 +21,13 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1856,
-    "edges": 9288,
+    "edges": 9290,
     "dbTables": 211,
     "doctrines": 688,
     "impactAreas": 207,
     "unresolvedCodeEdges": 895,
-    "dbWriteViaOverlapWarnings": 9,
-    "multiWriterTables": 87
+    "dbWriteViaOverlapWarnings": 11,
+    "multiWriterTables": 88
   },
   "byDomain": {
     "infrastructure": 24,
@@ -21150,6 +21150,7 @@
         "market_delegation_audit"
       ],
       "dbWrite": [
+        "assignment_memberships",
         "market_team_invitations"
       ],
       "dbWriteVia": [
@@ -21175,7 +21176,8 @@
         "team",
         "authorization"
       ],
-      "version": "2026-10"
+      "version": "2026-10",
+      "dbWriteViaOverlapWarning": "services/market-delegation-team-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> assignment_memberships"
     },
     {
       "id": "services/market-delivery-proof-service.js",
@@ -23396,7 +23398,9 @@
         "orders",
         "signals"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "signals"
+      ],
       "dbWriteVia": [
         {
           "via": "signal-service",
@@ -23417,7 +23421,8 @@
         "decision-signals",
         "finance"
       ],
-      "version": "2026-10"
+      "version": "2026-10",
+      "dbWriteViaOverlapWarning": "services/order-financial-closure-signal.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> signals"
     },
     {
       "id": "services/order-fx-snapshot.js",
@@ -74642,6 +74647,12 @@
     },
     {
       "from": "services/market-delegation-team-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-write",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/market-delegation-team-service.js",
       "to": "db:market_team_invitations",
       "type": "db-write",
       "label": "market_team_invitations"
@@ -78359,6 +78370,12 @@
       "from": "services/order-financial-closure-signal.js",
       "to": "db:signals",
       "type": "db-read",
+      "label": "signals"
+    },
+    {
+      "from": "services/order-financial-closure-signal.js",
+      "to": "db:signals",
+      "type": "db-write",
       "label": "signals"
     },
     {
@@ -119110,6 +119127,7 @@
         "market_delegation_audit"
       ],
       "dbWrite": [
+        "assignment_memberships",
         "market_team_invitations"
       ],
       "dbWriteVia": [
@@ -121390,7 +121408,9 @@
         "orders",
         "signals"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "signals"
+      ],
       "dbWriteVia": [
         {
           "via": "signal-service",
@@ -133961,6 +133981,8 @@
   "dbWriteViaOverlapWarnings": [
     "routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates",
     "services/customs-shipment-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> order_item_real_cost_allocations",
+    "services/market-delegation-team-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> assignment_memberships",
+    "services/order-financial-closure-signal.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> signals",
     "services/pickup-collection-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> pickup_print_tokens, pickup_reveal_codes, scans",
     "services/pickup-exceptional-collection-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> alerts",
     "services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders",
@@ -134237,6 +134259,18 @@
       ]
     },
     {
+      "table": "signals",
+      "writerCount": 6,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/agent-action-center.js",
+        "services/action-center-agent-scope.js",
+        "services/order-financial-closure-signal.js",
+        "services/signal-admin-service.js",
+        "services/signal-service.js"
+      ]
+    },
+    {
       "table": "supplier_execution_payments",
       "writerCount": 6,
       "writers": [
@@ -134302,17 +134336,6 @@
         "services/shared-cart-engine.js",
         "services/shared-cart-lifecycle.js",
         "services/shared-cart-queries.js"
-      ]
-    },
-    {
-      "table": "signals",
-      "writerCount": 5,
-      "writers": [
-        "bootstrap/crons.js",
-        "routes/agent-action-center.js",
-        "services/action-center-agent-scope.js",
-        "services/signal-admin-service.js",
-        "services/signal-service.js"
       ]
     },
     {
@@ -134544,6 +134567,14 @@
         "routes/admin/system.js",
         "routes/wallet.js",
         "services/wallet-service.js"
+      ]
+    },
+    {
+      "table": "assignment_memberships",
+      "writerCount": 2,
+      "writers": [
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
       ]
     },
     {

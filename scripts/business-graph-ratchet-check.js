@@ -96,6 +96,26 @@ for (const w of warns) {
   categoryOf[key] = category;
 }
 
+// ── 2b. Dette WRITER-NOT-OWNER nominative (governance/writer-not-owner-debt.json) ──
+// Un compte seul laisserait passer une substitution (une dette résorbée, une autre
+// introduite, total inchangé). Chaque identité table<-writer doit figurer au registre,
+// toute entrée résolue doit en être retirée, et la baseline égale le registre.
+const LEDGER_FILE = path.join(ROOT, 'governance', 'writer-not-owner-debt.json');
+const ledgerFailures = [];
+{
+  const ledger = fs.existsSync(LEDGER_FILE) ? (JSON.parse(fs.readFileSync(LEDGER_FILE, 'utf8')).entries || []) : [];
+  const ledgerIds = new Set(ledger.map(e => `${e.table}<-${e.writer}`));
+  const currentIds = new Set();
+  for (const w of warns.filter(x => x.type === 'WRITER-NOT-OWNER')) {
+    const m = /écrite par (.+)$/.exec(String(w.msg || ''));
+    for (const writer of (m ? m[1].split(/\s*,\s*/) : ['?'])) currentIds.add(`${w.ref}<-${writer.trim()}`);
+  }
+  for (const id of [...currentIds].sort()) if (!ledgerIds.has(id)) ledgerFailures.push(`${id} : écriture hors owner absente de ${path.relative(ROOT, LEDGER_FILE)}`);
+  for (const id of [...ledgerIds].sort()) if (!currentIds.has(id)) ledgerFailures.push(`${id} : résolue — retirer l'entrée et baisser WRITER-NOT-OWNER::KNOWN_DEBT`);
+  const declared = Object.entries(baseline).filter(([k]) => k.startsWith('WRITER-NOT-OWNER::')).reduce((a, [, v]) => a + v, 0);
+  if (declared !== ledger.length) ledgerFailures.push(`baseline WRITER-NOT-OWNER (${declared}) ≠ entrées du registre (${ledger.length})`);
+}
+
 const allKeys = new Set([...Object.keys(countByKey), ...Object.keys(baseline)]);
 const rows = [];
 let hasFailure = false;
@@ -143,8 +163,12 @@ const totalCurrent = warns.length;
 const totalBase    = Object.values(baseline).reduce((a, b) => a + b, 0);
 console.log(`\n${C.dim}Dette/drift ratchetté : ${totalCurrent} (baseline totale ${totalBase}). Hors warning : ${(graph.drifts.expectedTopology || []).length} topologie(s) attendue(s), ${(graph.drifts.generatorLimitations || []).length} limite(s) générateur.${C.r}`);
 
-if (hasFailure) {
-  console.log(`\n${C.red}${C.bld}✖ business-graph:ratchet-check ÉCHEC — nouveau drift au-dessus de la baseline type::catégorie.${C.r}`);
+if (ledgerFailures.length) {
+  console.log(`\n${C.bld}Dette WRITER-NOT-OWNER nominative${C.r}`);
+  for (const f of ledgerFailures) console.log(`  ${C.red}✖${C.r} ${f}`);
+}
+if (hasFailure || ledgerFailures.length) {
+  console.log(`\n${C.red}${C.bld}✖ business-graph:ratchet-check ÉCHEC — ${hasFailure ? 'nouveau drift au-dessus de la baseline type::catégorie' : 'registre nominatif WRITER-NOT-OWNER désaligné'}.${C.r}`);
   process.exit(1);
 }
 console.log(`\n${C.grn}${C.bld}✔ business-graph:ratchet-check OK — aucune dette nouvelle au-dessus de la baseline type::catégorie.${C.r}`);

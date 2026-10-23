@@ -84,7 +84,7 @@ module.exports = {
 
   db: {
     tables: [
-      'signals: RW',
+      'signals: RW!',
     ],
   },
 

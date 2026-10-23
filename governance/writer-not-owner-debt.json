@@ -1,0 +1,77 @@
+{
+  "_doctrine": "Registre nominatif de la dette WRITER-NOT-OWNER (une feature écrit la table d'un autre lifecycle owner). Déclarer une écriture dans db.tables la rend VISIBLE, jamais AUTORISÉE : chaque entrée est une dette traçable, avec statut et correction. scripts/business-graph-ratchet-check.js exige que chaque drift WRITER-NOT-OWNER du graphe figure ici (identité table + writer), qu'aucune entrée ne soit résolue sans être retirée, et que la baseline numérique égale le nombre d'entrées : le cliquet ne peut que descendre. Registre suivi par Debt Zero (identity-array) : toute nouvelle identité exige un accord humain sur le SHA exact.",
+  "entries": [
+    {
+      "table": "order_items",
+      "writer": "logistics",
+      "owner": "orders",
+      "sites": ["services/scan-engine.js#syncOrderFromParcels"],
+      "columns": ["qty_allocated", "qty_packed", "qty_shipped", "qty_received", "qty_collected"],
+      "reason": "projection des quantités physiques par ligne, recalculée depuis parcel_items à chaque scan",
+      "side_effects": "alimente la transition de statut de la commande (collected) via transitionOrderStatus ; c'est le point exact du risque de clôture R1 (commande collected avec une ligne hors colis)",
+      "status": "dette à résorber",
+      "risk": "P1 — clôture fonctionnellement fausse (R1 / RC-2)",
+      "correction": "service owner orders appliquant la couverture des lignes (lot B2) ; au minimum, propriété de colonne déclarée dans COLUMN_OWNERSHIP"
+    },
+    {
+      "table": "products",
+      "writer": "logistics",
+      "owner": "catalog",
+      "sites": ["services/hub-operations.js#recordVolume"],
+      "columns": ["volume_cm3", "repack_volume_cm3"],
+      "reason": "mesure physique au Hub (volume réel, volume après repack) prescrite par le système",
+      "side_effects": "alimente la ventilation du fret au volume, donc les coûts réels et la marge",
+      "status": "délégation légitime à formaliser",
+      "risk": "P2 — mesure écrite sans validation du catalogue ; effet sur les coûts",
+      "correction": "déclarer logistics propriétaire de ces colonnes physiques (COLUMN_OWNERSHIP) ou exposer une API catalog dédiée"
+    },
+    {
+      "table": "orders",
+      "writer": "economic-engine",
+      "owner": "orders",
+      "sites": ["services/cost-allocation/canonical-margin-writer.js#applyCanonicalMargin", "services/simulation-scope-service.js#assignOrderSimulationScope"],
+      "columns": ["margin_real_pct", "margin_alert", "sourcing_blocked", "simulation_scope"],
+      "reason": "cache dérivé de la marge canonique ; périmètre de simulation figé une fois posé (événement order_cost_entry_events)",
+      "side_effects": "sourcing_blocked n'est que lu (admin, statut, ombre) : aucune garde métier trouvée qui en dépende ; simulation_scope immuable une fois posé",
+      "status": "délégation légitime à formaliser",
+      "risk": "P3 — colonnes dérivées sans décision de cycle de vie",
+      "correction": "déclarer economic-engine propriétaire de ces colonnes dérivées (COLUMN_OWNERSHIP)"
+    },
+    {
+      "table": "order_item_real_cost_allocations",
+      "writer": "customs",
+      "owner": "economic-engine",
+      "sites": ["services/customs-shipment-service.js#deleteShipment", "services/customs-shipment-service.js#deactivateShipment"],
+      "columns": ["*"],
+      "reason": "retirer la ventilation d'une expédition douane supprimée (pending) ou désactivée, avant revente",
+      "side_effects": "propagateCostDouane recalcule le coût réel et la marge des commandes liées ; la même suppression existe aussi dans cost-allocation/allocate.js et transport-cost-allocation.js",
+      "status": "dette à résorber",
+      "risk": "P2 — suppression de faits de coût hors owner, sans journal propre de l'allocation",
+      "correction": "fonction owner unique dans cost-allocation (ex. clearShipmentAllocations) appelée par customs et transport"
+    },
+    {
+      "table": "sourcing_candidates",
+      "writer": "catalog",
+      "owner": "sourcing",
+      "sites": ["services/suppliers/catalog-import-json.js#stageCandidate"],
+      "columns": ["*"],
+      "reason": "l'import catalogue JSON insère directement ses candidats",
+      "side_effects": "contourne la frontière owner déclarée par la carte sourcing (sourcing-candidate-import-service#upsertCandidateFromCatalogImport) ; dédoublonnage et provenance potentiellement divergents (non vérifié)",
+      "status": "dette à résorber",
+      "risk": "P2 — contournement d'une frontière owner déclarée",
+      "correction": "déléguer l'insertion à sourcing-candidate-import-service"
+    },
+    {
+      "table": "signals",
+      "writer": "orders",
+      "owner": "decision-signals",
+      "sites": ["services/order-financial-closure-signal.js#generateFinancialCloseSignals"],
+      "columns": ["status", "resolved_at", "snoozed_until", "updated_at"],
+      "reason": "résoudre les signaux de clôture financière qui ne sont plus en attente",
+      "side_effects": "UPDATE direct alors que le header annonce signal-service ; sémantique différente d'autoResolveSignals (pas de filtre market_id, clause NOT EXISTS sur orders)",
+      "status": "dette à résorber",
+      "risk": "P3 — résolution de signaux hors service owner",
+      "correction": "passer par signal-service (autoResolveSignals avec la portée exacte)"
+    }
+  ]
+}

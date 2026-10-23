@@ -82,3 +82,10 @@ test('une panne de lecture est non fatale et rapportée', async () => {
   mockQuery.mockRejectedValueOnce(new Error('db down'));
   expect(await producer.generateFinancialCloseSignals()).toEqual({ generated: 0, error: 'db down' });
 });
+
+describe('en-tête @komerce-arch — mode d’accès (Lot A2)', () => {
+  test('l’UPDATE direct de signals est déclaré en @db-write (en plus de la délégation signal-service)', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/order-financial-closure-signal.js'), 'utf8');
+    expect(src).toMatch(/@db-write\s+signals\b/);
+  });
+});

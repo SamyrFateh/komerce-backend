@@ -9,7 +9,7 @@
  * @depends       services/market-delegation-service.js, crypto
  * @used-by       routes/market-delegation-team.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, users, market_team_invitations, market_delegation_audit
- * @db-write      market_team_invitations
+ * @db-write      assignment_memberships, market_team_invitations
  * @db-write-via:market-delegation-service assignment_memberships, membership_capabilities, market_delegation_audit
  * @db-txn        caller-owned
  * @doctrine      team_authority_is_capability_based, invitation_revalidated_on_acceptance

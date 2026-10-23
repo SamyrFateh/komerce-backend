@@ -164,4 +164,12 @@ describe('debt-zero-gate', () => {
     expect(missing).toEqual([]);
   });
 
+  test('le workflow fournit le numéro de la PR au contrôle humain Debt Zero', () => {
+    const workflow = fs.readFileSync(path.join(__dirname, '../../.github/workflows/pr-enforcement.yml'), 'utf8');
+    const step = workflow.match(/- name: Debt Zero — forbid baseline and exemption growth\n([\s\S]*?)\n\s*- name:/);
+    expect(step).not.toBeNull();
+    expect(step[1]).toContain('PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}');
+    expect(step[1]).toContain('node scripts/debt-zero-gate.js');
+  });
+
 });
