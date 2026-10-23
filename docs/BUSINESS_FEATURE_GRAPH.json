@@ -5311,6 +5311,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/pilotage.js",
+        "resolvedPath": "public/dashboards/canonical/js/pilotage.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/operations-decision.js",
         "resolvedPath": "public/dashboards/canonical/js/operations-decision.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5411,6 +5418,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/admin-context.js",
         "resolvedPath": "public/dashboards/canonical/js/admin-context.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/business-date.js",
+        "resolvedPath": "public/dashboards/canonical/js/business-date.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5656,6 +5670,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/pricing-economic-cockpit.js",
         "resolvedPath": "public/dashboards/canonical/js/pricing-economic-cockpit.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/pricing-structure-event-panel.js",
+        "resolvedPath": "public/dashboards/canonical/js/pricing-structure-event-panel.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -34295,6 +34316,14 @@
                 "targetFile": "services/economic-config.js"
               },
               {
+                "sourceFileId": "services/client-360.js",
+                "targetFile": "services/simulation-scope-service.js"
+              },
+              {
+                "sourceFileId": "services/client-index.js",
+                "targetFile": "services/simulation-scope-service.js"
+              },
+              {
                 "sourceFileId": "services/dashboard-commerce.js",
                 "targetFile": "services/simulation-scope-service.js"
               },
@@ -46687,7 +46716,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2128
+        "filesObserved": 2131
       },
       "boutique": {
         "filesObserved": 214,
