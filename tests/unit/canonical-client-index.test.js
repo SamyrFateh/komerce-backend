@@ -144,4 +144,9 @@ test('L12a : les téléphones de la liste sont masqués par défaut et révélab
   expect(masked.textContent).toBe('•••• 4567');
   expect(reveal.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
   expect(reveal.setAttribute).toHaveBeenCalledWith('aria-expanded', 'false');
+  reveal.addEventListener.mock.calls.find(([event]) => event === 'click')[1]();
+  expect(masked.textContent).toBe('+2691234567');
+  expect(reveal.textContent).toBe('Masquer');
+  reveal.addEventListener.mock.calls.find(([event]) => event === 'click')[1]();
+  expect(masked.textContent).toBe('•••• 4567');
 });
