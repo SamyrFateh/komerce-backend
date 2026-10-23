@@ -81,7 +81,7 @@
     const nav = doc.createElement('nav');
     nav.className = 'kmc-entity-nav';
     const links = [
-      ['/admin/operations', '← Opérations'],
+      ['/admin/operations', 'Opérations'],
       ['/admin/pilotage', 'Pilotage'],
       ['/admin/finance', 'Finance'],
     ];
