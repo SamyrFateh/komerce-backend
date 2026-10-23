@@ -20,6 +20,8 @@ const arg = flag => { const i = argv.indexOf(flag); return i >= 0 ? argv[i + 1] 
 const BASE = arg('--base') || process.env.BASE_SHA;
 const HEAD = arg('--head') || process.env.HEAD_SHA || 'HEAD';
 const APPROVER = process.env.DEBT_APPROVER || 'SamyrFateh';
+const LOCAL = process.argv.includes('--local');
+const PENDING_APPROVAL_EXIT = 3;
 
 function git(args, allowFail = false) {
   const r = cp.spawnSync('git', args, { encoding: 'utf8' });
@@ -226,8 +228,20 @@ function registryForComparison(base, head, failures) {
   return b || h; // bootstrap unique si main n'a pas encore le registre
 }
 
+// L'accord porte sur un SHA exact, jamais sur une date : la date d'un commit est
+// fixée par son auteur (GIT_COMMITTER_DATE) et ne prouve pas l'antériorité.
+const APPROVAL_RE = /^DEBT-APPROVAL\s+([0-9a-f]{12,40})$/i;
+
+/** SHA approuvé par le commentaire (première ligne « DEBT-APPROVAL <sha> »), sinon null. */
 function parseApprovalSignal(body) {
-  return String(body || '').trim().split(/\r?\n/)[0]?.trim() === 'DEBT-APPROVAL';
+  const first = String(body || '').trim().split(/\r?\n/)[0]?.trim() || '';
+  const m = APPROVAL_RE.exec(first);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/** L'accord vaut seulement pour le HEAD exact (préfixe ≥ 12 caractères). */
+function approvalMatchesHead(approvedSha, head) {
+  return Boolean(approvedSha && head && String(head).toLowerCase().startsWith(approvedSha));
 }
 
 function parseApprovalContext(body) {
@@ -262,17 +276,16 @@ async function findHumanApproval(head) {
   const pr = process.env.PR_NUMBER || process.env.GITHUB_PR_NUMBER || extractPrFromRef(process.env.GITHUB_REF);
   if (!repo || !pr) return null;
 
-  const [comments, reviews, prMeta, commitMeta] = await Promise.all([
+  const [comments, reviews, prMeta] = await Promise.all([
     githubGet(`/repos/${repo}/issues/${pr}/comments?per_page=100`),
     githubGet(`/repos/${repo}/pulls/${pr}/reviews?per_page=100`),
     githubGet(`/repos/${repo}/pulls/${pr}`),
-    githubGet(`/repos/${repo}/commits/${head}`),
   ]);
 
   const context = parseApprovalContext(prMeta?.body);
   if (!context) return null;
-  const headAt = Date.parse(commitMeta?.commit?.committer?.date || commitMeta?.commit?.author?.date || '');
-  if (!Number.isFinite(headAt)) return null;
+  // Contenu publié = contenu examiné : la PR doit pointer exactement sur ce HEAD.
+  if (!prMeta?.head?.sha || prMeta.head.sha !== head) return null;
 
   const entries = [...comments, ...reviews].sort((a, b) => {
     const at = Date.parse(a?.created_at || a?.submitted_at || '') || 0;
@@ -280,10 +293,10 @@ async function findHumanApproval(head) {
     return at - bt;
   });
   for (const entry of entries.reverse()) {
-    if (entry?.user?.login !== APPROVER || !parseApprovalSignal(entry.body)) continue;
-    const approvedAt = Date.parse(entry?.created_at || entry?.submitted_at || '');
-    if (!Number.isFinite(approvedAt) || approvedAt < headAt) continue;
-    return { author: entry.user.login, commentId: entry.id, approvedAt, ...context };
+    if (entry?.user?.login !== APPROVER) continue;
+    const approvedSha = parseApprovalSignal(entry.body);
+    if (!approvalMatchesHead(approvedSha, head)) continue;
+    return { author: entry.user.login, commentId: entry.id, approvedSha, ...context };
   }
   return null;
 }
@@ -310,16 +323,18 @@ async function main() {
   let approval = null;
   try { approval = await findHumanApproval(result.head); } catch (e) { console.error(`\n  Validation humaine non vérifiable: ${e.message}`); }
   if (approval) {
-    console.log(`\n✔ Exception approuvée humainement par ${approval.author} pour HEAD ${result.head}.`);
+    console.log(`\n✔ Exception approuvée humainement par ${approval.author} pour le SHA exact ${result.head}.`);
     console.log(`  Explication : ${approval.explanation}`);
     console.log(`  Justification : ${approval.justification}\n`);
     return;
   }
   console.error(`\n✖ Blocage Debt Zero. Validation humaine requise de ${APPROVER}.`);
-  console.error('\n  Commenter simplement : DEBT-APPROVAL');
-  console.error('  La PR doit contenir Explication: et Justification:.');
-  console.error('  Tout nouveau commit postérieur à l’accord invalide automatiquement cette validation.\n');
-  process.exit(1);
+  console.error(`\n  Après examen du contenu publié, commenter sur la PR : DEBT-APPROVAL ${result.head}`);
+  console.error('  La PR doit contenir Explication: et Justification:, et pointer exactement sur ce SHA.');
+  console.error('  L’accord ne vaut que pour ce SHA : tout autre commit exige un nouvel accord.\n');
+  // --local (pr:preflight) : l'accord ne peut exister qu'après publication. Code 3 =
+  // « tout est vert sauf l'accord humain » ; la CI (sans --local) reste bloquante (1).
+  process.exit(LOCAL ? 3 : 1);
 }
 
 if (require.main === module) main().catch(e => { console.error(`✖ debt-zero-gate: ${e.message}`); process.exit(1); });
@@ -333,6 +348,8 @@ module.exports = {
   numericMapGrowth,
   objectKeyGrowth,
   parseApprovalSignal,
+  approvalMatchesHead,
+  PENDING_APPROVAL_EXIT,
   parseApprovalContext,
   registryForComparison,
   stableStringify,

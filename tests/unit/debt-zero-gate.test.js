@@ -9,6 +9,8 @@ const {
   numericMapGrowth,
   objectKeyGrowth,
   parseApprovalSignal,
+  approvalMatchesHead,
+  PENDING_APPROVAL_EXIT,
   parseApprovalContext,
   stableStringify,
 } = require('../../scripts/debt-zero-gate');
@@ -121,10 +123,30 @@ describe('debt-zero-gate', () => {
       .toEqual(["'scripts/fix-schema.js'"]);
   });
 
-  test('parseApprovalSignal accepte uniquement le geste simplifié', () => {
-    expect(parseApprovalSignal('DEBT-APPROVAL')).toBe(true);
-    expect(parseApprovalSignal('DEBT-APPROVAL\nmerci')).toBe(true);
-    expect(parseApprovalSignal('DEBT-APPROVAL abc')).toBe(false);
+  test('parseApprovalSignal exige un SHA explicite (≥ 12 caractères hexadécimaux)', () => {
+    expect(parseApprovalSignal('DEBT-APPROVAL')).toBeNull();
+    expect(parseApprovalSignal('DEBT-APPROVAL abc')).toBeNull();
+    expect(parseApprovalSignal('DEBT-APPROVAL 5d24dcd7c')).toBeNull();
+    expect(parseApprovalSignal('DEBT-APPROVAL 5d24dcd7c0ab12\nmerci')).toBe('5d24dcd7c0ab12');
+    expect(parseApprovalSignal('merci\nDEBT-APPROVAL 5d24dcd7c0ab12')).toBeNull();
+  });
+
+  test('l’accord ne vaut que pour le SHA exact approuvé, jamais pour un autre commit', () => {
+    const head = '5d24dcd7c0ab12ffeeddccbbaa99887766554433';
+    expect(approvalMatchesHead('5d24dcd7c0ab12', head)).toBe(true);
+    expect(approvalMatchesHead(head, head)).toBe(true);
+    expect(approvalMatchesHead('5d24dcd7c0ab13', head)).toBe(false);
+    expect(approvalMatchesHead(null, head)).toBe(false);
+  });
+
+  test('l’accord ne se déduit jamais d’une date de commit (forgeable par l’auteur)', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../scripts/debt-zero-gate.js'), 'utf8');
+    expect(src).not.toMatch(/committer\?\.date|headAt/);
+    expect(src).toContain('prMeta.head.sha !== head');
+  });
+
+  test('en local (--local), l’accord en attente est le code 3, distinct d’un échec', () => {
+    expect(PENDING_APPROVAL_EXIT).toBe(3);
   });
 
   test('parseApprovalContext exige explication et justification dans la PR', () => {

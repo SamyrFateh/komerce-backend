@@ -538,6 +538,8 @@ module.exports = {
   authority: 'backend — ces fichiers sont consommés par toutes les features. Tout changement ici a un impact potentiel global.',
 
   invariants: [
+    { statement: 'un accord humain Debt Zero ne vaut que pour un SHA exact publié et examiné : commentaire « DEBT-APPROVAL <sha> » de l’approbateur, PR pointant exactement sur ce SHA, aucune déduction par date de commit ; en local, l’accord en attente est un statut distinct (exit 3) qui laisse publier pour examen tandis que la CI reste bloquante',
+      test: 'tests/unit/debt-zero-gate.test.js' },
     { statement: 'un invariant exécutable de Feature Card n’est prouvé que par un runner officiel (jest unitaire, intégration, E2E API, Playwright enregistré, boutique) et jamais par un succès à vide (aucun test passé, test ignoré ou base absente) ; aucun nouvel invariant textuel n’est accepté par rapport au commit de base de la PR, sans fichier de tolérance',
       test: 'tests/unit/feature-invariant-check.test.js' },
     'tout fichier middleware/ non-auth doit être listé ici',
