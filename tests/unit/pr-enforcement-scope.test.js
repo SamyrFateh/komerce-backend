@@ -527,3 +527,30 @@ describe('HTTP read-only RCT1 — conservative DB-cost boundary', () => {
     expect(classifyWith(files, current + '\nrouter.post("/orders/mutate", action);').e2eApiRequired).toBe(true);
   });
 });
+
+describe('CI unit coverage blast radius — executable backend sources only', () => {
+  test.each([
+    'routes/README.md',
+    'services/docs/contract.json',
+    'middleware/fixtures/response.txt',
+    'db/README.md',
+    'bootstrap/diagrams/flow.svg',
+  ])('non-executable %s does not trigger 13k global unit coverage', file => {
+    const result = classify([file]);
+    expect(result.backendSource).toBe(false);
+  });
+
+  test.each([
+    'routes/admin-dashboard-market.js',
+    'services/dashboard-rct1-orders.js',
+    'middleware/auth.cjs',
+    'validators/schema.mjs',
+    'utils/math.ts',
+    'core/loader.js',
+    'bootstrap/api-routes.js',
+    'db/connection.js',
+    'jest.unit.config.js',
+  ])('executable %s continues to require global coverage unless prior proof reusable', file => {
+    expect(classify([file]).backendSource).toBe(true);
+  });
+});
