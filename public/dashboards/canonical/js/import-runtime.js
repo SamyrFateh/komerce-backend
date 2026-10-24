@@ -1387,7 +1387,7 @@
   function fxRemediation(run) {
     const reasons = Object.entries(run?.diagnostics?.reject_reasons || {});
     const legacyCount = reasons.reduce((count, [reason, n]) =>
-      /taux\\s+(?:usd|aed)_kmf\\s+indisponible/i.test(reason) ? count + num(n) : count, 0);
+      /taux\s+(?:usd|aed)_kmf\s+indisponible/i.test(reason) ? count + num(n) : count, 0);
     const pendingCount = num(run?.diagnostics?.fx_pending || run?.accounting?.fx_pending);
     if (legacyCount === 0 && pendingCount === 0) return '';
     const title = pendingCount > 0
