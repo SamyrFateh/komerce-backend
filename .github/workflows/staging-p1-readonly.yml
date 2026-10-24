@@ -1,5 +1,7 @@
 name: P1 staging real Chromium product chain
 on:
+  issues:
+    types: [opened]
   workflow_dispatch:
     inputs:
       market:
@@ -19,6 +21,10 @@ concurrency:
   cancel-in-progress: false
 jobs:
   p1:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] p1-readonly-km')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -31,8 +37,8 @@ jobs:
       E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-      P1_MARKET: ${{ inputs.market }}
-      P1_PRODUCT_REF: ${{ inputs.product_ref }}
+      P1_MARKET: ${{ github.event_name == 'workflow_dispatch' && inputs.market || 'KM' }}
+      P1_PRODUCT_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.product_ref || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
