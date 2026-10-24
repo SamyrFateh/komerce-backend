@@ -361,43 +361,60 @@ test('createOrder fail-closed si marketId manque', async () => {
   expect(db.query).not.toHaveBeenCalled();
 });
 
-test('cleanup CM préserve le catalogue global et retire seulement la projection CM', async () => {
+test('cleanup CM retire seulement les commandes SEEDTEST et leur relais vide', async () => {
   db.query
     .mockResolvedValueOnce({ rows: [{ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }] })
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rows: [] })
-    .mockResolvedValueOnce({ rows: [
-      { id: 'product-1', product_ref: 'KPR-990001' },
-      { id: 'product-2', product_ref: 'KPR-990002' },
-    ] })
     .mockResolvedValueOnce({ rows: [] });
 
   const market = { id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' };
-  await cleanup(market);
+  const result = await cleanup(market);
+  expect(result).toEqual({ orders: 1, dryRun: false });
 
   const [selectSql, selectParams] = db.query.mock.calls[0];
-  expect(selectSql).toMatch(/reference LIKE \$1 AND market_id = \$2/);
+  expect(selectSql).toMatch(/reference LIKE \\$1 AND market_id = \\$2/);
   expect(selectParams).toEqual(['SEEDTEST-CM-%', 'market-cm-id']);
+  const allSql = db.query.mock.calls.map(([sql]) => sql).join('\\n');
+  expect(allSql).not.toMatch(/DELETE FROM products|UPDATE products|product_market_exposure|product_market_price_drafts/);
+  expect(allSql).toMatch(/DELETE FROM order_items/);
+  expect(allSql).toMatch(/DELETE FROM orders/);
+  expect(allSql).toMatch(/DELETE FROM relais/);
+  expect(allSql).toMatch(/NOT EXISTS/);
+  expect(catalogExposure.setExposure).not.toHaveBeenCalled();
+  expect(marketCommercialPrice.resetMarketPriceDraft).not.toHaveBeenCalled();
+});
 
-  const allSql = db.query.mock.calls.map(([sql]) => sql).join('\n');
-  expect(allSql).not.toMatch(/DELETE FROM products/);
-
-  expect(catalogExposure.setExposure).toHaveBeenCalledTimes(2);
-  expect(catalogExposure.setExposure).toHaveBeenNthCalledWith(
-    1, 'product-1', 'market-cm-id', 'DISABLED', null
-  );
-  expect(marketCommercialPrice.resetMarketPriceDraft).toHaveBeenCalledTimes(2);
-  expect(marketCommercialPrice.resetMarketPriceDraft).toHaveBeenNthCalledWith(1, {
-    market,
-    productRef: 'KPR-990001',
-    reason: 'SEEDTEST CM cleanup staging',
-    source: PRICE_SOURCE,
-    actorId: null,
+test('cleanup dry-run ne supprime aucune commande, aucun relais, aucune décision commerciale', async () => {
+  db.query.mockResolvedValueOnce({
+    rows: [{ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }],
   });
+  const market = { id: 'market-km-id', code: 'KM', name: 'Comores', currency: 'KMF' };
+  const result = await cleanup(market, { dryRun: true });
 
-  const [deleteRelaisSql, deleteRelaisParams] = db.query.mock.calls[4];
-  expect(deleteRelaisSql).toMatch(/DELETE FROM relais/);
-  expect(deleteRelaisParams).toEqual(['SEEDTEST CM relais', 'market-cm-id']);
+  expect(result).toEqual({ orders: 1, dryRun: true });
+  expect(db.query).toHaveBeenCalledTimes(1);
+  expect(db.query.mock.calls[0][0]).toMatch(/^SELECT id FROM orders/);
+  expect(catalogExposure.setExposure).not.toHaveBeenCalled();
+  expect(marketCommercialPrice.resetMarketPriceDraft).not.toHaveBeenCalled();
+});
+
+test('main --cleanup --dry-run n’appelle jamais les écritures', async () => {
+  process.env.KOMERCE_ENV = 'staging';
+  db.query
+    .mockResolvedValueOnce({
+      rows: [{ id: 'market-km-id', code: 'KM', name: 'Comores', currency: 'KMF', minor_unit: 0 }],
+    })
+    .mockResolvedValueOnce({ rows: [] });
+  const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  await main(['node', 'seed-market-test-data.js', '--market', 'KM', '--cleanup', '--dry-run']);
+  logSpy.mockRestore();
+
+  expect(process.exitCode).toBeUndefined();
+  expect(db.query).toHaveBeenCalledTimes(2);
+  expect(db.query.mock.calls.every(([sql]) => /^SELECT/.test(sql))).toBe(true);
+  expect(catalogExposure.setExposure).not.toHaveBeenCalled();
+  expect(marketCommercialPrice.resetMarketPriceDraft).not.toHaveBeenCalled();
 });
 
 test('--cleanup sans --market est refusé avant toute lecture DB une fois le runtime/opt-in valides', async () => {
