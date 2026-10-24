@@ -15,7 +15,7 @@
  *   - aucune copie `SEEDTEST <PAYS> produit N` n'est créée ;
  *   - le catalogue curaté doit passer un quality gate statique avant écriture ;
  *   - cleanup d'un marché ne modifie jamais catalogue, exposition ni décisions de prix ;
- *   - chaque produit exposé reçoit seulement un DRAFT_PENDING_GATE : aucun
+ *   - seules les décisions marché absentes reçoivent un DRAFT_PENDING_GATE : aucun
  *     LOCAL_ACTIVE n'est fabriqué artificiellement par le seed ;
  *   - KOMERCE_ENV est la vérité business de runtime et prime NODE_ENV ;
  *   - toute écriture exige MARKET_STAGING_SEED_ENABLED=true.
@@ -339,20 +339,7 @@ async function ensureProducts(count = DEFAULT_PRODUCT_COUNT) {
          product_ref, name, description, category, subcategory, price_kmf,
          promo_pct, image_url, images, stock, is_active, is_available, sort_order
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, TRUE, TRUE, $11)
-       ON CONFLICT (product_ref) DO UPDATE SET
-         name = EXCLUDED.name,
-         description = EXCLUDED.description,
-         category = EXCLUDED.category,
-         subcategory = EXCLUDED.subcategory,
-         price_kmf = EXCLUDED.price_kmf,
-         promo_pct = EXCLUDED.promo_pct,
-         image_url = EXCLUDED.image_url,
-         images = EXCLUDED.images,
-         stock = EXCLUDED.stock,
-         is_active = TRUE,
-         is_available = TRUE,
-         sort_order = EXCLUDED.sort_order,
-         updated_at = NOW()
+       ON CONFLICT (product_ref) DO NOTHING
        RETURNING *`,
       [
         product.product_ref,
@@ -368,7 +355,18 @@ async function ensureProducts(count = DEFAULT_PRODUCT_COUNT) {
         9000 + index,
       ]
     );
-    rows.push(upserted[0]);
+    if (upserted[0]) {
+      rows.push(upserted[0]);
+    } else {
+      // La fiche existante est la vérité canonique : le seed ne remplace
+      // ni sa description, ni son stock, ni son prix, ni ses médias.
+      const { rows: existing } = await db.query(
+        'SELECT * FROM products WHERE product_ref = $1 LIMIT 1',
+        [product.product_ref]
+      );
+      if (!existing[0]) throw new Error(`Produit introuvable après conflit: ${product.product_ref}`);
+      rows.push(existing[0]);
+    }
   }
   return rows;
 }
@@ -389,29 +387,50 @@ async function prepareProductsForMarket(products, market) {
   if (!market?.id || !market?.code || !market?.currency) {
     throw new Error('prepareProductsForMarket: canonical market is required');
   }
+  if (!products.length) return { exposed: 0, drafts: 0 };
+
+  // Le seed ne possède QUE les lignes qu'il crée. Rejouer une recette ne
+  // réactive pas un produit volontairement exclu et ne réinitialise jamais
+  // une décision locale AUTHORIZED/LOCAL_ACTIVE en DRAFT_PENDING_GATE.
+  const ids = products.map(product => product.id);
+  const { rows: exposureRows } = await db.query(
+    `SELECT product_id FROM product_market_exposure
+      WHERE market_id = $1::uuid AND product_id = ANY($2::uuid[])`,
+    [market.id, ids]
+  );
+  const { rows: priceRows } = await db.query(
+    `SELECT product_id FROM product_market_price_drafts
+      WHERE market_id = $1::uuid AND product_id = ANY($2::uuid[])`,
+    [market.id, ids]
+  );
+  const knownExposures = new Set(exposureRows.map(row => String(row.product_id)));
+  const knownPrices = new Set(priceRows.map(row => String(row.product_id)));
 
   let exposed = 0;
   let drafts = 0;
   for (const product of products) {
-    const localAmount = await localDraftAmountForProduct(product, market);
+    if (!knownExposures.has(String(product.id))) {
+      await catalogExposure.setExposure(
+        product.id,
+        market.id,
+        catalogExposure.EXPOSURE.ENABLED,
+        null
+      );
+      exposed++;
+    }
 
-    await catalogExposure.setExposure(
-      product.id,
-      market.id,
-      catalogExposure.EXPOSURE.ENABLED,
-      null
-    );
-    exposed++;
-
-    await marketCommercialPrice.setMarketPriceDraft({
-      market,
-      productRef: product.product_ref,
-      amount: localAmount,
-      reason: `${TAG} ${market.code} prix local de test`,
-      source: PRICE_SOURCE,
-      actorId: null,
-    });
-    drafts++;
+    if (!knownPrices.has(String(product.id))) {
+      const localAmount = await localDraftAmountForProduct(product, market);
+      await marketCommercialPrice.setMarketPriceDraft({
+        market,
+        productRef: product.product_ref,
+        amount: localAmount,
+        reason: `${TAG} ${market.code} prix local de test`,
+        source: PRICE_SOURCE,
+        actorId: null,
+      });
+      drafts++;
+    }
   }
 
   return { exposed, drafts };
