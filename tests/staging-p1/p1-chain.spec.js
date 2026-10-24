@@ -21,6 +21,8 @@ test('one supplier-sourced product from import to customer catalogue',async({pag
    const evidence=JSON.parse(fs.readFileSync(path.join(dir,'lineage.json'),'utf8'));
    result.ref=evidence.product?.product_ref;result.market=evidence.market;result.sha=evidence.git_sha;
    if(evidence.blocker||!evidence.product?.id||!evidence.product?.run_ref)throw Error('P1_LINEAGE_BLOCKED:'+evidence.blocker);
+   if(evidence.verdict!=='BACKEND_PROVED'||!Array.isArray(evidence.gates)||evidence.gates.length!==4)
+     result.issues.push('CANONICAL_P1_GATES_NOT_PROVED');
    for(const gate of evidence.gates||[])if(gate.status!=='PROVED')result.issues.push('BACKEND_'+gate.key+':'+gate.finding);
    page.on('pageerror',e=>result.jsErrors.push(e.message.slice(0,220)));
    await page.route('**/*',route=>{
