@@ -341,6 +341,24 @@ router.get(
   }
 );
 
+// Distincte de la projection opérationnelle : consultation RCT1 réservée aux admins
+// disposant de l'autorité globale déjà imposée par router.use ci-dessus.
+router.get(
+  '/orders/rct1',
+  rejectClientMarketId,
+  async (req, res, next) => {
+    try {
+      const code = req.query.market || null;
+      const { listRct1Orders } = require('../services/dashboard-rct1-orders');
+      res.set('Cache-Control', 'private, no-store');
+      res.json(await listRct1Orders({ marketCode: code }));
+    } catch (err) {
+      if (err.status === 400) return res.status(400).json({ error: err.message });
+      next(err);
+    }
+  }
+);
+
 router.get(
   '/orders',
   rejectClientMarketId,
