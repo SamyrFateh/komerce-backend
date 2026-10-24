@@ -122,6 +122,121 @@
     return node;
   }
 
+  // Autorité FX : le backend exige une observation EUR/USD sourcée, puis
+  // l'approbation par une AUTRE identité. Cette UI n'est jamais une autorité
+  // de taux, et n'invente ni valeur ni date.
+  async function appendFxAuthority(rootNode, context) {
+    if (String(context.user?.role || '').toLowerCase() !== 'admin') return;
+    const doc = context.document;
+    const endpoint = '/api/admin/finance-config/fx-observations';
+    const panel = doc.createElement('details');
+    panel.id = 'fx-authority';
+    panel.className = 'kmc-pricing-secondary';
+    panel.open = globalThis.location?.hash === '#fx-authority';
+    panel.appendChild(text(doc, 'summary', '', 'Taux EUR/USD · autorité de change'));
+    panel.appendChild(text(doc, 'p', 'kmc-workspace-note',
+      'Le sourcing USD/AED attend une observation EUR/USD récente, sourcée et approuvée par une deuxième personne. Les taux restent gouvernés par le serveur.'));
+    const status = text(doc, 'p', 'kmc-workspace-feedback', '');
+    status.setAttribute('role', 'status');
+    panel.appendChild(status);
+
+    const list = doc.createElement('div');
+    list.dataset.fxObservationList = '';
+    panel.appendChild(list);
+
+    const form = doc.createElement('form');
+    form.dataset.fxObservationEntry = '';
+    const fields = [
+      ['rate', 'USD pour 1 EUR (taux observé)', 'number'],
+      ['as_of', 'Date et heure observées', 'datetime-local'],
+      ['source_label', 'Source officielle', 'text'],
+      ['source_ref', 'Référence de la source (URL ou publication)', 'text'],
+    ];
+    for (const [name, labelValue, type] of fields) {
+      const label = doc.createElement('label');
+      label.className = 'kmc-market-policy-field';
+      label.appendChild(text(doc, 'span', '', labelValue));
+      const input = doc.createElement('input');
+      input.name = name;
+      input.type = type;
+      input.required = name !== 'source_ref';
+      if (name === 'rate') { input.min = '0.8'; input.max = '1.6'; input.step = 'any'; }
+      label.appendChild(input);
+      form.appendChild(label);
+    }
+    const submit = text(doc, 'button', 'kmc-workspace-action', 'Enregistrer l’observation');
+    submit.type = 'submit';
+    form.appendChild(submit);
+    panel.appendChild(form);
+    rootNode.appendChild(panel);
+
+    const sessionIdentity = String(context.user?.email || context.user?.id || '').trim().toLowerCase();
+    async function refresh() {
+      try {
+        const response = await jsonRequest(context.fetch, endpoint);
+        list.replaceChildren();
+        const observations = Array.isArray(response.observations) ? response.observations : [];
+        if (!observations.length) {
+          list.appendChild(text(doc, 'p', 'kmc-workspace-note', 'Aucune observation enregistrée.'));
+        }
+        observations.slice(0, 15).forEach(obs => {
+          const line = doc.createElement('div');
+          line.className = 'kmc-market-policy-facts';
+          const decision = obs.approved_by ? 'Approuvée' : 'En attente de deuxième approbateur';
+          line.appendChild(text(doc, 'span', '', `${formatDateTime(obs.as_of)} · ${obs.rate} USD/EUR · ${decision}`));
+          line.appendChild(text(doc, 'small', '', `Source : ${obs.source_label || '—'} ${obs.source_ref || ''}`));
+          if (!obs.approved_by && obs.id && String(obs.entered_by || '').trim().toLowerCase() !== sessionIdentity) {
+            const approve = text(doc, 'button', 'kmc-workspace-action is-secondary', 'Approuver');
+            approve.type = 'button';
+            approve.dataset.fxApproveId = String(obs.id);
+            approve.addEventListener('click', async () => {
+              approve.disabled = true;
+              try {
+                await jsonRequest(context.fetch, `${endpoint}/${encodeURIComponent(obs.id)}/approve`, { method: 'POST', body: {} });
+                status.textContent = 'Observation approuvée par la deuxième personne.';
+                await refresh();
+              } catch (error) {
+                approve.disabled = false;
+                status.textContent = error.message;
+              }
+            });
+            line.appendChild(approve);
+          }
+          list.appendChild(line);
+        });
+      } catch (error) {
+        status.textContent = `Lecture de l’autorité FX : ${error.message}`;
+      }
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      submit.disabled = true;
+      try {
+        const data = new globalThis.FormData(form);
+        const asOf = new Date(String(data.get('as_of') || ''));
+        if (Number.isNaN(asOf.getTime())) throw new Error('Date observée invalide.');
+        await jsonRequest(context.fetch, endpoint, {
+          method: 'POST',
+          body: {
+            rate: String(data.get('rate') || '').trim(),
+            as_of: asOf.toISOString(),
+            source_label: String(data.get('source_label') || '').trim(),
+            source_ref: String(data.get('source_ref') || '').trim() || null,
+          },
+        });
+        status.textContent = 'Observation enregistrée. Approbation requise depuis un deuxième compte admin.';
+        form.reset();
+        await refresh();
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        submit.disabled = false;
+      }
+    });
+    await refresh();
+  }
+
   function section(rootNode, ui, title, description, id) {
     const block = ui.Section.create(id ? { id, title, description } : { title, description });
     rootNode.appendChild(block.element);
@@ -1065,6 +1180,7 @@
       const intro = text(context.document, 'p', 'kmc-pricing-intro',
         'Décidez à partir des données économiques du serveur. Les paramètres avancés restent disponibles ci-dessous.');
       rootNode.appendChild(intro);
+      await appendFxAuthority(rootNode, context);
 
       // Keep the decision and editable cost controls prominent; technical inventories are secondary.
       const pricingDetails = (label, render) => {

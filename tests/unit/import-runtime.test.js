@@ -53,3 +53,14 @@ test('Sourcing Live : bande KPI agrégée des passages, lecture seule, non dispo
   expect(src).toContain("['candidates', 'Candidats détectés', NA, 'agrégat non fourni par le serveur']");
   expect(src).toContain('renderPassages(run, payload?.passages, payload?.passages_page, payload?.source_controls, payload?.lots)');
 });
+
+test('les rejets historiques pour FX ont une remédiation lisible directement sur la population écartée', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
+  expect(source).toContain('function fxRemediation(run)');
+  expect(source).toContain("run?.diagnostics?.reject_reasons");
+  expect(source).toContain("run?.diagnostics?.fx_pending");
+  expect(source).toContain("data-fx-remediation");
+  expect(source).toContain("/admin/workspaces/pricing#fx-authority");
+  expect(source).toContain("Après validation du taux, relancez la source");
+  expect(source).toContain("kind === 'discarded' || kind === 'deferred'");
+});

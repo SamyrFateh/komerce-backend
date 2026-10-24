@@ -226,6 +226,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     ready_for_refinery: 0,
     certification_blocked: 0,
     deferred: 0,
+    fx_pending: 0,
     errors: [...invalidFromConnector],
   };
   let itemSeq = 0;
@@ -284,6 +285,8 @@ async function importCatalog(body, userId, dispatchToConnector) {
         results.auto_rejected += 1;
         itemOutcome = 'auto_rejected';
       } else {
+        // Ne compter « candidat conservé pour FX » qu'APRÈS l'upsert réel.
+        if (normalized.fx_pending?.code === 'fx_rate_unavailable') results.fx_pending += 1;
         const outcome = decisionOutcome(scan.sourcing_decision);
         itemOutcome = outcome || 'processed';
         if (outcome === 'ready_for_refinery') {
@@ -338,6 +341,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     ? (sourceCertificationAccounting.balanced
       && canonicalResolved
       && accepted === products.length
+      && results.fx_pending === 0
       && results.errors.length === 0
         ? 'CANONICAL_RESOLVED'
         : 'PARTIAL_BLOCKED')
@@ -355,6 +359,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     rejected: Math.max(0, results.errors.length - duplicateCount) + results.auto_rejected,
     quarantined: 0,
     deferred: results.deferred,
+    fx_pending: results.fx_pending,
     ready_for_refinery: results.ready_for_refinery,
     certification_blocked: results.certification_blocked,
     pipeline_status: pipelineStatus,
@@ -389,6 +394,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
       updated: results.updated || 0,
       archived: results.archived || 0,
       errors: results.errors,
+      fx_pending: results.fx_pending,
       accepted,
       rejected: results.errors.length,
       reject_reasons: rejectReasons,
@@ -399,6 +405,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
         ready_for_refinery: results.ready_for_refinery,
         certification_blocked: results.certification_blocked,
         deferred: results.deferred,
+        fx_pending: results.fx_pending,
         ...sourceCertificationAccounting,
       },
       shadow_ingestion: shadowIngestion,
