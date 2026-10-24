@@ -12,6 +12,7 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {execFileSync}=require('child_process');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {projectUpstreamEvidence}=require('../../services/golden-upstream-evidence');
@@ -48,6 +49,30 @@ async function readMarketStates(productId){
     +' WHERE m.code=ANY($2::text[]) ORDER BY m.code',[productId,MARKETS]);
   return rows;
 }
+// A skipped Railway deploy is acceptable ONLY if git proves all intervening changes
+// are audit/CI-only. Any application, schema, runtime service or public UI change BLOCKS.
+function verifyRuntimeRevision(deployed,checkedOut){
+  if(!/^[a-f0-9]{40}$/.test(String(deployed||''))||
+     !/^[a-f0-9]{40}$/.test(String(checkedOut||'')))throw Error('P1_SHA_INVALID');
+  if(deployed===checkedOut)return {kind:'EXACT',deploy_sha:deployed,source_sha:checkedOut,changes:[]};
+  const processRun=(args)=>execFileSync('git',args,{encoding:'utf8',timeout:10000}).trim();
+  try{processRun(['merge-base','--is-ancestor',deployed,checkedOut]);}
+  catch{throw Error('P1_DEPLOY_NOT_SOURCE_ANCESTOR');}
+  let files;
+  try{files=processRun(['diff','--name-only',deployed,checkedOut]).split('\n').filter(Boolean);}
+  catch{throw Error('P1_SOURCE_DIFF_UNAVAILABLE');}
+  const allowed=file => /^\.github\/workflows\/[^/]+\.ya?ml$/.test(file) ||
+    /^docs\/recette\//.test(file) ||
+    /^tests\/staging-(canonical|p1)\//.test(file) ||
+    file==='tests/unit/staging-p1-verdict.test.js' ||
+    /^playwright\.staging-[a-z0-9-]+\.config\.js$/.test(file) ||
+    ['scripts/recette/p1-staging-evidence.js',
+     'scripts/recette/summarize-staging-chromium.js'].includes(file);
+  const runtimeDrift=files.filter(file=>!allowed(file));
+  if(runtimeDrift.length)throw Error('P1_RUNTIME_FILES_DIFFER:'+runtimeDrift.slice(0,3).join(','));
+  return {kind:'AUDIT_ONLY_DIFF',deploy_sha:deployed,source_sha:checkedOut,changes:files};
+}
+
 function verdictOf(gates){
   const required=['SOURCE_PROVED','REFINERY_PROVED','CATALOG_RELEASE_PROVED','STOREFRONT_PROVED'];
   return Array.isArray(gates)&&gates.length===required.length&&
@@ -70,7 +95,8 @@ async function main(){
     const runtime=await versionRes.json();
     record.git_sha=runtime.commit||runtime.sha||null;
     const expected=process.env.P1_EXPECTED_DEPLOY_SHA;
-    if(expected&&(!record.git_sha||record.git_sha!==expected))throw Error('P1_SHA_NOT_DEPLOYED');
+    record.revision=verifyRuntimeRevision(record.git_sha,expected||process.env.GITHUB_SHA);
+    record.deployed_sha=record.revision.deploy_sha;
     const product=await findProduct();
     if(!product)throw Error('P1_SOURCE_LINKED_PRODUCT_NOT_FOUND');
     record.product=product;
@@ -95,4 +121,4 @@ async function main(){
   }finally{await db.pool.end();}
 }
 if(require.main===module)main();
-module.exports={assertInputs,verdictOf};
+module.exports={assertInputs,verdictOf,verifyRuntimeRevision};
