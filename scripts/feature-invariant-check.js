@@ -210,40 +210,116 @@ function evaluateFileResult(result) {
 function runFamily(family, files, { verbose } = {}) {
   const isBoutique = family === KIND.BOUTIQUE;
   const cwd = isBoutique ? path.join(ROOT, 'public', 'boutique') : ROOT;
-  // La boutique a ses propres dépendances (npm --prefix public/boutique ci), comme en CI.
-  let jestBin;
-  try { jestBin = require.resolve('jest/bin/jest', { paths: [cwd] }); }
-  catch { return new Map(files.map(f => [f, { ok: false, reason: `jest introuvable dans ${path.relative(ROOT, cwd) || '.'} (installer ses dépendances)` }])); }
-  const outFile = path.join(os.tmpdir(), `kmc-invariants-${family}-${process.pid}.json`);
-  const targets = files.map(f => (isBoutique ? path.relative(cwd, path.join(ROOT, f)) : f).replace(/\\/g, '/'));
-  const args = [jestBin, '--json', `--outputFile=${outFile}`, '--no-coverage', '--forceExit', '--runInBand', '--ci'];
-  if (family === KIND.UNIT) args.push('--config', 'jest.unit.config.js');
-  if (!verbose) args.push('--silent');
-  args.push('--runTestsByPath', ...targets);
-  const result = spawnSync(process.execPath, args, {
-    cwd,
-    env: process.env,
-    stdio: 'pipe',
-    encoding: 'utf8',
-    maxBuffer: 20 * 1024 * 1024,
-    timeout: 30 * 60_000
-  });
-  if (result.error || result.status !== 0 || !fs.existsSync(outFile)) {
-    console.error('Jest execution:', {
-      status: result.status,
-      signal: result.signal,
-      error: result.error?.message,
-      stderr: (result.stderr || '').slice(-3000),
-      reportExists: fs.existsSync(outFile)
-    });
-  }
-  let report = { testResults: [] };
-  try { report = JSON.parse(fs.readFileSync(outFile, 'utf8')); } catch { /* rapport absent : tous non exécutés */ }
-  try { fs.unlinkSync(outFile); } catch { /* déjà absent */ }
-  const byFile = new Map(report.testResults.map(r => [path.relative(ROOT, r.name || r.testFilePath || '').replace(/\\/g, '/'), r]));
-  return new Map(files.map(f => [f, evaluateFileResult(byFile.get(f))]));
-}
 
+  let jestBin;
+  try {
+    jestBin = require.resolve('jest/bin/jest', { paths: [cwd] });
+  } catch {
+    return new Map(files.map(f => [f, {
+      ok: false,
+      reason: `jest introuvable dans ${path.relative(ROOT, cwd) || '.'}`
+    }]));
+  }
+
+  const verdicts = new Map();
+  const batchSize = 16;
+
+  for (let offset = 0; offset < files.length; offset += batchSize) {
+    const batch = files.slice(offset, offset + batchSize);
+    const number = Math.floor(offset / batchSize) + 1;
+
+    const outFile = path.join(
+      os.tmpdir(),
+      `kmc-invariants-${family}-${process.pid}-${number}.json`
+    );
+
+    try {
+      fs.unlinkSync(outFile);
+    } catch { /* aucun ancien rapport */ }
+
+    const targets = batch.map(f =>
+      (isBoutique ? path.relative(cwd, path.join(ROOT, f)) : f)
+        .replace(/\\/g, '/')
+    );
+
+    const args = [
+      jestBin,
+      '--json',
+      `--outputFile=${outFile}`,
+      '--no-coverage',
+      '--forceExit',
+      '--runInBand',
+      '--ci'
+    ];
+
+    if (family === KIND.UNIT) {
+      args.push('--config', 'jest.unit.config.js');
+    }
+
+    if (!verbose) args.push('--silent');
+    args.push('--runTestsByPath', ...targets);
+
+    const result = spawnSync(process.execPath, args, {
+      cwd,
+      env: process.env,
+      stdio: 'pipe',
+      encoding: 'utf8',
+      maxBuffer: 20 * 1024 * 1024,
+      timeout: 30 * 60_000
+    });
+
+    let report = null;
+    try {
+      report = JSON.parse(fs.readFileSync(outFile, 'utf8'));
+    } catch { /* rapport absent ou invalide */ }
+
+    try {
+      fs.unlinkSync(outFile);
+    } catch { /* nettoyage */ }
+
+    if (result.error || result.status !== 0 || !report) {
+      console.error(`Jest batch ${number}:`, {
+        status: result.status,
+        signal: result.signal,
+        error: result.error?.message,
+        reportExists: Boolean(report),
+        stderr: (result.stderr || '').slice(-1500)
+      });
+    }
+
+    const byFile = new Map(
+      (report?.testResults || []).map(r => [
+        path.relative(ROOT, r.name || r.testFilePath || '')
+          .replace(/\\/g, '/'),
+        r
+      ])
+    );
+
+    for (const file of batch) {
+      const proof = evaluateFileResult(byFile.get(file));
+
+      if (result.error || !report) {
+        verdicts.set(file, {
+          ok: false,
+          reason: `Jest interrompu ou rapport absent (lot ${number}, exit ${result.status}, ${result.error?.message || 'sans rapport'})`
+        });
+      } else if (result.status !== 0 && proof.ok) {
+        verdicts.set(file, {
+          ok: false,
+          reason: `Jest a quitté avec le code ${result.status} dans le lot ${number}`
+        });
+      } else {
+        verdicts.set(file, proof);
+      }
+    }
+
+    console.log(
+      `  Jest ${family} lot ${number}: ${batch.length} fichier(s), exit ${result.status}`
+    );
+  }
+
+  return verdicts;
+}
 function parseRunArg(argv) {
   const arg = argv.find(a => a.startsWith('--run='));
   if (!arg) return [];
