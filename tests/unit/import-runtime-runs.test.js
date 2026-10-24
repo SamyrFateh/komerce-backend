@@ -183,12 +183,46 @@ describe('import runtime run projection', () => {
     });
     expect(projection.diagnostics).toEqual({
       pipeline_status: 'PARTIAL_BLOCKED',
+      fx_pending: 0,
       canonical_resolved: true,
       reject_reasons: { 'media absent': 1 },
       runtime_certified: false,
       provider_runtime_status: 'BLOCKED',
       provider_runtime_reason: 'pipeline_partial_blocked',
       certification_reason: null,
+    });
+  });
+
+  test('les 20 produits en attente d’autorité FX restent comptabilisés, jamais rejetés', () => {
+    const pendingRows = Array.from({ length: 20 }, (_, index) =>
+      candidate(index + 1, {
+        scan_result: {
+          sourcing_decision: 'WATCH',
+          reason: 'Taux EUR/USD en attente',
+          fx_gate: { status: 'AWAITING_APPROVED_RATE', code: 'fx_rate_unavailable' },
+        },
+      })
+    );
+    const base = baseRun();
+    const run = baseRun({
+      source_total: 20,
+      intake: {
+        ...base.intake,
+        accepted: 20,
+        deferred: 20,
+        fx_pending: 20,
+        ready_for_refinery: 0,
+        pipeline_status: 'PARTIAL_BLOCKED',
+      },
+    });
+    const projection = runs.buildProjection({ run, rows: pendingRows });
+    expect(projection.accounting).toMatchObject({
+      source_total: 20, accepted: 20, deferred: 20,
+      fx_pending: 20, rejected: 0, unaccounted: 0,
+    });
+    expect(projection.diagnostics).toMatchObject({
+      pipeline_status: 'PARTIAL_BLOCKED', fx_pending: 20,
+      provider_runtime_status: 'BLOCKED',
     });
   });
 
