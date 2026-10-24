@@ -320,7 +320,16 @@ function runPlan(plan, dryRun = false) {
     }
     process.stdout.write(`  $ ${step.file} ${step.argv.join(' ')}\n`);
     if (dryRun) continue;
-    const r = cp.spawnSync(step.file, step.argv, {
+    const isWindowsCmd = process.platform === 'win32' && /\.(cmd|bat)$/i.test(step.file);
+    const npmCli = require('path').join(require('path').dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+    const npxCli = require('path').join(require('path').dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npx-cli.js');
+    const isNpm = isWindowsCmd && /^npm\.cmd$/i.test(step.file);
+    const isNpx = isWindowsCmd && /^npx\.cmd$/i.test(step.file);
+    const executable = isNpm || isNpx ? process.execPath : step.file;
+    const argv = isNpm ? [npmCli, ...step.argv]
+      : isNpx ? [npxCli, ...step.argv]
+      : step.argv;
+    const r = cp.spawnSync(executable, argv, {
       cwd: ROOT,
       stdio: 'inherit',
       env: process.env,

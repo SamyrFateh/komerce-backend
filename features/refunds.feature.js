@@ -80,6 +80,7 @@ module.exports = {
       'tests/unit/refund-evidence-verifier.test.js',
       'tests/unit/refund-intent-reconciliation.test.js',
       'tests/e2e-api/refunds.intents-reconciliation.e2e.test.js',
+      'tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js',
       'tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js',
       'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js',
       'tests/unit/refund-stripe-txn-known-risk.test.js',
@@ -136,6 +137,7 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution', test: 'tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js' },
     { statement: 'RC-9 : reference externe unique par fournisseur et intention, prouvee en PostgreSQL',
       test: 'tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js' },
     { statement: 'RC-5/RC-9 : le rapprochement PSP relit la preuve hors transaction, verrouille ensuite commande puis intention, interdit changement de marché/capture/montant, ne marque confirmed que si preuve complète et ne modifie ni refunds ni orders',

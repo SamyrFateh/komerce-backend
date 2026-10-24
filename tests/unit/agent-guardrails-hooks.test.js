@@ -61,7 +61,9 @@ describe('setup-hooks.sh : installation du pre-push léger', () => {
     fs.writeFileSync(hook, '#!/bin/sh\n# KOMERCE-HOOK ancien\nexit 1\n');
     expect(run()).toContain('tampon pr:preflight vert');
     expect(fs.readFileSync(hook, 'utf8')).toContain('pre-push-stamp v2');
-    expect(fs.statSync(hook).mode & 0o111).toBeTruthy();
+    if (process.platform !== 'win32') {
+      expect(fs.statSync(hook).mode & 0o111).toBeTruthy();
+    }
   });
 
   test('conserve un pre-push personnel', () => {
@@ -124,6 +126,6 @@ describe('preflight-stamp', () => {
     const write = jest.fn();
     const file = stamp.writeGreen({ sha: 'abc', gitPath: name => `/repo/.git/${name}`, write });
     expect(file).toBe('/repo/.git/komerce-preflight-green');
-    expect(write).toHaveBeenCalledWith('/repo/.git/komerce-preflight-green', 'abc\n');
+    expect(write).toHaveBeenCalledWith(path.resolve('/repo/.git/komerce-preflight-green'), 'abc\n');
   });
 });
