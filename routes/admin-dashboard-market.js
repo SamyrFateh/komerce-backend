@@ -349,9 +349,9 @@ router.get(
   async (req, res, next) => {
     try {
       const code = req.query.market || null;
-      const { listRct1Orders } = require('../services/dashboard-rct1-orders');
+      const { buildRct1Orders } = require('../services/dashboard-rct1-orders');
       res.set('Cache-Control', 'private, no-store');
-      res.json(await listRct1Orders({ marketCode: code }));
+      res.json(await buildRct1Orders({ marketCode: code }));
     } catch (err) {
       if (err.status === 400) return res.status(400).json({ error: err.message });
       next(err);
