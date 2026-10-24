@@ -145,6 +145,8 @@ module.exports = {
       'markets: RW!',
       'operator_market_scopes: RW!',
       'currency_parities: RW!',
+      'fx_rate_observations: RW!',
+      'fx_public_reference_quotes: RW!',
     ],
   },
 

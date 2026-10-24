@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 750,
-    "filesWithFullHeaders": 701,
-    "filesWithLiteHeaders": 49,
-    "filesWithAnyHeaders": 750,
+    "scannedCodeFiles": 755,
+    "filesWithFullHeaders": 705,
+    "filesWithLiteHeaders": 50,
+    "filesWithAnyHeaders": 755,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1856,
-    "edges": 9290,
-    "dbTables": 211,
-    "doctrines": 688,
+    "graphNodes": 1876,
+    "edges": 9336,
+    "dbTables": 213,
+    "doctrines": 701,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 895,
+    "unresolvedCodeEdges": 904,
     "dbWriteViaOverlapWarnings": 11,
-    "multiWriterTables": 88
+    "multiWriterTables": 90
   },
   "byDomain": {
     "infrastructure": 24,
@@ -36,10 +36,10 @@
     "auth": 14,
     "platform-ops": 2,
     "catalog": 130,
-    "admin-dashboard": 38,
+    "admin-dashboard": 39,
     "decision-signals": 14,
     "market-delegation": 35,
-    "market": 8,
+    "market": 9,
     "economic-engine": 65,
     "sourcing": 37,
     "logistics": 57,
@@ -73,7 +73,7 @@
     "market-autonomy": 4,
     "markets": 1,
     "payments": 1,
-    "refunds": 2,
+    "refunds": 5,
     "supplier-connectivity": 4,
     "shared": 1
   },
@@ -111,7 +111,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 434,
+    "service": 439,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -120,10 +120,10 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 106,
+    "critical": 110,
     "medium": 152,
     "high": 434,
-    "low": 58
+    "low": 59
   },
   "nodes": [
     {
@@ -264,6 +264,7 @@
         "continuous_decision_signals"
       ],
       "depends": [
+        "services/fx-public-reference-feed.js",
         "services/outbox-worker.js",
         "services/cash-reminder-service.js",
         "services/inventory-service.js"
@@ -278,6 +279,7 @@
         "revoked_tokens"
       ],
       "dbWrite": [
+        "fx_public_reference_quotes",
         "economic_snapshots",
         "pickup_print_tokens",
         "pickup_reveal_codes",
@@ -17611,6 +17613,32 @@
       "version": "2026-10"
     },
     {
+      "id": "services/dashboard-rct1-orders.js",
+      "file": "services/dashboard-rct1-orders.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "rct1-orders-readonly-projection",
+      "domain": "admin-dashboard",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Liste exhaustive des commandes fictives RCT1, jamais les files opérationnelles réelles.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "orders",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [],
+      "version": null
+    },
+    {
       "id": "services/discovery-rail-composer.js",
       "file": "services/discovery-rail-composer.js",
       "type": "file",
@@ -18626,7 +18654,8 @@
       "dbRead": [
         "currency_parities",
         "fx_pegs",
-        "fx_rate_observations"
+        "fx_rate_observations",
+        "fx_public_reference_quotes"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -18676,6 +18705,7 @@
         "tests/integration/fx-chain-postgres.test.js"
       ],
       "dbRead": [
+        "fx_public_reference_quotes",
         "fx_rate_observations",
         "fx_pegs"
       ],
@@ -18684,7 +18714,8 @@
       "dbTxn": [],
       "doctrine": [
         "fail_closed",
-        "no_fallback_rate",
+        "official_public_quotation_first",
+        "no_unverified_rate",
         "frozen_per_transaction",
         "eur_is_pivot"
       ],
@@ -18788,6 +18819,50 @@
       ],
       "impactAreas": [
         "market",
+        "pricing",
+        "payments"
+      ],
+      "version": "2026-10"
+    },
+    {
+      "id": "services/fx-public-reference-feed.js",
+      "file": "services/fx-public-reference-feed.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "official-fx-reference-ingestion",
+      "domain": "market",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "trusted_ecb_xml_feed"
+      ],
+      "outputs": [
+        "immutable_public_eur_cross_quotes"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [
+        "fx_public_reference_quotes"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-supplied transaction or db.withTransaction"
+      ],
+      "doctrine": [
+        "official_public_source",
+        "eur_pivot",
+        "dated_provenance",
+        "append_only",
+        "no_rate_fallback"
+      ],
+      "impactAreas": [
+        "market",
+        "sourcing",
         "pricing",
         "payments"
       ],
@@ -19841,7 +19916,7 @@
         }
       ],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "atomic_single_client_transaction_scan_assign"
       ],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -28319,6 +28394,140 @@
       "version": "2026-06"
     },
     {
+      "id": "services/refund-evidence-verifier.js",
+      "file": "services/refund-evidence-verifier.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "external-refund-evidence-verifier",
+      "domain": "refunds",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "persisted refund intent",
+        "providerRefundId",
+        "trusted provider GET adapter"
+      ],
+      "outputs": [
+        "explicit provider evidence verdict (NO ledger/order write)"
+      ],
+      "depends": [
+        "refund-intent-ledger.js",
+        "services/paypal-client.js"
+      ],
+      "usedBy": [
+        "future refund settlement (NOT ACTIVATED)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "financial_evidence_must_match_capture_amount_currency"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
+      "id": "services/refund-intent-ledger.js",
+      "file": "services/refund-intent-ledger.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "durable-refund-intent-reservation",
+      "domain": "refunds",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order",
+        "provider",
+        "capture",
+        "event id",
+        "EUR amount"
+      ],
+      "outputs": [
+        "durable intent id and stable PSP request key"
+      ],
+      "depends": [
+        "db.js",
+        "orders",
+        "refunds",
+        "refund_execution_intents"
+      ],
+      "usedBy": [
+        "future refund orchestrators (NOT ACTIVATED)"
+      ],
+      "dbRead": [
+        "orders",
+        "refunds",
+        "refund_execution_intents"
+      ],
+      "dbWrite": [
+        "refund_execution_intents"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "explicit BEGIN / COMMIT before PSP; NO PSP call here"
+      ],
+      "doctrine": [
+        "multi_market_isolation",
+        "idempotent_refund",
+        "legacy_reconciliation_first"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
+      "id": "services/refund-intent-reconciliation.js",
+      "file": "services/refund-intent-reconciliation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "durable-refund-evidence-reconciliation",
+      "domain": "refunds",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "intent id",
+        "PSP refund reference",
+        "provider GET adapter"
+      ],
+      "outputs": [
+        "durable provider-evidence status (NOT order refunded)"
+      ],
+      "depends": [
+        "db.js",
+        "refund-intent-ledger.js",
+        "refund-evidence-verifier.js"
+      ],
+      "usedBy": [
+        "future guarded refund executor (NOT ACTIVATED)"
+      ],
+      "dbRead": [
+        "refund_execution_intents",
+        "orders"
+      ],
+      "dbWrite": [
+        "refund_execution_intents"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "provider GET before transaction",
+        "then order+intent locks",
+        "short commit"
+      ],
+      "doctrine": [
+        "fail_closed_provider_evidence",
+        "no_psp_in_transaction",
+        "market_isolation"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
       "id": "services/refund-service.js",
       "file": "services/refund-service.js",
       "type": "file",
@@ -28686,7 +28895,8 @@
         "parcels",
         "products",
         "relais",
-        "scan_events"
+        "scan_events",
+        "users"
       ],
       "dbWrite": [
         "order_items",
@@ -36160,6 +36370,11 @@
       "table": "revoked_tokens"
     },
     {
+      "id": "db:fx_public_reference_quotes",
+      "type": "db-table",
+      "table": "fx_public_reference_quotes"
+    },
+    {
       "id": "db:signals",
       "type": "db-table",
       "table": "signals"
@@ -37138,6 +37353,11 @@
       "id": "db:supplier_execution_events",
       "type": "db-table",
       "table": "supplier_execution_events"
+    },
+    {
+      "id": "db:refund_execution_intents",
+      "type": "db-table",
+      "table": "refund_execution_intents"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -39130,9 +39350,14 @@
       "doctrine": "single_rounding"
     },
     {
-      "id": "doctrine:no_fallback_rate",
+      "id": "doctrine:official_public_quotation_first",
       "type": "doctrine",
-      "doctrine": "no_fallback_rate"
+      "doctrine": "official_public_quotation_first"
+    },
+    {
+      "id": "doctrine:no_unverified_rate",
+      "type": "doctrine",
+      "doctrine": "no_unverified_rate"
     },
     {
       "id": "doctrine:frozen_per_transaction",
@@ -39163,6 +39388,31 @@
       "id": "doctrine:no_invented_rate",
       "type": "doctrine",
       "doctrine": "no_invented_rate"
+    },
+    {
+      "id": "doctrine:official_public_source",
+      "type": "doctrine",
+      "doctrine": "official_public_source"
+    },
+    {
+      "id": "doctrine:eur_pivot",
+      "type": "doctrine",
+      "doctrine": "eur_pivot"
+    },
+    {
+      "id": "doctrine:dated_provenance",
+      "type": "doctrine",
+      "doctrine": "dated_provenance"
+    },
+    {
+      "id": "doctrine:append_only",
+      "type": "doctrine",
+      "doctrine": "append_only"
+    },
+    {
+      "id": "doctrine:no_rate_fallback",
+      "type": "doctrine",
+      "doctrine": "no_rate_fallback"
     },
     {
       "id": "doctrine:projection_only_no_business_authority",
@@ -40153,6 +40403,41 @@
       "id": "doctrine:qr_pickup_single_validation (P5-L5)",
       "type": "doctrine",
       "doctrine": "qr_pickup_single_validation (P5-L5)"
+    },
+    {
+      "id": "doctrine:financial_evidence_must_match_capture_amount_currency",
+      "type": "doctrine",
+      "doctrine": "financial_evidence_must_match_capture_amount_currency"
+    },
+    {
+      "id": "doctrine:multi_market_isolation",
+      "type": "doctrine",
+      "doctrine": "multi_market_isolation"
+    },
+    {
+      "id": "doctrine:idempotent_refund",
+      "type": "doctrine",
+      "doctrine": "idempotent_refund"
+    },
+    {
+      "id": "doctrine:legacy_reconciliation_first",
+      "type": "doctrine",
+      "doctrine": "legacy_reconciliation_first"
+    },
+    {
+      "id": "doctrine:fail_closed_provider_evidence",
+      "type": "doctrine",
+      "doctrine": "fail_closed_provider_evidence"
+    },
+    {
+      "id": "doctrine:no_psp_in_transaction",
+      "type": "doctrine",
+      "doctrine": "no_psp_in_transaction"
+    },
+    {
+      "id": "doctrine:market_isolation",
+      "type": "doctrine",
+      "doctrine": "market_isolation"
     },
     {
       "id": "doctrine:refund_confirmed_only",
@@ -41985,6 +42270,12 @@
     },
     {
       "from": "bootstrap/crons.js",
+      "to": "services/fx-public-reference-feed.js",
+      "type": "depends",
+      "label": "services/fx-public-reference-feed.js"
+    },
+    {
+      "from": "bootstrap/crons.js",
       "to": "services/outbox-worker.js",
       "type": "depends",
       "label": "services/outbox-worker.js"
@@ -42030,6 +42321,12 @@
       "to": "db:revoked_tokens",
       "type": "db-read",
       "label": "revoked_tokens"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "db:fx_public_reference_quotes",
+      "type": "db-write",
+      "label": "fx_public_reference_quotes"
     },
     {
       "from": "bootstrap/crons.js",
@@ -68699,6 +68996,24 @@
       "label": "pilotage"
     },
     {
+      "from": "services/dashboard-rct1-orders.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/dashboard-rct1-orders.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-rct1-orders.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
       "from": "services/discovery-rail-composer.js",
       "to": "db",
       "type": "depends",
@@ -70304,6 +70619,12 @@
     },
     {
       "from": "services/fx-authority.js",
+      "to": "db:fx_public_reference_quotes",
+      "type": "db-read",
+      "label": "fx_public_reference_quotes"
+    },
+    {
+      "from": "services/fx-authority.js",
       "to": "doctrine:eur_is_the_pivot",
       "type": "doctrine",
       "label": "eur_is_the_pivot"
@@ -70376,6 +70697,12 @@
     },
     {
       "from": "services/fx-chain-service.js",
+      "to": "db:fx_public_reference_quotes",
+      "type": "db-read",
+      "label": "fx_public_reference_quotes"
+    },
+    {
+      "from": "services/fx-chain-service.js",
       "to": "db:fx_rate_observations",
       "type": "db-read",
       "label": "fx_rate_observations"
@@ -70394,9 +70721,15 @@
     },
     {
       "from": "services/fx-chain-service.js",
-      "to": "doctrine:no_fallback_rate",
+      "to": "doctrine:official_public_quotation_first",
       "type": "doctrine",
-      "label": "no_fallback_rate"
+      "label": "official_public_quotation_first"
+    },
+    {
+      "from": "services/fx-chain-service.js",
+      "to": "doctrine:no_unverified_rate",
+      "type": "doctrine",
+      "label": "no_unverified_rate"
     },
     {
       "from": "services/fx-chain-service.js",
@@ -70598,6 +70931,72 @@
     },
     {
       "from": "services/fx-observation-service.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "db:fx_public_reference_quotes",
+      "type": "db-write",
+      "label": "fx_public_reference_quotes"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "doctrine:official_public_source",
+      "type": "doctrine",
+      "label": "official_public_source"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "doctrine:eur_pivot",
+      "type": "doctrine",
+      "label": "eur_pivot"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "doctrine:dated_provenance",
+      "type": "doctrine",
+      "label": "dated_provenance"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "doctrine:append_only",
+      "type": "doctrine",
+      "label": "append_only"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "doctrine:no_rate_fallback",
+      "type": "doctrine",
+      "label": "no_rate_fallback"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
       "to": "impact:payments",
       "type": "impact",
       "label": "payments"
@@ -86075,6 +86474,162 @@
       "label": "unknown"
     },
     {
+      "from": "services/refund-evidence-verifier.js",
+      "to": "services/refund-intent-ledger.js",
+      "type": "depends",
+      "label": "refund-intent-ledger.js"
+    },
+    {
+      "from": "services/refund-evidence-verifier.js",
+      "to": "services/paypal-client.js",
+      "type": "depends",
+      "label": "services/paypal-client.js"
+    },
+    {
+      "from": "future refund settlement (NOT ACTIVATED)",
+      "to": "services/refund-evidence-verifier.js",
+      "type": "uses",
+      "label": "future refund settlement (NOT ACTIVATED)"
+    },
+    {
+      "from": "services/refund-evidence-verifier.js",
+      "to": "doctrine:financial_evidence_must_match_capture_amount_currency",
+      "type": "doctrine",
+      "label": "financial_evidence_must_match_capture_amount_currency"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "utils/refunds.js",
+      "type": "depends",
+      "label": "refunds"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "refund_execution_intents",
+      "type": "depends",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "future refund orchestrators (NOT ACTIVATED)",
+      "to": "services/refund-intent-ledger.js",
+      "type": "uses",
+      "label": "future refund orchestrators (NOT ACTIVATED)"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-read",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-write",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "doctrine:multi_market_isolation",
+      "type": "doctrine",
+      "label": "multi_market_isolation"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "doctrine:idempotent_refund",
+      "type": "doctrine",
+      "label": "idempotent_refund"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "doctrine:legacy_reconciliation_first",
+      "type": "doctrine",
+      "label": "legacy_reconciliation_first"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "services/refund-intent-ledger.js",
+      "type": "depends",
+      "label": "refund-intent-ledger.js"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "services/refund-evidence-verifier.js",
+      "type": "depends",
+      "label": "refund-evidence-verifier.js"
+    },
+    {
+      "from": "future guarded refund executor (NOT ACTIVATED)",
+      "to": "services/refund-intent-reconciliation.js",
+      "type": "uses",
+      "label": "future guarded refund executor (NOT ACTIVATED)"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-read",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-write",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "doctrine:fail_closed_provider_evidence",
+      "type": "doctrine",
+      "label": "fail_closed_provider_evidence"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "doctrine:no_psp_in_transaction",
+      "type": "doctrine",
+      "label": "no_psp_in_transaction"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "doctrine:market_isolation",
+      "type": "doctrine",
+      "label": "market_isolation"
+    },
+    {
       "from": "services/refund-service.js",
       "to": "db.js",
       "type": "depends",
@@ -86619,6 +87174,12 @@
       "to": "db:scan_events",
       "type": "db-read",
       "label": "scan_events"
+    },
+    {
+      "from": "services/scan-engine.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
     },
     {
       "from": "services/scan-engine.js",
@@ -97968,6 +98529,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/fx-public-reference-feed.js",
         "services/outbox-worker.js",
         "services/cash-reminder-service.js",
         "services/inventory-service.js"
@@ -97983,6 +98545,7 @@
         "revoked_tokens"
       ],
       "dbWrite": [
+        "fx_public_reference_quotes",
         "economic_snapshots",
         "pickup_print_tokens",
         "pickup_reveal_codes",
@@ -98008,6 +98571,7 @@
       ],
       "mustCheck": [
         "db:economic_snapshots",
+        "db:fx_public_reference_quotes",
         "db:pickup_print_tokens",
         "db:pickup_reveal_codes",
         "db:revoked_tokens",
@@ -98026,6 +98590,7 @@
         "impact:payments",
         "server.js",
         "services/cash-reminder-service.js",
+        "services/fx-public-reference-feed.js",
         "services/incident-escalation.js",
         "services/inventory-service.js",
         "services/mobile-money-reconciliation.js",
@@ -115524,6 +116089,30 @@
         "routes/admin-dashboard.js"
       ]
     },
+    "services/dashboard-rct1-orders.js": {
+      "role": "rct1-orders-readonly-projection",
+      "domain": "admin-dashboard",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Liste exhaustive des commandes fictives RCT1, jamais les files opérationnelles réelles.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [],
+      "mustCheck": [
+        "backend-core",
+        "db:markets",
+        "db:orders"
+      ]
+    },
     "services/discovery-rail-composer.js": {
       "role": "recommendations-discovery-rail-composer",
       "domain": "recommendations",
@@ -116531,7 +117120,8 @@
       "dbRead": [
         "currency_parities",
         "fx_pegs",
-        "fx_rate_observations"
+        "fx_rate_observations",
+        "fx_public_reference_quotes"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -116552,6 +117142,7 @@
       "mustCheck": [
         "db:currency_parities",
         "db:fx_pegs",
+        "db:fx_public_reference_quotes",
         "db:fx_rate_observations",
         "doctrine:eur_is_the_pivot",
         "doctrine:fail_closed",
@@ -116587,6 +117178,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "fx_public_reference_quotes",
         "fx_rate_observations",
         "fx_pegs"
       ],
@@ -116594,7 +117186,8 @@
       "dbWriteVia": [],
       "doctrines": [
         "fail_closed",
-        "no_fallback_rate",
+        "official_public_quotation_first",
+        "no_unverified_rate",
         "frozen_per_transaction",
         "eur_is_pivot"
       ],
@@ -116605,11 +117198,13 @@
       ],
       "mustCheck": [
         "db:fx_pegs",
+        "db:fx_public_reference_quotes",
         "db:fx_rate_observations",
         "doctrine:eur_is_pivot",
         "doctrine:fail_closed",
         "doctrine:frozen_per_transaction",
-        "doctrine:no_fallback_rate",
+        "doctrine:no_unverified_rate",
+        "doctrine:official_public_quotation_first",
         "impact:checkout",
         "impact:finance",
         "impact:market",
@@ -116716,6 +117311,50 @@
         "routes/admin-finance-config.js",
         "utils/alerts.js",
         "utils/logger.js"
+      ]
+    },
+    "services/fx-public-reference-feed.js": {
+      "role": "official-fx-reference-ingestion",
+      "domain": "market",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "fx_public_reference_quotes"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "official_public_source",
+        "eur_pivot",
+        "dated_provenance",
+        "append_only",
+        "no_rate_fallback"
+      ],
+      "impactAreas": [
+        "market",
+        "sourcing",
+        "pricing",
+        "payments"
+      ],
+      "mustCheck": [
+        "bootstrap/crons.js",
+        "db:fx_public_reference_quotes",
+        "doctrine:append_only",
+        "doctrine:dated_provenance",
+        "doctrine:eur_pivot",
+        "doctrine:no_rate_fallback",
+        "doctrine:official_public_source",
+        "impact:market",
+        "impact:payments",
+        "impact:pricing",
+        "impact:sourcing"
       ]
     },
     "services/golden-checkout-thread.js": {
@@ -122991,6 +123630,7 @@
         "impact:payment",
         "routes/payments-paypal.js",
         "services/payment-paypal.js",
+        "services/refund-evidence-verifier.js",
         "utils/logger.js"
       ]
     },
@@ -126292,6 +126932,119 @@
         "utils/parcels.js"
       ]
     },
+    "services/refund-evidence-verifier.js": {
+      "role": "external-refund-evidence-verifier",
+      "domain": "refunds",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/refund-intent-ledger.js",
+        "services/paypal-client.js"
+      ],
+      "directUsedBy": [
+        "future refund settlement (NOT ACTIVATED)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "financial_evidence_must_match_capture_amount_currency"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "doctrine:financial_evidence_must_match_capture_amount_currency",
+        "services/paypal-client.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js"
+      ]
+    },
+    "services/refund-intent-ledger.js": {
+      "role": "durable-refund-intent-reservation",
+      "domain": "refunds",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "orders",
+        "utils/refunds.js",
+        "refund_execution_intents"
+      ],
+      "directUsedBy": [
+        "future refund orchestrators (NOT ACTIVATED)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "refunds",
+        "refund_execution_intents"
+      ],
+      "dbWrite": [
+        "refund_execution_intents"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "multi_market_isolation",
+        "idempotent_refund",
+        "legacy_reconciliation_first"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "db:orders",
+        "db:refund_execution_intents",
+        "db:refunds",
+        "doctrine:idempotent_refund",
+        "doctrine:legacy_reconciliation_first",
+        "doctrine:multi_market_isolation",
+        "services/refund-evidence-verifier.js",
+        "services/refund-intent-reconciliation.js",
+        "utils/refunds.js"
+      ]
+    },
+    "services/refund-intent-reconciliation.js": {
+      "role": "durable-refund-evidence-reconciliation",
+      "domain": "refunds",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-evidence-verifier.js"
+      ],
+      "directUsedBy": [
+        "future guarded refund executor (NOT ACTIVATED)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "refund_execution_intents",
+        "orders"
+      ],
+      "dbWrite": [
+        "refund_execution_intents"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "fail_closed_provider_evidence",
+        "no_psp_in_transaction",
+        "market_isolation"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "db:orders",
+        "db:refund_execution_intents",
+        "doctrine:fail_closed_provider_evidence",
+        "doctrine:market_isolation",
+        "doctrine:no_psp_in_transaction",
+        "services/refund-evidence-verifier.js",
+        "services/refund-intent-ledger.js"
+      ]
+    },
     "services/refund-service.js": {
       "role": "refund-service",
       "domain": "refunds",
@@ -126628,7 +127381,8 @@
         "parcels",
         "products",
         "relais",
-        "scan_events"
+        "scan_events",
+        "users"
       ],
       "dbWrite": [
         "order_items",
@@ -126669,6 +127423,7 @@
         "db:products",
         "db:relais",
         "db:scan_events",
+        "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
         "routes/parcel-api-v2/scans.js",
@@ -133800,6 +134555,7 @@
         "db:refunds",
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
+        "services/refund-intent-ledger.js",
         "services/wallet-service.js",
         "utils/logger.js"
       ]
@@ -134674,6 +135430,14 @@
       ]
     },
     {
+      "table": "fx_public_reference_quotes",
+      "writerCount": 2,
+      "writers": [
+        "bootstrap/crons.js",
+        "services/fx-public-reference-feed.js"
+      ]
+    },
+    {
       "table": "fx_rate_observations",
       "writerCount": 2,
       "writers": [
@@ -134791,6 +135555,14 @@
       "writers": [
         "routes/admin/users.js",
         "services/order-checkout-service.js"
+      ]
+    },
+    {
+      "table": "refund_execution_intents",
+      "writerCount": 2,
+      "writers": [
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js"
       ]
     },
     {
@@ -137738,6 +138510,12 @@
       "label": "services/dashboard-metrics"
     },
     {
+      "from": "services/dashboard-rct1-orders.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
       "from": "services/discovery-rail-composer.js",
       "to": "db",
       "type": "depends",
@@ -137946,6 +138724,12 @@
       "to": "services/fx-observation-service.js",
       "type": "uses",
       "label": "scripts/fx-observation-cli.js"
+    },
+    {
+      "from": "services/fx-public-reference-feed.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/golden-checkout-thread.js",
@@ -139026,6 +139810,48 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "future refund settlement (NOT ACTIVATED)",
+      "to": "services/refund-evidence-verifier.js",
+      "type": "uses",
+      "label": "future refund settlement (NOT ACTIVATED)"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "refund_execution_intents",
+      "type": "depends",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "future refund orchestrators (NOT ACTIVATED)",
+      "to": "services/refund-intent-ledger.js",
+      "type": "uses",
+      "label": "future refund orchestrators (NOT ACTIVATED)"
+    },
+    {
+      "from": "services/refund-intent-reconciliation.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "future guarded refund executor (NOT ACTIVATED)",
+      "to": "services/refund-intent-reconciliation.js",
+      "type": "uses",
+      "label": "future guarded refund executor (NOT ACTIVATED)"
     },
     {
       "from": "services/refund-service.js",
