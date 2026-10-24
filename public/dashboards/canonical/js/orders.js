@@ -224,6 +224,7 @@
     head.appendChild(el(doc, 'h2', 'kmc-ord-title', 'Commandes'));
     head.appendChild(el(doc, 'p', 'kmc-ord-sub', 'Ce qui attend une action, commande par commande. Les actions se font dans Order 360 et Opérations.'));
     page.appendChild(head);
+    page.appendChild(modeControl(doc, false));
     page.appendChild(renderKpis(doc, payload));
 
     const rows = buildRows(payload);
@@ -289,15 +290,76 @@
     rootNode.appendChild(page);
   }
 
+  // Le mode est explicite dans l'URL de l'écran ; défaut : données réelles.
+  function requestedRecetteMode() {
+    if (typeof window === 'undefined' || !window.location) return false;
+    return new URLSearchParams(window.location.search || '').get('simulation_scope') === 'RCT1';
+  }
+
+  function modeControl(doc, isRecette) {
+    const wrap = el(doc, 'nav', 'kmc-ord-tabs');
+    wrap.setAttribute('aria-label', 'Périmètre des commandes');
+    for (const [label, recette] of [['Réel', false], ['Recette RCT1', true]]) {
+      const a = el(doc, 'a', 'kmc-ord-tab' + (isRecette === recette ? ' is-active' : ''), label);
+      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search || '' : '');
+      if (recette) params.set('simulation_scope', 'RCT1');
+      else params.delete('simulation_scope');
+      a.href = (typeof window !== 'undefined' ? window.location.pathname : '/admin/orders') + (params.toString() ? '?' + params : '');
+      a.setAttribute('aria-current', isRecette === recette ? 'page' : 'false');
+      wrap.appendChild(a);
+    }
+    return wrap;
+  }
+
+  function renderRct1(doc, rootNode, payload) {
+    rootNode.textContent = '';
+    const page = el(doc, 'div', 'kmc-ord');
+    page.appendChild(el(doc, 'h2', 'kmc-ord-title', 'Commandes — Recette RCT1'));
+    page.appendChild(modeControl(doc, true));
+    const banner = el(doc, 'p', 'kmc-ord-error', 'Données fictives — RCT1. Consultation uniquement : aucune action opérationnelle ni financière.');
+    banner.setAttribute('role', 'status');
+    page.appendChild(banner);
+    page.appendChild(el(doc, 'p', 'kmc-ord-sub', String(payload.total) + ' commandes de recette, y compris remises et annulées.'));
+    const table = el(doc, 'table', 'kmc-ord-table');
+    const head = el(doc, 'tr');
+    for (const label of ['Référence', 'Marché', 'Statut', 'Paiement', 'Montant de référence (KMF)']) head.appendChild(el(doc, 'th', '', label));
+    const thead = el(doc, 'thead'); thead.appendChild(head); table.appendChild(thead);
+    const tbody = el(doc, 'tbody');
+    for (const row of payload.orders || []) {
+      const tr = el(doc, 'tr', 'kmc-ord-row');
+      for (const value of [row.reference, row.market_code, STATUS_LABELS[row.status] || row.status,
+        PAYMENT_LABELS[row.payment_status] || row.payment_status || '—', money(row.total_kmf)]) {
+        tr.appendChild(el(doc, 'td', '', value));
+      }
+      tbody.appendChild(tr);
+    }
+    if (!payload.orders || !payload.orders.length) {
+      const tr = el(doc, 'tr');
+      const td = el(doc, 'td', 'kmc-ord-empty', 'Aucune commande RCT1 pour ce marché.');
+      td.colSpan = 5; tr.appendChild(td); tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    const scroller = el(doc, 'div', 'kmc-ord-table-wrap'); scroller.appendChild(table); page.appendChild(scroller);
+    rootNode.appendChild(page);
+  }
+
   function mount(options) {
     const rootNode = options.root;
     const doc = options.document;
     const fetchFn = options.fetch;
     if (!rootNode) throw new Error('canonical_orders_root_missing');
-    const endpoint = endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
+    const normalEndpoint = endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
+    const recette = requestedRecetteMode();
+    const endpoint = recette
+      ? '/api/admin/dashboard/orders/rct1' +
+        (normalEndpoint.startsWith(MARKET_ENDPOINT_PREFIX)
+          ? '?market=' + encodeURIComponent(normalEndpoint.slice(MARKET_ENDPOINT_PREFIX.length))
+          : '')
+      : normalEndpoint;
     rootNode.textContent = 'Chargement de Commandes…';
     return jsonRequest(fetchFn, endpoint).then(payload => {
-      render(doc, rootNode, payload, { tab: 'all', selected: null });
+      if (recette) renderRct1(doc, rootNode, payload);
+      else render(doc, rootNode, payload, { tab: 'all', selected: null });
       return Object.freeze({ payload, endpoint });
     }).catch(error => {
       rootNode.textContent = '';
