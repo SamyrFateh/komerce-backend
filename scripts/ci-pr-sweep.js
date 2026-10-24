@@ -47,7 +47,9 @@ function isInFlight(pr, nowMs) {
   // encore en cours sur le HEAD actuel. Ne jamais tuer cette preuve.
   if (verdictOf(pr) === 'pending') return true;
   if (state === 'BEHIND' || state === 'DIRTY') return false;
-  if (MERGE_IMMINENT.has(state)) return true;
+  // Une PR CLEAN attendant une fusion humaine ne doit pas geler le sweep.
+  // Seules les PR déjà en auto-merge peuvent être effectivement imminentes.
+  if (MERGE_IMMINENT.has(state)) return Boolean(pr.autoMergeRequest);
   const verdict = verdictOf(pr);
   if (verdict === 'pending') return true;
   if (verdict === 'failure') return false;
