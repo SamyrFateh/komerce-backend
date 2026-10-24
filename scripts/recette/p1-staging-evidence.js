@@ -48,7 +48,12 @@ async function readMarketStates(productId){
     +' WHERE m.code=ANY($2::text[]) ORDER BY m.code',[productId,MARKETS]);
   return rows;
 }
-function verdictOf(gates){return gates.every(g=>g.status==='PROVED')?'BACKEND_PROVED':'NOT_PROVEN';}
+function verdictOf(gates){
+  const required=['SOURCE_PROVED','REFINERY_PROVED','CATALOG_RELEASE_PROVED','STOREFRONT_PROVED'];
+  return Array.isArray(gates)&&gates.length===required.length&&
+    required.every(key=>gates.some(g=>g.key===key&&g.status==='PROVED'))
+    ?'BACKEND_PROVED':'NOT_PROVEN';
+}
 async function main(){
   const record={schema_version:1,target:URL,market:MARKET,requested_ref:PROVIDED||null,
     generated_at:new Date().toISOString(),git_sha:process.env.GITHUB_SHA||null,
