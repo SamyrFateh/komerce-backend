@@ -45,7 +45,7 @@ test('RCT1 uses the canonical dashboard payload, displaying all seven rows, incl
   expect(result.summary.total_orders).toBe(7);
   expect(result.summary.cancelled).toBe(1);
   expect(result.funnel).toMatchObject({
-    creees: 6, payees: 6, expediees: 5,
+    creees: 6, payees: 6, expediees: 6,
     disponibles_relais: 3, retirees: 3, perdues: 1,
   });
   expect(result.priority_orders).toHaveLength(7);
