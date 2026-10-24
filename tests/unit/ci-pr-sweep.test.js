@@ -43,8 +43,9 @@ describe('CI PR sweep — serial behind synchronization', () => {
 
   test('green CLEAN without auto-merge is left ready for human merge', () => {
     expect(pickSweepAction([pr(17, { mergeStateStatus: 'CLEAN', autoMergeRequest: null })], NOW)).toEqual({
-      action: 'wait', reason: 'in-flight', number: 17,
+      action: 'idle', reason: 'no-green-behind-candidate',
     });
+    expect(pickSweepAction([pr(17, { mergeStateStatus: 'CLEAN', autoMergeRequest: null }), pr(18, { autoMergeRequest: null })], NOW)).toMatchObject({ action: 'update', number: 18 });
   });
 
   test('BEHIND with no green verdict never triggers update', () => {
