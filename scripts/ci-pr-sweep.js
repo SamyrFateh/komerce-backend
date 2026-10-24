@@ -25,6 +25,8 @@ const VERDICT = 'Required verdict';
 const HOLD_LABEL = 'hold';
 const GRACE_MS = 15 * 60 * 1000;
 const MERGE_IMMINENT = new Set(['CLEAN', 'HAS_HOOKS', 'UNSTABLE']);
+// GitHub peut autoriser un merge direct malgré BEHIND : ne jamais synchroniser dans ce cas.
+const DIRECT_MERGEABLE = new Set(['CLEAN', 'HAS_HOOKS', 'UNSTABLE']);
 const PENDING_STATUS = new Set(['QUEUED', 'IN_PROGRESS', 'PENDING', 'WAITING', 'REQUESTED']);
 const LIST_FIELDS = 'number,isDraft,isCrossRepository,mergeStateStatus,autoMergeRequest,headRefOid,updatedAt,labels,statusCheckRollup';
 
@@ -37,7 +39,7 @@ function verdictOf(pr) {
 }
 
 function isCandidate(pr) {
-  if (pr.isDraft || pr.isCrossRepository || !pr.autoMergeRequest) return false;
+  if (pr.isDraft || pr.isCrossRepository) return false;
   return !(pr.labels || []).some(l => String(l.name || l).toLowerCase() === HOLD_LABEL);
 }
 
@@ -58,11 +60,13 @@ function isInFlight(pr, nowMs) {
 
 function pickSweepAction(prs, nowMs = Date.now()) {
   const candidates = (prs || []).filter(isCandidate).sort((a, b) => a.number - b.number);
-  if (!candidates.length) return { action: 'idle', reason: 'no-auto-merge-candidate' };
+  if (!candidates.length) return { action: 'idle', reason: 'no-eligible-candidate' };
   const busy = candidates.find(pr => isInFlight(pr, nowMs));
   if (busy) return { action: 'wait', reason: 'in-flight', number: busy.number };
-  const target = candidates.find(pr => pr.mergeStateStatus === 'BEHIND' && verdictOf(pr) !== 'failure');
-  if (!target) return { action: 'idle', reason: 'no-behind-candidate' };
+  // N'agir que pour une PR déjà verte : pas de synchronisation qui déclenche
+  // une CI alors que des preuves sont absentes ou encore en cours.
+  const target = candidates.find(pr => pr.mergeStateStatus === 'BEHIND' && verdictOf(pr) === 'success');
+  if (!target) return { action: 'idle', reason: 'no-green-behind-candidate' };
   return { action: 'update', reason: 'oldest-behind-candidate', number: target.number, headSha: target.headRefOid };
 }
 
