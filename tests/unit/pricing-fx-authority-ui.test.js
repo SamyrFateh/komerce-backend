@@ -29,7 +29,7 @@ describe('Pricing FX authority administration', () => {
   });
 
   test('aucun taux par défaut ni approbation automatique lors de la saisie', () => {
-    expect(source).toContain('Le sourcing USD/AED attend une observation EUR/USD récente');
+    expect(source).toContain('Les cotations publiques de la BCE sont synchronisées automatiquement');
     expect(source).toContain("form.addEventListener('submit'");
     expect(source).toContain("Observation enregistrée. Approbation requise depuis un deuxième compte admin.");
     expect(source).not.toMatch(/input\.value\s*=\s*['\"]1\.[0-9]+/);

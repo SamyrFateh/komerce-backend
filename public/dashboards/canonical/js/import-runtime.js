@@ -1391,15 +1391,15 @@
     const pendingCount = num(run?.diagnostics?.fx_pending || run?.accounting?.fx_pending);
     if (legacyCount === 0 && pendingCount === 0) return '';
     const title = pendingCount > 0
-      ? `${pendingCount} candidat(s) conservé(s) — taux EUR/USD à valider`
+      ? `${pendingCount} candidat(s) conservé(s) — cotation officielle EUR/USD attendue`
       : `${legacyCount} rejet(s) de réception liés au taux EUR/USD`;
     const detail = pendingCount > 0
-      ? 'Les fiches fournisseurs sont conservées dans « Mis de côté » avec leur prix source. Leur évaluation économique reprendra lors du prochain passage après validation du taux.'
-      : 'Ce passage a été enregistré avec des rejets dus à un taux manquant. Après validation du taux, relancez la source pour récupérer ces produits.';
+      ? 'Les fiches fournisseurs restent dans « Mis de côté » avec leur prix d’origine. La synchronisation BCE fonctionne automatiquement ; un nouveau passage utilisera la dernière cotation officielle disponible.'
+      : 'Ce passage a été enregistré avant la synchronisation automatique du taux. Après récupération du cours officiel, relancez la source pour récupérer ces produits.';
     return `<section class="kir-exception-banner" data-fx-remediation role="status">
       <strong>${esc(title)}</strong>
       <p>${esc(detail)}</p>
-      <a href="/admin/workspaces/pricing#fx-authority">Renseigner et faire approuver le taux EUR/USD →</a>
+      <a href="/admin/workspaces/pricing#fx-authority">Consulter l’autorité des taux officiels →</a>
       <a href="${urlFor(run?.run_ref, 'sources')}" data-cockpit-nav>Retour aux sources →</a>
     </section>`;
   }

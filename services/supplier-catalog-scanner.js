@@ -160,7 +160,7 @@ async function normalizeCandidate(product, options = {}) {
   dataSources.category = catMap.source;
   // Une indisponibilité temporaire de l'autorité FX ne rend pas le produit
   // fournisseur invalide. Conserver ses faits bruts, et reporter la décision
-  // économique jusqu'à l'approbation d'une observation EUR/USD.
+  // économique jusqu'à la récupération d'une cotation officielle EUR/USD.
   let purchasePriceKmf = null;
   let fxPending = null;
   try {
@@ -174,7 +174,7 @@ async function normalizeCandidate(product, options = {}) {
     };
   }
   dataSources.purchase_price = product.purchase_price ? 'supplier' : 'missing';
-  if (fxPending) dataSources.fx_conversion = 'pending_approved_rate';
+  if (fxPending) dataSources.fx_conversion = 'pending_official_rate';
   const w = estimateWeight(product.weight_kg, komerceCategory, komerceCats);
   dataSources.weight = w.source;
   const v = estimateVolume(product.dimensions, komerceCategory, komerceCats);
@@ -240,14 +240,14 @@ async function scanCandidate(candidate, options = {}) {
       scan_result: {
         fx_gate: {
           code: 'fx_rate_unavailable',
-          status: 'AWAITING_APPROVED_RATE',
+          status: 'AWAITING_OFFICIAL_QUOTE',
           currency: candidate.fx_pending.currency,
         },
         economic_test_health_status: 'unknown',
       },
       sourcing_decision: 'WATCH',
-      reason: `Taux de change approuvé indisponible pour ${candidate.fx_pending.currency} — conversion et décision économique en attente.`,
-      recommended_action: 'Faire approuver une observation EUR/USD valide, puis relancer le passage fournisseur.',
+      reason: `Cotation officielle indisponible pour ${candidate.fx_pending.currency} — conversion et décision économique en attente.`,  
+      recommended_action: 'Attendre la synchronisation automatique BCE, puis relancer le passage fournisseur.',
       market_confidence: 'unknown',
       confidence: candidate.confidence || 'low',
     };

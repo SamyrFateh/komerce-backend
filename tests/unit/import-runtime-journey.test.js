@@ -1157,6 +1157,7 @@ test('KIR-000012 : 20 rejets historiques taux usd_kmf exposent un chemin de réc
   expect(node.innerHTML).toContain('20 rejet(s) de réception liés au taux EUR/USD');
   expect(node.innerHTML).toContain('/admin/workspaces/pricing#fx-authority');
   expect(node.innerHTML).toContain('relancez la source pour récupérer ces produits');
+  expect(node.innerHTML).toContain('Après récupération du cours officiel');
 });
 
 test('import après correctif : 20 prix USD sans observation restent en Mis de côté, avec correction FX', () => {
@@ -1169,6 +1170,7 @@ test('import après correctif : 20 prix USD sans observation restent en Mis de c
   ui.render(node, { ...p, population: { kind: 'deferred', total: 20, items: [] } });
   expect(node.innerHTML).toContain('20 candidat(s) conservé(s)');
   expect(node.innerHTML).toContain('Mis de côté');
+  expect(node.innerHTML).toContain('synchronisation BCE fonctionne automatiquement');
   expect(node.innerHTML).toContain('/admin/workspaces/pricing#fx-authority');
   expect(node.innerHTML).not.toContain('20 rejet(s) de réception');
 });
