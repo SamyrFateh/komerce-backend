@@ -374,6 +374,11 @@ function main() {
       console.log(`(tampon pre-push non posé : ${reason})`);
       return;
     }
+    stamp.assertFinalState({
+      expectedSha: headSha,
+      actualSha: git(['rev-parse', 'HEAD']),
+      trackedDirtyCount: trackedChanges().size,
+    });
     stamp.writeGreen({ sha: headSha, gitPath: name => git(['rev-parse', '--git-path', name]) });
   };
 

@@ -223,3 +223,20 @@ describe('contrôles en processus', () => {
     write.mockRestore();
   });
 });
+
+describe('green pre-push stamp — final verified state', () => {
+  const { assertFinalState, refusal } = require('../../scripts/lib/preflight-stamp');
+  test('validates the exact SHA and clean tracked tree after all gates', () => {
+    expect(() => assertFinalState({ expectedSha: 'abc', actualSha: 'abc', trackedDirtyCount: 0 })).not.toThrow();
+  });
+  test('refuses a HEAD changed during the gates', () => {
+    expect(() => assertFinalState({ expectedSha: 'abc', actualSha: 'def', trackedDirtyCount: 0 })).toThrow(/HEAD modifié/);
+  });
+  test('refuses generated tracked files changed during gates', () => {
+    expect(() => assertFinalState({ expectedSha: 'abc', actualSha: 'abc', trackedDirtyCount: 2 })).toThrow(/Arbre suivi modifié/);
+  });
+  test('dry-run and initially dirty workspace cannot receive stamp', () => {
+    expect(refusal({ dryRun: true, headRef: 'HEAD', dirtyFiles: 0 })).toBe('dry-run');
+    expect(refusal({ dryRun: false, headRef: 'HEAD', dirtyFiles: 1 })).toMatch(/non committé/);
+  });
+});
