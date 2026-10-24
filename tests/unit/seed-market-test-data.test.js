@@ -373,9 +373,9 @@ test('cleanup CM retire seulement les commandes SEEDTEST et leur relais vide', a
   expect(result).toEqual({ orders: 1, dryRun: false });
 
   const [selectSql, selectParams] = db.query.mock.calls[0];
-  expect(selectSql).toMatch(/reference LIKE \\$1 AND market_id = \\$2/);
+  expect(selectSql).toMatch(/reference LIKE \$1 AND market_id = \$2/);
   expect(selectParams).toEqual(['SEEDTEST-CM-%', 'market-cm-id']);
-  const allSql = db.query.mock.calls.map(([sql]) => sql).join('\\n');
+  const allSql = db.query.mock.calls.map(([sql]) => sql).join('\n');
   expect(allSql).not.toMatch(/DELETE FROM products|UPDATE products|product_market_exposure|product_market_price_drafts/);
   expect(allSql).toMatch(/DELETE FROM order_items/);
   expect(allSql).toMatch(/DELETE FROM orders/);
