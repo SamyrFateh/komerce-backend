@@ -93,3 +93,12 @@ describe('RCT1 renders via the same canonical screen without live actions', () =
     expect(rows.every(r => r.actionable === false)).toBe(true);
   });
 });
+
+
+test('canonical Orders uses a fresh cache key after RCT1 response contract change', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/index.html'), 'utf8');
+  const js = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/orders.js'), 'utf8');
+  expect(html).toContain('/dashboards/canonical/js/orders.js?v=261024-2');
+  expect(js).not.toContain('function renderRct1(');
+  expect(js).toContain("payload.simulation_scope === 'RCT1'");
+});
