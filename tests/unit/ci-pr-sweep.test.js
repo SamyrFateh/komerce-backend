@@ -25,13 +25,32 @@ describe('CI PR sweep — serial behind synchronization', () => {
     });
   });
 
-  test('ignores draft, fork, no auto-merge and hold', () => {
+  test('ignores draft, fork and hold, but allows manually merged PRs', () => {
     const prs = [
       pr(1, { isDraft: true }), pr(2, { isCrossRepository: true }),
-      pr(3, { autoMergeRequest: null }), pr(4, { labels: [{ name: 'Hold' }] }),
+      pr(4, { labels: [{ name: 'Hold' }] }),
     ];
     expect(prs.some(isCandidate)).toBe(false);
-    expect(pickSweepAction(prs, NOW)).toEqual({ action: 'idle', reason: 'no-auto-merge-candidate' });
+    expect(pickSweepAction(prs, NOW)).toEqual({ action: 'idle', reason: 'no-eligible-candidate' });
+    expect(isCandidate(pr(3, { autoMergeRequest: null }))).toBe(true);
+  });
+
+  test('green BEHIND without auto-merge is synchronized, never merged', () => {
+    expect(pickSweepAction([pr(17, { autoMergeRequest: null })], NOW)).toEqual({
+      action: 'update', reason: 'oldest-behind-candidate', number: 17, headSha: 'sha17',
+    });
+  });
+
+  test('green CLEAN without auto-merge is left ready for human merge', () => {
+    expect(pickSweepAction([pr(17, { mergeStateStatus: 'CLEAN', autoMergeRequest: null })], NOW)).toEqual({
+      action: 'wait', reason: 'in-flight', number: 17,
+    });
+  });
+
+  test('BEHIND with no green verdict never triggers update', () => {
+    expect(pickSweepAction([pr(17, { statusCheckRollup: [] })], NOW)).toEqual({
+      action: 'idle', reason: 'no-green-behind-candidate',
+    });
   });
 
   test('waits while another eligible PR is in flight', () => {
