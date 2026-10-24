@@ -81,13 +81,13 @@ describe('bootstrap/crons', () => {
   });
 
   describe('official ECB FX reference cron', () => {
-    test('charge la BCE après le démarrage puis toutes les 4 h ; aucun formulaire manuel', async () => {
+    test('charge la BCE après le démarrage puis chaque heure ; aucun formulaire manuel', async () => {
       crons.startPublicFxReferenceCron();
       await jest.advanceTimersByTimeAsync(2 * 60 * 1000 - 1);
       expect(mockIngestEcbDaily).not.toHaveBeenCalled();
       await jest.advanceTimersByTimeAsync(1);
       expect(mockIngestEcbDaily).toHaveBeenCalledTimes(1);
-      await jest.advanceTimersByTimeAsync(4 * 60 * 60 * 1000);
+      await jest.advanceTimersByTimeAsync(60 * 60 * 1000);
       expect(mockIngestEcbDaily).toHaveBeenCalledTimes(2);
     });
 
