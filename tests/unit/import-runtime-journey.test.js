@@ -1135,3 +1135,40 @@ test('Sourcing : « Continuer → Raffinerie » ouvre la raffinerie sur le produ
   expect(src).toContain('data-next-step="refinery"');
   expect(src).toContain('viewer = options.user || null;');
 });
+
+test('KIR-000012 : 20 rejets historiques taux usd_kmf exposent un chemin de récupération', () => {
+  const ui = cockpit('?run=KIR-000012&view=population&kind=discarded');
+  const p = JSON.parse(JSON.stringify(payload));
+  p.selected.run_ref = 'KIR-000012';
+  p.selected.accounting.rejected = 20;
+  p.selected.accounting.source_total = 20;
+  p.selected.diagnostics = {
+    reject_reasons: { 'Taux usd_kmf indisponible : aucune observation approuvée.': 20 },
+  };
+  const node = root();
+  ui.render(node, {
+    ...p,
+    population: {
+      kind: 'discarded', total: 20, items: [],
+      unlisted: [{ label: 'Produit non retenu à la réception', count: 20 }],
+      reject_reason_groups: [{ reason: 'Taux usd_kmf indisponible : aucune observation approuvée.', count: 20 }],
+    },
+  });
+  expect(node.innerHTML).toContain('20 rejet(s) de réception liés au taux EUR/USD');
+  expect(node.innerHTML).toContain('/admin/workspaces/pricing#fx-authority');
+  expect(node.innerHTML).toContain('relancez la source pour récupérer ces produits');
+});
+
+test('import après correctif : 20 prix USD sans observation restent en Mis de côté, avec correction FX', () => {
+  const ui = cockpit('?run=KIR-000013&view=population&kind=deferred');
+  const p = JSON.parse(JSON.stringify(payload));
+  p.selected.run_ref = 'KIR-000013';
+  p.selected.accounting = { ...p.selected.accounting, source_total: 20, accepted: 20, deferred: 20, rejected: 0 };
+  p.selected.diagnostics = { fx_pending: 20, reject_reasons: {} };
+  const node = root();
+  ui.render(node, { ...p, population: { kind: 'deferred', total: 20, items: [] } });
+  expect(node.innerHTML).toContain('20 candidat(s) conservé(s)');
+  expect(node.innerHTML).toContain('Mis de côté');
+  expect(node.innerHTML).toContain('/admin/workspaces/pricing#fx-authority');
+  expect(node.innerHTML).not.toContain('20 rejet(s) de réception');
+});
