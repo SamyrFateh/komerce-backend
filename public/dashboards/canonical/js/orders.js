@@ -182,7 +182,7 @@
     return box;
   }
 
-  function renderDetail(doc, row, isRecette = false) {
+  function renderDetail(doc, row) {
     const box = el(doc, 'aside', 'kmc-ord-detail');
     box.setAttribute('data-ord-detail', '');
     box.appendChild(el(doc, 'h3', 'kmc-ord-h3', 'Détail de la commande'));
@@ -203,10 +203,6 @@
     box.appendChild(dl);
     const action = el(doc, 'p', 'kmc-ord-action', `Action requise : ${row.action}`);
     box.appendChild(action);
-    if (isRecette) {
-      box.appendChild(el(doc, 'p', 'kmc-ord-muted', 'Mode recette : navigation opérationnelle désactivée.'));
-      return box;
-    }
     if (row.actionable && row.market_code) {
       const exec = el(doc, 'a', 'kmc-ord-open', 'Hub live › Exécution');
       exec.href = hubExecutionHref(row.market_code);
@@ -228,13 +224,6 @@
     head.appendChild(el(doc, 'h2', 'kmc-ord-title', 'Commandes'));
     head.appendChild(el(doc, 'p', 'kmc-ord-sub', 'Ce qui attend une action, commande par commande. Les actions se font dans Order 360 et Opérations.'));
     page.appendChild(head);
-    const isRecette = payload.simulation_scope === 'RCT1';
-    page.appendChild(modeControl(doc, isRecette));
-    if (isRecette) {
-      const notice = el(doc, 'p', 'kmc-ord-error', 'Données fictives — RCT1. Même dashboard canonique, consultation uniquement : aucune action opérationnelle ni financière.');
-      notice.setAttribute('role', 'status');
-      page.appendChild(notice);
-    }
     page.appendChild(renderKpis(doc, payload));
 
     const rows = buildRows(payload);
@@ -290,7 +279,7 @@
       listBox.appendChild(el(doc, 'p', 'kmc-ord-muted', 'Liste limitée aux plus anciennes ; les totaux des indicateurs portent sur l’ensemble.'));
     }
     main.appendChild(listBox);
-    main.appendChild(renderDetail(doc, selected, isRecette));
+    main.appendChild(renderDetail(doc, selected));
     page.appendChild(main);
 
     const foot = el(doc, 'div', 'kmc-ord-foot');
@@ -300,43 +289,15 @@
     rootNode.appendChild(page);
   }
 
-  // Le mode est explicite dans l'URL de l'écran ; défaut : données réelles.
-  function requestedRecetteMode() {
-    if (typeof window === 'undefined' || !window.location) return false;
-    return new URLSearchParams(window.location.search || '').get('simulation_scope') === 'RCT1';
-  }
-
-  function modeControl(doc, isRecette) {
-    const wrap = el(doc, 'nav', 'kmc-ord-tabs');
-    wrap.setAttribute('aria-label', 'Périmètre des commandes');
-    for (const [label, recette] of [['Réel', false], ['Recette RCT1', true]]) {
-      const a = el(doc, 'a', 'kmc-ord-tab' + (isRecette === recette ? ' is-active' : ''), label);
-      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search || '' : '');
-      if (recette) params.set('simulation_scope', 'RCT1');
-      else params.delete('simulation_scope');
-      a.href = (typeof window !== 'undefined' ? window.location.pathname : '/admin/orders') + (params.toString() ? '?' + params : '');
-      a.setAttribute('aria-current', isRecette === recette ? 'page' : 'false');
-      wrap.appendChild(a);
-    }
-    return wrap;
-  }
-
   function mount(options) {
     const rootNode = options.root;
     const doc = options.document;
     const fetchFn = options.fetch;
     if (!rootNode) throw new Error('canonical_orders_root_missing');
     const normalEndpoint = endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
-    const recette = requestedRecetteMode();
-    const endpoint = recette
-      ? '/api/admin/dashboard/orders/rct1' +
-        (normalEndpoint.startsWith(MARKET_ENDPOINT_PREFIX)
-          ? '?market=' + encodeURIComponent(normalEndpoint.slice(MARKET_ENDPOINT_PREFIX.length))
-          : '')
-      : normalEndpoint;
+    const endpoint = normalEndpoint;
     rootNode.textContent = 'Chargement de Commandes…';
     return jsonRequest(fetchFn, endpoint).then(payload => {
-      if (recette && payload.simulation_scope !== 'RCT1') throw new Error('projection RCT1 non conforme');
       render(doc, rootNode, payload, { tab: 'all', selected: null });
       return Object.freeze({ payload, endpoint });
     }).catch(error => {
