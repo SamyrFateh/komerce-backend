@@ -374,6 +374,15 @@ function main() {
       console.log(`(tampon pre-push non posé : ${reason})`);
       return;
     }
+    // La preuve concerne le SHA ET l'arbre après les gates, pas leur état initial.
+    // Un générateur peut rendre des fichiers suivis stale pendant les contrôles.
+    if (git(['rev-parse', 'HEAD']) !== headSha) {
+      throw new Error('HEAD modifié pendant le preflight : validation du commit final requise.');
+    }
+    const finalTree = trackedChanges();
+    if (finalTree.size > 0) {
+      throw new Error(`Arbre suivi modifié pendant le preflight (${finalTree.size} fichier(s)) : committer puis relancer.`);
+    }
     stamp.writeGreen({ sha: headSha, gitPath: name => git(['rev-parse', '--git-path', name]) });
   };
 
