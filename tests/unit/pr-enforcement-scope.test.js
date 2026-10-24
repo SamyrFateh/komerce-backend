@@ -496,10 +496,10 @@ describe('HTTP read-only RCT1 — conservative DB-cost boundary', () => {
     'tests/unit/admin-dashboard-market.test.js',
     'tests/unit/dashboard-rct1-orders.test.js',
   ];
-  const previous = '/** @db-write none */\nrouter.get("/orders", auth, handler);\n';
+  const previous = '/**\n * @db-write none\n */\nrouter.get("/orders", auth, handler);\n';
   const inserted = '\n// Consultation fictive protégée.\nrouter.get(\n  \'/orders/rct1\',\n  auth,\n  async (req, res) => { res.json({ orders: [] }); }\n);\n';
   const current = previous + inserted;
-  const service = '/** @db-read orders @db-write none */\nmodule.exports = {}';
+  const service = '/**\n * @db-read orders\n * @db-write none\n */\nmodule.exports = {}';
   const classifyWith = (changed, after = current, before = previous, serviceAfter = service) =>
     classifyRuntimeProof(changed, {
       readBefore: file => file === 'routes/admin-dashboard-market.js' ? before : null,
