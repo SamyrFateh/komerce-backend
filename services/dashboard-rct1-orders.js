@@ -2,6 +2,7 @@
  * @komerce-arch-lite
  * @role          rct1-orders-readonly-projection
  * @domain        admin-dashboard
+ * @owner         backend-core
  * @layer         service
  * @purpose       Liste exhaustive des commandes fictives RCT1, jamais les files opérationnelles réelles.
  * @db-read       orders, markets
