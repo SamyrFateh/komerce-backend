@@ -135,7 +135,7 @@
     panel.open = globalThis.location?.hash === '#fx-authority';
     panel.appendChild(text(doc, 'summary', '', 'Taux officiels automatiques · observations exceptionnelles'))
     panel.appendChild(text(doc, 'p', 'kmc-workspace-note',
-      'Les cotations publiques de la BCE sont synchronisées automatiquement toutes les 4 heures, y compris les week-ends (dernier cours officiel publié). La saisie et la double approbation ci-dessous sont réservées au traitement exceptionnel d’une indisponibilité de la source.'));
+      'Les cotations publiques de la BCE sont synchronisées automatiquement toutes les heures, y compris les week-ends (dernier cours officiel publié). La saisie et la double approbation ci-dessous sont réservées au traitement exceptionnel d’une indisponibilité de la source.'));
     const status = text(doc, 'p', 'kmc-workspace-feedback', '');
     status.setAttribute('role', 'status');
     panel.appendChild(status);
