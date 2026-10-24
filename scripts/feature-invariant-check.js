@@ -220,7 +220,23 @@ function runFamily(family, files, { verbose } = {}) {
   if (family === KIND.UNIT) args.push('--config', 'jest.unit.config.js');
   if (!verbose) args.push('--silent');
   args.push('--runTestsByPath', ...targets);
-  spawnSync(process.execPath, args, { cwd, env: process.env, stdio: verbose ? 'inherit' : 'pipe', encoding: 'utf8', timeout: 30 * 60_000 });
+  const result = spawnSync(process.execPath, args, {
+    cwd,
+    env: process.env,
+    stdio: 'pipe',
+    encoding: 'utf8',
+    maxBuffer: 20 * 1024 * 1024,
+    timeout: 30 * 60_000
+  });
+  if (result.error || result.status !== 0 || !fs.existsSync(outFile)) {
+    console.error('Jest execution:', {
+      status: result.status,
+      signal: result.signal,
+      error: result.error?.message,
+      stderr: (result.stderr || '').slice(-3000),
+      reportExists: fs.existsSync(outFile)
+    });
+  }
   let report = { testResults: [] };
   try { report = JSON.parse(fs.readFileSync(outFile, 'utf8')); } catch { /* rapport absent : tous non exécutés */ }
   try { fs.unlinkSync(outFile); } catch { /* déjà absent */ }
