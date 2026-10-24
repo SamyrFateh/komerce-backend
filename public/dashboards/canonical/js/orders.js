@@ -182,7 +182,7 @@
     return box;
   }
 
-  function renderDetail(doc, row) {
+  function renderDetail(doc, row, isRecette = false) {
     const box = el(doc, 'aside', 'kmc-ord-detail');
     box.setAttribute('data-ord-detail', '');
     box.appendChild(el(doc, 'h3', 'kmc-ord-h3', 'Détail de la commande'));
@@ -203,6 +203,10 @@
     box.appendChild(dl);
     const action = el(doc, 'p', 'kmc-ord-action', `Action requise : ${row.action}`);
     box.appendChild(action);
+    if (isRecette) {
+      box.appendChild(el(doc, 'p', 'kmc-ord-muted', 'Mode recette : navigation opérationnelle désactivée.'));
+      return box;
+    }
     if (row.actionable && row.market_code) {
       const exec = el(doc, 'a', 'kmc-ord-open', 'Hub live › Exécution');
       exec.href = hubExecutionHref(row.market_code);
@@ -224,7 +228,13 @@
     head.appendChild(el(doc, 'h2', 'kmc-ord-title', 'Commandes'));
     head.appendChild(el(doc, 'p', 'kmc-ord-sub', 'Ce qui attend une action, commande par commande. Les actions se font dans Order 360 et Opérations.'));
     page.appendChild(head);
-    page.appendChild(modeControl(doc, false));
+    const isRecette = payload.simulation_scope === 'RCT1';
+    page.appendChild(modeControl(doc, isRecette));
+    if (isRecette) {
+      const notice = el(doc, 'p', 'kmc-ord-error', 'Données fictives — RCT1. Même dashboard canonique, consultation uniquement : aucune action opérationnelle ni financière.');
+      notice.setAttribute('role', 'status');
+      page.appendChild(notice);
+    }
     page.appendChild(renderKpis(doc, payload));
 
     const rows = buildRows(payload);
@@ -280,7 +290,7 @@
       listBox.appendChild(el(doc, 'p', 'kmc-ord-muted', 'Liste limitée aux plus anciennes ; les totaux des indicateurs portent sur l’ensemble.'));
     }
     main.appendChild(listBox);
-    main.appendChild(renderDetail(doc, selected));
+    main.appendChild(renderDetail(doc, selected, isRecette));
     page.appendChild(main);
 
     const foot = el(doc, 'div', 'kmc-ord-foot');
@@ -311,38 +321,6 @@
     return wrap;
   }
 
-  function renderRct1(doc, rootNode, payload) {
-    rootNode.textContent = '';
-    const page = el(doc, 'div', 'kmc-ord');
-    page.appendChild(el(doc, 'h2', 'kmc-ord-title', 'Commandes — Recette RCT1'));
-    page.appendChild(modeControl(doc, true));
-    const banner = el(doc, 'p', 'kmc-ord-error', 'Données fictives — RCT1. Consultation uniquement : aucune action opérationnelle ni financière.');
-    banner.setAttribute('role', 'status');
-    page.appendChild(banner);
-    page.appendChild(el(doc, 'p', 'kmc-ord-sub', String(payload.total) + ' commandes de recette, y compris remises et annulées.'));
-    const table = el(doc, 'table', 'kmc-ord-table');
-    const head = el(doc, 'tr');
-    for (const label of ['Référence', 'Marché', 'Statut', 'Paiement', 'Montant de référence (KMF)']) head.appendChild(el(doc, 'th', '', label));
-    const thead = el(doc, 'thead'); thead.appendChild(head); table.appendChild(thead);
-    const tbody = el(doc, 'tbody');
-    for (const row of payload.orders || []) {
-      const tr = el(doc, 'tr', 'kmc-ord-row');
-      for (const value of [row.reference, row.market_code, STATUS_LABELS[row.status] || row.status,
-        PAYMENT_LABELS[row.payment_status] || row.payment_status || '—', money(row.total_kmf)]) {
-        tr.appendChild(el(doc, 'td', '', value));
-      }
-      tbody.appendChild(tr);
-    }
-    if (!payload.orders || !payload.orders.length) {
-      const tr = el(doc, 'tr');
-      const td = el(doc, 'td', 'kmc-ord-empty', 'Aucune commande RCT1 pour ce marché.');
-      td.colSpan = 5; tr.appendChild(td); tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    const scroller = el(doc, 'div', 'kmc-ord-table-wrap'); scroller.appendChild(table); page.appendChild(scroller);
-    rootNode.appendChild(page);
-  }
-
   function mount(options) {
     const rootNode = options.root;
     const doc = options.document;
@@ -358,8 +336,8 @@
       : normalEndpoint;
     rootNode.textContent = 'Chargement de Commandes…';
     return jsonRequest(fetchFn, endpoint).then(payload => {
-      if (recette) renderRct1(doc, rootNode, payload);
-      else render(doc, rootNode, payload, { tab: 'all', selected: null });
+      if (recette && payload.simulation_scope !== 'RCT1') throw new Error('projection RCT1 non conforme');
+      render(doc, rootNode, payload, { tab: 'all', selected: null });
       return Object.freeze({ payload, endpoint });
     }).catch(error => {
       rootNode.textContent = '';
