@@ -534,7 +534,7 @@ const KNOWN_RESPONSES = {
     get: { fields: ['scope','summary','signals','funnel','priority_orders','kpis','lifecycle','payment_mix','work_queues','data_quality'], source: 'service-read' }
   },
   '/api/admin/dashboard/orders/rct1': {
-    get: { fields: ['mode', 'simulation_scope', 'data_quality', 'total', 'orders'], source: 'service-read' }
+    get: { fields: ['mode', 'simulation_scope', 'scope', 'summary', 'signals', 'funnel', 'priority_orders', 'kpis', 'lifecycle', 'payment_mix', 'work_queues', 'data_quality'], source: 'service-read' }
   },
   // Control Plane marché (lecture seule) : clés vérifiées par
   // tests/unit/market-control-plane-service.test.js et admin-market-control-plane-routes.test.js.

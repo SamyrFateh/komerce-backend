@@ -31904,15 +31904,43 @@
                       "type": "string",
                       "x-observed": true
                     },
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "summary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "signals": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "funnel": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "priority_orders": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "kpis": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lifecycle": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "payment_mix": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "work_queues": {
+                      "type": "string",
+                      "x-observed": true
+                    },
                     "data_quality": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "total": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "orders": {
                       "type": "string",
                       "x-observed": true
                     }
