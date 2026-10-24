@@ -17,7 +17,8 @@ test('Provenance SQL defect only reported when exact source evidence exists',()=
  assert.ok(markdown(r).includes('BIZ-001'));
 });
 test('All findings carry a traceable source and are never certified as production bugs',()=>{
- const corpus=Object.fromEntries(RULES.map(r=>[r[4],r[5]]));
+ const corpus={};
+ for (const r of RULES) corpus[r[4]]=(corpus[r[4]]||'')+'\n'+r[5];
  const r=inspect({get:f=>corpus[f]||'',tracked:Object.keys(corpus),sha:'fixture'});
  assert.equal(r.verdict,'NOT_CERTIFICATION');
  assert.equal(r.dataStatus,'NOT_RUN');
