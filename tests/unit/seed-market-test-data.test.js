@@ -370,7 +370,7 @@ test('rejouer un seed conserve intégralement une fiche globale existante', asyn
   expect(products[0]).toMatchObject({ id: 'existing-id', price_kmf: 99999, stock: 2 });
   expect(db.query).toHaveBeenCalledTimes(2);
   expect(db.query.mock.calls[0][0]).toContain('ON CONFLICT (product_ref) DO NOTHING');
-  expect(db.query.mock.calls[1][0]).toMatch(/SELECT \\* FROM products WHERE product_ref/);
+  expect(db.query.mock.calls[1][0]).toMatch(/SELECT \* FROM products WHERE product_ref/);
 });
 
 test('createOrder écrit le market_id et projette total_eur via Currency Boundary', async () => {
