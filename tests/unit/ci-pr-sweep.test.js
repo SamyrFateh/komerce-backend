@@ -39,6 +39,14 @@ describe('CI PR sweep — serial behind synchronization', () => {
     expect(pickSweepAction([running, pr(9)], NOW)).toEqual({ action: 'wait', reason: 'in-flight', number: 5 });
   });
 
+  test('BEHIND with a pending verdict must finish before any update', () => {
+    const nearGreen = pr(5, { statusCheckRollup: [{ name: 'Required verdict', status: 'IN_PROGRESS' }] });
+    expect(isInFlight(nearGreen, NOW)).toBe(true);
+    expect(pickSweepAction([nearGreen, pr(9)], NOW)).toEqual({
+      action: 'wait', reason: 'in-flight', number: 5,
+    });
+  });
+
   test('red/conflicted PRs do not block the next behind candidate', () => {
     const red = pr(5, { mergeStateStatus: 'BLOCKED', statusCheckRollup: [{ name: 'Required verdict', status: 'COMPLETED', conclusion: 'FAILURE' }] });
     const conflict = pr(6, { mergeStateStatus: 'DIRTY' });
@@ -79,10 +87,12 @@ describe('CI PR sweep — serial behind synchronization', () => {
   test('workflows have no github.token fallback for branch mutation', () => {
     const sweepWorkflow = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-sweep-behind.yml'), 'utf8');
     const autoWorkflow = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-auto-update.yml'), 'utf8');
+    expect(sweepWorkflow).toContain('PR_SYNC_TOKEN');
     for (const workflow of [sweepWorkflow, autoWorkflow]) {
-      expect(workflow).toContain('PR_SYNC_TOKEN');
       expect(workflow).not.toContain('GH_TOKEN: ${{ github.token }}');
       expect(workflow).not.toContain('|| github.token');
     }
+    expect(autoWorkflow).not.toContain('pull_request_target:');
+    expect(autoWorkflow).not.toContain('update-branch');
   });
 });
