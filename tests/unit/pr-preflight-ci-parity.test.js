@@ -182,3 +182,21 @@ describe('orchestration fail-fast sans doublons', () => {
     expect(plan.some(step => step.argv && step.argv.some(arg => String(arg).includes('touched-tests-gate.js')))).toBe(false);
   });
 });
+
+describe('preflight fail-fast multi-scopes', () => {
+  test('gouvernance précède les suites backend sans dupliquer un gate', () => {
+    const plan = buildPlan({
+      backend: true, dashboard: true, boutique: false, governance: true,
+      migrations: false, golden: false, schemaDump: false,
+      boutiqueCss: false, boutiqueJs: false,
+      providerProofOnly: false, cjPilotProofOnly: false,
+      backendFiles: ['services/dashboard-rct1-orders.js'],
+      migrationFiles: [], changedFiles: ['services/dashboard-rct1-orders.js'],
+    }, 'base', 'head');
+    const names = plan.map(step => step.label);
+    expect(names[0]).toBe('Touched tests / completion-at-contact');
+    expect(names.indexOf('Architecture header hygiene')).toBeLessThan(names.indexOf('Related unit tests'));
+    expect(names.filter(n => n === 'Architecture header hygiene')).toHaveLength(1);
+    expect(names.filter(n => n === 'Related unit tests')).toHaveLength(1);
+  });
+});
