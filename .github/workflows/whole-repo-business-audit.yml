@@ -1,0 +1,49 @@
+name: Komerce — repository and business logic deep audit
+on:
+  push:
+    branches:
+      - audit/whole-repo-business-logic-20261025
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Entire repository logic scanner + business-flow diagnostics (READ ONLY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify isolated business-audit detector
+        run: node --test scripts/audits/business-logic-audit.node.test.cjs
+      - name: Canonical whole-repository logic scanner — all tracked app JS/TS
+        run: node scripts/audit-logic.js --static-only --base HEAD --out audit-results/canonical
+      - name: Cross-domain business audit — supplier to fulfillment
+        run: node scripts/audits/business-logic-audit.js --out audit-results/business
+      - name: Export complete findings into visible workflow logs
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const canonical = JSON.parse(fs.readFileSync('audit-results/canonical/audit.json','utf8'));
+          const business = JSON.parse(fs.readFileSync('audit-results/business/business-audit.json','utf8'));
+          console.log('=== COMPLETE SOURCE AUDIT ===');
+          console.log(JSON.stringify({sha:canonical.sha,scanned:canonical.scannedFiles,tracked:canonical.trackedFiles,total:canonical.findings.length,byRule:canonical.byRule,dataStatus:canonical.dataStatus},null,2));
+          canonical.findings.forEach(f=>console.log(JSON.stringify({rule:f.rule,priority:f.priority,category:f.category,file:f.file,line:f.line,title:f.title,snippet:f.snippet,novelty:f.novelty})));
+          console.log('=== BUSINESS WORKFLOW AUDIT ===');
+          console.log(JSON.stringify({sha:business.sha,census:business.census,issues:business.issues.length,missing:business.missing},null,2));
+          business.issues.forEach(f=>console.log(JSON.stringify({id:f.id,priority:f.priority,stage:f.stage,qualification:f.status,file:f.file,line:f.line,title:f.title,impact:f.impact,permalink:f.permalink})));
+          NODE
+      - name: Upload audit JSON and Markdown
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: komerce-business-logic-full-audit
+          path: audit-results/
+          if-no-files-found: warn
+          retention-days: 14
