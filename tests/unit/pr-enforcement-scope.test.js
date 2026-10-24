@@ -488,3 +488,42 @@ describe('scope dashboard — gate Playwright officiel', () => {
     expect(classify(['tests/e2e/search.spec.js']).dashboard).toBe(false);
   });
 });
+
+describe('HTTP read-only RCT1 — conservative DB-cost boundary', () => {
+  const files = [
+    'routes/admin-dashboard-market.js',
+    'services/dashboard-rct1-orders.js',
+    'tests/unit/admin-dashboard-market.test.js',
+    'tests/unit/dashboard-rct1-orders.test.js',
+  ];
+  const previous = '/**\n * @db-write none\n */\nrouter.get("/orders", auth, handler);\n';
+  const inserted = '\n// Consultation fictive protégée.\nrouter.get(\n  \'/orders/rct1\',\n  auth,\n  async (req, res) => { res.json({ orders: [] }); }\n);\n';
+  const current = previous + inserted;
+  const service = '/**\n * @db-read orders\n * @db-write none\n */\nmodule.exports = {}';
+  const classifyWith = (changed, after = current, before = previous, serviceAfter = service) =>
+    classifyRuntimeProof(changed, {
+      readBefore: file => file === 'routes/admin-dashboard-market.js' ? before : null,
+      readAfter: file => file === 'routes/admin-dashboard-market.js' ? after : file === 'services/dashboard-rct1-orders.js' ? serviceAfter : null,
+    });
+
+  test('isolated additive GET with two unit proofs avoids DB E2E', () => {
+    const result = classifyWith(files);
+    expect(result).toMatchObject({ dbRebuildRequired: false, integrationRequired: false, e2eApiRequired: false });
+  });
+
+  test('missing HTTP proof stays E2E required', () => {
+    expect(classifyWith(files.filter(x => x !== 'tests/unit/admin-dashboard-market.test.js')).e2eApiRequired).toBe(true);
+  });
+
+  test('other route edits remain E2E required even with proof', () => {
+    expect(classifyWith(files, current.replace('auth, handler', 'changedGuard, handler')).e2eApiRequired).toBe(true);
+  });
+
+  test('a writing service cannot use read-only shortcut', () => {
+    expect(classifyWith(files, current, previous, '/** @db-write orders */').e2eApiRequired).toBe(true);
+  });
+
+  test('a separate mutation route remains E2E required', () => {
+    expect(classifyWith(files, current + '\nrouter.post("/orders/mutate", action);').e2eApiRequired).toBe(true);
+  });
+});
