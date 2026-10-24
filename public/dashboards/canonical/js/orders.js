@@ -102,7 +102,7 @@
         payment_status: item.payment_status || (kind === 'cash' ? 'pending' : kind === 'parcel' || kind === 'to_order' || kind === 'awaiting' ? 'paid' : null),
         total_kmf: item.total_kmf, client_name: item.client_name || null, relais_name: item.relais_name || null,
         market_code: item.market_code || null, product_lines: item.product_lines, first_product_name: item.first_product_name || null,
-        parcel_count: item.parcel_count, problem: item.problem || null, since_days: item.since_days, action, queues: [kind], ...extra };
+        parcel_count: item.parcel_count, problem: item.problem || null, since_days: item.since_days, action, actionable: item.actionable === false ? false : undefined, queues: [kind], ...extra };
       seen.set(key, row);
       rows.push(row);
     }
