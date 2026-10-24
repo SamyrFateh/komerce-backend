@@ -304,6 +304,9 @@ test('prépare chaque produit sur le même Market ID: exposition ENABLED + prix 
     { id: 'product-1', product_ref: 'KPR-990001', price_kmf: 12000 },
     { id: 'product-2', product_ref: 'KPR-990002', price_kmf: 18000 },
   ];
+  db.query
+    .mockResolvedValueOnce({ rows: [] }) // no market exposure yet
+    .mockResolvedValueOnce({ rows: [] }); // no local price yet
   projectAmount
     .mockResolvedValueOnce(16000)
     .mockResolvedValueOnce(24000);
@@ -324,6 +327,50 @@ test('prépare chaque produit sur le même Market ID: exposition ENABLED + prix 
     source: PRICE_SOURCE,
     actorId: null,
   });
+});
+
+test('un seed rejoué ne touche pas une exposition ou un prix local déjà décidés', async () => {
+  const market = { id: 'market-km-id', code: 'KM', currency: 'KMF', minor_unit: 0 };
+  const products = [
+    { id: 'product-1', product_ref: 'KPR-990001', price_kmf: 12000 },
+    { id: 'product-2', product_ref: 'KPR-990002', price_kmf: 18000 },
+  ];
+  db.query
+    .mockResolvedValueOnce({ rows: [{ product_id: 'product-1' }, { product_id: 'product-2' }] })
+    .mockResolvedValueOnce({ rows: [{ product_id: 'product-1' }, { product_id: 'product-2' }] });
+
+  expect(await prepareProductsForMarket(products, market)).toEqual({ exposed: 0, drafts: 0 });
+  expect(catalogExposure.setExposure).not.toHaveBeenCalled();
+  expect(marketCommercialPrice.setMarketPriceDraft).not.toHaveBeenCalled();
+  expect(projectAmount).not.toHaveBeenCalled();
+});
+
+test('un seed partiel crée seulement les projections manquantes', async () => {
+  const market = { id: 'market-cm-id', code: 'CM', currency: 'XAF', minor_unit: 0 };
+  const products = [
+    { id: 'product-1', product_ref: 'KPR-990001', price_kmf: 12000 },
+    { id: 'product-2', product_ref: 'KPR-990002', price_kmf: 18000 },
+  ];
+  db.query
+    .mockResolvedValueOnce({ rows: [{ product_id: 'product-1' }] })
+    .mockResolvedValueOnce({ rows: [{ product_id: 'product-2' }] });
+
+  expect(await prepareProductsForMarket(products, market)).toEqual({ exposed: 1, drafts: 1 });
+  expect(catalogExposure.setExposure).toHaveBeenCalledTimes(1);
+  expect(catalogExposure.setExposure).toHaveBeenCalledWith('product-2', 'market-cm-id', 'ENABLED', null);
+  expect(marketCommercialPrice.setMarketPriceDraft).toHaveBeenCalledTimes(1);
+  expect(marketCommercialPrice.setMarketPriceDraft.mock.calls[0][0].productRef).toBe('KPR-990001');
+});
+
+test('rejouer un seed conserve intégralement une fiche globale existante', async () => {
+  db.query
+    .mockResolvedValueOnce({ rows: [] })
+    .mockResolvedValueOnce({ rows: [{ id: 'existing-id', product_ref: 'KPR-990001', price_kmf: 99999, stock: 2 }] });
+  const products = await ensureProducts(1);
+  expect(products[0]).toMatchObject({ id: 'existing-id', price_kmf: 99999, stock: 2 });
+  expect(db.query).toHaveBeenCalledTimes(2);
+  expect(db.query.mock.calls[0][0]).toContain('ON CONFLICT (product_ref) DO NOTHING');
+  expect(db.query.mock.calls[1][0]).toMatch(/SELECT \\* FROM products WHERE product_ref/);
 });
 
 test('createOrder écrit le market_id et projette total_eur via Currency Boundary', async () => {
