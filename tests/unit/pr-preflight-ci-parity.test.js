@@ -154,3 +154,31 @@ test('full unit coverage subsumes the targeted related-tests run', () => {
   expect(workflow).toMatch(/reuse_coverage != 'true'/);
   expect(workflow).toMatch(/npm run test:unit:coverage/);
 });
+
+describe('orchestration fail-fast sans doublons', () => {
+  const minimalScope = {
+    backend: true, dashboard: true, boutique: false, governance: true,
+    migrations: false, schemaDump: false, golden: false,
+    boutiqueCss: false, boutiqueJs: false,
+    providerProofOnly: false, cjPilotProofOnly: false,
+    backendFiles: ['routes/admin-dashboard-market.js'],
+    migrationFiles: [], changedFiles: ['routes/admin-dashboard-market.js'],
+  };
+
+  test('touched-tests --strict passe avant tous les gates coûteux et une seule fois', () => {
+    const plan = buildPlan(minimalScope, 'base', 'head');
+    const touched = plan.filter(step => step.argv && step.argv.some(arg => String(arg).includes('touched-tests-gate.js')));
+    expect(touched).toHaveLength(1);
+    expect(plan[0].label).toBe('Touched tests / completion-at-contact');
+    expect(plan[0].argv).toContain('--strict');
+    expect(plan[0].argv).toContain('base');
+  });
+
+  test('un changement documentaire seul ne lance pas touched-tests', () => {
+    const plan = buildPlan({
+      ...minimalScope, backend: false, dashboard: false, governance: false,
+      backendFiles: [], changedFiles: ['docs/note.md'],
+    }, 'base', 'head');
+    expect(plan.some(step => step.argv && step.argv.some(arg => String(arg).includes('touched-tests-gate.js')))).toBe(false);
+  });
+});

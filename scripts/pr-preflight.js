@@ -197,13 +197,13 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
     );
   }
 
+
+  // Check le moins coûteux et le plus souvent oublié : avant les audits,
+  // reconstructions de graphes et suites unitaires. Aucun nouveau gate.
   if (scope.backend || scope.dashboard || scope.boutique) {
-    plan.push(
-      nodeRun('Touched tests / completion-at-contact', 'scripts/touched-tests-gate.js', [
-        '--base', baseSha,
-        '--strict',
-      ])
-    );
+    plan.unshift(nodeRun('Touched tests / completion-at-contact', 'scripts/touched-tests-gate.js', [
+      '--base', baseSha, '--strict',
+    ]));
   }
 
   if (scope.backend) {
