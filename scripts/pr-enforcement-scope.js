@@ -82,7 +82,7 @@ function isBackendFile(file) {
 function isBackendSourceFile(file) {
   const f = norm(file);
   return /^(?:server\.js|jest\.config\.js|jest\.unit\.config\.js)$/i.test(f)
-    || /^(?:routes|services|middleware|utils|validators|core|bootstrap|db)\/.+/i.test(f);
+    || /^(?:routes|services|middleware|utils|validators|core|bootstrap|db)\/.+\.(?:js|cjs|mjs|ts)$/i.test(f);
 }
 
 function isMigrationFile(file) {
