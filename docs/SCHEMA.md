@@ -715,3 +715,10 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 `refund_execution_intents` est une nouvelle table **not yet live**. Elle conserve l'intention avant tout appel PSP Stripe/PayPal : commande, marché, capture, événement stable, montant EUR et statut. Les anciennes lignes `refunds` sont à rapprocher avant activation. Service propriétaire : `services/refund-intent-ledger.js` (non activé). Contrat : `docs/architecture/REFUND_EXECUTION_AUTHORITY.md`.
 <!-- /schema-pending -->
+
+
+<!-- schema-pending: fx_public_reference_quotes (migration 319, not yet live) -->
+### Cotations officielles EUR/XXX — migration 319 (`intended_migration_schema`)
+
+`fx_public_reference_quotes` est une nouvelle table **not yet live**, déclarée par `migrations/319_fx_public_reference_quotes.sql`. Cotations publiques BCE EUR/XXX ingérées automatiquement, identifiées par `(base_ccy, quote_ccy, as_of)` ; champs `id`, `rate`, `source_label`, `source_ref`, `ingested_at`. Seules les cotations BCE officielles datées sont acceptées, sans imposer de validation humaine fictive. Invariants : append-only, pas de DELETE/TRUNCATE, pas de réécriture rétroactive, horodatage de collecte ; parités fixes KMF/XAF maintenues exclusivement dans `currency_parities`. Écrivain : `services/fx-public-reference-feed.js` ; lecteur : `services/fx-chain-service.js` ; snapshot transactionnel via `services/fx-authority.js`. Le bloc doit être promu par `schema-promote` lorsque la migration est réellement attestée dans le dump live Railway.
+<!-- /schema-pending -->

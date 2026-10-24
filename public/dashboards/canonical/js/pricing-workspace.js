@@ -122,9 +122,9 @@
     return node;
   }
 
-  // Autorité FX : le backend exige une observation EUR/USD sourcée, puis
-  // l'approbation par une AUTRE identité. Cette UI n'est jamais une autorité
-  // de taux, et n'invente ni valeur ni date.
+  // Source courante : cotations BCE officielles collectées automatiquement.
+  // Cette UI est réservée aux observations manuelles exceptionnelles, dont
+  // l'approbation est strictement séparée de la collecte officielle.
   async function appendFxAuthority(rootNode, context) {
     if (String(context.user?.role || '').toLowerCase() !== 'admin') return;
     const doc = context.document;
@@ -133,9 +133,9 @@
     panel.id = 'fx-authority';
     panel.className = 'kmc-pricing-secondary';
     panel.open = globalThis.location?.hash === '#fx-authority';
-    panel.appendChild(text(doc, 'summary', '', 'Taux EUR/USD · autorité de change'));
+    panel.appendChild(text(doc, 'summary', '', 'Taux officiels automatiques · observations exceptionnelles'))
     panel.appendChild(text(doc, 'p', 'kmc-workspace-note',
-      'Le sourcing USD/AED attend une observation EUR/USD récente, sourcée et approuvée par une deuxième personne. Les taux restent gouvernés par le serveur.'));
+      'Les cotations publiques de la BCE sont synchronisées automatiquement toutes les heures, y compris les week-ends (dernier cours officiel publié). La saisie et la double approbation ci-dessous sont réservées au traitement exceptionnel d’une indisponibilité de la source.'));
     const status = text(doc, 'p', 'kmc-workspace-feedback', '');
     status.setAttribute('role', 'status');
     panel.appendChild(status);

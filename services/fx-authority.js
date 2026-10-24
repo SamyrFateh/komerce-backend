@@ -8,7 +8,7 @@
  * @outputs       converted_amount, legs, rounding
  * @depends       db, services/fx-chain-service.js
  * @used-by       utils/currency.js, services/market-transport-sale-rates.js
- * @db-read       currency_parities, fx_pegs, fx_rate_observations
+ * @db-read       currency_parities, fx_pegs, fx_rate_observations, fx_public_reference_quotes
  * @db-write      none
  * @db-txn        none
  * @doctrine      eur_is_the_pivot, single_conversion_authority, fail_closed, no_float_arithmetic, single_rounding
@@ -19,9 +19,10 @@
  *   montant × U(Y) / U(X), où U(c) = unités de c pour 1 EUR, produit de jambes sourcées :
  *     EUR            : 1 (identité)
  *     KMF, XAF       : currency_parities (parité fixe, ancrage garanti)
- *     USD            : observation EUR/USD approuvée par une 2e personne, fraîche (fx_rate_observations)
- *     DJF, AED       : observation EUR/USD × peg USD→devise daté (fx_pegs)
- *     toute autre    : refus typé (aucun taux inventé)
+ *     USD            : fixing officiel EUR/USD BCE daté ; observation manuelle validée conservée en second recours
+ *     DJF, AED       : EUR/USD officiel × peg USD→devise daté (fx_pegs)
+ *     CNY            : cotation flottante publique EUR/CNY (même pivot EUR, sans faux peg dollar)
+ *     toute autre    : refus typé tant que non autorisée (les cours BCE restent collectés et audités)
  * Calcul en rationnel exact (BigInt), UN SEUL arrondi half-even au minor_unit ISO de la devise cible.
  * Chaque conversion retourne les jambes (id, paire, taux, source) à figer dans le snapshot de transaction.
  * `at` absent = heure de la base (jamais l'horloge du process).
@@ -98,6 +99,7 @@ async function legsPerEur(ccy, ctx) {
   assertSupported(ccy);
   if (ccy === 'EUR') return [];
   if (FIXED_PARITY_CURRENCIES.includes(ccy)) return [await fixedParityLeg(ccy, ctx.client)];
+  if (ccy === 'CNY') return [await ctx.publishedQuote(ccy)];
   if (ccy === 'USD' || PEGGED_CURRENCIES.includes(ccy)) {
     const legs = [await ctx.observation()];
     if (ccy !== 'USD') legs.push(await ctx.peg(ccy));
@@ -114,6 +116,10 @@ function makeContext({ at, maxAgeDays, client }) {
     observation: () => once('obs', async () => {
       const o = await fxChain.resolveObservation({ at, maxAgeDays, client });
       return { kind: 'observation', id: o.id, pair: 'EUR/USD', rate: o.rate_text, as_of: o.as_of, source: o.source_label };
+    }),
+    publishedQuote: (quote) => once(`published:${quote}`, async () => {
+      const o = await fxChain.resolvePublishedQuote({ quote, at, maxAgeDays, client });
+      return { kind: 'observation', id: o.id, pair: `EUR/${quote}`, rate: o.rate_text, as_of: o.as_of, source: o.source_label };
     }),
     peg: (quote) => once(`peg:${quote}`, async () => {
       const p = await fxChain.resolvePeg({ quote, at, client });

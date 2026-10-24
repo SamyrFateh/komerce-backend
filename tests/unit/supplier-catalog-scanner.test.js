@@ -207,17 +207,17 @@ describe('supplier-catalog-scanner', () => {
     expect(candidate.fx_pending).toMatchObject({
       code: 'fx_rate_unavailable', currency: 'USD',
     });
-    expect(candidate.data_sources.fx_conversion).toBe('pending_approved_rate');
+    expect(candidate.data_sources.fx_conversion).toBe('pending_official_rate');
 
     const scanned = await scanCandidate(candidate, { config: pendingConfig });
     expect(scanned).toMatchObject({
       sourcing_decision: 'WATCH',
       scan_result: {
-        fx_gate: { status: 'AWAITING_APPROVED_RATE', code: 'fx_rate_unavailable', currency: 'USD' },
+        fx_gate: { status: 'AWAITING_OFFICIAL_QUOTE', code: 'fx_rate_unavailable', currency: 'USD' },
         economic_test_health_status: 'unknown',
       },
     });
-    expect(scanned.reason).toMatch(/Taux de change approuvé indisponible/);
+    expect(scanned.reason).toMatch(/Cotation officielle indisponible/);
     expect(pricingEngine.recommend).not.toHaveBeenCalled();
   });
 

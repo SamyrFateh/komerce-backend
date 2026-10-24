@@ -320,4 +320,6 @@ test('le workspace Pricing propose le cycle EUR/USD sourcé, administrateur et d
   expect(source).toContain("String(obs.entered_by || '').trim().toLowerCase() !== sessionIdentity");
   expect(source).toContain('Approbation requise depuis un deuxième compte admin.');
   expect(source).toContain('await appendFxAuthority(rootNode, context)');
+  expect(source).toContain('Les cotations publiques de la BCE sont synchronisées automatiquement toutes les heures');
+  expect(source).toContain('réservées au traitement exceptionnel');
 });
