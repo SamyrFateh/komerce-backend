@@ -241,7 +241,6 @@ async function importCatalog(body, userId, dispatchToConnector) {
       // PDC-1 : snapshot du mapping fournisseur → contrat normalisé. V1 = null.
       const normalizedSourceContract = buildNormalizedSourceContractSnapshot(product);
       const normalized = await scanner.normalizeCandidate(product, { config });
-      if (normalized.fx_pending?.code === 'fx_rate_unavailable') results.fx_pending += 1;
 
       // ③ Éligibilité — avant pricing, sur la donnée SOURCE.
       // Le verdict inclut la preuve du match (mot-clé/catégorie), persistée
@@ -286,6 +285,8 @@ async function importCatalog(body, userId, dispatchToConnector) {
         results.auto_rejected += 1;
         itemOutcome = 'auto_rejected';
       } else {
+        // Ne compter « candidat conservé pour FX » qu'APRÈS l'upsert réel.
+        if (normalized.fx_pending?.code === 'fx_rate_unavailable') results.fx_pending += 1;
         const outcome = decisionOutcome(scan.sourcing_decision);
         itemOutcome = outcome || 'processed';
         if (outcome === 'ready_for_refinery') {
