@@ -25,8 +25,6 @@ const VERDICT = 'Required verdict';
 const HOLD_LABEL = 'hold';
 const GRACE_MS = 15 * 60 * 1000;
 const MERGE_IMMINENT = new Set(['CLEAN', 'HAS_HOOKS', 'UNSTABLE']);
-// GitHub peut autoriser un merge direct malgré BEHIND : ne jamais synchroniser dans ce cas.
-const DIRECT_MERGEABLE = new Set(['CLEAN', 'HAS_HOOKS', 'UNSTABLE']);
 const PENDING_STATUS = new Set(['QUEUED', 'IN_PROGRESS', 'PENDING', 'WAITING', 'REQUESTED']);
 const LIST_FIELDS = 'number,isDraft,isCrossRepository,mergeStateStatus,autoMergeRequest,headRefOid,updatedAt,labels,statusCheckRollup';
 
