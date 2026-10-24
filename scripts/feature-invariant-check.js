@@ -222,7 +222,7 @@ function runFamily(family, files, { verbose } = {}) {
   }
 
   const verdicts = new Map();
-  const batchSize = process.platform === 'win32' ? 1 : 16;
+  const batchSize = 16;
 
   for (let offset = 0; offset < files.length; offset += batchSize) {
     const batch = files.slice(offset, offset + batchSize);
