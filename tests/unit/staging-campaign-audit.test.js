@@ -43,3 +43,16 @@ test('production and unconfirmed database fail closed before any query',async()=
   expect(calls).toHaveLength(0);
   expect(evaluateAudit([],[]).cleanup_allowed).toBe(false);
 });
+
+test('demo catalogue and operational references are protected from campaign cleanup',()=>{
+  expect(ROOTS.map(r=>[r.table,r.retention])).toEqual([
+    ['orders','campaign_transaction'],
+    ['products','persistent_demo_catalog'],
+    ['users','protected_identity'],
+    ['relais','protected_operational_reference'],
+  ]);
+  const verdict=evaluateAudit([],[]);
+  expect(verdict.cleanup_allowed).toBe(false);
+  expect(verdict.eligible_for_future_provenance_review).toEqual(['orders']);
+  expect(verdict.protected_roots.map(r=>r.table)).toEqual(['products','users','relais']);
+});
