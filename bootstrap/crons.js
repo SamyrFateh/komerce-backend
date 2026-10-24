@@ -131,12 +131,12 @@ function startSignalGenerationCron(options = {}) {
 }
 
 // La BCE publie en semaine, mais le dernier fixing officiel reste consultable
-// tous les jours. Relecture toutes les 4 h, idempotente en PostgreSQL ; le
+// tous les jours. Relecture toutes les heures, idempotente en PostgreSQL ; le
 // service FX conserve la provenance exacte de chaque observation ingérée.
 function startPublicFxReferenceCron({
   ingest = () => require('../services/fx-public-reference-feed').ingestEcbDaily(),
   initialDelayMs = 2 * 60 * 1000,
-  intervalMs = 4 * 60 * 60 * 1000,
+  intervalMs = 60 * 60 * 1000,
 } = {}) {
   let running = false;
   const run = async () => {
