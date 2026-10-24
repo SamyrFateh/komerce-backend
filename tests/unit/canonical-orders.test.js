@@ -72,3 +72,24 @@ describe('L8 — trois files de prochaine action', () => {
     expect(ordersModule.hubExecutionHref('KM')).toBe('/admin/hub-live?view=execute&market=KM');
   });
 });
+
+describe('RCT1 renders via the same canonical screen without live actions', () => {
+  test('one renderer for real and RCT1; no alternative table-only renderer', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/orders.js'), 'utf8');
+    expect(src).not.toContain('function renderRct1(');
+    expect(src).toContain('render(doc, rootNode, payload, { tab:');
+    expect(src).toContain("const isRecette = payload.simulation_scope === 'RCT1'");
+    expect(src).toContain('renderDetail(doc, selected, isRecette)');
+  });
+  test('RCT1 rows reuse the same navigation and queue contracts', () => {
+    const rows = orders.buildRows({
+      work_queues: { pending_cash: [], to_order: [], awaiting_hub_reception: [], ready_for_parcel: [] },
+      priority_orders: [
+        { reference: 'RCT1-E1', status: 'collected', market_code: 'KM', problem: 'Consultation RCT1', actionable: false },
+        { reference: 'RCT1-CM1', status: 'cancelled', market_code: 'CM', problem: 'Consultation RCT1', actionable: false },
+      ],
+    });
+    expect(rows.map(r => r.reference)).toEqual(['RCT1-E1', 'RCT1-CM1']);
+    expect(rows.every(r => r.actionable === false)).toBe(true);
+  });
+});
