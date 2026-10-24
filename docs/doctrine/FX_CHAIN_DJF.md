@@ -39,3 +39,19 @@ inconnues refusées. `currency_parities` est immuable en valeur. Les jambes sont
 - Une observation peut être datée dans le passé : elle ne modifie aucune commande existante (taux figés dans `orders.fx_snapshot`, migration 315) mais change le taux applicable à ces dates pour les conversions à `at` explicite.
 - Les définitions historiques de `finance_config` (`bootstrap/startup-migrations.js`, `db/schema.sql`) créent encore `taux_change_eur_kmf NOT NULL DEFAULT 491.96` sur une base neuve : la migration 316 les rend optionnelles, aucune lecture applicative ne les utilise (garde CI). Le DROP des colonnes est prévu dans une PR séparée.
 - Export financier : le taux EUR/KMF d'une commande est dérivé de ses montants figés (KMF d'origine / EUR encaissé) ; le taux AED n'est plus figé par commande.
+
+## Amendement du 25 octobre 2026 — alimentation publique 7j/7
+
+Les règles précédentes décrivent l'autorité à double saisie manuelle. Pour le fonctionnement courant de Komerce, **une cotation officielle publiée n'exige aucune approbation humaine** :
+
+- KMF/XAF : parités fixes gouvernées, jamais recalculées à partir d'un cours de marché.
+- EUR : pivot. Les cotations journalières BCE EUR/USD et EUR/XXX sont téléchargées automatiquement via
+  `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml` ; elles sont accessibles tous les jours.
+  La BCE *publie de nouveaux cours uniquement les jours ouvrés* ; le week-end, la dernière cotation publiée est conservée avec sa date réelle, **sans la redater**.
+- USD : la cotation BCE EUR/USD sourcée et enregistrée dans `fx_public_reference_quotes` prévaut. La dernière observation interne réellement approuvée reste un recours contrôlé si aucun cours officiel frais n'est disponible.
+- AED/DJF : leurs pegs USD officiels restent distincts et immuables ; les conversions suivent EUR/USD × USD/AED ou USD/DJF.
+- CNY : cours BCE EUR/CNY publié ; conversion USD/CNY dérivée par le pivot EUR à partir des deux cotations (EUR/USD et EUR/CNY), sans ratio inventé. Les autres EUR/XXX publiées sont aussi ingérées, mais **leur existence n'autorise pas automatiquement ces devises dans les opérations** : le registre de devises commerciales autorisées reste une décision métier distincte.
+- La collecte est déclenchée après démarrage et toutes les 4 heures par `bootstrap/crons.js`. Elle est idempotente et append-only. Chaque jambe de conversion porte un identifiant, un cours, une date réelle et sa source ; les transactions antérieures conservent leur snapshot.
+- Source inaccessible, cours périmé au-delà de 7 jours, devise non cotée ou doute sur la provenance : refus typé, sans taux fictif. La saisie manuelle à deux personnes reste réservée à une situation exceptionnelle documentée.
+
+La BCE indique que ses cours de référence sont informatifs : **les commissions et le taux de règlement du prestataire de paiement restent des faits financiers séparés** du cours de référence et doivent être figés au moment du paiement réel.
