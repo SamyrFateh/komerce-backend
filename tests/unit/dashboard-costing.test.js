@@ -46,6 +46,33 @@ describe('dashboard-metrics/costing', () => {
     expect(result.data_quality.completeness).toBe('provisional');
   });
 
+  it('E3 : le KPI de coût réel utilise le prédicat canonique et exclut monthly_recalc', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ value: '7400', items_with_data: '2', items_total: '5' }],
+    });
+
+    const result = await costing.getCoutReel({ market_id: 'market-uuid', simulation_scope: 'RCT1' });
+    const [sql, params] = db.query.mock.calls.at(-1);
+    expect(sql).toContain("alc.is_actual = TRUE AND COALESCE(alc.source, '') <> 'monthly_recalc'");
+    expect(sql).toContain('o.simulation_scope = $2');
+    expect(sql).toContain('o.market_id = $1');
+    expect(params).toEqual(['market-uuid', 'RCT1']);
+    expect(result).toMatchObject({ key: 'cout_reel', value: 7400 });
+    expect(result.data_quality).toMatchObject({ items_with_data: 2, items_total: 5, completeness: 'partial' });
+  });
+
+  it('E3 : aucune allocation réelle justifiée conserve un coût inconnu (NULL, pas zéro)', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ value: null, items_with_data: '0', items_total: '3' }],
+    });
+
+    const result = await costing.getCoutReel();
+
+    expect(result.value).toBeNull();
+    expect(result.data_quality).toMatchObject({ items_with_data: 0, items_total: 3, completeness: 'partial' });
+    expect(result.data_quality.warning).toContain('0/3');
+  });
+
   it('getMargeEstimee calcule marge et pourcentage sans division par zero', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ margin_kmf: '25000', revenue_kmf: '100000', items_with_data: '2', items_total: '3' }] });
 
