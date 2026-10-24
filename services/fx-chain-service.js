@@ -64,6 +64,24 @@ async function resolveObservation({ at = null, maxAgeDays = DEFAULT_MAX_AGE_DAYS
   return obs;
 }
 
+/** Cotation flottante officielle EUR/XXX, aucune parité inventée pour les autres devises. */
+async function resolvePublishedQuote({ quote, at = null, maxAgeDays = DEFAULT_MAX_AGE_DAYS, client = db } = {}) {
+  const ccy = String(quote || '').trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(ccy)) throw new FxChainUnavailableError('Code devise invalide pour cotation BCE');
+  const { rows: [obs] } = await client.query(
+    `SELECT id, rate, rate::text AS rate_text, as_of, source_label
+       FROM fx_public_reference_quotes
+      WHERE quote_ccy = $3
+        AND as_of <= COALESCE($1::timestamptz, now())::date
+        AND ingested_at <= COALESCE($1::timestamptz, now())
+        AND as_of::timestamptz >= COALESCE($1::timestamptz, now()) - make_interval(days => $2::int)
+      ORDER BY as_of DESC, ingested_at DESC LIMIT 1`,
+    [at, maxAgeDays, ccy]
+  );
+  if (!obs) throw new FxChainUnavailableError(`Aucune cotation officielle EUR/${ccy} récente : conversion refusée`);
+  return obs;
+}
+
 async function resolvePeg({ quote = 'DJF', at = null, client = db } = {}) {
   const { rows: [peg] } = await client.query(
     `SELECT id, rate, rate::text AS rate_text, valid_from, source_label FROM fx_pegs
@@ -100,4 +118,4 @@ function assertAmount(v) {
   return v;
 }
 
-module.exports = { resolveObservation, resolvePeg, resolveChain, convertEurToDjf, FxChainUnavailableError, DEFAULT_MAX_AGE_DAYS };
+module.exports = { resolveObservation, resolvePublishedQuote, resolvePeg, resolveChain, convertEurToDjf, FxChainUnavailableError, DEFAULT_MAX_AGE_DAYS };
