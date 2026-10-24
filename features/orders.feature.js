@@ -67,6 +67,7 @@ module.exports = {
       'services/order-financial-closure-signal.js',
       'services/order-checkout-service.js',
       'services/rct1-checkout-reference-guard.js',
+      'services/dashboard-rct1-orders.js',
       'services/order-checkout-item-resolution.js',
       'services/order-checkout-persistence.js',
       'services/order-fx-snapshot.js',
