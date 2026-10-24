@@ -96,6 +96,25 @@ describe('public catalog visibility', () => {
     expect(sql).toContain("cm.url NOT ILIKE 'data:image/%'");
   });
 
+  it('réutilise la galerie JSONB comme hero réel quand le média principal manque', () => {
+    const sql = publicCatalogVisibilitySql('p');
+    expect(sql).toContain('jsonb_array_elements_text');
+    expect(sql).toContain("jsonb_typeof(p.images) = 'array'");
+    expect(sql).toContain('THEN p.images');
+    expect(sql).toContain('WITH ORDINALITY AS g(url, ordinal)');
+    expect(sql).toContain("g.url NOT ILIKE 'data:image/%'");
+    expect(sql).toContain("g.url ~* '^https://");
+    expect(sql).toContain("g.url LIKE '/%'");
+    expect(sql).toContain('ORDER BY g.ordinal');
+  });
+
+  it('rejette un hero inline dans products.image_url et essaye les médias authentiques suivants', () => {
+    const sql = publicCatalogVisibilitySql('p');
+    expect(sql).toContain("BTRIM(p.image_url), '') NOT ILIKE 'data:image/%'");
+    expect(sql).toContain('FROM catalog_media cm');
+    expect(sql).toContain('jsonb_array_elements_text');
+  });
+
   it('refuse un alias SQL non sûr', () => {
     expect(() => publicCatalogVisibilitySql('p; DROP TABLE products')).toThrow('Alias SQL catalogue invalide');
   });
