@@ -35,10 +35,19 @@ function refusal({ dryRun, headRef, dirtyFiles }) {
   return null;
 }
 
+function assertFinalState({ expectedSha, actualSha, trackedDirtyCount }) {
+  if (actualSha !== expectedSha) {
+    throw new Error('HEAD modifié pendant le preflight : validation du commit final requise.');
+  }
+  if (trackedDirtyCount > 0) {
+    throw new Error(`Arbre suivi modifié pendant le preflight (${trackedDirtyCount} fichier(s)) : committer puis relancer.`);
+  }
+}
+
 function writeGreen({ sha, gitPath, write = fs.writeFileSync }) {
   const file = gitPath(STAMP_NAME);
   write(path.resolve(file), `${sha}\n`);
   return file;
 }
 
-module.exports = { STAMP_NAME, refusal, writeGreen };
+module.exports = { STAMP_NAME, refusal, assertFinalState, writeGreen };
