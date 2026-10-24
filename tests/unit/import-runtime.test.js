@@ -61,6 +61,6 @@ test('les rejets historiques pour FX ont une remédiation lisible directement su
   expect(source).toContain("run?.diagnostics?.fx_pending");
   expect(source).toContain("data-fx-remediation");
   expect(source).toContain("/admin/workspaces/pricing#fx-authority");
-  expect(source).toContain("Après validation du taux, relancez la source");
+  expect(source).toContain("Après récupération du cours officiel, relancez la source");
   expect(source).toContain("kind === 'discarded' || kind === 'deferred'");
 });
