@@ -296,6 +296,18 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
     }
   }
 
+  // Fail-fast inter-scope : en présence de code backend ET gouvernance, les
+  // contrôles structurels gouvernance doivent précéder les suites backend.
+  // Déplacement du même bloc existant : aucune nouvelle commande ni doublon.
+  if (scope.governance && scope.backend) {
+    const start = plan.findIndex(step => step.label === 'Architecture graph refresh');
+    const end = plan.findIndex(step => step.label === 'Agent remediation index check');
+    if (start < 0 || end < start) throw new Error('preflight_governance_plan_incomplete');
+    const governanceSteps = plan.splice(start, end - start + 1);
+    const afterTouched = plan.findIndex(step => step.label === 'Touched tests / completion-at-contact');
+    plan.splice(afterTouched >= 0 ? afterTouched + 1 : 0, 0, ...governanceSteps);
+  }
+
   // Parité CI : chaque job finit par `git diff --exit-code`. Un gate qui
   // réécrit un fichier suivi signale un artefact dérivé non committé.
   plan.push(inProcess('Tree unchanged (derived artifacts)', () => assertTreeUnchanged(before || new Map())));
