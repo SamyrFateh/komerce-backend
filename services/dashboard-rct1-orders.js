@@ -43,7 +43,7 @@ async function listRct1Orders({ marketCode = null } = {}) {
 const { LIFECYCLE } = require('./dashboard-orders');
 const { ACTIVE_ORDER_STATUSES } = require('./dashboard-metrics/_helpers');
 
-function projectCanonicalRct1(result) {
+function projectCanonicalRct1(result, marketCode = null) {
   const rows = result.orders || [];
   const statusCount = status => rows.filter(row => row.status === status).length;
   const active = rows.filter(row => ACTIVE_ORDER_STATUSES.includes(row.status)).length;
@@ -60,7 +60,7 @@ function projectCanonicalRct1(result) {
   return Object.freeze({
     mode: 'RCT1',
     simulation_scope: 'RCT1',
-    scope: { mode: 'global', market: null },
+    scope: { mode: marketCode ? 'market' : 'global', market: marketCode ? { code: marketCode } : null },
     summary: {
       total_orders: rows.length,
       active_orders: active,
@@ -107,7 +107,7 @@ function projectCanonicalRct1(result) {
 
 async function buildRct1Orders(options = {}) {
   const result = await listRct1Orders(options);
-  return projectCanonicalRct1(result);
+  return projectCanonicalRct1(result, options.marketCode || null);
 }
 
 module.exports = { listRct1Orders, buildRct1Orders, projectCanonicalRct1 };
