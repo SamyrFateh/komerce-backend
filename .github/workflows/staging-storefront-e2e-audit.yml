@@ -24,7 +24,7 @@ jobs:
     if: >-
       github.event_name == 'issues' && github.actor == github.repository_owner &&
       github.event.issue.title == '[staging-op] storefront-e2e-audit'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       BASE_URL: https://komerce.co/boutique/
