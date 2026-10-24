@@ -6,10 +6,10 @@
  * @criticality   critical
  * @inputs        timers, database_state, rules
  * @outputs       automatic_transitions, purges, reminders, incident_sla_escalations, continuous_decision_signals
- * @depends       services/outbox-worker.js, services/cash-reminder-service.js, services/inventory-service.js,
+ * @depends       services/fx-public-reference-feed.js, services/outbox-worker.js, services/cash-reminder-service.js, services/inventory-service.js,
  *                services/mobile-money-reconciliation.js, services/incident-escalation.js,
  *                services/signal-service.js, utils/rules.js
- * @db-write      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens, signals
+ * @db-write      fx_public_reference_quotes, economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens, signals
  * @db-read       economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
  * @used-by       server.js
  * @doctrine      idempotence_cron, retention_snapshots, bounded_mobile_money_reconciliation, bounded_incident_sla_escalation
@@ -130,6 +130,37 @@ function startSignalGenerationCron(options = {}) {
   log.info({ interval_min: 15, initial_delay_s: 60 }, 'Decision signal generation cron scheduled');
 }
 
+// La BCE publie en semaine, mais le dernier fixing officiel reste consultable
+// tous les jours. Relecture toutes les 4 h, idempotente en PostgreSQL ; le
+// service FX conserve la provenance exacte de chaque observation ingérée.
+function startPublicFxReferenceCron({
+  ingest = () => require('../services/fx-public-reference-feed').ingestEcbDaily(),
+  initialDelayMs = 2 * 60 * 1000,
+  intervalMs = 4 * 60 * 60 * 1000,
+} = {}) {
+  let running = false;
+  const run = async () => {
+    if (running) return;
+    running = true;
+    try {
+      const result = await ingest();
+      log.info({
+        as_of: result.as_of,
+        rates_received: result.rates_received,
+        inserted: result.inserted,
+      }, 'Official ECB FX reference rates synchronized');
+      require('../utils/rates').invalidateCache();
+    } catch (err) {
+      log.error({ err }, 'Official ECB FX sync failed; previous dated rates remain authoritative');
+    } finally {
+      running = false;
+    }
+  };
+  setTimeout(run, initialDelayMs);
+  setInterval(run, intervalMs);
+  log.info({ interval_h: intervalMs / 3600000 }, 'Official ECB FX reference cron scheduled');
+}
+
 function startOperationalCrons() {
   // ZG-1: migré de utils/sms (Africa's Talking, désactivé) → services/cash-reminder-service (WhatsApp)
   const { processCashRelaisReminders, processBackorderReminders } = require('../services/cash-reminder-service');
@@ -143,6 +174,7 @@ function startOperationalCrons() {
   startMobileMoneyReconciliationCron(); // migration 169
   startIncidentSlaEscalationCron(); // HUB-000 F3
   startSignalGenerationCron(); // Control Tower / Action Center health feed
+  startPublicFxReferenceCron(); // BCE cotations publiques, EUR pivot, refresh 7j/7
   startOutboxWorkerCron(); // HUB-000 F0 — consommateur durable de l'outbox (reçus d'audit)
 }
 
@@ -323,6 +355,7 @@ function startJwtRevocationCleanupCron() {
 // V4.1 — Machine d'état panier partagé.
 module.exports = {
   startOperationalCrons,
+  startPublicFxReferenceCron,
   startCashRelaisCron,
   startBackorderCron,
   startIncidentSlaEscalationCron,
