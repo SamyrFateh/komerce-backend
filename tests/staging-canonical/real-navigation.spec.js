@@ -29,7 +29,7 @@ test('real staging: full navigation, market context and browser errors',async({p
  try{
    await page.route('**/*',route=>{
      const r=route.request(),url=new URL(r.url());
-     if(url.origin!==ORIGIN||!url.pathname.startsWith('/api/'))return route.continue();
+     if(url.origin!==ORIGIN)return route.continue();
      if(['GET','HEAD','OPTIONS'].includes(r.method())||
        (r.method()==='POST'&&url.pathname==='/api/auth/login'))return route.continue();
      result.blockedWrites.push({method:r.method(),path:url.pathname});
