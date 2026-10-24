@@ -6,26 +6,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 750
-- Files with full headers: 701
-- Files with lite headers: 49
-- Files with any headers: 750
+- Scanned code files: 755
+- Files with full headers: 705
+- Files with lite headers: 50
+- Files with any headers: 755
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1856
-- Edges: 9290
-- DB tables: 211
-- Doctrines: 688
+- Graph nodes: 1876
+- Edges: 9336
+- DB tables: 213
+- Doctrines: 701
 - Impact areas: 207
-- Unresolved code edges: 895
-- Tables multi-écrivains directs (>=2): 88
+- Unresolved code edges: 904
+- Tables multi-écrivains directs (>=2): 90
 - Avertissements db-write / db-write-via en chevauchement: 11
 
 ## Domains
 
 - account: 2
-- admin-dashboard: 38
+- admin-dashboard: 39
 - auth: 14
 - auth-identity: 7
 - auth-passkey: 7
@@ -46,7 +46,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - local-stock: 4
 - logistics: 57
 - loyalty: 3
-- market: 8
+- market: 9
 - market-autonomy: 4
 - market-control-plane: 5
 - market-delegation: 35
@@ -60,7 +60,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - providers-services: 7
 - purchasing: 49
 - recommendations: 6
-- refunds: 2
+- refunds: 5
 - settlement: 2
 - shared: 1
 - shared-cart: 25
@@ -91,7 +91,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 434
+- service: 439
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -165,6 +165,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/fx-authority.js — fx-authority (market, critical, full)
 - services/fx-chain-service.js — fx-chain-service (market, critical, full)
 - services/fx-observation-service.js — fx-observation-service (market, critical, full)
+- services/fx-public-reference-feed.js — official-fx-reference-ingestion (market, critical, full)
 - services/hub-operations.js — hub-operations (logistics, critical, full)
 - services/hub-physical-identity.js — hub-physical-identity (logistics, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
@@ -211,6 +212,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/purchasing-engagement-service.js — purchasing-engagement-service (purchasing, critical, full)
 - services/qr-collection-core.js — qr-collection-core (orders, critical, full)
 - services/receive-purchase-order.js — orders-receive-purchase-order (purchasing, critical, full)
+- services/refund-evidence-verifier.js — external-refund-evidence-verifier (refunds, critical, full)
+- services/refund-intent-ledger.js — durable-refund-intent-reservation (refunds, critical, full)
+- services/refund-intent-reconciliation.js — durable-refund-evidence-reconciliation (refunds, critical, full)
 - services/repair-ordered-purchasing.js — orders-repair-ordered-purchasing (purchasing, critical, full)
 - services/repair-ordered-without-purchase-orders.js — orders-repair-ordered-without-purchase-orders (purchasing, critical, full)
 - services/scan-write-service.js — logistics-scan-write-service (logistics, critical, full)
@@ -705,6 +709,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-refinery-combined-proof.js -> owner catalog (catalog-refinery-combined-proof)
 - services/catalog-visual-fr-evidence-read.js -> owner catalog (catalog-visual-fr-evidence-read)
 - services/catalog-visual-fr-human-review-write.js -> owner catalog (catalog-visual-fr-human-review-write)
+- services/dashboard-rct1-orders.js -> owner backend-core (rct1-orders-readonly-projection)
 - services/providers-inquiry-service.js -> owner services/providers-service.js (providers-services-contextual-inquiry)
 - services/providers-interaction-policy.js -> owner services/providers-service.js (providers-services-interaction-policy)
 - services/rct1-checkout-reference-guard.js -> owner backend-core (rct1-checkout-reference-guard)
@@ -804,6 +809,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-finance-config.js -> finance_config
 - WRITE services/economic-config.js -> finance_config
 - WRITE services/economic-engine-queries.js -> finance_config
+- WRITE bootstrap/crons.js -> fx_public_reference_quotes
+- WRITE services/fx-public-reference-feed.js -> fx_public_reference_quotes
 - WRITE routes/admin-finance-config.js -> fx_rate_observations
 - WRITE services/fx-observation-service.js -> fx_rate_observations
 - WRITE routes/modules.js -> garment_models
@@ -829,8 +836,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
-- WRITE services/market-cash-control-policy-service.js -> market_cash_control_policies
-- WRITE services/cash-custody-service.js -> market_cash_destinations
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -1087,12 +1092,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: future CJ provider payment orchestrator -> services/suppliers/cj-payment-recovery.js (future CJ provider payment orchestrator)
 - uses: future Control Tower / Order 360 / financial closure -> services/customer-handoff-reconciliation.js (future Control Tower / Order 360 / financial closure)
 - uses: future CSV/XLSX adapters (M2) -> services/suppliers/managed-file-contract.js (future CSV/XLSX adapters (M2))
+- uses: future guarded refund executor (NOT ACTIVATED) -> services/refund-intent-reconciliation.js (future guarded refund executor (NOT ACTIVATED))
 - uses: future Hub/Control Tower reconciliation surfaces -> services/hub-inbound-reconciliation.js (future Hub/Control Tower reconciliation surfaces)
 - uses: future Order 360 / Control Tower / Golden closure -> services/order-financial-closure-reconciliation.js (future Order 360 / Control Tower / Golden closure)
 - uses: future pricing coverage gate -> services/pricing-maturity.js (future pricing coverage gate)
 - uses: future pricing strategy gate -> services/pricing-market-coverage.js (future pricing strategy gate)
 - uses: future provider payment adapters -> services/supplier-payment-orchestrator.js (future provider payment adapters)
 - uses: future provider payment orchestration -> services/supplier-payment-state.js (future provider payment orchestration)
+- uses: future refund orchestrators (NOT ACTIVATED) -> services/refund-intent-ledger.js (future refund orchestrators (NOT ACTIVATED))
+- uses: future refund settlement (NOT ACTIVATED) -> services/refund-evidence-verifier.js (future refund settlement (NOT ACTIVATED))
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future supplier payment reconciliation runtime -> services/supplier-payment-proof-persistence.js (future supplier payment reconciliation runtime)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
@@ -1151,9 +1159,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: ne migrent pas les affichages *_kmf existants (P2) -> utils/currency.js (ne migrent pas les affichages *_kmf existants (P2))
 - uses: non câblé — M5/P1 livrent l'outil -> utils/currency.js (non câblé — M5/P1 livrent l'outil)
 - uses: notification-service.js -> services/whatsapp-meta.js (notification-service.js)
-- uses: order-status-machine.js (consume à confirmed -> services/local-stock-service.js (order-status-machine.js (consume à confirmed)
-- uses: OTP routes -> utils/auth-session.js (OTP routes)
-- uses: P2/P3 external-provider contract proofs -> services/suppliers/connectors/ebay-connector.js (P2/P3 external-provider contract proofs)
 
 ## Files Still Without Headers Or Aggregation
 
