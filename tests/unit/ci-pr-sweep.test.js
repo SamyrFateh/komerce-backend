@@ -108,6 +108,8 @@ describe('CI PR sweep — serial behind synchronization', () => {
     const sweepWorkflow = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-sweep-behind.yml'), 'utf8');
     const autoWorkflow = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-auto-update.yml'), 'utf8');
     expect(sweepWorkflow).toContain('PR_SYNC_TOKEN');
+    expect(sweepWorkflow).toMatch(/workflow_run:\s*\n\s*workflows: \[PR enforcement\]\s*\n\s*types: \[completed\]/);
+    expect(sweepWorkflow).toContain('cancel-in-progress: false');
     for (const workflow of [sweepWorkflow, autoWorkflow]) {
       expect(workflow).not.toContain('GH_TOKEN: ${{ github.token }}');
       expect(workflow).not.toContain('|| github.token');
