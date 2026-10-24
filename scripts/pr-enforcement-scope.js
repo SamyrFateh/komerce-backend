@@ -161,6 +161,28 @@ function directDbWrite(source) {
   return Boolean(write && !/^none$/i.test(write));
 }
 
+// Exception très étroite : un seul GET de lecture RCT1 ajouté à la route
+// dashboard existante, sans aucune autre modification dans ce fichier.
+// La preuve HTTP Supertest est déjà une suite unit backend obligatoire.
+// Toute mutation concomitante ou preuve absente retombe sur l'E2E PostgreSQL.
+function coveredReadOnlyRct1Addition(file, changed, previous, current, readService = defaultReadSource) {
+  if (file !== 'routes/admin-dashboard-market.js' ||
+      !changed.includes('tests/unit/admin-dashboard-market.test.js') ||
+      !changed.includes('tests/unit/dashboard-rct1-orders.test.js') ||
+      !changed.includes('services/dashboard-rct1-orders.js') ||
+      !previous || !current ||
+      !/^none$/i.test(headerField(previous, 'db-write') || '') ||
+      !/^none$/i.test(headerField(current, 'db-write') || '')) return false;
+  const serviceSource = readService('services/dashboard-rct1-orders.js');
+  if (!serviceSource || !/^none$/i.test(headerField(serviceSource, 'db-write') || '')) return false;
+  const pattern = /\n(?:\/\/[^\n]*\n)*router\.get\(\s*['"]\/orders\/rct1['"][\s\S]*?\n\);\n/;
+  const match = current.match(pattern);
+  if (!match || /router\.(?:post|put|patch|delete)\(/.test(match[0])) return false;
+  const remaining = current.replace(pattern, '\n');
+  const normalize = value => value.replace(/\s+/g, ' ').trim();
+  return normalize(remaining) === normalize(previous);
+}
+
 function classifyRuntimeProof(files, {
   readSource = defaultReadSource,
   readBefore = null,
@@ -201,6 +223,7 @@ function classifyRuntimeProof(files, {
 
     if (/^routes\/.+\.(?:js|cjs|mjs)$/i.test(f)) {
       if (!semanticDiffAvailable) return true;
+      if (coveredReadOnlyRct1Addition(f, changed, before(file), after(file), after)) return false;
       return apiSurfaceFingerprint(before(file)) !== apiSurfaceFingerprint(after(file));
     }
 

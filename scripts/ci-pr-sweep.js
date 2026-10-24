@@ -43,6 +43,9 @@ function isCandidate(pr) {
 
 function isInFlight(pr, nowMs) {
   const state = pr.mergeStateStatus;
+  // BEHIND ne signifie pas inactif : un Required verdict est peut-être
+  // encore en cours sur le HEAD actuel. Ne jamais tuer cette preuve.
+  if (verdictOf(pr) === 'pending') return true;
   if (state === 'BEHIND' || state === 'DIRTY') return false;
   if (MERGE_IMMINENT.has(state)) return true;
   const verdict = verdictOf(pr);
