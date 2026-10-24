@@ -8,10 +8,10 @@
  * @outputs       chain{eur_to_djf, legs[observation_id, peg_id]}, FxChainUnavailableError
  * @depends       db.js
  * @used-by       tests/integration/fx-chain-postgres.test.js
- * @db-read       fx_rate_observations, fx_pegs
+ * @db-read       fx_public_reference_quotes, fx_rate_observations, fx_pegs
  * @db-write      none
  * @db-txn        none
- * @doctrine      fail_closed, no_fallback_rate, frozen_per_transaction, eur_is_pivot
+ * @doctrine      fail_closed, official_public_quotation_first, no_unverified_rate, frozen_per_transaction, eur_is_pivot
  * @impact-areas  market, finance, checkout
  * @version       2026-10
  *
@@ -38,14 +38,29 @@ class FxChainUnavailableError extends Error {
 async function resolveObservation({ at = null, maxAgeDays = DEFAULT_MAX_AGE_DAYS, client = db } = {}) {
   const { rows: [obs] } = await client.query(
     `SELECT id, rate, rate::text AS rate_text, as_of, source_label
-       FROM fx_rate_observations
-      WHERE approved_by IS NOT NULL AND as_of <= COALESCE($1::timestamptz, now())
-        AND created_at <= COALESCE($1::timestamptz, now()) AND approved_at <= COALESCE($1::timestamptz, now())
-        AND as_of >= COALESCE($1::timestamptz, now()) - make_interval(days => $2::int)
-      ORDER BY as_of DESC LIMIT 1`,
+       FROM (
+         -- Priorité aux taux EUR/USD officiellement publiés et collectés
+         -- AVANT la transaction. Aucun humain n'est simulé comme approbateur.
+         SELECT id, rate, as_of::timestamptz AS as_of, source_label, 0 AS authority_rank
+           FROM fx_public_reference_quotes
+          WHERE quote_ccy = 'USD'
+            AND as_of <= COALESCE($1::timestamptz, now())::date
+            AND ingested_at <= COALESCE($1::timestamptz, now())
+            AND as_of::timestamptz >= COALESCE($1::timestamptz, now()) - make_interval(days => $2::int)
+         UNION ALL
+         -- Compatibilité des décisions manuelles historiques, toujours
+         -- soumises à leur véritable validation à deux personnes.
+         SELECT id, rate, as_of, source_label, 1 AS authority_rank
+           FROM fx_rate_observations
+          WHERE approved_by IS NOT NULL AND as_of <= COALESCE($1::timestamptz, now())
+            AND created_at <= COALESCE($1::timestamptz, now())
+            AND approved_at <= COALESCE($1::timestamptz, now())
+            AND as_of >= COALESCE($1::timestamptz, now()) - make_interval(days => $2::int)
+       ) authoritative_quotes
+      ORDER BY authority_rank ASC, as_of DESC LIMIT 1`,
     [at, maxAgeDays]
   );
-  if (!obs) throw new FxChainUnavailableError('Aucun taux EUR/USD approuvé et frais : conversion refusée');
+  if (!obs) throw new FxChainUnavailableError('Aucune cotation EUR/USD officielle récente ni observation interne approuvée : conversion refusée');
   return obs;
 }
 
