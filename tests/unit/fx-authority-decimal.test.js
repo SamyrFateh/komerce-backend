@@ -32,6 +32,29 @@ describe('fx-authority — décimal exact', () => {
     expect(MINOR_UNITS).toMatchObject({ KMF: 0, XAF: 0, DJF: 0, EUR: 2, USD: 2, AED: 2, CNY: 2 });
   });
 
+  test('USD→CNY via pivot EUR : les deux cotations publiques sont sourcées, aucun taux USD/CNY inventé', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        if (sql.includes('fx_public_reference_quotes') && sql.includes('UNION ALL')) {
+          return { rows: [{ id:'usd-ecb', rate_text:'1.2500', as_of:'2026-10-23', source_label:'BCE' }] };
+        }
+        if (sql.includes('fx_public_reference_quotes')) {
+          return { rows: [{ id:'cny-ecb', rate_text:'7.5000', as_of:'2026-10-23', source_label:'BCE' }] };
+        }
+        return { rows: [] };
+      }),
+    };
+    const amount = await convert({ amount:'100', from:'USD', to:'CNY', client });
+    expect(amount).toMatchObject({
+      amount_text:'600.00', pivot:'EUR',
+      legs:[
+        expect.objectContaining({ pair:'EUR/USD', id:'usd-ecb', side:'from' }),
+        expect.objectContaining({ pair:'EUR/CNY', id:'cny-ecb', side:'to' }),
+      ],
+    });
+    expect(client.query).toHaveBeenCalledTimes(2);
+  });
+
   test('identité et refus sans base : devise inconnue, montant invalide', async () => {
     const same = await convert({ amount: '1234.5', from: 'KMF', to: 'KMF' });
     expect(same).toMatchObject({ amount: 1234, from: 'KMF', to: 'KMF', pivot: 'EUR', legs: [] }); // 1234,5 → 1234 (pair)
