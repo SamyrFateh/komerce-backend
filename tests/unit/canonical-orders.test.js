@@ -73,32 +73,11 @@ describe('L8 — trois files de prochaine action', () => {
   });
 });
 
-describe('RCT1 renders via the same canonical screen without live actions', () => {
-  test('one renderer for real and RCT1; no alternative table-only renderer', () => {
-    const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/orders.js'), 'utf8');
-    expect(src).not.toContain('function renderRct1(');
-    expect(src).toContain('render(doc, rootNode, payload, { tab:');
-    expect(src).toContain("const isRecette = payload.simulation_scope === 'RCT1'");
-    expect(src).toContain('renderDetail(doc, selected, isRecette)');
-  });
-  test('RCT1 rows reuse the same navigation and queue contracts', () => {
-    const rows = orders.buildRows({
-      work_queues: { pending_cash: [], to_order: [], awaiting_hub_reception: [], ready_for_parcel: [] },
-      priority_orders: [
-        { reference: 'RCT1-E1', status: 'collected', market_code: 'KM', problem: 'Consultation RCT1', actionable: false },
-        { reference: 'RCT1-CM1', status: 'cancelled', market_code: 'CM', problem: 'Consultation RCT1', actionable: false },
-      ],
-    });
-    expect(rows.map(r => r.reference)).toEqual(['RCT1-E1', 'RCT1-CM1']);
-    expect(rows.every(r => r.actionable === false)).toBe(true);
-  });
-});
-
-
-test('canonical Orders uses a fresh cache key after RCT1 response contract change', () => {
-  const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/index.html'), 'utf8');
-  const js = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/orders.js'), 'utf8');
-  expect(html).toContain('/dashboards/canonical/js/orders.js?v=261024-2');
-  expect(js).not.toContain('function renderRct1(');
-  expect(js).toContain("payload.simulation_scope === 'RCT1'");
+test('Orders dashboard has no RCT1 toggle or alternate data fetch', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/orders.js'), 'utf8');
+  expect(src).not.toContain('requestedRecetteMode');
+  expect(src).not.toContain('modeControl');
+  expect(src).not.toContain('/api/admin/dashboard/orders/rct1');
+  expect(src).not.toContain('renderRct1');
+  expect(src).toContain('const endpoint = normalEndpoint;');
 });
