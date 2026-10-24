@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 25,
-    "total_routes": 682,
+    "total_routes": 683,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -31868,6 +31868,51 @@
                   "type": "object",
                   "properties": {
                     "config": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/orders/rct1": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/orders/rct1",
+        "x-route-file": "routes/admin-dashboard-market.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "simulation_scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "orders": {
                       "type": "string",
                       "x-observed": true
                     }
