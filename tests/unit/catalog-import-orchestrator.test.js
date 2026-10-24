@@ -853,3 +853,41 @@ describe('importCatalog — événements par produit (télémétrie best-effort)
   });
 });
 
+
+describe('Intake — agrégation et preuves d’exclusion', () => {
+  const {
+    aggregateReasons,
+    eligibilityMatchLabel,
+    eligibilityReason,
+    automaticRejectedReason,
+  } = require('../../services/suppliers/catalog-import-orchestrator');
+
+  test('rejets invalides : couvre erreur unique, liste, objet sans motif et liste vide', () => {
+    expect(aggregateReasons(null)).toEqual({});
+    expect(aggregateReasons([
+      { errors: ['media absent', 'price invalid'] },
+      { error: 'media absent' },
+      {},
+    ])).toEqual({
+      'media absent': 2,
+      'price invalid': 1,
+      'raison inconnue': 1,
+    });
+  });
+
+  test('la décision douanière décrit la preuve, ou conserve un verdict sans match', () => {
+    expect(eligibilityReason(null)).toBeNull();
+    expect(eligibilityMatchLabel({})).toBeNull();
+    expect(eligibilityMatchLabel({ match: { type: 'category', value: null } })).toBeNull();
+    expect(eligibilityReason({ label: 'Restriction vérifiée', legal_note: 'Article local' }))
+      .toBe('Restriction vérifiée — Article local');
+    expect(eligibilityReason({
+      label: 'Interdit', match: { type: 'keyword', value: 'battery' },
+      legal_note: 'Référence douanière',
+    })).toBe('Interdit — keyword="battery" — Référence douanière');
+    expect(automaticRejectedReason({ label: 'Interdit', match: { type: 'keyword', value: 'battery' } }))
+      .toBe('[auto-exclusion] Interdit [keyword="battery"]');
+    expect(automaticRejectedReason({ label: 'Interdit' })).toBe('[auto-exclusion] Interdit');
+    expect(automaticRejectedReason(null)).toBe('[auto-exclusion] Exclusion');
+  });
+});
