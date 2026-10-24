@@ -57,8 +57,11 @@ jobs:
         run: |
           export P1_EXPECTED_DEPLOY_SHA="$(git rev-parse HEAD)"
           node scripts/recette/p1-staging-evidence.js
-      - name: Prove same real product through Chromium desktop and mobile
-        run: npx playwright test --config=playwright.staging-p1.config.js
+      - name: Prove anonymous buyer boundary in real Chromium without admin secrets
+        if: always()
+        run: npx playwright test tests/staging-p1/public-buyer.spec.js --config=playwright.staging-p1.config.js
+      - name: Prove authenticated sourcing and catalogue screens in Chromium
+        run: npx playwright test tests/staging-p1/p1-chain.spec.js --config=playwright.staging-p1.config.js
       - name: Publish evidence even when blocked
         if: always()
         uses: actions/upload-artifact@v4
