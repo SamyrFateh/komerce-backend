@@ -48,10 +48,10 @@ if(!ci){
   await conn.query('INSERT INTO products(id,name,price_kmf,stock) VALUES($1,$2,5000,20)',
    [ids.product,'CI cross-order boundary']);
   await conn.query(
-   `INSERT INTO orders(id,reference,relais_id,total_kmf,payment_mode,status)
-    VALUES($1,$3,$5,5000,'stripe_eur','confirmed'),
-          ($2,$4,$5,5000,'stripe_eur','confirmed')`,
-   [ids.a,ids.b,'CI-INV-A-'+ref,'CI-INV-B-'+ref,ids.relais]);
+   `INSERT INTO orders(id,reference,relais_id,market_id,total_kmf,payment_mode,status)
+    VALUES($1,$3,$5,$6,5000,'stripe_eur','confirmed'),
+          ($2,$4,$5,$6,5000,'stripe_eur','confirmed')`,
+   [ids.a,ids.b,'CI-INV-A-'+ref,'CI-INV-B-'+ref,ids.relais,market.id]);
   await conn.query(
    `INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf)
     VALUES($1,$3,$5,1,5000),($2,$4,$5,1,5000)`,
