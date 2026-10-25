@@ -41,7 +41,7 @@ const express = require('express');
 const Stripe = require('stripe');
 const { signAuthToken } = require('../../utils/auth-session');
 
-const { describeE2E, createCleanup, activateLocalPrice, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
+const { describeE2E, createCleanup, activateLocalPrice, authorizeCentralCollectionForTest, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
 jest.setTimeout(30000);
 
@@ -116,6 +116,9 @@ describeE2E('E2E-L1-01 — orders · commande payée par webhook Stripe', ({ db 
     // marketId résolu côté serveur exige un LOCAL_ACTIVE pour être achetable.
     const { rows: [market] } = await db.query(`SELECT id FROM markets WHERE code = 'KM'`);
     await activateLocalPrice(db, cleanup, { marketId: market.id, productId, amount: 25000, currency: 'KMF' });
+    // Stripe central est interdit par défaut. Ce scénario positif établit
+    // explicitement la permission de ce marché de TEST, sans modifier la doctrine.
+    await authorizeCentralCollectionForTest(db, cleanup, market.id, 'stripe_eur');
 
     // ── Précondition métier : point de retrait ──────────────────────────────
     await db.query(
