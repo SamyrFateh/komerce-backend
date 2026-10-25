@@ -81,10 +81,20 @@ jobs:
           mkdir -p audit-results/novel
           set -o pipefail
           node scripts/run-integration-tests.js --files=tests/integration/inventory-cross-order-governance-discovery.test.js | tee audit-results/novel/inventory-proof.log
-      - name: Preserve PostgreSQL execution evidence
+      - name: Calibrate Auto-parcel business truth versus silent SQL conflict
+        run: |
+          set -o pipefail
+          node scripts/run-integration-tests.js --files=tests/integration/auto-parcel-calibration-real-db.test.js | tee audit-results/novel/auto-parcel-proof.log
+      - name: Reject missing or unpaired nominal/deviation PostgreSQL evidence
+        run: |
+          node scripts/audits/verify-calibration-evidence.js audit-results/novel/inventory-proof.log audit-results/novel/auto-parcel-proof.log --out audit-results/calibration
+          cat audit-results/calibration/calibration.md
+      - name: Preserve complete paired PostgreSQL evidence (including failures)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: novel-inventory-cross-order-proof
-          path: audit-results/novel/
+          name: business-calibration-postgres-proof
+          path: |
+            audit-results/novel/
+            audit-results/calibration/
           if-no-files-found: warn
