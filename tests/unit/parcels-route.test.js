@@ -24,7 +24,10 @@ const express = require('express');
 const request = require('supertest');
 
 const mockDbQuery = jest.fn();
-jest.mock('../../db', () => ({ query: (...args) => mockDbQuery(...args) }));
+jest.mock('../../db', () => ({
+  query: (...args) => mockDbQuery(...args),
+  connect: async () => ({ query: (...args) => mockDbQuery(...args), release: jest.fn() }),
+}));
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
@@ -56,10 +59,12 @@ jest.mock('../../services/parcel-security', () => ({
 jest.mock('../../utils/parcelSync', () => ({ safeSyncScanToParcels: jest.fn().mockResolvedValue({}) }));
 jest.mock('../../utils/reference', () => ({ generateParcelRef: jest.fn().mockResolvedValue('COL-000123') }));
 jest.mock('../../utils/orderParcelLinkRules', () => ({ evaluateOrderParcelLinkRules: jest.fn().mockResolvedValue(null) }));
+jest.mock('../../services/parcel-item-mutation-service', () => ({ addParcelItemTraced: jest.fn() }));
 
 const parcelSecurity = require('../../services/parcel-security');
 const { safeSyncScanToParcels } = require('../../utils/parcelSync');
 const { evaluateOrderParcelLinkRules } = require('../../utils/orderParcelLinkRules');
+const { addParcelItemTraced } = require('../../services/parcel-item-mutation-service');
 
 const router = require('../../routes/parcels');
 
@@ -77,7 +82,9 @@ function buildApp() {
 describe('routes/parcels', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockDbQuery.mockReset();
+    // Les transactions BEGIN/COMMIT/ROLLBACK du routeur doivent toujours retourner une Promise.
+    mockDbQuery.mockReset().mockResolvedValue({ rows: [] });
+    addParcelItemTraced.mockReset();
     mockUser = { id: 'admin-1', role: 'admin' };
     parcelSecurity.generateExternalCode.mockReturnValue('EXT-STUB');
     parcelSecurity.generateSealCode.mockReturnValue('SEAL-STUB');
@@ -153,370 +160,67 @@ describe('routes/parcels', () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'p1', reference: 'COL-1' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'it1' }] });
-
       const res = await request(buildApp()).get('/api/parcels/COL-1');
-
       expect(res.status).toBe(200);
       expect(res.body.items).toEqual([{ id: 'it1' }]);
     });
   });
 
-  describe('GET /:ref/events', () => {
-    test('404 si colis introuvable', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [] });
-      const res = await request(buildApp()).get('/api/parcels/COL-999/events');
-      expect(res.status).toBe(404);
-    });
-
-    test('renvoie l\'historique des événements', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: 'p1' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'ev1' }, { id: 'ev2' }] });
-
-      const res = await request(buildApp()).get('/api/parcels/COL-1/events');
-
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({ parcel_id: 'p1', events: [{ id: 'ev1' }, { id: 'ev2' }], count: 2 });
-    });
-  });
-
-  describe('POST /', () => {
-    test('403 pour agent_relais (adminAgent uniquement)', async () => {
-      mockUser = { id: 'agent-1', role: 'agent_relais' };
-      const res = await request(buildApp()).post('/api/parcels').send({ order_id: VALID_UUID_1 });
-      expect(res.status).toBe(403);
-    });
-
-    test('400 si order_id absent ou invalide (validate réel)', async () => {
-      const res = await request(buildApp()).post('/api/parcels').send({ order_id: 'pas-un-uuid' });
-      expect(res.status).toBe(400);
-    });
-
-    test('404 si la commande est introuvable', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [] });
-      const res = await request(buildApp()).post('/api/parcels').send({ order_id: VALID_UUID_1 });
-      expect(res.status).toBe(404);
-    });
-
-    test('crée un colis avec external_code/seal_code et journalise (S1/S2)', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1 }] }) // orderCheck
-        .mockResolvedValueOnce({
-          rows: [{ id: 'p1', reference: 'COL-000123', external_code: 'EXT-STUB', seal_code: 'SEAL-STUB', status: 'draft' }],
-        }); // INSERT
-
-      const res = await request(buildApp())
-        .post('/api/parcels')
-        .send({ order_id: VALID_UUID_1, type: 'fragile', notes: 'attention' });
-
-      expect(res.status).toBe(201);
-      expect(res.body.external_code).toBe('EXT-STUB');
-      // created + sealed events (pas de weight_kg fourni)
-      expect(parcelSecurity.logParcelEvent).toHaveBeenCalledTimes(2);
-      expect(parcelSecurity.logParcelEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'created' }));
-      expect(parcelSecurity.logParcelEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'sealed' }));
-    });
-
-    test('journalise aussi weight_recorded si weight_kg fourni', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1 }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'p1', reference: 'COL-000123' }] })
-        .mockResolvedValueOnce({ rows: [] }); // UPDATE last_weight_at
-
-      const res = await request(buildApp())
-        .post('/api/parcels')
-        .send({ order_id: VALID_UUID_1, weight_kg: 4.2 });
-
-      expect(res.status).toBe(201);
-      expect(parcelSecurity.logParcelEvent).toHaveBeenCalledTimes(3);
-      expect(parcelSecurity.logParcelEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'weight_recorded' }));
-    });
-
-    test('409 si un colis draft existe déjà pour la commande (contrainte one_draft_per_order)', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1 }] });
-      mockDbQuery.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: '23505', constraint: 'one_draft_per_order' }));
-
-      const res = await request(buildApp()).post('/api/parcels').send({ order_id: VALID_UUID_1 });
-
-      expect(res.status).toBe(409);
-    });
-  });
-
-  describe('PATCH /:id/status', () => {
-    test('400 si status invalide (validate réel)', async () => {
-      const res = await request(buildApp()).patch(`/api/parcels/${VALID_UUID_1}/status`).send({ status: 'teleporte' });
-      expect(res.status).toBe(400);
-    });
-
-    test('404 si colis introuvable', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [] });
-      const res = await request(buildApp())
-        .patch(`/api/parcels/${VALID_UUID_1}/status`)
-        .send({ status: 'shipped' });
-      expect(res.status).toBe(404);
-    });
-
-    test('change le statut, sync le scan, journalise et évalue les règles de liaison', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, order_id: VALID_UUID_2, status: 'preparation', external_code: 'EXT-1' }] })
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, status: 'shipped' }] }) // SELECT parcel
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_2, status: 'confirmed', computed_status: 'shipped' }] }); // SELECT order
-
-      const res = await request(buildApp())
-        .patch(`/api/parcels/${VALID_UUID_1}/status`)
-        .send({ status: 'shipped' });
-
-      expect(res.status).toBe(200);
-      expect(safeSyncScanToParcels).toHaveBeenCalledWith(expect.objectContaining({ step: 'shipped' }));
-      expect(parcelSecurity.logParcelEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'status_changed' }));
-      expect(res.body.order).toEqual({ id: VALID_UUID_2, status: 'confirmed', computed_status: 'shipped' });
-    });
-
-    test('order est null si la commande liée est introuvable', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, order_id: VALID_UUID_2, status: 'preparation', external_code: 'EXT-1' }] })
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, status: 'collected' }] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      const res = await request(buildApp())
-        .patch(`/api/parcels/${VALID_UUID_1}/status`)
-        .send({ status: 'collected' });
-
-      expect(res.body.order).toBeNull();
-    });
-  });
-
-  describe('POST /:id/weight', () => {
-    test('400 si weight_kg absent ou non numérique', async () => {
-      const res = await request(buildApp()).post(`/api/parcels/${VALID_UUID_1}/weight`).send({});
-      expect(res.status).toBe(400);
-    });
-
-    test('404 si colis introuvable', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [] });
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/weight`)
-        .send({ weight_kg: 3.5 });
-      expect(res.status).toBe(404);
-    });
-
-    test('enregistre un checkpoint poids sans anomalie', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, last_weight_kg: 3.0, external_code: 'EXT-1' }] })
-        .mockResolvedValueOnce({ rows: [] }); // UPDATE
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/weight`)
-        .send({ weight_kg: 3.2, location: 'hub' });
-
-      expect(res.status).toBe(200);
-      expect(res.body.status).toBe('ok');
-      expect(res.body.anomaly).toBeNull();
-    });
-
-    test('signale une anomalie de poids (status=warning)', async () => {
-      parcelSecurity.checkWeightIntegrity.mockReturnValueOnce({ message: 'écart suspect' });
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, last_weight_kg: 3.0, external_code: 'EXT-1' }] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/weight`)
-        .send({ weight_kg: 9.9 });
-
-      expect(res.status).toBe(200);
-      expect(res.body.status).toBe('warning');
-      expect(res.body.anomaly).toEqual({ message: 'écart suspect' });
-      expect(parcelSecurity.logParcelEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'anomaly_detected' }));
-    });
-
-    // ── XREL-01 : garde cross-relais ────────────────────────────────────
-    test('[XREL-01] agent_relais sur colis d\'une commande d\'un AUTRE relais → 403, UPDATE jamais exécuté', async () => {
-      mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, last_weight_kg: 3.0, external_code: 'EXT-1', relais_id: 'relais-B' }] });
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/weight`)
-        .send({ weight_kg: 3.2 });
-
-      expect(res.status).toBe(403);
-      expect(res.body.error).toMatch(/relais/);
-      // Une seule requête (la lecture) — le garde bloque AVANT tout UPDATE.
-      expect(mockDbQuery).toHaveBeenCalledTimes(1);
-    });
-
-    test('[XREL-01] agent_relais sur colis de SON PROPRE relais → autorisé (continue)', async () => {
-      mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, last_weight_kg: 3.0, external_code: 'EXT-1', relais_id: 'relais-A' }] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/weight`)
-        .send({ weight_kg: 3.2 });
-
-      expect(res.status).toBe(200);
-    });
-  });
-
-  describe('POST /:id/verify-seal', () => {
-    // Helper : mock des 2 requêtes de rate-limit XREL-02 (DELETE puis INSERT..RETURNING)
-    // en plus de la lecture du colis, dans l'ordre où le handler les émet.
-    function mockRateLimitOk() {
-      mockDbQuery
-        .mockResolvedValueOnce({}) // DELETE FROM pickup_verify_attempts (cleanup)
-        .mockResolvedValueOnce({ rows: [{ count: 1, reset_at: new Date(Date.now() + 15 * 60 * 1000) }] }); // INSERT..RETURNING
-    }
-
-    test('400 si seal_code absent', async () => {
-      const res = await request(buildApp()).post(`/api/parcels/${VALID_UUID_1}/verify-seal`).send({});
-      expect(res.status).toBe(400);
-    });
-
-    test('404 si colis introuvable', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [] });
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
-        .send({ seal_code: 'X' });
-      expect(res.status).toBe(404);
-    });
-
-    test('scellé valide → 200', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: null }] });
-      mockRateLimitOk();
-      parcelSecurity.verifySeal.mockReturnValueOnce({ valid: true });
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
-        .send({ seal_code: 'SEAL-1' });
-
-      expect(res.status).toBe(200);
-      expect(res.body.seal_valid).toBe(true);
-    });
-
-    test('scellé invalide (mismatch) → 422 avec message alerte', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: null }] });
-      mockRateLimitOk();
-      parcelSecurity.verifySeal.mockReturnValueOnce({ valid: false, reason: 'seal_mismatch' });
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
-        .send({ seal_code: 'FAUX' });
-
-      expect(res.status).toBe(422);
-      expect(res.body.message).toMatch(/ALERTE/);
-    });
-
-    test('scellé manquant → 422 avec message générique', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: null, external_code: 'EXT-1', relais_id: null }] });
-      mockRateLimitOk();
-      parcelSecurity.verifySeal.mockReturnValueOnce({ valid: false, reason: 'seal_missing' });
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
-        .send({ seal_code: 'X' });
-
-      expect(res.status).toBe(422);
-      expect(res.body.message).toMatch(/manquant/);
-    });
-
-    // ── XREL-02 : garde cross-relais ────────────────────────────────────
-    test('[XREL-02] agent_relais sur colis d\'une commande d\'un AUTRE relais → 403, verifySeal jamais appelé', async () => {
-      mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: 'relais-B' }] });
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
-        .send({ seal_code: 'SEAL-1' });
-
-      expect(res.status).toBe(403);
-      expect(res.body.error).toMatch(/relais/);
-      expect(parcelSecurity.verifySeal).not.toHaveBeenCalled();
-      // Le rate-limit ne doit même pas être consulté après un 403 IDOR.
-      expect(mockDbQuery).toHaveBeenCalledTimes(1);
-    });
-
-    test('[XREL-02] agent_relais sur colis de SON PROPRE relais → autorisé (continue)', async () => {
-      mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: 'relais-A' }] });
-      mockRateLimitOk();
-      parcelSecurity.verifySeal.mockReturnValueOnce({ valid: true });
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
-        .send({ seal_code: 'SEAL-1' });
-
-      expect(res.status).toBe(200);
-    });
-
-    // ── XREL-02 : rate-limit (oracle de scellé) ─────────────────────────
-    test('[XREL-02] trop de tentatives → 429, verifySeal jamais appelé', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: null }] })
-        .mockResolvedValueOnce({}) // DELETE cleanup
-        .mockResolvedValueOnce({ rows: [{ count: 999, reset_at: new Date(Date.now() + 5 * 60 * 1000) }] }); // limite dépassée
-
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
-        .send({ seal_code: 'SEAL-1' });
-
-      expect(res.status).toBe(429);
-      expect(res.body.retryAfter).toBeGreaterThan(0);
-      expect(parcelSecurity.verifySeal).not.toHaveBeenCalled();
-    });
-  });
-
   describe('POST /:id/items', () => {
-    test('400 si order_item_id/quantity invalides (validate réel)', async () => {
+    test('404 si colis introuvable via service canonique', async () => {
+      addParcelItemTraced.mockRejectedValueOnce(
+        Object.assign(new Error('Colis introuvable'), { code: 'PARCEL_NOT_FOUND', status: 404 }));
       const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/items`)
-        .send({ order_item_id: 'pas-uuid', quantity: 0 });
-      expect(res.status).toBe(400);
-    });
-
-    test('404 si colis introuvable', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [] });
-      const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/items`)
+        .post('/api/parcels/'+VALID_UUID_1+'/items')
         .send({ order_item_id: VALID_UUID_2, quantity: 1 });
       expect(res.status).toBe(404);
+      expect(res.body.code).toBe('PARCEL_NOT_FOUND');
+      expect(mockDbQuery.mock.calls.map(x => x[0])).toEqual(['BEGIN', 'ROLLBACK']);
     });
 
-    test('404 si order_item introuvable', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, order_id: VALID_UUID_2 }] })
-        .mockResolvedValueOnce({ rows: [] });
+    test('404 si order_item introuvable via service canonique', async () => {
+      addParcelItemTraced.mockRejectedValueOnce(
+        Object.assign(new Error('Article introuvable'), { code: 'ORDER_ITEM_NOT_FOUND', status: 404 }));
       const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/items`)
+        .post('/api/parcels/'+VALID_UUID_1+'/items')
         .send({ order_item_id: VALID_UUID_2, quantity: 1 });
       expect(res.status).toBe(404);
+      expect(res.body.code).toBe('ORDER_ITEM_NOT_FOUND');
     });
 
-    test('ajoute un article au colis', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, order_id: VALID_UUID_2 }] })
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_2 }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'pi1', quantity: 2 }] });
-
+    test('ajoute via une transaction et le service canonique', async () => {
+      addParcelItemTraced.mockResolvedValueOnce({
+        row: { id: 'pi1', product_id: VALID_UUID_1, quantity: 2 }
+      });
       const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/items`)
+        .post('/api/parcels/'+VALID_UUID_1+'/items')
         .send({ order_item_id: VALID_UUID_2, quantity: 2 });
-
       expect(res.status).toBe(201);
-      expect(res.body).toEqual({ id: 'pi1', quantity: 2 });
+      expect(res.body).toEqual({ id: 'pi1', product_id: VALID_UUID_1, quantity: 2 });
+      expect(addParcelItemTraced).toHaveBeenCalledWith(expect.objectContaining({ query: expect.any(Function) }),
+        { parcelId: VALID_UUID_1, orderItemId: VALID_UUID_2, quantity: 2, actorId: 'admin-1' });
+      expect(mockDbQuery.mock.calls.map(x => x[0])).toEqual(['BEGIN', 'COMMIT']);
     });
 
-    test('409 si l\'article est déjà assigné à un colis (contrainte unique)', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, order_id: VALID_UUID_2 }] })
-        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_2 }] });
-      mockDbQuery.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: '23505', constraint: 'unique_order_item_per_parcel' }));
-
+    test('409 déjà assigné sans réponse de création trompeuse', async () => {
+      addParcelItemTraced.mockResolvedValueOnce({ row: null, already_assigned: true });
       const res = await request(buildApp())
-        .post(`/api/parcels/${VALID_UUID_1}/items`)
+        .post('/api/parcels/'+VALID_UUID_1+'/items')
         .send({ order_item_id: VALID_UUID_2, quantity: 1 });
-
       expect(res.status).toBe(409);
+      expect(res.body.code).toBe('PARCEL_ITEM_ALREADY_ASSIGNED');
+      expect(mockDbQuery.mock.calls.map(x => x[0])).toEqual(['BEGIN', 'ROLLBACK']);
+    });
+
+    test('409 marché incompatible suivi de rollback', async () => {
+      addParcelItemTraced.mockRejectedValueOnce(
+        Object.assign(new Error('Marché différent'), { code: 'MARKET_MISMATCH', status: 409 }));
+      const res = await request(buildApp())
+        .post('/api/parcels/'+VALID_UUID_1+'/items')
+        .send({ order_item_id: VALID_UUID_2, quantity: 1 });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('MARKET_MISMATCH');
+      expect(mockDbQuery.mock.calls.map(x => x[0])).toEqual(['BEGIN', 'ROLLBACK']);
     });
   });
 

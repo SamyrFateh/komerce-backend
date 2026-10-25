@@ -37,7 +37,12 @@ router.post('/receive', async (req, res, next) => {
     const result = await inv.receiveItem(req.body);
     res.json({ ok: true, ...result });
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    // Keep the canonical Inventory error contract visible to the caller.
+    // A mismatched order is a conflict, not a generic malformed request.
+    res.status(e.status || 400).json({
+      error: e.message,
+      ...(e.code ? { code: e.code } : {}),
+    });
   }
 });
 
