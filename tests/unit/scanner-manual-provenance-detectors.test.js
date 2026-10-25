@@ -4,7 +4,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const {getProtectedManualFields,scanUnprotectedManualUpserts}=require('../../scripts/audits/lib/manual-provenance-detectors');
+const {getProtectedManualFields,scanUnprotectedManualUpserts,scanManualProvenanceErasingMerges}=require('../../scripts/audits/lib/manual-provenance-detectors');
 const read=file=>fs.readFileSync(path.join(__dirname,'../..',file),'utf8');
 const table='sourcing_candidates';
 const ownerSource=read('services/sourcing-candidate-import-service.js');
@@ -33,4 +33,16 @@ test('different synthetic table with corresponding manual guard is handled witho
 });
 test('nonconflict INSERT and unrelated update must not trigger',()=>{
  assert.deepEqual(scanUnprotectedManualUpserts('INSERT INTO sourcing_candidates(purchase_price) VALUES($1)','no-conflict.js',table,['purchase_price']),[]);
+});
+
+test('detect a real owner UPSERT erasing its own manual source authority via JSONB merge',()=>{
+ const fields=getProtectedManualFields(ownerSource,table);
+ const found=scanManualProvenanceErasingMerges(ownerSource,'services/sourcing-candidate-import-service.js',table,fields);
+ assert.ok(found.some(x=>x.field==='purchase_price' && x.kind==='MANUAL_PROVENANCE_ERASED_BY_JSONB_MERGE'));
+ const foreign=scanManualProvenanceErasingMerges(foreignSource,'services/suppliers/catalog-import-json.js',table,fields);
+ assert.equal(foreign.length,0);
+});
+test('non-provenance JSONB merge and safe left-side incoming precedence are ignored',()=>{
+ const src='INSERT INTO offers(id) VALUES($1) ON CONFLICT (id) DO UPDATE SET data_sources=EXCLUDED.data_sources || offers.data_sources';
+ assert.deepEqual(scanManualProvenanceErasingMerges(src,'offers-owner.js','offers',['price']),[]);
 });
