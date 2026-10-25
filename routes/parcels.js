@@ -58,6 +58,7 @@ const { PARCEL_STATUSES } = require('../utils/parcels');
 // transporteur (volume) ni l'agent douanier (facture déclarée) ne regardent.
 // Actif phase Avion uniquement — à réécrire à neuf si ce besoin revient.
 const { evaluateOrderParcelLinkRules } = require('../utils/orderParcelLinkRules');
+const { addParcelItemTraced } = require('../services/parcel-item-mutation-service');
 const log = require('../utils/logger').child({ module: 'parcels' });
 
 // [XREL-02] Rate-limit vérification scellé — réutilise la table
@@ -468,28 +469,43 @@ router.post('/:id/verify-seal', ...adminAgentRelais, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-// POST /api/parcels/:id/items
+// POST /api/parcels/:id/items — délégation canonique à Logistics (issue #2958).
+// L'appartenance, le marché, le relais, le statut et la traçabilité sont validés
+// puis écrits dans UNE transaction. Aucun INSERT direct depuis la route.
 router.post('/:id/items', ...adminAgent, validate({ body: parcels.addItem }), async (req, res, next) => {
+  let client;
   try {
     const { order_item_id, quantity } = req.body;
-    const parcelCheck = await db.query('SELECT id, order_id FROM parcels WHERE id = $1', [req.params.id]);
-    if (!parcelCheck.rows.length) return res.status(404).json({ error: 'Colis introuvable' });
+    client = await db.connect();
+    await client.query('BEGIN');
 
-    const itemCheck = await db.query('SELECT id FROM order_items WHERE id = $1', [order_item_id]);
-    if (!itemCheck.rows.length) return res.status(404).json({ error: 'Article de commande introuvable' });
+    const { row, already_assigned } = await addParcelItemTraced(client, {
+      parcelId: req.params.id,
+      orderItemId: order_item_id,
+      quantity,
+      actorId: req.user.id,
+    });
 
-    const { rows } = await db.query(`
-      INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
-      VALUES ($1, $2, $3)
-      RETURNING *
-    `, [req.params.id, order_item_id, quantity]);
+    // Préserver le contrat historique 409 pour une tentative de doublon.
+    // Ne jamais présenter une insertion ignorée comme une création réussie.
+    if (already_assigned || !row) {
+      const err = new Error('Cet article est déjà assigné à un colis');
+      err.code = 'PARCEL_ITEM_ALREADY_ASSIGNED';
+      err.status = 409;
+      throw err;
+    }
 
-    res.status(201).json(rows[0]);
-  } catch(e) {
-    if (e.code === '23505' && e.constraint === 'unique_order_item_per_parcel') {
-      return res.status(409).json({ error: 'Cet article est déjà assigné à un colis' });
+    await client.query('COMMIT');
+    res.status(201).json(row);
+  } catch (e) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    if (e.status) return res.status(e.status).json({ error: e.message, code: e.code || null });
+    if (e.code === '23505') {
+      return res.status(409).json({ error: 'Cet article est déjà assigné à un colis', code: 'PARCEL_ITEM_ALREADY_ASSIGNED' });
     }
     next(e);
+  } finally {
+    if (client) client.release();
   }
 });
 

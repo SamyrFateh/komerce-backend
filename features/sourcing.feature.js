@@ -160,6 +160,7 @@ module.exports = {
       'tests/integration/sourcing-candidate-arbitration-real-db.test.js',
       'tests/unit/supplier-targeted-refresh-staging.test.js',
       'tests/unit/sourcing-candidate-import-service.test.js',
+      'tests/integration/sourcing-manual-provenance-real-db.test.js',
       'tests/integration/sourcing-candidate-stock-zero-real-db.test.js',
       'tests/unit/sourcing-observation-shadow-plan.test.js',
       'tests/unit/sourcing-observation-shadow-service.test.js',
@@ -340,6 +341,8 @@ module.exports = {
              'doit être validé par le propriétaire de routes/sourcing-scanner.js',
 
   invariants: [
+    { statement: 'Sourcing provenance: toute correction explicite depuis updateCandidate() fige son champ et son data_sources.<clé>=manual sur tous les réimports successifs. Un autre acteur fournisseur peut rafraîchir raw_payload sans retirer cette autorité. La dernière correction humaine remplace la précédente ; sans override humain la donnée fournisseur reste actualisable. Invariant de provenance distinct de la sémantique scan_result (observation source vs évaluation effective).',
+      test: 'tests/integration/sourcing-manual-provenance-real-db.test.js' },
     { statement: 'GET /import-passages expose un historique paginé des runs KIR en vérité Sourcing seulement (reçus, prêts certified, écartés, action requise, remise déduite de catalogued), chargé en batch sans N+1 ; aucune donnée prix / marché / vente / clôture',
       test: 'tests/unit/import-runtime-runs.test.js' },
     { statement: 'GET /import-runs/:runRef/population?kind=received|ready|discarded expose les produits qui composent un chiffre du cockpit ; ce qui n\'existe qu\'en compteur d\'intake est restitué en groupes explicites, jamais inventé ; les métriques processed/total restent des observations backend et l\'UI masque le ratio d\'une étape COMPLETED lorsqu\'il n\'est pas sa preuve de complétion',

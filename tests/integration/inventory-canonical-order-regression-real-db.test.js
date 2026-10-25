@@ -35,7 +35,19 @@ if(!ci){
      };
    },
  }));
+ // Admin login is the only replacement: route + service + PostgreSQL stay real.
+ jest.mock('../../middleware/auth',()=>({
+   authenticate:(req,res,next)=>{req.user={id:'ci-agent-hub',role:'agent_hub'};next();},
+   requireRole:roles=>(req,res,next)=>
+     roles.includes(req.user.role)?next():res.status(403).json({error:'forbidden'})
+ }));
+ const express=require('express');
+ const request=require('supertest');
  const {receiveItem}=require('../../services/inventory-service');
+ const router=require('../../routes/inventory-api');
+ const app=express();
+ app.use(express.json());
+ app.use('/api/hub/inventory',router);
  const feature=require('../../features/inventory.feature');
  const orders=require('../../features/orders.feature');
  const pool=new Pool({connectionString:process.env.DATABASE_URL});
@@ -115,6 +127,34 @@ if(!ci){
   const state=await inspect();
   expect(state.row.inventory_order).toBe(ids.a);
   console.log('INVENTORY_FIX_PROOF '+JSON.stringify({mode:'EXPLICIT_MATCH',db:'POSTGRES_REAL',correctOrder:true}));
+ });
+ test('REAL HTTP: foreign order B is refused 409 with code and no database mutation',async()=>{
+  const before=await inspect();
+  const response=await request(app).post('/api/hub/inventory/receive')
+    .send({order_item_id:ids.itemA,order_id:ids.b});
+  expect(response.status).toBe(409);
+  expect(response.body).toMatchObject({code:'INVENTORY_ORDER_MISMATCH'});
+  expect(response.body.ok).toBeUndefined();
+  expect(await inspect()).toEqual(before);
+  console.log('INVENTORY_FIX_PROOF '+JSON.stringify({
+   mode:'HTTP_ORDER_MISMATCH',db:'POSTGRES_REAL',http:response.status,
+   errorCode:response.body.code,foreignOrderUnchanged:true
+  }));
+ });
+ test('REAL HTTP: canonical line A succeeds and B is unaffected',async()=>{
+  const before=await inspect();
+  const response=await request(app).post('/api/hub/inventory/receive')
+    .send({order_item_id:ids.itemA,order_id:ids.a});
+  expect(response.status).toBe(200);
+  expect(response.body.ok).toBe(true);
+  expect(response.body.item.order_id).toBe(ids.a);
+  const after=await inspect();
+  expect(after.row).toMatchObject({inventory_order:ids.a,authoritative_order:ids.a});
+  expect(after.orders.find(x=>x.id===ids.b)).toEqual(before.orders.find(x=>x.id===ids.b));
+  console.log('INVENTORY_FIX_PROOF '+JSON.stringify({
+   mode:'HTTP_CANONICAL_NOMINAL',db:'POSTGRES_REAL',http:response.status,
+   canonicalOrder:response.body.item.order_id,foreignOrderUnchanged:true
+  }));
  });
  test('CONTROL: unknown order_item cannot persist a phantom receipt',async()=>{
   const before=await inspect();
