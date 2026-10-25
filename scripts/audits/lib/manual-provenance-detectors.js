@@ -46,4 +46,29 @@ function scanUnprotectedManualUpserts(source,file,table,protectedFields) {
   }
   return results;
 }
-module.exports={getProtectedManualFields,scanUnprotectedManualUpserts};
+
+/**
+ * JSONB's || operator is right-biased for duplicate keys. If the same
+ * upsert protects a manual field with CASE but later overlays all incoming
+ * data_sources, the first import can erase the manual authority marker.
+ * The second import may then bypass the earlier CASE. Review only.
+ */
+function scanManualProvenanceErasingMerges(source,file,table,protectedFields) {
+  const s=String(source);
+  if(!protectedFields?.length)return [];
+  const insert=new RegExp('\\bINSERT\\s+INTO\\s+(?:public\\.)?'+table+'\\b','i');
+  if(!insert.test(s) || !/\bON\s+CONFLICT\b[\s\S]*?\bDO\s+UPDATE\s+SET\b/i.test(s))return [];
+  const merge=new RegExp(
+    '\\bdata_sources\\s*=\\s*(?:'+table+'\\.)?data_sources\\s*\\|\\|\\s*EXCLUDED\\.data_sources\\b','i'
+  );
+  const matched=merge.exec(s);
+  if(!matched)return [];
+  return protectedFields.map(field=>({
+    kind:'MANUAL_PROVENANCE_ERASED_BY_JSONB_MERGE',severity:'REVIEW',
+    file,table,field,line:s.slice(0,matched.index).split('\n').length,
+    evidence:matched[0],
+    caveat:'Confirm JSONB incoming provenance overlaps protected manual keys and sequential reimport breaks subsequent guarded writes on real PostgreSQL.'
+  }));
+}
+
+module.exports={getProtectedManualFields,scanUnprotectedManualUpserts,scanManualProvenanceErasingMerges};
