@@ -46,6 +46,8 @@ jobs:
         run: node scripts/audits/repo-wide-scan.js --root target-main --out audit-results/repo-wide/main
       - name: Estimate calibrated pattern recall and sample unseen hits without asserting false precision
         run: node scripts/audits/repo-wide-relevance.js --audit audit-results/repo-wide/audit --main audit-results/repo-wide/main --out audit-results/repo-wide/evaluation
+      - name: Contextual triage of main candidates before manual adjudication
+        run: node scripts/audits/repo-wide-triage.js --input audit-results/repo-wide/main --out audit-results/repo-wide/triage
       - name: Publish independently measurable coverage and findings for both SHAs
         if: always()
         uses: actions/upload-artifact@v4
