@@ -38,7 +38,8 @@ test('nonconflict INSERT and unrelated update must not trigger',()=>{
 test('detect a real owner UPSERT erasing its own manual source authority via JSONB merge',()=>{
  const fields=getProtectedManualFields(ownerSource,table);
  const found=scanManualProvenanceErasingMerges(ownerSource,'services/sourcing-candidate-import-service.js',table,fields);
- assert.ok(found.some(x=>x.field==='purchase_price' && x.kind==='MANUAL_PROVENANCE_ERASED_BY_JSONB_MERGE'));
+ assert.ok(found.some(x=>x.protectedFields.includes('purchase_price') && x.kind==='MANUAL_PROVENANCE_ERASED_BY_JSONB_MERGE'));
+ assert.equal(found.length,1); // one SQL merge site, not one issue per protected field
  const foreign=scanManualProvenanceErasingMerges(foreignSource,'services/suppliers/catalog-import-json.js',table,fields);
  assert.equal(foreign.length,0);
 });
