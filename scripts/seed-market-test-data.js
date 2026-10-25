@@ -14,8 +14,8 @@
  *   - le produit est global ; le Market ID décide exposition + prix local ;
  *   - aucune copie `SEEDTEST <PAYS> produit N` n'est créée ;
  *   - le catalogue curaté doit passer un quality gate statique avant écriture ;
- *   - cleanup d'un marché ne supprime jamais le catalogue global ;
- *   - chaque produit exposé reçoit seulement un DRAFT_PENDING_GATE : aucun
+ *   - cleanup d'un marché ne modifie jamais catalogue, exposition ni décisions de prix ;
+ *   - seules les décisions marché absentes reçoivent un DRAFT_PENDING_GATE : aucun
  *     LOCAL_ACTIVE n'est fabriqué artificiellement par le seed ;
  *   - KOMERCE_ENV est la vérité business de runtime et prime NODE_ENV ;
  *   - toute écriture exige MARKET_STAGING_SEED_ENABLED=true.
@@ -339,20 +339,7 @@ async function ensureProducts(count = DEFAULT_PRODUCT_COUNT) {
          product_ref, name, description, category, subcategory, price_kmf,
          promo_pct, image_url, images, stock, is_active, is_available, sort_order
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, TRUE, TRUE, $11)
-       ON CONFLICT (product_ref) DO UPDATE SET
-         name = EXCLUDED.name,
-         description = EXCLUDED.description,
-         category = EXCLUDED.category,
-         subcategory = EXCLUDED.subcategory,
-         price_kmf = EXCLUDED.price_kmf,
-         promo_pct = EXCLUDED.promo_pct,
-         image_url = EXCLUDED.image_url,
-         images = EXCLUDED.images,
-         stock = EXCLUDED.stock,
-         is_active = TRUE,
-         is_available = TRUE,
-         sort_order = EXCLUDED.sort_order,
-         updated_at = NOW()
+       ON CONFLICT (product_ref) DO NOTHING
        RETURNING *`,
       [
         product.product_ref,
@@ -368,7 +355,18 @@ async function ensureProducts(count = DEFAULT_PRODUCT_COUNT) {
         9000 + index,
       ]
     );
-    rows.push(upserted[0]);
+    if (upserted[0]) {
+      rows.push(upserted[0]);
+    } else {
+      // La fiche existante est la vérité canonique : le seed ne remplace
+      // ni sa description, ni son stock, ni son prix, ni ses médias.
+      const { rows: existing } = await db.query(
+        'SELECT * FROM products WHERE product_ref = $1 LIMIT 1',
+        [product.product_ref]
+      );
+      if (!existing[0]) throw new Error(`Produit introuvable après conflit: ${product.product_ref}`);
+      rows.push(existing[0]);
+    }
   }
   return rows;
 }
@@ -389,29 +387,50 @@ async function prepareProductsForMarket(products, market) {
   if (!market?.id || !market?.code || !market?.currency) {
     throw new Error('prepareProductsForMarket: canonical market is required');
   }
+  if (!products.length) return { exposed: 0, drafts: 0 };
+
+  // Le seed ne possède QUE les lignes qu'il crée. Rejouer une recette ne
+  // réactive pas un produit volontairement exclu et ne réinitialise jamais
+  // une décision locale AUTHORIZED/LOCAL_ACTIVE en DRAFT_PENDING_GATE.
+  const ids = products.map(product => product.id);
+  const { rows: exposureRows } = await db.query(
+    `SELECT product_id FROM product_market_exposure
+      WHERE market_id = $1::uuid AND product_id = ANY($2::uuid[])`,
+    [market.id, ids]
+  );
+  const { rows: priceRows } = await db.query(
+    `SELECT product_id FROM product_market_price_drafts
+      WHERE market_id = $1::uuid AND product_id = ANY($2::uuid[])`,
+    [market.id, ids]
+  );
+  const knownExposures = new Set(exposureRows.map(row => String(row.product_id)));
+  const knownPrices = new Set(priceRows.map(row => String(row.product_id)));
 
   let exposed = 0;
   let drafts = 0;
   for (const product of products) {
-    const localAmount = await localDraftAmountForProduct(product, market);
+    if (!knownExposures.has(String(product.id))) {
+      await catalogExposure.setExposure(
+        product.id,
+        market.id,
+        catalogExposure.EXPOSURE.ENABLED,
+        null
+      );
+      exposed++;
+    }
 
-    await catalogExposure.setExposure(
-      product.id,
-      market.id,
-      catalogExposure.EXPOSURE.ENABLED,
-      null
-    );
-    exposed++;
-
-    await marketCommercialPrice.setMarketPriceDraft({
-      market,
-      productRef: product.product_ref,
-      amount: localAmount,
-      reason: `${TAG} ${market.code} prix local de test`,
-      source: PRICE_SOURCE,
-      actorId: null,
-    });
-    drafts++;
+    if (!knownPrices.has(String(product.id))) {
+      const localAmount = await localDraftAmountForProduct(product, market);
+      await marketCommercialPrice.setMarketPriceDraft({
+        market,
+        productRef: product.product_ref,
+        amount: localAmount,
+        reason: `${TAG} ${market.code} prix local de test`,
+        source: PRICE_SOURCE,
+        actorId: null,
+      });
+      drafts++;
+    }
   }
 
   return { exposed, drafts };
@@ -469,7 +488,7 @@ async function createOrder({ marketId, marketCode, relaisId, products }) {
   return { order, itemCount };
 }
 
-async function cleanup(market) {
+async function cleanup(market, { dryRun = false } = {}) {
   if (!market?.id) throw new Error('cleanup: canonical market is required');
   const tags = marketTags(market.code);
   const { rows: orders } = await db.query(
@@ -479,6 +498,14 @@ async function cleanup(market) {
   const orderIds = orders.map(order => order.id);
   console.log(`[cleanup:${tags.code}] ${orderIds.length} commande(s) SEEDTEST trouvée(s).`);
 
+  // La recette possède ses commandes préfixées SEEDTEST, pas les décisions
+  // commerciales partagées. Un nettoyage ne retire JAMAIS l'exposition ni
+  // le prix local des produits KPR, même si le seed les avait préparés.
+  if (dryRun) {
+    console.log(`[cleanup:${tags.code}] Dry-run — aucune écriture effectuée ; décisions catalogue et prix locaux conservés.`);
+    return { orders: orderIds.length, dryRun: true };
+  }
+
   if (orderIds.length > 0) {
     await db.query('DELETE FROM order_items WHERE order_id = ANY($1::uuid[])', [orderIds]);
     await db.query(
@@ -487,37 +514,18 @@ async function cleanup(market) {
     );
   }
 
-  const catalog = loadCuratedCatalog();
-  const refs = catalog.map(product => product.product_ref);
-  const { rows: products } = await db.query(
-    'SELECT id, product_ref FROM products WHERE product_ref = ANY($1::text[])',
-    [refs]
-  );
-  for (const product of products) {
-    await catalogExposure.setExposure(
-      product.id,
-      market.id,
-      catalogExposure.EXPOSURE.DISABLED,
-      null
-    );
-    try {
-      await marketCommercialPrice.resetMarketPriceDraft({
-        market,
-        productRef: product.product_ref,
-        reason: `${TAG} ${market.code} cleanup staging`,
-        source: PRICE_SOURCE,
-        actorId: null,
-      });
-    } catch (error) {
-      if (error?.code !== 'market_price_draft_not_found') throw error;
-    }
-  }
-
+  // Ne supprimer le relais de démonstration que s'il est toujours sans
+  // commandes : les dépendances inconnues font échouer la suppression,
+  // au lieu d'emporter d'autres données via CASCADE.
   await db.query(
-    'DELETE FROM relais WHERE name = $1 AND market_id = $2',
+    `DELETE FROM relais r
+       WHERE r.name = $1
+         AND r.market_id = $2
+         AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.relais_id = r.id)`,
     [tags.relaisName, market.id]
   );
-  console.log(`[cleanup:${tags.code}] Terminé — catalogue global préservé, projection marché retirée.`);
+  console.log(`[cleanup:${tags.code}] Commandes SEEDTEST nettoyées ; catalogue, exposition et prix locaux conservés.`);
+  return { orders: orderIds.length, dryRun: false };
 }
 
 async function main(argv = process.argv) {
@@ -558,7 +566,7 @@ async function main(argv = process.argv) {
   console.log(`[seed] Marché : ${market.code} — ${market.name} (${market.currency})`);
 
   if (args.cleanup) {
-    await cleanup(market);
+    await cleanup(market, { dryRun: args.dryRun });
     return;
   }
 

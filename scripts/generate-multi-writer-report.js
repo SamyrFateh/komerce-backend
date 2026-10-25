@@ -32,23 +32,18 @@ if (!fs.existsSync(GRAPH_PATH)) {
 const graph = JSON.parse(fs.readFileSync(GRAPH_PATH, 'utf8'));
 const nodesByFile = new Map(graph.nodes.filter(n => n.type === 'file').map(n => [n.file, n]));
 
+// Parseur canonique (scripts/lib/table-ownership.js) : modes R/W/RW et suffixes
+// ! (owner) / ~ (ecrivain technique) reconnus — jamais de parseur divergent.
+const { parseDbTables } = require('./lib/table-ownership');
 const features = {};
 for (const f of fs.readdirSync(path.join(ROOT, 'features'))) {
   if (!f.endsWith('.feature.js')) continue;
   const name = f.replace('.feature.js', '');
-  const txt = fs.readFileSync(path.join(ROOT, 'features', f), 'utf8');
-  const dbMatch = txt.match(/db:\s*\{\s*tables:\s*\[([\s\S]*?)\]\s*,?\s*\}/);
+  const card = require(path.join(ROOT, 'features', f));
   const tables = {};
-  if (dbMatch) {
-    for (const line of dbMatch[1].split('\n')) {
-      const m = line.match(/'([a-zA-Z0-9_]+):\s*(R|W|RW)'/);
-      if (m) tables[m[1]] = m[2];
-    }
-  }
-  const filesMatch = txt.match(/files:\s*\{([\s\S]*?)\n {2}\},/);
-  const files = filesMatch
-    ? [...filesMatch[1].matchAll(/'([a-zA-Z0-9_\-/.]+\.js)'/g)].map(m => m[1])
-    : [];
+  for (const e of parseDbTables(card)) tables[e.table] = e.mode;
+  const files = Object.values(card.files || {}).flat()
+    .filter(x => typeof x === 'string' && x.endsWith('.js'));
   features[name] = { tables, files: files.filter(f => !f.startsWith('tests/')) };
 }
 

@@ -64,7 +64,7 @@
     metrics: {
       source: 'commerce.metrics',
       pick: [
-        { key: 'ca-encaisse', label: 'Ventes payées' },
+        { key: 'ca-encaisse', label: 'Ventes payées (avoir inclus)' },
         { key: 'commandes', label: 'Commandes créées' },
         { key: 'panier-moyen', label: 'Panier moyen' },
         { key: 'quantites-vendues', label: 'Quantités vendues' },

@@ -13,8 +13,8 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261017-4');
-  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261017-4');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261023-1');
+  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261023-1');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
   expect(source).toContain('Charges fixes directes');
@@ -148,7 +148,6 @@ test('ajustements : enregistrement automatique (prix à la validation, coûts pa
   expect(src).toContain("form.addEventListener('change'");
   expect(src).toContain('valeur non enregistrée');
   expect(src).toContain('Montant invalide : prix non enregistré.');
-  expect(src).toContain('Enregistrer maintenant');
 });
 
 test('Atelier des prix : aucun bouton « Ajouter un produit » (la création relève du Catalogue)', () => {
@@ -156,4 +155,67 @@ test('Atelier des prix : aucun bouton « Ajouter un produit » (la création rel
   const src = require('fs').readFileSync(require('path').join(dir, 'js/pricing-economic-cockpit.js'), 'utf8');
   expect(src).not.toContain('Ajouter un produit');
   expect(src).not.toContain('create-product');
+});
+
+describe('L4 — unité par valeur, signe, prix non décidé, applicabilité des frais', () => {
+  const cockpit = require('../../public/dashboards/canonical/js/pricing-economic-cockpit.js');
+  function node(tag) {
+    return { tag, className: '', textContent: '', children: [], dataset: {}, attributes: {},
+      get lastChild() { return this.children[this.children.length - 1]; },
+      appendChild(c) { this.children.push(c); return c; }, setAttribute(k, v) { this.attributes[k] = v; }, addEventListener() {} };
+  }
+  const doc = { createElement: node };
+  const row = (corridor) => cockpit.portfolioProductRow(doc, { product_ref: 'P1', name: 'Coque' }, corridor);
+  const norm = t => String(t).replace(/[\u202f\u00a0]/g, ' ');
+  const cells = r => r.children.map(c => norm(c.textContent));
+  const base = (market, economics, selected = {}) => ({
+    market, product: { purchase_cost_kmf: 4000 },
+    corridor: { local: { low: { observed_amount: 9, currency: market.currency }, target: { observed_amount: 10, currency: market.currency }, high: null } },
+    selected: { economics, ...selected },
+  });
+
+  test('en-têtes : aucune unité imposée (chaque valeur porte la sienne)', () => {
+    const head = cockpit.portfolioHeader ? cockpit.portfolioHeader(doc) : null;
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
+    expect(src).not.toMatch(/'Prix retenu\\n\(FCFA\)'|\(FCFA\)/);
+    expect(head === null || head.children.every(c => !/FCFA/.test(c.textContent))).toBe(true);
+  });
+
+  test('CM : bornes et prix en XAF, coûts en KMF, prix absent = « Non décidé » (jamais price_kmf)', () => {
+    const r = row(base({ currency: 'XAF' }, { contribution_unit_kmf: -429 }, { price_kmf: 6000 }));
+    const text = cells(r);
+    expect(text).toContain('4 000 KMF');
+    expect(text.some(t => /XAF$/.test(t))).toBe(true);
+    const price = norm(r.children[7].children[0].textContent);
+    expect(price).toMatch(/^Non décidé/);
+    expect(price).not.toMatch(/6\s?000/);
+  });
+
+  test('prix local décidé : affiché dans la devise du marché (DJ -> DJF)', () => {
+    const r = row(base({ currency: 'DJF' }, { contribution_unit_kmf: 1342 }, { local_amount: 12500, local_currency: 'DJF' }));
+    expect(norm(r.children[7].children[0].textContent)).toMatch(/12 500 DJF/);
+  });
+
+  test('contribution : négative = critique, nulle = neutre, positive = ton nominal ; total jamais calculé ici', () => {
+    const tone = c => r => r.children[8].className;
+    expect(tone()(row(base({ currency: 'KMF' }, { contribution_unit_kmf: -429, quantity_sold: 3 })))).toContain('is-negative');
+    expect(tone()(row(base({ currency: 'KMF' }, { contribution_unit_kmf: 0 })))).toContain('is-zero');
+    const pos = row(base({ currency: 'KMF' }, { contribution_unit_kmf: 1342, quantity_sold: 3 }));
+    expect(pos.children[8].className).not.toMatch(/is-negative|is-zero/);
+    expect(pos.children[10].textContent).toBe('—');
+    expect(row(base({ currency: 'KMF' }, { contribution_unit_kmf: 1342 })).children[9].textContent).toBe('—');
+  });
+
+  test('frais de paiement hérités du global : « Applicabilité non vérifiée pour ce marché » ; surcharge pays : non', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
+    expect(src).toContain("component.inherited === true && component.category === 'payment'");
+    expect(src).toContain('Applicabilité non vérifiée pour ce marché');
+  });
+
+  test('enregistrement : message unique (automatique), plus de bouton « Enregistrer maintenant »', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
+    expect(src).toContain('enregistrés automatiquement');
+    expect(src).not.toContain('Enregistrer maintenant');
+    expect(src).not.toContain('cockpitSaveAll');
+  });
 });

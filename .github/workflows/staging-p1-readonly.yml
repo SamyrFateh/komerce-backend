@@ -1,0 +1,76 @@
+name: P1 staging real Chromium product chain
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      market:
+        description: Market whose buyer path is tested
+        required: true
+        type: choice
+        default: KM
+        options: [KM, CM, CG, DJ]
+      product_ref:
+        description: Optional sourced product reference; otherwise discover latest supplier-linked candidate
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: komerce-p1-staging-chromium
+  cancel-in-progress: false
+jobs:
+  p1:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] p1-readonly-km')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      P1_MARKET: ${{ github.event_name == 'workflow_dispatch' && inputs.market || 'KM' }}
+      P1_PRODUCT_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.product_ref || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Read one real P1 lineage and actual staging target identity
+        continue-on-error: true
+        shell: bash
+        run: |
+          export P1_EXPECTED_DEPLOY_SHA="$(git rev-parse HEAD)"
+          node scripts/recette/p1-staging-evidence.js
+      - name: Read-only audit of SQL demo exposure versus canonical source and local price
+        if: always()
+        continue-on-error: true
+        run: node scripts/recette/p1-demo-sql-segregation.js
+      - name: Prove anonymous buyer boundary in real Chromium without admin secrets
+        if: always()
+        run: npx playwright test tests/staging-p1/public-buyer.spec.js --config=playwright.staging-p1.config.js
+      - name: Prove authenticated sourcing and catalogue screens in Chromium
+        run: npx playwright test tests/staging-p1/p1-chain.spec.js --config=playwright.staging-p1.config.js
+      - name: Publish evidence even when blocked
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-staging-p1-${{ github.run_id }}
+          path: test-results/staging-p1/
+          if-no-files-found: warn
+          retention-days: 14

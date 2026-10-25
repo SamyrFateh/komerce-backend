@@ -1,0 +1,48 @@
+name: Staging P1 promote one real AliExpress source to INACTIVE draft
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: staging-p1-one-real-source-inactive-draft
+  cancel-in-progress: false
+jobs:
+  promote:
+    if: github.actor == github.repository_owner && github.event.issue.title == '[staging-op] p1-promote-one-sourced-inactive-draft'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      P1_DRAFT_SINGLE_APPROVAL: APPROVE_INACTIVE_ONLY_KIR_000009
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+      GITHUB_ISSUE_TITLE: ${{ github.event.issue.title }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Verify original source batch, history and exact unlinked candidate
+        run: node scripts/recette/p1-one-sourced-inactive-draft.js --preview
+      - name: Promote exactly one through canonical sourcing owner, no market price
+        run: node scripts/recette/p1-one-sourced-inactive-draft.js --apply
+      - name: Independently verify idempotent inactive draft, no exposure
+        run: node scripts/recette/p1-one-sourced-inactive-draft.js --preview
+      - name: Archive proof and any blocker
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-one-real-inactive-draft-${{ github.run_id }}
+          path: test-results/staging-p1/new-draft-*.json
+          retention-days: 30
+          if-no-files-found: warn

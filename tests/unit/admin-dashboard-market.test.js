@@ -84,6 +84,11 @@ jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() })),
 }));
 
+const mockBuildRct1Orders = jest.fn();
+jest.mock('../../services/dashboard-rct1-orders', () => ({
+  buildRct1Orders: (...args) => mockBuildRct1Orders(...args),
+}));
+
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -393,4 +398,34 @@ test('la route Commerce market projette seule les classements pays sans affecter
   expect(source).toContain('projectCommerceMarketPayload(await commerce.buildCommerce');
   expect(source).toContain('projectMarketPayload(await pilotage.buildMarketPilotage');
   expect(source).toContain('requireCommerceMarketRead');
+});
+
+describe('GET /api/admin/dashboard/orders/rct1 — strict authorization', () => {
+  beforeEach(() => mockBuildRct1Orders.mockResolvedValue({
+    mode: 'RCT1', total: 1, orders: [{ reference: 'RCT1-E1' }],
+  }));
+
+  test('admin avec grant global consulte RCT1 en lecture seule', async () => {
+    mockGlobalAllowed = true;
+    const res = await request(makeApp()).get('/api/admin/dashboard/orders/rct1?market=KM');
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(mockBuildRct1Orders).toHaveBeenCalledWith({ marketCode: 'KM' });
+    expect(res.body.orders[0].reference).toBe('RCT1-E1');
+  });
+
+  test('admin sans grant global et market_operator sont refusés', async () => {
+    mockGlobalAllowed = false;
+    expect((await request(makeApp()).get('/api/admin/dashboard/orders/rct1')).status).toBe(403);
+    mockCurrentUser = { id: 'operator-1', role: 'market_operator' };
+    expect((await request(makeApp()).get('/api/admin/dashboard/orders/rct1')).status).toBe(403);
+    expect(mockBuildRct1Orders).not.toHaveBeenCalled();
+  });
+
+  test('market_id client est interdit avant projection', async () => {
+    mockGlobalAllowed = true;
+    const res = await request(makeApp()).get('/api/admin/dashboard/orders/rct1?market_id=untrusted');
+    expect(res.status).toBe(400);
+    expect(mockBuildRct1Orders).not.toHaveBeenCalled();
+  });
 });

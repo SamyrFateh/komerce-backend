@@ -590,7 +590,7 @@
   function workQueueItems(rows, base) {
     return (Array.isArray(rows) ? rows : []).map(row => ({
       title: row.reference || row.id || 'Commande',
-      helper: [row.status, row.payment_mode, row.total_kmf != null ? `${base.formatNumber(row.total_kmf, 0)} KMF` : null]
+      helper: [row.next_action && row.next_action.label, row.status, row.payment_mode, row.total_kmf != null ? `${base.formatNumber(row.total_kmf, 0)} KMF` : null]
         .filter(Boolean).join(' · '),
       tone: 'warning',
       href: row.reference ? contextualHref(`/admin/orders/${encodeURIComponent(row.reference)}`, '/admin/operations', 'Retour aux opérations') : undefined,
@@ -716,11 +716,15 @@
       ), 'orders-pending-cash');
       decisionUi.RankedList.render(cash.body, { items: workQueueItems(queues.pending_cash, base) });
       grid.appendChild(cash.section);
-      const parcels = cardSection(doc, 'Colis à créer', queueDescription(
-        'Commandes payées prêtes à passer en logistique.', queues.ready_for_parcel_shown, queues.ready_for_parcel_total,
-      ), 'orders-ready-for-parcel');
-      decisionUi.RankedList.render(parcels.body, { items: workQueueItems(queues.ready_for_parcel, base) });
-      grid.appendChild(parcels.section);
+      [
+        ['À commander', 'Commandes payées à passer au fournisseur.', 'to_order', 'orders-to-order'],
+        ['En attente de réception Hub', 'Commandées : articles pas encore reçus au Hub (aucune action possible).', 'awaiting_hub_reception', 'orders-awaiting-hub-reception'],
+        ['Préparer le colis', 'Articles reçus au Hub : commandes prêtes à passer en préparation.', 'ready_for_parcel', 'orders-ready-for-parcel'],
+      ].forEach(([title, copy, key, id]) => {
+        const card = cardSection(doc, title, queueDescription(copy, queues[`${key}_shown`], queues[`${key}_total`]), id);
+        decisionUi.RankedList.render(card.body, { items: workQueueItems(queues[key], base) });
+        grid.appendChild(card.section);
+      });
       dashboard.appendChild(grid);
     }
 

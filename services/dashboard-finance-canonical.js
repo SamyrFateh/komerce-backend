@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const { isValidScope } = require('./simulation-scope-service');
+const { resolveBusinessTimezone, civilDayPeriodBounds } = require('./market-business-day');
 
 // L3 — vue d'un périmètre de recette : mêmes calculs, sélection explicite, libellé obligatoire.
 const SIMULATION_VIEW = (query = {}) => (isValidScope(query.simulation_scope)
@@ -51,14 +52,16 @@ function normalizePeriod(value) {
   return ALLOWED_PERIODS.includes(parsed) ? parsed : 30;
 }
 
-function buildPeriod(query = {}, marketId = null, now = new Date()) {
+// L3 : période = N jours civils incluant aujourd'hui, du minuit du marché (UTC en global), comme Commerce.
+function buildPeriod(query = {}, marketId = null, now = new Date(), market = null) {
   const period = normalizePeriod(query.period);
-  const to = new Date(now);
-  const from = new Date(to);
-  from.setUTCDate(from.getUTCDate() - period);
+  const { timezone, source } = resolveBusinessTimezone(market);
+  const { from, to } = civilDayPeriodBounds(now, period, timezone);
 
   return Object.freeze({
     period,
+    timezone,
+    timezone_source: source,
     from: from.toISOString(),
     to: to.toISOString(),
     filters: Object.freeze({
@@ -183,10 +186,11 @@ function trendBucket(period) {
   return 'month';
 }
 
-async function getFinanceTrend(filters = {}, period = 30) {
+async function getFinanceTrend(filters = {}, period = 30, timezone = 'UTC') {
   const bucket = trendBucket(period);
   const { where, params } = buildFiltersClause(filters, 'o');
-  const queryParams = params;
+  const queryParams = [...params, timezone];
+  const tz = `$${queryParams.length}::text`;
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
@@ -212,7 +216,7 @@ async function getFinanceTrend(filters = {}, period = 30) {
       FROM scoped_orders so
     )
     SELECT
-      date_trunc('${bucket}', created_at) AS bucket,
+      (date_trunc('${bucket}', created_at AT TIME ZONE ${tz}) AT TIME ZONE ${tz}) AS bucket,
       COUNT(*)::int AS paid_orders,
       COALESCE(SUM(total_kmf), 0)::bigint AS revenue_kmf,
       SUM(real_cost_kmf)::bigint AS real_cost_kmf,
@@ -223,7 +227,7 @@ async function getFinanceTrend(filters = {}, period = 30) {
         WHERE has_imputation = TRUE AND final_ready AND real_cost_kmf IS NOT NULL
       )::bigint AS consolidated_margin_kmf
     FROM cost_truth
-    GROUP BY date_trunc('${bucket}', created_at)
+    GROUP BY date_trunc('${bucket}', created_at AT TIME ZONE ${tz})
     ORDER BY bucket ASC
   `, queryParams);
 
@@ -608,7 +612,7 @@ async function getRelayProfitability(filters = {}) {
 
 async function buildFinance(query = {}, options = {}) {
   const market = options.market || null;
-  const window = buildPeriod(query, market && market.id, options.now || new Date());
+  const window = buildPeriod(query, market && market.id, options.now || new Date(), market);
 
   const [
     ca,
@@ -644,7 +648,7 @@ async function buildFinance(query = {}, options = {}) {
     getPaymentMix(window.filters),
     getRecentRefunds(window, market),
     metrics.getCmdsCoutIncompletIds(window.filters, { limit: 20 }),
-    getFinanceTrend(window.filters, window.period),
+    getFinanceTrend(window.filters, window.period, window.timezone),
     getCostFamilyBreakdown(window.filters),
     getRecentCostingOrders(window.filters, { limit: 20 }),
     getRelayProfitability(window.filters),
@@ -656,6 +660,15 @@ async function buildFinance(query = {}, options = {}) {
     scope: publicScope(market),
     simulation: SIMULATION_VIEW(query),
     period: window.period,
+    business_timezone: window.timezone,
+    period_definition: Object.freeze({
+      kind: 'civil_days_including_today',
+      days: window.period,
+      timezone: window.timezone,
+      timezone_source: window.timezone_source,
+      from: window.from,
+      to: window.to,
+    }),
     kpis: Object.freeze([
       ca,
       coutReel,
@@ -697,6 +710,8 @@ async function buildFinance(query = {}, options = {}) {
     ...(supplierPaymentReview ? { supplier_payment_review: supplierPaymentReview } : {}),
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),
+      business_timezone: window.timezone,
+      business_timezone_source: window.timezone_source,
       scope_enforced: true,
       scope_mode: market ? 'market' : 'global',
       finance_period_basis: Object.freeze({

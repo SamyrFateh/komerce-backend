@@ -64,7 +64,7 @@ async function getCAEncaisse(filters = {}) {
     delta = computeDelta(value, Number(prevR.rows[0].value), 'periode precedente');
   }
 
-  return makeKpi('ca_encaisse', 'CA commandes payées', value, 'KMF', {
+  return makeKpi('ca_encaisse', 'Commandes payées — part hors avoir', value, 'KMF', {
     delta,
     itemsTotal,
     itemsWithData: itemsTotal,

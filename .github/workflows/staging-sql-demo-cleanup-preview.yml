@@ -1,0 +1,38 @@
+name: Staging SQL demo selective cleanup preview
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: staging-sql-demo-cleanup-preview
+  cancel-in-progress: false
+jobs:
+  preview:
+    if: github.actor == github.repository_owner && github.event.issue.title == '[staging-op] sql-demo-cleanup-preview'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Verify database target and enumerate exact inbound references (READ ONLY)
+        run: node scripts/recette/staging-sql-demo-cleanup-preview.js
+      - name: Publish cleanup preview, even when blocked
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-sql-demo-cleanup-preview-${{ github.run_id }}
+          path: test-results/staging-demo-cleanup/preview.json
+          retention-days: 30
+          if-no-files-found: warn

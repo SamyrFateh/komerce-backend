@@ -58,6 +58,23 @@
     ? (o.payment_status === 'paid' ? 'Cash encaissé' : 'Cash à encaisser')
     : (o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente'));
 
+  // L9a : la liste des commandes n'est plus un onglet Hub live ; elle vit dans Commandes.
+  const ORDERS_URL = '/admin/orders';
+  // L9b : une commande livrée n'a plus rien à exécuter au Hub ; sa fiche vit dans Order 360 (retour vers Hub live).
+  let viewerUser = null;
+  function deliveredOrder360Url(order) {
+    if (!order || order.status !== 'collected' || !order.reference) return null;
+    const nav = global.KomerceCanonicalNavigation;
+    const path = `/admin/orders/${encodeURIComponent(order.reference)}`;
+    if (!nav || typeof nav.canOpenEntity360 !== 'function' || !nav.canOpenEntity360(viewerUser)) return null;
+    return nav.withEntityReturnTo(path, '/admin/hub-live', 'Retour au Hub live');
+  }
+
+  function legacyOrdersRedirect(search) {
+    const q = new URLSearchParams(String(search || ''));
+    return q.get('view') === 'queue' && q.get('tab') === 'all' ? ORDERS_URL : null;
+  }
+
   const fluxUrl = () => BASE;
   const suiviUrl = () => `${BASE}${queryString({ view:'overview' })}`;
 
@@ -65,7 +82,6 @@
     return [
       { key:'flux', label:'Flux Hub', href:fluxUrl() },
       { key:'suivi', label:'Suivi', href:suiviUrl() },
-      { key:'commandes', label:'Commandes', href:queueUrl('all') },
     ];
   }
 
@@ -207,7 +223,7 @@
     const ref = data?.reference || 'Commande';
     if (!from) return { crumbs:[{ label:'Hub', plain:true }, { label:'Suivi', href:suiviUrl() }, { label:ref }], back:{ href:suiviUrl(), label:'← Retour au suivi' } };
     if (from === 'all') {
-      return { crumbs:[{ label:'Hub', plain:true }, { label:'Commandes', href:queueUrl('all') }, { label:ref }], back:{ href:queueUrl('all'), label:'← Retour à Commandes' } };
+      return { crumbs:[{ label:'Hub', plain:true }, { label:'Commandes', href:ORDERS_URL }, { label:ref }], back:{ href:ORDERS_URL, label:'← Retour à Commandes' } };
     }
     return {
       crumbs:[{ label:'Hub', plain:true }, { label:'Suivi', href:suiviUrl() }, { label:QUEUE_TABS[from], href:queueUrl(from) }, { label:ref }],
@@ -288,14 +304,18 @@
       nav:() => ({ crumbs:[], back:null }),
     },
     queue:{
-      tab:p => (tabOf(p) === 'all' ? 'commandes' : 'suivi'),
+      tab:() => 'suivi',
       load:(p, api) => api(`/api/hub-dash/queue${queryString({ tab:tabOf(p), page:Math.max(1, num(p.page) || 1), limit:PAGE_SIZE, projection:'live' })}`),
       render:renderQueue,
       nav:navQueue,
     },
     order:{
-      tab:p => (fromOf(p) === 'all' ? 'commandes' : 'suivi'),
-      load:(p, api) => api(`/api/hub-dash/orders/${encodeURIComponent(p.order || '')}?projection=live`),
+      tab:() => 'suivi',
+      load:(p, api) => api(`/api/hub-dash/orders/${encodeURIComponent(p.order || '')}?projection=live`).then(data => {
+        const target = deliveredOrder360Url(data);
+        if (target && global.location && typeof global.location.replace === 'function') global.location.replace(target);
+        return data;
+      }),
       render:renderOrder,
       nav:navOrder,
     },
@@ -304,7 +324,17 @@
   const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Hub', tabs:hubTabs(), views, defaultView:'flux' });
 
   global.KomerceCanonicalHubLive = Object.freeze({
-    mount:options => cockpit.mount(options),
+    mount:options => {
+      viewerUser = (options && options.user) || null;
+      const target = legacyOrdersRedirect(global.location && global.location.search);
+      if (target && global.location && typeof global.location.replace === 'function') {
+        global.location.replace(target);
+        return Promise.resolve(null);
+      }
+      return cockpit.mount(options);
+    },
+    legacyOrdersRedirect,
+    deliveredOrder360Url,
     renderHtml:cockpit.renderHtml,
     queueUrl,
     orderUrl,

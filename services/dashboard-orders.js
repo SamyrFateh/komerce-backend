@@ -18,6 +18,7 @@
 'use strict';
 
 const db = require('../db');
+const { getOrdersPhysicalCoverage } = require('./order-physical-coverage-service');
 const { ACTIVE_ORDER_STATUSES, LATE_THRESHOLDS } = require('./dashboard-metrics/_helpers');
 
 // Séquence canonique du cycle de vie commande = chemin nominal de VALID_TRANSITIONS
@@ -94,37 +95,58 @@ async function getPendingCash(mid, limit = 25) {
   return Object.freeze({ items, count_total: Number(countRows[0]?.value) || 0 });
 }
 
-// File « colis à créer » — requête identique au contrat order-api-v2 /ready-for-parcel.
-// count_total est un COUNT(*) séparé, jamais rows.length : la liste est
-// plafonnée à `limit` pour rester une file de travail actionnable, mais le
-// KPI affiché doit refléter le vrai total, pas la troncature (doctrine
-// "éviter les incohérences entre les compteurs et leurs listes sous-jacentes").
+// L8 — « Prochaine action réelle » : la file unique « Colis à créer » devient trois files selon
+// l'état physique de la commande payée (confirmed / ordered). La couverture est lue par lot
+// (getOrdersPhysicalCoverage, une requête) ; aucune transition ni bouton d'écriture ici.
+//   confirmed                         → À commander
+//   ordered sans couverture complète  → En attente de réception Hub (n/N), sans action
+//   ordered avec couverture complète  → Préparer le colis
+// count_total est un compte réel de chaque file, jamais la longueur tronquée de la liste.
+function pipelineItem(row, next_action) {
+  return Object.freeze({
+    id: row.id, reference: row.reference, status: row.status,
+    total_kmf: row.total_kmf, payment_mode: row.payment_mode, next_action: Object.freeze(next_action),
+  });
+}
+
+async function getParcelPipeline(mid, limit = 25) {
+  const { rows } = await db.query(
+    `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.created_at
+       FROM orders o
+      WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
+        AND o.payment_status = 'paid'
+        AND o.status IN ('confirmed', 'ordered')
+      ORDER BY o.created_at ASC`,
+    [mid],
+  );
+  const coverage = await getOrdersPhysicalCoverage(db, rows.filter(r => r.status === 'ordered').map(r => r.id));
+  const toOrder = [];
+  const awaiting = [];
+  const ready = [];
+  rows.forEach((row) => {
+    if (row.status === 'confirmed') {
+      toOrder.push(pipelineItem(row, { key: 'order', label: 'À commander', actionable: true }));
+      return;
+    }
+    const cov = coverage.get(row.id);
+    if (!cov || cov.covered) {
+      ready.push(pipelineItem(row, { key: 'prepare_parcel', label: 'Préparer le colis', actionable: true }));
+    } else {
+      awaiting.push(pipelineItem(row, {
+        key: 'await_hub_reception',
+        label: `En attente de réception Hub (${cov.usable}/${cov.needed})`,
+        actionable: false,
+        received_units: cov.usable,
+        needed_units: cov.needed,
+      }));
+    }
+  });
+  const queue = list => Object.freeze({ items: list.slice(0, limit), count_total: list.length });
+  return Object.freeze({ to_order: queue(toOrder), awaiting_hub_reception: queue(awaiting), ready_for_parcel: queue(ready) });
+}
+
 async function getReadyForParcel(mid, limit = 25) {
-  const [{ rows }, { rows: countRows }] = await Promise.all([
-    db.query(
-      `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.created_at
-         FROM orders o
-        WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
-          AND o.payment_status = 'paid'
-          AND o.status IN ('confirmed', 'ordered')
-        ORDER BY o.created_at ASC
-        LIMIT $2`,
-      [mid, limit],
-    ),
-    db.query(
-      `SELECT COUNT(*)::int AS value
-         FROM orders o
-        WHERE ($1::uuid IS NULL OR o.market_id = $1) AND o.simulation_scope IS NULL
-          AND o.payment_status = 'paid'
-          AND o.status IN ('confirmed', 'ordered')`,
-      [mid],
-    ),
-  ]);
-  const items = rows.map(r => Object.freeze({
-    id: r.id, reference: r.reference, status: r.status,
-    total_kmf: r.total_kmf, payment_mode: r.payment_mode,
-  }));
-  return Object.freeze({ items, count_total: Number(countRows[0]?.value) || 0 });
+  return (await getParcelPipeline(mid, limit)).ready_for_parcel;
 }
 
 // Lecture canonique des relations d'une page de commandes déjà sélectionnées :
@@ -153,6 +175,16 @@ async function getOrderRelations(ids) {
     first_product_name: r.first_product_name || null,
     parcel_count: r.parcel_count,
   })]));
+}
+
+function pipelineQueues(pipeline, mapItems) {
+  const out = {};
+  [['to_order', 'to_order'], ['awaiting_hub_reception', 'awaiting_hub_reception'], ['ready_for_parcel', 'ready_for_parcel']].forEach(([key]) => {
+    out[key] = mapItems(pipeline[key].items);
+    out[`${key}_shown`] = pipeline[key].items.length;
+    out[`${key}_total`] = pipeline[key].count_total;
+  });
+  return out;
 }
 
 function withRelations(items, rel) {
@@ -377,14 +409,12 @@ async function getBusinessFunnel(mid) {
 // l'écran Opérations (qui a absorbé le suivi des commandes) — aucune requête dupliquée.
 async function getWorkQueues(market) {
   const mid = marketId(market || null);
-  const [pendingCash, readyForParcel] = await Promise.all([getPendingCash(mid), getReadyForParcel(mid)]);
+  const [pendingCash, pipeline] = await Promise.all([getPendingCash(mid), getParcelPipeline(mid)]);
   return Object.freeze({
     pending_cash: pendingCash.items,
     pending_cash_shown: pendingCash.items.length,
     pending_cash_total: pendingCash.count_total,
-    ready_for_parcel: readyForParcel.items,
-    ready_for_parcel_shown: readyForParcel.items.length,
-    ready_for_parcel_total: readyForParcel.count_total,
+    ...pipelineQueues(pipeline, items => items),
   });
 }
 
@@ -392,21 +422,21 @@ async function buildOrders(options = {}) {
   const market = options.market || null;
   const mid = marketId(market);
 
-  const [byStatus, paymentMix, pendingCash, readyForParcel, signals, funnel, priorityOrders] = await Promise.all([
+  const [byStatus, paymentMix, pendingCash, pipeline, signals, funnel, priorityOrders] = await Promise.all([
     getStatusCounts(mid),
     getPaymentMix(mid),
     getPendingCash(mid),
-    getReadyForParcel(mid),
+    getParcelPipeline(mid),
     getDecisionSignals(mid),
     getBusinessFunnel(mid),
     getPriorityOrders(mid),
   ]);
 
   const rel = await getOrderRelations([
-    ...pendingCash.items.map(i => i.id), ...readyForParcel.items.map(i => i.id), ...priorityOrders.map(i => i.id),
+    ...pendingCash.items.map(i => i.id), ...pipeline.to_order.items.map(i => i.id), ...pipeline.awaiting_hub_reception.items.map(i => i.id), ...pipeline.ready_for_parcel.items.map(i => i.id), ...priorityOrders.map(i => i.id),
   ]);
   const pendingCashItems = withRelations(pendingCash.items, rel);
-  const readyItems = withRelations(readyForParcel.items, rel);
+  const readyForParcel = pipeline.ready_for_parcel;
   const priorityItems = withRelations(priorityOrders, rel);
 
   const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
@@ -424,6 +454,8 @@ async function buildOrders(options = {}) {
       cancelled: byStatus.cancelled || 0,
       cash_to_confirm: pendingCash.count_total,
       parcels_to_create: readyForParcel.count_total,
+      orders_to_order: pipeline.to_order.count_total,
+      awaiting_hub_reception: pipeline.awaiting_hub_reception.count_total,
     }),
     signals,
     funnel,
@@ -432,7 +464,9 @@ async function buildOrders(options = {}) {
       kpi('total_orders', 'Commandes', total),
       kpi('active_orders', 'Commandes actives', active),
       kpi('cash_to_confirm', 'Cash à confirmer', pendingCash.count_total),
-      kpi('parcels_to_create', 'Colis à créer', readyForParcel.count_total),
+      kpi('orders_to_order', 'À commander', pipeline.to_order.count_total),
+      kpi('awaiting_hub_reception', 'En attente de réception Hub', pipeline.awaiting_hub_reception.count_total),
+      kpi('parcels_to_create', 'Colis à préparer', readyForParcel.count_total),
       kpi('cancelled', 'Annulées', byStatus.cancelled || 0),
     ]),
     lifecycle: Object.freeze(lifecycle),
@@ -441,9 +475,7 @@ async function buildOrders(options = {}) {
       pending_cash: pendingCashItems,
       pending_cash_shown: pendingCash.items.length,
       pending_cash_total: pendingCash.count_total,
-      ready_for_parcel: readyItems,
-      ready_for_parcel_shown: readyForParcel.items.length,
-      ready_for_parcel_total: readyForParcel.count_total,
+      ...pipelineQueues(pipeline, items => withRelations(items, rel)),
     }),
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),

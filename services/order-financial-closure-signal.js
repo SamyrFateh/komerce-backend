@@ -9,6 +9,7 @@
  * @depends       db.js, services/order-financial-closure-reconciliation.js, services/signal-service.js
  * @used-by       bootstrap/crons.js
  * @db-read       orders, signals
+ * @db-write      signals
  * @db-write-via:signal-service signals
  * @db-txn        none
  * @doctrine      verdict_comes_from_reconcileOrderFinancialClose, producer_pushes_to_decision_signals_sink, bounded_evaluation_never_silent, fail_closed_on_evaluation_error

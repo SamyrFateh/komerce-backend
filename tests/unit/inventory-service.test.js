@@ -25,16 +25,22 @@
 
 // ─── Mock db ─────────────────────────────────────────────────────────────────
 let mockQuery;
-jest.mock('../../db', () => ({ get query() { return mockQuery; } }));
+let mockConnect;
+jest.mock('../../db', () => ({ get query() { return mockQuery; }, connect: (...args) => mockConnect(...args) }));
+jest.mock('../../services/parcel-item-mutation-service', () => ({
+  addParcelItemTraced: jest.fn().mockResolvedValue({ row: { id: 'parcel-item' } }),
+  reassignParcelItem: jest.fn().mockResolvedValue({ moved: { id: 'parcel-item' } }),
+}));
 
 function loadService() {
   jest.resetModules();
-  jest.mock('../../db', () => ({ query: (...a) => mockQuery(...a) }));
+  jest.mock('../../db', () => ({ query: (...a) => mockQuery(...a), connect: (...a) => mockConnect(...a) }));
   return require('../../services/inventory-service');
 }
 
 beforeEach(() => {
   mockQuery = jest.fn();
+  mockConnect = jest.fn().mockResolvedValue({ query: (...args) => mockQuery(...args), release: jest.fn() });
 });
 
 // ─── receiveItem ─────────────────────────────────────────────────────────────
@@ -50,7 +56,9 @@ describe("receiveItem", () => {
     const inv = { id: 'inv-1', order_item_id: 'oi-1', order_id: 'ord-1', status: 'received', destination_island: 'Grande Comore' };
 
     mockQuery = jest.fn()
-      // 1. SELECT order_items JOIN products
+      // 1. BEGIN — la réception est atomique
+      .mockResolvedValueOnce({ rows: [] })
+      // 2. SELECT order_items JOIN products sous verrou
       .mockResolvedValueOnce({ rows: [oi] })
       // 2. INSERT inventory_items
       .mockResolvedValueOnce({ rows: [inv] })
@@ -109,51 +117,109 @@ describe("proposeAssignment", () => {
 });
 
 // ─── scanIntoParcel ───────────────────────────────────────────────────────────
-describe("scanIntoParcel", () => {
-  test("throw si item introuvable ou déjà assigné", async () => {
-    mockQuery = jest.fn().mockResolvedValue({ rows: [] }); // item absent
+describe("scanIntoParcel — atomicité RC-1", () => {
+  function fixture({ itemMissing = false, parcelMissing = false, existingParcelId = null, itemOrder = 'ord-1' } = {}) {
+    const item = {
+      id: 'inv-1', order_id: 'ord-1', order_item_id: 'oi-1',
+      proposed_parcel_id: 'pcl-1', status: 'proposed',
+    };
+    const client = { query: (...args) => mockQuery(...args), release: jest.fn() };
+    mockConnect.mockResolvedValue(client);
+    const sql = [];
+    mockQuery = jest.fn(async (statement) => {
+      sql.push(statement);
+      if (statement.includes('FROM inventory_items') && statement.includes('FOR UPDATE')) {
+        return { rows: itemMissing ? [] : [item] };
+      }
+      if (statement.includes('SELECT order_id FROM order_items')) return { rows: [{ order_id: itemOrder }] };
+      if (statement.includes('SELECT parcel_id FROM parcel_items')) {
+        return { rows: existingParcelId ? [{ parcel_id: existingParcelId }] : [] };
+      }
+      if (statement.includes('SELECT id FROM parcel_items')) {
+        return { rows: parcelMissing ? [] : [{ id: 'pi-1' }] };
+      }
+      if (statement.includes('UPDATE inventory_items')) return { rows: [{ id: item.id }] };
+      if (statement.includes('AS total')) return { rows: [{ total: 1, received: 1, assigned: 1 }] };
+      if (statement.includes('SELECT reference FROM parcels')) return { rows: [{ reference: 'P001' }] };
+      return { rows: [] };
+    });
+    return { client, sql };
+  }
+
+  test('nominal : ajoute puis vérifie le lien avant d affecter, même transaction COMMIT', async () => {
+    const { client, sql } = fixture();
     const svc = loadService();
-    await expect(svc.scanIntoParcel('inv-x', 'pcl-x')).rejects.toThrow('introuvable');
+    const result = await svc.scanIntoParcel('inv-1', 'pcl-1');
+    expect(result).toMatchObject({ assigned: true, matched_proposal: true, parcel_ref: 'P001' });
+    const { addParcelItemTraced } = require('../../services/parcel-item-mutation-service');
+    expect(addParcelItemTraced).toHaveBeenCalledWith(client,
+      expect.objectContaining({ parcelId: 'pcl-1', orderItemId: 'oi-1', quantity: 1 }));
+    expect(sql[0]).toBe('BEGIN');
+    expect(sql.at(-1)).toBe('COMMIT');
+    expect(sql.findIndex(x => x.includes('SELECT id FROM parcel_items')))
+      .toBeLessThan(sql.findIndex(x => x.includes('UPDATE inventory_items')));
+    expect(client.release).toHaveBeenCalled();
   });
 
-  test("throw si parcel introuvable", async () => {
-    const item = { id: 'inv-4', order_id: 'ord-1', order_item_id: 'oi-4', proposed_parcel_id: null, status: 'proposed' };
-    mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [item] }) // item
-      .mockResolvedValueOnce({ rows: [] });    // parcel introuvable
+  test('une affectation sans appartenance réelle doit échouer avec ROLLBACK', async () => {
+    const { client, sql } = fixture({ parcelMissing: true });
     const svc = loadService();
-    await expect(svc.scanIntoParcel('inv-4', 'pcl-ghost')).rejects.toThrow('Colis introuvable');
+    await expect(svc.scanIntoParcel('inv-1', 'pcl-1')).rejects.toMatchObject({
+      code: 'PARCEL_MEMBERSHIP_NOT_PERSISTED', status: 409,
+    });
+    expect(sql).toContain('ROLLBACK');
+    expect(sql.some(x => x.includes('UPDATE inventory_items'))).toBe(false);
+    expect(client.release).toHaveBeenCalled();
   });
 
-  test("nominal matched_proposal:true si parcel = proposed_parcel_id", async () => {
-    const item = { id: 'inv-5', order_id: 'ord-1', order_item_id: 'oi-5', proposed_parcel_id: 'pcl-5', status: 'proposed' };
-    mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [item] })
-      .mockResolvedValueOnce({ rows: [{ id: 'pcl-5', reference: 'P005', status: 'preparation' }] })
-      .mockResolvedValueOnce({ rows: [] }) // UPDATE inventory_items
-      .mockResolvedValueOnce({ rows: [] }) // INSERT parcel_items
-      .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 1 }] }) // counts
-      .mockResolvedValueOnce({ rows: [] }); // UPDATE orders
-
+  test('aucune modification après refus de la règle marché / relais / état', async () => {
+    const { client, sql } = fixture();
     const svc = loadService();
-    const result = await svc.scanIntoParcel('inv-5', 'pcl-5');
-    expect(result.assigned).toBe(true);
-    expect(result.matched_proposal).toBe(true);
+    const m = require('../../services/parcel-item-mutation-service');
+    const error = Object.assign(new Error('Autre marché'), { code: 'MARKET_MISMATCH', status: 409 });
+    m.addParcelItemTraced.mockRejectedValueOnce(error);
+    await expect(svc.scanIntoParcel('inv-1', 'pcl-1')).rejects.toMatchObject({ code: 'MARKET_MISMATCH' });
+    expect(sql).toContain('ROLLBACK');
+    expect(sql.some(x => x.includes('UPDATE inventory_items'))).toBe(false);
+    expect(client.release).toHaveBeenCalled();
   });
 
-  test("nominal matched_proposal:false si parcel différent", async () => {
-    const item = { id: 'inv-6', order_id: 'ord-1', order_item_id: 'oi-6', proposed_parcel_id: 'pcl-original', status: 'proposed' };
-    mockQuery = jest.fn()
-      .mockResolvedValueOnce({ rows: [item] })
-      .mockResolvedValueOnce({ rows: [{ id: 'pcl-other', reference: 'P006', status: 'preparation' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 1 }] })
-      .mockResolvedValueOnce({ rows: [] });
-
+  test('colis expédié ou indisponible : refus 409 et rollback', async () => {
+    const { sql } = fixture();
     const svc = loadService();
-    const result = await svc.scanIntoParcel('inv-6', 'pcl-other');
+    const m = require('../../services/parcel-item-mutation-service');
+    m.addParcelItemTraced.mockRejectedValueOnce(
+      Object.assign(new Error('Colis déjà expédié'), { code: 'PARCEL_NOT_MUTABLE', status: 409 })
+    );
+    await expect(svc.scanIntoParcel('inv-1', 'pcl-1')).rejects.toMatchObject({
+      code: 'PARCEL_NOT_MUTABLE', status: 409,
+    });
+    expect(sql).toContain('ROLLBACK');
+    expect(sql.some(x => x.includes('UPDATE inventory_items'))).toBe(false);
+  });
+
+  test('item déjà attribué ou provenance incohérente : refus avant mutation', async () => {
+    const first = fixture({ itemMissing: true });
+    let svc = loadService();
+    await expect(svc.scanIntoParcel('inv-1', 'pcl-1')).rejects.toThrow('introuvable');
+    expect(first.sql).toContain('ROLLBACK');
+    const second = fixture({ itemOrder: 'ord-autre' });
+    svc = loadService();
+    await expect(svc.scanIntoParcel('inv-1', 'pcl-1')).rejects.toMatchObject({
+      code: 'INVENTORY_ORDER_MISMATCH',
+    });
+    expect(second.sql.some(x => x.includes('UPDATE inventory_items'))).toBe(false);
+  });
+
+  test('réaffectation explicite via le service canonique, pas un INSERT ignoré', async () => {
+    const { client, sql } = fixture({ existingParcelId: 'pcl-old' });
+    const svc = loadService();
+    const result = await svc.scanIntoParcel('inv-1', 'pcl-new');
     expect(result.matched_proposal).toBe(false);
+    const m = require('../../services/parcel-item-mutation-service');
+    expect(m.reassignParcelItem).toHaveBeenCalledWith(client,
+      expect.objectContaining({ fromParcelId: 'pcl-old', toParcelId: 'pcl-new', orderItemId: 'oi-1' }));
+    expect(sql.at(-1)).toBe('COMMIT');
   });
 });
 
@@ -241,25 +307,23 @@ describe("getStats", () => {
 // ─── Lot A, branches manquantes ───────────────────────────────────────────────
 
 describe("inventory-service — Lot A, branches manquantes", () => {
-  describe("receiveItem — order_id explicite", () => {
-    test("order_id fourni explicitement a priorité sur oi.order_id", async () => {
+  describe("receiveItem — autorité de la ligne", () => {
+    test("order_id contradictoire est rejeté 409 avant toute écriture", async () => {
       const oi = { id: 'oi-9', order_id: 'ord-oi', product_id: 'p-9', quantity: 1, product_name: 'Sucre' };
-      const inv = { id: 'inv-9', order_item_id: 'oi-9', order_id: 'ord-explicit', status: 'received', destination_island: 'Anjouan' };
-
-      mockQuery = jest.fn()
-        .mockResolvedValueOnce({ rows: [oi] })
-        .mockResolvedValueOnce({ rows: [inv] })
-        .mockResolvedValueOnce({ rows: [] }) // proposeAssignment → item non trouvé (status déjà avancé) → null
-        .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 0 }] })
-        .mockResolvedValueOnce({ rows: [] });
+      mockQuery = jest.fn(async (sql) => {
+        if (sql.includes('FROM order_items oi')) return { rows: [oi] };
+        return { rows: [] };
+      });
 
       const svc = loadService();
-      await svc.receiveItem({ order_item_id: 'oi-9', order_id: 'ord-explicit' });
+      await expect(svc.receiveItem({ order_item_id: 'oi-9', order_id: 'ord-explicit' }))
+        .rejects.toMatchObject({ status: 409, code: 'INVENTORY_ORDER_MISMATCH' });
 
-      // 2e appel = INSERT inventory_items — vérifier que order_id explicite est utilisé
-      expect(mockQuery.mock.calls[1][1]).toEqual(['oi-9', 'ord-explicit']);
-      // 4e appel = updateOrderCompletion SELECT counts, doit utiliser ord-explicit
-      expect(mockQuery.mock.calls[3][1]).toEqual(['ord-explicit']);
+      const executed = mockQuery.mock.calls.map(([sql]) => sql);
+      expect(executed[0]).toBe('BEGIN');
+      expect(executed).toContain('ROLLBACK');
+      expect(executed).not.toContain('COMMIT');
+      expect(executed.some(sql => /INSERT INTO inventory_items|UPDATE inventory_items|SET items_received/.test(sql))).toBe(false);
     });
   });
 

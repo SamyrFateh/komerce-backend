@@ -178,7 +178,9 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
     // Parité CI (job changes) : registre de routes hydraté avant l'audit.
     nodeRun('Route registry hydration', 'scripts/gen-route-registry.js'),
     npmRun('Feature audit', 'gate:feature-audit'),
-    nodeRun('Debt Zero', 'scripts/debt-zero-gate.js', ['--base', baseSha, '--head', headSha]),
+    // Accord humain Debt Zero : il ne peut porter que sur un SHA publié (PR). En local,
+    // exit 3 = « vert sauf accord » : le reste du plan continue, la CI reste bloquante.
+    { ...nodeRun('Debt Zero', 'scripts/debt-zero-gate.js', ['--base', baseSha, '--head', headSha, '--local']), pendingExit: 3 },
   ];
 
   if (scope.cjPilotProofOnly) {
@@ -195,13 +197,13 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
     );
   }
 
+
+  // Check le moins coûteux et le plus souvent oublié : avant les audits,
+  // reconstructions de graphes et suites unitaires. Aucun nouveau gate.
   if (scope.backend || scope.dashboard || scope.boutique) {
-    plan.push(
-      nodeRun('Touched tests / completion-at-contact', 'scripts/touched-tests-gate.js', [
-        '--base', baseSha,
-        '--strict',
-      ])
-    );
+    plan.unshift(nodeRun('Touched tests / completion-at-contact', 'scripts/touched-tests-gate.js', [
+      '--base', baseSha, '--strict',
+    ]));
   }
 
   if (scope.backend) {
@@ -225,6 +227,7 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
         '--runInBand', '--silent',
       ]),
       nodeRun('Supplier execution certification manifest', 'scripts/check-supplier-execution-certification-manifest.js'),
+      nodeRun('Feature invariants — preuve unitaire', 'scripts/feature-invariant-check.js', ['--strict', '--run=unit']),
       npmRun('Backend feature guard', 'feature:check'),
       nodeRun('Contract consumer check', 'scripts/contract-check.js'),
       npmRun('Security 360 freshness and ratchet', 'security:360:check'),
@@ -254,7 +257,9 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
       nodeRun('Governance projections hydration', 'scripts/ci-refresh-governance-projections.js'),
       nodeRun('Architecture header hygiene', 'scripts/arch-db-check.js'),
       nodeRun('Headers ↔ SQL', 'scripts/arch-header-sql-check.js'),
+      nodeRun('Audit logique statique', 'scripts/audit-logic.js', ['--static-only', '--strict', '--base', baseSha]),
       nodeRun('Hub authority gate', 'scripts/hub-authority-gate.js'),
+      nodeRun('Feature invariants — runner officiel et cliquet', 'scripts/feature-invariant-check.js', ['--strict']),
       // Déjà exécuté par « Backend feature guard » (npm run feature:check) si backend.
       ...(scope.backend ? [] : [nodeRun('Feature slice guard', 'scripts/feature-guard.js', ['--strict'])]),
       nodeRun('Business graph semantic check', 'scripts/business-graph-gen.js', [
@@ -291,6 +296,18 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
     }
   }
 
+  // Fail-fast inter-scope : en présence de code backend ET gouvernance, les
+  // contrôles structurels gouvernance doivent précéder les suites backend.
+  // Déplacement du même bloc existant : aucune nouvelle commande ni doublon.
+  if (scope.governance && scope.backend) {
+    const start = plan.findIndex(step => step.label === 'Architecture graph refresh');
+    const end = plan.findIndex(step => step.label === 'Agent remediation index check');
+    if (start < 0 || end < start) throw new Error('preflight_governance_plan_incomplete');
+    const governanceSteps = plan.splice(start, end - start + 1);
+    const afterTouched = plan.findIndex(step => step.label === 'Touched tests / completion-at-contact');
+    plan.splice(afterTouched >= 0 ? afterTouched + 1 : 0, 0, ...governanceSteps);
+  }
+
   // Parité CI : chaque job finit par `git diff --exit-code`. Un gate qui
   // réécrit un fichier suivi signale un artefact dérivé non committé.
   plan.push(inProcess('Tree unchanged (derived artifacts)', () => assertTreeUnchanged(before || new Map())));
@@ -299,6 +316,7 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
 }
 
 function runPlan(plan, dryRun = false) {
+  const pending = [];
   for (let i = 0; i < plan.length; i += 1) {
     const step = plan[i];
     process.stdout.write(`\n[${i + 1}/${plan.length}] ${step.label}\n`);
@@ -314,16 +332,30 @@ function runPlan(plan, dryRun = false) {
     }
     process.stdout.write(`  $ ${step.file} ${step.argv.join(' ')}\n`);
     if (dryRun) continue;
-    const r = cp.spawnSync(step.file, step.argv, {
+    const isWindowsCmd = process.platform === 'win32' && /\.(cmd|bat)$/i.test(step.file);
+    const npmCli = require('path').join(require('path').dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+    const npxCli = require('path').join(require('path').dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npx-cli.js');
+    const isNpm = isWindowsCmd && /^npm\.cmd$/i.test(step.file);
+    const isNpx = isWindowsCmd && /^npx\.cmd$/i.test(step.file);
+    const executable = isNpm || isNpx ? process.execPath : step.file;
+    const argv = isNpm ? [npmCli, ...step.argv]
+      : isNpx ? [npxCli, ...step.argv]
+      : step.argv;
+    const r = cp.spawnSync(executable, argv, {
       cwd: ROOT,
       stdio: 'inherit',
       env: process.env,
     });
     if (r.error) throw r.error;
+    if (step.pendingExit !== undefined && r.status === step.pendingExit) {
+      pending.push(step.label);
+      continue;
+    }
     if (r.status !== 0) {
       throw new Error(`${step.label} a échoué (exit ${r.status}). Corriger avant d'ouvrir/mettre à jour la PR.`);
     }
   }
+  return pending;
 }
 
 function main() {
@@ -342,6 +374,11 @@ function main() {
       console.log(`(tampon pre-push non posé : ${reason})`);
       return;
     }
+    stamp.assertFinalState({
+      expectedSha: headSha,
+      actualSha: git(['rev-parse', 'HEAD']),
+      trackedDirtyCount: trackedChanges().size,
+    });
     stamp.writeGreen({ sha: headSha, gitPath: name => git(['rev-parse', '--git-path', name]) });
   };
 
@@ -357,8 +394,13 @@ function main() {
     return;
   }
 
-  runPlan(plan, dryRun);
+  const pending = runPlan(plan, dryRun) || [];
   markGreen();
+  if (pending.length) {
+    console.log(`\n⚠ PRE-FLIGHT VERT SAUF ACCORD HUMAIN — ${pending.join(', ')}.`);
+    console.log('  Publier ce SHA (push + PR) pour examen ; la CI reste bloquée tant que l’accord sur ce SHA exact manque.');
+    return;
+  }
   console.log('\n✔ PRE-FLIGHT VERT — la PR peut maintenant servir de preuve indépendante.');
 }
 

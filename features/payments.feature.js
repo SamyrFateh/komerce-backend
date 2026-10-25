@@ -135,6 +135,7 @@ module.exports = {
       'tests/e2e-api/payments.paypal-amount-currency.e2e.test.js',
       'tests/unit/payment-cash-confirm.test.js',
       'tests/unit/payment-paypal.test.js',
+      'tests/unit/payment-paypal-known-logic-bugs.test.js',
       'tests/unit/payment-status-validator.test.js',
       'tests/unit/payment-stripe.test.js',
       'tests/unit/payments-webhook.test.js',
@@ -198,6 +199,9 @@ module.exports = {
       'scan_events: R',
       'stripe_events_processed: RW',
       'users: R',
+      'cash_custody_losses: RW!',
+      'cash_custody_receipts: RW!',
+      'market_payment_accounts: RW!',
     ],
   },
 
@@ -260,6 +264,12 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'RC-9 : getRefund lit PayPal par GET sans exécuter un refund, rejette tout ID douteux et fournit seulement une preuve à confronter au ledger.',
+      test: 'tests/unit/paypal-client.test.js' },
+    { statement: 'RC-9 préparation : le client PayPal relaie une clé providerRequestKey validée issue de refund_execution_intents, stable au rejeu, tout en laissant les anciennes routes inchangées tant que la réconciliation est incomplète',
+      test: 'tests/unit/paypal-client.test.js' },
+    { statement: 'RC-9 — une requête de remboursement PayPal rejouée exige une clé persistante identique ; test témoin du client PayPal courant avec échec attendu sur la clé temporelle',
+      test: 'tests/unit/paypal-client.test.js' },
     { statement: 'idempotence stricte sur tout webhook/callback externe',
       test: 'tests/invariants/payments.webhook-idempotency.test.js' },
     { statement: 'une capture PayPal ne confirme la commande que si elle est COMPLETED, en EUR et conforme au montant figé de la commande',

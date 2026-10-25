@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 25,
-    "total_routes": 682,
+    "total_routes": 683,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -15969,6 +15969,101 @@
         }
       }
     },
+    "/api/admin/finance-config/fx-observations": {
+      "get": {
+        "summary": "GET /api/admin/finance-config/fx-observations",
+        "x-route-file": "routes/admin-finance-config.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "observations": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /api/admin/finance-config/fx-observations",
+        "x-route-file": "routes/admin-finance-config.js",
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "observation": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/finance-config/fx-observations/{id}/approve": {
+      "post": {
+        "summary": "POST /api/admin/finance-config/fx-observations/{id}/approve",
+        "x-route-file": "routes/admin-finance-config.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "observation": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/finance-config": {
       "get": {
         "summary": "GET /api/admin/finance-config",
@@ -31868,6 +31963,79 @@
                   "type": "object",
                   "properties": {
                     "config": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/orders/rct1": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/orders/rct1",
+        "x-route-file": "routes/admin-dashboard-market.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "simulation_scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "summary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "signals": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "funnel": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "priority_orders": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "kpis": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lifecycle": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "payment_mix": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "work_queues": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
                       "type": "string",
                       "x-observed": true
                     }

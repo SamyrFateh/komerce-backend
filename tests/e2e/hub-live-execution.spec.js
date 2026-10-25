@@ -50,12 +50,12 @@ const WORKSPACE = {
   },
 };
 
-async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, view = '' } = {}) {
+async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, view = '', emptyDistribution = false, pilot = false } = {}) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-    if (url.pathname === '/admin/hub-live') return route.fulfill({ contentType: 'text/html', path: path.join(CANONICAL, 'index.html') });
+    if (url.pathname === '/admin/hub-live' || url.pathname === '/admin/workspaces/operations') return route.fulfill({ contentType: 'text/html', path: path.join(CANONICAL, 'index.html') });
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
@@ -74,10 +74,16 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     }
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
-    if (url.pathname === API) return json(WORKSPACE);
+    if (url.pathname === API) return json(emptyDistribution ? { ...WORKSPACE, distribution: { unassigned: [] } } : WORKSPACE);
     if (url.pathname === RECEIVABLE) return receivable === 'forbidden' ? json({ error: 'Accès refusé' }, 403) : json(receivable);
     return route.fulfill({ status: 404, body: '' });
   });
+  if (pilot) {
+    await page.goto(`${ORIGIN}/admin/workspaces/operations?market=KM`);
+    await expect(page.locator('[data-workspace-view="hub"]')).toBeVisible();
+    if (view) await page.locator(`[data-workspace-view="${view}"]`).click();
+    return;
+  }
   await page.goto(`${ORIGIN}/admin/hub-live?view=execute`);
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
   await expect(page.locator('h1')).toHaveText('Exécuter les opérations Hub');
@@ -95,6 +101,12 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-workspace-action="run-distribution"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="ship"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="confirm-cash"], [data-workspace-action="receive"], [data-workspace-action="collect"]')).toHaveCount(0);
+    });
+
+    test('L9a : « Répartir ce marché » est masqué quand aucune commande n’est à répartir', async ({ page }) => {
+      await mount(page, { emptyDistribution: true });
+      await expect(page.locator('[data-workspace-action="run-distribution"]')).toHaveCount(0);
+      await expect(page.getByText('Aucune commande à répartir.')).toBeVisible();
     });
 
     test('commander, répartir, expédier : une mutation par clic, routes canoniques du marché', async ({ page }) => {
@@ -225,3 +237,27 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     });
   });
 }
+
+test.describe('L9c — parité Hub live / workspace Hub & Relais', () => {
+  test.use({ viewport: { width: 1536, height: 1024 } });
+  test('Hub live Exécution propose tous les gestes Hub ; le workspace les lit sans bouton et renvoie vers Hub live', async ({ page }) => {
+    await mount(page);
+    for (const action of ['mark-ordered', 'run-distribution', 'ship']) await expect(page.locator(`[data-workspace-action="${action}"]`)).toHaveCount(1);
+    await page.locator('[data-workspace-view="inventory"]').click();
+    await expect(page.locator('[data-workspace-action="assign-inventory"]')).toHaveCount(1);
+    await page.locator('[data-workspace-view="reception"]').click();
+    await expect(page.locator('[data-workspace-action="receive-supplier"]')).toHaveCount(1);
+  });
+  test('workspace : onglets Hub et Stock en lecture seule, lien Exécuter dans Hub live avec le marché, Relais inchangé', async ({ page }) => {
+    await mount(page, { pilot: true });
+    await expect(page.locator('[data-workspace-action="mark-ordered"], [data-workspace-action="run-distribution"], [data-workspace-action="ship"]')).toHaveCount(0);
+    await expect(page.locator('[data-action="open-hub-live"]')).toHaveAttribute('href', '/admin/hub-live?view=execute&market=KM');
+    await expect(page.getByText('K-ORDER-1')).toBeVisible();
+    await page.locator('[data-workspace-view="inventory"]').click();
+    await expect(page.locator('[data-workspace-action="assign-inventory"]')).toHaveCount(0);
+    await expect(page.locator('[data-action="open-hub-live"]')).toHaveCount(1);
+    await page.locator('[data-workspace-view="relay"]').click();
+    for (const action of ['confirm-cash', 'receive', 'collect']) await expect(page.locator(`[data-workspace-action="${action}"]`)).toHaveCount(1);
+    await expect(page.locator('[data-action="open-hub-live"]')).toHaveCount(0);
+  });
+});

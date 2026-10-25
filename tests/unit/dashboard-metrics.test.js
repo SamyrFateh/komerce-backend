@@ -163,7 +163,7 @@ describe('getCAEncaisse', () => {
     const k = await getCAEncaisse({});
     expectKpi(k, { key: 'ca_encaisse', unit: 'KMF' });
     expect(k.value).toBe(150000);
-    expect(k.label).toBe('CA commandes payées');
+    expect(k.label).toBe('Commandes payées — part hors avoir');
     expect(k.delta).toBeNull();
     expect(db.query).toHaveBeenCalledTimes(1);
   });

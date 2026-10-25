@@ -144,6 +144,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'le scan inventaire→colis ne valide jamais une affectation sans membership réel, ni hors marché/relais ou sur colis figé ; mutation, trace et projection restent transactionnelles',
+      test: 'tests/unit/inventory-service.test.js' },
     { statement: 'le stock ne descend jamais sous zero sans flag explicite de surventee assumee',
       test: 'tests/e2e-api/inventory.stock-never-negative.e2e.test.js' },
   ],

@@ -205,5 +205,7 @@ test('projection globale expose les facettes compte sans publier leurs identifia
 
 test('marketFilter échoue fermé quand aucun marché n’est autorisé', () => {
   expect(client360.marketFilter('o', [], 2)).toEqual({ sql: ' AND FALSE', params: [] });
-  expect(client360.marketFilter('o', null, 2)).toEqual({ sql: '', params: [] });
+  // L2 : vue réelle par défaut ; périmètre de recette explicite = inverse.
+  expect(client360.marketFilter('o', null, 2)).toEqual({ sql: ' AND o.simulation_scope IS NULL', params: [] });
+  expect(client360.marketFilter('o', null, 2, 'RCT1')).toEqual({ sql: ' AND o.simulation_scope = $2', params: ['RCT1'] });
 });

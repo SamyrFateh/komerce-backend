@@ -197,6 +197,7 @@ function analyzeHeaderSql(root = REPO_ROOT) {
   const nodes = (graph.nodes || []).filter(n => (n.type === 'file' || n.type === 'file-lite') && n.file);
 
   const findings = []; // { file, missing:[tables] }
+  const writeModeFindings = []; // { file, tables:[ecrites, declarees en lecture seule] }
   let totalUnder = 0;
   for (const n of nodes) {
     const abs = path.join(root, n.file);
@@ -209,8 +210,8 @@ function analyzeHeaderSql(root = REPO_ROOT) {
       ...(n.dbWrite || [])
     ].map(t => String(t).toLowerCase().trim()));
 
-    const refs = extractSqlTableRefs(src);
-    const missing = [...refs]
+    const { reads, writes } = extractSqlTableRefsRW(src);
+    const missing = [...reads, ...writes]
       .filter(t => live.tables.has(t))   // ancrage : seulement de vraies tables live
       .filter(t => !declared.has(t))     // touchee par le code, absente du header
       .sort();
@@ -219,9 +220,57 @@ function analyzeHeaderSql(root = REPO_ROOT) {
       findings.push({ file: n.file, missing });
       totalUnder += missing.length;
     }
+
+    // Mode : une ecriture SQL directe doit figurer dans @db-write (pas seulement
+    // @db-read, ni seulement @db-write-via qui designe une delegation).
+    const declaredWrite = new Set((n.dbWrite || []).map(t => String(t).toLowerCase().trim()));
+    const writeAsReadOnly = [...writes]
+      .filter(t => live.tables.has(t) && declared.has(t) && !declaredWrite.has(t))
+      .sort();
+    if (writeAsReadOnly.length) writeModeFindings.push({ file: n.file, tables: writeAsReadOnly });
   }
   findings.sort((a, b) => a.file.localeCompare(b.file));
-  return { paths: P, findings, totalUnder };
+  writeModeFindings.sort((a, b) => a.file.localeCompare(b.file));
+  return { paths: P, findings, totalUnder, writeModeFindings };
+}
+
+/** Categories de fichiers de code applicatif d'une carte (scripts/ et tests/ exclus : outils et preuves). */
+const CARD_CODE_CATEGORIES = Object.freeze(['services', 'routes', 'bootstrap', 'utils', 'middleware', 'validators', 'compositionRoots']);
+
+/**
+ * Carte <-> SQL : toute ecriture SQL statique d'un fichier de code possede par une
+ * carte (features/) ou un manifeste de capacite (capabilities/) doit etre declaree en W/RW (suffixe ! ou ~ compris) dans db.tables de cette
+ * carte. Ferme l'angle mort entre le cliquet WRITER-NOT-OWNER (cartes seules) et la
+ * porte headers <-> SQL (fichiers seuls). Lecture seule, aucun exit.
+ */
+function analyzeCardWrites(root = REPO_ROOT) {
+  const P = paths(root);
+  const live = parseLiveSchema(readOrThrow(P.liveSql, 'dump live'));
+  const { parseDbTables } = require('./table-ownership');
+  // Cartes features/ et manifestes capabilities/ : tous deux possedent des fichiers.
+  const manifests = [['features', '.feature.js'], ['capabilities', '.capability.js']]
+    .flatMap(([dir, suffix]) => {
+      const abs = path.join(root, dir);
+      return fs.existsSync(abs) ? fs.readdirSync(abs).filter(f => f.endsWith(suffix)).sort().map(f => path.join(abs, f)) : [];
+    });
+  const findings = []; // { feature, file, table }
+  for (const manifestPath of manifests) {
+    const fname = path.basename(manifestPath);
+    let card;
+    try { card = require(manifestPath); } catch { continue; }
+    const declaredW = new Set(parseDbTables(card).filter(e => e.mode !== 'R').map(e => e.table));
+    for (const cat of CARD_CODE_CATEGORIES) {
+      for (const file of (card.files || {})[cat] || []) {
+        if (typeof file !== 'string' || !file.endsWith('.js')) continue;
+        let src;
+        try { src = fs.readFileSync(path.join(root, file), 'utf8'); } catch { continue; }
+        for (const t of [...extractSqlTableRefsRW(src).writes].sort()) {
+          if (live.tables.has(t) && !declaredW.has(t)) findings.push({ feature: card.name || fname, file, table: t });
+        }
+      }
+    }
+  }
+  return { findings };
 }
 
 /** Budget brut (objet complet, meta-cles comprises) — pour mutation par reconcile. */
@@ -323,7 +372,7 @@ module.exports = {
   REPO_ROOT, paths,
   SQL_NOISE, PG_SYSTEM_RE, DOCTRINE_INVARIANTS, INFRA_TABLES,
   parseLiveSchema, parseDocumentedTokens, parseHeaderTableTokens,
-  extractSqlTableRefs, extractSqlTableRefsRW, analyzeHeaderSql,
+  extractSqlTableRefs, extractSqlTableRefsRW, analyzeHeaderSql, analyzeCardWrites, CARD_CODE_CATEGORIES,
   loadBudgetRaw, normalizeAllowlist, ratchetMaxOf,
   analyze
 };

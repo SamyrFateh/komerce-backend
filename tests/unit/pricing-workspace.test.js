@@ -307,3 +307,19 @@ describe('Atelier — contrat UI de la politique de décision (source)', () => {
     expect(ui).toContain('/decision-policy/preview');
   });
 });
+
+test('le workspace Pricing propose le cycle EUR/USD sourcé, administrateur et double approbation', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(
+    path.join(__dirname, '../../public/dashboards/canonical/js/pricing-workspace.js'), 'utf8'
+  );
+  expect(source).toContain('async function appendFxAuthority(rootNode, context)');
+  expect(source).toContain("context.user?.role || '').toLowerCase() !== 'admin'");
+  expect(source).toContain("'/api/admin/finance-config/fx-observations'");
+  expect(source).toContain("String(obs.entered_by || '').trim().toLowerCase() !== sessionIdentity");
+  expect(source).toContain('Approbation requise depuis un deuxième compte admin.');
+  expect(source).toContain('await appendFxAuthority(rootNode, context)');
+  expect(source).toContain('Les cotations publiques de la BCE sont synchronisées automatiquement toutes les heures');
+  expect(source).toContain('réservées au traitement exceptionnel');
+});

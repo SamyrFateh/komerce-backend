@@ -196,6 +196,20 @@ describe('contrôles en processus', () => {
     expect(() => preflight.assertTreeUnchanged(new Map([['services/b.js', 'x']]))).toThrow(/services\/b\.js/);
   });
 
+  test('runPlan : seul un code d’attente déclaré (accord Debt Zero) est mis en attente, tout autre échec bloque', () => {
+    const node = process.execPath;
+    expect(preflight.runPlan([{ label: 'DZ', file: node, argv: ['-e', 'process.exit(3)'], pendingExit: 3 }])).toEqual(['DZ']);
+    expect(() => preflight.runPlan([{ label: 'DZ', file: node, argv: ['-e', 'process.exit(1)'], pendingExit: 3 }])).toThrow(/DZ a échoué/);
+    expect(() => preflight.runPlan([{ label: 'X', file: node, argv: ['-e', 'process.exit(3)'] }])).toThrow(/X a échoué/);
+  });
+
+  test('le plan ne déclare un code d’attente que pour Debt Zero, en mode --local', () => {
+    const plan = preflight.buildPlan({ changedFiles: ['a'], backend: false, dashboard: false, boutique: false, migrations: false, governance: false }, 'b'.repeat(40), 'h'.repeat(40), { treeSnapshot: new Map() });
+    const waiting = plan.filter(s => s.pendingExit !== undefined);
+    expect(waiting.map(s => s.label)).toEqual(['Debt Zero']);
+    expect(waiting[0].argv).toContain('--local');
+  });
+
   test('runPlan exécute les étapes en processus et préfixe leur erreur', () => {
     const write = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const ok = jest.fn();
@@ -207,5 +221,22 @@ describe('contrôles en processus', () => {
     preflight.runPlan([{ label: 'C', fn: skipped, argv: [] }], true);
     expect(skipped).not.toHaveBeenCalled();
     write.mockRestore();
+  });
+});
+
+describe('green pre-push stamp — final verified state', () => {
+  const { assertFinalState, refusal } = require('../../scripts/lib/preflight-stamp');
+  test('validates the exact SHA and clean tracked tree after all gates', () => {
+    expect(() => assertFinalState({ expectedSha: 'abc', actualSha: 'abc', trackedDirtyCount: 0 })).not.toThrow();
+  });
+  test('refuses a HEAD changed during the gates', () => {
+    expect(() => assertFinalState({ expectedSha: 'abc', actualSha: 'def', trackedDirtyCount: 0 })).toThrow(/HEAD modifié/);
+  });
+  test('refuses generated tracked files changed during gates', () => {
+    expect(() => assertFinalState({ expectedSha: 'abc', actualSha: 'abc', trackedDirtyCount: 2 })).toThrow(/Arbre suivi modifié/);
+  });
+  test('dry-run and initially dirty workspace cannot receive stamp', () => {
+    expect(refusal({ dryRun: true, headRef: 'HEAD', dirtyFiles: 0 })).toBe('dry-run');
+    expect(refusal({ dryRun: false, headRef: 'HEAD', dirtyFiles: 1 })).toMatch(/non committé/);
   });
 });

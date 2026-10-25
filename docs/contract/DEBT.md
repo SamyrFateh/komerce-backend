@@ -3,7 +3,7 @@
 > Fichier généré depuis `docs/contract/openapi.json` par `scripts/contract-debt-sync.js`.
 > Ne pas maintenir cette liste à la main.
 
-- Routes dans le contrat : **682**
+- Routes dans le contrat : **683**
 - Réponses 200 `UNKNOWN` : **25**
 
 | # | Opération | Source route |

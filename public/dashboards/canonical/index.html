@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/dashboards/canonical/css/tokens.css?v=1" />
   <link rel="stylesheet" href="/dashboards/canonical/css/navigation.css?v=261010-2" />
   <link rel="stylesheet" href="/dashboards/canonical/css/renderer.css" />
-  <link rel="stylesheet" href="/dashboards/canonical/css/decision-visual.css?v=261010-9" />
+  <link rel="stylesheet" href="/dashboards/canonical/css/decision-visual.css?v=261023-2" />
   <link rel="stylesheet" href="/dashboards/canonical/css/decision-controls.css?v=261010-9" />
   <link rel="stylesheet" href="/dashboards/canonical/css/entity-360.css?v=261021-6" />
   <link rel="stylesheet" href="/dashboards/canonical/css/operations-workspace.css?v=261018-1" />
@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="/dashboards/canonical/css/pricing-equilibrium-panel.css?v=261010-9" />
   <link rel="stylesheet" href="/dashboards/canonical/css/pricing-simulation.css?v=261010-9" />
   <link rel="stylesheet" href="/dashboards/canonical/css/pricing-decision-chain.css?v=261010-9" />
-  <link rel="stylesheet" href="/dashboards/canonical/css/pricing-economic-cockpit.css?v=261017-4" />
+  <link rel="stylesheet" href="/dashboards/canonical/css/pricing-economic-cockpit.css?v=261023-1" />
   <link rel="stylesheet" href="/dashboards/canonical/css/pricing-structure-event-panel.css" />
   <link rel="stylesheet" href="/dashboards/canonical/css/demo-order-flow.css" />
   <link rel="stylesheet" href="/dashboards/canonical/css/settings-workspace.css" />
@@ -59,17 +59,18 @@
   <script src="/dashboards/canonical/js/cockpit-pattern.js?v=260929-1"></script>
   <script src="/dashboards/canonical/js/dashboard-schema.js"></script>
   <script src="/dashboards/canonical/js/dashboard-renderer.js"></script>
-  <script src="/dashboards/canonical/js/admin-context.js"></script>
+  <script src="/dashboards/canonical/js/admin-context.js?v=261023-1"></script>
+  <script src="/dashboards/canonical/js/market-prompt.js?v=261023-1"></script>
   <script src="/dashboards/canonical/js/pilotage.js"></script>
   <script src="/dashboards/canonical/js/pilotage-decision.js?v=261021-2"></script>
   <script src="/dashboards/canonical/js/commerce.js?v=261021-1"></script>
-  <script src="/dashboards/canonical/js/orders.js?v=261021-1"></script>
+  <script src="/dashboards/canonical/js/orders.js?v=261024-3"></script>
   <script src="/dashboards/canonical/js/commerce-decision.js?v=261021-2"></script>
   <script src="/dashboards/canonical/js/operations.js"></script>
-  <script src="/dashboards/canonical/js/operations-decision.js?v=261021-3"></script>
+  <script src="/dashboards/canonical/js/operations-decision.js?v=261023-1"></script>
   <script src="/dashboards/canonical/js/finance.js?v=261021-1"></script>
   <script src="/dashboards/canonical/js/finance-decision.js?v=261021-5"></script>
-  <script src="/dashboards/canonical/js/operations-workspace.js?v=261018-2"></script>
+  <script src="/dashboards/canonical/js/operations-workspace.js?v=261023-2"></script>
   <script src="/dashboards/canonical/js/operations-workspace-decision.js?v=261009-2h"></script>
   <script src="/dashboards/canonical/js/shipping-customs-workspace.js?v=261021-3"></script>
   <script src="/dashboards/canonical/js/shipping-customs-workspace-decision.js?v=261009-2"></script>
@@ -78,34 +79,35 @@
   <script src="/dashboards/canonical/js/catalog-control-tower.js?v=260929-2"></script>
   <script src="/dashboards/canonical/js/finance-accounting-workspace.js"></script>
   <script src="/dashboards/canonical/js/finance-accounting-workspace-decision.js?v=261011-1"></script>
-  <script src="/dashboards/canonical/js/sourcing-workspace.js?v=261010-2"></script>
+  <script src="/dashboards/canonical/js/sourcing-workspace.js?v=261023-1"></script>
   <script src="/dashboards/canonical/js/sourcing-workspace-decision.js?v=261009-2"></script>
   <script src="/dashboards/canonical/js/purchasing-workspace.js?v=261021-3"></script>
   <script src="/dashboards/canonical/js/import-runtime.js?v=261021-4"></script>
   <script src="/dashboards/canonical/js/live-kit.js?v=261021-3"></script>
-  <script src="/dashboards/canonical/js/hub-live.js?v=261021-3"></script>
+  <script src="/dashboards/canonical/js/hub-live.js?v=261023-2"></script>
   <script src="/dashboards/canonical/js/relay-live.js?v=261021-3"></script>
   <script src="/dashboards/canonical/js/pricing-workspace.js?v=261019-1"></script>
   <script src="/dashboards/canonical/js/pricing-workspace-presentation.js?v=261017-1"></script>
   <script src="/dashboards/canonical/js/pricing-equilibrium-panel.js?v=1302"></script>
   <script src="/dashboards/canonical/js/pricing-workspace-simulation.js?v=1217"></script>
   <script src="/dashboards/canonical/js/pricing-decision-chain.js?v=261021-4"></script>
-  <script src="/dashboards/canonical/js/pricing-economic-cockpit.js?v=261017-4"></script>
-  <script src="/dashboards/canonical/js/pricing-structure-event-panel.js"></script>
+  <script src="/dashboards/canonical/js/pricing-economic-cockpit.js?v=261023-1"></script>
+  <script src="/dashboards/canonical/js/pricing-structure-event-panel.js?v=261023-1"></script>
   <script src="/dashboards/canonical/js/pricing-workspace-decision.js?v=261017-1"></script>
   <script src="/dashboards/canonical/js/pricing-product-focus.js?v=261019-1"></script>
   <script src="/dashboards/canonical/js/action-center.js?v=261010-4"></script>
-  <script src="/dashboards/canonical/js/order-360.js?v=261021-5"></script>
-  <script src="/dashboards/canonical/js/client-index.js"></script>
-  <script src="/dashboards/canonical/js/client-360.js?v=261017-1"></script>
-  <script src="/dashboards/canonical/js/product-360.js?v=261021-6"></script>
+  <script src="/dashboards/canonical/js/business-date.js?v=261023-1"></script>
+  <script src="/dashboards/canonical/js/order-360.js?v=261023-3"></script>
+  <script src="/dashboards/canonical/js/client-index.js?v=261023-2"></script>
+  <script src="/dashboards/canonical/js/client-360.js?v=261023-3"></script>
+  <script src="/dashboards/canonical/js/product-360.js?v=261023-1"></script>
   <script src="/dashboards/canonical/js/supplier-360.js?v=261017-1"></script>
   <script src="/dashboards/canonical/js/demo-order-flow.js"></script>
   <script src="/dashboards/canonical/js/settings-workspace.js"></script>
   <script src="/dashboards/canonical/js/providers-admin.js?v=1"></script>
   <script src="/dashboards/canonical/js/users-admin.js?v=1"></script>
-  <script src="/dashboards/canonical/js/app.js?v=261021-7"></script>
-  <script src="/dashboards/canonical/js/navigation-policy-v4.js?v=261021-4"></script>
+  <script src="/dashboards/canonical/js/app.js?v=261023-1"></script>
+  <script src="/dashboards/canonical/js/navigation-policy-v4.js?v=261023-3"></script>
   <script src="/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2102"></script>
   <script src="/dashboards/canonical/js/canonical-client-router-v4.js?v=261010-3"></script>
   <script src="/dashboards/canonical/js/canonical-finish-polish-v1.js?v=261003-1"></script>

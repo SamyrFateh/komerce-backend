@@ -3,7 +3,7 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 jest.mock('../../db', () => ({ query: jest.fn() }));
 
-const { resolveObservation, resolvePeg, resolveChain, convertEurToDjf, FxChainUnavailableError } = require('../../services/fx-chain-service');
+const { resolveObservation, resolvePublishedQuote, resolvePeg, resolveChain, convertEurToDjf, FxChainUnavailableError } = require('../../services/fx-chain-service');
 
 const client = (rowsByCall) => ({ query: jest.fn(async () => ({ rows: rowsByCall.shift() || [] })) });
 
@@ -20,6 +20,34 @@ describe('fx-chain-service — résolveurs (observation, peg)', () => {
     expect(sql).toMatch(/approved_by IS NOT NULL/);
     expect(sql).toMatch(/approved_at <= COALESCE/);
     expect(params).toEqual([null, 7]);
+  });
+
+  test('l’autorité FX choisit la cotation BCE publiée avant toute observation manuelle', async () => {
+    const c = client([[{
+      id: 'official-usd', rate: 1.1193, rate_text: '1.11930000',
+      as_of: '2026-10-23', source_label: 'Banque centrale européenne',
+    }]]);
+    const o = await resolveObservation({ client: c });
+    expect(o.id).toBe('official-usd');
+    const sql = c.query.mock.calls[0][0];
+    expect(sql).toContain('fx_public_reference_quotes');
+    expect(sql).toContain("quote_ccy = 'USD'");
+    expect(sql).toContain('approved_by IS NOT NULL');
+    expect(sql).toContain('ingested_at <=');
+    expect(sql).toContain('ORDER BY authority_rank ASC');
+  });
+
+  test('une cotation EUR/CNY nécessite une publication sourcée et fraîche', async () => {
+    const c = client([[{
+      id: 'published-cny', rate: 7.4999, rate_text: '7.49990000',
+      as_of: '2026-10-23', source_label: 'Banque centrale européenne',
+    }]]);
+    const o = await resolvePublishedQuote({ quote: 'CNY', client: c });
+    expect(o.rate_text).toBe('7.49990000');
+    expect(c.query.mock.calls[0][1]).toEqual([null, 7, 'CNY']);
+    expect(c.query.mock.calls[0][0]).toContain('ingested_at <=');
+    await expect(resolvePublishedQuote({ quote: 'CNY', client: client([[]]) }))
+      .rejects.toMatchObject({ code: 'fx_rate_unavailable' });
   });
 
   test('peg : filtré par devise cotée ; absent = refus nommant la paire', async () => {

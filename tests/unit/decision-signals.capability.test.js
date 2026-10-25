@@ -24,3 +24,11 @@ describe('capability decision-signals — contrat', () => {
     expect(files).toContain('services/radar-queries.js');
   });
 });
+
+describe('decision-signals — owner déclaré de signals (Lot A2)', () => {
+  test('la capacité déclare signals comme lifecycle owner (RW!)', () => {
+    const { parseDbTables } = require('../../scripts/lib/table-ownership');
+    const entry = parseDbTables(require('../../capabilities/decision-signals.capability.js')).find(e => e.table === 'signals');
+    expect(entry).toMatchObject({ mode: 'RW', declaredOwner: true });
+  });
+});

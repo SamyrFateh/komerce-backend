@@ -108,3 +108,14 @@ test('liens d\'action des cartes décision et bouton Configurer : boutons lisibl
   const ws = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/catalog-workspace.js'), 'utf8');
   expect(ws).toContain("line.className = 'kmc-param-line'");
 });
+
+test('L1 : invite « Choisir un marché » stylée (composant unique market-prompt)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/decision-visual.css'), 'utf8');
+  expect(src).toContain('.kmc-market-prompt {');
+  expect(src).toContain('.kmc-market-prompt[data-market-prompt="unauthorized"]');
+});
+
+test('L2 : le bandeau de recette est stylé', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/decision-visual.css'), 'utf8');
+  expect(css).toContain('.kmc-recette-banner');
+});

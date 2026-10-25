@@ -44,6 +44,7 @@ const DASHBOARD_SPECS = [
   'market-readonly-views',
   'finance-accounting-workspace',
   'golden-cockpit-browser-flow',
+  'market-context-explicit',
 ];
 
 module.exports = defineConfig({

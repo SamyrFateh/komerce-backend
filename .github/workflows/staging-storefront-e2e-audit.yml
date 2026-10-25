@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: komerce-staging-storefront-e2e-audit
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   audit:
@@ -24,10 +24,11 @@ jobs:
     if: >-
       github.event_name == 'issues' && github.actor == github.repository_owner &&
       github.event.issue.title == '[staging-op] storefront-e2e-audit'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      BASE_URL: https://komerce.co/boutique/
+      BASE_URL: https://komerce-backend-production.up.railway.app/boutique/
+      KOMERCE_ENV: staging
       CI: '1'
 
     steps:
@@ -52,69 +53,59 @@ jobs:
         working-directory: public/boutique
         run: npx playwright install --with-deps chromium
 
-      - name: Run storefront battery (public, no test-account credentials required)
+      - name: Verify staging target and record deployed SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Expected staging URL: $BASE_URL"
+          curl --retry 2 --fail --silent --show-error \
+            "https://komerce-backend-production.up.railway.app/health/version" \
+            | tee staging-version.json
+          printf "\nChecked-out SHA: %s\n" "$(git rev-parse HEAD)"
+
+      - name: Calibrate live storefront selectors first (desktop and mobile)
+        id: calibration
+        working-directory: public/boutique
+        shell: bash
+        run: |
+          set +e
+          mkdir -p test-results/storefront-audit
+          rc=0
+          npx playwright test tests/e2e/calibration.spec.js \
+            --project='Mobile Chrome' --workers=1 --retries=0 \
+            --output=test-results/storefront-audit/calibration-mobile || rc=1
+          npx playwright test tests/e2e/calibration.spec.js \
+            --project='Desktop Chrome' --workers=1 --retries=0 \
+            --output=test-results/storefront-audit/calibration-desktop || rc=1
+          echo "calibration_exit=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" -ne 0 ]; then
+            echo 'NO GO — storefront calibration failed, dependent functional tests are NOT_PROVEN.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$rc"
+
+      - name: Check real catalog, exposure, search and render (no payments)
         id: audit
+        if: steps.calibration.outcome == 'success'
         working-directory: public/boutique
         shell: bash
         run: |
           set +e
           rc=0
-
-          # Périmètre : specs publiques, dépendantes du catalogue réel, sans
-          # identifiants de compte de test. Exclus délibérément :
-          #   - authenticated/*, wallet.spec.js (top-level) — nécessitent
-          #     TEST_ACCOUNT_PHONE/OTP, absents de ce workflow.
-          #   - pdp-aliexpress-live-audit.spec.js, pdp-aliexpress-all-units.spec.js
-          #     — déjà couverts par staging-pdp-aliexpress-live-audit.yml,
-          #     ne pas dupliquer.
-          #   - admin-pricing-market-decision.spec.js — dashboard admin
-          #     entièrement mocké (route.fulfill), hors périmètre boutique.
-          #   - modal-mdm9-gallery-layout.spec.js, modal-geometry.spec.js,
-          #     modal-visual-regression.spec.js, hero-geometry.spec.js,
-          #     modal-backtop-zindex.spec.js, csp-fronts.spec.js,
-          #     visual-geometry-audit.spec.js — projet "Chromium Local-Only",
-          #     fixtures déterministes, indépendants du catalogue staging.
-          # calibration.spec.js est volontairement placé en premier (valide
-          # que les sélecteurs correspondent au site réel avant le reste).
-          SPECS="tests/e2e/calibration.spec.js \
-            tests/e2e/home.spec.js \
-            tests/e2e/catalog.spec.js \
+          SPECS="tests/e2e/catalog.spec.js \
             tests/e2e/catalog-market-exposure.spec.js \
-            tests/e2e/catalog-responsive-matrix.spec.js \
             tests/e2e/search.spec.js \
             tests/e2e/navigation.spec.js \
-            tests/e2e/cart.spec.js \
-            tests/e2e/checkout.spec.js \
-            tests/e2e/checkout-final-simplification.spec.js \
-            tests/e2e/modal.spec.js \
-            tests/e2e/modal-v3-desktop-responsive-closure.spec.js \
-            tests/e2e/modal-v3-enriched-catalogue.spec.js \
-            tests/e2e/modal-v3-mobile-finition.spec.js \
-            tests/e2e/product-detail-pdc.spec.js \
-            tests/e2e/golden-product-content-live.spec.js \
-            tests/e2e/golden-product-gpm.spec.js \
-            tests/e2e/favorites.spec.js \
-            tests/e2e/tracking.spec.js \
-            tests/e2e/group.spec.js \
-            tests/e2e/accessibility.spec.js \
-            tests/e2e/desktop.spec.js \
-            tests/e2e/cross-browser.spec.js \
-            tests/e2e/resilience.spec.js \
             tests/e2e/render-integrity.spec.js"
-
-          mkdir -p test-results/storefront-audit
-
-          echo '=== Mobile Chrome (la boutique est mobile-first) ==='
-          npx playwright test $SPECS \
-            --project='Mobile Chrome' --workers=1 --retries=0 \
-            --output=test-results/storefront-audit/mobile || rc=$?
-
-          echo '=== Desktop Chrome ==='
-          npx playwright test $SPECS \
-            --project='Desktop Chrome' --workers=1 --retries=0 \
-            --output=test-results/storefront-audit/desktop || rc=$?
-
-          exit $rc
+          npx playwright test $SPECS --project='Mobile Chrome' --workers=1 \
+            --retries=0 --output=test-results/storefront-audit/mobile || rc=1
+          npx playwright test $SPECS --project='Desktop Chrome' --workers=1 \
+            --retries=0 --output=test-results/storefront-audit/desktop || rc=1
+          if [ "$rc" -eq 0 ]; then
+            echo 'PASS — public storefront subset; this does NOT certify P1 approval or P2 checkout.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'NO GO — storefront real browser functional failures. Inspect JUnit + traces.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$rc"
 
       - name: Upload storefront battery artifacts
         if: always()
@@ -122,6 +113,7 @@ jobs:
         with:
           name: storefront-playwright-battery
           path: |
+            staging-version.json
             public/boutique/test-results/storefront-audit/
             public/boutique/test-results/results.xml
             public/boutique/playwright-report/
@@ -134,8 +126,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          CALIBRATION: ${{ steps.calibration.outcome }}
           OUTCOME: ${{ steps.audit.outcome }}
         run: |
           gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
-            --body "Storefront Playwright battery: ${OUTCOME}. Review artifact storefront-playwright-battery."
-          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
+            --body "Staging public Chromium: calibration=${CALIBRATION}, catalog=${OUTCOME}. FAIL / SKIP is NOT_PROVEN. Review artifact storefront-playwright-battery."

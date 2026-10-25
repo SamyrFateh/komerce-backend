@@ -1,8 +1,13 @@
 name: PR sweep behind
 
 # Synchronise au plus UNE PR BEHIND à la fois. Le sweep ne touche que les PR
-# internes dont l'auto-merge est déjà activé et s'abstient sans token attribuable.
+# internes, déjà vertes, même sans auto-merge ; s'abstient sans token attribuable.
 on:
+  # Une PR devenue verte doit réveiller le sweep immédiatement.
+  # Ne dépend pas d'un nouveau push main ni du cron.
+  workflow_run:
+    workflows: [PR enforcement]
+    types: [completed]
   push:
     branches: [main]
   schedule:

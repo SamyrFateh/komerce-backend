@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 204 | Vérifié sur le dump live Railway. |
+| Tables | 213 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 492 | Performance + contraintes uniques |
-| Foreign keys | 397 | Cohérence relationnelle |
-| Fonctions | 85 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 97 | Triggers présents dans le dump live Railway. |
+| Index | 498 | Performance + contraintes uniques |
+| Foreign keys | 406 | Cohérence relationnelle |
+| Fonctions | 91 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 108 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -324,7 +324,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
 | Table | Rôle |
 |---|---|
-| `users` | Utilisateurs (rôle via ENUM `user_role`). |
+| `users` | Utilisateurs (rôle via ENUM `user_role`). **Migration 320 (`intended_migration_schema`)** : ajoute la valeur `finance` à `public.user_role` pour le portail interne, sans créer d'utilisateur ni accorder de membership ou de capability. `sourcing` provient de la migration 148a ; `agent_transitaire` existe dans l'ENUM historique. |
 | `otp_codes` | Codes OTP. |
 | `user_pickup_authorizations` | Autorisation nominative courante de retrait exceptionnel, propriété auth-identity. Une ligne par utilisateur ; aucun numéro, copie ou donnée de pièce d’identité conservé. Migration 121. |
 | `revoked_tokens` | Révocation JWT (logout) : `jti` révoqué, `expires_at` pour purge. Câblage : `routes/auth.js` insère au logout, `middleware/auth.js` vérifie, cron de purge dans `bootstrap/crons.js`. Migration 072. |
@@ -707,4 +707,18 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 ### Tarifs de vente transport par Market (migration 313 — intended_migration_schema)
 
 `market_transport_sale_rates` est une nouvelle table **not yet live** : tarif de vente du transport par Market (clés `SEA_KMF_PER_KG_COMMERCIAL` / `AIR_KMF_PER_KG_TAXABLE` de `business_rules`, par kg dans la devise du marché, convertis en KMF de base par la voie gouvernée : parités fixes ou chaîne FX DJF), avec pièce justificative obligatoire, un seul tarif actif par (Market, clé), révocable. Absence de tarif = refus fail-closed hors marché KMF ; le coût de fret attesté n'est jamais un prix. Lecteur : `services/market-transport-sale-rates.js` (checkout).
+<!-- /schema-pending -->
+
+
+<!-- schema-pending: refund_execution_intents (migration 317, not yet live) -->
+### Intentions de remboursement (migration 317 — intended_migration_schema)
+
+`refund_execution_intents` est une nouvelle table **not yet live**. Elle conserve l'intention avant tout appel PSP Stripe/PayPal : commande, marché, capture, événement stable, montant EUR et statut. Les anciennes lignes `refunds` sont à rapprocher avant activation. Service propriétaire : `services/refund-intent-ledger.js` (non activé). Contrat : `docs/architecture/REFUND_EXECUTION_AUTHORITY.md`.
+<!-- /schema-pending -->
+
+
+<!-- schema-pending: fx_public_reference_quotes (migration 319, not yet live) -->
+### Cotations officielles EUR/XXX — migration 319 (`intended_migration_schema`)
+
+`fx_public_reference_quotes` est une nouvelle table **not yet live**, déclarée par `migrations/319_fx_public_reference_quotes.sql`. Cotations publiques BCE EUR/XXX ingérées automatiquement, identifiées par `(base_ccy, quote_ccy, as_of)` ; champs `id`, `rate`, `source_label`, `source_ref`, `ingested_at`. Seules les cotations BCE officielles datées sont acceptées, sans imposer de validation humaine fictive. Invariants : append-only, pas de DELETE/TRUNCATE, pas de réécriture rétroactive, horodatage de collecte ; parités fixes KMF/XAF maintenues exclusivement dans `currency_parities`. Écrivain : `services/fx-public-reference-feed.js` ; lecteur : `services/fx-chain-service.js` ; snapshot transactionnel via `services/fx-authority.js`. Le bloc doit être promu par `schema-promote` lorsque la migration est réellement attestée dans le dump live Railway.
 <!-- /schema-pending -->

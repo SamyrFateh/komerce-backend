@@ -32,3 +32,23 @@ describe('tableau des candidats Sourcing', () => {
 test('operations-workspace.css : plancher typographique (aucun texte sous 10 px)', () => {
   expect(require('../helpers/fontFloor').tinyFonts('operations-workspace.css')).toEqual([]);
 });
+
+describe('L9a — répartition Hub dans Opérations', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  test('le bouton « Répartir ce marché » n’est ajouté que s’il reste des commandes à répartir', () => {
+    expect(src).toMatch(/distribution\.unassigned\.length > 0\)\s*\{\s*distributionBar\.appendChild\(distributeButton\)/);
+  });
+});
+
+describe('L9c — gestes Hub réservés à Hub live', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  test('hors mode execution, les boutons Commander, Répartir, Expédier et Affecter ne sont pas rendus', () => {
+    expect(src).toMatch(/function isHubReadOnly\(context\)\s*\{\s*return context\.mode !== 'execution';/);
+    expect(src).toMatch(/config\.hub && isHubReadOnly\(context\)\) return;/);
+    expect(src).toMatch(/!isHubReadOnly\(context\) && Array\.isArray\(payload\.distribution/);
+    expect(src).toMatch(/if \(isHubReadOnly\(context\)\) \{ select\.disabled = true/);
+  });
+  test('le lien « Exécuter dans Hub live » porte le marché', () => {
+    expect(src).toContain('/admin/hub-live?view=execute&market=${encodeURIComponent(context.marketCode)}');
+  });
+});

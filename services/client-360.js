@@ -19,6 +19,8 @@
 'use strict';
 
 const db = require('../db');
+const { isValidScope } = require('./simulation-scope-service');
+const { resolveBusinessTimezone } = require('./market-business-day');
 
 const CLIENT_PHONE = /^\+?[0-9]{6,20}$/;
 const ORGANIZER_ID_SQL = `COALESCE(
@@ -33,15 +35,28 @@ function normalizePhone(value) {
   return CLIENT_PHONE.test(normalized) ? normalized : null;
 }
 
-function marketFilter(alias, marketIds, startIndex) {
-  if (marketIds === null) return { sql: '', params: [] };
-  if (!Array.isArray(marketIds) || marketIds.length === 0) {
-    return { sql: ' AND FALSE', params: [] };
+// L2 : vue réelle par défaut (commandes simulation_scope IS NULL) ; vue recette si un périmètre valide est demandé.
+function marketFilter(alias, marketIds, startIndex, simulationScope = null) {
+  const params = [];
+  let sql = '';
+  if (marketIds !== null) {
+    if (!Array.isArray(marketIds) || marketIds.length === 0) return { sql: ' AND FALSE', params: [] };
+    sql += ` AND ${alias}.market_id = ANY($${startIndex}::uuid[])`;
+    params.push(marketIds);
   }
-  return {
-    sql: ` AND ${alias}.market_id = ANY($${startIndex}::uuid[])`,
-    params: [marketIds],
-  };
+  if (simulationScope && isValidScope(simulationScope)) {
+    sql += ` AND ${alias}.simulation_scope = $${startIndex + params.length}`;
+    params.push(simulationScope);
+  } else {
+    sql += ` AND ${alias}.simulation_scope IS NULL`;
+  }
+  return { sql, params };
+}
+
+function simulationView(scope) {
+  return scope && isValidScope(scope)
+    ? Object.freeze({ scope, label: `Périmètre de recette ${scope} : faits simulés, pas une activité réelle de l'entreprise.` })
+    : null;
 }
 
 function publicScope(mode, markets) {
@@ -60,7 +75,7 @@ async function resolveClient(phone, options = {}) {
   if (!normalized) return { invalid: true, client: null };
 
   const marketIds = options.marketIds === undefined ? null : options.marketIds;
-  const scoped = marketFilter('o', marketIds, 2);
+  const scoped = marketFilter('o', marketIds, 2, options.simulationScope);
   const { rows } = await db.query(`
     SELECT
       COALESCE(u.id, r.user_id) AS user_id,
@@ -97,11 +112,11 @@ async function loadClient360(client, options = {}) {
   const includeAccountFacets = Boolean(options.includeSecurity && client.user_id && mode === 'global');
   const phone = client.normalized_phone;
 
-  const profileMarket = marketFilter('o', marketIds, 2);
-  const ordersMarket = marketFilter('o', marketIds, 2);
-  const productsMarket = marketFilter('o', marketIds, 2);
-  const marketsMarket = marketFilter('o', marketIds, 2);
-  const notificationsMarket = marketFilter('o', marketIds, 2);
+  const profileMarket = marketFilter('o', marketIds, 2, options.simulationScope);
+  const ordersMarket = marketFilter('o', marketIds, 2, options.simulationScope);
+  const productsMarket = marketFilter('o', marketIds, 2, options.simulationScope);
+  const marketsMarket = marketFilter('o', marketIds, 2, options.simulationScope);
+  const notificationsMarket = marketFilter('o', marketIds, 2, options.simulationScope);
 
   const profilePromise = db.query(`
     WITH scoped_orders AS (
@@ -271,6 +286,7 @@ async function loadClient360(client, options = {}) {
   const orders = ordersResult.rows.map(row => Object.freeze({
     reference: row.reference,
     market: Object.freeze({ code: row.market_code || null, name: row.market_name || null }),
+    business_timezone: resolveBusinessTimezone({ code: row.market_code }).timezone,
     status: row.status,
     payment_status: row.payment_status,
     payment_mode: row.payment_mode,
@@ -385,6 +401,9 @@ async function loadClient360(client, options = {}) {
       days_since_last_order: p.days_since_last_order == null ? null : Number(p.days_since_last_order),
     }),
     scope: publicScope(mode, marketsResult.rows),
+    simulation: simulationView(options.simulationScope),
+    // Fuseau métier de la fiche = marché de la dernière commande (chaque commande porte aussi le sien).
+    business_timezone: orders[0] ? orders[0].business_timezone : resolveBusinessTimezone(null).timezone,
     summary: Object.freeze({
       orders_total: ordersTotal,
       orders_valid: ordersValid,

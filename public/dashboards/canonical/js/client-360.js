@@ -39,8 +39,11 @@
       throw new Error('canonical_client_360_admin_context_contract_missing');
     }
     const view = contextContract.resolveMarketView(adminContext);
+    // L2 : périmètre de recette explicite (?simulation_scope=RCT1), transmis au serveur (vue globale).
+    const scope = new URLSearchParams(String((globalThis.location && globalThis.location.search) || '')).get('simulation_scope');
+    const simulation = scope && /^[A-Z][A-Z0-9-]{1,31}$/.test(scope) ? `?simulation_scope=${encodeURIComponent(scope)}` : '';
     return view.mode === 'global'
-      ? GLOBAL_ENDPOINT_PREFIX + encodeURIComponent(phone)
+      ? GLOBAL_ENDPOINT_PREFIX + encodeURIComponent(phone) + simulation
       : MARKET_ENDPOINT_PREFIX + encodeURIComponent(view.marketCode) + MARKET_ENDPOINT_SUFFIX + encodeURIComponent(phone);
   }
 
@@ -60,10 +63,25 @@
     return `${formatNumber(value)} KMF`;
   }
 
-  function formatDate(value) {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(date);
+  // L12a : affichage discret des coordonnées personnelles, sans déduire de
+  // nouvelle permission et sans modifier les données de l'API canonique.
+  function maskPhone(value) {
+    const phone = String(value || '');
+    return phone ? `•••• ${phone.slice(-4)}` : '—';
+  }
+
+  function maskEmail(value) {
+    const email = String(value || '');
+    const at = email.lastIndexOf('@');
+    return !email ? '—' : at > 0 ? `•••${email.slice(at)}` : '•••';
+  }
+
+  // L3 : fuseau métier du serveur (marché de l'objet), jamais celui du navigateur.
+  let activeTimezone = null;
+  function formatDate(value, timezone) {
+    return globalThis.KomerceBusinessDate
+      ? globalThis.KomerceBusinessDate.formatBusinessDate(value, timezone || activeTimezone, { time: true })
+      : (value ? String(value).slice(0, 10) : '—');
   }
 
   function text(doc, tag, className, value) {
@@ -79,23 +97,23 @@
     return markets.map(row => row.code || row.name).filter(Boolean).join(' · ');
   }
 
-  function createHeader(doc, payload) {
+  function createHeader(doc, payload, revealContacts = false, onToggleContacts = null) {
     const client = payload.client || {};
     const header = doc.createElement('header');
     header.className = 'kmc-entity-header';
     header.appendChild(text(doc, 'span', 'kmc-entity-kicker', 'CLIENT 360'));
-    header.appendChild(text(doc, 'h1', 'kmc-entity-title', client.name || client.phone || 'Client'));
+    header.appendChild(text(doc, 'h1', 'kmc-entity-title', client.name || (client.phone ? (revealContacts ? client.phone : maskPhone(client.phone)) : 'Client')));
     header.appendChild(text(
       doc,
       'p',
       'kmc-entity-subtitle',
-      [client.phone, client.country, marketLabel(payload.scope)].filter(Boolean).join(' · ')
+      [client.phone ? (revealContacts ? client.phone : maskPhone(client.phone)) : null, client.country, marketLabel(payload.scope)].filter(Boolean).join(' · ')
     ));
 
     const nav = doc.createElement('nav');
     nav.className = 'kmc-entity-nav';
     [
-      ['/admin/commerce', '← Commerce'],
+      ['/admin/commerce', 'Commerce'],
       ['/admin/pilotage', 'Pilotage'],
       ['/admin/operations', 'Opérations'],
     ].forEach(([href, label]) => {
@@ -104,6 +122,13 @@
       nav.appendChild(link);
     });
     header.appendChild(nav);
+    if ((client.phone || client.email) && typeof onToggleContacts === 'function') {
+      const toggle = text(doc, 'button', 'kmc-entity-nav-link', revealContacts ? 'Masquer les coordonnées' : 'Afficher les coordonnées');
+      toggle.type = 'button';
+      toggle.setAttribute('aria-expanded', String(revealContacts));
+      if (typeof toggle.addEventListener === 'function') toggle.addEventListener('click', onToggleContacts);
+      header.appendChild(toggle);
+    }
     return header;
   }
 
@@ -136,14 +161,24 @@
     });
   }
 
-  function renderPayload(rootNode, ui, doc, payload) {
+  function renderPayload(rootNode, ui, doc, payload, revealContacts = false) {
+    activeTimezone = payload.business_timezone || null;
     const client = payload.client || {};
     const scope = payload.scope || {};
     const security = payload.security || { visibility: 'restricted' };
 
     rootNode.className = 'kmc-admin-shell kmc-entity-shell';
     rootNode.replaceChildren();
-    rootNode.appendChild(createHeader(doc, payload));
+    rootNode.appendChild(createHeader(doc, payload, revealContacts, () => renderPayload(rootNode, ui, doc, payload, !revealContacts)));
+
+    const recette = new URLSearchParams(String((globalThis.location && globalThis.location.search) || '')).get('simulation_scope');
+    if (recette && /^[A-Z][A-Z0-9-]{1,31}$/.test(recette)) {
+      const note = doc.createElement('p');
+      note.className = 'kmc-recette-banner';
+      note.setAttribute('role', 'status');
+      note.textContent = `Périmètre de recette ${recette} : faits simulés, pas une activité réelle de l'entreprise.`;
+      rootNode.appendChild(note);
+    }
 
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-entity-metrics';
@@ -158,8 +193,8 @@
       columns: [{ key: 'champ', label: 'Champ' }, { key: 'valeur', label: 'Valeur' }],
       rows: [
         { champ: 'Nom', valeur: client.name },
-        { champ: 'Téléphone', valeur: client.phone },
-        { champ: 'Email', valeur: client.email },
+        { champ: 'Téléphone', valeur: revealContacts ? client.phone : maskPhone(client.phone) },
+        { champ: 'Email', valeur: revealContacts ? client.email : maskEmail(client.email) },
         { champ: 'Pays', valeur: client.country },
         { champ: 'Périmètre', valeur: marketLabel(scope) },
         { champ: 'Première commande', valeur: formatDate(client.first_order_at) },
@@ -187,7 +222,7 @@
         payment: row.payment_status,
         total: formatKmf(row.total_kmf),
         relais: row.relais && row.relais.name,
-        date: formatDate(row.created_at),
+        date: formatDate(row.created_at, row.business_timezone),
       })),
       emptyText: 'Aucune commande visible.',
     });
@@ -311,6 +346,8 @@
     phoneFromPath,
     formatNumber,
     formatKmf,
+    maskPhone,
+    maskEmail,
     formatDate,
     marketLabel,
     metricItems,

@@ -1047,6 +1047,35 @@ $$;
 
 
 --
+-- Name: currency_parities_no_truncate(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.currency_parities_no_truncate() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'currency_parities : TRUNCATE interdit';
+END;
+$$;
+
+
+--
+-- Name: currency_parities_value_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.currency_parities_value_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.currency IS DISTINCT FROM OLD.currency OR NEW.eur_rate IS DISTINCT FROM OLD.eur_rate THEN
+    RAISE EXCEPTION 'currency_parities : parité immuable (une nouvelle parité est une décision gouvernée, pas un UPDATE)';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: customs_shipment_fees_immutable(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1398,6 +1427,71 @@ $$;
 
 
 --
+-- Name: fx_append_only_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fx_append_only_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION '% est append-only : suppression interdite', TG_TABLE_NAME;
+  END IF;
+  IF TG_TABLE_NAME = 'fx_rate_observations' THEN
+    IF OLD.approved_by IS NULL AND NEW.approved_by IS NOT NULL
+       AND (NEW.id, NEW.base_ccy, NEW.quote_ccy, NEW.rate, NEW.source_label, NEW.source_ref, NEW.as_of, NEW.entered_by, NEW.created_at)
+           IS NOT DISTINCT FROM
+           (OLD.id, OLD.base_ccy, OLD.quote_ccy, OLD.rate, OLD.source_label, OLD.source_ref, OLD.as_of, OLD.entered_by, OLD.created_at) THEN
+      NEW.approved_by := lower(btrim(NEW.approved_by));
+      NEW.approved_at := now();
+      RETURN NEW;
+    END IF;
+  END IF;
+  RAISE EXCEPTION '% est append-only : modification interdite', TG_TABLE_NAME;
+END;
+$$;
+
+
+--
+-- Name: fx_insert_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fx_insert_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.created_at := now();
+  IF TG_TABLE_NAME = 'fx_rate_observations' THEN
+    NEW.entered_by := lower(btrim(NEW.entered_by));
+    IF NEW.entered_by = '' THEN
+      RAISE EXCEPTION 'fx_rate_observations : entered_by vide';
+    END IF;
+    IF NEW.approved_by IS NOT NULL OR NEW.approved_at IS NOT NULL THEN
+      RAISE EXCEPTION 'fx_rate_observations : une observation est insérée non approuvée (approbation = étape séparée)';
+    END IF;
+    IF NEW.as_of > NEW.created_at THEN
+      RAISE EXCEPTION 'fx_rate_observations : as_of dans le futur';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: fx_no_truncate_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fx_no_truncate_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION '% est append-only : TRUNCATE interdit', TG_TABLE_NAME;
+END;
+$$;
+
+
+--
 -- Name: hub_guard_allocation_purchase_line(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1602,10 +1696,12 @@ BEGIN
     RAISE EXCEPTION 'hub_purchase_allocation_unresolvable';
   END IF;
 
-  SELECT COALESCE(SUM(quantity), 0)::integer INTO already_placed
-    FROM hub_physical_unit_placements
-   WHERE allocation_id = NEW.allocation_id
-     AND removed_at IS NULL;
+  SELECT COALESCE(SUM(p.quantity), 0)::integer INTO already_placed
+    FROM hub_physical_unit_placements p
+    JOIN hub_physical_units u ON u.id = p.physical_unit_id
+   WHERE p.allocation_id = NEW.allocation_id
+     AND p.removed_at IS NULL
+     AND u.outcome_type IS NULL;
 
   IF already_placed + NEW.quantity > allocation_qty THEN
     RAISE EXCEPTION 'hub_allocation_overplaced';
@@ -1895,6 +1991,25 @@ BEGIN
 
   RETURN NEW;
 END $$;
+
+
+--
+-- Name: orders_snapshots_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.orders_snapshots_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF OLD.fx_snapshot IS NOT NULL AND NEW.fx_snapshot IS DISTINCT FROM OLD.fx_snapshot THEN
+    RAISE EXCEPTION 'orders.fx_snapshot est immuable une fois posé';
+  END IF;
+  IF OLD.transport_pricing_snapshot IS NOT NULL AND NEW.transport_pricing_snapshot IS DISTINCT FROM OLD.transport_pricing_snapshot THEN
+    RAISE EXCEPTION 'orders.transport_pricing_snapshot est immuable une fois posé';
+  END IF;
+  RETURN NEW;
+END;
+$$;
 
 
 --
@@ -4624,6 +4739,101 @@ CREATE SEQUENCE public.decision_signal_ref_seq
 
 
 --
+-- Name: demo_kpr_backup_20261024; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.demo_kpr_backup_20261024 (
+    id uuid,
+    sku text,
+    name text,
+    description text,
+    category text,
+    emoji text,
+    price_kmf numeric(12,2),
+    cost_kmf numeric(12,2),
+    promo_pct integer,
+    promo_until date,
+    stock integer,
+    weight_kg numeric(6,2),
+    is_active boolean,
+    is_promo boolean,
+    image_url text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    price_aed numeric(10,2),
+    source text,
+    dims_l numeric(8,2),
+    dims_w numeric(8,2),
+    dims_h numeric(8,2),
+    customs_risk_coeff numeric(5,3),
+    customs_risk_updated date,
+    price_eur numeric(12,2),
+    dimensions_cm text,
+    images jsonb,
+    badge text,
+    is_available boolean,
+    has_couture boolean,
+    sourcing_source text,
+    sort_order integer,
+    unsold_price_kmf numeric(12,2),
+    unsold_channel character varying(20),
+    requires_secure_transport boolean,
+    volume_cm3 numeric(10,2),
+    is_fragile boolean,
+    is_bulky boolean,
+    compatibility_group text,
+    subcategory text,
+    sourcing_rail text,
+    volume_class text,
+    fragility text,
+    sale_mode text,
+    exposure_mode text,
+    lifecycle_status text,
+    quality_validated boolean,
+    real_weight_known boolean,
+    real_price_validated boolean,
+    delivery_delay_days integer,
+    supplier_notes text,
+    last_review_at timestamp with time zone,
+    has_variants boolean,
+    product_ref text,
+    repack_volume_cm3 numeric(10,2),
+    repack_exempt boolean,
+    name_source text,
+    description_source text,
+    source_locale character varying(8),
+    content_source character varying(20),
+    enrichment_version integer,
+    needs_review boolean,
+    enrichment_confidence numeric(4,3),
+    inventory_model text,
+    series text,
+    air_excluded boolean,
+    air_eligibility_status public.air_eligibility_status,
+    air_exclusion_reason text,
+    boutique_category_key text,
+    boutique_subcategory_key text,
+    target_margin_pct numeric(5,2)
+);
+
+
+--
+-- Name: demo_kpr_exposure_backup_20261024; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.demo_kpr_exposure_backup_20261024 (
+    id uuid,
+    product_id uuid,
+    market_id uuid,
+    commercial_exposure text,
+    decided_by uuid,
+    decided_at timestamp with time zone,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
+);
+
+
+--
 -- Name: disputes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4964,7 +5174,7 @@ CREATE TABLE public.finance_config (
     target_panier_moyen_kmf numeric(14,2) DEFAULT 15000 NOT NULL,
     objectif_commandes_mois integer DEFAULT 100 NOT NULL,
     objectif_ca_mensuel_kmf numeric(14,2) DEFAULT 1500000 NOT NULL,
-    taux_change_eur_kmf numeric(10,2) DEFAULT 491.96 NOT NULL,
+    taux_change_eur_kmf numeric(10,2),
     markup_cible_pct numeric(5,2) DEFAULT 250.00 NOT NULL,
     cout_achat_moyen_eur numeric(10,2) DEFAULT 5.00 NOT NULL,
     delai_transit_jours integer DEFAULT 25 NOT NULL,
@@ -4978,7 +5188,7 @@ CREATE TABLE public.finance_config (
     loyalty_trigger_count integer DEFAULT 3 NOT NULL,
     updated_at timestamp with time zone DEFAULT now(),
     updated_by uuid,
-    taux_aed_kmf numeric(10,2) DEFAULT 138.00 NOT NULL,
+    taux_aed_kmf numeric(10,2),
     fret_eur_per_m3 integer DEFAULT 180 NOT NULL,
     frais_stripe_pct numeric(5,2) DEFAULT 2.5 NOT NULL,
     frais_stripe_fixed_kmf numeric(14,2) DEFAULT 150 NOT NULL,
@@ -5015,6 +5225,20 @@ CREATE TABLE public.finance_config (
     CONSTRAINT finance_config_id_check CHECK ((id = 1)),
     CONSTRAINT finance_config_taux_pln_kmf_check CHECK ((taux_pln_kmf > (0)::numeric))
 );
+
+
+--
+-- Name: COLUMN finance_config.taux_change_eur_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.taux_change_eur_kmf IS 'DEPRECATED (migration 316) : jamais lu ni écrit. Autorité = currency_parities (EUR/KMF) via services/fx-authority.js.';
+
+
+--
+-- Name: COLUMN finance_config.taux_aed_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.taux_aed_kmf IS 'DEPRECATED (migration 316) : jamais lu ni écrit. AED = observation EUR/USD approuvée x peg USD/AED via services/fx-authority.js.';
 
 
 --
@@ -5120,6 +5344,97 @@ COMMENT ON COLUMN public.finance_config.margin_rail_d IS 'Marge Rail D — sourc
 --
 
 COMMENT ON COLUMN public.finance_config.taux_pln_kmf IS 'KMF per PLN, explicitly maintained in Finance sourcing configuration. NULL blocks PLN sourcing valuation; native provider amounts remain PLN.';
+
+
+--
+-- Name: fx_pegs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.fx_pegs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    base_ccy text DEFAULT 'USD'::text NOT NULL,
+    quote_ccy text DEFAULT 'DJF'::text NOT NULL,
+    rate numeric(18,8) NOT NULL,
+    source_label text NOT NULL,
+    source_ref text,
+    valid_from timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT fx_peg_rate_band CHECK ((((quote_ccy = 'DJF'::text) AND (rate >= (100)::numeric) AND (rate <= (300)::numeric)) OR ((quote_ccy = 'AED'::text) AND (rate >= (3)::numeric) AND (rate <= 4.5)))),
+    CONSTRAINT fx_pegs_base_ccy_check CHECK ((base_ccy = 'USD'::text)),
+    CONSTRAINT fx_pegs_quote_ccy_check CHECK ((quote_ccy = ANY (ARRAY['DJF'::text, 'AED'::text]))),
+    CONSTRAINT fx_pegs_rate_check CHECK ((rate > (0)::numeric)),
+    CONSTRAINT fx_pegs_source_label_check CHECK ((length(btrim(source_label)) > 0))
+);
+
+
+--
+-- Name: TABLE fx_pegs; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.fx_pegs IS 'Pegs officiels USD→devise (DJF Banque centrale de Djibouti ; AED Central Bank of the UAE). Append-only, datés.';
+
+
+--
+-- Name: fx_public_reference_quotes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.fx_public_reference_quotes (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    base_ccy text DEFAULT 'EUR'::text NOT NULL,
+    quote_ccy text NOT NULL,
+    rate numeric(24,8) NOT NULL,
+    as_of date NOT NULL,
+    source_label text DEFAULT 'Banque centrale européenne'::text NOT NULL,
+    source_ref text NOT NULL,
+    ingested_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT fx_public_reference_quotes_as_of_check CHECK ((as_of <= CURRENT_DATE)),
+    CONSTRAINT fx_public_reference_quotes_base_ccy_check CHECK ((base_ccy = 'EUR'::text)),
+    CONSTRAINT fx_public_reference_quotes_quote_ccy_check CHECK (((quote_ccy ~ '^[A-Z]{3}$'::text) AND (quote_ccy <> ALL (ARRAY['EUR'::text, 'KMF'::text, 'XAF'::text])))),
+    CONSTRAINT fx_public_reference_quotes_rate_check CHECK (((rate > (0)::numeric) AND (rate < (100000000)::numeric))),
+    CONSTRAINT fx_public_reference_quotes_source_label_check CHECK ((source_label = 'Banque centrale européenne'::text)),
+    CONSTRAINT fx_public_reference_quotes_source_ref_check CHECK ((source_ref = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'::text))
+);
+
+
+--
+-- Name: TABLE fx_public_reference_quotes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.fx_public_reference_quotes IS 'Cotations EUR/XXX BCE datées, sourcées, ingérées automatiquement et immuables. Source publique distincte des observations manuelles à double approbation.';
+
+
+--
+-- Name: fx_rate_observations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.fx_rate_observations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    base_ccy text DEFAULT 'EUR'::text NOT NULL,
+    quote_ccy text DEFAULT 'USD'::text NOT NULL,
+    rate numeric(18,8) NOT NULL,
+    source_label text NOT NULL,
+    source_ref text,
+    as_of timestamp with time zone NOT NULL,
+    entered_by text NOT NULL,
+    approved_by text,
+    approved_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT fx_obs_approval_pair CHECK (((approved_by IS NULL) = (approved_at IS NULL))),
+    CONSTRAINT fx_obs_as_of_not_future CHECK ((as_of <= created_at)),
+    CONSTRAINT fx_obs_two_person CHECK (((approved_by IS NULL) OR (approved_by <> entered_by))),
+    CONSTRAINT fx_rate_observations_base_ccy_check CHECK ((base_ccy = 'EUR'::text)),
+    CONSTRAINT fx_rate_observations_entered_by_check CHECK ((length(btrim(entered_by)) > 0)),
+    CONSTRAINT fx_rate_observations_quote_ccy_check CHECK ((quote_ccy = 'USD'::text)),
+    CONSTRAINT fx_rate_observations_rate_check CHECK (((rate >= 0.8) AND (rate <= 1.6))),
+    CONSTRAINT fx_rate_observations_source_label_check CHECK ((length(btrim(source_label)) > 0))
+);
+
+
+--
+-- Name: TABLE fx_rate_observations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.fx_rate_observations IS 'EUR→USD flottant sourcé, daté, approuvé par une 2e personne. Aucune valeur pré-remplie. Distinct de currency_parities.';
 
 
 --
@@ -5716,6 +6031,29 @@ COMMENT ON TABLE public.market_cash_destinations IS 'Destinations finales autori
 
 
 --
+-- Name: market_central_collection_modes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_central_collection_modes (
+    market_id uuid NOT NULL,
+    payment_mode text NOT NULL,
+    evidence_ref text NOT NULL,
+    authorized_by uuid,
+    authorized_at timestamp with time zone DEFAULT now() NOT NULL,
+    revoked_at timestamp with time zone,
+    CONSTRAINT market_central_collection_modes_evidence_ref_check CHECK ((length(btrim(evidence_ref)) >= 3)),
+    CONSTRAINT market_central_collection_modes_payment_mode_check CHECK ((payment_mode = ANY (ARRAY['stripe_eur'::text, 'paypal_eur'::text])))
+);
+
+
+--
+-- Name: TABLE market_central_collection_modes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_central_collection_modes IS 'Moyens d''encaissement central (stripe_eur, paypal_eur) autorisés par marché. Absence ou revoked_at = refus. Le titulaire des fonds doit être décidé par le propriétaire avant toute ligne hors KM.';
+
+
+--
 -- Name: market_cost_attributions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5770,6 +6108,46 @@ COMMENT ON TABLE public.market_delegation_audit IS 'Append-only audit trail for 
 --
 
 COMMENT ON COLUMN public.market_delegation_audit.market_id IS 'Market ID audité directement. Permet de tracer le provisioning avant création complète de l assignment ; cohérent avec assignment/membership quand présents.';
+
+
+--
+-- Name: market_delivery_attestations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_delivery_attestations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    carrier_id uuid NOT NULL,
+    mode text NOT NULL,
+    origin_ref text NOT NULL,
+    freight_rate numeric(14,2) NOT NULL,
+    rate_currency text NOT NULL,
+    rate_unit text NOT NULL,
+    transit_days integer NOT NULL,
+    evidence_ref text NOT NULL,
+    attested_by uuid NOT NULL,
+    attested_at timestamp with time zone DEFAULT now() NOT NULL,
+    valid_until timestamp with time zone NOT NULL,
+    revoked_at timestamp with time zone,
+    revoked_by uuid,
+    revoke_reason text,
+    CONSTRAINT market_delivery_attestation_revocation CHECK ((((revoked_at IS NULL) AND (revoked_by IS NULL) AND (revoke_reason IS NULL)) OR ((revoked_at IS NOT NULL) AND (revoked_by IS NOT NULL) AND (length(btrim(COALESCE(revoke_reason, ''::text))) >= 3)))),
+    CONSTRAINT market_delivery_attestation_validity CHECK ((valid_until > attested_at)),
+    CONSTRAINT market_delivery_attestations_evidence_ref_check CHECK ((length(btrim(evidence_ref)) >= 3)),
+    CONSTRAINT market_delivery_attestations_freight_rate_check CHECK ((freight_rate > (0)::numeric)),
+    CONSTRAINT market_delivery_attestations_mode_check CHECK ((mode = ANY (ARRAY['SEA'::text, 'AIR'::text, 'ROAD'::text, 'MIXED'::text]))),
+    CONSTRAINT market_delivery_attestations_origin_ref_check CHECK ((length(btrim(origin_ref)) >= 2)),
+    CONSTRAINT market_delivery_attestations_rate_currency_check CHECK ((rate_currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT market_delivery_attestations_rate_unit_check CHECK ((rate_unit = ANY (ARRAY['PER_KG'::text, 'PER_PARCEL'::text]))),
+    CONSTRAINT market_delivery_attestations_transit_days_check CHECK (((transit_days > 0) AND (transit_days <= 365)))
+);
+
+
+--
+-- Name: TABLE market_delivery_attestations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_delivery_attestations IS 'Preuve centrale, vérifiable et révocable, qu''une liaison de transport et un tarif applicable existent pour un marché. Jamais un booléen ; jamais déduite des tarifs globaux.';
 
 
 --
@@ -6068,6 +6446,35 @@ COMMENT ON COLUMN public.market_team_invitations.invited_by_user_id IS 'Canonica
 --
 
 COMMENT ON COLUMN public.market_team_invitations.grants_operating_lead IS 'When true, acceptance designates the resulting ACTIVE membership as operating lead; only central invitations may request it.';
+
+
+--
+-- Name: market_transport_sale_rates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_transport_sale_rates (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    rate_key text NOT NULL,
+    rate_per_kg numeric(14,4) NOT NULL,
+    currency text NOT NULL,
+    evidence_ref text NOT NULL,
+    set_by uuid,
+    valid_from timestamp with time zone DEFAULT now() NOT NULL,
+    revoked_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT market_transport_sale_rates_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT market_transport_sale_rates_evidence_ref_check CHECK ((length(btrim(evidence_ref)) > 0)),
+    CONSTRAINT market_transport_sale_rates_rate_key_check CHECK ((rate_key = ANY (ARRAY['SEA_KMF_PER_KG_COMMERCIAL'::text, 'AIR_KMF_PER_KG_TAXABLE'::text]))),
+    CONSTRAINT market_transport_sale_rates_rate_per_kg_check CHECK ((rate_per_kg > (0)::numeric))
+);
+
+
+--
+-- Name: TABLE market_transport_sale_rates; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.market_transport_sale_rates IS 'Tarif de vente transport par Market (devise du marché, par kg ; converti en KMF de base par voie gouvernée). Absent = refus hors KMF. Distinct du coût de fret attesté.';
 
 
 --
@@ -6694,6 +7101,8 @@ CREATE TABLE public.orders (
     display_currency text,
     display_parity_snapshot jsonb,
     simulation_scope text,
+    transport_pricing_snapshot jsonb,
+    fx_snapshot jsonb,
     CONSTRAINT chk_orders_discount CHECK (((discount_pct >= (0)::numeric) AND (discount_pct <= (100)::numeric))),
     CONSTRAINT chk_orders_total CHECK ((total_kmf >= (0)::numeric)),
     CONSTRAINT orders_pickup_code_recipient_check CHECK (((pickup_code_recipient)::text = ANY ((ARRAY['buyer'::character varying, 'organizer'::character varying])::text[]))),
@@ -6986,6 +7395,20 @@ COMMENT ON COLUMN public.orders.display_parity_snapshot IS 'Métadonnée d''audi
 --
 
 COMMENT ON COLUMN public.orders.simulation_scope IS 'NULL = activité réelle. Sinon identifiant du périmètre de recette (faits simulés) : exclu des agrégats d''activité réelle, inclus seulement quand ce périmètre est demandé explicitement. Immuable une fois posé.';
+
+
+--
+-- Name: COLUMN orders.transport_pricing_snapshot; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.orders.transport_pricing_snapshot IS 'Preuve figée du tarif de vente transport (devise marché, pivot EUR, ids de tarif, jambes FX). Nullable : commandes antérieures ou sans transport import.';
+
+
+--
+-- Name: COLUMN orders.fx_snapshot; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.orders.fx_snapshot IS 'Snapshot monétaire immuable de la commande : origine KMF, montant confirmé devise marché, EUR autorisé, jambes FX. Lu, jamais recalculé.';
 
 
 --
@@ -8651,6 +9074,50 @@ CREATE TABLE public.recipients (
     is_default boolean DEFAULT false NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+
+--
+-- Name: refund_execution_intents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.refund_execution_intents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    provider text NOT NULL,
+    capture_ref text NOT NULL,
+    operation_key text NOT NULL,
+    amount_eur numeric(12,2) NOT NULL,
+    currency character(3) DEFAULT 'EUR'::bpchar NOT NULL,
+    status text DEFAULT 'reserved'::text NOT NULL,
+    provider_ref text,
+    initiated_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    processing_at timestamp with time zone,
+    confirmed_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_refund_intents_confirmed_ref CHECK (((status <> 'confirmed'::text) OR ((provider_ref IS NOT NULL) AND (length(TRIM(BOTH FROM provider_ref)) > 0)))),
+    CONSTRAINT refund_execution_intents_amount_eur_check CHECK ((amount_eur > (0)::numeric)),
+    CONSTRAINT refund_execution_intents_capture_ref_check CHECK ((length(TRIM(BOTH FROM capture_ref)) > 0)),
+    CONSTRAINT refund_execution_intents_currency_check CHECK ((currency = 'EUR'::bpchar)),
+    CONSTRAINT refund_execution_intents_operation_key_check CHECK ((length(TRIM(BOTH FROM operation_key)) > 0)),
+    CONSTRAINT refund_execution_intents_provider_check CHECK ((provider = ANY (ARRAY['stripe'::text, 'paypal'::text]))),
+    CONSTRAINT refund_execution_intents_status_check CHECK ((status = ANY (ARRAY['reserved'::text, 'processing'::text, 'unknown'::text, 'confirmed'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: TABLE refund_execution_intents; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.refund_execution_intents IS 'DURABLE refund intent authority before Stripe/PayPal; no PSP call in migration, no automatic legacy refund backfill. Existing refunds MUST be reconciled before activation.';
+
+
+--
+-- Name: COLUMN refund_execution_intents.operation_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.refund_execution_intents.operation_key IS 'Caller event id or explicitly authorized distinct partial refund event; replay keeps same key.';
 
 
 --
@@ -10844,17 +11311,16 @@ CREATE VIEW public.v_purchase_line_progress AS
             ELSE 'historical'::text
         END AS po_shape,
     public.purchase_line_effective_quantity(pl.cancelled_at, pl.settled_quantity, pl.confirmed_quantity, pl.quantity) AS effective_quantity,
-        CASE
-            WHEN (po.order_id IS NOT NULL) THEN COALESCE(po.received_qty, 0)
-            ELSE COALESCE(( SELECT (sum(p.quantity))::integer AS sum
-               FROM (public.hub_physical_unit_placements p
-                 JOIN public.hub_purchase_allocations a ON ((a.id = p.allocation_id)))
-              WHERE ((a.purchase_line_id = pl.id) AND (p.operation_type = 'RECEIVE'::text))), 0)
-        END AS received_quantity,
+    COALESCE(( SELECT (sum(p.quantity))::integer AS sum
+           FROM ((public.hub_purchase_allocations a
+             JOIN public.hub_physical_unit_placements p ON (((p.allocation_id = a.id) AND (p.removed_at IS NULL))))
+             JOIN public.hub_physical_units u ON (((u.id = p.physical_unit_id) AND (u.state <> ALL (ARRAY['QUARANTINED'::text, 'SUPERSEDED'::text])) AND (u.outcome_type IS NULL))))
+          WHERE ((a.purchase_line_id = pl.id) OR ((a.purchase_line_id IS NULL) AND (a.purchase_order_id = pl.purchase_order_id) AND (a.order_item_id = pl.order_item_id)))), 0) AS received_quantity,
     (pl.cancelled_at IS NOT NULL) AS cancelled,
     pl.product_supplier_id,
     po.hub_received_at,
-    pl.quantity
+    pl.quantity,
+    COALESCE(po.received_qty, 0) AS declared_received_quantity
    FROM ((public.purchase_lines pl
      JOIN public.order_items oi ON ((oi.id = pl.order_item_id)))
      LEFT JOIN public.purchase_orders po ON ((po.id = pl.purchase_order_id)))
@@ -10869,11 +11335,16 @@ UNION ALL
             WHEN (po.status = 'cancelled'::text) THEN 0
             ELSE po.qty
         END AS effective_quantity,
-    COALESCE(po.received_qty, 0) AS received_quantity,
+    COALESCE(( SELECT (sum(p.quantity))::integer AS sum
+           FROM ((public.hub_purchase_allocations a
+             JOIN public.hub_physical_unit_placements p ON (((p.allocation_id = a.id) AND (p.removed_at IS NULL))))
+             JOIN public.hub_physical_units u ON (((u.id = p.physical_unit_id) AND (u.state <> ALL (ARRAY['QUARANTINED'::text, 'SUPERSEDED'::text])) AND (u.outcome_type IS NULL))))
+          WHERE ((a.purchase_order_id = po.id) AND (a.purchase_line_id IS NULL))), 0) AS received_quantity,
     (po.status = 'cancelled'::text) AS cancelled,
     po.product_supplier_id,
     po.hub_received_at,
-    po.qty AS quantity
+    po.qty AS quantity,
+    COALESCE(po.received_qty, 0) AS declared_received_quantity
    FROM public.purchase_orders po
   WHERE ((po.order_id IS NOT NULL) AND (NOT (EXISTS ( SELECT 1
            FROM public.purchase_lines pl
@@ -10884,7 +11355,7 @@ UNION ALL
 -- Name: VIEW v_purchase_line_progress; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON VIEW public.v_purchase_line_progress IS 'Progression d''achat par ligne (engagé effectif, reçu, annulé). Seule définition du reçu par ligne pour les lecteurs. Les PO historiques sans ligne (avant 225) sont exposées avec line_id NULL.';
+COMMENT ON VIEW public.v_purchase_line_progress IS 'Progression d''achat par ligne. received_quantity = matière physique utilisable (placements actifs, hors quarantaine/superseded/outcome) pour toutes les formes de PO ; declared_received_quantity = ancien compteur déclaratif, informatif uniquement.';
 
 
 --
@@ -11839,6 +12310,54 @@ ALTER TABLE ONLY public.finance_config
 
 
 --
+-- Name: fx_rate_observations fx_obs_unique_as_of; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fx_rate_observations
+    ADD CONSTRAINT fx_obs_unique_as_of UNIQUE (as_of);
+
+
+--
+-- Name: fx_pegs fx_peg_unique_quote_valid_from; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fx_pegs
+    ADD CONSTRAINT fx_peg_unique_quote_valid_from UNIQUE (quote_ccy, valid_from);
+
+
+--
+-- Name: fx_pegs fx_pegs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fx_pegs
+    ADD CONSTRAINT fx_pegs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: fx_public_reference_quotes fx_public_reference_quotes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fx_public_reference_quotes
+    ADD CONSTRAINT fx_public_reference_quotes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: fx_public_reference_quotes fx_public_reference_quotes_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fx_public_reference_quotes
+    ADD CONSTRAINT fx_public_reference_quotes_unique UNIQUE (base_ccy, quote_ccy, as_of);
+
+
+--
+-- Name: fx_rate_observations fx_rate_observations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fx_rate_observations
+    ADD CONSTRAINT fx_rate_observations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: garment_models garment_models_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12007,6 +12526,14 @@ ALTER TABLE ONLY public.market_cash_destinations
 
 
 --
+-- Name: market_central_collection_modes market_central_collection_modes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_central_collection_modes
+    ADD CONSTRAINT market_central_collection_modes_pkey PRIMARY KEY (market_id, payment_mode);
+
+
+--
 -- Name: market_cost_attributions market_cost_attributions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12020,6 +12547,14 @@ ALTER TABLE ONLY public.market_cost_attributions
 
 ALTER TABLE ONLY public.market_delegation_audit
     ADD CONSTRAINT market_delegation_audit_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: market_delivery_attestations market_delivery_attestations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delivery_attestations
+    ADD CONSTRAINT market_delivery_attestations_pkey PRIMARY KEY (id);
 
 
 --
@@ -12100,6 +12635,14 @@ ALTER TABLE ONLY public.market_team_invitations
 
 ALTER TABLE ONLY public.market_team_invitations
     ADD CONSTRAINT market_team_invitations_token_hash_key UNIQUE (token_hash);
+
+
+--
+-- Name: market_transport_sale_rates market_transport_sale_rates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_transport_sale_rates
+    ADD CONSTRAINT market_transport_sale_rates_pkey PRIMARY KEY (id);
 
 
 --
@@ -12644,6 +13187,14 @@ ALTER TABLE ONLY public.purchase_orders
 
 ALTER TABLE ONLY public.recipients
     ADD CONSTRAINT recipients_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: refund_execution_intents refund_execution_intents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refund_execution_intents
+    ADD CONSTRAINT refund_execution_intents_pkey PRIMARY KEY (id);
 
 
 --
@@ -13260,6 +13811,14 @@ ALTER TABLE ONLY public.outbox_events
 
 ALTER TABLE ONLY public.physical_outcome_receipts
     ADD CONSTRAINT uq_physical_outcome_receipts_event_consumer UNIQUE (event_id, consumer_key);
+
+
+--
+-- Name: refund_execution_intents uq_refund_intents_provider_operation; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refund_execution_intents
+    ADD CONSTRAINT uq_refund_intents_provider_operation UNIQUE (provider, operation_key);
 
 
 --
@@ -14033,6 +14592,13 @@ CREATE INDEX idx_fabrics_available ON public.fabrics USING btree (fabric_type, s
 
 
 --
+-- Name: idx_fx_public_reference_quote_latest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_fx_public_reference_quote_latest ON public.fx_public_reference_quotes USING btree (quote_ccy, as_of DESC);
+
+
+--
 -- Name: idx_hub_custody_events_operation; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -14310,6 +14876,13 @@ CREATE INDEX idx_market_delegation_audit_assignment ON public.market_delegation_
 --
 
 CREATE INDEX idx_market_delegation_audit_market ON public.market_delegation_audit USING btree (market_id, occurred_at DESC);
+
+
+--
+-- Name: idx_market_delivery_attestations_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_market_delivery_attestations_active ON public.market_delivery_attestations USING btree (market_id, valid_until) WHERE (revoked_at IS NULL);
 
 
 --
@@ -15559,6 +16132,13 @@ CREATE INDEX idx_recipients_user ON public.recipients USING btree (user_id);
 
 
 --
+-- Name: idx_refund_intents_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_refund_intents_order ON public.refund_execution_intents USING btree (order_id, created_at);
+
+
+--
 -- Name: idx_relais_market; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -16609,6 +17189,13 @@ CREATE UNIQUE INDEX uniq_sc_supplier_ref ON public.sourcing_candidates USING btr
 
 
 --
+-- Name: uq_market_transport_sale_rates_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_market_transport_sale_rates_active ON public.market_transport_sale_rates USING btree (market_id, rate_key) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: uq_mobile_money_active_attempt; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -16648,6 +17235,27 @@ CREATE UNIQUE INDEX uq_orders_qr_token ON public.orders USING btree (qr_token) W
 --
 
 CREATE UNIQUE INDEX uq_products_sku ON public.products USING btree (sku) WHERE (sku IS NOT NULL);
+
+
+--
+-- Name: uq_refund_intents_one_unresolved_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_refund_intents_one_unresolved_order ON public.refund_execution_intents USING btree (order_id) WHERE (status = ANY (ARRAY['reserved'::text, 'processing'::text, 'unknown'::text]));
+
+
+--
+-- Name: uq_refund_intents_provider_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_refund_intents_provider_ref ON public.refund_execution_intents USING btree (provider, provider_ref) WHERE (provider_ref IS NOT NULL);
+
+
+--
+-- Name: INDEX uq_refund_intents_provider_ref; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON INDEX public.uq_refund_intents_provider_ref IS 'One external provider refund operation must settle at most one Komerce intent';
 
 
 --
@@ -16816,6 +17424,83 @@ CREATE UNIQUE INDEX ux_product_skus_supplier_unit_ref ON public.product_skus USI
 --
 
 CREATE UNIQUE INDEX ux_purchase_orders_order_item_supplier_active ON public.purchase_orders USING btree (order_item_id, product_supplier_id) WHERE ((order_item_id IS NOT NULL) AND (product_supplier_id IS NOT NULL) AND (status <> 'cancelled'::text));
+
+
+--
+-- Name: currency_parities currency_parities_no_truncate; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER currency_parities_no_truncate BEFORE TRUNCATE ON public.currency_parities FOR EACH STATEMENT EXECUTE FUNCTION public.currency_parities_no_truncate();
+
+
+--
+-- Name: currency_parities currency_parities_value_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER currency_parities_value_guard BEFORE UPDATE ON public.currency_parities FOR EACH ROW EXECUTE FUNCTION public.currency_parities_value_guard();
+
+
+--
+-- Name: fx_pegs fx_pegs_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER fx_pegs_append_only BEFORE DELETE OR UPDATE ON public.fx_pegs FOR EACH ROW EXECUTE FUNCTION public.fx_append_only_guard();
+
+
+--
+-- Name: fx_pegs fx_pegs_insert_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER fx_pegs_insert_guard BEFORE INSERT ON public.fx_pegs FOR EACH ROW EXECUTE FUNCTION public.fx_insert_guard();
+
+
+--
+-- Name: fx_pegs fx_pegs_no_truncate; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER fx_pegs_no_truncate BEFORE TRUNCATE ON public.fx_pegs FOR EACH STATEMENT EXECUTE FUNCTION public.fx_no_truncate_guard();
+
+
+--
+-- Name: fx_public_reference_quotes fx_public_reference_quotes_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER fx_public_reference_quotes_append_only BEFORE DELETE OR UPDATE ON public.fx_public_reference_quotes FOR EACH ROW EXECUTE FUNCTION public.fx_append_only_guard();
+
+
+--
+-- Name: fx_public_reference_quotes fx_public_reference_quotes_no_truncate; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER fx_public_reference_quotes_no_truncate BEFORE TRUNCATE ON public.fx_public_reference_quotes FOR EACH STATEMENT EXECUTE FUNCTION public.fx_no_truncate_guard();
+
+
+--
+-- Name: fx_rate_observations fx_rate_observations_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER fx_rate_observations_append_only BEFORE DELETE OR UPDATE ON public.fx_rate_observations FOR EACH ROW EXECUTE FUNCTION public.fx_append_only_guard();
+
+
+--
+-- Name: fx_rate_observations fx_rate_observations_insert_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER fx_rate_observations_insert_guard BEFORE INSERT ON public.fx_rate_observations FOR EACH ROW EXECUTE FUNCTION public.fx_insert_guard();
+
+
+--
+-- Name: fx_rate_observations fx_rate_observations_no_truncate; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER fx_rate_observations_no_truncate BEFORE TRUNCATE ON public.fx_rate_observations FOR EACH STATEMENT EXECUTE FUNCTION public.fx_no_truncate_guard();
+
+
+--
+-- Name: orders orders_snapshots_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER orders_snapshots_immutable BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.orders_snapshots_immutable();
 
 
 --
@@ -18722,6 +19407,22 @@ ALTER TABLE ONLY public.market_cash_destinations
 
 
 --
+-- Name: market_central_collection_modes market_central_collection_modes_authorized_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_central_collection_modes
+    ADD CONSTRAINT market_central_collection_modes_authorized_by_fkey FOREIGN KEY (authorized_by) REFERENCES public.users(id);
+
+
+--
+-- Name: market_central_collection_modes market_central_collection_modes_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_central_collection_modes
+    ADD CONSTRAINT market_central_collection_modes_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
 -- Name: market_cost_attributions market_cost_attributions_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -18791,6 +19492,38 @@ ALTER TABLE ONLY public.market_delegation_audit
 
 ALTER TABLE ONLY public.market_delegation_audit
     ADD CONSTRAINT market_delegation_audit_membership_id_fkey FOREIGN KEY (membership_id) REFERENCES public.assignment_memberships(id) ON DELETE SET NULL;
+
+
+--
+-- Name: market_delivery_attestations market_delivery_attestations_attested_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delivery_attestations
+    ADD CONSTRAINT market_delivery_attestations_attested_by_fkey FOREIGN KEY (attested_by) REFERENCES public.users(id);
+
+
+--
+-- Name: market_delivery_attestations market_delivery_attestations_carrier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delivery_attestations
+    ADD CONSTRAINT market_delivery_attestations_carrier_id_fkey FOREIGN KEY (carrier_id) REFERENCES public.carriers(id);
+
+
+--
+-- Name: market_delivery_attestations market_delivery_attestations_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delivery_attestations
+    ADD CONSTRAINT market_delivery_attestations_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: market_delivery_attestations market_delivery_attestations_revoked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_delivery_attestations
+    ADD CONSTRAINT market_delivery_attestations_revoked_by_fkey FOREIGN KEY (revoked_by) REFERENCES public.users(id);
 
 
 --
@@ -19007,6 +19740,22 @@ ALTER TABLE ONLY public.market_team_invitations
 
 ALTER TABLE ONLY public.market_team_invitations
     ADD CONSTRAINT market_team_invitations_revoked_by_membership_id_fkey FOREIGN KEY (revoked_by_membership_id) REFERENCES public.assignment_memberships(id);
+
+
+--
+-- Name: market_transport_sale_rates market_transport_sale_rates_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_transport_sale_rates
+    ADD CONSTRAINT market_transport_sale_rates_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: market_transport_sale_rates market_transport_sale_rates_set_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.market_transport_sale_rates
+    ADD CONSTRAINT market_transport_sale_rates_set_by_fkey FOREIGN KEY (set_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
@@ -19903,6 +20652,14 @@ ALTER TABLE ONLY public.recipients
 
 ALTER TABLE ONLY public.recipients
     ADD CONSTRAINT recipients_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: refund_execution_intents refund_execution_intents_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refund_execution_intents
+    ADD CONSTRAINT refund_execution_intents_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
 
 
 --

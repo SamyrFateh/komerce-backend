@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const { resolveBusinessTimezone } = require('./market-business-day');
 const controlChain = require('./logistics-control-chain-projection');
 const financeCanonical = require('./dashboard-finance-canonical');
 
@@ -88,6 +89,7 @@ function publicOrder(order) {
       name: order.market_name || null,
       currency: order.market_currency || null,
     }),
+    business_timezone: resolveBusinessTimezone({ code: order.market_code }).timezone,
     created_at: order.created_at,
     updated_at: order.updated_at,
   });
@@ -310,6 +312,8 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
       items: items.length,
       quantity: totalQuantity,
       parcels: parcels.length,
+      // Filiation Hub (L9b) : articles de la commande couverts par au moins un colis actif — lu depuis parcel_items, jamais recalculé ailleurs.
+      items_assigned: new Set(parcelItemsResult.rows.map(row => row.order_item_id).filter(Boolean)).size,
       open_incidents: openIncidents,
       notifications: notifications.length,
       documents: documents.length,

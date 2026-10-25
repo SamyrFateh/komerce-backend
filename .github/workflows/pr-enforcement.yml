@@ -378,6 +378,12 @@ jobs:
         run: |
           npx jest tests/unit/supplier-execution-certification.test.js --runInBand --silent
           node scripts/check-supplier-execution-certification-manifest.js
+      - name: Feature invariants — preuve unitaire (jamais de succès à vide)
+        if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
+        env:
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+        # Historique déjà approfondi par « Deepen git history » : le commit de base est présent.
+        run: node scripts/feature-invariant-check.js --strict --run=unit --base "$BASE_SHA"
       - name: Contract consumer check
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
         run: node scripts/contract-check.js
@@ -589,6 +595,10 @@ jobs:
         run: |
           PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
           node scripts/ci-db-bootstrap.js
+      - name: Feature invariants — preuve sur base reconstruite (intégration + E2E API)
+        env:
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+        run: node scripts/feature-invariant-check.js --strict --run=db --base "$BASE_SHA"
       - name: Integration DB proofs (targeted)
         if: needs.changes.outputs.integration_required == 'true' && steps.integration_scope.outputs.mode == 'targeted'
         env:
@@ -741,7 +751,16 @@ jobs:
         env:
           BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
         run: node scripts/debt-zero-gate.js --base "$BASE_SHA" --head "$HEAD_SHA"
+      - name: Audit logique statique — nouvelles suspicions critiques
+        env:
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+        run: node scripts/audit-logic.js --static-only --strict --base "$BASE_SHA"
+      - name: Feature invariants — runner officiel et cliquet des invariants textuels
+        env:
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+        run: node scripts/feature-invariant-check.js --strict --base "$BASE_SHA"
       # Les sources canoniques restent bloquantes. Le graphe technique doit être
       # hydraté AVANT les projections métier qui le consomment ; sinon un
       # changement de header rend mécaniquement BUSINESS_FEATURE_GRAPH stale

@@ -33,6 +33,10 @@ describe.each(SURFACES)('%s — lecture seule', name => {
   test('boutons : uniquement recherche/pagination (GET) de l’index clients', () => {
     const hasButton = /['"]button['"]/.test(source);
     if (name === 'client-index.js') expect(hasButton).toBe(true);
-    else expect(hasButton).toBe(false);
+    // L12a : Client 360 porte un seul bouton local « Afficher/Masquer les coordonnées » (affichage, aucune écriture).
+    else if (name === 'client-360.js') {
+      expect((source.match(/createElement\('button'\)|text\(doc, 'button'/g) || []).length).toBe(1);
+      expect(source).toContain('Afficher les coordonnées');
+    } else expect(hasButton).toBe(false);
   });
 });

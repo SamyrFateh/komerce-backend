@@ -180,3 +180,85 @@ test('indicateurs placés avant les alertes dans la vue de décision', () => {
   const src = fs.readFileSync(path.join(ROOT, 'public/dashboards/canonical/js/pricing-workspace-decision.js'), 'utf8');
   expect(src).toContain("overview.insertBefore(metrics.section, overview.querySelector('[data-dashboard-role=\"attention\"]'))");
 });
+
+describe('Atelier des prix — politique marché non configurée', () => {
+  const missingPolicy = {
+    decision_status: 'NOT_DECISIONAL',
+    reason: 'MARKET_DECISION_POLICY_REQUIRED',
+    authorization: 'DENY_NEW_UNDER_CDR_POSITION',
+    coverage: null,
+  };
+
+  test('aucune double alerte ni lien de gate quand seule la politique manque', () => {
+    expect(decision.marketDecisionItems(missingPolicy)).toEqual([]);
+    const metrics = decision.marketMetricItems(fixture(), missingPolicy, pricingWorkspace);
+    expect(metrics[0]).toMatchObject({ key: 'coverage', value: 'Indisponible', tone: 'neutral' });
+    expect(metrics.every(item => item.value !== '0')).toBe(true);
+  });
+
+  test.each(['POLICY_DOES_NOT_COVER_CANONICAL_PERIOD', 'MATURITY_INSUFFICIENT'])('autre raison NOT_DECISIONAL (%s) : rendu inchangé, décision visible', reason => {
+    const items = decision.marketDecisionItems({ decision_status: 'NOT_DECISIONAL', reason, authorization: 'DENY_NEW_UNDER_CDR_POSITION', coverage: null });
+    expect(items.length).toBeGreaterThan(0);
+  });
+
+  test('rend une seule information, sans CTA, avec le motif métier lisible', () => {
+    const nodes = [];
+    const doc = {
+      createElement(tag) {
+        return {
+          tag, children: [], dataset: {}, attributes: {},
+          appendChild(child) { this.children.push(child); return child; },
+          setAttribute(key, value) { this.attributes[key] = value; },
+          insertBefore(child, sibling) {
+            const at = this.children.indexOf(sibling);
+            if (at < 0) this.children.push(child);
+            else this.children.splice(at, 0, child);
+            return child;
+          },
+          querySelector() { return null; },
+        };
+      },
+    };
+    const root = {
+      querySelector() { return null; },
+      prepend(node) { nodes.unshift(node); },
+    };
+    const decisionUi = {
+      DecisionStrip: { render: jest.fn() },
+    };
+    const ui = {
+      MetricStrip: { render: jest.fn() },
+    };
+    decision.renderOverview(root, fixture(), missingPolicy,
+      { document: doc, ui, requestedMarket: 'CM' },
+      pricingWorkspace, decisionUi);
+
+    expect(nodes).toHaveLength(1);
+    const notice = nodes[0].children.find(node => node.dataset.pricingConfigurationNotice === '');
+    expect(notice).toBeDefined();
+    expect(notice.attributes.role).toBe('status');
+    expect(notice.children.map(child => child.textContent).join(' ')).toContain('politique de décision');
+    expect(notice.children.map(child => child.textContent).join(' ')).toContain('Les prix couvrant le CDR restent possibles ; seules les positions sous CDR sont refusées');
+    expect(notice.children.map(child => child.textContent).join(' ')).not.toMatch(/Voir la décision|Voir le gate/);
+    expect(notice.children.every(child => child.tag !== 'a' && child.tag !== 'button')).toBe(true);
+    expect(decisionUi.DecisionStrip.render).not.toHaveBeenCalled();
+    expect(ui.MetricStrip.render).toHaveBeenCalledTimes(1);
+  });
+
+  test('la notice de configuration est lisible sans CSS global pour les alertes', () => {
+    const css = fs.readFileSync(path.join(ROOT, 'public/dashboards/canonical/css/pricing-economic-cockpit.css'), 'utf8');
+    expect(css).toContain('.kmc-pricing-decision-overview .kmc-pricing-configuration-notice');
+    expect(css).toContain('.kmc-pricing-decision-overview .kmc-pricing-configuration-copy');
+    expect(css).toContain('font-size: 14px');
+  });
+
+  test('les alertes de couverture réellement insuffisante ne sont pas masquées', () => {
+    const items = decision.marketDecisionItems({
+      decision_status: 'UNCOVERED',
+      reason: 'COVERAGE_THRESHOLD_NOT_MET',
+      authorization: 'DENY_NEW_UNDER_CDR_POSITION',
+      coverage: { coverage_ratio: 0.8 },
+    });
+    expect(items.map(item => item.key)).toEqual(['market-decision', 'market-authorization']);
+  });
+});

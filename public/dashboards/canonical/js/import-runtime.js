@@ -1381,18 +1381,42 @@
 
   // Écran calme : rien à afficher quand rien n'est à décider. Seuls un lot sans résultat ou une
   // connexion fournisseur interrompue justifient un message.
+  // Distinguer les anciens rejets de réception dus à l'autorité FX des
+  // candidats désormais conservés en WATCH. Le taux doit être observé,
+  // approuvé par une deuxième personne, puis la source relancée.
+  function fxRemediation(run) {
+    const reasons = Object.entries(run?.diagnostics?.reject_reasons || {});
+    const legacyCount = reasons.reduce((count, [reason, n]) =>
+      /taux\s+(?:usd|aed)_kmf\s+indisponible/i.test(reason) ? count + num(n) : count, 0);
+    const pendingCount = num(run?.diagnostics?.fx_pending || run?.accounting?.fx_pending);
+    if (legacyCount === 0 && pendingCount === 0) return '';
+    const title = pendingCount > 0
+      ? `${pendingCount} candidat(s) conservé(s) — cotation officielle EUR/USD attendue`
+      : `${legacyCount} rejet(s) de réception liés au taux EUR/USD`;
+    const detail = pendingCount > 0
+      ? 'Les fiches fournisseurs restent dans « Mis de côté » avec leur prix d’origine. La synchronisation BCE fonctionne automatiquement ; un nouveau passage utilisera la dernière cotation officielle disponible.'
+      : 'Ce passage a été enregistré avant la synchronisation automatique du taux. Après récupération du cours officiel, relancez la source pour récupérer ces produits.';
+    return `<section class="kir-exception-banner" data-fx-remediation role="status">
+      <strong>${esc(title)}</strong>
+      <p>${esc(detail)}</p>
+      <a href="/admin/workspaces/pricing#fx-authority">Consulter l’autorité des taux officiels →</a>
+      <a href="${urlFor(run?.run_ref, 'sources')}" data-cockpit-nav>Retour aux sources →</a>
+    </section>`;
+  }
+
   function renderDecisions(run) {
+    const fxNotice = fxRemediation(run);
     const lot = run.business || {};
     const connectorBlocked = lot.business_status === 'BLOCKED'
       && String(lot.failure_reason || '').startsWith('connector_failed:');
     if (lot.business_status === 'NO_RESULT') {
-      return '<section class="kir-neutral-panel"><strong>Passage terminé sans résultat.</strong>&nbsp; La source n’a retourné aucun produit exploitable ; le passage reste visible pour garder sa trace.</section>';
+      return fxNotice || '<section class="kir-neutral-panel"><strong>Passage terminé sans résultat.</strong>&nbsp; La source n’a retourné aucun produit exploitable ; le passage reste visible pour garder sa trace.</section>';
     }
     if (connectorBlocked) {
       const message = String(lot.failure_reason || '').replace(/^connector_failed:\s*/i, '');
-      return `<section class="kir-exception-banner"><strong>Connexion fournisseur interrompue.</strong> ${esc(message || 'Le fournisseur n’a pas pu être interrogé.')}</section>`;
+      return fxNotice + `<section class="kir-exception-banner"><strong>Connexion fournisseur interrompue.</strong> ${esc(message || 'Le fournisseur n’a pas pu être interrogé.')}</section>`;
     }
-    return '';
+    return fxNotice;
   }
 
   // Une opération peut terminer les traitements sans produire la preuve de certification de son fournisseur.
@@ -1695,6 +1719,7 @@
             : '<p>Le motif détaillé du rejet de réception n’a pas été enregistré.</p>'}
         </section>` : '';
     return drillHeader(run, `${title} · ${num(population.total)}`, copy)
+      + ((kind === 'discarded' || kind === 'deferred') ? fxRemediation(run) : '')
       + (rows || extra
         ? `<div class="kir-table-wrap"><table class="kir-table" data-population-list="${esc(kind)}">
             <thead><tr><th>Produit</th><th>Identifiant source</th><th>${esc(issueHead)}</th></tr></thead><tbody>${rows}${extra}</tbody></table></div>`

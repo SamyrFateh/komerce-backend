@@ -56,7 +56,7 @@
     "healthy": 35,
     "attention": 5,
     "blocked": 0,
-    "businessDependencies": 316,
+    "businessDependencies": 317,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -4925,7 +4925,23 @@
             "resolution": "single-writer"
           },
           {
+            "table": "catalog_field_sync_state",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "catalog_media",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "catalog_media_visual_fr_reviews",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "catalog_publication_decision_audit",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "catalog_stock_sync_state",
             "resolution": "declared-table-owner"
           },
           {
@@ -4966,6 +4982,10 @@
           },
           {
             "table": "products",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_catalog_import_rejections",
             "resolution": "declared-table-owner"
           },
           {
@@ -5007,7 +5027,31 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "catalog_field_sync_state",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "catalog_media",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_media_visual_fr_reviews",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_publication_decision_audit",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_stock_sync_state",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -5068,6 +5112,18 @@
           },
           {
             "table": "products",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_candidates",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "supplier_catalog_import_rejections",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -5119,10 +5175,6 @@
           {
             "table": "product_market_price_drafts",
             "lifecycleOwner": "market-autonomy"
-          },
-          {
-            "table": "sourcing_candidates",
-            "lifecycleOwner": "sourcing"
           }
         ]
       },
@@ -5145,7 +5197,23 @@
             "resolution": "single-writer"
           },
           {
+            "table": "catalog_field_sync_state",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "catalog_media",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "catalog_media_visual_fr_reviews",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "catalog_publication_decision_audit",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "catalog_stock_sync_state",
             "resolution": "declared-table-owner"
           },
           {
@@ -5186,6 +5254,10 @@
           },
           {
             "table": "products",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_catalog_import_rejections",
             "resolution": "declared-table-owner"
           },
           {
@@ -5227,7 +5299,31 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "catalog_field_sync_state",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "catalog_media",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_media_visual_fr_reviews",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_publication_decision_audit",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_stock_sync_state",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -5288,6 +5384,18 @@
           },
           {
             "table": "products",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_candidates",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "supplier_catalog_import_rejections",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -5339,10 +5447,6 @@
           {
             "table": "product_market_price_drafts",
             "lifecycleOwner": "market-autonomy"
-          },
-          {
-            "table": "sourcing_candidates",
-            "lifecycleOwner": "sourcing"
           }
         ]
       },
@@ -5517,6 +5621,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -5599,6 +5704,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -6006,6 +6112,14 @@
             "resolution": "single-writer"
           },
           {
+            "table": "customs_shipment_fees",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "customs_shipment_parcel_events",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "customs_shipment_parcels",
             "resolution": "single-writer"
           },
@@ -6022,6 +6136,18 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "customs_shipment_fees",
+            "mode": "RW",
+            "lifecycleOwner": "customs",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "customs_shipment_parcel_events",
+            "mode": "RW",
+            "lifecycleOwner": "customs",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "customs_shipment_parcels",
             "mode": "RW",
             "lifecycleOwner": "customs",
@@ -6032,6 +6158,12 @@
             "mode": "RW",
             "lifecycleOwner": "customs",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_item_real_cost_allocations",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -6068,6 +6200,14 @@
             "resolution": "single-writer"
           },
           {
+            "table": "customs_shipment_fees",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "customs_shipment_parcel_events",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "customs_shipment_parcels",
             "resolution": "single-writer"
           },
@@ -6084,6 +6224,18 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "customs_shipment_fees",
+            "mode": "RW",
+            "lifecycleOwner": "customs",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "customs_shipment_parcel_events",
+            "mode": "RW",
+            "lifecycleOwner": "customs",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "customs_shipment_parcels",
             "mode": "RW",
             "lifecycleOwner": "customs",
@@ -6094,6 +6246,12 @@
             "mode": "RW",
             "lifecycleOwner": "customs",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_item_real_cost_allocations",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -6155,7 +6313,8 @@
           "provider": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write"
           ]
         },
         {
@@ -6171,6 +6330,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -6418,7 +6584,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 160,
+            "count": 163,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6951,6 +7117,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/business-date.js",
+                "resolvedPath": "public/dashboards/canonical/js/business-date.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/canonical-client-router-v4.js",
                 "resolvedPath": "public/dashboards/canonical/js/canonical-client-router-v4.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7081,6 +7252,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/pilotage.js",
+                "resolvedPath": "public/dashboards/canonical/js/pilotage.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/pricing-decision-chain.js",
                 "resolvedPath": "public/dashboards/canonical/js/pricing-decision-chain.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7093,6 +7269,11 @@
               {
                 "declared": "dashboards/canonical/js/pricing-product-focus.js",
                 "resolvedPath": "public/dashboards/canonical/js/pricing-product-focus.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/pricing-structure-event-panel.js",
+                "resolvedPath": "public/dashboards/canonical/js/pricing-structure-event-panel.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7393,7 +7574,7 @@
             ]
           },
           "services": {
-            "count": 43,
+            "count": 44,
             "files": [
               {
                 "declared": "public/golden-e2e-cockpit.html",
@@ -7556,6 +7737,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/market-business-day.js",
+                "resolvedPath": "services/market-business-day.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/operations-relay-projection.js",
                 "resolvedPath": "services/operations-relay-projection.js",
                 "status": "resolved-in-technical-graph"
@@ -7613,7 +7799,7 @@
             ]
           },
           "tests": {
-            "count": 190,
+            "count": 192,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -7623,6 +7809,11 @@
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
                 "resolvedPath": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/commerce-business-day.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/commerce-business-day.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8381,6 +8572,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/market-business-day.test.js",
+                "resolvedPath": "tests/unit/market-business-day.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/market-catalog-decision.test.js",
                 "resolvedPath": "tests/unit/market-catalog-decision.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8568,7 +8764,7 @@
             ]
           }
         },
-        "totalFiles": 424,
+        "totalFiles": 430,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -8587,6 +8783,18 @@
           }
         ],
         "writesTables": [
+          {
+            "table": "basket_items",
+            "mode": "W",
+            "lifecycleOwner": "shared-cart",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "baskets",
+            "mode": "W",
+            "lifecycleOwner": "shared-cart",
+            "ownershipStatus": "writer-not-owner"
+          },
           {
             "table": "invoices",
             "mode": "RW",
@@ -8624,6 +8832,18 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
+            "table": "parcel_items",
+            "mode": "W",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "parcels",
+            "mode": "W",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "partners",
             "mode": "RW",
             "lifecycleOwner": "dashboard",
@@ -8657,6 +8877,18 @@
             "table": "sms_log",
             "mode": "RW",
             "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "wallet_consumptions",
+            "mode": "W",
+            "lifecycleOwner": "wallet",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "wallet_credit_lots",
+            "mode": "W",
+            "lifecycleOwner": "wallet",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -8755,7 +8987,7 @@
           },
           {
             "table": "purchase_lines",
-            "lifecycleOwner": null
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "purchase_orders",
@@ -8800,6 +9032,18 @@
         ],
         "writesTables": [
           {
+            "table": "basket_items",
+            "mode": "W",
+            "lifecycleOwner": "shared-cart",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "baskets",
+            "mode": "W",
+            "lifecycleOwner": "shared-cart",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "invoices",
             "mode": "RW",
             "lifecycleOwner": "documents",
@@ -8836,6 +9080,18 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
+            "table": "parcel_items",
+            "mode": "W",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "parcels",
+            "mode": "W",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "partners",
             "mode": "RW",
             "lifecycleOwner": "dashboard",
@@ -8869,6 +9125,18 @@
             "table": "sms_log",
             "mode": "RW",
             "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "wallet_consumptions",
+            "mode": "W",
+            "lifecycleOwner": "wallet",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "wallet_credit_lots",
+            "mode": "W",
+            "lifecycleOwner": "wallet",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -8967,7 +9235,7 @@
           },
           {
             "table": "purchase_lines",
-            "lifecycleOwner": null
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "purchase_orders",
@@ -9527,7 +9795,7 @@
         "ownsTables": [
           {
             "table": "signals",
-            "resolution": "single-writer"
+            "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
@@ -9544,7 +9812,7 @@
         "ownsTables": [
           {
             "table": "signals",
-            "resolution": "single-writer"
+            "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
@@ -9655,7 +9923,8 @@
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write"
           ]
         }
       ],
@@ -11420,7 +11689,7 @@
         "ownsTables": [
           {
             "table": "charges",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "competitor_prices",
@@ -11468,7 +11737,11 @@
           },
           {
             "table": "finance_config",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
+          },
+          {
+            "table": "market_cost_attributions",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "market_price_observation_events",
@@ -11476,6 +11749,10 @@
           },
           {
             "table": "market_price_observations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "order_cost_entry_events",
             "resolution": "declared-table-owner"
           },
           {
@@ -11603,6 +11880,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "market_cost_attributions",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "market_price_observation_events",
             "mode": "W",
             "lifecycleOwner": "economic-engine",
@@ -11615,10 +11898,22 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "order_cost_entry_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "order_item_real_cost_allocations",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "orders",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "price_history",
@@ -11716,10 +12011,6 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "orders"
-          },
-          {
-            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -11772,7 +12063,7 @@
         "ownsTables": [
           {
             "table": "charges",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "competitor_prices",
@@ -11820,7 +12111,11 @@
           },
           {
             "table": "finance_config",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
+          },
+          {
+            "table": "market_cost_attributions",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "market_price_observation_events",
@@ -11828,6 +12123,10 @@
           },
           {
             "table": "market_price_observations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "order_cost_entry_events",
             "resolution": "declared-table-owner"
           },
           {
@@ -11955,6 +12254,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "market_cost_attributions",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "market_price_observation_events",
             "mode": "W",
             "lifecycleOwner": "economic-engine",
@@ -11967,10 +12272,22 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "order_cost_entry_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "order_item_real_cost_allocations",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "orders",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "price_history",
@@ -12068,10 +12385,6 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "orders"
-          },
-          {
-            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -12238,7 +12551,8 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "data-read"
+            "data-read",
+            "data-write"
           ]
         },
         {
@@ -12275,7 +12589,8 @@
           "consumer": "customs",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write"
           ]
         },
         {
@@ -15210,7 +15525,19 @@
         ],
         "writesTables": [
           {
+            "table": "charges",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "economic_snapshots",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "finance_config",
             "mode": "W",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "writer-not-owner"
@@ -15250,6 +15577,12 @@
             "mode": "W",
             "lifecycleOwner": "infrastructure",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "users",
+            "mode": "W",
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": []
@@ -15271,7 +15604,19 @@
         ],
         "writesTables": [
           {
+            "table": "charges",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "economic_snapshots",
+            "mode": "W",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "finance_config",
             "mode": "W",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "writer-not-owner"
@@ -15311,6 +15656,12 @@
             "mode": "W",
             "lifecycleOwner": "infrastructure",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "users",
+            "mode": "W",
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": []
@@ -17688,6 +18039,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "order_items",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "parcel_events",
             "mode": "RW",
             "lifecycleOwner": "logistics",
@@ -17722,6 +18079,12 @@
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "products",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "relais",
@@ -17762,10 +18125,6 @@
             "lifecycleOwner": "documents"
           },
           {
-            "table": "order_items",
-            "lifecycleOwner": "orders"
-          },
-          {
             "table": "orders",
             "lifecycleOwner": "orders"
           },
@@ -17775,10 +18134,6 @@
           },
           {
             "table": "product_variants",
-            "lifecycleOwner": "catalog"
-          },
-          {
-            "table": "products",
             "lifecycleOwner": "catalog"
           },
           {
@@ -17890,6 +18245,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "order_items",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "parcel_events",
             "mode": "RW",
             "lifecycleOwner": "logistics",
@@ -17924,6 +18285,12 @@
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "products",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "relais",
@@ -17964,10 +18331,6 @@
             "lifecycleOwner": "documents"
           },
           {
-            "table": "order_items",
-            "lifecycleOwner": "orders"
-          },
-          {
             "table": "orders",
             "lifecycleOwner": "orders"
           },
@@ -17977,10 +18340,6 @@
           },
           {
             "table": "product_variants",
-            "lifecycleOwner": "catalog"
-          },
-          {
-            "table": "products",
             "lifecycleOwner": "catalog"
           },
           {
@@ -18193,6 +18552,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -18251,6 +18611,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -18976,7 +19337,7 @@
             ]
           },
           "services": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "middleware/require-market-scope.js",
@@ -19009,6 +19370,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/market-operation-guard.js",
+                "resolvedPath": "services/market-operation-guard.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/market-scope-admin-service.js",
                 "resolvedPath": "services/market-scope-admin-service.js",
                 "status": "resolved-in-technical-graph"
@@ -19021,8 +19387,13 @@
             ]
           },
           "tests": {
-            "count": 26,
+            "count": 28,
             "files": [
+              {
+                "declared": "tests/e2e-api/market-operation-guard.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/market-operation-guard.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/currency-boundary.test.js",
                 "resolvedPath": "tests/integration/currency-boundary.test.js",
@@ -19139,6 +19510,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/market-operation-guard.test.js",
+                "resolvedPath": "tests/unit/market-operation-guard.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/market-operator-governance-gaps.test.js",
                 "resolvedPath": "tests/unit/market-operator-governance-gaps.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19156,7 +19532,7 @@
             ]
           }
         },
-        "totalFiles": 50,
+        "totalFiles": 53,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19268,6 +19644,13 @@
           ]
         },
         {
+          "consumer": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -19375,9 +19758,13 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 3,
+        "testOnlyRelations": 4,
         "compositionRootRelations": 0,
         "details": [
+          {
+            "to": "customs",
+            "family": "NON_RUNTIME_TEST"
+          },
           {
             "to": "dashboard",
             "family": "NON_RUNTIME_TEST"
@@ -19509,7 +19896,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 18,
+            "count": 20,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -19559,6 +19946,16 @@
               {
                 "declared": "dashboards/canonical/js/market-cash-control.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-cash-control.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-catalog.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-catalog.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-prompt.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-prompt.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19704,7 +20101,7 @@
             ]
           }
         },
-        "totalFiles": 35,
+        "totalFiles": 37,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -23712,6 +24109,18 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "scans",
+            "mode": "W",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "signals",
+            "mode": "W",
+            "lifecycleOwner": "decision-signals",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
             "table": "sms_log",
             "mode": "W",
             "lifecycleOwner": "orders",
@@ -23836,6 +24245,18 @@
             "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "scans",
+            "mode": "W",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "signals",
+            "mode": "W",
+            "lifecycleOwner": "decision-signals",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sms_log",
@@ -24075,7 +24496,8 @@
           "provider": "decision-signals",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-write"
           ]
         },
         {
@@ -24250,7 +24672,8 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
-            "data-read"
+            "data-read",
+            "data-write"
           ]
         },
         {
@@ -24280,6 +24703,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -24989,6 +25413,14 @@
             "resolution": "single-writer"
           },
           {
+            "table": "cash_custody_losses",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "cash_custody_receipts",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "cash_deposit_allocations",
             "resolution": "single-writer"
           },
@@ -24999,6 +25431,10 @@
           {
             "table": "market_cash_destinations",
             "resolution": "single-writer"
+          },
+          {
+            "table": "market_payment_accounts",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "market_payment_providers",
@@ -25031,6 +25467,18 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "cash_custody_losses",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "cash_custody_receipts",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "cash_deposit_allocations",
             "mode": "RW",
             "lifecycleOwner": "payments",
@@ -25044,6 +25492,12 @@
           },
           {
             "table": "market_cash_destinations",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_payment_accounts",
             "mode": "RW",
             "lifecycleOwner": "payments",
             "ownershipStatus": "owner"
@@ -25123,6 +25577,14 @@
             "resolution": "single-writer"
           },
           {
+            "table": "cash_custody_losses",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "cash_custody_receipts",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "cash_deposit_allocations",
             "resolution": "single-writer"
           },
@@ -25133,6 +25595,10 @@
           {
             "table": "market_cash_destinations",
             "resolution": "single-writer"
+          },
+          {
+            "table": "market_payment_accounts",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "market_payment_providers",
@@ -25165,6 +25631,18 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "cash_custody_losses",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "cash_custody_receipts",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "cash_deposit_allocations",
             "mode": "RW",
             "lifecycleOwner": "payments",
@@ -25178,6 +25656,12 @@
           },
           {
             "table": "market_cash_destinations",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_payment_accounts",
             "mode": "RW",
             "lifecycleOwner": "payments",
             "ownershipStatus": "owner"
@@ -28029,7 +28513,35 @@
             "resolution": "single-writer"
           },
           {
+            "table": "purchase_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_fulfillments",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_order_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_payment_proofs",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_payments",
             "resolution": "declared-table-owner"
           },
           {
@@ -28049,7 +28561,49 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "purchase_lines",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "purchase_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_events",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_fulfillments",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_order_lines",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_payment_proofs",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_payments",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"
@@ -28087,10 +28641,6 @@
           {
             "table": "relais",
             "lifecycleOwner": "logistics"
-          },
-          {
-            "table": "supplier_execution_payments",
-            "lifecycleOwner": null
           }
         ]
       },
@@ -28101,7 +28651,35 @@
             "resolution": "single-writer"
           },
           {
+            "table": "purchase_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_fulfillments",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_order_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_payment_proofs",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_execution_payments",
             "resolution": "declared-table-owner"
           },
           {
@@ -28121,7 +28699,49 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "purchase_lines",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "purchase_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_events",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_fulfillments",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_order_lines",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_payment_proofs",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_execution_payments",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"
@@ -28159,10 +28779,6 @@
           {
             "table": "relais",
             "lifecycleOwner": "logistics"
-          },
-          {
-            "table": "supplier_execution_payments",
-            "lifecycleOwner": null
           }
         ]
       },
@@ -29901,11 +30517,11 @@
         "ownsTables": [
           {
             "table": "basket_items",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "baskets",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "cart_shares",
@@ -29995,11 +30611,11 @@
         "ownsTables": [
           {
             "table": "basket_items",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "baskets",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "cart_shares",
@@ -30989,7 +31605,15 @@
       "ownership": {
         "ownsTables": [
           {
+            "table": "import_runtime_item_events",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "import_runtime_runs",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "provider_credentials",
             "resolution": "declared-table-owner"
           },
           {
@@ -31041,13 +31665,33 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "sourcing_source_requests",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "sourcing_sources",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_commercial_category_mappings",
             "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
           {
+            "table": "import_runtime_item_events",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "import_runtime_runs",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "provider_credentials",
             "mode": "RW",
             "lifecycleOwner": "sourcing",
             "ownershipStatus": "owner"
@@ -31125,7 +31769,19 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "sourcing_source_requests",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "sourcing_sources",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_commercial_category_mappings",
             "mode": "RW",
             "lifecycleOwner": "sourcing",
             "ownershipStatus": "owner"
@@ -31161,7 +31817,15 @@
       "data": {
         "ownsTables": [
           {
+            "table": "import_runtime_item_events",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "import_runtime_runs",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "provider_credentials",
             "resolution": "declared-table-owner"
           },
           {
@@ -31213,13 +31877,33 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "sourcing_source_requests",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "sourcing_sources",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "supplier_commercial_category_mappings",
             "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
           {
+            "table": "import_runtime_item_events",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "import_runtime_runs",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "provider_credentials",
             "mode": "RW",
             "lifecycleOwner": "sourcing",
             "ownershipStatus": "owner"
@@ -31297,7 +31981,19 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "sourcing_source_requests",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "sourcing_sources",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_commercial_category_mappings",
             "mode": "RW",
             "lifecycleOwner": "sourcing",
             "ownershipStatus": "owner"
@@ -31508,6 +32204,7 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-write",
             "data-read"
           ]
         },
@@ -32213,11 +32910,11 @@
         "ownsTables": [
           {
             "table": "wallet_consumptions",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "wallet_credit_lots",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "wallet_transactions",
@@ -32269,11 +32966,11 @@
         "ownsTables": [
           {
             "table": "wallet_consumptions",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "wallet_credit_lots",
-            "resolution": "single-writer"
+            "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
             "table": "wallet_transactions",

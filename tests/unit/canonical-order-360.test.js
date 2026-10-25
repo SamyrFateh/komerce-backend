@@ -21,13 +21,14 @@ test('metricItems ne recalcule aucune vérité économique', () => {
       status: 'shipped',
       payment: { status: 'paid', total_kmf: 12000 },
     },
-    summary: { parcels: 2, open_incidents: 1, documents: 3 },
+    summary: { items: 2, items_assigned: 1, parcels: 2, open_incidents: 1, documents: 3 },
   });
 
   expect(metrics.map(metric => metric.value)).toEqual([
     'shipped',
     'paid',
     '12 000 KMF',
+    '1/2',
     '2',
     '1',
     '3',
@@ -248,4 +249,9 @@ describe('Commande 360 — section Coûts & écarts (projection Finance, lecture
     expect(src).toContain("section.element.id = 'couts'");
     expect(src).toContain('Coûts non applicables : commande annulée ou remboursée.');
   });
+});
+
+test('L6 : l’en-tête order-360 ne porte pas de lien « ← » concurrent du retour du shell', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/order-360.js'), 'utf8');
+  expect(src).not.toMatch(/'← (Opérations|Commerce)'/);
 });

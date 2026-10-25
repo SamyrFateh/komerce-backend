@@ -549,6 +549,7 @@ describe('createShipment — happy paths', () => {
       const s = sql.trim();
       if (s === 'BEGIN' || s === 'COMMIT' || s === 'ROLLBACK') return { rows: [] };
       if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+      if (s.includes('FROM markets WHERE')) return { rows: [{ id: 'KM', code: 'KM', lifecycle_status: 'ACTIVE' }] };
        if (s.includes('FROM parcels p JOIN orders o')) return {rows:(params?.[0] || []).map(id=>({id,market_id:'KM'}))};
        if (s.startsWith('INSERT INTO customs_shipments')) {
         return { rows: [overrides.shipment || { id: 'ship-1', reference: 'ENV-001' }] };
@@ -671,6 +672,7 @@ describe('activateShipment', () => {
         if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
         if (s.startsWith('UPDATE customs_shipments')) return { rows: [{ id: 'ship-1', market_id:'KM', customs_paid_kmf: 10000, allocation_method: 'by_cif_value' }] };
         if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+      if (s.includes('FROM markets WHERE')) return { rows: [{ id: 'KM', code: 'KM', lifecycle_status: 'ACTIVE' }] };
         if (s.includes('FROM parcels p JOIN orders o')) return {rows:[{id:'p1',market_id:'KM'}]};
         if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
         if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };
@@ -742,6 +744,7 @@ describe('declareCustomsPayment', () => {
         if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
         if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }] };
         if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+      if (s.includes('FROM markets WHERE')) return { rows: [{ id: 'KM', code: 'KM', lifecycle_status: 'ACTIVE' }] };
         if (s.includes('FROM parcels p JOIN orders o')) return {rows:[{id:'p1',market_id:'KM'}]};
         if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
         if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };
@@ -794,6 +797,7 @@ describe('declareCustomsPayment', () => {
         if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
         if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }] };
         if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+      if (s.includes('FROM markets WHERE')) return { rows: [{ id: 'KM', code: 'KM', lifecycle_status: 'ACTIVE' }] };
         if (s.includes('FROM parcels p JOIN orders o')) return {rows:[{id:'p1',market_id:'KM'}]};
         if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
         if (s === 'ROLLBACK') return { rows: [] };
@@ -820,6 +824,7 @@ describe('declareCustomsPayment', () => {
         if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
         if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }] };
         if (s.startsWith('SELECT market_id FROM customs_shipments')) return {rows:[{market_id:'KM'}]};
+      if (s.includes('FROM markets WHERE')) return { rows: [{ id: 'KM', code: 'KM', lifecycle_status: 'ACTIVE' }] };
         if (s.includes('FROM parcels p JOIN orders o')) return {rows:[{id:'p1',market_id:'KM'}]};
         if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
         if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };

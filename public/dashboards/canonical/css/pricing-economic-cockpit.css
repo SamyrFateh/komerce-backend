@@ -1179,3 +1179,31 @@
 .kmc-cockpit-costs .kmc-cockpit-cost-table .kmc-cockpit-cell { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
 .kmc-autosave-status { min-width: 150px; color: #047857; font-size: 12px; }
 .kmc-autosave-status:empty { min-width: 0; }
+
+/* L4 — le signe de la contribution porte le ton : négative = critique, nulle = neutre (jamais vert). */
+.kmc-cockpit-product-row .kmc-cockpit-cell.is-contribution.is-negative { color: #b42318; }
+.kmc-cockpit-product-row .kmc-cockpit-cell.is-contribution.is-zero { color: #5b6b82; }
+/* Politique marché absente : information de configuration, pas deux alertes de blocage. */
+.kmc-pricing-decision-overview .kmc-pricing-configuration-notice {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 13px 16px;
+  border: 1px solid #dbe7f5;
+  border-left: 3px solid #6b92bd;
+  border-radius: 9px;
+  background: #f8fbff;
+}
+.kmc-pricing-decision-overview .kmc-pricing-configuration-title {
+  color: #1d3b66;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+.kmc-pricing-decision-overview .kmc-pricing-configuration-copy {
+  margin: 0;
+  color: #4b6280;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}

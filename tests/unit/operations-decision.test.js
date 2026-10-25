@@ -47,10 +47,15 @@ test('le titre du Hero Operations n’est plus doublé (« Tour de contrôle » 
   expect(src).not.toContain('Opérations — Tour de contrôle');
 });
 
-test('Operations affiche les files Cash à confirmer et Colis à créer (ex-écran Commandes), avec retour vers Opérations', () => {
+test('Operations affiche les files Cash à confirmer, À commander, En attente de réception Hub et Préparer le colis (ex-écran Commandes), avec retour vers Opérations', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
   expect(src).toContain("'Cash à confirmer'");
-  expect(src).toContain("'Colis à créer'");
+  expect(src).toContain("'À commander'");
+  expect(src).toContain("'En attente de réception Hub'");
+  expect(src).toContain("'Préparer le colis'");
+  expect(src).toContain("'orders-to-order'");
+  expect(src).toContain("'orders-awaiting-hub-reception'");
+  expect(src).not.toContain("'Colis à créer'");
   expect(src).toContain("'orders-pending-cash'");
   expect(src).toContain("'orders-ready-for-parcel'");
   expect(src).toContain("'/admin/operations', 'Retour aux opérations'");

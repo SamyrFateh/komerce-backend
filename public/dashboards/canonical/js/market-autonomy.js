@@ -63,13 +63,26 @@
     return body;
   }
 
+  // L1 : aucun repli sur le premier marché autorisé (CG pour un admin global).
+  function explicitMarket(context) {
+    const contract = global.KomerceAdminContext;
+    if (!contract || typeof contract.resolveExplicitMarket !== 'function') throw new Error('Contrat de contexte marché indisponible.');
+    return contract.resolveExplicitMarket(context, global.location.search);
+  }
+
   function marketFromContext(context) {
-    const access = context && context.access || {};
-    const allowed = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
-    const requested = new URL(global.location.href).searchParams.get('market');
-    if (requested && allowed.includes(requested.toUpperCase())) return requested.toUpperCase();
-    if (access.defaultMarket && allowed.includes(access.defaultMarket)) return access.defaultMarket;
-    return allowed[0] || null;
+    return explicitMarket(context).marketCode;
+  }
+
+  function renderMarketPrompt(explicit) {
+    root.className = 'canonical-boot';
+    root.replaceChildren();
+    root.appendChild(el('p', 'canonical-eyebrow', 'KOMERCE · AUTONOMIE PAYS'));
+    root.appendChild(el('h1', '', 'Autonomie pays'));
+    global.KomerceMarketPrompt.render(global.document, root, {
+      state: explicit.state,
+      requested: explicit.requested,
+    });
   }
 
   function feedback(message, tone) {
@@ -302,8 +315,9 @@
   async function load() {
     try {
       const context = await request('/api/admin/dashboard/context');
-      const marketCode = marketFromContext(context);
-      if (!marketCode) throw new Error('Aucun marché autorisé pour ce compte.');
+      const explicit = explicitMarket(context);
+      if (!explicit.marketCode) { renderMarketPrompt(explicit); return; }
+      const marketCode = explicit.marketCode;
       const [workspace, prices] = await Promise.all([
         request(`/api/admin/workspaces/pricing/market/${encodeURIComponent(marketCode)}`),
         request(`/api/admin/workspaces/pricing/market/${encodeURIComponent(marketCode)}/commercial-prices`),

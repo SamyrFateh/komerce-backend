@@ -148,6 +148,9 @@ module.exports = {
       // transaction_documents retiré (2026-07-07) : délégué à
       // services/documents/customs-invoice.js — customs ne lit/écrit jamais
       // cette table en direct (voir MULTI_WRITER_TABLES.md).
+      'customs_shipment_fees: RW!',
+      'customs_shipment_parcel_events: RW!',
+      'order_item_real_cost_allocations: W',
     ],
   },
 
@@ -183,6 +186,7 @@ module.exports = {
       'documents (facture douane generee)',
       'auth',
       'economic-engine',
+      'market (garde Q2 market-operation-guard : nouvelle expédition refusée hors marché actif)',
     ],
   },
 

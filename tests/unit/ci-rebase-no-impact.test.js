@@ -74,19 +74,15 @@ describe('CI rebase no-impact proof', () => {
   test('les workflows verrouillent auto-update interne et fast-path no-impact', () => {
     const auto = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-auto-update.yml'), 'utf8');
     const enforcement = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-enforcement.yml'), 'utf8');
-    expect(auto).toContain('pull_request_target:');
-    expect(auto).not.toMatch(/^\s{2}push:/m);
-    expect(auto).toContain('github.event.pull_request.head.repo.full_name == github.repository');
-    expect(auto).toContain('/update-branch');
-    expect(auto).toContain('COMPARE_URL=');
-    expect(auto).toContain('compare/$BASE_SHA...$HEAD_SHA');
-    expect(auto).toContain('BEHIND_BY=');
-    expect(auto).not.toContain('/pulls?state=open&base=main&per_page=100');
-    expect(auto).not.toContain('Auto-update open PRs after main advances');
-    expect(auto).toContain('expected_head_sha');
-    expect(auto).toContain('PR_SYNC_TOKEN');
-    expect(auto).not.toContain('GH_TOKEN: ${{ github.token }}');
-    expect(auto).not.toContain('|| github.token');
+    const sweep = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-sweep-behind.yml'), 'utf8');
+    // La mise à jour eager pull_request_target est désactivée depuis #2882.
+    // Les synchronisations BEHIND passent exclusivement par le sweep sérialisé.
+    expect(auto).not.toMatch(/^\\s{2}pull_request_target:/m);
+    expect(auto).not.toContain('/update-branch');
+    expect(auto).not.toMatch(/^\\s{2}push:/m);
+    expect(sweep).toContain('scripts/ci-pr-sweep.js');
+    expect(sweep).toContain('PR_SYNC_TOKEN');
+    expect(sweep).not.toContain('|| github.token');
     expect(enforcement).toContain('rebase_no_impact: ${{ steps.rebase_proof.outputs.rebase_no_impact }}');
     expect(enforcement).toContain("needs.changes.outputs.rebase_no_impact != 'true'");
     expect(enforcement).toContain('git fetch --no-tags --depth=128 origin "$PREVIOUS_HEAD" "$BASE_SHA" "$HEAD_SHA"');

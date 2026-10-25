@@ -48,10 +48,12 @@
     return `${formatNumber(value)} KMF`;
   }
 
-  function formatDate(value) {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(date);
+  // L3 : fuseau métier du serveur (marché de l'objet), jamais celui du navigateur.
+  let activeTimezone = null;
+  function formatDate(value, timezone) {
+    return globalThis.KomerceBusinessDate
+      ? globalThis.KomerceBusinessDate.formatBusinessDate(value, timezone || activeTimezone, { time: true })
+      : (value ? String(value).slice(0, 10) : '—');
   }
 
   function text(doc, tag, className, value) {
@@ -79,7 +81,7 @@
     const nav = doc.createElement('nav');
     nav.className = 'kmc-entity-nav';
     const links = [
-      ['/admin/operations', '← Opérations'],
+      ['/admin/operations', 'Opérations'],
       ['/admin/pilotage', 'Pilotage'],
       ['/admin/finance', 'Finance'],
     ];
@@ -103,6 +105,7 @@
       { key: 'status', label: 'Statut', value: order.status || '—' },
       { key: 'payment', label: 'Paiement', value: order.payment && order.payment.status || '—', tone: order.payment && order.payment.status === 'paid' ? 'positive' : 'warning' },
       { key: 'total', label: 'Total', value: formatKmf(order.payment && order.payment.total_kmf) },
+      { key: 'assigned', label: 'Articles affectés', value: `${formatNumber(summary.items_assigned)}/${formatNumber(summary.items)}`, tone: Number(summary.items_assigned) >= Number(summary.items) && Number(summary.items) > 0 ? 'positive' : 'neutral' },
       { key: 'parcels', label: 'Colis', value: formatNumber(summary.parcels) },
       { key: 'incidents', label: 'Incidents ouverts', value: formatNumber(summary.open_incidents), tone: Number(summary.open_incidents) > 0 ? 'critical' : 'positive' },
       { key: 'documents', label: 'Documents', value: formatNumber(summary.documents) },
@@ -382,6 +385,7 @@
   }
 
   function renderPayload(rootNode, ui, doc, payload) {
+    activeTimezone = (payload.order && payload.order.business_timezone) || payload.business_timezone || null;
     rootNode.className = 'kmc-admin-shell kmc-entity-shell';
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload));

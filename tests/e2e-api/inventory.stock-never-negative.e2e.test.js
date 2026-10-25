@@ -46,7 +46,7 @@ const express = require('express');
 const Stripe = require('stripe');
 const { signAuthToken } = require('../../utils/auth-session');
 
-const { describeE2E, createCleanup, activateLocalPrice, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
+const { describeE2E, createCleanup, activateLocalPrice, authorizeCentralCollectionForTest, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
 jest.setTimeout(60000);
 
@@ -174,6 +174,12 @@ describeE2E('E2E-P0-STOCK — inventory · stock jamais négatif', ({ db }) => {
        VALUES ($1, 'E2E Relais Stock', 'E2E Agent', '+269000111', 'Moroni Test', 'Ngazidja', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
+
+    // La branche Stripe teste un encaissement central autorisé pour CE marché
+    // de recette. Le checkout réel reste fail-closed pour les marchés non
+    // habilités ; la fixture ne doit pas contourner cette autorité métier.
+    const { rows: [market] } = await db.query("SELECT id FROM markets WHERE code = 'KM'");
+    await authorizeCentralCollectionForTest(db, cleanup, market.id, 'stripe_eur');
 
     token = signAuthToken(
       { id: userId, role: 'client' },

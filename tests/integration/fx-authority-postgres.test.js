@@ -84,9 +84,9 @@ if (!hasIntegrationEnv) {
     expect(new Set(kmf.legs.filter(l => l.kind === 'observation').map(l => l.id)).size).toBe(1);
   });
 
-  test('CNY et devises inconnues : refus typé, aucun taux inventé', async () => {
+  test('CNY exige une cotation BCE officielle ; les devises non autorisées restent refusées', async () => {
     await approvedObs(1.1);
-    await expect(convert({ amount: 10, from: 'CNY', to: 'EUR' })).rejects.toMatchObject({ code: 'fx_currency_unsupported', statusCode: 422 });
+    await expect(convert({ amount: 10, from: 'CNY', to: 'EUR' })).rejects.toMatchObject({ code: 'fx_rate_unavailable', statusCode: 503 });
     await expect(convert({ amount: 10, from: 'EUR', to: 'GBP' })).rejects.toMatchObject({ code: 'fx_currency_unsupported' });
   });
 

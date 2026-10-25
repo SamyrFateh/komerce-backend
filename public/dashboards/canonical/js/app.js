@@ -310,6 +310,9 @@
     if (access.mode === 'global' && !options.requireMarket) {
       choices.push(Object.freeze({ value: '', marketCode: null, label: 'Global · Tous les marchés' }));
     }
+    if (options.requireMarket && options.withPlaceholder) {
+      choices.push(Object.freeze({ value: '', marketCode: null, label: 'Choisir un marché…', placeholder: true }));
+    }
     access.allowedMarkets.forEach(code => {
       const flag = regionFlagEmoji(code);
       const label = flag ? `${flag} ${marketDisplayName(code)}` : marketDisplayName(code);
@@ -318,26 +321,25 @@
     return Object.freeze(choices);
   }
 
+  function explicitMarketState(adminContext, contextContract) {
+    if (!contextContract || typeof contextContract.resolveExplicitMarket !== 'function') {
+      throw new Error('canonical_market_selector_contract_missing');
+    }
+    return contextContract.resolveExplicitMarket(adminContext, String(global.location?.search || ''));
+  }
+
   function initialRequestedMarket(adminContext, contextContract, options = {}) {
     if (!contextContract || typeof contextContract.resolveMarketView !== 'function') {
       throw new Error('canonical_market_selector_contract_missing');
     }
 
     if (options.requireMarket) {
-      const access = adminContext && adminContext.access;
-      const preferred = access && (
-        access.defaultMarket ||
-        (Array.isArray(access.allowedMarkets) && access.allowedMarkets[0])
-      );
-      if (!preferred) throw new Error('canonical_workspace_market_required');
-      // ?market= de l'URL (lien « Continuer → » depuis un autre espace) : retenu seulement s'il est autorisé par le serveur.
-      try {
-        const requested = String(new URLSearchParams(String(global.location?.search || '')).get('market') || '').toUpperCase();
-        if (requested && Array.isArray(access.allowedMarkets) && access.allowedMarkets.includes(requested)) {
-          return contextContract.resolveMarketView(adminContext, requested).marketCode;
-        }
-      } catch (_) { /* repli sur le défaut serveur */ }
-      return contextContract.resolveMarketView(adminContext, preferred).marketCode;
+      // L1 : aucun repli implicite. Marché retenu seulement s'il est explicite (?market= autorisé)
+      // ou si la délégation est mono-marché ; sinon null (invite « Choisir un marché »).
+      const explicit = explicitMarketState(adminContext, contextContract);
+      return explicit.marketCode
+        ? contextContract.resolveMarketView(adminContext, explicit.marketCode).marketCode
+        : null;
     }
 
     // Contexte transporté par l'URL (?market=) : retenu seulement s'il fait partie des marchés autorisés par le serveur.
@@ -381,8 +383,10 @@
     });
     const choices = marketChoices(adminContext, {
       requireMarket: Boolean(options.requireMarket),
+      withPlaceholder: Boolean(options.requireMarket) && !initialMarket,
     });
     let selectedMarket = initialMarket;
+    let placeholderOption = null;
 
     const bar = doc.createElement('section');
     bar.className = 'kmc-market-context';
@@ -392,7 +396,8 @@
     copy.className = 'kmc-market-context-copy';
     copy.appendChild(textNode(doc, 'span', 'kmc-market-context-kicker', options.requireMarket ? 'CONTEXTE D’ACTION' : 'PÉRIMÈTRE'));
     copy.appendChild(textNode(doc, 'strong', 'kmc-market-context-title', options.title || 'Vue de pilotage'));
-    const description = textNode(doc, 'span', 'kmc-market-context-description', scopeDescription(initialMarket));
+    const description = textNode(doc, 'span', 'kmc-market-context-description',
+      options.requireMarket && !initialMarket ? 'Aucun marché sélectionné' : scopeDescription(initialMarket));
     copy.appendChild(description);
 
     const field = doc.createElement('label');
@@ -407,6 +412,7 @@
       const option = doc.createElement('option');
       option.value = choice.value;
       option.textContent = choice.label;
+      if (choice.placeholder) placeholderOption = option;
       select.appendChild(option);
     });
     select.value = initialMarket || '';
@@ -432,6 +438,10 @@
         }
         selectedMarket = resolved.marketCode;
         description.textContent = scopeDescription(selectedMarket);
+        if (placeholderOption && typeof select.removeChild === 'function') {
+          select.removeChild(placeholderOption);
+          placeholderOption = null;
+        }
       } catch (error) {
         select.value = previousMarket || '';
         console.error('[canonical-admin] market reload failed', error);
@@ -707,7 +717,11 @@
     const surface = global.document.createElement('div');
     surface.setAttribute('data-canonical-surface', options.surface);
 
-    const renderCurrent = requestedMarket => options.render(surface, user, adminContext, requestedMarket);
+    let promptShown = false;
+    const renderCurrent = requestedMarket => {
+      if (promptShown) { surface.replaceChildren(); promptShown = false; }
+      return options.render(surface, user, adminContext, requestedMarket);
+    };
     const renderAtomically = async requestedMarket => {
       // Pricing garde l'Atelier courant visible pendant que le marché suivant
       // se construit hors DOM. Le swap n'arrive qu'après un rendu réussi :
@@ -717,6 +731,7 @@
       stage.dataset.marketSurfaceStage = '';
       await options.render(stage, user, adminContext, requestedMarket);
       surface.replaceChildren(stage);
+      promptShown = false;
       return stage;
     };
 
@@ -733,6 +748,18 @@
     });
 
     root.appendChild(surface);
+    if (options.requireMarket && !selector.initialMarket) {
+      // L1 : aucune surface marché montée, donc aucune requête /market/ avant le choix.
+      const explicit = explicitMarketState(adminContext, global.KomerceAdminContext);
+      promptShown = true;
+      if (global.KomerceMarketPrompt) {
+        global.KomerceMarketPrompt.render(global.document, surface, {
+          state: explicit.state,
+          requested: explicit.requested,
+        });
+      }
+      return Promise.resolve(null);
+    }
     return renderCurrent(selector.initialMarket);
   }
 
@@ -975,6 +1002,7 @@
     regionFlagEmoji,
     marketChoices,
     initialRequestedMarket,
+    explicitMarketState,
     mountMarketSelector,
     renderPilotage,
     renderCommerce,

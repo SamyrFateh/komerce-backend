@@ -19,6 +19,8 @@
 'use strict';
 
 const db = require('../db');
+const { isValidScope } = require('./simulation-scope-service');
+const { resolveBusinessTimezone } = require('./market-business-day');
 
 const PAGE_SIZE_DEFAULT = 25;
 const PAGE_SIZE_MAX = 100;
@@ -48,15 +50,22 @@ function normalizeSort(value) {
   return Object.prototype.hasOwnProperty.call(SORTS, key) ? key : 'recent';
 }
 
-function scopeFilter(marketIds, startIndex) {
-  if (marketIds === null) return { sql: '', params: [] };
-  if (!Array.isArray(marketIds) || marketIds.length === 0) {
-    return { sql: ' AND FALSE', params: [] };
+// L2 : vue réelle par défaut (simulation_scope IS NULL) ; vue recette si un périmètre valide est demandé.
+function scopeFilter(marketIds, startIndex, simulationScope = null) {
+  const params = [];
+  let sql = '';
+  if (marketIds !== null) {
+    if (!Array.isArray(marketIds) || marketIds.length === 0) return { sql: ' AND FALSE', params: [] };
+    sql += ` AND o.market_id = ANY($${startIndex}::uuid[])`;
+    params.push(marketIds);
   }
-  return {
-    sql: ` AND o.market_id = ANY($${startIndex}::uuid[])`,
-    params: [marketIds],
-  };
+  if (simulationScope && isValidScope(simulationScope)) {
+    sql += ` AND o.simulation_scope = $${startIndex + params.length}`;
+    params.push(simulationScope);
+  } else {
+    sql += ' AND o.simulation_scope IS NULL';
+  }
+  return { sql, params };
 }
 
 function publicScope(marketIds, market) {
@@ -81,7 +90,7 @@ async function listClients(query = {}, options = {}) {
   const offset = (page - 1) * pageSize;
 
   const params = [];
-  const scoped = scopeFilter(marketIds, params.length + 1);
+  const scoped = scopeFilter(marketIds, params.length + 1, options.simulationScope);
   params.push(...scoped.params);
 
   let searchSql = '';
@@ -122,7 +131,8 @@ async function listClients(query = {}, options = {}) {
         MIN(created_at) AS first_order_at,
         MAX(created_at) AS last_order_at,
         EXTRACT(DAY FROM NOW() - MAX(created_at))::int AS days_since_last_order,
-        ARRAY_REMOVE(ARRAY_AGG(DISTINCT market_code), NULL) AS markets
+        ARRAY_REMOVE(ARRAY_AGG(DISTINCT market_code), NULL) AS markets,
+        (ARRAY_AGG(market_code ORDER BY created_at DESC))[1] AS last_market_code
       FROM scoped_orders
       GROUP BY phone
     ), filtered AS (
@@ -148,10 +158,14 @@ async function listClients(query = {}, options = {}) {
     last_order_at: row.last_order_at || null,
     days_since_last_order: row.days_since_last_order == null ? null : Number(row.days_since_last_order),
     markets: Object.freeze(Array.isArray(row.markets) ? row.markets.filter(Boolean) : []),
+    business_timezone: resolveBusinessTimezone({ code: row.last_market_code }).timezone,
   }));
 
   return Object.freeze({
     scope: publicScope(marketIds, market),
+    simulation: options.simulationScope && isValidScope(options.simulationScope)
+      ? Object.freeze({ scope: options.simulationScope, label: `Périmètre de recette ${options.simulationScope} : faits simulés, pas une activité réelle de l'entreprise.` })
+      : null,
     query: Object.freeze({ search, sort }),
     pagination: Object.freeze({
       page,

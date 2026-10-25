@@ -32,7 +32,7 @@ async function mount(page, { populated = false, autoMarket = false, posts = [] }
     }
     if (route.request().method() === 'POST') { posts.push({ path: url.pathname, body: route.request().postDataJSON() }); return json({ ok: true }); }
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
-    if (url.pathname === '/api/admin/dashboard/context') return json(autoMarket ? { ...FX.context, access: { ...FX.context.access, defaultMarket: 'KM' } } : FX.context);
+    if (url.pathname === '/api/admin/dashboard/context') return json(autoMarket ? { ...FX.context, actor: { ...FX.context.actor, role: 'market_operator' }, access: { ...FX.context.access, mode: 'market', allowedMarkets: ['KM'], defaultMarket: 'KM', capabilities: ['pricing.read'] } } : FX.context);
     if (url.pathname === '/api/admin/workspaces/pricing') return json(FX.global);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM') return json(market);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision') return json(FX.decision);
@@ -61,9 +61,19 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(body).not.toContain('Ajouter un produit');
     });
 
-    test('premier affichage : le marché autorisé par le serveur est chargé sans sélection manuelle, titre inclus', async ({ page }) => {
+    test('délégation mono-marché : le marché autorisé est chargé sans sélection manuelle, titre inclus (L1)', async ({ page }) => {
       await mount(page, { autoMarket: true });
       await expect(page.locator('h1')).toHaveText('Atelier des prix · Comores');
+    });
+
+    test('politique de marché absente : un seul avis neutre, aucun bouton ni code brut (L5)', async ({ page }) => {
+      await mount(page);
+      const notice = page.locator('[data-pricing-configuration-notice]');
+      await expect(notice).toHaveCount(1);
+      await expect(notice).toContainText('Les prix couvrant le CDR restent possibles');
+      await expect(notice.locator('a, button')).toHaveCount(0);
+      const body = await page.locator('body').innerText();
+      expect(body).not.toMatch(/Voir la décision|Voir le gate|MARKET_DECISION_POLICY_REQUIRED/);
     });
 
     test('familles : onglets répartis sur la largeur du panneau actif', async ({ page }) => {

@@ -61,6 +61,9 @@
     params.set('sort', String(state.sort || 'recent'));
     params.set('page', String(state.page || 1));
     params.set('page_size', String(state.page_size || 25));
+    // L2 : périmètre de recette explicite (?simulation_scope=RCT1), transmis tel quel au serveur.
+    const scope = new URLSearchParams(String((globalThis.location && globalThis.location.search) || '')).get('simulation_scope');
+    if (scope && /^[A-Z][A-Z0-9-]{1,31}$/.test(scope)) params.set('simulation_scope', scope);
     return `${endpoint}?${params.toString()}`;
   }
 
@@ -73,10 +76,40 @@
     return `${formatNumber(value)} KMF`;
   }
 
-  function formatDate(value) {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' }).format(date);
+  // L12a : coordonnées masquées par défaut. La permission client.read est
+  // vérifiée par l'API ; le bouton ne modifie aucune habilitation.
+  function maskPhone(value) {
+    const phone = String(value || '');
+    return phone ? `•••• ${phone.slice(-4)}` : '—';
+  }
+
+  function createPhoneCell(doc, phone) {
+    const cell = doc.createElement('td');
+    const label = text(doc, 'span', 'kmc-client-phone-masked', maskPhone(phone));
+    cell.appendChild(label);
+    if (!phone) return cell;
+
+    let revealed = false;
+    const button = text(doc, 'button', 'kmc-entity-nav-link', 'Afficher');
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Afficher ou masquer le téléphone');
+    button.setAttribute('aria-expanded', 'false');
+    button.addEventListener('click', () => {
+      revealed = !revealed;
+      label.textContent = revealed ? String(phone) : maskPhone(phone);
+      button.textContent = revealed ? 'Masquer' : 'Afficher';
+      button.setAttribute('aria-expanded', String(revealed));
+    });
+    cell.appendChild(button);
+    return cell;
+  }
+
+  // L3 : fuseau métier du serveur (marché de l'objet), jamais celui du navigateur.
+  let activeTimezone = null;
+  function formatDate(value, timezone) {
+    return globalThis.KomerceBusinessDate
+      ? globalThis.KomerceBusinessDate.formatBusinessDate(value, timezone || activeTimezone, { time: false })
+      : (value ? String(value).slice(0, 10) : '—');
   }
 
   function text(doc, tag, className, value) {
@@ -156,6 +189,13 @@
 
   function renderClientTable(container, doc, payload) {
     container.replaceChildren();
+    if (payload && payload.simulation && payload.simulation.label) {
+      const note = doc.createElement('p');
+      note.className = 'kmc-recette-banner';
+      note.setAttribute('role', 'status');
+      note.textContent = payload.simulation.label;
+      container.appendChild(note);
+    }
     const rows = Array.isArray(payload && payload.clients) ? payload.clients : [];
     if (!rows.length) return null;
 
@@ -176,13 +216,13 @@
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
+      tr.appendChild(text(doc, 'td', '', row.name || '—'));
+      tr.appendChild(createPhoneCell(doc, row.phone));
       [
-        row.name || '—',
-        row.phone || '—',
         formatNumber(row.orders_valid),
         formatKmf(row.ltv_kmf),
         formatKmf(row.average_basket_kmf),
-        formatDate(row.last_order_at),
+        formatDate(row.last_order_at, row.business_timezone),
         Array.isArray(row.markets) && row.markets.length ? row.markets.join(' · ') : '—',
       ].forEach(value => tr.appendChild(text(doc, 'td', '', value)));
       const actionCell = doc.createElement('td');
@@ -282,6 +322,8 @@
     buildQueryUrl,
     formatNumber,
     formatKmf,
+    maskPhone,
+    createPhoneCell,
     formatDate,
     jsonRequest,
     createHeader,
