@@ -118,5 +118,13 @@ fs.writeFileSync(path.join(out,'summary.json'),JSON.stringify(summary,null,2)+'\
 fs.writeFileSync(path.join(out,'findings.json'),JSON.stringify(findings,null,2)+'\n');
 fs.writeFileSync(path.join(out,'graph.json'),JSON.stringify({invariants,tableClaims:Object.fromEntries(byTable),fileClaims:Object.fromEntries(byPath)},null,2)+'\n');
 console.log('DISCOVERY_GRAPH_SUMMARY '+JSON.stringify(summary));
-for(const finding of findings.filter(x=>x.severity!=='INFO').slice(0,150))
- console.log('DISCOVERY_CANDIDATE '+JSON.stringify(finding));
+const priority = findings.filter(x=>x.severity==='HIGH' || [
+ 'WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER', 'DB_INVARIANT_PROVED_BY_MOCK_ONLY',
+ 'INVARIANT_TEST_HAS_SKIP_PATH'
+].includes(x.kind));
+for(const finding of priority.slice(0,150))
+ console.log('DISCOVERY_PRIORITY '+JSON.stringify(finding));
+const underproved=Object.entries(Object.groupBy(
+  findings.filter(x=>x.kind==='INVARIANT_WITHOUT_EXECUTABLE_PROOF'),x=>x.feature))
+  .map(([feature,items])=>({feature,count:items.length})).sort((a,b)=>b.count-a.count);
+console.log('DISCOVERY_UNPROVEN_BY_FEATURE '+JSON.stringify(underproved.slice(0,20)));
