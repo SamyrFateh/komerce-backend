@@ -81,6 +81,21 @@ if(!ci){
   evidence('DEVIATION',{refs:['CI-IMG-B'],stableSku:true},
    {refs:second.rows.map(x=>x.source_media_id),stableSku:second.sku.id===first.sku.id},false);
  });
+ test('NEGATIVE CONTROL: additive supplier media change A -> [A,B] legitimately keeps both',async()=>{
+  await promoteCatalog(client,{productId,normalizedSourceContract:contract(['CI-IMG-A'])});
+  await promoteCatalog(client,{productId,normalizedSourceContract:contract(['CI-IMG-A','CI-IMG-B'])});
+  const state=await query();
+  expect(state.rows.map(x=>x.source_media_id)).toEqual(['CI-IMG-A','CI-IMG-B']);
+  evidence('NEGATIVE_ADDITIVE',{refs:['CI-IMG-A','CI-IMG-B']},
+   {refs:state.rows.map(x=>x.source_media_id)},true);
+ });
+ test('NEGATIVE CONTROL: fresh SKU with only B displays B (resolver itself is correct)',async()=>{
+  await promoteCatalog(client,{productId,normalizedSourceContract:contract(['CI-IMG-B'])});
+  const resolved=await resolveSellableUnit(client,{productId,variantCombo:{couleur:'Rouge'},quantity:1});
+  expect(resolved.image_url).toBe('https://example.org/ci-catalog-image-b.jpg');
+  evidence('NEGATIVE_FRESH_B',{chosenImage:'https://example.org/ci-catalog-image-b.jpg'},
+   {chosenImage:resolved.image_url},true);
+ });
  test('DOWNSTREAM: real checkout resolver may choose the superseded first image',async()=>{
   await promoteCatalog(client,{productId,normalizedSourceContract:contract(['CI-IMG-A'])});
   await promoteCatalog(client,{productId,normalizedSourceContract:contract(['CI-IMG-B'])});
