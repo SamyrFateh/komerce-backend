@@ -113,6 +113,7 @@ module.exports = {
       'scripts/arch-schema-drift-check.js',
       'scripts/audit-backend-arch.js',
       'scripts/audit-logic.js',
+      'scripts/audits/evaluate-provenance-invariant.js',
       'scripts/lib/logic-detectors.js',
       'scripts/lib/logic-data-detectors.js',
       'scripts/audit-komerce-arch-headers.js',
@@ -368,6 +369,7 @@ module.exports = {
     tests: [
       'tests/unit/audit-logic.test.js',
       'tests/unit/logic-detectors.test.js',
+      'tests/unit/sourcing-provenance-invariant.test.js',
       'tests/unit/logic-data-detectors.test.js',
       'tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js',
       'tests/unit/feature-invariant-check.test.js',
@@ -548,6 +550,8 @@ module.exports = {
   authority: 'backend — ces fichiers sont consommés par toutes les features. Tout changement ici a un impact potentiel global.',
 
   invariants: [
+    { statement: 'Le détecteur générique de provenance rend la première rupture de l autorité explicite, accepte le dernier override humain, et ne qualifie un scan comme effectif que si la gouvernance le déclare. Les contrôles négatifs sans édition humaine ne doivent pas signaler un bug.',
+      test: 'tests/unit/sourcing-provenance-invariant.test.js' },
     { statement: 'A3/A4 contre-expertise : scanner suivi de bout en bout, fail-closed si périmètre vide/illisible, alerte LS-01 sur écriture de statut directe, LS-03 sur idempotence temporelle et LS-06 sur toute frontière PSP même hors transaction apparente',
       test: 'tests/unit/logic-detectors.test.js' },
     { statement: 'les neuf requêtes LD-01 à LD-07b sont vérifiées sur une base PostgreSQL de test par scénarios fautifs puis sains isolés en tables TEMP, avec rollback avant le scénario suivant',
