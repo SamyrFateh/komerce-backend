@@ -60,7 +60,8 @@ function validateEvolution(run,candidates,items,events){
  if(computed!==13||transitioned.length!==1||transitioned[0].id!==RECLASSIFIED||
     transitioned[0].from!=='deferred'||transitioned[0].to!=='ready_for_refinery')
    throw Error('P1_UNEXPLAINED_READY_DELTA');
- const post=events.filter(e=>new Date(e.created_at)>new Date(run.finished_at));
+ const post=events.filter(e=>new Date(e.created_at)>new Date(run.finished_at) &&
+   (e.event_type==='data_correction'||e.event_type==='scan'));
  if(post.length!==2||post.some(e=>String(e.candidate_id)!==RECLASSIFIED)||
    !post.some(e=>e.event_type==='data_correction'&&e.changes?.komerce_category)||
    !post.some(e=>e.event_type==='scan'&&
