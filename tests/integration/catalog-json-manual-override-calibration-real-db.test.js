@@ -122,18 +122,49 @@ if(!ci){
    invariantOK:false
   }));
  });
- test('NEGATIVE CONTROL: actual Sourcing owner writer preserves manual price and audits re-import',async()=>{
+ test('NOMINAL: Sourcing owner re-imports non-manual price and provenance consistently',async()=>{
+  await client.query('ROLLBACK TO SAVEPOINT original_candidate');
+  const result=await upsertCandidateFromCatalogImport(client,ownerInput());
+  expect(result.wasUpdated).toBe(true);
+  const {row,events}=await getActual();
+  expect(Number(row.purchase_price)).toBe(120);
+  expect(row.data_sources.purchase_price).toBe('supplier');
+  expect(events).toBe(1);
+  console.log('CALIBRATION_EVIDENCE '+JSON.stringify({
+   caseId:'SOURCING_MANUAL_PROVENANCE_ERASURE',mode:'NOMINAL',
+   service:'sourcing-candidate-import-service.upsertCandidateFromCatalogImport',db:'POSTGRES_REAL',
+   expected:{currentPrice:120,manualLock:false,correctionEvents:1},
+   observed:{currentPrice:Number(row.purchase_price),
+    manualLock:row.data_sources.purchase_price==='manual',correctionEvents:events},
+   invariantOK:true
+  }));
+ });
+ test('DEVIATION: Sourcing owner preserves manual price on first import but loses lock and overwrites on next',async()=>{
   await client.query('ROLLBACK TO SAVEPOINT original_candidate');
   await client.query(
    `UPDATE sourcing_candidates SET purchase_price=100,
      data_sources=jsonb_set(data_sources,'{purchase_price}','"manual"'::jsonb)
     WHERE id=$1`,[ids.candidate]
   );
-  const result=await upsertCandidateFromCatalogImport(client,ownerInput());
-  expect(result.wasUpdated).toBe(true);
+  const first=await upsertCandidateFromCatalogImport(client,ownerInput());
+  expect(first.wasUpdated).toBe(true);
+  const afterFirst=await getActual();
+  expect(Number(afterFirst.row.purchase_price)).toBe(100); // nominal guard holds once
+  expect(afterFirst.row.data_sources.purchase_price).toBe('supplier'); // lock disappeared
+  const second=await upsertCandidateFromCatalogImport(client,ownerInput());
+  expect(second.wasUpdated).toBe(true);
   const {row,events}=await getActual();
-  expect(Number(row.purchase_price)).toBe(100);
-  expect(row.data_sources.purchase_price).toBe('manual');
-  expect(events).toBe(1);
+  expect(Number(row.purchase_price)).toBe(120); // second re-import violates manual lock
+  expect(row.data_sources.purchase_price).toBe('supplier');
+  expect(events).toBe(2);
+  console.log('CALIBRATION_EVIDENCE '+JSON.stringify({
+   caseId:'SOURCING_MANUAL_PROVENANCE_ERASURE',mode:'DEVIATION',
+   service:'sourcing-candidate-import-service.upsertCandidateFromCatalogImport',db:'POSTGRES_REAL',
+   stimulus:'manual price=100, two legitimate consecutive owner reimports at supplier price=120',
+   expected:{currentPrice:100,manualLock:true,correctionEvents:2},
+   observed:{currentPrice:Number(row.purchase_price),
+    manualLock:row.data_sources.purchase_price==='manual',correctionEvents:events},
+   invariantOK:false
+  }));
  });
 }
