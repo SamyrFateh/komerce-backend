@@ -53,11 +53,11 @@ function scanNovelPatterns(source, file) {
 function directSqlMutationHint(source, table) {
   if (!/^[a-z][a-z0-9_]*$/.test(String(table))) return null;
   // Exclude the architectural JSDoc header, which is only metadata.
-  const body = String(source).replace(/^\\s*\\/\\*[\\s\\S]*?\\*\\//, '');
-  const pattern = new RegExp('\\\\b(INSERT\\\\s+INTO|UPDATE|DELETE\\\\s+FROM|MERGE\\\\s+INTO|TRUNCATE\\\\s+TABLE)\\\\s+(?:public\\\\.)?' + table + '\\\\b','gi');
+  const body = String(source).replace(/^\s*\/\*[\s\S]*?\*\//, '');
+  const pattern = new RegExp('\\b(INSERT\\s+INTO|UPDATE|DELETE\\s+FROM|MERGE\\s+INTO|TRUNCATE\\s+TABLE)\\s+(?:public\\.)?' + table + '\\b', 'gi');
   const found = pattern.exec(body);
   if (!found) return null;
-  return { operation: found[1].toUpperCase().replace(/\\s+/g,' '),
+  return { operation: found[1].toUpperCase().replace(/\s+/g,' '),
     evidence: body.slice(found.index, found.index + found[0].length),
     lineHintOnly: true };
 }
