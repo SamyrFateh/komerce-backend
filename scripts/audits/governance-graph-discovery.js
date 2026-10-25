@@ -70,7 +70,7 @@ for(const inv of invariants){
   const gated=/(describe|test|it)\.skip\s*\(/.test(text)||(/describe\.skip/.test(text));
   const mock=/jest\.mock\s*\(/.test(text);
   const pg=Boolean(/(?:DATABASE_URL|hasIntegrationEnv)/.test(text));
-  if(gated)register('REVIEW','INVARIANT_TEST_HAS_SKIP_PATH',
+  if(gated)register('REVIEW','INVARIANT_TEST_HAS_SKIP_PATH', 'CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW',
     {feature:inv.feature,test:testPath,invariant:inv.statement.slice(0,155),postgresGated:pg});
   // A mock-based test is not evidence of a DB-level invariant.
   if(mock&&/\b(?:atomic|transaction|idempot|doubl|rollback|concurrent|FOR UPDATE|persist|réel|database|PostgreSQL)\b/i.test(inv.statement)){
@@ -102,6 +102,23 @@ for(const [file,refs] of byPath){
  if(c===null)register('HIGH','DECLARED_SERVICE_MISSING',{file,features:refs.map(x=>x.feature)});
  else if(refs.length>1&&producer(file).length){
   register('INFO','MULTI_FEATURE_SERVICE_WRITER',{file,features:refs.map(x=>x.feature),tables:producer(file)});
+ }
+}
+// New pattern learned from one proven counterexample: a caller-supplied
+// identity wins over an identity read from the authoritative DB entity.
+// Scan all registered service/route source paths, not a hardcoded feature.
+for(const [file,refs] of byPath){
+ if(!refs.some(r=>r.kind==='services'||r.kind==='routes'))continue;
+ const src=contents(file)||'';
+ const re=/\b(?:const|let)\s+([A-Za-z_$][\w$]*(?:Id|_id))\s*=\s*([A-Za-z_$][\w$]*)\s*\|\|\s*([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*(?:Id|_id))\s*;/g;
+ for(const m of src.matchAll(re)){
+   const [expr,target,input,dbRow,dbField]=m;
+   const ln=src.slice(0,m.index).split('\n').length;
+   register('REVIEW','CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW',{
+     feature:[...new Set(refs.map(r=>r.feature))],file,line:ln,
+     target,input,dbRow,dbField,evidence:expr,
+     invariantCandidate:'The caller override must be equal to the canonical row identity, not trusted by precedence.',
+   });
  }
 }
 const summary={
