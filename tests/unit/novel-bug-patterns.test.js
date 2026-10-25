@@ -53,3 +53,18 @@ test('cross-owner declaration is not the same thing as a direct SQL write', () =
   assert.equal(directSqlMutationHint(fx, 'fx_rate_observations'), null);
   assert.match(directSqlMutationHint(parcel, 'parcel_items').evidence, /INSERT\s+INTO\s+parcel_items/i);
 });
+
+test('SQL named only in JSDoc or service commentary does not count as a direct mutation', () => {
+  const misleading = [
+    '/** historical UPDATE orders by Paypal handler (no longer executed) */',
+    'const { setPaypalCaptureMetadata } = require("./order-mutation-service");',
+    'async function pay(client) { // UPDATE orders is delegated',
+    '  return setPaypalCaptureMetadata(client);',
+    '}'
+  ].join('\n');
+  assert.equal(directSqlMutationHint(misleading, 'orders'), null);
+  const paypal = fs.readFileSync(path.join(repoRoot, 'services/payment-paypal.js'), 'utf8');
+  const facade = fs.readFileSync(path.join(repoRoot, 'services/pickup-secret-service.js'), 'utf8');
+  assert.equal(directSqlMutationHint(paypal, 'orders'), null);
+  assert.equal(directSqlMutationHint(facade, 'orders'), null);
+});
