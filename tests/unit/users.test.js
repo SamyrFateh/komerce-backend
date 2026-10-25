@@ -275,6 +275,57 @@ describe('POST /api/admin/users', () => {
     expect(bcrypt.hash).toHaveBeenCalledWith('Abcdefg1', 12);
   });
 
+  it.each(['finance', 'sourcing', 'agent_transitaire'])(
+    'crée une identité %s sans octroyer une autorité métier implicite',
+    async (role) => {
+      db.query
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{
+          id: 'new-internal', full_name: 'E2E Internal', email: 'internal@x.km',
+          role, currency_pref: 'KMF',
+        }] });
+
+      const res = await request(app).post('/api/admin/users').send({
+        full_name: 'E2E Internal',
+        email: 'internal@x.km',
+        password: 'Abcdefg1',
+        role,
+      });
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ role, market_scopes: [] });
+      expect(provisioning.grantOperatorScope).not.toHaveBeenCalled();
+      expect(db.query).toHaveBeenCalledTimes(2);
+    }
+  );
+
+  it.each(['finance', 'sourcing', 'agent_transitaire'])(
+    'refuse toute autorité market_scope implicite pour %s',
+    async (role) => {
+      const res = await request(app).post('/api/admin/users').send({
+        full_name: 'E2E Internal',
+        email: 'internal@x.km',
+        password: 'Abcdefg1',
+        role,
+        market_scope: { market_code: 'KM', scope_role: 'manager' },
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe('MARKET_SCOPE_ROLE_MISMATCH');
+      expect(db.query).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each(['finance', 'sourcing', 'agent_transitaire'])(
+    'refuse un utilisateur non-admin voulant créer le rôle %s',
+    async (role) => {
+      setAuth({ id: 'u-non-admin', role: 'market_operator' });
+      const res = await request(app).post('/api/admin/users').send({
+        full_name: 'E2E Internal', email: 'internal@x.km', password: 'Abcdefg1', role,
+      });
+      expect(res.status).toBe(403);
+      expect(db.query).not.toHaveBeenCalled();
+    }
+  );
+
   it('crée atomiquement un market_operator manager CM', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [] })
