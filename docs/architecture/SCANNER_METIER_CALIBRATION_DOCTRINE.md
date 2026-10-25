@@ -24,7 +24,7 @@ Un motif statique est une **suspicion**, jamais un bug. Pour décider qu'une rè
 ## Artefacts
 
 - Cas déclarés : `scripts/audits/calibration-cases.json` (extensible sans modifier le vérificateur).
-- Audit statique : `scripts/audits/governance-graph-discovery.js`.
+- Audit statique : `scripts/audits/governance-graph-discovery.js`. Les patterns réutilisables sont combinés à `scripts/audits/lib/exemption-invariant-detectors.js` et `novel-bug-patterns.js`. Le détecteur d'exemptions tire ses paires de colonnes du schéma PostgreSQL et les limite aux tables déclarées dans les feature cards. Tout signal reste `REVIEW` tant qu'il n'est pas étalonné.
 - Vérificateur fail-closed : `scripts/audits/verify-calibration-evidence.js`.
 - Tests réels Inventory et Auto-parcel : `tests/integration/*calibration*.test.js` et `tests/integration/inventory-cross-order-governance-discovery.test.js`.
 - Sortie CI : `audit-results/calibration/calibration.json`, `calibration.md`, journaux sources.
@@ -33,4 +33,5 @@ Un motif statique est une **suspicion**, jamais un bug. Pour décider qu'une rè
 
 - Inventory : preuve réelle PostgreSQL du rattachement A→B, pas de preuve d'occurrence en production.
 - Auto-parcel : preuve PostgreSQL d'un conflit d'unicité avec entrelacement déterministe entre vérification et insertion, **pas** encore reproduction de deux transactions concurrentes réellement indépendantes.
+- Hub / Catalog / Sourcing : preuve PostgreSQL qu'un produit `repack_exempt=TRUE` peut recevoir un `repack_volume_cm3` incompatible avec l'interdiction de reconditionner et que le moteur de densité de valeur préfère cette mesure à la mesure initiale ; contrôle nominal non exempt et contrôle négatif exempt avec volume normal. Voir issue #2951.
 - Un scénario négatif unique ne mesure ni taux de faux positifs global, ni taux de faux négatifs du scanner. Chaque nouveau pattern doit ajouter ses propres contre-exemples et échantillons qualifiés ; un scan sur les 36 feature cards n'est pas une certification exhaustive du dépôt.
