@@ -20,9 +20,13 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const CASES = Object.freeze([
-  'INVENTORY_CROSS_ORDER', 'AUTO_PARCEL_SILENT_CONFLICT'
-]);
+const MANIFEST = require('./calibration-cases.json');
+if (MANIFEST.contract !== 'komerce-calibration-cases-v1'
+    || !Array.isArray(MANIFEST.cases) || !MANIFEST.cases.length) {
+  throw Error('Invalid or empty scanner calibration manifest');
+}
+const CASES = Object.freeze(MANIFEST.cases.map(x => x.caseId));
+if (new Set(CASES).size !== CASES.length) throw Error('Duplicate calibration case in manifest');
 const MODES = new Set(['NOMINAL', 'DEVIATION']);
 
 function equal(a,b) { return JSON.stringify(a) === JSON.stringify(b); }
@@ -34,6 +38,9 @@ function requireProof(x) {
       || typeof x.invariantOK !== 'boolean') {
     throw Error('Malformed or unrecognized real-Postgres calibration evidence: ' + JSON.stringify(x));
   }
+  const registered = MANIFEST.cases.find(c => c.caseId === x.caseId);
+  if (!registered || x.service !== registered.service || x.db !== registered.db)
+    throw Error('Unregistered calibration service/database for ' + x.caseId);
   if (x.mode === 'DEVIATION' && !x.stimulus) throw Error('Missing adversarial stimulus: ' + x.caseId);
   const actualMatches = equal(x.expected, x.observed);
   if (x.invariantOK !== actualMatches) throw Error('Evidence verdict inconsistent with observed state: ' + x.caseId + '/' + x.mode);
@@ -59,12 +66,14 @@ function verify(logs) {
     const nominal = items.find(e => e.mode === 'NOMINAL');
     const deviation = items.find(e => e.mode === 'DEVIATION');
     if (nominal.service !== deviation.service) throw Error('Different services in calibration pair: ' + caseId);
-    return { caseId, service: nominal.service,
+    return { caseId, pattern: MANIFEST.cases.find(c => c.caseId === caseId).pattern,
+      service: nominal.service,
       verdict: deviation.invariantOK ? 'ADVERSARIAL_GUARD_VALIDATED' : 'BUSINESS_BUG_REPRODUCED',
       nominal, deviation };
   });
   return {
     contract: 'komerce-business-calibration-v1',
+    enrolledPatterns: [...new Set(MANIFEST.cases.map(c => c.pattern))],
     sha: process.env.GITHUB_SHA || 'UNSPECIFIED',
     database: 'ISOLATED_REAL_POSTGRES_ROLLBACK',
     meaning: 'Diagnostic paired proofs. Green tests do not certify application correctness.',
@@ -103,7 +112,7 @@ function main() {
   const outPos = args.indexOf('--out');
   const out = outPos >= 0 ? args[outPos + 1] : 'audit-results/calibration';
   const paths = args.filter((x,i)=>x !== '--out' && i !== outPos + 1);
-  if (paths.length !== 2 || !out) throw Error('Usage: verify-calibration-evidence.js inventory.log auto-parcel.log --out DIR');
+  if (!paths.length || !out) throw Error('Usage: verify-calibration-evidence.js <one or more *.log> --out DIR');
   const logs = paths.map(p => fs.readFileSync(p, 'utf8'));
   const report = verify(logs);
   fs.mkdirSync(out, { recursive: true });
