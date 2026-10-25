@@ -1,0 +1,120 @@
+name: POC governance to one supplier reimport invariant
+on:
+  push:
+    branches:
+      - audit/poc-governance-to-postgres-reimport-20261025
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sourcing-probe:
+    name: Sourcing governance context + isolated PostgreSQL reproduction
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      KOMERCE_DISABLE_CRONS: 'true'
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without lifecycle mutation
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Governance context pack — source of truth, not an invented graph
+        run: |
+          mkdir -p audit-results/governance-poc
+          node scripts/agent-context.js --pack service --feature sourcing --json \
+            > audit-results/governance-poc/context-sourcing.json
+          node scripts/agent-context.js --impact services/sourcing-candidate-import-service.js --json \
+            > audit-results/governance-poc/impact-import-owner.json
+          node scripts/agent-context.js --impact services/sourcing-candidate-actions.js --json \
+            > audit-results/governance-poc/impact-human-update.json
+          node <<'NODE'
+          const fs=require('fs');
+          const a=JSON.parse(fs.readFileSync('audit-results/governance-poc/context-sourcing.json','utf8'));
+          const b=JSON.parse(fs.readFileSync('audit-results/governance-poc/impact-import-owner.json','utf8'));
+          const c=JSON.parse(fs.readFileSync('audit-results/governance-poc/impact-human-update.json','utf8'));
+          const feature=require('./features/sourcing.feature');
+          if(feature.name!=='sourcing'||!feature.db.tables.includes('sourcing_candidates: RW!'))
+            throw Error('Governance sourcing ownership of sourcing_candidates not resolved');
+          if(!JSON.stringify(a).includes('sourcing_candidates'))
+            throw Error('Context pack did not resolve sourcing_candidates authority');
+          console.log('GOV_POC_CONTEXT',JSON.stringify({
+            feature:feature.name,owner:feature.owner,table:'sourcing_candidates',
+            contracts:feature.contract.internalApi.filter(x=>x.fn==='upsertCandidateFromCatalogImport'),
+            importImpactFeature:b.feature||b.owner||null,
+            manualImpactFeature:c.feature||c.owner||null,
+            existingTests:feature.files.tests.filter(x=>x.includes('sourcing-candidate-import-service'))
+          }));
+          NODE
+      - name: Rebuild disposable CI PostgreSQL from canonical schema
+        run: |
+          PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql > /tmp/governance-poc-schema.log
+          node scripts/ci-db-bootstrap.js
+      - name: Challenge source owner + manual writer + provenance + scan on actual SQL
+        run: |
+          set -o pipefail
+          node scripts/run-integration-tests.js \
+            --files=tests/integration/sourcing-governance-reimport-poc.test.js \
+            | tee audit-results/governance-poc/postgres-reproduction.log
+      - name: Export observed path and proof fields
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const file='audit-results/governance-poc/postgres-reproduction.log';
+          if(!fs.existsSync(file))process.exit(0);
+          const content=fs.readFileSync(file,'utf8');
+          const m=content.match(/GOV_POC_COUNTEREXAMPLE\s+(\{[^\r\n]+\})/);
+          if(m){
+            const proof=JSON.parse(m[1]);
+            fs.writeFileSync('audit-results/governance-poc/observed.json',JSON.stringify(proof,null,2)+'\n');
+            console.log('GOV_POC_CONCLUSION',JSON.stringify({
+              manualEdit:proof.manual.margin,
+              afterFirst:proof.afterFirst.margin,
+              afterFirstSource:proof.afterFirst.marginProvenance,
+              afterSecond:proof.afterSecond.margin,
+              afterSecondSource:proof.afterSecond.marginProvenance,
+              invariantBroken:proof.invariantBroken,
+            }));
+          }
+          NODE
+      - name: Preserve model-data-path-observation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-single-product-proof
+          path: audit-results/governance-poc/
+          if-no-files-found: warn
+          retention-days: 14
