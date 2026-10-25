@@ -28,6 +28,8 @@ jobs:
         run: node --test tests/unit/scanner-calibration-verifier.test.js
       - name: Challenge manual-field provenance detector against owning and foreign UPSERTs
         run: node --test tests/unit/scanner-manual-provenance-detectors.test.js
+      - name: Challenge generic association-replay risk detector on unrelated domains and negatives
+        run: node --test tests/unit/scanner-append-only-reconciliation-detector.test.js
       - name: Challenge schema-derived exemption detector with other schemas and guarded controls
         run: node --test tests/unit/scanner-exemption-detectors.test.js
       - name: Reproduce silent conflict against the real auto-parcel service (mocked PostgreSQL result)
