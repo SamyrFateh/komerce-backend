@@ -28,6 +28,15 @@
       "owner": "logistics",
       "otherDomain": "sourcing/catalog",
       "evidenceTest": "tests/integration/hub-repack-exemption-calibration-real-db.test.js"
+    },
+    {
+      "caseId": "CATALOG_REIMPORT_MANUAL_OVERRIDE",
+      "pattern": "CROSS_OWNER_UPSERT_DISCARDS_MANUAL_FIELD_AUTHORITY",
+      "service": "catalog-import-json.stageCandidate",
+      "db": "POSTGRES_REAL",
+      "owner": "catalog",
+      "otherDomain": "sourcing",
+      "evidenceTest": "tests/integration/catalog-json-manual-override-calibration-real-db.test.js"
     }
   ]
 }
