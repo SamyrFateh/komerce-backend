@@ -45,4 +45,20 @@ function scanNovelPatterns(source, file) {
   }
   return findings.sort((a,b)=>a.line-b.line || a.kind.localeCompare(b.kind));
 }
-module.exports = { scanNovelPatterns };
+/**
+ * A declaration in @db-write is NOT evidence that this file issues the SQL.
+ * Detect an explicit mutation statement as a positive hint only. Absence of
+ * the hint remains UNKNOWN (dynamic SQL/delegation), never certified safe.
+ */
+function directSqlMutationHint(source, table) {
+  if (!/^[a-z][a-z0-9_]*$/.test(String(table))) return null;
+  // Exclude the architectural JSDoc header, which is only metadata.
+  const body = String(source).replace(/^\\s*\\/\\*[\\s\\S]*?\\*\\//, '');
+  const pattern = new RegExp('\\\\b(INSERT\\\\s+INTO|UPDATE|DELETE\\\\s+FROM|MERGE\\\\s+INTO|TRUNCATE\\\\s+TABLE)\\\\s+(?:public\\\\.)?' + table + '\\\\b','gi');
+  const found = pattern.exec(body);
+  if (!found) return null;
+  return { operation: found[1].toUpperCase().replace(/\\s+/g,' '),
+    evidence: body.slice(found.index, found.index + found[0].length),
+    lineHintOnly: true };
+}
+module.exports = { scanNovelPatterns, directSqlMutationHint };
