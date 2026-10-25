@@ -93,9 +93,13 @@ jobs:
         run: |
           set -o pipefail
           node scripts/run-integration-tests.js --files=tests/integration/hub-repack-exemption-calibration-real-db.test.js | tee audit-results/novel/hub-repack-proof.log
+      - name: Calibrate Catalog/Sourcing manual provenance re-import against real PostgreSQL
+        run: |
+          set -o pipefail
+          node scripts/run-integration-tests.js --files=tests/integration/catalog-json-manual-override-calibration-real-db.test.js | tee audit-results/novel/manual-reimport-proof.log
       - name: Reject missing or unpaired nominal/deviation PostgreSQL evidence
         run: |
-          node scripts/audits/verify-calibration-evidence.js audit-results/novel/inventory-proof.log audit-results/novel/auto-parcel-proof.log audit-results/novel/hub-repack-proof.log --out audit-results/calibration
+          node scripts/audits/verify-calibration-evidence.js audit-results/novel/inventory-proof.log audit-results/novel/auto-parcel-proof.log audit-results/novel/hub-repack-proof.log audit-results/novel/manual-reimport-proof.log --out audit-results/calibration
           cat audit-results/calibration/calibration.md
       - name: Preserve complete paired PostgreSQL evidence (including failures)
         if: always()
