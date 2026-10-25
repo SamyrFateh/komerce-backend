@@ -12,7 +12,9 @@ const db = require('../db');
 const { createAdminUser } = require('../services/user-mutation-service');
 const ROLES = ['finance', 'sourcing', 'agent_transitaire'];
 async function run() {
-  if (process.env.KOMERCE_ENV !== 'staging' || process.env.NODE_ENV === 'production' ||
+  if (process.env.KOMERCE_ENV !== 'staging' ||
+      process.env.RAILWAY_ENVIRONMENT_NAME !== 'staging' ||
+      process.env.NODE_ENV === 'production' ||
       process.env.E2E_IDENTITY_PROVISION_CONFIRM !== 'STAGING_ONLY') {
     throw new Error('STAGING_ONLY_GUARD');
   }
