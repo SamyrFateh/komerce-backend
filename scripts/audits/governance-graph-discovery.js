@@ -8,6 +8,7 @@
  */
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const {scanNovelPatterns,directSqlMutationHint}=require('./lib/novel-bug-patterns');
+const {discoverExemptionPairs,scanExemptionSinks}=require('./lib/exemption-invariant-detectors');
 const ROOT=path.resolve(__dirname,'../..');
 const FDIR=path.join(ROOT,'features');
 const git=(args)=>{const r=cp.spawnSync('git',args,{cwd:ROOT,encoding:'utf8'});if(r.status!==0)throw Error(r.stderr);return r.stdout.trim()};
@@ -54,6 +55,7 @@ const producer=(file)=> {
  return m?m[1].split(',').map(x=>x.trim().split(/\s/)[0]).filter(x=>/^[a-z][a-z0-9_]*$/.test(x)):[];
 };
 function register(severity,kind,body){findings.push({severity,kind,...body})}
+const exemptionPairs=discoverExemptionPairs(fs.readFileSync(path.join(ROOT,'docs/db/railway-live-schema.sql'),'utf8'));
 const testNames=new Set([...byPath.keys()].filter(f=>f.startsWith('tests/')));
 for(const inv of invariants){
  if(!inv.explicit||!inv.tests.length){
@@ -113,6 +115,11 @@ for(const [file,refs] of byPath){
  if(!refs.some(r=>r.kind==='services'||r.kind==='routes'))continue;
  const src=contents(file);
  if(src===null)continue;
+ for(const candidate of scanExemptionSinks(src,file,exemptionPairs)){
+  register(candidate.severity,candidate.kind,{
+    ...candidate,feature:[...new Set(refs.map(r=>r.feature))]
+  });
+ }
  for(const candidate of scanNovelPatterns(src,file)){
   register(candidate.severity,candidate.kind,{
     ...candidate,feature:[...new Set(refs.map(r=>r.feature))]
@@ -122,6 +129,7 @@ for(const [file,refs] of byPath){
 const summary={
  sha:git(['rev-parse','HEAD']),features:features.length,
  filesOwned:byPath.size,tables:byTable.size,invariants:invariants.length,
+ exemptionPairDefinitions:exemptionPairs.length,
  crossOwnerWriteHints:findings.filter(x=>x.kind==='WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER' && x.evidenceTier==='DIRECT_SQL_TEXT_HINT').length,
  crossOwnerHeaderOnly:findings.filter(x=>x.kind==='WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER' && x.evidenceTier==='HEADER_ONLY_UNVERIFIED').length,
  explicitlyTested:invariants.filter(x=>x.explicit&&x.tests.length).length,
@@ -138,7 +146,8 @@ console.log('DISCOVERY_GRAPH_SUMMARY '+JSON.stringify(summary));
 const priority = findings.filter(x=>x.severity==='HIGH' || [
  'WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER', 'DB_INVARIANT_PROVED_BY_MOCK_ONLY',
  'INVARIANT_TEST_HAS_SKIP_PATH', 'CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW',
- 'SILENT_CONFLICT_COUNT_AS_SUCCESS'
+ 'SILENT_CONFLICT_COUNT_AS_SUCCESS',
+ 'EXEMPTION_WRITE_UNGUARDED','EXEMPTION_READ_UNGUARDED'
 ].includes(x.kind));
 for(const finding of priority.slice(0,150))
  console.log('DISCOVERY_PRIORITY '+JSON.stringify(finding));
