@@ -9,6 +9,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 const {scanNovelPatterns}=require('./lib/novel-bug-patterns');
 const {discoverExemptionPairs,scanExemptionSinks}=require('./lib/exemption-invariant-detectors');
 const {getProtectedManualFields,scanUnprotectedManualUpserts,scanManualProvenanceErasingMerges}=require('./lib/manual-provenance-detectors');
+const {scanAppendOnlyReconciliationRisk}=require('./lib/reconciliation-detectors');
 const argv=process.argv.slice(2);
 const arg=(key,def)=>{const i=argv.indexOf(key);return i<0?def:argv[i+1];};
 const ROOT=path.resolve(arg('--root','.')),OUT=path.resolve(arg('--out','audit-results/repo-wide'));
@@ -93,6 +94,8 @@ for(const [f,s]of codeFiles){
   push(item.kind,f,{line:item.line,evidence:item.evidence,detector:'generic-lexical'});
  for(const item of scanExemptionSinks(s,f,exemptionPairs))
   push(item.kind,f,{line:item.line,table:item.table,field:item.field,flag:item.flag,function:item.function,detector:'schema-derived'});
+ for(const item of scanAppendOnlyReconciliationRisk(s,f))
+  push(item.kind,f,{line:item.line,table:item.table,function:item.function,evidence:item.evidence,detector:'generic-join-replay'});
 }
 const tablesWithManualLocks=[];
 for(const [table,owners]of exclusive){
