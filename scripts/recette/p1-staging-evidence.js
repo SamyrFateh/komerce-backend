@@ -56,6 +56,7 @@ function isAuditedOnlyFile(file){
     /^docs\/recette\//.test(file) ||
     /^tests\/staging-(canonical|p1)\//.test(file) ||
     file==='tests/unit/staging-p1-verdict.test.js' ||
+    file==='tests/unit/staging-demo-soft-deactivate.test.js' ||
     /^playwright\.staging-[a-z0-9-]+\.config\.js$/.test(file) ||
     ['scripts/recette/p1-staging-evidence.js',
      'scripts/recette/p1-demo-sql-segregation.js',
