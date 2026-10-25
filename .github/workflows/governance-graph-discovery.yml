@@ -133,6 +133,8 @@ jobs:
         run: |
           set -o pipefail
           node scripts/run-integration-tests.js --files=tests/integration/catalog-sku-media-replay-hypothesis-real-db.test.js | tee audit-results/novel/sku-media-blind-trial.log
+      - name: Fail-closed oracle for independently found SKU-media replay contradiction
+        run: node scripts/audits/verify-blind-catalog-trial.js audit-results/novel/sku-media-blind-trial.log audit-results/blind-trial
       - name: Reject missing or unpaired nominal/deviation PostgreSQL evidence
         run: |
           node scripts/audits/verify-calibration-evidence.js audit-results/novel/inventory-proof.log audit-results/novel/auto-parcel-proof.log audit-results/novel/hub-repack-proof.log audit-results/novel/manual-reimport-proof.log --out audit-results/calibration
@@ -145,4 +147,5 @@ jobs:
           path: |
             audit-results/novel/
             audit-results/calibration/
+            audit-results/blind-trial/
           if-no-files-found: warn
