@@ -39,7 +39,15 @@ if(!ci){
  let marketKM,marketCM;
  async function q(sql,args=[]){return mockClient.query(sql,args);}
  async function post(itemId,quantity=1){
-  return request(app).post('/api/parcels/'+ids.parcel+'/items').send({order_item_id:itemId,quantity});
+  // A failed HTTP mutation may leave PostgreSQL transaction in aborted
+  // state. Keep the experiment alive WITHOUT bypassing the constraints.
+  await q('SAVEPOINT before_http');
+  const response=await request(app).post('/api/parcels/'+ids.parcel+'/items').send({order_item_id:itemId,quantity});
+  if(response.status>=400){
+   console.log('BLIND_LOGISTICS_HTTP_ERROR '+JSON.stringify({status:response.status,body:response.body}));
+   await q('ROLLBACK TO SAVEPOINT before_http');
+  } else await q('RELEASE SAVEPOINT before_http');
+  return response;
  }
  async function parcelState(){
   const {rows}=await q(
