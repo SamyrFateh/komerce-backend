@@ -19,6 +19,8 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Challenge detectors on known positive and negative fixtures (no DB)
         run: node --test tests/unit/novel-bug-patterns.test.js
+      - name: Calibrate the calibrator (fail-closed negative controls)
+        run: node --test tests/unit/scanner-calibration-verifier.test.js
       - name: Reproduce silent conflict against the real auto-parcel service (mocked PostgreSQL result)
         run: ./node_modules/.bin/jest --config jest.unit.config.js --runInBand tests/unit/auto-parcel-silent-conflict-discovery.test.js
       - name: Generate candidates FROM the full feature graph without named bugs
