@@ -54,7 +54,7 @@ function directSqlMutationHint(source, table) {
   if (!/^[a-z][a-z0-9_]*$/.test(String(table))) return null;
   // Strip all block comments and line-only JS comments. Describing an
   // 'UPDATE orders' in a JSDoc/changelog is NOT evidence of executable SQL.
-  const body = String(source).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/[^\n]*$/gm, '');
+  const body = String(source).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[ \t])\/\/[^\n]*/gm, '$1');
   const pattern = new RegExp('\\b(INSERT\\s+INTO|UPDATE|DELETE\\s+FROM|MERGE\\s+INTO|TRUNCATE\\s+TABLE)\\s+(?:public\\.)?' + table + '\\b', 'gi');
   const found = pattern.exec(body);
   if (!found) return null;
