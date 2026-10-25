@@ -63,7 +63,7 @@ function chooseCandidate(runs){
 async function main(){
  const out={schema_version:1,generated_at:new Date().toISOString(),target:HOST,
    purpose:'Real supplier candidate accounting; no import, price market, approval, publication or mutation',
-   focus_run:FOCUS,selected:null,run_count:0,runs:[],failure:null,
+   focus_run:FOCUS,selected:null,run_count:0,runs:[],focus_history:[],focus_changes_after_run:[],failure:null,
    status:'BLOCKED',no_business_writes:true};
  let c;
  fs.mkdirSync(path.dirname(OUT),{recursive:true});
@@ -80,7 +80,7 @@ async function main(){
    await c.query('BEGIN READ ONLY');
    await c.query("SET LOCAL statement_timeout='12000ms'");
    const {rows}=await c.query(
-     "SELECT id,run_ref,import_id,provider,source_type,status,intake "+
+     "SELECT id,run_ref,import_id,provider,source_type,status,intake,started_at,finished_at "+
      "FROM import_runtime_runs WHERE lower(provider)='aliexpress' AND import_id IS NOT NULL "+
      "ORDER BY run_ref DESC LIMIT 35");
    out.run_count=rows.length;
@@ -106,11 +106,41 @@ async function main(){
      for(const row of res.rows)seen.set(String(row.supplier_product_id),row.n);
    }
    out.runs=collected.map(({run,candidates})=>reconcileRun(run,candidates,linked,seen));
+   const focused=collected.find(x=>x.run.run_ref===FOCUS);
+   if(focused){
+     const focusIds=focused.candidates.map(x=>x.id);
+     const byCandidate=new Map(focused.candidates.map(x=>[String(x.id),x]));
+     const history=focusIds.length?(await c.query(
+       "SELECT id,candidate_id,event_type,old_state,new_state,changes,result,created_at "+
+       "FROM sourcing_candidate_events WHERE candidate_id=ANY($1::uuid[]) "+
+       "ORDER BY created_at,id LIMIT 1500",[focusIds])).rows:[];
+     const closed=focused.run.finished_at?new Date(focused.run.finished_at).getTime():null;
+     out.focus_history=history.map(ev=>{
+       const candidate=byCandidate.get(String(ev.candidate_id));
+       const originalDecision=ev.result?.sourcing_decision||
+         ev.result?.scan_result?.sourcing_decision||
+         ev.changes?.scan_result?.sourcing_decision||null;
+       return {candidate_id:ev.candidate_id,supplier_product_id:candidate?.supplier_product_id||null,
+         event_type:ev.event_type,old_state:ev.old_state,new_state:ev.new_state,
+         created_at:ev.created_at,
+         after_run:closed!==null&&new Date(ev.created_at).getTime()>closed,
+         scan_decision_snapshot:originalDecision,
+         changes_keys:ev.changes&&typeof ev.changes==='object'?Object.keys(ev.changes):[]};
+     });
+     out.focus_changes_after_run=out.focus_history.filter(e=>e.after_run);
+     out.focus_run_timeline={started_at:focused.run.started_at,finished_at:focused.run.finished_at,
+       history_events:history.length,post_run_events:out.focus_changes_after_run.length,
+       snapshot_ready:Number(focused.run.intake?.ready_for_refinery||0),
+       current_ready:out.runs.find(x=>x.run_ref===FOCUS)?.recomputed_certified_total||0};
+   }
+
    out.selected=chooseCandidate(out.runs);
    out.status=out.selected?'ONE_REAL_SOURCE_CANDIDATE_IDENTIFIED':'NO_ELIGIBLE_CANDIDATE_PROVEN';
    await c.query('ROLLBACK');c.release();c=null;
    console.log(JSON.stringify({status:out.status,runs:out.run_count,
      focus:out.runs.find(x=>x.run_ref===FOCUS)||null,
+     focus_timeline:out.focus_run_timeline,
+     focus_changes_after_run:out.focus_changes_after_run,
      selection:out.selected,inventory:out.runs.map(x=>({
        run_ref:x.run_ref,delta:x.delta,recorded:x.recorded_ready_for_refinery,
        computed:x.recomputed_certified_total,promotable:x.summary.promotable,options:x.options
