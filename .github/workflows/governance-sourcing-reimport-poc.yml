@@ -154,11 +154,11 @@ jobs:
           if(x.verdict!=='CONTRADICTION_OBSERVED'
              || x.firstViolation?.kind!=='AUTHORITY_MARKER_OVERWRITTEN'
              || !x.violations.some(v=>v.kind==='MANUAL_VALUE_OVERWRITTEN')
-             || !x.violations.some(v=>v.kind==='DERIVED_SCAN_DISAGREES_WITH_PERSISTED_FIELD')){
+             || !x.observations.some(v=>v.kind==='SOURCE_SCAN_DIFFERS_FROM_EFFECTIVE_VALUE' && v.classification==='REVIEW_REQUIRED')){
             throw Error('Expected causal chain is not completely proven: '+JSON.stringify(x));
           }
           console.log('GOV_POC_GOVERNANCE_MISMATCH_PROVEN',JSON.stringify({
-             verdict:x.verdict,firstViolation:x.firstViolation,violations:x.violations
+             verdict:x.verdict,firstViolation:x.firstViolation,violations:x.violations,observations:x.observations
           }));
           NODE
       - name: Preserve model-data-path-observation artifacts
