@@ -82,7 +82,8 @@ function buildApp() {
 describe('routes/parcels', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockDbQuery.mockReset();
+    // Les transactions BEGIN/COMMIT/ROLLBACK du routeur doivent toujours retourner une Promise.
+    mockDbQuery.mockReset().mockResolvedValue({ rows: [] });
     addParcelItemTraced.mockReset();
     mockUser = { id: 'admin-1', role: 'admin' };
     parcelSecurity.generateExternalCode.mockReturnValue('EXT-STUB');
@@ -149,6 +150,23 @@ describe('routes/parcels', () => {
   });
 
   describe('GET /:ref', () => {
+    test('404 si colis introuvable', async () => {
+      mockDbQuery.mockResolvedValueOnce({ rows: [] });
+      const res = await request(buildApp()).get('/api/parcels/COL-999');
+      expect(res.status).toBe(404);
+    });
+
+    test('renvoie le colis avec ses items', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ id: 'p1', reference: 'COL-1' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'it1' }] });
+      const res = await request(buildApp()).get('/api/parcels/COL-1');
+      expect(res.status).toBe(200);
+      expect(res.body.items).toEqual([{ id: 'it1' }]);
+    });
+  });
+
+  describe('POST /:id/items', () => {
     test('404 si colis introuvable via service canonique', async () => {
       addParcelItemTraced.mockRejectedValueOnce(
         Object.assign(new Error('Colis introuvable'), { code: 'PARCEL_NOT_FOUND', status: 404 }));
