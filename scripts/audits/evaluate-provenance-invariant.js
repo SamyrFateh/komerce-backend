@@ -25,48 +25,70 @@ const util = require('node:util');
  * By itself this helper cannot determine whether a manual field should be
  * immutable forever — caller MUST supply the governance authority contract.
  */
-function evaluateAuthorityTrace({ entity, field, sourceField, scanField = null,
+function evaluateAuthorityTrace({
+  entity, field, sourceField, scanField = null, scanSemantics = 'unclassified',
   manualMarker = 'manual', preservedThrough = 'supplier_reimport',
-  sequence, expectedAuthority = 'manual' }) {
+  sequence, expectedAuthority = 'manual',
+}) {
   if (!entity || !field || !sourceField || !Array.isArray(sequence)) {
-    return { verdict:'INSUFFICIENT_EVIDENCE', violations:[], reason:'Entity, field, sourceField and sequence required' };
+    return { verdict:'INSUFFICIENT_EVIDENCE', violations:[], observations:[],
+      reason:'Entity, field, sourceField and sequence required' };
   }
-  const manualIndex = sequence.findIndex(x => x.action === 'human_override'
-    && x.snapshot && x.snapshot[sourceField] === manualMarker);
-  if (manualIndex < 0) {
-    return { entity, field, verdict:'NO_MANUAL_ASSERTION', violations:[],
-      reason:'No explicit manual edit event: routine supplier refresh can update its own fields' };
+  if (scanSemantics !== 'unclassified' && scanSemantics !== 'effective') {
+    return { verdict:'INSUFFICIENT_EVIDENCE', violations:[], observations:[],
+      reason:'scanSemantics must be unclassified or effective' };
   }
-  const pinned = sequence[manualIndex].snapshot[field];
-  if (pinned === undefined || pinned === null) {
-    return { entity, field, verdict:'INSUFFICIENT_EVIDENCE', violations:[],
-      reason:'Manual value was not observed in the source database' };
-  }
-  const violations=[];
-  for(let i=manualIndex+1;i<sequence.length;i++){
-    const event=sequence[i],now=event.snapshot;
-    if(event.action==='human_override')continue; // A newer human edit may reauthor the value.
-    if(event.action!==preservedThrough)continue; // Rule is scoped to supplier refresh only.
-    if(!now){
-      violations.push({kind:'MISSING_POST_ACTION_EVIDENCE',at:event.id||i});
+  let pinned, manualAssertion = false;
+  const violations = [], observations = [];
+  for (let i = 0; i < sequence.length; i++) {
+    const event = sequence[i], now = event.snapshot, at = event.id ?? i;
+    if (event.action === 'human_override') {
+      if (!now || now[sourceField] !== manualMarker) {
+        observations.push({kind:'HUMAN_EDIT_WITHOUT_MANUAL_PROVENANCE',at});
+        continue;
+      }
+      pinned = now[field];
+      manualAssertion = true;
+      if (pinned === undefined || pinned === null) {
+        return {entity,field,verdict:'INSUFFICIENT_EVIDENCE',violations,observations,
+          reason:'Manual value not available after latest human edit'};
+      }
+      continue; // A later human edit legitimately supersedes an earlier edit.
+    }
+    if (!manualAssertion || event.action !== preservedThrough) continue;
+    if (!now) {
+      violations.push({kind:'MISSING_POST_ACTION_EVIDENCE',at});
       continue;
     }
-    if(!util.isDeepStrictEqual(now[sourceField],expectedAuthority)){
-      violations.push({kind:'AUTHORITY_MARKER_OVERWRITTEN',at:event.id||i,
+    if (!util.isDeepStrictEqual(now[sourceField], expectedAuthority)) {
+      violations.push({kind:'AUTHORITY_MARKER_OVERWRITTEN',at,
         expected:expectedAuthority,actual:now[sourceField]});
     }
-    if(!util.isDeepStrictEqual(now[field],pinned)){
-      violations.push({kind:'MANUAL_VALUE_OVERWRITTEN',at:event.id||i,
+    if (!util.isDeepStrictEqual(now[field], pinned)) {
+      violations.push({kind:'MANUAL_VALUE_OVERWRITTEN',at,
         expected:pinned,actual:now[field]});
     }
-    if(scanField && now[scanField]!=null && !util.isDeepStrictEqual(now[scanField],now[field])){
-      violations.push({kind:'DERIVED_SCAN_DISAGREES_WITH_PERSISTED_FIELD',at:event.id||i,
-        expected:now[field],actual:now[scanField]});
+    if (scanField && now[scanField] != null
+      && !util.isDeepStrictEqual(now[scanField],now[field])) {
+      const difference = {at,expected:now[field],actual:now[scanField]};
+      // A snapshot of the raw supplier observation is ALLOWED to differ from
+      // an effective/manual candidate value. It is only an invariant failure
+      // when the governance contract declares the scan field "effective".
+      if (scanSemantics === 'effective') {
+        violations.push({kind:'DERIVED_SCAN_DISAGREES_WITH_PERSISTED_FIELD',...difference});
+      } else {
+        observations.push({kind:'SOURCE_SCAN_DIFFERS_FROM_EFFECTIVE_VALUE',
+          classification:'REVIEW_REQUIRED',...difference});
+      }
     }
   }
-  return { entity,field,sourceField,manualMarker,expectedAuthority,manualValue:pinned,
+  if (!manualAssertion) {
+    return {entity,field,verdict:'NO_MANUAL_ASSERTION',violations:[],observations,
+      reason:'No explicit authoritative human edit; supplier refresh is allowed'};
+  }
+  return {entity,field,sourceField,manualMarker,expectedAuthority,manualValue:pinned,
     verdict:violations.length?'CONTRADICTION_OBSERVED':'INVARIANT_OBSERVED',
-    firstViolation:violations[0]||null,violations };
+    firstViolation:violations[0]||null,violations,observations};
 }
 
 function fromPocProof(p){
