@@ -19,6 +19,15 @@
       "owner": "logistics",
       "otherDomain": "orders",
       "evidenceTest": "tests/integration/auto-parcel-calibration-real-db.test.js"
+    },
+    {
+      "caseId": "HUB_REPACK_EXEMPTION",
+      "pattern": "AUTHORITATIVE_EXEMPTION_IGNORED_BY_DOWNSTREAM_CONSUMER",
+      "service": "hub.recordVolume -> sourcing.analyzeProduct",
+      "db": "POSTGRES_REAL",
+      "owner": "logistics",
+      "otherDomain": "sourcing/catalog",
+      "evidenceTest": "tests/integration/hub-repack-exemption-calibration-real-db.test.js"
     }
   ]
 }
