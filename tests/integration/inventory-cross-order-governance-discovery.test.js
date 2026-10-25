@@ -98,6 +98,14 @@ if(!ci){
    severity:'P1',
    confidence:'REAL_POSTGRES_COUNTEREXAMPLE',
   }));
+  console.log('CALIBRATION_EVIDENCE '+JSON.stringify({
+   caseId:'INVENTORY_CROSS_ORDER', mode:'DEVIATION', service:'inventory.receiveItem',
+   db:'POSTGRES_REAL', stimulus:'caller supplies order B for line canonically owned by A',
+   expected:{ inventoryMatchesCanonical:true, foreignOrderReceived:0 },
+   observed:{ inventoryMatchesCanonical:observed.row.inventory_order===observed.row.authoritative_order,
+              foreignOrderReceived:receivedB.items_received },
+   invariantOK:false
+  }));
  });
  test('negative control: without foreign order the canonical link is respected',async()=>{
   await conn.query('ROLLBACK TO SAVEPOINT healthy_seed');
@@ -115,6 +123,14 @@ if(!ci){
    category:'CROSS_ORDER_INVENTORY_RECEIPT',
    rowMatches:observed.row.inventory_order===observed.row.authoritative_order,
    otherOrderCompletion:receivedB.completion_ratio,
+  }));
+  console.log('CALIBRATION_EVIDENCE '+JSON.stringify({
+   caseId:'INVENTORY_CROSS_ORDER', mode:'NOMINAL', service:'inventory.receiveItem',
+   db:'POSTGRES_REAL',
+   expected:{ inventoryMatchesCanonical:true, foreignOrderReceived:0 },
+   observed:{ inventoryMatchesCanonical:observed.row.inventory_order===observed.row.authoritative_order,
+              foreignOrderReceived:receivedB.items_received },
+   invariantOK:true
   }));
  });
 }
