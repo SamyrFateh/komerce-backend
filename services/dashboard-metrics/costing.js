@@ -106,6 +106,10 @@ async function getCoutEstime(filters = {}) {
 }
 
 async function getCoutReel(filters = {}) {
+  // E3 : coût réellement enregistré ET justifié ; les lignes héritées
+  // monthly_recalc ne sont pas une preuve de coût réel.
+  // Ce KPI mesure la présence d'au moins une allocation justifiée par
+  // commande, pas la clôture de tous les coûts attendus.
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     SELECT
@@ -116,7 +120,7 @@ async function getCoutReel(filters = {}) {
     JOIN orders o ON o.id = alc.order_id
     WHERE ${where}
       AND o.status NOT IN ('cancelled', 'refunded')
-      AND alc.is_actual = TRUE
+      AND ${costExpectation.justifiedRealSql('alc')}
   `;
   const r = await db.query(sql, params);
   const value = nullableKmf(r.rows[0].value);
