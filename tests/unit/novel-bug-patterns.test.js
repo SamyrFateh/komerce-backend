@@ -4,7 +4,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { scanNovelPatterns } = require('../../scripts/audits/lib/novel-bug-patterns');
+const { scanNovelPatterns, directSqlMutationHint } = require('../../scripts/audits/lib/novel-bug-patterns');
 const repoRoot = path.resolve(__dirname, '../..');
 const scan = (src, name='services/example.js') => scanNovelPatterns(src, name);
 
@@ -43,4 +43,13 @@ test('silent conflicts without unconditional success counter and normal writes a
 test('every finding is explicitly a lead, not a confirmed runtime bug', () => {
   const found = scan('const effectiveOrderId = order_id || oi.order_id;');
   assert.ok(found.every(f => f.severity === 'REVIEW' && /verify|verified/i.test(f.caveat)));
+});
+
+test('cross-owner declaration is not the same thing as a direct SQL write', () => {
+  const cash = fs.readFileSync(path.join(repoRoot, 'services/cash-deposit-service.js'), 'utf8');
+  const fx = fs.readFileSync(path.join(repoRoot, 'routes/admin-finance-config.js'), 'utf8');
+  const parcel = fs.readFileSync(path.join(repoRoot, 'services/auto-parcel.js'), 'utf8');
+  assert.equal(directSqlMutationHint(cash, 'market_delegation_audit'), null);
+  assert.equal(directSqlMutationHint(fx, 'fx_rate_observations'), null);
+  assert.match(directSqlMutationHint(parcel, 'parcel_items').evidence, /INSERT\s+INTO\s+parcel_items/i);
 });
