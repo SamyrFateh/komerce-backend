@@ -51,6 +51,17 @@ async function readMarketStates(productId){
 }
 // A skipped Railway deploy is acceptable ONLY if git proves all intervening changes
 // are audit/CI-only. Any application, schema, runtime service or public UI change BLOCKS.
+function isAuditedOnlyFile(file){
+  return /^\.github\/workflows\/[^/]+\.ya?ml$/.test(file) ||
+    /^docs\/recette\//.test(file) ||
+    /^tests\/staging-(canonical|p1)\//.test(file) ||
+    file==='tests/unit/staging-p1-verdict.test.js' ||
+    /^playwright\.staging-[a-z0-9-]+\.config\.js$/.test(file) ||
+    ['scripts/recette/p1-staging-evidence.js',
+     'scripts/recette/p1-demo-sql-segregation.js',
+     'scripts/recette/summarize-staging-chromium.js'].includes(file);
+}
+
 function verifyRuntimeRevision(deployed,checkedOut){
   if(!/^[a-f0-9]{40}$/.test(String(deployed||''))||
      !/^[a-f0-9]{40}$/.test(String(checkedOut||'')))throw Error('P1_SHA_INVALID');
@@ -61,13 +72,7 @@ function verifyRuntimeRevision(deployed,checkedOut){
   let files;
   try{files=processRun(['diff','--name-only',deployed,checkedOut]).split('\n').filter(Boolean);}
   catch{throw Error('P1_SOURCE_DIFF_UNAVAILABLE');}
-  const allowed=file => /^\.github\/workflows\/[^/]+\.ya?ml$/.test(file) ||
-    /^docs\/recette\//.test(file) ||
-    /^tests\/staging-(canonical|p1)\//.test(file) ||
-    file==='tests/unit/staging-p1-verdict.test.js' ||
-    /^playwright\.staging-[a-z0-9-]+\.config\.js$/.test(file) ||
-    ['scripts/recette/p1-staging-evidence.js',
-     'scripts/recette/summarize-staging-chromium.js'].includes(file);
+  const allowed=isAuditedOnlyFile;
   const runtimeDrift=files.filter(file=>!allowed(file));
   if(runtimeDrift.length)throw Error('P1_RUNTIME_FILES_DIFFER:'+runtimeDrift.slice(0,3).join(','));
   return {kind:'AUDIT_ONLY_DIFF',deploy_sha:deployed,source_sha:checkedOut,changes:files};
@@ -121,4 +126,4 @@ async function main(){
   }finally{await db.pool.end();}
 }
 if(require.main===module)main();
-module.exports={assertInputs,verdictOf,verifyRuntimeRevision};
+module.exports={assertInputs,verdictOf,verifyRuntimeRevision,isAuditedOnlyFile};

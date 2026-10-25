@@ -1,6 +1,6 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
-const {verdictOf,verifyRuntimeRevision}=require('../../scripts/recette/p1-staging-evidence');
+const {verdictOf,verifyRuntimeRevision,isAuditedOnlyFile}=require('../../scripts/recette/p1-staging-evidence');
 const ok=['SOURCE_PROVED','REFINERY_PROVED','CATALOG_RELEASE_PROVED','STOREFRONT_PROVED'].map(key=>({key,status:'PROVED'}));
 test('P1: all four distinct canonical gates must be proved',()=>{
  expect(verdictOf(ok)).toBe('BACKEND_PROVED');
@@ -15,4 +15,10 @@ test('P1: SHA exact accepted, runtime drift fail closed',()=>{
  expect(verifyRuntimeRevision(sha,sha)).toMatchObject({kind:'EXACT'});
  expect(()=>verifyRuntimeRevision('local',sha)).toThrow('P1_SHA_INVALID');
  expect(()=>verifyRuntimeRevision(sha,'local')).toThrow('P1_SHA_INVALID');
+});
+
+test('P1: staging demo SQL probe is nonruntime but any business mutation remains drift',()=>{
+  expect(isAuditedOnlyFile('scripts/recette/p1-demo-sql-segregation.js')).toBe(true);
+  for(const file of ['services/catalog-approval.js','routes/products.js','migrations/100_catalog_enrichment_runs.sql','scripts/recette/controlled-business-purge.js','public/boutique/js/b-catalog.js'])
+    expect(isAuditedOnlyFile(file)).toBe(false);
 });
