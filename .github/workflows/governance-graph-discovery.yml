@@ -129,6 +129,10 @@ jobs:
         run: |
           set -o pipefail
           node scripts/run-integration-tests.js --files=tests/integration/catalog-json-manual-override-calibration-real-db.test.js | tee audit-results/novel/manual-reimport-proof.log
+      - name: Second-domain blind R&D — Logistics market isolation on real parcel HTTP route
+        run: |
+          set -o pipefail
+          node scripts/run-integration-tests.js --files=tests/integration/logistics-legacy-parcel-item-market-isolation-real-db.test.js | tee audit-results/novel/logistics-market-isolation.log
       - name: Blind R&D — reimport media-ref replacement through catalog promotion and checkout
         run: |
           set -o pipefail
