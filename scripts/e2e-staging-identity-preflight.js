@@ -45,6 +45,7 @@ async function inspectAccount(profile) {
        JOIN market_operating_assignments a ON a.id=am.assignment_id
        JOIN markets m ON m.id=a.market_id
       WHERE am.user_id=$1 AND am.status='ACTIVE' AND a.status='ACTIVE' AND m.code=$2
+        AND m.is_active=TRUE AND m.lifecycle_status='ACTIVE'
       LIMIT 1`, [user.id, profile.market]
   );
   if (membershipRows.length !== 1) {
