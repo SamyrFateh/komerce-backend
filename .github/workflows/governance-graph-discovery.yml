@@ -26,3 +26,61 @@ jobs:
           name: governance-discovery-graph
           path: audit-results/discovery
           if-no-files-found: error
+
+  prove-inventory:
+    name: Independent authority counterexample — real PostgreSQL (ROLLBACK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      KOMERCE_DISABLE_CRONS: 'true'
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build isolated database with canonical schema, never Railway
+        run: |
+          PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql > /tmp/ci-schema.log
+          node scripts/ci-db-bootstrap.js
+      - name: Reproduce discovered cross-order receipt plus healthy negative control
+        run: |
+          mkdir -p audit-results/novel
+          set -o pipefail
+          node scripts/run-integration-tests.js --files=tests/integration/inventory-cross-order-governance-discovery.test.js | tee audit-results/novel/inventory-proof.log
+      - name: Preserve PostgreSQL execution evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: novel-inventory-cross-order-proof
+          path: audit-results/novel/
+          if-no-files-found: warn
