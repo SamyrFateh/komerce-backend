@@ -169,3 +169,13 @@ test('L12a : Client 360 masque les coordonnées jusqu’à une action explicite'
   expect(revealedRows).toContainEqual({ champ: 'Téléphone', valeur: '+2691234567' });
   expect(revealedRows).toContainEqual({ champ: 'Email', valeur: 'amina@example.test' });
 });
+
+test('L2 : Client 360 signale la vue recette dans le source', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/client-360.js'), 'utf8');
+  expect(src).toContain('kmc-recette-banner');
+});
+
+test('L6 : l’en-tête client-360 ne porte pas de lien « ← » concurrent du retour du shell', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/client-360.js'), 'utf8');
+  expect(src).not.toMatch(/'← (Opérations|Commerce)'/);
+});

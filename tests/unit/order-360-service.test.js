@@ -120,7 +120,7 @@ test('loadOrder360 agrège les facettes sans exposer leurs UUID', async () => {
     id: 'order-id',
     reference: 'CMD-CM-001',
   }));
-  expect(payload.summary).toEqual(expect.objectContaining({ items: 1, quantity: 2, parcels: 1, open_incidents: 1, notifications: 1, documents: 1 }));
+  expect(payload.summary).toEqual(expect.objectContaining({ items: 1, quantity: 2, parcels: 1, items_assigned: 1, open_incidents: 1, notifications: 1, documents: 1 }));
   expect(payload.parcels[0]).toEqual(expect.objectContaining({ reference: 'COL-001', tracking_number: 'TRK001' }));
   expect(payload.incidents[0].priority).toBe('high');
   expect(payload.purchasing.purchase_orders).toEqual([

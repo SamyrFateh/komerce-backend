@@ -55,6 +55,17 @@ test('inventaire : requetes lecture seule uniquement', () => {
   for (const q of Object.values(cli.INVENTORY)) assert.match(q, /^SELECT /);
   assert.equal(typeof cli.inventory, 'function');
 });
+test('inventaire : rattachement relais E2E contre etalon RCT1 sans fuite de credentials', () => {
+  const sql = cli.INVENTORY.relay_agents_e2e_binding;
+  assert.match(sql, /FROM users u LEFT JOIN relais r ON r\.id = u\.relais_id/);
+  assert.match(sql, /LEFT JOIN markets m ON m\.id = r\.market_id/);
+  assert.match(sql, /r\.is_active AS relais_active/);
+  assert.match(sql, /UNASSIGNED/);
+  assert.match(sql, /INACTIVE_RELAIS/);
+  assert.match(sql, /E2E%/);
+  assert.match(sql, /RCT1 Agent relais%/);
+  assert.doesNotMatch(sql, /password_hash|u\.email|u\.phone/i);
+});
 test('ONLY : etapes hors selection inspectees (contexte partage) sans ecriture', async () => {
   let applied = 0;
   const steps = [

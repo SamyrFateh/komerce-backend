@@ -61,6 +61,9 @@ module.exports = {
     ],
     services: [
       'services/refund-service.js',
+      'services/refund-intent-ledger.js',
+      'services/refund-evidence-verifier.js',
+      'services/refund-intent-reconciliation.js',
     ],
     routes: [],
     tests: [
@@ -73,6 +76,14 @@ module.exports = {
       // les arrondir à l'unité lui faisait perdre des centimes.
       'tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js',
       'tests/unit/refund-service.test.js',
+      'tests/unit/refund-intent-ledger.test.js',
+      'tests/unit/refund-evidence-verifier.test.js',
+      'tests/unit/refund-intent-reconciliation.test.js',
+      'tests/e2e-api/refunds.intents-reconciliation.e2e.test.js',
+      'tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js',
+      'tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js',
+      'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js',
+      'tests/unit/refund-stripe-txn-known-risk.test.js',
       'tests/unit/refunds-util.test.js',
       'tests/unit/refund-receipt-html.test.js',
     ],
@@ -93,6 +104,7 @@ module.exports = {
     tables: [
       'orders: R',
       'refunds: RW',
+      'refund_execution_intents: RW',
       'wallets: R',
     ],
   },
@@ -125,6 +137,21 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution', test: 'tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js' },
+    { statement: 'RC-9 : reference externe unique par fournisseur et intention, prouvee en PostgreSQL',
+      test: 'tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js' },
+    { statement: 'RC-5/RC-9 : le rapprochement PSP relit la preuve hors transaction, verrouille ensuite commande puis intention, interdit changement de marché/capture/montant, ne marque confirmed que si preuve complète et ne modifie ni refunds ni orders',
+      test: 'tests/e2e-api/refunds.intents-reconciliation.e2e.test.js' },
+    { statement: 'RC-5/RC-9 : timeout PSP reste unknown, refus de capture/montant contradictoires, rejeu confirmed sans double effet et rollback en cas de conflit',
+      test: 'tests/unit/refund-intent-reconciliation.test.js' },
+    { statement: 'RC-5/RC-9 : vérification GET seule de la référence externe, capture, montant EUR et statut PSP. Toute preuve absente ou contradictoire interdit un succès implicite. Aucun writer financier nouveau.',
+      test: 'tests/unit/refund-evidence-verifier.test.js' },
+    { statement: 'RC-5/RC-9 fondation : réservation durable avant PSP, clé de rejeu stable par UUID, refus des lignes refunds historiques, plafond de montant et exclusion des intentions non résolues — sans activer de paiement',
+      test: 'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js' },
+    { statement: 'RC-5/RC-9 : aucun remboursement externe ne sort du ledger de réservation, rollback et refus si paramètres de rejeu discordants ; statut processing/unknown non relançable',
+      test: 'tests/unit/refund-intent-ledger.test.js' },
+    { statement: 'RC-5 — toute sortie PSP requiert une intention de remboursement committee avant appel externe ; le vrai service et le faux Stripe documentent provisoirement cette rupture sans prétendre la corriger',
+      test: 'tests/unit/refund-stripe-txn-known-risk.test.js' },
     'un remboursement n\'est jamais applique deux fois pour le meme evenement source',
     "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement",
   ],

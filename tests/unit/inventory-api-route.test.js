@@ -135,6 +135,18 @@ describe('inventory-api — POST /scan-assign', () => {
   });
 });
 
+describe('inventory-api — propagation des refus canoniques du scan', () => {
+  it('409 et code métier pour un colis expédié', async () => {
+    mockScanIntoParcel.mockRejectedValueOnce(
+      Object.assign(new Error('Colis déjà expédié'), { code: 'PARCEL_NOT_MUTABLE', status: 409 })
+    );
+    const res = await request(app).post('/api/hub/inventory/scan-assign')
+      .send({ inventory_item_id: 'i1', parcel_id: 'p1' });
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ error: 'Colis déjà expédié', code: 'PARCEL_NOT_MUTABLE' });
+  });
+});
+
 describe('inventory-api — POST /propose-all', () => {
   it('succès → ok:true + résultat', async () => {
     mockProposeAll.mockResolvedValueOnce({ updated: 5 });

@@ -312,6 +312,8 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
       items: items.length,
       quantity: totalQuantity,
       parcels: parcels.length,
+      // Filiation Hub (L9b) : articles de la commande couverts par au moins un colis actif — lu depuis parcel_items, jamais recalculé ailleurs.
+      items_assigned: new Set(parcelItemsResult.rows.map(row => row.order_item_id).filter(Boolean)).size,
       open_incidents: openIncidents,
       notifications: notifications.length,
       documents: documents.length,

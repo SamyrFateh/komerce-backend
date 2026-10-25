@@ -20,6 +20,7 @@
 
 'use strict';
 
+const { assertMarketOperationAllowed } = require('./market-operation-guard');
 const { markCustomsCleared } = require('./parcel-mutation-service');
 const { recomputeCustomsCosts } = require('./order-mutation-service');
 const { shareByWeight } = require('./cost-allocation/_helpers');
@@ -615,6 +616,8 @@ async function createShipment(db, body, userId, options = {}) {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
+    // Q2 : nouvelle expédition refusée hors marché actif ; marché suspendu seulement pour des colis de commandes existantes.
+    await assertMarketOperationAllowed(client, marketId, 'customs_shipment_create', { carriesOnlyExistingOrders: Boolean(parcel_ids?.length) });
 
     const { rows: [shipment] } = await client.query(
       `INSERT INTO customs_shipments

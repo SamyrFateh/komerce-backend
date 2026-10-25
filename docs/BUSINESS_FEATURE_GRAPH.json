@@ -13542,9 +13542,30 @@
       },
       {
         "feature": "market",
+        "category": "services",
+        "declared": "services/market-operation-guard.js",
+        "resolvedPath": "services/market-operation-guard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market",
         "category": "tests",
         "declared": "tests/unit/require-market-scope.test.js",
         "resolvedPath": "tests/unit/require-market-scope.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/market-operation-guard.test.js",
+        "resolvedPath": "tests/unit/market-operation-guard.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-operation-guard.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-operation-guard.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -27224,6 +27245,12 @@
         "resolved": true
       },
       {
+        "from": "customs",
+        "to": "market",
+        "raw": "market (garde Q2 market-operation-guard : nouvelle expédition refusée hors marché actif)",
+        "resolved": true
+      },
+      {
         "from": "dashboard",
         "to": "shared-cart",
         "raw": "shared-cart (suppression des paniers utilisateur via API interne lifecycle-owned)",
@@ -33708,12 +33735,17 @@
             ]
           },
           {
-            "channel": "data-read",
+            "channel": "data-write",
             "evidence": [
               {
                 "table": "sourcing_candidates",
-                "mode": "R"
-              },
+                "mode": "RW"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
               {
                 "table": "import_runtime_runs",
                 "mode": "R"
@@ -33879,6 +33911,15 @@
                 "targetFile": "services/transport-cost-allocation.js"
               }
             ]
+          },
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "order_item_real_cost_allocations",
+                "mode": "W"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -33962,6 +34003,22 @@
               {
                 "table": "parcel_items",
                 "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "customs",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/customs-shipment-service.js",
+                "targetFile": "services/market-operation-guard.js"
               }
             ]
           }
@@ -34377,11 +34434,11 @@
             "channel": "data-read",
             "evidence": [
               {
-                "table": "exchange_rates",
+                "table": "order_item_real_cost_allocations",
                 "mode": "R"
               },
               {
-                "table": "order_item_real_cost_allocations",
+                "table": "exchange_rates",
                 "mode": "R"
               }
             ]
@@ -34934,6 +34991,10 @@
                 "targetFile": "services/pickup-secret-service.js"
               },
               {
+                "sourceFileId": "services/dashboard-orders.js",
+                "targetFile": "services/order-physical-coverage-service.js"
+              },
+              {
                 "sourceFileId": "services/operations-workspace.js",
                 "targetFile": "services/auto-parcel.js"
               },
@@ -35444,6 +35505,10 @@
           {
             "channel": "data-read",
             "evidence": [
+              {
+                "table": "purchase_lines",
+                "mode": "R"
+              },
               {
                 "table": "purchase_orders",
                 "mode": "R"
@@ -36847,6 +36912,10 @@
                 "targetFile": "utils/currency.js"
               },
               {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "services/market-operation-guard.js"
+              },
+              {
                 "sourceFileId": "routes/admin-finance-config.js",
                 "targetFile": "services/fx-observation-service.js"
               }
@@ -36928,16 +36997,21 @@
                 "mode": "R"
               },
               {
-                "table": "orders",
-                "mode": "R"
-              },
-              {
                 "table": "order_item_cost_imputations",
                 "mode": "R"
               },
               {
                 "table": "recipients",
                 "mode": "R"
+              }
+            ]
+          },
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "orders",
+                "mode": "RW"
               }
             ]
           }
@@ -38379,12 +38453,17 @@
             ]
           },
           {
-            "channel": "data-read",
+            "channel": "data-write",
             "evidence": [
               {
                 "table": "products",
-                "mode": "R"
-              },
+                "mode": "RW"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
               {
                 "table": "product_variants",
                 "mode": "R"
@@ -39141,12 +39220,17 @@
             ]
           },
           {
-            "channel": "data-read",
+            "channel": "data-write",
             "evidence": [
               {
                 "table": "order_items",
-                "mode": "R"
-              },
+                "mode": "RW"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
               {
                 "table": "orders",
                 "mode": "R"
@@ -39397,6 +39481,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market",
+        "to": "customs",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/e2e-api/market-operation-guard.e2e.test.js",
+                "targetFile": "services/customs-shipment-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "market",
@@ -40344,6 +40444,10 @@
                 "targetFile": "services/market-scope-admin-service.js"
               },
               {
+                "sourceFileId": "routes/market-delegation-catalog.js",
+                "targetFile": "services/market-operation-guard.js"
+              },
+              {
                 "sourceFileId": "tests/unit/market-operator-provisioning.test.js",
                 "targetFile": "services/market-scope-admin-service.js"
               }
@@ -41101,6 +41205,15 @@
               {
                 "sourceFileId": "services/order-financial-closure-signal.js",
                 "targetFile": "services/signal-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-write",
+            "evidence": [
+              {
+                "table": "signals",
+                "mode": "W"
               }
             ]
           }
@@ -46671,6 +46784,11 @@
           "raw": "resolved"
         },
         {
+          "sourceFileId": "scripts/lib/arch-drift-core.js",
+          "kind": "require",
+          "raw": "manifestPath"
+        },
+        {
           "sourceFileId": "scripts/agent-context.js",
           "kind": "require",
           "raw": "abs"
@@ -46716,7 +46834,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2131
+        "filesObserved": 2134
       },
       "boutique": {
         "filesObserved": 214,
@@ -46752,7 +46870,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 20,
-      "NON_RUNTIME_TEST": 18,
+      "NON_RUNTIME_TEST": 19,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -47078,6 +47196,21 @@
       },
       {
         "from": "market",
+        "to": "customs",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "market",
         "to": "dashboard",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
@@ -47341,7 +47474,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 7,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 8,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
@@ -47397,6 +47530,12 @@
           "mode": "RW",
           "declaredOwner": true,
           "technical": false
+        },
+        {
+          "feature": "infrastructure",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
         }
       ],
       "readers": [
@@ -47467,6 +47606,12 @@
           "technical": true
         },
         {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        },
+        {
           "feature": "orders",
           "mode": "RW",
           "declaredOwner": true,
@@ -47480,7 +47625,6 @@
         "documents",
         "economic-engine",
         "inventory",
-        "logistics",
         "payments",
         "platform-ops",
         "purchasing",
@@ -47499,6 +47643,12 @@
           "technical": true
         },
         {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        },
+        {
           "feature": "orders",
           "mode": "RW",
           "declaredOwner": true,
@@ -47510,7 +47660,6 @@
         "catalog",
         "customs",
         "documents",
-        "economic-engine",
         "incident-management",
         "inventory",
         "logistics",
@@ -47544,6 +47693,12 @@
     },
     "parcels": {
       "writers": [
+        {
+          "feature": "dashboard",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
+        },
         {
           "feature": "logistics",
           "mode": "RW",
@@ -47586,6 +47741,12 @@
           "mode": "RW",
           "declaredOwner": false,
           "technical": true
+        },
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -47595,7 +47756,6 @@
         "economic-engine",
         "inventory",
         "local-stock",
-        "logistics",
         "market-autonomy",
         "market-delegation",
         "orders",
@@ -47946,6 +48106,12 @@
     "sourcing_candidates": {
       "writers": [
         {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        },
+        {
           "feature": "sourcing",
           "mode": "RW",
           "declaredOwner": true,
@@ -47953,7 +48119,6 @@
         }
       ],
       "readers": [
-        "catalog",
         "dashboard"
       ],
       "lifecycleOwner": "sourcing",
@@ -48039,6 +48204,71 @@
       "lifecycleOwner": "catalog",
       "resolution": "single-writer"
     },
+    "catalog_field_sync_state": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
+    },
+    "catalog_media_visual_fr_reviews": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
+    },
+    "catalog_publication_decision_audit": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
+    },
+    "catalog_stock_sync_state": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
+    },
+    "supplier_catalog_import_rejections": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
+    },
     "customs_categories": {
       "writers": [
         {
@@ -48100,6 +48330,12 @@
     "parcel_items": {
       "writers": [
         {
+          "feature": "dashboard",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
+        },
+        {
           "feature": "logistics",
           "mode": "RW",
           "declaredOwner": true,
@@ -48122,6 +48358,53 @@
         "payments"
       ],
       "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "customs_shipment_fees": {
+      "writers": [
+        {
+          "feature": "customs",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "customs",
+      "resolution": "declared-table-owner"
+    },
+    "customs_shipment_parcel_events": {
+      "writers": [
+        {
+          "feature": "customs",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "customs",
+      "resolution": "declared-table-owner"
+    },
+    "order_item_real_cost_allocations": {
+      "writers": [
+        {
+          "feature": "customs",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        },
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "dashboard"
+      ],
+      "lifecycleOwner": "economic-engine",
       "resolution": "declared-table-owner"
     },
     "client_notifications": {
@@ -48266,21 +48549,6 @@
       "lifecycleOwner": "orders",
       "resolution": "single-writer"
     },
-    "order_item_real_cost_allocations": {
-      "writers": [
-        {
-          "feature": "economic-engine",
-          "mode": "RW",
-          "declaredOwner": true,
-          "technical": false
-        }
-      ],
-      "readers": [
-        "dashboard"
-      ],
-      "lifecycleOwner": "economic-engine",
-      "resolution": "declared-table-owner"
-    },
     "order_status_history": {
       "writers": [
         {
@@ -48314,12 +48582,19 @@
       "resolution": "single-writer"
     },
     "purchase_lines": {
-      "writers": [],
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
       "readers": [
         "dashboard"
       ],
-      "lifecycleOwner": null,
-      "resolution": "no-declared-writer"
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
     },
     "purchase_orders": {
       "writers": [
@@ -48394,6 +48669,12 @@
           "technical": false
         },
         {
+          "feature": "orders",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
+        },
+        {
           "feature": "platform-ops",
           "mode": "RW",
           "declaredOwner": false,
@@ -48409,9 +48690,15 @@
     "signals": {
       "writers": [
         {
+          "feature": "orders",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        },
+        {
           "feature": "decision-signals",
           "mode": "RW",
-          "declaredOwner": false,
+          "declaredOwner": true,
           "technical": false
         }
       ],
@@ -48419,7 +48706,7 @@
         "dashboard"
       ],
       "lifecycleOwner": "decision-signals",
-      "resolution": "single-writer"
+      "resolution": "declared-table-owner"
     },
     "sms_log": {
       "writers": [
@@ -48506,6 +48793,82 @@
       "lifecycleOwner": "wallet",
       "resolution": "multi-writer-resolved-by-classification-signal"
     },
+    "basket_items": {
+      "writers": [
+        {
+          "feature": "dashboard",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
+        },
+        {
+          "feature": "shared-cart",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "shared-cart",
+      "resolution": "multi-writer-resolved-by-classification-signal"
+    },
+    "baskets": {
+      "writers": [
+        {
+          "feature": "dashboard",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
+        },
+        {
+          "feature": "shared-cart",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "shared-cart",
+      "resolution": "multi-writer-resolved-by-classification-signal"
+    },
+    "wallet_consumptions": {
+      "writers": [
+        {
+          "feature": "dashboard",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
+        },
+        {
+          "feature": "wallet",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "wallet",
+      "resolution": "multi-writer-resolved-by-classification-signal"
+    },
+    "wallet_credit_lots": {
+      "writers": [
+        {
+          "feature": "dashboard",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
+        },
+        {
+          "feature": "wallet",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "wallet",
+      "resolution": "multi-writer-resolved-by-classification-signal"
+    },
     "refunds": {
       "writers": [
         {
@@ -48530,11 +48893,17 @@
           "mode": "RW",
           "declaredOwner": false,
           "technical": false
+        },
+        {
+          "feature": "infrastructure",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
         }
       ],
       "readers": [],
       "lifecycleOwner": "economic-engine",
-      "resolution": "single-writer"
+      "resolution": "multi-writer-resolved-by-classification-signal"
     },
     "competitor_prices": {
       "writers": [
@@ -48704,13 +49073,19 @@
           "mode": "RW",
           "declaredOwner": false,
           "technical": false
+        },
+        {
+          "feature": "infrastructure",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
         }
       ],
       "readers": [
         "loyalty"
       ],
       "lifecycleOwner": "economic-engine",
-      "resolution": "single-writer"
+      "resolution": "multi-writer-resolved-by-classification-signal"
     },
     "garment_models": {
       "writers": [
@@ -48907,6 +49282,32 @@
       ],
       "lifecycleOwner": null,
       "resolution": "no-declared-writer"
+    },
+    "market_cost_attributions": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "order_cost_entry_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
     },
     "pickup_print_tokens": {
       "writers": [
@@ -49597,6 +49998,45 @@
       "lifecycleOwner": "payments",
       "resolution": "single-writer"
     },
+    "cash_custody_losses": {
+      "writers": [
+        {
+          "feature": "payments",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "payments",
+      "resolution": "declared-table-owner"
+    },
+    "cash_custody_receipts": {
+      "writers": [
+        {
+          "feature": "payments",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "payments",
+      "resolution": "declared-table-owner"
+    },
+    "market_payment_accounts": {
+      "writers": [
+        {
+          "feature": "payments",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "payments",
+      "resolution": "declared-table-owner"
+    },
     "inquiries": {
       "writers": [
         {
@@ -49611,12 +50051,17 @@
       "resolution": "single-writer"
     },
     "supplier_execution_payments": {
-      "writers": [],
-      "readers": [
-        "purchasing"
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
       ],
-      "lifecycleOwner": null,
-      "resolution": "no-declared-writer"
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
     },
     "supplier_payment_settlements": {
       "writers": [
@@ -49644,6 +50089,71 @@
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
     },
+    "supplier_execution_events": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "supplier_execution_fulfillments": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "supplier_execution_order_lines": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "supplier_execution_orders": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "supplier_execution_payment_proofs": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
     "market_settlement_events": {
       "writers": [
         {
@@ -49656,32 +50166,6 @@
       "readers": [],
       "lifecycleOwner": "settlement",
       "resolution": "declared-table-owner"
-    },
-    "basket_items": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
-    "baskets": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
     },
     "cart_shares": {
       "writers": [
@@ -49904,6 +50388,58 @@
       "lifecycleOwner": "sourcing",
       "resolution": "declared-table-owner"
     },
+    "import_runtime_item_events": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "provider_credentials": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_source_requests": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "supplier_commercial_category_mappings": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
     "unsold_items": {
       "writers": [
         {
@@ -49924,32 +50460,6 @@
       ],
       "lifecycleOwner": null,
       "resolution": "no-declared-writer"
-    },
-    "wallet_consumptions": {
-      "writers": [
-        {
-          "feature": "wallet",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "wallet",
-      "resolution": "single-writer"
-    },
-    "wallet_credit_lots": {
-      "writers": [
-        {
-          "feature": "wallet",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "wallet",
-      "resolution": "single-writer"
     }
   },
   "orphanTechnicalNodes": [],
@@ -49958,8 +50468,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 645,
-        "technicalNodesOwned": 645,
+        "technicalNodesTotal": 646,
+        "technicalNodesOwned": 646,
         "technicalOrphans": 0
       },
       "dash": {
@@ -50058,8 +50568,70 @@
   },
   "drifts": {
     "error": [],
-    "warn": [],
-    "debt": [],
+    "warn": [
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_item_real_cost_allocations",
+        "msg": "table \"order_item_real_cost_allocations\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par customs"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_items",
+        "msg": "table \"order_items\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "orders",
+        "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par economic-engine"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "products",
+        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "signals",
+        "msg": "table \"signals\" : lifecycle owner = decision-signals (db.tables \"!\"), mais aussi écrite par orders"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "sourcing_candidates",
+        "msg": "table \"sourcing_candidates\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
+      }
+    ],
+    "debt": [
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_item_real_cost_allocations",
+        "msg": "table \"order_item_real_cost_allocations\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par customs"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_items",
+        "msg": "table \"order_items\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "orders",
+        "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par economic-engine"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "products",
+        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "signals",
+        "msg": "table \"signals\" : lifecycle owner = decision-signals (db.tables \"!\"), mais aussi écrite par orders"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "sourcing_candidates",
+        "msg": "table \"sourcing_candidates\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
+      }
+    ],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -50175,6 +50747,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "loyalty -> logistics",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"loyalty\" vers \"logistics\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "market -> customs",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market\" vers \"customs\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -50311,7 +50888,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "26 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
+        "msg": "27 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
@@ -50370,11 +50947,11 @@
       }
     ],
     "summary": {
-      "signals": 0,
-      "debt": 0,
-      "expectedTopology": 49,
+      "signals": 6,
+      "debt": 6,
+      "expectedTopology": 50,
       "generatorLimitations": 12,
-      "classifiedCandidates": 61
+      "classifiedCandidates": 68
     }
   }
 }

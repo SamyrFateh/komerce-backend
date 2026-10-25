@@ -131,6 +131,12 @@ module.exports = {
       'users: R',   // W-via auth-identity/user-mutation-service ? LOT12
       'wallet_transactions: W',
       'wallets: W',
+      'basket_items: W~',
+      'baskets: W~',
+      'parcel_items: W~',
+      'parcels: W~',
+      'wallet_consumptions: W~',
+      'wallet_credit_lots: W~',
     ],
   },
 

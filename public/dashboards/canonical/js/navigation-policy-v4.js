@@ -117,7 +117,7 @@
     'operations-workspace': 'operations',
     'shipping-customs-workspace': 'operations',
     'purchasing-workspace': 'operations',
-    'sourcing-workspace': 'catalog',
+    'sourcing-workspace': 'live',
     'import-runtime': 'live',
     'hub-live': 'live',
     'relais-live': 'live',
@@ -150,6 +150,7 @@
     'shipping-customs-workspace': 'shipping-customs-workspace',
     'purchasing-workspace': 'purchasing-workspace',
     'import-runtime': 'import-runtime',
+    'sourcing-workspace': 'import-runtime',
     'hub-live': 'hub-live',
     'relais-live': 'relais-live',
     finance: 'finance-overview',
@@ -160,7 +161,7 @@
 
   const BACK_TARGETS = Object.freeze({
     'action-center': Object.freeze({ href:'/admin/pilotage', label:'Retour au pilotage' }),
-    'order-360': Object.freeze({ href:'/admin/operations', label:'Retour aux opérations' }),
+    'order-360': Object.freeze({ href:'/admin/orders', label:'Retour aux commandes' }),
     'client-index': Object.freeze({ href:'/admin/commerce', label:'Retour au commerce' }),
     'client-360': Object.freeze({ href:'/admin/clients', label:'Retour aux clients' }),
     'product-360': Object.freeze({ href:'/admin/workspaces/catalog', label:'Retour au catalogue' }),
@@ -875,6 +876,12 @@
         Object.freeze({ id: 'flow-commerce', label: 'Vue commerce', href: '/admin/commerce', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['commerce'] }),
         Object.freeze({ id: 'flow-orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['orders', 'order-360'] }),
         Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'economy',
+      label: 'Économie',
+      items: Object.freeze([
         Object.freeze({ id: 'workspace-pricing', label: 'Prix & économie', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read', surfaces: ['pricing-workspace'] }),
         Object.freeze({ id: 'workspace-refinery', label: 'Raffinerie', href: '/admin/workspaces/catalog?view=refinery', roles: ['admin'], surfaces: [] }),
         Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
@@ -884,7 +891,7 @@
       id: 'operations',
       label: 'Opérations',
       items: Object.freeze([
-        Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations', 'order-360'] }),
+        Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
         Object.freeze({ id: 'workspace-operations', label: 'Hub & Relais', href: '/admin/workspaces/operations', roles: ['admin', 'agent_hub', 'agent_relais', 'market_operator'], capability: 'operations.read', surfaces: ['operations-workspace'] }),
         Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
 
@@ -1113,20 +1120,20 @@
   function localTabsFor(domainId, user, adminContext) {
     const role = roleOf(user);
     // La navigation N2 du Sourcing suit ses étapes, pas les autres métiers Live.
-    if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/import-runtime') {
+    if (domainId === 'live' && ['/admin/import-runtime', '/admin/workspaces/sourcing'].includes(String(global.location?.pathname || ''))) {
       const run = new URLSearchParams(String(global.location?.search || '')).get('run');
       const suffix = run ? `run=${encodeURIComponent(run)}&` : '';
       return [
         { id: 'sourcing-suivi', label: 'Suivi', href: '/admin/import-runtime' + (run ? `?run=${encodeURIComponent(run)}` : '') },
         { id: 'sourcing-passages', label: 'Passages', href: `/admin/import-runtime?${suffix}view=passages` },
         { id: 'sourcing-sources', label: 'Sources', href: `/admin/import-runtime?${suffix}view=sources` },
+        { id: 'sourcing-candidats', label: 'Décisions candidates', href: '/admin/workspaces/sourcing' },
       ];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub-live') {
       return [
         { id: 'hub-flux', label: 'Flux Hub', href: '/admin/hub-live' },
         { id: 'hub-suivi', label: 'Suivi', href: '/admin/hub-live?view=overview' },
-        { id: 'hub-commandes', label: 'Commandes', href: '/admin/hub-live?view=queue&tab=all' },
         { id: 'hub-execution', label: 'Exécution', href: '/admin/hub-live?view=execute' },
       ];
     }
@@ -1156,6 +1163,7 @@
     const hash = String(global.location?.hash || '').replace(/^#/, '');
     const search = new URLSearchParams(String(global.location?.search || ''));
 
+    if (domainId === 'live' && path === '/admin/workspaces/sourcing') return 'sourcing-candidats';
     if (domainId === 'live' && path === '/admin/import-runtime') {
       const view = search.get('view');
       return view === 'passages' ? 'sourcing-passages' : view === 'sources' ? 'sourcing-sources' : 'sourcing-suivi';
@@ -1163,7 +1171,7 @@
     if (domainId === 'live' && path === '/admin/hub-live') {
       if (search.get('view') === 'execute') return 'hub-execution';
       if (!search.get('view') || search.get('view') === 'flux') return 'hub-flux';
-      return search.get('view') === 'queue' && search.get('tab') === 'all' || search.get('view') === 'order' && search.get('from') === 'all' ? 'hub-commandes' : 'hub-suivi';
+      return 'hub-suivi';
     }
     if (domainId === 'live' && path === '/admin/relais-live') {
       return search.get('view') === 'orders' && search.get('list') === 'all' || search.get('view') === 'order' && search.get('from') === 'all' ? 'relais-colis' : 'relais-suivi';

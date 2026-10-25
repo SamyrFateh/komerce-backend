@@ -11,7 +11,7 @@
  * @db-read       inventory_items, order_items, orders, parcel_items, parcels, products
  * @db-write      inventory_items, orders
  * @db-write-via:parcel-item-mutation-service parcel_items
- * @db-txn        resolve_before_behavior_change
+ * @db-txn        atomic_single_client_transaction_scan_assign
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  inventory
  * @version       2026-06
@@ -32,7 +32,8 @@
  */
 const db = require('../db');
 const {
-  assignSingleOrderItemToParcel,
+  addParcelItemTraced,
+  reassignParcelItem,
 } = require('./parcel-item-mutation-service');
 const { setInventoryCompletion } = require('./order-mutation-service');
 
@@ -40,35 +41,54 @@ const BUFFER_DEFAULT_HOURS = 12;
 
 // ─── RECEIVE ARTICLE ──────────────────────────────────────────
 async function receiveItem({ order_item_id, order_id }) {
-  // Verify order_item exists
-  const { rows: [oi] } = await db.query(
-    `SELECT oi.id, oi.order_id, oi.product_id, oi.quantity, p.name AS product_name
-     FROM order_items oi JOIN products p ON p.id = oi.product_id
-     WHERE oi.id = $1`, [order_item_id]
-  );
-  if (!oi) throw new Error('Article introuvable');
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
 
-  const effectiveOrderId = order_id || oi.order_id;
+    // La ligne de commande est l'autorité ; un order_id envoyé par l'agent
+    // n'a jamais le droit de substituer la commande réelle (issue #2939).
+    // Le verrou maintient identité, réception, proposition et complétion
+    // dans la même transaction.
+    const { rows: [oi] } = await client.query(
+      `SELECT oi.id, oi.order_id, oi.product_id, oi.quantity, p.name AS product_name
+       FROM order_items oi JOIN products p ON p.id = oi.product_id
+       WHERE oi.id = $1 FOR SHARE OF oi`, [order_item_id]
+    );
+    if (!oi) {
+      const err = new Error('Article introuvable');
+      err.code = 'ORDER_ITEM_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
 
-  // Create inventory_item
-  const { rows: [inv] } = await db.query(`
-    INSERT INTO inventory_items (id, order_item_id, order_id, status, received_at)
-    VALUES (gen_random_uuid(), $1, $2, 'received', NOW())
-    RETURNING *
-  `, [order_item_id, effectiveOrderId]);
+    if (order_id != null && String(order_id) !== String(oi.order_id)) {
+      const err = new Error('La commande fournie ne correspond pas à la ligne reçue');
+      err.code = 'INVENTORY_ORDER_MISMATCH';
+      err.status = 409;
+      throw err;
+    }
 
-  // Auto-propose
-  const proposal = await proposeAssignment(inv.id);
+    const { rows: [inv] } = await client.query(`
+      INSERT INTO inventory_items (id, order_item_id, order_id, status, received_at)
+      VALUES (gen_random_uuid(), $1, $2, 'received', NOW())
+      RETURNING *
+    `, [order_item_id, oi.order_id]);
 
-  // Update order completion
-  await updateOrderCompletion(effectiveOrderId);
-
-  return { item: inv, proposal };
+    const proposal = await proposeAssignment(inv.id, client);
+    await updateOrderCompletion(oi.order_id, client);
+    await client.query('COMMIT');
+    return { item: inv, proposal };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 // ─── PROPOSE ASSIGNMENT (guidance, not a gate) ────────────────
-async function proposeAssignment(inventoryItemId) {
-  const { rows: [item] } = await db.query(
+async function proposeAssignment(inventoryItemId, executor = db) {
+  const { rows: [item] } = await executor.query(
     `SELECT ii.*, o.destination_island, o.id AS order_id
      FROM inventory_items ii
      JOIN orders o ON o.id = ii.order_id
@@ -79,7 +99,7 @@ async function proposeAssignment(inventoryItemId) {
   if (!item) return null; // already assigned or proposed — fine
 
   // Find open parcels: same order first, then same destination
-  const { rows: parcels } = await db.query(`
+  const { rows: parcels } = await executor.query(`
     SELECT p.id, p.reference, p.order_id,
            CASE WHEN p.order_id = $2 THEN 0 ELSE 1 END AS priority,
            (SELECT COUNT(*)::int FROM parcel_items pi WHERE pi.parcel_id = p.id) AS item_count
@@ -93,7 +113,7 @@ async function proposeAssignment(inventoryItemId) {
 
   if (parcels.length > 0) {
     const best = parcels[0];
-    await db.query(`
+    await executor.query(`
       UPDATE inventory_items 
       SET status = 'proposed', proposed_parcel_id = $2, proposed_at = NOW(), updated_at = NOW()
       WHERE id = $1
@@ -104,7 +124,7 @@ async function proposeAssignment(inventoryItemId) {
 
   // No compatible parcel → buffer
   const bufferUntil = new Date(Date.now() + BUFFER_DEFAULT_HOURS * 3600000);
-  await db.query(`
+  await executor.query(`
     UPDATE inventory_items 
     SET status = 'buffered', buffer_reason = 'no_compatible_parcel', buffer_until = $2, updated_at = NOW()
     WHERE id = $1
@@ -119,43 +139,110 @@ async function proposeAssignment(inventoryItemId) {
 //   - different parcel → auto-reassign, no friction
 //   - no proposal yet → assign directly
 async function scanIntoParcel(inventoryItemId, parcelId) {
-  const { rows: [item] } = await db.query(
-    `SELECT * FROM inventory_items WHERE id = $1 AND status IN ('received', 'proposed', 'buffered')`,
-    [inventoryItemId]
-  );
-  if (!item) throw new Error('Item introuvable ou déjà assigné');
+  const client = await db.connect();
+  try {
+    // Inventory + parcel membership + order projection form ONE atomic operation.
+    await client.query('BEGIN');
 
-  const { rows: [parcel] } = await db.query(
-    `SELECT id, reference, status FROM parcels WHERE id = $1`,
-    [parcelId]
-  );
-  if (!parcel) throw new Error('Colis introuvable');
+    const { rows: [item] } = await client.query(
+      `SELECT * FROM inventory_items
+       WHERE id = $1 AND status IN ('received', 'proposed', 'buffered')
+       FOR UPDATE`,
+      [inventoryItemId]
+    );
+    if (!item) {
+      const err = new Error('Item introuvable ou déjà assigné');
+      err.code = 'INVENTORY_NOT_ASSIGNABLE';
+      err.status = 409;
+      throw err;
+    }
+    if (!item.order_item_id || !item.order_id) {
+      const err = new Error('Ligne ou commande d’origine absente : affectation interdite');
+      err.code = 'INVENTORY_PROVENANCE_UNKNOWN';
+      err.status = 409;
+      throw err;
+    }
 
-  const matched = item.proposed_parcel_id === parcelId;
+    const { rows: [line] } = await client.query(
+      'SELECT order_id FROM order_items WHERE id = $1', [item.order_item_id]
+    );
+    if (!line || String(line.order_id) !== String(item.order_id)) {
+      const err = new Error('Article inventaire sans rattachement canonique à sa commande');
+      err.code = 'INVENTORY_ORDER_MISMATCH';
+      err.status = 409;
+      throw err;
+    }
 
-  // Assign
-  await db.query(`
-    UPDATE inventory_items 
-    SET status = 'assigned', parcel_id = $2, proposed_parcel_id = NULL, 
-        assigned_at = NOW(), updated_at = NOW()
-    WHERE id = $1
-  `, [inventoryItemId, parcelId]);
+    // Existing assignment is an explicit re-assignment, not a silent
+    // ON CONFLICT DO NOTHING. Canonical logistics service validates the
+    // destination relay, market and mutable state of BOTH parcels.
+    const { rows: existing } = await client.query(
+      'SELECT parcel_id FROM parcel_items WHERE order_item_id = $1 FOR UPDATE',
+      [item.order_item_id]
+    );
+    const sourceIds = [...new Set(existing.map(row => String(row.parcel_id)))];
+    if (sourceIds.length > 1) {
+      const err = new Error('Ligne répartie sur plusieurs colis : réaffectation automatique interdite');
+      err.code = 'MULTI_PARCEL_REASSIGN_REQUIRES_REVIEW';
+      err.status = 409;
+      throw err;
+    }
+    if (sourceIds.length === 1 && sourceIds[0] !== String(parcelId)) {
+      await reassignParcelItem(client, {
+        fromParcelId: sourceIds[0], toParcelId: parcelId,
+        orderItemId: item.order_item_id, reason: 'inventory_scan',
+      });
+    } else {
+      // Quantity 1 = one physical inventory scan (preserves the old scan unit).
+      await addParcelItemTraced(client, {
+        parcelId, orderItemId: item.order_item_id, quantity: 1,
+      });
+    }
 
-  // Also add to parcel_items if not already there
-  await assignSingleOrderItemToParcel(db, {
-    parcelId,
-    orderItemId: item.order_item_id,
-  });
+    // Fail-closed: even if a conflict was silently ignored below the canonical
+    // writer, inventory can NEVER claim assigned unless the membership exists.
+    const { rows: [membership] } = await client.query(
+      'SELECT id FROM parcel_items WHERE parcel_id = $1 AND order_item_id = $2 LIMIT 1',
+      [parcelId, item.order_item_id]
+    );
+    if (!membership) {
+      const err = new Error('Colis non lié à la ligne après mutation : affectation annulée');
+      err.code = 'PARCEL_MEMBERSHIP_NOT_PERSISTED';
+      err.status = 409;
+      throw err;
+    }
 
-  // Update order completion
-  await updateOrderCompletion(item.order_id);
+    const { rows: [updated] } = await client.query(
+      `UPDATE inventory_items
+       SET status = 'assigned', parcel_id = $2, proposed_parcel_id = NULL,
+           assigned_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND status IN ('received', 'proposed', 'buffered')
+       RETURNING id`,
+      [inventoryItemId, parcelId]
+    );
+    if (!updated) {
+      const err = new Error('Affectation inventaire concurrente : opération annulée');
+      err.code = 'INVENTORY_ASSIGNMENT_RACE';
+      err.status = 409;
+      throw err;
+    }
+    await updateOrderCompletion(item.order_id, client);
+    const { rows: [parcel] } = await client.query(
+      'SELECT reference FROM parcels WHERE id = $1', [parcelId]
+    );
+    await client.query('COMMIT');
 
-  return { 
-    assigned: true, 
-    matched_proposal: matched, 
-    parcel_ref: parcel.reference,
-    message: matched ? '✅ Conforme à la proposition' : '🔄 Réassigné (proposition ignorée)'
-  };
+    const matched = String(item.proposed_parcel_id || '') === String(parcelId);
+    return {
+      assigned: true, matched_proposal: matched, parcel_ref: parcel.reference,
+      message: matched ? '✅ Conforme à la proposition' : '🔄 Réassigné (proposition ignorée)',
+    };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 // ─── BULK PROPOSE ALL ─────────────────────────────────────────
@@ -175,8 +262,8 @@ async function proposeAll() {
 }
 
 // ─── ORDER COMPLETION ─────────────────────────────────────────
-async function updateOrderCompletion(orderId) {
-  const { rows: [counts] } = await db.query(`
+async function updateOrderCompletion(orderId, executor = db) {
+  const { rows: [counts] } = await executor.query(`
     SELECT 
       (SELECT COUNT(*)::int FROM order_items WHERE order_id = $1) AS total,
       (SELECT COUNT(*)::int FROM inventory_items WHERE order_id = $1 AND status != 'cancelled') AS received,
@@ -187,7 +274,7 @@ async function updateOrderCompletion(orderId) {
   if (!counts) return;
 
   const ratio = counts.total > 0 ? counts.received / counts.total : 0;
-  await setInventoryCompletion(db, {
+  await setInventoryCompletion(executor, {
     orderId,
     itemsReceived: counts.received,
     itemsTotal: counts.total,

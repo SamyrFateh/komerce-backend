@@ -187,6 +187,53 @@ describe('supplier-catalog-scanner', () => {
     });
   });
 
+  it('conserve le candidat USD en attente de taux approuvé, avec prix brut et conversion KMF inconnue', async () => {
+    const pendingConfig = {
+      ...config,
+      finance: { ...config.finance, taux_usd_kmf: null },
+    };
+    const candidate = await normalizeCandidate({
+      supplier_name: 'CJ',
+      supplier_product_id: 'sku-usd-1',
+      product_name: 'Smartphone USD',
+      supplier_category: 'smartphone',
+      purchase_price: 12.5,
+      currency: 'USD',
+    }, { config: pendingConfig });
+
+    expect(candidate.purchase_price).toBe(12.5);
+    expect(candidate.currency).toBe('USD');
+    expect(candidate.purchase_price_kmf).toBeNull();
+    expect(candidate.fx_pending).toMatchObject({
+      code: 'fx_rate_unavailable', currency: 'USD',
+    });
+    expect(candidate.data_sources.fx_conversion).toBe('pending_official_rate');
+
+    const scanned = await scanCandidate(candidate, { config: pendingConfig });
+    expect(scanned).toMatchObject({
+      sourcing_decision: 'WATCH',
+      scan_result: {
+        fx_gate: { status: 'AWAITING_OFFICIAL_QUOTE', code: 'fx_rate_unavailable', currency: 'USD' },
+        economic_test_health_status: 'unknown',
+      },
+    });
+    expect(scanned.reason).toMatch(/Cotation officielle indisponible/);
+    expect(pricingEngine.recommend).not.toHaveBeenCalled();
+  });
+
+  it('les devises inconnues restent refusées et une conversion EUR valide reste normale', async () => {
+    const pendingConfig = { ...config, finance: { ...config.finance, taux_usd_kmf: null } };
+    await expect(normalizeCandidate({
+      supplier_name: 'CJ', product_name: 'Unknown', purchase_price: 10, currency: 'GBP',
+    }, { config: pendingConfig })).rejects.toThrow(/Devise inconnue/);
+
+    const candidate = await normalizeCandidate({
+      supplier_name: 'CJ', product_name: 'Euro', purchase_price: 10, currency: 'EUR',
+    }, { config: pendingConfig });
+    expect(candidate.purchase_price_kmf).toBe(4920);
+    expect(candidate.fx_pending).toBeNull();
+  });
+
   describe('scanCandidate', () => {
     it('appelle pricing-engine et transforme healthy en decision TEST', async () => {
       pricingEngine.recommend.mockResolvedValue({ health_status: 'healthy', recommended_price_kmf: 9000 });

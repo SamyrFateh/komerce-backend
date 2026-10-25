@@ -25,18 +25,46 @@ describe('CI PR sweep — serial behind synchronization', () => {
     });
   });
 
-  test('ignores draft, fork, no auto-merge and hold', () => {
+  test('ignores draft, fork and hold, but allows manually merged PRs', () => {
     const prs = [
       pr(1, { isDraft: true }), pr(2, { isCrossRepository: true }),
-      pr(3, { autoMergeRequest: null }), pr(4, { labels: [{ name: 'Hold' }] }),
+      pr(4, { labels: [{ name: 'Hold' }] }),
     ];
     expect(prs.some(isCandidate)).toBe(false);
-    expect(pickSweepAction(prs, NOW)).toEqual({ action: 'idle', reason: 'no-auto-merge-candidate' });
+    expect(pickSweepAction(prs, NOW)).toEqual({ action: 'idle', reason: 'no-eligible-candidate' });
+    expect(isCandidate(pr(3, { autoMergeRequest: null }))).toBe(true);
+  });
+
+  test('green BEHIND without auto-merge is synchronized, never merged', () => {
+    expect(pickSweepAction([pr(17, { autoMergeRequest: null })], NOW)).toEqual({
+      action: 'update', reason: 'oldest-behind-candidate', number: 17, headSha: 'sha17',
+    });
+  });
+
+  test('green CLEAN without auto-merge is left ready for human merge', () => {
+    expect(pickSweepAction([pr(17, { mergeStateStatus: 'CLEAN', autoMergeRequest: null })], NOW)).toEqual({
+      action: 'idle', reason: 'no-green-behind-candidate',
+    });
+    expect(pickSweepAction([pr(17, { mergeStateStatus: 'CLEAN', autoMergeRequest: null }), pr(18, { autoMergeRequest: null })], NOW)).toMatchObject({ action: 'update', number: 18 });
+  });
+
+  test('BEHIND with no green verdict never triggers update', () => {
+    expect(pickSweepAction([pr(17, { statusCheckRollup: [] })], NOW)).toEqual({
+      action: 'idle', reason: 'no-green-behind-candidate',
+    });
   });
 
   test('waits while another eligible PR is in flight', () => {
     const running = pr(5, { mergeStateStatus: 'BLOCKED', statusCheckRollup: [{ name: 'Required verdict', status: 'IN_PROGRESS' }] });
     expect(pickSweepAction([running, pr(9)], NOW)).toEqual({ action: 'wait', reason: 'in-flight', number: 5 });
+  });
+
+  test('BEHIND with a pending verdict must finish before any update', () => {
+    const nearGreen = pr(5, { statusCheckRollup: [{ name: 'Required verdict', status: 'IN_PROGRESS' }] });
+    expect(isInFlight(nearGreen, NOW)).toBe(true);
+    expect(pickSweepAction([nearGreen, pr(9)], NOW)).toEqual({
+      action: 'wait', reason: 'in-flight', number: 5,
+    });
   });
 
   test('red/conflicted PRs do not block the next behind candidate', () => {
@@ -79,10 +107,14 @@ describe('CI PR sweep — serial behind synchronization', () => {
   test('workflows have no github.token fallback for branch mutation', () => {
     const sweepWorkflow = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-sweep-behind.yml'), 'utf8');
     const autoWorkflow = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-auto-update.yml'), 'utf8');
+    expect(sweepWorkflow).toContain('PR_SYNC_TOKEN');
+    expect(sweepWorkflow).toMatch(/workflow_run:\s*\n\s*workflows: \[PR enforcement\]\s*\n\s*types: \[completed\]/);
+    expect(sweepWorkflow).toContain('cancel-in-progress: false');
     for (const workflow of [sweepWorkflow, autoWorkflow]) {
-      expect(workflow).toContain('PR_SYNC_TOKEN');
       expect(workflow).not.toContain('GH_TOKEN: ${{ github.token }}');
       expect(workflow).not.toContain('|| github.token');
     }
+    expect(autoWorkflow).not.toContain('pull_request_target:');
+    expect(autoWorkflow).not.toContain('update-branch');
   });
 });

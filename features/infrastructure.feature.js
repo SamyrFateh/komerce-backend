@@ -112,6 +112,9 @@ module.exports = {
       'scripts/arch-reconcile.js',
       'scripts/arch-schema-drift-check.js',
       'scripts/audit-backend-arch.js',
+      'scripts/audit-logic.js',
+      'scripts/lib/logic-detectors.js',
+      'scripts/lib/logic-data-detectors.js',
       'scripts/audit-komerce-arch-headers.js',
       'scripts/audit-sourcing.js',
       'scripts/backfill-boot-data.js',
@@ -363,6 +366,11 @@ module.exports = {
       'railway.toml',
     ],
     tests: [
+      'tests/unit/audit-logic.test.js',
+      'tests/unit/logic-detectors.test.js',
+      'tests/unit/logic-data-detectors.test.js',
+      'tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js',
+      'tests/unit/feature-invariant-check.test.js',
       'tests/unit/impact-check-security-conventions.test.js',
       'tests/unit/require-non-production.test.js',
       'tests/unit/target-identity.test.js',
@@ -486,6 +494,9 @@ module.exports = {
       // users — retiré : propriété auth-identity (arbitrage A)
       'outbox_events: W',   // producer écrit l'événement et la séquence ; worker écrit ACK/retry. Infrastructure reste le writer technique unique.
       'physical_outcome_receipts: W',   // reçu d'audit append-only du consumer minimal F0, écrit par outbox-worker.
+      'charges: W~',
+      'finance_config: W~',
+      'users: W~',
     ],
   },
 
@@ -537,6 +548,18 @@ module.exports = {
   authority: 'backend — ces fichiers sont consommés par toutes les features. Tout changement ici a un impact potentiel global.',
 
   invariants: [
+    { statement: 'A3/A4 contre-expertise : scanner suivi de bout en bout, fail-closed si périmètre vide/illisible, alerte LS-01 sur écriture de statut directe, LS-03 sur idempotence temporelle et LS-06 sur toute frontière PSP même hors transaction apparente',
+      test: 'tests/unit/logic-detectors.test.js' },
+    { statement: 'les neuf requêtes LD-01 à LD-07b sont vérifiées sur une base PostgreSQL de test par scénarios fautifs puis sains isolés en tables TEMP, avec rollback avant le scénario suivant',
+      test: 'tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js' },
+    { statement: 'audit:logic --data contrôle explicitement les neuf règles LD-01 à LD-07b sans écriture PostgreSQL, dans une transaction READ ONLY avec rollback systématique, et rend visible NON EXÉCUTÉ sans base',
+      test: 'tests/unit/logic-data-detectors.test.js' },
+    { statement: 'le scan logique repère les motifs métiers risqués dans tous les fichiers applicatifs suivis, classe les détections comme suspicions statiques, signale toute nouveauté depuis le commit de base et ne confond jamais une absence de signal avec une certification métier',
+      test: 'tests/unit/logic-detectors.test.js' },
+    { statement: 'un accord humain Debt Zero ne vaut que pour un SHA exact publié et examiné : commentaire « DEBT-APPROVAL <sha> » de l’approbateur, PR pointant exactement sur ce SHA, aucune déduction par date de commit ; en local, l’accord en attente est un statut distinct (exit 3) qui laisse publier pour examen tandis que la CI reste bloquante',
+      test: 'tests/unit/debt-zero-gate.test.js' },
+    { statement: 'un invariant exécutable de Feature Card n’est prouvé que par un runner officiel (jest unitaire, intégration, E2E API, Playwright enregistré, boutique) et jamais par un succès à vide (aucun test passé, test ignoré ou base absente) ; aucun nouvel invariant textuel n’est accepté par rapport au commit de base de la PR, sans fichier de tolérance',
+      test: 'tests/unit/feature-invariant-check.test.js' },
     'tout fichier middleware/ non-auth doit être listé ici',
     'tout fichier utils/ à @domain infrastructure doit être listé ici',
     'tout fichier bootstrap/ doit être listé ici',

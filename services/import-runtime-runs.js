@@ -390,6 +390,7 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     rejected,
     quarantined,
     deferred,
+    fx_pending: Number(intake.fx_pending || 0),
     certification_blocked: certificationBlocked,
     refined,
     taxonomized,
@@ -731,6 +732,7 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     accounting,
     diagnostics: {
       pipeline_status: intake.pipeline_status || null,
+      fx_pending: Number(intake.fx_pending || 0),
       canonical_resolved: intake.canonical_resolved === true,
       reject_reasons: intake.reject_reasons && typeof intake.reject_reasons === 'object'
         ? intake.reject_reasons

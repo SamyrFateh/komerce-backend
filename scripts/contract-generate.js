@@ -187,6 +187,7 @@ const ROUTE_SCHEMA_MAP = [
   // LOT 2E — Canonical Operations global + market-scoped
   { prefix: '/api/admin/dashboard/operations', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/operations/market/{marketCode}', method: 'get', schema: null },
+  { prefix: '/api/admin/dashboard/orders/rct1', method: 'get', schema: null },
   // Canonical Reference Resolver — query inline validée par le service (reference requise, <= 200 caractères).
   { prefix: '/api/admin/dashboard/reference/resolve', method: 'get', schema: null },
   // LOT 2F — Canonical Finance global + market-scoped
@@ -531,6 +532,9 @@ const KNOWN_RESPONSES = {
   },
   '/api/admin/dashboard/orders/market/{marketCode}': {
     get: { fields: ['scope','summary','signals','funnel','priority_orders','kpis','lifecycle','payment_mix','work_queues','data_quality'], source: 'service-read' }
+  },
+  '/api/admin/dashboard/orders/rct1': {
+    get: { fields: ['mode', 'simulation_scope', 'scope', 'summary', 'signals', 'funnel', 'priority_orders', 'kpis', 'lifecycle', 'payment_mix', 'work_queues', 'data_quality'], source: 'service-read' }
   },
   // Control Plane marché (lecture seule) : clés vérifiées par
   // tests/unit/market-control-plane-service.test.js et admin-market-control-plane-routes.test.js.

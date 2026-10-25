@@ -54,6 +54,11 @@ jest.mock('../../services/signal-service', () => ({
   generateSignals: (...args) => mockGenerateSignals(...args),
 }));
 
+const mockIngestEcbDaily = jest.fn();
+jest.mock('../../services/fx-public-reference-feed', () => ({
+  ingestEcbDaily: (...args) => mockIngestEcbDaily(...args),
+}));
+
 const crons = require('../../bootstrap/crons');
 
 describe('bootstrap/crons', () => {
@@ -67,11 +72,37 @@ describe('bootstrap/crons', () => {
     mockGetRuleNumber.mockResolvedValue(60);
     mockGenerateSignals.mockResolvedValue({ expired: 0, retired_obsolete: 0, generators: {} });
     mockPollOnce.mockResolvedValue([]);
+    mockIngestEcbDaily.mockResolvedValue({ as_of: '2026-10-23', rates_received: 30, inserted: 0 });
   });
 
   afterEach(() => {
     jest.clearAllTimers();
     jest.useRealTimers();
+  });
+
+  describe('official ECB FX reference cron', () => {
+    test('charge la BCE après le démarrage puis chaque heure ; aucun formulaire manuel', async () => {
+      crons.startPublicFxReferenceCron();
+      await jest.advanceTimersByTimeAsync(2 * 60 * 1000 - 1);
+      expect(mockIngestEcbDaily).not.toHaveBeenCalled();
+      await jest.advanceTimersByTimeAsync(1);
+      expect(mockIngestEcbDaily).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(60 * 60 * 1000);
+      expect(mockIngestEcbDaily).toHaveBeenCalledTimes(2);
+    });
+
+    test('erreur réseau non fatale ; prochain cycle réessaie', async () => {
+      mockIngestEcbDaily.mockRejectedValueOnce(new Error('ECB timeout'))
+        .mockResolvedValue({ as_of: '2026-10-23', rates_received: 30, inserted: 0 });
+      crons.startPublicFxReferenceCron({ initialDelayMs: 1000, intervalMs: 2000 });
+      await jest.advanceTimersByTimeAsync(1100);
+      expect(mockLog.error).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error) }),
+        'Official ECB FX sync failed; previous dated rates remain authoritative'
+      );
+      await jest.advanceTimersByTimeAsync(2000);
+      expect(mockIngestEcbDaily).toHaveBeenCalledTimes(2);
+    });
   });
 
   // ── startSnapshotRetentionCron ──────────────────────────────────────────

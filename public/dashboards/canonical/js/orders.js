@@ -39,7 +39,9 @@
   const TABS = Object.freeze([
     Object.freeze({ id: 'all', label: 'Toutes les files' }),
     Object.freeze({ id: 'cash', label: 'Cash à confirmer' }),
-    Object.freeze({ id: 'parcel', label: 'Colis à créer' }),
+    Object.freeze({ id: 'to_order', label: 'À commander' }),
+    Object.freeze({ id: 'awaiting', label: 'En attente de réception Hub' }),
+    Object.freeze({ id: 'parcel', label: 'Préparer le colis' }),
     Object.freeze({ id: 'follow', label: 'À suivre / bloquées' }),
   ]);
 
@@ -57,6 +59,10 @@
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.error || `Erreur HTTP ${response.status}`);
     return body;
+  }
+
+  function hubExecutionHref(marketCode) {
+    return `/admin/hub-live?view=execute&market=${encodeURIComponent(marketCode)}`;
   }
 
   function orderHref(reference) {
@@ -93,15 +99,17 @@
       const key = item.reference;
       if (seen.has(key)) { seen.get(key).queues.push(kind); return; }
       const row = { reference: item.reference, status: item.status, payment_mode: item.payment_mode || null,
-        payment_status: item.payment_status || (kind === 'cash' ? 'pending' : kind === 'parcel' ? 'paid' : null),
+        payment_status: item.payment_status || (kind === 'cash' ? 'pending' : kind === 'parcel' || kind === 'to_order' || kind === 'awaiting' ? 'paid' : null),
         total_kmf: item.total_kmf, client_name: item.client_name || null, relais_name: item.relais_name || null,
         market_code: item.market_code || null, product_lines: item.product_lines, first_product_name: item.first_product_name || null,
-        parcel_count: item.parcel_count, problem: item.problem || null, since_days: item.since_days, action, queues: [kind], ...extra };
+        parcel_count: item.parcel_count, problem: item.problem || null, since_days: item.since_days, action, actionable: item.actionable === false ? false : undefined, queues: [kind], ...extra };
       seen.set(key, row);
       rows.push(row);
     }
     (queues.pending_cash || []).forEach(i => add('cash', i, 'Confirmer le paiement', {}));
-    (queues.ready_for_parcel || []).forEach(i => add('parcel', i, 'Créer le colis', {}));
+    (queues.to_order || []).forEach(i => add('to_order', i, (i.next_action && i.next_action.label) || 'À commander', { actionable: true }));
+    (queues.awaiting_hub_reception || []).forEach(i => add('awaiting', i, (i.next_action && i.next_action.label) || 'En attente de réception Hub', { actionable: false }));
+    (queues.ready_for_parcel || []).forEach(i => add('parcel', i, (i.next_action && i.next_action.label) || 'Préparer le colis', { actionable: true }));
     (payload.priority_orders || []).forEach(i => add('follow', i, i.problem || 'À suivre', {}));
     return rows;
   }
@@ -118,7 +126,9 @@
     const signals = payload.signals || {};
     const cards = [
       ['cash', 'Cash à confirmer', summary.cash_to_confirm, 'Paiements en attente de confirmation'],
-      ['parcel', 'Colis à créer', summary.parcels_to_create, 'Commandes payées sans colis'],
+      ['to_order', 'À commander', summary.orders_to_order, 'Commandes payées à passer au fournisseur'],
+      ['awaiting', 'En attente de réception Hub', summary.awaiting_hub_reception, 'Commandées, articles pas encore reçus au Hub'],
+      ['parcel', 'Colis à préparer', summary.parcels_to_create, 'Articles reçus au Hub, prêts à être préparés'],
       ['active', 'Commandes à suivre', summary.active_orders, 'Commandes actives en cours'],
       ['blocked', 'Commandes bloquées', signals.commandes_bloquees, 'Incident ou litige ouvert'],
     ];
@@ -193,6 +203,12 @@
     box.appendChild(dl);
     const action = el(doc, 'p', 'kmc-ord-action', `Action requise : ${row.action}`);
     box.appendChild(action);
+    if (row.actionable && row.market_code) {
+      const exec = el(doc, 'a', 'kmc-ord-open', 'Hub live › Exécution');
+      exec.href = hubExecutionHref(row.market_code);
+      exec.setAttribute('data-ord-hub-execution', row.reference);
+      box.appendChild(exec);
+    }
     const link = el(doc, 'a', 'kmc-ord-open', 'Ouvrir Order 360');
     link.href = orderHref(row.reference);
     link.setAttribute('data-ord-open', row.reference);
@@ -259,7 +275,7 @@
     scroller.appendChild(table);
     listBox.appendChild(scroller);
     const q = payload.work_queues || {};
-    if ((q.pending_cash_total > q.pending_cash_shown) || (q.ready_for_parcel_total > q.ready_for_parcel_shown)) {
+    if (['pending_cash', 'to_order', 'awaiting_hub_reception', 'ready_for_parcel'].some(k => q[`${k}_total`] > q[`${k}_shown`])) {
       listBox.appendChild(el(doc, 'p', 'kmc-ord-muted', 'Liste limitée aux plus anciennes ; les totaux des indicateurs portent sur l’ensemble.'));
     }
     main.appendChild(listBox);
@@ -278,7 +294,8 @@
     const doc = options.document;
     const fetchFn = options.fetch;
     if (!rootNode) throw new Error('canonical_orders_root_missing');
-    const endpoint = endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
+    const normalEndpoint = endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
+    const endpoint = normalEndpoint;
     rootNode.textContent = 'Chargement de Commandes…';
     return jsonRequest(fetchFn, endpoint).then(payload => {
       render(doc, rootNode, payload, { tab: 'all', selected: null });
@@ -292,5 +309,5 @@
     });
   }
 
-  return Object.freeze({ mount, buildRows, endpointForContext, STATUS_LABELS, TABS });
+  return Object.freeze({ mount, buildRows, endpointForContext, hubExecutionHref, STATUS_LABELS, TABS });
 });

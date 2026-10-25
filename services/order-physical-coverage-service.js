@@ -50,4 +50,42 @@ async function getOrderPhysicalCoverage(executor, orderId) {
   return { covered: uncovered.length === 0, lines, uncovered };
 }
 
-module.exports = { getOrderPhysicalCoverage };
+/**
+ * Lecture par lot (une requête, sans N+1) de la couverture physique de plusieurs commandes.
+ * Même définition que getOrderPhysicalCoverage : lignes hors LOCAL_STOCK, quantités reçues
+ * utilisables (v_purchase_line_progress, annulations/quarantaine exclues comme le service).
+ * Retourne Map(order_id → { covered, needed, usable, lines }) ; `usable` est plafonné à `needed`
+ * par ligne pour que n/N ne dépasse jamais 100 %. Une commande sans ligne physique est absente de la Map.
+ * Lecture seule : aucune transition, aucun gate modifié.
+ */
+async function getOrdersPhysicalCoverage(executor, orderIds) {
+  const ids = [...new Set((orderIds || []).filter(Boolean))];
+  const result = new Map();
+  if (!ids.length) return result;
+  const { rows } = await executor.query(
+    `SELECT oi.order_id,
+            COUNT(*)::int AS lines,
+            SUM(oi.quantity)::int AS needed,
+            SUM(LEAST(oi.quantity, COALESCE(v.rcv, 0)))::int AS usable,
+            BOOL_AND(COALESCE(v.rcv, 0) >= oi.quantity) AS covered
+       FROM orders o
+       JOIN order_items oi ON oi.order_id = o.id AND COALESCE(oi.fulfillment_source, '') <> 'LOCAL_STOCK'
+       LEFT JOIN LATERAL (
+              SELECT SUM(p.received_quantity) FILTER (WHERE NOT p.cancelled) AS rcv
+                FROM v_purchase_line_progress p
+               WHERE p.order_item_id = oi.id
+            ) v ON TRUE
+      WHERE o.id = ANY($1::uuid[]) AND o.simulation_scope IS NULL
+      GROUP BY oi.order_id`,
+    [ids]
+  );
+  (rows || []).forEach((r) => result.set(r.order_id, {
+    covered: Boolean(r.covered),
+    lines: Number(r.lines),
+    needed: Number(r.needed),
+    usable: Number(r.usable),
+  }));
+  return result;
+}
+
+module.exports = { getOrderPhysicalCoverage, getOrdersPhysicalCoverage };

@@ -91,6 +91,8 @@
     "schema:check": "node scripts/check-schema-freshness.js",
     "schema:check:resurrection": "node scripts/check-schema-resurrection.js",
     "audit:gate": "node scripts/npm-audit-gate.js",
+    "audit:logic": "node scripts/audit-logic.js --static-only",
+    "audit:logic:report": "node scripts/audit-logic-summary.js",
     "audit:gate:observe": "node scripts/npm-audit-gate.js --observe",
     "testkit:check": "node scripts/test-kit-usage-check.js --strict",
     "testkit:check:report": "node scripts/test-kit-usage-check.js --report",
@@ -175,7 +177,7 @@
     "@playwright/test": "1.56.1",
     "dotenv": "^17.4.2",
     "jest": "^30.5.0",
-    "nodemon": "^3.1.4",
+    "nodemon": "^3.1.14",
     "supertest": "^7.2.2"
   },
   "engines": {

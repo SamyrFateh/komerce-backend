@@ -194,3 +194,63 @@ test('hasCapability : global = oui (le serveur re-valide) ; marché = capability
   expect(nav.hasCapability(null, 'catalog.expose', 'CM')).toBe(false);
   expect(nav.hasCapability(ctx, '', 'KM')).toBe(false);
 });
+
+describe('L7 — rattachement du workspace candidats à Live › Sourcing', () => {
+  test('la surface sourcing-workspace appartient au domaine live, espace Sourcing live', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
+    expect(src).toContain("'sourcing-workspace': 'live',");
+    expect(src).not.toContain("'sourcing-workspace': 'catalog'");
+    expect(src).toContain("'sourcing-workspace': 'import-runtime',");
+    expect(src).toContain("id: 'sourcing-candidats', label: 'Décisions candidates', href: '/admin/workspaces/sourcing'");
+  });
+});
+
+describe('L6 — autorité unique de navigation', () => {
+  const vm = require('vm');
+  function loadNav() {
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
+    const sandbox = { window: {}, document: {}, console };
+    sandbox.globalThis = sandbox;
+    vm.createContext(sandbox);
+    vm.runInContext(src, sandbox);
+    return sandbox.window.KomerceCanonicalNavigation || sandbox.KomerceCanonicalNavigation;
+  }
+
+  test('chaque surface appartient à un seul item de sidebar', () => {
+    const nav = loadNav();
+    const owners = {};
+    nav.SIDEBAR_GROUPS.forEach(group => group.items.forEach(item => (item.surfaces || []).forEach(surface => {
+      (owners[surface] = owners[surface] || []).push(item.id);
+    })));
+    Object.entries(owners).forEach(([surface, ids]) => expect([surface, ids.length]).toEqual([surface, 1]));
+    expect(owners['order-360']).toEqual(['flow-orders']);
+  });
+
+  test('Économie regroupe Prix & économie, Raffinerie et Catalogue, hors Commerce', () => {
+    const nav = loadNav();
+    const ids = id => nav.SIDEBAR_GROUPS.find(group => group.id === id).items.map(item => item.id);
+    expect(ids('economy')).toEqual(['workspace-pricing', 'workspace-refinery', 'workspace-catalog']);
+    ['workspace-pricing', 'workspace-refinery', 'workspace-catalog'].forEach(id => expect(ids('commerce')).not.toContain(id));
+    expect(nav.SIDEBAR_GROUPS.find(group => group.id === 'economy').label).toBe('Économie');
+  });
+
+  test('le retour d’Order 360 est Commandes ; les liens de tête ne portent plus de flèche de retour', () => {
+    const nav = loadNav();
+    expect(nav.BACK_TARGETS['order-360']).toEqual({ href: '/admin/orders', label: 'Retour aux commandes' });
+    ['order-360', 'client-360', 'product-360'].forEach(file => {
+      const src = fs.readFileSync(path.join(__dirname, '..', '..', `public/dashboards/canonical/js/${file}.js`), 'utf8');
+      expect(src).not.toMatch(/'← (Opérations|Commerce)'/);
+    });
+  });
+
+  test('chaque href de sidebar pointe une route déclarée par une surface ou un espace', () => {
+    const nav = loadNav();
+    const spaceHrefs = new Set();
+    nav.DOMAINS.forEach(d => { if (d.href) spaceHrefs.add(d.href); (d.spaces || []).forEach(s => spaceHrefs.add(s.href)); });
+    nav.SIDEBAR_GROUPS.forEach(group => group.items.forEach(item => {
+      const base = item.href.split('?')[0];
+      const inSpaces = [...spaceHrefs].some(h => h.split('?')[0] === base);
+      expect([item.id, inSpaces || base.startsWith('/admin/') || base.startsWith('/dashboards/canonical/')]).toEqual([item.id, true]);
+    }));
+  });
+});

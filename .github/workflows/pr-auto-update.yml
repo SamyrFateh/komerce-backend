@@ -1,83 +1,17 @@
-name: PR auto update
+# Automatic synchronization is owned exclusively by pr-sweep-behind.yml.
+# The former pull_request_target auto-update eagerly changed HEAD while
+# PR enforcement was still running, invalidating green proofs.
+# Keep this workflow as a no-op compatibility notice for historical links.
+name: PR auto update (delegated to sweep)
 
 on:
-  pull_request_target:
-    branches:
-      - main
-    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
-
-concurrency:
-  group: pr-auto-update-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  contents: read
 
 jobs:
-  update:
-    name: Auto-update current PR from main
-    if: >-
-      github.event_name == 'pull_request_target' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.draft == false
+  notice:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
     steps:
-      - name: Update internal PR when behind and conflict-free
-        env:
-          PR_SYNC_TOKEN: ${{ secrets.PR_SYNC_TOKEN || secrets.SCHEMA_REFRESH_PR_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ -z "${PR_SYNC_TOKEN:-}" ]; then
-            echo "::notice::PR sync skipped: no attributable PR_SYNC_TOKEN/SCHEMA_REFRESH_PR_TOKEN configured."
-            exit 0
-          fi
-          GH_TOKEN="$PR_SYNC_TOKEN"
-          PR_URL="https://api.github.com/repos/$REPOSITORY/pulls/$PR_NUMBER"
-          curl -fsSL \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "$PR_URL" > /tmp/pr.json
-
-          BASE_SHA="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.base?.sha||""))')"
-          HEAD_SHA="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.head?.sha||""))')"
-          MERGEABLE="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.mergeable))')"
-          MERGEABLE_STATE="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.mergeable_state||"unknown"))')"
-
-          if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
-            echo "::error::Unable to resolve PR base/head SHA."
-            exit 1
-          fi
-
-          # GitHub compare is base...head. To know whether the PR head is
-          # behind its base, compare BASE...HEAD and read behind_by.
-          COMPARE_URL="https://api.github.com/repos/$REPOSITORY/compare/$BASE_SHA...$HEAD_SHA"
-          curl -fsSL \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "$COMPARE_URL" > /tmp/compare.json
-
-          BEHIND_BY="$(node -e 'const c=require("/tmp/compare.json"); process.stdout.write(String(c.behind_by||0))')"
-          echo "mergeable_state=$MERGEABLE_STATE mergeable=$MERGEABLE behind_by=$BEHIND_BY"
-
-          if [ "$MERGEABLE" = "false" ] && [ "$MERGEABLE_STATE" = "dirty" ]; then
-            echo "Conflict detected: automatic update intentionally skipped."
-            exit 0
-          fi
-
-          if [ "$BEHIND_BY" -gt 0 ]; then
-            curl -fsSL -X PUT \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              -H "Content-Type: application/json" \
-              "https://api.github.com/repos/$REPOSITORY/pulls/$PR_NUMBER/update-branch" \
-              -d "{\"expected_head_sha\":\"$EXPECTED_HEAD_SHA\"}"
-            echo "Branch update requested; synchronize will trigger PR enforcement on the new HEAD."
-          else
-            echo "No mechanical branch update required; PR head already contains current base."
-          fi
+      - run: echo "Synchronization is handled by PR sweep behind, not on PR opening or synchronize."

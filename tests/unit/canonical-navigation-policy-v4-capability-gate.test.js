@@ -124,11 +124,12 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const groups = nav.sidebarGroupsFor({ role: 'admin' }, null);
     expect(groups.map(group => group.id)).toEqual([
-      'pilot', 'commerce', 'operations', 'finance', 'live', 'markets', 'administration',
+      'pilot', 'commerce', 'economy', 'operations', 'finance', 'live', 'markets', 'administration',
     ]);
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
-    expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients', 'Prix & économie', 'Raffinerie', 'Catalogue']);
+    expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients']);
+    expect(labels('economy')).toEqual(['Prix & économie', 'Raffinerie', 'Catalogue']);
     expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Achats fournisseurs']);
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
@@ -143,7 +144,8 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(all.some(item => item.id === 'entity-orders')).toBe(false);
     expect(all.filter(item => item.href === '/admin/orders')).toHaveLength(1);
     expect(labels('operations')).toContain('Vue opérations');
-    expect(groups.find(group => group.id === 'operations').items[0].surfaces).toContain('order-360');
+    expect(groups.find(group => group.id === 'operations').items[0].surfaces).not.toContain('order-360');
+    expect(groups.find(group => group.id === 'commerce').items.find(item => item.id === 'flow-orders').surfaces).toContain('order-360');
   });
 
   test('chaque entrée de menu d’un market_operator déclare la capability serveur qui la protège', () => {
@@ -316,11 +318,21 @@ describe('Sourcing — navigation locale du shell Canonical', () => {
     global.location = { pathname: '/admin/import-runtime', search, hash: '' };
     const nav = loadPolicy();
     expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.label))
-      .toEqual(['Suivi', 'Passages', 'Sources']);
+      .toEqual(['Suivi', 'Passages', 'Sources', 'Décisions candidates']);
     expect(nav._activeLocalTab('live', 'import-runtime')).toBe(active);
     expect(nav._localTabsFor('live', { role: 'admin' })[1].href)
       .toContain('view=passages');
   });
+});
+
+test('L7 : /admin/workspaces/sourcing est actif sur « Décisions candidates » dans Live › Sourcing', () => {
+  global.location = { pathname: '/admin/workspaces/sourcing', search: '', hash: '' };
+  try {
+    const nav = loadPolicy();
+    expect(nav.activePrimarySurface('sourcing-workspace')).toBe('live');
+    expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.id)).toContain('sourcing-candidats');
+    expect(nav._activeLocalTab('live', 'sourcing-workspace')).toBe('sourcing-candidats');
+  } finally { delete global.location; }
 });
 
 test('Hub et Relais Live utilisent leur navigation locale sans onglets concurrents du shell', () => {
@@ -329,17 +341,18 @@ test('Hub et Relais Live utilisent leur navigation locale sans onglets concurren
   expect(source).not.toContain("if (domainId === 'live' && (surface === 'hub-live' || surface === 'relais-live')) return null;");
   const hub = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/hub-live.js'), 'utf8');
   const relay = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/relay-live.js'), 'utf8');
-  expect(hub).toContain("label:'Commandes'");
+  expect(hub).not.toContain("key:'commandes'");
   expect(relay).toContain("label:'Colis'");
 });
 
 describe('Navigation Live — trois métiers, onglets contextuels uniques', () => {
   afterEach(() => { delete global.location; });
   test.each([
-    ['/admin/hub-live', '', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-flux'],
-    ['/admin/hub-live', '?view=overview', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-suivi'],
-    ['/admin/hub-live', '?view=flux', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-flux'],
-    ['/admin/hub-live', '?view=queue&tab=all', ['Flux Hub', 'Suivi', 'Commandes', 'Exécution'], 'hub-commandes'],
+    ['/admin/hub-live', '', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-flux'],
+    ['/admin/hub-live', '?view=overview', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-suivi'],
+    ['/admin/hub-live', '?view=flux', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-flux'],
+    ['/admin/hub-live', '?view=queue&tab=all', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-suivi'],
+    ['/admin/hub-live', '?view=execute', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-execution'],
     ['/admin/relais-live', '', ['Suivi', 'Colis'], 'relais-suivi'],
     ['/admin/relais-live', '?view=orders&list=all', ['Suivi', 'Colis'], 'relais-colis'],
   ])('%s %s respecte ses onglets métier', (pathname, search, labels, active) => {

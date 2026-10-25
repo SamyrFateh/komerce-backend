@@ -27,6 +27,7 @@
  */
 
 const https = require('https');
+const fs = require('fs');
 
 const args    = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
@@ -107,6 +108,29 @@ function checkBody(title, body) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
+  // Prévalidation hors GitHub : la même fonction checkBody fait autorité.
+  // Usage : node scripts/pr-governance-check.js --title "feat: ..." --body-file .git/PR_BODY.md
+  // L'option ne lit ni token ni API et évite les rouges de forme après publication.
+  const titleIndex = args.indexOf('--title');
+  const bodyIndex = args.indexOf('--body-file');
+  if (titleIndex !== -1 || bodyIndex !== -1) {
+    if (titleIndex < 0 || bodyIndex < 0 || !args[titleIndex + 1] || !args[bodyIndex + 1]) {
+      console.error('Usage: --title <titre> --body-file <fichier>');
+      process.exitCode = 2;
+      return;
+    }
+    let body;
+    try { body = fs.readFileSync(args[bodyIndex + 1], 'utf8'); }
+    catch (err) { console.error('Description PR illisible : ' + err.message); process.exitCode = 2; return; }
+    const result = checkBody(args[titleIndex + 1], body);
+    if (result.missing.length) {
+      console.error('Description PR incomplète : ' + result.missing.join(', '));
+      process.exitCode = 1;
+      return;
+    }
+    console.log('✔ Description PR conforme à la règle GitHub (' + (result.isLite ? 'allégée' : 'complète') + ').');
+    return;
+  }
   console.log(`\n${C.bld}╔═══════════════════════════════════════════════╗${C.r}`);
   console.log(`${C.bld}║  PR GOVERNANCE — plan d'attaque obligatoire   ║${C.r}`);
   console.log(`${C.bld}╚═══════════════════════════════════════════════╝${C.r}\n`);

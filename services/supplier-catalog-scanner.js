@@ -158,8 +158,23 @@ async function normalizeCandidate(product, options = {}) {
   const catMap = mapProductCategory(product, komerceCats, config.boutique_customs_affinities || []);
   const komerceCategory = catMap.key;
   dataSources.category = catMap.source;
-  const purchasePriceKmf = convertToKMF(product.purchase_price, product.currency, config.finance);
+  // Une indisponibilité temporaire de l'autorité FX ne rend pas le produit
+  // fournisseur invalide. Conserver ses faits bruts, et reporter la décision
+  // économique jusqu'à la récupération d'une cotation officielle EUR/USD.
+  let purchasePriceKmf = null;
+  let fxPending = null;
+  try {
+    purchasePriceKmf = convertToKMF(product.purchase_price, product.currency, config.finance);
+  } catch (error) {
+    if (error?.code !== 'fx_rate_unavailable') throw error;
+    fxPending = {
+      code: 'fx_rate_unavailable',
+      currency: String(product.currency || '').toUpperCase(),
+      reason: error.message,
+    };
+  }
   dataSources.purchase_price = product.purchase_price ? 'supplier' : 'missing';
+  if (fxPending) dataSources.fx_conversion = 'pending_official_rate';
   const w = estimateWeight(product.weight_kg, komerceCategory, komerceCats);
   dataSources.weight = w.source;
   const v = estimateVolume(product.dimensions, komerceCategory, komerceCats);
@@ -186,6 +201,7 @@ async function normalizeCandidate(product, options = {}) {
     dim_h_cm: product.dimensions?.h_cm || null,
     komerce_category: komerceCategory,
     purchase_price_kmf: purchasePriceKmf,
+    fx_pending: fxPending,
     estimated_weight_kg: w.value,
     estimated_volume_m3: v.value,
     target_margin_pct: targetMarginPct,
@@ -219,6 +235,23 @@ function economicTestHealth(reco = {}) {
 
 async function scanCandidate(candidate, options = {}) {
   const config = options.config || (await pricingEngine.loadGlobalConfig());
+  if (candidate.fx_pending?.code === 'fx_rate_unavailable') {
+    return {
+      scan_result: {
+        fx_gate: {
+          code: 'fx_rate_unavailable',
+          status: 'AWAITING_OFFICIAL_QUOTE',
+          currency: candidate.fx_pending.currency,
+        },
+        economic_test_health_status: 'unknown',
+      },
+      sourcing_decision: 'WATCH',
+      reason: `Cotation officielle indisponible pour ${candidate.fx_pending.currency} — conversion et décision économique en attente.`,  
+      recommended_action: 'Attendre la synchronisation automatique BCE, puis relancer le passage fournisseur.',
+      market_confidence: 'unknown',
+      confidence: candidate.confidence || 'low',
+    };
+  }
   if (!candidate.purchase_price_kmf) {
     return { scan_result: null, sourcing_decision: 'WATCH', reason: 'Prix d\'achat manquant — décision impossible.', recommended_action: 'Mettre en watchlist, ne pas importer pour l\'instant', market_confidence: 'unknown', confidence: candidate.confidence || 'low' };
   }

@@ -72,6 +72,8 @@ jobs:
         run: |
           PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
           node scripts/ci-db-bootstrap.js
+      - name: Feature invariants — preuve complète sur base reconstruite
+        run: node scripts/feature-invariant-check.js --strict --run=db --base HEAD
       - name: Integration DB proofs (full)
         run: npm run test:integration
       - name: Feature-first E2E API proofs (full)

@@ -1,0 +1,77 @@
+name: Chromium Canonical staging real navigation and markets
+on:
+  workflow_dispatch:
+    inputs:
+      roles:
+        description: 'admin baseline or all roles'
+        required: true
+        type: choice
+        default: all
+        options: [admin, all]
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-canonical-chromium-staging
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] canonical-chromium-audit')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CI: 'true'
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_AUDIT_ROLES: ${{ github.event_name == 'workflow_dispatch' && inputs.roles || 'all' }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_FINANCE_EMAIL: ${{ secrets.E2E_FINANCE_EMAIL }}
+      E2E_FINANCE_PASSWORD: ${{ secrets.E2E_FINANCE_PASSWORD }}
+      E2E_SOURCING_EMAIL: ${{ secrets.E2E_SOURCING_EMAIL }}
+      E2E_SOURCING_PASSWORD: ${{ secrets.E2E_SOURCING_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Pin expected deployment SHA
+        shell: bash
+        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Audit actual staging in read-only Chromium
+        run: npx playwright test --config=playwright.staging-canonical.config.js
+      - name: Build graphs and coverage matrix even on failure
+        if: always()
+        run: node scripts/recette/summarize-staging-chromium.js
+      - name: Publish report to workflow summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f test-results/staging-chromium/rapport.md ]; then
+            cat test-results/staging-chromium/rapport.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Archive screenshots, traces, JSON, CSV and HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-canonical-chromium-${{ github.run_id }}
+          path: test-results/staging-chromium/
+          retention-days: 14
+          if-no-files-found: warn

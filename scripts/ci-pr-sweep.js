@@ -37,14 +37,19 @@ function verdictOf(pr) {
 }
 
 function isCandidate(pr) {
-  if (pr.isDraft || pr.isCrossRepository || !pr.autoMergeRequest) return false;
+  if (pr.isDraft || pr.isCrossRepository) return false;
   return !(pr.labels || []).some(l => String(l.name || l).toLowerCase() === HOLD_LABEL);
 }
 
 function isInFlight(pr, nowMs) {
   const state = pr.mergeStateStatus;
+  // BEHIND ne signifie pas inactif : un Required verdict est peut-être
+  // encore en cours sur le HEAD actuel. Ne jamais tuer cette preuve.
+  if (verdictOf(pr) === 'pending') return true;
   if (state === 'BEHIND' || state === 'DIRTY') return false;
-  if (MERGE_IMMINENT.has(state)) return true;
+  // Une PR CLEAN attendant une fusion humaine ne doit pas geler le sweep.
+  // Seules les PR déjà en auto-merge peuvent être effectivement imminentes.
+  if (MERGE_IMMINENT.has(state)) return Boolean(pr.autoMergeRequest);
   const verdict = verdictOf(pr);
   if (verdict === 'pending') return true;
   if (verdict === 'failure') return false;
@@ -55,11 +60,13 @@ function isInFlight(pr, nowMs) {
 
 function pickSweepAction(prs, nowMs = Date.now()) {
   const candidates = (prs || []).filter(isCandidate).sort((a, b) => a.number - b.number);
-  if (!candidates.length) return { action: 'idle', reason: 'no-auto-merge-candidate' };
+  if (!candidates.length) return { action: 'idle', reason: 'no-eligible-candidate' };
   const busy = candidates.find(pr => isInFlight(pr, nowMs));
   if (busy) return { action: 'wait', reason: 'in-flight', number: busy.number };
-  const target = candidates.find(pr => pr.mergeStateStatus === 'BEHIND' && verdictOf(pr) !== 'failure');
-  if (!target) return { action: 'idle', reason: 'no-behind-candidate' };
+  // N'agir que pour une PR déjà verte : pas de synchronisation qui déclenche
+  // une CI alors que des preuves sont absentes ou encore en cours.
+  const target = candidates.find(pr => pr.mergeStateStatus === 'BEHIND' && verdictOf(pr) === 'success');
+  if (!target) return { action: 'idle', reason: 'no-green-behind-candidate' };
   return { action: 'update', reason: 'oldest-behind-candidate', number: target.number, headSha: target.headRefOid };
 }
 

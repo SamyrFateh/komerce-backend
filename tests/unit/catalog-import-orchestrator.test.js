@@ -387,6 +387,56 @@ describe('importCatalog', () => {
     });
   });
 
+  test('20 prix USD sans taux FX deviennent 20 candidats différés, et non 20 rejets', async () => {
+    jest.clearAllMocks();
+    const products = Array.from({ length: 20 }, (_, index) => makeV2Product({
+      supplier_product_id: `sku-fx-${index + 1}`,
+      product_name: `Produit fournisseur ${index + 1}`,
+      currency: 'USD',
+      purchase_price: 12,
+    }));
+    const dispatch = jest.fn().mockResolvedValue({ products, invalid: [] });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) {
+        return Promise.resolve({ rows: [{ id: 'import-fx' }] });
+      }
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'cand-fx', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized({
+      purchase_price_kmf: null,
+      fx_pending: { code: 'fx_rate_unavailable', currency: 'USD' },
+    }));
+    eligibility.checkEligibility.mockReturnValue({ layer: null, eligible: true });
+    scanner.scanCandidate.mockResolvedValue(makeScan({
+      sourcing_decision: 'WATCH',
+      scan_result: { fx_gate: { status: 'AWAITING_APPROVED_RATE' } },
+      reason: 'Taux EUR/USD en attente',
+    }));
+    shadow.recordCatalogImportObservationsShadow.mockResolvedValue({
+      status: 'recorded', source_id: 'api:aliexpress', capture_id: 'capture-fx',
+      resolution: { status: 'resolved', review_required: 0, deferred_parent: 0 },
+    });
+
+    const result = await importCatalog({
+      supplier_name: 'AliExpress', source_type: 'api', supplier_id: 'aliexpress',
+    }, 'user-1', dispatch);
+
+    expect(result.status).toBe(200);
+    expect(result.body).toMatchObject({
+      created: 20, accepted: 20, rejected: 0, fx_pending: 20,
+      pipeline_status: 'PARTIAL_BLOCKED',
+      errors: [],
+    });
+    expect(result.body.source_certification).toMatchObject({
+      input_total: 20, deferred: 20, fx_pending: 20,
+      rejected: 0, unaccounted: 0, balanced: true,
+    });
+    expect(scanner.scanCandidate).toHaveBeenCalledTimes(20);
+  });
+
   test('WATCH est une issue DEFERRED explicite, comptée mais non certifiée', async () => {
     jest.clearAllMocks();
     const product = makeV2Product({
@@ -803,3 +853,41 @@ describe('importCatalog — événements par produit (télémétrie best-effort)
   });
 });
 
+
+describe('Intake — agrégation et preuves d’exclusion', () => {
+  const {
+    aggregateReasons,
+    eligibilityMatchLabel,
+    eligibilityReason,
+    automaticRejectedReason,
+  } = require('../../services/suppliers/catalog-import-orchestrator');
+
+  test('rejets invalides : couvre erreur unique, liste, objet sans motif et liste vide', () => {
+    expect(aggregateReasons(null)).toEqual({});
+    expect(aggregateReasons([
+      { errors: ['media absent', 'price invalid'] },
+      { error: 'media absent' },
+      {},
+    ])).toEqual({
+      'media absent': 2,
+      'price invalid': 1,
+      'raison inconnue': 1,
+    });
+  });
+
+  test('la décision douanière décrit la preuve, ou conserve un verdict sans match', () => {
+    expect(eligibilityReason(null)).toBeNull();
+    expect(eligibilityMatchLabel({})).toBeNull();
+    expect(eligibilityMatchLabel({ match: { type: 'category', value: null } })).toBeNull();
+    expect(eligibilityReason({ label: 'Restriction vérifiée', legal_note: 'Article local' }))
+      .toBe('Restriction vérifiée — Article local');
+    expect(eligibilityReason({
+      label: 'Interdit', match: { type: 'keyword', value: 'battery' },
+      legal_note: 'Référence douanière',
+    })).toBe('Interdit — keyword="battery" — Référence douanière');
+    expect(automaticRejectedReason({ label: 'Interdit', match: { type: 'keyword', value: 'battery' } }))
+      .toBe('[auto-exclusion] Interdit [keyword="battery"]');
+    expect(automaticRejectedReason({ label: 'Interdit' })).toBe('[auto-exclusion] Interdit');
+    expect(automaticRejectedReason(null)).toBe('[auto-exclusion] Exclusion');
+  });
+});

@@ -103,7 +103,7 @@ const STEPS = [
   {
     label:    'Gate 2b — Invariants exécutables (feature-invariant-check)',
     category: 'gate',
-    cmd:      'node scripts/feature-invariant-check.js --strict',
+    cmd:      'node scripts/feature-invariant-check.js --strict --run=unit',
   },
 
   // ── Reconstruction architecture ────────────────────────────────────────

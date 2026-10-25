@@ -24,6 +24,7 @@
   if (root) root.KomerceCanonicalSourcingWorkspace = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createSourcingWorkspace() {
   const ENDPOINT = '/api/admin/workspaces/sourcing';
+  const LOAD_TIMEOUT_MS = 20000;
 
   function contextualHref(path, returnTo, label) {
     const nav = globalThis.KomerceCanonicalNavigation;
@@ -77,15 +78,30 @@
   }
 
   async function jsonRequest(fetchFn, url, options = {}) {
-    const response = await fetchFn(url, {
+    const controller = options.timeoutMs && typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), options.timeoutMs) : null;
+    let response;
+    try {
+      response = await fetchFn(url, {
       method: options.method || 'GET',
       credentials: 'include',
+      ...(controller ? { signal: controller.signal } : {}),
       headers: {
         Accept: 'application/json',
         ...(options.body == null ? {} : { 'Content-Type': 'application/json' }),
       },
       body: options.body == null ? undefined : JSON.stringify(options.body),
-    });
+      });
+    } catch (error) {
+      if (error && error.name === 'AbortError') {
+        const timeout = new Error('Le chargement du Sourcing prend trop de temps. Réessayez dans un instant.');
+        timeout.code = 'sourcing_workspace_timeout';
+        throw timeout;
+      }
+      throw error;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(body.error || `Erreur HTTP ${response.status}`);
@@ -634,7 +650,10 @@
     };
     context.reload = async () => {
       try {
-        const payload = await jsonRequest(fetchFn, ENDPOINT);
+        const search = options.locationSearch
+          ?? (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
+        const diagnostic = new URLSearchParams(search || '').get('diagnostic') === '1';
+        const payload = await jsonRequest(fetchFn, diagnostic ? `${ENDPOINT}?include=health` : ENDPOINT, { timeoutMs: diagnostic ? 60000 : LOAD_TIMEOUT_MS });
         renderPayload(rootNode, ui, doc, payload, context);
         return payload;
       } catch (error) {

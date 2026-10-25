@@ -116,9 +116,9 @@ async function buildMarketPilotage(filters, market) {
     },
     {
       view: 'costing',
-      title: 'Coût rendu relais',
+      title: 'Coûts & marge',
       subtitle: 'Dire la vérité économique',
-      url: '/admin/costing',
+      url: '/admin/finance',
       kpis_summary: [ca, coutReel, margeConsolidee, cmdsCoutIncomplet, coutMoyParCmd],
     },
     {

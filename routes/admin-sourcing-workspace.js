@@ -84,12 +84,15 @@ router.get('/', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store');
     const timings = {};
+    // L7 : l'audit d'intégrité (≈17 s sur le staging) ne bloque plus le chargement ;
+    // il n'est calculé que pour la vue diagnostic (?include=health).
+    const withHealth = req.query.include === 'health';
     const [payload, health] = await Promise.all([
       workspace.buildWorkspace({ timings }),
-      timed(timings, 'health', sourcingHealth.buildHealthDashboard()),
+      withHealth ? timed(timings, 'health', sourcingHealth.buildHealthDashboard()) : Promise.resolve(null),
     ]);
     res.set('Server-Timing', serverTiming(timings));
-    res.json({ ...payload, health });
+    res.json(withHealth ? { ...payload, health } : payload);
   } catch (err) { handleError(err, res, next); }
 });
 

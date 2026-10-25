@@ -74,7 +74,11 @@ function isExcludedPublicProductRef(value) {
 function canonicalProductImageSql(alias = 'p') {
   const a = assertSqlAlias(alias);
   return `COALESCE(
-    NULLIF(BTRIM(${a}.image_url), ''),
+    CASE
+      WHEN NULLIF(BTRIM(${a}.image_url), '') NOT ILIKE 'data:image/%'
+        THEN NULLIF(BTRIM(${a}.image_url), '')
+      ELSE NULL
+    END,
     (
       SELECT NULLIF(BTRIM(cm.url), '')
         FROM catalog_media cm
@@ -83,6 +87,18 @@ function canonicalProductImageSql(alias = 'p') {
          AND NULLIF(BTRIM(cm.url), '') IS NOT NULL
          AND cm.url NOT ILIKE 'data:image/%'
        ORDER BY cm.display_order ASC NULLS LAST, cm.created_at ASC
+       LIMIT 1
+    ),
+    (
+      SELECT NULLIF(BTRIM(g.url), '')
+        FROM jsonb_array_elements_text(
+          CASE WHEN jsonb_typeof(${a}.images) = 'array'
+            THEN ${a}.images ELSE '[]'::jsonb END
+        ) WITH ORDINALITY AS g(url, ordinal)
+       WHERE NULLIF(BTRIM(g.url), '') IS NOT NULL
+         AND g.url NOT ILIKE 'data:image/%'
+         AND (g.url ~* '^https://[^[:space:]]+$' OR g.url LIKE '/%')
+       ORDER BY g.ordinal
        LIMIT 1
     )
   )`;

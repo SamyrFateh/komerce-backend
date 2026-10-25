@@ -67,6 +67,7 @@ module.exports = {
       'services/order-financial-closure-signal.js',
       'services/order-checkout-service.js',
       'services/rct1-checkout-reference-guard.js',
+      'services/dashboard-rct1-orders.js',
       'services/order-checkout-item-resolution.js',
       'services/order-checkout-persistence.js',
       'services/order-fx-snapshot.js',
@@ -214,6 +215,8 @@ module.exports = {
       'relais: R',
       'sms_log: W',
       'users: R',
+      'scans: W~',
+      'signals: W',
     ],
   },
 
@@ -302,6 +305,7 @@ module.exports = {
       { fn: 'makeInput', file: 'public/boutique/js/b-checkout.js' },
     ],
     consumes: [
+      'dashboard (RCT1 canonical projection reuses dashboard-orders LIFECYCLE read-only contract; service dashboard-rct1-orders.js -> services/dashboard-orders.js)',
       'market-control-plane (preuve de livrabilité du marché : assertMarketDeliverable, garde checkout Lot B ; refus 409 MARKET_DELIVERY_NOT_PROVEN sans preuve)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',

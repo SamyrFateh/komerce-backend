@@ -92,3 +92,20 @@ describe('table-ownership — marqueurs ! (lifecycle owner) et ~ (technical writ
     ]);
   });
 });
+
+describe('table-ownership — convention RW ⊇ R (verrou)', () => {
+  test('RW est un écrivain portant la lecture dans writers[].mode, jamais dupliqué en readers', () => {
+    const rec = resolveTableOwnership([
+      manifest('orders', ['orders: RW!']),
+      manifest('dashboard', ['orders: R']),
+    ]).tableOwnership.orders;
+    expect(rec.writers).toEqual([{ feature: 'orders', mode: 'RW', declaredOwner: true, technical: false }]);
+    expect(rec.readers).toEqual(['dashboard']);
+  });
+
+  test('le rapport multi-écrivains réutilise le parseur canonique (aucun regex divergent)', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../scripts/generate-multi-writer-report.js'), 'utf8');
+    expect(src).toContain("require('./lib/table-ownership')");
+    expect(src).not.toMatch(/\(R\|W\|RW\)'/);
+  });
+});

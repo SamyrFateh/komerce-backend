@@ -21,6 +21,8 @@ const REFERENCE_MARKETS = Object.freeze([
   Object.freeze({ code: 'YT', name: 'Mayotte', currency: 'EUR', minor_unit: 2, is_active: true }),
   Object.freeze({ code: 'CM', name: 'Cameroun', currency: 'XAF', minor_unit: 0, is_active: true }),
   Object.freeze({ code: 'CG', name: 'Congo', currency: 'XAF', minor_unit: 0, is_active: true }),
+  // Migration 310 : marché préparé uniquement. Le seeding CI ne l'active jamais.
+  Object.freeze({ code: 'DJ', name: 'Djibouti', currency: 'DJF', minor_unit: 0, is_active: false }),
 ]);
 
 // Données de référence déterministes de migrations/142_currency_parities.sql.
@@ -29,6 +31,23 @@ const FIXED_CURRENCY_PARITIES = Object.freeze([
   Object.freeze({ currency: 'EUR', eur_rate: 1, source_note: 'Référence — identité, pas un ancrage' }),
   Object.freeze({ currency: 'KMF', eur_rate: 491.96775, source_note: 'Ancrage comorien, garanti Trésor français, en vigueur depuis 1999' }),
   Object.freeze({ currency: 'XAF', eur_rate: 655.957, source_note: 'Franc CFA d’Afrique centrale (CEMAC), garanti Trésor français' }),
+]);
+// Parités officielles FIXES des migrations 311/314, pas des taux de marché.
+// Le snapshot CI est schema-only et ne conserve pas ces INSERT historiques.
+// Ne JAMAIS préremplir EUR/USD : observation humaine approuvée obligatoire.
+const OFFICIAL_FX_PEGS = Object.freeze([
+  Object.freeze({
+    quote_ccy: 'DJF', rate: 177.721,
+    source_label: 'Banque centrale de Djibouti — parité officielle 177,721 DJF pour 1 USD',
+    source_ref: 'https://en.wikipedia.org/wiki/Djiboutian_franc',
+    valid_from: '2000-01-01T00:00:00Z',
+  }),
+  Object.freeze({
+    quote_ccy: 'AED', rate: 3.6725,
+    source_label: 'Central Bank of the UAE — parité officielle 3,6725 AED pour 1 USD (depuis 1997)',
+    source_ref: 'CBUAE — peg AED/USD',
+    valid_from: '2000-01-01T00:00:00Z',
+  }),
 ]);
 
 async function tableExists(client, tableName) {
@@ -101,6 +120,38 @@ async function seedCurrencyParities(client) {
     );
   }
   return { skipped: false, count: FIXED_CURRENCY_PARITIES.length };
+}
+
+/**
+ * Restaure uniquement les pegs officiels de migrations 311/314 dans une CI
+ * reconstruite depuis le snapshot schema-only. N'effectue jamais d'UPDATE,
+ * ne crée aucune observation EUR/USD et respecte le caractère append-only.
+ * La passe pre-migration est ignorée si la contrainte multi-devises n'existe
+ * pas encore ; ci-db-bootstrap relance le seed après les migrations.
+ */
+async function seedFxPegs(client) {
+  if (!(await tableExists(client, 'fx_pegs'))) return { skipped: true, count: 0 };
+  const { rows: [constraint] } = await client.query(
+    `SELECT EXISTS (
+       SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'public.fx_pegs'::regclass
+          AND conname = 'fx_peg_unique_quote_valid_from'
+     ) AS present`
+  );
+  if (!constraint?.present) return { skipped: true, count: 0 };
+
+  let count = 0;
+  for (const peg of OFFICIAL_FX_PEGS) {
+    const { rowCount } = await client.query(
+      `INSERT INTO fx_pegs (quote_ccy, rate, source_label, source_ref, valid_from)
+       SELECT $1, $2, $3, $4, $5::timestamptz
+       WHERE NOT EXISTS (SELECT 1 FROM fx_pegs WHERE quote_ccy = $1)
+       ON CONFLICT (quote_ccy, valid_from) DO NOTHING`,
+      [peg.quote_ccy, peg.rate, peg.source_label, peg.source_ref, peg.valid_from]
+    );
+    count += rowCount;
+  }
+  return { skipped: false, count };
 }
 
 async function seedCapabilities(client) {
@@ -199,11 +250,12 @@ async function seedReferenceData(client) {
   try {
     const markets = await seedMarkets(connection);
     const currencyParities = await seedCurrencyParities(connection);
+    const fxPegs = await seedFxPegs(connection);
     const capabilities = await seedCapabilities(connection);
     const templateId = await ensureCurrentCeilingTemplate(connection);
     const ceiling = await seedCeilingCapabilities(connection, templateId);
     const financeConfig = await seedFinanceConfig(connection);
-    return { markets, currencyParities, capabilities, ceiling, templateId, financeConfig };
+    return { markets, currencyParities, fxPegs, capabilities, ceiling, templateId, financeConfig };
   } finally {
     if (ownClient) connection.release();
   }
@@ -215,7 +267,7 @@ async function main() {
   }
   const result = await seedReferenceData();
   console.log(
-    `[seed-reference-data] markets=${result.markets.count}, currency_parities=${result.currencyParities.count}, capabilities=${result.capabilities.count}, ceiling=${result.ceiling.count}`
+    `[seed-reference-data] markets=${result.markets.count}, currency_parities=${result.currencyParities.count}, fx_pegs=${result.fxPegs.count}, capabilities=${result.capabilities.count}, ceiling=${result.ceiling.count}`
   );
 }
 
@@ -231,9 +283,11 @@ if (require.main === module) {
 module.exports = {
   REFERENCE_MARKETS,
   FIXED_CURRENCY_PARITIES,
+  OFFICIAL_FX_PEGS,
   seedReferenceData,
   seedMarkets,
   seedCurrencyParities,
+  seedFxPegs,
   seedCapabilities,
   ensureCurrentCeilingTemplate,
   seedCeilingCapabilities,
