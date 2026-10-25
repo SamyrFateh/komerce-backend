@@ -48,7 +48,7 @@ function scanExemptionSinks(source,file,pairs) {
       // exemption decision in this function's conditional or SQL WHERE.
       const writesTable=new RegExp('\\bUPDATE\\s+(?:public\\.)?'+table+'\\s+SET\\b','i').test(fn.text);
       const modifiesField=new RegExp('\\b'+field+'\\s*=\\s*\\$','i').test(fn.text);
-      const guardsFlag=new RegExp('(\\bif\\s*\\([^\\n]{0,250}\\b'+flag+'\\b|\\bWHERE\\b[^;]{0,500}\\b'+flag+'\\b)','i').test(fn.text);
+      const guardsFlag=new RegExp('(\\bif\\s*\\([^\\n]{0,250}\\b'+flag+'\\b|\\bWHERE\\b[^\\n;]{0,300}\\b'+flag+'\\b)','i').test(fn.text);
       if(writesTable && modifiesField && !guardsFlag) {
         results.push({
           kind:'EXEMPTION_WRITE_UNGUARDED',severity:'REVIEW',file,
