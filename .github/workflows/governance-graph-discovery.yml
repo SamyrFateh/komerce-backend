@@ -12,6 +12,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout latest main separately for HEAD-to-HEAD coverage
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: target-main
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -35,6 +40,17 @@ jobs:
         run: |
           node scripts/audits/triage-discovery-signals.js audit-results/discovery/findings.json --out audit-results/triage
           cat audit-results/triage/signal-triage.md | head -n 45
+      - name: Full Git tracked-file inventory and static detection on audit branch
+        run: node scripts/audits/repo-wide-scan.js --root . --out audit-results/repo-wide/audit
+      - name: Same scanner against exact latest main checkout (never stage or production)
+        run: node scripts/audits/repo-wide-scan.js --root target-main --out audit-results/repo-wide/main
+      - name: Publish independently measurable coverage and findings for both SHAs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: komerce-repo-wide-discovery
+          path: audit-results/repo-wide/
+          if-no-files-found: warn
       - name: Upload complete cross-domain graph and candidate evidence
         if: always()
         uses: actions/upload-artifact@v4
