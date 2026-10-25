@@ -28,7 +28,7 @@ describe('generic authority precedence — governance as an executable fact', ()
   it('finds the FIRST loss of authority, before the value disappears', () => {
     const r=run([e('h1','human_override',55,'manual'),
       e('s1','supplier_reimport',55,'supplier',32),
-      e('s2','supplier_reimport',33,'supplier',33)]);
+      e('s2','supplier_reimport',33,'supplier',33)], {scanField:'scan'});
     expect(r.verdict).toBe('CONTRADICTION_OBSERVED');
     expect(r.firstViolation).toMatchObject({kind:'AUTHORITY_MARKER_OVERWRITTEN',at:'s1'});
     expect(r.violations.map(x=>x.kind)).toContain('MANUAL_VALUE_OVERWRITTEN');
