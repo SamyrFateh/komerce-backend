@@ -70,7 +70,7 @@ for(const inv of invariants){
   const gated=/(describe|test|it)\.skip\s*\(/.test(text)||(/describe\.skip/.test(text));
   const mock=/jest\.mock\s*\(/.test(text);
   const pg=Boolean(/(?:DATABASE_URL|hasIntegrationEnv)/.test(text));
-  if(gated)register('REVIEW','INVARIANT_TEST_HAS_SKIP_PATH', 'CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW',
+  if(gated)register('REVIEW','INVARIANT_TEST_HAS_SKIP_PATH',
     {feature:inv.feature,test:testPath,invariant:inv.statement.slice(0,155),postgresGated:pg});
   // A mock-based test is not evidence of a DB-level invariant.
   if(mock&&/\b(?:atomic|transaction|idempot|doubl|rollback|concurrent|FOR UPDATE|persist|réel|database|PostgreSQL)\b/i.test(inv.statement)){
@@ -137,7 +137,7 @@ fs.writeFileSync(path.join(out,'graph.json'),JSON.stringify({invariants,tableCla
 console.log('DISCOVERY_GRAPH_SUMMARY '+JSON.stringify(summary));
 const priority = findings.filter(x=>x.severity==='HIGH' || [
  'WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER', 'DB_INVARIANT_PROVED_BY_MOCK_ONLY',
- 'INVARIANT_TEST_HAS_SKIP_PATH'
+ 'INVARIANT_TEST_HAS_SKIP_PATH', 'CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW'
 ].includes(x.kind));
 for(const finding of priority.slice(0,150))
  console.log('DISCOVERY_PRIORITY '+JSON.stringify(finding));
