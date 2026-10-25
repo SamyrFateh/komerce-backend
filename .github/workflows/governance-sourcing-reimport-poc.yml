@@ -78,6 +78,8 @@ jobs:
             existingTests:feature.files.tests.filter(x=>x.includes('sourcing-candidate-import-service'))
           }));
           NODE
+      - name: Challenge generic provenance detector with healthy and broken controls
+        run: node --test scripts/audits/evaluate-provenance-invariant.node.test.cjs
       - name: Rebuild disposable CI PostgreSQL from canonical schema
         run: |
           PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql > /tmp/governance-poc-schema.log
@@ -109,6 +111,28 @@ jobs:
               invariantBroken:proof.invariantBroken,
             }));
           }
+          NODE
+      - name: Interpret the observed trace and REQUIRE proof of contradiction
+        run: |
+          set -e
+          if node scripts/audits/evaluate-provenance-invariant.js \
+            audit-results/governance-poc/observed.json \
+            audit-results/governance-poc/invariant-result.json; then
+            echo "::error::Expected contradiction not reproduced: investigate regression or detector."
+            exit 1
+          fi
+          node - <<'NODE'
+          const fs=require('fs');
+          const x=JSON.parse(fs.readFileSync('audit-results/governance-poc/invariant-result.json','utf8'));
+          if(x.verdict!=='CONTRADICTION_OBSERVED'
+             || x.firstViolation?.kind!=='AUTHORITY_MARKER_OVERWRITTEN'
+             || !x.violations.some(v=>v.kind==='MANUAL_VALUE_OVERWRITTEN')
+             || !x.violations.some(v=>v.kind==='DERIVED_SCAN_DISAGREES_WITH_PERSISTED_FIELD')){
+            throw Error('Expected causal chain is not completely proven: '+JSON.stringify(x));
+          }
+          console.log('GOV_POC_GOVERNANCE_MISMATCH_PROVEN',JSON.stringify({
+             verdict:x.verdict,firstViolation:x.firstViolation,violations:x.violations
+          }));
           NODE
       - name: Preserve model-data-path-observation artifacts
         if: always()
