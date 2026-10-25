@@ -90,7 +90,7 @@ if (!isolated) {
     expect(feature.name).toBe('sourcing');
     expect(feature.db.tables).toContain('sourcing_candidates: RW!');
     expect(feature.db.tables).toContain('sourcing_candidate_events: RW!');
-    expect(feature.api.internalApi).toEqual(expect.arrayContaining([
+    expect(feature.contract.internalApi).toEqual(expect.arrayContaining([
       expect.objectContaining({
         fn: 'upsertCandidateFromCatalogImport',
         file: 'services/sourcing-candidate-import-service.js',
