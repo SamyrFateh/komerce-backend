@@ -36,7 +36,7 @@ const mockStripeClient = {
 
 jest.mock('stripe', () => jest.fn(() => mockStripeClient));
 
-const { describeE2E } = require('../helpers/e2eDbKit');
+const { describeE2E, createCleanup, authorizeCentralCollectionForTest } = require('../helpers/e2eDbKit');
 
 jest.setTimeout(30000);
 
@@ -46,6 +46,7 @@ describeE2E('Stripe P3 — public intent API + DB persistence', ({ db }) => {
   let relay;
   let order;
   let token;
+  let marketPermissionCleanup;
 
   beforeAll(async () => {
     await cleanupBusinessFixtures();
@@ -53,6 +54,13 @@ describeE2E('Stripe P3 — public intent API + DB persistence', ({ db }) => {
 
     user = await createUser({ role: 'client' });
     relay = await createTestRelais();
+    // The commercial authority is fail-closed: this test explicitly opts
+    // a disposable CI market into central Stripe collection. Do not change
+    // the production gate or make this permission implicit in helpers.
+    marketPermissionCleanup = createCleanup(db);
+    await authorizeCentralCollectionForTest(
+      db, marketPermissionCleanup, relay.market_id, 'stripe_eur'
+    );
     order = await createPendingOrder({
       user_id: user.id,
       relais_id: relay.id,
@@ -83,6 +91,7 @@ describeE2E('Stripe P3 — public intent API + DB persistence', ({ db }) => {
   });
 
   afterAll(async () => {
+    if (marketPermissionCleanup) await marketPermissionCleanup.run();
     await cleanupBusinessFixtures();
     await cleanup();
   });
