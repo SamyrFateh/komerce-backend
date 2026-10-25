@@ -7,6 +7,7 @@
  * Does NOT claim a bug without an observed failing state transition.
  */
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
+const {scanNovelPatterns}=require('./lib/novel-bug-patterns');
 const ROOT=path.resolve(__dirname,'../..');
 const FDIR=path.join(ROOT,'features');
 const git=(args)=>{const r=cp.spawnSync('git',args,{cwd:ROOT,encoding:'utf8'});if(r.status!==0)throw Error(r.stderr);return r.stdout.trim()};
@@ -104,21 +105,16 @@ for(const [file,refs] of byPath){
   register('INFO','MULTI_FEATURE_SERVICE_WRITER',{file,features:refs.map(x=>x.feature),tables:producer(file)});
  }
 }
-// New pattern learned from one proven counterexample: a caller-supplied
-// identity wins over an identity read from the authoritative DB entity.
-// Scan all registered service/route source paths, not a hardcoded feature.
+// Cross-domain heuristic expansion: no domain, file or known bug is hardcoded.
+// These findings MUST remain REVIEW until a real service/database counterexample.
 for(const [file,refs] of byPath){
  if(!refs.some(r=>r.kind==='services'||r.kind==='routes'))continue;
- const src=contents(file)||'';
- const re=/\b(?:const|let)\s+([A-Za-z_$][\w$]*(?:Id|_id))\s*=\s*([A-Za-z_$][\w$]*)\s*\|\|\s*([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*(?:Id|_id))\s*;/g;
- for(const m of src.matchAll(re)){
-   const [expr,target,input,dbRow,dbField]=m;
-   const ln=src.slice(0,m.index).split('\n').length;
-   register('REVIEW','CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW',{
-     feature:[...new Set(refs.map(r=>r.feature))],file,line:ln,
-     target,input,dbRow,dbField,evidence:expr,
-     invariantCandidate:'The caller override must be equal to the canonical row identity, not trusted by precedence.',
-   });
+ const src=contents(file);
+ if(src===null)continue;
+ for(const candidate of scanNovelPatterns(src,file)){
+  register(candidate.severity,candidate.kind,{
+    ...candidate,feature:[...new Set(refs.map(r=>r.feature))]
+  });
  }
 }
 const summary={
@@ -137,7 +133,8 @@ fs.writeFileSync(path.join(out,'graph.json'),JSON.stringify({invariants,tableCla
 console.log('DISCOVERY_GRAPH_SUMMARY '+JSON.stringify(summary));
 const priority = findings.filter(x=>x.severity==='HIGH' || [
  'WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER', 'DB_INVARIANT_PROVED_BY_MOCK_ONLY',
- 'INVARIANT_TEST_HAS_SKIP_PATH', 'CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW'
+ 'INVARIANT_TEST_HAS_SKIP_PATH', 'CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW',
+ 'SILENT_CONFLICT_COUNT_AS_SUCCESS'
 ].includes(x.kind));
 for(const finding of priority.slice(0,150))
  console.log('DISCOVERY_PRIORITY '+JSON.stringify(finding));
