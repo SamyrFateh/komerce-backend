@@ -63,7 +63,7 @@ function chooseCandidate(runs){
 async function main(){
  const out={schema_version:1,generated_at:new Date().toISOString(),target:HOST,
    purpose:'Real supplier candidate accounting; no import, price market, approval, publication or mutation',
-   focus_run:FOCUS,selected:null,run_count:0,runs:[],focus_history:[],focus_changes_after_run:[],failure:null,
+   focus_run:FOCUS,selected:null,run_count:0,runs:[],focus_history:[],focus_changes_after_run:[],focus_import_items:[],initial_to_current_diff:[],failure:null,
    status:'BLOCKED',no_business_writes:true};
  let c;
  fs.mkdirSync(path.dirname(OUT),{recursive:true});
@@ -109,6 +109,28 @@ async function main(){
    const focused=collected.find(x=>x.run.run_ref===FOCUS);
    if(focused){
      const focusIds=focused.candidates.map(x=>x.id);
+     const {rows:runItems}=await c.query(
+       "SELECT candidate_id,supplier_product_id,seq,outcome,change_kind,started_at,finished_at "+
+       "FROM import_runtime_item_events WHERE run_id=$1 ORDER BY seq",[focused.run.id]);
+     out.focus_import_items=runItems.map(item=>({
+       candidate_id:item.candidate_id,supplier_product_id:item.supplier_product_id,
+       seq:item.seq,original_outcome:item.outcome,change_kind:item.change_kind,
+       finished_at:item.finished_at
+     }));
+     const current=out.runs.find(x=>x.run_ref===FOCUS);
+     for(const item of out.focus_import_items){
+       const row=current?.details?.find(x=>String(x.candidate_id)===String(item.candidate_id))||
+         current?.details?.find(x=>x.supplier_product_id===item.supplier_product_id);
+       if(!row)continue;
+       const initialReady=['ready_for_refinery','catalog_imported'].includes(item.original_outcome);
+       const currentReady=row.sourcing_certified;
+       if(initialReady!==currentReady)
+         out.initial_to_current_diff.push({candidate_id:row.candidate_id,
+           supplier_product_id:row.supplier_product_id,
+           original_outcome:item.original_outcome,current_outcome:row.outcome,
+           initial_ready:initialReady,current_ready:currentReady});
+     }
+
      const byCandidate=new Map(focused.candidates.map(x=>[String(x.id),x]));
      const history=focusIds.length?(await c.query(
        "SELECT id,candidate_id,event_type,old_state,new_state,changes,result,created_at "+
@@ -141,6 +163,8 @@ async function main(){
      focus:out.runs.find(x=>x.run_ref===FOCUS)||null,
      focus_timeline:out.focus_run_timeline,
      focus_changes_after_run:out.focus_changes_after_run,
+     initial_to_current_diff:out.initial_to_current_diff,
+     original_items:out.focus_import_items,
      selection:out.selected,inventory:out.runs.map(x=>({
        run_ref:x.run_ref,delta:x.delta,recorded:x.recorded_ready_for_refinery,
        computed:x.recomputed_certified_total,promotable:x.summary.promotable,options:x.options
