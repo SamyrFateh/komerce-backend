@@ -57,10 +57,12 @@ function isAuditedOnlyFile(file){
     /^tests\/staging-(canonical|p1)\//.test(file) ||
     file==='tests/unit/staging-p1-verdict.test.js' ||
     file==='tests/unit/staging-demo-soft-deactivate.test.js' ||
+    file==='tests/unit/p1-one-sourced-inactive-draft.test.js' ||
     /^playwright\.staging-[a-z0-9-]+\.config\.js$/.test(file) ||
     ['scripts/recette/p1-staging-evidence.js',
      'scripts/recette/p1-demo-sql-segregation.js',
      'scripts/recette/staging-demo-soft-deactivate.js',
+     'scripts/recette/p1-one-sourced-inactive-draft.js',
      'scripts/recette/summarize-staging-chromium.js'].includes(file);
 }
 

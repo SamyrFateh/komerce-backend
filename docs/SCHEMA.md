@@ -324,7 +324,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
 | Table | Rôle |
 |---|---|
-| `users` | Utilisateurs (rôle via ENUM `user_role`). |
+| `users` | Utilisateurs (rôle via ENUM `user_role`). **Migration 320 (`intended_migration_schema`)** : ajoute la valeur `finance` à `public.user_role` pour le portail interne, sans créer d'utilisateur ni accorder de membership ou de capability. `sourcing` provient de la migration 148a ; `agent_transitaire` existe dans l'ENUM historique. |
 | `otp_codes` | Codes OTP. |
 | `user_pickup_authorizations` | Autorisation nominative courante de retrait exceptionnel, propriété auth-identity. Une ligne par utilisateur ; aucun numéro, copie ou donnée de pièce d’identité conservé. Migration 121. |
 | `revoked_tokens` | Révocation JWT (logout) : `jti` révoqué, `expires_at` pour purge. Câblage : `routes/auth.js` insère au logout, `middleware/auth.js` vérifie, cron de purge dans `bootstrap/crons.js`. Migration 072. |

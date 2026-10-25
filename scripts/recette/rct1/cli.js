@@ -27,6 +27,8 @@ const INVENTORY = Object.freeze({
   users_by_role: "SELECT role::text AS role, COUNT(*)::int AS n FROM users GROUP BY 1 ORDER BY 1",
   rct1_users: "SELECT id, role::text AS role, full_name, relais_id FROM users WHERE full_name ILIKE 'RCT1%' OR email ILIKE 'rct1%' ORDER BY full_name",
   admins: "SELECT id, full_name, role::text AS role, last_login_at FROM users WHERE role::text IN ('admin','superadmin','super_admin') ORDER BY created_at LIMIT 5",
+  // Controle nominal RCT1 vs E2E, noms de test seulement. Aucun email, telephone ni secret.
+  relay_agents_e2e_binding: "SELECT u.id, u.full_name, u.role::text AS role, u.relais_id, r.name AS relais_name, m.code AS market_code, r.is_active AS relais_active, CASE WHEN u.relais_id IS NULL THEN 'UNASSIGNED' WHEN r.id IS NULL THEN 'UNKNOWN_RELAIS' WHEN r.is_active IS DISTINCT FROM TRUE THEN 'INACTIVE_RELAIS' WHEN m.code IS NULL THEN 'UNKNOWN_MARKET' ELSE 'ACTIVE_RELAIS' END AS binding_status FROM users u LEFT JOIN relais r ON r.id = u.relais_id LEFT JOIN markets m ON m.id = r.market_id WHERE u.role::text = 'agent_relais' AND (u.full_name ILIKE 'E2E%' OR u.full_name ILIKE 'RCT1 Agent relais%') ORDER BY u.full_name",
   relais_by_market: "SELECT m.code, COUNT(r.id)::int AS n, COUNT(*) FILTER (WHERE r.is_active)::int AS active FROM markets m LEFT JOIN relais r ON r.market_id=m.id GROUP BY m.code ORDER BY m.code",
   rct1_relais: "SELECT id, name, market_id, is_active FROM relais WHERE name ILIKE 'RCT1%' OR id::text LIKE '5eed1000%'",
   products: "SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE is_active)::int AS active, COUNT(*) FILTER (WHERE product_ref LIKE 'RCT1-%')::int AS rct1 FROM products",
