@@ -21,6 +21,8 @@ const REFERENCE_MARKETS = Object.freeze([
   Object.freeze({ code: 'YT', name: 'Mayotte', currency: 'EUR', minor_unit: 2, is_active: true }),
   Object.freeze({ code: 'CM', name: 'Cameroun', currency: 'XAF', minor_unit: 0, is_active: true }),
   Object.freeze({ code: 'CG', name: 'Congo', currency: 'XAF', minor_unit: 0, is_active: true }),
+  // Migration 310 : marché préparé uniquement. Le seeding CI ne l'active jamais.
+  Object.freeze({ code: 'DJ', name: 'Djibouti', currency: 'DJF', minor_unit: 0, is_active: false }),
 ]);
 
 // Données de référence déterministes de migrations/142_currency_parities.sql.
