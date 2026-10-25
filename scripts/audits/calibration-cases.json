@@ -1,0 +1,24 @@
+{
+  "contract": "komerce-calibration-cases-v1",
+  "doctrine": "Each enrolled case requires a NOMINAL and an adversarial DEVIATION using one real service and PostgreSQL. Missing case or missing proof fails closed. No success implies bug fixed.",
+  "cases": [
+    {
+      "caseId": "INVENTORY_CROSS_ORDER",
+      "pattern": "CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW",
+      "service": "inventory.receiveItem",
+      "db": "POSTGRES_REAL",
+      "owner": "inventory",
+      "otherDomain": "orders",
+      "evidenceTest": "tests/integration/inventory-cross-order-governance-discovery.test.js"
+    },
+    {
+      "caseId": "AUTO_PARCEL_SILENT_CONFLICT",
+      "pattern": "SILENT_CONFLICT_COUNT_AS_SUCCESS",
+      "service": "auto-parcel.distributeOrder",
+      "db": "POSTGRES_REAL",
+      "owner": "logistics",
+      "otherDomain": "orders",
+      "evidenceTest": "tests/integration/auto-parcel-calibration-real-db.test.js"
+    }
+  ]
+}
