@@ -63,12 +63,15 @@ function scanManualProvenanceErasingMerges(source,file,table,protectedFields) {
   );
   const matched=merge.exec(s);
   if(!matched)return [];
-  return protectedFields.map(field=>({
+  // A single merge is one candidate seam, regardless of how many fields
+  // it might corrupt. Field count must never inflate "bugs discovered".
+  return [{
     kind:'MANUAL_PROVENANCE_ERASED_BY_JSONB_MERGE',severity:'REVIEW',
-    file,table,field,line:s.slice(0,matched.index).split('\n').length,
+    file,table,protectedFields:[...protectedFields],
+    line:s.slice(0,matched.index).split('\n').length,
     evidence:matched[0],
     caveat:'Confirm JSONB incoming provenance overlaps protected manual keys and sequential reimport breaks subsequent guarded writes on real PostgreSQL.'
-  }));
+  }];
 }
 
 module.exports={getProtectedManualFields,scanUnprotectedManualUpserts,scanManualProvenanceErasingMerges};
