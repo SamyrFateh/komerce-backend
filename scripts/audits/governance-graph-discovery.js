@@ -7,7 +7,7 @@
  * Does NOT claim a bug without an observed failing state transition.
  */
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
-const {scanNovelPatterns}=require('./lib/novel-bug-patterns');
+const {scanNovelPatterns,directSqlMutationHint}=require('./lib/novel-bug-patterns');
 const ROOT=path.resolve(__dirname,'../..');
 const FDIR=path.join(ROOT,'features');
 const git=(args)=>{const r=cp.spawnSync('git',args,{cwd:ROOT,encoding:'utf8'});if(r.status!==0)throw Error(r.stderr);return r.stdout.trim()};
@@ -92,7 +92,9 @@ for(const [table,claims] of byTable){
   const writerFeatures=new Set(refs.map(r=>r.feature));
   if(![...authority].some(x=>writerFeatures.has(x))){
    register('REVIEW','WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER',{
-    table,authority:[...authority],file,declaredBy:[...writerFeatures],writerHeader:writes
+    table,authority:[...authority],file,declaredBy:[...writerFeatures],writerHeader:writes,
+    directSqlEvidence:directSqlMutationHint(contents(file)||'',table),
+    evidenceTier:directSqlMutationHint(contents(file)||'',table) ? 'DIRECT_SQL_TEXT_HINT' : 'HEADER_ONLY_UNVERIFIED'
    });
   }
  }
@@ -120,6 +122,8 @@ for(const [file,refs] of byPath){
 const summary={
  sha:git(['rev-parse','HEAD']),features:features.length,
  filesOwned:byPath.size,tables:byTable.size,invariants:invariants.length,
+ crossOwnerWriteHints:findings.filter(x=>x.kind==='WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER' && x.evidenceTier==='DIRECT_SQL_TEXT_HINT').length,
+ crossOwnerHeaderOnly:findings.filter(x=>x.kind==='WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER' && x.evidenceTier==='HEADER_ONLY_UNVERIFIED').length,
  explicitlyTested:invariants.filter(x=>x.explicit&&x.tests.length).length,
  findings:findings.length,byKind:Object.fromEntries([...new Set(findings.map(x=>x.kind))]
  .map(k=>[k,findings.filter(x=>x.kind===k).length])),
