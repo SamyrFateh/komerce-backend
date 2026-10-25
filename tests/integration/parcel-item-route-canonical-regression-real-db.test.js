@@ -142,7 +142,8 @@ if(!ci){
   evidence('QUANTITY_GUARD',{http:response.status,code:response.body.code,items:0});
  });
  test('DEVIATION: shipped parcel has frozen item assignments',async()=>{
-  await q("UPDATE parcels SET status='shipped' WHERE id=$1",[ids.parcel]);
+  // Shipping DB guard requires a real destination, even for a test parcel.
+  await q("UPDATE parcels SET relais_id=$2, status='shipped' WHERE id=$1",[ids.parcel,ids.kmRelay]);
   const response=await post(ids.kmItem);
   expect(response.status).toBe(409);
   expect(response.body.code).toBe('PARCEL_NOT_MUTABLE');
