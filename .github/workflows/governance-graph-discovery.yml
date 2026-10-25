@@ -29,12 +29,18 @@ jobs:
         run: ./node_modules/.bin/jest --config jest.unit.config.js --runInBand tests/unit/auto-parcel-silent-conflict-discovery.test.js
       - name: Generate candidates FROM the full feature graph without named bugs
         run: node scripts/audits/governance-graph-discovery.js --out audit-results/discovery
+      - name: Triage every discovery signal against owned tables and existing debt
+        run: |
+          node scripts/audits/triage-discovery-signals.js audit-results/discovery/findings.json --out audit-results/triage
+          cat audit-results/triage/signal-triage.md | head -n 45
       - name: Upload complete cross-domain graph and candidate evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: governance-discovery-graph
-          path: audit-results/discovery
+          path: |
+            audit-results/discovery/
+            audit-results/triage/
           if-no-files-found: error
 
   prove-inventory:
