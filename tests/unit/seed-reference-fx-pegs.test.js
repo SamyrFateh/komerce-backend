@@ -2,7 +2,7 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 jest.mock('../../db', () => ({ getClient: jest.fn() }));
 
-const { seedFxPegs, OFFICIAL_FX_PEGS } = require('../../scripts/seed-reference-data');
+const { seedFxPegs, OFFICIAL_FX_PEGS, REFERENCE_MARKETS, FIXED_CURRENCY_PARITIES } = require('../../scripts/seed-reference-data');
 
 const clientFor = ({ table = true, upgraded = true, inserted = 1 } = {}) => {
   const queries = [];
@@ -54,5 +54,15 @@ describe('CI schema-only : parités officielles FX', () => {
       throw new Error('fx_peg_rate_band');
     });
     await expect(seedFxPegs(c)).rejects.toThrow('fx_peg_rate_band');
+  });
+});
+
+// Migration 310 : DJ doit exister pour les vérifications de readiness sans activation.
+describe('CI schema-only : marché DJ de référence', () => {
+  test('Djibouti reste PROVISIONING et inactif, jamais une parité EUR fictive', () => {
+    expect(REFERENCE_MARKETS.find(m => m.code === 'DJ')).toMatchObject({
+      name: 'Djibouti', currency: 'DJF', minor_unit: 0, is_active: false,
+    });
+    expect(FIXED_CURRENCY_PARITIES.find(p => p.currency === 'DJF')).toBeUndefined();
   });
 });
