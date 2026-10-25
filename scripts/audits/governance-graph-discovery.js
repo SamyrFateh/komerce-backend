@@ -9,7 +9,7 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const {scanNovelPatterns,directSqlMutationHint}=require('./lib/novel-bug-patterns');
 const {discoverExemptionPairs,scanExemptionSinks}=require('./lib/exemption-invariant-detectors');
-const {getProtectedManualFields,scanUnprotectedManualUpserts}=require('./lib/manual-provenance-detectors');
+const {getProtectedManualFields,scanUnprotectedManualUpserts,scanManualProvenanceErasingMerges}=require('./lib/manual-provenance-detectors');
 const ROOT=path.resolve(__dirname,'../..');
 const FDIR=path.join(ROOT,'features');
 const git=(args)=>{const r=cp.spawnSync('git',args,{cwd:ROOT,encoding:'utf8'});if(r.status!==0)throw Error(r.stderr);return r.stdout.trim()};
@@ -145,6 +145,12 @@ for(const [table,claims] of byTable){
      register(finding.severity,finding.kind,{...finding,owners:[...owners],declaredBy:[...new Set(refs.map(x=>x.feature))]});
    }
  }
+ for(const [file,refs] of byPath){
+   if(!refs.some(x=>['services','routes'].includes(x.kind)&&owners.has(x.feature)))continue;
+   for(const finding of scanManualProvenanceErasingMerges(contents(file)||'',file,table,protectedFields)){
+     register(finding.severity,finding.kind,{...finding,owners:[...owners],declaredBy:[...new Set(refs.map(x=>x.feature))]});
+   }
+ }
 }
 const summary={
  sha:git(['rev-parse','HEAD']),features:features.length,
@@ -167,7 +173,7 @@ const priority = findings.filter(x=>x.severity==='HIGH' || [
  'WRITE_HEADER_OUTSIDE_EXCLUSIVE_OWNER', 'DB_INVARIANT_PROVED_BY_MOCK_ONLY',
  'INVARIANT_TEST_HAS_SKIP_PATH', 'CALLER_IDENTITY_OVERRIDES_CANONICAL_ROW',
  'SILENT_CONFLICT_COUNT_AS_SUCCESS',
- 'EXEMPTION_WRITE_UNGUARDED','EXEMPTION_READ_UNGUARDED','MANUAL_FIELD_PROVENANCE_IGNORED_BY_UPSERT'
+ 'EXEMPTION_WRITE_UNGUARDED','EXEMPTION_READ_UNGUARDED','MANUAL_FIELD_PROVENANCE_IGNORED_BY_UPSERT','MANUAL_PROVENANCE_ERASED_BY_JSONB_MERGE'
 ].includes(x.kind));
 for(const finding of priority.slice(0,150))
  console.log('DISCOVERY_PRIORITY '+JSON.stringify(finding));
