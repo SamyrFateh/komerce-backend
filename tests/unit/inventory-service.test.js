@@ -56,7 +56,9 @@ describe("receiveItem", () => {
     const inv = { id: 'inv-1', order_item_id: 'oi-1', order_id: 'ord-1', status: 'received', destination_island: 'Grande Comore' };
 
     mockQuery = jest.fn()
-      // 1. SELECT order_items JOIN products
+      // 1. BEGIN — la réception est atomique
+      .mockResolvedValueOnce({ rows: [] })
+      // 2. SELECT order_items JOIN products sous verrou
       .mockResolvedValueOnce({ rows: [oi] })
       // 2. INSERT inventory_items
       .mockResolvedValueOnce({ rows: [inv] })
@@ -305,25 +307,23 @@ describe("getStats", () => {
 // ─── Lot A, branches manquantes ───────────────────────────────────────────────
 
 describe("inventory-service — Lot A, branches manquantes", () => {
-  describe("receiveItem — order_id explicite", () => {
-    test("order_id fourni explicitement a priorité sur oi.order_id", async () => {
+  describe("receiveItem — autorité de la ligne", () => {
+    test("order_id contradictoire est rejeté 409 avant toute écriture", async () => {
       const oi = { id: 'oi-9', order_id: 'ord-oi', product_id: 'p-9', quantity: 1, product_name: 'Sucre' };
-      const inv = { id: 'inv-9', order_item_id: 'oi-9', order_id: 'ord-explicit', status: 'received', destination_island: 'Anjouan' };
-
-      mockQuery = jest.fn()
-        .mockResolvedValueOnce({ rows: [oi] })
-        .mockResolvedValueOnce({ rows: [inv] })
-        .mockResolvedValueOnce({ rows: [] }) // proposeAssignment → item non trouvé (status déjà avancé) → null
-        .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 0 }] })
-        .mockResolvedValueOnce({ rows: [] });
+      mockQuery = jest.fn(async (sql) => {
+        if (sql.includes('FROM order_items oi')) return { rows: [oi] };
+        return { rows: [] };
+      });
 
       const svc = loadService();
-      await svc.receiveItem({ order_item_id: 'oi-9', order_id: 'ord-explicit' });
+      await expect(svc.receiveItem({ order_item_id: 'oi-9', order_id: 'ord-explicit' }))
+        .rejects.toMatchObject({ status: 409, code: 'INVENTORY_ORDER_MISMATCH' });
 
-      // 2e appel = INSERT inventory_items — vérifier que order_id explicite est utilisé
-      expect(mockQuery.mock.calls[1][1]).toEqual(['oi-9', 'ord-explicit']);
-      // 4e appel = updateOrderCompletion SELECT counts, doit utiliser ord-explicit
-      expect(mockQuery.mock.calls[3][1]).toEqual(['ord-explicit']);
+      const executed = mockQuery.mock.calls.map(([sql]) => sql);
+      expect(executed[0]).toBe('BEGIN');
+      expect(executed).toContain('ROLLBACK');
+      expect(executed).not.toContain('COMMIT');
+      expect(executed.some(sql => /INSERT INTO inventory_items|UPDATE inventory_items|SET items_received/.test(sql))).toBe(false);
     });
   });
 

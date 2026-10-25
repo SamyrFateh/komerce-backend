@@ -41,35 +41,54 @@ const BUFFER_DEFAULT_HOURS = 12;
 
 // ─── RECEIVE ARTICLE ──────────────────────────────────────────
 async function receiveItem({ order_item_id, order_id }) {
-  // Verify order_item exists
-  const { rows: [oi] } = await db.query(
-    `SELECT oi.id, oi.order_id, oi.product_id, oi.quantity, p.name AS product_name
-     FROM order_items oi JOIN products p ON p.id = oi.product_id
-     WHERE oi.id = $1`, [order_item_id]
-  );
-  if (!oi) throw new Error('Article introuvable');
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
 
-  const effectiveOrderId = order_id || oi.order_id;
+    // La ligne de commande est l'autorité ; un order_id envoyé par l'agent
+    // n'a jamais le droit de substituer la commande réelle (issue #2939).
+    // Le verrou maintient identité, réception, proposition et complétion
+    // dans la même transaction.
+    const { rows: [oi] } = await client.query(
+      `SELECT oi.id, oi.order_id, oi.product_id, oi.quantity, p.name AS product_name
+       FROM order_items oi JOIN products p ON p.id = oi.product_id
+       WHERE oi.id = $1 FOR SHARE OF oi`, [order_item_id]
+    );
+    if (!oi) {
+      const err = new Error('Article introuvable');
+      err.code = 'ORDER_ITEM_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
 
-  // Create inventory_item
-  const { rows: [inv] } = await db.query(`
-    INSERT INTO inventory_items (id, order_item_id, order_id, status, received_at)
-    VALUES (gen_random_uuid(), $1, $2, 'received', NOW())
-    RETURNING *
-  `, [order_item_id, effectiveOrderId]);
+    if (order_id != null && String(order_id) !== String(oi.order_id)) {
+      const err = new Error('La commande fournie ne correspond pas à la ligne reçue');
+      err.code = 'INVENTORY_ORDER_MISMATCH';
+      err.status = 409;
+      throw err;
+    }
 
-  // Auto-propose
-  const proposal = await proposeAssignment(inv.id);
+    const { rows: [inv] } = await client.query(`
+      INSERT INTO inventory_items (id, order_item_id, order_id, status, received_at)
+      VALUES (gen_random_uuid(), $1, $2, 'received', NOW())
+      RETURNING *
+    `, [order_item_id, oi.order_id]);
 
-  // Update order completion
-  await updateOrderCompletion(effectiveOrderId);
-
-  return { item: inv, proposal };
+    const proposal = await proposeAssignment(inv.id, client);
+    await updateOrderCompletion(oi.order_id, client);
+    await client.query('COMMIT');
+    return { item: inv, proposal };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 // ─── PROPOSE ASSIGNMENT (guidance, not a gate) ────────────────
-async function proposeAssignment(inventoryItemId) {
-  const { rows: [item] } = await db.query(
+async function proposeAssignment(inventoryItemId, executor = db) {
+  const { rows: [item] } = await executor.query(
     `SELECT ii.*, o.destination_island, o.id AS order_id
      FROM inventory_items ii
      JOIN orders o ON o.id = ii.order_id
@@ -80,7 +99,7 @@ async function proposeAssignment(inventoryItemId) {
   if (!item) return null; // already assigned or proposed — fine
 
   // Find open parcels: same order first, then same destination
-  const { rows: parcels } = await db.query(`
+  const { rows: parcels } = await executor.query(`
     SELECT p.id, p.reference, p.order_id,
            CASE WHEN p.order_id = $2 THEN 0 ELSE 1 END AS priority,
            (SELECT COUNT(*)::int FROM parcel_items pi WHERE pi.parcel_id = p.id) AS item_count
@@ -94,7 +113,7 @@ async function proposeAssignment(inventoryItemId) {
 
   if (parcels.length > 0) {
     const best = parcels[0];
-    await db.query(`
+    await executor.query(`
       UPDATE inventory_items 
       SET status = 'proposed', proposed_parcel_id = $2, proposed_at = NOW(), updated_at = NOW()
       WHERE id = $1
@@ -105,7 +124,7 @@ async function proposeAssignment(inventoryItemId) {
 
   // No compatible parcel → buffer
   const bufferUntil = new Date(Date.now() + BUFFER_DEFAULT_HOURS * 3600000);
-  await db.query(`
+  await executor.query(`
     UPDATE inventory_items 
     SET status = 'buffered', buffer_reason = 'no_compatible_parcel', buffer_until = $2, updated_at = NOW()
     WHERE id = $1
