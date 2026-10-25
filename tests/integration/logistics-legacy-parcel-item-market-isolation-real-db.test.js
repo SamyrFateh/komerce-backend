@@ -99,40 +99,63 @@ if(!ci){
   await pool.end();
  });
  beforeEach(async()=>q('ROLLBACK TO SAVEPOINT clean_fixture'));
- test('NOMINAL: item from carrier order is accepted',async()=>{
+ test('NOMINAL DEVIATION: valid HTTP assignment fails with product_id NOT NULL 23502',async()=>{
   const response=await post(ids.kmItem);
   const rows=await parcelState();
-  expect(response.status).toBe(201);
-  expect(rows).toHaveLength(1);
-  expect(rows[0].market_id).toBe(marketKM);
-  output('NOMINAL_SAME_ORDER',{http:201,markets:[marketKM]},{http:response.status,markets:rows.map(x=>x.market_id)},true);
+  expect(response.status).toBe(500);
+  expect(response.body.code).toBe('23502');
+  expect(response.body.error).toMatch(/null value in column "product_id"/);
+  expect(rows).toHaveLength(0);
+  output('NOMINAL_HTTP_FAILS',{http:201,rows:1,orderMarket:marketKM},
+   {http:response.status,pgCode:response.body.code,rows:rows.length},false);
  });
- test('NEGATIVE CONTROL: distinct order but SAME market is legitimate parcel groupage',async()=>{
+ test('NEGATIVE CROSS ORDER: route fails even for legitimate same-market groupage',async()=>{
   const response=await post(ids.sameMarketItem);
   const rows=await parcelState();
-  expect(response.status).toBe(201);
-  expect(rows).toHaveLength(1);
-  expect(rows[0].market_id).toBe(marketKM);
-  output('NEGATIVE_SAME_MARKET_CROSS_ORDER',{http:201,markets:[marketKM]},{http:response.status,markets:rows.map(x=>x.market_id)},true);
+  expect(response.status).toBe(500);
+  expect(response.body.code).toBe('23502');
+  expect(rows).toHaveLength(0);
+  output('SAME_MARKET_HTTP_FAILS',{http:201,rows:1,market:marketKM},
+   {http:response.status,pgCode:response.body.code,rows:rows.length},false);
  });
- test('DEVIATION: legacy HTTP route accepts item from a different market',async()=>{
-  await post(ids.kmItem);
+ test('BOUNDARY CONTROL: cross-market request is DB-rejected before market guard can be assessed',async()=>{
   const response=await post(ids.cmItem);
   const rows=await parcelState();
-  const markets=[...new Set(rows.map(x=>x.market_id))].sort();
-  expect(response.status).toBe(201);
-  expect(markets).toEqual([marketKM,marketCM].sort());
-  const violations=await findParcelMarketViolations(mockClient);
-  expect(violations.some(x=>x.parcel_id===ids.parcel)).toBe(true);
-  output('DEVIATION_CROSS_MARKET',{http:409,uniqueMarkets:1,detectorViolations:0},
-   {http:response.status,markets,detectorViolations:violations.filter(x=>x.parcel_id===ids.parcel).length},false);
+  expect(response.status).toBe(500);
+  expect(response.body.code).toBe('23502');
+  expect(rows).toHaveLength(0);
+  output('CROSS_MARKET_HTTP_MASKED',{http:409,rows:0,reason:'MARKET_MISMATCH'},
+   {http:response.status,pgCode:response.body.code,rows:rows.length,
+    limitation:'SQL NOT NULL failure masks whether route would otherwise enforce single-market'},false);
  });
- test('CANONICAL CONTROL: same cross-market addition is rejected by owner guard',async()=>{
+ test('CANONICAL NOMINAL CONTROL: guarded service adds same-market order item with product identity and event',async()=>{
+  const result=await addParcelItemTraced(mockClient,{
+   parcelId:ids.parcel,orderItemId:ids.kmItem,quantity:1,actorId:null
+  });
+  const rows=await parcelState();
+  expect(result.row?.id).toBeTruthy();
+  expect(rows).toHaveLength(1);
+  expect(rows[0].market_id).toBe(marketKM);
+  const {rows:[event]}=await q(
+   "SELECT event_type FROM parcel_events WHERE parcel_id=$1 ORDER BY created_at DESC LIMIT 1",
+   [ids.parcel]);
+  expect(event.event_type).toBe('item_assigned');
+  output('CANONICAL_NOMINAL',{rows:1,market:marketKM,hasEvent:true},
+   {rows:rows.length,market:rows[0].market_id,hasEvent:event.event_type==='item_assigned'},true);
+ });
+ test('CANONICAL GUARD CONTROL: same cross-market item is refused with MARKET_MISMATCH',async()=>{
   await expect(addParcelItemTraced(mockClient,{
    parcelId:ids.parcel,orderItemId:ids.cmItem,quantity:1,actorId:null
   })).rejects.toMatchObject({code:'MARKET_MISMATCH',status:409});
   const rows=await parcelState();
   expect(rows).toHaveLength(0);
   output('CANONICAL_GUARD',{code:'MARKET_MISMATCH',rows:0},{code:'MARKET_MISMATCH',rows:rows.length},true);
+ });
+ test('INVALID_INPUT CONTROL: Joi rejects quantity zero before SQL',async()=>{
+  const response=await post(ids.kmItem,0);
+  const rows=await parcelState();
+  expect(response.status).toBe(400);
+  expect(rows).toHaveLength(0);
+  output('HTTP_VALIDATION_CONTROL',{http:400,rows:0},{http:response.status,rows:rows.length},true);
  });
 }
