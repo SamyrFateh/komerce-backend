@@ -35,7 +35,7 @@ if(!ci){
  app.use('/api/parcels',router);
  app.use((err,req,res,next)=>res.status(err.status||500).json({code:err.code||null,error:err.message}));
  const id=()=>randomUUID();
- const ids={kmOrder:id(),kmOtherOrder:id(),cmOrder:id(),product:id(),kmItem:id(),sameMarketItem:id(),cmItem:id(),parcel:id()};
+ const ids={kmOrder:id(),kmOtherOrder:id(),cmOrder:id(),kmRelay:id(),cmRelay:id(),product:id(),kmItem:id(),sameMarketItem:id(),cmItem:id(),parcel:id()};
  let marketKM,marketCM;
  async function q(sql,args=[]){return mockClient.query(sql,args);}
  async function post(itemId,quantity=1){
@@ -63,14 +63,21 @@ if(!ci){
    const {rows:[created]}=await q("INSERT INTO markets(code,name,currency,minor_unit,is_active) VALUES('CM','CI Cameroon','XAF',0,false) RETURNING id");
    marketCM=created.id;
   }
+  for(const [relayId,label,marketId,island] of [
+   [ids.kmRelay,'KM',marketKM,'Ngazidja'],[ids.cmRelay,'CM',marketCM,null]
+  ]){
+   await q(
+    "INSERT INTO relais(id,name,agent_name,phone,address,island,market_id,is_active) VALUES($1,$2,'CI test hub', $3, 'CI isolated', $4, $5,false)",
+    [relayId,'CI LOG '+label+' '+ids.parcel.slice(0,8),label==='KM'?'+2690001991':'+237600000991',island,marketId]);
+  }
   await q("INSERT INTO products(id,name,price_kmf,stock) VALUES($1,'CI parcel market isolation',12000,10)",[ids.product]);
   const orders=[
-   [ids.kmOrder,'KM',marketKM],[ids.kmOtherOrder,'K2',marketKM],[ids.cmOrder,'CM',marketCM]
+   [ids.kmOrder,'KM',marketKM,ids.kmRelay],[ids.kmOtherOrder,'K2',marketKM,ids.kmRelay],[ids.cmOrder,'CM',marketCM,ids.cmRelay]
   ];
-  for(const [orderId,code,marketId] of orders){
+  for(const [orderId,code,marketId,relayId] of orders){
    await q(
-    "INSERT INTO orders(id,reference,user_id,relais_id,market_id,total_kmf,payment_mode,payment_status,status) VALUES($1,$2,NULL,NULL,$3,12000,'cash_relais','paid','confirmed')",
-    [orderId,'CI-LOG-BLIND-'+code+'-'+ids.parcel.slice(0,8),marketId]);
+    "INSERT INTO orders(id,reference,user_id,relais_id,market_id,total_kmf,payment_mode,payment_status,status) VALUES($1,$2,NULL,$4,$3,12000,'cash_relais','paid','confirmed')",
+    [orderId,'CI-LOG-BLIND-'+code+'-'+ids.parcel.slice(0,8),marketId,relayId]);
   }
   for(const [itemId,orderId] of [[ids.kmItem,ids.kmOrder],[ids.sameMarketItem,ids.kmOtherOrder],[ids.cmItem,ids.cmOrder]]){
    await q('INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf) VALUES($1,$2,$3,1,12000)',[itemId,orderId,ids.product]);
