@@ -59,6 +59,7 @@ function isAuditedOnlyFile(file){
     /^playwright\.staging-[a-z0-9-]+\.config\.js$/.test(file) ||
     ['scripts/recette/p1-staging-evidence.js',
      'scripts/recette/p1-demo-sql-segregation.js',
+     'scripts/recette/staging-demo-soft-deactivate.js',
      'scripts/recette/summarize-staging-chromium.js'].includes(file);
 }
 
