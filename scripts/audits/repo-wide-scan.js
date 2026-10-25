@@ -116,7 +116,7 @@ for(const [table,owners]of exclusive){
 const sqlSites=[];
 const re=/\b(INSERT\s+INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO|TRUNCATE\s+TABLE)\s+(?:public\.)?([a-z][a-z0-9_]*)\b/gi;
 for(const [f,s]of codeFiles){
- const stripped=s.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[ \t])\/\/[^\n]*/gm,'$1');
+ const stripped=s.replace(/\/\*[\s\S]*?\*\//g,m=>m.replace(/[^\n]/g,' ')).replace(/(^|[ \t])\/\/[^\n]*/gm,m=>m.replace(/[^\n]/g,' '));
  const entries=new Map();
  for(const match of stripped.matchAll(re)){
   const table=match[2].toLowerCase();
