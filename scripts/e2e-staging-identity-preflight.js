@@ -2,6 +2,7 @@
 
 /**
  * Issue #2914 — staging-only, read-only identity preflight.
+ * Verification revision: dedicated fresh build after Railway skipped identical SHA.
  * Usage: KOMERCE_ENV=staging node scripts/e2e-staging-identity-preflight.js
  * Never print credentials, hashes, email addresses, tokens or DB connection strings.
  * Exit nonzero until all three role identities are present with bcrypt hashes.
