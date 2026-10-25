@@ -24,6 +24,10 @@ function classify(item){
  if(known.includes(k+'|'+f)){
   assignment='CALIBRATED_PATTERN_ALREADY_KNOWN';
   why='Part of previous nominal/adversarial calibration; not a fresh bug discovery';
+ }else if(k==='APPEND_ONLY_ASSOCIATION_REPLAY_RISK'){
+  assignment='COLLECTION_REPLAY_SEMANTIC_REVIEW';
+  tier='PRIORITY_REVIEW';
+  why='Owner-like reconciliation writes a junction with ON CONFLICT DO NOTHING and no removal; distinguish complete snapshot replacement from incremental deltas, and prove any stale-link consumer effect on PostgreSQL';
  }else if(['CROSS_OWNER_SQL_WRITER','UNDECLARED_SQL_WRITER'].includes(k)){
   const entry=debt.entries.find(e=>e.table===item.table&&(e.sites||[]).some(s=>s.split('#')[0]===f));
   if(entry){
