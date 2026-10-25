@@ -13,7 +13,7 @@
  * @db-txn        caller_owned
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  sourcing, catalog
- * @version       2026-08
+ * @version       2026-10
  */
 
 'use strict';
@@ -113,7 +113,19 @@ async function upsertCandidateFromCatalogImport(q, {
        dim_l_cm            = EXCLUDED.dim_l_cm,
        dim_w_cm            = EXCLUDED.dim_w_cm,
        dim_h_cm            = EXCLUDED.dim_h_cm,
-       data_sources        = sourcing_candidates.data_sources || EXCLUDED.data_sources,
+       -- Merge supplier observations, then restore ONLY pre-existing
+       -- human-owned provenance keys. JSONB || uses the RIGHT operand on
+       -- duplicate keys; the old order silently removed manual locks on the
+       -- first replay, allowing the next replay to overwrite human values.
+       -- Keep supplier raw_payload and normalized_source_contract unchanged.
+       data_sources        = COALESCE(sourcing_candidates.data_sources, '{}'::jsonb)
+                             || COALESCE(EXCLUDED.data_sources, '{}'::jsonb)
+                             || COALESCE((
+                               SELECT jsonb_object_agg(src.key, src.value)
+                                 FROM jsonb_each_text(COALESCE(sourcing_candidates.data_sources, '{}'::jsonb))
+                                      AS src(key, value)
+                                WHERE src.value = 'manual'
+                             ), '{}'::jsonb),
        scan_result         = EXCLUDED.scan_result,
        scan_at             = NOW(),
        confidence          = EXCLUDED.confidence,

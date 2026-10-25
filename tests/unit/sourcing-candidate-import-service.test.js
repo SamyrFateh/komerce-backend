@@ -71,6 +71,11 @@ describe('sourcing-candidate-import-service', () => {
     expect(q.query.mock.calls[0][0]).toContain('INSERT INTO sourcing_candidates');
     expect(q.query.mock.calls[0][0]).toContain('ON CONFLICT (supplier_name, supplier_product_id)');
     expect(q.query.mock.calls[0][0]).toContain("data_sources->>'purchase_price'");
+    expect(q.query.mock.calls[0][0]).toContain("jsonb_each_text(COALESCE(sourcing_candidates.data_sources, '{}'::jsonb))");
+    expect(q.query.mock.calls[0][0]).toContain("WHERE src.value = 'manual'");
+    expect(q.query.mock.calls[0][0]).toContain('jsonb_object_agg(src.key, src.value)');
+    expect(q.query.mock.calls[0][0]).toContain('raw_payload         = EXCLUDED.raw_payload');
+    expect(q.query.mock.calls[0][0]).toContain('normalized_source_contract = EXCLUDED.normalized_source_contract');
   });
 
   it.each([
