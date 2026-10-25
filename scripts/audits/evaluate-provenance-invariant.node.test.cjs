@@ -29,9 +29,11 @@ test('authority marker overwritten first, then the value: both transitions ident
   ]);
   assert.equal(r.verdict,'CONTRADICTION_OBSERVED');
   assert.deepEqual(r.violations.map(x=>x.kind),[
-    'AUTHORITY_MARKER_OVERWRITTEN','DERIVED_SCAN_DISAGREES_WITH_PERSISTED_FIELD',
+    'AUTHORITY_MARKER_OVERWRITTEN',
     'AUTHORITY_MARKER_OVERWRITTEN','MANUAL_VALUE_OVERWRITTEN',
   ]);
+  assert.equal(r.observations[0].kind,'SOURCE_SCAN_DIFFERS_FROM_EFFECTIVE_VALUE');
+  assert.equal(r.observations[0].classification,'REVIEW_REQUIRED');
   assert.equal(r.firstViolation.at,'one');
 });
 
