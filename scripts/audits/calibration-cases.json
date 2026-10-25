@@ -37,6 +37,15 @@
       "owner": "catalog",
       "otherDomain": "sourcing",
       "evidenceTest": "tests/integration/catalog-json-manual-override-calibration-real-db.test.js"
+    },
+    {
+      "caseId": "SOURCING_MANUAL_PROVENANCE_ERASURE",
+      "pattern": "JSONB_MERGE_OVERRIDES_MANUAL_FIELD_AUTHORITY",
+      "service": "sourcing-candidate-import-service.upsertCandidateFromCatalogImport",
+      "db": "POSTGRES_REAL",
+      "owner": "sourcing",
+      "otherDomain": "catalog",
+      "evidenceTest": "tests/integration/catalog-json-manual-override-calibration-real-db.test.js"
     }
   ]
 }
