@@ -55,7 +55,8 @@ const producer=(file)=> {
  return m?m[1].split(',').map(x=>x.trim().split(/\s/)[0]).filter(x=>/^[a-z][a-z0-9_]*$/.test(x)):[];
 };
 function register(severity,kind,body){findings.push({severity,kind,...body})}
-const exemptionPairs=discoverExemptionPairs(fs.readFileSync(path.join(ROOT,'docs/db/railway-live-schema.sql'),'utf8'));
+const exemptionPairs=discoverExemptionPairs(fs.readFileSync(path.join(ROOT,'docs/db/railway-live-schema.sql'),'utf8'))
+ .filter(pair=>byTable.has(pair.table)); // governed canonical tables only; no orphan demo/backup schema tables
 const testNames=new Set([...byPath.keys()].filter(f=>f.startsWith('tests/')));
 for(const inv of invariants){
  if(!inv.explicit||!inv.tests.length){
