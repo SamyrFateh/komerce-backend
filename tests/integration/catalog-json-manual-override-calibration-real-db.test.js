@@ -45,7 +45,7 @@ if(!ci){
   client=await pool.connect();
   await client.query('BEGIN');
   await client.query(
-   "INSERT INTO supplier_catalog_imports(id,supplier_name,source_type,status) VALUES($1,$3,'json','COMPLETED'),($2,$3,'json','COMPLETED')",
+   "INSERT INTO supplier_catalog_imports(id,supplier_name,source_type,status,profile_id,profile_version,profile_hash) VALUES($1,$3,'json','COMPLETED','ci-profile',1,'ci-hash'),($2,$3,'json','COMPLETED','ci-profile',1,'ci-hash')",
    [ids.batchA,ids.batchB,supplier]
   );
   await client.query(
