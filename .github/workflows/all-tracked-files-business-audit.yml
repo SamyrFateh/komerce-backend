@@ -1,0 +1,69 @@
+name: Whole tracked repository + business audit (read-only)
+on:
+  push:
+    branches:
+      - audit/all-tracked-files-business-20261025
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repo-census:
+    name: All tracked files — typed static scan + business diagnostics
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without lifecycle hooks
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Read every tracked file (including tests, SQL, docs, config and assets)
+        run: node scripts/audits/repository-wide-risk-audit.js --out audit-results/full
+      - name: Run canonical logic scanner separately on eligible application JS/TS
+        run: node scripts/audit-logic.js --static-only --base HEAD --out audit-results/canonical
+      - name: Existing feature registry and graph invariants
+        continue-on-error: true
+        run: |
+          node scripts/feature-registry-check.js --strict
+          node scripts/business-graph-ratchet-check.js
+      - name: Print actual scope and critical findings
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          if(!fs.existsSync('audit-results/full/summary.json'))process.exit(0);
+          const x=JSON.parse(fs.readFileSync('audit-results/full/summary.json'));
+          const a=JSON.parse(fs.readFileSync('audit-results/full/business-audit.json'));
+          const c=JSON.parse(fs.readFileSync('audit-results/full/static-findings.json'));
+          const err=JSON.parse(fs.readFileSync('audit-results/full/file-anomalies.json'));
+          console.log(JSON.stringify({scope:x,business:a.issues.map(f=>({id:f.id,priority:f.priority,file:f.file,line:f.line,qualification:f.status})),signalsByRule:Object.fromEntries([...new Set(c.map(f=>f.rule))].map(k=>[k,c.filter(f=>f.rule===k).length])),errorsByRule:Object.fromEntries([...new Set(err.map(f=>f.rule))].map(k=>[k,err.filter(f=>f.rule===k).length])),anomalyExamples:err.slice(0,25)},null,2));
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,'## Komerce — couverture réelle\n\n| Métrique | Nombre |\n|---|---:|\n| Fichiers suivis Git | '+x.tracked+' |\n| Fichiers effectivement lus | '+x.read+' |\n| Fichiers exclus | '+x.excluded+' |\n| Heuristiques (tests inclus) | '+x.staticFindingCount+' |\n| Anomalies de fichiers | '+x.anomalyCount+' |\n| Signaux métier ciblés | '+x.businessFindings+' |\n\n**Niveau de preuve :** inventaire 100 % ; contrôles statiques adaptés par type. Ni certificat métier exhaustif, ni données Railway, ni navigateur. Artefact JSON complet avec inventaire de chaque fichier.\n');
+          NODE
+      - name: Store entire manifest and machine-readable findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: whole-repository-business-audit
+          path: audit-results
+          if-no-files-found: error
+          retention-days: 14
+
+  full-unit-suite:
+    name: Full Jest unit suite — runtime regression coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Complete Jest unit tests
+        run: npm test -- --ci
