@@ -90,6 +90,33 @@ jobs:
           node scripts/run-integration-tests.js \
             --files=tests/integration/sourcing-governance-reimport-poc.test.js \
             | tee audit-results/governance-poc/postgres-reproduction.log
+      - name: Challenge same evaluator on purchase price, category and weight (real DB)
+        run: |
+          set -o pipefail
+          node scripts/run-integration-tests.js \
+            --files=tests/integration/sourcing-governance-multifield-poc.test.js \
+            | tee audit-results/governance-poc/multifield-postgres.log
+      - name: Export independently observed 3-field evidence
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const file='audit-results/governance-poc/multifield-postgres.log';
+          if(!fs.existsSync(file))process.exit(0);
+          const lines=fs.readFileSync(file,'utf8').split(/\r?\n/);
+          const extract=prefix=>lines.filter(line=>line.includes(prefix)).map(line=>{
+            const start=line.indexOf(prefix)+prefix.length;
+            try{return JSON.parse(line.slice(start).trim());}catch{return null;}
+          }).filter(Boolean);
+          const bugs=extract('GOV_MULTIFIELD_PROOF ');
+          const controls=extract('GOV_MULTIFIELD_CONTROL ');
+          const summary={
+            bugs,controls,expectedFields:['purchase_price','komerce_category','estimated_weight_kg'],
+            observedBugs:bugs.length,observedNegativeControls:controls.length,
+          };
+          fs.writeFileSync('audit-results/governance-poc/multifield-observed.json',JSON.stringify(summary,null,2)+'\n');
+          console.log('GOV_MULTIFIELD_SUMMARY',JSON.stringify(summary));
+          NODE
       - name: Export observed path and proof fields
         if: always()
         run: |
