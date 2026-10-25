@@ -17,6 +17,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Challenge detectors on known positive and negative fixtures (no DB)
+        run: node --test tests/unit/novel-bug-patterns.test.js
       - name: Generate candidates FROM the full feature graph without named bugs
         run: node scripts/audits/governance-graph-discovery.js --out audit-results/discovery
       - name: Upload complete cross-domain graph and candidate evidence
