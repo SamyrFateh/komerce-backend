@@ -58,7 +58,14 @@ const guard = [authenticate, requireRole(['admin'])];
 // dashboard legacy (cf. PR #1452, CROSS_MARKET_BUG) : le rôle admin seul ne
 // suffit pas, il faut le grant dashboard_global_access_grants.
 const marketAuthorityGuard = [authenticate, requireRole(['admin']), requireDashboardGlobalAuthority];
-const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin', 'market_operator'];
+// Identity roles supported by the canonical internal portal. A role NEVER
+// grants a market membership or a global central capability: Finance and
+// Transitaire need explicit delegated market grants; Sourcing needs an
+// explicit sourcing_global_access_grants record (separate authority).
+const VALID_ROLES = [
+  'client', 'agent_relais', 'agent_hub', 'agent_transitaire',
+  'admin', 'market_operator', 'finance', 'sourcing',
+];
 const PASSWORD_HASH_ROUNDS = 12;
 
 function validatePasswordPolicy(password) {
