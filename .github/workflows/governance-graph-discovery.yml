@@ -129,6 +129,8 @@ jobs:
         run: |
           set -o pipefail
           node scripts/run-integration-tests.js --files=tests/integration/catalog-json-manual-override-calibration-real-db.test.js | tee audit-results/novel/manual-reimport-proof.log
+      - name: Read-only DB-schema-guided scan of required columns in runtime INSERT writers
+        run: node scripts/audits/sql-required-column-detector.js --out audit-results/schema-guided
       - name: Second-domain blind R&D — Logistics market isolation on real parcel HTTP route
         run: |
           set -o pipefail
@@ -152,4 +154,5 @@ jobs:
             audit-results/novel/
             audit-results/calibration/
             audit-results/blind-trial/
+            audit-results/schema-guided/
           if-no-files-found: warn
