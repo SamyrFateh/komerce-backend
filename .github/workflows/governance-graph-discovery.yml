@@ -1,0 +1,28 @@
+name: Governance graph — blind spot discovery (READ ONLY)
+on:
+  push:
+    branches:
+      - audit/discover-governance-blindspots-20261025
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Generate candidates FROM the full feature graph without named bugs
+        run: node scripts/audits/governance-graph-discovery.js --out audit-results/discovery
+      - name: Upload complete cross-domain graph and candidate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-discovery-graph
+          path: audit-results/discovery
+          if-no-files-found: error
