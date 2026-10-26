@@ -1,0 +1,73 @@
+name: P1 one real product — functional staging proof (read only)
+
+# One preexisting real KIR identity. No seeding, SQL write, price
+# activation, payment, procurement or approval from CI.
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-p1-one-product-functional
+  cancel-in-progress: false
+
+jobs:
+  functional-proof:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issues' &&
+        github.actor == github.repository_owner &&
+        github.event.issue.user.login == github.repository_owner &&
+        github.event.issue.title == '[staging-op] p1-one-product-functional-readonly'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      P1_TWENTY_SOURCE_RUNS: KIR-000009
+      E2E_P1_20_HUMAN_MODE: read-only
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+    steps:
+      - name: Checkout canonical main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Pin exact checkout
+        shell: bash
+        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Verify actual staging runtime SHA
+        run: node scripts/recette/staging-chromium-deployment-preflight.js
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Read one real product from canonical cohort (DB READ ONLY)
+        run: node scripts/recette/p1-20-cohort-inventory.js
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Functional P1 positive and negative proof (desktop + mobile)
+        run: npx playwright test --config=playwright.staging-p1-one-product.config.js
+      - name: Preserve proofs regardless of GO or NO GO
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-one-real-product-functional-${{ github.run_id }}
+          path: |
+            test-results/staging-p1-one-product/
+            test-results/staging-p1-20/cohort.json
+            test-results/staging-chromium/deployment-preflight.json
+          retention-days: 21
+          if-no-files-found: warn
