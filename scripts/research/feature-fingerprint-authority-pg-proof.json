@@ -15,7 +15,7 @@
     "features/orders.feature.js",
     "features/logistics.feature.js"
   ],
-  "sourceHash": "0e60a3cab2d6737af73d8ab4844c668d21ae3582f4a9b3b98043b16483e54906",
+  "sourceHash": "d1e57edb6f68b12b266e4462f65878790e9ce8aacb03da81d704f4c912e87531",
   "cases": [
     {
       "round": 1,
@@ -46,13 +46,13 @@
         "order_mismatch": 0
       },
       "after": {
-        "written": 1,
-        "product_mismatch": 1,
+        "written": 0,
+        "product_mismatch": 0,
         "quantity_excess": 0,
         "order_mismatch": 0
       },
-      "writeCount": 1,
-      "authorityViolation": true,
+      "writeCount": 0,
+      "authorityViolation": false,
       "grounding": "internal writer invocation, not HTTP route"
     },
     {
@@ -65,13 +65,13 @@
         "order_mismatch": 0
       },
       "after": {
-        "written": 1,
+        "written": 0,
         "product_mismatch": 0,
-        "quantity_excess": 1,
+        "quantity_excess": 0,
         "order_mismatch": 0
       },
-      "writeCount": 1,
-      "authorityViolation": true,
+      "writeCount": 0,
+      "authorityViolation": false,
       "grounding": "internal writer invocation, not HTTP route"
     },
     {
@@ -103,13 +103,13 @@
         "order_mismatch": 0
       },
       "after": {
-        "written": 1,
-        "product_mismatch": 1,
+        "written": 0,
+        "product_mismatch": 0,
         "quantity_excess": 0,
         "order_mismatch": 0
       },
-      "writeCount": 1,
-      "authorityViolation": true,
+      "writeCount": 0,
+      "authorityViolation": false,
       "grounding": "internal writer invocation, not HTTP route"
     },
     {
@@ -122,17 +122,17 @@
         "order_mismatch": 0
       },
       "after": {
-        "written": 1,
+        "written": 0,
         "product_mismatch": 0,
-        "quantity_excess": 1,
+        "quantity_excess": 0,
         "order_mismatch": 0
       },
-      "writeCount": 1,
-      "authorityViolation": true,
+      "writeCount": 0,
+      "authorityViolation": false,
       "grounding": "internal writer invocation, not HTTP route"
     }
   ],
   "rollbackVerified": true,
-  "verdict": "CROSS_ENTITY_AUTHORITY_MISMATCH_ACCEPTED",
-  "evidenceHash": "7ae963ba7f9d09207b7175678ff339f36b54b20210672f51634c35dbdb38a02c"
+  "verdict": "NO_AUTHORITY_VIOLATION_OBSERVED",
+  "evidenceHash": "1ba7cfad4e78c7ceb59b0113da3a5dfe132cd933db9f188236d348aea7b4c5c8"
 }
