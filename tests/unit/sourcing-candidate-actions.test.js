@@ -147,6 +147,7 @@ test('confirmed boutique review allows an inactive draft despite unresolved cust
 });
 
 test('commercial confirmation never bypasses explicit exclusion',async()=>{
+  jest.clearAllMocks();
   const db=require('../../db');
   const {promoteCandidate}=require('../../services/sourcing-candidate-actions');
   const catalog=require('../../services/catalog-candidate-product-service');
