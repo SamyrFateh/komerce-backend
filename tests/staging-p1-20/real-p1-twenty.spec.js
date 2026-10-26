@@ -134,6 +134,13 @@ async function verifyRenderedBusinessSurface(page,stage){
   const oracle=SCREEN_ORACLES[stage.key];
   if(!oracle)throw Error('P1_20_NO_SCREEN_ORACLE_'+stage.key);
   const root=page.locator(oracle.root).first();
+  if(stage.area==='buyer'){
+    // An empty #k-grid can have zero dimensions: it must be attached,
+    // while the API+matching-card assertions below decide buyer readiness.
+    await expect(root,'Le conteneur boutique doit exister').toBeAttached({timeout:30000});
+    return {oracle:stage.key,root:oracle.root,rendered:false,
+      reason:'API_AND_EXACT_DOM_CARD_PROOF_REQUIRED'};
+  }
   await expect(root,'Le contenu métier '+stage.key+' doit être monté, pas seulement le shell').toBeVisible({timeout:30000});
   let heading=null;
   if(oracle.heading){
