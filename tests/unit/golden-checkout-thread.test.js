@@ -123,9 +123,17 @@ test('FP_GOLDEN_MARKET_BASELINE — compare selected market to true order market
   expect(trace.checkpoints.find(c=>c.key==='P2_BOUTIQUE_TO_ORDER').status).toBe('CONTRADICTION_HYPOTHESIS');
   if(process.env.FP_EXPECT_GOLDEN_MARKET_GUARD==='true'){
     expect(marketCheck?.ok).toBe(false);
-    expect(bound.status).toBe(GATE.NON_PROUVE);
+    expect(bound.status).toBe(GATE.ANOMALIE);
+    expect(bound.anomalies).toEqual(expect.arrayContaining([expect.stringContaining('ORDER_MARKET_MISMATCH')]));
   }else{
     // Preserve the before-fix observation; do not accept it as desired behavior.
     expect(bound.status).toBe(GATE.PROVED);
   }
+});
+
+test('FP_GOLDEN_NOMINAL_MARKET — checkout origin matches market and stays valid',async()=>{
+  const report=await run(facts());
+  const origin=report.gates.find(g=>g.key==='CHECKOUT_ORIGIN_PROVED');
+  expect(origin.status).toBe(GATE.PROVED);
+  expect(origin.checks.find(c=>c.key==='order_matches_selected_market')).toMatchObject({ok:true});
 });
