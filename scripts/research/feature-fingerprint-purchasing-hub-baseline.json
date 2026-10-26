@@ -1,0 +1,22 @@
+{
+  "schema": "fingerprint-purchasing-hub-ab/v1",
+  "phase": "before_fix",
+  "run": "https://github.com/SamyrFateh/komerce-backend/actions/runs/40405256772",
+  "evidence": "GitHub Actions log FP_PURCHASING_HUB_PROOF",
+  "code": "services/hub-physical-identity.js",
+  "test": "tests/integration/hub-physical-identity-postgres.test.js",
+  "environment": "PostgreSQL 16 schema isolated and migration-backed",
+  "nominal": {
+    "status": "confirmed",
+    "quarantined": false,
+    "allocations": 1
+  },
+  "perturbation": {
+    "status": "pending",
+    "quarantined": false,
+    "reason_code": null,
+    "allocations": 1
+  },
+  "violation": true,
+  "caveat": "Internal HUB receive service, not complete HTTP E2E. Exact procurement lifecycle contract requires business review."
+}
