@@ -11,6 +11,7 @@
 const fs=require('fs'),path=require('path');
 const {test,expect}=require('@playwright/test');
 const {markets,pages,dimensions,processes}=require('./matrix');
+const {expectedPath}=require('./navigation-audit-policy');
 const ORIGIN=process.env.E2E_STAGING_BASE_URL||'https://komerce-backend-production.up.railway.app';
 const ROOT=path.resolve('test-results/staging-chromium/evidence');
 const pathname=u=>{try{const x=new URL(u,ORIGIN);return x.origin===ORIGIN?x.pathname:null;}catch{return null;}};
@@ -22,7 +23,7 @@ test('real staging: full navigation, market context and browser errors',async({p
  const mobile=info.project.name.endsWith('-mobile');
  const result={target:ORIGIN,role,viewport:mobile?'390x844':'1440x900',version:null,
   markets,dimensions,processes,context:null,routes:[],edges:[],marketViews:[],
-  blockedWrites:[],apiErrors:[],jsErrors:[],findings:[]};
+  blockedWrites:[],apiErrors:[],jsErrors:[],canonicalRedirects:[],findings:[]};
  const fail=(severity,code,detail)=>result.findings.push({severity,code,detail:short(detail)});
  const file=path.join(ROOT,info.project.name+'.json');
  const save=()=>fs.writeFileSync(file,JSON.stringify(result,null,2));
@@ -120,7 +121,11 @@ test('real staging: full navigation, market context and browser errors',async({p
          surface:data.surface,header:data.header,title:data.title,overflow:data.overflow,
          n1:data.n1,n2:data.n2,n3:data.n3,links:data.links.length});
        if(response?.status()!==200)fail('P1','PAGE_HTTP',route+' '+response?.status());
-       if(actual!==route)fail('P1','WRONG_ROUTE',route+' => '+actual);
+       if(actual!==route){
+         const expected=expectedPath(route,ORIGIN);
+         if(actual===expected)result.canonicalRedirects.push({source:route,destination:actual,kind:'canonical_alias'});
+         else fail('P1','WRONG_ROUTE',route+' => '+actual);
+       }
        if(data.contentLength<25)fail('P1','EMPTY_SCREEN',route);
        if(data.surface==='pilotage'&&!['/admin','/admin/pilotage'].includes(route))
          fail('P1','UNEXPECTED_PILOTAGE',route);
@@ -137,7 +142,11 @@ test('real staging: full navigation, market context and browser errors',async({p
            await page.waitForTimeout(160);
            const got=pathname(page.url());
            result.edges.push({source:route,destination:got,expected:dest,kind:'clicked'});
-           if(got!==dest)fail('P2','CLICK_WRONG_DESTINATION',route+' -> '+dest+' != '+got);
+           if(got!==dest){
+             const expected=expectedPath(link.href,ORIGIN);
+             if(got===expected)result.canonicalRedirects.push({source:route,destination:got,via:dest,kind:'clicked_alias'});
+             else fail('P2','CLICK_WRONG_DESTINATION',route+' -> '+dest+' != '+got);
+           }
          }catch(e){fail('P2','CLICK_UNAVAILABLE',route+' -> '+dest+': '+short(e.message));}
          await page.goto(ORIGIN+route,{waitUntil:'domcontentloaded'});
          await page.waitForTimeout(130);
