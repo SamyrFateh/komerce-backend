@@ -30,40 +30,6 @@
       "feature": [
         "logistics"
       ],
-      "path": "services/auto-parcel.js",
-      "line": 195,
-      "variable": "assigned",
-      "basis": "SQL INSERT may write zero rows; increment does not inspect query.rowCount",
-      "codeSha256": "39ad8cf05c02e67016911cbb40e038d2cb7c39a7c5300a102a9ce2778b51e6ca",
-      "status": "H0_UNVERIFIED",
-      "priority": "investigate",
-      "provenance": {
-        "sql": "ON CONFLICT DO NOTHING `, [parcelId, item.id, item.quantity || 1, ite",
-        "counter": "); assigned++; } catch (e) { // Minimal"
-      }
-    },
-    {
-      "kind": "UNCONDITIONAL_EFFECT_INCREMENT",
-      "feature": [
-        "logistics"
-      ],
-      "path": "services/auto-parcel.js",
-      "line": 204,
-      "variable": "assigned",
-      "basis": "SQL INSERT may write zero rows; increment does not inspect query.rowCount",
-      "codeSha256": "39ad8cf05c02e67016911cbb40e038d2cb7c39a7c5300a102a9ce2778b51e6ca",
-      "status": "H0_UNVERIFIED",
-      "priority": "investigate",
-      "provenance": {
-        "sql": "ON CONFLICT DO NOTHING `, [parcelId, item.id, item.quantity || 1, ite",
-        "counter": "item.quantity || 1]); assigned++; "
-      }
-    },
-    {
-      "kind": "UNCONDITIONAL_EFFECT_INCREMENT",
-      "feature": [
-        "logistics"
-      ],
       "path": "services/parcelOptimizationService.js",
       "line": 514,
       "variable": "totalAssigned",
@@ -78,8 +44,8 @@
     }
   ],
   "metrics": {
-    "hypotheses": 4,
+    "hypotheses": 2,
     "unknownTrueBugs": "NOT_MEASURED"
   },
-  "digest": "9af857a38a116b0c3f01889555ea8cc2b18f34dd631ca9b5cb16dae193745b94"
+  "digest": "85208f764d5324186cb5c0687c844aa8d3924a413aa09c50ff16e9cf04f7abb8"
 }
