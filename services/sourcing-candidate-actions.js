@@ -8,7 +8,7 @@
  * @outputs       candidate_mutation_result, inactive_catalog_draft, automatic_catalogue_handoff_summary
  * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js, services/import-runtime-runs.js, services/sourcing-certification.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
- * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, import_runtime_runs
+ * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, import_runtime_runs, boutique_categories, boutique_subcategories
  * @db-write      sourcing_candidates, sourcing_candidate_events
  * @db-write-via:catalog-candidate-product-service products
  * @db-write-via:catalog-promotion catalog_media, product_variants, product_skus, product_sku_media
@@ -428,11 +428,115 @@ async function handoffImportResult(result, actorId = null, options = {}) {
   };
 }
 
+/**
+ * Sourcing is the sole owner of candidate commercial taxonomy review.
+ * This has NO effect on customs classifications, source KIR snapshots,
+ * Catalog activation, market exposure, local pricing or buyer eligibility.
+ */
+function requireCommercialReviewPayload(payload = {}) {
+  const category=typeof payload.category==='string'?payload.category.trim():'';
+  const subcategory=typeof payload.subcategory==='string'?payload.subcategory.trim():'';
+  const reason=typeof payload.reason==='string'?payload.reason.trim():'';
+  if(!/^[a-z0-9][a-z0-9_-]{0,127}$/i.test(category)
+    ||!/^[a-z0-9][a-z0-9_-]{0,127}$/i.test(subcategory)){
+    throw new SourcingCandidateActionError(400,
+      'Une catégorie et sous-catégorie boutique actives sont requises.',
+      'commercial_taxonomy_pair_invalid');
+  }
+  if(reason.length<12||reason.length>500){
+    throw new SourcingCandidateActionError(400,
+      'Motif de revue explicite obligatoire (12–500 caractères).',
+      'commercial_taxonomy_reason_required');
+  }
+  return {category,subcategory,reason};
+}
+async function listCommercialTaxonomyOptions(id,q=db){
+  const candidate=await requireCandidate(id,q);
+  const {rows}=await q.query(
+    `SELECT bc.key AS category,bc.label AS category_label,
+            bs.key AS subcategory,bs.label AS subcategory_label
+       FROM boutique_categories bc
+       JOIN boutique_subcategories bs ON bs.category_key=bc.key
+      WHERE bc.is_active=TRUE AND bs.is_active=TRUE
+      ORDER BY bc.display_order,bs.display_order,bc.key,bs.key`
+  );
+  return {candidate_ref:candidate.candidate_ref,
+    product_name:candidate.product_name,
+    supplier_category:candidate.supplier_category||null,
+    review:candidate.commercial_taxonomy_review||null,
+    options:rows.map(x=>({category:x.category,category_label:x.category_label,
+      subcategory:x.subcategory,subcategory_label:x.subcategory_label}))};
+}
+async function confirmCommercialTaxonomy(id,payload={},actorId=null){
+  const {category,subcategory,reason}=requireCommercialReviewPayload(payload);
+  if(!actorId)throw new SourcingCandidateActionError(403,
+    'Un acteur Sourcing authentifié est obligatoire.','commercial_taxonomy_actor_required');
+  const client=await db.getClient();
+  try{
+    await client.query('BEGIN');
+    const {rows:[candidate]}=await client.query(
+      'SELECT * FROM sourcing_candidates WHERE id=$1 FOR UPDATE',[id]);
+    if(!candidate)throw new SourcingCandidateActionError(404,
+      'Candidat introuvable','candidate_not_found');
+    if(['imported_to_catalog','rejected','quarantined','archived'].includes(candidate.state)
+      ||String(candidate.scan_result?.sourcing_decision||'').toUpperCase()==='EXCLUDED'){
+      throw new SourcingCandidateActionError(409,
+        'La classification de ce candidat ne peut plus être modifiée à ce stade.',
+        'commercial_taxonomy_lifecycle_forbidden');
+    }
+    const {rows:[validPair]}=await client.query(
+      `SELECT 1 FROM boutique_categories bc
+         JOIN boutique_subcategories bs ON bs.category_key=bc.key
+        WHERE bc.key=$1 AND bs.key=$2
+          AND bc.is_active=TRUE AND bs.is_active=TRUE LIMIT 1`,
+      [category,subcategory]);
+    if(!validPair)throw new SourcingCandidateActionError(409,
+      'Cette paire catégorie/sous-catégorie boutique n’est pas active.',
+      'commercial_taxonomy_not_active');
+    const previous=candidate.commercial_taxonomy_review||null;
+    if(previous?.status==='CONFIRMED' &&
+      previous.category===category && previous.subcategory===subcategory){
+      await client.query('ROLLBACK');
+      return {candidate_ref:candidate.candidate_ref,unchanged:true,
+        review:{status:'CONFIRMED',category,subcategory}};
+    }
+    const review={status:'CONFIRMED',category,subcategory,
+      source:'HUMAN_SOURCING_COMMERCIAL_REVIEW',reason,
+      reviewed_by:actorId,reviewed_at:new Date().toISOString()};
+    await client.query(
+      `UPDATE sourcing_candidates
+         SET commercial_taxonomy_review=$1::jsonb,updated_by=$2
+       WHERE id=$3`,
+      [JSON.stringify(review),actorId,id]);
+    await client.query(
+      `INSERT INTO sourcing_candidate_events
+         (candidate_id,event_type,changes,notes,triggered_by)
+       VALUES ($1,'commercial_taxonomy_confirmed',$2::jsonb,$3,$4)`,
+      [id,JSON.stringify({
+        before:previous?{category:previous.category||null,
+          subcategory:previous.subcategory||null,status:previous.status||null}:null,
+        after:{status:'CONFIRMED',category,subcategory}
+      }),reason,actorId]
+    );
+    await client.query('COMMIT');
+    return {candidate_ref:candidate.candidate_ref,unchanged:false,
+      review:{status:'CONFIRMED',category,subcategory}};
+  }catch(error){
+    await client.query('ROLLBACK').catch(()=>{});
+    throw error;
+  }finally{
+    client.release();
+  }
+}
+
 module.exports = {
   SourcingCandidateActionError,
   SourcingCatalogueHandoffError,
   requireCandidate,
   updateCandidate,
+  requireCommercialReviewPayload,
+  listCommercialTaxonomyOptions,
+  confirmCommercialTaxonomy,
   scanCandidate,
   watchlistCandidate,
   rejectCandidate,
