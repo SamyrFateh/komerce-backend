@@ -40,6 +40,7 @@ jobs:
       FP_AUTOPARCEL_OUTPUT: /tmp/feature-fingerprint-auto-parcel-pg-proof.json
       FP_UNSOLD_OUTPUT: /tmp/feature-fingerprint-unsold-terminal-pg-proof.json
       FP_AUTHORITY_OUTPUT: /tmp/feature-fingerprint-authority-pg-proof.json
+      FP_EXPECT_AUTHORITY_GUARD: 'true'
       FP_EXPECT_FAIL_CLOSED: 'true'
       FP_EXPECT_TERMINAL_GUARD: 'true'
     steps:
@@ -89,6 +90,11 @@ jobs:
         run: |
           set -o pipefail
           node scripts/research/feature-fingerprint-unsold-terminal-pg.js 2>&1 | tee /tmp/fp-unsold-terminal.log
+      - name: Focused parcel-item mutation authority unit cases
+        id: unit_authority
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/parcel-item-mutation-service.test.js 2>&1 | tee /tmp/fp-unit-authority.log
       - name: R&D authority plus quantity cross-feature proof
         id: authority
         run: |
