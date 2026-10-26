@@ -1,0 +1,66 @@
+name: R&D ECO Feature Fingerprint PostgreSQL A/B
+on:
+  push:
+    branches:
+      - research/feature-fingerprint-eco-pg-20261026
+    paths:
+      - .github/workflows/research-feature-fingerprint-eco-pg.yml
+      - scripts/research/feature-fingerprint-hub-pg.js
+permissions:
+  contents: read
+concurrency:
+  group: research-feature-fingerprint-eco-pg
+  cancel-in-progress: true
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
+      KOMERCE_DISABLE_CRONS: 'true'
+      FP_OUTPUT: /tmp/feature-fingerprint-pg-proof.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install only production dependencies
+        run: npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+      - name: Build disposable canonical database
+        run: |
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-schema-load.log
+          node scripts/ci-db-bootstrap.js
+      - name: Prove only 2x(A/B) with outer rollback
+        run: node scripts/research/feature-fingerprint-hub-pg.js
+      - name: Report
+        if: always()
+        run: |
+          if [ -f /tmp/feature-fingerprint-pg-proof.json ]; then
+            echo '## Feature Fingerprint: PostgreSQL experiment' >> "$GITHUB_STEP_SUMMARY"
+            echo '\`\`\`json' >> "$GITHUB_STEP_SUMMARY"
+            node -e 'const r=require("/tmp/feature-fingerprint-pg-proof.json");console.log(JSON.stringify({verdict:r.verdict,rollbackVerified:r.rollbackVerified,cases:r.cases.map(c=>({label:c.label,response:c.response,after:c.after,contradiction:c.contradiction})),evidenceHash:r.evidenceHash},null,2))' >> "$GITHUB_STEP_SUMMARY"
+            echo '\`\`\`' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: research-feature-fingerprint-pg-${{ github.run_id }}
+          path: /tmp/feature-fingerprint-pg-proof.json
+          if-no-files-found: ignore
+          retention-days: 3
