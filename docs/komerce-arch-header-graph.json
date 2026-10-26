@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1876,
-    "edges": 9336,
+    "edges": 9343,
     "dbTables": 213,
     "doctrines": 701,
     "impactAreas": 207,
@@ -14396,7 +14396,8 @@
         "product_market_exposure",
         "products",
         "markets",
-        "catalog_media"
+        "catalog_media",
+        "sourcing_candidates"
       ],
       "dbWrite": [
         "product_market_exposure"
@@ -16738,7 +16739,9 @@
         "market_operating_assignments",
         "assignment_memberships",
         "membership_capabilities",
-        "assignment_capability_ceiling"
+        "assignment_capability_ceiling",
+        "users",
+        "relais"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -30068,6 +30071,7 @@
       ],
       "depends": [
         "db.js",
+        "services/supplier-commercial-category-mapping.js",
         "services/supplier-catalog-scanner.js",
         "services/pricing-engine.js",
         "services/catalog-candidate-product-service.js",
@@ -30111,10 +30115,17 @@
           "tables": [
             "import_runtime_runs"
           ]
+        },
+        {
+          "via": "supplier-commercial-category-mapping",
+          "tables": [
+            "supplier_commercial_category_mappings"
+          ]
         }
       ],
       "dbTxn": [
-        "promoteCandidate : transaction dédiée"
+        "promoteCandidate",
+        "confirmCandidateBoutiqueCategory : transactions dédiées"
       ],
       "doctrine": [
         "single_sourcing_candidate_mutation_authority",
@@ -30172,7 +30183,7 @@
         "sourcing",
         "catalog"
       ],
-      "version": "2026-08"
+      "version": "2026-10"
     },
     {
       "id": "services/sourcing-canonical-commercial-projection-core.js",
@@ -31496,7 +31507,9 @@
         "partners",
         "suppliers_stats",
         "sourcing_sources",
-        "sourcing_captures"
+        "sourcing_captures",
+        "boutique_categories",
+        "boutique_subcategories"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -37365,6 +37378,11 @@
       "table": "shared_cart_saved_access"
     },
     {
+      "id": "db:supplier_commercial_category_mappings",
+      "type": "db-table",
+      "table": "supplier_commercial_category_mappings"
+    },
+    {
       "id": "db:sourcing_canonical_entity_refs",
       "type": "db-table",
       "table": "sourcing_canonical_entity_refs"
@@ -37393,11 +37411,6 @@
       "id": "db:sourcing_source_requests",
       "type": "db-table",
       "table": "sourcing_source_requests"
-    },
-    {
-      "id": "db:supplier_commercial_category_mappings",
-      "type": "db-table",
-      "table": "supplier_commercial_category_mappings"
     },
     {
       "id": "db:supplier_catalog_import_rejections",
@@ -63522,6 +63535,12 @@
     },
     {
       "from": "services/catalog-market-exposure-service.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/catalog-market-exposure-service.js",
       "to": "db:product_market_exposure",
       "type": "db-write",
       "label": "product_market_exposure"
@@ -67356,6 +67375,18 @@
       "to": "db:assignment_capability_ceiling",
       "type": "db-read",
       "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "services/dashboard-admin-context.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/dashboard-admin-context.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
     },
     {
       "from": "services/dashboard-admin-context.js",
@@ -89113,6 +89144,12 @@
     },
     {
       "from": "services/sourcing-candidate-actions.js",
+      "to": "services/supplier-commercial-category-mapping.js",
+      "type": "depends",
+      "label": "services/supplier-commercial-category-mapping.js"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
       "to": "services/supplier-catalog-scanner.js",
       "type": "depends",
       "label": "services/supplier-catalog-scanner.js"
@@ -89242,6 +89279,13 @@
       "type": "db-write-via",
       "label": "import_runtime_runs",
       "via": "import-runtime-runs"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:supplier_commercial_category_mappings",
+      "type": "db-write-via",
+      "label": "supplier_commercial_category_mappings",
+      "via": "supplier-commercial-category-mapping"
     },
     {
       "from": "services/sourcing-candidate-actions.js",
@@ -91502,6 +91546,18 @@
       "to": "db:sourcing_captures",
       "type": "db-read",
       "label": "sourcing_captures"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:boutique_categories",
+      "type": "db-read",
+      "label": "boutique_categories"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:boutique_subcategories",
+      "type": "db-read",
+      "label": "boutique_subcategories"
     },
     {
       "from": "services/sourcing-workspace.js",
@@ -112805,7 +112861,8 @@
         "product_market_exposure",
         "products",
         "markets",
-        "catalog_media"
+        "catalog_media",
+        "sourcing_candidates"
       ],
       "dbWrite": [
         "product_market_exposure"
@@ -112825,6 +112882,7 @@
         "db:markets",
         "db:product_market_exposure",
         "db:products",
+        "db:sourcing_candidates",
         "doctrine:catalog_stays_unique_exposure_is_projection",
         "doctrine:missing_exposure_is_disabled",
         "doctrine:writer_not_owner_boundary",
@@ -115159,7 +115217,9 @@
         "market_operating_assignments",
         "assignment_memberships",
         "membership_capabilities",
-        "assignment_capability_ceiling"
+        "assignment_capability_ceiling",
+        "users",
+        "relais"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -115182,6 +115242,8 @@
         "db:markets",
         "db:membership_capabilities",
         "db:operator_market_scopes",
+        "db:relais",
+        "db:users",
         "doctrine:delegated_capability_projection_is_never_authority",
         "doctrine:delegated_capability_projection_stays_market_scoped",
         "doctrine:server_global_context_explicit",
@@ -128559,6 +128621,7 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
+        "services/supplier-commercial-category-mapping.js",
         "services/supplier-catalog-scanner.js",
         "services/pricing-engine.js",
         "services/catalog-candidate-product-service.js",
@@ -128603,6 +128666,12 @@
           "tables": [
             "import_runtime_runs"
           ]
+        },
+        {
+          "via": "supplier-commercial-category-mapping",
+          "tables": [
+            "supplier_commercial_category_mappings"
+          ]
         }
       ],
       "doctrines": [
@@ -128628,6 +128697,7 @@
         "db:sourcing_candidate_events",
         "db:sourcing_candidates",
         "db:supplier_catalog_imports",
+        "db:supplier_commercial_category_mappings",
         "doctrine:catalog_promotion_owner_respected",
         "doctrine:draft_handoff_has_no_market_price",
         "doctrine:engine_price_is_not_market_decision",
@@ -128646,7 +128716,8 @@
         "services/sourcing-certification.js",
         "services/sourcing-source-autopilot.js",
         "services/sourcing-workspace.js",
-        "services/supplier-catalog-scanner.js"
+        "services/supplier-catalog-scanner.js",
+        "services/supplier-commercial-category-mapping.js"
       ]
     },
     "services/sourcing-candidate-import-service.js": {
@@ -129992,7 +130063,9 @@
         "partners",
         "suppliers_stats",
         "sourcing_sources",
-        "sourcing_captures"
+        "sourcing_captures",
+        "boutique_categories",
+        "boutique_subcategories"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -130056,6 +130129,8 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:boutique_categories",
+        "db:boutique_subcategories",
         "db:catalog_media",
         "db:partners",
         "db:product_sku_media",
@@ -130215,7 +130290,8 @@
       "mustCheck": [
         "db:boutique_categories",
         "db:boutique_subcategories",
-        "db:supplier_commercial_category_mappings"
+        "db:supplier_commercial_category_mappings",
+        "services/sourcing-candidate-actions.js"
       ]
     },
     "services/supplier-execution-certification.js": {
