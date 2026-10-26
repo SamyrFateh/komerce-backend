@@ -36,6 +36,7 @@ for(const r of runs)for(const m of markets){
 fs.writeFileSync(path.join(root,'markets-processes-matrix.csv'),csv(matrix));
 const routeCount=runs.reduce((n,r)=>n+r.routes.length,0);
 const clicked=edges.filter(e=>e.kind==='clicked').length;
+const nominalRedirects=runs.reduce((sum,r)=>sum+(r.canonicalRedirects||[]).length,0);
 const versions=runs.map(r=>'- '+r.role+'/'+r.viewport+': '+(r.version||'SHA NON PROUVE')).join('\n');
 const report=[
  '# Komerce — Chromium staging reel', '',
@@ -45,6 +46,7 @@ const report=[
  'Noms des secrets manquants (valeurs jamais journalisees): '+(credentialPreflight?credentialPreflight.missing_secret_names.join(', ')||'aucun detecte':'inconnu'),
  'Routes observees: '+routeCount,
  'Transitions reellement cliquees: '+clicked,
+ 'Redirections canoniques observees (nominal prouve): '+nominalRedirects,
  'Anomalies: '+allFindings.length,
  'Cellules de matrice marches/processus: '+(matrix.length-1), '',
  '## Version reellement observee',versions,'',
@@ -65,4 +67,4 @@ const report=[
  '+ vrais parcours positifs et negatifs + nettoyage selectif + validation humaine.'
 ];
 fs.writeFileSync(path.join(root,'rapport.md'),report.join('\n')+'\n');
-console.log(JSON.stringify({runs:runs.length,routeCount,clicked,findings:allFindings.length,matrixRows:matrix.length-1}));
+console.log(JSON.stringify({runs:runs.length,routeCount,clicked,nominalRedirects,findings:allFindings.length,matrixRows:matrix.length-1}));
