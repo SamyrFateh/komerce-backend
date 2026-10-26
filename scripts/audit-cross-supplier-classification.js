@@ -39,7 +39,7 @@ async function run({database=db,confirm=confirmTarget,auditRun=audit,env=process
 
       const report=await auditRun(runRef,{query:client,sourceAudit:ref=>sourceAudit(ref,client)});
       const products=report.products.map(p=>({
-        candidate_ref:p.candidate_ref,source_path:p.source_path,
+        candidate_ref:p.candidate_ref,product_name:p.product_name||null,source_path:p.source_path,
         category:p.category||null,subcategory:p.subcategory||null,
         status:p.status,reason:p.source,
         historical_category:p.historical_category||null,
@@ -62,7 +62,7 @@ if(require.main===module){
   const out=path.resolve('test-results/cross-supplier-classification/classification.json');
   const persist=(result)=>{
     fs.mkdirSync(path.dirname(out),{recursive:true});
-    fs.writeFileSync(out,JSON.stringify(result,null,2)+'\\n');
+    fs.writeFileSync(out,JSON.stringify(result,null,2)+'\n');
   };
   run().then(result=>{
     persist(result);

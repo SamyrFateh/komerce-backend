@@ -47,7 +47,7 @@ async function audit(runRef,deps={}) {
     const decision=await verdict(q,replay);
     const mismatch=historical?.category && decision.status==='AUTO_CLASSIFIED'
       && (historical.category!==decision.category || historical.subcategory!==decision.subcategory);
-    results.push({candidate_ref:item.candidate_ref,
+    results.push({candidate_ref:item.candidate_ref,product_name:candidate.product_name||null,
       status:mismatch?'REVIEW_REQUIRED':decision.status,
       source:mismatch?'HISTORICAL_CLASSIFICATION_CONFLICT':decision.source,
       category:mismatch?null:decision.category,subcategory:mismatch?null:decision.subcategory,
