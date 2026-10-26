@@ -9,8 +9,8 @@
  */
 'use strict';
 const { defineConfig } = require('@playwright/test');
-const ALL=['admin','market_operator','finance','sourcing','agent_hub','agent_relais','agent_transitaire'];
-const selected=process.env.E2E_AUDIT_ROLES==='admin'?['admin']:ALL;
+const {selectedRoles}=require('./tests/staging-canonical/role-selection');
+const selected=selectedRoles(process.env.E2E_AUDIT_ROLES||'all');
 const baseURL=process.env.E2E_STAGING_BASE_URL||'https://komerce-backend-production.up.railway.app';
 if(new URL(baseURL).origin!=='https://komerce-backend-production.up.railway.app') throw Error('Staging host only');
 module.exports=defineConfig({
