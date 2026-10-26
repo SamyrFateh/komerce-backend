@@ -36,6 +36,7 @@ jobs:
       DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
       KOMERCE_DISABLE_CRONS: 'true'
       FP_MATURITY_OUTPUT: /tmp/fp-maturity-membership.json
+      FP_EXPECT_PARCEL_MEMBERSHIP_GUARD: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,6 +48,8 @@ jobs:
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-maturity-schema.log
           node scripts/ci-db-bootstrap.js
+      - name: Focused pricing maturity regression
+        run: ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/pricing-maturity.test.js
       - name: Historical carrier vs shared parcel A/B
         run: node scripts/research/golden-parcel-maturity-pg.js
       - name: Preserve full evidence
