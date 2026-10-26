@@ -870,3 +870,36 @@ describe('C2 — couverture physique quantitative avant préparation (PO histori
     expect((await coverage(purchase.order)).covered).toBe(true);
   });
 });
+
+describe('FP-PURCHASING-HUB — submitted PO authority A/B [experimental]', () => {
+  test('FP-PURCHASING-HUB: confirmed vs not-yet-submitted historical PO', async () => {
+    const confirmed = await seedPurchase({qty:1,supplierUnitRef:'FP-CONFIRMED'});
+    const nominal = await transact(client => receiveSupplierPackage(client, {
+      reference:'FP-CONFIRMED-ARRIVAL', contents:[{purchase_order_id:confirmed.po,quantity:1}],
+    }));
+    expect(nominal.quarantined).toBe(false);
+    expect(nominal.allocations).toHaveLength(1);
+
+    const pending = await seedPurchase({qty:1,supplierUnitRef:'FP-NOT-SUBMITTED'});
+    await query("UPDATE purchase_orders SET status='pending' WHERE id=$1",[pending.po]);
+    const perturbed = await transact(client => receiveSupplierPackage(client, {
+      reference:'FP-PENDING-ARRIVAL', contents:[{purchase_order_id:pending.po,quantity:1}],
+    }));
+    const allocationCount = Number((await query(
+      'SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations WHERE purchase_order_id=$1',[pending.po]
+    )).rows[0].n);
+    const violation = !perturbed.quarantined && allocationCount > 0;
+    const proof = {contract:'non-submitted PO cannot become an accepted Hub economic allocation',
+      fixture:'real PostgreSQL isolated schema + canonical migrations',
+      nominal:{status:'confirmed',quarantined:nominal.quarantined,allocations:nominal.allocations.length},
+      perturbation:{status:'pending',quarantined:perturbed.quarantined,
+        reason_code:perturbed.reason_code||null,allocations:allocationCount},
+      violation,operationalImpact:'internal HUB-001 service; not demonstrated public HTTP exposure'};
+    console.log('FP_PURCHASING_HUB_PROOF '+JSON.stringify(proof));
+    if(process.env.FP_EXPECT_PURCHASING_HUB_GUARD==='true'){
+      expect(violation).toBe(false);
+      expect(perturbed).toMatchObject({quarantined:true,reason_code:'HUB_PURCHASE_ORDER_NOT_SUBMITTED'});
+      expect(allocationCount).toBe(0);
+    }
+  });
+});
