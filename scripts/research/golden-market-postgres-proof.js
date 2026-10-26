@@ -57,6 +57,7 @@ async function main(){
     const result=await loadCheckoutOriginGate(client,{...common,marketCode});
     proof.cases.push({repeat,variant,selected_market:marketCode,canonical_order_market:base.market_code,
       status:result.status,check:result.checks.find(k=>k.key==='order_matches_selected_market')?.ok??null,
+      failedChecks:result.checks.filter(k=>!k.ok).map(k=>({key:k.key,detail:k.detail})),
       anomalyCount:result.anomalies?.length||0});
    }
   }
@@ -64,6 +65,9 @@ async function main(){
   try{if(began&&client){await client.query('ROLLBACK');proof.rollbackVerified=true;}}
   finally{if(client)client.release();await pool.end();}
  }
+ console.log('GOLDEN_PG_OBSERVED '+JSON.stringify(proof.cases));
+ const output=process.env.FP_GOLDEN_PG_OUTPUT||'/tmp/golden-cross-market-pg-proof.json';
+ fs.writeFileSync(output,JSON.stringify({...proof,verdict:'AWAITING_ASSERTIONS'},null,2)+'\\n');
  assert.equal(proof.cases.length,4);
  for(const c of proof.cases.filter(x=>x.variant==='nominal')){
   assert.equal(c.status,'PROVED');assert.equal(c.check,true);
