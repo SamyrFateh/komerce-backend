@@ -14,6 +14,8 @@ const root=path.resolve('test-results/staging-chromium'),dir=path.join(root,'evi
 fs.mkdirSync(root,{recursive:true});
 const files=fs.existsSync(dir)?fs.readdirSync(dir).filter(x=>x.endsWith('.json')):[];
 const runs=files.map(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')));
+const preflightFile=path.join(root,'credentials-preflight.json');
+const credentialPreflight=fs.existsSync(preflightFile)?JSON.parse(fs.readFileSync(preflightFile,'utf8')):null;
 const q=x=>'"'+String(x??'').replace(/"/g,'""').replace(/[\r\n]/g,' ')+'"';
 const csv=rows=>rows.map(row=>row.map(q).join(',')).join('\n')+'\n';
 const allFindings=runs.flatMap(r=>r.findings.map(f=>({...f,role:r.role,viewport:r.viewport})));
@@ -38,13 +40,17 @@ const versions=runs.map(r=>'- '+r.role+'/'+r.viewport+': '+(r.version||'SHA NON 
 const report=[
  '# Komerce — Chromium staging reel', '',
  'Profils executes: '+runs.length,
+ 'Profils configures dans le run: '+(credentialPreflight?credentialPreflight.selected_roles.join(', '):'non determines'),
+ 'Audit des identifiants: '+(credentialPreflight?credentialPreflight.status:'PRECHECK_NOT_RECORDED'),
+ 'Noms des secrets manquants (valeurs jamais journalisees): '+(credentialPreflight?credentialPreflight.missing_secret_names.join(', ')||'aucun detecte':'inconnu'),
  'Routes observees: '+routeCount,
  'Transitions reellement cliquees: '+clicked,
  'Anomalies: '+allFindings.length,
  'Cellules de matrice marches/processus: '+(matrix.length-1), '',
  '## Version reellement observee',versions,'',
  '## Verdict distinct', '',
- 'NAVIGATION: '+(runs.length&&allFindings.length===0?'aucun ecart sur les chemins parcourus':'NO GO ou couverture bloquee')+'.', '',
+ 'NAVIGATION: '+(runs.length&&allFindings.length===0?'aucun ecart sur les chemins parcourus':'NO GO ou couverture bloquee')+'.',
+ 'Parcours non executes ou roles absents : NOT_PROVEN (jamais PASS).', '',
  'E2E metier integral: NOT_PROVEN. Une lecture Chromium ne prouve pas les transitions transactionnelles P1-P7.',
  'Les cellules metier restent NOT_PROVEN jusqu a un scenario staging isole avec objets et preuves effectives.','',
  '## Anomalies', '',
