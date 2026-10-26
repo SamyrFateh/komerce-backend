@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "codeSource": "services/auto-parcel.js",
+  "sourceSha256": "39ad8cf05c02e67016911cbb40e038d2cb7c39a7c5300a102a9ce2778b51e6ca",
+  "postgres": true,
+  "fullHttp": false,
+  "scenarioCount": 4,
+  "contract": "items_assigned is new active persisted assignments",
+  "approved": false,
+  "cases": [
+    {
+      "rep": 1,
+      "scenario": "nominal",
+      "request": {
+        "orderItems": 1
+      },
+      "before": {
+        "active": 0,
+        "cancelled": 0,
+        "active_parcels": 0
+      },
+      "after": {
+        "active": 1,
+        "cancelled": 0,
+        "active_parcels": 1
+      },
+      "response": {
+        "success": true,
+        "already_assigned": false,
+        "queued": false,
+        "parcel_created": true,
+        "items_assigned": 1
+      },
+      "actualNewActive": 1,
+      "contradiction": false
+    },
+    {
+      "rep": 1,
+      "scenario": "cancelled_parcel",
+      "request": {
+        "orderItems": 1
+      },
+      "before": {
+        "active": 0,
+        "cancelled": 1,
+        "active_parcels": 0
+      },
+      "after": {
+        "active": 0,
+        "cancelled": 1,
+        "active_parcels": 1
+      },
+      "response": {
+        "success": true,
+        "already_assigned": false,
+        "queued": false,
+        "parcel_created": true,
+        "items_assigned": 1
+      },
+      "actualNewActive": 0,
+      "contradiction": true
+    },
+    {
+      "rep": 2,
+      "scenario": "nominal",
+      "request": {
+        "orderItems": 1
+      },
+      "before": {
+        "active": 0,
+        "cancelled": 0,
+        "active_parcels": 0
+      },
+      "after": {
+        "active": 1,
+        "cancelled": 0,
+        "active_parcels": 1
+      },
+      "response": {
+        "success": true,
+        "already_assigned": false,
+        "queued": false,
+        "parcel_created": true,
+        "items_assigned": 1
+      },
+      "actualNewActive": 1,
+      "contradiction": false
+    },
+    {
+      "rep": 2,
+      "scenario": "cancelled_parcel",
+      "request": {
+        "orderItems": 1
+      },
+      "before": {
+        "active": 0,
+        "cancelled": 1,
+        "active_parcels": 0
+      },
+      "after": {
+        "active": 0,
+        "cancelled": 1,
+        "active_parcels": 1
+      },
+      "response": {
+        "success": true,
+        "already_assigned": false,
+        "queued": false,
+        "parcel_created": true,
+        "items_assigned": 1
+      },
+      "actualNewActive": 0,
+      "contradiction": true
+    }
+  ],
+  "rollbackVerified": true,
+  "verdict": "UNAPPROVED_CONTRADICTION",
+  "evidenceHash": "08167a036b1d601b1f0a10333c273bab09eef747e583d7fb4c12241e0988f258"
+}
