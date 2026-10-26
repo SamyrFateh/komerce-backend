@@ -304,8 +304,8 @@ describe('routes/hub-dashboard', () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [VALID_ORDER] })
         .mockResolvedValueOnce({ rows: [{ id: 'p1', reference: 'COL-000123' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'pi1' }] }) // INSERT parcel_items item1
-        .mockResolvedValueOnce({ rows: [{ id: 'pi2' }] }) // INSERT parcel_items item2
+        .mockResolvedValueOnce({ rows: [{ id: 'pi1' }], rowCount: 1 }) // INSERT parcel_items item1
+        .mockResolvedValueOnce({ rows: [{ id: 'pi2' }], rowCount: 1 }) // INSERT parcel_items item2
         .mockResolvedValueOnce({ rows: [] }); // INSERT order_comments
 
       const res = await request(buildApp())
