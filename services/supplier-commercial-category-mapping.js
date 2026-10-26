@@ -107,24 +107,32 @@ function rankCommercialPairs(pairs = [], candidate = {}, preferred = null) {
  */
 function chooseCommercialPair(pairs = [], candidate = {}, preferred = null) {
   const suggestions = rankCommercialPairs(pairs,candidate,preferred);
-  if (!suggestions.length) return null;
-  if (suggestions[0].confidence === 'confirmed') {
+  if (suggestions[0]?.confidence === 'confirmed') {
     return {...suggestions[0],source:'KNOWN_COMMERCIAL_MAPPING'};
   }
+  // The supplier leaf can be generic ("Accessories & Parts"). Use the actual
+  // product identity as additional evidence; never let generic parent words
+  // manufacture a destination. Only an unambiguous active boutique pair wins.
   const sourcePath = String(candidate.supplier_category || '').split(/\s*>\s*/).pop();
-  const words = new Set(normalizeWords(sourcePath).filter(w=>w.length>2));
+  const generic = new Set(['accessories','accessory','parts','part','products','product',
+    'items','item','other','general','miscellaneous','and','the','for','with']);
+  const leafWords = new Set(normalizeWords(sourcePath).filter(w=>w.length>2&&!generic.has(w)));
+  const titleWords = new Set(normalizeWords(candidate.product_name).filter(w=>w.length>2&&!generic.has(w)));
   const scored = pairs.map(p=>{
-    const label = normalizeWords([p.category_label,p.subcategory_label,p.category,p.subcategory].join(' '));
-    const hits = [...new Set(label.filter(w=>words.has(w)))];
-    return {...p,hits:hits.length};
-  }).filter(x=>x.hits>0).sort((a,b)=>b.hits-a.hits);
-  // Tied categories still receive a visible default suggestion rather than a
-  // WATCH classification; operator correction remains possible later.
-  if (!scored.length) return null;
+    const label = new Set(normalizeWords([p.category_label,p.subcategory_label,
+      p.category,p.subcategory].join(' ')).filter(w=>w.length>2&&!generic.has(w)));
+    const leafHits = [...label].filter(w=>leafWords.has(w)).length;
+    const titleHits = [...label].filter(w=>titleWords.has(w)).length;
+    return {...p,score:leafHits*10+titleHits*3,leafHits,titleHits};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score
+    || String(a.category).localeCompare(String(b.category))
+    || String(a.subcategory).localeCompare(String(b.subcategory)));
+  if (!scored.length || (scored[1] && scored[0].score===scored[1].score)) return null;
   const top=scored[0];
   return {category:top.category,subcategory:top.subcategory,
     category_label:top.category_label,subcategory_label:top.subcategory_label,
-    source:'SUPPLIER_CATEGORY_MATCH',confidence:'proposed'};
+    source:top.leafHits?'SUPPLIER_CATEGORY_MATCH':'PRODUCT_IDENTITY_MATCH',
+    confidence:'proposed'};
 }
 
 module.exports={normalizePath,sourceKey,findConfirmed,confirmMapping,rankCommercialPairs,chooseCommercialPair};

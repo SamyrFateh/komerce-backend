@@ -28,3 +28,24 @@ test('uses the supplier leaf category, not parent category, when choosing boutiq
     product_name:'Silicone protective item',
   })).toMatchObject({category:'Tech',subcategory:'Decor',source:'SUPPLIER_CATEGORY_MATCH'});
 });
+
+test('generic supplier category uses actual product identity',()=>{
+  const shelves=[
+    {category:'Tech',subcategory:'Cables',category_label:'Technology',subcategory_label:'USB Cables'},
+    {category:'Home',subcategory:'Kitchen',category_label:'Home',subcategory_label:'Kitchen'},
+  ];
+  expect(chooseCommercialPair(shelves,{
+    supplier_category:'Consumer Electronics > Accessories & Parts',
+    product_name:'USB charging cable',
+  })).toMatchObject({category:'Tech',subcategory:'Cables',source:'PRODUCT_IDENTITY_MATCH'});
+});
+test('ambiguous accessory stays review required rather than guessing',()=>{
+  const shelves=[
+    {category:'Tech',subcategory:'CableA',category_label:'Tech',subcategory_label:'USB Cables'},
+    {category:'Tech',subcategory:'CableB',category_label:'Tech',subcategory_label:'USB Chargers'},
+  ];
+  expect(chooseCommercialPair(shelves,{
+    supplier_category:'Consumer Electronics > Accessories & Parts',
+    product_name:'USB accessory',
+  })).toBeNull();
+});
