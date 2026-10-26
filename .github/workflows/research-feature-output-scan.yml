@@ -1,0 +1,38 @@
+name: Research ECO feature-output hypothesis scan
+on:
+  push:
+    branches:
+      - research/feature-fingerprint-eco-pg-20261026
+    paths:
+      - scripts/research/feature-output-hypotheses.js
+      - .github/workflows/research-feature-output-scan.yml
+permissions:
+  contents: write
+concurrency:
+  group: research-feature-output-hypotheses
+  cancel-in-progress: true
+jobs:
+  hypotheses:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Static hypotheses (no dependencies, no PostgreSQL)
+        env:
+          FP_HYPOTHESIS_OUTPUT: scripts/research/feature-output-hypotheses-report.json
+        run: |
+          set -eo pipefail
+          node --check scripts/research/feature-output-hypotheses.js
+          node scripts/research/feature-output-hypotheses.js > /tmp/hypotheses-summary.json
+          cat /tmp/hypotheses-summary.json
+      - name: Save reproducible static observations
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/research/feature-output-hypotheses-report.json
+          if git diff --staged --quiet; then exit 0; fi
+          git commit -m 'research: snapshot generated H0 hypotheses [skip ci]'
+          git push origin HEAD:research/feature-fingerprint-eco-pg-20261026
