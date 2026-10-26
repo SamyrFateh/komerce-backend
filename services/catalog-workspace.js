@@ -249,6 +249,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } 
     enrichment_confidence: row.enrichment_confidence == null ? null : Number(row.enrichment_confidence),
     supplier_name: row.supplier_name || null,
     supplier_product_id: row.supplier_product_id || null,
+    supplier_source_linked: Boolean(row.candidate_id),
     supplier_stock: row.supplier_stock == null ? null : Number(row.supplier_stock),
     sourcing_confidence: row.sourcing_confidence || 'low',
     sourcing_decision: row.sourcing_decision || 'UNKNOWN',
