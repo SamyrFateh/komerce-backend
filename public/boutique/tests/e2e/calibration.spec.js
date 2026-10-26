@@ -129,7 +129,11 @@ test.describe('⚙️ CALIBRATION — Validation des sélecteurs et hypothèses'
       );
       console.log('[CAL-04] Onglets bnav trouvés :', tabs);
       expect(tabs).toContain('shop');
-      expect(tabs).toContain('group');
+      // Navigation canonique : l'ancien onglet 'group' a été remplacé.
+      // Partages et Mon Komerce sont deux destinations distinctes.
+      expect(tabs).toContain('shares');
+      expect(tabs).toContain('komerce');
+      expect(tabs).not.toContain('group');
     }
   });
 
