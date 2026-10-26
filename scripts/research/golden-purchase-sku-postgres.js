@@ -23,7 +23,7 @@ async function seed(c,valid,marketId){
  const x={order:id(),item:id(),relay:id(),product:id(),soldSku:id(),otherSku:id(),supplier:id(),po:id(),line:id()};
  await c.query("INSERT INTO relais(id,name,agent_name,phone,address,market_id) VALUES($1,'FP SKU','FP','+269100010','TEMP',$2)",[x.relay,marketId]);
  await c.query("INSERT INTO products(id,name,price_kmf,stock) VALUES($1,'FP Order Product',5000,10)",[x.product]);
- await c.query("INSERT INTO product_skus(id,product_id,sku,stock) VALUES($1,$3,'FP-SOLD',10),($2,$3,'FP-OTHER',10)",[x.soldSku,x.otherSku,x.product]);
+ await c.query("INSERT INTO product_skus(id,product_id,sku,variant_combo,stock) VALUES($1,$3,'FP-SOLD','{\"color\":\"red\"}'::jsonb,10),($2,$3,'FP-OTHER','{\"color\":\"blue\"}'::jsonb,10)",[x.soldSku,x.otherSku,x.product]);
  await c.query("INSERT INTO orders(id,reference,relais_id,market_id,total_kmf,payment_mode,status) VALUES($1,$2,$3,$4,5000,'cash_relais','ordered')",[x.order,'FP-SKU-'+x.order.slice(0,12),x.relay,marketId]);
  await c.query('INSERT INTO order_items(id,order_id,product_id,sku_id,quantity,price_kmf) VALUES($1,$2,$3,$4,1,5000)',[x.item,x.order,x.product,x.soldSku]);
  await c.query("INSERT INTO suppliers(id,name,platform) VALUES($1,'FP Supplier','local')",[x.supplier]);
