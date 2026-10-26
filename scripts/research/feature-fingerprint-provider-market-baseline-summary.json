@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "CROSS_MARKET_PROVIDER_OFFER",
+  "phase": "before_fix",
+  "path": "services/providers-service.js",
+  "source": "real createPhysicalOffer function body with injected real PostgreSQL transactional executor",
+  "nominal": {
+    "count": 2,
+    "violations": 0
+  },
+  "foreignMarket": {
+    "count": 2,
+    "violations": 2
+  },
+  "rollbackVerified": true,
+  "runId": 40396085159,
+  "jobStatus": "failure_on_proof_publication",
+  "proofStep": "success",
+  "artifactId": 12685214505,
+  "digest": "c90ab8862acbb95bbd66d77d15fe1691b7b51d194faba8eed34b3d4a485a8c62",
+  "httpReachabilityProven": false
+}
