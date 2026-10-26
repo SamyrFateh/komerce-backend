@@ -379,7 +379,8 @@ describe('unified commercial classification verdict', () => {
       .mockResolvedValueOnce({rows:[
         {category:'Auto',subcategory:'Accessoires',terms:{'car neck pillow':10}},
         {category:'Maison',subcategory:'Textile',terms:{'car neck pillow':10}},
-      ]}), mockResolvedValue({rows:[]})};
+      ]})
+      .mockResolvedValue({rows:[]})};
     await expect(resolveCommercialTaxonomyVerdict(q,{
       supplier_name:'AliExpress',supplier_category:'Unmapped',product_name:'Car Neck Pillow',
     })).resolves.toEqual({status:'REVIEW_REQUIRED',category:null,subcategory:null,
