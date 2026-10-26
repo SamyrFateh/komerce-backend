@@ -24,6 +24,7 @@ const {
   updateCandidate,
   watchlistCandidate,
   rejectCandidate,
+  confirmCandidateBoutiqueCategory,
 } = require('../../services/sourcing-candidate-actions');
 const candidateProductService = jest.requireActual('../../services/catalog-candidate-product-service');
 
@@ -161,4 +162,55 @@ test('commercial confirmation never bypasses explicit exclusion',async()=>{
   await expect(promoteCandidate('excluded',{},'admin-1',{syncRuntime:false}))
     .rejects.toMatchObject({code:'candidate_excluded',status:409});
   expect(catalog.createDraftProductFromSourcingCandidate).not.toHaveBeenCalled();
+});
+
+test('commercial confirmation saves supplier mapping and candidate review then creates inactive draft',async()=>{
+  jest.clearAllMocks();
+  const db=require('../../db');
+  const catalog=require('../../services/catalog-candidate-product-service');
+  const candidate={id:'c-1',candidate_ref:'KSC-000051',supplier_name:'AliExpress',
+    supplier_category:'Phones > Mobile Phone Accessories',state:'scanned',
+    scan_result:{sourcing_decision:'WATCH'}};
+  const client={query:jest.fn()
+    .mockResolvedValueOnce({rows:[]}) // BEGIN
+    .mockResolvedValueOnce({rows:[candidate]}) // locked candidate
+    .mockResolvedValueOnce({rows:[{category:'Tech',subcategory:'Phones'}]}) // active pair
+    .mockResolvedValueOnce({rows:[{status:'CONFIRMED'}]}) // upsert
+    .mockResolvedValueOnce({rows:[]}) // update review
+    .mockResolvedValueOnce({rows:[]}) // audit
+    .mockResolvedValueOnce({rows:[]}),release:jest.fn()}; // COMMIT
+  db.getClient.mockResolvedValueOnce(client);
+  // The follow-up promotion uses its own transaction; we model its existing seam.
+  const followUp={query:jest.fn().mockImplementation(sql=>Promise.resolve(
+    sql.includes('SELECT * FROM sourcing_candidates')
+      ? {rows:[{...candidate,commercial_taxonomy_review:{
+          status:'CONFIRMED',category:'Tech',subcategory:'Phones'
+        },komerce_category:null}]}
+      : {rows:[]})),release:jest.fn()};
+  db.getClient.mockResolvedValueOnce(followUp);
+  catalog.createDraftProductFromSourcingCandidate.mockResolvedValueOnce('draft-1');
+  require('../../services/catalog-promotion').promoteCatalog.mockResolvedValueOnce({});
+  const result=await confirmCandidateBoutiqueCategory('KSC-000051',
+    {category:'Tech',subcategory:'Phones'},'admin-1');
+  expect(result).toMatchObject({confirmed:true,draft_created:true,price_decision:'DEFERRED_TO_PUBLICATION'});
+  const stored=client.query.mock.calls.find(call=>String(call[0]).includes('commercial_taxonomy_review='));
+  expect(JSON.parse(stored[1][0])).toMatchObject({status:'CONFIRMED',category:'Tech',subcategory:'Phones'});
+  expect(client.query.mock.calls.some(call=>call[0]==='COMMIT')).toBe(true);
+  expect(followUp.query.mock.calls.some(call=>call[0]==='COMMIT')).toBe(true);
+});
+
+test('commercial category confirmation cannot modify an excluded candidate',async()=>{
+  jest.clearAllMocks();
+  const db=require('../../db');
+  const candidate={id:'excluded',state:'scanned',
+    scan_result:{sourcing_decision:'EXCLUDED'}};
+  const client={query:jest.fn().mockResolvedValueOnce({rows:[]})
+    .mockResolvedValueOnce({rows:[candidate]})
+    .mockResolvedValueOnce({rows:[]}),release:jest.fn()};
+  db.getClient.mockResolvedValueOnce(client);
+  await expect(confirmCandidateBoutiqueCategory('KSC-000173',
+    {category:'Tech',subcategory:'Phones'},'admin-1'))
+    .rejects.toMatchObject({code:'candidate_not_classifiable',status:409});
+  expect(client.query.mock.calls.some(call=>String(call[0]).includes('UPDATE sourcing_candidates'))).toBe(false);
+  expect(client.query.mock.calls.some(call=>call[0]==='ROLLBACK')).toBe(true);
 });
