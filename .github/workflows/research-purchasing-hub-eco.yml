@@ -34,6 +34,7 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
       KOMERCE_DISABLE_CRONS: 'true'
+      FP_EXPECT_PURCHASING_HUB_GUARD: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
