@@ -58,10 +58,28 @@ test('real staging: full navigation, market context and browser errors',async({p
    await page.goto('/login.html?next='+encodeURIComponent(pages[role][0]),{waitUntil:'domcontentloaded'});
    await page.locator('#email').fill(email);
    await page.locator('#password').fill(password);
+   // Observe the authentication HTTP status, never response credentials or the password.
+   // Distinguish rejected credentials from a broken login form/redirect.
+   const loginResponsePromise=page.waitForResponse(
+     response=>pathname(response.url())==='/api/auth/login' && response.request().method()==='POST',
+     {timeout:20000}
+   ).catch(()=>null);
    await page.locator('#btn-submit').click();
+   const loginResponse=await loginResponsePromise;
+   result.loginHttpStatus=loginResponse?loginResponse.status():null;
+   if(!loginResponse){
+     fail('P0','LOGIN_REQUEST_NOT_OBSERVED',role);
+     save();throw Error('Login request missing '+role);
+   }
+   if(!loginResponse.ok()){
+     const errorBody=await loginResponse.json().catch(()=>({}));
+     result.loginErrorCode=typeof errorBody.code==='string'?short(errorBody.code):null;
+     fail('P0','LOGIN_HTTP_REJECTED',role+' HTTP '+loginResponse.status()+(result.loginErrorCode?' '+result.loginErrorCode:''));
+     save();throw Error('Live login rejected '+role+' HTTP '+loginResponse.status());
+   }
    try{await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:15000});}
-   catch{fail('P0','LOGIN_FAILED',role);}
-   if(pathname(page.url())==='/login.html'){save();throw Error('Live login failed '+role);}
+   catch{fail('P0','LOGIN_REDIRECT_NOT_COMPLETED',role);}
+   if(pathname(page.url())==='/login.html'){save();throw Error('Live login redirection failed '+role);}
    const ctxResp=await page.request.get('/api/admin/dashboard/context');
    result.contextStatus=ctxResp.status();
    const ctx=ctxResp.ok()?await ctxResp.json().catch(()=>({})):{};
