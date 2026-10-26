@@ -241,8 +241,10 @@ test('a previously confirmed supplier category auto-enters an inactive draft wit
   promotion.promoteCatalog.mockResolvedValueOnce({promoted:true});
   const result=await promoteCandidate('known-source',{},null,{syncRuntime:false});
   expect(result).toMatchObject({product_id:'draft-known',price_decision:'DEFERRED_TO_PUBLICATION'});
-  expect(client.query.mock.calls.some(([sql])=>
-    String(sql).includes('supplier_commercial_category_mappings'))).toBe(true);
+  // The single commercial resolver is mocked in this unit seam.
+  // An existing mapping requires no new mapping write or user validation.
+  expect(require('../../services/catalog-candidate-product-service')
+    .resolveCommercialTaxonomyVerdict).toHaveBeenCalledWith(client,candidate);
   expect(client.query.mock.calls.some(([sql])=>sql==='COMMIT')).toBe(true);
   expect(catalog.createDraftProductFromSourcingCandidate).toHaveBeenCalledWith(
     client,{candidate,initialPrice:null});
