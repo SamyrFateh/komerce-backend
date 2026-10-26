@@ -99,3 +99,24 @@ describe('Golden thread and verdict',()=>{
     expect(deriveReadiness({productId:PID,orderReference:REF,gates:gs([...Array(6).fill(GATE.PROVED),GATE.ANOMALIE])})).toBe(STAGE.ANOMALIE);
   });
 });
+
+describe('Golden cross-market checkout continuity',()=>{
+  test('market selected KM but actual order CM is ANOMALIE, never PROVED',async()=>{
+    const actual=facts({order:[{...facts().order[0],market_code:'CM'}]});
+    const result=await run(actual);
+    const origin=gate(result,'CHECKOUT_ORIGIN_PROVED');
+    expect(origin.status).toBe(GATE.ANOMALIE);
+    expect(origin.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({key:'order_matches_selected_market',ok:false}),
+    ]));
+    expect(origin.anomalies).toEqual(expect.arrayContaining([expect.stringContaining('ORDER_MARKET_MISMATCH')]));
+    expect(resolveProvenance({orderReference:REF,gates:result.gates})).toBe('ORDER_ORIGIN_NOT_PROVED');
+  });
+  test('market selected KM and actual order KM remains PROVED',async()=>{
+    const result=await run(facts());
+    expect(gate(result,'CHECKOUT_ORIGIN_PROVED')).toMatchObject({status:GATE.PROVED});
+    expect(gate(result,'CHECKOUT_ORIGIN_PROVED').checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({key:'order_matches_selected_market',ok:true}),
+    ]));
+  });
+});
