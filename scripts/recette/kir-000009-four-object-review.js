@@ -7,8 +7,8 @@
  * @db-write none
  */
 'use strict';
-const fs=require('node:fs'),path=require('node:path'),db=require('../db');
-const {confirmTarget}=require('./recette/target-guard');
+const fs=require('node:fs'),path=require('node:path'),db=require('../../db');
+const {confirmTarget}=require('./target-guard');
 const HOST='https://komerce-backend-production.up.railway.app';
 const REF='KIR-000009';
 const EXPECTED=Object.freeze(['KSC-000162','KSC-000164','KSC-000175','KSC-000178']);
