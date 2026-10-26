@@ -7,6 +7,7 @@ on:
       - .github/workflows/research-golden-purchase-sku-pg.yml
       - scripts/research/golden-purchase-sku-postgres.js
       - services/golden-e2e-cockpit.js
+      - tests/unit/golden-e2e-cockpit.test.js
 permissions:
   contents: read
 concurrency:
@@ -35,6 +36,7 @@ jobs:
       DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
       KOMERCE_DISABLE_CRONS: 'true'
       FP_SKU_OUTPUT: /tmp/golden-purchasing-sku-proof.json
+      FP_EXPECT_SKU_GUARD: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,6 +49,8 @@ jobs:
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-sku-schema.log
           node scripts/ci-db-bootstrap.js
+      - name: Focused Golden order cockpit unit regressions
+        run: ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/golden-e2e-cockpit.test.js
       - name: A/B sold versus purchased SKU in actual Golden query
         run: node scripts/research/golden-purchase-sku-postgres.js
       - name: Preserve evidence independently of commit
