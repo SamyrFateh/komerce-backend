@@ -39,6 +39,7 @@ jobs:
       FP_AUTOPARCEL_OUTPUT: /tmp/feature-fingerprint-auto-parcel-pg-proof.json
       FP_UNSOLD_OUTPUT: /tmp/feature-fingerprint-unsold-terminal-pg-proof.json
       FP_EXPECT_FAIL_CLOSED: 'true'
+      FP_EXPECT_TERMINAL_GUARD: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -76,6 +77,11 @@ jobs:
         run: |
           set -o pipefail
           node scripts/research/feature-fingerprint-auto-parcel-pg.js 2>&1 | tee /tmp/fp-auto-parcel.log
+      - name: Focused unsold-resolution unit cases
+        id: unit_unsold
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/unsold.test.js 2>&1 | tee /tmp/fp-unit-unsold.log
       - name: R&D new family — unsold terminal irreversibility
         id: unsold_terminal
         run: |
@@ -94,7 +100,10 @@ jobs:
         if: always()
         with:
           name: research-feature-fingerprint-pg-${{ github.run_id }}
-          path: /tmp/feature-fingerprint-pg-proof.json
+          path: |
+            /tmp/feature-fingerprint-pg-proof.json
+            /tmp/feature-fingerprint-auto-parcel-pg-proof.json
+            /tmp/feature-fingerprint-unsold-terminal-pg-proof.json
           if-no-files-found: ignore
           retention-days: 3
       - name: Persist bounded proof for review via GitHub connector
@@ -108,6 +117,7 @@ jobs:
           STAGE_AUTO_PARCEL: ${{ steps.auto_parcel.outcome }}
           STAGE_UNIT_AUTO_PARCEL: ${{ steps.unit_auto_parcel.outcome }}
           STAGE_UNSOLD_TERMINAL: ${{ steps.unsold_terminal.outcome }}
+          STAGE_UNIT_UNSOLD: ${{ steps.unit_unsold.outcome }}
         run: |
           if [ -f /tmp/feature-fingerprint-pg-proof.json ]; then
             cp /tmp/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-pg-proof.json
@@ -129,4 +139,8 @@ jobs:
           git add scripts/research/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-auto-parcel-pg-proof.json scripts/research/feature-fingerprint-unsold-terminal-pg-proof.json
           if git diff --staged --quiet; then exit 0; fi
           git commit -m "research: record bounded PostgreSQL proof [skip ci]"
-          git push origin HEAD:research/feature-fingerprint-eco-pg-20261026
+          git push origin HEAD:research/feature-fingerprint-eco-pg-20261026 || {
+            echo 'Concurrent Git update: attempt non-force rebase once; artifacts remain authoritative.'
+            git fetch origin research/feature-fingerprint-eco-pg-20261026
+            git rebase FETCH_HEAD && git push origin HEAD:research/feature-fingerprint-eco-pg-20261026 || echo 'Skipped proof branch publish; see uploaded workflow artifact.'
+          }
