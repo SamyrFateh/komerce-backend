@@ -51,6 +51,11 @@ jobs:
           set -o pipefail
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-schema-load.log
           node scripts/ci-db-bootstrap.js 2>&1 | tee /tmp/fp-bootstrap.log
+      - name: Focused Hub output-count regression (four unit cases)
+        id: unit
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/hub-create-parcel-assigned-count.test.js 2>&1 | tee /tmp/fp-unit.log
       - name: Prove only 2x(A/B) with outer rollback
         id: replay
         run: |
@@ -79,11 +84,12 @@ jobs:
           STAGE_DEPS: ${{ steps.deps.outcome }}
           STAGE_BOOTSTRAP: ${{ steps.bootstrap.outcome }}
           STAGE_REPLAY: ${{ steps.replay.outcome }}
+          STAGE_UNIT: ${{ steps.unit.outcome }}
         run: |
           if [ -f /tmp/feature-fingerprint-pg-proof.json ]; then
             cp /tmp/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-pg-proof.json
           else
-            node -e 'const fs=require("fs");const logs={install:"/tmp/fp-install.log",schema:"/tmp/fp-schema-load.log",bootstrap:"/tmp/fp-bootstrap.log",replay:"/tmp/fp-replay.log"};const tails=Object.fromEntries(Object.entries(logs).map(([k,p])=>[k,fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2200):"NOT_RUN"]));fs.writeFileSync("scripts/research/feature-fingerprint-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",job_status:process.env.JOB_RESULT,stages:{deps:process.env.STAGE_DEPS,bootstrap:process.env.STAGE_BOOTSTRAP,replay:process.env.STAGE_REPLAY},tails},null,2)+"\\n");'
+            node -e 'const fs=require("fs");const logs={unit:"/tmp/fp-unit.log",install:"/tmp/fp-install.log",schema:"/tmp/fp-schema-load.log",bootstrap:"/tmp/fp-bootstrap.log",replay:"/tmp/fp-replay.log"};const tails=Object.fromEntries(Object.entries(logs).map(([k,p])=>[k,fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2200):"NOT_RUN"]));fs.writeFileSync("scripts/research/feature-fingerprint-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",job_status:process.env.JOB_RESULT,stages:{deps:process.env.STAGE_DEPS,bootstrap:process.env.STAGE_BOOTSTRAP,unit:process.env.STAGE_UNIT,replay:process.env.STAGE_REPLAY},tails},null,2)+"\\n");'
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
