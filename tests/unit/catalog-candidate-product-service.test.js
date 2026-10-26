@@ -386,3 +386,17 @@ describe('unified commercial classification verdict', () => {
       source:'UNRESOLVED_COMMERCIAL_TAXONOMY'});
   });
 });
+
+test('confirmed supplier mapping overrides conflicting discovery for next product',async()=>{
+  const {resolveCommercialTaxonomyVerdict}=require('../../services/catalog-candidate-product-service');
+  const q={query:jest.fn().mockResolvedValueOnce({
+    rows:[{category:'Tech',subcategory:'Phones'}]})};
+  const result=await resolveCommercialTaxonomyVerdict(q,{
+    supplier_name:'AliExpress',supplier_category:'Phones > Cases',
+    product_name:'Phone Case',
+    raw_payload:{discovery:{target_category:'Maison',target_subcategory:'Salon'}},
+  });
+  expect(result).toMatchObject({category:'Tech',subcategory:'Phones',
+    source:'CONFIRMED_SUPPLIER_PATH'});
+  expect(q.query).toHaveBeenCalledTimes(1);
+});
