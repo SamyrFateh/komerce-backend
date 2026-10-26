@@ -219,13 +219,18 @@ async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
     if (candidate.state === 'rejected' || candidate.scan_result?.sourcing_decision === 'EXCLUDED') {
       throw new SourcingCandidateActionError(409, 'Candidat exclu (douane/légal) — import interdit, non ré-évaluable.', 'candidate_excluded');
     }
-    // A commercial review is allowed while customs is unresolved, but never
-    // promote a draft with missing economic category or untrusted fallback.
-    if (!candidate.komerce_category || candidate.data_sources?.category === 'default'
-        || candidate.scan_result?.customs_review?.status === 'REQUIRED') {
+    // A confirmed BOUTIQUE category allows an INACTIVE draft to enter
+    // refinery under grouped shipping. Customs remain backend-only and
+    // cannot be invented by this decision. Publication/pricing gates remain.
+    const commercialConfirmed = candidate.commercial_taxonomy_review?.status === 'CONFIRMED'
+      && candidate.commercial_taxonomy_review?.category
+      && candidate.commercial_taxonomy_review?.subcategory;
+    if (!commercialConfirmed && (!candidate.komerce_category
+        || candidate.data_sources?.category === 'default'
+        || candidate.scan_result?.customs_review?.status === 'REQUIRED')) {
       throw new SourcingCandidateActionError(
-        409, 'Catégorie douanière non qualifiée — conservation en Raffinerie uniquement.',
-        'candidate_customs_classification_required'
+        409, 'Catégorie boutique à confirmer avant préparation du brouillon.',
+        'candidate_commercial_category_review_required'
       );
     }
     if (candidate.state === 'quarantined') {
