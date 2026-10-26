@@ -19,9 +19,8 @@ module.exports=defineConfig({
  timeout:900000,retries:0,workers:1,fullyParallel:false,
  reporter:[['line'],['html',{outputFolder:'test-results/staging-chromium/html',open:'never'}],
  ['json',{outputFile:'test-results/staging-chromium/playwright.json'}]],
- projects:selected.flatMap(role=>[
- {name:role+'-desktop',use:{viewport:{width:1440,height:900}}},
- {name:role+'-mobile',use:{viewport:{width:390,height:844},isMobile:true,hasTouch:true}}]),
+ // Admin dashboards are desktop-only in the current certification scope.
+ projects:selected.map(role=>({name:role+'-desktop',use:{viewport:{width:1440,height:900}}})), 
  use:{baseURL,browserName:'chromium',headless:true,trace:'on',screenshot:'only-on-failure',
  actionTimeout:10000,navigationTimeout:20000}
 });
