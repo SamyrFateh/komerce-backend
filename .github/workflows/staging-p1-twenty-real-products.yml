@@ -1,0 +1,74 @@
+name: P1 Twenty real products — staged source-to-storefront Chromium
+
+# Audits an exact existing 20-source-product cohort, not a blind seed.
+# A separate local Playwright Inspector session is required for human
+# market approval. Never auto-publish or auto-price from GitHub Actions.
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-p1-twenty-real
+  cancel-in-progress: false
+
+jobs:
+  inventory-and-chromium:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.user.login == github.repository_owner &&
+       github.event.issue.title == '[staging-op] p1-twenty-readonly'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_P1_20_HUMAN_MODE: read-only
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_SOURCING_EMAIL: ${{ secrets.E2E_SOURCING_EMAIL }}
+      E2E_SOURCING_PASSWORD: ${{ secrets.E2E_SOURCING_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+    steps:
+      - name: Checkout canonical main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Pin exact checkout before any browser
+        shell: bash
+        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Require actual deployed staging or verified tooling-only diff
+        run: node scripts/recette/staging-chromium-deployment-preflight.js
+      - run: npm ci
+      - name: Build exact 20 source lineage ledger in a READ ONLY DB transaction
+        run: node scripts/recette/p1-20-cohort-inventory.js
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Visit true Sourcing, Refinery, Catalog, Pricing, KM and storefront screens
+        run: npx playwright test --config=playwright.staging-p1-20.config.js
+      - name: Publish stage proofs, failed assertions and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-twenty-real-source-to-storefront-${{ github.run_id }}
+          path: |
+            test-results/staging-p1-20/
+            test-results/staging-chromium/deployment-preflight.json
+          retention-days: 21
+          if-no-files-found: warn
