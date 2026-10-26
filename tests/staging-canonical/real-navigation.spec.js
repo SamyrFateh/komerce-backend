@@ -12,6 +12,7 @@ const fs=require('fs'),path=require('path');
 const {test,expect}=require('@playwright/test');
 const {markets,pages,dimensions,processes}=require('./matrix');
 const {expectedPath}=require('./navigation-audit-policy');
+const {clickDiscoveredLink}=require('./link-replay');
 const ORIGIN=process.env.E2E_STAGING_BASE_URL||'https://komerce-backend-production.up.railway.app';
 const ROOT=path.resolve('test-results/staging-chromium/evidence');
 const pathname=u=>{try{const x=new URL(u,ORIGIN);return x.origin===ORIGIN?x.pathname:null;}catch{return null;}};
@@ -146,19 +147,25 @@ test('real staging: full navigation, market context and browser errors',async({p
          if(!seen.has(dest)&&!queue.includes(dest))queue.push(dest);
          if(edgeClicks>=170||dest===route)continue;
          edgeClicks++;
-         try{
-           await page.locator('a[href='+JSON.stringify(link.href)+']').first().click({timeout:5000});
-           await page.waitForTimeout(160);
-           const got=pathname(page.url());
-           result.edges.push({source:route,destination:got,expected:dest,kind:'clicked'});
-           if(got!==dest){
-             const expected=expectedPath(link.href,ORIGIN);
-             if(got===expected)result.canonicalRedirects.push({source:route,destination:got,via:dest,kind:'clicked_alias'});
-             else fail('P2','CLICK_WRONG_DESTINATION',route+' -> '+dest+' != '+got);
+         const clicked=await clickDiscoveredLink(page,{
+           href:link.href,sourcePath:route,pathname
+         });
+         result.edges.push({source:route,destination:clicked.actual,expected:dest,
+           kind:clicked.kind==='CLICKED'?'clicked':'replay_issue',
+           reason:clicked.kind});
+         if(clicked.kind!=='CLICKED'){
+           fail('P2',clicked.kind,route+' -> '+dest+': '+short(clicked.detail));
+         } else if(clicked.actual!==dest){
+           const expected=expectedPath(link.href,ORIGIN);
+           if(clicked.actual===expected){
+             result.canonicalRedirects.push({source:route,destination:clicked.actual,via:dest,kind:'clicked_alias'});
+           } else {
+             fail('P2','CLICK_WRONG_DESTINATION',route+' -> '+dest+' != '+clicked.actual);
            }
-         }catch(e){fail('P2','CLICK_UNAVAILABLE',route+' -> '+dest+': '+short(e.message));}
+         }
          await page.goto(ORIGIN+route,{waitUntil:'domcontentloaded'});
-         await page.waitForTimeout(130);
+         // The next iteration waits for its exact visible anchor. A fixed 130 ms
+         // delay gave false CLICK_UNAVAILABLE findings on slower rendered pages.
        }
      }catch(e){fail('P1','ROUTE_EXCEPTION',route+': '+short(e.message));result.routes.push({expected:route,error:short(e.message)});}
      save();
