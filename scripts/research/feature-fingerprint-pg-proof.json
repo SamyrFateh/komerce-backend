@@ -4,7 +4,7 @@
   "authExecuted": false,
   "fullHttpExecuted": false,
   "source": {
-    "routes/hub-dashboard.js": "e950014125f76a1216ba1ee0cc0c1f981877dbca4b19b1e511282998a009c021",
+    "routes/hub-dashboard.js": "e820c1376c130f64c6f02753f5744e9cdd8299a6dbe2dda215468ebb08589559",
     "services/parcel-item-mutation-service.js": "0e60a3cab2d6737af73d8ab4844c668d21ae3582f4a9b3b98043b16483e54906",
     "services/parcel-mutation-service.js": "9c2aa97e571399936241f4e0488b46a744f0ecab79e564a7283a6fac56ab6cf8"
   },
@@ -42,7 +42,7 @@
       "inputCount": 1,
       "response": {
         "status": 201,
-        "items_assigned": 1,
+        "items_assigned": 0,
         "parcel_created": true
       },
       "before": {
@@ -57,7 +57,7 @@
         "foreignMembershipCount": 0,
         "commentCount": 1
       },
-      "contradiction": true
+      "contradiction": false
     },
     {
       "repetition": 1,
@@ -65,7 +65,7 @@
       "inputCount": 2,
       "response": {
         "status": 201,
-        "items_assigned": 2,
+        "items_assigned": 1,
         "parcel_created": true
       },
       "before": {
@@ -80,7 +80,7 @@
         "foreignMembershipCount": 0,
         "commentCount": 1
       },
-      "contradiction": true
+      "contradiction": false
     },
     {
       "repetition": 2,
@@ -111,7 +111,7 @@
       "inputCount": 1,
       "response": {
         "status": 201,
-        "items_assigned": 1,
+        "items_assigned": 0,
         "parcel_created": true
       },
       "before": {
@@ -126,7 +126,7 @@
         "foreignMembershipCount": 0,
         "commentCount": 1
       },
-      "contradiction": true
+      "contradiction": false
     },
     {
       "repetition": 2,
@@ -134,7 +134,7 @@
       "inputCount": 2,
       "response": {
         "status": 201,
-        "items_assigned": 2,
+        "items_assigned": 1,
         "parcel_created": true
       },
       "before": {
@@ -149,11 +149,11 @@
         "foreignMembershipCount": 0,
         "commentCount": 1
       },
-      "contradiction": true
+      "contradiction": false
     }
   ],
   "repetitions": 2,
   "rollbackVerified": true,
-  "verdict": "UNAPPROVED_CONTRADICTION",
-  "evidenceHash": "368cb9f7d26966ac23e941cf95e7b179632f853cbba7323b1e8bca1d95996719"
+  "verdict": "NO_VIOLATION_OBSERVED",
+  "evidenceHash": "b2b29d54f619589dc4a16cf037af77c74374fb207f34ec84ab6f98900bfc2c5a"
 }
