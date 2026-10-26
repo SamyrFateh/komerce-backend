@@ -8,7 +8,7 @@
  * @outputs       server_resolved_admin_context
  * @depends       db.js, middleware/require-dashboard-global-authority.js, services/market-delegation-service.js
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       dashboard_global_access_grants, operator_market_scopes, markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
+ * @db-read       dashboard_global_access_grants, operator_market_scopes, markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, users, relais
  * @db-write      none
  * @db-txn        none
  * @doctrine      server_global_context_explicit, server_market_scope_is_authority, delegated_capability_projection_is_never_authority, delegated_capability_projection_stays_market_scoped
