@@ -44,6 +44,7 @@ async function fixture(client){
   const market=await client.query("SELECT id FROM markets WHERE code='KM' LIMIT 1");
   assert.ok(market.rows[0],'KM market seed required');x.market=market.rows[0].id;
   await client.query("INSERT INTO relais(id,name,agent_name,phone,address,market_id) VALUES($1,'Feature FP Hub','FP','+269100000','TEMP',$2)",[x.relay,x.market]);
+  await client.query("INSERT INTO users(id,full_name,role) VALUES($1,'FP Hub Actor','agent_hub')",[x.actor]);
   await client.query("INSERT INTO products(id,name,price_kmf,stock) VALUES($1,'FP fixture',5000,20)",[x.product]);
   await client.query("INSERT INTO orders(id,reference,relais_id,market_id,total_kmf,payment_mode,status) VALUES($1,$3,$5,$6,5000,'stripe_eur','confirmed'),($2,$4,$5,$6,5000,'stripe_eur','confirmed')",[x.a,x.b,'FP-A-'+id().slice(0,10),'FP-B-'+id().slice(0,10),x.relay,x.market]);
   await client.query("INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf) VALUES($1,$3,$5,1,5000),($2,$4,$5,1,5000)",[x.lineA,x.lineB,x.a,x.b,x.product]);
