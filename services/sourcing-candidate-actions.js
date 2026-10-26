@@ -400,7 +400,7 @@ class SourcingCatalogueHandoffError extends Error {
 
 async function catalogueHandoffCandidateRows(importId, q = db) {
   const { rows } = await q.query(
-    `SELECT id, state, product_id, supplier_name, supplier_product_id,
+    `SELECT id, state, product_id, supplier_name, supplier_category, supplier_product_id,
             raw_payload, normalized_source_contract, scan_result,
             rejected_reason, promotion_status, promotion_reasons, findings
        FROM sourcing_candidates
@@ -438,7 +438,22 @@ async function handoffCertifiedImport(importId, {
 
   for (const row of rows) {
     const verdict = certification.evaluateSourcingCandidateOutcome(row);
-    if (!verdict.outcome_valid || !verdict.sourcing_certified) continue;
+    if (!verdict.outcome_valid) continue;
+    // A deferred classification is not a commercial rejection. Only a
+    // previously CONFIRMED exact provider/path mapping may cross this seam;
+    // economics-deferred WATCH, quarantined, excluded and unknown sources do not.
+    if (!verdict.sourcing_certified) {
+      const reason = String(row.scan_result?.reason || '');
+      const classificationOnly = verdict.decision === 'WATCH'
+        && reason.startsWith('Catégorie Komerce non résolue')
+        && String(row.normalized_source_contract?.schema_version) === '2';
+      const provider = row.normalized_source_contract?.supplier_name || row.supplier_name;
+      const sourcePath = row.supplier_category || row.normalized_source_contract?.supplier_category;
+      if (!classificationOnly || !provider || !sourcePath) continue;
+      // eslint-disable-next-line no-await-in-loop
+      const mapping = await commercialMapping.findConfirmed(provider, sourcePath, q);
+      if (!mapping) continue;
+    }
     if (row.state === 'imported_to_catalog' && row.product_id) {
       alreadyCatalogued += 1;
       continue;
