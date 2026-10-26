@@ -23,7 +23,7 @@ test('real staging: full navigation, market context and browser errors',async({p
  const mobile=info.project.name.endsWith('-mobile');
  const result={target:ORIGIN,role,viewport:mobile?'390x844':'1440x900',version:null,
   markets,dimensions,processes,context:null,routes:[],edges:[],marketViews:[],
-  blockedWrites:[],apiErrors:[],jsErrors:[],canonicalRedirects:[],findings:[]};
+  blockedWrites:[],apiErrors:[],jsErrors:[],canonicalRedirects:[],expectedDenials:[],findings:[]};
  const fail=(severity,code,detail)=>result.findings.push({severity,code,detail:short(detail)});
  const file=path.join(ROOT,info.project.name+'.json');
  const save=()=>fs.writeFileSync(file,JSON.stringify(result,null,2));
@@ -86,7 +86,16 @@ test('real staging: full navigation, market context and browser errors',async({p
    const ctx=ctxResp.ok()?await ctxResp.json().catch(()=>({})):{};
    result.context={role:ctx.actor?.role||null,mode:ctx.access?.mode||null,
      allowedMarkets:ctx.access?.allowedMarkets||[]};
-   if(!ctxResp.ok())fail('P1','CONTEXT_API',ctxResp.status());
+   // Sourcing's global authorization belongs to its own grant. It deliberately
+   // does not grant the dashboard-context route; a 403 here is nominal, NOT an
+   // indication that the authorized Sourcing workspace is inaccessible.
+   if(role==='sourcing' && ctxResp.status()===403){
+     result.expectedDenials.push({api:'/api/admin/dashboard/context',status:403,kind:'separate_sourcing_authority'});
+   } else if(role==='sourcing' && ctxResp.ok()){
+     fail('P0','SOURCING_CONTEXT_UNEXPECTEDLY_GRANTED','Dashboard context must be separately authorized');
+   } else if(!ctxResp.ok()){
+     fail('P1','CONTEXT_API',role+' HTTP '+ctxResp.status());
+   }
    if(ctx.actor?.role&&ctx.actor.role!==role)fail('P0','ROLE_MISMATCH',ctx.actor.role+' != '+role);
    if(role==='market_operator'&&!result.context.allowedMarkets.length)
      fail('P0','MARKET_MEMBERSHIP_MISSING','empty markets from server');
@@ -155,6 +164,13 @@ test('real staging: full navigation, market context and browser errors',async({p
      save();
    }
    if(queue.length)fail('P1','UNVISITED_ROUTES','pending='+queue.length);
+   const endVersionResp=await page.request.get('/health/version',{timeout:20000}).catch(()=>null);
+   const endVersion=endVersionResp&&endVersionResp.ok()
+     ? await endVersionResp.json().catch(()=>({})) : {};
+   result.versionAtEnd=endVersion.commit||endVersion.sha||null;
+   if(!result.versionAtEnd || result.versionAtEnd!==result.version)
+     fail('P0','DEPLOY_SHA_CHANGED_DURING_AUDIT',
+       'start='+short(result.version)+' end='+short(result.versionAtEnd));
    if(!result.edges.some(e=>e.kind==='clicked'))fail('P1','NO_REAL_NAVIGATION_CLICKS',role);
 
    // Per-country overview is a read-only observation, not proof of price/checkout mutations.
