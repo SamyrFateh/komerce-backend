@@ -36,6 +36,8 @@ const catalogImport = require('./suppliers/catalog-import-orchestrator');
 const partnerAdmin = require('./partner-admin-service');
 const pricingEngine = require('./pricing-engine');
 const categoryClassifier = require('./customs-dynamic-category-classifier');
+const commercialMapping = require('./supplier-commercial-category-mapping');
+const { resolveCommercialObjectTaxonomy } = require('./catalog-candidate-product-service');
 
 class SourcingWorkspaceError extends Error {
   constructor(status, message, code = null, details = null) {
@@ -362,6 +364,108 @@ async function importCatalog(body, actor) {
 
 async function replayImport(body, actor) {
   return importCatalog({ ...(body || {}), mode: 'replay' }, actor);
+}
+
+
+/**
+ * Boutique-first review: no customs category is returned to the browser.
+ * Existing confirmed provider mapping, object terms, then lexical proposals.
+ * Ambiguous candidates still expose every active boutique pair for selection.
+ */
+async function getCandidateBoutiqueCategoryOptions(candidateRef) {
+  const { rows:[candidate] } = await db.query(
+    'SELECT candidate_ref, supplier_name, supplier_category, product_name, ' +
+    'normalized_source_contract, commercial_taxonomy_review, state, scan_result ' +
+    'FROM sourcing_candidates WHERE candidate_ref=$1', [candidateRef]);
+  if (!candidate) throw new SourcingWorkspaceError(404, 'Produit Sourcing introuvable', 'candidate_not_found');
+  const { rows:pairs } = await db.query(
+    'SELECT bc.key AS category, bc.label AS category_label, ' +
+    'bs.key AS subcategory, bs.label AS subcategory_label ' +
+    'FROM boutique_categories bc JOIN boutique_subcategories bs ON bs.category_key=bc.key ' +
+    'WHERE bc.is_active=TRUE AND bs.is_active=TRUE AND bc.filter_type IS NULL ' +
+    'ORDER BY bc.display_order, bs.display_order');
+  if (!pairs.length) throw new SourcingWorkspaceError(409,
+    'Aucune catégorie boutique active.', 'sourcing_boutique_taxonomy_unavailable');
+  const provider = candidate.normalized_source_contract?.supplier_name || candidate.supplier_name;
+  const sourcePath = candidate.supplier_category;
+  const saved = candidate.commercial_taxonomy_review?.status === 'CONFIRMED'
+    ? candidate.commercial_taxonomy_review : null;
+  let preferred = saved && { category:saved.category, subcategory:saved.subcategory };
+  if (!preferred && provider && sourcePath) {
+    preferred = await commercialMapping.findConfirmed(provider, sourcePath);
+  }
+  if (!preferred) {
+    preferred = await resolveCommercialObjectTaxonomy(db,candidate);
+  }
+  return {
+    candidate_ref:candidateRef,
+    product_name:candidate.product_name,
+    supplier_category:sourcePath,
+    source:'boutique_categories',
+    categories:pairs,
+    suggestions:commercialMapping.rankCommercialPairs(pairs,candidate,preferred),
+    note:'Catégorie commerciale uniquement. Une suggestion incertaine exige une confirmation.',
+  };
+}
+
+/** Confirm source -> boutique mapping and advance to a NON-PUBLISHED draft. */
+async function confirmCandidateBoutiqueCategory(candidateRef, body, actor) {
+  const category = String(body?.category || '').trim();
+  const subcategory = String(body?.subcategory || '').trim();
+  if (!category || !subcategory) throw new SourcingWorkspaceError(400,
+    'Catégorie et sous-catégorie boutique requises.', 'sourcing_boutique_pair_required');
+  const client = await db.getClient();
+  let candidate;
+  try {
+    await client.query('BEGIN');
+    const { rows:[row] } = await client.query(
+      'SELECT * FROM sourcing_candidates WHERE candidate_ref=$1 FOR UPDATE', [candidateRef]);
+    candidate = row;
+    if (!candidate) throw new SourcingWorkspaceError(404, 'Produit Sourcing introuvable','candidate_not_found');
+    if (candidate.product_id || ['imported_to_catalog','rejected','archived','quarantined'].includes(candidate.state)
+        || candidate.scan_result?.sourcing_decision === 'EXCLUDED') {
+      throw new SourcingWorkspaceError(409,'Candidat bloqué ou déjà transmis.','candidate_not_classifiable');
+    }
+    const provider = candidate.normalized_source_contract?.supplier_name || candidate.supplier_name;
+    if (!provider || !candidate.supplier_category) {
+      throw new SourcingWorkspaceError(409,'Catégorie source fournisseur absente.','supplier_category_source_missing');
+    }
+    try {
+      await commercialMapping.confirmMapping({
+        provider, source_category_path:candidate.supplier_category,
+        category,subcategory,
+        source_locale:candidate.normalized_source_contract?.source_locale || 'en',
+      },String(actor?.id || actor?.role || 'sourcing'),client);
+    } catch (error) {
+      if (error.message === 'BOUTIQUE_TAXONOMY_INVALID') throw new SourcingWorkspaceError(
+        400,'Catégorie boutique inactive ou inconnue.','sourcing_boutique_pair_invalid');
+      throw error;
+    }
+    const review = { status:'CONFIRMED', category, subcategory, source:'OPERATOR',
+      confirmed_at:new Date().toISOString() };
+    await client.query(
+      'UPDATE sourcing_candidates SET commercial_taxonomy_review=$1::jsonb, updated_by=$2, updated_at=now() WHERE id=$3',
+      [JSON.stringify(review),actor?.id || null,candidate.id]);
+    await client.query(
+      "INSERT INTO sourcing_candidate_events (candidate_id,event_type,old_state,new_state,changes,triggered_by) VALUES ($1,'data_correction',$2,$2,$3,$4)",
+      [candidate.id,candidate.state,JSON.stringify({ commercial_taxonomy_review:review }),actor?.id || null]);
+    await client.query('COMMIT');
+  } catch(error) {
+    try { await client.query('ROLLBACK'); } catch(_) { /* preserve original error */ }
+    throw error;
+  } finally { client.release(); }
+  // Mapping is durable even if a separate draft handoff fails; never publish.
+  try {
+    const draft = await candidateActions.promoteCandidate(candidate.id,
+      {enrichment_mode:'source_only'},actor?.id || null);
+    return { candidate_ref:candidateRef, category,subcategory, confirmed:true,
+      draft_created:true, price_decision:draft.price_decision,
+      next_step:'Préparer la fiche et décider du prix marché avant publication.' };
+  } catch(error) {
+    return { candidate_ref:candidateRef, category,subcategory, confirmed:true,
+      draft_created:false, handoff_error_code:error?.code || 'catalogue_handoff_failed',
+      next_step:'Mapping conservé ; compléter la Raffinerie avant de relancer la remise Catalogue.' };
+  }
 }
 
 // Remédiation guidée : réutilise STRICTEMENT les catégories actives du moteur
@@ -721,6 +825,8 @@ module.exports = {
   updateCandidate,
   getCandidateCategoryOptions,
   resolveCandidateCategory,
+  getCandidateBoutiqueCategoryOptions,
+  confirmCandidateBoutiqueCategory,
   scanCandidate,
   watchlistCandidate,
   rejectCandidate,
