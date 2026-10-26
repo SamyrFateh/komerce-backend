@@ -214,3 +214,50 @@ test('commercial category confirmation cannot modify an excluded candidate',asyn
   expect(client.query.mock.calls.some(call=>String(call[0]).includes('UPDATE sourcing_candidates'))).toBe(false);
   expect(client.query.mock.calls.some(call=>call[0]==='ROLLBACK')).toBe(true);
 });
+
+
+test('a previously confirmed supplier category auto-enters an inactive draft with zero new validation',async()=>{
+  jest.clearAllMocks();
+  const db=require('../../db');
+  const mapping=require('../../services/supplier-commercial-category-mapping');
+  const catalog=require('../../services/catalog-candidate-product-service');
+  const promotion=require('../../services/catalog-promotion');
+  const {promoteCandidate}=require('../../services/sourcing-candidate-actions');
+  const candidate={id:'known-source',state:'scanned',supplier_name:'AliExpress',
+    supplier_category:'Phones > Mobile Phone Accessories',
+    normalized_source_contract:{supplier_name:'AliExpress'},
+    komerce_category:null,data_sources:{category:'default'},
+    scan_result:{sourcing_decision:'WATCH',customs_review:{status:'REQUIRED'}}};
+  const client={query:jest.fn().mockImplementation(sql=>Promise.resolve(
+    sql.includes('SELECT * FROM sourcing_candidates')?{rows:[candidate]}:
+    sql.includes('FROM supplier_commercial_category_mappings')?
+      {rows:[{category:'Tech',subcategory:'Phones'}]}:{rows:[]})),release:jest.fn()};
+  db.getClient.mockResolvedValueOnce(client);
+  catalog.createDraftProductFromSourcingCandidate.mockResolvedValueOnce('draft-known');
+  promotion.promoteCatalog.mockResolvedValueOnce({promoted:true});
+  const result=await promoteCandidate('known-source',{},null,{syncRuntime:false});
+  expect(result).toMatchObject({product_id:'draft-known',price_decision:'DEFERRED_TO_PUBLICATION'});
+  expect(client.query.mock.calls.some(([sql])=>
+    String(sql).includes('supplier_commercial_category_mappings'))).toBe(true);
+  expect(client.query.mock.calls.some(([sql])=>sql==='COMMIT')).toBe(true);
+  expect(catalog.createDraftProductFromSourcingCandidate).toHaveBeenCalledWith(
+    client,{candidate,initialPrice:null});
+  // Mapping reuse is read-only, never a new human-confirmation write.
+  expect(client.query.mock.calls.some(([sql])=>String(sql).includes('INSERT INTO supplier_commercial_category_mappings'))).toBe(false);
+});
+
+test('source category without a confirmed provider mapping still requires review',async()=>{
+  jest.clearAllMocks();
+  const db=require('../../db');
+  const catalog=require('../../services/catalog-candidate-product-service');
+  const {promoteCandidate}=require('../../services/sourcing-candidate-actions');
+  const candidate={id:'unknown-source',state:'scanned',supplier_name:'AliExpress',
+    supplier_category:'Phones > Ambiguous Items',komerce_category:null,
+    data_sources:{category:'default'},scan_result:{customs_review:{status:'REQUIRED'}}};
+  const client={query:jest.fn().mockImplementation(sql=>Promise.resolve(
+    sql.includes('SELECT * FROM sourcing_candidates')?{rows:[candidate]}:{rows:[]})),release:jest.fn()};
+  db.getClient.mockResolvedValueOnce(client);
+  await expect(promoteCandidate('unknown-source',{},null,{syncRuntime:false}))
+    .rejects.toMatchObject({code:'candidate_commercial_category_review_required',status:409});
+  expect(catalog.createDraftProductFromSourcingCandidate).not.toHaveBeenCalled();
+});
