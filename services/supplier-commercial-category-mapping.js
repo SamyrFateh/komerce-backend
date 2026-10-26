@@ -99,4 +99,32 @@ function rankCommercialPairs(pairs = [], candidate = {}, preferred = null) {
   }));
 }
 
-module.exports={normalizePath,sourceKey,findConfirmed,confirmMapping,rankCommercialPairs};
+
+/**
+ * Auto classification is an editorial proposal, not a customs or publication
+ * verdict. Prefer the provider's own category; the title only breaks ties.
+ * A missing lexical hit returns null rather than assigning an arbitrary shelf.
+ */
+function chooseCommercialPair(pairs = [], candidate = {}, preferred = null) {
+  const suggestions = rankCommercialPairs(pairs,candidate,preferred);
+  if (!suggestions.length) return null;
+  if (suggestions[0].confidence === 'confirmed') {
+    return {...suggestions[0],source:'KNOWN_COMMERCIAL_MAPPING'};
+  }
+  const sourcePath = String(candidate.supplier_category || '').split(/\\s*>\\s*/).pop();
+  const words = new Set(normalizeWords(sourcePath).filter(w=>w.length>2));
+  const scored = pairs.map(p=>{
+    const label = normalizeWords([p.category_label,p.subcategory_label,p.category,p.subcategory].join(' '));
+    const hits = [...new Set(label.filter(w=>words.has(w)))];
+    return {...p,hits:hits.length};
+  }).filter(x=>x.hits>0).sort((a,b)=>b.hits-a.hits);
+  // Tied categories still receive a visible default suggestion rather than a
+  // WATCH classification; operator correction remains possible later.
+  if (!scored.length) return null;
+  const top=scored[0];
+  return {category:top.category,subcategory:top.subcategory,
+    category_label:top.category_label,subcategory_label:top.subcategory_label,
+    source:'SUPPLIER_CATEGORY_MATCH',confidence:'proposed'};
+}
+
+module.exports={normalizePath,sourceKey,findConfirmed,confirmMapping,rankCommercialPairs,chooseCommercialPair};
