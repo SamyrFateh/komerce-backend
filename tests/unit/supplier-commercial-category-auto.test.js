@@ -17,3 +17,14 @@ test('confirmed supplier mapping wins regardless of lexical score',()=>{
 test('unknown supplier category does not invent a shelf',()=>{
   expect(chooseCommercialPair(pairs,{supplier_category:'Very Strange Unrelated'},null)).toBeNull();
 });
+
+test('uses the supplier leaf category, not parent category, when choosing boutique shelf',()=>{
+  const boutiquePairs=[
+    {category:'Generic',subcategory:'Electronics',category_label:'Consumer Electronics',subcategory_label:'General'},
+    {category:'Tech',subcategory:'Decor',category_label:'Tech',subcategory_label:'Mobile Phone Decorations'},
+  ];
+  expect(chooseCommercialPair(boutiquePairs,{
+    supplier_category:'Consumer Electronics > Mobile Phone Decorations',
+    product_name:'Silicone protective item',
+  })).toMatchObject({category:'Tech',subcategory:'Decor',source:'SUPPLIER_CATEGORY_MATCH'});
+});
