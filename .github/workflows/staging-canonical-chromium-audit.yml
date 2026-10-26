@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       roles:
-        description: 'admin baseline or all roles'
+        description: 'Admin only, Admin + Responsable pays baseline, or all roles'
         required: true
         type: choice
         default: all
-        options: [admin, all]
+        options: [admin, baseline, all]
   issues:
     types: [opened]
 permissions:
@@ -49,6 +49,8 @@ jobs:
         with:
           node-version: '20'
           cache: npm
+      - name: Verify E2E identity secrets before heavy Chromium installation
+        run: node scripts/recette/staging-chromium-credentials-preflight.js
       - run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
