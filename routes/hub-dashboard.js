@@ -250,13 +250,19 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
       notes,
     });
 
+    let itemsAssigned = 0;
     if (item_ids && item_ids.length) {
       for (const itemId of item_ids) {
-        await assignWholeOrderItemToParcel(db, {
+        const assignment = await assignWholeOrderItemToParcel(db, {
           parcelId: parcel.id,
           orderItemId: itemId,
           orderId: order.id,
-        }).catch(() => {});
+        }).catch((err) => {
+          log.warn({ err, parcelId: parcel.id, orderItemId: itemId }, '[HUB] affectation au colis échouée');
+          return null;
+        });
+        // ON CONFLICT DO NOTHING / SELECT ... WHERE may insert zero rows.
+        itemsAssigned += Number(assignment?.rowCount || 0);
       }
     }
 
@@ -268,7 +274,7 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
     res.status(201).json({
       message: `Colis ${reference} créé`,
       parcel,
-      items_assigned: item_ids ? item_ids.length : 0
+      items_assigned: itemsAssigned
     });
   } catch(e) { next(e); }
 });
