@@ -9,6 +9,7 @@ on:
       - scripts/research/feature-fingerprint-auto-parcel-pg.js
       - scripts/research/feature-fingerprint-unsold-terminal-pg.js
       - scripts/research/feature-fingerprint-authority-pg.js
+      - scripts/research/feature-fingerprint-provider-market-pg.js
       - services/parcel-item-mutation-service.js
       - routes/hub-dashboard.js
       - tests/unit/parcel-item-mutation-service.test.js
@@ -44,6 +45,7 @@ jobs:
       FP_AUTOPARCEL_OUTPUT: /tmp/feature-fingerprint-auto-parcel-pg-proof.json
       FP_UNSOLD_OUTPUT: /tmp/feature-fingerprint-unsold-terminal-pg-proof.json
       FP_AUTHORITY_OUTPUT: /tmp/feature-fingerprint-authority-pg-proof.json
+      FP_PROVIDER_OUTPUT: /tmp/feature-fingerprint-provider-market-pg-proof.json
       FP_EXPECT_AUTHORITY_GUARD: 'true'
       FP_EXPECT_FAIL_CLOSED: 'true'
       FP_EXPECT_TERMINAL_GUARD: 'true'
@@ -109,6 +111,11 @@ jobs:
         run: |
           set -o pipefail
           node scripts/research/feature-fingerprint-authority-pg.js 2>&1 | tee /tmp/fp-authority.log
+      - name: R&D provider market authority A/B
+        id: provider_market
+        run: |
+          set -o pipefail
+          node scripts/research/feature-fingerprint-provider-market-pg.js 2>&1 | tee /tmp/fp-provider-market.log
       - name: Report
         if: always()
         run: |
@@ -127,6 +134,7 @@ jobs:
             /tmp/feature-fingerprint-auto-parcel-pg-proof.json
             /tmp/feature-fingerprint-unsold-terminal-pg-proof.json
             /tmp/feature-fingerprint-authority-pg-proof.json
+            /tmp/feature-fingerprint-provider-market-pg-proof.json
           if-no-files-found: ignore
           retention-days: 3
       - name: Persist bounded proof for review via GitHub connector
@@ -158,9 +166,14 @@ jobs:
             node -e 'const fs=require("fs");const p="/tmp/fp-unsold-terminal.log";fs.writeFileSync("scripts/research/feature-fingerprint-unsold-terminal-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",stage:process.env.STAGE_UNSOLD_TERMINAL||"unknown",tail:fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2200):"NOT_RUN"},null,2)+"\\n");'
           fi
           if [ -f /tmp/feature-fingerprint-authority-pg-proof.json ]; then
-            cp /tmp/feature-fingerprint-authority-pg-proof.json scripts/research/feature-fingerprint-authority-pg-proof.json
+            cp /tmp/feature-fingerprint-authority-pg-proof.json scripts/research/feature-fingerprint-authority-pg-proof.json scripts/research/feature-fingerprint-provider-market-pg-proof.json
           else
             node -e 'const fs=require("fs");const p="/tmp/fp-authority.log";fs.writeFileSync("scripts/research/feature-fingerprint-authority-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",tail:fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2000):"NOT_RUN"},null,2)+"\\n");'
+          fi
+          if [ -f /tmp/feature-fingerprint-provider-market-pg-proof.json ]; then
+            cp /tmp/feature-fingerprint-provider-market-pg-proof.json scripts/research/feature-fingerprint-provider-market-pg-proof.json
+          else
+            node -e 'const fs=require("fs");const p="/tmp/fp-provider-market.log";fs.writeFileSync("scripts/research/feature-fingerprint-provider-market-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",tail:fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2600):"NOT_RUN"},null,2)+"\\n");'
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
