@@ -6,14 +6,15 @@
  * @criticality   high
  * @inputs        candidate_id_internal, import_id_internal, validated_candidate_payload, actor_id
  * @outputs       candidate_mutation_result, inactive_catalog_draft, automatic_catalogue_handoff_summary
- * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js, services/import-runtime-runs.js, services/sourcing-certification.js
+ * @depends       db.js, services/supplier-commercial-category-mapping.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js, services/import-runtime-runs.js, services/sourcing-certification.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
  * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, import_runtime_runs
  * @db-write      sourcing_candidates, sourcing_candidate_events
  * @db-write-via:catalog-candidate-product-service products
  * @db-write-via:catalog-promotion catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:import-runtime-runs import_runtime_runs
- * @db-txn        promoteCandidate : transaction dédiée
+ * @db-write-via:supplier-commercial-category-mapping supplier_commercial_category_mappings
+ * @db-txn        promoteCandidate, confirmCandidateBoutiqueCategory : transactions dédiées
  * @doctrine      single_sourcing_candidate_mutation_authority, sourcing_certified_auto_handoff, catalog_promotion_owner_respected, engine_price_is_not_market_decision, draft_handoff_has_no_market_price, publication_requires_price
  * @impact-areas  sourcing, catalog, economic-engine
  * @version       2026-09
@@ -28,6 +29,7 @@ const { createDraftProductFromSourcingCandidate } = require('./catalog-candidate
 const { promoteCatalog } = require('./catalog-promotion');
 const importRuns = require('./import-runtime-runs');
 const certification = require('./sourcing-certification');
+const commercialMapping = require('./supplier-commercial-category-mapping');
 
 class SourcingCandidateActionError extends Error {
   constructor(status, message, code = null, details = null) {
@@ -317,6 +319,66 @@ async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
 }
 
 
+async function confirmCandidateBoutiqueCategory(candidateRef, body, actorId = null) {
+  const category = String(body?.category || '').trim();
+  const subcategory = String(body?.subcategory || '').trim();
+  if (!category || !subcategory) throw new SourcingCandidateActionError(400,
+    'Catégorie et sous-catégorie boutique requises.', 'sourcing_boutique_pair_required');
+  const client = await db.getClient();
+  let candidate;
+  try {
+    await client.query('BEGIN');
+    const { rows:[row] } = await client.query(
+      'SELECT * FROM sourcing_candidates WHERE candidate_ref=$1 FOR UPDATE', [candidateRef]);
+    candidate = row;
+    if (!candidate) throw new SourcingCandidateActionError(404, 'Produit Sourcing introuvable','candidate_not_found');
+    if (candidate.product_id || ['imported_to_catalog','rejected','archived','quarantined'].includes(candidate.state)
+        || candidate.scan_result?.sourcing_decision === 'EXCLUDED') {
+      throw new SourcingCandidateActionError(409,'Candidat bloqué ou déjà transmis.','candidate_not_classifiable');
+    }
+    const provider = candidate.normalized_source_contract?.supplier_name || candidate.supplier_name;
+    if (!provider || !candidate.supplier_category) {
+      throw new SourcingCandidateActionError(409,'Catégorie source fournisseur absente.','supplier_category_source_missing');
+    }
+    try {
+      await commercialMapping.confirmMapping({
+        provider, source_category_path:candidate.supplier_category,
+        category,subcategory,
+        source_locale:candidate.normalized_source_contract?.source_locale || 'en',
+      },String(actorId || 'sourcing'),client);
+    } catch (error) {
+      if (error.message === 'BOUTIQUE_TAXONOMY_INVALID') throw new SourcingCandidateActionError(
+        400,'Catégorie boutique inactive ou inconnue.','sourcing_boutique_pair_invalid');
+      throw error;
+    }
+    const review = { status:'CONFIRMED', category, subcategory, source:'OPERATOR',
+      confirmed_at:new Date().toISOString() };
+    await client.query(
+      'UPDATE sourcing_candidates SET commercial_taxonomy_review=$1::jsonb, updated_by=$2, updated_at=now() WHERE id=$3',
+      [JSON.stringify(review),actorId,candidate.id]);
+    await client.query(
+      "INSERT INTO sourcing_candidate_events (candidate_id,event_type,old_state,new_state,changes,triggered_by) VALUES ($1,'data_correction',$2,$2,$3,$4)",
+      [candidate.id,candidate.state,JSON.stringify({ commercial_taxonomy_review:review }),actorId]);
+    await client.query('COMMIT');
+  } catch(error) {
+    try { await client.query('ROLLBACK'); } catch(_) { /* preserve original error */ }
+    throw error;
+  } finally { client.release(); }
+  // Mapping is durable even if a separate draft handoff fails; never publish.
+  try {
+    const draft = await promoteCandidate(candidate.id,
+      {enrichment_mode:'source_only'},actorId);
+    return { candidate_ref:candidateRef, category,subcategory, confirmed:true,
+      draft_created:true, price_decision:draft.price_decision,
+      next_step:'Préparer la fiche et décider du prix marché avant publication.' };
+  } catch(error) {
+    return { candidate_ref:candidateRef, category,subcategory, confirmed:true,
+      draft_created:false, handoff_error_code:error?.code || 'catalogue_handoff_failed',
+      next_step:'Mapping conservé ; compléter la Raffinerie avant de relancer la remise Catalogue.' };
+  }
+}
+
+
 class SourcingCatalogueHandoffError extends Error {
   constructor(message, details = null) {
     super(message);
@@ -442,6 +504,7 @@ module.exports = {
   watchlistCandidate,
   rejectCandidate,
   promoteCandidate,
+  confirmCandidateBoutiqueCategory,
   handoffCertifiedImport,
   handoffImportResult,
   _resolveDraftPrice: resolveDraftPrice,
