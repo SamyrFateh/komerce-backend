@@ -8,7 +8,7 @@
  * @outputs       global_sourcing_projection, sourcing_mutation_result
  * @depends       db.js, services/pricing-engine.js, services/customs-dynamic-category-classifier.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
- * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures
+ * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures, boutique_categories, boutique_subcategories
  * @db-write-via:sourcing-mutations products
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates
@@ -410,62 +410,7 @@ async function getCandidateBoutiqueCategoryOptions(candidateRef) {
 
 /** Confirm source -> boutique mapping and advance to a NON-PUBLISHED draft. */
 async function confirmCandidateBoutiqueCategory(candidateRef, body, actor) {
-  const category = String(body?.category || '').trim();
-  const subcategory = String(body?.subcategory || '').trim();
-  if (!category || !subcategory) throw new SourcingWorkspaceError(400,
-    'Catégorie et sous-catégorie boutique requises.', 'sourcing_boutique_pair_required');
-  const client = await db.getClient();
-  let candidate;
-  try {
-    await client.query('BEGIN');
-    const { rows:[row] } = await client.query(
-      'SELECT * FROM sourcing_candidates WHERE candidate_ref=$1 FOR UPDATE', [candidateRef]);
-    candidate = row;
-    if (!candidate) throw new SourcingWorkspaceError(404, 'Produit Sourcing introuvable','candidate_not_found');
-    if (candidate.product_id || ['imported_to_catalog','rejected','archived','quarantined'].includes(candidate.state)
-        || candidate.scan_result?.sourcing_decision === 'EXCLUDED') {
-      throw new SourcingWorkspaceError(409,'Candidat bloqué ou déjà transmis.','candidate_not_classifiable');
-    }
-    const provider = candidate.normalized_source_contract?.supplier_name || candidate.supplier_name;
-    if (!provider || !candidate.supplier_category) {
-      throw new SourcingWorkspaceError(409,'Catégorie source fournisseur absente.','supplier_category_source_missing');
-    }
-    try {
-      await commercialMapping.confirmMapping({
-        provider, source_category_path:candidate.supplier_category,
-        category,subcategory,
-        source_locale:candidate.normalized_source_contract?.source_locale || 'en',
-      },String(actor?.id || actor?.role || 'sourcing'),client);
-    } catch (error) {
-      if (error.message === 'BOUTIQUE_TAXONOMY_INVALID') throw new SourcingWorkspaceError(
-        400,'Catégorie boutique inactive ou inconnue.','sourcing_boutique_pair_invalid');
-      throw error;
-    }
-    const review = { status:'CONFIRMED', category, subcategory, source:'OPERATOR',
-      confirmed_at:new Date().toISOString() };
-    await client.query(
-      'UPDATE sourcing_candidates SET commercial_taxonomy_review=$1::jsonb, updated_by=$2, updated_at=now() WHERE id=$3',
-      [JSON.stringify(review),actor?.id || null,candidate.id]);
-    await client.query(
-      "INSERT INTO sourcing_candidate_events (candidate_id,event_type,old_state,new_state,changes,triggered_by) VALUES ($1,'data_correction',$2,$2,$3,$4)",
-      [candidate.id,candidate.state,JSON.stringify({ commercial_taxonomy_review:review }),actor?.id || null]);
-    await client.query('COMMIT');
-  } catch(error) {
-    try { await client.query('ROLLBACK'); } catch(_) { /* preserve original error */ }
-    throw error;
-  } finally { client.release(); }
-  // Mapping is durable even if a separate draft handoff fails; never publish.
-  try {
-    const draft = await candidateActions.promoteCandidate(candidate.id,
-      {enrichment_mode:'source_only'},actor?.id || null);
-    return { candidate_ref:candidateRef, category,subcategory, confirmed:true,
-      draft_created:true, price_decision:draft.price_decision,
-      next_step:'Préparer la fiche et décider du prix marché avant publication.' };
-  } catch(error) {
-    return { candidate_ref:candidateRef, category,subcategory, confirmed:true,
-      draft_created:false, handoff_error_code:error?.code || 'catalogue_handoff_failed',
-      next_step:'Mapping conservé ; compléter la Raffinerie avant de relancer la remise Catalogue.' };
-  }
+  return candidateActions.confirmCandidateBoutiqueCategory(candidateRef, body, actor?.id || null);
 }
 
 // Remédiation guidée : réutilise STRICTEMENT les catégories actives du moteur
