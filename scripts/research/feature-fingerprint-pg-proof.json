@@ -1,15 +1,159 @@
 {
-  "status": "REPLAY_FAILED",
-  "job_status": "failure",
-  "stages": {
-    "deps": "success",
-    "bootstrap": "success",
-    "replay": "failure"
+  "version": 5,
+  "execution": "REAL_POSTGRESQL_WITH_CHECKOUT_SOURCE",
+  "authExecuted": false,
+  "fullHttpExecuted": false,
+  "source": {
+    "routes/hub-dashboard.js": "e950014125f76a1216ba1ee0cc0c1f981877dbca4b19b1e511282998a009c021",
+    "services/parcel-item-mutation-service.js": "0e60a3cab2d6737af73d8ab4844c668d21ae3582f4a9b3b98043b16483e54906",
+    "services/parcel-mutation-service.js": "9c2aa97e571399936241f4e0488b46a744f0ecab79e564a7283a6fac56ab6cf8"
   },
-  "tails": {
-    "install": "\nadded 561 packages in 3s\n",
-    "schema": "BLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\nALTER TABLE\n",
-    "bootstrap": "◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }\n[ci-db-bootstrap] 1/3 reference data pre-seed\n[ci-db-bootstrap] 2/3 migration reconciliation\n[ci-migrate] Baseline git : 304 migration(s) au commit 3a242a32\n[ci-migrate] Snapshot incomplet pour 302_canonical_margin_writer_rules.sql — migration retirée de la baseline et appliquée réellement.\n[ci-migrate] Snapshot incomplet pour 118_transport_pricing.sql — migration retirée de la baseline et appliquée réellement.\n[ci-migrate] Baselinées : 299 (302 dump + 2 ci-excluded)\n[ci-migrate] À appliquer : 2 migration(s) post-snapshot/incomplète(s)\n   • 118_transport_pricing.sql\n   • 302_canonical_margin_writer_rules.sql\n2 migration(s) en attente :\n   • 118_transport_pricing.sql\n   • 302_canonical_margin_writer_rules.sql\n   ✅ appliquée : 118_transport_pricing.sql\n   ✅ appliquée : 302_canonical_margin_writer_rules.sql\n\n✅ 2 migration(s) appliquées.\n[ci-migrate] ✅ 2 migration(s) appliquée(s).\n[ci-db-bootstrap] 3/3 reference data convergence\n[ci-db-bootstrap] ✅ from-scratch database reconstructed\n",
-    "replay": "REPLAY_FAILED error: insert or update on table \"order_comments\" violates foreign key constraint \"order_comments_author_id_fkey\"\n    at /home/runner/work/komerce-backend/komerce-backend/node_modules/pg/lib/client.js:652:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async routes/hub-dashboard.js:35:5\n    at async /home/runner/work/komerce-backend/komerce-backend/scripts/research/feature-fingerprint-hub-pg.js:36:5\n    at async main (/home/runner/work/komerce-backend/komerce-backend/scripts/research/feature-fingerprint-hub-pg.js:79:24)\n"
-  }
-}\n
+  "contract": {
+    "id": "response-items-assigned-corresponds-to-persisted-memberships",
+    "approved": false
+  },
+  "cases": [
+    {
+      "repetition": 1,
+      "label": "nominal",
+      "inputCount": 1,
+      "response": {
+        "status": 201,
+        "items_assigned": 1,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 1,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": false
+    },
+    {
+      "repetition": 1,
+      "label": "foreign_order",
+      "inputCount": 1,
+      "response": {
+        "status": 201,
+        "items_assigned": 1,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": true
+    },
+    {
+      "repetition": 1,
+      "label": "duplicate",
+      "inputCount": 2,
+      "response": {
+        "status": 201,
+        "items_assigned": 2,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 1,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": true
+    },
+    {
+      "repetition": 2,
+      "label": "nominal",
+      "inputCount": 1,
+      "response": {
+        "status": 201,
+        "items_assigned": 1,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 1,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": false
+    },
+    {
+      "repetition": 2,
+      "label": "foreign_order",
+      "inputCount": 1,
+      "response": {
+        "status": 201,
+        "items_assigned": 1,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": true
+    },
+    {
+      "repetition": 2,
+      "label": "duplicate",
+      "inputCount": 2,
+      "response": {
+        "status": 201,
+        "items_assigned": 2,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 1,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": true
+    }
+  ],
+  "repetitions": 2,
+  "rollbackVerified": true,
+  "verdict": "UNAPPROVED_CONTRADICTION",
+  "evidenceHash": "368cb9f7d26966ac23e941cf95e7b179632f853cbba7323b1e8bca1d95996719"
+}
