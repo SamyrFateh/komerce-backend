@@ -12,6 +12,7 @@ const path=require('node:path');
 const db=require('../db');
 const {confirmTarget}=require('./recette/target-guard');
 const {audit}=require('./audit-kir-unified-commercial-coverage');
+const {audit:sourceAudit}=require('./audit-kir-supplier-category-provenance');
 const RUNS=Object.freeze(['KIR-000009','KIR-000008']);
 const HOST='https://komerce-backend-production.up.railway.app';
 async function run({database=db,confirm=confirmTarget,auditRun=audit,env=process.env}={}) {
@@ -25,7 +26,7 @@ async function run({database=db,confirm=confirmTarget,auditRun=audit,env=process
     await client.query("SET LOCAL statement_timeout='25000ms'");
     const reports=[];
     for(const runRef of RUNS){
-      const report=await auditRun(runRef,{query:client,sourceAudit:undefined});
+      const report=await auditRun(runRef,{query:client,sourceAudit:ref=>sourceAudit(ref,client)});
       const products=report.products.map(p=>({
         candidate_ref:p.candidate_ref,source_path:p.source_path,
         category:p.category||null,subcategory:p.subcategory||null,
