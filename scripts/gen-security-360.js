@@ -448,7 +448,14 @@ function renderMarkdown(generatedAt) {
 
 function comparableProjection(doc) {
   if (!doc) return null;
-  return { source: doc.source, summary: doc.summary, flagged: doc.flagged, dispositions: doc.dispositions, routes: doc.routes };
+  // Runtime router enumeration can vary in order across environments. Freshness
+  // is about the EXACT set of protected routes and guard metadata, not array
+  // positions. Keep every record intact; sort by key only for comparison.
+  return { source: doc.source, summary: doc.summary, flagged: doc.flagged,
+    dispositions: doc.dispositions,
+    routes: Array.isArray(doc.routes)
+      ? [...doc.routes].sort((a,b)=>String(a.key).localeCompare(String(b.key),'en'))
+      : doc.routes };
 }
 const current = flagged.map(key).sort();
 if (MODE === 'check') {
