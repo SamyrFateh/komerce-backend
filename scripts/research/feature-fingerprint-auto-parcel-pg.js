@@ -66,6 +66,16 @@ async function main(){
  report.scenarioCount=report.cases.length;
  const nom=report.cases.filter(c=>c.scenario==='nominal');
  assert.equal(nom.length,2);for(const c of nom){assert.equal(c.actualNewActive,1);assert.equal(c.response.items_assigned,1);assert.equal(c.contradiction,false)}
+ if(process.env.FP_EXPECT_FAIL_CLOSED==='true'){
+  const cancelled=report.cases.filter(c=>c.scenario==='cancelled_parcel');
+  assert.equal(cancelled.length,2);
+  for(const c of cancelled){
+    assert.equal(c.response.success,false,'cancelled parcel must not be announced distributed');
+    assert.equal(c.actualNewActive,0);
+    assert.equal(c.after.active_parcels,0,'refused redistributions must not create ghost parcels');
+    assert.equal(c.contradiction,false);
+  }
+ }
  report.verdict=report.cases.some(c=>c.contradiction)?'UNAPPROVED_CONTRADICTION':'NO_VIOLATION_OBSERVED';
  report.evidenceHash=crypto.createHash('sha256').update(JSON.stringify(report.cases)).digest('hex');
  const out=path.resolve(process.env.FP_AUTOPARCEL_OUTPUT||'/tmp/feature-fingerprint-auto-parcel-pg-proof.json');
