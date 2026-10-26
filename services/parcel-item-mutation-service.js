@@ -56,9 +56,17 @@ async function assignParcelItem(executor, {
 }) {
   assertExecutor(executor);
 
+  // Orders owns product identity and maximum quantity. Validate both in
+  // the INSERT itself: the caller must not redefine canonical order-item facts.
+  // A mismatched product/quantity produces rowCount=0 for the caller to reject.
   return executor.query(
     `INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
-     VALUES ($1, $2, $3, $4)
+     SELECT $1, oi.id, oi.product_id, $4::integer
+       FROM order_items oi
+      WHERE oi.id = $2
+        AND oi.product_id = $3
+        AND $4::integer > 0
+        AND $4::integer <= oi.quantity
      ON CONFLICT DO NOTHING`,
     [parcelId, orderItemId, productId, quantity]
   );
