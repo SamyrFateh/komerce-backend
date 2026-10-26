@@ -41,13 +41,16 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Install only production dependencies
-        run: npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+        id: deps
+        run: npm ci --omit=dev --ignore-scripts --no-audit --no-fund 2>&1 | tee /tmp/fp-install.log
       - name: Build disposable canonical database
+        id: bootstrap
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-schema-load.log
-          node scripts/ci-db-bootstrap.js
+          node scripts/ci-db-bootstrap.js 2>&1 | tee /tmp/fp-bootstrap.log
       - name: Prove only 2x(A/B) with outer rollback
-        run: node scripts/research/feature-fingerprint-hub-pg.js
+        id: replay
+        run: node scripts/research/feature-fingerprint-hub-pg.js 2>&1 | tee /tmp/fp-replay.log
       - name: Report
         if: always()
         run: |
@@ -68,11 +71,14 @@ jobs:
         if: always()
         env:
           JOB_RESULT: ${{ job.status }}
+          STAGE_DEPS: ${{ steps.deps.outcome }}
+          STAGE_BOOTSTRAP: ${{ steps.bootstrap.outcome }}
+          STAGE_REPLAY: ${{ steps.replay.outcome }}
         run: |
           if [ -f /tmp/feature-fingerprint-pg-proof.json ]; then
             cp /tmp/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-pg-proof.json
           else
-            printf '{"status":"REPLAY_FAILED","job_status":"%s","note":"No validated PostgreSQL proof artifact was emitted"}\n' "$JOB_RESULT" > scripts/research/feature-fingerprint-pg-proof.json
+            node -e 'const fs=require("fs");const logs={install:"/tmp/fp-install.log",schema:"/tmp/fp-schema-load.log",bootstrap:"/tmp/fp-bootstrap.log",replay:"/tmp/fp-replay.log"};const tails=Object.fromEntries(Object.entries(logs).map(([k,p])=>[k,fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2200):"NOT_RUN"]));fs.writeFileSync("scripts/research/feature-fingerprint-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",job_status:process.env.JOB_RESULT,stages:{deps:process.env.STAGE_DEPS,bootstrap:process.env.STAGE_BOOTSTRAP,replay:process.env.STAGE_REPLAY},tails},null,2)+"\\n");'
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
