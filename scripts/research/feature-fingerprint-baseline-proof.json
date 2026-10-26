@@ -1,0 +1,159 @@
+{
+  "version": 5,
+  "execution": "REAL_POSTGRESQL_WITH_CHECKOUT_SOURCE",
+  "authExecuted": false,
+  "fullHttpExecuted": false,
+  "source": {
+    "routes/hub-dashboard.js": "e950014125f76a1216ba1ee0cc0c1f981877dbca4b19b1e511282998a009c021",
+    "services/parcel-item-mutation-service.js": "0e60a3cab2d6737af73d8ab4844c668d21ae3582f4a9b3b98043b16483e54906",
+    "services/parcel-mutation-service.js": "9c2aa97e571399936241f4e0488b46a744f0ecab79e564a7283a6fac56ab6cf8"
+  },
+  "contract": {
+    "id": "response-items-assigned-corresponds-to-persisted-memberships",
+    "approved": false
+  },
+  "cases": [
+    {
+      "repetition": 1,
+      "label": "nominal",
+      "inputCount": 1,
+      "response": {
+        "status": 201,
+        "items_assigned": 1,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 1,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": false
+    },
+    {
+      "repetition": 1,
+      "label": "foreign_order",
+      "inputCount": 1,
+      "response": {
+        "status": 201,
+        "items_assigned": 1,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": true
+    },
+    {
+      "repetition": 1,
+      "label": "duplicate",
+      "inputCount": 2,
+      "response": {
+        "status": 201,
+        "items_assigned": 2,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 1,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": true
+    },
+    {
+      "repetition": 2,
+      "label": "nominal",
+      "inputCount": 1,
+      "response": {
+        "status": 201,
+        "items_assigned": 1,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 1,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": false
+    },
+    {
+      "repetition": 2,
+      "label": "foreign_order",
+      "inputCount": 1,
+      "response": {
+        "status": 201,
+        "items_assigned": 1,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": true
+    },
+    {
+      "repetition": 2,
+      "label": "duplicate",
+      "inputCount": 2,
+      "response": {
+        "status": 201,
+        "items_assigned": 2,
+        "parcel_created": true
+      },
+      "before": {
+        "parcelCount": 0,
+        "membershipCount": 0,
+        "foreignMembershipCount": 0,
+        "commentCount": 0
+      },
+      "after": {
+        "parcelCount": 1,
+        "membershipCount": 1,
+        "foreignMembershipCount": 0,
+        "commentCount": 1
+      },
+      "contradiction": true
+    }
+  ],
+  "repetitions": 2,
+  "rollbackVerified": true,
+  "verdict": "UNAPPROVED_CONTRADICTION",
+  "evidenceHash": "368cb9f7d26966ac23e941cf95e7b179632f853cbba7323b1e8bca1d95996719"
+}
