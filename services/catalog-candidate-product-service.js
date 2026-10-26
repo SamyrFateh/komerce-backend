@@ -89,10 +89,12 @@ async function resolveCommercialObjectTaxonomy(q, candidate) {
 }
 
 async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
-  const requested = boutiqueTaxonomyFromCandidate(candidate);
-  if (requested.category || requested.subcategory) {
-    return { status:'EXPLICIT_REVIEW', category:requested.category,
-      subcategory:requested.subcategory, source:'OPERATOR_OR_DISCOVERY' };
+  // A candidate-specific human decision wins. A reusable confirmed source
+  // mapping wins over exploratory discovery hints for following products.
+  const human = candidate.commercial_taxonomy_review;
+  if (human?.status === 'CONFIRMED' && human.category && human.subcategory) {
+    return {status:'EXPLICIT_REVIEW',category:human.category,
+      subcategory:human.subcategory,source:'OPERATOR_CONFIRMED'};
   }
   const provider = candidate.normalized_source_contract?.supplier_name
     || candidate.raw_payload?.source || candidate.supplier_name;
@@ -101,6 +103,11 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
   if (provider && sourcePath) {
     const mapped = await findConfirmed(provider, sourcePath, q);
     if (mapped) return { status:'AUTO_CLASSIFIED', ...mapped, source:'CONFIRMED_SUPPLIER_PATH' };
+  }
+  const requested = boutiqueTaxonomyFromCandidate(candidate);
+  if (requested.category || requested.subcategory) {
+    return { status:'EXPLICIT_REVIEW', category:requested.category,
+      subcategory:requested.subcategory, source:'OPERATOR_OR_DISCOVERY' };
   }
   const matched = await resolveCommercialObjectTaxonomy(q, candidate);
   if (matched.category && matched.subcategory) {
