@@ -7,6 +7,8 @@ on:
       - .github/workflows/research-golden-continuity-eco.yml
       - scripts/research/golden-continuity-fingerprint.js
       - scripts/research/golden-continuity-fingerprint.test.js
+      - scripts/research/golden-continuity-collector.js
+      - scripts/research/golden-continuity-collector.test.js
       - tests/unit/golden-checkout-thread.test.js
       - services/golden-checkout-thread.js
 permissions:
@@ -29,7 +31,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Pure continuity fingerprints (zero new dependencies)
-        run: node --test scripts/research/golden-continuity-fingerprint.test.js
+        run: node --test scripts/research/golden-continuity-fingerprint.test.js scripts/research/golden-continuity-collector.test.js
       - name: Install existing dependencies only
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Targeted Golden projections — checkout, upstream, order
