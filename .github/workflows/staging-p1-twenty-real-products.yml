@@ -5,6 +5,12 @@ name: P1 Twenty real products — staged source-to-storefront Chromium
 # market approval. Never auto-publish or auto-price from GitHub Actions.
 on:
   workflow_dispatch:
+    inputs:
+      source_runs:
+        description: "Exact canonical KIR refs, separated by commas (no invented items)"
+        required: false
+        default: KIR-000009
+        type: string
   issues:
     types: [opened]
 
@@ -33,6 +39,7 @@ jobs:
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      P1_TWENTY_SOURCE_RUNS: ${{ inputs.source_runs || 'KIR-000009' }}
       E2E_P1_20_HUMAN_MODE: read-only
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
