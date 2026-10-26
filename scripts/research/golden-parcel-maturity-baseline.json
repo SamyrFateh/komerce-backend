@@ -1,0 +1,29 @@
+{
+  "experiment": "parcel_shared_membership_vs_pricing_maturity",
+  "date": "2026-10-26",
+  "run": "https://github.com/SamyrFateh/komerce-backend/actions/runs/40416850754",
+  "artifact": "https://github.com/SamyrFateh/komerce-backend/actions/runs/40416850754/artifacts/12694984024",
+  "source": [
+    "services/parcel-order-membership.js",
+    "services/pricing-maturity.js"
+  ],
+  "scenario": {
+    "A": "carrier order",
+    "B": "order whose order_items are in the shared parcel"
+  },
+  "nominal": {
+    "ownership": "B",
+    "canonicalMembership": 1,
+    "maturityParcelCount": 1,
+    "repeated": 2
+  },
+  "counterexample": {
+    "ownership": "A",
+    "actualLineOwner": "B",
+    "canonicalMembership": 1,
+    "maturityParcelCount": 0,
+    "repeated": 2
+  },
+  "rollbackVerified": true,
+  "scope": "getOrderMaturity parcel counts vs canonical membership; no full order financial close certified"
+}
