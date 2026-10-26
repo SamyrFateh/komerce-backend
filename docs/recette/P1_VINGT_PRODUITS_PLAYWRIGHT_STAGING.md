@@ -1,5 +1,7 @@
 # Komerce P1 — campagne de 20 produits réels dans le staging Railway
 
+> **Périmètre actualisé le 26/10/2026 : DESKTOP UNIQUEMENT (1440 × 900).** Le propriétaire reporte la certification mobile, y compris la boutique mobile. Les captures 390 px antérieures sont historiques et ne comptent pas pour le GO. Les suites Chromium P1 et canonical n’exécutent plus de projet mobile. `launch-p1-twenty.ps1 -Device mobile` renvoie volontairement `MOBILE_CERTIFICATION_DEFERRED_USE_DESKTOP_ONLY`. La certification future du mobile fera l’objet d’une campagne distincte. Les API et règles métier restent identiques.
+
 **But** : 20 identités fournisseur distinctes → Sourcing certifié → Raffinerie / SKU → brouillon Catalogue → fiche et publication globale approuvées → décision commerciale du marché KM, prix **LOCAL_ACTIVE** → exposition **ENABLED** → 20 cartes exactes dans la boutique. Les **mêmes** 20 références traversent chaque frontière, sans second moteur métier.
 
 **Périmètre** : staging Railway uniquement, `KM` d'abord. Pas de RESET, seed SQL fictif, changement direct d'état, paiement, commande, ordre d'achat fournisseur ni changement de règles de gate.
@@ -70,7 +72,7 @@ Prérequis : Node.js, Git, Playwright, `git pull --ff-only`, `npm ci`, `npx play
 .\scripts\recette\launch-p1-twenty.ps1 -Stage catalogue -Mode inspect
 .\scripts\recette\launch-p1-twenty.ps1 -Stage marche -Mode inspect
 .\scripts\recette\launch-p1-twenty.ps1 -Stage prix -Mode inspect
-.\scripts\recette\launch-p1-twenty.ps1 -Stage boutique -Device mobile -Mode inspect
+.\scripts\recette\launch-p1-twenty.ps1 -Stage boutique -Device desktop -Mode inspect
 ```
 
 Playwright Inspector s'ouvre sur le véritable écran et s'arrête à `page.pause()`. Les secrets sont saisis masqués ou lus des variables de **processus** et restaurés en fin de script ; rien n'est écrit en .env ou Git.
@@ -100,7 +102,7 @@ Chaque entrée comporte : `candidate_ref`, `supplier_product_id`, `source_run_re
 - 20 identités fournisseur et 20 produits globaux distincts avec filiation prouvée.
 - 20 décisions source certifiées, fiches globales approuvées et actives.
 - 20 prix locaux **LOCAL_ACTIVE** et expositions **ENABLED** vérifiées par autorité KM.
-- Exactement les mêmes vingt `product_id` dans l'API du marché et les cartes de la boutique desktop/mobile. La boutique peut contenir d'autres produits : ils ne remplacent pas ceux du manifeste.
+- Exactement les mêmes vingt `product_id` dans l'API du marché et les cartes de la boutique desktop. La boutique peut contenir d'autres produits : ils ne remplacent pas ceux du manifeste.
 - État vide nominal et produit bloqué non exposé conservés en tests négatifs.
 - Aucune commande ni fournisseur réellement engagé.
 - Validation humaine des décisions et publication de l'artefact attendu/observé; sinon **NO GO ou NON COUVERT**, jamais « 20 produits » fictifs.
