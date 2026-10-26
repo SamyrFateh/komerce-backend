@@ -52,12 +52,14 @@ jobs:
           cache: npm
       - name: Verify E2E identity secrets before heavy Chromium installation
         run: node scripts/recette/staging-chromium-credentials-preflight.js
-      - run: npm ci
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
       - name: Pin expected deployment SHA
         shell: bash
         run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Verify staging serves the pinned SHA before installing Chromium
+        run: node scripts/recette/staging-chromium-deployment-preflight.js
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
       - name: Audit actual staging in read-only Chromium
         run: npx playwright test --config=playwright.staging-canonical.config.js
       - name: Build graphs and coverage matrix even on failure
