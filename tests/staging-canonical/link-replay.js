@@ -1,3 +1,12 @@
+/**
+ * @komerce-arch-lite
+ * @role staging-chromium-navigation-replay
+ * @domain dashboard
+ * @layer e2e
+ * @owner backend-core
+ * @purpose Distinguish an anchor that has not reappeared after reload from a real failed click.
+ * @impact-areas dashboard, staging-only
+ */
 'use strict';
 
 /**
