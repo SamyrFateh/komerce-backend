@@ -10,6 +10,7 @@ const crypto=require('node:crypto'),assert=require('node:assert/strict'),fs=requ
 const {listParcelsRepresentingOrder}=require('../../services/parcel-order-membership');
 const {reconcileCustomerHandoff}=require('../../services/customer-handoff-reconciliation');
 const {getOrderMaturity}=require('../../services/pricing-maturity');
+const {reconcileOrderFinancialClose}=require('../../services/order-financial-closure-reconciliation');
 const u=new URL(process.env.DATABASE_URL||'');
 if(!['localhost','127.0.0.1'].includes(u.hostname)||u.pathname!=='/komerce_test'
  ||process.env.NODE_ENV!=='test'||process.env.KOMERCE_DISABLE_CRONS!=='true')
@@ -42,6 +43,7 @@ async function observed(c,x,oid,label){
  const members=await listParcelsRepresentingOrder(c,oid,{columns:'p.id, p.status',excludeCancelled:true});
  const handoff=await reconcileCustomerHandoff(c,{orderId:oid});
  const maturity=await getOrderMaturity(oid,c);
+ const financialClose=await reconcileOrderFinancialClose(c,{orderId:oid});
  const criterion=maturity?.criteria?.find(v=>v.code==='parcel_flow_closed');
  assert.ok(criterion,'Economic parcel closure criterion missing');
  return {order:label,order_id:oid,parcel_id:x.parcel,canonicalMembership:members.length,
@@ -51,6 +53,8 @@ async function observed(c,x,oid,label){
   maturityCollectedCount:criterion.evidence.collected_parcel_count,
   parcelCriterionApplicable:criterion.applicable,parcelCriterionSatisfied:criterion.satisfied,
   fullyEconomicallyMature:maturity.mature,
+  financialClose:financialClose.verdict,financialCloseReason:financialClose.reason,
+  financialHandoff:financialClose.handoff_verdict,
   membershipParity:members.length===criterion.evidence.parcel_count};
 }
 async function main(){
@@ -81,6 +85,7 @@ async function main(){
       assert.equal(v.membershipParity,true,'Order parcel membership must match maturity parcel count');
       assert.equal(v.parcelCriterionApplicable,true,'Relay fee snapshot makes parcel flow closure applicable');
       assert.equal(v.fullyEconomicallyMature,false,'No real relay settlement was created');
+      assert.notEqual(v.financialClose,'FINANCIAL_CLOSE_MATCHED','Never certify finance without real relay settlement');
     }
     if(scenario.status==='cancelled'){
       for(const v of [a,b]){
@@ -97,15 +102,25 @@ async function main(){
     if(scenario.key==='BOTH_PROVED'){
       assert.equal(a.handoff,'HANDOFF_MATCHED');assert.equal(b.handoff,'HANDOFF_MATCHED');
       assert.equal(a.proofCount,1);assert.equal(b.proofCount,1);
+      for(const v of [a,b]){
+        assert.equal(v.financialClose,'FINANCIAL_CLOSE_PENDING');
+        assert.equal(v.financialCloseReason,'FINANCIAL_CLOSE_ECONOMIC_FACTS_PENDING');
+      }
     }
     if(scenario.key==='ONLY_A_PROVED'){
       assert.equal(a.handoff,'HANDOFF_MATCHED');
       assert.equal(b.handoff,'HANDOFF_MISMATCH');
       assert.equal(b.handoffReason,'CUSTOMER_HANDOFF_COLLECTED_WITHOUT_PROOF');
       assert.equal(b.proofCount,0);
+      assert.equal(a.financialClose,'FINANCIAL_CLOSE_PENDING');
+      assert.equal(b.financialClose,'FINANCIAL_CLOSE_MISMATCH');
+      assert.equal(b.financialCloseReason,'FINANCIAL_CLOSE_HANDOFF_MISMATCH');
+      assert.equal(b.financialHandoff,'HANDOFF_MISMATCH');
     }
     if(scenario.key==='AVAILABLE_UNCOLLECTED'){
       assert.equal(a.handoff,'HANDOFF_PENDING');assert.equal(b.handoff,'HANDOFF_PENDING');
+      assert.equal(a.financialClose,'FINANCIAL_CLOSE_PENDING');
+      assert.equal(b.financialClose,'FINANCIAL_CLOSE_PENDING');
     }
   }
  }finally{try{if(c&&started){await c.query('ROLLBACK');proof.rollbackVerified=true}}finally{if(c)c.release();await pool.end()}}
@@ -113,8 +128,8 @@ async function main(){
  proof.digest=crypto.createHash('sha256').update(JSON.stringify(proof.cases)).digest('hex');
  fs.writeFileSync(process.env.FP_MULTIORDER_OUTPUT||'/tmp/fp-multiorder-cross-projections.json',JSON.stringify(proof,null,2)+'\n');
  console.log('FP_MULTIORDER_PROOF '+JSON.stringify({verdict:proof.verdict,caseCount:proof.cases.length,
-  cases:proof.cases.map(x=>({scenario:x.scenario,A:{handoff:x.A.handoff,parcel:x.A.maturityParcelCount,closed:x.A.parcelCriterionSatisfied},
-    B:{handoff:x.B.handoff,parcel:x.B.maturityParcelCount,closed:x.B.parcelCriterionSatisfied}})),
+  cases:proof.cases.map(x=>({scenario:x.scenario,A:{handoff:x.A.handoff,finance:x.A.financialClose,parcel:x.A.maturityParcelCount,closed:x.A.parcelCriterionSatisfied},
+    B:{handoff:x.B.handoff,finance:x.B.financialClose,parcel:x.B.maturityParcelCount,closed:x.B.parcelCriterionSatisfied}})),
   rollbackVerified:proof.rollbackVerified}));
 }
 main().catch(err=>{console.error('FP_MULTIORDER_FAILED',err.stack||err);process.exitCode=1});
