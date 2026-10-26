@@ -1,0 +1,42 @@
+name: KIR-000009 four real objects — staging proof
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issues' &&
+        github.actor == github.repository_owner &&
+        github.event.issue.user.login == github.repository_owner &&
+        github.event.issue.title == '[staging-op] kir-000009-four-object-readonly'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify real boutique destinations (READ ONLY)
+        run: node scripts/recette/kir-000009-four-object-review.js
+      - name: Preserve four-object evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kir-nine-four-object-proof-${{ github.run_id }}
+          path: test-results/staging-p1-20/four-object-proposals.json
+          retention-days: 21
+          if-no-files-found: warn
