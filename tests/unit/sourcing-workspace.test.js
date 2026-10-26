@@ -231,3 +231,54 @@ describe('L7 — montage du workspace candidats : erreur, délai, diagnostic', (
     expect(urls).toEqual(['/api/admin/workspaces/sourcing', '/api/admin/workspaces/sourcing?include=health']);
   });
 });
+
+test('boutique options return only active commercial pairs and confirmed proposal',async()=>{
+  const row={candidate_ref:'KSC-000050',supplier_name:'AliExpress',
+    supplier_category:'Phones & Telecommunications > Phone Case',
+    product_name:'Phone Case',state:'watchlist',
+    commercial_taxonomy_review:{status:'CONFIRMED',category:'Tech',subcategory:'Phones'}};
+  mockQuery.mockResolvedValueOnce({rows:[row]}).mockResolvedValueOnce({rows:[
+    {category:'Tech',category_label:'Tech',subcategory:'Phones',subcategory_label:'Téléphones'},
+    {category:'Maison',category_label:'Maison',subcategory:'Salon',subcategory_label:'Salon'},
+  ]});
+  const result=await workspace.getCandidateBoutiqueCategoryOptions('KSC-000050');
+  expect(result.source).toBe('boutique_categories');
+  expect(result.suggestions[0]).toMatchObject({category:'Tech',subcategory:'Phones',confidence:'confirmed'});
+  expect(result).not.toHaveProperty('customs');
+  expect(mockPricingConfig).not.toHaveBeenCalled();
+});
+test('boutique confirmation cannot mutate an excluded candidate',async()=>{
+  const client={query:jest.fn().mockResolvedValueOnce({rows:[]})
+    .mockResolvedValueOnce({rows:[{id:'1',state:'scanned',
+      scan_result:{sourcing_decision:'EXCLUDED'}}]}),release:jest.fn()};
+  mockGetClient.mockResolvedValueOnce(client);
+  await expect(workspace.confirmCandidateBoutiqueCategory('KSC-000050',
+    {category:'Tech',subcategory:'Phones'},{id:'operator'}))
+    .rejects.toMatchObject({status:409,code:'candidate_not_classifiable'});
+  expect(client.query.mock.calls.map(c=>c[0])).toEqual([
+    'BEGIN',expect.stringContaining('FOR UPDATE'),'ROLLBACK'
+  ]);
+});
+test('boutique confirmation stores mapping + review then requests only inactive draft',async()=>{
+  const actions=require('../../services/sourcing-candidate-actions');
+  const candidate={id:'c-1',candidate_ref:'KSC-000051',
+    supplier_name:'AliExpress', supplier_category:'Phones > Mobile Phone Accessories',
+    state:'scanned',scan_result:{sourcing_decision:'WATCH'}};
+  const client={query:jest.fn()
+    .mockResolvedValueOnce({rows:[]}) // BEGIN
+    .mockResolvedValueOnce({rows:[candidate]}) // locked candidate
+    .mockResolvedValueOnce({rows:[{category:'Tech',subcategory:'Phones'}]}) // validate active pair
+    .mockResolvedValueOnce({rows:[{status:'CONFIRMED'}]}) // mapping UPSERT
+    .mockResolvedValueOnce({rows:[]}) // candidate review
+    .mockResolvedValueOnce({rows:[]}) // event
+    .mockResolvedValueOnce({rows:[]}),release:jest.fn()}; // COMMIT
+  mockGetClient.mockResolvedValueOnce(client);
+  actions.promoteCandidate.mockResolvedValueOnce({price_decision:'DEFERRED_TO_PUBLICATION'});
+  const result=await workspace.confirmCandidateBoutiqueCategory('KSC-000051',
+    {category:'Tech',subcategory:'Phones'},{id:'operator'});
+  expect(result).toMatchObject({confirmed:true,draft_created:true,price_decision:'DEFERRED_TO_PUBLICATION'});
+  expect(actions.promoteCandidate).toHaveBeenCalledWith('c-1',{enrichment_mode:'source_only'},'operator');
+  expect(client.query.mock.calls.map(c=>c[0])).toContain('COMMIT');
+  const stored=client.query.mock.calls.find(c=>String(c[0]).includes('commercial_taxonomy_review='));
+  expect(JSON.parse(stored[1][0])).toMatchObject({status:'CONFIRMED',category:'Tech',subcategory:'Phones'});
+});
