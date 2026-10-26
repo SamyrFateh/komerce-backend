@@ -72,10 +72,35 @@ function find(){
  }
  const uniq=new Map();for(const x of findings){const k=[x.source,x.line,x.childTable,x.parentTable,x.relationship].join(':');uniq.set(k,x)}
  const sorted=[...uniq.values()].sort((a,b)=>a.source.localeCompare(b.source)||a.line-b.line);
- return {schema:'feature-fd-authority-hypotheses/v1',statement:'Provenance-based risk hypotheses, NOT demonstrated vulnerabilities',
+ // ECO funnel: dedupe by structural dependency before consuming analyst/LLM budget.
+ // Full observations retained for audit, but only one representative per relationship.
+ const score=x=>(x.sharedIdentityColumns.includes('product_id')?6:0)
+    +(x.sharedIdentityColumns.includes('market_id')?5:0)
+    +(x.sharedIdentityColumns.includes('order_id')?4:0)
+    +(x.sharedQuantityColumns.length?4:0)
+    +(x.source.startsWith('services/')?2:0)
+    +(x.parentDeclaredWriters.length&&x.childDeclaredWriters.length?1:0)
+    -(/(?:simulator|admin\\/system|\\/seed)/i.test(x.source)?10:0);
+ const groups=new Map();
+ for(const x of sorted){
+  const key=[x.parentTable,x.childTable,x.sharedIdentityColumns.join(','),x.sharedQuantityColumns.join(',')].join('|');
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(x);
+ }
+ const candidates=[...groups.entries()].map(([key,sites])=>{
+   const best=[...sites].sort((a,b)=>score(b)-score(a)||a.source.localeCompare(b.source))[0];
+   return {relationship:key,score:score(best),representative:{source:best.source,line:best.line,feature:best.feature},
+     sourceSites:sites.length,allSources:[...new Set(sites.map(x=>x.source))].sort(),
+     status:'H0_UNVERIFIED',nextStep:'independent contract review, then cheapest targeted A/B'};
+ }).sort((a,b)=>b.score-a.score||a.relationship.localeCompare(b.relationship));
+ const cap=Number(process.env.FP_FD_MAX_H0||10);
+ const shortlisted=candidates.slice(0,Math.min(20,Math.max(1,cap)));
+ return {schema:'feature-fd-authority-hypotheses/v2',statement:'Provenance-based risk hypotheses, NOT demonstrated vulnerabilities',
  scope:{features:featureCount,schemaTables:model.size,mappedFiles:out.size},
- metrics:{hypotheses:sorted.length,approvedOracles:0},findings:sorted,digest:sha(JSON.stringify(sorted))};
+ metrics:{rawHypotheses:sorted.length,uniqueRelations:candidates.length,triageCap:shortlisted.length,
+  deferredRelations:candidates.length-shortlisted.length,approvedOracles:0},
+ triage:shortlisted,findings:sorted,digest:sha(JSON.stringify(sorted))};
 }
 const report=find();
 if(process.env.FP_FD_REPORT)fs.writeFileSync(path.resolve(process.env.FP_FD_REPORT),JSON.stringify(report,null,2)+'\n');
-console.log(JSON.stringify({scope:report.scope,metrics:report.metrics,findings:report.findings.map(({source,line,childTable,parentTable,sharedIdentityColumns,sharedQuantityColumns})=>({source,line,childTable,parentTable,sharedIdentityColumns,sharedQuantityColumns})),digest:report.digest},null,2));
+console.log(JSON.stringify({scope:report.scope,metrics:report.metrics,triage:report.triage,digest:report.digest},null,2));
