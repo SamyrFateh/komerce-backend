@@ -9,6 +9,10 @@ on:
       - scripts/research/feature-fingerprint-auto-parcel-pg.js
       - scripts/research/feature-fingerprint-unsold-terminal-pg.js
       - scripts/research/feature-fingerprint-authority-pg.js
+      - services/parcel-item-mutation-service.js
+      - routes/hub-dashboard.js
+      - tests/unit/parcel-item-mutation-service.test.js
+      - tests/unit/hub-dashboard-route.test.js
 permissions:
   contents: write
 concurrency:
