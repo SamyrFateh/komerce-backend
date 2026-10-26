@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "kind": "TERMINAL_STATE_IMMUTABILITY",
+  "source": "routes/unsold.js",
+  "sourceSha256": "80149ebc2b29f65d5330936ef31fe6fcb205e31d5d442e9877bde8af9998941f",
+  "contractSource": "features/unsold-resolution.feature.js classification lifecycle: available -> four terminal states, irreversible",
+  "contractApproved": false,
+  "authExecuted": false,
+  "fullHttpExecuted": false,
+  "cases": [
+    {
+      "rep": 1,
+      "scenario": "nominal_available_to_terminal",
+      "before": {
+        "status": "available",
+        "resolved_at": null,
+        "resolved_price_kmf": null
+      },
+      "response": {
+        "code": 200,
+        "body": {
+          "status": "sold_whatsapp",
+          "resolvedAt": "Mon Oct 26 2026 19:36:08 GMT+0000 (Coordinated Universal Time)"
+        }
+      },
+      "after": {
+        "status": "sold_whatsapp",
+        "resolved_at": "2026-10-26T19:36:08.889Z",
+        "resolved_price_kmf": 1100
+      },
+      "contradiction": false
+    },
+    {
+      "rep": 1,
+      "scenario": "mutation_terminal_to_terminal",
+      "before": {
+        "status": "sold_whatsapp",
+        "resolved_at": "2026-01-02T00:00:00.000Z",
+        "resolved_price_kmf": 1800
+      },
+      "response": {
+        "code": 409,
+        "body": {
+          "resolvedAt": null
+        }
+      },
+      "after": {
+        "status": "sold_whatsapp",
+        "resolved_at": "2026-01-02T00:00:00.000Z",
+        "resolved_price_kmf": 1800
+      },
+      "contradiction": false
+    },
+    {
+      "rep": 2,
+      "scenario": "nominal_available_to_terminal",
+      "before": {
+        "status": "available",
+        "resolved_at": null,
+        "resolved_price_kmf": null
+      },
+      "response": {
+        "code": 200,
+        "body": {
+          "status": "sold_whatsapp",
+          "resolvedAt": "Mon Oct 26 2026 19:36:08 GMT+0000 (Coordinated Universal Time)"
+        }
+      },
+      "after": {
+        "status": "sold_whatsapp",
+        "resolved_at": "2026-10-26T19:36:08.889Z",
+        "resolved_price_kmf": 1100
+      },
+      "contradiction": false
+    },
+    {
+      "rep": 2,
+      "scenario": "mutation_terminal_to_terminal",
+      "before": {
+        "status": "sold_whatsapp",
+        "resolved_at": "2026-01-02T00:00:00.000Z",
+        "resolved_price_kmf": 1800
+      },
+      "response": {
+        "code": 409,
+        "body": {
+          "resolvedAt": null
+        }
+      },
+      "after": {
+        "status": "sold_whatsapp",
+        "resolved_at": "2026-01-02T00:00:00.000Z",
+        "resolved_price_kmf": 1800
+      },
+      "contradiction": false
+    }
+  ],
+  "rollbackVerified": true,
+  "verdict": "NO_VIOLATION_OBSERVED",
+  "evidenceHash": "8278452f6149ad4c965e610c56ad12168a4c7a88bb24dd0539f733bb1cb9ed63"
+}
