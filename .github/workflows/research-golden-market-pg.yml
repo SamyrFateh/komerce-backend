@@ -1,0 +1,58 @@
+name: R&D ECO Golden market PostgreSQL A/B
+on:
+  push:
+    branches:
+      - research/golden-continuity-checkpoints-20261026
+    paths:
+      - .github/workflows/research-golden-market-pg.yml
+      - scripts/research/golden-market-postgres-proof.js
+      - services/golden-checkout-thread.js
+permissions:
+  contents: read
+concurrency:
+  group: research-golden-market-pg
+  cancel-in-progress: true
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
+      KOMERCE_DISABLE_CRONS: 'true'
+      FP_GOLDEN_PG_OUTPUT: /tmp/golden-cross-market-pg-proof.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install repo dependencies
+        run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
+      - name: Bootstrap disposable canonical schema
+        run: |
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-golden-schema.log
+          node scripts/ci-db-bootstrap.js
+      - name: Golden market A/B with outer ROLLBACK
+        run: node scripts/research/golden-market-postgres-proof.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-market-pg-proof-${{ github.run_id }}
+          path: /tmp/golden-cross-market-pg-proof.json
+          if-no-files-found: ignore
+          retention-days: 5
