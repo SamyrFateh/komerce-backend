@@ -128,6 +128,12 @@ for(const {domain:area,route:targetRoute} of screens){
           }
         });
 
+        if(process.env.E2E_INTERACTIVE_PAUSE==='1'){
+          await test.step('Pause manuelle — inspecter et cliquer sans écriture serveur',async()=>{
+            await page.pause(); // Playwright Inspector: Resume to complete the proof.
+          });
+        }
+
         await test.step('Vérifier version finale et absence d’écriture',async()=>{
           const end=await page.request.get('/health/version');
           expect(end.status()).toBe(200);
