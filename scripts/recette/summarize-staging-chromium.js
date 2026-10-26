@@ -16,6 +16,8 @@ const files=fs.existsSync(dir)?fs.readdirSync(dir).filter(x=>x.endsWith('.json')
 const runs=files.map(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')));
 const preflightFile=path.join(root,'credentials-preflight.json');
 const credentialPreflight=fs.existsSync(preflightFile)?JSON.parse(fs.readFileSync(preflightFile,'utf8')):null;
+const deploymentPreflightFile=path.join(root,'deployment-preflight.json');
+const deploymentPreflight=fs.existsSync(deploymentPreflightFile)?JSON.parse(fs.readFileSync(deploymentPreflightFile,'utf8')):null;
 const q=x=>'"'+String(x??'').replace(/"/g,'""').replace(/[\r\n]/g,' ')+'"';
 const csv=rows=>rows.map(row=>row.map(q).join(',')).join('\n')+'\n';
 const allFindings=runs.flatMap(r=>r.findings.map(f=>({...f,role:r.role,viewport:r.viewport})));
@@ -37,12 +39,15 @@ fs.writeFileSync(path.join(root,'markets-processes-matrix.csv'),csv(matrix));
 const routeCount=runs.reduce((n,r)=>n+r.routes.length,0);
 const clicked=edges.filter(e=>e.kind==='clicked').length;
 const nominalRedirects=runs.reduce((sum,r)=>sum+(r.canonicalRedirects||[]).length,0);
+const expectedDenied=runs.reduce((sum,r)=>sum+(r.expectedDenials||[]).length,0);
 const versions=runs.map(r=>'- '+r.role+'/'+r.viewport+': '+(r.version||'SHA NON PROUVE')).join('\n');
 const report=[
  '# Komerce — Chromium staging reel', '',
  'Profils executes: '+runs.length,
  'Profils configures dans le run: '+(credentialPreflight?credentialPreflight.selected_roles.join(', '):'non determines'),
  'Audit des identifiants: '+(credentialPreflight?credentialPreflight.status:'PRECHECK_NOT_RECORDED'),
+ 'Alignement code deploye: '+(deploymentPreflight?deploymentPreflight.status:'DEPLOY_PREFLIGHT_NOT_RECORDED'),
+ 'Refus attendus observes (hors findings): '+expectedDenied,
  'Noms des secrets manquants (valeurs jamais journalisees): '+(credentialPreflight?credentialPreflight.missing_secret_names.join(', ')||'aucun detecte':'inconnu'),
  'Routes observees: '+routeCount,
  'Transitions reellement cliquees: '+clicked,
@@ -59,6 +64,7 @@ const report=[
  ...allFindings.map(f=>'- ['+f.severity+'] '+f.role+'/'+f.viewport+' '+f.code+' : '+f.detail), '',
  '## Preuves archivees', '',
  '- evidence/*.json et evidence/*.jpg: pages, contexte, codes HTTP et captures',
+ '- deployment-preflight.json: preuve SHA staging avant lancement navigateur',
  '- navigation-graph.json: liens decouverts et effectivement cliques',
  '- findings.csv: backlog triable',
  '- markets-processes-matrix.csv: matrice non prouvee != PASS',
@@ -67,4 +73,4 @@ const report=[
  '+ vrais parcours positifs et negatifs + nettoyage selectif + validation humaine.'
 ];
 fs.writeFileSync(path.join(root,'rapport.md'),report.join('\n')+'\n');
-console.log(JSON.stringify({runs:runs.length,routeCount,clicked,nominalRedirects,findings:allFindings.length,matrixRows:matrix.length-1}));
+console.log(JSON.stringify({runs:runs.length,routeCount,clicked,nominalRedirects,expectedDenied,findings:allFindings.length,matrixRows:matrix.length-1}));
