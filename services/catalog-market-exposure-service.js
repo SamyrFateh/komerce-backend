@@ -8,7 +8,7 @@
  * @outputs       product_market_exposure read model
  * @depends       services/product-publication-guard.js
  * @used-by       services/market-delegation-catalog-service.js, services/catalog-public-view.js
- * @db-read       product_market_exposure, products, markets, catalog_media
+ * @db-read       product_market_exposure, products, markets, catalog_media, sourcing_candidates
  * @db-write      product_market_exposure
  * @db-txn        caller_transaction_preserved
  * @doctrine      writer_not_owner_boundary, catalog_stays_unique_exposure_is_projection, missing_exposure_is_disabled
@@ -103,6 +103,11 @@ async function listReviewCandidatesForMarket(marketId, executor = db, { limit = 
   const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
   const { rows } = await executor.query(
     `SELECT p.*,
+            EXISTS (
+              SELECT 1 FROM sourcing_candidates sc
+               WHERE sc.product_id = p.id
+                 AND sc.state = 'imported_to_catalog'
+            ) AS has_sourcing_candidate,
             (
               SELECT COUNT(*)::int
                 FROM catalog_media cm
@@ -125,7 +130,10 @@ async function listReviewCandidatesForMarket(marketId, executor = db, { limit = 
   const ready = rows.filter(row => validatePublicationUpdate({
     before: row,
     patch: { is_active: true },
-    context: { catalogMediaCount: Number(row.active_media || 0) },
+    context: {
+      catalogMediaCount: Number(row.active_media || 0),
+      allowDeferredLocalPrice: row.has_sourcing_candidate === true,
+    },
   }).ok);
 
   return {

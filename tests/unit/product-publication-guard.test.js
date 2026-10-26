@@ -54,6 +54,39 @@ describe('product-publication-guard', () => {
     })).toMatchObject({ ok: false, code: 'invalid_price' });
   });
 
+  it('admet le prix GLOBAL différé uniquement pour un brouillon fournisseur correctement certifié par le caller', () => {
+    const before = {
+      name: 'Chargeur universel',
+      description: 'Chargeur USB-C de voyage compatible avec plusieurs appareils récents.',
+      category: 'tech',
+      price_kmf: null,
+      stock: 12,
+      is_active: false,
+      is_available: false,
+      lifecycle_status: 'candidate',
+      content_source: 'manual',
+      source_locale: 'fr',
+    };
+    const options = {
+      before,
+      patch: { is_active: true, is_available: true },
+      context: { catalogMediaCount: 1, allowDeferredLocalPrice: true },
+    };
+    expect(validatePublicationUpdate(options)).toEqual({ ok: true });
+    expect(validatePublicationUpdate({ ...options,
+      context: { catalogMediaCount: 1 },
+    })).toMatchObject({ ok: false, code: 'invalid_price' });
+    expect(validatePublicationUpdate({ ...options,
+      before: { ...before, price_kmf: 0 },
+    })).toMatchObject({ ok: false, code: 'invalid_price' });
+    expect(validatePublicationUpdate({ ...options,
+      before: { ...before, price_kmf: -20 },
+    })).toMatchObject({ ok: false, code: 'invalid_price' });
+    expect(validatePublicationUpdate({ ...options,
+      patch: { ...options.patch, price_kmf: 0 },
+    })).toMatchObject({ ok: false, code: 'invalid_price' });
+  });
+
   it('validatePublicationUpdate bloque publication sans nom, categorie, prix ou stock valide', () => {
     const base = { name: 'Riz', category: 'food', price_kmf: 1000, stock: 1, is_active: false, is_available: false };
 

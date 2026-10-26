@@ -123,7 +123,16 @@ function validatePublicationUpdate({ before, patch, context }) {
     return { ok: true };
   }
 
-  const priceKmf = patch.price_kmf !== undefined ? Number(patch.price_kmf) : Number(before.price_kmf || 0);
+  const rawPrice = patch.price_kmf !== undefined ? patch.price_kmf : before.price_kmf;
+  // The global Catalogue is not a sales market. A supplier-certified draft may
+  // be approved without a GLOBAL selling price. Its market price is chosen
+  // later by the market operator and must be LOCAL_ACTIVE before any buyer
+  // visibility or checkout. This exception is only injected by trusted domain
+  // owners for a source-linked candidate; explicit zero/negative prices are
+  // still invalid.
+  const deferredLocalPrice = context?.allowDeferredLocalPrice === true
+    && (rawPrice === null || rawPrice === undefined);
+  const priceKmf = deferredLocalPrice ? null : Number(rawPrice);
   const stock = patch.stock !== undefined ? patch.stock : before.stock;
   const name = patch.name !== undefined ? patch.name : before.name;
   const category = patch.category !== undefined ? patch.category : before.category;
@@ -134,7 +143,7 @@ function validatePublicationUpdate({ before, patch, context }) {
   if (!category || String(category).trim().length < 2) {
     return { ok: false, code: 'missing_category', error: 'Publication refusée : catégorie produit manquante' };
   }
-  if (!Number.isFinite(priceKmf) || priceKmf <= 0) {
+  if (!deferredLocalPrice && (!Number.isFinite(priceKmf) || priceKmf <= 0)) {
     return { ok: false, code: 'invalid_price', error: 'Publication refusée : price_kmf doit être strictement positif' };
   }
   if (stock !== null && stock !== undefined) {

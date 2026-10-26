@@ -88,7 +88,12 @@ function evaluateCatalogProductCertification(row = {}, options = {}) {
       is_available: false,
     },
     patch: { is_active: true, is_available: true },
-    context: { catalogMediaCount: Number(row.active_media || 0) },
+    context: {
+      catalogMediaCount: Number(row.active_media || 0),
+      // Only source-linked, structurally certified catalogue drafts may defer
+      // the global reference price. Market-local buyer activation stays gated.
+      allowDeferredLocalPrice: row.has_sourcing_candidate === true,
+    },
   });
   if (!publication.ok) reasons.push(`publication_guard:${publication.code}`);
 

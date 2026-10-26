@@ -127,6 +127,33 @@ describe('catalog-market-exposure-service (catalog write boundary)', () => {
     expect(params).toEqual(['mkt-cm']);
   });
 
+  test('le marché voit un brouillon sourcé sans prix global lorsque le contenu est déjà validé', async () => {
+    const db = executor();
+    db.query.mockResolvedValueOnce({ rows: [
+      {
+        id:'p-sourced', product_ref:'KPR-000123', name:'Chargeur USB-C',
+        description:'Chargeur de voyage compact adapté aux appareils récents.',
+        category:'Tech', price_kmf:null, stock:5, is_active:false,
+        is_available:false, lifecycle_status:'candidate',
+        content_source:'manual', source_locale:'fr', needs_review:false,
+        has_sourcing_candidate:true, active_media:1,
+      },
+      {
+        id:'p-unsourced', product_ref:'KPR-000124', name:'Chargeur non sourcé',
+        description:'Chargeur de voyage compact adapté aux appareils récents.',
+        category:'Tech', price_kmf:null, stock:5, is_active:false,
+        is_available:false, lifecycle_status:'candidate',
+        content_source:'manual', source_locale:'fr', needs_review:false,
+        has_sourcing_candidate:false, active_media:1,
+      },
+    ]});
+    const result = await exposureService.listReviewCandidatesForMarket('mkt-km',db);
+    expect(result.total).toBe(1);
+    expect(result.items[0].product_ref).toBe('KPR-000123');
+    const sql = db.query.mock.calls[0][0];
+    expect(sql).toMatch(/EXISTS\s*\(\s*SELECT 1 FROM sourcing_candidates sc/);
+  });
+
   test('le module n’écrit jamais dans products — le catalogue reste unique et intact', () => {
     const fs = require('fs');
     const path = require('path');
