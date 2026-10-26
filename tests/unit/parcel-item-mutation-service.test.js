@@ -44,7 +44,9 @@ describe('parcel-item-mutation-service', () => {
       quantity: 3,
     });
 
-    expect(executor.query.mock.calls[0][0]).toContain('VALUES ($1, $2, $3, $4)');
+    expect(executor.query.mock.calls[0][0]).toContain('SELECT $1, oi.id, oi.product_id, $4::integer');
+    expect(executor.query.mock.calls[0][0]).toContain('oi.product_id = $3');
+    expect(executor.query.mock.calls[0][0]).toContain('$4::integer <= oi.quantity');
     expect(executor.query.mock.calls[0][0]).not.toContain('RETURNING');
     expect(executor.query.mock.calls[0][1]).toEqual(['parcel-1', 'item-1', 'product-1', 3]);
   });
