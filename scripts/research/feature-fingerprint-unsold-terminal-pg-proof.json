@@ -20,12 +20,12 @@
         "code": 200,
         "body": {
           "status": "sold_whatsapp",
-          "resolvedAt": "Mon Oct 26 2026 19:55:52 GMT+0000 (Coordinated Universal Time)"
+          "resolvedAt": "Mon Oct 26 2026 19:57:40 GMT+0000 (Coordinated Universal Time)"
         }
       },
       "after": {
         "status": "sold_whatsapp",
-        "resolved_at": "2026-10-26T19:55:52.181Z",
+        "resolved_at": "2026-10-26T19:57:40.960Z",
         "resolved_price_kmf": 1100
       },
       "contradiction": false
@@ -63,12 +63,12 @@
         "code": 200,
         "body": {
           "status": "sold_whatsapp",
-          "resolvedAt": "Mon Oct 26 2026 19:55:52 GMT+0000 (Coordinated Universal Time)"
+          "resolvedAt": "Mon Oct 26 2026 19:57:40 GMT+0000 (Coordinated Universal Time)"
         }
       },
       "after": {
         "status": "sold_whatsapp",
-        "resolved_at": "2026-10-26T19:55:52.181Z",
+        "resolved_at": "2026-10-26T19:57:40.960Z",
         "resolved_price_kmf": 1100
       },
       "contradiction": false
@@ -97,5 +97,5 @@
   ],
   "rollbackVerified": true,
   "verdict": "NO_VIOLATION_OBSERVED",
-  "evidenceHash": "66462cce49d21a370a83dc4d0683839bc0352a6ab062e7b1d9103cfe58dfa64a"
+  "evidenceHash": "8b10d2e24f937b9ee9a5f12bdc7bf1c068333e0d1444b92a5889d1c9d6c3b964"
 }
