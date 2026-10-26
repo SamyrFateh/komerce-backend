@@ -63,3 +63,24 @@ test('an absent chain cannot become certified',()=>{
  assert.equal(r.totals.evidence_gaps,3);
  assert.equal(r.no_go_granted,true);
 });
+
+test('upstream purchase SKU anomaly contradicts Golden quantity-only purchasing PASS',()=>{
+ const u=base(),d=fulfillment();
+ u.gates.push({key:'CUSTOMER_ORDER_PROVED',status:'ANOMALIE',anomalies:['SKU_SUBSTITUTION:oi-1']});
+ const r=projectContinuity(u,d);
+ assert.ok(cp(r,'P3_TO_P6_PAYMENT_TO_FINANCE').contradictions.includes('UPSTREAM_PURCHASE_SKU_ANOMALY_VS_GOLDEN_PURCHASING_PASS'));
+});
+test('guarded Purchasing false is no longer a contradictory PASS for wrong SKU',()=>{
+ const u=base(),d=fulfillment();
+ u.gates.push({key:'CUSTOMER_ORDER_PROVED',status:'ANOMALIE',anomalies:['SKU_SUBSTITUTION:oi-1']});
+ d.steps.find(x=>x.key==='PURCHASING').passed=false;
+ const r=projectContinuity(u,d);
+ assert.equal(cp(r,'P3_TO_P6_PAYMENT_TO_FINANCE').contradictions.includes('UPSTREAM_PURCHASE_SKU_ANOMALY_VS_GOLDEN_PURCHASING_PASS'),false);
+ assert.equal(cp(r,'P3_TO_P6_PAYMENT_TO_FINANCE').status,'EVIDENCE_GAP');
+});
+test('do not call a missing upstream SKU proof a confirmed bug',()=>{
+ const u=base(),d=fulfillment();
+ const r=projectContinuity(u,d);
+ assert.ok(cp(r,'P3_TO_P6_PAYMENT_TO_FINANCE').gaps.includes('UPSTREAM_PURCHASE_IDENTITY_NOT_PROVED'));
+ assert.equal(r.totals.contradiction_hypotheses,0);
+});
