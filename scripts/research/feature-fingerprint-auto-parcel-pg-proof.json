@@ -1,7 +1,7 @@
 {
   "version": 1,
   "codeSource": "services/auto-parcel.js",
-  "sourceSha256": "39ad8cf05c02e67016911cbb40e038d2cb7c39a7c5300a102a9ce2778b51e6ca",
+  "sourceSha256": "95b0fd3089c362fcbc308bf9b141c3d3ca17392a1a47ce00faf50b5d30ff3e19",
   "postgres": true,
   "fullHttp": false,
   "scenarioCount": 4,
@@ -48,17 +48,17 @@
       "after": {
         "active": 0,
         "cancelled": 1,
-        "active_parcels": 1
+        "active_parcels": 0
       },
       "response": {
-        "success": true,
+        "success": false,
         "already_assigned": false,
         "queued": false,
-        "parcel_created": true,
-        "items_assigned": 1
+        "parcel_created": false,
+        "items_assigned": 0
       },
       "actualNewActive": 0,
-      "contradiction": true
+      "contradiction": false
     },
     {
       "rep": 2,
@@ -100,20 +100,20 @@
       "after": {
         "active": 0,
         "cancelled": 1,
-        "active_parcels": 1
+        "active_parcels": 0
       },
       "response": {
-        "success": true,
+        "success": false,
         "already_assigned": false,
         "queued": false,
-        "parcel_created": true,
-        "items_assigned": 1
+        "parcel_created": false,
+        "items_assigned": 0
       },
       "actualNewActive": 0,
-      "contradiction": true
+      "contradiction": false
     }
   ],
   "rollbackVerified": true,
-  "verdict": "UNAPPROVED_CONTRADICTION",
-  "evidenceHash": "08167a036b1d601b1f0a10333c273bab09eef747e583d7fb4c12241e0988f258"
+  "verdict": "NO_VIOLATION_OBSERVED",
+  "evidenceHash": "97d0bf5e3cc58bec7ed92923b4508a5a49c1bcc0d446a9df390f217b3b7076f0"
 }
