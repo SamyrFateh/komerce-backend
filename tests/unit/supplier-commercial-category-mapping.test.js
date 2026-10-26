@@ -45,3 +45,20 @@ test('CJ path punctuation variants share one canonical path without merging diff
  expect(normalizePath('Home, Garden & Furniture > Home Storage > Bathroom Storage'))
    .not.toBe(normalizePath('Home, Garden & Furniture > Home Storage > Home Office Storage'));
 });
+
+test('proposes an existing boutique pair, prefers confirmed mapping, never returns customs',()=>{
+  const {rankCommercialPairs}=require('../../services/supplier-commercial-category-mapping');
+  const pairs=[
+    {category:'Tech',category_label:'Tech',subcategory:'Phones',subcategory_label:'Téléphones'},
+    {category:'Tech',category_label:'Tech',subcategory:'Audio',subcategory_label:'Audio'},
+    {category:'Maison',category_label:'Maison',subcategory:'Salon',subcategory_label:'Salon'},
+  ];
+  expect(rankCommercialPairs(pairs,{supplier_category:'Consumer Electronics > Phones',
+    product_name:'Phone case'} )[0]).toMatchObject({
+      category:'Tech',subcategory:'Phones',confidence:'review_required'});
+  expect(rankCommercialPairs(pairs,{supplier_category:'Other',product_name:'Unknown'},
+    {category:'Tech',subcategory:'Audio'})[0]).toMatchObject({
+      category:'Tech',subcategory:'Audio',confidence:'confirmed'});
+  expect(rankCommercialPairs(pairs,{supplier_category:'Unmatched',product_name:'Unknown'}))
+    .toEqual([]);
+});
