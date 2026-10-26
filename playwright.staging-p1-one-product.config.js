@@ -22,9 +22,9 @@ module.exports=defineConfig({
   workers:1,fullyParallel:false,retries:0,
   outputDir:'test-results/staging-p1-one-product/raw',
   reporter:[['list'],['html',{outputFolder:'test-results/staging-p1-one-product/html',open:'never'}]],
+  // Only desktop dashboards/storefront are certified in this phase.
   projects:[
-    {name:'P1-functional desktop',use:{viewport:{width:1440,height:900}}},
-    {name:'P1-functional mobile',use:{viewport:{width:390,height:844},isMobile:true,hasTouch:true}}
+    {name:'P1-functional desktop',use:{viewport:{width:1440,height:900}}}
   ],
   use:{
     baseURL:ORIGIN,browserName:'chromium',locale:'fr-FR',headless:true,

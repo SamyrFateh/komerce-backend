@@ -4,7 +4,7 @@
  * @domain catalog
  * @layer test-config
  * @owner backend-core
- * @purpose Real staging Playwright 20-product P1 proof, desktop/mobile, human-gated manual curation.
+ * @purpose Real staging Playwright 20-product P1 proof, desktop only, human-gated manual curation.
  * @impact-areas sourcing, catalog, market, pricing, boutique, staging-only
  */
 'use strict';
@@ -20,9 +20,9 @@ module.exports=defineConfig({
   workers:1,fullyParallel:false,retries:0,
   outputDir:'test-results/staging-p1-20/raw',
   reporter:[['list'],['html',{outputFolder:'test-results/staging-p1-20/html',open:'never'}]],
+  // Current certification scope: desktop only. Mobile is deferred.
   projects:[
-    {name:'P1-20 desktop',use:{viewport:{width:1440,height:900}}},
-    {name:'P1-20 mobile',use:{viewport:{width:390,height:844},isMobile:true,hasTouch:true}}
+    {name:'P1-20 desktop',use:{viewport:{width:1440,height:900}}}
   ],
   use:{
     baseURL:HOST,browserName:'chromium',locale:'fr-FR',
