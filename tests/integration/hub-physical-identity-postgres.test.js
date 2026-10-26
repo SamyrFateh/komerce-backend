@@ -870,3 +870,51 @@ describe('C2 — couverture physique quantitative avant préparation (PO histori
     expect((await coverage(purchase.order)).covered).toBe(true);
   });
 });
+
+describe('FP-PURCHASING-HUB — submitted PO authority A/B [experimental]', () => {
+  test('FP-PURCHASING-HUB: confirmed & notified nominal vs pending (twice)', async () => {
+    const evidence = [];
+    for (let round = 1; round <= 2; round += 1) {
+      const confirmed = await seedPurchase({qty:1,supplierUnitRef:'FP-CONFIRMED-'+round});
+      const nominal = await transact(client => receiveSupplierPackage(client, {
+        reference:'FP-CONFIRMED-ARRIVAL-'+round, contents:[{purchase_order_id:confirmed.po,quantity:1}],
+      }));
+      expect(nominal.quarantined).toBe(false);
+      expect(nominal.allocations).toHaveLength(1);
+
+      const notifiedPo = await seedPurchase({qty:1,supplierUnitRef:'FP-NOTIFIED-'+round});
+      await query("UPDATE purchase_orders SET status='notified' WHERE id=$1",[notifiedPo.po]);
+      const notified = await transact(client => receiveSupplierPackage(client, {
+        reference:'FP-NOTIFIED-ARRIVAL-'+round, contents:[{purchase_order_id:notifiedPo.po,quantity:1}],
+      }));
+      expect(notified.quarantined).toBe(false);
+      expect(notified.allocations).toHaveLength(1);
+
+      const pending = await seedPurchase({qty:1,supplierUnitRef:'FP-NOT-SUBMITTED-'+round});
+      await query("UPDATE purchase_orders SET status='pending' WHERE id=$1",[pending.po]);
+      const perturbed = await transact(client => receiveSupplierPackage(client, {
+        reference:'FP-PENDING-ARRIVAL-'+round, contents:[{purchase_order_id:pending.po,quantity:1}],
+      }));
+      const allocationCount = Number((await query(
+        'SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations WHERE purchase_order_id=$1',[pending.po]
+      )).rows[0].n);
+      const violation = !perturbed.quarantined && allocationCount > 0;
+      const proof = {round,
+        nominal:{status:'confirmed',quarantined:nominal.quarantined,allocations:nominal.allocations.length},
+        submitted:{status:'notified',quarantined:notified.quarantined,allocations:notified.allocations.length},
+        perturbation:{status:'pending',quarantined:perturbed.quarantined,
+          reason_code:perturbed.reason_code||null,allocations:allocationCount},
+        violation};
+      evidence.push(proof);
+      if(process.env.FP_EXPECT_PURCHASING_HUB_GUARD==='true'){
+        expect(violation).toBe(false);
+        expect(perturbed).toMatchObject({quarantined:true,reason_code:'HUB_PURCHASE_ORDER_NOT_SUBMITTED'});
+        expect(allocationCount).toBe(0);
+      }
+    }
+    console.log('FP_PURCHASING_HUB_PROOF '+JSON.stringify({
+      contract:'non-submitted PO must not become economic allocation',
+      provenance:'actual services/hub-physical-identity.js + migrations isolated PG',
+      scenarios:evidence,violations:evidence.filter(x=>x.violation).length}));
+  });
+});
