@@ -125,10 +125,19 @@ router.post('/:id/resolve', authenticate, requireAdmin, async (req, res, next) =
            resolved_price_kmf = $2,
            reseller_id        = $3,
            notes              = COALESCE($4, notes)
-       WHERE id = $5 RETURNING *`,
+       WHERE id = $5 AND status = 'available' RETURNING *`,
       [status, resolved_price_kmf, reseller_id, notes, req.params.id]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
+    if (!rows.length) {
+      const { rows: existing } = await db.query(
+        'SELECT status FROM unsold_items WHERE id = $1', [req.params.id]
+      );
+      if (!existing.length) return res.status(404).json({ error: 'Invendu introuvable' });
+      return res.status(409).json({
+        error: 'Invendu déjà résolu — statut terminal non modifiable',
+        code: 'UNSOLD_ALREADY_RESOLVED',
+      });
+    }
     res.json(rows[0]);
   } catch(err) { next(err); }
 });
