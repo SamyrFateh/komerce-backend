@@ -111,9 +111,11 @@ const SCREEN_ORACLES=Object.freeze({
     evidence:'.kir-main, .kir-empty-launch'
   },
   '03-catalogue-global':{
-    root:'.kmc-operations-workspace',
-    heading:'h1.kmc-workspace-title',title:'Catalogue global',
-    evidence:'.kmc-workspace-section'
+    // The canonical admin shell now renders the commercial catalogue header,
+    // not the legacy kmc-workspace-title/layout.
+    root:'main',
+    heading:'h1',title:'Catalogue commercial',
+    evidence:'h2:has-text("Catalogue global commercial")'
   },
   '04-decision-marche':{
     root:'#market-catalog-root[data-workspace-kind="market-catalog"]',
@@ -121,9 +123,10 @@ const SCREEN_ORACLES=Object.freeze({
     evidence:'[data-market-catalog-overview="decision-first-v1"]'
   },
   '05-prix-local':{
-    root:'.kmc-pricing-approved-layout',
-    heading:'h1.kmc-workspace-title',title:'Modèle de coûts · KM',
-    evidence:'.kmc-market-decision-hero'
+    // KM economy is exposed through the canonical "Atelier des prix" shell.
+    root:'main',
+    heading:'h1',title:'Atelier des prix · Comores',
+    evidence:'h2:has-text("Situation économique")'
   },
   '06-boutique':{
     root:'#k-grid',
