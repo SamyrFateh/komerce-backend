@@ -17,7 +17,7 @@
       "responseField": "items_created",
       "collection": "newUnsold",
       "basis": "Response effect count uses collection length while preceding INSERT may be suppressed",
-      "codeSha256": "5a8ceca198aa53e1b54d127c19c9c81dc32a532844ff6ca5f4f9176114562f3d",
+      "codeSha256": "80149ebc2b29f65d5330936ef31fe6fcb205e31d5d442e9877bde8af9998941f",
       "status": "H0_UNVERIFIED",
       "priority": "investigate",
       "provenance": {
@@ -47,5 +47,5 @@
     "hypotheses": 2,
     "unknownTrueBugs": "NOT_MEASURED"
   },
-  "digest": "85208f764d5324186cb5c0687c844aa8d3924a413aa09c50ff16e9cf04f7abb8"
+  "digest": "d2677b66876267885b886dd00d87133b20cc6c3a721b95077ba67958df1ac2e8"
 }

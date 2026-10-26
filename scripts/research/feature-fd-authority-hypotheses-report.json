@@ -1,0 +1,2819 @@
+{
+  "schema": "feature-fd-authority-hypotheses/v1",
+  "statement": "Provenance-based risk hypotheses, NOT demonstrated vulnerabilities",
+  "scope": {
+    "features": 36,
+    "schemaTables": 213,
+    "mappedFiles": 574
+  },
+  "metrics": {
+    "hypotheses": 105,
+    "approvedOracles": 0
+  },
+  "findings": [
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "routes/admin/system.js",
+      "line": 345,
+      "feature": [
+        "dashboard"
+      ],
+      "childTable": "orders",
+      "parentTable": "users",
+      "relationship": "user_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "auth-identity",
+        "infrastructure"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "b04dc2d46bd83b9d70007e0aec9dab90e1561606b44b8086257b487f9c7726d5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "routes/admin/system.js",
+      "line": 454,
+      "feature": [
+        "dashboard"
+      ],
+      "childTable": "parcels",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "b04dc2d46bd83b9d70007e0aec9dab90e1561606b44b8086257b487f9c7726d5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "routes/admin/system.js",
+      "line": 491,
+      "feature": [
+        "dashboard"
+      ],
+      "childTable": "parcel_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "product_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "b04dc2d46bd83b9d70007e0aec9dab90e1561606b44b8086257b487f9c7726d5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "routes/admin/system.js",
+      "line": 546,
+      "feature": [
+        "dashboard"
+      ],
+      "childTable": "scan_events",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "b04dc2d46bd83b9d70007e0aec9dab90e1561606b44b8086257b487f9c7726d5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "routes/admin/system.js",
+      "line": 610,
+      "feature": [
+        "dashboard"
+      ],
+      "childTable": "invoices",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "documents"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "b04dc2d46bd83b9d70007e0aec9dab90e1561606b44b8086257b487f9c7726d5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/auto-parcel.js",
+      "line": 175,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcels",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "95b0fd3089c362fcbc308bf9b141c3d3ca17392a1a47ce00faf50b5d30ff3e19"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/auto-parcel.js",
+      "line": 208,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcel_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "product_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "95b0fd3089c362fcbc308bf9b141c3d3ca17392a1a47ce00faf50b5d30ff3e19"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/auto-parcel.js",
+      "line": 217,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcel_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "95b0fd3089c362fcbc308bf9b141c3d3ca17392a1a47ce00faf50b5d30ff3e19"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cash-confirmation-control-service.js",
+      "line": 183,
+      "feature": [
+        "payments"
+      ],
+      "childTable": "cash_confirmation_controls",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "market_id",
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "payments"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "e4058f9a3e47dd2660c568a0720903ef0ba6c41ca85fed86a2f080fd559ed826"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cash-operations.js",
+      "line": 122,
+      "feature": [
+        "payments"
+      ],
+      "childTable": "cash_collections",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "payments"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "eb5d25a04963e7fa243e50b018f5bc08c7b63eb2d3bebfd69c03a5c0f86881fd"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/confirm-pickup-cash-payment.js",
+      "line": 227,
+      "feature": [
+        "payments"
+      ],
+      "childTable": "cash_collections",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "payments"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "c2532a98f5eb4e9d6ecc00b3d65b4ae64d88654298c275d24f221918807ca5ba"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 245,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 245,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 245,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id",
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 257,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 257,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 257,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id",
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 401,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 401,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 598,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/allocate.js",
+      "line": 668,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d471f8bd9dfe979839d43cfffb2abf41381393329ee146893cc518a1a98e0d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/cost-allocation/manual-cost-entry-service.js",
+      "line": 100,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "a05fa7c2a92cffdb33df19856fb6364d5eff0b27178d755b5090f0b16c17c2cb"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/customs-shipment-service.js",
+      "line": 519,
+      "feature": [
+        "customs"
+      ],
+      "childTable": "customs_shipment_parcels",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "0ec4514f9361db2dcb34b5a735eb3d5330bdfadfbacfece9bf92e70771e5e85f"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/customs-shipment-service.js",
+      "line": 666,
+      "feature": [
+        "customs"
+      ],
+      "childTable": "customs_shipment_parcels",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "0ec4514f9361db2dcb34b5a735eb3d5330bdfadfbacfece9bf92e70771e5e85f"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/customs-shipment-service.js",
+      "line": 895,
+      "feature": [
+        "customs"
+      ],
+      "childTable": "customs_shipment_parcels",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "0ec4514f9361db2dcb34b5a735eb3d5330bdfadfbacfece9bf92e70771e5e85f"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/customs-shipment-service.js",
+      "line": 1177,
+      "feature": [
+        "customs"
+      ],
+      "childTable": "customs_shipment_parcel_events",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "0ec4514f9361db2dcb34b5a735eb3d5330bdfadfbacfece9bf92e70771e5e85f"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/customs-shipment-service.js",
+      "line": 1211,
+      "feature": [
+        "customs"
+      ],
+      "childTable": "customs_shipment_parcels",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "0ec4514f9361db2dcb34b5a735eb3d5330bdfadfbacfece9bf92e70771e5e85f"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/documents/document-service.js",
+      "line": 97,
+      "feature": [
+        "documents"
+      ],
+      "childTable": "transaction_documents",
+      "parentTable": "refunds",
+      "relationship": "refund_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "refunds"
+      ],
+      "childDeclaredWriters": [
+        "documents"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "62c6e16c90b94406c7242759caf5418541d4649f8444f3aac095a72a15d70617"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/hub-physical-identity.js",
+      "line": 292,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "hub_purchase_allocations",
+      "parentTable": "purchase_orders",
+      "relationship": "purchase_order_id",
+      "sharedIdentityColumns": [
+        "order_id",
+        "order_item_id",
+        "product_sku_id",
+        "supplier_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "logistics"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "470fba8bae065d2e1ed9e72a630dcff9f7a7cb74bbe311e5a6bb2ca472726dac"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/hub-physical-identity.js",
+      "line": 292,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "hub_purchase_allocations",
+      "parentTable": "purchase_lines",
+      "relationship": "purchase_line_id",
+      "sharedIdentityColumns": [
+        "purchase_order_id",
+        "order_item_id",
+        "product_sku_id",
+        "supplier_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "logistics"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "470fba8bae065d2e1ed9e72a630dcff9f7a7cb74bbe311e5a6bb2ca472726dac"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/hub-physical-identity.js",
+      "line": 292,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "hub_purchase_allocations",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "supplier_id",
+        "market_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "logistics"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "470fba8bae065d2e1ed9e72a630dcff9f7a7cb74bbe311e5a6bb2ca472726dac"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/hub-physical-identity.js",
+      "line": 292,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "hub_purchase_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "logistics"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "470fba8bae065d2e1ed9e72a630dcff9f7a7cb74bbe311e5a6bb2ca472726dac"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-service.js",
+      "line": 118,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "4a11ecbc7c7734723208b17f6a4c21f360729d9f321d0e94c667187780bf611b"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-service.js",
+      "line": 118,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "4a11ecbc7c7734723208b17f6a4c21f360729d9f321d0e94c667187780bf611b"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-write-service.js",
+      "line": 34,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "ddd75ecba649b6fdcec48ad8f1b8409eacf815a181494d943a043745c5efb15d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-write-service.js",
+      "line": 34,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "ddd75ecba649b6fdcec48ad8f1b8409eacf815a181494d943a043745c5efb15d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-write-service.js",
+      "line": 34,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "scan_events",
+      "relationship": "scan_event_id",
+      "sharedIdentityColumns": [
+        "parcel_id",
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "ddd75ecba649b6fdcec48ad8f1b8409eacf815a181494d943a043745c5efb15d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-write-service.js",
+      "line": 69,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "ddd75ecba649b6fdcec48ad8f1b8409eacf815a181494d943a043745c5efb15d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-write-service.js",
+      "line": 69,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "ddd75ecba649b6fdcec48ad8f1b8409eacf815a181494d943a043745c5efb15d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-write-service.js",
+      "line": 127,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "ddd75ecba649b6fdcec48ad8f1b8409eacf815a181494d943a043745c5efb15d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-write-service.js",
+      "line": 127,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "ddd75ecba649b6fdcec48ad8f1b8409eacf815a181494d943a043745c5efb15d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-write-service.js",
+      "line": 172,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "ddd75ecba649b6fdcec48ad8f1b8409eacf815a181494d943a043745c5efb15d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/incident-write-service.js",
+      "line": 456,
+      "feature": [
+        "incident-management"
+      ],
+      "childTable": "incidents",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "incident-management"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "ddd75ecba649b6fdcec48ad8f1b8409eacf815a181494d943a043745c5efb15d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/inventory-service.js",
+      "line": 72,
+      "feature": [
+        "inventory"
+      ],
+      "childTable": "inventory_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "inventory"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "53974b15b165ca2e75a1c1b0522652d33783af25fa434fdde9e9dd8ad4206c9e"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/invoice-service.js",
+      "line": 154,
+      "feature": [
+        "documents"
+      ],
+      "childTable": "invoices",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "documents"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "84bf9d4152bd1bcff6134dc6eb63670187b9fc59c8112601e78dbcf31b77b7fc"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/order-checkout-persistence.js",
+      "line": 69,
+      "feature": [
+        "orders"
+      ],
+      "childTable": "orders",
+      "parentTable": "users",
+      "relationship": "user_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "auth-identity",
+        "infrastructure"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "f0171061111fd0d969eb73838de8727149fb399a94e6efc563ad5fd12462edcd"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/order-checkout-persistence.js",
+      "line": 69,
+      "feature": [
+        "orders"
+      ],
+      "childTable": "orders",
+      "parentTable": "recipients",
+      "relationship": "recipient_id",
+      "sharedIdentityColumns": [
+        "user_id",
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "f0171061111fd0d969eb73838de8727149fb399a94e6efc563ad5fd12462edcd"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/order-checkout-persistence.js",
+      "line": 191,
+      "feature": [
+        "orders"
+      ],
+      "childTable": "order_items",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "module_fabric_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "f0171061111fd0d969eb73838de8727149fb399a94e6efc563ad5fd12462edcd"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/order-checkout-persistence.js",
+      "line": 191,
+      "feature": [
+        "orders"
+      ],
+      "childTable": "order_items",
+      "parentTable": "shared_cart_items",
+      "relationship": "shared_cart_item_id",
+      "sharedIdentityColumns": [
+        "product_id",
+        "sku_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "shared-cart"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "f0171061111fd0d969eb73838de8727149fb399a94e6efc563ad5fd12462edcd"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/order-checkout-service.js",
+      "line": 264,
+      "feature": [
+        "orders"
+      ],
+      "childTable": "recipients",
+      "parentTable": "users",
+      "relationship": "user_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "auth-identity",
+        "infrastructure"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "orders"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "7b7ae34293e5e6e03e0b6a48d420f3e1e76d146d3b3285ba97163e4ef0301e90"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/order-cost-snapshot.js",
+      "line": 189,
+      "feature": [
+        "orders"
+      ],
+      "childTable": "order_item_cost_imputations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id",
+        "product_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "orders"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "c49e2d130e7c4b14fe4a2752d359226813dfa367622a57f0bd0a600000af1e2d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/order-status-machine.js",
+      "line": 514,
+      "feature": [
+        "orders"
+      ],
+      "childTable": "order_status_history",
+      "parentTable": "scans",
+      "relationship": "scan_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "logistics",
+        "orders",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "orders"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "1f3638abdb0220e06f884dfec55e955be58e798f36193f15c2ebac997c2643aa"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-auto-create-service.js",
+      "line": 123,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcels",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "7a693e6f1be6253723c1cd46fc4fdeac95cb561e21c975d1e9092bf57918b1d0"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-auto-create-service.js",
+      "line": 145,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcel_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "product_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "7a693e6f1be6253723c1cd46fc4fdeac95cb561e21c975d1e9092bf57918b1d0"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-auto-create-service.js",
+      "line": 167,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "scan_events",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "7a693e6f1be6253723c1cd46fc4fdeac95cb561e21c975d1e9092bf57918b1d0"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-item-mutation-service.js",
+      "line": 88,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcel_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "product_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d1e57edb6f68b12b266e4462f65878790e9ce8aacb03da81d704f4c912e87531"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-mutation-service.js",
+      "line": 40,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcels",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "9c2aa97e571399936241f4e0488b46a744f0ecab79e564a7283a6fac56ab6cf8"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-mutation-service.js",
+      "line": 48,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcels",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "9c2aa97e571399936241f4e0488b46a744f0ecab79e564a7283a6fac56ab6cf8"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-mutation-service.js",
+      "line": 66,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcels",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "9c2aa97e571399936241f4e0488b46a744f0ecab79e564a7283a6fac56ab6cf8"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-mutation-service.js",
+      "line": 74,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcels",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "9c2aa97e571399936241f4e0488b46a744f0ecab79e564a7283a6fac56ab6cf8"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-operations.js",
+      "line": 212,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcels",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "0fe48b32d838bec501c8f3bb30cb1a543cc7cc27881fa603a646a42349a4c8c6"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-operations.js",
+      "line": 223,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcel_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "product_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "0fe48b32d838bec501c8f3bb30cb1a543cc7cc27881fa603a646a42349a4c8c6"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-operations.js",
+      "line": 265,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcels",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "0fe48b32d838bec501c8f3bb30cb1a543cc7cc27881fa603a646a42349a4c8c6"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcel-operations.js",
+      "line": 274,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcel_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "product_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "0fe48b32d838bec501c8f3bb30cb1a543cc7cc27881fa603a646a42349a4c8c6"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/parcelOptimizationService.js",
+      "line": 510,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "parcel_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "product_id"
+      ],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "36bb8c81668ca67731e0ac862309e7fe4121150c05a6587551a84abd4092bf41"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/payment-cash-confirm.js",
+      "line": 161,
+      "feature": [
+        "payments"
+      ],
+      "childTable": "cash_collections",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "relais_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "payments"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "fc44ad93ca4f3074a088226f97177f38d98411dbfb9f237a818715687eecdee2"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/payment-mobile-money.js",
+      "line": 254,
+      "feature": [
+        "payments"
+      ],
+      "childTable": "mobile_money_transactions",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "market_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "payments"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "891d1ded4071756a76532e1dec0e944aaa16a4e2494deed5165ff654363ecd86"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/pricing-maturity.js",
+      "line": 515,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "pricing_maturity_disposition_events",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "market_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "84148e30fa6b35170bbd8abbbae11be2b8d7731adbd16400c30bddee4868f650"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/pricing-risk-period.js",
+      "line": 222,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "economic_risk_cost_events",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "market_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d3dddfd0a9ec734cc045153bcc47d2a8e6b9f74da75308a2d0d4de4810641c2a"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/providers-service.js",
+      "line": 263,
+      "feature": [
+        "providers-services"
+      ],
+      "childTable": "services",
+      "parentTable": "providers",
+      "relationship": "provider_id",
+      "sharedIdentityColumns": [
+        "market_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "providers-services"
+      ],
+      "childDeclaredWriters": [
+        "providers-services"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "78bd1ee98f0de77413f3d64f0985da579a4674592139cdcf6f096f756c41ae99"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/providers-service.js",
+      "line": 428,
+      "feature": [
+        "providers-services"
+      ],
+      "childTable": "physical_offers",
+      "parentTable": "providers",
+      "relationship": "provider_id",
+      "sharedIdentityColumns": [
+        "market_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "providers-services"
+      ],
+      "childDeclaredWriters": [
+        "providers-services"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "78bd1ee98f0de77413f3d64f0985da579a4674592139cdcf6f096f756c41ae99"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchase-line-snapshot.js",
+      "line": 139,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_lines",
+      "parentTable": "purchase_orders",
+      "relationship": "purchase_order_id",
+      "sharedIdentityColumns": [
+        "order_item_id",
+        "supplier_id",
+        "product_supplier_id",
+        "product_sku_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "48640ef76810b0e1e2f2a240ba66299c289397e307fe580761d2c8528329bad5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchase-line-snapshot.js",
+      "line": 139,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_lines",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "48640ef76810b0e1e2f2a240ba66299c289397e307fe580761d2c8528329bad5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchase-line-snapshot.js",
+      "line": 139,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_lines",
+      "parentTable": "product_suppliers",
+      "relationship": "product_supplier_id",
+      "sharedIdentityColumns": [
+        "supplier_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "48640ef76810b0e1e2f2a240ba66299c289397e307fe580761d2c8528329bad5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchase-line-snapshot.js",
+      "line": 165,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_lines",
+      "parentTable": "purchase_orders",
+      "relationship": "purchase_order_id",
+      "sharedIdentityColumns": [
+        "order_item_id",
+        "supplier_id",
+        "product_supplier_id",
+        "product_sku_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "48640ef76810b0e1e2f2a240ba66299c289397e307fe580761d2c8528329bad5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchase-line-snapshot.js",
+      "line": 165,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_lines",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "48640ef76810b0e1e2f2a240ba66299c289397e307fe580761d2c8528329bad5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchase-line-snapshot.js",
+      "line": 165,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_lines",
+      "parentTable": "product_suppliers",
+      "relationship": "product_supplier_id",
+      "sharedIdentityColumns": [
+        "supplier_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "48640ef76810b0e1e2f2a240ba66299c289397e307fe580761d2c8528329bad5"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchasing-engagement-service.js",
+      "line": 143,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_lines",
+      "parentTable": "purchase_orders",
+      "relationship": "purchase_order_id",
+      "sharedIdentityColumns": [
+        "order_item_id",
+        "supplier_id",
+        "product_supplier_id",
+        "product_sku_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d8959eb61cc090bcdef6147c73d221a7a63e953249614192b7e2460a8feff5db"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchasing-engagement-service.js",
+      "line": 143,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_lines",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d8959eb61cc090bcdef6147c73d221a7a63e953249614192b7e2460a8feff5db"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchasing-engagement-service.js",
+      "line": 143,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_lines",
+      "parentTable": "product_suppliers",
+      "relationship": "product_supplier_id",
+      "sharedIdentityColumns": [
+        "supplier_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "d8959eb61cc090bcdef6147c73d221a7a63e953249614192b7e2460a8feff5db"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchasing-grouped-service.js",
+      "line": 295,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_orders",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "supplier_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "3358598cffc0da4139b4a4e300cd394732b531d5e83527a3251d9d6f84216d49"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchasing-trigger-service.js",
+      "line": 399,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_orders",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "supplier_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "02266043a9a2543d3648469605a0475d36baee5d22a7935d27a730717754db19"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchasing-trigger-service.js",
+      "line": 399,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_orders",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "02266043a9a2543d3648469605a0475d36baee5d22a7935d27a730717754db19"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/purchasing-trigger-service.js",
+      "line": 399,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "purchase_orders",
+      "parentTable": "product_suppliers",
+      "relationship": "product_supplier_id",
+      "sharedIdentityColumns": [
+        "supplier_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "02266043a9a2543d3648469605a0475d36baee5d22a7935d27a730717754db19"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/scan-engine.js",
+      "line": 892,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "scan_events",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "55acbc40129264101c71a6aa8ebc5d055311ef15346c2e940b6b001af3f4c078"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/scan-engine.js",
+      "line": 914,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "scan_events",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "55acbc40129264101c71a6aa8ebc5d055311ef15346c2e940b6b001af3f4c078"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/scan-operations.js",
+      "line": 134,
+      "feature": [
+        "logistics"
+      ],
+      "childTable": "scans",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "logistics",
+        "orders",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "eaf7a05e7f10846de0f27857842ed3d9a41c2e79c31d46a307d69a06db27f746"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/simulator/state-advancer.js",
+      "line": 199,
+      "feature": [
+        "platform-ops"
+      ],
+      "childTable": "parcel_items",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "b65cde9a664d60f4686b7e93f1700aa141efe43c99b65f6d4a3ab384450b41e4"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/supplier-execution-persistence.js",
+      "line": 52,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "supplier_execution_orders",
+      "parentTable": "purchase_orders",
+      "relationship": "purchase_order_id",
+      "sharedIdentityColumns": [
+        "supplier_order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "b8aaa8312a9d3feb66ab25f36a6c23e69d825714ee684197023bb69545400d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/supplier-execution-persistence.js",
+      "line": 81,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "supplier_execution_order_lines",
+      "parentTable": "purchase_lines",
+      "relationship": "purchase_line_id",
+      "sharedIdentityColumns": [],
+      "sharedQuantityColumns": [
+        "quantity"
+      ],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "b8aaa8312a9d3feb66ab25f36a6c23e69d825714ee684197023bb69545400d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/supplier-execution-persistence.js",
+      "line": 90,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "supplier_execution_events",
+      "parentTable": "supplier_execution_orders",
+      "relationship": "supplier_execution_order_id",
+      "sharedIdentityColumns": [
+        "purchase_order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "b8aaa8312a9d3feb66ab25f36a6c23e69d825714ee684197023bb69545400d1d"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/supplier-payment-state.js",
+      "line": 81,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "supplier_execution_payments",
+      "parentTable": "supplier_execution_orders",
+      "relationship": "supplier_execution_order_id",
+      "sharedIdentityColumns": [
+        "purchase_order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "77b7da2a49a6e81025f8681902d725ee864b6b7fe1f3c86c5ebbc3708f3ab37b"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/supplier-payment-state.js",
+      "line": 81,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "supplier_execution_payments",
+      "parentTable": "supplier_execution_groups",
+      "relationship": "supplier_execution_group_id",
+      "sharedIdentityColumns": [
+        "purchase_order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "77b7da2a49a6e81025f8681902d725ee864b6b7fe1f3c86c5ebbc3708f3ab37b"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/supplier-payment-state.js",
+      "line": 138,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "supplier_execution_events",
+      "parentTable": "supplier_execution_orders",
+      "relationship": "supplier_execution_order_id",
+      "sharedIdentityColumns": [
+        "purchase_order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "77b7da2a49a6e81025f8681902d725ee864b6b7fe1f3c86c5ebbc3708f3ab37b"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/supplier-payment-state.js",
+      "line": 138,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "supplier_execution_events",
+      "parentTable": "supplier_execution_groups",
+      "relationship": "supplier_execution_group_id",
+      "sharedIdentityColumns": [
+        "purchase_order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "77b7da2a49a6e81025f8681902d725ee864b6b7fe1f3c86c5ebbc3708f3ab37b"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/suppliers/supplier-fulfillment-persistence.js",
+      "line": 224,
+      "feature": [
+        "purchasing"
+      ],
+      "childTable": "supplier_execution_events",
+      "parentTable": "supplier_execution_orders",
+      "relationship": "supplier_execution_order_id",
+      "sharedIdentityColumns": [
+        "purchase_order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "purchasing"
+      ],
+      "childDeclaredWriters": [
+        "purchasing"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "6c68647a894c8b727aed840da2abf34aa32afeb883a4312ab8c7f17c770ee39f"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/transport-cost-allocation.js",
+      "line": 652,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "922d1ed5b7234cb1f1bc61fadd7578e8897464aba881227ec51e0356bf70d55e"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/transport-cost-allocation.js",
+      "line": 652,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "922d1ed5b7234cb1f1bc61fadd7578e8897464aba881227ec51e0356bf70d55e"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/transport-cost-allocation.js",
+      "line": 652,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id",
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "922d1ed5b7234cb1f1bc61fadd7578e8897464aba881227ec51e0356bf70d55e"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/transport-cost-allocation.js",
+      "line": 674,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "922d1ed5b7234cb1f1bc61fadd7578e8897464aba881227ec51e0356bf70d55e"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/transport-cost-allocation.js",
+      "line": 674,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "922d1ed5b7234cb1f1bc61fadd7578e8897464aba881227ec51e0356bf70d55e"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/transport-cost-allocation.js",
+      "line": 674,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id",
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "922d1ed5b7234cb1f1bc61fadd7578e8897464aba881227ec51e0356bf70d55e"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/transport-cost-allocation.js",
+      "line": 695,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "orders",
+      "relationship": "order_id",
+      "sharedIdentityColumns": [
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "economic-engine",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "922d1ed5b7234cb1f1bc61fadd7578e8897464aba881227ec51e0356bf70d55e"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/transport-cost-allocation.js",
+      "line": 695,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "order_items",
+      "relationship": "order_item_id",
+      "sharedIdentityColumns": [
+        "order_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "orders"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "922d1ed5b7234cb1f1bc61fadd7578e8897464aba881227ec51e0356bf70d55e"
+    },
+    {
+      "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
+      "status": "H0_UNVERIFIED",
+      "source": "services/transport-cost-allocation.js",
+      "line": 695,
+      "feature": [
+        "economic-engine"
+      ],
+      "childTable": "order_item_real_cost_allocations",
+      "parentTable": "parcels",
+      "relationship": "parcel_id",
+      "sharedIdentityColumns": [
+        "order_id",
+        "shipment_id"
+      ],
+      "sharedQuantityColumns": [],
+      "parentDeclaredWriters": [
+        "dashboard",
+        "logistics",
+        "platform-ops"
+      ],
+      "childDeclaredWriters": [
+        "customs",
+        "economic-engine"
+      ],
+      "basis": "Child INSERT uses supplied VALUES for fields duplicated on referenced parent. Inspect call-site oracles and cross-entity invariants.",
+      "sourceSha256": "922d1ed5b7234cb1f1bc61fadd7578e8897464aba881227ec51e0356bf70d55e"
+    }
+  ],
+  "digest": "828add15e06d153ab5a9b585b629fadbe1fb513879131d7defe22ad446b47f80"
+}

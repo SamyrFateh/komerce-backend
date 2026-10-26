@@ -4,25 +4,10 @@
   "scanScope": {
     "featureCount": 36
   },
-  "findings": [
-    {
-      "kind": "TERMINAL_STATE_WITHOUT_SOURCE_GUARD",
-      "status": "H0_UNVERIFIED",
-      "feature": "unsold-resolution",
-      "path": "routes/unsold.js",
-      "table": "unsold_items",
-      "line": 122,
-      "predicate": "id = $5",
-      "provenance": {
-        "commitment": "terminal",
-        "contractPath": "features/unsold-resolution.feature.js",
-        "codeSha256": "5a8ceca198aa53e1b54d127c19c9c81dc32a532844ff6ca5f4f9176114562f3d"
-      }
-    }
-  ],
+  "findings": [],
   "metrics": {
-    "hypotheses": 1,
+    "hypotheses": 0,
     "confirmed": 0
   },
-  "digest": "20d2cfd2cb54d44b7a33c518bd9ceac7a8ff40f3cc1badab335145be948c3b3b"
+  "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
 }
