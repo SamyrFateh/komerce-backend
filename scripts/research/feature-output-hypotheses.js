@@ -39,9 +39,10 @@ function inspect(source,rel,features){
     for(const x of immediate.matchAll(inc)){
       // SQL result is not inspected between the query and optimistic increment.
       if(/\browCount\b|\bRETURNING\b/i.test(immediate.slice(0,x.index)))continue;
-      const key='UNCONDITIONAL_EFFECT_INCREMENT:'+i+':'+x.index;
+      const absoluteCounter=i+firstQueryClose+x.index;
+      const key='UNCONDITIONAL_EFFECT_INCREMENT:'+absoluteCounter;
       if(seen.has(key))continue;seen.add(key);
-      results.push({kind:'UNCONDITIONAL_EFFECT_INCREMENT',feature:[...features].sort(),path:rel,line:line(source,i),
+      results.push({kind:'UNCONDITIONAL_EFFECT_INCREMENT',feature:[...features].sort(),path:rel,line:line(source,absoluteCounter),
         variable:x[1],basis:'SQL INSERT may write zero rows; increment does not inspect query.rowCount',
         codeSha256:sha(source),status:'H0_UNVERIFIED',priority:'investigate',
         provenance:{sql:source.slice(i,Math.min(i+75,source.length)).replace(/\s+/g,' '),
