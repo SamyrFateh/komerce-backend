@@ -481,6 +481,14 @@ if (MODE === 'check') {
         const after = generatedRoutes.get(routeKey) || null;
         if (JSON.stringify(before) !== JSON.stringify(after)) changed.push({ key: routeKey, committed: before, generated: after });
       }
+      for (const field of ['source', 'flagged', 'dispositions']) {
+        if (JSON.stringify(committedProjection[field]) !== JSON.stringify(projection[field])) {
+          console.error('   Δ ' + field + ': committed='
+            + JSON.stringify(committedProjection[field]).slice(0,1800));
+          console.error('   Δ ' + field + ': generated='
+            + JSON.stringify(projection[field]).slice(0,1800));
+        }
+      }
       if (JSON.stringify(committedProjection.summary) !== JSON.stringify(projection.summary)) {
         console.error('   summary committed=' + JSON.stringify(committedProjection.summary));
         console.error('   summary generated=' + JSON.stringify(projection.summary));
