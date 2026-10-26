@@ -1012,7 +1012,7 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
     mockGetClient.mockResolvedValue(client);
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({ price_kmf:4200 });
     expect(res.status).toBe(409);
-    expect(res.body.error).toContain('Catégorie douanière non qualifiée');
+    expect(res.body.error).toContain('Catégorie boutique à confirmer');
     expect(client.calls.some(c => /INSERT INTO products/.test(c.sql))).toBe(false);
   });
 
