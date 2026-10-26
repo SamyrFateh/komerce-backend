@@ -1,0 +1,46 @@
+name: P1 commercial taxonomy review — real supplier KIR
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: staging-p1-commercial-taxonomy-review
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issues' &&
+        github.actor == github.repository_owner &&
+        github.event.issue.user.login == github.repository_owner &&
+        github.event.issue.title == '[staging-op] p1-commercial-taxonomy-review'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Identify four eligible candidates and active commercial taxonomy with real read-only DB
+        run: node scripts/recette/p1-20-commercial-taxonomy-review.js
+      - name: Archive human review workpack and immutable supplier evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-commercial-taxonomy-review-${{ github.run_id }}
+          path: test-results/staging-p1-20/commercial-taxonomy-review.json
+          if-no-files-found: warn
+          retention-days: 30
