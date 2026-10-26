@@ -36,7 +36,8 @@ function isToolingOnlyPath(file) {
     file.startsWith('scripts/recette/') ||
     file==='playwright.staging-canonical.config.js' ||
     file==='playwright.staging-interactive.config.js' ||
-    file==='playwright.staging-p1-20.config.js';
+    file==='playwright.staging-p1-20.config.js' ||
+    file==='playwright.staging-p1-one-product.config.js';
 }
 function verifyRuntimeEquivalence(deployedSha,runnerSha) {
   if(!/^[0-9a-f]{40}$/.test(deployedSha) || !/^[0-9a-f]{40}$/.test(runnerSha)) {
