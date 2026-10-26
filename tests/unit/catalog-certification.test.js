@@ -45,6 +45,30 @@ function readyRow(overrides = {}) {
 describe('catalog canonical certification', () => {
   beforeEach(() => PASS_GUARD.mockClear());
 
+  test('sourcing-linked candidate with NULL global price is certifiable, but native price-less product is not', () => {
+    const base = readyRow({
+      price_kmf: null,
+      source_locale: 'fr',
+      has_sourcing_candidate: true,
+    });
+    const sourced = evaluateCatalogProductCertification(base);
+    expect(sourced.certified).toBe(true);
+    expect(sourced.publication_guard).toBe('PASS');
+
+    const notProvenSourced = evaluateCatalogProductCertification({
+      ...base, has_sourcing_candidate: false,
+    });
+    expect(notProvenSourced.certified).toBe(false);
+    expect(notProvenSourced.reasons).toContain('publication_guard:invalid_price');
+
+    // Supplier order identity and approved editorial copy are still mandatory.
+    const noSupplierUnit = evaluateCatalogProductCertification({
+      ...base, complete_supplier_skus: 0,
+    });
+    expect(noSupplierUnit.certified).toBe(false);
+    expect(noSupplierUnit.reasons).toContain('supplier_order_identity_incomplete');
+  });
+
   test('certifies a complete provider-independent catalog candidate', () => {
     const result = evaluateCatalogProductCertification(readyRow(), {
       publicationGuard: PASS_GUARD,
