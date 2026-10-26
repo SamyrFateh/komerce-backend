@@ -19,7 +19,7 @@
 'use strict';
 
 const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
-const { findConfirmed } = require('./supplier-commercial-category-mapping');
+const { findConfirmed, chooseCommercialPair } = require('./supplier-commercial-category-mapping');
 
 function sourceLocaleFromCandidate(candidate = {}) {
   const locale = candidate?.normalized_source_contract?.source_locale;
@@ -112,6 +112,16 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
   const matched = await resolveCommercialObjectTaxonomy(q, candidate);
   if (matched.category && matched.subcategory) {
     return { status:'AUTO_CLASSIFIED', ...matched, source:'OBJECT_NAME_MATCH' };
+  }
+  if (sourcePath) {
+    const {rows:pairs}=await q.query(
+      'SELECT bc.key AS category,bc.label AS category_label,'+
+      'bs.key AS subcategory,bs.label AS subcategory_label '+
+      'FROM boutique_categories bc JOIN boutique_subcategories bs ON bs.category_key=bc.key '+
+      'WHERE bc.is_active=TRUE AND bs.is_active=TRUE AND bc.filter_type IS NULL');
+    const proposal=chooseCommercialPair(pairs,{...candidate,supplier_category:sourcePath});
+    if (proposal) return {status:'AUTO_CLASSIFIED',category:proposal.category,
+      subcategory:proposal.subcategory,source:proposal.source};
   }
   return { status:'REVIEW_REQUIRED', category:null, subcategory:null,
     source:'UNRESOLVED_COMMERCIAL_TAXONOMY' };
