@@ -448,7 +448,14 @@ function renderMarkdown(generatedAt) {
 
 function comparableProjection(doc) {
   if (!doc) return null;
-  return { source: doc.source, summary: doc.summary, flagged: doc.flagged, dispositions: doc.dispositions, routes: doc.routes };
+  // Runtime router enumeration can vary in order across environments. Freshness
+  // is about the EXACT set of protected routes and guard metadata, not array
+  // positions. Keep every record intact; sort by key only for comparison.
+  return { source: doc.source, summary: doc.summary, flagged: doc.flagged,
+    dispositions: doc.dispositions,
+    routes: Array.isArray(doc.routes)
+      ? [...doc.routes].sort((a,b)=>String(a.key).localeCompare(String(b.key),'en'))
+      : doc.routes };
 }
 const current = flagged.map(key).sort();
 if (MODE === 'check') {
@@ -469,7 +476,7 @@ if (MODE === 'check') {
   }
   let committedJson = null;
   try { committedJson = JSON.parse(fs.readFileSync(path.join(DOCS, 'SECURITY_360.json'), 'utf8')); } catch (_) {}
-  if (!committedJson || JSON.stringify(comparableProjection(committedJson)) !== JSON.stringify(projection)) {
+  if (!committedJson || JSON.stringify(comparableProjection(committedJson)) !== JSON.stringify(comparableProjection(projection))) {
     console.error('\x1b[31m\x1b[1m✖ SECURITY_360.json est périmé.\x1b[0m');
     if (committedJson) {
       const committedProjection = comparableProjection(committedJson);
@@ -480,6 +487,14 @@ if (MODE === 'check') {
         const before = committedRoutes.get(routeKey) || null;
         const after = generatedRoutes.get(routeKey) || null;
         if (JSON.stringify(before) !== JSON.stringify(after)) changed.push({ key: routeKey, committed: before, generated: after });
+      }
+      for (const field of ['source', 'flagged', 'dispositions']) {
+        if (JSON.stringify(committedProjection[field]) !== JSON.stringify(projection[field])) {
+          console.error('   Δ ' + field + ': committed='
+            + JSON.stringify(committedProjection[field]).slice(0,1800));
+          console.error('   Δ ' + field + ': generated='
+            + JSON.stringify(projection[field]).slice(0,1800));
+        }
       }
       if (JSON.stringify(committedProjection.summary) !== JSON.stringify(projection.summary)) {
         console.error('   summary committed=' + JSON.stringify(committedProjection.summary));

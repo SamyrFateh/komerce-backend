@@ -67,4 +67,64 @@ async function confirmMapping(input,actor,q=db) {
      input.label_fr || null,active.category,active.subcategory,actor || null]);
   return row;
 }
-module.exports={normalizePath,sourceKey,findConfirmed,confirmMapping};
+
+function normalizeWords(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+}
+
+// Pure proposal ranking: an active BOUTIQUE pair only. A weak lexical match
+// is a suggestion to review, never a customs classification or a write.
+function rankCommercialPairs(pairs = [], candidate = {}, preferred = null) {
+  const path = String(candidate.supplier_category || '').split(/\s*>\s*/).pop();
+  const sourceWords = new Set(normalizeWords(path));
+  const titleWords = new Set(normalizeWords(candidate.product_name));
+  const ranked = pairs.map(pair => {
+    const labelWords = normalizeWords([pair.category, pair.category_label,
+      pair.subcategory, pair.subcategory_label].join(' '));
+    const exact = preferred && pair.category === preferred.category
+      && pair.subcategory === preferred.subcategory;
+    const supplierHits = labelWords.filter(word => word.length > 2 && sourceWords.has(word)).length;
+    const titleHits = labelWords.filter(word => word.length > 3 && titleWords.has(word)).length;
+    return { ...pair, score: exact ? 1000 : supplierHits * 10 + titleHits * 3,
+      source: exact ? 'KNOWN_COMMERCIAL_MAPPING' : 'SUPPLIER_LEXICAL_MATCH' };
+  }).sort((a,b) => b.score-a.score
+    || String(a.category_label).localeCompare(String(b.category_label),'fr')
+    || String(a.subcategory_label).localeCompare(String(b.subcategory_label),'fr'));
+  return ranked.filter(row => row.score > 0).slice(0,3).map(row => ({
+    category:row.category, subcategory:row.subcategory,
+    category_label:row.category_label, subcategory_label:row.subcategory_label,
+    source:row.source,
+    confidence:row.score === 1000 ? 'confirmed' : 'review_required',
+  }));
+}
+
+
+/**
+ * Auto classification is an editorial proposal, not a customs or publication
+ * verdict. Prefer the provider's own category; the title only breaks ties.
+ * A missing lexical hit returns null rather than assigning an arbitrary shelf.
+ */
+function chooseCommercialPair(pairs = [], candidate = {}, preferred = null) {
+  const suggestions = rankCommercialPairs(pairs,candidate,preferred);
+  if (!suggestions.length) return null;
+  if (suggestions[0].confidence === 'confirmed') {
+    return {...suggestions[0],source:'KNOWN_COMMERCIAL_MAPPING'};
+  }
+  const sourcePath = String(candidate.supplier_category || '').split(/\\s*>\\s*/).pop();
+  const words = new Set(normalizeWords(sourcePath).filter(w=>w.length>2));
+  const scored = pairs.map(p=>{
+    const label = normalizeWords([p.category_label,p.subcategory_label,p.category,p.subcategory].join(' '));
+    const hits = [...new Set(label.filter(w=>words.has(w)))];
+    return {...p,hits:hits.length};
+  }).filter(x=>x.hits>0).sort((a,b)=>b.hits-a.hits);
+  // Tied categories still receive a visible default suggestion rather than a
+  // WATCH classification; operator correction remains possible later.
+  if (!scored.length) return null;
+  const top=scored[0];
+  return {category:top.category,subcategory:top.subcategory,
+    category_label:top.category_label,subcategory_label:top.subcategory_label,
+    source:'SUPPLIER_CATEGORY_MATCH',confidence:'proposed'};
+}
+
+module.exports={normalizePath,sourceKey,findConfirmed,confirmMapping,rankCommercialPairs,chooseCommercialPair};

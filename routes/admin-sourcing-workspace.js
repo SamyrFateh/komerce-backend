@@ -354,6 +354,21 @@ router.post('/products/:productRef/update', async (req, res, next) => {
   catch (err) { handleError(err, res, next); }
 });
 
+
+router.get('/candidates/:candidateRef/boutique-category-options', async (req,res,next) => {
+  try {
+    res.set('Cache-Control','no-store');
+    res.json(await workspace.getCandidateBoutiqueCategoryOptions(req.params.candidateRef));
+  } catch(error) { handleError(error,res,next); }
+});
+
+router.post('/candidates/:candidateRef/confirm-boutique-category', async (req,res,next) => {
+  try {
+    sendAction(res,'confirm_candidate_boutique_category',
+      await workspace.confirmCandidateBoutiqueCategory(req.params.candidateRef,req.body,req.user));
+  } catch(error) { handleError(error,res,next); }
+});
+
 // Production remediation : liste dynamique et suggestions du classificateur canonique.
 // Ne pas confondre les catégories douanières/économiques avec la navigation boutique.
 router.get('/candidates/:candidateRef/category-options', async (req, res, next) => {

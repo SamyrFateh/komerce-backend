@@ -34,6 +34,8 @@ const mockCalls = {
   updatePortfolioProduct: jest.fn(),
   updateCandidate: jest.fn(),
   getCandidateCategoryOptions: jest.fn(),
+  getCandidateBoutiqueCategoryOptions: jest.fn(),
+  confirmCandidateBoutiqueCategory: jest.fn(),
   resolveCandidateCategory: jest.fn(),
   scanCandidate: jest.fn(),
   watchlistCandidate: jest.fn(),
@@ -66,6 +68,8 @@ jest.mock('../../services/sourcing-workspace', () => ({
   updatePortfolioProduct: (...args) => mockCalls.updatePortfolioProduct(...args),
   updateCandidate: (...args) => mockCalls.updateCandidate(...args),
   getCandidateCategoryOptions: (...args) => mockCalls.getCandidateCategoryOptions(...args),
+  getCandidateBoutiqueCategoryOptions: (...args) => mockCalls.getCandidateBoutiqueCategoryOptions(...args),
+  confirmCandidateBoutiqueCategory: (...args) => mockCalls.confirmCandidateBoutiqueCategory(...args),
   resolveCandidateCategory: (...args) => mockCalls.resolveCandidateCategory(...args),
   scanCandidate: (...args) => mockCalls.scanCandidate(...args),
   watchlistCandidate: (...args) => mockCalls.watchlistCandidate(...args),
@@ -464,3 +468,18 @@ describe('routes archivage / mise à jour des sources', () => {
   });
 });
 
+
+test('canonical sourcing exposes boutique review, not customs, under global authority',async()=>{
+  mockCalls.getCandidateBoutiqueCategoryOptions.mockResolvedValueOnce({
+    candidate_ref:'KSC-001',source:'boutique_categories',
+    suggestions:[{category:'Tech',subcategory:'Phones'}]});
+  const choices=await request(app()).get('/api/admin/workspaces/sourcing/candidates/KSC-001/boutique-category-options');
+  expect(choices.status).toBe(200);
+  expect(choices.body.source).toBe('boutique_categories');
+  mockCalls.confirmCandidateBoutiqueCategory.mockResolvedValueOnce({confirmed:true,draft_created:false});
+  const result=await request(app()).post('/api/admin/workspaces/sourcing/candidates/KSC-001/confirm-boutique-category')
+    .send({category:'Tech',subcategory:'Phones'});
+  expect(result.status).toBe(200);
+  expect(mockCalls.confirmCandidateBoutiqueCategory).toHaveBeenCalledWith(
+    'KSC-001',{category:'Tech',subcategory:'Phones'},expect.objectContaining({role:'admin'}));
+});

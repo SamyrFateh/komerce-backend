@@ -77,6 +77,50 @@ describe('automatic Sourcing → Catalogue handoff', () => {
     expect(importRuns.syncRunsForImport).toHaveBeenCalledWith('import-1', db);
   });
 
+
+  test('WATCH only due to unresolved classification advances without click when exact supplier mapping is confirmed',async()=>{
+    const known=row('mapped','WATCH',{
+      supplier_category:'Phones > Cases',
+      scan_result:{sourcing_decision:'WATCH',reason:'Catégorie Komerce non résolue — décision impossible.'},
+    });
+    const unknown=row('unmapped','WATCH',{
+      supplier_category:'Phones > Unknown',
+      scan_result:{sourcing_decision:'WATCH',reason:'Catégorie Komerce non résolue — décision impossible.'},
+    });
+    const loss=row('loss','LOSS',{
+      supplier_category:'Phones > Cases',
+      scan_result:{sourcing_decision:'LOSS',reason:'Insufficient economics'},
+    });
+    db.query.mockImplementation((sql,params)=>{
+      if(String(sql).includes('FROM sourcing_candidates'))return Promise.resolve({rows:[
+        known,unknown,loss,row('excluded','EXCLUDED',{state:'rejected',rejected_reason:'prohibited'}),
+      ]});
+      if(String(sql).includes('FROM supplier_commercial_category_mappings')){
+        return Promise.resolve({rows:params[1]==='phones > cases'?
+          [{category:'Tech',subcategory:'Phones'}]:[]});
+      }
+      return Promise.resolve({rows:[]});
+    });
+    const promote=jest.fn().mockResolvedValue({product_id:'draft-1'});
+    const result=await handoffCertifiedImport('import-mapped',{promote});
+    expect(result).toMatchObject({attempted:1,catalogued:1,failed:[]});
+    expect(promote).toHaveBeenCalledTimes(1);
+    expect(promote.mock.calls[0][0]).toBe('mapped');
+    expect(promote.mock.calls[0][1]).not.toHaveProperty('price_kmf');
+    expect(db.query.mock.calls.filter(([sql])=>String(sql).includes('FROM supplier_commercial_category_mappings'))).toHaveLength(2);
+  });
+
+  test('classification WATCH with no V2 provenance never advances even if mapping exists',async()=>{
+    db.query.mockResolvedValueOnce({rows:[row('legacy','WATCH',{
+      supplier_category:'Phones > Cases',normalized_source_contract:{schema_version:'1'},
+      scan_result:{sourcing_decision:'WATCH',reason:'Catégorie Komerce non résolue — décision impossible.'},
+    })]});
+    const promote=jest.fn();
+    const result=await handoffCertifiedImport('import-legacy',{promote});
+    expect(result.attempted).toBe(0);
+    expect(promote).not.toHaveBeenCalled();
+  });
+
   test('est idempotent : un brouillon déjà imported_to_catalog est compté mais jamais recréé', async () => {
     db.query.mockResolvedValueOnce({
       rows:[row('c1', 'TEST', { state:'imported_to_catalog', product_id:'p1' })],

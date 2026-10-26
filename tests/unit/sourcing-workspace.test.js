@@ -20,6 +20,7 @@ jest.mock('../../services/sourcing-mutations', () => ({ updateProduct: jest.fn()
 jest.mock('../../services/sourcing-candidate-actions', () => ({
   updateCandidate: jest.fn(), scanCandidate: jest.fn(), watchlistCandidate: jest.fn(),
   rejectCandidate: jest.fn(), promoteCandidate: jest.fn(),
+  confirmCandidateBoutiqueCategory: jest.fn(),
   handoffImportResult: (...args) => mockHandoffImportResult(...args),
 }));
 jest.mock('../../services/sourcing-import-dispatch', () => ({ connectorCatalog: jest.fn(() => ({})), dispatchToConnector: jest.fn() }));
@@ -230,4 +231,33 @@ describe('L7 — montage du workspace candidats : erreur, délai, diagnostic', (
     await ui.mount({ root: d.root, document: d, fetch, ui: {}, locationSearch: '?diagnostic=1' }).catch(() => {});
     expect(urls).toEqual(['/api/admin/workspaces/sourcing', '/api/admin/workspaces/sourcing?include=health']);
   });
+});
+
+test('boutique options return only active commercial pairs and confirmed proposal',async()=>{
+  const row={candidate_ref:'KSC-000050',supplier_name:'AliExpress',
+    supplier_category:'Phones & Telecommunications > Phone Case',
+    product_name:'Phone Case',state:'watchlist',
+    commercial_taxonomy_review:{status:'CONFIRMED',category:'Tech',subcategory:'Phones'}};
+  mockQuery.mockResolvedValueOnce({rows:[row]}).mockResolvedValueOnce({rows:[
+    {category:'Tech',category_label:'Tech',subcategory:'Phones',subcategory_label:'Téléphones'},
+    {category:'Maison',category_label:'Maison',subcategory:'Salon',subcategory_label:'Salon'},
+  ]});
+  const result=await workspace.getCandidateBoutiqueCategoryOptions('KSC-000050');
+  expect(result.source).toBe('boutique_categories');
+  expect(result.suggestions[0]).toMatchObject({category:'Tech',subcategory:'Phones',confidence:'confirmed'});
+  expect(result).not.toHaveProperty('customs');
+  expect(mockPricingConfig).not.toHaveBeenCalled();
+});
+
+test('workspace delegates the commercial confirmation to its Sourcing mutation owner',async()=>{
+  const actions=require('../../services/sourcing-candidate-actions');
+  actions.confirmCandidateBoutiqueCategory.mockResolvedValueOnce({
+    candidate_ref:'KSC-000051', confirmed:true,draft_created:false,
+  });
+  const result=await workspace.confirmCandidateBoutiqueCategory('KSC-000051',
+    {category:'Tech',subcategory:'Phones'},{id:'operator'});
+  expect(result).toMatchObject({confirmed:true});
+  expect(actions.confirmCandidateBoutiqueCategory).toHaveBeenCalledWith(
+    'KSC-000051',{category:'Tech',subcategory:'Phones'},'operator');
+  expect(mockGetClient).not.toHaveBeenCalled();
 });

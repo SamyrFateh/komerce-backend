@@ -236,10 +236,52 @@
         actions.appendChild(product);
       }
 
+
+      // Le front n'expose aucune catégorie douanière. On confirme la catégorie
+      // boutique suggérée ou on choisit une autre paire active existante.
+      const classify = makeButton(doc, 'Classer', 'classify-boutique', true);
+      classify.addEventListener('click', async () => {
+        classify.disabled = true;
+        try {
+          const options = await jsonRequest(context.fetch,
+            `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/boutique-category-options`);
+          const candidates = options.categories || [];
+          const suggestion = options.suggestions?.[0];
+          const ordered = suggestion
+            ? [suggestion, ...candidates.filter(x => x.category !== suggestion.category || x.subcategory !== suggestion.subcategory)]
+            : candidates;
+          if (!ordered.length) throw new Error('Aucune catégorie boutique disponible.');
+          const sample = ordered.map((x,index) =>
+            `${index+1}. ${x.category_label || x.category} › ${x.subcategory_label || x.subcategory}`).join('\n');
+          let chosen = null;
+          if (suggestion && context.confirm(
+            `Catégorie fournisseur : ${options.supplier_category || '—'}\n\n` +
+            `Proposition Komerce : ${suggestion.category_label || suggestion.category} › ` +
+            `${suggestion.subcategory_label || suggestion.subcategory}\n\nValider ?`)) {
+            chosen = suggestion;
+          } else {
+            const reply = context.prompt(
+              `Catégorie fournisseur : ${options.supplier_category || '—'}\n\nChoisir le numéro de la catégorie BOUTIQUE :\n${sample}`,
+              '1');
+            if (reply == null) return;
+            const index = Number(reply);
+            if (!Number.isInteger(index) || index < 1 || index > ordered.length) {
+              throw new Error('Sélectionnez un numéro de catégorie valide.');
+            }
+            chosen = ordered[index-1];
+          }
+          await runAction(context, classify, {
+            url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/confirm-boutique-category`,
+            body: { category:chosen.category, subcategory:chosen.subcategory },
+            successMessage: `Catégorie boutique validée pour ${row.candidate_ref}. Brouillon préparé si éligible.`,
+          });
+        } catch(error) { setFeedback(context.root,error.message,'critical'); }
+        finally { classify.disabled = false; }
+      });
+      actions.appendChild(classify);
+
       const edit = makeButton(doc, 'Corriger', 'update-candidate', true);
       edit.addEventListener('click', () => {
-        const category = context.prompt(`Catégorie Komerce · ${row.candidate_ref}`, row.komerce_category || '');
-        if (category == null) return;
         const weight = context.prompt('Poids estimé kg', row.estimated_weight_kg == null ? '' : String(row.estimated_weight_kg));
         if (weight == null) return;
         const purchase = context.prompt(`Prix achat · ${row.currency || 'AED'}`, row.purchase_price == null ? '' : String(row.purchase_price));
@@ -249,7 +291,6 @@
         runAction(context, edit, {
           url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/update`,
           body: {
-            ...(category.trim() ? { komerce_category: category.trim() } : {}),
             ...(weight.trim() ? { estimated_weight_kg: Number(weight) } : {}),
             ...(purchase.trim() ? { purchase_price: Number(purchase) } : {}),
             currency: currency.trim().toUpperCase(),

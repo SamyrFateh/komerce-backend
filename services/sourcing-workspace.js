@@ -8,7 +8,7 @@
  * @outputs       global_sourcing_projection, sourcing_mutation_result
  * @depends       db.js, services/pricing-engine.js, services/customs-dynamic-category-classifier.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
- * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures
+ * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures, boutique_categories, boutique_subcategories
  * @db-write-via:sourcing-mutations products
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates
@@ -36,6 +36,8 @@ const catalogImport = require('./suppliers/catalog-import-orchestrator');
 const partnerAdmin = require('./partner-admin-service');
 const pricingEngine = require('./pricing-engine');
 const categoryClassifier = require('./customs-dynamic-category-classifier');
+const commercialMapping = require('./supplier-commercial-category-mapping');
+const { resolveCommercialObjectTaxonomy } = require('./catalog-candidate-product-service');
 
 class SourcingWorkspaceError extends Error {
   constructor(status, message, code = null, details = null) {
@@ -362,6 +364,53 @@ async function importCatalog(body, actor) {
 
 async function replayImport(body, actor) {
   return importCatalog({ ...(body || {}), mode: 'replay' }, actor);
+}
+
+
+/**
+ * Boutique-first review: no customs category is returned to the browser.
+ * Existing confirmed provider mapping, object terms, then lexical proposals.
+ * Ambiguous candidates still expose every active boutique pair for selection.
+ */
+async function getCandidateBoutiqueCategoryOptions(candidateRef) {
+  const { rows:[candidate] } = await db.query(
+    'SELECT candidate_ref, supplier_name, supplier_category, product_name, ' +
+    'normalized_source_contract, commercial_taxonomy_review, state, scan_result ' +
+    'FROM sourcing_candidates WHERE candidate_ref=$1', [candidateRef]);
+  if (!candidate) throw new SourcingWorkspaceError(404, 'Produit Sourcing introuvable', 'candidate_not_found');
+  const { rows:pairs } = await db.query(
+    'SELECT bc.key AS category, bc.label AS category_label, ' +
+    'bs.key AS subcategory, bs.label AS subcategory_label ' +
+    'FROM boutique_categories bc JOIN boutique_subcategories bs ON bs.category_key=bc.key ' +
+    'WHERE bc.is_active=TRUE AND bs.is_active=TRUE AND bc.filter_type IS NULL ' +
+    'ORDER BY bc.display_order, bs.display_order');
+  if (!pairs.length) throw new SourcingWorkspaceError(409,
+    'Aucune catégorie boutique active.', 'sourcing_boutique_taxonomy_unavailable');
+  const provider = candidate.normalized_source_contract?.supplier_name || candidate.supplier_name;
+  const sourcePath = candidate.supplier_category;
+  const saved = candidate.commercial_taxonomy_review?.status === 'CONFIRMED'
+    ? candidate.commercial_taxonomy_review : null;
+  let preferred = saved && { category:saved.category, subcategory:saved.subcategory };
+  if (!preferred && provider && sourcePath) {
+    preferred = await commercialMapping.findConfirmed(provider, sourcePath);
+  }
+  if (!preferred) {
+    preferred = await resolveCommercialObjectTaxonomy(db,candidate);
+  }
+  return {
+    candidate_ref:candidateRef,
+    product_name:candidate.product_name,
+    supplier_category:sourcePath,
+    source:'boutique_categories',
+    categories:pairs,
+    suggestions:commercialMapping.rankCommercialPairs(pairs,candidate,preferred),
+    note:'Catégorie commerciale uniquement. Une suggestion incertaine exige une confirmation.',
+  };
+}
+
+/** Confirm source -> boutique mapping and advance to a NON-PUBLISHED draft. */
+async function confirmCandidateBoutiqueCategory(candidateRef, body, actor) {
+  return candidateActions.confirmCandidateBoutiqueCategory(candidateRef, body, actor?.id || null);
 }
 
 // Remédiation guidée : réutilise STRICTEMENT les catégories actives du moteur
@@ -721,6 +770,8 @@ module.exports = {
   updateCandidate,
   getCandidateCategoryOptions,
   resolveCandidateCategory,
+  getCandidateBoutiqueCategoryOptions,
+  confirmCandidateBoutiqueCategory,
   scanCandidate,
   watchlistCandidate,
   rejectCandidate,
