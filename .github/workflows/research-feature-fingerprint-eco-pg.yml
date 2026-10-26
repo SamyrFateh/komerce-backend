@@ -177,7 +177,7 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add scripts/research/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-auto-parcel-pg-proof.json scripts/research/feature-fingerprint-unsold-terminal-pg-proof.json scripts/research/feature-fingerprint-authority-pg-proof.json
+          git add scripts/research/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-auto-parcel-pg-proof.json scripts/research/feature-fingerprint-unsold-terminal-pg-proof.json scripts/research/feature-fingerprint-authority-pg-proof.json scripts/research/feature-fingerprint-provider-market-pg-proof.json
           if git diff --staged --quiet; then exit 0; fi
           git commit -m "research: record bounded PostgreSQL proof [skip ci]"
           git push origin HEAD:research/feature-fingerprint-eco-pg-20261026 || {
