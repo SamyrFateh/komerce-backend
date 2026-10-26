@@ -19,8 +19,10 @@ jest.mock('../../middleware/require-dashboard-global-authority', () => ({
 // On le mocke ici — la couverture de resolveAuthorization lui-même vit dans
 // tests/unit/market-delegation-service*.test.js, pas ici.
 const mockResolveAuthorization = jest.fn();
+const mockListAuthorizedMarkets = jest.fn();
 jest.mock('../../services/market-delegation-service', () => ({
   resolveAuthorization: (...args) => mockResolveAuthorization(...args),
+  listAuthorizedMarketsForCapability: (...args) => mockListAuthorizedMarkets(...args),
 }));
 
 const {
@@ -31,6 +33,7 @@ const {
 beforeEach(() => {
   jest.clearAllMocks();
   mockResolveAuthorization.mockResolvedValue({ capabilities: [] });
+  mockListAuthorizedMarkets.mockResolvedValue([]);
 });
 
 describe('dashboard-admin-context', () => {
@@ -81,6 +84,78 @@ describe('dashboard-admin-context', () => {
 
     await expect(resolveDashboardAdminContext({ id: 'admin-empty', role: 'admin' }))
       .rejects.toBeInstanceOf(DashboardAccessDeniedError);
+  });
+
+  test('Finance: contexte KM depuis finance.read actif, jamais depuis operator_market_scopes', async () => {
+    mockHasGlobal.mockResolvedValue(false);
+    mockListAuthorizedMarkets.mockResolvedValue([{ market_code: 'KM' }]);
+    mockQuery.mockResolvedValueOnce({ rows: [{ code: 'KM' }] });
+
+    const context = await resolveDashboardAdminContext({ id: 'finance-1', role: 'finance' });
+    expect(context.actor.role).toBe('finance');
+    expect(context.access.mode).toBe('market');
+    expect(context.access.allowedMarkets).toEqual(['KM']);
+    expect(context.access.capabilities).not.toContain('dashboard.global.read');
+    expect(mockListAuthorizedMarkets).toHaveBeenCalledWith(
+      expect.anything(), { userId: 'finance-1', requiredCapability: 'finance.read' }
+    );
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).not.toContain('operator_market_scopes');
+    expect(sql).toContain('is_active = TRUE');
+    expect(params).toEqual([['KM']]);
+  });
+
+  test('Transitaire: logistics.read actif est requis, un rôle seul ne suffit pas', async () => {
+    mockHasGlobal.mockResolvedValue(false);
+    mockListAuthorizedMarkets.mockResolvedValueOnce([{ market_code: 'KM' }]);
+    mockQuery.mockResolvedValueOnce({ rows: [{ code: 'KM' }] });
+
+    const ctx = await resolveDashboardAdminContext({ id: 'transit-1', role: 'agent_transitaire' });
+    expect(ctx.access.allowedMarkets).toEqual(['KM']);
+    expect(mockListAuthorizedMarkets).toHaveBeenCalledWith(
+      expect.anything(), { userId: 'transit-1', requiredCapability: 'logistics.read' }
+    );
+    expect(ctx.access.delegatedCapabilities.KM).toEqual([]);
+
+    mockListAuthorizedMarkets.mockResolvedValueOnce([]);
+    await expect(resolveDashboardAdminContext({ id: 'transit-no-grant', role: 'agent_transitaire' }))
+      .rejects.toMatchObject({ code: 'dashboard_access_denied' });
+  });
+
+  test('Hub: union des marchés où une lecture operations/logistics est réellement accordée', async () => {
+    mockHasGlobal.mockResolvedValue(false);
+    mockListAuthorizedMarkets
+      .mockResolvedValueOnce([{ market_code: 'CM' }])
+      .mockResolvedValueOnce([{ market_code: 'KM' }, { market_code: 'CM' }]);
+    mockQuery.mockResolvedValueOnce({ rows: [{ code: 'CM' }, { code: 'KM' }] });
+
+    const ctx = await resolveDashboardAdminContext({ id: 'hub-1', role: 'agent_hub' });
+    expect(ctx.access.allowedMarkets).toEqual(['CM', 'KM']);
+    expect(mockListAuthorizedMarkets).toHaveBeenCalledTimes(2);
+    expect(mockListAuthorizedMarkets.mock.calls.map(([, args]) => args.requiredCapability))
+      .toEqual(['operations.read', 'logistics.read']);
+    expect(mockQuery.mock.calls[0][1]).toEqual([['CM', 'KM']]);
+  });
+
+  test('Relais: seul le rattachement physique actif détermine son marché', async () => {
+    mockHasGlobal.mockResolvedValue(false);
+    mockQuery.mockResolvedValueOnce({ rows: [{ code: 'KM' }] });
+
+    const ctx = await resolveDashboardAdminContext({ id: 'relay-1', role: 'agent_relais' });
+    expect(ctx.access.allowedMarkets).toEqual(['KM']);
+    expect(mockQuery.mock.calls[0][0]).toContain('u.relais_id');
+    expect(mockQuery.mock.calls[0][0]).toContain('r.is_active = TRUE');
+    expect(mockQuery.mock.calls[0][1]).toEqual(['relay-1']);
+    expect(mockListAuthorizedMarkets).not.toHaveBeenCalled();
+  });
+
+  test('aucune capability effective ne crée artificiellement de marché', async () => {
+    mockHasGlobal.mockResolvedValue(false);
+    mockListAuthorizedMarkets.mockResolvedValue([]);
+
+    await expect(resolveDashboardAdminContext({ id: 'finance-empty', role: 'finance' }))
+      .rejects.toBeInstanceOf(DashboardAccessDeniedError);
+    expect(mockQuery).not.toHaveBeenCalled();
   });
 
   test('ne renvoie aucun UUID de scope au client', async () => {
