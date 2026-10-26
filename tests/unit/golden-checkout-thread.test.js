@@ -137,3 +137,24 @@ test('FP_GOLDEN_NOMINAL_MARKET — checkout origin matches market and stays vali
   expect(origin.status).toBe(GATE.PROVED);
   expect(origin.checks.find(c=>c.key==='order_matches_selected_market')).toMatchObject({ok:true});
 });
+
+describe('Golden cross-market checkout continuity',()=>{
+  test('market selected KM but actual order CM is ANOMALIE, never PROVED',async()=>{
+    const actual=facts({order:[{...facts().order[0],market_code:'CM'}]});
+    const result=await run(actual);
+    const origin=gate(result,'CHECKOUT_ORIGIN_PROVED');
+    expect(origin.status).toBe(GATE.ANOMALIE);
+    expect(origin.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({key:'order_matches_selected_market',ok:false}),
+    ]));
+    expect(origin.anomalies).toEqual(expect.arrayContaining([expect.stringContaining('ORDER_MARKET_MISMATCH')]));
+    expect(resolveProvenance({orderReference:REF,gates:result.gates})).toBe('ORDER_ORIGIN_NOT_PROVED');
+  });
+  test('market selected KM and actual order KM remains PROVED',async()=>{
+    const result=await run(facts());
+    expect(gate(result,'CHECKOUT_ORIGIN_PROVED')).toMatchObject({status:GATE.PROVED});
+    expect(gate(result,'CHECKOUT_ORIGIN_PROVED').checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({key:'order_matches_selected_market',ok:true}),
+    ]));
+  });
+});
