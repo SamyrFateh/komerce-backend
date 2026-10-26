@@ -49,28 +49,11 @@ async function fixAdminHash() {
       }
     }
 
-    // ── Force Hub & Relais passwords at startup ──────────────────────────
-    const hubPassword = process.env.HUB_PASSWORD;
-    if (hubPassword) {
-      console.log('🏢 HUB_PASSWORD défini — migration des hash agents hub');
-      const hubHash = await bcryptMigrate.hash(hubPassword, 10);
-      const hubResult = await db.query(
-        "UPDATE users SET password_hash = $1 WHERE role = 'agent_hub'",
-        [hubHash]
-      );
-      console.log(`✅ Migration: hub hash forcé — ${hubResult.rowCount} agent(s) hub`);
-    }
-
-    const relaisPassword = process.env.RELAIS_PASSWORD;
-    if (relaisPassword) {
-      console.log('🏪 RELAIS_PASSWORD défini — migration des hash agents relais');
-      const relaisHash = await bcryptMigrate.hash(relaisPassword, 10);
-      const relaisResult = await db.query(
-        "UPDATE users SET password_hash = $1 WHERE role = 'agent_relais'",
-        [relaisHash]
-      );
-      console.log(`✅ Migration: relais hash forcé — ${relaisResult.rowCount} agent(s) relais`);
-    }
+    // Passwords for Hub/Relay agents belong to each user and must not be
+    // overwritten at startup. Legacy HUB_PASSWORD/RELAIS_PASSWORD are
+    // deliberately ignored here: granting every agent the same password,
+    // and replacing administrative resets on each deploy, is unsafe.
+    // Use the existing audited per-user password management endpoint.
   } catch (err) {
     console.error('Migration admin hash error (non-fatal):', err.message);
   }
