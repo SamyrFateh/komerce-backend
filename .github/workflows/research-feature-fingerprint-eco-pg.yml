@@ -95,6 +95,11 @@ jobs:
         run: |
           set -o pipefail
           ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/parcel-item-mutation-service.test.js 2>&1 | tee /tmp/fp-unit-authority.log
+      - name: Focused Hub route non-regression
+        id: unit_hub_route
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/hub-dashboard-route.test.js 2>&1 | tee /tmp/fp-unit-hub-route.log
       - name: R&D authority plus quantity cross-feature proof
         id: authority
         run: |
