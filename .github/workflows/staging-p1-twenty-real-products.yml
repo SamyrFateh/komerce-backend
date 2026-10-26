@@ -65,8 +65,19 @@ jobs:
       - run: npm ci
       - name: Build exact 20 source lineage ledger in a READ ONLY DB transaction
         run: node scripts/recette/p1-20-cohort-inventory.js
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      # GitHub-hosted runners are ephemeral. Cache the browser binaries by
+      # Playwright lockfile version; always install Linux system libraries.
+      - name: Restore Playwright Chromium browser cache
+        id: chromium-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-chromium-${{ hashFiles('package-lock.json') }}
+      - name: Install Chromium browser on cache miss
+        if: steps.chromium-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
+      - name: Ensure Chromium system dependencies
+        run: npx playwright install-deps chromium
       - name: Visit true Sourcing, Refinery, Catalog, Pricing, KM and storefront screens
         run: npx playwright test --config=playwright.staging-p1-20.config.js
       - name: Publish stage proofs, failed assertions and screenshots
