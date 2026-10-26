@@ -118,10 +118,7 @@ async function inspect({database=db,fetcher=fetch,targetConfirm=confirmTarget}={
     if(runQuery.rows.length!==1)throw Error('P1_20_KIR_NOT_FOUND');
     run=runQuery.rows[0];
     const query=await tx.query(
-      `SELECT sc.id AS candidate_id,sc.candidate_ref,sc.supplier_product_id,
-              sc.state AS candidate_state,sc.scan_result,
-              sc.normalized_source_contract,sc.data_sources,
-              sc.komerce_category,sc.product_id,
+      `SELECT sc.*,sc.id AS candidate_id,sc.state AS candidate_state,
               p.product_ref,p.is_active,p.is_available,p.lifecycle_status,
               COALESCE(pme.commercial_exposure,'DISABLED') AS commercial_exposure,
               pm.status AS price_status
