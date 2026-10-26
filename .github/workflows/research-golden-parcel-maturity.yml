@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/research-golden-parcel-maturity.yml
       - scripts/research/golden-parcel-maturity-pg.js
+      - scripts/research/golden-shared-multiorder-handoff-pg.js
       - services/pricing-maturity.js
       - tests/unit/pricing-maturity.test.js
 permissions:
@@ -36,6 +37,7 @@ jobs:
       DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
       KOMERCE_DISABLE_CRONS: 'true'
       FP_MATURITY_OUTPUT: /tmp/fp-maturity-membership.json
+      FP_MULTIORDER_OUTPUT: /tmp/fp-multiorder-cross-projections.json
       FP_EXPECT_PARCEL_MEMBERSHIP_GUARD: 'true'
     steps:
       - uses: actions/checkout@v4
@@ -52,11 +54,15 @@ jobs:
         run: ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/pricing-maturity.test.js
       - name: Historical carrier vs shared parcel A/B
         run: node scripts/research/golden-parcel-maturity-pg.js
+      - name: True multi-order parcel, handoff and economic eligibility A/B
+        run: node scripts/research/golden-shared-multiorder-handoff-pg.js
       - name: Preserve full evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: parcel-maturity-proof-${{ github.run_id }}
-          path: /tmp/fp-maturity-membership.json
+          path: |
+            /tmp/fp-maturity-membership.json
+            /tmp/fp-multiorder-cross-projections.json
           if-no-files-found: ignore
           retention-days: 5
