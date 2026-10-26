@@ -257,6 +257,33 @@ test('file de curation expose la vérité source pour comparaison avant/après',
   });
 });
 
+test('un brouillon issu du Sourcing sans prix global atteint la curation humaine sans fuite d’ID DB', async () => {
+  mockQuery.mockImplementation(async sql => {
+    if (String(sql).includes("p.lifecycle_status = 'candidate'") && String(sql).includes('LEFT JOIN LATERAL')) {
+      return {rows:[{
+        product_id:'internal-product-id',product_ref:'KPR-NULL-PRICE',
+        candidate_id:'internal-source-id',
+        supplier_name:'AliExpress',supplier_product_id:'supplier-123',
+        name:'Produit fournisseur',category:'tech',
+        price_kmf:null,content_source:'manual',source_locale:'fr',
+        needs_review:false,sourcing_decision:'TEST'
+      }]};
+    }
+    return {rows:[]};
+  });
+  const rows=await workspace._test.queryApprovalQueue({limit:10});
+  expect(rows).toHaveLength(1);
+  expect(rows[0].supplier_source_linked).toBe(true);
+  expect(rows[0].price_kmf).toBeNull();
+  expect(rows[0]).not.toHaveProperty('candidate_id');
+  expect(rows[0].product_ref).toBe('KPR-NULL-PRICE');
+  const ui=require('fs').readFileSync(
+    require('path').join(__dirname,'../../public/dashboards/canonical/js/catalog-workspace.js'),'utf8'
+  );
+  expect(ui).toContain('row.supplier_source_linked === true && row.price_kmf == null');
+  expect(ui).toContain('aucune mise en vente acheteur avant LOCAL_ACTIVE');
+});
+
 test('préparation FR résout product_ref puis applique des overrides manuels sans API IA', async () => {
   mockQuery.mockImplementation(async sql => {
     if (String(sql).includes('WHERE product_ref = $1')) {
