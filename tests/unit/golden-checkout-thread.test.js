@@ -99,3 +99,33 @@ describe('Golden thread and verdict',()=>{
     expect(deriveReadiness({productId:PID,orderReference:REF,gates:gs([...Array(6).fill(GATE.PROVED),GATE.ANOMALIE])})).toBe(STAGE.ANOMALIE);
   });
 });
+
+test('FP_GOLDEN_MARKET_BASELINE — compare selected market to true order market',async()=>{
+  const actual=facts({order:[{...facts().order[0],market_code:'CM'}]});
+  const result=await run(actual);
+  const {projectContinuity}=require('../../scripts/research/golden-continuity-fingerprint');
+  const evidence={
+    ids:{product_id:PID,market_code:'KM',order_reference:REF},
+    thread:result.thread,
+    gates:[...upstream,...result.gates],
+  };
+  const trace=projectContinuity(evidence,{
+    order:{reference:REF,market_code:'CM',payment_status:'pending'},
+    steps:[{key:'CLIENT_PAYMENT',passed:false}],
+  });
+  const bound=result.gates.find(g=>g.key==='CHECKOUT_ORIGIN_PROVED');
+  const marketCheck=bound.checks.find(c=>c.key==='order_matches_selected_market');
+  console.log('FP_GOLDEN_MARKET_PROOF '+JSON.stringify({
+    selected_market:'KM',canonical_order_market:bound.evidence.market_code,
+    checkout_gate_status:bound.status,market_check:marketCheck?.ok ?? null,
+    fingerprint_status:trace.checkpoints.find(c=>c.key==='P2_BOUTIQUE_TO_ORDER').status,
+  }));
+  expect(trace.checkpoints.find(c=>c.key==='P2_BOUTIQUE_TO_ORDER').status).toBe('CONTRADICTION_HYPOTHESIS');
+  if(process.env.FP_EXPECT_GOLDEN_MARKET_GUARD==='true'){
+    expect(marketCheck?.ok).toBe(false);
+    expect(bound.status).toBe(GATE.NON_PROUVE);
+  }else{
+    // Preserve the before-fix observation; do not accept it as desired behavior.
+    expect(bound.status).toBe(GATE.PROVED);
+  }
+});
