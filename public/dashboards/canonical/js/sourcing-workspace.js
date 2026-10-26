@@ -253,15 +253,23 @@
           if (!ordered.length) throw new Error('Aucune catégorie boutique disponible.');
           const sample = ordered.map((x,index) =>
             `${index+1}. ${x.category_label || x.category} › ${x.subcategory_label || x.subcategory}`).join('\n');
-          const reply = context.prompt(
-            `Catégorie fournisseur : ${options.supplier_category || '—'}\n\nChoisir le numéro de la catégorie BOUTIQUE :\n${sample}`,
-            '1');
-          if (reply == null) return;
-          const index = Number(reply);
-          if (!Number.isInteger(index) || index < 1 || index > ordered.length) {
-            throw new Error('Sélectionnez un numéro de catégorie valide.');
+          let chosen = null;
+          if (suggestion && context.confirm(
+            `Catégorie fournisseur : ${options.supplier_category || '—'}\n\n` +
+            `Proposition Komerce : ${suggestion.category_label || suggestion.category} › ` +
+            `${suggestion.subcategory_label || suggestion.subcategory}\n\nValider ?`)) {
+            chosen = suggestion;
+          } else {
+            const reply = context.prompt(
+              `Catégorie fournisseur : ${options.supplier_category || '—'}\n\nChoisir le numéro de la catégorie BOUTIQUE :\n${sample}`,
+              '1');
+            if (reply == null) return;
+            const index = Number(reply);
+            if (!Number.isInteger(index) || index < 1 || index > ordered.length) {
+              throw new Error('Sélectionnez un numéro de catégorie valide.');
+            }
+            chosen = ordered[index-1];
           }
-          const chosen = ordered[index-1];
           await runAction(context, classify, {
             url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/confirm-boutique-category`,
             body: { category:chosen.category, subcategory:chosen.subcategory },
