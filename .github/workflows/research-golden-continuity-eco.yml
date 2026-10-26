@@ -1,0 +1,35 @@
+name: R&D ECO Golden continuity checkpoints
+on:
+  push:
+    branches:
+      - research/golden-continuity-checkpoints-20261026
+    paths:
+      - .github/workflows/research-golden-continuity-eco.yml
+      - scripts/research/golden-continuity-fingerprint.js
+      - scripts/research/golden-continuity-fingerprint.test.js
+      - tests/unit/golden-checkout-thread.test.js
+      - services/golden-checkout-thread.js
+permissions:
+  contents: read
+concurrency:
+  group: research-golden-continuity-eco
+  cancel-in-progress: true
+jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Pure continuity fingerprints (zero new dependencies)
+        run: node --test scripts/research/golden-continuity-fingerprint.test.js
+      - name: Install existing dependencies only
+        run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
+      - name: Actual Golden checkout projection and market-boundary proof
+        run: ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/golden-checkout-thread.test.js --testNamePattern 'FP_GOLDEN_MARKET_BASELINE'
