@@ -227,7 +227,16 @@ async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
     const commercialConfirmed = candidate.commercial_taxonomy_review?.status === 'CONFIRMED'
       && candidate.commercial_taxonomy_review?.category
       && candidate.commercial_taxonomy_review?.subcategory;
-    if (!commercialConfirmed && (!candidate.komerce_category
+    // A validated mapping for this exact provider/category path is already an
+    // authoritative commercial decision. Never ask to approve it again merely
+    // because the legacy customs category is absent in a grouped-shipping flow.
+    const provider = candidate.normalized_source_contract?.supplier_name || candidate.supplier_name;
+    const sourcePath = candidate.supplier_category
+      || candidate.normalized_source_contract?.supplier_category;
+    const commercialMapped = !commercialConfirmed && provider && sourcePath
+      ? await commercialMapping.findConfirmed(provider,sourcePath,client)
+      : null;
+    if (!commercialConfirmed && !commercialMapped && (!candidate.komerce_category
         || candidate.data_sources?.category === 'default'
         || candidate.scan_result?.customs_review?.status === 'REQUIRED')) {
       throw new SourcingCandidateActionError(
