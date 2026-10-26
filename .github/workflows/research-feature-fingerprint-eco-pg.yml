@@ -174,7 +174,7 @@ jobs:
             node -e 'const fs=require("fs");const p="/tmp/fp-unsold-terminal.log";fs.writeFileSync("scripts/research/feature-fingerprint-unsold-terminal-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",stage:process.env.STAGE_UNSOLD_TERMINAL||"unknown",tail:fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2200):"NOT_RUN"},null,2)+"\\n");'
           fi
           if [ -f /tmp/feature-fingerprint-authority-pg-proof.json ]; then
-            cp /tmp/feature-fingerprint-authority-pg-proof.json scripts/research/feature-fingerprint-authority-pg-proof.json scripts/research/feature-fingerprint-provider-market-pg-proof.json
+            cp /tmp/feature-fingerprint-authority-pg-proof.json scripts/research/feature-fingerprint-authority-pg-proof.json
           else
             node -e 'const fs=require("fs");const p="/tmp/fp-authority.log";fs.writeFileSync("scripts/research/feature-fingerprint-authority-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",tail:fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2000):"NOT_RUN"},null,2)+"\\n");'
           fi
