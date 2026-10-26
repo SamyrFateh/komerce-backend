@@ -1,0 +1,49 @@
+name: Staging E2E Hub and Relay credential reconciliation
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Read-only audit first, or audited per-E2E-account reconciliation
+        required: true
+        type: choice
+        default: audit
+        options: [audit, reconcile]
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-staging-e2e-logistics-reconcile
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issues' && github.actor == github.repository_owner &&
+        (github.event.issue.title == '[staging-op] audit-hub-relais-e2e' ||
+         github.event.issue.title == '[staging-op] reconcile-hub-relais-e2e')))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      KOMERCE_ENV: staging
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_LOGISTICS_RECONCILE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || (github.event.issue.title == '[staging-op] reconcile-hub-relais-e2e' && 'reconcile' || 'audit') }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Pin deployed code before touching E2E credentials
+        shell: bash
+        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Verify identities and reconcile only explicitly dedicated E2E Hub/Relay accounts
+        run: node scripts/recette/reconcile-staging-logistics-e2e.js
