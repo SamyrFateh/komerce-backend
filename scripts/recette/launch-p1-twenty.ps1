@@ -1,8 +1,8 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Pilote P1 20 produits : Sourcing -> Raffinerie -> Catalogue -> KM -> Boutique,
-  dans Chromium sur le staging Railway réel.
+  dans Chromium sur le staging Railway réel (desktop 1440 px uniquement).
 .EXAMPLE
   .\scripts\recette\launch-p1-twenty.ps1 -Stage sourcing -Mode inspect
 .EXAMPLE
@@ -18,6 +18,11 @@ param(
   [string]$Mode='inspect'
 )
 $ErrorActionPreference='Stop'
+# Certification dashboard/commerce staging is desktop 1440x900 only.
+# Keep mobile in the accepted arguments to emit an explicit de-scope error.
+if($Device -ne 'desktop'){
+  throw 'MOBILE_CERTIFICATION_DEFERRED_USE_DESKTOP_ONLY'
+}
 $root=(Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $hostUrl='https://komerce-backend-production.up.railway.app'
 $steps=@{
@@ -50,6 +55,10 @@ try {
     throw 'Installer les modules à la racine : npm ci'
   }
 
+  if($Stage -in @('all','boutique') -and -not (Test-Path 'test-results/staging-p1-20/cohort.json')){
+    throw 'P1_20_SOURCE_MANIFEST_MISSING: restore cohort.json from the most recent P1 GitHub Actions artifact before the buyer step.'
+  }
+
   Write-Host ('P1-20 | Staging Railway | Étape '+$Stage+' | '+$Device+' | '+$Mode)
   Write-Host 'La campagne ne change jamais le catalogue par SQL ni par seed.'
   [Environment]::SetEnvironmentVariable('KOMERCE_ENV','staging','Process')
@@ -78,7 +87,7 @@ try {
     $passwordKey=$pfx+'PASSWORD'
     if(-not [Environment]::GetEnvironmentVariable($emailKey,'Process')){
       $email=Read-Host ('Email du seul compte de recette '+$role)
-      if([string]::IsNullOrWhiteSpace($email))throw 'TEST_IDENTITY_EMAIL_REQUIRED'
+      if([string]::IsNullOrWhiteSpace($email)){ throw 'TEST_IDENTITY_EMAIL_REQUIRED' }
       [Environment]::SetEnvironmentVariable($emailKey,$email.Trim(),'Process')
     }
     if(-not [Environment]::GetEnvironmentVariable($passwordKey,'Process')){
@@ -86,7 +95,7 @@ try {
       $pointer=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($pw)
       try {
         $plain=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
-        if([string]::IsNullOrWhiteSpace($plain))throw 'TEST_PASSWORD_REQUIRED'
+        if([string]::IsNullOrWhiteSpace($plain)){ throw 'TEST_PASSWORD_REQUIRED' }
         [Environment]::SetEnvironmentVariable($passwordKey,$plain,'Process')
       }finally {
         if($pointer -ne [IntPtr]::Zero){
@@ -103,7 +112,7 @@ try {
   }
   [Environment]::SetEnvironmentVariable('E2E_EXPECTED_DEPLOY_SHA',$head,'Process')
   & node scripts/recette/staging-chromium-deployment-preflight.js
-  if($LASTEXITCODE -ne 0)throw 'STAGING_NOT_ON_VERIFIED_RUNTIME'
+  if($LASTEXITCODE -ne 0){ throw 'STAGING_NOT_ON_VERIFIED_RUNTIME' }
   $preflight=Get-Content 'test-results/staging-chromium/deployment-preflight.json' -Raw | ConvertFrom-Json
   if($preflight.status -notin @('DEPLOY_SHA_MATCHED','DEPLOY_RUNTIME_EQUIVALENT')){
     throw 'STAGING_SHA_UNVERIFIED'
