@@ -80,7 +80,8 @@ test('runtime-file differences never count as harmless skipped builds',async()=>
 test('runtime classification is fail-closed for arbitrary files',()=>{
   for(const file of ['tests/unit/demo.test.js','scripts/recette/audit.js',
     'docs/doctrine.md','.github/workflows/chromium.yml',
-    'playwright.staging-canonical.config.js','playwright.staging-interactive.config.js'])expect(isToolingOnlyPath(file)).toBe(true);
+    'playwright.staging-canonical.config.js','playwright.staging-interactive.config.js',
+    'playwright.staging-p1-20.config.js'])expect(isToolingOnlyPath(file)).toBe(true);
   for(const file of ['server.js','services/dashboard-admin-context.js',
     'public/dashboards/canonical/js/app.js','migrations/300.sql',
     'scripts/fix-schema.js','package.json','db.js'])expect(isToolingOnlyPath(file)).toBe(false);
