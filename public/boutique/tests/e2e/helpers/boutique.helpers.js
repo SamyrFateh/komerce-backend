@@ -84,12 +84,24 @@ async function gotoAndVerifyTarget(page) {
 
 // ─── Catalogue ──────────────────────────────────────────────────────────────
 
-/** Attend que la grille catalogue soit hydratée (≥1 carte visible). */
+/**
+ * Attend soit ≥1 carte soit un état canonique terminal du catalogue.
+ * Un marché sans offre vendable n'est jamais un PASS : on rend le défaut
+ * explicite plutôt que de multiplier les timeouts de 12 secondes sans cause.
+ */
 async function waitForGrid(page) {
-  await page.waitForSelector('#k-grid .k-promo-card, #k-grid .k-card', {
-    state: 'attached',
-    timeout: 12_000,
-  });
+  const stateHandle = await page.waitForFunction(() => {
+    const grid = document.querySelector('#k-grid');
+    if (!grid) return null;
+    if (grid.querySelector('.k-promo-card, .k-card')) return 'PRODUCTS_READY';
+    if (grid.querySelector('#k-catalog-empty-wa-btn')) return 'CATALOG_NO_SELLABLE_PRODUCTS';
+    if (grid.querySelector('#k-catalog-retry-btn')) return 'CATALOG_LOAD_FAILED';
+    return null; // Loading in progress, keep waiting.
+  }, null, { timeout: 12_000 });
+  const state = await stateHandle.jsonValue();
+  if (state !== 'PRODUCTS_READY') {
+    throw new Error(state + ': la boutique staging ne peut pas être certifiée sur des produits réels dans cet état. Vérifier /api/products?market=XX et l’exposition/prix LOCAL_ACTIVE du marché.');
+  }
 }
 
 /** Retourne le nombre de cartes dans la grille. */
