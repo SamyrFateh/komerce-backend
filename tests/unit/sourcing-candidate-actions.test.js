@@ -102,8 +102,8 @@ describe('catalog candidate draft source locale', () => {
   });
 });
 
-describe('customs gate before catalogue promotion', () => {
-  test('rejects a candidate with unresolved customs before draft creation', async () => {
+describe('commercial review before inactive catalogue draft', () => {
+  test('requires commercial review if no economic category is available', async () => {
     const db=require('../../db');
     const create=require('../../services/catalog-candidate-product-service').createDraftProductFromSourcingCandidate;
     const {promoteCandidate}=require('../../services/sourcing-candidate-actions');
@@ -116,8 +116,48 @@ describe('customs gate before catalogue promotion', () => {
       .mockResolvedValueOnce({rows:[]})}; // ROLLBACK
     db.getClient.mockResolvedValueOnce({...client,release:jest.fn()});
     await expect(promoteCandidate('candidate-1',{},'admin-1')).rejects.toMatchObject({
-      code:'candidate_customs_classification_required',status:409,
+      code:'candidate_commercial_category_review_required',status:409,
     });
     expect(create).not.toHaveBeenCalled();
   });
+});
+
+test('confirmed boutique review allows an inactive draft despite unresolved customs',async()=>{
+  const db=require('../../db');
+  const catalog=require('../../services/catalog-candidate-product-service');
+  const {promoteCandidate}=require('../../services/sourcing-candidate-actions');
+  const promotion=require('../../services/catalog-promotion');
+  const candidate={
+    id:'candidate-2', state:'scanned', komerce_category:null,
+    data_sources:{category:'default'}, scan_result:{customs_review:{status:'REQUIRED'}},
+    commercial_taxonomy_review:{status:'CONFIRMED',category:'Tech',subcategory:'Phones'},
+  };
+  const client={query:jest.fn().mockImplementation(sql=>Promise.resolve(
+    sql.includes('SELECT * FROM sourcing_candidates')?{rows:[candidate]}:{rows:[]})),
+    release:jest.fn()};
+  db.getClient.mockResolvedValueOnce(client);
+  catalog.createDraftProductFromSourcingCandidate.mockResolvedValueOnce('prod-draft-2');
+  promotion.promoteCatalog.mockResolvedValueOnce({promoted:true});
+  const result=await promoteCandidate('candidate-2',{},'admin-1',{syncRuntime:false});
+  expect(result.product_id).toBe('prod-draft-2');
+  expect(result.price_decision).toBe('DEFERRED_TO_PUBLICATION');
+  expect(catalog.createDraftProductFromSourcingCandidate).toHaveBeenCalledWith(
+    client,{candidate,initialPrice:null});
+  expect(client.query.mock.calls.some(call=>call[0]==='COMMIT')).toBe(true);
+});
+
+test('commercial confirmation never bypasses explicit exclusion',async()=>{
+  const db=require('../../db');
+  const {promoteCandidate}=require('../../services/sourcing-candidate-actions');
+  const catalog=require('../../services/catalog-candidate-product-service');
+  const candidate={ id:'excluded',state:'scanned',
+    scan_result:{sourcing_decision:'EXCLUDED'},
+    commercial_taxonomy_review:{status:'CONFIRMED',category:'Tech',subcategory:'Phones'} };
+  const client={query:jest.fn().mockImplementation(sql=>Promise.resolve(
+    sql.includes('SELECT * FROM sourcing_candidates')?{rows:[candidate]}:{rows:[]})),
+    release:jest.fn()};
+  db.getClient.mockResolvedValueOnce(client);
+  await expect(promoteCandidate('excluded',{},'admin-1',{syncRuntime:false}))
+    .rejects.toMatchObject({code:'candidate_excluded',status:409});
+  expect(catalog.createDraftProductFromSourcingCandidate).not.toHaveBeenCalled();
 });
