@@ -10,6 +10,8 @@ on:
       - scripts/research/feature-fingerprint-unsold-terminal-pg.js
       - scripts/research/feature-fingerprint-authority-pg.js
       - scripts/research/feature-fingerprint-provider-market-pg.js
+      - services/providers-service.js
+      - tests/unit/providers-service.test.js
       - services/parcel-item-mutation-service.js
       - routes/hub-dashboard.js
       - tests/unit/parcel-item-mutation-service.test.js
@@ -46,6 +48,7 @@ jobs:
       FP_UNSOLD_OUTPUT: /tmp/feature-fingerprint-unsold-terminal-pg-proof.json
       FP_AUTHORITY_OUTPUT: /tmp/feature-fingerprint-authority-pg-proof.json
       FP_PROVIDER_OUTPUT: /tmp/feature-fingerprint-provider-market-pg-proof.json
+      FP_EXPECT_PROVIDER_GUARD: 'true'
       FP_EXPECT_AUTHORITY_GUARD: 'true'
       FP_EXPECT_FAIL_CLOSED: 'true'
       FP_EXPECT_TERMINAL_GUARD: 'true'
@@ -111,6 +114,11 @@ jobs:
         run: |
           set -o pipefail
           node scripts/research/feature-fingerprint-authority-pg.js 2>&1 | tee /tmp/fp-authority.log
+      - name: Focused provider service and market ownership regressions
+        id: providers_unit
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/providers-service.test.js 2>&1 | tee /tmp/fp-providers-unit.log
       - name: R&D provider market authority A/B
         id: provider_market
         run: |
