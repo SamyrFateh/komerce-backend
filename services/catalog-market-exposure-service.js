@@ -8,7 +8,7 @@
  * @outputs       product_market_exposure read model
  * @depends       services/product-publication-guard.js
  * @used-by       services/market-delegation-catalog-service.js, services/catalog-public-view.js
- * @db-read       product_market_exposure, products, markets, catalog_media
+ * @db-read       product_market_exposure, products, markets, catalog_media, sourcing_candidates
  * @db-write      product_market_exposure
  * @db-txn        caller_transaction_preserved
  * @doctrine      writer_not_owner_boundary, catalog_stays_unique_exposure_is_projection, missing_exposure_is_disabled
