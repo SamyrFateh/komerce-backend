@@ -80,7 +80,7 @@ function find(){
     +(x.sharedQuantityColumns.length?4:0)
     +(x.source.startsWith('services/')?2:0)
     +(x.parentDeclaredWriters.length&&x.childDeclaredWriters.length?1:0)
-    -(/(?:simulator|admin\\/system|\\/seed)/i.test(x.source)?10:0);
+    -(['simulator','admin/system','/seed'].some(mark=>x.source.includes(mark))?10:0);
  const groups=new Map();
  for(const x of sorted){
   const key=[x.parentTable,x.childTable,x.sharedIdentityColumns.join(','),x.sharedQuantityColumns.join(',')].join('|');
