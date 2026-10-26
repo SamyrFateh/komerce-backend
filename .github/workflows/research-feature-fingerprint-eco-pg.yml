@@ -42,15 +42,20 @@ jobs:
           cache: npm
       - name: Install only production dependencies
         id: deps
-        run: npm ci --omit=dev --ignore-scripts --no-audit --no-fund 2>&1 | tee /tmp/fp-install.log
+        run: |
+          set -o pipefail
+          npm ci --include=dev --ignore-scripts --no-audit --no-fund 2>&1 | tee /tmp/fp-install.log
       - name: Build disposable canonical database
         id: bootstrap
         run: |
+          set -o pipefail
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-schema-load.log
           node scripts/ci-db-bootstrap.js 2>&1 | tee /tmp/fp-bootstrap.log
       - name: Prove only 2x(A/B) with outer rollback
         id: replay
-        run: node scripts/research/feature-fingerprint-hub-pg.js 2>&1 | tee /tmp/fp-replay.log
+        run: |
+          set -o pipefail
+          node scripts/research/feature-fingerprint-hub-pg.js 2>&1 | tee /tmp/fp-replay.log
       - name: Report
         if: always()
         run: |
