@@ -51,7 +51,7 @@ async function main(){
   assert.equal((await client.query('SELECT current_database() AS name')).rows[0].name,'komerce_test');
   await client.query('BEGIN');began=true;
   const {x,base}=await fixture(client);
-  const common={orderReference:x.ref,productId:x.product,base,storefrontGate:{evidence:{price_kmf:5000}}};
+  const common={orderReference:x.ref,productId:x.product,base:{order:base},storefrontGate:{evidence:{price_kmf:5000}}};
   for(let repeat=1;repeat<=2;repeat++){
    for(const [variant,marketCode] of [['nominal','CM'],['cross_market','KM']]){
     const result=await loadCheckoutOriginGate(client,{...common,marketCode});
