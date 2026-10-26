@@ -1,0 +1,30 @@
+{
+  "schema": "FP_PURCHASE_SKU_CROSS_PATH/v1",
+  "phase": "BEFORE",
+  "provenance": {
+    "run": "https://github.com/SamyrFateh/komerce-backend/actions/runs/40412537302",
+    "artifact": "https://github.com/SamyrFateh/komerce-backend/actions/runs/40412537302/artifacts/12694022540",
+    "source": "actual Golden Purchasing SQL, PostgreSQL 16 isolated; rollback verified"
+  },
+  "oracle": "sold order_items.sku_id must equal purchased purchase_lines.product_sku_id",
+  "cases": [
+    {
+      "variant": "nominal",
+      "ordered": 1,
+      "purchased": 1,
+      "purchasing_pass": true,
+      "sku_matches": true,
+      "repeat": 2
+    },
+    {
+      "variant": "wrong_sku",
+      "ordered": 1,
+      "purchased": 1,
+      "purchasing_pass": true,
+      "sku_matches": false,
+      "repeat": 2
+    }
+  ],
+  "contradictionReplays": 2,
+  "limits": "Golden Purchasing projection only, not HTTP, live marketplace order, supplier payment, hub or handoff E2E."
+}
