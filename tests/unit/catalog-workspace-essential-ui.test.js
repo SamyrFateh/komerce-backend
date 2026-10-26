@@ -29,12 +29,14 @@ test('Raffinerie et Catalogue gardent des identités de Hero distinctes',()=>{
   expect(workspace).toContain("'Préparez les fiches, définissez les prix et validez les produits proposés.'");
 });
 
-test('Curation : le prix explique coût estimé, prix global absent et responsable',()=>{
+test('Curation : le prix global du fournisseur peut rester différé sans autoriser une vente client',()=>{
   expect(workspace).toContain('function priceExplanation');
   expect(workspace).toContain("Coût d’achat estimé");
-  expect(workspace).toContain('Prix de vente global non défini');
+  expect(workspace).toContain('Prix de référence global');
+  expect(workspace).toContain('Référence globale sans prix : validation Catalogue possible');
+  expect(workspace).toContain('aucune mise en vente acheteur avant LOCAL_ACTIVE');
+  expect(workspace).toContain('Prix global manquant ou invalide');
   expect(workspace).toContain('data-price-explanation');
-  expect(workspace).toContain('Responsable : décision prix');
   expect(workspace).not.toContain("'Prix —'");
 });
 
