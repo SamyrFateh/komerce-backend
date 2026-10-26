@@ -20,6 +20,7 @@ jest.mock('../../services/sourcing-mutations', () => ({ updateProduct: jest.fn()
 jest.mock('../../services/sourcing-candidate-actions', () => ({
   updateCandidate: jest.fn(), scanCandidate: jest.fn(), watchlistCandidate: jest.fn(),
   rejectCandidate: jest.fn(), promoteCandidate: jest.fn(),
+  confirmCandidateBoutiqueCategory: jest.fn(),
   handoffImportResult: (...args) => mockHandoffImportResult(...args),
 }));
 jest.mock('../../services/sourcing-import-dispatch', () => ({ connectorCatalog: jest.fn(() => ({})), dispatchToConnector: jest.fn() }));
@@ -247,38 +248,16 @@ test('boutique options return only active commercial pairs and confirmed proposa
   expect(result).not.toHaveProperty('customs');
   expect(mockPricingConfig).not.toHaveBeenCalled();
 });
-test('boutique confirmation cannot mutate an excluded candidate',async()=>{
-  const client={query:jest.fn().mockResolvedValueOnce({rows:[]})
-    .mockResolvedValueOnce({rows:[{id:'1',state:'scanned',
-      scan_result:{sourcing_decision:'EXCLUDED'}}]}),release:jest.fn()};
-  mockGetClient.mockResolvedValueOnce(client);
-  await expect(workspace.confirmCandidateBoutiqueCategory('KSC-000050',
-    {category:'Tech',subcategory:'Phones'},{id:'operator'}))
-    .rejects.toMatchObject({status:409,code:'candidate_not_classifiable'});
-  expect(client.query.mock.calls.map(c=>c[0])).toEqual([
-    'BEGIN',expect.stringContaining('FOR UPDATE'),'ROLLBACK'
-  ]);
-});
-test('boutique confirmation stores mapping + review then requests only inactive draft',async()=>{
+
+test('workspace delegates the commercial confirmation to its Sourcing mutation owner',async()=>{
   const actions=require('../../services/sourcing-candidate-actions');
-  const candidate={id:'c-1',candidate_ref:'KSC-000051',
-    supplier_name:'AliExpress', supplier_category:'Phones > Mobile Phone Accessories',
-    state:'scanned',scan_result:{sourcing_decision:'WATCH'}};
-  const client={query:jest.fn()
-    .mockResolvedValueOnce({rows:[]}) // BEGIN
-    .mockResolvedValueOnce({rows:[candidate]}) // locked candidate
-    .mockResolvedValueOnce({rows:[{category:'Tech',subcategory:'Phones'}]}) // validate active pair
-    .mockResolvedValueOnce({rows:[{status:'CONFIRMED'}]}) // mapping UPSERT
-    .mockResolvedValueOnce({rows:[]}) // candidate review
-    .mockResolvedValueOnce({rows:[]}) // event
-    .mockResolvedValueOnce({rows:[]}),release:jest.fn()}; // COMMIT
-  mockGetClient.mockResolvedValueOnce(client);
-  actions.promoteCandidate.mockResolvedValueOnce({price_decision:'DEFERRED_TO_PUBLICATION'});
+  actions.confirmCandidateBoutiqueCategory.mockResolvedValueOnce({
+    candidate_ref:'KSC-000051', confirmed:true,draft_created:false,
+  });
   const result=await workspace.confirmCandidateBoutiqueCategory('KSC-000051',
     {category:'Tech',subcategory:'Phones'},{id:'operator'});
-  expect(result).toMatchObject({confirmed:true,draft_created:true,price_decision:'DEFERRED_TO_PUBLICATION'});
-  expect(actions.promoteCandidate).toHaveBeenCalledWith('c-1',{enrichment_mode:'source_only'},'operator');
-  expect(client.query.mock.calls.map(c=>c[0])).toContain('COMMIT');
-  const stored=client.query.mock.calls.find(c=>String(c[0]).includes('commercial_taxonomy_review='));
-  expect(JSON.parse(stored[1][0])).toMatchObject({status:'CONFIRMED',category:'Tech',subcategory:'Phones'});
+  expect(result).toMatchObject({confirmed:true});
+  expect(actions.confirmCandidateBoutiqueCategory).toHaveBeenCalledWith(
+    'KSC-000051',{category:'Tech',subcategory:'Phones'},'operator');
+  expect(mockGetClient).not.toHaveBeenCalled();
 });
