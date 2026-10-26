@@ -67,4 +67,36 @@ async function confirmMapping(input,actor,q=db) {
      input.label_fr || null,active.category,active.subcategory,actor || null]);
   return row;
 }
-module.exports={normalizePath,sourceKey,findConfirmed,confirmMapping};
+
+function normalizeWords(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+}
+
+// Pure proposal ranking: an active BOUTIQUE pair only. A weak lexical match
+// is a suggestion to review, never a customs classification or a write.
+function rankCommercialPairs(pairs = [], candidate = {}, preferred = null) {
+  const path = String(candidate.supplier_category || '').split(/\s*>\s*/).pop();
+  const sourceWords = new Set(normalizeWords(path));
+  const titleWords = new Set(normalizeWords(candidate.product_name));
+  const ranked = pairs.map(pair => {
+    const labelWords = normalizeWords([pair.category, pair.category_label,
+      pair.subcategory, pair.subcategory_label].join(' '));
+    const exact = preferred && pair.category === preferred.category
+      && pair.subcategory === preferred.subcategory;
+    const supplierHits = labelWords.filter(word => word.length > 2 && sourceWords.has(word)).length;
+    const titleHits = labelWords.filter(word => word.length > 3 && titleWords.has(word)).length;
+    return { ...pair, score: exact ? 1000 : supplierHits * 10 + titleHits * 3,
+      source: exact ? 'KNOWN_COMMERCIAL_MAPPING' : 'SUPPLIER_LEXICAL_MATCH' };
+  }).sort((a,b) => b.score-a.score
+    || String(a.category_label).localeCompare(String(b.category_label),'fr')
+    || String(a.subcategory_label).localeCompare(String(b.subcategory_label),'fr'));
+  return ranked.filter(row => row.score > 0).slice(0,3).map(row => ({
+    category:row.category, subcategory:row.subcategory,
+    category_label:row.category_label, subcategory_label:row.subcategory_label,
+    source:row.source,
+    confidence:row.score === 1000 ? 'confirmed' : 'review_required',
+  }));
+}
+
+module.exports={normalizePath,sourceKey,findConfirmed,confirmMapping,rankCommercialPairs};
