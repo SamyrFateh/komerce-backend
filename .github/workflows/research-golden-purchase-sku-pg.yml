@@ -1,0 +1,59 @@
+name: R&D ECO Golden purchased SKU authority
+on:
+  push:
+    branches:
+      - research/golden-continuity-checkpoints-20261026
+    paths:
+      - .github/workflows/research-golden-purchase-sku-pg.yml
+      - scripts/research/golden-purchase-sku-postgres.js
+      - services/golden-e2e-cockpit.js
+permissions:
+  contents: read
+concurrency:
+  group: fp-golden-purchased-sku-pg
+  cancel-in-progress: true
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
+      KOMERCE_DISABLE_CRONS: 'true'
+      FP_SKU_OUTPUT: /tmp/golden-purchasing-sku-proof.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install existing dependencies
+        run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
+      - name: Bootstrap disposable canonical PostgreSQL
+        run: |
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-sku-schema.log
+          node scripts/ci-db-bootstrap.js
+      - name: A/B sold versus purchased SKU in actual Golden query
+        run: node scripts/research/golden-purchase-sku-postgres.js
+      - name: Preserve evidence independently of commit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-purchased-sku-${{ github.run_id }}
+          path: /tmp/golden-purchasing-sku-proof.json
+          if-no-files-found: ignore
+          retention-days: 5
