@@ -20,7 +20,8 @@ const {evaluateSourcingCandidateOutcome}=require('../../services/sourcing-certif
 const HOST='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/staging-p1-20/cohort.json');
 const EXPECTED_COUNT=20;
-const FOCUS_RUN=process.env.P1_TWENTY_SOURCE_RUN||'KIR-000009';
+const SOURCE_RUNS=String(process.env.P1_TWENTY_SOURCE_RUNS||'KIR-000009')
+  .split(',').map(x=>x.trim()).filter(Boolean);
 const MARKET=process.env.P1_TWENTY_MARKET||'KM';
 
 function checkTarget(env=process.env){
@@ -28,7 +29,9 @@ function checkTarget(env=process.env){
     ||env.STAGING_BASE_URL!==HOST||env.E2E_STAGING_BASE_URL!==HOST)
     throw Error('P1_20_STAGING_TARGET_REQUIRED');
   if(MARKET!=='KM')throw Error('P1_20_KM_MARKET_ONLY');
-  if(!/^KIR-[0-9]{6}$/.test(FOCUS_RUN))throw Error('P1_20_SOURCE_REF_INVALID');
+  if(!SOURCE_RUNS.length||SOURCE_RUNS.length>12||new Set(SOURCE_RUNS).size!==SOURCE_RUNS.length||
+    SOURCE_RUNS.some(ref=>!/^KIR-[0-9]{6}$/.test(ref)))
+    throw Error('P1_20_SOURCE_REFS_INVALID');
 }
 
 function classifyEvidence(item){
@@ -107,22 +110,25 @@ async function inspect({database=db,fetcher=fetch,targetConfirm=confirmTarget}={
   if(!/^[0-9a-f]{40}$/.test(deployedSha))throw Error('P1_20_DEPLOY_SHA_INVALID');
 
   let tx;
-  let rows,run;
+  let rows,runs;
   try{
     tx=await database.pool.connect();
     await tx.query('BEGIN READ ONLY');
     await tx.query("SET LOCAL statement_timeout='15000ms'");
     const runQuery=await tx.query(
       `SELECT id,run_ref,provider,source_type,intake
-         FROM import_runtime_runs WHERE run_ref=$1`,[FOCUS_RUN]);
-    if(runQuery.rows.length!==1)throw Error('P1_20_KIR_NOT_FOUND');
-    run=runQuery.rows[0];
+         FROM import_runtime_runs WHERE run_ref=ANY($1::text[]) ORDER BY run_ref`,
+      [SOURCE_RUNS]);
+    if(runQuery.rows.length!==SOURCE_RUNS.length)throw Error('P1_20_SOURCE_KIR_NOT_FOUND');
+    runs=runQuery.rows;
     const query=await tx.query(
       `SELECT sc.*,sc.id AS candidate_id,sc.state AS candidate_state,
+              irr.run_ref AS source_run_ref,
               p.product_ref,p.is_active,p.is_available,p.lifecycle_status,
               COALESCE(pme.commercial_exposure,'DISABLED') AS commercial_exposure,
               pm.status AS price_status
          FROM sourcing_candidates sc
+         JOIN import_runtime_runs irr ON irr.import_id=sc.import_id
          LEFT JOIN products p ON p.id=sc.product_id
          LEFT JOIN markets m ON m.code=$2
          LEFT JOIN product_market_exposure pme
@@ -132,9 +138,9 @@ async function inspect({database=db,fetcher=fetch,targetConfirm=confirmTarget}={
              WHERE product_id=p.id AND market_id=m.id
              ORDER BY updated_at DESC LIMIT 1
          ) pm ON TRUE
-        WHERE sc.import_id=$1
-        ORDER BY sc.id ASC`,
-      [run.id,MARKET]
+        WHERE irr.run_ref=ANY($1::text[])
+        ORDER BY irr.run_ref ASC,sc.id ASC`,
+      [SOURCE_RUNS,MARKET]
     );
     rows=query.rows;
     await tx.query('ROLLBACK');tx.release();tx=null;
@@ -142,12 +148,13 @@ async function inspect({database=db,fetcher=fetch,targetConfirm=confirmTarget}={
     if(tx){await tx.query('ROLLBACK').catch(()=>{});tx.release();}
     throw err;
   }
-  if(rows.length!==EXPECTED_COUNT)throw Error('P1_20_SOURCE_BATCH_NOT_EXACTLY_20');
+  if(rows.length<EXPECTED_COUNT)throw Error('P1_20_SOURCE_POOL_TOO_SMALL');
 
   const buyer=await readBuyerProducts(fetcher);
   const items=rows.map(row=>{
     const status=evaluateSourcingCandidateOutcome(row);
     const item={
+      source_run_ref:row.source_run_ref,
       candidate_id:row.candidate_id,candidate_ref:row.candidate_ref,
       supplier_product_id:row.supplier_product_id,
       candidate_state:row.candidate_state,
@@ -165,20 +172,47 @@ async function inspect({database=db,fetcher=fetch,targetConfirm=confirmTarget}={
     };
     return classifyEvidence(item);
   });
-  const summary=reduceReadiness(items);
-  // Use both the immutable initial KIR count and current certified decision,
-  // never silently rewrite old evidence to manufacture a green batch.
-  const recorded=Number(run.intake?.ready_for_refinery);
-  const current=summary.sourcing_certified;
+  // Source identities from later real supplier runs may replace WATCH or
+  // excluded candidates; never change a sourcing decision to fill the quota.
+  const rank=item=>
+    (item.gate.status==='PROVED'?100:0)
+    +(item.gate.source_certified?20:0)
+    +(item.gate.catalog_public_active?10:0)
+    +(item.global?.product_ref?4:0)
+    +(item.gate.market_exposed?2:0)
+    +(item.gate.local_price_active?1:0);
+  const ranked=[...items].sort((a,b)=>rank(b)-rank(a)
+    ||a.source_run_ref.localeCompare(b.source_run_ref)
+    ||String(a.supplier_product_id).localeCompare(String(b.supplier_product_id)));
+  const picked=[],used=new Set();
+  for(const item of ranked) {
+    const key=String(item.supplier_product_id||'');
+    if(!key||used.has(key))continue;
+    picked.push(item);used.add(key);
+    if(picked.length===EXPECTED_COUNT)break;
+  }
+  if(picked.length!==EXPECTED_COUNT)throw Error('P1_20_DISTINCT_SOURCE_IDENTITIES_MISSING');
+  const summary=reduceReadiness(picked);
+  // Preserve the immutable initial intake counts plus later human decisions.
+  const sourceRuns=runs.map(run=>{
+    const initial=run.intake?.ready_for_refinery;
+    const recorded=initial===null||initial===undefined?null:Number(initial);
+    const current=items.filter(item=>item.source_run_ref===run.run_ref
+      &&item.gate.source_certified).length;
+    return {ref:run.run_ref,provider:run.provider,source_type:run.source_type,
+      pool_count:items.filter(item=>item.source_run_ref===run.run_ref).length,
+      initial_ready:recorded!==null&&Number.isFinite(recorded)?recorded:null,
+      current_ready:current,
+      historical_delta:recorded!==null&&Number.isFinite(recorded)?current-recorded:null};
+  });
   return {
     schema_version:1,generated_at:new Date().toISOString(),
     target:HOST,market:MARKET,deployed_sha:deployedSha,
-    source_run:{ref:FOCUS_RUN,provider:run.provider,source_type:run.source_type,
-      initial_ready:Number.isFinite(recorded)?recorded:null,current_ready:current,
-      historical_delta:Number.isFinite(recorded)?current-recorded:null},
+    source_run:sourceRuns[0],source_runs:sourceRuns,pool_size:items.length,
+    selection:'twenty_distinct_supplier_identities_ranked_by_proven_canonicity',
     expected_count:EXPECTED_COUNT,write_count:0,
     buyer_api:{status:buyer.status,total:buyer.total,returned:buyer.returned??null},
-    summary,products:items
+    summary,products:picked
   };
 }
 
@@ -188,7 +222,7 @@ async function main(){
   try{
     report=await inspect();
     console.log('[P1-20] '+JSON.stringify({
-      market:report.market,source_run:report.source_run.ref,
+      market:report.market,source_runs:report.source_runs.map(x=>x.ref),
       run_initial_ready:report.source_run.initial_ready,
       run_current_ready:report.source_run.current_ready,
       observed_api:report.buyer_api,summary:report.summary,
