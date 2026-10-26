@@ -1,0 +1,14 @@
+{
+  "schema": "feature-terminal-PG-baseline-summary/v1",
+  "workflow": "https://github.com/SamyrFateh/komerce-backend/actions/runs/40386729030",
+  "job": 121796862162,
+  "source": "scripts/research/feature-fingerprint-unsold-terminal-pg.js",
+  "verdict": "UNAPPROVED_TERMINAL_CONTRADICTION",
+  "cases": 4,
+  "violations": 2,
+  "rollbackVerified": true,
+  "evidenceHash": "6a56a03e4e4425b396aa62d777d79064cd07f63c8d9d9ee2e3ca1bafbc71f58b",
+  "evidenceLevel": "GitHub Actions job log (not original JSON artifact)",
+  "caveat": "Business replay step succeeded; workflow overall failed only because git push collided with another branch update.",
+  "status": "TECHNICALLY_REPRODUCED_CONTRACT_TO_APPROVE"
+}
