@@ -97,6 +97,8 @@ Depuis l'artifact du workflow, placer le fichier `cohort.json` dans `test-result
 
 Chaque entrée comporte : `candidate_ref`, `supplier_product_id`, `source_run_ref`, `product_ref`, `product_id`, statut source, exposition KM, prix local, présence API, et `gate.blockers[]`.
 
+Pour `-Stage boutique` ou `-Stage all`, le lanceur vérifie **avant l'authentification ou Chromium** que `test-results/staging-p1-20/cohort.json` existe. Si absent, il renvoie `P1_20_SOURCE_MANIFEST_MISSING` ; télécharger le dernier artefact P1 du workflow et rétablir le registre réel. Ne jamais créer un manifeste fictif pour contourner l'arrêt.
+
 ### Conditions de GO
 
 - 20 identités fournisseur et 20 produits globaux distincts avec filiation prouvée.
