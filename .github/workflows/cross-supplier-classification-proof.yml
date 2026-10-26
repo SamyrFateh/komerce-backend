@@ -1,0 +1,31 @@
+name: Cross-supplier classification proof — AliExpress and CJ
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Audit same classifier on two existing provider cohorts (READ ONLY)
+        run: node scripts/audit-cross-supplier-classification.js
+      - name: Preserve product-by-product evidence even when unresolved
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-supplier-commercial-classification-${{ github.run_id }}
+          path: test-results/cross-supplier-classification/classification.json
+          retention-days: 21
+          if-no-files-found: warn
