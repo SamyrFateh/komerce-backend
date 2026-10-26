@@ -57,6 +57,8 @@ async function main(){
      contradiction:coverage.purchasing!==skuMatches});
   }
  }finally{try{if(c&&open){await c.query('ROLLBACK');report.rollbackVerified=true;}}finally{if(c)c.release();await pool.end();}}
+ console.log('FP_SKU_OBSERVED '+JSON.stringify(report.cases));
+ fs.writeFileSync(process.env.FP_SKU_OUTPUT||'/tmp/golden-purchasing-sku-proof.json',JSON.stringify({...report,verdict:'PRE_ASSERTIONS'},null,2)+'\\n');
  for(const row of report.cases.filter(x=>x.variant==='nominal'))assert.equal(row.purchasingStepPassed,true);
  if(process.env.FP_EXPECT_SKU_GUARD==='true'){
   for(const row of report.cases.filter(x=>x.variant==='wrong_sku'))assert.equal(row.purchasingStepPassed,false,'SKU substitution must not pass Golden Purchasing');
