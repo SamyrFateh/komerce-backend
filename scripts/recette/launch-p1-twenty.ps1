@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Pilote P1 20 produits : Sourcing -> Raffinerie -> Catalogue -> KM -> Boutique,
@@ -53,6 +53,10 @@ Push-Location $root
 try {
   if(-not (Test-Path 'node_modules\@playwright\test')){
     throw 'Installer les modules à la racine : npm ci'
+  }
+
+  if($Stage -in @('all','boutique') -and -not (Test-Path 'test-results/staging-p1-20/cohort.json')){
+    throw 'P1_20_SOURCE_MANIFEST_MISSING: restore cohort.json from the most recent P1 GitHub Actions artifact before the buyer step.'
   }
 
   Write-Host ('P1-20 | Staging Railway | Étape '+$Stage+' | '+$Device+' | '+$Mode)
