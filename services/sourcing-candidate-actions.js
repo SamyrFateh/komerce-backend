@@ -456,8 +456,9 @@ async function handoffCertifiedImport(importId, {
       // Reuse the single Catalogue commercial classifier (confirmed mapping,
       // object phrase, then supplier category), not a second eligibility rule.
       // eslint-disable-next-line no-await-in-loop
-      const verdict = await resolveCommercialTaxonomyVerdict(q,row);
-      if (verdict.status !== 'AUTO_CLASSIFIED' || !verdict.category || !verdict.subcategory) continue;
+      const commercialVerdict = await resolveCommercialTaxonomyVerdict(q,row);
+      if (commercialVerdict.status !== 'AUTO_CLASSIFIED' ||
+          !commercialVerdict.category || !commercialVerdict.subcategory) continue;
     }
     if (row.state === 'imported_to_catalog' && row.product_id) {
       alreadyCatalogued += 1;
