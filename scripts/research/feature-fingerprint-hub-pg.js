@@ -2,6 +2,7 @@
 'use strict';
 // R&D ECO: real Komerce JS route and writers, actual disposable PostgreSQL,
 // outer ROLLBACK; middleware/auth and complete HTTP stack not exercised.
+// Replay after fix: same inputs and independent DB observation, not a new oracle.
 const fs=require('node:fs'), path=require('node:path'), vm=require('node:vm');
 const crypto=require('node:crypto'), assert=require('node:assert/strict');
 const {Pool}=require('pg');
