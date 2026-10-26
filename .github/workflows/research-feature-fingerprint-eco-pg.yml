@@ -36,6 +36,7 @@ jobs:
       KOMERCE_DISABLE_CRONS: 'true'
       FP_OUTPUT: /tmp/feature-fingerprint-pg-proof.json
       FP_AUTOPARCEL_OUTPUT: /tmp/feature-fingerprint-auto-parcel-pg-proof.json
+      FP_EXPECT_FAIL_CLOSED: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -63,6 +64,11 @@ jobs:
         run: |
           set -o pipefail
           node scripts/research/feature-fingerprint-hub-pg.js 2>&1 | tee /tmp/fp-replay.log
+      - name: Focused auto-parcel regression
+        id: unit_auto_parcel
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/jest --config jest.unit.config.js --runInBand --no-coverage --runTestsByPath tests/unit/auto-parcel.test.js 2>&1 | tee /tmp/fp-unit-auto-parcel.log
       - name: R&D second feature — auto-parcel actual persisted count
         id: auto_parcel
         run: |
@@ -93,6 +99,7 @@ jobs:
           STAGE_REPLAY: ${{ steps.replay.outcome }}
           STAGE_UNIT: ${{ steps.unit.outcome }}
           STAGE_AUTO_PARCEL: ${{ steps.auto_parcel.outcome }}
+          STAGE_UNIT_AUTO_PARCEL: ${{ steps.unit_auto_parcel.outcome }}
         run: |
           if [ -f /tmp/feature-fingerprint-pg-proof.json ]; then
             cp /tmp/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-pg-proof.json
