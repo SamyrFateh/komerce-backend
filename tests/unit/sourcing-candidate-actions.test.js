@@ -15,6 +15,10 @@ jest.mock('../../services/pricing-engine', () => ({ loadGlobalConfig: jest.fn() 
 jest.mock('../../services/catalog-enrichment', () => ({ enrichAndApply: jest.fn() }));
 jest.mock('../../services/catalog-candidate-product-service', () => ({
   createDraftProductFromSourcingCandidate: jest.fn(),
+  resolveCommercialTaxonomyVerdict: jest.fn(async (_q,candidate) =>
+    candidate.supplier_category === 'Phones > Mobile Phone Accessories'
+      ? {status:'AUTO_CLASSIFIED',category:'Tech',subcategory:'Phones'}
+      : {status:'REVIEW_REQUIRED',category:null,subcategory:null}),
 }));
 jest.mock('../../services/catalog-promotion', () => ({ promoteCatalog: jest.fn() }));
 
