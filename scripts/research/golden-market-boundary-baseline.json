@@ -1,0 +1,16 @@
+{
+  "experiment": "GOLDEN_MARKET_BOUNDARY",
+  "date": "2026-10-26",
+  "evidence_level": "UNIT_L2_REAL_PROJECTION_MOCKED_SQL",
+  "run": "https://github.com/SamyrFateh/komerce-backend/actions/runs/40409555172",
+  "observed": {
+    "requested_market_code": "KM",
+    "order_market_code": "CM",
+    "checkout_gate_status": "PROVED",
+    "order_market_check": null,
+    "continuity": "CONTRADICTION_HYPOTHESIS"
+  },
+  "impact": "Golden can report checkout origin proved for a selected market differing from actual order market; no external HTTP reachability established",
+  "contractApproval": "NOT_APPROVED",
+  "noProductionAccess": true
+}
