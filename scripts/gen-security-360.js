@@ -476,7 +476,7 @@ if (MODE === 'check') {
   }
   let committedJson = null;
   try { committedJson = JSON.parse(fs.readFileSync(path.join(DOCS, 'SECURITY_360.json'), 'utf8')); } catch (_) {}
-  if (!committedJson || JSON.stringify(comparableProjection(committedJson)) !== JSON.stringify(projection)) {
+  if (!committedJson || JSON.stringify(comparableProjection(committedJson)) !== JSON.stringify(comparableProjection(projection))) {
     console.error('\x1b[31m\x1b[1m✖ SECURITY_360.json est périmé.\x1b[0m');
     if (committedJson) {
       const committedProjection = comparableProjection(committedJson);
