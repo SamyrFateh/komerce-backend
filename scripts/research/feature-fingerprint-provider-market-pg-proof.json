@@ -1,0 +1,53 @@
+{
+  "schema": "fingerprint-providers-authority-ab/v1",
+  "source": "services/providers-service.js",
+  "sourceSha256": "aa95e1993689d53b2a345d90a80478459ba95cbcfb68acbedb717769e8925d84",
+  "mode": "real-service-body+injected-real-transactional-db",
+  "httpTested": false,
+  "contractApproved": false,
+  "cases": [
+    {
+      "repeat": 1,
+      "variant": "nominal_same_market",
+      "providerMarket": "KM",
+      "targetMarket": "KM",
+      "attemptAccepted": true,
+      "throwMessage": null,
+      "writtenRows": 1,
+      "marketMismatch": false
+    },
+    {
+      "repeat": 1,
+      "variant": "foreign_market",
+      "providerMarket": "KM",
+      "targetMarket": "CM",
+      "attemptAccepted": false,
+      "throwMessage": "createPhysicalOffer: provider rattaché à un autre marché",
+      "writtenRows": 0,
+      "marketMismatch": false
+    },
+    {
+      "repeat": 2,
+      "variant": "nominal_same_market",
+      "providerMarket": "KM",
+      "targetMarket": "KM",
+      "attemptAccepted": true,
+      "throwMessage": null,
+      "writtenRows": 1,
+      "marketMismatch": false
+    },
+    {
+      "repeat": 2,
+      "variant": "foreign_market",
+      "providerMarket": "KM",
+      "targetMarket": "CM",
+      "attemptAccepted": false,
+      "throwMessage": "createPhysicalOffer: provider rattaché à un autre marché",
+      "writtenRows": 0,
+      "marketMismatch": false
+    }
+  ],
+  "rollbackVerified": true,
+  "verdict": "NO_CROSS_MARKET_VIOLATION",
+  "digest": "dfda91dfeefa01df7432b7c9507f250285f50e0617608e49437bd0d85aeb579c"
+}
