@@ -918,3 +918,81 @@ describe('FP-PURCHASING-HUB — submitted PO authority A/B [experimental]', () =
       scenarios:evidence,violations:evidence.filter(x=>x.violation).length}));
   });
 });
+
+describe('FP-PATH-ASYMMETRY — compare purchase forms by identical business intent', () => {
+  test('observes five normalized decisions AND actual economic writes, twice', async () => {
+    const { compareEquivalentPaths } = require('../../scripts/research/business-path-compare');
+    const intents = [
+      { key: 'UNSUBMITTED', historicalStatus: 'pending', groupedSubmit: false, expected: 'QUARANTINE' },
+      { key: 'SUBMITTED', historicalStatus: 'confirmed', groupedSubmit: true, expected: 'ACCEPT' },
+      { key: 'CANCELLED', historicalStatus: 'cancelled', groupedSubmit: true, expected: 'QUARANTINE' },
+      { key: 'WRONG_SKU', historicalStatus: 'confirmed', groupedSubmit: true, expected: 'QUARANTINE' },
+      { key: 'EXCESS_QUANTITY', historicalStatus: 'confirmed', groupedSubmit: true, expected: 'QUARANTINE' },
+    ];
+    const cases = [];
+    for (let round = 1; round <= 2; round += 1) {
+      for (const intent of intents) {
+        const historical = await seedPurchase({ qty: 1, supplierUnitRef: 'FP-PATH-' + id().slice(0, 8) });
+        const grouped = await seedGroupedPurchase({ quantities: [1], submit: intent.groupedSubmit });
+        if (intent.historicalStatus !== 'confirmed') {
+          await query('UPDATE purchase_orders SET status = $2 WHERE id = $1',
+            [historical.po, intent.historicalStatus]);
+        }
+        if (intent.key === 'CANCELLED') {
+          await query("UPDATE purchase_orders SET status = 'cancelled' WHERE id = $1", [grouped.po]);
+        }
+        const inputQuantity = intent.key === 'EXCESS_QUANTITY' ? 2 : 1;
+        const historicalSku = intent.key === 'WRONG_SKU' ? id() : historical.sku;
+        const groupedSku = intent.key === 'WRONG_SKU' ? id() : grouped.sku;
+        const observed = async (variant, purchaseOrderId, sku, suffix) => {
+          const result = await transact(client => receiveSupplierPackage(client, {
+            reference: 'FP-PATH-' + round + '-' + intent.key + '-' + suffix,
+            contents: [{ purchase_order_id: purchaseOrderId, product_sku_id: sku, quantity: inputQuantity }],
+          }));
+          const persistedAllocations = Number((await query(
+            'SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations WHERE purchase_order_id=$1',
+            [purchaseOrderId]
+          )).rows[0].n);
+          return {
+            path:variant, intent:intent.key,
+            decision:result.quarantined ? 'QUARANTINE' : 'ACCEPT',
+            reason:result.reason_code||null,
+            persistedAllocations,
+            metadata:{round, purchase_order_id:purchaseOrderId,
+              physical_unit_state:result.unit?.state||null,
+              physical_unit_id:result.unit?.id||null,
+              inputQuantity,sku},
+          };
+        };
+        const left = await observed('purchase_order_historical',historical.po,historicalSku,'H');
+        const right = await observed('purchase_order_grouped',grouped.po,groupedSku,'G');
+        cases.push({left,right});
+        expect(left.decision).toBe(intent.expected);
+        expect(right.decision).toBe(intent.expected);
+        expect(left.persistedAllocations).toBe(intent.expected==='ACCEPT' ? 1 : 0);
+        expect(right.persistedAllocations).toBe(intent.expected==='ACCEPT' ? 1 : 0);
+      }
+    }
+    const report = compareEquivalentPaths({
+      pairId:'purchasing-to-hub-historical-vs-grouped',
+      contractRefs:['features/purchasing.feature.js','features/logistics.feature.js',
+        'docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md'],
+      oracleApproval:'UNAPPROVED',
+      cases,
+    });
+    if (process.env.FP_PATH_OUTPUT) {
+      fs.writeFileSync(process.env.FP_PATH_OUTPUT, JSON.stringify(report,null,2)+'\\n');
+    }
+    console.log('FP_PATH_FINGERPRINT '+JSON.stringify({
+      pairId:report.pairId,
+      caseCount:report.caseCount,
+      mismatchCount:report.mismatchCount,
+      verdict:report.verdict,
+      intentResults:report.results.map(v=>({
+        intent:v.intent,left:v.left,right:v.right,outcome:v.outcome,
+      })),
+    }));
+    expect(report.caseCount).toBe(10);
+    expect(report.mismatchCount).toBe(0);
+  });
+});
