@@ -25,7 +25,7 @@
 const db = require('../db');
 const scanner = require('./supplier-catalog-scanner');
 const pricingEngine = require('./pricing-engine');
-const { createDraftProductFromSourcingCandidate } = require('./catalog-candidate-product-service');
+const { createDraftProductFromSourcingCandidate, resolveCommercialTaxonomyVerdict } = require('./catalog-candidate-product-service');
 const { promoteCatalog } = require('./catalog-promotion');
 const importRuns = require('./import-runtime-runs');
 const certification = require('./sourcing-certification');
@@ -233,9 +233,11 @@ async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
     const provider = candidate.normalized_source_contract?.supplier_name || candidate.supplier_name;
     const sourcePath = candidate.supplier_category
       || candidate.normalized_source_contract?.supplier_category;
-    const commercialMapped = !commercialConfirmed && provider && sourcePath
-      ? await commercialMapping.findConfirmed(provider,sourcePath,client)
+    const commercialVerdict = !commercialConfirmed && sourcePath
+      ? await resolveCommercialTaxonomyVerdict(client,candidate)
       : null;
+    const commercialMapped = commercialVerdict?.category && commercialVerdict?.subcategory
+      && commercialVerdict?.status === 'AUTO_CLASSIFIED';
     if (!commercialConfirmed && !commercialMapped && (!candidate.komerce_category
         || candidate.data_sources?.category === 'default'
         || candidate.scan_result?.customs_review?.status === 'REQUIRED')) {
@@ -400,7 +402,7 @@ class SourcingCatalogueHandoffError extends Error {
 
 async function catalogueHandoffCandidateRows(importId, q = db) {
   const { rows } = await q.query(
-    `SELECT id, state, product_id, supplier_name, supplier_category, supplier_product_id,
+    `SELECT id, state, product_id, supplier_name, supplier_category, product_name, supplier_product_id,
             raw_payload, normalized_source_contract, scan_result,
             rejected_reason, promotion_status, promotion_reasons, findings
        FROM sourcing_candidates
@@ -451,8 +453,11 @@ async function handoffCertifiedImport(importId, {
       const sourcePath = row.supplier_category || row.normalized_source_contract?.supplier_category;
       if (!classificationOnly || !provider || !sourcePath) continue;
       // eslint-disable-next-line no-await-in-loop
-      const mapping = await commercialMapping.findConfirmed(provider, sourcePath, q);
-      if (!mapping) continue;
+      // Reuse the single Catalogue commercial classifier (confirmed mapping,
+      // object phrase, then supplier category), not a second eligibility rule.
+      // eslint-disable-next-line no-await-in-loop
+      const verdict = await resolveCommercialTaxonomyVerdict(q,row);
+      if (verdict.status !== 'AUTO_CLASSIFIED' || !verdict.category || !verdict.subcategory) continue;
     }
     if (row.state === 'imported_to_catalog' && row.product_id) {
       alreadyCatalogued += 1;
