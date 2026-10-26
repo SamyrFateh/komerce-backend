@@ -1,0 +1,51 @@
+name: R&D ECO Purchasing to Hub A/B
+on:
+  push:
+    branches:
+      - research/feature-fingerprint-eco-pg-20261026
+    paths:
+      - .github/workflows/research-purchasing-hub-eco.yml
+      - tests/integration/hub-physical-identity-postgres.test.js
+      - services/hub-physical-identity.js
+permissions:
+  contents: read
+concurrency:
+  group: research-purchasing-hub-eco
+  cancel-in-progress: true
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install declared dependencies
+        run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
+      - name: Prepare isolated DB
+        run: |
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-purchasing-hub-schema.log
+          node scripts/ci-db-bootstrap.js
+      - name: Only Purchasing-Hub A/B (no broad E2E)
+        run: |
+          ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/integration/hub-physical-identity-postgres.test.js --testNamePattern 'FP-PURCHASING-HUB'
