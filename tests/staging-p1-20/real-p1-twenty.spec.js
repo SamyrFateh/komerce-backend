@@ -84,7 +84,7 @@ async function inspectBuyer(request,manifest){
   const ids=new Set(body.products.map(p=>String(p.id)));
   const matched=(manifest.products||[])
     .filter(item=>item.global?.product_id&&ids.has(String(item.global.product_id)));
-  return {http:200,market:'KM',count:body.products.length,
+  return {http:200,market:'KM',count:body.products.length,listed_ids:[...ids],
     matched:matched.length,
     missing:(manifest.products||[])
       .filter(item=>!item.global?.product_id||!ids.has(String(item.global.product_id)))
@@ -94,13 +94,68 @@ async function inspectBuyer(request,manifest){
     status:matched.length===20?'BUYER_20_COHORT_ITEMS_OBSERVED':'BUYER_20_NOT_PROVED'};
 }
 
+
+/*
+ * Explicit render oracles. A shell/sidebar and HTTP 200 are NOT evidence
+ * that the business workspace finished loading.
+ */
+const SCREEN_ORACLES=Object.freeze({
+  '01-sourcing':{
+    root:'[data-workspace-kind="sourcing"]',
+    heading:'h1.kmc-workspace-title',title:'Produits à qualifier',
+    evidence:'.kmc-workspace-metrics'
+  },
+  '02-raffinerie':{
+    root:'[data-cockpit-domain="imports"] .kir-page:not(.kir-loading)',
+    heading:'h1',title:'Suivi d’import — Source → Catalogue',
+    evidence:'.kir-main, .kir-empty-launch'
+  },
+  '03-catalogue-global':{
+    root:'.kmc-operations-workspace',
+    heading:'h1.kmc-workspace-title',title:'Catalogue global',
+    evidence:'.kmc-workspace-section'
+  },
+  '04-decision-marche':{
+    root:'#market-catalog-root[data-workspace-kind="market-catalog"]',
+    heading:'h1.kmc-workspace-title',title:'Choisir les produits du marché',
+    evidence:'[data-market-catalog-overview="decision-first-v1"]'
+  },
+  '05-prix-local':{
+    root:'.kmc-pricing-approved-layout',
+    heading:'h1.kmc-workspace-title',title:'Modèle de coûts · KM',
+    evidence:'.kmc-market-decision-hero'
+  },
+  '06-boutique':{
+    root:'#k-grid',
+    heading:null,title:null,evidence:null
+  }
+});
+async function verifyRenderedBusinessSurface(page,stage){
+  const oracle=SCREEN_ORACLES[stage.key];
+  if(!oracle)throw Error('P1_20_NO_SCREEN_ORACLE_'+stage.key);
+  const root=page.locator(oracle.root).first();
+  await expect(root,'Le contenu métier '+stage.key+' doit être monté, pas seulement le shell').toBeVisible({timeout:30000});
+  let heading=null;
+  if(oracle.heading){
+    const element=root.locator(oracle.heading).first();
+    await expect(element,'Le vrai titre métier doit être visible').toContainText(oracle.title,{timeout:15000});
+    heading=(await element.innerText()).trim();
+  }
+  if(oracle.evidence){
+    await expect(root.locator(oracle.evidence).first(),
+      'Une projection métier, un état vide terminal ou un état d’erreur explicite est requis'
+    ).toBeVisible({timeout:30000});
+  }
+  return {oracle:stage.key,root:oracle.root,heading,rendered:true};
+}
+
 for(const stage of STAGES){
   test(stage.key+' · '+stage.route,async({page,context,request},info)=>{
     const observation={stage:stage.key,role:stage.role||'anonymous',
       mode:HUMAN?'HUMAN_CURATE':'READ_ONLY',
       target:stage.route,market:MARKET,
       expected_sha:process.env.E2E_EXPECTED_DEPLOY_SHA||null,
-      start_sha:null,end_sha:null,actual_url:null,http:null,
+      start_sha:null,end_sha:null,actual_url:null,actual_search:null,ui_gate:null,http:null,
       writes_allowed:[],writes_blocked:[],api5xx:[],js_errors:[],
       buyer:null,visible_cards:null,verdict:'NOT_PROVEN'};
     page.on('pageerror',error=>observation.js_errors.push(error.message.slice(0,180)));
@@ -142,15 +197,37 @@ for(const stage of STAGES){
         await expect.poll(async()=>page.locator('body').innerText()
           .then(text=>text.trim().length),{timeout:15000})
           .toBeGreaterThan(60);
-        observation.actual_url=new URL(page.url()).pathname;
-        expect(observation.actual_url).not.toBe('/');
-        expect(observation.actual_url).not.toBe('/login.html');
+        const actual=new URL(page.url());
+        const expected=new URL(ORIGIN+stage.route);
+        observation.actual_url=actual.pathname;
+        observation.actual_search=actual.search;
+        expect(observation.actual_url,'L’écran doit rester sur la route métier demandée').toBe(expected.pathname);
+        if(expected.searchParams.has('market')){
+          expect(actual.searchParams.get('market'),'Contexte marché KM perdu').toBe(MARKET);
+        }
+        observation.ui_gate=await verifyRenderedBusinessSurface(page,stage);
       });
       if(stage.area==='buyer'){
         await test.step('Observer les vingt produits exacts sur le vrai marché KM',async()=>{
           if(!fs.existsSync(MANIFEST))throw Error('P1_20_SOURCE_MANIFEST_MISSING');
           const manifest=JSON.parse(fs.readFileSync(MANIFEST,'utf8'));
           observation.buyer=await inspectBuyer(request,manifest);
+          // Functional negative oracle: a source lacking ANY sale gate must
+          // never appear in the buyer API. Independent from the 20-product GO.
+          const listed=new Set(observation.buyer.listed_ids||[]);
+          const forbidden=(manifest.products||[]).filter(item=>
+            item.global?.product_id&&(
+              item.sourcing?.sourcing_certified!==true||
+              item.global?.is_active!==true||
+              item.global?.is_available!==true||
+              item.global?.lifecycle_status!=='active'||
+              item.market?.commercial_exposure!=='ENABLED'||
+              item.market?.price_status!=='LOCAL_ACTIVE'
+            ));
+          const leaks=forbidden.filter(item=>listed.has(String(item.global.product_id)));
+          observation.buyer.negative_gate={tested:forbidden.length,
+            leaked_product_refs:leaks.map(item=>item.global.product_ref)};
+          expect(leaks,'Un produit non autorisé ou sans prix actif ne doit jamais être achetable').toEqual([]);
           observation.visible_cards=await page.locator('#k-grid .k-card,#k-grid .k-promo-card').count();
           for(const entry of manifest.products||[]){
             if(!entry.global?.product_id)continue;
