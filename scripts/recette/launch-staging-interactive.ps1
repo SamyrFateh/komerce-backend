@@ -19,7 +19,7 @@ param(
   [string]$Role = 'admin',
   [ValidateSet('desktop','mobile','both')]
   [string]$Device = 'desktop',
-  [ValidateSet('ui','debug','headed','list')]
+  [ValidateSet('ui','manual','debug','headed','list')]
   [string]$Mode = 'ui'
 )
 $ErrorActionPreference='Stop'
@@ -30,7 +30,7 @@ $emailKey=$prefix+'EMAIL'
 $passwordKey=$prefix+'PASSWORD'
 $names=@('E2E_STAGING_BASE_URL','E2E_EXPECTED_DEPLOY_SHA',
   'E2E_INTERACTIVE_ROLE','E2E_INTERACTIVE_DOMAIN','E2E_INTERACTIVE_DEVICE',
-  'E2E_INTERACTIVE_HEADLESS',$emailKey,$passwordKey)
+  'E2E_INTERACTIVE_HEADLESS','E2E_INTERACTIVE_PAUSE',$emailKey,$passwordKey)
 $old=@{}
 foreach($name in $names) {
   $old[$name]=[Environment]::GetEnvironmentVariable($name,'Process')
@@ -45,6 +45,7 @@ try {
   [Environment]::SetEnvironmentVariable('E2E_INTERACTIVE_DOMAIN',$Domain,'Process')
   [Environment]::SetEnvironmentVariable('E2E_INTERACTIVE_DEVICE',$Device,'Process')
   [Environment]::SetEnvironmentVariable('E2E_INTERACTIVE_HEADLESS','0','Process')
+  [Environment]::SetEnvironmentVariable('E2E_INTERACTIVE_PAUSE',$(if($Mode -eq 'manual'){'1'}else{'0'}),'Process')
 
   Write-Host ('Komerce — staging distant | Domaine: '+$Domain+' | Rôle: '+$Role+' | Écran: '+$Device)
   Write-Host 'Les actions HTTP de modification sont bloquées pendant la recette interactive.'
@@ -95,6 +96,7 @@ try {
   $pwArgs=@('playwright','test','--config=playwright.staging-interactive.config.js')
   switch($Mode){
     'ui' {$pwArgs+='--ui'}
+    'manual' {$pwArgs+='--debug'}
     'debug' {$pwArgs+='--debug'}
     'headed' {$pwArgs+='--headed'}
   }
