@@ -21,6 +21,7 @@
 const { test, expect } = require('@playwright/test');
 const { BASE_URL, IS_REMOTE, waitForGrid } = require('./helpers/boutique.helpers');
 const { capturePageState } = require('./helpers/diagnostic.helpers');
+const { EXPECTED_MOBILE_TABS } = require('./helpers/mobile-nav-contract');
 
 test.describe('⚙️ CALIBRATION — Validation des sélecteurs et hypothèses', () => {
 
@@ -128,12 +129,9 @@ test.describe('⚙️ CALIBRATION — Validation des sélecteurs et hypothèses'
         els.map(el => el.dataset.tab)
       );
       console.log('[CAL-04] Onglets bnav trouvés :', tabs);
-      expect(tabs).toContain('shop');
-      // Navigation canonique : l'ancien onglet 'group' a été remplacé.
-      // Partages et Mon Komerce sont deux destinations distinctes.
-      expect(tabs).toContain('shares');
-      expect(tabs).toContain('komerce');
-      expect(tabs).not.toContain('group');
+      // Le contrat est partagé avec le test unitaire qui vérifie la source HTML.
+      // Un tab absent ou inventé ne peut pas passer silencieusement.
+      expect(tabs).toEqual([...EXPECTED_MOBILE_TABS]);
     }
   });
 
