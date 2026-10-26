@@ -1,0 +1,102 @@
+{
+  "schema": "feature-output-hypotheses/v1",
+  "status": "STATIC_HYPOTHESES_NOT_PROOFS",
+  "scanScope": {
+    "featureFileCount": 36,
+    "mappedServiceRouteCount": 574,
+    "scannedSourceCount": 574
+  },
+  "findings": [
+    {
+      "kind": "INPUT_LENGTH_AS_EFFECT",
+      "feature": [
+        "unsold-resolution"
+      ],
+      "path": "routes/unsold.js",
+      "line": 58,
+      "responseField": "items_created",
+      "collection": "newUnsold",
+      "basis": "Response effect count uses collection length while preceding INSERT may be suppressed",
+      "codeSha256": "5a8ceca198aa53e1b54d127c19c9c81dc32a532844ff6ca5f4f9176114562f3d",
+      "status": "H0_UNVERIFIED",
+      "priority": "investigate",
+      "provenance": {
+        "sql": "ON CONFLICT DO NOTHING`, [row.order_id, row.product_id, row.product",
+        "response": "items_created: newUnsold.length"
+      }
+    },
+    {
+      "kind": "UNCONDITIONAL_EFFECT_INCREMENT",
+      "feature": [
+        "logistics"
+      ],
+      "path": "services/auto-parcel.js",
+      "line": 193,
+      "variable": "assigned",
+      "basis": "SQL INSERT may write zero rows; increment does not inspect query.rowCount",
+      "codeSha256": "39ad8cf05c02e67016911cbb40e038d2cb7c39a7c5300a102a9ce2778b51e6ca",
+      "status": "H0_UNVERIFIED",
+      "priority": "investigate",
+      "provenance": {
+        "sql": "ON CONFLICT DO NOTHING `, [parcelId, item.id, item.quantity || 1, ite",
+        "counter": "); assigned++; } catch (e) { // Minimal"
+      }
+    },
+    {
+      "kind": "UNCONDITIONAL_EFFECT_INCREMENT",
+      "feature": [
+        "logistics"
+      ],
+      "path": "services/auto-parcel.js",
+      "line": 193,
+      "variable": "assigned",
+      "basis": "SQL INSERT may write zero rows; increment does not inspect query.rowCount",
+      "codeSha256": "39ad8cf05c02e67016911cbb40e038d2cb7c39a7c5300a102a9ce2778b51e6ca",
+      "status": "H0_UNVERIFIED",
+      "priority": "investigate",
+      "provenance": {
+        "sql": "ON CONFLICT DO NOTHING `, [parcelId, item.id, item.quantity || 1, ite",
+        "counter": "item.quantity || 1]); assigned++; "
+      }
+    },
+    {
+      "kind": "UNCONDITIONAL_EFFECT_INCREMENT",
+      "feature": [
+        "logistics"
+      ],
+      "path": "services/auto-parcel.js",
+      "line": 202,
+      "variable": "assigned",
+      "basis": "SQL INSERT may write zero rows; increment does not inspect query.rowCount",
+      "codeSha256": "39ad8cf05c02e67016911cbb40e038d2cb7c39a7c5300a102a9ce2778b51e6ca",
+      "status": "H0_UNVERIFIED",
+      "priority": "investigate",
+      "provenance": {
+        "sql": "ON CONFLICT DO NOTHING `, [parcelId, item.id, item.quantity || 1]);",
+        "counter": "); assigned++; } catch (e2) { log.w"
+      }
+    },
+    {
+      "kind": "UNCONDITIONAL_EFFECT_INCREMENT",
+      "feature": [
+        "logistics"
+      ],
+      "path": "services/parcelOptimizationService.js",
+      "line": 512,
+      "variable": "totalAssigned",
+      "basis": "SQL INSERT may write zero rows; increment does not inspect query.rowCount",
+      "codeSha256": "36bb8c81668ca67731e0ac862309e7fe4121150c05a6587551a84abd4092bf41",
+      "status": "H0_UNVERIFIED",
+      "priority": "investigate",
+      "provenance": {
+        "sql": "ON CONFLICT DO NOTHING `, [parcel.id, item.order_item_id, item.produc",
+        "counter": "); totalAssigned++; } persistedParcels.push({"
+      }
+    }
+  ],
+  "metrics": {
+    "hypotheses": 5,
+    "unknownTrueBugs": "NOT_MEASURED"
+  },
+  "digest": "c3b80dce8631a20ec586eba616533f9a594c45d90992d8cec7a4bbacf9f970b3"
+}
