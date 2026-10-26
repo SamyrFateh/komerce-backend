@@ -1,0 +1,59 @@
+name: R&D ECO Shared Parcel Maturity A/B
+on:
+  push:
+    branches:
+      - research/golden-continuity-checkpoints-20261026
+    paths:
+      - .github/workflows/research-golden-parcel-maturity.yml
+      - scripts/research/golden-parcel-maturity-pg.js
+      - services/pricing-maturity.js
+      - tests/unit/pricing-maturity.test.js
+permissions:
+  contents: read
+concurrency:
+  group: fp-parcel-maturity-eco
+  cancel-in-progress: true
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
+      KOMERCE_DISABLE_CRONS: 'true'
+      FP_MATURITY_OUTPUT: /tmp/fp-maturity-membership.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
+      - name: Prepare disposable PG
+        run: |
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-maturity-schema.log
+          node scripts/ci-db-bootstrap.js
+      - name: Historical carrier vs shared parcel A/B
+        run: node scripts/research/golden-parcel-maturity-pg.js
+      - name: Preserve full evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parcel-maturity-proof-${{ github.run_id }}
+          path: /tmp/fp-maturity-membership.json
+          if-no-files-found: ignore
+          retention-days: 5
