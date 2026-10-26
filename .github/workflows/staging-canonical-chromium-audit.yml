@@ -20,13 +20,14 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issues' && github.actor == github.repository_owner &&
-       github.event.issue.title == '[staging-op] canonical-chromium-audit')
+       (github.event.issue.title == '[staging-op] canonical-chromium-audit' ||
+        github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline'))
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
       CI: 'true'
       E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
-      E2E_AUDIT_ROLES: ${{ github.event_name == 'workflow_dispatch' && inputs.roles || 'all' }}
+      E2E_AUDIT_ROLES: ${{ github.event_name == 'workflow_dispatch' && inputs.roles || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'baseline' || 'all') }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
