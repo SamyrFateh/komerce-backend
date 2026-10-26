@@ -46,6 +46,13 @@ function projectContinuity(upstream,downstream=null){
  if(gate('CHECKOUT_ORIGIN_PROVED')?.status!=='PROVED')checkoutGaps.push('CHECKOUT_ORIGIN_NOT_PROVED');
  const fulfillmentConflicts=[],fulfillmentGaps=[];
  if(!downstream)fulfillmentGaps.push('GOLDEN_ORDER_PROJECTION_NOT_SUPPLIED');
+ const purchaseIdentity=gate('CUSTOMER_ORDER_PROVED');
+ const purchaseStep=step('PURCHASING');
+ if(purchaseIdentity?.status==='ANOMALIE' && purchaseStep?.passed===true){
+  fulfillmentConflicts.push('UPSTREAM_PURCHASE_SKU_ANOMALY_VS_GOLDEN_PURCHASING_PASS');
+ }else if(purchaseStep?.passed===true && purchaseIdentity?.status!=='PROVED'){
+  fulfillmentGaps.push('UPSTREAM_PURCHASE_IDENTITY_NOT_PROVED');
+ }
  const paymentGate=gate('PAYMENT_FINAL_PROVED');
  const paymentStep=step('CLIENT_PAYMENT');
  if(paymentGate?.status==='ANOMALIE'&&paymentStep?.passed===true)fulfillmentConflicts.push('PAYMENT_AUTHORITY_ANOMALY_VS_ORDER_PAYMENT_PASS');
