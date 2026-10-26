@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/research-feature-fingerprint-eco-pg.yml
       - scripts/research/feature-fingerprint-hub-pg.js
+      - scripts/research/feature-fingerprint-auto-parcel-pg.js
 permissions:
   contents: write
 concurrency:
@@ -34,6 +35,7 @@ jobs:
       DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
       KOMERCE_DISABLE_CRONS: 'true'
       FP_OUTPUT: /tmp/feature-fingerprint-pg-proof.json
+      FP_AUTOPARCEL_OUTPUT: /tmp/feature-fingerprint-auto-parcel-pg-proof.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -61,6 +63,11 @@ jobs:
         run: |
           set -o pipefail
           node scripts/research/feature-fingerprint-hub-pg.js 2>&1 | tee /tmp/fp-replay.log
+      - name: R&D second feature — auto-parcel actual persisted count
+        id: auto_parcel
+        run: |
+          set -o pipefail
+          node scripts/research/feature-fingerprint-auto-parcel-pg.js 2>&1 | tee /tmp/fp-auto-parcel.log
       - name: Report
         if: always()
         run: |
@@ -85,15 +92,21 @@ jobs:
           STAGE_BOOTSTRAP: ${{ steps.bootstrap.outcome }}
           STAGE_REPLAY: ${{ steps.replay.outcome }}
           STAGE_UNIT: ${{ steps.unit.outcome }}
+          STAGE_AUTO_PARCEL: ${{ steps.auto_parcel.outcome }}
         run: |
           if [ -f /tmp/feature-fingerprint-pg-proof.json ]; then
             cp /tmp/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-pg-proof.json
           else
-            node -e 'const fs=require("fs");const logs={unit:"/tmp/fp-unit.log",install:"/tmp/fp-install.log",schema:"/tmp/fp-schema-load.log",bootstrap:"/tmp/fp-bootstrap.log",replay:"/tmp/fp-replay.log"};const tails=Object.fromEntries(Object.entries(logs).map(([k,p])=>[k,fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2200):"NOT_RUN"]));fs.writeFileSync("scripts/research/feature-fingerprint-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",job_status:process.env.JOB_RESULT,stages:{deps:process.env.STAGE_DEPS,bootstrap:process.env.STAGE_BOOTSTRAP,unit:process.env.STAGE_UNIT,replay:process.env.STAGE_REPLAY},tails},null,2)+"\\n");'
+            node -e 'const fs=require("fs");const logs={auto_parcel:"/tmp/fp-auto-parcel.log",unit:"/tmp/fp-unit.log",install:"/tmp/fp-install.log",schema:"/tmp/fp-schema-load.log",bootstrap:"/tmp/fp-bootstrap.log",replay:"/tmp/fp-replay.log"};const tails=Object.fromEntries(Object.entries(logs).map(([k,p])=>[k,fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2200):"NOT_RUN"]));fs.writeFileSync("scripts/research/feature-fingerprint-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",job_status:process.env.JOB_RESULT,stages:{deps:process.env.STAGE_DEPS,bootstrap:process.env.STAGE_BOOTSTRAP,unit:process.env.STAGE_UNIT,replay:process.env.STAGE_REPLAY,auto_parcel:process.env.STAGE_AUTO_PARCEL},tails},null,2)+"\\n");'
+          fi
+          if [ -f /tmp/feature-fingerprint-auto-parcel-pg-proof.json ]; then
+            cp /tmp/feature-fingerprint-auto-parcel-pg-proof.json scripts/research/feature-fingerprint-auto-parcel-pg-proof.json
+          else
+            node -e 'const fs=require("fs");const p="/tmp/fp-auto-parcel.log";fs.writeFileSync("scripts/research/feature-fingerprint-auto-parcel-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",stage:process.env.STAGE_AUTO_PARCEL||"unknown",tail:fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2000):"NOT_RUN"},null,2)+"\\n");'
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add scripts/research/feature-fingerprint-pg-proof.json
+          git add scripts/research/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-auto-parcel-pg-proof.json
           if git diff --staged --quiet; then exit 0; fi
           git commit -m "research: record bounded PostgreSQL proof [skip ci]"
           git push origin HEAD:research/feature-fingerprint-eco-pg-20261026
