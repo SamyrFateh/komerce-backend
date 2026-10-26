@@ -5,7 +5,7 @@ const {projectContinuity}=require('./golden-continuity-fingerprint');
 
 const base=()=>{
  const gates=['SOURCE_PROVED','REFINERY_PROVED','CATALOG_RELEASE_PROVED','STOREFRONT_PROVED',
-              'CHECKOUT_ORIGIN_PROVED','PAYMENT_FINAL_PROVED']
+              'CHECKOUT_ORIGIN_PROVED','PAYMENT_FINAL_PROVED','CUSTOMER_ORDER_PROVED']
   .map(key=>({key,status:'PROVED',evidence:key==='CHECKOUT_ORIGIN_PROVED'?{market_code:'KM'}:{}}));
  return {
   ids:{product_id:'p1',market_code:'KM',order_reference:'O-1'},thread:{product_id:'p1',market:'KM',order_reference:'O-1',trace_id:'GT-1'},
@@ -66,13 +66,13 @@ test('an absent chain cannot become certified',()=>{
 
 test('upstream purchase SKU anomaly contradicts Golden quantity-only purchasing PASS',()=>{
  const u=base(),d=fulfillment();
- u.gates.push({key:'CUSTOMER_ORDER_PROVED',status:'ANOMALIE',anomalies:['SKU_SUBSTITUTION:oi-1']});
+ u.gates.find(g=>g.key==='CUSTOMER_ORDER_PROVED').status='ANOMALIE';
  const r=projectContinuity(u,d);
  assert.ok(cp(r,'P3_TO_P6_PAYMENT_TO_FINANCE').contradictions.includes('UPSTREAM_PURCHASE_SKU_ANOMALY_VS_GOLDEN_PURCHASING_PASS'));
 });
 test('guarded Purchasing false is no longer a contradictory PASS for wrong SKU',()=>{
  const u=base(),d=fulfillment();
- u.gates.push({key:'CUSTOMER_ORDER_PROVED',status:'ANOMALIE',anomalies:['SKU_SUBSTITUTION:oi-1']});
+ u.gates.find(g=>g.key==='CUSTOMER_ORDER_PROVED').status='ANOMALIE';
  d.steps.find(x=>x.key==='PURCHASING').passed=false;
  const r=projectContinuity(u,d);
  assert.equal(cp(r,'P3_TO_P6_PAYMENT_TO_FINANCE').contradictions.includes('UPSTREAM_PURCHASE_SKU_ANOMALY_VS_GOLDEN_PURCHASING_PASS'),false);
@@ -80,6 +80,7 @@ test('guarded Purchasing false is no longer a contradictory PASS for wrong SKU',
 });
 test('do not call a missing upstream SKU proof a confirmed bug',()=>{
  const u=base(),d=fulfillment();
+ u.gates=u.gates.filter(g=>g.key!=='CUSTOMER_ORDER_PROVED');
  const r=projectContinuity(u,d);
  assert.ok(cp(r,'P3_TO_P6_PAYMENT_TO_FINANCE').gaps.includes('UPSTREAM_PURCHASE_IDENTITY_NOT_PROVED'));
  assert.equal(r.totals.contradiction_hypotheses,0);
