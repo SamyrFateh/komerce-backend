@@ -14,7 +14,9 @@ if(!['127.0.0.1','localhost'].includes(u.hostname)||u.pathname!=='/komerce_test'
   ||process.env.NODE_ENV!=='test'||process.env.KOMERCE_DISABLE_CRONS!=='true')throw Error('DISPOSABLE_LOCAL_KOMERCE_TEST_ONLY');
 const src=fs.readFileSync(path.resolve(__dirname,'../../services/golden-e2e-cockpit.js'),'utf8');
 const prefix='SELECT oi.id AS order_item_id, oi.quantity AS ordered_qty,';
-const start=src.indexOf(prefix),end=src.indexOf('`',start);
+const purchaseAnchor=src.indexOf('const purchaseResult = await db.query(');
+const start=src.indexOf(prefix,purchaseAnchor),end=src.indexOf('`',start);
+if(purchaseAnchor<0||start<0||start<purchaseAnchor)throw Error('Golden purchasing SQL anchor missing');
 if(start<0||end<0)throw Error('Cannot extract owner SQL query; fail closed');
 const canonicalSql=src.slice(start,end);
 const sourceSha256=crypto.createHash('sha256').update(src).digest('hex');
@@ -36,7 +38,7 @@ async function seed(c,valid,marketId){
 async function main(){
  const pool=new Pool({connectionString:process.env.DATABASE_URL,max:1,connectionTimeoutMillis:5000});
  const report={schema:'FP_PURCHASE_SKU_CROSS_PATH/v1',source:'services/golden-e2e-cockpit.js',
-  sourceSha256,sqlReadFromOwner:true,oracleApproval:'DOCTRINE_REVIEW_REQUIRED',
+  sourceSha256,sqlReadFromOwner:true,selectedQuery:'purchaseResult',oracleApproval:'DOCTRINE_REVIEW_REQUIRED',
   expected:'purchasing PASS requires quantity AND purchased SKU identity matching sold order_item SKU',
   cases:[],rollbackVerified:false,protocol:'real PostgreSQL 16 isolated, no HTTP/staging'};
  let c,open=false;
