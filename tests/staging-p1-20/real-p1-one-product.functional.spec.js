@@ -129,7 +129,7 @@ test('P1-N01 · no unpriced product leaks into the public KM buyer',async({page,
 });
 
 test('P1-A01 · operator KM permissions and cross-market refusal',async({page,context,request},info)=>{
-  const proof={test:'P1-A01',market:MARKET,verdict:'NOT_PROVEN'};
+  const proof={test:'P1-A01',market:MARKET,verdict:'NOT_PROVEN',blocked_writes:[]};
   try{
     const {manifest,item}=loadRealIdentity();
     proof.sha=await pinnedSha(request,manifest);
@@ -161,6 +161,7 @@ test('P1-A01 · operator KM permissions and cross-market refusal',async({page,co
     proof.cm_http=cm.status();
     expect([401,403,404],
       'Cross-market read must be denied, no leakage 200').toContain(cm.status());
+    await browserReadOnly(page,proof.blocked_writes);
     const resp=await page.goto(ORIGIN+
       '/dashboards/canonical/market-catalog.html?market=KM&product_ref='+PRODUCT_REF,{
       waitUntil:'domcontentloaded',timeout:30000});
@@ -169,6 +170,7 @@ test('P1-A01 · operator KM permissions and cross-market refusal',async({page,co
       .toBeVisible({timeout:25000});
     proof.market_ui=(await page.locator('#market-catalog-root h1').first().innerText()).trim();
     expect(proof.market_ui).toContain('Choisir les produits du marché');
+    expect(proof.blocked_writes,'No write attempt from market decision view').toEqual([]);
     proof.verdict='KM_ROLE_AND_FOREIGN_MARKET_REFUSAL_PROVED';
   }finally{
     await annotate(info,'p1-one-product-rbac-proof.json',proof);
@@ -177,7 +179,7 @@ test('P1-A01 · operator KM permissions and cross-market refusal',async({page,co
 
 test('P1-P01 · same KPR must have approved local price AND buyer API + DOM',async({page,request},info)=>{
   const proof={test:'P1-P01',product_ref:PRODUCT_REF,candidate_ref:CANDIDATE,
-    market:MARKET,verdict:'NOT_PROVEN',human_price_decision:'NOT_PERFORMED'};
+    market:MARKET,verdict:'NOT_PROVEN',human_price_decision:'NOT_PERFORMED',blocked_writes:[]};
   try{
     const {manifest,item}=loadRealIdentity();
     proof.sha=await pinnedSha(request,manifest);
@@ -190,6 +192,7 @@ test('P1-P01 · same KPR must have approved local price AND buyer API + DOM',asy
     const publicProduct=findPublicProduct(products,item);
     proof.buyer_api={returned:products.length,matched:Boolean(publicProduct),
       product_id:publicProduct?.id||null,product_ref:publicProduct?.product_ref||null};
+    await browserReadOnly(page,proof.blocked_writes);
     await page.goto(ORIGIN+'/boutique/?market=KM',{waitUntil:'domcontentloaded',timeout:30000});
     await expect(page.locator('#k-grid')).toBeAttached({timeout:15000});
     proof.visible_cards=await page.locator('#k-grid [data-id="'+item.global.product_id+'"]').count();
@@ -202,6 +205,7 @@ test('P1-P01 · same KPR must have approved local price AND buyer API + DOM',asy
     expect(publicProduct,'Produit identique dans API KM').not.toBeNull();
     await expect(page.locator('#k-grid [data-id="'+item.global.product_id+'"]'),
       'Carte du même product_id dans la boutique KM').toHaveCount(1,{timeout:20000});
+    expect(proof.blocked_writes,'No buyer-side writes in audit').toEqual([]);
     proof.verdict='ONE_REAL_PRODUCT_FUNCTIONAL_SELLABILITY_PROVED';
   }finally{
     await annotate(info,'p1-one-product-positive-proof.json',proof);
