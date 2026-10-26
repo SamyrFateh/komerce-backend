@@ -255,7 +255,8 @@ CREATE TYPE public.user_role AS ENUM (
     'agent_hub',
     'agent_transitaire',
     'sourcing',
-    'market_operator'
+    'market_operator',
+    'finance'
 );
 
 
