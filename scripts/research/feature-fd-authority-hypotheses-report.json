@@ -1,5 +1,5 @@
 {
-  "schema": "feature-fd-authority-hypotheses/v1",
+  "schema": "feature-fd-authority-hypotheses/v2",
   "statement": "Provenance-based risk hypotheses, NOT demonstrated vulnerabilities",
   "scope": {
     "features": 36,
@@ -7,9 +7,189 @@
     "mappedFiles": 574
   },
   "metrics": {
-    "hypotheses": 105,
+    "rawHypotheses": 105,
+    "uniqueRelations": 47,
+    "triageCap": 10,
+    "deferredRelations": 37,
     "approvedOracles": 0
   },
+  "triage": [
+    {
+      "relationship": "order_items|order_item_cost_imputations|order_id,product_id|quantity",
+      "score": 17,
+      "representative": {
+        "source": "services/order-cost-snapshot.js",
+        "line": 189,
+        "feature": [
+          "orders"
+        ]
+      },
+      "sourceSites": 1,
+      "allSources": [
+        "services/order-cost-snapshot.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    },
+    {
+      "relationship": "order_items|parcel_items|product_id|quantity",
+      "score": 13,
+      "representative": {
+        "source": "services/auto-parcel.js",
+        "line": 208,
+        "feature": [
+          "logistics"
+        ]
+      },
+      "sourceSites": 7,
+      "allSources": [
+        "routes/admin/system.js",
+        "services/auto-parcel.js",
+        "services/parcel-auto-create-service.js",
+        "services/parcel-item-mutation-service.js",
+        "services/parcel-operations.js",
+        "services/parcelOptimizationService.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    },
+    {
+      "relationship": "shared_cart_items|order_items|product_id,sku_id|quantity",
+      "score": 13,
+      "representative": {
+        "source": "services/order-checkout-persistence.js",
+        "line": 191,
+        "feature": [
+          "orders"
+        ]
+      },
+      "sourceSites": 1,
+      "allSources": [
+        "services/order-checkout-persistence.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    },
+    {
+      "relationship": "order_items|hub_purchase_allocations|order_id|quantity",
+      "score": 11,
+      "representative": {
+        "source": "services/hub-physical-identity.js",
+        "line": 292,
+        "feature": [
+          "logistics"
+        ]
+      },
+      "sourceSites": 1,
+      "allSources": [
+        "services/hub-physical-identity.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    },
+    {
+      "relationship": "orders|cash_confirmation_controls|market_id,relais_id|",
+      "score": 8,
+      "representative": {
+        "source": "services/cash-confirmation-control-service.js",
+        "line": 183,
+        "feature": [
+          "payments"
+        ]
+      },
+      "sourceSites": 1,
+      "allSources": [
+        "services/cash-confirmation-control-service.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    },
+    {
+      "relationship": "orders|economic_risk_cost_events|market_id|",
+      "score": 8,
+      "representative": {
+        "source": "services/pricing-risk-period.js",
+        "line": 222,
+        "feature": [
+          "economic-engine"
+        ]
+      },
+      "sourceSites": 1,
+      "allSources": [
+        "services/pricing-risk-period.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    },
+    {
+      "relationship": "orders|hub_purchase_allocations|supplier_id,market_id|",
+      "score": 8,
+      "representative": {
+        "source": "services/hub-physical-identity.js",
+        "line": 292,
+        "feature": [
+          "logistics"
+        ]
+      },
+      "sourceSites": 1,
+      "allSources": [
+        "services/hub-physical-identity.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    },
+    {
+      "relationship": "orders|mobile_money_transactions|market_id|",
+      "score": 8,
+      "representative": {
+        "source": "services/payment-mobile-money.js",
+        "line": 254,
+        "feature": [
+          "payments"
+        ]
+      },
+      "sourceSites": 1,
+      "allSources": [
+        "services/payment-mobile-money.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    },
+    {
+      "relationship": "orders|pricing_maturity_disposition_events|market_id|",
+      "score": 8,
+      "representative": {
+        "source": "services/pricing-maturity.js",
+        "line": 515,
+        "feature": [
+          "economic-engine"
+        ]
+      },
+      "sourceSites": 1,
+      "allSources": [
+        "services/pricing-maturity.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    },
+    {
+      "relationship": "providers|physical_offers|market_id|",
+      "score": 8,
+      "representative": {
+        "source": "services/providers-service.js",
+        "line": 428,
+        "feature": [
+          "providers-services"
+        ]
+      },
+      "sourceSites": 1,
+      "allSources": [
+        "services/providers-service.js"
+      ],
+      "status": "H0_UNVERIFIED",
+      "nextStep": "independent contract review, then cheapest targeted A/B"
+    }
+  ],
   "findings": [
     {
       "type": "CROSS_FEATURE_FD_AUTHORITY_CANDIDATE",
