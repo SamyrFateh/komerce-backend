@@ -290,9 +290,17 @@
     return row.content_source === 'connector_raw' && !isFrenchLocale(row.source_locale);
   }
 
-  function hasPublishablePrice(row = {}) {
+  function hasGlobalReferencePrice(row = {}) {
     const price = Number(row.price_kmf);
-    return Number.isFinite(price) && price > 0;
+    return row.price_kmf != null && Number.isFinite(price) && price > 0;
+  }
+
+  // A global product is not yet a buyer offer. A supplier-linked draft may
+  // pass human catalog approval with price_kmf=NULL; the market operator later
+  // decides the local price, and the buyer API insists on LOCAL_ACTIVE.
+  function hasPublishablePrice(row = {}) {
+    return hasGlobalReferencePrice(row) ||
+      (row.supplier_source_linked === true && row.price_kmf == null);
   }
 
   function classificationNote(row = {}) {
@@ -307,8 +315,11 @@
     const costText = Number.isFinite(cost) && cost > 0
       ? `Coût d’achat estimé : ${formatKmf(cost)} (estimation, pas un coût réel).`
       : 'Coût d’achat estimé non renseigné.';
-    if (hasPublishablePrice(row)) return `Prix de vente global : ${formatKmf(row.price_kmf)}. ${costText}`;
-    return `Prix de vente global non défini : le produit ne peut pas être validé. ${costText} Responsable : décision prix — action « Définir le prix ».`;
+    if (hasGlobalReferencePrice(row)) return `Prix de référence global : ${formatKmf(row.price_kmf)}. ${costText}`;
+    if (hasPublishablePrice(row)) {
+      return `Référence globale sans prix : validation Catalogue possible. Le responsable pays décide ensuite du prix local ; aucune mise en vente acheteur avant LOCAL_ACTIVE. ${costText}`;
+    }
+    return `Prix global manquant ou invalide : ce produit non sourcé reste bloqué à la publication. ${costText}`;
   }
 
   function marketPriceLabel(market = {}) {
