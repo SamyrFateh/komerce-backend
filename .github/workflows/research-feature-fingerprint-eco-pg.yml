@@ -7,6 +7,7 @@ on:
       - .github/workflows/research-feature-fingerprint-eco-pg.yml
       - scripts/research/feature-fingerprint-hub-pg.js
       - scripts/research/feature-fingerprint-auto-parcel-pg.js
+      - scripts/research/feature-fingerprint-unsold-terminal-pg.js
 permissions:
   contents: write
 concurrency:
@@ -36,6 +37,7 @@ jobs:
       KOMERCE_DISABLE_CRONS: 'true'
       FP_OUTPUT: /tmp/feature-fingerprint-pg-proof.json
       FP_AUTOPARCEL_OUTPUT: /tmp/feature-fingerprint-auto-parcel-pg-proof.json
+      FP_UNSOLD_OUTPUT: /tmp/feature-fingerprint-unsold-terminal-pg-proof.json
       FP_EXPECT_FAIL_CLOSED: 'true'
     steps:
       - uses: actions/checkout@v4
@@ -74,6 +76,11 @@ jobs:
         run: |
           set -o pipefail
           node scripts/research/feature-fingerprint-auto-parcel-pg.js 2>&1 | tee /tmp/fp-auto-parcel.log
+      - name: R&D new family — unsold terminal irreversibility
+        id: unsold_terminal
+        run: |
+          set -o pipefail
+          node scripts/research/feature-fingerprint-unsold-terminal-pg.js 2>&1 | tee /tmp/fp-unsold-terminal.log
       - name: Report
         if: always()
         run: |
@@ -100,6 +107,7 @@ jobs:
           STAGE_UNIT: ${{ steps.unit.outcome }}
           STAGE_AUTO_PARCEL: ${{ steps.auto_parcel.outcome }}
           STAGE_UNIT_AUTO_PARCEL: ${{ steps.unit_auto_parcel.outcome }}
+          STAGE_UNSOLD_TERMINAL: ${{ steps.unsold_terminal.outcome }}
         run: |
           if [ -f /tmp/feature-fingerprint-pg-proof.json ]; then
             cp /tmp/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-pg-proof.json
@@ -111,9 +119,14 @@ jobs:
           else
             node -e 'const fs=require("fs");const p="/tmp/fp-auto-parcel.log";fs.writeFileSync("scripts/research/feature-fingerprint-auto-parcel-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",stage:process.env.STAGE_AUTO_PARCEL||"unknown",tail:fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2000):"NOT_RUN"},null,2)+"\\n");'
           fi
+          if [ -f /tmp/feature-fingerprint-unsold-terminal-pg-proof.json ]; then
+            cp /tmp/feature-fingerprint-unsold-terminal-pg-proof.json scripts/research/feature-fingerprint-unsold-terminal-pg-proof.json
+          else
+            node -e 'const fs=require("fs");const p="/tmp/fp-unsold-terminal.log";fs.writeFileSync("scripts/research/feature-fingerprint-unsold-terminal-pg-proof.json",JSON.stringify({status:"REPLAY_FAILED",stage:process.env.STAGE_UNSOLD_TERMINAL||"unknown",tail:fs.existsSync(p)?fs.readFileSync(p,"utf8").slice(-2200):"NOT_RUN"},null,2)+"\\n");'
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add scripts/research/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-auto-parcel-pg-proof.json
+          git add scripts/research/feature-fingerprint-pg-proof.json scripts/research/feature-fingerprint-auto-parcel-pg-proof.json scripts/research/feature-fingerprint-unsold-terminal-pg-proof.json
           if git diff --staged --quiet; then exit 0; fi
           git commit -m "research: record bounded PostgreSQL proof [skip ci]"
           git push origin HEAD:research/feature-fingerprint-eco-pg-20261026
