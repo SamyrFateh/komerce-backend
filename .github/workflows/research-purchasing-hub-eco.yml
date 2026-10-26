@@ -35,6 +35,7 @@ jobs:
       DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
       KOMERCE_DISABLE_CRONS: 'true'
       FP_EXPECT_PURCHASING_HUB_GUARD: 'true'
+      FP_PATH_OUTPUT: /tmp/feature-path-fingerprint.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,6 +48,16 @@ jobs:
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-purchasing-hub-schema.log
           node scripts/ci-db-bootstrap.js
-      - name: Only Purchasing-Hub A/B (no broad E2E)
+      - name: Calibrate pure comparator (zero database)
+        run: node --test scripts/research/business-path-compare.test.js
+      - name: Purchasing-Hub A/B and cross-path fingerprints only
         run: |
-          ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/integration/hub-physical-identity-postgres.test.js --testNamePattern 'FP-PURCHASING-HUB'
+          ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/integration/hub-physical-identity-postgres.test.js --testNamePattern 'FP-(PURCHASING-HUB|PATH-ASYMMETRY)'
+      - name: Save evidence — no branch write
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: business-path-fingerprint-${{ github.run_id }}
+          path: /tmp/feature-path-fingerprint.json
+          if-no-files-found: ignore
+          retention-days: 5
