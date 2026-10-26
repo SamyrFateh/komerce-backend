@@ -111,7 +111,7 @@ function chooseCommercialPair(pairs = [], candidate = {}, preferred = null) {
   if (suggestions[0].confidence === 'confirmed') {
     return {...suggestions[0],source:'KNOWN_COMMERCIAL_MAPPING'};
   }
-  const sourcePath = String(candidate.supplier_category || '').split(/\\s*>\\s*/).pop();
+  const sourcePath = String(candidate.supplier_category || '').split(/\s*>\s*/).pop();
   const words = new Set(normalizeWords(sourcePath).filter(w=>w.length>2));
   const scored = pairs.map(p=>{
     const label = normalizeWords([p.category_label,p.subcategory_label,p.category,p.subcategory].join(' '));
