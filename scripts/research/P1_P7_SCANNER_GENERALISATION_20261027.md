@@ -227,3 +227,41 @@ Les trois frontières qui restent à instrumenter sont `P5_P6_CASH_REALITY`, `P6
 - `P7_P5_COUNTRY_SETTLEMENT` : droits / marché opérationnel et isolement des flux de règlement pays.
 
 **11/13 instrumentées ne signifie pas 11/13 certifiées en vrai parcours client**. Aucun merge `main`, déploiement Railway, paiement réel ni écriture staging.
+
+## 27 octobre — Clôture du câblage scanner P1–P7 : **13/13 frontières instrumentées**
+
+**Validation du dernier lot** : [GitHub Actions #40524045088](https://github.com/SamyrFateh/komerce-backend/actions/runs/40524045088), CI ECO verte pour les tests P6→P1/P7→P5 ; et [double Golden #40524441346](https://github.com/SamyrFateh/komerce-backend/actions/runs/40524441346), **vert : 175/175 tests purs, deux Golden PostgreSQL isolés, tests réels des colis partagés, comparateur A/B sans asymétrie, 13/13 observées, zéro `NOT_WIRED`, zéro erreur lecteur et zéro contradiction nominale**. `main`, staging et production sont inchangés.
+
+### P6 → P1 : marge économique → décision humaine de prix
+
+`scripts/research/p6-p1-canonical-collector.js` lit `real-margin-shadow.computeOrderRealMarginShadow` (signal par commande) et la **décision locale** détenue par `product_market_price_drafts` + les événements audit `product_market_price_draft_events` (propriétaires : `market-commercial-price-service` et `market-local-price-state-transition`). Il n'appelle **aucun writer** : un écart de marge ne crée jamais un prix actif, et un brouillon `DRAFT_PENDING_GATE` ou `LOCAL_AUTHORIZED_PENDING_CUTOVER` n'est pas un prix effectif acheteur.
+
+**Golden nominal** : marge shadow = **56 %** ; aucun brouillon ni activation humaine, donc `P6_P1_PRICE_REVIEW = EVIDENCE_GAP`, aucun prix inventé, aucun changement `products.price_kmf` attribué.
+
+**Vraie contre-épreuve PostgreSQL** : dans `BEGIN/ROLLBACK`, insertion d'un **événement** `ACTIVATE` pour le vrai couple produit/marché avec `actor_id=NULL` ; SQL accepte, puis le scanner remonte `UNATTRIBUTED_PRICE_ACTIVATE_EVENT`. ROLLBACK et absence d'événement ensuite vérifiés. **L'expérience ne modifie pas le prix effectif** : elle montre une fragilité de la piste d'audit si un autre writer SQL injecte une activation sans acteur. Issue [#3071](https://github.com/SamyrFateh/komerce-backend/issues/3071).
+
+### P7 → P5 : marché/mandat → règlement pays
+
+`scripts/research/p7-p5-canonical-collector.js` lit le contrôle de marché `market-control-plane.getControlPlane` et les faits `market_settlements` reliés à `market_operating_assignments`, gardés par la migration 208 et le propriétaire `market-settlement-service`. Un règlement pays n'est **jamais** déduit d'une commission, d'un total de ventes ni d'un indicateur cash. `READY` = attestation centrale, `REQUESTED` = demande pays, `PAID` = paiement central déclaré, `RECEIVED` = accusé pays ; **aucun** statut ne constitue ici une pièce bancaire externe vérifiée. Les mandats historiques `ENDED/SUSPENDED` ne deviennent pas automatiquement invalides.
+
+**Golden nominal** : aucun settlement ni mandat actif dans la fixture ; `P7_P5_COUNTRY_SETTLEMENT = EVIDENCE_GAP`. Cela ne signifie pas qu'un paiement est dû ; le scénario n'inclut simplement aucun règlement pays.
+
+**Vraie contre-épreuve PostgreSQL** : dans `BEGIN/ROLLBACK`, créer un mandat **DRAFT jamais activé** sur le marché KM, puis attester un settlement `READY` avec la bonne devise/acteur. SQL **accepte** ; le scanner retrouve `NEW_READY_SETTLEMENT_ON_INACTIVE_ASSIGNMENT`. Le writer canonique `market-settlement-service.createReadySettlement` exige pourtant un mandat `ACTIVE`. ROLLBACK et disparition du mandat test vérifiés. **Issue [#3072](https://github.com/SamyrFateh/komerce-backend/issues/3072)**.
+
+### Bilan général — ne pas confondre couverture et certification
+
+| Mesure | Résultat |
+| --- | --- |
+| Frontières P1–P7 cartographiées et branchées aux lectures propriétaires | **13/13** |
+| Golden PO regroupée / PO historique | **2/2** |
+| Tests purs de la CI finale | **175/175** |
+| Erreurs de lecture propriétaire sur double Golden | **0** |
+| Contradictions dans le parcours nominal Golden synthétique | **0** |
+| Contre-épreuves contradictoires SQL isolées | **Exécutées avec ROLLBACK** |
+| Certification réelle storefront + OTP + checkout client + PSP + prix humain + règlement bancaire + Chromium | **Non effectuée par cette R&D** |
+
+Les anomalies SQL confirmées sont des **états persistables dans PostgreSQL de test**, pas des anomalies constatées dans les données de production, ni des preuves de fraude ou d'écriture via les API publiques. La matrice ne prétend pas prouver que toutes les fonctionnalités métier existantes ont été parcourues ou sont sans bugs. Une frontière `EVIDENCE_GAP` est volontairement comptée comme **observée**, jamais comme `GO`. Une comparaison A/B identiquement incomplète n'est pas autorisée à déclarer une preuve absente acquise.
+
+**Registre issu de cette série** : [#3057](https://github.com/SamyrFateh/komerce-backend/issues/3057) Hub anticipé (arbitrage), [#3062](https://github.com/SamyrFateh/komerce-backend/issues/3062) relais scan (arbitrage), [#3063](https://github.com/SamyrFateh/komerce-backend/issues/3063) Stripe sans PSP sur fixture (lacune), [#3064](https://github.com/SamyrFateh/komerce-backend/issues/3064) coût/article de commande étrangère (SQL), [#3065](https://github.com/SamyrFateh/komerce-backend/issues/3065) fret/article/colis/expédition incohérents (SQL), [#3068](https://github.com/SamyrFateh/komerce-backend/issues/3068) encaissement cash sur commande Stripe (SQL), [#3071](https://github.com/SamyrFateh/komerce-backend/issues/3071) événement activation sans acteur (SQL), [#3072](https://github.com/SamyrFateh/komerce-backend/issues/3072) règlement READY sous mandat DRAFT (SQL).
+
+**Prochaine phase séparée de la R&D de raccordement** : arbitrage des invariants par propriétaires, audit read-only des données réelles autorisé, correction *owner-local* avec migrations contrôlées si nécessaire, puis véritable recette utilisateur et navigateur. Pas de correction automatique, pas d'activation automatique de prix, pas de mutation de production sans revue.
