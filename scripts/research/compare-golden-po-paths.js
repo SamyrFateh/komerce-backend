@@ -149,6 +149,29 @@ function assertP4P6(p){
    freight_kmf:1500,customs_kmf:2500,
    foreign_parcel_probe:probe.outcome};
 }
+function assertP5P6(p){
+ const w=p.p1_p7_wiring;
+ const e=w?.boundaries?.find(x=>x.id==='P5_P6_CASH_REALITY');
+ const f=w?.funds_cost?.facts,d=w?.funds_cost?.diagnostics;
+ if(!w?.wired_edges?.includes('P5_P6_CASH_REALITY')||
+    !e||e.status!=='EVIDENCE_GAP'||e.contradictions?.length||
+    !Array.isArray(e.contradictions)||
+    !f||f.synthetic!==true||f.mode!=='stripe_eur'||f.collections!==0||
+    f.actual_fee_allocations!==0||
+    !d||!Array.isArray(d.gaps)||
+    !d.gaps.includes('SYNTHETIC_GOLDEN_PAYMENT_NOT_EXTERNAL_PROOF')||
+    !Array.isArray(d.contradictions)||d.contradictions.length)
+   throw Error('P5-P6: synthetic customer funds and payment fees are not independently certified');
+ const probe=w.cross_rail_funds_probe;
+ const detected=probe?.outcome==='STRIPE_ORDER_CASH_COLLECTION_ACCEPTED'&&
+   probe.hypothesis==='STRIPE_ORDER_HAS_CASH_COLLECTION';
+ const guarded=probe?.outcome==='SQL_CROSS_RAIL_COLLECTION_GUARD'&&
+   ['23514','23503','P0001'].includes(probe.sqlstate);
+ if(!detected&&!guarded)
+   throw Error('P5-P6 real SQL cross-rail cash collection proof missing');
+ return {evidence:'NO_SIGNED_CUSTOMER_FUNDS_OR_REAL_PAYMENT_FEE',
+   cash_collection_count:0,fee_allocation_count:0,negative_outcome:probe.outcome};
+}
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
  if(p.identity_status!=='NO_IDENTITY_CONTRADICTION_OBSERVED')
@@ -167,6 +190,7 @@ const norm=(p)=>{
   p5_p2_finance_truth:assertP5P2(p),
   p3_p6_purchase_cost_truth:assertP3P6(p),
   p4_p6_logistics_cost_truth:assertP4P6(p),
+  p5_p6_funds_cost_truth:assertP5P6(p),
   identity_status:p.identity_status,
   final_business_verdict:p.checkpoint,
   stage_projections:p.progressive_checkpoints.map(s=>({
