@@ -50,3 +50,34 @@ E. **Bilan qualité du détecteur** : vrais positifs / faux positifs / non déte
 - Aucune PR métier, aucune modification de `main`, Railway, base staging/production, secrets, fournisseurs ni paiements réels.
 
 Ne pas transformer le prototype en nouveau Golden ou en nouvel outil d'administration. Le niveau de preuve et le prochain adaptateur doivent rester mesurables et traçables.
+
+## 27/10 — Premiers câbles réellement raccordés
+
+Le manifeste contient 13 frontières. Les **4 premières** sont connectées au même article `order_items.id`, avec un marché sélectionné et une référence de commande explicites :
+
+- P7→P1 prix : `market-control-plane.getControlPlane` face à `resolveActiveProductMarketPricingById`.
+- P7→P1 exposition : contrôle du marché face à `catalog-market-exposure-service.getExposure`.
+- P7→P2 checkout : contrôle marché/readiness/livrabilité face à `golden-upstream-evidence.projectUpstreamEvidence` et l'identité réelle `orders.market_id`.
+- P1→P2 produit/SKU : SKU réel de `product_skus`, gate catalogue existant, exposition `ENABLED` et prix `LOCAL_ACTIVE` face à `order_items` et la preuve d'origine du checkout.
+
+Le lecteur `scripts/research/p1-p7-canonical-collector.js` utilise les services propriétaires sans HTTP storefront, et **sans filtrer la commande par le marché demandé**. Une carte de preuves incomplète, ou deux côtés tous deux `BLOCKED`, donne `EVIDENCE_GAP`, **jamais PASS**. Le gate catalogue `CATALOG_RELEASE_PROVED` est nécessaire pour appeler un SKU vendable ; la seule présence d'un SKU et d'un prix ne suffit pas.
+
+### Preuves exécutées
+
+- [CI ECO #40500266009](https://github.com/SamyrFateh/komerce-backend/actions/runs/40500266009) : 34 tests purs et 60 projections Golden verts au premier raccordement.
+- [Double Golden PG #40500271555](https://github.com/SamyrFateh/komerce-backend/actions/runs/40500271555) : deux Goldens complets en PostgreSQL 16 isolé, lecture des 4 nouveaux raccordements sans erreur des propriétaires, verdict final FINANCIAL_CLOSE_MATCHED.
+- [Contre-épreuve renforcée #40500645721](https://github.com/SamyrFateh/komerce-backend/actions/runs/40500645721) : 4 frontières observées, **4 EVIDENCE_GAP dans chaque parcours**, 9 NOT_WIRED, zéro lecture en erreur. Ce n'est pas un échec : la fixture Golden construit directement une commande, sans offrir la chaîne réelle de publication/OTP/paiement nécessaire à une certification de vendabilité. L'oracle corrigé n'affiche plus NO_CONTRADICTION_OBSERVED quand les deux propriétaires refusent la preuve.
+
+### Point d'entrée opérable, limité à une base de test locale
+
+Commande (remplacer les quatre identités par des identifiants réellement présents) :
+
+```bash
+NODE_ENV=test KOMERCE_DISABLE_CRONS=true DATABASE_URL=postgresql://localhost:5432/komerce_test \
+  npm run audit:logic:p1p7 -- --market KM --product UUID_PRODUIT \
+  --order-ref REFERENCE_COMMANDE --order-item UUID_LIGNE
+```
+
+Exigences : PostgreSQL local `komerce_test` uniquement, un article exact, `REPEATABLE READ READ ONLY`, `ROLLBACK` inconditionnel ; URL Railway et bases non-test interdites. Le script `audit:logic` historique reste inchangé et conserve ses signaux LS/LD. Les 9 autres raccordements ne sont **pas exécutés** ; le compte des processus cartographiés ne signifie pas couverture métier.
+
+**Suite prioritaire** : équiper P2→P3 et P3→P4 avec les identités `order_item_id`, `purchase_line_id`, `hub_allocation_id` et les verdicts de leurs propriétaires, puis P4→P2 et les frontières finance P5/P6. Les scénarios de marché KM/CM/CG/DJ et la recette réelle Chromium demeurent nécessaires.
