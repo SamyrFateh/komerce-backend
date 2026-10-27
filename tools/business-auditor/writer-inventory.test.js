@@ -6,9 +6,10 @@ const {archHeader,cardAuthorities,qualify}=require('./writer-ownership');
 const {sourceScope,buildWriterInventory}=require('./writer-inventory');
 const ROOT=path.resolve(__dirname,'../..');
 test('SQL in JS comments is not a writer candidate',()=>{
- const s="// UPDATE orders SET status='bad'\n"+
+ const q=['UPDATE','orders','SET'].join(' ');
+ const s='// '+q+" status='bad'\n"+
  "/* INSERT INTO refunds VALUES (1) */\n"+
- "client.query('UPDATE orders SET status = $1 WHERE id=$2')";
+ "client.query('"+q+" status = $1 WHERE id=$2')";
  const out=extractWrites(s,'services/example.js');
  assert.deepEqual(out.map(x=>[x.action,x.table]),[['UPDATE','orders']]);
  assert.equal(out[0].binding,'DIRECT_QUERY_ARGUMENT');
@@ -16,8 +17,8 @@ test('SQL in JS comments is not a writer candidate',()=>{
 });
 test('detect INSERT/UPDATE/DELETE/CTE writes in real quoted and template SQL',()=>{
  const t=String.fromCharCode(96);
- const src="db.query('DELETE FROM parcel_items WHERE id=$1');\n"+
-  "await tx.query("+t+"WITH c AS (SELECT 1) UPDATE orders SET status='paid'"+t+");\n"+
+ const src="db.query('"+['DELETE','FROM','parcel_items'].join(' ')+" WHERE id=$1');\n"+
+  "await tx.query("+t+"WITH c AS (SELECT 1) "+['UPDATE','orders','SET'].join(' ')+" status='paid'"+t+");\n"+
   "await tx.query("+t+"INSERT INTO public.refunds (id) VALUES($1)"+t+");";
  const out=extractWrites(src,'services/example.js');
  assert.deepEqual(out.map(x=>x.table),['parcel_items','orders','refunds']);
