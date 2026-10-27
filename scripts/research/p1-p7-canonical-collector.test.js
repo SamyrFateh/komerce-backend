@@ -32,6 +32,7 @@ function fixture({orderMarket='KM',skuProduct=P,checkoutStatus='NON_PROUVE',mark
   p2p4:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   p4p2:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   p5p2:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
+  p3p6:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   upstream:async(_db,{productId,marketCode,orderReference,fetchImpl})=>{
     assert.equal(productId,P);assert.equal(marketCode,'KM');
     assert.equal(orderReference,'CUSTOMER-001');
@@ -192,4 +193,24 @@ test('eight-edge assembly accepts independent P5-P2 finance owner while checkout
  assert.equal(edge(r,'P5_P2_PAYMENT_CLOSURE').status,'EVIDENCE_GAP');
  assert.equal(r.customer_finance.facts.closure_verdict,'FINANCIAL_CLOSE_MATCHED');
  assert.equal(r.customer_finance.owner_provenance.provider_confirmed,false);
+});
+
+test('ninth boundary keeps exact real-cost lineage distinct from purchase confirmation',async()=>{
+ const {assessP3P6}=require('./p3-p6-canonical-collector');
+ const f=fixture({checkoutStatus:'NON_PROUVE'});
+ f.owners.p3p6=async(_db,{item})=>assessP3P6({
+  item,
+  lines:[{id:'pl1',order_item_id:OI,purchase_order_id:'po1',
+   po_status:'confirmed',cancelled_at:null}],
+  costs:[{id:'cost1',order_id:OTHER,order_item_id:OI,cost_type:'product_purchase',
+   amount_kmf:'7000.00',is_actual:true,source:'supplier_execution_payment'}],
+  orderItemCount:1,
+  shadow:{order_id:OTHER,purchase:{state:'estimated_only',real_kmf:null,
+   flags:['no_settlement_recorded'],supplier_payments:{count:1,debit_verified:1}}},
+ });
+ const r=await collectP1P7Canonical(f.db,f.args,f.owners);
+ assert.equal(r.totals.observed,5);
+ assert.equal(r.totals.notWired,8);
+ assert.equal(edge(r,'P3_P6_PURCHASE_COST').status,'EVIDENCE_GAP');
+ assert.ok(r.supplier_cost.diagnostics.gaps.includes('ACTUAL_ALLOCATION_WITHOUT_SETTLEMENT_PROOF'));
 });
