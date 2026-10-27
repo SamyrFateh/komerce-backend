@@ -35,6 +35,8 @@ function fixture({orderMarket='KM',skuProduct=P,checkoutStatus='NON_PROUVE',mark
   p3p6:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   p4p6:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   p5p6:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
+  p6p1:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
+  p7p5:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   upstream:async(_db,{productId,marketCode,orderReference,fetchImpl})=>{
     assert.equal(productId,P);assert.equal(marketCode,'KM');
     assert.equal(orderReference,'CUSTOMER-001');
@@ -251,4 +253,21 @@ test('eleventh seam adds real shadow payment fees without inventing PSP collecti
  assert.equal(edge(r,'P5_P6_CASH_REALITY').status,'EVIDENCE_GAP');
  assert.equal(r.funds_cost.facts.collections,0);
  assert.ok(r.funds_cost.diagnostics.gaps.includes('SYNTHETIC_GOLDEN_PAYMENT_NOT_EXTERNAL_PROOF'));
+});
+
+test('all thirteen seams can be assembled with exact human pricing and market settlement owners',async()=>{
+ const {assessP6P1}=require('./p6-p1-canonical-collector');
+ const {assessP7P5}=require('./p7-p5-canonical-collector');
+ const f=fixture({checkoutStatus:'NON_PROUVE'});
+ f.owners.p6p1=async(_db,{item,market})=>assessP6P1({
+   item,market,shadow:{margin:{shadow_pct:8,basis:'real'}},draft:null,events:[]});
+ f.owners.p7p5=async(_db,{plane})=>assessP7P5({plane,settlements:[]});
+ const r=await collectP1P7Canonical(f.db,f.args,f.owners);
+ assert.ok(r.wired_edges.includes('P6_P1_PRICE_REVIEW'));
+ assert.ok(r.wired_edges.includes('P7_P5_COUNTRY_SETTLEMENT'));
+ assert.equal(r.wired_edges.length,6); // other test owner seams intentionally mocked
+ assert.equal(r.totals.notWired,7);
+ assert.equal(edge(r,'P6_P1_PRICE_REVIEW').status,'EVIDENCE_GAP');
+ assert.equal(edge(r,'P7_P5_COUNTRY_SETTLEMENT').status,'EVIDENCE_GAP');
+ assert.equal(r.verdict,'NOT_CERTIFICATION');
 });
