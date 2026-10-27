@@ -107,3 +107,19 @@ Le comparateur A/B est renforcé : absence identique de ces deux frontières sur
 ### Prochaine frontière
 
 **P4 → P2 :** appartenance d'un colis éventuellement partagé à la commande exacte, arrivée relais et scan de remise client. Raccorder `parcel_items.order_item_id`, `scans.order_id / parcel_id` et le propriétaire de la remise. Garder l'exception des colis partagés : `parcels.order_id` n'a pas à correspondre à toutes les commandes transportées.
+
+## 27 octobre — P4 → P2, septième frontière raccordée
+
+Le scanner suit maintenant `P4_P2_RELAY_HANDOFF` grâce aux **lecteurs propriétaires existants** :
+- `parcel-order-membership.listParcelsRepresentingOrder` récupère les colis par appartenance réelle. Pour un colis partagé, `parcels.order_id` peut désigner une autre commande porteuse. La preuve est `parcel_items.order_item_id → order_items.order_id`.
+- `customer-handoff-reconciliation.reconcileCustomerHandoff` retourne le verdict de remise officiel, et l'observateur vérifie indépendamment `scans.order_id`, `scans.parcel_id`, `scans.pickup_relais_id` par rapport à la commande et au colis.
+- Avant scan ou avec remise partielle, `HANDOFF_PENDING` reste `EVIDENCE_GAP`. Si une ancienne commande n'a pas de ligne de colis, un colis d'en-tête peut être présent mais **n'est pas certifié au grain order_item**.
+- Les contradictions de scan sur colis étranger, de scan sur un autre relais, de fausse couverture ou de mauvaise commande sont des **hypothèses**, jusqu'à preuve PostgreSQL indépendante.
+
+### Preuve nominale et contre-épreuve
+
+[Run PostgreSQL #40506072944](https://github.com/SamyrFateh/komerce-backend/actions/runs/40506072944) : **86/86 tests purs**, deux Goldens, `7/13` frontières lues, `0` contradiction nominale, `6` non raccordées. `P4_P2_RELAY_HANDOFF = NO_CONTRADICTION_OBSERVED` avec un colis membre, une ligne, un scan et `HANDOFF_MATCHED` sur les deux formes de PO.
+
+**Contre-épreuve vraie PostgreSQL :** créer un autre relais sur le marché, modifier `scans.pickup_relais_id` du scan de retrait vers ce relais dans `BEGIN/ROLLBACK`. Le service canonique retourne encore `HANDOFF_MATCHED` alors que le scanner rapporte `COLLECTION_SCAN_FOREIGN_RELAY`. Retour à l'original vérifié en SQL ; aucune donnée persistée. L'issue [#3062](https://github.com/SamyrFateh/komerce-backend/issues/3062) suit l'arbitrage avec l'owner Logistics / Orders. **Défaut métier à qualifier**, pas une preuve d'incident réel ni une autorisation de modifier le service sans décision sur les transferts exceptionnels de relais.
+
+**Périmètre restant** : 6/13 : P5→P2, P3→P6, P4→P6, P5→P6, P6→P1, P7→P5. La certification réelle nécessite encore la chaîne publication/checkout authentique, finance et navigation Chromium. Aucun changement de `main`, staging, production, PSP ou fournisseur.
