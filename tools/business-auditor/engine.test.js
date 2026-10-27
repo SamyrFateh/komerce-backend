@@ -85,5 +85,5 @@ test('markdown report explicitly warns against automatic bug confirmation',()=>{
    status:'DATA_INTEGRITY_SIGNAL',detectedAtLeast:1,samples:['cost-1'],issue:3064}]}};
  const text=reportMarkdown(report);
  assert.match(text,/KBA-001/);assert.match(text,/cost-1/);
- assert.match(text,/pas une certification métier automatique/);
+ assert.match(text,/jamais une certification métier automatique/);
 });
