@@ -238,6 +238,6 @@ describe('progressive category-level public projection',()=>{
     const {publicProductColumns}=require('../../services/catalog-public-view');
     const columns=publicProductColumns('p');
     expect(columns).toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END AS subcategory');
-    expect(columns).not.toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END AS subcategory');
+    expect(columns).not.toContain('COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory');
   });
 });
