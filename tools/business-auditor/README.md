@@ -1,4 +1,4 @@
-# Komerce Independent Business Auditor — R&D v0.2
+# Komerce Independent Business Auditor — R&D v0.3
 
 **Goal:** detect independently reproducible contradictions between business rules,
 persisted facts and process invariants. A green Golden is not certification.
@@ -107,3 +107,35 @@ that production data contains any specific anomaly.
 
 This is still an incremental discovery tool, **not** complete formal
 verification of all business code.
+
+
+## V0.3 — dependable reviewer provenance and payment-key evidence
+
+**Verified GitHub Actions proof:** https://github.com/SamyrFateh/komerce-backend/actions/runs/40544895889
+
+- **34/34 tests** in the standalone auditor job, with local disposable PostgreSQL.
+- **1,489 source files** scanned and **23 lexical findings**, including two
+  deliberate scanner-test signals, not production writers. All 23 have
+  owner/scope classifications and **23/23 exact Git blob fingerprints matched**.
+- **13 investigation candidates** remain after source classification.
+  These are not 13 confirmed bugs.
+- Two independent code detector families emit **5 precise code signals**:
+  - KBA-C01: two count-after-ignored-conflict sites in auto-parcel plus one in
+    parcelOptimizationService. Issue #2949 reproduced auto-parcel under mocked
+    rowCount; physical PostgreSQL concurrency has not been certified.
+  - KBA-C02: wallet admin credit uses a time-derived request identity;
+    paypal-client has a time-derived refund fallback **with a durable
+    providerRequestKey override**. Caller reachability, real retry and PSP
+    result must be verified separately.
+- **7 SQL data rules** ran in REPEATABLE READ READ ONLY on disposable clean PG;
+  0 signals in that DB says nothing about real staging/production data.
+- A previously reviewed source file that changes receives
+  SOURCE_CHANGED_REVIEW_STALE, and R&D CI must fail instead of silently
+  preserving that review as current.
+- No Komerce business-service fix, no online PSP call, no SQL writes, no PR,
+  merge or deployment.
+
+**Next gates:** authoritative invariant inventory beyond seven SQL checks,
+owner arbitration of 13 candidates, authorization for real read-only data
+audit, physical conflict/retry reproduction, and extraction to a separate
+distribution when justified.
