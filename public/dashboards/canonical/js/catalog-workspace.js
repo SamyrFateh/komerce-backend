@@ -1167,9 +1167,10 @@
       rootNode, ui, 'Catalogue global · produits',
       'Tous les produits remis par la Raffinerie, même en attente de classification, préparation ou validation.'
     );
+    if (slot.parentNode) slot.parentNode.setAttribute('id', 'catalog-products');
     const filters = context.catalogFilters;
     const bar = doc.createElement('div');
-    bar.className = 'kmc-workspace-section-actions';
+    bar.className = 'kmc-workspace-section-actions kmc-catalog-filter-bar';
     const field = (label, control) => {
       const wrapper = doc.createElement('label');
       wrapper.className = 'kmc-catalog-filter';
@@ -1262,11 +1263,24 @@
         const tr = doc.createElement('tr');
         tr.setAttribute('data-product-ref', row.product_ref);
         const productCell = doc.createElement('td');
+        const productWrap = doc.createElement('div');
+        productWrap.className = 'kmc-catalog-registry-product';
+        if (row.image_url && /^https:\/\//i.test(row.image_url)) {
+          const picture = doc.createElement('img');
+          picture.className = 'kmc-catalog-registry-thumb';
+          picture.src = row.image_url;
+          picture.alt = '';
+          picture.loading = 'lazy';
+          productWrap.appendChild(picture);
+        }
+        const productCopy = doc.createElement('div');
         const link = text(doc, 'a', 'kmc-catalog-product-title', row.name || row.product_ref);
         link.href = contextualHref('/admin/products/' + encodeURIComponent(row.product_ref),
           '/admin/workspaces/catalog?product_ref=' + encodeURIComponent(row.product_ref), 'Retour au Catalogue');
-        productCell.appendChild(link);
-        productCell.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', row.product_ref));
+        productCopy.appendChild(link);
+        productCopy.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', row.product_ref));
+        productWrap.appendChild(productCopy);
+        productCell.appendChild(productWrap);
         tr.appendChild(productCell);
         tr.appendChild(td(doc, row.supplier_name || 'Fournisseur à vérifier'));
         tr.appendChild(td(doc, [row.boutique_category_label || row.boutique_category_key || 'À classer',
@@ -1366,6 +1380,7 @@
     // The original CLOSED-KIR commercial projection remains available as a
     // distinct read-only view; it is no longer the Catalog's source of truth.
     const details = doc.createElement('details');
+    details.className = 'kmc-catalog-commercial-panel';
     const summary = doc.createElement('summary');
     summary.textContent = 'Voir l’assortiment commercial approuvé (KIR clos et prix marché actif)';
     details.appendChild(summary);
