@@ -4,6 +4,26 @@
  * source review is never proof of a defect; the counterexample is still owed.
  * New/moved findings remain unreviewed, never silently exempted.
  */
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {SOURCE_BLOBS}=require('./reviewed-blobs');
+function gitBlobHash(content){
+ const bytes=Buffer.isBuffer(content)?content:Buffer.from(content);
+ return crypto.createHash('sha1')
+  .update(Buffer.from('blob '+bytes.length+'\0'))
+  .update(bytes).digest('hex');
+}
+function reviewerSourceState(file,options={}){
+ if(!options.root)return 'NOT_RECHECKED';
+ if(path.isAbsolute(file)||file.split(/[\\/]/).includes('..'))
+  return 'INVALID_SOURCE_PATH';
+ const expected=SOURCE_BLOBS[file];
+ if(!expected)return 'BASELINE_NOT_RECORDED';
+ try{
+  const read=options.readFile||fs.readFileSync;
+  const data=read(path.join(options.root,file));
+  return gitBlobHash(data)===expected?'SOURCE_UNCHANGED':'SOURCE_CHANGED_REVIEW_STALE';
+ }catch(e){return 'SOURCE_UNAVAILABLE_REVIEW_STALE'}
+}
 const ENTRY=Object.freeze({
  'LS-04|routes/admin/system.js': ['ADMIN_FIXTURE_WRITER','NEEDS_SCOPE_REVIEW','Admin system fixture/seeding endpoint, verify disabled or guarded in real deployments'],
  'LS-04|routes/parcels.js': ['DIRECT_RUNTIME_WRITER','TARGETED_NEGATIVE_TEST','DELETE /api/parcels/:id/items/:item_id bypasses traced add owner; verify transition and audit effects'],
@@ -34,10 +54,17 @@ const PRIOR_EVIDENCE=Object.freeze({
  }),
 });
 const key=f=>String(f.rule)+'|'+String(f.file);
-function qualifyStaticTriage(rows){
+function qualifyStaticTriage(rows,options={}){
+ const cache=new Map();
  return rows.map(t=>{
   const entry=ENTRY[key(t)];
+  if(!cache.has(t.file))cache.set(t.file,reviewerSourceState(t.file,options));
+  const sourceState=cache.get(t.file);
+  const currentReviewValid=options.root?Boolean(entry&&sourceState==='SOURCE_UNCHANGED'):null;
   return {...t,
+   reviewerSourceState:sourceState,
+   reviewedSourceBlob:SOURCE_BLOBS[t.file]||null,
+   currentReviewValid,
    evidenceReview:entry?entry[0]:'UNREVIEWED',
    proposedTest:entry?entry[1]:'OWNER_REVIEW_REQUIRED',
    groundedObservation:entry?entry[2]:'New signal: inspect source and design nominal/counterexample',
@@ -54,6 +81,8 @@ function triageCounts(rows){
   if(['TARGETED_NEGATIVE_TEST','TARGETED_RETRY_TEST','NEEDS_TRANSACTION_TRACE'].includes(t.proposedTest))risk.push({
    file:t.file,line:t.line,rule:t.rule,owner:t.owner,observation:t.groundedObservation,proposedTest:t.proposedTest});
  }
- return {byReview:groups,targetedCandidateCount:risk.length,targetedCandidates:risk};
+ return {byReview:groups,targetedCandidateCount:risk.length,targetedCandidates:risk,
+  currentReviewsVerified:rows.filter(t=>t.currentReviewValid===true).length,
+  staleOrUnknownReviews:rows.filter(t=>t.currentReviewValid===false).length};
 }
-module.exports={ENTRY,PRIOR_EVIDENCE,qualifyStaticTriage,triageCounts};
+module.exports={ENTRY,PRIOR_EVIDENCE,gitBlobHash,reviewerSourceState,qualifyStaticTriage,triageCounts};
