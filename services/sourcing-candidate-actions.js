@@ -236,8 +236,13 @@ async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
     const commercialVerdict = !commercialConfirmed && sourcePath
       ? await resolveCommercialTaxonomyVerdict(client,candidate)
       : null;
-    const commercialMapped = commercialVerdict?.category && commercialVerdict?.subcategory
-      && commercialVerdict?.status === 'AUTO_CLASSIFIED';
+    const commercialMapped = Boolean(commercialVerdict?.category && (
+      (commercialVerdict.status==='AUTO_CLASSIFIED' && commercialVerdict.subcategory)
+      || (commercialVerdict.status==='CATEGORY_CLASSIFIED'
+          && commercialVerdict.subcategory===null
+          && commercialVerdict.level==='CATEGORY'
+          && commercialVerdict.source==='SOURCE_AND_OBJECT_ROOT_CORROBORATED')
+    ));
     if (!commercialConfirmed && !commercialMapped && (!candidate.komerce_category
         || candidate.data_sources?.category === 'default'
         || candidate.scan_result?.customs_review?.status === 'REQUIRED')) {
