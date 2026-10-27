@@ -84,7 +84,7 @@ describe('Supplier-agnostic semantic commercial taxonomy',()=>{
  });
  test('gender contradiction in source or title fails closed',()=>{
   expect(semanticIntent({supplier_category:"Women's Clothing > Tops",product_name:'Mens Casual Jacket'}))
-    .toMatchObject({kind:'pair',subcategory:'Femme'});
+    .toMatchObject({kind:'conflict',reason:'CLOTHING_SOURCE_OBJECT_CONTRADICTION'});
   expect(semanticConflict({supplier_category:"Women's Clothing > Tops",
     product_name:'Men Gold Ring'}, {category:'Mode & Beauté',subcategory:'Femme'}))
     .toBe('CLOTHING_SOURCE_OBJECT_CONTRADICTION');
