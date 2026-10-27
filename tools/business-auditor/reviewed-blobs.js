@@ -24,6 +24,7 @@ const SOURCE_BLOBS=Object.freeze({
  'services/simulator/cleanup.js':'b300145209220dff2fa0446539ac2bb82943fce6',
  'services/simulator/state-advancer.js':'74e349975b4c7a8536f2a37cb79249832cd96bed',
  'tools/business-auditor/engine.test.js':'56404ce955226a3d122491fcef4d570133de86ad',
+ 'tools/business-auditor/code-detectors.test.js':'1bb5c4891821f84e780d6953b16adad3f4f6b064',
  'utils/refunds.js':'dcd8869ee1707488af3d7102174d8779ce98e840',
 });
 module.exports={SOURCE_BLOBS};
