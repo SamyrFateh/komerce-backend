@@ -123,6 +123,32 @@ function assertP3P6(p) {
   item_allocation_kmf:7000,verified_supplier_settlement_kmf:null,
   cost_poison_outcome:probe.outcome};
 }
+function assertP4P6(p){
+ const w=p.p1_p7_wiring,edge=w?.boundaries?.find(x=>x.id==='P4_P6_LOGISTICS_COST');
+ const cost=w?.logistics_cost,f=cost?.facts,d=cost?.diagnostics;
+ if(!w?.wired_edges?.includes('P4_P6_LOGISTICS_COST')||
+   !edge||edge.status!=='NO_CONTRADICTION_OBSERVED'||
+   !Array.isArray(edge.contradictions)||edge.contradictions.length||
+   !f||f.member_parcel_count!==1||f.item_parcel_count!==1||
+   f.actual_cost_count!==2||f.compared_owner_cost_types!==2||
+   Number(f.allocated_kmf?.freight)!==1500||
+   Number(f.allocated_kmf?.customs)!==2500||
+   !d||!Array.isArray(d.contradictions)||d.contradictions.length||
+   !Array.isArray(d.gaps)||d.gaps.length)
+   throw Error('P4-P6 exact parcel-to-item freight/duty real-owner evidence missing');
+ const probe=w.foreign_parcel_logistics_cost_probe;
+ const detected=probe?.outcome==='UNLINKED_LOGISTICS_COST_PARCEL_REPRODUCED' &&
+   Array.isArray(probe.hypotheses) &&
+   probe.hypotheses.includes('LOGISTICS_COST_FOREIGN_PARCEL') &&
+   probe.hypotheses.includes('LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM');
+ const guarded=probe?.outcome==='SQL_LOGISTICS_COST_PARCEL_GUARD' &&
+   ['23514','23503','P0001'].includes(probe.sqlstate);
+ if(!detected&&!guarded)
+   throw Error('P4-P6 real SQL wrong-parcel cost probe absent or inconclusive');
+ return {nominal:'CORRECT_PARCEL_AND_SHIPMENT',
+   freight_kmf:1500,customs_kmf:2500,
+   foreign_parcel_probe:probe.outcome};
+}
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
  if(p.identity_status!=='NO_IDENTITY_CONTRADICTION_OBSERVED')
@@ -140,6 +166,7 @@ const norm=(p)=>{
   p4_p2_handoff_truth:assertP4P2(p),
   p5_p2_finance_truth:assertP5P2(p),
   p3_p6_purchase_cost_truth:assertP3P6(p),
+  p4_p6_logistics_cost_truth:assertP4P6(p),
   identity_status:p.identity_status,
   final_business_verdict:p.checkpoint,
   stage_projections:p.progressive_checkpoints.map(s=>({
