@@ -317,7 +317,8 @@ async function createDraftProductFromSourcingCandidate(q, {
       // A category-only candidate is still awaiting leaf-level commercial review.
       // Never carry a sale price into this intermediate draft, even when the
       // sourcing caller happens to supply an initial price.
-      boutiqueTaxonomy.subcategory && initialPrice != null ? initialPrice : null,
+      boutiqueTaxonomy.category && !boutiqueTaxonomy.subcategory
+        ? null : (initialPrice == null ? null : initialPrice),
       stock,
       weightKg,
       hasVariants,
