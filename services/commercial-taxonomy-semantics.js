@@ -20,7 +20,7 @@ const MALE_CLOTHING = /\b(mens? clothing|mens? apparel|male clothing|ropa de hom
 // Provider-neutral child apparel evidence: the actual supplier breadcrumb,
 // not a discovery keyword such as "kids" or a destination preselected by search.
 const CHILD_CLOTHING = /\b(?:girls?|boys?|bab(?:y|ies)|kids?|child(?:ren|rens)?|toddlers?|infants?) (?:clothing|clothes|apparel|garments?|wear)\b|\b(?:ropa infantil|vetements? enfants?|kinderbekleidung|moda infantil|roupa infantil)\b/;
-const CHILD_GARMENT = /\b(?:onesies?|rompers?|jumpsuits?|bodysuits?|pajamas?|pyjamas?|dress(?:es)?|shirts?|tops?|shorts?|pants?|trousers?|coats?|jackets?|outfits?|suits?|sets?|skirts?|robes?|chemises?|combinaisons?)\b/;
+const CHILD_GARMENT = /\b(?:onesies?|rompers?|jumpsuits?|bodysuits?|pajamas?|pyjamas?|dress(?:es)?|shirts?|tops?|shorts?|pants?|trousers?|coats?|jackets?|outfits?|suits?|sets?|skirts?|robes?|chemises?|combinaisons?|sweaters?|pullovers?)\b/;
 const ADULT_TITLE = /\b(?:womens?|ladies|female|femmes?|mens?|male|hommes?|mujer(?:es)?|hombre(?:s)?)\b/;
 const CLOTHING_OBJECT = /\b(shirts?|t shirts?|tees?|tops?|dress(?:es)?|blouses?|skirts?|shorts?|pants?|trousers?|jackets?|blazers?|coats?|vests?|pullovers?|hoodies?|sweaters?|robes?|chemises?|jupes?|pantalons?|vestes?)\b/;
 // Explicit adult mixed-gender clothing proves the PARENT, never a gender leaf.
@@ -46,6 +46,14 @@ function semanticIntent(candidate = {}) {
     if (CHILD_GARMENT.test(title))
       return {kind:'pair',category:'Mode & Beauté',subcategory:'Enfant',
         source:'SEMANTIC_SUPPLIER_HIERARCHY'};
+    // A child-specific apparel title may prove the parent even when its
+    // exact garment (e.g. an elf costume) remains unidentified. Do not infer
+    // the Enfant leaf from the supplier path alone.
+    if (/\b(?:childrens?|girls?|boys?|bab(?:y|ies)|kids?|toddlers?|infants?)\b/.test(title)
+      && /\b(?:clothing|apparel|garments?|clothes)\b/.test(title))
+      return {kind:'category',category:'Mode & Beauté',subcategory:null,
+        source:'SEMANTIC_CHILD_APPAREL_PARENT',
+        evidence:{title_object:'child_clothing',supplier_hierarchy:'child_clothing'}};
     return {kind:'none'};
   }
   const oppositeGender = (female && /\b(mens?|male|hommes?|hombre|herren)\b/.test(title))

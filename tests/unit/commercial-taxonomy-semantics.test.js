@@ -217,3 +217,28 @@ describe('mixed-gender garments: a verified commercial parent, not a fabricated 
       status:'REVIEW_REQUIRED',category:null,subcategory:null,source:'SEMANTIC_CATEGORY_INACTIVE'});
   });
 });
+
+
+describe('CJ child-specific apparel: precise leaf or defended parent',()=>{
+  test('a real child sweater proves Enfant, never a suggestion',()=>{
+    expect(semanticIntent({product_name:"Hot Selling Children's Clothing Pullover Knitting Sweater",
+      supplier_category:'Toys, Kids & Babies > Baby Clothing > Baby Clothing Sets'}))
+      .toMatchObject({kind:'pair',category:'Mode & Beauté',subcategory:'Enfant'});
+  });
+  test('an unspecified child costume only proves Mode & Beauté',()=>{
+    expect(semanticIntent({product_name:"Corduroy Children's Christmas Elf Clothing",
+      supplier_category:'Toys, Kids & Babies > Girls Clothing > Girl Clothing Sets'}))
+      .toMatchObject({kind:'category',category:'Mode & Beauté',subcategory:null,
+        source:'SEMANTIC_CHILD_APPAREL_PARENT'});
+  });
+  test.each(['Girls Sun Hat','Baby Cotton Blanket','Childrens Gold Ring',
+    'Infant Sleeping Bag','Children Toy Doll'])
+    ('non-garment %s must never become child apparel',(product_name)=>{
+      expect(semanticIntent({product_name,
+        supplier_category:'Toys, Kids & Babies > Girls Clothing > Girl Clothing Sets'}).kind)
+        .not.toBe('pair');
+      expect(semanticIntent({product_name,
+        supplier_category:'Toys, Kids & Babies > Girls Clothing > Girl Clothing Sets'}).kind)
+        .not.toBe('category');
+    });
+});

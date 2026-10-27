@@ -655,3 +655,41 @@ describe('corroborated object protects reusable supplier mappings',()=>{
     });
   });
 });
+
+
+describe('CJ real-world evidence generalization: no token-property confusion',()=>{
+  const {categoryCorroboratedByObject}=require('../../services/catalog-commercial-category-evidence');
+  const c=(product_name,supplier_category)=>({product_name,supplier_category});
+  test.each([
+    ['A17 Pro Max Smartphone, 256GB Storage, 72MP Camera',
+      'Phones & Accessories > Mobile Phones > Dual SIM Card','Tech'],
+    ['Silicone Kitchenware Set',
+      'Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools','Maison'],
+    ['Electric Hot Pot with Cooking Tools',
+      'Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools','Maison'],
+    ['Solar Wall Light Outdoor Wireless Lamps',
+      'Home Improvement > Outdoor Lighting > Solar Lamps','Maison'],
+    ['Solar Street Path Light Outdoor',
+      'Home Improvement > Outdoor Lighting > Solar Lamps','Maison'],
+    ['NM-B Wire 14AWG Copper Core Cable 50 Ft Electrical Wire With Ground',
+      'Home Improvement > Tools > Tool Sets','Bricolage'],
+    ['Solar Panel Extension Wire Female and Male Connectors',
+      'Home Improvement > Tools > Tool Sets','Bricolage'],
+    ['Cable Dispenser Mounted Portable For Electrical Industrial',
+      'Home Improvement > Tools > Tool Sets','Bricolage'],
+  ])('two-source category proof %s', (product_name,supplier_category,category)=>{
+    expect(categoryCorroboratedByObject(c(product_name,supplier_category)))
+      .toMatchObject({category,subcategory:null,source:'SUPPLIER_PATH_AND_OBJECT'});
+  });
+  test.each([
+    ['Smartphone with 256GB Storage','Home, Garden & Furniture > Home Storage > Office'],
+    ['USB-C Charger with Storage','Home, Garden & Furniture > Home Storage > Office'],
+    ['Car Interior LED Lamp','Home Improvement > Outdoor Lighting > Solar Lamps'],
+    ['USB-C Cable','Home Improvement > Tools > Tool Sets'],
+    ['Audio Cable','Home Improvement > Tools > Tool Sets'],
+    ['Garden Toy with Solar Panel Wire','Home Improvement > Tools > Tool Sets'],
+    ['Solar Cable Organizer Cabinet','Home Improvement > Tools > Tool Sets'],
+  ])('adversarial conflict/unproved object stays review: %s',(product_name,supplier_category)=>{
+    expect(categoryCorroboratedByObject(c(product_name,supplier_category))).toBeNull();
+  });
+});

@@ -84,11 +84,38 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   const byStatus={},byEvidence={},byPair={},byCategory={},drift=[],samples=[],categorySamples=[],decisions=[];
   let ignoredDiscovery=0,discoveryOnly=0,auto=0,category=0;
   const mixedGenderRefs=new Set(['KSC-000012','KSC-000017','KSC-000031']);
+  const realObjectRegression=new Map([
+    ['KSC-000168',['CATEGORY_CLASSIFIED','Tech',null]],
+    ['KSC-000169',['CATEGORY_CLASSIFIED','Tech',null]],
+    ['KSC-000051',['CATEGORY_CLASSIFIED','Mode & Beauté',null]],
+    ['KSC-000060',['AUTO_CLASSIFIED','Mode & Beauté','Enfant']],
+    ['KSC-000104',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000110',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000283',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000284',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000285',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000286',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000287',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000290',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000291',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000292',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000312',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000324',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000326',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000327',['CATEGORY_CLASSIFIED','Maison',null]],
+  ]);
   for(const original of doc.products){
     const candidate=sourceCandidate(original);
     const v=await resolveCommercialTaxonomyVerdict(db,candidate);
     const p=v.category&&v.subcategory?v.category+'/'+v.subcategory:null;
     inc(byStatus,v.status);inc(byEvidence,v.source);
+    if(realObjectRegression.has(original.candidate_ref)){
+      const want=realObjectRegression.get(original.candidate_ref);
+      if([v.status,v.category,v.subcategory].some((x,i)=>x!==want[i]))
+        throw Error('REAL_OBJECT_CATEGORY_REGRESSION:'+original.candidate_ref+
+          ':expected='+JSON.stringify(want)+':observed='+JSON.stringify(v));
+      realObjectRegression.delete(original.candidate_ref);
+    }
     if(mixedGenderRefs.has(original.candidate_ref)) {
       if(v.status!=='CATEGORY_CLASSIFIED'||v.category!=='Mode & Beauté'
         ||v.subcategory!==null||v.source!=='SEMANTIC_MIXED_GENDER_APPAREL')
@@ -109,7 +136,7 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
       category++;inc(byCategory,v.category);
       if(!v.category||v.subcategory!==null||!activeCategories.has(v.category)
         ||!['OBJECT_TERM_COMMON_PARENT','SUPPLIER_PATH_AND_OBJECT',
-          'SEMANTIC_MIXED_GENDER_APPAREL'].includes(v.source))
+          'SEMANTIC_MIXED_GENDER_APPAREL','SEMANTIC_CHILD_APPAREL_PARENT'].includes(v.source))
         throw Error('UNJUSTIFIED_CATEGORY:'+original.candidate_ref+':'+JSON.stringify(v));
       if(v.source==='SUPPLIER_PATH_AND_OBJECT' && !v.evidence?.object_families?.length)
         throw Error('CATEGORY_EVIDENCE_MISSING:'+original.candidate_ref);
@@ -138,6 +165,7 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
         proposal:v.proposal||null});
   }
   if(mixedGenderRefs.size)throw Error('MIXED_GENDER_CORPUS_REFS_MISSING:'+Array.from(mixedGenderRefs).join(','));
+  if(realObjectRegression.size)throw Error('REAL_OBJECT_CORPUS_REFS_MISSING:'+Array.from(realObjectRegression.keys()).join(','));
   // These are genuine service calls on a real PostgreSQL transaction and
   // canonical boutique reference tables, not mocked SQL nor live Railway.
   const client=await db.getClient(),draftProofs=[];
