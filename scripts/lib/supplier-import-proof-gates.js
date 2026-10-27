@@ -15,9 +15,10 @@ const count = value => Number.isInteger(Number(value))&&Number(value)>=0?Number(
 const unique = list => Array.isArray(list)&&list.length===new Set(list).size
   && list.every(x=>typeof x==='string'&&x.trim()!=='');
 
-function assess({provider,expected,source,run,events,candidates,classification,publishedDelta}={}) {
+function assess({provider,expected,source,run,events,candidates,classification,publishedDelta,scope='full'}={}) {
   if(!provider||!Number.isInteger(expected)||expected<1||expected>500)
     throw Error('INVALID_SUPPLIER_PROOF_PARAMETERS');
+  if(!['full','sourcing_only'].includes(scope))throw Error('INVALID_PROOF_SCOPE');
   const input=Array.isArray(source?.products)?source.products:[];
   const ids=input.map(p=>String(p?.supplier_product_id||'').trim());
   const inputOk=input.length===expected && unique(ids)
@@ -28,7 +29,7 @@ function assess({provider,expected,source,run,events,candidates,classification,p
   const fxPending=count(intake.fx_pending);
   const runOk=Boolean(run&&normalized(run.provider)===normalized(provider)
     && /^KIR-\d{6}$/.test(String(run.run_ref||''))
-    && run.status==='COMPLETED'
+    && (run.status==='COMPLETED'||(scope==='sourcing_only'&&run.status==='RUNNING'))
     && received===expected
     && accepted===expected && rejected===0
     && Number.isFinite(fxPending)&&fxPending<=accepted
@@ -70,7 +71,9 @@ function assess({provider,expected,source,run,events,candidates,classification,p
   const publicationOk=publishedDelta===0;
   const gates={
     source:{pass:inputOk,received:input.length,distinct:new Set(ids).size},
-    import:{pass:runOk,run_ref:run?.run_ref||null,received,accepted,rejected,pipeline_status:intake.pipeline_status||null},
+    import:{pass:runOk,run_ref:run?.run_ref||null,run_status:run?.status||null,
+      scope,receipt_certified:runOk,terminal_handoff_certified:scope==='full'&&run?.status==='COMPLETED',
+      received,accepted,rejected,pipeline_status:intake.pipeline_status||null},
     trace:{pass:eventOk,event_count:eventRows.length,finished_linked:finished.length},
     candidates:{pass:candidateOk,persisted:candidateRows.length,distinct: new Set(candidateSupplierIds).size},
     fx_deferral:{pass:fxOk,pending:fxPending,safe_deferred:observedFx.length,
@@ -81,8 +84,8 @@ function assess({provider,expected,source,run,events,candidates,classification,p
     publication:{pass:publicationOk,new_products:publishedDelta}
   };
   const fails=Object.entries(gates).filter(([,gate])=>!gate.pass).map(([key])=>key);
-  return {provider,expected,verdict:fails.length?'NOT_CERTIFIED':'CLASSIFICATION_CERTIFIED_NOT_SELLABILITY',
+  return {provider,expected,scope,verdict:fails.length?'NOT_CERTIFIED':'CLASSIFICATION_CERTIFIED_NOT_SELLABILITY',
     passed:fails.length===0,failed_gates:fails,gates,
-    note:'Economic prices and buyer publication are not certified by this proof; a deferred FX quote must not block intake or object classification.'};
+    note:'Sourcing-only proof never certifies the Catalogue handoff, prices or buyer publication. A deferred FX quote must not block intake or object classification.'};
 }
 module.exports={assess};
