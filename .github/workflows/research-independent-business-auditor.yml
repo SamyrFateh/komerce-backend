@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
+      - tests/unit/auditor-paypal-refund-execution.test.js
       - scripts/audit-logic.js
       - scripts/lib/logic-detectors.js
       - package.json
@@ -43,9 +44,11 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
+      - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
+        run: npm test -- --runInBand --no-coverage --runTestsByPath tests/unit/auditor-paypal-refund-execution.test.js
       - name: Bootstrap isolated PostgreSQL test schema
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/business-auditor-bootstrap.log
@@ -58,6 +61,9 @@ jobs:
       - name: Assert independent source-control-flow detector observed both live parcel writers
         run: |
           node -e "const r=require('/tmp/komerce-independent-business-audit/business-audit.json');const a=r.code?.independentCodeSignals||[];if(!a.some(x=>x.file==='services/auto-parcel.js')||!a.some(x=>x.file==='services/parcelOptimizationService.js')||!a.some(x=>x.file==='routes/wallet.js'&&x.classification==='TIME_BASED_ADMIN_CREDIT_KEY')||!a.some(x=>x.file==='services/paypal-client.js'&&x.classification==='LEGACY_FALLBACK_WITH_DURABLE_OVERRIDE'))process.exit(2);console.log('BUSINESS_AUDIT_CODE_PATTERN',JSON.stringify(a.map(x=>({file:x.file,line:x.line,id:x.id,counter:x.counter||null,requestKey:x.requestKey||null,class:x.classification||null,priorIssue:x.previousEvidence?.issue||null}))));"
+      - name: Fail closed on missing PayPal legacy-refund owner-chain proof
+        run: |
+          node -e "const p=require('/tmp/komerce-independent-business-audit/business-audit.json');const r=p.code?.paypalRefundBoundary;if(r?.status!=='LIVE_LEGACY_CALL_WITHOUT_DURABLE_REQUEST_KEY'||r.productionDuplicateRefundConfirmed!==false||r.observations.intentLedgerMarkedNotActivated!==true)process.exit(2);console.log('BUSINESS_AUDIT_PAYPAL_REFUND_CHAIN',JSON.stringify(r));"
       - name: Enforce owner-review coverage for known static rule families
         run: |
           node -e "const r=require('/tmp/komerce-independent-business-audit/business-audit.json');if(!r.code?.triage||r.code.triage.length!==r.code.findings.length||!r.code.reviewSummary||r.code.reviewSummary.currentReviewsVerified!==r.code.triage.length||r.code.reviewSummary.staleOrUnknownReviews!==0)process.exit(2);console.log('BUSINESS_AUDIT_TRIAGE',JSON.stringify({total:r.code.triage.length,reviewed:r.code.triage.filter(x=>x.reviewedFromSource).length,unreviewed:r.code.triage.filter(x=>!x.reviewedFromSource).map(x=>({file:x.file,rule:x.rule})),targeted:r.code.reviewSummary.targetedCandidateCount,current:r.code.reviewSummary.currentReviewsVerified,stale:r.code.reviewSummary.staleOrUnknownReviews,groups:r.code.reviewSummary.byReview}));"
