@@ -54,12 +54,24 @@ function comparePaths(first,second){
  for(const key of Object.keys(a))
   if(JSON.stringify(a[key])!==JSON.stringify(b[key]))
    mismatches.push({field:key,grouped:a[key],historical:b[key]});
- const digest=crypto.createHash('sha256').update(JSON.stringify({a,b,mismatches})).digest('hex');
+ // Early Hub receipt is a deliberately non-equivalent boundary: record the
+ // observed result separately instead of pretending it is a Golden mismatch.
+ const groupedProbe=first.pre_submission_hub_probe;
+ const historicalProbe=second.pre_submission_hub_probe;
+ if(!groupedProbe||!historicalProbe)throw Error('Both actual PostgreSQL Hub probes required');
+ const earlyHub={
+  grouped:groupedProbe,historical:historicalProbe,
+  hypothesis:groupedProbe.outcome==='ERROR'||historicalProbe.outcome==='ERROR'
+   ? 'PROBE_INCONCLUSIVE'
+   : (groupedProbe.outcome!==historicalProbe.outcome
+       ? 'EARLY_HUB_RECEIPT_ASYMMETRY_HYPOTHESIS':'NO_EARLY_HUB_OUTCOME_DIFFERENCE'),
+ };
+ const digest=crypto.createHash('sha256').update(JSON.stringify({a,b,mismatches,earlyHub})).digest('hex');
  return {schema:'golden-po-shape-differential/v1',
   variants:['grouped','historical'],count:2,
   verdict:mismatches.length?'CROSS_PATH_ASYMMETRY_HYPOTHESIS':'NO_ASYMMETRY_OBSERVED',
   mismatchCount:mismatches.length,mismatches,
-  normalized:{grouped:a,historical:b},digest,
+  normalized:{grouped:a,historical:b},earlyHub,digest,
   caveats:['The same Golden fixture inserts minimal canonical facts; no external provider execution.',
           'Matching outcomes are not a certificate of HTTP/staging or complete P1-P7.',
           'Entity UUIDs are intentionally compared only inside each individual trail, never across runs.'],
@@ -71,7 +83,7 @@ if(require.main===module){
  try{
   const report=comparePaths(JSON.parse(fs.readFileSync(a)),JSON.parse(fs.readFileSync(b)));
   fs.writeFileSync(out,JSON.stringify(report,null,2)+'\n');
-  console.log('FP_GOLDEN_PO_DIFF '+JSON.stringify({verdict:report.verdict,mismatches:report.mismatches,digest:report.digest}));
+  console.log('FP_GOLDEN_PO_DIFF '+JSON.stringify({verdict:report.verdict,mismatches:report.mismatches,earlyHub:report.earlyHub,digest:report.digest}));
   if(report.mismatchCount)process.exitCode=1;
  }catch(e){console.error('FP_GOLDEN_PO_COMPARE_FAILED',e.stack||e);process.exitCode=1}
 }
