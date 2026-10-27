@@ -18,7 +18,7 @@ La navigation marchande est une responsabilité différente :
 - `products.boutique_subcategory_key` = sous-catégorie boutique canonique ;
 - les lectures publiques utilisent ces champs lorsqu'ils existent, avec fallback historique sur `category/subcategory` pour les anciens produits ;
 - un connecteur fournisseur ne doit jamais écraser la classification douanière pour fabriquer une catégorie d'affichage ;
-- le provenance discovery (`target_category`, `target_subcategory`) peut alimenter la taxonomie boutique lors de la promotion, sans modifier la classification économique.
+- la provenance Discovery (`target_category`, `target_subcategory`) est une **suggestion non autoritative**. Elle ne peut pas alimenter directement les catégories boutique lors de la promotion. La taxonomie commerciale exige soit une décision humaine confirmée, soit une preuve d'objet suffisamment discriminante, soit une concordance entre le chemin fournisseur et l'identité réelle de l'objet. Un objet contradictoire ou une simple suggestion Discovery reste en revue ; la classification économique n'est jamais réécrite.
 
 Cette séparation est obligatoire pour tout nouveau peuplement fournisseur destiné aux tests E2E.
 
