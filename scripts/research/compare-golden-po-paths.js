@@ -139,8 +139,8 @@ function assertP4P6(p){
  const probe=w.foreign_parcel_logistics_cost_probe;
  const detected=probe?.outcome==='UNLINKED_LOGISTICS_COST_PARCEL_REPRODUCED' &&
    Array.isArray(probe.hypotheses) &&
-   probe.hypotheses.includes('LOGISTICS_COST_FOREIGN_PARCEL') &&
-   probe.hypotheses.includes('LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM');
+   probe.hypotheses.includes('LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM') &&
+   probe.hypotheses.includes('LOGISTICS_COST_SHIPMENT_PARCEL_UNLINKED');
  const guarded=probe?.outcome==='SQL_LOGISTICS_COST_PARCEL_GUARD' &&
    ['23514','23503','P0001'].includes(probe.sqlstate);
  if(!detected&&!guarded)
