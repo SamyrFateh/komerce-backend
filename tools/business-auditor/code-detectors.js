@@ -32,18 +32,55 @@ function detectIgnoredInsertCount(source,file){
  }
  return out;
 }
+/**
+ * Variable-time money request keys require durable retries, but a matching
+ * Date.now elsewhere (expiry timestamps, OAuth cache) is not evidence.
+ * PayPal legacy refund fallback is distinct from durable provider override.
+ */
+function detectTimeBasedRequestKeys(source,file){
+ const str=String(source),out=[];
+ const keyAssignment=/(?:\bidempotencyKey\b|['"]PayPal-Request-Id['"])\s*:\s*\x60[^\x60]{0,240}\bDate\.now\s*\(\s*\)[^\x60]{0,240}\x60/g;
+ for(const m of str.matchAll(keyAssignment)){
+  const expr=m[0],at=m.index;
+  const provider=expr.includes('PayPal-Request-Id');
+  const after=str.slice(at+m[0].length,at+m[0].length+360);
+  const overridden=provider&&
+   /\bif\s*\(\s*providerRequestKey\s*\)\s*refundHeaders\[['"]PayPal-Request-Id['"]\]\s*=\s*providerRequestKey\s*;?/.test(after);
+  out.push({
+   id:'KBA-C02',file,line:str.slice(0,at).split('\n').length,
+   owner:provider?'Payments / PayPal Refunds':'Wallet / Admin Credits',
+   priority:'P1',risk:'TIME_DERIVED_FINANCIAL_REQUEST_IDENTITY',
+   requestKey:provider?'PayPal-Request-Id':'idempotencyKey',
+   classification:overridden?'LEGACY_FALLBACK_WITH_DURABLE_OVERRIDE':'TIME_BASED_ADMIN_CREDIT_KEY',
+   stableOverrideObserved:overridden,
+   externalFinancialDuplicateConfirmed:false,
+   verifiedBusinessBug:false,
+   requiredIndependentProof:provider
+    ?'Trace all caller and durable intents; replay legacy no-key refund in PSP sandbox and compare provider IDs'
+    :'Replay same logical admin credit request against disposable ledger with different clock times and compare credit lots',
+  });
+ }
+ return out;
+}
 function scanRelevantCode(staticFindings,root,read=fs.readFileSync){
- const matched=[...new Set((staticFindings||[])
-   .filter(f=>f.rule==='LS-05'&&typeof f.file==='string')
-   .map(f=>f.file))].sort();
+ const categories=new Map();
+ for(const finding of staticFindings||[]){
+  if(!['LS-03','LS-05'].includes(finding.rule)||typeof finding.file!=='string')continue;
+  const categoriesForFile=categories.get(finding.file)||new Set();
+  categoriesForFile.add(finding.rule);
+  categories.set(finding.file,categoriesForFile);
+ }
  const out=[];
- for(const filename of matched){
+ for(const filename of [...categories.keys()].sort()){
   const pathNorm=filename.replace(/\\/g,'/');
   if(path.isAbsolute(pathNorm)||pathNorm.split('/').includes('..'))
    throw Error('Unsafe static finding path');
   const source=read(path.join(root,pathNorm),'utf8');
-  out.push(...detectIgnoredInsertCount(source,pathNorm));
+  if(categories.get(filename).has('LS-05'))
+   out.push(...detectIgnoredInsertCount(source,pathNorm));
+  if(categories.get(filename).has('LS-03'))
+   out.push(...detectTimeBasedRequestKeys(source,pathNorm));
  }
  return out;
 }
-module.exports={detectIgnoredInsertCount,scanRelevantCode};
+module.exports={detectIgnoredInsertCount,detectTimeBasedRequestKeys,scanRelevantCode};
