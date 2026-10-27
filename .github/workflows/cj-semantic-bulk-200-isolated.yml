@@ -75,8 +75,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kmf="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT eur_rate FROM currency_parities WHERE currency='KMF'")"
-          test "$kmf" = '491.96775'
+          kmf="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT (eur_rate=491.96775)::int FROM currency_parities WHERE currency='KMF'")"
+          test "$kmf" = '1'
           quote_count="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT COUNT(*) FROM fx_rate_observations")"
           test "$quote_count" = '0'
           echo "FIXED_CURRENCY_PARITY_PRESENT_AND_EUR_USD_UNSEEDED"
