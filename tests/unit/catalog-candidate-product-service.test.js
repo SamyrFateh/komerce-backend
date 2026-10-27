@@ -617,7 +617,7 @@ describe('supplier path + actual object corroborate category without inventing a
     const c=candidate('Kitchen Cooking Utensil',
       'Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools','Tech');
     const q=qFor(true);
-    await expect(createDraftProductFromSourcingCandidate(q,{candidate:c,initialPrice:null}))
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate:c,initialPrice:12999}))
       .resolves.toBe('inactive-only');
     const insert=q.query.mock.calls.find(([sql])=>sql.includes('INSERT INTO products'));
     expect(insert[1].slice(2,4)).toEqual(['Maison',null]);
