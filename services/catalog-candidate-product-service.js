@@ -87,10 +87,20 @@ async function resolveCommercialObjectTaxonomy(q, candidate) {
         && objectPhraseMatch(title, term))
       .map(([term, weight]) => Number(weight) + normalizedObjectWords(term).length / 1000)),
   })).filter(hit => hit.score > 0).sort((a, b) => b.score - a.score);
-  if (!ranked.length || (ranked[1] && ranked[0].score === ranked[1].score)) {
-    return { category:null, subcategory:null };
+  if (!ranked.length) return {category:null,subcategory:null};
+  // A tied high-confidence object phrase that points to different leaves in
+  // ONE boutique category proves the parent, not either leaf. Disagreements
+  // across root categories never become an authoritative placement.
+  const best=ranked[0].score;
+  const tied=ranked.filter(hit=>hit.score===best);
+  if(tied.length>1){
+    const parents=new Set(tied.map(hit=>hit.row.category));
+    if(parents.size===1) return {category:tied[0].row.category,subcategory:null,
+      level:'CATEGORY',source:'OBJECT_TERM_COMMON_PARENT'};
+    return {category:null,subcategory:null};
   }
-  return { category:ranked[0].row.category, subcategory:ranked[0].row.subcategory };
+  return {category:ranked[0].row.category,subcategory:ranked[0].row.subcategory};
+
 }
 
 async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
@@ -141,7 +151,11 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
   // short-circuit object identity matching.
   const matched = await resolveCommercialObjectTaxonomy(q, candidate);
   if (matched.category && matched.subcategory) {
-    return { status:'AUTO_CLASSIFIED', ...matched, source:'OBJECT_NAME_MATCH' };
+    return { status:'AUTO_CLASSIFIED', ...matched, source:'OBJECT_NAME_MATCH',level:'SUBCATEGORY' };
+  }
+  if (matched.category && !matched.subcategory) {
+    return {status:'CATEGORY_CLASSIFIED',category:matched.category,subcategory:null,
+      level:'CATEGORY',source:'OBJECT_TERM_COMMON_PARENT'};
   }
   if (sourcePath) {
     const {rows:pairs}=await q.query(
@@ -171,6 +185,13 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
 async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
   const verdict = await resolveCommercialTaxonomyVerdict(q, candidate);
   const requested = { category:verdict.category, subcategory:verdict.subcategory };
+  if (verdict.status === 'CATEGORY_CLASSIFIED') {
+    const {rows:[active]}=await q.query(
+      'SELECT key FROM boutique_categories WHERE key=$1 AND is_active=TRUE LIMIT 1',
+      [requested.category]);
+    if(!active) throw new Error('BOUTIQUE_CATEGORY_INACTIVE');
+    return requested;
+  }
   if (verdict.status !== 'EXPLICIT_REVIEW') return requested;
   if (!requested.category || !requested.subcategory) {
     throw new Error('BOUTIQUE_TAXONOMY_INCOMPLETE: target_category + target_subcategory requis ensemble');
@@ -236,7 +257,7 @@ async function createDraftProductFromSourcingCandidate(q, {
   const commercialProvider = String(candidate?.normalized_source_contract?.supplier_name
     || candidate?.supplier_name || '').trim().toLowerCase();
   const strictSupplier = ['aliexpress', 'cj', 'cjdropshipping'].includes(commercialProvider);
-  if (strictSupplier && (!boutiqueTaxonomy?.category || !boutiqueTaxonomy?.subcategory)) {
+  if (strictSupplier && !boutiqueTaxonomy?.category) {
     throw new Error('BOUTIQUE_TAXONOMY_UNRESOLVED: category/subcategory review required before draft creation');
   }
   // Identité client (nom court, description proposée) dérivée mécaniquement
