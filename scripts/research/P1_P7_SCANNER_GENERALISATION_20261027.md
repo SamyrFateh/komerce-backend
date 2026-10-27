@@ -81,3 +81,7 @@ NODE_ENV=test KOMERCE_DISABLE_CRONS=true DATABASE_URL=postgresql://localhost:543
 Exigences : PostgreSQL local `komerce_test` uniquement, un article exact, `REPEATABLE READ READ ONLY`, `ROLLBACK` inconditionnel ; URL Railway et bases non-test interdites. Le script `audit:logic` historique reste inchangé et conserve ses signaux LS/LD. Les 9 autres raccordements ne sont **pas exécutés** ; le compte des processus cartographiés ne signifie pas couverture métier.
 
 **Suite prioritaire** : équiper P2→P3 et P3→P4 avec les identités `order_item_id`, `purchase_line_id`, `hub_allocation_id` et les verdicts de leurs propriétaires, puis P4→P2 et les frontières finance P5/P6. Les scénarios de marché KM/CM/CG/DJ et la recette réelle Chromium demeurent nécessaires.
+
+### Vérification finale du point d’entrée local
+
+[GitHub Actions #40501030224](https://github.com/SamyrFateh/komerce-backend/actions/runs/40501030224) : **40/40 tests purs et 60/60 tests de projections Golden**, y compris les gardes du CLI local, le refus des bases distantes et le ROLLBACK même si un lecteur échoue. Tests du CLI exécutés avec doubles injectés ; l'appel complet aux lecteurs sur PostgreSQL a été vérifié séparément par le double Golden #40500645721. Aucun nouveau bug métier confirmé dans ce lot.
