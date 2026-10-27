@@ -27,6 +27,9 @@ function fixture({orderMarket='KM',skuProduct=P,checkoutStatus='NON_PROUVE',mark
     assert.equal(marketId,MID);assert.equal(productId,P);called.push('pricing');
     return price?{source:'LOCAL_ACTIVE',effective_unit_price_kmf:10000}:null;
   },
+  // The older four-edge tests isolate P1/P2/P7; P2/P3/P4 has its own
+  // canonical SQL suite and is exercised in the real disposable PG Goldens.
+  p2p4:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   upstream:async(_db,{productId,marketCode,orderReference,fetchImpl})=>{
     assert.equal(productId,P);assert.equal(marketCode,'KM');
     assert.equal(orderReference,'CUSTOMER-001');
@@ -125,4 +128,29 @@ test('two matching BLOCKED decisions are not a positive P1/P2 proof',async()=>{
  const r=await collectP1P7Canonical(f.db,f.args,f.owners);
  assert.equal(edge(r,'P1_P2_SELLABLE_UNIT').status,'EVIDENCE_GAP');
  assert.ok(edge(r,'P1_P2_SELLABLE_UNIT').gaps.includes('BLOCKED_OWNER_OR_CONSUMER'));
+});
+
+test('integrates two more seams from explicitly injected P2-P4 owner facts',async()=>{
+ const {assessP2P4}=require('./p2-p4-canonical-collector');
+ const f=fixture({checkoutStatus:'PROVED'});
+ f.owners.p2p4=async(_db,{item,upstream})=>{
+  assert.equal(item.order_item_id,OI);
+  assert.ok(upstream.gates);
+  return assessP2P4({
+   item:{order_item_id:OI,order_id:OTHER,sku_id:SKU},
+   lines:[{id:'line1',order_item_id:OI,product_sku_id:SKU,
+    purchase_order_id:'po1',po_order_id:null,po_status:'confirmed'}],
+   progress:[{effective_quantity:1,received_quantity:1,cancelled:false}],
+   allocations:[{id:'alloc1',order_id:OTHER,order_item_id:OI,purchase_line_id:'line1',
+    purchase_order_id:'po1',product_sku_id:SKU}],
+   inbound:{verdict:'INBOUND_MATCHED',purchase_line_ids:['line1']},
+   fulfillmentIds:['f1'],paymentGate:{status:'PROVED'},
+  });
+ };
+ const r=await collectP1P7Canonical(f.db,f.args,f.owners);
+ assert.equal(r.wired_edges.length,6);
+ assert.equal(r.totals.notWired,7);
+ assert.equal(r.totals.contradictions,0);
+ assert.equal(edge(r,'P2_P3_PURCHASE_REQUIREMENT').status,'NO_CONTRADICTION_OBSERVED');
+ assert.equal(edge(r,'P3_P4_HUB_RECEIPT').status,'NO_CONTRADICTION_OBSERVED');
 });
