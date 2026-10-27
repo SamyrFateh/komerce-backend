@@ -204,6 +204,24 @@ function assertP6P1P7P5(p){
    settlement:'NO_CENTRAL_ATTESTATION_IN_SYNTHETIC_GOLDEN',
    price_probe:pr.outcome,settlement_probe:sp.outcome};
 }
+function assertIndependentPhysicalAdversaries(p){
+ const w=p.p1_p7_wiring;
+ const parcel=w?.physical_parcel_counter;
+ const wallet=w?.physical_wallet_replay;
+ if(parcel?.id!=='KBA-C01'||
+    parcel.outcome!=='COUNT_INCREASED_WITH_ZERO_PHYSICAL_INSERT'||
+    parcel.ownerReportCount!==1||parcel.postgresNewRows!==0||
+    parcel.independentProof!=='PHYSICAL_POSTGRESQL_CONTROLLED_PREFLIGHT_STALENESS'||
+    parcel.productionIncidentConfirmed!==false)
+   throw Error('Physical PostgreSQL parcel-count adversarial owner proof is missing');
+ if(wallet?.id!=='KBA-C02'||
+    wallet.outcome!=='SAME_KEY_DEDUPLICATED_DIFFERENT_TIME_KEYS_CREDITED_TWICE'||
+    wallet.independentProof!=='PHYSICAL_POSTGRESQL_WALLET_SERVICE'||
+    wallet.productionIncidentConfirmed!==false)
+   throw Error('Physical PostgreSQL wallet idempotency replay owner proof is missing');
+ return {parcel:'COUNT_1_FOR_ZERO_SQL_ROWS',wallet:'STABLE_KEY_DEDUPES_BUT_TEMPORAL_KEYS_DO_NOT',
+  staging_verified:false,production_incident_confirmed:false};
+}
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
  if(p.identity_status!=='NO_IDENTITY_CONTRADICTION_OBSERVED')
@@ -224,6 +242,7 @@ const norm=(p)=>{
   p4_p6_logistics_cost_truth:assertP4P6(p),
   p5_p6_funds_cost_truth:assertP5P6(p),
   p6_p1_p7_p5_final_truth:assertP6P1P7P5(p),
+  independent_physical_adversarial_truth:assertIndependentPhysicalAdversaries(p),
   identity_status:p.identity_status,
   final_business_verdict:p.checkpoint,
   stage_projections:p.progressive_checkpoints.map(s=>({
