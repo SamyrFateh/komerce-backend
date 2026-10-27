@@ -18,6 +18,9 @@ jest.mock('../../services/catalog-candidate-product-service', () => ({
   resolveCommercialTaxonomyVerdict: jest.fn(async (_q,candidate) =>
     candidate.supplier_category === 'Phones > Mobile Phone Accessories'
       ? {status:'AUTO_CLASSIFIED',category:'Tech',subcategory:'Phones'}
+      : candidate.supplier_category === 'Jewelry & Watches > Fashion Jewelry > Rings'
+      ? {status:'CATEGORY_CLASSIFIED',level:'CATEGORY',
+        category:'Mode & Beauté',subcategory:null,source:'SOURCE_AND_OBJECT_ROOT_CORROBORATED'}
       : {status:'REVIEW_REQUIRED',category:null,subcategory:null}),
 }));
 jest.mock('../../services/catalog-promotion', () => ({ promoteCatalog: jest.fn() }));
@@ -125,6 +128,31 @@ describe('commercial review before inactive catalogue draft', () => {
     });
     expect(create).not.toHaveBeenCalled();
   });
+});
+
+test('supplier corroborated category-only promotes a real sourcing candidate to an inactive catalogue draft',async()=>{
+  jest.clearAllMocks();
+  const db=require('../../db');
+  const catalog=require('../../services/catalog-candidate-product-service');
+  const {promoteCandidate}=require('../../services/sourcing-candidate-actions');
+  const promotion=require('../../services/catalog-promotion');
+  const candidate={
+    id:'ring-1',state:'scanned',supplier_name:'CJdropshipping',
+    supplier_category:'Jewelry & Watches > Fashion Jewelry > Rings',
+    product_name:'Fashion Ring',komerce_category:null,
+    data_sources:{category:'default'},scan_result:{customs_review:{status:'REQUIRED'}},
+    raw_payload:{discovery:{target_category:'Bricolage',target_subcategory:'Sécurité'}}
+  };
+  const client={query:jest.fn(async sql=>sql.includes('SELECT * FROM sourcing_candidates')
+    ?{rows:[candidate]}:{rows:[]}),release:jest.fn()};
+  db.getClient.mockResolvedValueOnce(client);
+  catalog.createDraftProductFromSourcingCandidate.mockResolvedValueOnce('category-only-draft');
+  promotion.promoteCatalog.mockResolvedValueOnce({promoted:true});
+  const result=await promoteCandidate('ring-1',{},'admin-1',{syncRuntime:false});
+  expect(result.product_id).toBe('category-only-draft');
+  expect(catalog.createDraftProductFromSourcingCandidate).toHaveBeenCalledWith(
+    client,{candidate,initialPrice:null});
+  expect(client.query.mock.calls.some(([sql])=>sql==='COMMIT')).toBe(true);
 });
 
 test('confirmed boutique review allows an inactive draft despite unresolved customs',async()=>{
