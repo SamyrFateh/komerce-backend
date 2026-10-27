@@ -2,6 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const {extractWrites}=require('./writer-sql');
 const {archHeader,cardAuthorities,qualify}=require('./writer-ownership');
+const {canonicalTables,classifySchemaTarget}=require('./writer-schema');
 function sourceScope(file){
  if(/^(?:services|routes|middleware|controllers|workers|jobs|bootstrap|api|lib|utils)\//.test(file)||
     file==='db.js')return 'APPLICATION_CANDIDATE';
@@ -31,9 +32,13 @@ function buildWriterInventory(root,options={}){
  }
  const paths=all.filter(x=>/^features\/[^/]+\.feature\.js$/.test(x));
  const features=cardAuthorities(paths.map(file=>({file,source:read(path.join(root,file),'utf8')})));
- const qualified=qualify(candidates,files,features.authorities);
+ const schema=canonicalTables(read(path.join(root,'docs/db/railway-live-schema.sql'),'utf8'));
+ if(schema.size<80)throw Error('Checked-in PostgreSQL schema relation list unexpectedly empty');
+ const qualified=qualify(candidates,files,features.authorities).map(x=>classifySchemaTarget(x,schema));
+ const schemaBound=qualified.filter(x=>x.physicalTableDeclared);
+ const nonSchema=qualified.filter(x=>!x.physicalTableDeclared);
  const tableMap=new Map();
- for(const x of qualified){
+ for(const x of schemaBound){
   const key=x.table||'<unresolved>';
   if(!tableMap.has(key))tableMap.set(key,{table:key,explicitOwners:x.explicitOwners,
    writers:new Set(),domains:new Set(),occurrences:0,directQueryCandidates:0,
@@ -55,16 +60,22 @@ function buildWriterInventory(root,options={}){
   coverage:{trackedJsFiles:all.length,applicationFiles:apps.length,
    excludedFiles:all.length-apps.length,excludedNotCertified:true,
    featureCardsRead:features.features.length,
-   featureCardsWithDbDeclarations:features.features.filter(x=>x.found).length},
-  summary:{candidateWrites:qualified.length,possibleDirectQueryCalls:qualified.filter(x=>x.binding==='DIRECT_QUERY_ARGUMENT').length,
-   tablesFound:tableSummary.length,ownershipReviewCandidates:qualified.filter(x=>gaps.has(x.ownerResolution)).length,
-   crossDomainReviewCandidates:qualified.filter(x=>x.ownerResolution==='CROSS_DOMAIN_WRITE_REVIEW').length,
-   headerMissingDeclarations:qualified.filter(x=>!x.headerWriteDeclared).length,
+   featureCardsWithDbDeclarations:features.features.filter(x=>x.found).length,
+   canonicalSchemaTables:schema.size},
+  summary:{candidateWrites:qualified.length,physicalTableCandidates:schemaBound.length,
+   notProvenTableCandidates:nonSchema.length,
+   possibleDirectQueryCalls:schemaBound.filter(x=>x.binding==='DIRECT_QUERY_ARGUMENT').length,
+   tablesFound:tableSummary.length,ownershipReviewCandidates:schemaBound.filter(x=>gaps.has(x.ownerResolution)).length,
+   crossDomainReviewCandidates:schemaBound.filter(x=>x.ownerResolution==='CROSS_DOMAIN_WRITE_REVIEW').length,
+   headerMissingDeclarations:schemaBound.filter(x=>!x.headerWriteDeclared).length,
    runtimeWriteProofs:0,confirmedBusinessBugs:0},
   featureCards:features.features,tableSummary,writes:qualified,
+  rejectedTargetSamples:nonSchema.slice(0,60).map(x=>({file:x.file,line:x.line,rawTarget:x.rawTarget,schemaEvidence:x.schemaEvidence})),
+  rejectedTargetCount:nonSchema.length,
   limits:[
    'Lexical source parser: dynamic SQL, fragments, ORM calls, escaping and SQL from non-JS sources can be missed or misclassified',
    'A SQL literal need not execute; direct query syntax alone does not establish runtime reachability',
+   'Counts are separated into checked-in schema table candidates and non-schema lexical candidates; this schema snapshot may omit future tables',
    'A Feature Card ! is a declared owner and ~ a declared technical writer, not proof of authority',
    'Cross-domain writers are candidates for owner review, not automatically forbidden',
    'Scripts, tests, public frontends, migrations and non-JS files are excluded from this runtime-candidate subset, not declared safe',
