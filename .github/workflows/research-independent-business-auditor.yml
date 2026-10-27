@@ -67,6 +67,11 @@ jobs:
           const w=p.code?.writerInventory,l=p.code?.evidenceLedger;
           if(!w||l?.contract!=='komerce-business-evidence-ledger/v1')throw Error('Evidence ledger missing');
           if(l.summary.sourceOccurrences!==w.summary.physicalTableCandidates)throw Error('Lost physical write candidates');
+          if(l.summary.unresolvedOccurrences!==w.summary.notProvenTableCandidates)throw Error('Lost unresolved candidates');
+          if(l.summary.allCandidateOccurrences!==w.summary.candidateWrites)throw Error('Total candidate loss');
+          if(l.unresolvedEntries.reduce((n,x)=>n+x.occurrenceCount,0)!==l.summary.unresolvedOccurrences)throw Error('Lost unresolved occurrences');
+          if(new Set([...l.entries,...l.unresolvedEntries].map(x=>x.id)).size!==l.entries.length+l.unresolvedEntries.length)throw Error('Duplicate case ID');
+          if(l.unresolvedEntries.some(x=>x.verdict!=='SCHEMA_TARGET_UNRESOLVED'||x.confirmedProductionIncident))throw Error('Unresolved candidate mislabeled');
           if(!l.summary.distinctCases||l.summary.distinctCases>l.summary.sourceOccurrences)throw Error('Invalid grouping');
           if(l.summary.reviewCases!==l.entries.filter(x=>x.reviewRequired).length)throw Error('Inconsistent review counts');
           if(l.entries.reduce((n,x)=>n+x.occurrenceCount,0)!==l.summary.sourceOccurrences)throw Error('Occurrence total mismatch');
