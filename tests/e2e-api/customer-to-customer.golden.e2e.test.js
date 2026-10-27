@@ -722,6 +722,28 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     }));
     expect(close.verdict).toBe('FINANCIAL_CLOSE_MATCHED');
 
+    // Connected P1/P2/P7 R&D: the SAME persisted order-item and market,
+    // owner services read-only. Simulated Golden objects are NOT real checkout.
+    const {collectP1P7Canonical}=require('../../scripts/research/p1-p7-canonical-collector');
+    const wiredP1P7=await collectP1P7Canonical(db,{
+      productId,orderItemId:itemId,marketCode:'KM',orderReference:ORDER_REF,
+    });
+    expect(wiredP1P7.wired_edges).toHaveLength(4);
+    expect(wiredP1P7.totals.notWired).toBe(9);
+    expect(wiredP1P7.context.actual_product_id).toBe(productId);
+    expect(wiredP1P7.context.actual_sku_id).toBe(skuId);
+    expect(wiredP1P7.context.persisted_order_market).toBe('KM');
+    expect(wiredP1P7.stagingCertified).toBe(false);
+    expect(wiredP1P7.liveCheckoutCertified).toBe(false);
+    // Failing owner reads are evidence gaps, never silently a green status.
+    expect(wiredP1P7.owner_read_errors).toEqual([]);
+    const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
+      context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
+      totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
+      boundaries:wiredP1P7.boundaries.filter(b=>wiredP1P7.wired_edges.includes(b.id)),
+      stagingCertified:false};
+    console.log('FP_P1_P7_CANONICAL_WIRING '+JSON.stringify(wiredSummary));
+
     // Stronger second A/B: attempt a real SQL substitution using a second
     // valid SKU on a transaction-bound client. The canonical purchase-line
     // immutability guard must reject it. Entire probe is ROLLED BACK.
@@ -789,6 +811,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       header_carries_order_item:!!persistedPoForm.order_item_id,
       pre_submission:unsubmittedPoProof,
       pre_submission_hub_probe:preSubmissionHubProbe,
+      p1_p7_wiring:wiredSummary,
       identity_status:identityTrail.status,
       progressive_checkpoints:stageProofs,
       verified_counts:Object.fromEntries(Object.entries(identityTrail.observed)
