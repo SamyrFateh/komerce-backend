@@ -10,8 +10,11 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
   wired_edges:['P7_P1_MARKET_PRICING','P7_P1_MARKET_EXPOSURE','P7_P2_CHECKOUT',
    'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT',
    'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE','P3_P6_PURCHASE_COST',
-   'P4_P6_LOGISTICS_COST','P5_P6_CASH_REALITY'],
+   'P4_P6_LOGISTICS_COST','P5_P6_CASH_REALITY','P6_P1_PRICE_REVIEW','P7_P5_COUNTRY_SETTLEMENT'],
   owner_read_errors:[],
+  totals:{notWired:0},
+  unaudited_price_probe:{outcome:'PRICE_ACTIVATE_EVENT_WITHOUT_ACTOR_ACCEPTED',hypothesis:'UNATTRIBUTED_PRICE_ACTIVATE_EVENT'},
+  draft_settlement_probe:{outcome:'DRAFT_ASSIGNMENT_SETTLEMENT_ACCEPTED',hypothesis:'NEW_READY_SETTLEMENT_ON_INACTIVE_ASSIGNMENT'},
   foreign_cost_allocation_probe:{outcome:'CROSS_ORDER_COST_ALLOCATION_REPRODUCED',hypothesis:'COST_ALLOCATION_FOREIGN_ORDER'},
   cross_rail_funds_probe:{outcome:'STRIPE_ORDER_CASH_COLLECTION_ACCEPTED',
      hypothesis:'STRIPE_ORDER_HAS_CASH_COLLECTION'},
@@ -27,8 +30,18 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
    {id:'P5_P2_PAYMENT_CLOSURE',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
    {id:'P3_P6_PURCHASE_COST',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
    {id:'P4_P6_LOGISTICS_COST',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
-   {id:'P5_P6_CASH_REALITY',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']}
+   {id:'P5_P6_CASH_REALITY',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
+   {id:'P6_P1_PRICE_REVIEW',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
+   {id:'P7_P5_COUNTRY_SETTLEMENT',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']}
   ],
+  price_review:{
+    facts:{price_status:null,event_count:0},
+    diagnostics:{gaps:['NO_HUMAN_MARKET_PRICE_DECISION'],contradictions:[]}
+  },
+  country_settlement:{
+    facts:{settlement_count:0,statuses:[]},
+    diagnostics:{gaps:['NO_COUNTRY_SETTLEMENT_ATTESTATION'],contradictions:[]}
+  },
   funds_cost:{
     facts:{order_id:'o1',synthetic:true,mode:'stripe_eur',collections:0,
       actual_fee_allocations:0,shadow_fee_state:'not_expected'},
@@ -304,5 +317,29 @@ test('P5-P6 SQL protective constraint is also acceptable, with exact SQLSTATE',(
  const a=make('grouped'),b=make('historical');
  for(const x of [a,b])
   x.p1_p7_wiring.cross_rail_funds_probe={outcome:'SQL_CROSS_RAIL_COLLECTION_GUARD',sqlstate:'23514'};
+ assert.equal(comparePaths(a,b).mismatchCount,0);
+});
+
+test('two paths both without human pricing and market settlement readers are not equal',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.price_review;delete b.p1_p7_wiring.price_review;
+ assert.throws(()=>comparePaths(a,b),/P6-P1 \/ P7-P5/);
+});
+test('price activation event audit cannot disappear from both negative proofs',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.unaudited_price_probe;delete b.p1_p7_wiring.unaudited_price_probe;
+ assert.throws(()=>comparePaths(a,b),/P6-P1 PostgreSQL unaudited/);
+});
+test('settlement DRAFT mandatory negative SQL probe cannot disappear silently',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.draft_settlement_probe;delete b.p1_p7_wiring.draft_settlement_probe;
+ assert.throws(()=>comparePaths(a,b),/P7-P5 PostgreSQL DRAFT/);
+});
+test('both protection constraints are acceptable when PostgreSQL rejects mutations',()=>{
+ const a=make('grouped'),b=make('historical');
+ for(const p of [a,b]){
+  p.p1_p7_wiring.unaudited_price_probe={outcome:'SQL_PRICE_ACTIVATION_EVENT_GUARD',sqlstate:'23514'};
+  p.p1_p7_wiring.draft_settlement_probe={outcome:'SQL_DRAFT_SETTLEMENT_GUARD',sqlstate:'P0001'};
+ }
  assert.equal(comparePaths(a,b).mismatchCount,0);
 });
