@@ -96,6 +96,19 @@ jobs:
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress \
             -v ON_ERROR_STOP=1 -f migrations/244_catalog_glossary_batch001.sql > /dev/null
 
+      - name: Restore canonical fixed FX and active boutique taxonomy for disposable E2E
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress'
+          node scripts/seed-reference-data.js
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f migrations/migrate-categories-v2.sql >/dev/null
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f migrations/250_boutique_subcategory_customs_affinity.sql >/dev/null
+          kmf="$(PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Atqc "SELECT (eur_rate=491.96775)::int FROM currency_parities WHERE currency='KMF'")"
+          test "$kmf" = '1'
+          pair="$(PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Atqc "SELECT COUNT(*) FROM boutique_subcategories bs JOIN boutique_categories bc ON bc.key=bs.category_key WHERE bc.is_active AND bs.is_active AND bc.key='Mode & Beauté' AND bs.key='Femme'")"
+          test "$pair" = '1'
+          echo "CANONICAL_REFERENCE_FX_AND_ACTIVE_BOUTIQUE_READY"
       - name: Pull exactly 500 balanced real CJ products
         id: sync
         shell: bash
