@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - research/golden-continuity-checkpoints-20261026
+      - research/business-auditor-v07-writer-qualification-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -44,7 +45,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -58,6 +59,24 @@ jobs:
       - name: V0.6 writer inventory is nonempty and has owner declarations
         run: |
           node -e "const p=require('/tmp/komerce-independent-business-audit/business-audit.json');const w=p.code?.writerInventory;if(!w||w.contract!=='komerce-business-writer-inventory/v1'||w.summary.physicalTableCandidates<50||w.coverage.canonicalSchemaTables<100||w.coverage.featureCardsWithDbDeclarations<15||w.tableSummary.length<10||w.tableSummary.some(t=>t.table==='set'||t.table==='of')||w.summary.confirmedBusinessBugs!==0)process.exit(2);console.log('BUSINESS_AUDIT_WRITER_INVENTORY',JSON.stringify({coverage:w.coverage,summary:w.summary,topTables:w.tableSummary.slice(0,8).map(t=>({table:t.table,writes:t.occurrences,owners:t.explicitOwners,rules:t.primaryGrainRules})),crossDomainExamples:w.crossDomainExamples.slice(0,12),ownerResolutionCounts:w.summary.ownerResolutionCounts}));"
+      - name: V0.7 qualify every candidate and refuse unproven authority
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const p=JSON.parse(fs.readFileSync('/tmp/komerce-independent-business-audit/business-audit.json','utf8'));
+          const w=p.code?.writerInventory,q=p.code?.writerQualification;
+          if(q?.contract!=='komerce-business-writer-qualification/v1')throw Error('V0.7 missing');
+          if(q.summary.occurrences!==w.summary.candidateWrites||
+             q.summary.physical!==w.summary.physicalTableCandidates||
+             q.summary.unresolved!==w.summary.notProvenTableCandidates)throw Error('V0.7 lost SQL candidates');
+          if(q.cases.reduce((n,x)=>n+x.occurrences,0)!==q.summary.occurrences)throw Error('Grouping lost candidates');
+          if(q.summary.reviewCases!==q.cases.filter(x=>x.needsReview).length)throw Error('Review accounting mismatch');
+          if(q.findings.some(x=>x.authorized||x.runtimeWriteProven||x.confirmedBusinessBug||x.verifiedCallPath))
+            throw Error('Static writer mistakenly certified');
+          const md=fs.readFileSync('/tmp/komerce-independent-business-audit/business-audit.md','utf8');
+          if(!md.includes('Qualification statique des responsabilités'))throw Error('Markdown summary missing');
+          console.log('BUSINESS_AUDIT_V07_QUALIFICATION',JSON.stringify(q.summary));
+          NODE
       - name: Fail closed if report lacks explicit seven SQL owner rules
         run: |
           node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('/tmp/komerce-independent-business-audit/business-audit.json'));if(p.contract!=='komerce-independent-business-auditor/v1'||p.data.results.length!==7||p.permissions.dataTarget!=='LOCAL_KOMERCE_TEST_ONLY'||p.code.status!=='STATIC_HEURISTICS_ONLY')process.exit(2);console.log('INDEPENDENT_AUDITOR_PROOF',JSON.stringify({scannedFiles:p.code.scannedFiles,staticSuspicions:p.summary.staticSuspicions,dataRules:p.data.results.length,signals:p.summary.rulesWithEvidence}));"
