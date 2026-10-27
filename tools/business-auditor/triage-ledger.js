@@ -27,6 +27,12 @@ const ENTRY=Object.freeze({
  'LS-01|tools/business-auditor/engine.test.js': ['TEST_SOURCE_FALSE_POSITIVE','NOT_RUNTIME_PROOF','SQL guard test contains literal UPDATE orders; no runtime business writer'],
  'LS-06|utils/refunds.js': ['EXTERNAL_PSP_SIDE_EFFECT','TARGETED_RETRY_TEST','Stripe refund call lacks explicit idempotency key in this helper; verify reachability before declaring vulnerability'],
 });
+const PRIOR_EVIDENCE=Object.freeze({
+ 'LS-05|services/auto-parcel.js':Object.freeze({
+  issue:2949,level:'SERVICE_MOCK_REPRODUCED_NOT_PHYSICAL_PG',
+  observation:'Earlier issue #2949 reports rowCount=0 yet items_assigned=1 in 2/2 service-mock tests; real PostgreSQL concurrency still required',
+ }),
+});
 const key=f=>String(f.rule)+'|'+String(f.file);
 function qualifyStaticTriage(rows){
  return rows.map(t=>{
@@ -36,6 +42,7 @@ function qualifyStaticTriage(rows){
    proposedTest:entry?entry[1]:'OWNER_REVIEW_REQUIRED',
    groundedObservation:entry?entry[2]:'New signal: inspect source and design nominal/counterexample',
    reviewedFromSource:Boolean(entry),
+   priorEvidence:PRIOR_EVIDENCE[key(t)]||null,
    // No static code review ever proves runtime exploitability or a money error.
    confirmedBug:false};
  });
@@ -49,4 +56,4 @@ function triageCounts(rows){
  }
  return {byReview:groups,targetedCandidateCount:risk.length,targetedCandidates:risk};
 }
-module.exports={ENTRY,qualifyStaticTriage,triageCounts};
+module.exports={ENTRY,PRIOR_EVIDENCE,qualifyStaticTriage,triageCounts};
