@@ -43,7 +43,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Bootstrap isolated PostgreSQL test schema
@@ -55,6 +55,9 @@ jobs:
       - name: Fail closed if report lacks explicit seven SQL owner rules
         run: |
           node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('/tmp/komerce-independent-business-audit/business-audit.json'));if(p.contract!=='komerce-independent-business-auditor/v1'||p.data.results.length!==7||p.permissions.dataTarget!=='LOCAL_KOMERCE_TEST_ONLY'||p.code.status!=='STATIC_HEURISTICS_ONLY')process.exit(2);console.log('INDEPENDENT_AUDITOR_PROOF',JSON.stringify({scannedFiles:p.code.scannedFiles,staticSuspicions:p.summary.staticSuspicions,dataRules:p.data.results.length,signals:p.summary.rulesWithEvidence}));"
+      - name: Enforce owner-review coverage for known static rule families
+        run: |
+          node -e "const r=require('/tmp/komerce-independent-business-audit/business-audit.json');if(!r.code?.triage||r.code.triage.length!==r.code.findings.length||!r.code.reviewSummary)process.exit(2);console.log('BUSINESS_AUDIT_TRIAGE',JSON.stringify({total:r.code.triage.length,reviewed:r.code.triage.filter(x=>x.reviewedFromSource).length,unreviewed:r.code.triage.filter(x=>!x.reviewedFromSource).map(x=>({file:x.file,rule:x.rule})),targeted:r.code.reviewSummary.targetedCandidateCount,groups:r.code.reviewSummary.byReview}));"
       - name: Inventory static findings for owner triage (no source snippets)
         run: |
           node -e "const r=require('/tmp/komerce-independent-business-audit/business-audit.json');for(const f of r.code.findings)console.log('BUSINESS_AUDIT_STATIC '+JSON.stringify({rule:f.rule,priority:f.priority,file:f.file,line:f.line,category:f.category}));"
