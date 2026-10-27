@@ -81,13 +81,19 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   const activeCategories=new Set(active.map(x=>x.category));
   if(activeSet.size<15||!activeSet.has('Mode & Beauté/Enfant')
     ||!activeSet.has('Auto/Accessoires')||!activeSet.has('Tech/Phones'))throw Error('CANONICAL_TAXONOMY_NOT_READY');
-  const byStatus={},byEvidence={},byPair={},byCategory={},drift=[],samples=[],categorySamples=[];
+  const byStatus={},byEvidence={},byPair={},byCategory={},drift=[],samples=[],categorySamples=[],decisions=[];
   let ignoredDiscovery=0,discoveryOnly=0,auto=0,category=0;
   for(const original of doc.products){
     const candidate=sourceCandidate(original);
     const v=await resolveCommercialTaxonomyVerdict(db,candidate);
     const p=v.category&&v.subcategory?v.category+'/'+v.subcategory:null;
     inc(byStatus,v.status);inc(byEvidence,v.source);
+    decisions.push({supplier_product_id:original.supplier_product_id,
+      candidate_ref:original.candidate_ref,product_name:original.product_name,
+      supplier_category:original.supplier_category,
+      verdict:v.status,category:v.category||null,subcategory:v.subcategory||null,
+      evidence_source:v.source,evidence:v.evidence||null,
+      suggestion:v.proposal||null});
     if(v.status==='AUTO_CLASSIFIED'){
       auto++;inc(byPair,p);
       if(!activeSet.has(p)||v.source==='OPERATOR_OR_DISCOVERY'||v.source==='DISCOVERY_PRIOR')
@@ -216,6 +222,12 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
     transaction_rolled_back:rolledBack,publication_performed:false,supplier_calls:0};
   fs.mkdirSync(path.dirname(output),{recursive:true});
   fs.writeFileSync(output,JSON.stringify(out,null,2)+'\n');
+  const decisionOutput=path.join(path.dirname(output),'all-498-decisions.json');
+  fs.writeFileSync(decisionOutput,JSON.stringify({
+    kind:'REVIEWABLE_CJ_498_COMMERCIAL_CLASSIFICATION',
+    note:'Proposed classifications, not an independently annotated accuracy score',
+    source_sha256:EXPECTED_SHA,decisions,
+  },null,2)+'\n');
   console.log('[CJ_P1_REAL_PG] '+JSON.stringify({inspected:498,automatic:auto,
     category,placement:auto+category,review:498-auto-category,
     discovery_only:discoveryOnly,prior_seen:ignoredDiscovery,
