@@ -1,11 +1,33 @@
 name: CJ frozen 498 — semantic classifier replay
 on:
+  pull_request:
+    paths:
+      - 'scripts/replay-cj-frozen-semantic-classification.js'
+      - 'scripts/cj-balanced-500-classification-audit.js'
+      - 'tests/unit/cj-frozen-classification-proofs.test.js'
+      - '.github/workflows/cj-498-frozen-semantic-replay.yml'
   issues:
     types: [opened]
 permissions:
   contents: read
   actions: read
 jobs:
+  proof-unit:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify source and adversarial provenance controls
+        run: |
+          node --check scripts/replay-cj-frozen-semantic-classification.js
+          node --check scripts/cj-balanced-500-classification-audit.js
+          npx jest --config jest.unit.config.js tests/unit/cj-frozen-classification-proofs.test.js --runInBand --no-coverage
   offline-real-corpus:
     if: >-
       github.repository == 'SamyrFateh/komerce-backend' &&
