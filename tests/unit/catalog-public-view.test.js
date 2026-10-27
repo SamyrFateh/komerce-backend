@@ -208,7 +208,7 @@ describe('publicProductColumns', () => {
       if (field === 'category') {
         expect(sql).toContain('COALESCE(p.boutique_category_key, p.category) AS category');
       } else if (field === 'subcategory') {
-        expect(sql).toContain('COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory');
+        expect(sql).toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END AS subcategory');
       } else if (field === 'image_url') {
         expect(sql).toContain('FROM catalog_media cm');
         expect(sql).toContain('AS image_url');
@@ -238,6 +238,6 @@ describe('progressive category-level public projection',()=>{
     const {publicProductColumns}=require('../../services/catalog-public-view');
     const columns=publicProductColumns('p');
     expect(columns).toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END AS subcategory');
-    expect(columns).not.toContain('COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory');
+    expect(columns).not.toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END AS subcategory');
   });
 });
