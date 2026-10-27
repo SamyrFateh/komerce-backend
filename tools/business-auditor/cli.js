@@ -15,6 +15,7 @@ const {qualifyStaticTriage,triageCounts}=require('./triage-ledger');
 const {scanRelevantCode}=require('./code-detectors');
 const {inspectTrackedPayPalRefundChain}=require('./paypal-refund-boundary');
 const {buildWriterInventory}=require('./writer-inventory');
+const {makeEvidenceLedger}=require('./evidence-ledger');
 const ROOT=path.resolve(__dirname,'../..');
 function parseArgs(argv){
  const o={mode:'code',sampleLimit:25,base:null,out:null};
@@ -112,6 +113,8 @@ async function runIndependent(argv=process.argv.slice(2),env=process.env,deps={}
   permissions:{dataTarget:wantsData?'LOCAL_KOMERCE_TEST_ONLY':'NO_DATABASE_CONNECTION',
    writerCalls:false,mutationTestsExecuted:false},
  };
+ if(report.code?.writerInventory)
+  report.code.evidenceLedger=makeEvidenceLedger(report.code.writerInventory);
  report.summary=summarize({staticResult,dataResults,mode:options.mode});
  const out=options.out?path.resolve(options.out):fs.mkdtempSync(path.join(os.tmpdir(),'komerce-independent-audit-'));
  fs.mkdirSync(out,{recursive:true});
