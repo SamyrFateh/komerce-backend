@@ -12,6 +12,9 @@ on:
       - scripts/research/golden-po-unsubmitted-proof.js
       - scripts/research/golden-po-unsubmitted-proof.test.js
       - tests/e2e-api/customer-to-customer.golden.e2e.test.js
+      - scripts/research/p1-p7-boundary-oracle.js
+      - scripts/research/p1-p7-canonical-collector.js
+      - scripts/research/p1-p7-canonical-collector.test.js
 permissions:
   contents: read
 concurrency:
@@ -47,7 +50,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Pure A/B identity oracle — zero DB
-        run: node --test scripts/research/golden-identity-trail.test.js scripts/research/compare-golden-po-paths.test.js scripts/research/golden-po-unsubmitted-proof.test.js
+        run: node --test scripts/research/golden-identity-trail.test.js scripts/research/compare-golden-po-paths.test.js scripts/research/golden-po-unsubmitted-proof.test.js scripts/research/p1-p7-boundary-oracle.test.js scripts/research/p1-p7-canonical-collector.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Bootstrap disposable PostgreSQL
