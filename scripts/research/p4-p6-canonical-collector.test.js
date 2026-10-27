@@ -16,7 +16,7 @@ const costs=[
 const shadow={order_id:'o1',costs:{by_type:{
  freight:{state:'real',real_kmf:1500},customs:{state:'real',real_kmf:2500}}}};
 const facts=overrides=>({item,memberParcels:[parcel],itemParcels:[parcelLine],costs,
- shipments:[{shipment_id:'ship1:box1'}],shadow,orderItemCount:1,...overrides});
+ shipments:[{shipment_id:'ship1',parcel_id:'box1'}],shadow,orderItemCount:1,...overrides});
 test('one item with declared shipment actual freight and duty agrees with economic owner',()=>{
  const x=assessP4P6(facts());
  assert.equal(status(x).status,'NO_CONTRADICTION_OBSERVED');
@@ -45,7 +45,7 @@ test('customs cost allocated to parcel that does not contain this sold item',()=
  assert.ok(status(x).contradictions.includes('OWNER_FACT:LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM'));
 });
 test('shipment must actually include attributed parcel, not just be declared elsewhere',()=>{
- const x=assessP4P6(facts({shipments:[{shipment_id:'other:box1'}]}));
+ const x=assessP4P6(facts({shipments:[{shipment_id:'other',parcel_id:'box1'}]}));
  assert.ok(status(x).contradictions.includes('OWNER_FACT:LOGISTICS_COST_SHIPMENT_PARCEL_UNLINKED'));
 });
 test('shadow overreports cost on exact one-item order: independent amount contradiction',()=>{
