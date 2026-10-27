@@ -40,7 +40,7 @@ const FAMILIES=[
     object:/\b(?:(?:storage (?:boxes?|bins?|cabinets?|shelves?|benches?|racks?|containers?|cubes?))|organizers?|cabinets?|shel(?:f|ves)|racks?|hampers?|furniture|tables?|chairs?|beds?|sofas?|benches?|kitchen|kitchenware|tableware|hot pots?|electric cookers?|coffee pot|cookware|utensils?|egg boiler|caddy|towels?|lamps?|decor|tapestry|vases?|wall art|paintings?|posters?|pillows?|blankets?|cushions?|drinkware|cups?|mugs?|curtains?|baskets?)\b/},
   {id:'home_children',category:'Maison',
     path:/^toys kids babies\b/,
-    object:/\b(?:toys?|plush toys?|stuffed animals?|teddy bears?|dolls?|strollers?|baby stroller|school bags?|pencil cases?|baby beds?|nursery furniture)\b/},
+    object:/\b(?:toys?|plush toys?|stuffed animals?|teddy bears?|dolls?|ride on (?:cars?|motorcycles?)|strollers?|baby stroller|school bags?|pencil cases?|baby beds?|nursery furniture)\b/},
   {id:'home_lighting',category:'Maison',
     path:/^home improvement (?:indoor|outdoor) lighting\b/,
     object:/\b(?:lamps?|decorative light|bedside light|night lights?|wall lights?|solar (?:wall|street|path) lights?|outdoor wall lights?|street path lights?)\b/},
@@ -84,7 +84,17 @@ function categoryCorroboratedByObject(candidate={}){
   if (/\b(?:heat|tumbler|mug|sublimation) press (?:machine|set|kit)\b/.test(title)
       && /\b(?:mugs?|cups?|tumblers?|press machines?)\b/.test(title))
     return null;
-  const titleHits=FAMILIES.filter(f=>f.object.test(title));
+  // A ride-on motorcycle for children is a toy; its 'motorcycle' noun is
+  // NOT independent proof of a real vehicle or replacement part. Resolve the
+  // identity before cross-universe collision tests, using BOTH supplier path
+  // and concrete toy/child semantics. Never infer toy from 'car' by itself.
+  const toyVehicle=(/^toys kids babies\b/.test(path)
+    && (/\btoy (?:cars?|motorcycles?|trucks?)\b/.test(title)
+      || (/\bride on (?:cars?|motorcycles?)\b/.test(title)
+        && /\b(?:kids?|children|babies|6v|12v)\b/.test(title)))
+    && !/\b(?:brake rotors?|engine parts?|fuel filters?|brake calipers?)\b/.test(title));
+  const titleHits=FAMILIES.filter(f=>f.object.test(title)
+    && !(toyVehicle && f.id==='vehicle_part'));
   const categories=new Set(titleHits.map(f=>f.category));
   if(categories.size!==1) return null;
   const matched=titleHits.filter(f=>f.path.test(path));

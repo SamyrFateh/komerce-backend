@@ -87,6 +87,10 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   const counterAuditRefs=new Map([
     ['KSC-000150',['REVIEW_REQUIRED',null,null]],
     ['KSC-000399',['REVIEW_REQUIRED',null,null]],
+    ['KSC-000465',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000476',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000477',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000478',['REVIEW_REQUIRED',null,null]],
   ]);
   const realObjectRegression=new Map([
     ['KSC-000168',['CATEGORY_CLASSIFIED','Tech',null]],

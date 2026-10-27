@@ -739,3 +739,39 @@ describe('Object identity counter-audit: material is not an object and kits have
         source:'DISCOVERY_PRIOR'});
     });
 });
+
+
+describe('toy vehicle is not an automotive part (frozen CJ object identities)',()=>{
+  const {categoryCorroboratedByObject}=require('../../services/catalog-commercial-category-evidence');
+  const {resolveCommercialTaxonomyVerdict}=require('../../services/catalog-candidate-product-service');
+  const toy='Toys, Kids & Babies > Toys & Hobbies > Action & Toy Figures';
+  test.each([
+    ['Remote Control Toy Car F1 Racing Style With Music And Light',toy],
+    ['Ride On Motorcycle 6V Ride on Bubble Car 3 Wheeled Electric Motorcycle for Kids',
+      'Toys, Kids & Babies > Toys & Hobbies > Blocks'],
+    ['Pink 6V Kids 3-Wheel Electric Ride On Motorcycle for Children',toy],
+  ])('explicit toy vehicle under actual toy breadcrumb proves Maison parent: %s',
+    async(product_name,supplier_category)=>{
+      const c={product_name,supplier_category};
+      expect(categoryCorroboratedByObject(c)).toMatchObject({
+        category:'Maison',subcategory:null,source:'SUPPLIER_PATH_AND_OBJECT'});
+      const q={query:jest.fn(async sql=>sql.includes('FROM boutique_categories WHERE key=')
+        ? {rows:[{key:'Maison'}]} : {rows:[]})};
+      await expect(resolveCommercialTaxonomyVerdict(q,{...c,
+        supplier_name:'CJdropshipping',
+        raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Éclairage'}}}))
+        .resolves.toMatchObject({status:'CATEGORY_CLASSIFIED',category:'Maison',
+          subcategory:null,source:'SUPPLIER_PATH_AND_OBJECT'});
+    });
+  test.each([
+    ['Adult Ride On Motorcycle Helmet',toy],
+    ['Motorcycle Brake Rotor Spare Parts',toy],
+    ['Remote Control Car Brake Assembly',toy],
+    ['Toy Car Brake Rotor Repair Kit',toy],
+    ['Kids Electric Ride On Car',
+      'Home, Garden & Furniture > Home Storage > Furniture'],
+  ])('an uncorroborated or contradictory vehicle stays unresolved: %s',
+    (product_name,supplier_category)=>{
+      expect(categoryCorroboratedByObject({product_name,supplier_category})).toBeNull();
+    });
+});
