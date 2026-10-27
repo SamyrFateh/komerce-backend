@@ -87,6 +87,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
 
   let cleanup;
   let marketId;
+  let unsubmittedPoProof;
 
   const q = (sql, params) => db.query(sql, params);
   const one = async (sql, params) => (await q(sql, params)).rows[0];
@@ -274,6 +275,16 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     );
 
     }
+    // Independent R&D SQL checkpoint: actual unsubmitted PO form before
+    // any supplier execution/payment fixture is inserted. This is an
+    // observation of persisted facts, not proof of a provider-side action.
+    const {collectUnsubmittedPo}=require('../../scripts/research/golden-po-unsubmitted-proof');
+    unsubmittedPoProof=await collectUnsubmittedPo(db,{
+      shape:FP_GOLDEN_PO_SHAPE,poId,lineId,orderId,orderItemId:itemId,
+    });
+    expect(unsubmittedPoProof.verdict).toBe('NO_RECORDED_SUPPLIER_EXECUTION');
+    expect(unsubmittedPoProof.issues).toEqual([]);
+
     await q(
       `UPDATE purchase_orders
           SET status = 'confirmed',
@@ -663,6 +674,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       orderId,
       itemIds: [itemId],
       purchaseLineIds: [lineId],
+      executionLineIds: [lineId],
       supplierPaymentIds: [supplierPaymentId],
       fulfillmentIds: [fulfillmentId],
       hubAllocationIds: [allocationId],
@@ -737,6 +749,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       po_shape:FP_GOLDEN_PO_SHAPE,
       persisted_po_shape:actualPoShape,
       header_carries_order_item:!!persistedPoForm.order_item_id,
+      pre_submission:unsubmittedPoProof,
       identity_status:identityTrail.status,
       progressive_checkpoints:stageProofs,
       verified_counts:Object.fromEntries(Object.entries(identityTrail.observed)
