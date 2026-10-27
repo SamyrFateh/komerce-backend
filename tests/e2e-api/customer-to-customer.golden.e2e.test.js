@@ -784,6 +784,19 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     // Adversarial PostgreSQL A/B at P4 -> P2 (not a fake in-memory scan):
     // scan points to a second real relay, while collection owner can still
     // report MATCHED. Always rollback and verify the original scan survives.
+    const {scanData:scanIndependentBusinessRules}=
+      require('../../tools/business-auditor/engine');
+    const independentCalibrations=new Set();
+    const assertIndependentSignal=async(client,ruleIds)=>{
+      const entries=await scanIndependentBusinessRules(client,{ruleIds,sampleLimit:10});
+      expect(entries).toHaveLength(ruleIds.length);
+      for(const entry of entries){
+        expect(entry.status).toBe('DATA_INTEGRITY_SIGNAL');
+        expect(entry.samples.length).toBeGreaterThan(0);
+        expect(entry.confirmedBusinessBug).toBe(false);
+        independentCalibrations.add(entry.id);
+      }
+    };
     const relayProbeClient=await db.getClient();
     const wrongRelayId=uuid();
     let relayProbe;
@@ -812,6 +825,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       expect(seam.diagnostics.contradictions)
         .toContain('COLLECTION_SCAN_FOREIGN_RELAY');
       expect(owner.verdict).toBe('HANDOFF_MATCHED');
+      await assertIndependentSignal(relayProbeClient,['KBA-007']);
     } finally {
       await relayProbeClient.query('ROLLBACK');
       relayProbeClient.release();
@@ -884,6 +898,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
         });
         expect(poisoned.diagnostics.contradictions)
           .toContain('COST_ALLOCATION_FOREIGN_ORDER');
+        await assertIndependentSignal(costProbeClient,['KBA-001']);
         foreignCostProbe={outcome:'CROSS_ORDER_COST_ALLOCATION_REPRODUCED',
           hypothesis:'COST_ALLOCATION_FOREIGN_ORDER'};
       }catch(error){
@@ -937,6 +952,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
           .toContain('LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM');
         expect(poisoned.diagnostics.contradictions)
           .toContain('LOGISTICS_COST_SHIPMENT_PARCEL_UNLINKED');
+        await assertIndependentSignal(logisticsProbeClient,['KBA-002','KBA-003']);
         foreignParcelCostProbe={outcome:'UNLINKED_LOGISTICS_COST_PARCEL_REPRODUCED',
           hypotheses:poisoned.diagnostics.contradictions};
       }catch(error){
@@ -981,6 +997,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
         expect(poisoned.diagnostics.contradictions)
           .toContain('STRIPE_ORDER_HAS_CASH_COLLECTION');
         expect(poisoned.facts.collection_kmf).toBe(25000);
+        await assertIndependentSignal(fundsProbeClient,['KBA-004']);
         crossRailFundsProbe={outcome:'STRIPE_ORDER_CASH_COLLECTION_ACCEPTED',
           hypothesis:'STRIPE_ORDER_HAS_CASH_COLLECTION'};
       }catch(error){
@@ -1025,6 +1042,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
         });
         expect(bad.diagnostics.contradictions)
           .toContain('UNATTRIBUTED_PRICE_ACTIVATE_EVENT');
+        await assertIndependentSignal(priceProbeClient,['KBA-005']);
         unauditedPriceProbe={outcome:'PRICE_ACTIVATE_EVENT_WITHOUT_ACTOR_ACCEPTED',
           hypothesis:'UNATTRIBUTED_PRICE_ACTIVATE_EVENT'};
       }catch(error){
@@ -1067,6 +1085,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
         const bad=await collectP7P5Canonical(settlementProbeClient,{plane:currentPlane});
         expect(bad.diagnostics.contradictions)
           .toContain('NEW_READY_SETTLEMENT_ON_INACTIVE_ASSIGNMENT');
+        await assertIndependentSignal(settlementProbeClient,['KBA-006']);
         draftSettlementProbe={outcome:'DRAFT_ASSIGNMENT_SETTLEMENT_ACCEPTED',
           hypothesis:'NEW_READY_SETTLEMENT_ON_INACTIVE_ASSIGNMENT'};
       }catch(error){
@@ -1082,6 +1101,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect((await q("SELECT id FROM market_operating_assignments WHERE id=$1",
       [draftAssignmentId])).rows).toEqual([]);
 
+    expect([...independentCalibrations].sort()).toEqual(
+      ['KBA-001','KBA-002','KBA-003','KBA-004','KBA-005','KBA-006','KBA-007']);
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
@@ -1100,6 +1121,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       foreign_cost_allocation_probe:foreignCostProbe,
       unpaid_closure_probe:unpaidClosureProbe,
       wrong_relay_probe:relayProbe,
+      independent_calibrated_rules:[...independentCalibrations].sort(),
       boundaries:wiredP1P7.boundaries.filter(b=>wiredP1P7.wired_edges.includes(b.id)),
       stagingCertified:false};
     console.log('FP_P1_P7_CANONICAL_WIRING '+JSON.stringify(wiredSummary));
