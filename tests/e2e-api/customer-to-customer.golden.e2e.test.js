@@ -490,6 +490,68 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       [parcelId, itemId, productId]
     );
 
+    // Independent auditor: REAL PG unique_order_item_per_parcel = one article
+    // per active parcel. A controlled stale preflight models a concurrent
+    // observer: hide ONLY the read of existing membership; every INSERT runs
+    // on the real PostgreSQL table. Nothing here is a production incident.
+    const parcelCountClient=await db.getClient();
+    let physicalParcelCounterEvidence;
+    const {distributeOrder:distributeAutoParcel}=
+      require('../../services/auto-parcel');
+    try{
+      const normal=await distributeAutoParcel(orderId,parcelCountClient);
+      expect(normal.already_assigned).toBe(true);
+      await parcelCountClient.query('BEGIN');
+      await parcelCountClient.query(
+        "UPDATE parcels SET status='preparation' WHERE id=$1",[parcelId]);
+      const before=await parcelCountClient.query(
+        'SELECT COUNT(*)::int AS n FROM parcel_items WHERE order_item_id=$1',[itemId]);
+      const insertResults=[];let stalePreflights=0;
+      const controlledStaleReadClient={query:async(sql,params)=>{
+        if(typeof sql==='string'&&
+           /SELECT\s+pi\.id\s+FROM\s+parcel_items\s+pi/i.test(sql)&&
+           sql.includes("JOIN parcels p")){
+          stalePreflights++;
+          return {rows:[],rowCount:0}; // controlled stale read only
+        }
+        const result=await parcelCountClient.query(sql,params);
+        if(typeof sql==='string'&&/INSERT\s+INTO\s+parcel_items/i.test(sql))
+          insertResults.push(result.rowCount);
+        return result;
+      }};
+      const returned=await distributeAutoParcel(orderId,controlledStaleReadClient);
+      const after=await parcelCountClient.query(
+        'SELECT COUNT(*)::int AS n FROM parcel_items WHERE order_item_id=$1',[itemId]);
+      expect(stalePreflights).toBe(1);
+      expect(insertResults).toEqual([0]);
+      expect(returned.items_assigned).toBe(1);
+      expect(after.rows[0].n-before.rows[0].n).toBe(0);
+      physicalParcelCounterEvidence={
+        reader_mode:'CONTROLLED_STALE_PREFLIGHT',
+        sql_engine:'POSTGRESQL_16_REAL_SCHEMA',
+        nominal_already_assigned:normal.already_assigned===true,
+        ignored_insert_rowcount:insertResults[0],
+        reported_items_assigned:returned.items_assigned,
+        actual_new_rows:after.rows[0].n-before.rows[0].n,
+      };
+    }finally{
+      await parcelCountClient.query('ROLLBACK');
+      parcelCountClient.release();
+    }
+    const afterParcelCounter=await q(
+      'SELECT p.status::text AS status, COUNT(pi.id)::int AS rows_found '+
+      'FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id '+
+      'WHERE p.id=$1 AND pi.order_item_id=$2 GROUP BY p.status',
+      [parcelId,itemId]);
+    expect(afterParcelCounter.rows[0]).toMatchObject({
+      status:'in_transit',rows_found:1,
+    });
+    physicalParcelCounterEvidence.rollback_restored=true;
+    const assessedParcelCounter=require('../../tools/business-auditor/physical-probes')
+      .assertParcelConflictEvidence(physicalParcelCounterEvidence);
+    expect(assessedParcelCounter.outcome).toBe('COUNT_INCREASED_WITH_ZERO_PHYSICAL_INSERT');
+    console.log('FP_KBA_PHYSICAL_PARCEL '+JSON.stringify(assessedParcelCounter));
+
     // 7 — CUSTOMS : le dossier pending bloque explicitement la progression.
     const createdCustoms = await createShipment(db, {
       reference: CUSTOMS_REF,
@@ -1103,6 +1165,58 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
 
     expect([...independentCalibrations].sort()).toEqual(
       ['KBA-001','KBA-002','KBA-003','KBA-004','KBA-005','KBA-006','KBA-007']);
+    // Independent physical financial retry calibration. No HTTP nor PSP.
+    // Same real wallet owner: stable key replay -> one credit; distinct
+    // timestamp-derived keys -> two credits, even when logical payload same.
+    // This is an idempotency-policy risk, NOT evidence of an actual duplicate
+    // admin API request or real payout. Every ledger entry is ROLLED BACK.
+    const walletProbeClient=await db.getClient();
+    let physicalWalletReplayEvidence;
+    const creditWallet=require('../../services/wallet-service').credit;
+    const stableKey='KBA-STABLE-'+RUN_TAG;
+    const clockKey1='admin_'+userId+'_1111111111111';
+    const clockKey2='admin_'+userId+'_1111111111112';
+    try{
+      await walletProbeClient.query('BEGIN');
+      const makeCredit=(idempotencyKey)=>creditWallet(walletProbeClient,{
+        userId,amountKmf:100,reason:'admin_gift',note:'R&D rollback proof',
+        createdBy:userId,idempotencyKey,
+      });
+      const stableFirst=await makeCredit(stableKey);
+      const stableRetry=await makeCredit(stableKey);
+      const timeFirst=await makeCredit(clockKey1);
+      const timeSecond=await makeCredit(clockKey2);
+      const counts=await walletProbeClient.query(
+        'SELECT idempotency_key,COUNT(*)::int AS n FROM wallet_transactions '+
+        'WHERE idempotency_key=ANY($1::text[]) GROUP BY idempotency_key',
+        [[stableKey,clockKey1,clockKey2]]);
+      const result=new Map(counts.rows.map(x=>[x.idempotency_key,x.n]));
+      physicalWalletReplayEvidence={
+        sql_engine:'POSTGRESQL_16_REAL_SCHEMA',
+        stable_first_duplicate:stableFirst.duplicate,
+        stable_retry_duplicate:stableRetry.duplicate,
+        stable_key_credit_count:result.get(stableKey)||0,
+        time_first_duplicate:timeFirst.duplicate,
+        time_second_duplicate:timeSecond.duplicate,
+        time_keys_distinct:clockKey1!==clockKey2,
+        time_key_credit_count:(result.get(clockKey1)||0)+(result.get(clockKey2)||0),
+      };
+    }finally{
+      await walletProbeClient.query('ROLLBACK');
+      walletProbeClient.release();
+    }
+    const remainingWallet=await q(
+      'SELECT COUNT(*)::int AS n FROM wallet_transactions '+
+      'WHERE idempotency_key=ANY($1::text[])',
+      [[stableKey,clockKey1,clockKey2]]);
+    expect(remainingWallet.rows[0].n).toBe(0);
+    physicalWalletReplayEvidence.rollback_restored=true;
+    const assessedWalletReplay=require('../../tools/business-auditor/physical-probes')
+      .assertWalletReplayEvidence(physicalWalletReplayEvidence);
+    expect(assessedWalletReplay.outcome)
+      .toBe('SAME_KEY_DEDUPLICATED_DIFFERENT_TIME_KEYS_CREDITED_TWICE');
+    console.log('FP_KBA_PHYSICAL_WALLET '+JSON.stringify(assessedWalletReplay));
+
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
@@ -1122,6 +1236,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       unpaid_closure_probe:unpaidClosureProbe,
       wrong_relay_probe:relayProbe,
       independent_calibrated_rules:[...independentCalibrations].sort(),
+      physical_parcel_counter:assessedParcelCounter,
+      physical_wallet_replay:assessedWalletReplay,
       boundaries:wiredP1P7.boundaries.filter(b=>wiredP1P7.wired_edges.includes(b.id)),
       stagingCertified:false};
     console.log('FP_P1_P7_CANONICAL_WIRING '+JSON.stringify(wiredSummary));
