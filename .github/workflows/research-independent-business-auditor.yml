@@ -1,0 +1,65 @@
+name: R&D independent business auditor (offline + local PG)
+on:
+  push:
+    branches:
+      - research/golden-continuity-checkpoints-20261026
+    paths:
+      - .github/workflows/research-independent-business-auditor.yml
+      - tools/business-auditor/**
+      - scripts/audit-logic.js
+      - scripts/lib/logic-detectors.js
+      - package.json
+permissions:
+  contents: read
+concurrency:
+  group: research-independent-business-auditor
+  cancel-in-progress: true
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Independent scanner contract + adversarial unit tests (no DB)
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js
+      - name: Install existing dependencies
+        run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
+      - name: Bootstrap isolated PostgreSQL test schema
+        run: |
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/business-auditor-bootstrap.log
+          node scripts/ci-db-bootstrap.js
+      - name: Run independent repo + PostgreSQL data audit (read only)
+        run: npm run audit:logic:full -- --mode all --out /tmp/komerce-independent-business-audit --sample-limit 20
+      - name: Fail closed if report lacks explicit seven SQL owner rules
+        run: |
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('/tmp/komerce-independent-business-audit/business-audit.json'));if(p.contract!=='komerce-independent-business-auditor/v1'||p.data.results.length!==7||p.permissions.dataTarget!=='LOCAL_KOMERCE_TEST_ONLY'||p.code.status!=='STATIC_HEURISTICS_ONLY')process.exit(2);console.log('INDEPENDENT_AUDITOR_PROOF',JSON.stringify({scannedFiles:p.code.scannedFiles,staticSuspicions:p.summary.staticSuspicions,dataRules:p.data.results.length,signals:p.summary.rulesWithEvidence}));"
+      - name: Archive independent JSON + Markdown evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: business-auditor-\${{ github.run_id }}
+          path: /tmp/komerce-independent-business-audit/
+          if-no-files-found: ignore
+          retention-days: 5
