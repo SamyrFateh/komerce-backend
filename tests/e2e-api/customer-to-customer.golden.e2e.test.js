@@ -724,7 +724,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       fingerprint:identityTrail.digest};
     console.log('FP_GOLDEN_IDENTITY_TRAIL '+JSON.stringify(evidence));
     if(process.env.FP_IDENTITY_OUTPUT){
-      require('node:fs').writeFileSync(process.env.FP_IDENTITY_OUTPUT,JSON.stringify(evidence,null,2)+'\\n');
+      require('node:fs').writeFileSync(process.env.FP_IDENTITY_OUTPUT,JSON.stringify(evidence,null,2)+'\n');
     }
   });
 });
