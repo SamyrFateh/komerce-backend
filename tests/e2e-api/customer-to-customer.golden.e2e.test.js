@@ -728,8 +728,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     const wiredP1P7=await collectP1P7Canonical(db,{
       productId,orderItemId:itemId,marketCode:'KM',orderReference:ORDER_REF,
     });
-    expect(wiredP1P7.wired_edges).toHaveLength(9);
-    expect(wiredP1P7.totals.notWired).toBe(4);
+    expect(wiredP1P7.wired_edges).toHaveLength(10);
+    expect(wiredP1P7.totals.notWired).toBe(3);
     expect(wiredP1P7.context.actual_product_id).toBe(productId);
     expect(wiredP1P7.context.actual_sku_id).toBe(skuId);
     expect(wiredP1P7.context.persisted_order_market).toBe('KM');
@@ -737,6 +737,15 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect(wiredP1P7.liveCheckoutCertified).toBe(false);
     // Failing owner reads are evidence gaps, never silently a green status.
     expect(wiredP1P7.owner_read_errors).toEqual([]);
+    expect(wiredP1P7.logistics_cost?.facts?.member_parcel_count).toBe(1);
+    expect(wiredP1P7.logistics_cost?.facts?.item_parcel_count).toBe(1);
+    expect(wiredP1P7.logistics_cost?.facts?.allocated_kmf).toMatchObject({
+      freight:1500,customs:2500,
+    });
+    expect(wiredP1P7.logistics_cost?.facts?.compared_owner_cost_types).toBe(2);
+    expect(wiredP1P7.logistics_cost?.diagnostics?.contradictions).toEqual([]);
+    expect(wiredP1P7.boundaries.find(e=>e.id==='P4_P6_LOGISTICS_COST')?.status)
+      .toBe('NO_CONTRADICTION_OBSERVED');
     // A manual/product cost allocation is NOT a settled KMF supplier debit.
     expect(wiredP1P7.supplier_cost?.facts?.product_purchase_actual_count).toBe(1);
     expect(wiredP1P7.supplier_cost?.facts?.allocation_amount_kmf).toBe(7000);
@@ -885,6 +894,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       physical_handoff:wiredP1P7.physical_handoff,
       customer_finance:wiredP1P7.customer_finance,
       supplier_cost:wiredP1P7.supplier_cost,
+      logistics_cost:wiredP1P7.logistics_cost,
       foreign_cost_allocation_probe:foreignCostProbe,
       unpaid_closure_probe:unpaidClosureProbe,
       wrong_relay_probe:relayProbe,
