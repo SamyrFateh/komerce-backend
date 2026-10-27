@@ -172,6 +172,38 @@ function assertP5P6(p){
  return {evidence:'NO_SIGNED_CUSTOMER_FUNDS_OR_REAL_PAYMENT_FEE',
    cash_collection_count:0,fee_allocation_count:0,negative_outcome:probe.outcome};
 }
+function assertP6P1P7P5(p){
+ const w=p.p1_p7_wiring;
+ const price=w?.price_review,sett=w?.country_settlement;
+ const ePrice=w?.boundaries?.find(e=>e.id==='P6_P1_PRICE_REVIEW');
+ const eSett=w?.boundaries?.find(e=>e.id==='P7_P5_COUNTRY_SETTLEMENT');
+ if(!w?.wired_edges?.includes('P6_P1_PRICE_REVIEW')||
+    !w?.wired_edges?.includes('P7_P5_COUNTRY_SETTLEMENT')||
+    w.totals?.notWired!==0||
+    !ePrice||ePrice.status!=='EVIDENCE_GAP'||ePrice.contradictions?.length||
+    !price||price.facts?.price_status!==null||
+    !price.diagnostics?.gaps?.includes('NO_HUMAN_MARKET_PRICE_DECISION')||
+    !eSett||eSett.status!=='EVIDENCE_GAP'||eSett.contradictions?.length||
+    !sett||sett.facts?.settlement_count!==0||
+    !sett.diagnostics?.gaps?.includes('NO_COUNTRY_SETTLEMENT_ATTESTATION'))
+   throw Error('P6-P1 / P7-P5: owner decisions are not independently documented');
+ const pr=w.unaudited_price_probe,sp=w.draft_settlement_probe;
+ const priceCaught=pr?.outcome==='PRICE_ACTIVATE_EVENT_WITHOUT_ACTOR_ACCEPTED'&&
+   pr.hypothesis==='UNATTRIBUTED_PRICE_ACTIVATE_EVENT';
+ const priceGuard=pr?.outcome==='SQL_PRICE_ACTIVATION_EVENT_GUARD'&&
+   ['23514','23503','23502','P0001'].includes(pr.sqlstate);
+ const settlementCaught=sp?.outcome==='DRAFT_ASSIGNMENT_SETTLEMENT_ACCEPTED'&&
+   sp.hypothesis==='NEW_READY_SETTLEMENT_ON_INACTIVE_ASSIGNMENT';
+ const settlementGuard=sp?.outcome==='SQL_DRAFT_SETTLEMENT_GUARD'&&
+   ['23514','23503','23502','P0001'].includes(sp.sqlstate);
+ if(!priceCaught&&!priceGuard)
+   throw Error('P6-P1 PostgreSQL unaudited price event adversary missing');
+ if(!settlementCaught&&!settlementGuard)
+   throw Error('P7-P5 PostgreSQL DRAFT assignment settlement adversary missing');
+ return {human_price:'NO_HUMAN_DECISION_IN_SYNTHETIC_GOLDEN',
+   settlement:'NO_CENTRAL_ATTESTATION_IN_SYNTHETIC_GOLDEN',
+   price_probe:pr.outcome,settlement_probe:sp.outcome};
+}
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
  if(p.identity_status!=='NO_IDENTITY_CONTRADICTION_OBSERVED')
@@ -191,6 +223,7 @@ const norm=(p)=>{
   p3_p6_purchase_cost_truth:assertP3P6(p),
   p4_p6_logistics_cost_truth:assertP4P6(p),
   p5_p6_funds_cost_truth:assertP5P6(p),
+  p6_p1_p7_p5_final_truth:assertP6P1P7P5(p),
   identity_status:p.identity_status,
   final_business_verdict:p.checkpoint,
   stage_projections:p.progressive_checkpoints.map(s=>({
