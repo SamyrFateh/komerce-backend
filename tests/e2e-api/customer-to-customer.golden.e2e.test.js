@@ -588,5 +588,60 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
         consolidated_margin_kmf: 14000,
       },
     });
+
+    // R&D seam: independent canonical foreign-key trail on THIS SAME Golden
+    // order, after all owners made their own verdicts. Read-only and never GO.
+    const { collectGoldenTrail, analyzeGoldenTrail } =
+      require('../../scripts/research/golden-identity-trail');
+    const identityTrail = await collectGoldenTrail(db, orderId);
+    expect(identityTrail.status).toBe('NO_IDENTITY_CONTRADICTION_OBSERVED');
+    expect(identityTrail.issues).toEqual([]);
+    expect(identityTrail.gaps).toEqual([]);
+    expect(identityTrail.observed).toEqual(expect.objectContaining({
+      orderId,
+      itemIds: [itemId],
+      purchaseLineIds: [lineId],
+      supplierPaymentIds: [supplierPaymentId],
+      fulfillmentIds: [fulfillmentId],
+      hubAllocationIds: [allocationId],
+      physicalUnitIds: [hubUnitId],
+      parcelIds: [parcelId],
+      scanIds: [scanId],
+    }));
+    expect(close.verdict).toBe('FINANCIAL_CLOSE_MATCHED');
+
+    // Tamper a COPY of the observation only — no SQL mutation. This tests
+    // the scanner's independent oracle, not exploitability of a route.
+    const corrupted = analyzeGoldenTrail({
+      order:{id:orderId,market_id:marketId},
+      items:[{id:itemId,order_id:orderId,sku_id:skuId,product_id:productId}],
+      purchaseLines:[{id:lineId,order_item_id:itemId,product_sku_id:uuid(),
+        purchase_order_id:poId,supplier_id:supplierId,po_order_id:null,po_supplier_id:supplierId}],
+      executionLines:[{purchase_line_id:lineId,supplier_execution_order_id:executionOrderId,purchase_order_id:poId}],
+      supplierPayments:[{id:supplierPaymentId}],
+      fulfillments:[{id:fulfillmentId}],
+      allocations:[{id:allocationId,order_id:orderId,order_item_id:itemId,purchase_line_id:lineId,
+        product_sku_id:skuId,purchase_order_id:poId,market_id:marketId,supplier_id:supplierId}],
+      placements:[{id:uuid(),allocation_id:allocationId,physical_unit_id:hubUnitId}],
+      parcels:[{id:uuid(),parcel_id:parcelId,order_item_id:itemId,product_id:productId,carrier_order_id:orderId}],
+      scans:[{id:scanId,order_id:orderId,parcel_id:parcelId}],
+    });
+    expect(corrupted.issues.map(x=>x.code)).toEqual(expect.arrayContaining([
+      'PURCHASE_SKU_SUBSTITUTION','HUB_ALLOCATION_SKU_MISMATCH',
+    ]));
+    const evidence = {schema:identityTrail.schema,level:'L4 isolated persisted Golden fixture',
+      order_reference:ORDER_REF,canonical_order_id:orderId,
+      checkpoint:'FINANCIAL_CLOSE_MATCHED',
+      identity_status:identityTrail.status,
+      verified_counts:Object.fromEntries(Object.entries(identityTrail.observed)
+        .filter(([key,value])=>Array.isArray(value)).map(([key,value])=>[key,value.length])),
+      perturbation:'IN_MEMORY_ONLY_SKU_REPLACEMENT',
+      perturbation_detected:corrupted.issues.map(x=>x.code),
+      no_staging_or_external_http:true,
+      fingerprint:identityTrail.digest};
+    console.log('FP_GOLDEN_IDENTITY_TRAIL '+JSON.stringify(evidence));
+    if(process.env.FP_IDENTITY_OUTPUT){
+      require('node:fs').writeFileSync(process.env.FP_IDENTITY_OUTPUT,JSON.stringify(evidence,null,2)+'\\n');
+    }
   });
 });
