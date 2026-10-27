@@ -21,7 +21,7 @@
 const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
 const { findConfirmed, chooseCommercialPair } = require('./supplier-commercial-category-mapping');
 const {semanticIntent,semanticConflict} = require('./commercial-taxonomy-semantics');
-const {categoryCorroboratedByObject}=require('./catalog-commercial-category-evidence');
+const {categoryCorroboratedByObject,genericObjectIdentityReason}=require('./catalog-commercial-category-evidence');
 
 function sourceLocaleFromCandidate(candidate = {}) {
   const locale = candidate?.normalized_source_contract?.source_locale;
@@ -112,6 +112,12 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
     return {status:'EXPLICIT_REVIEW',category:human.category,
       subcategory:human.subcategory,source:'OPERATOR_CONFIRMED'};
   }
+  // A generic category label masquerading as a product title does not prove
+  // the item itself. Fail closed before supplier mapping, object term and
+  // supplier-path corroboration. An explicit human decision remains sovereign.
+  const missingIdentity=genericObjectIdentityReason(candidate);
+  if(missingIdentity) return {status:'REVIEW_REQUIRED',
+    category:null,subcategory:null,source:missingIdentity};
   // Analyse de la hiérarchie entière AVANT les correspondances fournisseur :
   // un chemin "Women's Clothing" est une preuve métier, même lorsque la feuille
   // "Shirts" ne partage aucun mot avec la catégorie française "Femme".

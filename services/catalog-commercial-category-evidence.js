@@ -67,6 +67,16 @@ const FAMILIES=[
     object:/\b(?:cars?|automotive|automobiles?|motorcycles?|vehicle|fuel|brakes?|calipers?|rotors?|air filters?|cabin filters?|engines?|dashboards?|windshields?|wipers?|headlights?|taillights?|steering|bumpers?|radiators?|seat belts?|exhaust|clutch|tires?|tyres?|suspension|transmission)\b/},
 ];
 
+// Supplier category copied into an ambiguous product title is not a second,
+// independent source of object identity. Keep such items in review even when
+// their root strongly suggests Auto. This guards against generic product feeds.
+const GENERIC_ACCESSORY_TITLE =
+  /^(?:(?:universal|generic|assorted|various|general) )?(?:motorcycle|car|automobile|auto|vehicle|bike|scooter)(?: (?:modification|replacement|general|universal))? (?:accessories|parts|products|items)$/;
+function genericObjectIdentityReason(candidate={}){
+  const title=words(candidate.product_name);
+  return GENERIC_ACCESSORY_TITLE.test(title)?'GENERIC_ACCESSORIES_WITHOUT_ITEM_IDENTITY':null;
+}
+
 /**
  * Conservative two-source category proposal. Returns null when either proof is
  * missing or when the title contains objects from multiple parent universes.
@@ -77,6 +87,7 @@ function categoryCorroboratedByObject(candidate={}){
   const supplierPath=candidate.supplier_category||candidate.normalized_source_contract?.supplier_category;
   const path=words(supplierPath);
   if(!title||!path) return null;
+  if(genericObjectIdentityReason(candidate)) return null;
   // A finishing material is not a product type: 'plush backpack' is a bag,
   // never affirmative evidence of a toy merely because the CJ branch says Toys.
   // Separately, a heat-press machine bundled with mugs is equipment + goods,
@@ -105,4 +116,4 @@ function categoryCorroboratedByObject(candidate={}){
     source:'SUPPLIER_PATH_AND_OBJECT',
     evidence:{object_families:matched.map(f=>f.id),supplier_root:words(String(supplierPath).split('>')[0])||null}};
 }
-module.exports={categoryCorroboratedByObject};
+module.exports={categoryCorroboratedByObject,genericObjectIdentityReason};

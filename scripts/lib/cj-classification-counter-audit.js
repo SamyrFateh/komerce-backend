@@ -38,6 +38,8 @@ function signalsFor(item){
     add('SOURCE_PATH_CONFLICT_AUTO','P1','Vehicle component in inconsistent supplier hierarchy');
   if(/\b(?:car phone holders?|motorcycle phone holders?|motorcycle riding (?:gloves|bags?)|car bluetooth (?:chargers?|stereo))\b/.test(title))
     add('MULTI_UNIVERSE_ACCESSORY','P1','Object spans Auto/Tech/Mode merchandising decisions');
+  if(/^(?:(?:universal|generic|assorted|various|general) )?(?:motorcycle|car|automobile|auto|vehicle|bike|scooter)(?: (?:modification|replacement|general|universal))? (?:accessories|parts|products|items)$/.test(title))
+    add('INSUFFICIENT_OBJECT_IDENTITY','P0','The title merely repeats a supplier category without identifying an item');
   if(title.split(' ').filter(Boolean).length<=2&&item.verdict!=='REVIEW_REQUIRED')
     add('LOW_INFORMATION_CLASSIFICATION','P1','A short title needs corroborated product identity');
   return flags;

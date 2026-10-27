@@ -818,3 +818,54 @@ describe('separate classification counter-audit — risk signals are never decis
     expect(()=>buildCounterAudit([corpus[0],corpus[0]])).toThrow('COUNTER_AUDIT_DUPLICATE_REF');
   });
 });
+
+
+describe('independent object identity is required: generic source category echo',()=>{
+  const {categoryCorroboratedByObject,genericObjectIdentityReason} =
+    require('../../services/catalog-commercial-category-evidence');
+  const {resolveCommercialTaxonomyVerdict}=require('../../services/catalog-candidate-product-service');
+  const path='Automobiles & Motorcycles > Motorcycle Accessories & Parts > Other';
+  const db={query:jest.fn(async sql=>sql.includes('FROM boutique_categories WHERE key=')
+    ? {rows:[{key:'Auto'}]} : {rows:[]})};
+  test.each([
+    ['Motorcycle accessories',path],
+    ['Universal Motorcycle Modification Accessories',path],
+    ['Car accessories','Automobiles & Motorcycles > Exterior Accessories'],
+    ['Generic vehicle parts','Automobiles & Motorcycles > Auto Replacement Parts'],
+  ])('cannot classify supplier hierarchy echo as an item: %s',async(product_name,supplier_category)=>{
+    const candidate={supplier_name:'CJdropshipping',product_name,supplier_category,
+      raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Pièces'}}};
+    expect(genericObjectIdentityReason(candidate))
+      .toBe('GENERIC_ACCESSORIES_WITHOUT_ITEM_IDENTITY');
+    expect(categoryCorroboratedByObject(candidate)).toBeNull();
+    await expect(resolveCommercialTaxonomyVerdict(db,candidate)).resolves.toMatchObject({
+      status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'GENERIC_ACCESSORIES_WITHOUT_ITEM_IDENTITY'});
+  });
+  test.each([
+    'Motorcycle Air Filter Mushroom Head',
+    'Motorcycle Headlight Bulb',
+    'Rear View Mirror For Motorcycle',
+    'Car Window Wiper',
+    'Car Interior LED Lamp',
+    'Motorcycle Phone Holder Mount',
+    'Motorcycle Accessories Brake Rotor',
+  ])('specific object is not rejected: %s',(product_name)=>{
+    expect(genericObjectIdentityReason({product_name})).toBeNull();
+  });
+  test('human-confirmed mapping preserves explicit human authority',async()=>{
+    const candidate={product_name:'Motorcycle accessories',supplier_category:path,
+      commercial_taxonomy_review:{status:'CONFIRMED',category:'Auto',subcategory:'Pièces'}};
+    await expect(resolveCommercialTaxonomyVerdict(db,candidate)).resolves.toMatchObject({
+      status:'EXPLICIT_REVIEW',category:'Auto',subcategory:'Pièces',source:'OPERATOR_CONFIRMED'});
+  });
+  test('counter-audit flags generic identity without becoming taxonomy authority',()=>{
+    const {signalsFor}=require('../../scripts/lib/cj-classification-counter-audit');
+    const flags=signalsFor({product_name:'Motorcycle accessories',supplier_category:path,
+      verdict:'REVIEW_REQUIRED'});
+    expect(flags).toEqual(expect.arrayContaining([expect.objectContaining({
+      code:'INSUFFICIENT_OBJECT_IDENTITY',priority:'P0'})]));
+    expect(flags[0]).not.toHaveProperty('category');
+    expect(flags[0]).not.toHaveProperty('subcategory');
+  });
+});

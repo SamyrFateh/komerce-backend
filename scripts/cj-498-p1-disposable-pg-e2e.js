@@ -86,6 +86,8 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   let ignoredDiscovery=0,discoveryOnly=0,auto=0,category=0;
   const mixedGenderRefs=new Set(['KSC-000012','KSC-000017','KSC-000031']);
   const counterAuditRefs=new Map([
+    ['KSC-000094',['REVIEW_REQUIRED',null,null]],
+    ['KSC-000479',['REVIEW_REQUIRED',null,null]],
     ['KSC-000150',['REVIEW_REQUIRED',null,null]],
     ['KSC-000399',['REVIEW_REQUIRED',null,null]],
     ['KSC-000465',['CATEGORY_CLASSIFIED','Maison',null]],
