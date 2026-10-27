@@ -12,6 +12,7 @@ on:
       - scripts/research/golden-po-unsubmitted-proof.js
       - scripts/research/golden-po-unsubmitted-proof.test.js
       - tests/e2e-api/customer-to-customer.golden.e2e.test.js
+      - tests/e2e-api/hub-membership-readers.e2e.test.js
       - scripts/research/p1-p7-boundary-oracle.js
       - scripts/research/p1-p7-canonical-collector.js
       - scripts/research/p1-p7-canonical-collector.test.js
@@ -71,6 +72,8 @@ jobs:
           FP_GOLDEN_PO_SHAPE: historical
           FP_IDENTITY_OUTPUT: /tmp/fp-golden-historical.json
         run: ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/e2e-api/customer-to-customer.golden.e2e.test.js
+      - name: Physical shared-parcel truth — owner readers and scanner (PostgreSQL)
+        run: ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/e2e-api/hub-membership-readers.e2e.test.js
       - name: Compare evidence envelopes, not UUIDs
         run: node scripts/research/compare-golden-po-paths.js /tmp/fp-golden-grouped.json /tmp/fp-golden-historical.json /tmp/fp-golden-po-diff.json
       - name: Persist proof, no Git push
