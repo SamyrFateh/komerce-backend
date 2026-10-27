@@ -85,3 +85,25 @@ Exigences : PostgreSQL local `komerce_test` uniquement, un article exact, `REPEA
 ### Vérification finale du point d’entrée local
 
 [GitHub Actions #40501030224](https://github.com/SamyrFateh/komerce-backend/actions/runs/40501030224) : **40/40 tests purs et 60/60 tests de projections Golden**, y compris les gardes du CLI local, le refus des bases distantes et le ROLLBACK même si un lecteur échoue. Tests du CLI exécutés avec doubles injectés ; l'appel complet aux lecteurs sur PostgreSQL a été vérifié séparément par le double Golden #40500645721. Aucun nouveau bug métier confirmé dans ce lot.
+
+## 27/10 — P2 → P3 → P4 raccordés au vrai PostgreSQL
+
+Deux frontières supplémentaires ont été reliées, **6 / 13 raccordées, 7 encore NOT_WIRED**. Le lecteur est `scripts/research/p2-p4-canonical-collector.js`, intégré à `p1-p7-canonical-collector.js`. Il n'invente aucun moteur d'achat ou de stock :
+
+- **P2 → P3 :** `order_items.id / sku_id` → `purchase_lines.order_item_id / product_sku_id`, PO rattachée, sans exiger `purchase_orders.order_id` sur une PO regroupée. Le paiement client provient de la porte canonique `PAYMENT_FINAL_PROVED`, jamais du seul `orders.payment_status = paid`.
+- **P3 → P4 :** `purchase_line_id / product_sku_id` → `hub_purchase_allocations`, `v_purchase_line_progress` (quantité physiquement utilisable), et `hub-inbound-reconciliation.reconcileHubInbound`. Les allocations historiques sans `purchase_line_id` ne sont liées que par **PO ET order_item**. Plusieurs lignes ou fulfillments non résolus produisent des lacunes, pas une première ligne choisie arbitrairement.
+- Les contradictions d'identité de SKU, commande/PO, fournisseur, allocation et source sont remontées à l'oracle transversal. Les contrôles réels ne sont pas une preuve de commande/paiement fournisseur externe.
+- **Nuance temporelle importante :** `INBOUND_MATCHED` est une preuve de réception historique au Hub ; `v_purchase_line_progress.received_quantity` décrit la quantité utilisable actuelle. Leur différence après mouvement/sortie physique est un **signal de maturité à expliquer**, pas automatiquement un bug.
+- **Anti-faux positif synthétique :** la fixture K-GOLDEN est marquée `SYNTHETIC_GOLDEN_CREATE` par le service canonique. Sa porte de paiement non probante est `EVIDENCE_GAP`, pas une violation confirmée d'encaissement.
+
+### Preuves observées
+
+[Run PostgreSQL #40503339530](https://github.com/SamyrFateh/komerce-backend/actions/runs/40503339530) — deux Goldens verts, `6/13` frontières lues, `0` contradiction après qualification de la fixture, `7` frontières non raccordées. Sur les deux formes de PO : **une ligne, une allocation, une fulfillment, `INBOUND_MATCHED`, quantité effective=1 et utilisable=1** ; P3→P4 est `NO_CONTRADICTION_OBSERVED`. P2→P3 est `EVIDENCE_GAP` car le paiement/checkout réel n'est pas certifié par cette fixture synthétique.
+
+[CI ECO #40503339702](https://github.com/SamyrFateh/komerce-backend/actions/runs/40503339702) — tests purs et projections existantes verts, y compris mauvais SKU, mauvaise commande, preuve Hub absente, achat multi-lignes non agrégé et provenance synthétique.
+
+Le comparateur A/B est renforcé : absence identique de ces deux frontières sur les deux parcours, absence d'allocation physique ou de verdict propriétaire `INBOUND_MATCHED` = **échec de comparaison**, pas une fausse équivalence. Aucune mutation de main, Railway, base staging ou partenaire réel.
+
+### Prochaine frontière
+
+**P4 → P2 :** appartenance d'un colis éventuellement partagé à la commande exacte, arrivée relais et scan de remise client. Raccorder `parcel_items.order_item_id`, `scans.order_id / parcel_id` et le propriétaire de la remise. Garder l'exception des colis partagés : `parcels.order_id` n'a pas à correspondre à toutes les commandes transportées.
