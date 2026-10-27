@@ -72,16 +72,6 @@
       });
     }
 
-    if (false && curation.at_cap) {
-      items.push({
-        key: 'catalog-cap',
-        label: 'Cap catalogue atteint',
-        helper: 'Toute nouvelle entrée doit remplacer une référence sortie',
-        value: `${curation.published_products || 0}/${curation.catalog_cap_mvp || 0}`,
-        tone: 'critical',
-        icon: '!',
-      });
-    }
 
     return items.slice(0, 4);
   }
