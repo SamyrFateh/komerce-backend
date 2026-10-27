@@ -263,8 +263,14 @@ async function createDraftProductFromSourcingCandidate(q, {
   const commercialProvider = String(candidate?.normalized_source_contract?.supplier_name
     || candidate?.supplier_name || '').trim().toLowerCase();
   const strictSupplier = ['aliexpress', 'cj', 'cjdropshipping'].includes(commercialProvider);
-  if (strictSupplier && (!boutiqueTaxonomy?.category || !boutiqueTaxonomy?.subcategory)) {
-    throw new Error('BOUTIQUE_TAXONOMY_UNRESOLVED: category/subcategory review required before draft creation');
+  const categoryProof=categoryIntent(candidate);
+  const categoryOnlyCertifiedAtDraft=Boolean(
+    boutiqueTaxonomy?.category && !boutiqueTaxonomy?.subcategory
+    && categoryProof.kind==='category' && categoryProof.category===boutiqueTaxonomy.category
+  );
+  if (strictSupplier && (!boutiqueTaxonomy?.category ||
+      (!boutiqueTaxonomy?.subcategory && !categoryOnlyCertifiedAtDraft))) {
+    throw new Error('BOUTIQUE_TAXONOMY_UNRESOLVED: verified boutique category or subcategory required before draft creation');
   }
   // Identité client (nom court, description proposée) dérivée mécaniquement
   // du fournisseur — jamais d'invention, jamais d'IA (DOCTRINE_CATALOGUE.md
