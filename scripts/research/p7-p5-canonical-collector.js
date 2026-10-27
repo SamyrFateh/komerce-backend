@@ -22,8 +22,10 @@ function assessP7P5({plane,settlements=[]}={}){
   if(!s.assignment_market_id)gaps.add('SETTLEMENT_ASSIGNMENT_NOT_RESOLVED');
   if(s.currency!==market.currency)faults.add('SETTLEMENT_CURRENCY_NOT_MARKET_CURRENCY');
   if(s.source!=='CENTRAL_ATTESTATION')faults.add('SETTLEMENT_NOT_CENTRAL_ATTESTATION');
-  if(s.status==='READY'&&s.assignment_status!=='ACTIVE')
+  if(s.status==='READY'&&s.assignment_status==='DRAFT')
    faults.add('NEW_READY_SETTLEMENT_ON_INACTIVE_ASSIGNMENT');
+  if(s.status==='READY'&&['SUSPENDED','ENDED'].includes(s.assignment_status))
+   gaps.add('HISTORICAL_OPEN_SETTLEMENT_ON_INACTIVE_ASSIGNMENT');
   // PAID and RECEIVED are attested lifecycle stages, not proof of bank
   // settlement beyond the stored payment reference / human receipt.
   if(['PAID','RECEIVED'].includes(s.status)&&!s.payment_reference)
