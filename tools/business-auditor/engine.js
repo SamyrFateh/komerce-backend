@@ -95,13 +95,14 @@ function reportMarkdown(report){
  }else lines.push('Non exécutés (mode sans base PostgreSQL).');
  if(report.code?.triage){
   lines.push('', '## Revue statique par propriétaire', '',
-   '| Signal | Règle | Fichier:ligne | P | Propriétaire | Frontière | Action de preuve |',
-   '|---|---|---|---|---|---|---|');
+   '| Signal | Règle | Fichier:ligne | P | Propriétaire | Qualification | Observation | Prochaine preuve |',
+   '|---|---|---|---|---|---|---|---|');
   for(const t of report.code.triage){
    const clean=x=>String(x??'').replace(/[|\r\n]/g,' ').slice(0,270);
    lines.push('| '+t.id+' | '+t.rule+' | '+clean(t.file)+':'+t.line+' | '+
-    clean(t.priority)+' | '+clean(t.owner)+' | '+clean(t.businessBoundary)+
-    ' | '+clean(t.nextIndependentProof)+' |');
+    clean(t.priority)+' | '+clean(t.owner)+' | '+clean(t.evidenceReview||'UNREVIEWED')+
+    ' | '+clean(t.groundedObservation||'NOT_REVIEWED')+
+    ' | '+clean(t.proposedTest||t.nextIndependentProof)+' |');
   }
   lines.push('', '**Toutes ces entrées restent des suspicions, même si elles apparaissent dans du code de production.**');
  }
