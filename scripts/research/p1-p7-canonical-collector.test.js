@@ -33,6 +33,7 @@ function fixture({orderMarket='KM',skuProduct=P,checkoutStatus='NON_PROUVE',mark
   p4p2:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   p5p2:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   p3p6:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
+  p4p6:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   upstream:async(_db,{productId,marketCode,orderReference,fetchImpl})=>{
     assert.equal(productId,P);assert.equal(marketCode,'KM');
     assert.equal(orderReference,'CUSTOMER-001');
@@ -213,4 +214,23 @@ test('ninth boundary keeps exact real-cost lineage distinct from purchase confir
  assert.equal(r.totals.notWired,8);
  assert.equal(edge(r,'P3_P6_PURCHASE_COST').status,'EVIDENCE_GAP');
  assert.ok(r.supplier_cost.diagnostics.gaps.includes('ACTUAL_ALLOCATION_WITHOUT_SETTLEMENT_PROOF'));
+});
+
+test('tenth seam assembler retains physical parcel and cost lineage without false mismatch',async()=>{
+ const {assessP4P6}=require('./p4-p6-canonical-collector');
+ const f=fixture({checkoutStatus:'NON_PROUVE'});
+ f.owners.p4p6=async(_db,{item})=>assessP4P6({item,
+  memberParcels:[{id:'box1',order_id:'other-carrier'}],
+  itemParcels:[{parcel_id:'box1',carrier_order_id:'other-carrier',line_order_id:OTHER}],
+  costs:[{id:'c1',order_id:OTHER,order_item_id:OI,parcel_id:'box1',shipment_id:'ship1',
+   cost_type:'freight',amount_kmf:'1500',is_actual:true,source:'customs_shipments'},
+   {id:'c2',order_id:OTHER,order_item_id:OI,parcel_id:'box1',shipment_id:'ship1',
+   cost_type:'customs',amount_kmf:'2500',is_actual:true,source:'customs_shipments'}],
+  shipments:[{shipment_id:'ship1:box1'}],orderItemCount:1,
+  shadow:{order_id:OTHER,costs:{by_type:{
+   freight:{state:'real',real_kmf:1500},customs:{state:'real',real_kmf:2500}}}}});
+ const r=await collectP1P7Canonical(f.db,f.args,f.owners);
+ assert.equal(r.wired_edges.length,5);assert.equal(r.totals.notWired,8);
+ assert.equal(edge(r,'P4_P6_LOGISTICS_COST').status,'NO_CONTRADICTION_OBSERVED');
+ assert.equal(r.logistics_cost.facts.shared_carrier_parcels,1);
 });
