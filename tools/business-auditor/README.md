@@ -1,4 +1,4 @@
-# Komerce Independent Business Auditor — R&D v0.4
+# Komerce Independent Business Auditor — R&D v0.5
 
 **Goal:** detect independently reproducible contradictions between business rules,
 persisted facts and process invariants. A green Golden is not certification.
@@ -180,3 +180,34 @@ legacy refund caller reachability and sandbox replay, and independent code
 scanner coverage beyond the current finite detector families.
 
 main, Railway staging/production, Stripe and PayPal remain unchanged.
+
+
+## V0.5 — connected PayPal refund replay observation, zero real PSP calls
+
+**Complete findings and owner-prioritized corrections:** [RESEARCH_SYNTHESIS_2026-10-27.md](./RESEARCH_SYNTHESIS_2026-10-27.md)
+
+- paypal-refund-boundary.js independently reads the active refund API route,
+  payment-paypal.refundPaypalOrder, paypal-client.refundCapture and the
+  currently dormant refund-intent-ledger. It never imports runtime owners.
+  The active legacy refund route does not supply a durable
+  providerRequestKey. The client fallback uses a new timestamp-based
+  PayPal-Request-Id on each attempt.
+- tests/unit/auditor-paypal-refund-execution.test.js invokes the **real**
+  legacy owner and client but replaces global.fetch completely. Under an
+  ambiguous mocked provider timeout, two identical refund attempts produce
+  two distinct outgoing request IDs; the durable-key control sends the same
+  ID twice. Invalid provider keys fail before any HTTP.
+- This is a **repeat identity risk at a provider boundary**, not a
+  confirmed refund of actual money, no proof of two PayPal executions and
+  no confirmed production incident. Owner arbitration:
+  https://github.com/SamyrFateh/komerce-backend/issues/3080
+- The independent JSON/Markdown report includes the exact call-chain state,
+  with explicit productionDuplicateRefundConfirmed=false. This is code and
+  transport-mock evidence; no PSP credentials or API calls were used.
+- CI proof with full standalone chain:
+  https://github.com/SamyrFateh/komerce-backend/actions/runs/40552611778
+  (41/41 pure + 3/3 Jest mocked-network tests, 1,493 files,
+  23 static suspicions, 7 SQL rules read-only, 0 SQL signals in clean PG).
+
+Nothing has been merged to main; staging, production and real payment flows
+have not been modified.
