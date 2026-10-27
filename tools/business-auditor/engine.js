@@ -105,6 +105,19 @@ function reportMarkdown(report){
      ' | '+v.requiredIndependentProof+' |');
   lines.push('', 'Ces traces de code ne prouvent pas une anomalie de données en production.');
  }
+ if(report.code?.paypalRefundBoundary){
+  const r=report.code.paypalRefundBoundary;
+  lines.push('', '## PayPal — raccordement effectif du remboursement', '',
+   '- Détecteur : '+r.id+' ; propriétaire : '+r.owner,
+   '- État : **'+r.status+'**',
+   '- Route reliée au propriétaire : '+Boolean(r.observations.routeConnected),
+   '- Clé durable passée au client : '+Boolean(r.observations.ownerPassesStableProviderKey),
+   '- Registre d intentions actuellement activé par ce writer : '+
+      Boolean(r.observations.ownerReservesDurableIntent&&r.observations.ownerClaimsDurableIntent),
+   '- Repli horodaté encore présent : '+Boolean(r.observations.clientHasTimestampFallback),
+   '- Remboursement PSP réellement dupliqué démontré : **NON**',
+   '- Suite : '+r.nextProof,'');
+ }
  if(report.code?.triage){
   lines.push('', '## Revue statique par propriétaire', '',
    '| Signal | Règle | Fichier:ligne | P | Propriétaire | Qualification | Observation | Prochaine preuve |',
