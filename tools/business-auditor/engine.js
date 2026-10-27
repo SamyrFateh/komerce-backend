@@ -105,6 +105,31 @@ function reportMarkdown(report){
      ' | '+v.requiredIndependentProof+' |');
   lines.push('', 'Ces traces de code ne prouvent pas une anomalie de données en production.');
  }
+ if(report.code?.writerInventory){
+  const w=report.code.writerInventory;
+  lines.push('', '## V0.6 — Inventaire indépendant des écritures métier', '',
+   '- Fichiers applicatifs candidats : '+w.coverage.applicationFiles+' / '+w.coverage.trackedJsFiles+
+    ' JS/TS suivis (autres périmètres exclus, non certifiés).',
+   '- Feature Cards lues : '+w.coverage.featureCardsRead+
+    ' ; avec déclaration db.tables : '+w.coverage.featureCardsWithDbDeclarations,
+   '- Écritures SQL candidates : '+w.summary.candidateWrites+
+    ' ; arguments directs query/execute/run : '+w.summary.possibleDirectQueryCalls,
+   '- Tables distinctes : '+w.summary.tablesFound,
+   '- Écritures à investiguer pour propriétaire absent/ambigu/autre domaine : '+
+      w.summary.ownershipReviewCandidates,
+   '- Écritures de domaine différent du propriétaire déclaré : '+w.summary.crossDomainReviewCandidates,
+   '- En-têtes sans déclaration de la table : '+w.summary.headerMissingDeclarations,
+   '- Exécutions SQL prouvées par le scan lexical : **0** ; bugs confirmés : **0**.',
+   '', '### Tables ayant le plus de candidats (25 premières)', '',
+   '| Table | Candidats | Fichiers distincts | Propriétaire(s) déclaré(s) | Écarts en-tête | À examiner |',
+   '|---|---:|---:|---|---:|---:|');
+  for(const row of w.tableSummary.slice(0,25))lines.push(
+   '| '+row.table+' | '+row.occurrences+' | '+row.writers.length+
+   ' | '+(row.explicitOwners.join(', ')||'NON EXPLICITE')+
+   ' | '+row.sourceHeaderGaps+' | '+row.crossDomainReview+' |');
+  lines.push('', 'Toutes les occurrences et les fichiers figurent dans business-audit.json.',
+   'Un propriétaire déclaré ou une occurrence SQL ne prouve ni autorisation, ni chemin actif, ni anomalie.');
+ }
  if(report.code?.paypalRefundBoundary){
   const r=report.code.paypalRefundBoundary;
   lines.push('', '## PayPal — raccordement effectif du remboursement', '',
