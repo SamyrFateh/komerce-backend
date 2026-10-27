@@ -20,6 +20,7 @@
 
 const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
 const { findConfirmed, chooseCommercialPair } = require('./supplier-commercial-category-mapping');
+const {semanticIntent,semanticConflict} = require('./commercial-taxonomy-semantics');
 
 function sourceLocaleFromCandidate(candidate = {}) {
   const locale = candidate?.normalized_source_contract?.source_locale;
@@ -96,13 +97,40 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
     return {status:'EXPLICIT_REVIEW',category:human.category,
       subcategory:human.subcategory,source:'OPERATOR_CONFIRMED'};
   }
+  // Analyse de la hiérarchie entière AVANT les correspondances fournisseur :
+  // un chemin "Women's Clothing" est une preuve métier, même lorsque la feuille
+  // "Shirts" ne partage aucun mot avec la catégorie française "Femme".
+  // Une contradiction source/objet ne doit jamais obtenir un faux PASS.
+  const semantic=semanticIntent(candidate);
+  if (semantic.kind==='conflict') {
+    return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:semantic.reason};
+  }
+  if (semantic.kind==='pair') {
+    const {rows:[active]}=await q.query(
+      'SELECT bs.key FROM boutique_subcategories bs JOIN boutique_categories bc '+
+      'ON bc.key=bs.category_key WHERE bc.is_active=TRUE AND bs.is_active=TRUE '+
+      'AND bc.key=$1 AND bs.key=$2 LIMIT 1',
+      [semantic.category,semantic.subcategory]);
+    if (active) {
+      return {status:'AUTO_CLASSIFIED',category:semantic.category,
+        subcategory:semantic.subcategory,source:semantic.source};
+    }
+    return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'SEMANTIC_TARGET_INACTIVE'};
+  }
   const provider = candidate.normalized_source_contract?.supplier_name
     || candidate.raw_payload?.source || candidate.supplier_name;
   const sourcePath = candidate.supplier_category
     || candidate.normalized_source_contract?.supplier_category;
   if (provider && sourcePath) {
     const mapped = await findConfirmed(provider, sourcePath, q);
-    if (mapped) return { status:'AUTO_CLASSIFIED', ...mapped, source:'CONFIRMED_SUPPLIER_PATH' };
+    if (mapped) {
+      const contradiction=semanticConflict(candidate,mapped);
+      if (contradiction) return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+        source:contradiction};
+      return {status:'AUTO_CLASSIFIED',...mapped,source:'CONFIRMED_SUPPLIER_PATH'};
+    }
   }
   const requested = boutiqueTaxonomyFromCandidate(candidate);
   if (requested.category || requested.subcategory) {
@@ -120,8 +148,12 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
       'FROM boutique_categories bc JOIN boutique_subcategories bs ON bs.category_key=bc.key '+
       'WHERE bc.is_active=TRUE AND bs.is_active=TRUE AND bc.filter_type IS NULL');
     const proposal=chooseCommercialPair(pairs,{...candidate,supplier_category:sourcePath});
-    if (proposal) return {status:'AUTO_CLASSIFIED',category:proposal.category,
-      subcategory:proposal.subcategory,source:proposal.source};
+    // Une similarité lexicale faible n'est pas une validation métier.
+    // Conserver la suggestion pour la revue, mais ne jamais l'appeler AUTO.
+    if (proposal?.confidence==='confirmed') {
+      return {status:'AUTO_CLASSIFIED',category:proposal.category,
+        subcategory:proposal.subcategory,source:proposal.source};
+    }
   }
   return { status:'REVIEW_REQUIRED', category:null, subcategory:null,
     source:'UNRESOLVED_COMMERCIAL_TAXONOMY' };
