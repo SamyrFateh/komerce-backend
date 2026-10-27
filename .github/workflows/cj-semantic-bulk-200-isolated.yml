@@ -80,6 +80,16 @@ jobs:
           quote_count="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT COUNT(*) FROM fx_rate_observations")"
           test "$quote_count" = '0'
           echo "FIXED_CURRENCY_PARITY_PRESENT_AND_EUR_USD_UNSEEDED"
+      - name: Bootstrap canonical active boutique taxonomy for real classification
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f migrations/migrate-categories-v2.sql >/dev/null
+          active="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT COUNT(*) FROM boutique_categories bc JOIN boutique_subcategories bs ON bs.category_key=bc.key WHERE bc.is_active=TRUE AND bs.is_active=TRUE")"
+          test "$active" -ge 15
+          femme="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT COUNT(*) FROM boutique_categories bc JOIN boutique_subcategories bs ON bs.category_key=bc.key WHERE bc.is_active=TRUE AND bs.is_active=TRUE AND bc.key='Mode & Beauté' AND bs.key='Femme'")"
+          test "$femme" = 1
+          echo "CANONICAL_BOUTIQUE_ACTIVE_PAIRS=$active"
       - name: Import up to 200 real CJ supplier offers and independently classify
         run: node scripts/cj-semantic-bulk-200-isolated.js
       - name: Upload proof whether green or red
