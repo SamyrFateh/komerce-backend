@@ -1,0 +1,84 @@
+name: CJ 498 — P1 real PostgreSQL sourcing to catalog evidence E2E
+on:
+  pull_request:
+    paths:
+      - 'services/catalog-candidate-product-service.js'
+      - 'tests/unit/catalog-candidate-product-service.test.js'
+      - 'scripts/cj-498-p1-disposable-pg-e2e.js'
+      - '.github/workflows/cj-498-p1-real-pg-e2e.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  real-pg-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_real_catalog_stress
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_real_catalog_stress"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
+      PGPASSWORD: komerce
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Certify source syntax and supplier-to-draft regression fixtures
+        run: |
+          set -euo pipefail
+          node --check scripts/cj-498-p1-disposable-pg-e2e.js
+          npx jest --config jest.unit.config.js tests/unit/catalog-candidate-product-service.test.js --runInBand --no-coverage
+      - name: Rebuild canonical empty PostgreSQL database in a disposable container
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress'
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql >/dev/null
+          for migration in             migrations/227_sourcing_resolution_foundation.sql             migrations/238_sourcing_source_autopilot.sql             migrations/036b_seed_customs_categories.sql             migrations/245_products_boutique_taxonomy.sql             migrations/244_catalog_glossary_batch001.sql; do
+            case "$migration" in
+              *227*) if [ "$(psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Atqc "SELECT to_regclass('public.sourcing_canonical_entities') IS NOT NULL")" = t ]; then continue; fi;;
+            esac
+            psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f "$migration" >/dev/null
+          done
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f migrations/migrate-categories-v2.sql >/dev/null
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f migrations/250_boutique_subcategory_customs_affinity.sql >/dev/null
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f migrations/290_boutique_object_taxonomy_terms.sql >/dev/null
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f migrations/350_boutique_cable_and_usb_port_terms.sql >/dev/null
+          if [ "$(psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Atqc "SELECT to_regclass('public.supplier_commercial_category_mappings') IS NOT NULL")" = f ]; then
+            psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f migrations/292_supplier_commercial_category_mappings.sql >/dev/null
+          fi
+          node scripts/seed-reference-data.js
+          echo CANONICAL_DISPOSABLE_POSTGRESQL_READY
+      - name: Recover the exact 498 authentic supplier identities without any API calls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p baseline
+          gh run download 40518230098 -R "$GITHUB_REPOSITORY" -n cj-balanced-e2e-500 -D baseline
+          echo '9ff18f6f902f2e72fc893a90da96b61058c77028d55e941381631fc9fb8116de  baseline/classification-evidence.json' | sha256sum -c -
+      - name: Certify 498 real classifications and Sourcing to Catalogue transactions
+        run: node scripts/cj-498-p1-disposable-pg-e2e.js baseline/classification-evidence.json
+      - name: Preserve E2E evidence on green or red
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-498-p1-real-pg-e2e-${{ github.run_id }}
+          path: artifacts/cj-p1-evidence-boundary-real-pg/
+          if-no-files-found: warn
+          retention-days: 21
