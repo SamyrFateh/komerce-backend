@@ -59,7 +59,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: business-auditor-\${{ github.run_id }}
+          name: business-auditor-${{ github.run_id }}
           path: /tmp/komerce-independent-business-audit/
           if-no-files-found: ignore
           retention-days: 5
