@@ -17,6 +17,8 @@ on:
       - scripts/research/p2-p4-canonical-collector.test.js
       - scripts/research/p4-p2-canonical-collector.js
       - scripts/research/p4-p2-canonical-collector.test.js
+      - scripts/research/p5-p2-canonical-collector.js
+      - scripts/research/p5-p2-canonical-collector.test.js
       - scripts/research/p1-p7-audit-once.js
       - scripts/research/p1-p7-audit-once.test.js
       - package.json
@@ -42,7 +44,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Pure continuity fingerprints (zero new dependencies)
-        run: node --test scripts/research/golden-continuity-fingerprint.test.js scripts/research/golden-continuity-collector.test.js scripts/research/p1-p7-boundary-oracle.test.js scripts/research/p1-p7-canonical-collector.test.js scripts/research/p1-p7-audit-once.test.js scripts/research/p2-p4-canonical-collector.test.js scripts/research/p4-p2-canonical-collector.test.js
+        run: node --test scripts/research/golden-continuity-fingerprint.test.js scripts/research/golden-continuity-collector.test.js scripts/research/p1-p7-boundary-oracle.test.js scripts/research/p1-p7-canonical-collector.test.js scripts/research/p1-p7-audit-once.test.js scripts/research/p2-p4-canonical-collector.test.js scripts/research/p4-p2-canonical-collector.test.js scripts/research/p5-p2-canonical-collector.test.js
       - name: Install existing dependencies only
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Targeted Golden projections — checkout, upstream, order
