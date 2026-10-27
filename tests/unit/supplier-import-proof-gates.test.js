@@ -64,6 +64,10 @@ describe('Provider-neutral supplier import certification, nominal + fault calibr
     x.candidates=[];x.classification=null;
     expect(assess(x)).toMatchObject({passed:false,failed_gates:expect.arrayContaining(['import','trace','candidates','boutique_classification'])});
   });
+  test('a finished event without an explicit outcome is not terminal',()=>{
+    const x=fixture();delete x.events[0].outcome;
+    expect(assess(x).failed_gates).toContain('trace');
+  });
   test('a missing item event is a trace failure even if 20 candidates exist',()=>{
     const x=fixture();x.events.pop();
     expect(assess(x).failed_gates).toContain('trace');
