@@ -81,8 +81,19 @@ function assertP5P2(p) {
     !diag.gaps.includes('SYNTHETIC_PAYMENT_NOT_PSP_PROOF') ||
     !diag.gaps.includes('STRIPE_PAID_NO_PSP_REFERENCE'))
    throw Error('P5-P2 finance: synthetic Golden payment is not PSP evidence; explicit gap required');
+ const probe=w.unpaid_closure_probe;
+ if(!probe || !(
+   (probe.outcome==='OWNER_RECONCILED_AFTER_TEMP_UNPAID' &&
+    probe.verdict==='FINANCIAL_CLOSE_MISMATCH' &&
+    probe.reason==='FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID' &&
+    probe.payment_status==='pending') ||
+   (probe.outcome==='DATABASE_GUARD_REJECTED_UNPAID_REWRITE' &&
+    ['23514','P0001'].includes(probe.code))
+ ))throw Error('P5-P2 real PostgreSQL unpaid-close negative probe absent or inconclusive');
  return {finance_scope:'SYNTHETIC_PAYMENT_NOT_PSP_PROVED',
-  closure_status:facts.closure_verdict,psp_ref_proved:false};
+  closure_status:facts.closure_verdict,psp_ref_proved:false,
+  unpaid_probe_outcome:probe.outcome,
+  unpaid_probe_verdict:probe.verdict||'SQL_GUARD_REJECTED'};
 }
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
