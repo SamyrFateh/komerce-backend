@@ -151,3 +151,30 @@ La frontière est désormais **8/13 câblée**, mais ne constitue **pas** une ce
 **Issue de recherche [#3063](https://github.com/SamyrFateh/komerce-backend/issues/3063)** : cohérence finance GAP 3a ↔ clôture, doctrine Stripe payée sans référence PSP, et chaîne webhook signée à reconstituer sur un scénario non synthétique avant de qualifier bug métier. Conserver l'observation de fixture comme lacune, jamais comme attestation d'encaissement externe.
 
 **Suivant** : P3→P6 coût achat fournisseur, puis P4→P6 transport/douane, P5→P6 réalité cash, P6→P1 revue humaine des prix, P7→P5 règlement par marché. La formule `8/13` désigne des **frontières instrumentées**, pas huit processus entièrement certifiés.
+
+## 27 octobre — P3 → P6, neuvième frontière raccordée et premier écart d'intégrité coût
+
+Le lecteur `scripts/research/p3-p6-canonical-collector.js` relie :
+- `purchase_lines.order_item_id` et la PO réellement confirmée (P3),
+- `order_item_real_cost_allocations` à **l'article exact** (P6),
+- `services/cost-allocation/real-margin-shadow.computeOrderRealMarginShadow(orderId,{client})` (moteur existant) qui utilise `supplier_payment_settlements` pour les **KMF effectivement débités**, y compris ventilation des PO regroupées, remboursements de marchandises et frais séparés.
+
+Il ne somme pas une PO regroupée pour attribuer artificiellement toute sa valeur à un article. La comparaison des montants est limitée à une commande avec un seul article, une seule ligne d'achat active et un coût réel fournisseur prouvé. Pour toutes les autres situations, le résultat reste une preuve incomplète explicitement comptabilisée.
+
+### Double étalonnage sur PostgreSQL 16
+
+[GitHub Actions #40511487766](https://github.com/SamyrFateh/komerce-backend/actions/runs/40511487766) : 119/119 tests purs, deux Goldens verts, 9/13 frontières observées, 4 non raccordées. Dans chaque Golden, `order_item_real_cost_allocations` contient une allocation `product_purchase` marquée `is_actual=true` de 7 000 KMF avec source `supplier_execution_payment`, **sans** règlement append-only `supplier_payment_settlements`. Le propriétaire économique retourne `shadow_purchase_state=estimated_only`, `real_kmf=null` ; l'oracle correctement fail-closed produit `ACTUAL_ALLOCATION_WITHOUT_SETTLEMENT_PROOF` et `EVIDENCE_GAP`. Il n'y a **pas** de débit fournisseur externe certifié dans cette fixture.
+
+[GitHub Actions #40511947278](https://github.com/SamyrFateh/komerce-backend/actions/runs/40511947278) : **121/121 tests purs, deux Goldens PG et matrice 4/4 colis partagés verts**, comparateur A/B `NO_ASYMMETRY_OBSERVED`. Contre-épreuve SQL : ajouter temporairement une autre commande B, déplacer l'`order_id` de l'allocation (qui conserve son `order_item_id` de commande A), puis lire la contradiction via le scanner. **L'UPDATE est accepté** sur les deux formes de PO ; le scanner remonte `COST_ALLOCATION_FOREIGN_ORDER`. `ROLLBACK` et restauration de la valeur d'origine vérifiés. Le comparateur exige désormais cette preuve négative sur **les deux** Golden ; une absence identique de preuve n'est plus acceptée comme équivalence.
+
+**Issue [#3064](https://github.com/SamyrFateh/komerce-backend/issues/3064)** : garde d'intégrité commande/article/coût manquante en DB, reproductible en PostgreSQL. Ne pas prétendre qu'une telle ligne existe en production. Ne pas corriger avant revue owner / inspection de l'historique et de la stratégie de migration. Contrairement aux PO regroupées ou aux colis partagés, **l'allocation de coût et son `order_item_id` doivent désigner la même commande**.
+
+### État
+
+**9/13 frontières instrumentées**, 4 toujours `NOT_WIRED` :
+- `P4_P6_LOGISTICS_COST` (coûts transport/douane par appartenance aux colis),
+- `P5_P6_CASH_REALITY` (encaissements, reversements et actuals),
+- `P6_P1_PRICE_REVIEW` (décision humaine de prix versus écriture marché),
+- `P7_P5_COUNTRY_SETTLEMENT` (autorité marché pour règlements pays).
+
+La cartographie instrumentée et les contre-épreuves restent une **R&D L4**, pas une certification métier complète, ni un audit autorisé sur les données de production.
