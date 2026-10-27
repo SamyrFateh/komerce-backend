@@ -112,8 +112,16 @@ function assertP3P6(p) {
     !Array.isArray(diag.gaps)||
     !diag.gaps.includes('ACTUAL_ALLOCATION_WITHOUT_SETTLEMENT_PROOF'))
    throw Error('P3-P6 actual allocation must not become a proved supplier settlement');
+ const probe=w.foreign_cost_allocation_probe;
+ if(!probe||!(
+   (probe.outcome==='CROSS_ORDER_COST_ALLOCATION_REPRODUCED'&&
+     probe.hypothesis==='COST_ALLOCATION_FOREIGN_ORDER')||
+   (probe.outcome==='SQL_COST_ALLOCATION_ORDER_GUARD'&&
+     ['23514','23503','P0001'].includes(probe.sqlstate))
+ ))throw Error('P3-P6 persisted cross-order cost check is missing');
  return {purchase_cost_evidence:'ACTUAL_ALLOCATION_WITHOUT_SETTLEMENT_PROOF',
-  item_allocation_kmf:7000,verified_supplier_settlement_kmf:null};
+  item_allocation_kmf:7000,verified_supplier_settlement_kmf:null,
+  cost_poison_outcome:probe.outcome};
 }
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
