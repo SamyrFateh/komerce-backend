@@ -143,3 +143,11 @@ La doctrine est prudente :
 Contre-épreuve négative PostgreSQL : depuis la commande Golden effectivement `collected/paid`, dans une transaction jetable `BEGIN/ROLLBACK`, basculer `payment_status` temporairement à `pending`. L'oracle attend `FINANCIAL_CLOSE_MISMATCH / FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID`, ou le refus par une garde SQL de l'écriture. Après rollback, `payment_status` doit demeurer `paid`. Aucun appel Stripe, encaissement ou écriture staging.
 
 La frontière est désormais **8/13 câblée**, mais ne constitue **pas** une certification de paiement PSP réel. Les 5 restantes sont `P3_P6_PURCHASE_COST`, `P4_P6_LOGISTICS_COST`, `P5_P6_CASH_REALITY`, `P6_P1_PRICE_REVIEW`, `P7_P5_COUNTRY_SETTLEMENT`.
+
+### Dernière validation du huitième raccordement
+
+[GitHub Actions #40509973372](https://github.com/SamyrFateh/komerce-backend/actions/runs/40509973372), **vert** : 104/104 tests purs, deux Goldens PostgreSQL réussis, quatre tests de colis partagés réussis, rapprochement A/B `NO_ASYMMETRY_OBSERVED`. Dans chaque Golden, `observed=8`, `notWired=5`, `contradictions=0`, zéro erreur de lecture propriétaire. P5→P2 = `EVIDENCE_GAP` : Golden synthétique `paid/stripe_eur` sans `stripe_payment_id`, alors que le propriétaire financier retourne `FINANCIAL_CLOSE_MATCHED`. Les contre-épreuves PostgreSQL déclenchent dans les deux cas `FINANCIAL_CLOSE_MISMATCH / FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID` lorsque `payment_status` est basculé à `pending`, puis restaurent `paid` par rollback.
+
+**Issue de recherche [#3063](https://github.com/SamyrFateh/komerce-backend/issues/3063)** : cohérence finance GAP 3a ↔ clôture, doctrine Stripe payée sans référence PSP, et chaîne webhook signée à reconstituer sur un scénario non synthétique avant de qualifier bug métier. Conserver l'observation de fixture comme lacune, jamais comme attestation d'encaissement externe.
+
+**Suivant** : P3→P6 coût achat fournisseur, puis P4→P6 transport/douane, P5→P6 réalité cash, P6→P1 revue humaine des prix, P7→P5 règlement par marché. La formule `8/13` désigne des **frontières instrumentées**, pas huit processus entièrement certifiés.
