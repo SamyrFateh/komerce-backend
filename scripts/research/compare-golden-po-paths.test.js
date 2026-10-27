@@ -9,9 +9,12 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
   execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',
   wired_edges:['P7_P1_MARKET_PRICING','P7_P1_MARKET_EXPOSURE','P7_P2_CHECKOUT',
    'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT',
-   'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE','P3_P6_PURCHASE_COST'],
+   'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE','P3_P6_PURCHASE_COST',
+   'P4_P6_LOGISTICS_COST'],
   owner_read_errors:[],
   foreign_cost_allocation_probe:{outcome:'CROSS_ORDER_COST_ALLOCATION_REPRODUCED',hypothesis:'COST_ALLOCATION_FOREIGN_ORDER'},
+  foreign_parcel_logistics_cost_probe:{outcome:'UNLINKED_LOGISTICS_COST_PARCEL_REPRODUCED',
+    hypotheses:['LOGISTICS_COST_FOREIGN_PARCEL','LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM']},
   unpaid_closure_probe:{outcome:'OWNER_RECONCILED_AFTER_TEMP_UNPAID',
    verdict:'FINANCIAL_CLOSE_MISMATCH',
    reason:'FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID',payment_status:'pending'},
@@ -20,8 +23,14 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
    {id:'P3_P4_HUB_RECEIPT',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
    {id:'P4_P2_RELAY_HANDOFF',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
    {id:'P5_P2_PAYMENT_CLOSURE',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
-   {id:'P3_P6_PURCHASE_COST',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']}
+   {id:'P3_P6_PURCHASE_COST',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
+   {id:'P4_P6_LOGISTICS_COST',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]}
   ],
+  logistics_cost:{
+    facts:{member_parcel_count:1,item_parcel_count:1,actual_cost_count:2,
+      compared_owner_cost_types:2,allocated_kmf:{freight:1500,customs:2500}},
+    diagnostics:{contradictions:[],gaps:[]}
+  },
   supplier_cost:{
    facts:{product_purchase_actual_count:1,allocation_amount_kmf:7000,
     settlement_real_kmf:null,shadow_purchase_state:'estimated_only'},
@@ -238,5 +247,30 @@ test('a protective SQL constraint is a valid result in both PO variants',()=>{
  const a=make('grouped'),b=make('historical');
  a.p1_p7_wiring.foreign_cost_allocation_probe={outcome:'SQL_COST_ALLOCATION_ORDER_GUARD',sqlstate:'23514'};
  b.p1_p7_wiring.foreign_cost_allocation_probe={outcome:'SQL_COST_ALLOCATION_ORDER_GUARD',sqlstate:'23514'};
+ assert.equal(comparePaths(a,b).mismatchCount,0);
+});
+
+test('both Golden paths lacking P4-P6 physical-cost reads cannot pass',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.logistics_cost;delete b.p1_p7_wiring.logistics_cost;
+ assert.throws(()=>comparePaths(a,b),/P4-P6 exact parcel-to-item/);
+});
+test('P4-P6 2 matching missing freight proof envelopes must not pass',()=>{
+ const a=make('grouped'),b=make('historical');
+ a.p1_p7_wiring.logistics_cost.facts.actual_cost_count=1;
+ b.p1_p7_wiring.logistics_cost.facts.actual_cost_count=1;
+ assert.throws(()=>comparePaths(a,b),/P4-P6 exact parcel-to-item/);
+});
+test('P4-P6 both missing real negative parcel probe must be rejected',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.foreign_parcel_logistics_cost_probe;
+ delete b.p1_p7_wiring.foreign_parcel_logistics_cost_probe;
+ assert.throws(()=>comparePaths(a,b),/P4-P6 real SQL wrong-parcel/);
+});
+test('P4-P6 SQL protective foreign-parcel constraint is an acceptable counterexample outcome',()=>{
+ const a=make('grouped'),b=make('historical');
+ for(const e of [a,b])
+  e.p1_p7_wiring.foreign_parcel_logistics_cost_probe={
+   outcome:'SQL_LOGISTICS_COST_PARCEL_GUARD',sqlstate:'23514'};
  assert.equal(comparePaths(a,b).mismatchCount,0);
 });
