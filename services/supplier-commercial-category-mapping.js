@@ -135,4 +135,47 @@ function chooseCommercialPair(pairs = [], candidate = {}, preferred = null) {
     confidence:'proposed'};
 }
 
-module.exports={normalizePath,sourceKey,findConfirmed,confirmMapping,rankCommercialPairs,chooseCommercialPair};
+
+// A semantic concept is independent of the provider's specific category
+// identifiers and independent of the customs classification. Check the full
+// breadcrumb, not only its last leaf (which may say "Shirts" or "Blazers").
+// Destination keys are resolved against the currently active boutique pairs.
+const APPAREL_BREADCRUMB = /\b(?:clothing|clothes|apparel|garments?|wear|v[eê]tements?|ropa|roupas?|bekleidung|abbigliamento)\b/i;
+const WOMEN_BREADCRUMB = /\b(?:women(?:'s|s)?|lad(?:y|ies)|female|femme|mujer(?:es)?|donna|mulher(?:es)?|damen)\b/i;
+const MEN_BREADCRUMB = /\b(?:men(?:'s|s)?|male|homme|hombre(?:s)?|uomo|homem|herren)\b/i;
+const CHILD_BREADCRUMB = /\b(?:kids?|children|child|boys?|girls?|enfants?|infantil|kinder)\b/i;
+const GENERIC_STORAGE_CONTRADICTION = /\b(?:stain\s*(?:remov(?:er|al)|treat(?:er|ment))|laundry\s*detergent|cleaning\s*(?:liquid|spray|agent|product)|insect\s*repellent|mosquito\s*(?:repellent|spray)|bug\s*spray|pesticide|decorative\s*(?:painting|canvas|print|art)|wall\s*art|canvas\s*(?:painting|art))\b/i;
+
+function inferCommercialFromHierarchy(pairs = [], candidate = {}) {
+  const path=String(candidate.supplier_category||'').replace(/\s*\/\s*/g,' > ');
+  if(!APPAREL_BREADCRUMB.test(path)) return null;
+  const flags=[
+    {sub:'Femme',hit:WOMEN_BREADCRUMB.test(path),other:MEN_BREADCRUMB},
+    {sub:'Homme',hit:MEN_BREADCRUMB.test(path),other:WOMEN_BREADCRUMB},
+    {sub:'Enfant',hit:CHILD_BREADCRUMB.test(path),other:null},
+  ].filter(x=>x.hit);
+  // Multiple gender/age destinations in a supplier path are ambiguous.
+  if(flags.length!==1) return null;
+  const concept=flags[0];
+  // A product title directly contradicting the supplier's gender is not a
+  // safe automatic classification even when the source breadcrumb looks strong.
+  if(concept.other?.test(String(candidate.product_name||''))) {
+    return {status:'REVIEW_REQUIRED',source:'TITLE_HIERARCHY_CONFLICT',
+      category:null,subcategory:null};
+  }
+  const pair=pairs.find(p=>p.category==='Mode & Beauté'&&p.subcategory===concept.sub);
+  if(!pair) return null;
+  return {status:'AUTO_CLASSIFIED',category:pair.category,subcategory:pair.subcategory,
+    source:'FULL_BREADCRUMB_SEMANTIC_MATCH',confidence:'high'};
+}
+
+// A confirmed path may still be wrong for an individual object. These are
+// broad cross-provider object families, not supplier mappings or product IDs.
+function contradictsCommercialPair(candidate={}, pair={}) {
+  const title=String(candidate.product_name||'');
+  if(pair.category==='Maison'&&pair.subcategory==='Rangement'
+      &&GENERIC_STORAGE_CONTRADICTION.test(title)) return true;
+  return false;
+}
+
+module.exports={normalizePath,sourceKey,findConfirmed,confirmMapping,rankCommercialPairs,chooseCommercialPair,inferCommercialFromHierarchy,contradictsCommercialPair};
