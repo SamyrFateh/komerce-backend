@@ -43,6 +43,14 @@ describe('Provider-neutral supplier import certification, nominal + fault calibr
     expect(r.verdict).toBe('CLASSIFICATION_CERTIFIED_NOT_SELLABILITY');
     expect(r.gates.fx_deferral.economic_pricing_certified).toBe(false);
   });
+  test('same proof contract also works for AliExpress (no supplier-specific exceptions)',()=>{
+    const x=fixture(); x.provider='AliExpress';x.run.provider='AliExpress';
+    expect(assess(x).passed).toBe(true);
+  });
+  test('an auto-rejected terminal item does not pass on inflated accepted counters',()=>{
+    const x=fixture();x.events[0].outcome='auto_rejected';
+    expect(assess(x).failed_gates).toContain('trace');
+  });
   test('no approved USD FX: 20 retained WATCH, 20 independently classified, no false sale',()=>{
     const r=assess(fixture(20,{fxPending:20}));
     expect(r.passed).toBe(true);
