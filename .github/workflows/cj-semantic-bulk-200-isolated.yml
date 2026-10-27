@@ -53,6 +53,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p artifacts/cj-semantic-bulk-200
           test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_semantic_bulk_200'
           psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql >/dev/null
           for migration in             migrations/227_sourcing_resolution_foundation.sql             migrations/238_sourcing_source_autopilot.sql             migrations/036b_seed_customs_categories.sql             migrations/245_products_boutique_taxonomy.sql             migrations/244_catalog_glossary_batch001.sql; do
@@ -69,6 +70,16 @@ jobs:
           if [ "$has_map" = f ]; then
             psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f migrations/292_supplier_commercial_category_mappings.sql >/dev/null
           fi
+      - name: Restore real boutique classification destinations from canonical source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_semantic_bulk_200'
+          psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f migrations/migrate-categories-v2.sql >/dev/null
+          psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f migrations/250_boutique_subcategory_customs_affinity.sql >/dev/null
+          psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT bc.key || '/' || bs.key FROM boutique_categories bc JOIN boutique_subcategories bs ON bs.category_key=bc.key WHERE bc.is_active AND bs.is_active ORDER BY 1" > artifacts/cj-semantic-bulk-200/active-pairs.txt
+          grep -qx 'Mode & Beauté/Femme' artifacts/cj-semantic-bulk-200/active-pairs.txt
+          grep -qx 'Mode & Beauté/Homme' artifacts/cj-semantic-bulk-200/active-pairs.txt
       - name: Restore canonical fixed reference data for schema-only CI
         run: node scripts/seed-reference-data.js
       - name: Verify fixed KMF parity exists without any fabricated EUR/USD quote
