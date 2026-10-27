@@ -9,7 +9,7 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
   execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',
   wired_edges:['P7_P1_MARKET_PRICING','P7_P1_MARKET_EXPOSURE','P7_P2_CHECKOUT',
    'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT',
-   'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE'],
+   'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE','P3_P6_PURCHASE_COST'],
   owner_read_errors:[],
   unpaid_closure_probe:{outcome:'OWNER_RECONCILED_AFTER_TEMP_UNPAID',
    verdict:'FINANCIAL_CLOSE_MISMATCH',
@@ -18,8 +18,14 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
    {id:'P2_P3_PURCHASE_REQUIREMENT',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
    {id:'P3_P4_HUB_RECEIPT',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
    {id:'P4_P2_RELAY_HANDOFF',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
-   {id:'P5_P2_PAYMENT_CLOSURE',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']}
+   {id:'P5_P2_PAYMENT_CLOSURE',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
+   {id:'P3_P6_PURCHASE_COST',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']}
   ],
+  supplier_cost:{
+   facts:{product_purchase_actual_count:1,allocation_amount_kmf:7000,
+    settlement_real_kmf:null,shadow_purchase_state:'estimated_only'},
+   diagnostics:{contradictions:[],gaps:['ACTUAL_ALLOCATION_WITHOUT_SETTLEMENT_PROOF']}
+  },
   customer_finance:{
    facts:{mode:'stripe_eur',synthetic:true,psp_reference_present:false,
     closure_verdict:'FINANCIAL_CLOSE_MATCHED',closure_mode:'normal'},
@@ -205,4 +211,18 @@ test('bad negative probe that still financially matches must reject equal fixtur
   x.p1_p7_wiring.unpaid_closure_probe.verdict='FINANCIAL_CLOSE_MATCHED';
  }
  assert.throws(()=>comparePaths(a,b),/P5-P2 real PostgreSQL unpaid-close negative probe/);
+});
+
+test('both Goldens without supplier-cost canonical owner observation are rejected',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.supplier_cost;delete b.p1_p7_wiring.supplier_cost;
+ assert.throws(()=>comparePaths(a,b),/P3-P6 actual allocation/);
+});
+test('a synthetic supplier purchase cost must never masquerade as proven real KMF',()=>{
+ const a=make('grouped'),b=make('historical');
+ for(const p of [a,b]){
+   p.p1_p7_wiring.supplier_cost.facts.settlement_real_kmf=7000;
+   p.p1_p7_wiring.boundaries.find(e=>e.id==='P3_P6_PURCHASE_COST').status='NO_CONTRADICTION_OBSERVED';
+ }
+ assert.throws(()=>comparePaths(a,b),/P3-P6 actual allocation/);
 });
