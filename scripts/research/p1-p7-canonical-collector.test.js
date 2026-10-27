@@ -72,8 +72,8 @@ test('missing market exposure and LOCAL_ACTIVE price do not report sellability',
  const f=fixture({exposure:'DISABLED',price:false,checkoutStatus:'PROVED'});
  const r=await collectP1P7Canonical(f.db,f.args,f.owners);
  assert.ok(edge(r,'P1_P2_SELLABLE_UNIT').contradictions.includes('BLOCKED_OWNER_VS_DOWNSTREAM_PROVED'));
- assert.equal(edge(r,'P7_P1_MARKET_EXPOSURE').status,'NO_CONTRADICTION_OBSERVED');
- assert.equal(edge(r,'P7_P1_MARKET_PRICING').status,'NO_CONTRADICTION_OBSERVED');
+ assert.equal(edge(r,'P7_P1_MARKET_EXPOSURE').status,'EVIDENCE_GAP');
+ assert.equal(edge(r,'P7_P1_MARKET_PRICING').status,'EVIDENCE_GAP');
 });
 test('missing checkout origin is not promoted to proof because the order was inserted',async()=>{
  const f=fixture();
@@ -111,4 +111,18 @@ test('simulated scope is preserved; NOT_RUN staging never becomes accepted',asyn
  const r=await collectP1P7Canonical(f.db,f.args,f.owners);
  assert.equal(r.context.simulation_scope,'RCT1');
  assert.equal(r.financeCertified,false);
+});
+
+test('catalog provenance missing makes unit provenance unknown even if local price and exposure exist',async()=>{
+ const f=fixture({checkoutStatus:'PROVED'});
+ f.owners.upstream=async()=>({gates:[{key:'CHECKOUT_ORIGIN_PROVED',status:'PROVED'},
+   {key:'CATALOG_RELEASE_PROVED',status:'NON_PROUVE'}]});
+ const r=await collectP1P7Canonical(f.db,f.args,f.owners);
+ assert.equal(edge(r,'P1_P2_SELLABLE_UNIT').status,'EVIDENCE_GAP');
+});
+test('two matching BLOCKED decisions are not a positive P1/P2 proof',async()=>{
+ const f=fixture({checkoutStatus:'ANOMALIE',exposure:'DISABLED',price:false});
+ const r=await collectP1P7Canonical(f.db,f.args,f.owners);
+ assert.equal(edge(r,'P1_P2_SELLABLE_UNIT').status,'EVIDENCE_GAP');
+ assert.ok(edge(r,'P1_P2_SELLABLE_UNIT').gaps.includes('BLOCKED_OWNER_OR_CONSUMER'));
 });
