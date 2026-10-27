@@ -828,6 +828,56 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       [orderId])).payment_status).toBe('paid');
     expect(unpaidClosureProbe).toBeTruthy();
 
+    // Real-PG adversarial P3->P6 allocation ownership: a valid second
+    // same-market order is made ONLY inside a discarded transaction; then
+    // the existing product-purchase allocation is pointed at that order.
+    // A SQL guard rejection is acceptable and MUST be reported as such.
+    const costProbeClient=await db.getClient();
+    const foreignCostOrderId=uuid();
+    let foreignCostProbe;
+    try {
+      await costProbeClient.query('BEGIN');
+      await costProbeClient.query(
+        "INSERT INTO orders(id,user_id,relais_id,market_id,reference,status,"+
+        "payment_status,payment_mode,total_kmf,total_eur) "+
+        "SELECT $2,user_id,relais_id,market_id,$3,'pending','pending',"+
+        "payment_mode,total_kmf,total_eur FROM orders WHERE id=$1",
+        [orderId,foreignCostOrderId,'K-GOLDEN-COST-FOREIGN-'+RUN_TAG]
+      );
+      await costProbeClient.query('SAVEPOINT p3p6_allocation_move');
+      try {
+        await costProbeClient.query(
+          "UPDATE order_item_real_cost_allocations SET order_id=$2 "+
+          "WHERE order_item_id=$1 AND cost_type='product_purchase' AND is_actual=TRUE",
+          [itemId,foreignCostOrderId]
+        );
+        const {collectP3P6Canonical}=require('../../scripts/research/p3-p6-canonical-collector');
+        const poisoned=await collectP3P6Canonical(costProbeClient,{
+          item:{order_id:orderId,order_item_id:itemId},
+        });
+        expect(poisoned.diagnostics.contradictions)
+          .toContain('COST_ALLOCATION_FOREIGN_ORDER');
+        foreignCostProbe={outcome:'CROSS_ORDER_COST_ALLOCATION_REPRODUCED',
+          hypothesis:'COST_ALLOCATION_FOREIGN_ORDER'};
+      }catch(error){
+        if(['23514','23503','P0001'].includes(error.code)){
+          await costProbeClient.query('ROLLBACK TO SAVEPOINT p3p6_allocation_move');
+          foreignCostProbe={outcome:'SQL_COST_ALLOCATION_ORDER_GUARD',
+            sqlstate:error.code};
+        }else throw error;
+      }
+    }finally{
+      await costProbeClient.query('ROLLBACK');
+      costProbeClient.release();
+    }
+    expect(foreignCostProbe).toBeTruthy();
+    const restoredAllocation=await one(
+      "SELECT order_id FROM order_item_real_cost_allocations "+
+      "WHERE order_item_id=$1 AND cost_type='product_purchase' AND is_actual=TRUE LIMIT 1",
+      [itemId]
+    );
+    expect(restoredAllocation.order_id).toBe(orderId);
+
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
@@ -835,6 +885,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       physical_handoff:wiredP1P7.physical_handoff,
       customer_finance:wiredP1P7.customer_finance,
       supplier_cost:wiredP1P7.supplier_cost,
+      foreign_cost_allocation_probe:foreignCostProbe,
       unpaid_closure_probe:unpaidClosureProbe,
       wrong_relay_probe:relayProbe,
       boundaries:wiredP1P7.boundaries.filter(b=>wiredP1P7.wired_edges.includes(b.id)),
