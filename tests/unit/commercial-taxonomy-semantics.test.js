@@ -82,6 +82,20 @@ describe('Supplier-agnostic semantic commercial taxonomy',()=>{
     expect(semanticIntent({supplier_category,product_name}).kind).not.toBe('pair');
   }
  });
+ test('sports bra with support ring stays apparel, not jewelry',async()=>{
+   const candidate={supplier_name:'CJdropshipping',
+     supplier_category:"Women's Clothing > Underwears > Bras",
+     product_name:'Shockproof Gathered Fitness Vest No Steel Ring Yoga Bra'};
+   expect(semanticIntent(candidate)).toMatchObject({kind:'pair',subcategory:'Femme'});
+   expect(await resolveCommercialTaxonomyVerdict(q(),candidate)).toMatchObject({
+     status:'AUTO_CLASSIFIED',category:'Mode & Beauté',subcategory:'Femme'});
+ });
+ test('adult clothing source cannot auto-classify a child hat',()=>{
+   const candidate={supplier_category:"Women's Clothing > Accessories > Woman Hats & Caps",
+     product_name:"Japanese Solid Color Children's Fisherman Hat"};
+   expect(semanticIntent(candidate)).toMatchObject({
+     kind:'conflict',reason:'CLOTHING_SOURCE_OBJECT_CONTRADICTION'});
+ });
  test('gender contradiction in source or title fails closed',()=>{
   expect(semanticIntent({supplier_category:"Women's Clothing > Tops",product_name:'Mens Casual Jacket'}))
     .toMatchObject({kind:'conflict',reason:'CLOTHING_SOURCE_OBJECT_CONTRADICTION'});
