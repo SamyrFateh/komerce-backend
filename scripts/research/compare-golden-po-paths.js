@@ -18,6 +18,32 @@ function assertUnsubmitted(p, expectedShape) {
     || s.execution_count!==0 || s.payment_count!==0)
   throw Error('Unsubmitted PO not independently proved in persisted database');
 }
+function assertP2P4(p) {
+ const w=p.p1_p7_wiring;
+ if(!w||w.schema!=='komerce-p1-p7-cross-boundary-research/v1' ||
+    w.execution!=='CANONICAL_READ_ONLY_OWNER_ADAPTERS' ||
+    !Array.isArray(w.wired_edges) ||
+    !['P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT']
+      .every(k=>w.wired_edges.includes(k)) ||
+    w.owner_read_errors?.length || !Array.isArray(w.owner_read_errors))
+   throw Error('P2-P4 canonical owner wiring missing or unreadable');
+ const edge=k=>w.boundaries?.find(b=>b.id===k);
+ const purchase=edge('P2_P3_PURCHASE_REQUIREMENT'),hub=edge('P3_P4_HUB_RECEIPT');
+ const facts=w.purchasing_hub?.facts,diag=w.purchasing_hub?.diagnostics;
+ if(!purchase||!hub||hub.status!=='NO_CONTRADICTION_OBSERVED' ||
+    hub.contradictions?.length || !Array.isArray(hub.contradictions) ||
+    purchase.status==='CONTRADICTION_HYPOTHESIS' ||
+    !facts||facts.line_count!==1||facts.allocation_count!==1||facts.fulfillment_count!==1 ||
+    facts.inbound_verdict!=='INBOUND_MATCHED' ||
+    !Number.isSafeInteger(Number(facts.received_quantity)) ||
+    Number(facts.received_quantity)<1 ||
+    Number(facts.received_quantity)!==Number(facts.effective_quantity) ||
+    !diag || diag.contradictions?.length || !Array.isArray(diag.contradictions))
+   throw Error('P2-P4 physical owner identity and quantity proof incomplete');
+ return {purchase_status:purchase.status,hub_status:hub.status,
+  physical_qty:Number(facts.received_quantity),inbound_verdict:facts.inbound_verdict,
+  line_count:facts.line_count,allocation_count:facts.allocation_count};
+}
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
  if(p.identity_status!=='NO_IDENTITY_CONTRADICTION_OBSERVED')
@@ -31,6 +57,7 @@ const norm=(p)=>{
    throw Error('Full nine-category canonical identity evidence required: '+key);
  return {
   pre_submission_verdict:p.pre_submission.verdict,
+  p2_p4_owner_truth:assertP2P4(p),
   identity_status:p.identity_status,
   final_business_verdict:p.checkpoint,
   stage_projections:p.progressive_checkpoints.map(s=>({
