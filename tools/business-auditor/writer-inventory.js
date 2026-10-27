@@ -3,6 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 const {extractWrites}=require('./writer-sql');
 const {archHeader,cardAuthorities,qualify}=require('./writer-ownership');
 const {canonicalTables,classifySchemaTarget}=require('./writer-schema');
+const {RULES}=require('./rules');
 function sourceScope(file){
  if(/^(?:services|routes|middleware|controllers|workers|jobs|bootstrap|api|lib|utils)\//.test(file)||
     file==='db.js')return 'APPLICATION_CANDIDATE';
@@ -34,7 +35,17 @@ function buildWriterInventory(root,options={}){
  const features=cardAuthorities(paths.map(file=>({file,source:read(path.join(root,file),'utf8')})));
  const schema=canonicalTables(read(path.join(root,'docs/db/railway-live-schema.sql'),'utf8'));
  if(schema.size<80)throw Error('Checked-in PostgreSQL schema relation list unexpectedly empty');
- const qualified=qualify(candidates,files,features.authorities).map(x=>classifySchemaTarget(x,schema));
+ const rulesByPrimaryTable=new Map();
+ for(const rule of RULES){
+  const table=String(rule.grain||'').split('.')[0];
+  if(!schema.has(table))continue;
+  if(!rulesByPrimaryTable.has(table))rulesByPrimaryTable.set(table,[]);
+  rulesByPrimaryTable.get(table).push(rule.id);
+ }
+ const qualified=qualify(candidates,files,features.authorities)
+  .map(x=>({...classifySchemaTarget(x,schema),
+   primaryGrainRules:rulesByPrimaryTable.get(x.table)||[]}));
+
  const schemaBound=qualified.filter(x=>x.physicalTableDeclared);
  const nonSchema=qualified.filter(x=>!x.physicalTableDeclared);
  const tableMap=new Map();
@@ -51,7 +62,10 @@ function buildWriterInventory(root,options={}){
  }
  const tableSummary=[...tableMap.values()].map(x=>({
   ...x,writers:[...x.writers].sort(),domains:[...x.domains].sort(),
+  primaryGrainRules:rulesByPrimaryTable.get(x.table)||[],
  })).sort((a,b)=>b.occurrences-a.occurrences||a.table.localeCompare(b.table));
+ const ownerResolutionCounts={};
+ for(const x of schemaBound)ownerResolutionCounts[x.ownerResolution]=(ownerResolutionCounts[x.ownerResolution]||0)+1;
  const gaps=new Set(['DYNAMIC_TABLE_UNRESOLVED','NOT_IN_FEATURE_CARDS',
   'FEATURE_OWNER_NOT_EXPLICIT','CONFLICTING_EXPLICIT_OWNERS','CROSS_DOMAIN_WRITE_REVIEW']);
  return {
@@ -65,11 +79,20 @@ function buildWriterInventory(root,options={}){
   summary:{candidateWrites:qualified.length,physicalTableCandidates:schemaBound.length,
    notProvenTableCandidates:nonSchema.length,
    possibleDirectQueryCalls:schemaBound.filter(x=>x.binding==='DIRECT_QUERY_ARGUMENT').length,
-   tablesFound:tableSummary.length,ownershipReviewCandidates:schemaBound.filter(x=>gaps.has(x.ownerResolution)).length,
+   tablesFound:tableSummary.length,ownerResolutionCounts,
+   ownerReviewDistinctFiles:new Set(schemaBound.filter(x=>gaps.has(x.ownerResolution)).map(x=>x.file)).size,
+   tablesWithExecutablePrimaryGrainRules:tableSummary.filter(x=>x.primaryGrainRules.length).length,
+   ownershipReviewCandidates:schemaBound.filter(x=>gaps.has(x.ownerResolution)).length,
    crossDomainReviewCandidates:schemaBound.filter(x=>x.ownerResolution==='CROSS_DOMAIN_WRITE_REVIEW').length,
    headerMissingDeclarations:schemaBound.filter(x=>!x.headerWriteDeclared).length,
    runtimeWriteProofs:0,confirmedBusinessBugs:0},
   featureCards:features.features,tableSummary,writes:qualified,
+  crossDomainExamples:schemaBound.filter(x=>x.ownerResolution==='CROSS_DOMAIN_WRITE_REVIEW')
+   .slice(0,25).map(x=>({file:x.file,line:x.line,table:x.table,
+    declaredDomain:x.declaredDomain,explicitOwners:x.explicitOwners,binding:x.binding})),
+  ownerGapExamples:schemaBound.filter(x=>gaps.has(x.ownerResolution))
+   .slice(0,25).map(x=>({file:x.file,line:x.line,table:x.table,
+    ownerResolution:x.ownerResolution,explicitOwners:x.explicitOwners,binding:x.binding})),
   rejectedTargetSamples:nonSchema.slice(0,60).map(x=>({file:x.file,line:x.line,rawTarget:x.rawTarget,schemaEvidence:x.schemaEvidence})),
   rejectedTargetCount:nonSchema.length,
   limits:[
