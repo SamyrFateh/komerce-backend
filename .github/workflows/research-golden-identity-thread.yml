@@ -32,6 +32,7 @@ on:
       - scripts/research/p6-p1-canonical-collector.test.js
       - scripts/research/p7-p5-canonical-collector.js
       - scripts/research/p7-p5-canonical-collector.test.js
+      - tools/business-auditor/**
 permissions:
   contents: read
 concurrency:
@@ -68,6 +69,8 @@ jobs:
           cache: npm
       - name: Pure A/B identity oracle — zero DB
         run: node --test scripts/research/golden-identity-trail.test.js scripts/research/compare-golden-po-paths.test.js scripts/research/golden-po-unsubmitted-proof.test.js scripts/research/p1-p7-boundary-oracle.test.js scripts/research/p1-p7-canonical-collector.test.js scripts/research/p2-p4-canonical-collector.test.js scripts/research/p4-p2-canonical-collector.test.js scripts/research/p5-p2-canonical-collector.test.js scripts/research/p3-p6-canonical-collector.test.js scripts/research/p4-p6-canonical-collector.test.js scripts/research/p5-p6-canonical-collector.test.js scripts/research/p6-p1-canonical-collector.test.js scripts/research/p7-p5-canonical-collector.test.js
+      - name: Independent business SQL auditor tests (no DB)
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Bootstrap disposable PostgreSQL
@@ -86,6 +89,8 @@ jobs:
         run: ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/e2e-api/customer-to-customer.golden.e2e.test.js
       - name: Physical shared-parcel truth — owner readers and scanner (PostgreSQL)
         run: ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/e2e-api/hub-membership-readers.e2e.test.js
+      - name: Independent read-only business scanner (local PostgreSQL)
+        run: npm run audit:logic:full -- --mode data --out /tmp/komerce-business-audit-golden
       - name: Compare evidence envelopes, not UUIDs
         run: node scripts/research/compare-golden-po-paths.js /tmp/fp-golden-grouped.json /tmp/fp-golden-historical.json /tmp/fp-golden-po-diff.json
       - name: Persist proof, no Git push
@@ -97,5 +102,7 @@ jobs:
             /tmp/fp-golden-grouped.json
             /tmp/fp-golden-historical.json
             /tmp/fp-golden-po-diff.json
+            /tmp/komerce-business-audit-golden/business-audit.json
+            /tmp/komerce-business-audit-golden/business-audit.md
           if-no-files-found: ignore
           retention-days: 5
