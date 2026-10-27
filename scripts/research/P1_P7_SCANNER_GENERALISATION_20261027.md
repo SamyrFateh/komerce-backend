@@ -127,3 +127,19 @@ Le scanner suit maintenant `P4_P2_RELAY_HANDOFF` grâce aux **lecteurs propriét
 ### Complément de preuve : colis réellement partagé en PostgreSQL
 
 [GitHub Actions #40506461210](https://github.com/SamyrFateh/komerce-backend/actions/runs/40506461210) : workflow vert, **86/86 tests purs, Golden regroupé 1/1, Golden historique 1/1, matrice multi-commandes 4/4**, comparateur final sans asymétrie. Le test multi-commandes crée une PO/commande porteuse et une autre commande non porteuse partageant le même colis : le propriétaire de remise retrouve celui-ci au moyen de `parcel_items`, l'observateur retrouve le colis au grain `order_item_id` et classe la remise non encore effectuée en `EVIDENCE_GAP` (pas une erreur d'en-tête ni une fausse remise). Le test du mauvais relais reste rollbacké et confirmé dans les deux Golden.
+
+## 27/10 — P5 → P2, huitième frontière (paiement client ↔ clôture financière)
+
+Raccordement **en lecture seule** de `P5_P2_PAYMENT_CLOSURE` : `scripts/research/p5-p2-canonical-collector.js` lit la commande exacte, la porte `PAYMENT_FINAL_PROVED` du Golden checkout et le **véritable propriétaire** `services/order-financial-closure-reconciliation.reconcileOrderFinancialClose`. Il réutilise le contrôle Finance existant `services/finance-metrics/payments.js` : `stripe_eur + paid + stripe_payment_id vide` constitue un signal explicite.
+
+La doctrine est prudente :
+- L'existence de `orders.stripe_payment_id` **ne prouve pas** l'exécution et le règlement Stripe. Le scanner signale `PSP_REFERENCE_NOT_EXTERNAL_SETTLEMENT_PROOF` même si le checkout projette `PROVED`.
+- Les commandes `K-GOLDEN-*` sont synthétiques, marquées `SYNTHETIC_GOLDEN_CREATE` par le propriétaire Golden. Dans ce cas, une clôture `FINANCIAL_CLOSE_MATCHED` avec `stripe_payment_id` absent est un **écart de certification** `EVIDENCE_GAP`, pas un bug de production ni une preuve de paiement réel.
+- Pour une commande **non synthétique** `stripe_eur` payée mais sans identifiant PSP, une clôture `FINANCIAL_CLOSE_MATCHED` produit `CONTRADICTION_HYPOTHESIS` ; verdict définitif à confirmer avec événement signé/autorité de paiement.
+- `cash_relais` : la collection en relais et l'attribution du reversement final sont deux preuves différentes. Un cash encaissé sans attribution de règlement ne donne aucun `GO` sur la clôture financière.
+- Les clôtures `refund` et `cancel` ne valent jamais encaissement positif d'une commande.
+- La comparaison A/B exige expressément le lecteur financier + le signal `SYNTHETIC_PAYMENT_NOT_PSP_PROOF` sur **les deux PO**, faute de quoi elle échoue.
+
+Contre-épreuve négative PostgreSQL : depuis la commande Golden effectivement `collected/paid`, dans une transaction jetable `BEGIN/ROLLBACK`, basculer `payment_status` temporairement à `pending`. L'oracle attend `FINANCIAL_CLOSE_MISMATCH / FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID`, ou le refus par une garde SQL de l'écriture. Après rollback, `payment_status` doit demeurer `paid`. Aucun appel Stripe, encaissement ou écriture staging.
+
+La frontière est désormais **8/13 câblée**, mais ne constitue **pas** une certification de paiement PSP réel. Les 5 restantes sont `P3_P6_PURCHASE_COST`, `P4_P6_LOGISTICS_COST`, `P5_P6_CASH_REALITY`, `P6_P1_PRICE_REVIEW`, `P7_P5_COUNTRY_SETTLEMENT`.
