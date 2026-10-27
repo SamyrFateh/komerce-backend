@@ -1197,7 +1197,10 @@
         control.appendChild(opt);
       });
       control.value = filters[key] || '';
-      control.addEventListener('change', () => { filters[key] = control.value; });
+      control.addEventListener('change', () => {
+        if (key === 'category' && filters.category !== control.value) filters.subcategory = '';
+        filters[key] = control.value;
+      });
       bar.appendChild(field(label, control));
     };
     input('Recherche', 'search', 'Nom, référence, SKU fournisseur');
@@ -1326,7 +1329,7 @@
             successMessage: 'Classification enregistrée ; conformité recalculée pour ' + row.product_ref + '.',
           });
         });
-        actions.appendChild(editClassification);
+        if (row.lifecycle_status !== 'rejected') actions.appendChild(editClassification);
         const issues = row.issues || [];
         if (issues.includes('source_to_normalize')) {
           const source = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Examiner source');
