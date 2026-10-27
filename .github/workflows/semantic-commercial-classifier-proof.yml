@@ -1,0 +1,28 @@
+name: Semantic commercial classifier — unit + bulk replay
+on:
+  pull_request:
+    paths:
+      - 'services/commercial-taxonomy-semantics.js'
+      - 'services/catalog-candidate-product-service.js'
+      - 'tests/unit/commercial-taxonomy-semantics.test.js'
+      - '.github/workflows/semantic-commercial-classifier-proof.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  targeted:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Syntax checks
+        run: |
+          node --check services/commercial-taxonomy-semantics.js
+          node --check services/catalog-candidate-product-service.js
+      - name: Semantic regression + 10000 replay + existing catalog tests
+        run: npx jest --config jest.unit.config.js tests/unit/commercial-taxonomy-semantics.test.js tests/unit/catalog-candidate-product-service.test.js tests/unit/supplier-commercial-category-mapping.test.js --runInBand --no-coverage
