@@ -728,8 +728,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     const wiredP1P7=await collectP1P7Canonical(db,{
       productId,orderItemId:itemId,marketCode:'KM',orderReference:ORDER_REF,
     });
-    expect(wiredP1P7.wired_edges).toHaveLength(11);
-    expect(wiredP1P7.totals.notWired).toBe(2);
+    expect(wiredP1P7.wired_edges).toHaveLength(13);
+    expect(wiredP1P7.totals.notWired).toBe(0);
     expect(wiredP1P7.context.actual_product_id).toBe(productId);
     expect(wiredP1P7.context.actual_sku_id).toBe(skuId);
     expect(wiredP1P7.context.persisted_order_market).toBe('KM');
@@ -737,6 +737,16 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect(wiredP1P7.liveCheckoutCertified).toBe(false);
     // Failing owner reads are evidence gaps, never silently a green status.
     expect(wiredP1P7.owner_read_errors).toEqual([]);
+    expect(wiredP1P7.price_review?.facts?.price_status).toBeNull();
+    expect(wiredP1P7.price_review?.diagnostics?.gaps)
+      .toContain('NO_HUMAN_MARKET_PRICE_DECISION');
+    expect(wiredP1P7.boundaries.find(e=>e.id==='P6_P1_PRICE_REVIEW')?.status)
+      .toBe('EVIDENCE_GAP');
+    expect(wiredP1P7.country_settlement?.facts?.settlement_count).toBe(0);
+    expect(wiredP1P7.country_settlement?.diagnostics?.gaps)
+      .toContain('NO_COUNTRY_SETTLEMENT_ATTESTATION');
+    expect(wiredP1P7.boundaries.find(e=>e.id==='P7_P5_COUNTRY_SETTLEMENT')?.status)
+      .toBe('EVIDENCE_GAP');
     expect(wiredP1P7.funds_cost?.facts?.mode).toBe('stripe_eur');
     expect(wiredP1P7.funds_cost?.facts?.collections).toBe(0);
     expect(wiredP1P7.funds_cost?.facts?.actual_fee_allocations).toBe(0);
@@ -988,6 +998,90 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect((await q('SELECT id FROM cash_collections WHERE order_id=$1',[orderId])).rows)
       .toEqual([]);
 
+    // P6->P1: insert an unattributed ACTIVATE *event*, not an actual buyer
+    // price. The adapter must call it a suspect orphan audit trace, not
+    // pretend there was an actual market-local activation. Transaction rolled back.
+    const priceProbeClient=await db.getClient();
+    let unauditedPriceProbe;
+    try{
+      await priceProbeClient.query('BEGIN');
+      await priceProbeClient.query('SAVEPOINT p6p1_orphan_event');
+      try{
+        const native=(await priceProbeClient.query(
+          'SELECT currency FROM markets WHERE id=$1',[marketId])).rows[0].currency;
+        await priceProbeClient.query(
+          "INSERT INTO product_market_price_draft_events "+
+          "(market_id,product_id,action,old_amount,new_amount,currency,old_status,"+
+          "new_status,reason,source,actor_id) "+
+          "VALUES($1,$2,'ACTIVATE',25000,25000,$3,"+
+          "'LOCAL_AUTHORIZED_PENDING_CUTOVER','LOCAL_ACTIVE',"+
+          "'Research unattributed event','research_negative',NULL)",
+          [marketId,productId,native]
+        );
+        const {collectP6P1Canonical}=require('../../scripts/research/p6-p1-canonical-collector');
+        const bad=await collectP6P1Canonical(priceProbeClient,{
+          item:{order_id:orderId,product_id:productId},
+          market:{id:marketId,code:'KM',currency:native},
+        });
+        expect(bad.diagnostics.contradictions)
+          .toContain('UNATTRIBUTED_PRICE_ACTIVATE_EVENT');
+        unauditedPriceProbe={outcome:'PRICE_ACTIVATE_EVENT_WITHOUT_ACTOR_ACCEPTED',
+          hypothesis:'UNATTRIBUTED_PRICE_ACTIVATE_EVENT'};
+      }catch(error){
+        if(['23514','23503','23502','P0001'].includes(error.code)){
+          await priceProbeClient.query('ROLLBACK TO SAVEPOINT p6p1_orphan_event');
+          unauditedPriceProbe={outcome:'SQL_PRICE_ACTIVATION_EVENT_GUARD',sqlstate:error.code};
+        }else throw error;
+      }
+    }finally{
+      await priceProbeClient.query('ROLLBACK');priceProbeClient.release();
+    }
+    expect(unauditedPriceProbe).toBeTruthy();
+    expect((await q("SELECT id FROM product_market_price_draft_events "+
+      "WHERE market_id=$1 AND product_id=$2 AND source='research_negative'",
+      [marketId,productId])).rows).toEqual([]);
+
+    // P7->P5: a never-active DRAFT assignment is NOT an eligible country
+    // settlement mandate. If SQL admits a READY settlement anyway, the
+    // cross-process observer must detect the disagreement with the owner.
+    const settlementProbeClient=await db.getClient();
+    const draftAssignmentId=uuid();let draftSettlementProbe;
+    try{
+      await settlementProbeClient.query('BEGIN');
+      await settlementProbeClient.query(
+        "INSERT INTO market_operating_assignments(id,market_id,status) "+
+        "VALUES($1,$2,'DRAFT')",[draftAssignmentId,marketId]);
+      await settlementProbeClient.query('SAVEPOINT p7p5_draft_settlement');
+      try{
+        const native=(await settlementProbeClient.query(
+          'SELECT currency FROM markets WHERE id=$1',[marketId])).rows[0].currency;
+        await settlementProbeClient.query(
+          "INSERT INTO market_settlements "+
+          "(market_id,assignment_id,amount,currency,source,status,attested_by) "+
+          "VALUES($1,$2,10000,$3,'CENTRAL_ATTESTATION','READY',$4)",
+          [marketId,draftAssignmentId,native,userId]
+        );
+        const {collectP7P5Canonical}=require('../../scripts/research/p7-p5-canonical-collector');
+        const currentPlane=await require('../../services/market-control-plane')
+          .getControlPlane(settlementProbeClient,'KM');
+        const bad=await collectP7P5Canonical(settlementProbeClient,{plane:currentPlane});
+        expect(bad.diagnostics.contradictions)
+          .toContain('NEW_READY_SETTLEMENT_ON_INACTIVE_ASSIGNMENT');
+        draftSettlementProbe={outcome:'DRAFT_ASSIGNMENT_SETTLEMENT_ACCEPTED',
+          hypothesis:'NEW_READY_SETTLEMENT_ON_INACTIVE_ASSIGNMENT'};
+      }catch(error){
+        if(['23514','23503','23502','P0001'].includes(error.code)){
+          await settlementProbeClient.query('ROLLBACK TO SAVEPOINT p7p5_draft_settlement');
+          draftSettlementProbe={outcome:'SQL_DRAFT_SETTLEMENT_GUARD',sqlstate:error.code};
+        }else throw error;
+      }
+    }finally{
+      await settlementProbeClient.query('ROLLBACK');settlementProbeClient.release();
+    }
+    expect(draftSettlementProbe).toBeTruthy();
+    expect((await q("SELECT id FROM market_operating_assignments WHERE id=$1",
+      [draftAssignmentId])).rows).toEqual([]);
+
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
@@ -997,6 +1091,10 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       supplier_cost:wiredP1P7.supplier_cost,
       logistics_cost:wiredP1P7.logistics_cost,
       funds_cost:wiredP1P7.funds_cost,
+      price_review:wiredP1P7.price_review,
+      country_settlement:wiredP1P7.country_settlement,
+      unaudited_price_probe:unauditedPriceProbe,
+      draft_settlement_probe:draftSettlementProbe,
       cross_rail_funds_probe:crossRailFundsProbe,
       foreign_parcel_logistics_cost_probe:foreignParcelCostProbe,
       foreign_cost_allocation_probe:foreignCostProbe,
