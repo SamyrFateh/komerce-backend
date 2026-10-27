@@ -176,7 +176,7 @@
     const copy = doc.createElement('div');
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', refinery ? 'WORKSPACE · RAFFINERIE' : 'WORKSPACE · CATALOGUE'));
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', refinery ? 'Raffinerie produits' : 'Catalogue global'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', refinery ? 'Corriger, enrichir, tarifer et valider avant toute mise au catalogue.' : 'Produits finis et approuvés · exposition et disponibilité commerciale.'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', refinery ? 'Corriger, enrichir, tarifer et valider avant toute mise au catalogue.' : 'Produits remis par la Raffinerie · classement, corrections et validation.'));
     header.appendChild(copy);
 
     const nav = doc.createElement('nav');
@@ -207,11 +207,12 @@
 
   function metricItems(summary = {}, curation = {}) {
     return [
-      { key: 'published', label: 'Approuvés vente', value: formatNumber(summary.commercial_approved ?? curation.published_products), tone: 'neutral' },
-      { key: 'lots', label: 'KIR clos contributeurs', value: formatNumber(summary.commercial_closed_lots), tone: 'neutral' },
+      { key: 'registry', label: 'Produits remis (filtres)', value: formatNumber(summary.registry_total), tone: 'neutral' },
+      { key: 'published', label: 'Assortiment approuvé affiché', value: formatNumber(summary.commercial_approved), tone: 'neutral' },
+      { key: 'lots', label: 'KIR clos de l’assortiment affiché', value: formatNumber(summary.commercial_closed_lots), tone: 'neutral' },
       { key: 'approval', label: 'À curater', value: formatNumber(summary.approval_pending), tone: summary.approval_pending ? 'warning' : 'neutral' },
       { key: 'review', label: 'À relire', value: formatNumber(summary.needs_review), tone: summary.needs_review ? 'warning' : 'neutral' },
-      { key: 'markets', label: 'Marchés servis', value: formatNumber(summary.commercial_markets), tone: 'neutral' },
+      { key: 'markets', label: 'Marchés de l’assortiment affiché', value: formatNumber(summary.commercial_markets), tone: 'neutral' },
     ];
   }
 
@@ -1560,7 +1561,13 @@
     } else {
       renderFocusedHandoff(rootNode, ui, doc, payload);
       renderProducts(rootNode, ui, doc, payload, context);
-      renderTaxonomy(rootNode, ui, doc, payload, context);
+      const taxonomyPanel = doc.createElement('details');
+      taxonomyPanel.className = 'kmc-catalog-taxonomy-panel';
+      const toggle = doc.createElement('summary');
+      toggle.textContent = 'Gérer les catégories et sous-catégories boutique';
+      taxonomyPanel.appendChild(toggle);
+      rootNode.appendChild(taxonomyPanel);
+      renderTaxonomy(taxonomyPanel, ui, doc, payload, context);
     }
   }
 
@@ -1594,6 +1601,9 @@
       afterRender: typeof options.afterRender === 'function' ? options.afterRender : null,
       approvalLimit: 50,
       approvalOffset: 0,
+      catalogFilters: {
+        search: '', supplier: '', category: '', subcategory: '', status: '', offset: 0,
+      },
       focusedProductRef: String(focusedProductRef || '').trim() || null,
       autoFrenchAttempted: new Set(),
       autoFrenchFailed: new Set(),
@@ -1607,6 +1617,14 @@
           approval_offset: String(context.approvalOffset),
         });
         if (context.focusedProductRef) params.set('product_ref', context.focusedProductRef);
+        if (context.workspaceView !== 'refinery') {
+          const filters = context.catalogFilters;
+          ['search', 'supplier', 'category', 'subcategory', 'status'].forEach(key => {
+            if (filters[key]) params.set(key, filters[key]);
+          });
+          params.set('catalog_limit', '50');
+          params.set('catalog_offset', String(filters.offset || 0));
+        }
         const payload = await jsonRequest(fetchFn, `${ENDPOINT}?${params.toString()}`);
         renderPayload(rootNode, ui, doc, payload, context);
         if (context.afterRender) context.afterRender(payload);
