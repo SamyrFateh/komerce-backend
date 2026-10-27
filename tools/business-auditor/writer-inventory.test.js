@@ -77,6 +77,15 @@ test('true tracked project metadata yields a non-empty cross-domain traceable in
  assert.ok(result.coverage.canonicalSchemaTables>=100);
  assert.ok(result.summary.physicalTableCandidates>50);
  assert.ok(result.summary.notProvenTableCandidates>0);
+ assert.ok(result.summary.ownerReviewDistinctFiles>10);
+ assert.equal(Object.values(result.summary.ownerResolutionCounts).reduce((a,b)=>a+b,0),
+  result.summary.physicalTableCandidates);
+ assert.ok(result.summary.tablesWithExecutablePrimaryGrainRules>=4);
+ assert.ok(result.tableSummary.some(x=>x.table==='parcel_items'&&
+  x.primaryGrainRules.length===0));
+ assert.ok(result.tableSummary.some(x=>x.table==='order_item_real_cost_allocations'&&
+  x.primaryGrainRules.includes('KBA-001')));
+ assert.ok(result.crossDomainExamples.every(x=>x.binding&&x.explicitOwners.length===1));
  assert.equal(result.tableSummary.some(t=>t.table==='set'||t.table==='of'),false);
  assert.equal(result.summary.confirmedBusinessBugs,0);
 });
