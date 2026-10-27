@@ -144,6 +144,13 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
       const contradiction=semanticConflict(candidate,mapped);
       if (contradiction) return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
         source:contradiction};
+      // A broad supplier path may be polluted: a reusable mapping is NOT
+      // permission to ignore a contradictory object-family proof.
+      const corroborated=categoryCorroboratedByObject(candidate);
+      if(corroborated && corroborated.category!==mapped.category)
+        return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+          source:'CONFIRMED_MAPPING_OBJECT_CONFLICT',
+          evidence:{mapping_category:mapped.category,object_category:corroborated.category}};
       return {status:'AUTO_CLASSIFIED',...mapped,source:'CONFIRMED_SUPPLIER_PATH'};
     }
   }
