@@ -73,6 +73,8 @@ function assessP2P4({item,lines=[],progress=[],allocations=[],fulfillmentIds=[],
  if(fulfillmentIds.length>1)evidenceGaps.push('MULTIPLE_SUPPLIER_FULFILLMENTS_NOT_AGGREGATED');
  if(fulfillmentIds.length===0)evidenceGaps.push('NO_SUPPLIER_FULFILLMENT_LINK');
  if(line?.cancelled_at)evidenceGaps.push('PURCHASE_LINE_CANCELLED');
+ p2p3.crossContradictions=contradictions.filter(x=>x.startsWith('PURCHASE_PO_'));
+ p3p4.crossContradictions=contradictions.filter(x=>x.startsWith('HUB_')||x.startsWith('INBOUND_'));
  const result={
   proofs:{P2_P3_PURCHASE_REQUIREMENT:p2p3,P3_P4_HUB_RECEIPT:p3p4},
   diagnostics:{contradictions:[...new Set(contradictions)],gaps:[...new Set(evidenceGaps)],
