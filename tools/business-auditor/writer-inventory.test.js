@@ -4,6 +4,7 @@ const path=require('node:path');
 const {readLiterals,extractWrites}=require('./writer-sql');
 const {archHeader,cardAuthorities,qualify}=require('./writer-ownership');
 const {sourceScope,buildWriterInventory}=require('./writer-inventory');
+const {canonicalTables,classifySchemaTarget}=require('./writer-schema');
 const ROOT=path.resolve(__dirname,'../..');
 test('SQL in JS comments is not a writer candidate',()=>{
  const q=['UPDATE','orders','SET'].join(' ');
@@ -73,5 +74,21 @@ test('true tracked project metadata yields a non-empty cross-domain traceable in
  assert.ok(result.tableSummary.some(t=>t.table==='orders'&&t.explicitOwners.length>0));
  assert.ok(result.tableSummary.some(t=>t.table==='parcel_items'));
  assert.ok(result.writes.some(x=>x.file==='services/auto-parcel.js'&&x.table==='parcel_items'));
+ assert.ok(result.coverage.canonicalSchemaTables>=100);
+ assert.ok(result.summary.physicalTableCandidates>50);
+ assert.ok(result.summary.notProvenTableCandidates>0);
+ assert.equal(result.tableSummary.some(t=>t.table==='set'||t.table==='of'),false);
  assert.equal(result.summary.confirmedBusinessBugs,0);
+});
+
+test('schema parser keeps real tables but rejects words emitted by SQL regex',()=>{
+ const schema="-- CREATE TABLE public.fake (id int);\n"+
+ "CREATE TABLE public.parcel_items (id uuid);\n"+
+ "CREATE TABLE public.orders (id uuid);\n"+
+ "CREATE TABLE public.monthly_events PARTITION OF public.events FOR VALUES IN (1);\n";
+ const names=canonicalTables(schema);
+ assert.deepEqual([...names].sort(),['monthly_events','orders','parcel_items']);
+ assert.equal(classifySchemaTarget({table:'orders'},names).physicalTableDeclared,true);
+ assert.equal(classifySchemaTarget({table:'set'},names).physicalTableDeclared,false);
+ assert.equal(classifySchemaTarget({table:null},names).schemaEvidence,'DYNAMIC_TARGET_UNKNOWN');
 });
