@@ -44,6 +44,7 @@ const ENTRY=Object.freeze({
  'LS-06|services/refund-service.js': ['EXTERNAL_PSP_SIDE_EFFECT','NEEDS_TRANSACTION_TRACE','Stripe refund carries stable idempotencyKey and inserts pending first; review transaction commit and recovery path'],
  'LS-04|services/simulator/cleanup.js': ['SIMULATOR_WRITER','NOT_RUNTIME_PROOF','Simulator cleanup SQL; check segregation from real business and production access'],
  'LS-04|services/simulator/state-advancer.js': ['SIMULATOR_WRITER','NOT_RUNTIME_PROOF','Simulator state advancement; check segregation from real business'],
+ 'LS-03|tools/business-auditor/code-detectors.test.js': ['TEST_SOURCE_FALSE_POSITIVE','NOT_RUNTIME_PROOF','Synthetic clock-based request key in scanner test: the source is not an executing financial writer'],
  'LS-01|tools/business-auditor/engine.test.js': ['TEST_SOURCE_FALSE_POSITIVE','NOT_RUNTIME_PROOF','SQL guard test contains literal UPDATE orders; no runtime business writer'],
  'LS-06|utils/refunds.js': ['EXTERNAL_PSP_SIDE_EFFECT','TARGETED_RETRY_TEST','Stripe refund call lacks explicit idempotency key in this helper; verify reachability before declaring vulnerability'],
 });
