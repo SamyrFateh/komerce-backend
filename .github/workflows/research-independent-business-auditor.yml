@@ -55,6 +55,9 @@ jobs:
       - name: Fail closed if report lacks explicit seven SQL owner rules
         run: |
           node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('/tmp/komerce-independent-business-audit/business-audit.json'));if(p.contract!=='komerce-independent-business-auditor/v1'||p.data.results.length!==7||p.permissions.dataTarget!=='LOCAL_KOMERCE_TEST_ONLY'||p.code.status!=='STATIC_HEURISTICS_ONLY')process.exit(2);console.log('INDEPENDENT_AUDITOR_PROOF',JSON.stringify({scannedFiles:p.code.scannedFiles,staticSuspicions:p.summary.staticSuspicions,dataRules:p.data.results.length,signals:p.summary.rulesWithEvidence}));"
+      - name: Inventory static findings for owner triage (no source snippets)
+        run: |
+          node -e "const r=require('/tmp/komerce-independent-business-audit/business-audit.json');for(const f of r.code.findings)console.log('BUSINESS_AUDIT_STATIC '+JSON.stringify({rule:f.rule,priority:f.priority,file:f.file,line:f.line,category:f.category}));"
       - name: Archive independent JSON + Markdown evidence
         if: always()
         uses: actions/upload-artifact@v4
