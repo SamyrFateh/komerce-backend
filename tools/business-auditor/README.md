@@ -1,4 +1,4 @@
-# Komerce Independent Business Auditor — R&D v0.3
+# Komerce Independent Business Auditor — R&D v0.4
 
 **Goal:** detect independently reproducible contradictions between business rules,
 persisted facts and process invariants. A green Golden is not certification.
@@ -139,3 +139,44 @@ verification of all business code.
 owner arbitration of 13 candidates, authorization for real read-only data
 audit, physical conflict/retry reproduction, and extraction to a separate
 distribution when justified.
+
+
+## V0.4 — physical PostgreSQL owner counterexamples (not just mock or regex)
+
+**Verified double Golden:** https://github.com/SamyrFateh/komerce-backend/actions/runs/40548294957
+
+- **177/177 pure tests**, two disposable PostgreSQL 16 Golden PO variants
+  (grouped and historical), no A/B asymmetry, 13/13 owner seams read with
+  zero owner-read errors.
+- **KBA-C01 actual service + real SQL**: auto-parcel.distributeOrder() first
+  confirms already_assigned on the normal path. A *controlled stale
+  existence preflight* then forces an attempt to assign the same order item.
+  Real PostgreSQL applies unique_order_item_per_parcel, reports
+  rowCount=0, while the actual service returns items_assigned=1.
+  Count before/after: **0 new rows**. The enclosing PG transaction is
+  rolled back and prior parcel status/membership is verified. This confirms
+  count drift **under this instrumented preflight scenario**, not an
+  uninstrumented concurrency race or production corruption.
+  Existing issue: https://github.com/SamyrFateh/komerce-backend/issues/2949
+- **KBA-C02 actual wallet owner + real SQL**: wallet-service.credit()
+  with one persistent idempotency key returns one credit then duplicate=true
+  on replay; two different timestamp-style keys from the admin route pattern
+  create two different credit ledger rows. The transaction is rolled back;
+  no wallet receipts or external PSP calls occur. This confirms sensitivity
+  to request identity, **not** an observed unintended HTTP replay or double
+  credit in production.
+  Owner arbitration: https://github.com/SamyrFateh/komerce-backend/issues/3079
+- Independent classification contract in physical-probes.js and negative
+  tests rejects missing rowCount, missing rollback restoration, an absent
+  stable-key duplicate, or missing wallet ledger evidence.
+- The **two-path comparator** rejects absent physical evidence on both
+  Golden variants. The independent tool still does not import or execute
+  Komerce writers itself: those writes only happen in disposable, rolled-back
+  Golden transactions run by isolated GitHub Actions jobs.
+
+**Open questions:** genuine physical concurrency schedule, real HTTP admin
+request retry contract (must permit two consciously distinct gifts), PayPal
+legacy refund caller reachability and sandbox replay, and independent code
+scanner coverage beyond the current finite detector families.
+
+main, Railway staging/production, Stripe and PayPal remain unchanged.
