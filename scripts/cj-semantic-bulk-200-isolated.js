@@ -41,6 +41,9 @@ async function main(){
    published_products:0, verdict:'RUNNING'};
  try{
   await guard();
+  const {rows:[active]}=await db.query('SELECT COUNT(*)::int AS n FROM boutique_categories bc JOIN boutique_subcategories bs ON bs.category_key=bc.key WHERE bc.is_active=TRUE AND bs.is_active=TRUE');
+  report.active_boutique_pairs=Number(active.n||0);
+  if(report.active_boutique_pairs<15)throw Error('ACTIVE_BOUTIQUE_TAXONOMY_NOT_BOOTSTRAPPED');
   const seen=new Set(), chosen=[];
   for(let page=1;page<=MAX_PAGES && chosen.length<EXPECT;page++){
    if(page>1)await sleep(MIN_INTERVAL_MS);
