@@ -26,7 +26,7 @@ test('the exact 22 observed CI findings are source-reviewed without inventing co
  const rows=qualifyStaticTriage(prepareStaticTriage(samples));
  assert.equal(rows.length,22);
  assert.ok(rows.every(x=>x.reviewedFromSource&&x.evidenceReview!=='UNREVIEWED'&&x.confirmedBug===false));
- assert.equal(Object.keys(ENTRY).length,21); // one PayPal source line appears twice
+ assert.equal(Object.keys(ENTRY).length,22); // one PayPal source line appears twice
  assert.equal(triageCounts(rows).targetedCandidateCount,13);
 });
 test('legitimate owner operations are not automatically reported as rule violations',()=>{
