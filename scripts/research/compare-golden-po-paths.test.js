@@ -11,6 +11,7 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
    'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT',
    'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE','P3_P6_PURCHASE_COST'],
   owner_read_errors:[],
+  foreign_cost_allocation_probe:{outcome:'CROSS_ORDER_COST_ALLOCATION_REPRODUCED',hypothesis:'COST_ALLOCATION_FOREIGN_ORDER'},
   unpaid_closure_probe:{outcome:'OWNER_RECONCILED_AFTER_TEMP_UNPAID',
    verdict:'FINANCIAL_CLOSE_MISMATCH',
    reason:'FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID',payment_status:'pending'},
