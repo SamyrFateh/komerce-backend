@@ -728,8 +728,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     const wiredP1P7=await collectP1P7Canonical(db,{
       productId,orderItemId:itemId,marketCode:'KM',orderReference:ORDER_REF,
     });
-    expect(wiredP1P7.wired_edges).toHaveLength(6);
-    expect(wiredP1P7.totals.notWired).toBe(7);
+    expect(wiredP1P7.wired_edges).toHaveLength(7);
+    expect(wiredP1P7.totals.notWired).toBe(6);
     expect(wiredP1P7.context.actual_product_id).toBe(productId);
     expect(wiredP1P7.context.actual_sku_id).toBe(skuId);
     expect(wiredP1P7.context.persisted_order_market).toBe('KM');
@@ -737,10 +737,14 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect(wiredP1P7.liveCheckoutCertified).toBe(false);
     // Failing owner reads are evidence gaps, never silently a green status.
     expect(wiredP1P7.owner_read_errors).toEqual([]);
+    expect(wiredP1P7.physical_handoff?.facts?.handoff_verdict).toBe('HANDOFF_MATCHED');
+    expect(wiredP1P7.boundaries.find(e=>e.id==='P4_P2_RELAY_HANDOFF')?.status)
+      .toBe('NO_CONTRADICTION_OBSERVED');
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
       purchasing_hub:wiredP1P7.purchasing_hub,
+      physical_handoff:wiredP1P7.physical_handoff,
       boundaries:wiredP1P7.boundaries.filter(b=>wiredP1P7.wired_edges.includes(b.id)),
       stagingCertified:false};
     console.log('FP_P1_P7_CANONICAL_WIRING '+JSON.stringify(wiredSummary));
