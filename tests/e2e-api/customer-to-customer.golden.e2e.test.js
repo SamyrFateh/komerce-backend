@@ -728,8 +728,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     const wiredP1P7=await collectP1P7Canonical(db,{
       productId,orderItemId:itemId,marketCode:'KM',orderReference:ORDER_REF,
     });
-    expect(wiredP1P7.wired_edges).toHaveLength(7);
-    expect(wiredP1P7.totals.notWired).toBe(6);
+    expect(wiredP1P7.wired_edges).toHaveLength(8);
+    expect(wiredP1P7.totals.notWired).toBe(5);
     expect(wiredP1P7.context.actual_product_id).toBe(productId);
     expect(wiredP1P7.context.actual_sku_id).toBe(skuId);
     expect(wiredP1P7.context.persisted_order_market).toBe('KM');
@@ -737,6 +737,12 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect(wiredP1P7.liveCheckoutCertified).toBe(false);
     // Failing owner reads are evidence gaps, never silently a green status.
     expect(wiredP1P7.owner_read_errors).toEqual([]);
+    expect(wiredP1P7.customer_finance?.facts?.closure_verdict).toBe('FINANCIAL_CLOSE_MATCHED');
+    expect(wiredP1P7.customer_finance?.facts?.psp_reference_present).toBe(false);
+    expect(wiredP1P7.customer_finance?.diagnostics?.gaps)
+      .toContain('SYNTHETIC_PAYMENT_NOT_PSP_PROOF');
+    expect(wiredP1P7.boundaries.find(e=>e.id==='P5_P2_PAYMENT_CLOSURE')?.status)
+      .toBe('EVIDENCE_GAP');
     expect(wiredP1P7.physical_handoff?.facts?.handoff_verdict).toBe('HANDOFF_MATCHED');
     expect(wiredP1P7.boundaries.find(e=>e.id==='P4_P2_RELAY_HANDOFF')?.status)
       .toBe('NO_CONTRADICTION_OBSERVED');
@@ -784,6 +790,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
       purchasing_hub:wiredP1P7.purchasing_hub,
       physical_handoff:wiredP1P7.physical_handoff,
+      customer_finance:wiredP1P7.customer_finance,
       wrong_relay_probe:relayProbe,
       boundaries:wiredP1P7.boundaries.filter(b=>wiredP1P7.wired_edges.includes(b.id)),
       stagingCertified:false};
