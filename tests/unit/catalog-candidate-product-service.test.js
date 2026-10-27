@@ -543,3 +543,85 @@ describe('progressive taxonomy — certified parent vs unverified Discovery',()=
       .rejects.toThrow('BOUTIQUE_CATEGORY_INACTIVE');
   });
 });
+
+
+describe('supplier path + actual object corroborate category without inventing a leaf',()=>{
+  const {categoryCorroboratedByObject}=require('../../services/catalog-commercial-category-evidence');
+  const {resolveCommercialTaxonomyVerdict,
+    createDraftProductFromSourcingCandidate}=require('../../services/catalog-candidate-product-service');
+  const candidate=(product_name,supplier_category,discoveryCategory='Auto')=>({
+    supplier_name:'CJdropshipping',product_name,supplier_category,
+    raw_payload:{discovery:{target_category:discoveryCategory,
+      target_subcategory:'Éclairage'}},
+  });
+  const qFor=(active=true)=>({query:jest.fn(async (sql)=>{
+    if(sql.includes('FROM supplier_commercial_category_mappings'))return {rows:[]};
+    if(sql.includes('object_classification_terms'))return {rows:[]};
+    if(sql.includes('FROM boutique_categories WHERE key='))return {rows:active?[{key:'Maison'}]:[]};
+    if(sql.includes('INSERT INTO products'))return {rows:[{id:'inactive-only'}]};
+    return {rows:[]};
+  })});
+
+  test.each([
+    ['High Heels Catwalk Shoes Far Shoes Women',"Bags & Shoes > Women's Shoes > Slippers",'Mode & Beauté'],
+    ['Portable Makeup Brush Beauty Tools','Health, Beauty & Hair > Makeup > Makeup Brushes','Mode & Beauté'],
+    ['Diatomaceous Earth Sink Tray Kitchen Organizer','Home, Garden & Furniture > Home Storage > Office Storage','Maison'],
+    ['Ceramic Bedside Table Lamp','Home Improvement > Indoor Lighting > Night Lights','Maison'],
+    ['Cabin Air Filter fit for Sprinter','Automobiles & Motorcycles > Auto Replacement Parts > Other','Auto'],
+    ['Bluetooth Wireless Headphones','Consumer Electronics > Portable Audio & Video > Headphones','Tech'],
+    ['Type C Mobile Phone Charging Cable','Phones & Accessories > Mobile Accessories > Cables','Tech'],
+    ['Ratchet Screwdriver With Drill Bits','Home Improvement > Tools > Tool Sets','Bricolage'],
+  ])('category-only corroboration: %s', (name,path,expected)=>{
+    expect(categoryCorroboratedByObject(candidate(name,path))).toMatchObject({
+      category:expected,subcategory:null,level:'CATEGORY',source:'SUPPLIER_PATH_AND_OBJECT',
+    });
+  });
+
+  test.each([
+    ['Wireless Bluetooth Earbuds','Jewelry & Watches > Fashion Jewelry > Keychains'],
+    ['USB-C Wall Charger 45W','Home, Garden & Furniture > Home Storage > Home Office Storage'],
+    ['Ceramic Table Lamp','Home Improvement > Tools > Garden Tools'],
+    ['Car Phone Charger Bluetooth Wireless','Automobiles & Motorcycles > Car Electronics > Audio'],
+    ['Makeup Storage Box With LED Light','Home, Garden & Furniture > Home Storage > Office'],
+    ['Professional Portable Electric Nail Drill','Health, Beauty & Hair > Beauty Tools > Manicure'],
+    ['Solar Connector Crimper Tool with Cable Storage Box','Home Improvement > Tools > Tool Sets'],
+  ])('no unjustified parent: %s', (name,path)=>{
+    expect(categoryCorroboratedByObject(candidate(name,path))).toBeNull();
+  });
+  test('Discovery can propose a competing category but never reverse the dual evidence',async()=>{
+    const c=candidate('Mobile Phone Holder','Phones & Accessories > Mobile Accessories > Holders','Maison');
+    const q=qFor();
+    await expect(resolveCommercialTaxonomyVerdict(q,c)).resolves.toMatchObject({
+      status:'CATEGORY_CLASSIFIED',category:'Tech',subcategory:null,
+      source:'SUPPLIER_PATH_AND_OBJECT',
+    });
+    expect(q.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO products'))).toBe(false);
+  });
+  test('inactive parent rejected before draft INSERT',async()=>{
+    const c=candidate('Metal Shoe Rack Storage Shelf',
+      'Home, Garden & Furniture > Home Storage > Furniture','Tech');
+    // "shoe" (fashion) and "storage" (home) are competing title universes:
+    // corroboration must refuse a seemingly convenient parent.
+    expect(categoryCorroboratedByObject(c)).toBeNull();
+    const safe=candidate('Kitchen Cooking Utensil',
+      'Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools','Tech');
+    const q=qFor(false);
+    await expect(resolveCommercialTaxonomyVerdict(q,safe)).resolves.toMatchObject({
+      status:'REVIEW_REQUIRED',source:'CORROBORATED_CATEGORY_INACTIVE',category:null,
+    });
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate:safe,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_TAXONOMY_UNRESOLVED');
+    expect(q.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO products'))).toBe(false);
+  });
+  test('category-only handoff creates an inactive unpriced draft, no publication',async()=>{
+    const c=candidate('Kitchen Cooking Utensil',
+      'Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools','Tech');
+    const q=qFor(true);
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate:c,initialPrice:null}))
+      .resolves.toBe('inactive-only');
+    const insert=q.query.mock.calls.find(([sql])=>sql.includes('INSERT INTO products'));
+    expect(insert[1].slice(2,4)).toEqual(['Maison',null]);
+    expect(insert[1][5]).toBeNull();
+    expect(insert[0]).toContain("FALSE, FALSE, 'candidate'");
+  });
+});
