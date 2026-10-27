@@ -475,6 +475,9 @@ async function updateProduct(productRef, body, actor) {
 // jamais sa catégorie économique/douanière.
 async function classifyProduct(productRef, body = {}) {
   const product = await resolveProduct(productRef);
+  if (product.lifecycle_status === 'rejected') {
+    throw new CatalogWorkspaceError('catalog_product_rejected', 'Produit écarté : réactivation requise avant correction', 409);
+  }
   const { rows } = await db.query(
     "SELECT 1 FROM sourcing_candidates WHERE product_id=$1 AND state='imported_to_catalog' LIMIT 1",
     [product.id]
