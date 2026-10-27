@@ -14,7 +14,7 @@ const {record,statusOfGate}=require('./p1-p7-canonical-collector');
 const {evaluateBoundary,MAP}=require('./p1-p7-boundary-oracle');
 const seam=id=>MAP.find(x=>x.id===id);
 const integer=x=>Number.isSafeInteger(Number(x))&&Number(x)>=0?Number(x):null;
-function assessP2P4({item,lines=[],progress=[],allocations=[],fulfillmentIds=[],inbound=null,paymentGate=null}={}) {
+function assessP2P4({item,lines=[],progress=[],allocations=[],fulfillmentIds=[],inbound=null,paymentGate=null,provenance=null}={}) {
  if(!item?.order_item_id||!item?.sku_id)throw Error('Exact persisted customer order item required');
  const evidenceGaps=[];
  const line=lines.length===1?lines[0]:null;
@@ -31,7 +31,12 @@ function assessP2P4({item,lines=[],progress=[],allocations=[],fulfillmentIds=[],
    Number(physical.received_quantity)===Number(physical.effective_quantity)&&
    inboundStatus==='INBOUND_MATCHED'&&
    (inbound.purchase_line_ids||[]).some(id=>String(id)===String(line.id)));
- const p2status=statusOfGate(paymentGate);
+ // A synthetic Golden can carry a paid DB flag while the checkout owner
+ // deliberately rejects it as NOT PROBATIVE; this is a missing proof, not
+ // a production claim of provider-payment reversal.
+ const synthetic=provenance==='SYNTHETIC_GOLDEN_CREATE';
+ const p2status=synthetic?'UNKNOWN':statusOfGate(paymentGate);
+ if(synthetic)evidenceGaps.push('SYNTHETIC_GOLDEN_CLIENT_PAYMENT_NOT_PROVED');
  const p3status=!line?'UNKNOWN':line.cancelled_at?'BLOCKED':
    line.purchase_order_id&&line.po_status==='confirmed'?'PROVED':'UNKNOWN';
  const p4status=inboundStatus==='MISMATCH'?'BLOCKED':receiptProved?'PROVED':'UNKNOWN';
@@ -69,7 +74,7 @@ function assessP2P4({item,lines=[],progress=[],allocations=[],fulfillmentIds=[],
     (integer(physical.received_quantity)===null||integer(physical.effective_quantity)===null||
       Number(physical.effective_quantity)===0||
       Number(physical.received_quantity)!==Number(physical.effective_quantity)))
-  contradictions.push('INBOUND_MATCHED_WITHOUT_FULL_USABLE_PHYSICAL_QUANTITY');
+  evidenceGaps.push('INBOUND_HISTORY_NOT_EQUAL_CURRENT_USABLE_STOCK');
  if(fulfillmentIds.length>1)evidenceGaps.push('MULTIPLE_SUPPLIER_FULFILLMENTS_NOT_AGGREGATED');
  if(fulfillmentIds.length===0)evidenceGaps.push('NO_SUPPLIER_FULFILLMENT_LINK');
  if(line?.cancelled_at)evidenceGaps.push('PURCHASE_LINE_CANCELLED');
@@ -113,7 +118,8 @@ async function collectP2P4Canonical(db,{item,upstream,readers={}}={}) {
   }
  }
  const paymentGate=upstream?.gates?.find(g=>g.key==='PAYMENT_FINAL_PROVED')||null;
- const assessed=assessP2P4({item,lines,progress,allocations,fulfillmentIds,inbound,paymentGate});
+ const assessed=assessP2P4({item,lines,progress,allocations,fulfillmentIds,inbound,paymentGate,
+  provenance:upstream?.dossier?.provenance||null});
  return {...assessed,owner_provenance:{
   order:'orders/order_items by exact order_item_id',
   purchase:'purchase_lines/purchase_orders at purchase_line grain',
