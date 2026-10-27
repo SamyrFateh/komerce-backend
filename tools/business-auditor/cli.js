@@ -87,6 +87,8 @@ async function runIndependent(argv=process.argv.slice(2),env=process.env,deps={}
    }));
   }finally{if(pool?.end)await pool.end()}
  }
+ const preparedTriage=staticResult?prepareStaticTriage(staticResult.findings):null;
+ const qualifiedTriage=preparedTriage?qualifyStaticTriage(preparedTriage,{root:ROOT}):null;
  const report={
   contract:'komerce-independent-business-auditor/v1',
   mode:options.mode,
@@ -97,9 +99,9 @@ async function runIndependent(argv=process.argv.slice(2),env=process.env,deps={}
    scannedFiles:staticResult.scannedFiles,trackedFiles:staticResult.trackedFiles,
    findings:staticResult.findings,newFindings:options.base?staticResult.newFindings:null,
    comparisonBase:staticResult.base,
-   triage:qualifyStaticTriage(prepareStaticTriage(staticResult.findings)),
-   ownerSummary:summarizeTriage(prepareStaticTriage(staticResult.findings)),
-   reviewSummary:triageCounts(qualifyStaticTriage(prepareStaticTriage(staticResult.findings))),
+   triage:qualifiedTriage,
+   ownerSummary:summarizeTriage(preparedTriage),
+   reviewSummary:triageCounts(qualifiedTriage),
    independentCodeSignals:deps.codeSignals||scanRelevantCode(staticResult.findings,ROOT)}:null,
   data:dataResults?{status:'EXECUTED_REPEATABLE_READ_READ_ONLY_ROLLBACK',
    sampleLimit:options.sampleLimit,results:dataResults}:null,
