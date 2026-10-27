@@ -48,7 +48,7 @@ jobs:
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
-        run: npm test -- --runInBand --no-coverage --runTestsByPath tests/unit/auditor-paypal-refund-execution.test.js
+        run: npx jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/unit/auditor-paypal-refund-execution.test.js
       - name: Bootstrap isolated PostgreSQL test schema
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/business-auditor-bootstrap.log
