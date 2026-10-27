@@ -81,6 +81,7 @@ function reportMarkdown(report){
   '## Bilan','',
   '- Fichiers statiques analysés : '+(report.summary.staticFilesReviewed??'NON_EXECUTE'),
   '- Suspicions statiques : '+(report.summary.staticSuspicions??'NON_EXECUTE'),
+  '- Signaux de contrôle de flux indépendants : '+(report.code?.independentCodeSignals?.length??'NON_EXECUTE'),
   '- Règles SQL exécutées : '+(report.summary.dataRulesExecuted??'NON_EXECUTE'),
   '- Règles présentant au moins un signal : '+report.summary.rulesWithEvidence,
   '- Bugs runtime confirmés par cet audit seul : **0** (qualification humaine + contre-épreuve séparées)', '',
@@ -93,6 +94,16 @@ function reportMarkdown(report){
    ' | '+r.status+' | '+r.detectedAtLeast+' | '+r.samples.map(s=>s.replace(/[|]/g,'/')).join(', ')+
    ' | #'+r.issue+' |');
  }else lines.push('Non exécutés (mode sans base PostgreSQL).');
+ if(report.code?.independentCodeSignals?.length){
+  lines.push('', '## Contradictions potentielles de contrôle de flux (code)', '',
+   '| Règle | Source | Compteur | Hypothèse | Preuve restante |',
+   '|---|---|---|---|---|');
+  for(const v of report.code.independentCodeSignals)
+   lines.push('| '+v.id+' | '+String(v.file).replace(/[|]/g,'/')+':'+v.line+
+     ' | '+v.counter+' | '+v.risk+
+     ' | '+v.requiredIndependentProof+' |');
+  lines.push('', 'Ces traces de code ne prouvent pas une anomalie de données en production.');
+ }
  if(report.code?.triage){
   lines.push('', '## Revue statique par propriétaire', '',
    '| Signal | Règle | Fichier:ligne | P | Propriétaire | Qualification | Observation | Prochaine preuve |',
