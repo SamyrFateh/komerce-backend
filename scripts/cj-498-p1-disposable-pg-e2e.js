@@ -14,6 +14,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const db=require('../db');
+const {buildCounterAudit}=require('./lib/cj-classification-counter-audit');
 const {resolveCommercialTaxonomyVerdict,
   createDraftProductFromSourcingCandidate}=require('../services/catalog-candidate-product-service');
 const EXPECTED_URL='postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress';
@@ -271,6 +272,8 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   }finally {
     try{await client.query('ROLLBACK');rolledBack=true;}finally{client.release();}
   }
+  const counterAudit=buildCounterAudit(decisions);
+  assertEqual(counterAudit.data_count,498,'COUNTER_AUDIT_CORPUS_INCOMPLETE');
   const out={kind:'REAL_PG_E2E_CJ_SOURCE_TO_CATALOG_DRAFT',
     certification:'PROVEN_BOUNDARY_NOT_PRODUCT_PRECISION',
     source_count:498,previous_automatic:doc.automatic,
@@ -280,9 +283,15 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
     by_status:byStatus,by_evidence:byEvidence,by_pair:byPair,
     by_category:byCategory,category_evidence_samples:categorySamples,
     changed_examples:drift,review_samples:samples,product_draft_proofs:draftProofs,
+    counter_audit_summary:{flagged:counterAudit.flagged_count,
+      by_code:counterAudit.flag_counts,
+      duplicate_groups:counterAudit.duplicates.groups,
+      discordant_duplicate_groups:counterAudit.duplicates.discordant_groups},
     transaction_rolled_back:rolledBack,publication_performed:false,supplier_calls:0};
   fs.mkdirSync(path.dirname(output),{recursive:true});
   fs.writeFileSync(output,JSON.stringify(out,null,2)+'\n');
+  fs.writeFileSync(path.join(path.dirname(output),'counter-audit-risks.json'),
+    JSON.stringify(counterAudit,null,2)+'\n');
   const decisionOutput=path.join(path.dirname(output),'all-498-decisions.json');
   fs.writeFileSync(decisionOutput,JSON.stringify({
     kind:'REVIEWABLE_CJ_498_COMMERCIAL_CLASSIFICATION',

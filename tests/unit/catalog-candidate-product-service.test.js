@@ -775,3 +775,46 @@ describe('toy vehicle is not an automotive part (frozen CJ object identities)',(
       expect(categoryCorroboratedByObject({product_name,supplier_category})).toBeNull();
     });
 });
+
+describe('separate classification counter-audit — risk signals are never decisions',()=>{
+  const {signalsFor,buildCounterAudit}=require('../../scripts/lib/cj-classification-counter-audit');
+  const check=(product_name,supplier_category,verdict='REVIEW_REQUIRED')=>
+    signalsFor({product_name,supplier_category,verdict}).map(x=>x.code);
+  test('detects off-hierarchy technology and tools, never emits automatic taxonomy',()=>{
+    expect(check('Wireless Bluetooth Earbuds Pastel Lavender','Jewelry & Watches > Keychains'))
+      .toContain('SOURCE_PATH_CONFLICT_TECH');
+    expect(check('MR-20G Drill Bits Sharpener','Home, Garden & Furniture > Furniture'))
+      .toContain('SOURCE_PATH_CONFLICT_TOOL');
+    expect(check('Car Brake Bleeder Kit','Home, Garden & Furniture > Furniture'))
+      .toContain('SOURCE_PATH_CONFLICT_AUTO');
+    expect(check('Electric Nail Drill Kit Manicure','Health, Beauty & Hair > Nail Art'))
+      .not.toContain('SOURCE_PATH_CONFLICT_TOOL');
+  });
+  test('distinguishes genuine customer assets, mixed bundles and plush material',()=>{
+    expect(check('Custom Mug Photo Gift - Must Upload The Image','Home Storage'))
+      .toContain('CUSTOMER_ASSET_OR_PHOTO');
+    expect(check('Tumbler Heat Press Machine With Blank Tumblers','Home Storage'))
+      .toContain('BUNDLED_EQUIPMENT_AND_GOODS');
+    expect(check('Children Plush Backpack','Toys, Kids & Babies > Toy Figures'))
+      .toContain('MATERIAL_NOT_PRODUCT_IDENTITY');
+    expect(check('Plush Bunny Toy','Toys, Kids & Babies > Toy Figures'))
+      .not.toContain('MATERIAL_NOT_PRODUCT_IDENTITY');
+    expect(check('Regular Coffee Mug','Home, Garden & Furniture > Kitchen'))
+      .not.toContain('CUSTOMER_ASSET_OR_PHOTO');
+  });
+  test('normalizes duplicate titles, exposes disagreements without inventing labels',()=>{
+    const corpus=[
+      {candidate_ref:'X1',product_name:'A17 Smartphone',supplier_category:'Phones > Mobile',
+        verdict:'CATEGORY_CLASSIFIED',category:'Tech',subcategory:null},
+      {candidate_ref:'X2',product_name:'A17  Smartphone',supplier_category:'Home Storage',
+        verdict:'REVIEW_REQUIRED',category:null,subcategory:null},
+    ];
+    const out=buildCounterAudit(corpus);
+    expect(out.data_count).toBe(2);
+    expect(out.duplicates).toEqual({groups:1,discordant_groups:1});
+    expect(out.duplicate_decision_disagreements[0].refs).toEqual(['X1','X2']);
+    expect(out).not.toHaveProperty('precision');
+    expect(out).not.toHaveProperty('accuracy');
+    expect(()=>buildCounterAudit([corpus[0],corpus[0]])).toThrow('COUNTER_AUDIT_DUPLICATE_REF');
+  });
+});
