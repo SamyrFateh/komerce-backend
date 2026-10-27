@@ -28,6 +28,9 @@ const norm=(p)=>{
 function comparePaths(first,second){
  if(first.po_shape!=='grouped'||second.po_shape!=='historical')
   throw Error('Expected grouped vs historical evidence pair');
+ if(first.persisted_po_shape!=='grouped'||second.persisted_po_shape!=='historical'
+   ||first.header_carries_order_item!==false||second.header_carries_order_item!==true)
+  throw Error('PO shape assertions must be backed by canonical persisted PO headers');
  const a=norm(first),b=norm(second);
  const mismatches=[];
  for(const key of Object.keys(a))
