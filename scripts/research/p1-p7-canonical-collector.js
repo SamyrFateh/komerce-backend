@@ -98,6 +98,11 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
    {...ctx,sku_active:sku?.is_active??null,exposure,local_active:!!activePrice,
     catalog_gate:catalogGate?.status||'MISSING'}),
  };
+ const purchasingHub=await safe('scripts/research/p2-p4-canonical-collector.collectP2P4Canonical',()=>{
+   const fn=owners.p2p4||require('./p2-p4-canonical-collector').collectP2P4Canonical;
+   return fn(db,{item,upstream});
+ });
+ if(purchasingHub?.proofs)Object.assign(proofs,purchasingHub.proofs);
  const report=evaluateP1P7(proofs);
  return {...report,execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',wired_edges:Object.keys(proofs),
    evidence_provenance:['services/market-control-plane.js:getControlPlane',
@@ -106,6 +111,9 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
     'services/golden-upstream-evidence.js:projectUpstreamEvidence',
     'orders/order_items/product_skus exact persisted identity'],
    owner_read_errors:errors,
+   purchasing_hub:purchasingHub?{facts:purchasingHub.facts||null,
+     diagnostics:purchasingHub.diagnostics||null,
+     owner_provenance:purchasingHub.owner_provenance||null}:null,
    context:{...ctx,selected_market:code,persisted_order_market:item.order_market_code||null,
      actual_product_id:item.product_id,actual_sku_id:item.sku_id,
      provenance:'CANONICAL_OWNER_READS_NOT_EXTERNAL_CHECKOUT'},
