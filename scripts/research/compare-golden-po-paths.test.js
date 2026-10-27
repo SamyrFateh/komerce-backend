@@ -14,7 +14,7 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
   owner_read_errors:[],
   foreign_cost_allocation_probe:{outcome:'CROSS_ORDER_COST_ALLOCATION_REPRODUCED',hypothesis:'COST_ALLOCATION_FOREIGN_ORDER'},
   foreign_parcel_logistics_cost_probe:{outcome:'UNLINKED_LOGISTICS_COST_PARCEL_REPRODUCED',
-    hypotheses:['LOGISTICS_COST_FOREIGN_PARCEL','LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM']},
+    hypotheses:['LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM','LOGISTICS_COST_SHIPMENT_PARCEL_UNLINKED']},
   unpaid_closure_probe:{outcome:'OWNER_RECONCILED_AFTER_TEMP_UNPAID',
    verdict:'FINANCIAL_CLOSE_MISMATCH',
    reason:'FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID',payment_status:'pending'},
