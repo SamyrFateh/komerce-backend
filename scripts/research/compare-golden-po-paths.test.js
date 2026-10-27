@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {comparePaths}=require('./compare-golden-po-paths');
-const make=(shape)=>({po_shape:shape,identity_status:'NO_IDENTITY_CONTRADICTION_OBSERVED',
+const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_order_item:shape==='historical',identity_status:'NO_IDENTITY_CONTRADICTION_OBSERVED',
  checkpoint:'FINANCIAL_CLOSE_MATCHED',
  progressive_checkpoints:[
   {stage:'SUPPLIER_EXECUTION_NOT_HUB_RECEIPT',status:'MISSING_IDENTITY_EVIDENCE',gaps:['NO_HUB_ALLOCATION','NO_PARCEL_MEMBERSHIP']},
@@ -36,4 +36,10 @@ test('rejects missing or wrong final canonical owner proof',()=>{
 test('requires both separately named PO forms',()=>{
  const a=make('grouped'),b=make('grouped');
  assert.throws(()=>comparePaths(a,b),/grouped vs historical/);
+});
+
+test('rejects ungrounded PO shape labels even if nominal signatures match',()=>{
+ const a=make('grouped'),b=make('historical');
+ b.persisted_po_shape='grouped';
+ assert.throws(()=>comparePaths(a,b),/canonical persisted PO headers/);
 });
