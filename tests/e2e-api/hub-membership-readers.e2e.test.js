@@ -10,6 +10,7 @@ const db = require('../../db');
 const { describeE2E, createCleanup, uuid, tag } = require('../helpers/e2eDbKit');
 
 const { reconcileCustomerHandoff } = require('../../services/customer-handoff-reconciliation');
+const { collectP4P2Canonical } = require('../../scripts/research/p4-p2-canonical-collector');
 const { autoCreateParcel } = require('../../services/parcel-auto-create-service');
 const { evaluateOrderParcelLinkRules } = require('../../utils/orderParcelLinkRules');
 const { memberParcelPredicate } = require('../../services/parcel-order-membership');
@@ -57,6 +58,19 @@ describeE2E('HUB-B — lecteurs de vérité alignés sur les colis multi-command
     expect(verdict.parcel_count).toBe(1);
     const ref = (await db.query('SELECT reference FROM parcels WHERE id=$1', [p])).rows[0].reference;
     expect(verdict.parcel_refs).toEqual([ref]);
+    // Seventh seam: physically shared carrier parcel must be linked by
+    // parcel_items (not by parcels.order_id), and still remain PENDING before
+    // its own authorized collection scan.
+    const scanned = await collectP4P2Canonical(db, {
+      item: { order_id:y.id, order_item_id:y.itemId, relais_id:relais },
+    });
+    expect(scanned.facts).toMatchObject({
+      parcel_count:1,item_parcel_count:1,shared_carrier_parcels:1,
+      handoff_verdict:'HANDOFF_PENDING',
+    });
+    expect(scanned.diagnostics.contradictions).toEqual([]);
+    expect(scanned.diagnostics.gaps).toContain('CUSTOMER_HANDOFF_PENDING');
+
   });
 
   test('création automatique : une commande dont les lignes sont déjà dans un colis partagé ne crée pas de doublon', async () => {
