@@ -1,0 +1,62 @@
+name: R&D ECO one-order Golden identity trail
+on:
+  push:
+    branches:
+      - research/golden-continuity-checkpoints-20261026
+    paths:
+      - .github/workflows/research-golden-identity-thread.yml
+      - scripts/research/golden-identity-trail.js
+      - scripts/research/golden-identity-trail.test.js
+      - tests/e2e-api/customer-to-customer.golden.e2e.test.js
+permissions:
+  contents: read
+concurrency:
+  group: fp-golden-single-order-identity
+  cancel-in-progress: true
+jobs:
+  identity-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_test
+      KOMERCE_DISABLE_CRONS: 'true'
+      FP_IDENTITY_OUTPUT: /tmp/fp-golden-identity-proof.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Pure A/B identity oracle — zero DB
+        run: node --test scripts/research/golden-identity-trail.test.js
+      - name: Install existing dependencies
+        run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
+      - name: Bootstrap disposable PostgreSQL
+        run: |
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-identity-schema.log
+          node scripts/ci-db-bootstrap.js
+      - name: Existing single-order Golden — real database and reconciler
+        run: ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/e2e-api/customer-to-customer.golden.e2e.test.js
+      - name: Persist proof, no Git push
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-identity-trail-${{ github.run_id }}
+          path: /tmp/fp-golden-identity-proof.json
+          if-no-files-found: ignore
+          retention-days: 5
