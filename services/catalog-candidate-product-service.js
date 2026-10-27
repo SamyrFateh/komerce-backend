@@ -151,7 +151,7 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
   // short-circuit object identity matching.
   const matched = await resolveCommercialObjectTaxonomy(q, candidate);
   if (matched.category && matched.subcategory) {
-    return { status:'AUTO_CLASSIFIED', ...matched, source:'OBJECT_NAME_MATCH',level:'SUBCATEGORY' };
+    return { status:'AUTO_CLASSIFIED', ...matched, source:'OBJECT_NAME_MATCH' };
   }
   if (matched.category && !matched.subcategory) {
     return {status:'CATEGORY_CLASSIFIED',category:matched.category,subcategory:null,
