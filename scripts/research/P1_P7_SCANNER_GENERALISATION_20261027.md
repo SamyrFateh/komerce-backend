@@ -178,3 +178,19 @@ Il ne somme pas une PO regroupée pour attribuer artificiellement toute sa valeu
 - `P7_P5_COUNTRY_SETTLEMENT` (autorité marché pour règlements pays).
 
 La cartographie instrumentée et les contre-épreuves restent une **R&D L4**, pas une certification métier complète, ni un audit autorisé sur les données de production.
+
+## 27 octobre — P4 → P6 : dixième couture, colis → coûts fret/douane
+
+**Lecture réelle en PostgreSQL** : `scripts/research/p4-p6-canonical-collector.js` lit l'appartenance au propriétaire `parcel-order-membership.listParcelsRepresentingOrder`, les lignes `parcel_items` de l'article exact, les allocations `freight`/`customs` de `order_item_real_cost_allocations`, leur relation `customs_shipment_parcels`, et les montants de `services/cost-allocation/real-margin-shadow.computeOrderRealMarginShadow`. Aucun algorithme parallèle de ventilation au poids, volume, CIF ou FX n'a été ajouté.
+
+**Doctrine anti-faux positif :** `parcels.order_id` peut désigner une autre commande porteuse d'un colis partagé ; un colis sans `parcel_items` peut également représenter sa commande porteuse via la règle historique. Les comparaisons coût/articule exigent `parcel_items.order_item_id`. Une marge `order` ne se compare à un seul article **que pour une commande mono-article**. Les estimations `is_actual=false` ne deviennent pas des coûts réels. Une absence de douane documentée ou une ventilation encore provisoire reste `EVIDENCE_GAP`, pas zéro KMF et pas `PASS`.
+
+### Étalonnage et contradiction SQL
+
+[Run double Golden #40515819395](https://github.com/SamyrFateh/komerce-backend/actions/runs/40515819395), **vert : 134/134 tests purs, 2/2 PostgreSQL**, `observed=10`, `notWired=3`, `contradictions=0`. Nominal pour chacune des deux PO : un colis membre, une ligne de colis, **fret réel=1 500 KMF**, **douane réelle=2 500 KMF**, et concordance avec le shadow économique par type.
+
+[Run adversarial #40516532131](https://github.com/SamyrFateh/komerce-backend/actions/runs/40516532131), **138/138 tests purs**, deux Goldens PostgreSQL et comparateur `NO_ASYMMETRY_OBSERVED`. En `BEGIN/ROLLBACK`, insérer un colis B appartenant à la commande via son en-tête historique mais **sans cet article** et **sans lien à l'expédition d'origine**. `UPDATE order_item_real_cost_allocations SET parcel_id=B` sur la ligne freight : accepté, puis lecture du scanner `LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM` et `LOGISTICS_COST_SHIPMENT_PARCEL_UNLINKED`. Après rollback, la ligne fret pointe à nouveau le colis A ; B n'existe plus. Reproduit dans les deux formes de PO, sans écriture persistante. Ce n'est **pas** `LOGISTICS_COST_FOREIGN_PARCEL` : l'appartenance historique par en-tête est légitime, mais ne justifie pas une imputation d'article ni de shipment.
+
+**Issue [#3065](https://github.com/SamyrFateh/komerce-backend/issues/3065)** : anomalie d'intégrité persistable de coût/article/colis/expédition, à arbitrer avec Logistics/Economic Engine et à auditer dans les données historiques **avant** toute garde/migration. Aucune preuve qu'une telle imputation existe en production ; aucune modification de code métier, de main, de staging ou Railway.
+
+Les trois frontières qui restent à instrumenter sont `P5_P6_CASH_REALITY`, `P6_P1_PRICE_REVIEW`, `P7_P5_COUNTRY_SETTLEMENT`. **10/13** signifie coutures câblées et étalonnées ; pas 10 processus acceptés en recette réelle.
