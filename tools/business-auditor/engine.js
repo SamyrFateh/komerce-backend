@@ -147,6 +147,17 @@ function reportMarkdown(report){
    lines.push('| '+x.id+' | '+x.file+' | '+x.table+' | '+x.occurrenceCount+
     ' | '+(x.declaredDomain||'NON DECLARE')+' | '+(x.declaredOwners.join(', ')||'NON EXPLICITE')+
     ' | '+x.verdict+' |');
+  lines.push('', '### Cibles SQL non rattachées au schéma', '',
+   '- Occurrences à clarifier : '+l.summary.unresolvedOccurrences,
+   '- Dossiers distincts : '+l.summary.distinctUnresolvedCases,
+   '- Candidats totaux conservés : '+l.summary.allCandidateOccurrences,
+   'Ces cibles ne sont ni des tables prouvées ni des bugs, et ne disparaissent pas du registre.',
+   '', '| ID | Fichier | Cible brute | Occurrences | Qualification |',
+   '|---|---|---|---:|---|');
+  for(const x of l.unresolvedEntries.slice(0,50))
+   lines.push('| '+x.id+' | '+x.file+' | '+(x.rawTarget||'DYNAMIQUE')+
+    ' | '+x.occurrenceCount+' | '+x.schemaEvidence+' |');
+  lines.push('', 'Liste JSON complète : code.evidenceLedger.unresolvedEntries.');
   lines.push('', 'Liste complète JSON : code.evidenceLedger.entries.',
    'Aucune occurrence lexicale n est automatiquement un bug confirmé.');
  }
