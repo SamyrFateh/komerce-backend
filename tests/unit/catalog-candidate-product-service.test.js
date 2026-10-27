@@ -625,3 +625,33 @@ describe('supplier path + actual object corroborate category without inventing a
     expect(insert[0]).toContain("FALSE, FALSE, 'candidate'");
   });
 });
+
+
+describe('corroborated object protects reusable supplier mappings',()=>{
+  const {resolveCommercialTaxonomyVerdict,
+    createDraftProductFromSourcingCandidate}=require('../../services/catalog-candidate-product-service');
+  const candidate={supplier_name:'CJdropshipping',
+    product_name:'Kitchen Cooking Utensil',
+    supplier_category:'Home, Garden & Furniture > Home Storage > Home Office Storage',
+    raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}}};
+  test('polluted generic path mapped to Tech cannot override a kitchen object',async()=>{
+    const q={query:jest.fn().mockResolvedValue({
+      rows:[{category:'Tech',subcategory:'Phones'}]})};
+    await expect(resolveCommercialTaxonomyVerdict(q,candidate)).resolves.toMatchObject({
+      status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'CONFIRMED_MAPPING_OBJECT_CONFLICT',
+      evidence:{mapping_category:'Tech',object_category:'Maison'},
+    });
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_TAXONOMY_UNRESOLVED');
+    expect(q.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO products'))).toBe(false);
+  });
+  test('compatible confirmed mapping keeps its pair (not downgraded)',async()=>{
+    const q={query:jest.fn().mockResolvedValue({
+      rows:[{category:'Maison',subcategory:'Cuisine'}]})};
+    await expect(resolveCommercialTaxonomyVerdict(q,candidate)).resolves.toMatchObject({
+      status:'AUTO_CLASSIFIED',category:'Maison',subcategory:'Cuisine',
+      source:'CONFIRMED_SUPPLIER_PATH',
+    });
+  });
+});
