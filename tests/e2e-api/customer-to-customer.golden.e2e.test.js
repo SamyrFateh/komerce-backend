@@ -35,6 +35,9 @@
 const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
 jest.setTimeout(90000);
+const FP_GOLDEN_PO_SHAPE=process.env.FP_GOLDEN_PO_SHAPE||'grouped';
+if(!['grouped','historical'].includes(FP_GOLDEN_PO_SHAPE))throw Error('FP_GOLDEN_PO_SHAPE invalid');
+
 
 describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => {
   const { reconcileHubInbound } = require('../../services/hub-inbound-reconciliation');
@@ -222,6 +225,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     );
 
     // 2 — PO + SUPPLIER ORDER exact
+    if(FP_GOLDEN_PO_SHAPE==='grouped') {
     await q(
       `INSERT INTO purchase_orders
          (id, order_id, supplier_id, status, trigger_mode, procurement_hub_ref,
@@ -232,12 +236,23 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
 
     // Une ligne destinée à une PO regroupée naît ouverte, puis est rattachée
     // explicitement. La garde DB interdit volontairement un INSERT déjà attaché.
+    } else {
+      await q(
+        `INSERT INTO purchase_orders
+           (id,order_id,order_item_id,product_sku_id,supplier_id,status,trigger_mode,
+            procurement_hub_ref,qty,supplier_sku,supplier_unit_ref,supplier_order_identity)
+         VALUES ($1,$2,$3,$4,$5,'pending','auto','DXB',1,$6,$7,$8::jsonb)`,
+        [poId,orderId,itemId,skuId,supplierId,soi.payload.supplier_sku,
+          SUPPLIER_UNIT_REF,JSON.stringify(soi)]
+      );
+    }
+
     await q(
       `INSERT INTO purchase_lines
          (id, purchase_order_id, order_item_id, supplier_id, product_sku_id,
           supplier_sku, supplier_unit_ref, supplier_order_identity, quantity,
           supplier_unit_price, supplier_currency, procurement_hub_ref)
-       VALUES ($1,NULL,$2,$3,$4,$5,$6,$7::jsonb,1,7,'USD','DXB')`,
+       VALUES ($1,$8,$2,$3,$4,$5,$6,$7::jsonb,1,7,'USD','DXB')`,
       [
         lineId,
         itemId,
@@ -245,10 +260,11 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
         skuId,
         soi.payload.supplier_sku,
         SUPPLIER_UNIT_REF,
-        JSON.stringify(soi),
+        JSON.stringify(soi), FP_GOLDEN_PO_SHAPE==='historical'?poId:null,
       ]
     );
 
+    if(FP_GOLDEN_PO_SHAPE==='grouped') {
     await q(
       `UPDATE purchase_lines
           SET purchase_order_id = $2,
@@ -257,6 +273,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       [lineId, poId]
     );
 
+    }
     await q(
       `UPDATE purchase_orders
           SET status = 'confirmed',
@@ -694,6 +711,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     const evidence = {schema:identityTrail.schema,level:'L4 isolated persisted Golden fixture',
       order_reference:ORDER_REF,canonical_order_id:orderId,
       checkpoint:'FINANCIAL_CLOSE_MATCHED',
+      po_shape:FP_GOLDEN_PO_SHAPE,
       identity_status:identityTrail.status,
       progressive_checkpoints:stageProofs,
       verified_counts:Object.fromEntries(Object.entries(identityTrail.observed)
