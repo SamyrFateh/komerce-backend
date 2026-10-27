@@ -44,7 +44,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -55,6 +55,9 @@ jobs:
           node scripts/ci-db-bootstrap.js
       - name: Run independent repo + PostgreSQL data audit (read only)
         run: npm run audit:logic:full -- --mode all --out /tmp/komerce-independent-business-audit --sample-limit 20
+      - name: V0.6 writer inventory is nonempty and has owner declarations
+        run: |
+          node -e "const p=require('/tmp/komerce-independent-business-audit/business-audit.json');const w=p.code?.writerInventory;if(!w||w.contract!=='komerce-business-writer-inventory/v1'||w.summary.candidateWrites<50||w.coverage.featureCardsWithDbDeclarations<15||w.tableSummary.length<10||w.summary.confirmedBusinessBugs!==0)process.exit(2);console.log('BUSINESS_AUDIT_WRITER_INVENTORY',JSON.stringify({coverage:w.coverage,summary:w.summary,topTables:w.tableSummary.slice(0,8).map(t=>({table:t.table,writes:t.occurrences,owners:t.explicitOwners}))}));"
       - name: Fail closed if report lacks explicit seven SQL owner rules
         run: |
           node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('/tmp/komerce-independent-business-audit/business-audit.json'));if(p.contract!=='komerce-independent-business-auditor/v1'||p.data.results.length!==7||p.permissions.dataTarget!=='LOCAL_KOMERCE_TEST_ONLY'||p.code.status!=='STATIC_HEURISTICS_ONLY')process.exit(2);console.log('INDEPENDENT_AUDITOR_PROOF',JSON.stringify({scannedFiles:p.code.scannedFiles,staticSuspicions:p.summary.staticSuspicions,dataRules:p.data.results.length,signals:p.summary.rulesWithEvidence}));"
