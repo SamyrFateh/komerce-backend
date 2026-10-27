@@ -121,6 +121,15 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
     return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
       source:semantic.reason};
   }
+  if (semantic.kind==='category') {
+    const {rows:[active]}=await q.query(
+      'SELECT key FROM boutique_categories WHERE key=$1 AND is_active=TRUE LIMIT 1',
+      [semantic.category]);
+    if(active) return {status:'CATEGORY_CLASSIFIED',category:semantic.category,
+      subcategory:null,level:'CATEGORY',source:semantic.source,evidence:semantic.evidence};
+    return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'SEMANTIC_CATEGORY_INACTIVE'};
+  }
   if (semantic.kind==='pair') {
     const {rows:[active]}=await q.query(
       'SELECT bs.key FROM boutique_subcategories bs JOIN boutique_categories bc '+

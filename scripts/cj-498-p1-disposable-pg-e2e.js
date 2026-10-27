@@ -83,11 +83,18 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
     ||!activeSet.has('Auto/Accessoires')||!activeSet.has('Tech/Phones'))throw Error('CANONICAL_TAXONOMY_NOT_READY');
   const byStatus={},byEvidence={},byPair={},byCategory={},drift=[],samples=[],categorySamples=[],decisions=[];
   let ignoredDiscovery=0,discoveryOnly=0,auto=0,category=0;
+  const mixedGenderRefs=new Set(['KSC-000012','KSC-000017','KSC-000031']);
   for(const original of doc.products){
     const candidate=sourceCandidate(original);
     const v=await resolveCommercialTaxonomyVerdict(db,candidate);
     const p=v.category&&v.subcategory?v.category+'/'+v.subcategory:null;
     inc(byStatus,v.status);inc(byEvidence,v.source);
+    if(mixedGenderRefs.has(original.candidate_ref)) {
+      if(v.status!=='CATEGORY_CLASSIFIED'||v.category!=='Mode & Beauté'
+        ||v.subcategory!==null||v.source!=='SEMANTIC_MIXED_GENDER_APPAREL')
+        throw Error('MIXED_GENDER_PARENT_REGRESSION:'+original.candidate_ref+':'+JSON.stringify(v));
+      mixedGenderRefs.delete(original.candidate_ref);
+    }
     decisions.push({supplier_product_id:original.supplier_product_id,
       candidate_ref:original.candidate_ref,product_name:original.product_name,
       supplier_category:original.supplier_category,
@@ -101,7 +108,8 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
     } else if(v.status==='CATEGORY_CLASSIFIED') {
       category++;inc(byCategory,v.category);
       if(!v.category||v.subcategory!==null||!activeCategories.has(v.category)
-        ||!['OBJECT_TERM_COMMON_PARENT','SUPPLIER_PATH_AND_OBJECT'].includes(v.source))
+        ||!['OBJECT_TERM_COMMON_PARENT','SUPPLIER_PATH_AND_OBJECT',
+          'SEMANTIC_MIXED_GENDER_APPAREL'].includes(v.source))
         throw Error('UNJUSTIFIED_CATEGORY:'+original.candidate_ref+':'+JSON.stringify(v));
       if(v.source==='SUPPLIER_PATH_AND_OBJECT' && !v.evidence?.object_families?.length)
         throw Error('CATEGORY_EVIDENCE_MISSING:'+original.candidate_ref);
@@ -129,6 +137,7 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
       samples.push({ref:original.candidate_ref,title:original.product_name,source:v.source,
         proposal:v.proposal||null});
   }
+  if(mixedGenderRefs.size)throw Error('MIXED_GENDER_CORPUS_REFS_MISSING:'+Array.from(mixedGenderRefs).join(','));
   // These are genuine service calls on a real PostgreSQL transaction and
   // canonical boutique reference tables, not mocked SQL nor live Railway.
   const client=await db.getClient(),draftProofs=[];
@@ -176,6 +185,13 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
       raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}}};
     draftProofs.push(await transactionProof(client,'category_only_common_parent',categoryOnly,
       {shouldCreate:true,expectedCategory:'Maison',expectedSubcategory:null}));
+    const mixed={supplier_name:'CJdropshipping',
+      product_name:'Woolen Loose Cape Tops For Men And Women',
+      supplier_category:"Women's Clothing > Outerwear & Jackets > Blazers",
+      komerce_category:'vetements',
+      raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Éclairage'}}};
+    draftProofs.push(await transactionProof(client,'mixed_gender_parent_unpriced',mixed,
+      {shouldCreate:true,expectedCategory:'Mode & Beauté',expectedSubcategory:null}));
     // Human learning is governed, not unsupervised. First a human explicitly
     // confirms an object's destination. Reuse for other SKUs is only allowed
     // after an editor separately accepts a reusable multiword OBJECT phrase in

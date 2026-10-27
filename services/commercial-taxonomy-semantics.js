@@ -23,6 +23,9 @@ const CHILD_CLOTHING = /\b(?:girls?|boys?|bab(?:y|ies)|kids?|child(?:ren|rens)?|
 const CHILD_GARMENT = /\b(?:onesies?|rompers?|jumpsuits?|bodysuits?|pajamas?|pyjamas?|dress(?:es)?|shirts?|tops?|shorts?|pants?|trousers?|coats?|jackets?|outfits?|suits?|sets?|skirts?|robes?|chemises?|combinaisons?)\b/;
 const ADULT_TITLE = /\b(?:womens?|ladies|female|femmes?|mens?|male|hommes?|mujer(?:es)?|hombre(?:s)?)\b/;
 const CLOTHING_OBJECT = /\b(shirts?|t shirts?|tees?|tops?|dress(?:es)?|blouses?|skirts?|shorts?|pants?|trousers?|jackets?|blazers?|coats?|vests?|pullovers?|hoodies?|sweaters?|robes?|chemises?|jupes?|pantalons?|vestes?)\b/;
+// Explicit adult mixed-gender clothing proves the PARENT, never a gender leaf.
+const MIXED_GENDER_TITLE = /\b(?:men|mens)\s+and\s+(?:women|womens)\b|\b(?:women|womens)\s+and\s+(?:men|mens)\b/;
+const GENERIC_CLOTHING_OBJECT = /\b(?:clothing|garments?|apparel)\b/;
 const NON_CLOTHING_OBJECT = /\b(rings?|necklaces?|pendants?|earrings?|bracelets?|watches?|jewelry|jewellery|bijoux|colliers?|bagues?|parfums?|sprays?|detergents?|repellent|cleaners?|treater|paintings?|canvases?|wall art|posters?|kennels?|pet beds?)\b/;
 const NON_STORAGE_OBJECT = /\b(stain treater|stain removers?|insect repellents?|mosquito repellents?|pest sprays?|cleaning sprays?|cleaners?|paintings?|canvas prints?|wall art|tableaux?)\b/;
 
@@ -48,8 +51,18 @@ function semanticIntent(candidate = {}) {
   const oppositeGender = (female && /\b(mens?|male|hommes?|hombre|herren)\b/.test(title))
     || (male && /\b(womens?|female|femmes?|mujer|damen|ladies)\b/.test(title));
   if (female || male) {
-    if (female && male || oppositeGender || NON_CLOTHING_OBJECT.test(title))
+    if (female && male || NON_CLOTHING_OBJECT.test(title))
       return {kind:'conflict',reason:'CLOTHING_SOURCE_OBJECT_CONTRADICTION'};
+    if (oppositeGender) {
+      // Only an explicit conjunction plus a garment in the real title
+      // justifies the parent. A single opposite gender remains a contradiction.
+      if (MIXED_GENDER_TITLE.test(title)
+        && (CLOTHING_OBJECT.test(title) || GENERIC_CLOTHING_OBJECT.test(title)))
+        return {kind:'category',category:'Mode & Beauté',subcategory:null,
+          source:'SEMANTIC_MIXED_GENDER_APPAREL',
+          evidence:{title_object:'mixed_gender_garment',supplier_hierarchy:'adult_clothing'}};
+      return {kind:'conflict',reason:'CLOTHING_SOURCE_OBJECT_CONTRADICTION'};
+    }
     if (CLOTHING_OBJECT.test(title) || CLOTHING_OBJECT.test(source))
       return {kind:'pair',category:'Mode & Beauté',subcategory:female?'Femme':'Homme',
         source:'SEMANTIC_SUPPLIER_HIERARCHY'};
@@ -66,6 +79,8 @@ function semanticConflict(candidate = {}, mapped = {}) {
     if (concept.kind==='conflict') return concept.reason;
     if (concept.kind==='pair' && concept.subcategory!==mapped.subcategory)
       return 'CLOTHING_GENDER_CONFLICT';
+    if (concept.kind==='category' && ['Femme','Homme'].includes(mapped.subcategory))
+      return 'MIXED_GENDER_OBJECT_CONTRADICTS_GENDER_MAPPING';
     if (NON_CLOTHING_OBJECT.test(title)) return 'NON_CLOTHING_OBJECT_IN_APPAREL';
   }
   return null;

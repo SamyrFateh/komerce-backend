@@ -172,3 +172,48 @@ describe('Supplier-agnostic semantic commercial taxonomy',()=>{
    console.log('[SEMANTIC_BULK_10000] '+JSON.stringify({...results,elapsed_ms:Date.now()-started}));
  });
 });
+
+describe('mixed-gender garments: a verified commercial parent, not a fabricated gender leaf',()=>{
+  test.each([
+    ['Woolen Loose Cape Tops For Men And Women',
+      "Women's Clothing > Outerwear & Jackets > Blazers"],
+    ['Summer Thin Breathable Sunscreen Clothing For Men And Women',
+      "Women's Clothing > Outerwear & Jackets > Basic Jacket"],
+    ["Men And Women's Thick Windproof Cotton Clothing For Couples",
+      "Women's Clothing > Outerwear & Jackets > Women's Padded Jackets"],
+    ['Women And Men Unisex Jacket',"Men's Clothing > Outerwear"],
+  ])('explicit mixed-gender object: %s',(product_name,supplier_category)=>{
+    expect(semanticIntent({product_name,supplier_category})).toMatchObject({
+      kind:'category',category:'Mode & Beauté',subcategory:null,
+      source:'SEMANTIC_MIXED_GENDER_APPAREL'});
+  });
+  test.each([
+    ['Mens Casual Jacket',"Women's Clothing > Tops"],
+    ['Womens Summer Blouse',"Men's Clothing > Tops"],
+    ['Men And Women Gold Ring',"Women's Clothing > Tops"],
+    ['Men And Women Watch',"Men's Clothing > Tops"],
+    ['Women And Men Cleaning Spray',"Women's Clothing > Tops"],
+  ])('opposite gender or non-garment remains a contradiction: %s',(product_name,supplier_category)=>{
+    expect(semanticIntent({product_name,supplier_category})).toMatchObject({
+      kind:'conflict',reason:'CLOTHING_SOURCE_OBJECT_CONTRADICTION'});
+  });
+  test('confirmed gender leaf cannot override a mixed-gender object',()=>{
+    const c={product_name:'Coats For Men And Women',
+      supplier_category:"Women's Clothing > Outerwear"};
+    expect(semanticConflict(c,{category:'Mode & Beauté',subcategory:'Femme'}))
+      .toBe('MIXED_GENDER_OBJECT_CONTRADICTS_GENDER_MAPPING');
+  });
+  test('active parent required; Discovery never rescues inactive destination',async()=>{
+    const c={supplier_name:'CJdropshipping',product_name:'Shirts For Men And Women',
+      supplier_category:"Women's Clothing > Tops",
+      raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Éclairage'}}};
+    const active={query:jest.fn(async sql=>sql.includes('FROM boutique_categories WHERE key=')
+      ?{rows:[{key:'Mode & Beauté'}]}:{rows:[]})};
+    await expect(resolveCommercialTaxonomyVerdict(active,c)).resolves.toMatchObject({
+      status:'CATEGORY_CLASSIFIED',category:'Mode & Beauté',subcategory:null,
+      source:'SEMANTIC_MIXED_GENDER_APPAREL'});
+    const inactive={query:jest.fn(async()=>({rows:[]}))};
+    await expect(resolveCommercialTaxonomyVerdict(inactive,c)).resolves.toMatchObject({
+      status:'REVIEW_REQUIRED',category:null,subcategory:null,source:'SEMANTIC_CATEGORY_INACTIVE'});
+  });
+});
