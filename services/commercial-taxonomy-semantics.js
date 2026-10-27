@@ -17,7 +17,7 @@ function words(input) {
 // Une expression de genre seule ne suffit jamais à identifier un article.
 const FEMALE_CLOTHING = /\b(womens? clothing|womens? apparel|ladies clothing|female clothing|ropa de mujer(?:es)?|vetements? femme(?:s)?|mode femme(?:s)?|damenbekleidung)\b/;
 const MALE_CLOTHING = /\b(mens? clothing|mens? apparel|male clothing|ropa de hombre(?:s)?|vetements? homme(?:s)?|herrenbekleidung)\b/;
-const CLOTHING_OBJECT = /\b(shirts?|t shirts?|tees?|tops?|dresses?|blouses?|skirts?|shorts?|pants?|trousers?|jackets?|blazers?|coats?|vests?|pullovers?|hoodies?|sweaters?|robes?|chemises?|jupes?|pantalons?|vestes?)\b/;
+const CLOTHING_OBJECT = /\b(shirts?|t shirts?|tees?|tops?|dresses?|blouses?|skirts?|shorts?|pants?|trousers?|jackets?|blazers?|coats?|vests?|pullovers?|hoodies?|sweaters?|robes?|chemises?|jupes?|pantalons?|vestes?|bras?|brassieres?|lingerie|hats?|caps?|headwear|suits?|uniforms?|leggings?|rompers?|swimsuits?|bikinis?|underwear|stockings?)\b/;
 const NON_CLOTHING_OBJECT = /\b(rings?|necklaces?|pendants?|earrings?|bracelets?|watches?|jewelry|jewellery|bijoux|colliers?|bagues?|parfums?|sprays?|detergents?|repellent|cleaners?|treater|paintings?|canvases?|kennels?|pet beds?)\b/;
 const NON_STORAGE_OBJECT = /\b(stain treater|stain removers?|insect repellents?|mosquito repellents?|pest sprays?|cleaning sprays?|cleaners?|paintings?|canvas prints?|wall art|tableaux?)\b/;
 
@@ -30,8 +30,10 @@ function semanticIntent(candidate = {}) {
   const female = FEMALE_CLOTHING.test(source), male = MALE_CLOTHING.test(source);
   const oppositeGender = (female && /\b(mens?|male|hommes?|hombre|herren)\b/.test(title))
     || (male && /\b(womens?|female|femmes?|mujer|damen|ladies)\b/.test(title));
+  const childTitle = /\b(children|childrens|kids|kid|toddler|toddlers|baby|babies|garcons|filles)\b/.test(title);
   if (female || male) {
-    if (female && male || oppositeGender || NON_CLOTHING_OBJECT.test(title))
+    if (female && male || oppositeGender || childTitle ||
+      (NON_CLOTHING_OBJECT.test(title) && !CLOTHING_OBJECT.test(title)))
       return {kind:'conflict',reason:'CLOTHING_SOURCE_OBJECT_CONTRADICTION'};
     if (CLOTHING_OBJECT.test(title) || CLOTHING_OBJECT.test(source))
       return {kind:'pair',category:'Mode & Beauté',subcategory:female?'Femme':'Homme',
@@ -49,7 +51,8 @@ function semanticConflict(candidate = {}, mapped = {}) {
     if (concept.kind==='conflict') return concept.reason;
     if (concept.kind==='pair' && concept.subcategory!==mapped.subcategory)
       return 'CLOTHING_GENDER_CONFLICT';
-    if (NON_CLOTHING_OBJECT.test(title)) return 'NON_CLOTHING_OBJECT_IN_APPAREL';
+    if (NON_CLOTHING_OBJECT.test(title) && !CLOTHING_OBJECT.test(title))
+      return 'NON_CLOTHING_OBJECT_IN_APPAREL';
   }
   return null;
 }
