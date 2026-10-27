@@ -133,6 +133,23 @@ function reportMarkdown(report){
   lines.push('', 'Toutes les occurrences et les fichiers figurent dans business-audit.json.',
    'Un propriétaire déclaré ou une occurrence SQL ne prouve ni autorisation, ni chemin actif, ni anomalie.');
  }
+ if(report.code?.evidenceLedger){
+  const l=report.code.evidenceLedger;
+  lines.push('', '## V0.9 R&D — Registre de qualification des preuves', '',
+   '- Occurrences SQL physiques regroupées : '+l.summary.sourceOccurrences,
+   '- Cas distincts : '+l.summary.distinctCases,
+   '- Cas nécessitant examen de responsabilité : '+l.summary.reviewCases,
+   '- Contre-exemples confirmés par cette campagne : '+l.summary.confirmedTestCounterexamples,
+   '- Incidents de production confirmés : **0**', '',
+   '| ID | Fichier | Table | Occurrences | Domaine | Propriétaire | État |',
+   '|---|---|---|---:|---|---|---|');
+  for(const x of l.entries.filter(x=>x.reviewRequired).slice(0,50))
+   lines.push('| '+x.id+' | '+x.file+' | '+x.table+' | '+x.occurrenceCount+
+    ' | '+(x.declaredDomain||'NON DECLARE')+' | '+(x.declaredOwners.join(', ')||'NON EXPLICITE')+
+    ' | '+x.verdict+' |');
+  lines.push('', 'Liste complète JSON : code.evidenceLedger.entries.',
+   'Aucune occurrence lexicale n est automatiquement un bug confirmé.');
+ }
  if(report.code?.paypalRefundBoundary){
   const r=report.code.paypalRefundBoundary;
   lines.push('', '## PayPal — raccordement effectif du remboursement', '',
