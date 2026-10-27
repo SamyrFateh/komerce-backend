@@ -17,6 +17,7 @@ const {dispatchToConnector}=require('../services/sourcing-import-dispatch');
 const {importCatalog}=require('../services/suppliers/catalog-import-orchestrator');
 const {confirmTarget}=require('./recette/target-guard');
 const {audit}=require('./audit-kir-unified-commercial-coverage');
+const {assess}=require('./lib/supplier-import-proof-gates');
 const HOST='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/cj-canonical-20-staging/report.json');
 
@@ -55,16 +56,33 @@ async function replay({database=db,confirm=confirmTarget,dispatch=dispatchToConn
   if(!/^KIR-\d{6}$/.test(runRef||''))throw Error('CJ_CANONICAL_RUN_REF_MISSING');
   const {rows:[productsAfter]}=await database.query('SELECT COUNT(*)::int AS n FROM products');
   if(productsAfter.n!==productsBefore.n)throw Error('CJ_SCRIPT_PUBLISHED_PRODUCTS_UNEXPECTEDLY');
-  const {rows:[persisted]}=await database.query(
-    'SELECT COUNT(*)::int AS n FROM sourcing_candidates sc JOIN import_runtime_runs ir ON ir.import_id=sc.import_id WHERE ir.run_ref=$1',[runRef]);
-  let classification=null;
-  if(persisted.n>0){
-    const c=await classify(runRef);
-    classification={inspected:c.inspected,automatic:c.auto_classifiable_products,
-      unresolved:c.unresolved_products,explicit_review:c.explicit_review_products,
-      products:c.products.map(p=>({ref:p.candidate_ref,name:p.product_name,
-        status:p.status,category:p.category,subcategory:p.subcategory,source:p.source}))};
-  }
+  // Independently reconcile the actual run, terminal item events and persisted
+  // candidate identities. A technical 200 or KIR COMPLETED is NOT proof.
+  const {rows:[run]}=await database.query(
+    'SELECT id,run_ref,provider,source_total,status,intake FROM import_runtime_runs WHERE run_ref=$1',[runRef]);
+  const {rows:events}=await database.query(
+    'SELECT supplier_product_id,candidate_id,finished_at,outcome FROM import_runtime_item_events WHERE run_id=$1 ORDER BY seq',[run?.id]);
+  const {rows:candidates}=await database.query(
+    `SELECT id,candidate_ref,supplier_product_id,purchase_price_kmf,data_sources,scan_result
+       FROM sourcing_candidates
+      WHERE import_id=(SELECT import_id FROM import_runtime_runs WHERE run_ref=$1)
+      ORDER BY candidate_ref`,[runRef]);
+  const persisted={n:candidates.length};
+  const classificationReport=persisted.n>0?await classify(runRef):null;
+  const classification=classificationReport?{
+    inspected:classificationReport.inspected,
+    automatic:classificationReport.auto_classifiable_products,
+    unresolved:classificationReport.unresolved_products,
+    explicit_review:classificationReport.explicit_review_products,
+    products:classificationReport.products.map(p=>({ref:p.candidate_ref,name:p.product_name,
+      status:p.status,category:p.category,subcategory:p.subcategory,source:p.source}))
+  }:null;
+  const proof=assess({
+    provider:cj.SUPPLIER_NAME,expected:20,
+    source:{products:data,invalid_count:(batch.invalid||[]).length},
+    run,events,candidates,classification:classificationReport,
+    publishedDelta:productsAfter.n-productsBefore.n
+  });
   return {mode:'GUARDED_STAGING_CANONICAL_INTAKE',target:HOST,run_ref:runRef,
     supplier:'CJdropshipping',requested:20,fetched:20,distinct:identities.size,
     created:Number(result.body?.created||0),updated:Number(result.body?.updated||0),
@@ -73,11 +91,9 @@ async function replay({database=db,confirm=confirmTarget,dispatch=dispatchToConn
     pipeline_status:result.body?.pipeline_status||null,
     candidate_count:persisted.n,source_reasons:safeReasons(result.body?.errors),
     products_created:productsAfter.n-productsBefore.n,
-    classification,
-    verdict:persisted.n===20&&classification?.automatic===20&&classification?.unresolved===0
-      ?'CJ_20_CLASSIFICATION_CERTIFIED_NOT_SELLABILITY'
-      :persisted.n===20?'CJ_20_PERSISTED_CLASSIFICATION_GAPS'
-      :'CJ_IMPORT_REJECTED_OR_INCOMPLETE'};
+    classification,proof,
+    verdict:proof.passed?'CJ_20_CLASSIFICATION_CERTIFIED_NOT_SELLABILITY'
+      :'CJ_PROOF_GATES_FAILED'};
 }
 async function main(){
   fs.mkdirSync(path.dirname(OUT),{recursive:true});
@@ -89,7 +105,7 @@ async function main(){
       fx_pending:r.fx_pending,persisted:r.candidate_count,
       classification:r.classification&&{automatic:r.classification.automatic,
         unresolved:r.classification.unresolved},
-      errors:r.source_reasons
+      errors:r.source_reasons,failed_gates:r.proof.failed_gates
     }));
     if(r.verdict!=='CJ_20_CLASSIFICATION_CERTIFIED_NOT_SELLABILITY')process.exitCode=2;
   }catch(err){
