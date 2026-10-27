@@ -113,6 +113,11 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
    return fn(db,{item,upstream});
  });
  if(customerFinance?.proofs)Object.assign(proofs,customerFinance.proofs);
+ const supplierCost=await safe('scripts/research/p3-p6-canonical-collector.collectP3P6Canonical',()=>{
+   const fn=owners.p3p6||require('./p3-p6-canonical-collector').collectP3P6Canonical;
+   return fn(db,{item});
+ });
+ if(supplierCost?.proofs)Object.assign(proofs,supplierCost.proofs);
  const report=evaluateP1P7(proofs);
  return {...report,execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',wired_edges:Object.keys(proofs),
    evidence_provenance:['services/market-control-plane.js:getControlPlane',
@@ -130,6 +135,9 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
    customer_finance:customerFinance?{facts:customerFinance.facts||null,
      diagnostics:customerFinance.diagnostics||null,
      owner_provenance:customerFinance.owner_provenance||null}:null,
+   supplier_cost:supplierCost?{facts:supplierCost.facts||null,
+     diagnostics:supplierCost.diagnostics||null,
+     owner_provenance:supplierCost.owner_provenance||null}:null,
    context:{...ctx,selected_market:code,persisted_order_market:item.order_market_code||null,
      actual_product_id:item.product_id,actual_sku_id:item.sku_id,
      provenance:'CANONICAL_OWNER_READS_NOT_EXTERNAL_CHECKOUT'},
