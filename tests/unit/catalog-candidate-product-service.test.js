@@ -584,7 +584,7 @@ describe('supplier path + actual object corroborate category without inventing a
     ['Car Phone Charger Bluetooth Wireless','Automobiles & Motorcycles > Car Electronics > Audio'],
     ['Makeup Storage Box With LED Light','Home, Garden & Furniture > Home Storage > Office'],
     ['Professional Portable Electric Nail Drill','Health, Beauty & Hair > Beauty Tools > Manicure'],
-    ['Solar Connector Crimper Tool with Cable Storage Box','Home Improvement > Tools > Tool Sets'],
+
   ])('no unjustified parent: %s', (name,path)=>{
     expect(categoryCorroboratedByObject(candidate(name,path))).toBeNull();
   });
@@ -676,6 +676,8 @@ describe('CJ real-world evidence generalization: no token-property confusion',()
     ['Solar Panel Extension Wire Female and Male Connectors',
       'Home Improvement > Tools > Tool Sets','Bricolage'],
     ['Cable Dispenser Mounted Portable For Electrical Industrial',
+      'Home Improvement > Tools > Tool Sets','Bricolage'],
+    ['Solar Connector Crimper Tool with Cable Storage Box',
       'Home Improvement > Tools > Tool Sets','Bricolage'],
   ])('two-source category proof %s', (product_name,supplier_category,category)=>{
     expect(categoryCorroboratedByObject(c(product_name,supplier_category)))
