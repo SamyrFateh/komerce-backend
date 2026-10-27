@@ -44,6 +44,23 @@ function assertP2P4(p) {
   physical_qty:Number(facts.received_quantity),inbound_verdict:facts.inbound_verdict,
   line_count:facts.line_count,allocation_count:facts.allocation_count};
 }
+function assertP4P2(p) {
+ const w=p.p1_p7_wiring, edge=w?.boundaries?.find(b=>b.id==='P4_P2_RELAY_HANDOFF');
+ const facts=w?.physical_handoff?.facts,diag=w?.physical_handoff?.diagnostics;
+ if(!w?.wired_edges?.includes('P4_P2_RELAY_HANDOFF') ||
+    edge?.status!=='NO_CONTRADICTION_OBSERVED' ||
+    !Array.isArray(edge.contradictions)||edge.contradictions.length ||
+    !facts||facts.handoff_verdict!=='HANDOFF_MATCHED' ||
+    !Number.isSafeInteger(facts.parcel_count)||facts.parcel_count<1 ||
+    !Number.isSafeInteger(facts.item_parcel_count)||facts.item_parcel_count<1 ||
+    !Number.isSafeInteger(facts.scan_count)||facts.scan_count<1 ||
+    !diag||!Array.isArray(diag.contradictions)||diag.contradictions.length ||
+    !Array.isArray(diag.gaps)||diag.gaps.length)
+   throw Error('P4-P2 true parcel membership and handoff evidence missing');
+ return {handoff_verdict:facts.handoff_verdict,
+  parcels:facts.parcel_count,item_parcels:facts.item_parcel_count,
+  scans:facts.scan_count};
+}
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
  if(p.identity_status!=='NO_IDENTITY_CONTRADICTION_OBSERVED')
@@ -58,6 +75,7 @@ const norm=(p)=>{
  return {
   pre_submission_verdict:p.pre_submission.verdict,
   p2_p4_owner_truth:assertP2P4(p),
+  p4_p2_handoff_truth:assertP4P2(p),
   identity_status:p.identity_status,
   final_business_verdict:p.checkpoint,
   stage_projections:p.progressive_checkpoints.map(s=>({
