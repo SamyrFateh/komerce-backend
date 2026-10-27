@@ -10,9 +10,11 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
   wired_edges:['P7_P1_MARKET_PRICING','P7_P1_MARKET_EXPOSURE','P7_P2_CHECKOUT',
    'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT',
    'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE','P3_P6_PURCHASE_COST',
-   'P4_P6_LOGISTICS_COST'],
+   'P4_P6_LOGISTICS_COST','P5_P6_CASH_REALITY'],
   owner_read_errors:[],
   foreign_cost_allocation_probe:{outcome:'CROSS_ORDER_COST_ALLOCATION_REPRODUCED',hypothesis:'COST_ALLOCATION_FOREIGN_ORDER'},
+  cross_rail_funds_probe:{outcome:'STRIPE_ORDER_CASH_COLLECTION_ACCEPTED',
+     hypothesis:'STRIPE_ORDER_HAS_CASH_COLLECTION'},
   foreign_parcel_logistics_cost_probe:{outcome:'UNLINKED_LOGISTICS_COST_PARCEL_REPRODUCED',
     hypotheses:['LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM','LOGISTICS_COST_SHIPMENT_PARCEL_UNLINKED']},
   unpaid_closure_probe:{outcome:'OWNER_RECONCILED_AFTER_TEMP_UNPAID',
@@ -24,8 +26,15 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
    {id:'P4_P2_RELAY_HANDOFF',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
    {id:'P5_P2_PAYMENT_CLOSURE',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
    {id:'P3_P6_PURCHASE_COST',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
-   {id:'P4_P6_LOGISTICS_COST',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]}
+   {id:'P4_P6_LOGISTICS_COST',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
+   {id:'P5_P6_CASH_REALITY',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']}
   ],
+  funds_cost:{
+    facts:{order_id:'o1',synthetic:true,mode:'stripe_eur',collections:0,
+      actual_fee_allocations:0,shadow_fee_state:'not_expected'},
+    diagnostics:{gaps:['SYNTHETIC_GOLDEN_PAYMENT_NOT_EXTERNAL_PROOF','PAYMENT_FEE_NOT_ACTUALLY_VALUED'],
+      contradictions:[]}
+  },
   logistics_cost:{
     facts:{member_parcel_count:1,item_parcel_count:1,actual_cost_count:2,
       compared_owner_cost_types:2,allocated_kmf:{freight:1500,customs:2500}},
@@ -272,5 +281,28 @@ test('P4-P6 SQL protective foreign-parcel constraint is an acceptable counterexa
  for(const e of [a,b])
   e.p1_p7_wiring.foreign_parcel_logistics_cost_probe={
    outcome:'SQL_LOGISTICS_COST_PARCEL_GUARD',sqlstate:'23514'};
+ assert.equal(comparePaths(a,b).mismatchCount,0);
+});
+
+test('P5-P6 cannot pass if both Goldens omit the independent cash-cost observer',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.funds_cost;delete b.p1_p7_wiring.funds_cost;
+ assert.throws(()=>comparePaths(a,b),/P5-P6: synthetic customer funds/);
+});
+test('P5-P6 twin false PSP proof is rejected, not accepted as equivalent',()=>{
+ const a=make('grouped'),b=make('historical');
+ for(const x of [a,b])
+   x.p1_p7_wiring.boundaries.find(e=>e.id==='P5_P6_CASH_REALITY').status='NO_CONTRADICTION_OBSERVED';
+ assert.throws(()=>comparePaths(a,b),/P5-P6: synthetic customer funds/);
+});
+test('P5-P6 both Goldens must have real negative cross-rail SQL counterexample',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.cross_rail_funds_probe;delete b.p1_p7_wiring.cross_rail_funds_probe;
+ assert.throws(()=>comparePaths(a,b),/P5-P6 real SQL cross-rail/);
+});
+test('P5-P6 SQL protective constraint is also acceptable, with exact SQLSTATE',()=>{
+ const a=make('grouped'),b=make('historical');
+ for(const x of [a,b])
+  x.p1_p7_wiring.cross_rail_funds_probe={outcome:'SQL_CROSS_RAIL_COLLECTION_GUARD',sqlstate:'23514'};
  assert.equal(comparePaths(a,b).mismatchCount,0);
 });
