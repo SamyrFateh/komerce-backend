@@ -114,7 +114,7 @@ describe('GET /api/products — liste', () => {
     const sql=mockDbQuery.mock.calls[0][0];
     expect(sql).toContain('COALESCE(p.boutique_category_key, p.category)');
     expect(sql).toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END AS subcategory');
-    expect(sql).not.toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END');
+    expect(sql).not.toContain('COALESCE(p.boutique_subcategory_key, p.subcategory)');
   });
 
   it('accès public, sans auth → 200', async () => {
