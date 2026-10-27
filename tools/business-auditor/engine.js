@@ -137,6 +137,25 @@ function reportMarkdown(report){
    'Un propriétaire déclaré ou une occurrence SQL ne prouve ni autorisation, ni chemin actif, ni anomalie.',
    'Répartition des statuts de propriétaire : '+JSON.stringify(w.summary.ownerResolutionCounts));
  }
+ if(report.code?.writerQualification){
+  const q=report.code.writerQualification;
+  lines.push('', '## V0.7 — Qualification statique des responsabilités', '',
+   '- Fragments conservés : '+q.summary.occurrences,
+   ' (tables reconnues : '+q.summary.physical+', cibles non prouvées : '+q.summary.unresolved+').',
+   '- Dossiers distincts : '+q.summary.cases+' ; dossiers a examiner : '+q.summary.reviewCases+'.',
+   '- Occurrences a examiner : '+q.summary.reviewOccurrences,
+   '- Repartition : '+JSON.stringify(q.summary.byStatus),
+   '- Chemins actifs prouves : **0** ; autorisations prouvees : **0** ; bugs confirmes : **0**.',
+   '', '### Principaux dossiers a examiner (50)', '',
+   '| Fichier | Table | Statut | P | Fragments | Proprio declare |',
+   '|---|---|---|---|---:|---|');
+  const clean=x=>String(x??'').replace(/[|\r\n]/g,' ').slice(0,170);
+  for(const v of q.cases.filter(x=>x.needsReview).slice(0,50))
+   lines.push('| '+clean(v.file)+' | '+clean(v.table||v.rawTarget)+' | '+
+    v.status+' | '+v.priority+' | '+v.occurrences+' | '+clean(v.owners.join(', ')||'NON DEFINI')+' |');
+  lines.push('', 'Tous les fragments et dossiers figurent dans business-audit.json.',
+   'Une correspondance de domaine (y compris un alias) ou une déclaration W~ ne prouve ni délégation ni exécution.');
+ }
  if(report.code?.paypalRefundBoundary){
   const r=report.code.paypalRefundBoundary;
   lines.push('', '## PayPal — raccordement effectif du remboursement', '',
