@@ -194,3 +194,36 @@ La cartographie instrumentée et les contre-épreuves restent une **R&D L4**, pa
 **Issue [#3065](https://github.com/SamyrFateh/komerce-backend/issues/3065)** : anomalie d'intégrité persistable de coût/article/colis/expédition, à arbitrer avec Logistics/Economic Engine et à auditer dans les données historiques **avant** toute garde/migration. Aucune preuve qu'une telle imputation existe en production ; aucune modification de code métier, de main, de staging ou Railway.
 
 Les trois frontières qui restent à instrumenter sont `P5_P6_CASH_REALITY`, `P6_P1_PRICE_REVIEW`, `P7_P5_COUNTRY_SETTLEMENT`. **10/13** signifie coutures câblées et étalonnées ; pas 10 processus acceptés en recette réelle.
+
+## 27 octobre — P5 → P6, onzième frontière raccordée (cash / PSP / frais de paiement)
+
+**Les CI en attente après P4→P6 sont vertes** : [ECO #40517281513](https://github.com/SamyrFateh/komerce-backend/actions/runs/40517281513), [double Golden #40517281056](https://github.com/SamyrFateh/komerce-backend/actions/runs/40517281056).
+
+**Nouveau collecteur** : `scripts/research/p5-p6-canonical-collector.js`, injecté dans le rapport général par `p1-p7-canonical-collector.js`. Il lit sur le **même order_id** les données P5 `orders.payment_mode/payment_status`, `cash_collections`, `cash_deposit_allocations` et `cash_deposits`, puis appelle le propriétaire P6 `services/cost-allocation/real-margin-shadow.computeOrderRealMarginShadow` pour `costs.by_type.payment`. Aucune émission de paiement, aucun recalcul parallèle de la marge, aucune conversion FX indépendante.
+
+### Invariants / pièges exclus
+
+- **Fonds client encaissés** ≠ **frais de paiement**. Ne jamais comparer le montant d'une collection cash au coût `payment` dans le shadow ; comparer plutôt les identités commande, marché, article, les preuves d'attribution et les montants de *même nature*.
+- `stripe_eur` avec `stripe_payment_id` n'est **pas** une preuve de virement ou de réception d'un événement Stripe signé. Les Golden synthétiques (`SYNTHETIC_GOLDEN_CREATE`) restent `EVIDENCE_GAP`.
+- La **ventilation d'une remise** n'est pas nécessairement une remise finale. `cash_deposit_allocations.allocation_basis='RECONSTRUCTED'` ne décharge jamais la garde ; une allocation `CONFIRMED` n'atteste pas seule la réception et le contrôle de destination `FINAL`. Pas de vert sur une chaîne de custody finale non attribuable à cette commande.
+- `is_actual=true` pour un coût `payment` doit être distingué de son **preuve de provenance** et de son affectation `order_item_id / order_id`. L'autorité économique reste `real-margin-shadow`.
+- Les commandes avec plusieurs articles ne deviennent pas « sans frais » parce qu'une seule ligne est absente. Le lecteur agrège par commande mais ne déclare pas la certification externe de ces frais.
+- Aucun `GO` de paiement PSP réel ou de reversement final n'est produit par ce câble.
+
+### Preuves nominales et contradictoires sur PostgreSQL
+
+[CI ECO #40519405912](https://github.com/SamyrFateh/komerce-backend/actions/runs/40519405912) : tests des propriétaires et 12 cas P5→P6 (Stripe, cash intégral, paiement insuffisant, dépôt reconstitué, marché étranger, coût financier imputé au mauvais article, distinction frais/encaissement).
+
+[CI double Golden #40519725602](https://github.com/SamyrFateh/komerce-backend/actions/runs/40519725602), **verte : 155/155 tests purs, deux Golden PostgreSQL, matrice colis partagés, aucune asymétrie A/B**. Le rapport donne **11/13 frontières raccordées, 2 NOT_WIRED et zéro contradiction nominale**. En Golden synthétique `stripe_eur` : aucune collection cash, aucun frais de paiement réel démontré, aucune preuve PSP signée ; **P5→P6 = EVIDENCE_GAP** sur les deux PO.
+
+**Vraie contre-épreuve SQL P5→P6** sur les deux variantes : `BEGIN`, insertion d'une ligne `cash_collections` de 25 000 KMF liée à la commande Golden `stripe_eur` ; **PostgreSQL accepte**, puis le scanner détecte `STRIPE_ORDER_HAS_CASH_COLLECTION` ; `ROLLBACK` suivi de `SELECT` vérifie l'absence de collection persistée. Le writer normal `services/cash-operations.collectCash` refuse déjà une commande dont le mode n'est pas `cash_relais`, mais la relation persistée ne protège pas ce scénario. Aucune preuve que ce mauvais rail existe en production ni qu'un endpoint ordinaire le crée.
+
+**Issue [#3068](https://github.com/SamyrFateh/komerce-backend/issues/3068)** : réconcilier la protection du writer avec l'intégrité DB et la gestion des historiques. Rechercher de façon read-only les collections sur commandes non-cash avant de définir une éventuelle garde DB, puis tests négatifs, sans perturber les chemins de règlement légitimes.
+
+### Restant à raccorder
+
+**2 frontières sur 13** :
+- `P6_P1_PRICE_REVIEW` : impacts de marge à la décision humaine de prix, puis mutation effective de la projection marché uniquement après décision ;
+- `P7_P5_COUNTRY_SETTLEMENT` : droits / marché opérationnel et isolement des flux de règlement pays.
+
+**11/13 instrumentées ne signifie pas 11/13 certifiées en vrai parcours client**. Aucun merge `main`, déploiement Railway, paiement réel ni écriture staging.
