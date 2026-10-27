@@ -88,6 +88,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
   let cleanup;
   let marketId;
   let unsubmittedPoProof;
+  let preSubmissionHubProbe;
 
   const q = (sql, params) => db.query(sql, params);
   const one = async (sql, params) => (await q(sql, params)).rows[0];
@@ -284,6 +285,43 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     });
     expect(unsubmittedPoProof.verdict).toBe('NO_RECORDED_SUPPLIER_EXECUTION');
     expect(unsubmittedPoProof.issues).toEqual([]);
+
+    // The negative checkpoint uses the REAL Hub writer on a transaction
+    // that is always rolled back. Do not manufacture supplier execution.
+    // This exposes a possible early-receipt asymmetry without changing
+    // the nominal Golden or claiming a production incident.
+    const {receiveSupplierPackage}=require('../../services/hub-physical-identity');
+    const probeClient=await db.getClient();
+    try {
+      await probeClient.query('BEGIN');
+      try {
+        const receipt=await receiveSupplierPackage(probeClient,{
+          reference:'FP-UNSUBMITTED-'+FP_GOLDEN_PO_SHAPE+'-'+RUN_TAG,
+          actorId:userId,locationRef:'DXB-HUB',
+          contents:[{purchase_order_id:poId,product_sku_id:skuId,quantity:1}],
+        });
+        const count=await probeClient.query(
+          'SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations WHERE purchase_order_id=$1',
+          [poId]
+        );
+        preSubmissionHubProbe={
+          outcome:receipt.quarantined?'QUARANTINED':'RECEIVED',
+          reason_code:receipt.reason_code||null,
+          allocation_count:Number(count.rows[0].n),
+        };
+      } catch(error) {
+        preSubmissionHubProbe={outcome:'ERROR',reason_code:error.code||error.name||'UNKNOWN',
+          allocation_count:null};
+      }
+    } finally {
+      await probeClient.query('ROLLBACK');
+      probeClient.release();
+    }
+    const noResidualHub=await one(
+      'SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations WHERE purchase_order_id=$1',
+      [poId]
+    );
+    expect(noResidualHub.n).toBe(0);
 
     await q(
       `UPDATE purchase_orders
@@ -750,6 +788,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       persisted_po_shape:actualPoShape,
       header_carries_order_item:!!persistedPoForm.order_item_id,
       pre_submission:unsubmittedPoProof,
+      pre_submission_hub_probe:preSubmissionHubProbe,
       identity_status:identityTrail.status,
       progressive_checkpoints:stageProofs,
       verified_counts:Object.fromEntries(Object.entries(identityTrail.observed)
