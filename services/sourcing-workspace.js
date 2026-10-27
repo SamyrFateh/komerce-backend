@@ -175,7 +175,8 @@ async function listCandidates(focusedCandidateRef = null) {
        FROM sourcing_candidates sc
        LEFT JOIN supplier_catalog_imports si ON si.id = sc.import_id
        LEFT JOIN products p ON p.id = sc.product_id
-      ORDER BY sc.updated_at DESC
+      ORDER BY CASE WHEN sc.candidate_ref = $1 THEN 0 ELSE 1 END,
+               sc.updated_at DESC
       LIMIT 250`, [focusedCandidateRef]
   );
   return rows;
