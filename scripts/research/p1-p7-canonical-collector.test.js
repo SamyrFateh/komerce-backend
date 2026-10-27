@@ -34,6 +34,7 @@ function fixture({orderMarket='KM',skuProduct=P,checkoutStatus='NON_PROUVE',mark
   p5p2:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   p3p6:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   p4p6:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
+  p5p6:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   upstream:async(_db,{productId,marketCode,orderReference,fetchImpl})=>{
     assert.equal(productId,P);assert.equal(marketCode,'KM');
     assert.equal(orderReference,'CUSTOMER-001');
@@ -233,4 +234,21 @@ test('tenth seam assembler retains physical parcel and cost lineage without fals
  assert.equal(r.wired_edges.length,5);assert.equal(r.totals.notWired,8);
  assert.equal(edge(r,'P4_P6_LOGISTICS_COST').status,'NO_CONTRADICTION_OBSERVED');
  assert.equal(r.logistics_cost.facts.shared_carrier_parcels,1);
+});
+
+test('eleventh seam adds real shadow payment fees without inventing PSP collection proof',async()=>{
+ const {assessP5P6}=require('./p5-p6-canonical-collector');
+ const f=fixture({checkoutStatus:'NON_PROUVE'});
+ f.owners.p5p6=async(_db,{item})=>assessP5P6({
+  order:{id:item.order_id,market_id:MID,relais_id:MID,reference:'K-GOLDEN-FAKE',
+    payment_mode:'stripe_eur',payment_status:'paid',stripe_payment_id:null,total_kmf:25000},
+  shadow:{order_id:item.order_id,costs:{by_type:{
+   payment:{state:'not_expected',real_kmf:null,estimated_kmf:0}}}},
+  paymentGate:{status:'ANOMALIE'},provenance:'SYNTHETIC_GOLDEN_CREATE',
+ });
+ const r=await collectP1P7Canonical(f.db,f.args,f.owners);
+ assert.equal(r.totals.observed,5);assert.equal(r.totals.notWired,8);
+ assert.equal(edge(r,'P5_P6_CASH_REALITY').status,'EVIDENCE_GAP');
+ assert.equal(r.funds_cost.facts.collections,0);
+ assert.ok(r.funds_cost.diagnostics.gaps.includes('SYNTHETIC_GOLDEN_PAYMENT_NOT_EXTERNAL_PROOF'));
 });
