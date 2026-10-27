@@ -1,0 +1,81 @@
+name: CJ real 200 semantic mass import — disposable PostgreSQL
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: cj-real-semantic-200-disposable
+  cancel-in-progress: false
+jobs:
+  isolated-mass:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[isolated-op] cj-semantic-bulk-200'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_semantic_bulk_200
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_semantic_bulk_200"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      CI: '1'
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_semantic_bulk_200
+      PGPASSWORD: komerce
+      KOMERCE_ALLOW_CJ_SEMANTIC_BULK_200: '1'
+      CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Reconstruct disposable canonical DB schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_semantic_bulk_200'
+          psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql >/dev/null
+          for migration in             migrations/227_sourcing_resolution_foundation.sql             migrations/238_sourcing_source_autopilot.sql             migrations/036b_seed_customs_categories.sql             migrations/245_products_boutique_taxonomy.sql             migrations/244_catalog_glossary_batch001.sql; do
+              case "$migration" in
+                *227*) if [ "$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "select to_regclass('public.sourcing_canonical_entities') is null")" = f ]; then continue; fi ;;
+              esac
+              psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f "$migration" >/dev/null
+          done
+          has_terms="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT COUNT(*) FROM information_schema.columns WHERE table_name='boutique_subcategories' AND column_name='object_classification_terms'")"
+          if [ "$has_terms" = 0 ]; then
+            psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f migrations/290_boutique_object_taxonomy_terms.sql >/dev/null
+          fi
+          has_map="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT to_regclass('public.supplier_commercial_category_mappings') IS NOT NULL")"
+          if [ "$has_map" = f ]; then
+            psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f migrations/292_supplier_commercial_category_mappings.sql >/dev/null
+          fi
+      - name: Import up to 200 real CJ supplier offers and independently classify
+        run: node scripts/cj-semantic-bulk-200-isolated.js
+      - name: Upload proof whether green or red
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-semantic-bulk-200-${{ github.run_id }}
+          path: artifacts/cj-semantic-bulk-200/report.json
+          retention-days: 21
+          if-no-files-found: warn
