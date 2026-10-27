@@ -1,0 +1,42 @@
+name: CJ real staging cohort census — readonly
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+jobs:
+  census:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issues' &&
+        github.actor == github.repository_owner &&
+        github.event.issue.user.login == github.repository_owner &&
+        github.event.issue.title == '[staging-op] cj-real-cohort-census-readonly'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Inventory actual persisted CJ cohorts and independently replay taxonomy
+        run: node scripts/cj-staging-cohort-census.js
+      - name: Preserve read-only CJ evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-staging-cohort-census-${{ github.run_id }}
+          path: test-results/cj-staging-cohort-census/report.json
+          retention-days: 21
+          if-no-files-found: error
