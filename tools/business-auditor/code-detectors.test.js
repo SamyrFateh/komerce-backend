@@ -19,7 +19,7 @@ test('no report when insert count is actually checked',()=>{
 test('no report on non-parcel benign ignore or simple insertion',()=>{
  const query=['INSERT','INTO','orders','(id)','VALUES ($1)','ON','CONFLICT','DO','NOTHING'].join(' ');
  assert.deepEqual(detectIgnoredInsertCount('await query("'+query+'");assigned++;','services/other.js'),[]);
- assert.deepEqual(detectIgnoredInsertCount('await query("INSERT INTO parcel_items");assigned++;','services/good.js'),[]);
+ assert.deepEqual(detectIgnoredInsertCount('await query("'+['INSERT','INTO','parcel_items'].join(' ')+'");assigned++;','services/good.js'),[]);
 });
 test('real tracked Komerce code has two different count-after-conflict source sites',()=>{
  const root=path.resolve(__dirname,'../..');
