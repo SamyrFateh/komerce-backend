@@ -31,6 +31,7 @@ function fixture({orderMarket='KM',skuProduct=P,checkoutStatus='NON_PROUVE',mark
   // canonical SQL suite and is exercised in the real disposable PG Goldens.
   p2p4:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   p4p2:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
+  p5p2:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   upstream:async(_db,{productId,marketCode,orderReference,fetchImpl})=>{
     assert.equal(productId,P);assert.equal(marketCode,'KM');
     assert.equal(orderReference,'CUSTOMER-001');
@@ -173,4 +174,22 @@ test('seven-edge assembly uses explicit owner handoff and never parcel header as
  assert.equal(r.totals.notWired,8);
  assert.equal(edge(r,'P4_P2_RELAY_HANDOFF').status,'NO_CONTRADICTION_OBSERVED');
  assert.equal(r.physical_handoff.facts.shared_carrier_parcels,1);
+});
+
+test('eight-edge assembly accepts independent P5-P2 finance owner while checkout remains noncertified',async()=>{
+ const {assessP5P2}=require('./p5-p2-canonical-collector');
+ const f=fixture({checkoutStatus:'PROVED'});
+ f.owners.p5p2=async(_db,{item})=>{
+   assert.equal(item.order_id,OTHER);
+   return assessP5P2({order:{id:OTHER,reference:'CUSTOMER-001',
+     status:'collected',payment_status:'paid',payment_mode:'stripe_eur',
+     stripe_payment_id:'pi_123',total_kmf:25000},
+     paymentGate:{status:'PROVED'},
+     closure:{order_id:OTHER,verdict:'FINANCIAL_CLOSE_MATCHED',mode:'normal'}});
+ };
+ const r=await collectP1P7Canonical(f.db,f.args,f.owners);
+ assert.equal(r.totals.observed,5);assert.equal(r.totals.notWired,8);
+ assert.equal(edge(r,'P5_P2_PAYMENT_CLOSURE').status,'EVIDENCE_GAP');
+ assert.equal(r.customer_finance.facts.closure_verdict,'FINANCIAL_CLOSE_MATCHED');
+ assert.equal(r.customer_finance.owner_provenance.provider_confirmed,false);
 });
