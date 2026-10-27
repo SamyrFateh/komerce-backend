@@ -30,6 +30,7 @@ function fixture({orderMarket='KM',skuProduct=P,checkoutStatus='NON_PROUVE',mark
   // The older four-edge tests isolate P1/P2/P7; P2/P3/P4 has its own
   // canonical SQL suite and is exercised in the real disposable PG Goldens.
   p2p4:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
+  p4p2:async()=>({proofs:{},diagnostics:{gaps:['MOCK_NOT_WIRED']}}),
   upstream:async(_db,{productId,marketCode,orderReference,fetchImpl})=>{
     assert.equal(productId,P);assert.equal(marketCode,'KM');
     assert.equal(orderReference,'CUSTOMER-001');
@@ -153,4 +154,23 @@ test('integrates two more seams from explicitly injected P2-P4 owner facts',asyn
  assert.equal(r.totals.contradictions,0);
  assert.equal(edge(r,'P2_P3_PURCHASE_REQUIREMENT').status,'NO_CONTRADICTION_OBSERVED');
  assert.equal(edge(r,'P3_P4_HUB_RECEIPT').status,'NO_CONTRADICTION_OBSERVED');
+});
+
+test('seven-edge assembly uses explicit owner handoff and never parcel header as order identity',async()=>{
+ const {assessP4P2}=require('./p4-p2-canonical-collector');
+ const f=fixture({checkoutStatus:'PROVED'});
+ f.owners.p4p2=async(_db,{item})=>assessP4P2({
+  item:{...item,relais_id:MID},
+  memberParcels:[{id:'parcel1',order_id:'other-carrier'}],
+  itemParcels:[{id:'parcel1',order_id:'other-carrier',
+   order_item_id:OI,line_owner_order_id:OTHER}],
+  scans:[{order_id:OTHER,parcel_id:'parcel1',pickup_relais_id:MID}],
+  handoff:{order_id:OTHER,verdict:'HANDOFF_MATCHED',
+   collected_parcel_count:1,proofs:[{parcel_id:'parcel1'}]}
+ });
+ const r=await collectP1P7Canonical(f.db,f.args,f.owners);
+ assert.equal(r.totals.observed,5);
+ assert.equal(r.totals.notWired,8);
+ assert.equal(edge(r,'P4_P2_RELAY_HANDOFF').status,'NO_CONTRADICTION_OBSERVED');
+ assert.equal(r.physical_handoff.facts.shared_carrier_parcels,1);
 });
