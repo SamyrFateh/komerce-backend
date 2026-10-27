@@ -36,6 +36,10 @@ async function inspect({database=db,confirm=confirmTarget,replay=audit}={}) {
       SELECT ir.id,ir.run_ref,ir.provider,ir.source_total,ir.status,
         ir.source_type,ir.mode,ir.import_id IS NOT NULL AS has_import_link,
         ir.intake,ir.stages,
+        (SELECT COALESCE(jsonb_object_agg(outcome, n), '{}'::jsonb)
+           FROM (SELECT COALESCE(ev.outcome,'<absent>') AS outcome,COUNT(*)::int AS n
+                   FROM import_runtime_item_events ev WHERE ev.run_id=ir.id
+                  GROUP BY 1) ev_counts) AS item_outcomes,
         sci.total_items AS batch_declared,sci.status AS batch_status,
         sci.ready_count,sci.quarantined_count,sci.rejected_count,sci.error_code,
         (SELECT COUNT(*)::int FROM supplier_catalog_import_rejections rej
@@ -63,6 +67,9 @@ async function inspect({database=db,confirm=confirmTarget,replay=audit}={}) {
       source_type:r.source_type,mode:r.mode,has_import_link:r.has_import_link,
       intake:Object.fromEntries(intakeFields.filter(k=>r.intake?.[k]!==undefined)
         .map(k=>[k,r.intake[k]])),
+      reject_reasons:Object.entries(r.intake?.reject_reasons||{}).slice(0,20)
+        .map(([reason,n])=>({reason:String(reason).slice(0,200),count:Number(n||0)})),
+      item_outcomes:r.item_outcomes||{},
       stages:Object.fromEntries(Object.entries(r.stages||{}).map(([k,v])=>
         [k,{started:!!v?.started_at,finished:!!v?.finished_at}])),
       batch:{declared:r.batch_declared,status:r.batch_status,
@@ -129,7 +136,8 @@ async function main() {
       provider_population:report.provider_candidate_population,
       run_summaries:report.candidates.map(x=>({run:x.run_ref,source_total:x.source_total,
         linked:x.has_import_link,batch:x.batch,event_rows:x.event_rows,
-        rejection_rows:x.rejection_rows,intake:x.intake})),
+        rejection_rows:x.rejection_rows,intake:x.intake,
+        reject_reasons:x.reject_reasons,item_outcomes:x.item_outcomes})),
       exact_twenty:report.eligible_exact_twenty,
       selected:report.selected,
       classification:report.classification&&{
