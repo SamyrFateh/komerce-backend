@@ -785,12 +785,48 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect(unchangedRelay.pickup_relais_id).toBe(relaisId);
     expect(await one('SELECT id FROM relais WHERE id=$1',[wrongRelayId])).toBeUndefined();
 
+    // P5->P2 negative real-PG proof: a delivered order with unreceived
+    // customer payment cannot financial-close. The probe is transaction
+    // isolated, never touches Stripe and leaves no persisted mutation.
+    const financeClient=await db.getClient();
+    let unpaidClosureProbe=null;
+    try {
+      await financeClient.query('BEGIN');
+      await financeClient.query('SAVEPOINT p5_customer_payment');
+      try {
+        await financeClient.query(
+          "UPDATE orders SET payment_status='pending' WHERE id=$1",[orderId]);
+        const unpaid=await reconcileOrderFinancialClose(financeClient,{orderId});
+        unpaidClosureProbe={
+          outcome:'OWNER_RECONCILED_AFTER_TEMP_UNPAID',
+          verdict:unpaid.verdict,
+          reason:unpaid.reason||null,
+          payment_status:unpaid.payment_status,
+        };
+        expect(unpaid.verdict).toBe('FINANCIAL_CLOSE_MISMATCH');
+        expect(unpaid.reason).toBe('FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID');
+      } catch(error) {
+        if(error.code==='23514'||error.code==='P0001'){
+          await financeClient.query('ROLLBACK TO SAVEPOINT p5_customer_payment');
+          unpaidClosureProbe={outcome:'DATABASE_GUARD_REJECTED_UNPAID_REWRITE',
+            code:error.code};
+        }else throw error;
+      }
+    } finally {
+      await financeClient.query('ROLLBACK');
+      financeClient.release();
+    }
+    expect((await one("SELECT payment_status::text AS payment_status FROM orders WHERE id=$1",
+      [orderId])).payment_status).toBe('paid');
+    expect(unpaidClosureProbe).toBeTruthy();
+
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
       purchasing_hub:wiredP1P7.purchasing_hub,
       physical_handoff:wiredP1P7.physical_handoff,
       customer_finance:wiredP1P7.customer_finance,
+      unpaid_closure_probe:unpaidClosureProbe,
       wrong_relay_probe:relayProbe,
       boundaries:wiredP1P7.boundaries.filter(b=>wiredP1P7.wired_edges.includes(b.id)),
       stagingCertified:false};
