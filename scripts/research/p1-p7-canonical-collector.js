@@ -108,6 +108,11 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
    return fn(db,{item});
  });
  if(physicalHandoff?.proofs)Object.assign(proofs,physicalHandoff.proofs);
+ const customerFinance=await safe('scripts/research/p5-p2-canonical-collector.collectP5P2Canonical',()=>{
+   const fn=owners.p5p2||require('./p5-p2-canonical-collector').collectP5P2Canonical;
+   return fn(db,{item,upstream});
+ });
+ if(customerFinance?.proofs)Object.assign(proofs,customerFinance.proofs);
  const report=evaluateP1P7(proofs);
  return {...report,execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',wired_edges:Object.keys(proofs),
    evidence_provenance:['services/market-control-plane.js:getControlPlane',
@@ -122,6 +127,9 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
    physical_handoff:physicalHandoff?{facts:physicalHandoff.facts||null,
      diagnostics:physicalHandoff.diagnostics||null,
      owner_provenance:physicalHandoff.owner_provenance||null}:null,
+   customer_finance:customerFinance?{facts:customerFinance.facts||null,
+     diagnostics:customerFinance.diagnostics||null,
+     owner_provenance:customerFinance.owner_provenance||null}:null,
    context:{...ctx,selected_market:code,persisted_order_market:item.order_market_code||null,
      actual_product_id:item.product_id,actual_sku_id:item.sku_id,
      provenance:'CANONICAL_OWNER_READS_NOT_EXTERNAL_CHECKOUT'},
