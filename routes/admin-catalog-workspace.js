@@ -74,6 +74,15 @@ router.post('/products/:productRef/update', async (req, res, next) => {
   } catch (err) { sendError(err, res, next); }
 });
 
+router.post('/products/:productRef/classify', async (req, res, next) => {
+  try {
+    res.json({
+      ok: true, action: 'catalog_product_classified',
+      result: await workspace.classifyProduct(req.params.productRef, req.body || {}),
+    });
+  } catch (err) { sendError(err, res, next); }
+});
+
 router.post('/products/:productRef/deactivate', async (req, res, next) => {
   try {
     res.json({ ok: true, action: 'product_deactivated', result: await workspace.deactivateProduct(req.params.productRef) });
