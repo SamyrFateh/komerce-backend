@@ -96,11 +96,12 @@ function reportMarkdown(report){
  }else lines.push('Non exécutés (mode sans base PostgreSQL).');
  if(report.code?.independentCodeSignals?.length){
   lines.push('', '## Contradictions potentielles de contrôle de flux (code)', '',
-   '| Règle | Source | Compteur | Hypothèse | Preuve restante |',
+   '| Règle | Source | Élément à contrôler | Risque / qualification | Preuve restante |',
    '|---|---|---|---|---|');
   for(const v of report.code.independentCodeSignals)
    lines.push('| '+v.id+' | '+String(v.file).replace(/[|]/g,'/')+':'+v.line+
-     ' | '+v.counter+' | '+v.risk+
+     ' | '+(v.counter||v.requestKey||'n/a')+' | '+v.risk+
+     (v.classification?' ('+v.classification+')':'')+
      ' | '+v.requiredIndependentProof+' |');
   lines.push('', 'Ces traces de code ne prouvent pas une anomalie de données en production.');
  }
