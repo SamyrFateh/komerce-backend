@@ -5,6 +5,7 @@ const {ENTRY,gitBlobHash,reviewerSourceState,qualifyStaticTriage,triageCounts}=r
 const path=require('node:path');
 const samples=[
  ['LS-04','routes/admin/system.js'],['LS-04','routes/parcels.js'],
+ ['LS-03','routes/wallet.js'],
  ['LS-04','scripts/seed-a8-staging-two-orders.js'],
  ['LS-04','services/auto-parcel.js'],['LS-05','services/auto-parcel.js'],
  ['LS-04','services/parcel-auto-create-service.js'],
