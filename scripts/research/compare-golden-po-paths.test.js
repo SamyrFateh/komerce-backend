@@ -9,13 +9,20 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
   execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',
   wired_edges:['P7_P1_MARKET_PRICING','P7_P1_MARKET_EXPOSURE','P7_P2_CHECKOUT',
    'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT',
-   'P4_P2_RELAY_HANDOFF'],
+   'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE'],
   owner_read_errors:[],
   boundaries:[
    {id:'P2_P3_PURCHASE_REQUIREMENT',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
    {id:'P3_P4_HUB_RECEIPT',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
-   {id:'P4_P2_RELAY_HANDOFF',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]}
+   {id:'P4_P2_RELAY_HANDOFF',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
+   {id:'P5_P2_PAYMENT_CLOSURE',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']}
   ],
+  customer_finance:{
+   facts:{mode:'stripe_eur',synthetic:true,psp_reference_present:false,
+    closure_verdict:'FINANCIAL_CLOSE_MATCHED',closure_mode:'normal'},
+   diagnostics:{finance_outcome:'NOT_CERTIFICATION',contradictions:[],
+    gaps:['SYNTHETIC_PAYMENT_NOT_PSP_PROOF','STRIPE_PAID_NO_PSP_REFERENCE']}
+  },
   physical_handoff:{
    facts:{parcel_count:1,item_parcel_count:1,scan_count:1,handoff_verdict:'HANDOFF_MATCHED'},
    diagnostics:{contradictions:[],gaps:[]}
@@ -161,4 +168,24 @@ test('both Golden paths must have scan, not just parcel.collected',()=>{
  a.p1_p7_wiring.physical_handoff.facts.scan_count=0;
  b.p1_p7_wiring.physical_handoff.facts.scan_count=0;
  assert.throws(()=>comparePaths(a,b),/P4-P2 true parcel membership/);
+});
+
+test('both matching Goldens without a finance owner read never prove customer payment',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.customer_finance;
+ delete b.p1_p7_wiring.customer_finance;
+ assert.throws(()=>comparePaths(a,b),/P5-P2 finance/);
+});
+test('both synthetic payment fixtures mislabeled PSP proved are rejected',()=>{
+ const a=make('grouped'),b=make('historical');
+ for(const p of [a,b]){
+  p.p1_p7_wiring.boundaries.find(x=>x.id==='P5_P2_PAYMENT_CLOSURE').status='NO_CONTRADICTION_OBSERVED';
+  p.p1_p7_wiring.customer_finance.diagnostics.gaps=[];
+ }
+ assert.throws(()=>comparePaths(a,b),/P5-P2 finance/);
+});
+test('one deceptively persisted Stripe ref cannot be treated as a real PSP charge',()=>{
+ const a=make('grouped'),b=make('historical');
+ b.p1_p7_wiring.customer_finance.facts.psp_reference_present=true;
+ assert.throws(()=>comparePaths(a,b),/P5-P2 finance/);
 });
