@@ -314,7 +314,10 @@ async function createDraftProductFromSourcingCandidate(q, {
       boutiqueTaxonomy.category,
       boutiqueTaxonomy.subcategory,
       purchaseCostKmf,
-      initialPrice == null ? null : initialPrice,
+      // A category-only candidate is still awaiting leaf-level commercial review.
+      // Never carry a sale price into this intermediate draft, even when the
+      // sourcing caller happens to supply an initial price.
+      boutiqueTaxonomy.subcategory && initialPrice != null ? initialPrice : null,
       stock,
       weightKg,
       hasVariants,
