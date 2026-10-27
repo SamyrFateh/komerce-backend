@@ -913,10 +913,12 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
         const poisoned=await collectP4P6Canonical(logisticsProbeClient,{
           item:{order_id:orderId,order_item_id:itemId},
         });
-        expect(poisoned.diagnostics.contradictions)
-          .toContain('LOGISTICS_COST_FOREIGN_PARCEL');
+        // Header-only legacy parcel is a valid ORDER member, but does
+        // not actually contain this item and is absent from the shipment.
         expect(poisoned.diagnostics.contradictions)
           .toContain('LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM');
+        expect(poisoned.diagnostics.contradictions)
+          .toContain('LOGISTICS_COST_SHIPMENT_PARCEL_UNLINKED');
         foreignParcelCostProbe={outcome:'UNLINKED_LOGISTICS_COST_PARCEL_REPRODUCED',
           hypotheses:poisoned.diagnostics.contradictions};
       }catch(error){
