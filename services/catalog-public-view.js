@@ -250,7 +250,7 @@ function publicProductColumns(alias = 'p') {
       return `COALESCE(${a}.boutique_category_key, ${a}.category) AS category`;
     }
     if (field === 'subcategory') {
-      return `COALESCE(${a}.boutique_subcategory_key, ${a}.subcategory) AS subcategory`;
+      return `CASE WHEN ${a}.boutique_category_key IS NOT NULL THEN ${a}.boutique_subcategory_key ELSE ${a}.subcategory END AS subcategory`;
     }
     if (field === 'image_url') {
       return `${canonicalProductImageSql(a)} AS image_url`;
