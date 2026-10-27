@@ -7,7 +7,7 @@ const {RULES}=require('./rules');
 function validateReadOnlySql(sql){
  const s=String(sql||'').trim();
  return /^SELECT\b/i.test(s)&&s.includes('LIMIT $1')&&!s.includes(';')&&
-   !/\b(?:INSERT|UPDATE|DELETE|ALTER|CREATE|DROP|TRUNCATE|MERGE|EXECUTE|GRANT|REVOKE|COPY|CALL|DO)\b/i.test(s);
+   !/\b(?:INSERT|UPDATE|DELETE|ALTER|CREATE|DROP|TRUNCATE|MERGE|EXECUTE|GRANT|REVOKE|COPY|CALL|DO|INTO)\b/i.test(s);
 }
 function normalizeOptions(opts={}){
  const n=opts.sampleLimit===undefined?25:Number(opts.sampleLimit);
