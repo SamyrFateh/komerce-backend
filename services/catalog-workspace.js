@@ -27,6 +27,7 @@ const { certifyCatalogProduct } = require('./catalog-certification');
 const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
+const catalogRegistry = require('./catalog-registry');
 const { getPricingParameterStatus } = require('./pricing-parameters-status');
 
 const CATALOG_CAP_FALLBACK = 120;
@@ -349,15 +350,20 @@ async function buildWorkspace(query = {}) {
   const approvalLimit = Math.min(Math.max(Number(query.approval_limit) || 50, 1), 100);
   const approvalOffset = Math.max(Number.parseInt(query.approval_offset, 10) || 0, 0);
   const approvalProductRef = String(query.product_ref || '').trim() || null;
-  const [summary, catalogCap, categories, products, approval, approvalBreakdown, focusedHandoff, pricingParameters] = await Promise.all([
+  const [summary, catalogCap, categories, registry, commercialProducts, approval, approvalBreakdown, focusedHandoff, pricingParameters] = await Promise.all([
     querySummary(),
     queryCatalogCap(),
     taxonomy.listCategories(),
-    commercialAssortment.listCommercialAssortment({
+    catalogRegistry.listRegistry({
       search: query.search,
+      supplier: query.supplier,
       category: query.category,
-      limit: query.limit || 200,
+      subcategory: query.subcategory,
+      status: query.status,
+      limit: query.catalog_limit || 50,
+      offset: query.catalog_offset || 0,
     }),
+    commercialAssortment.listCommercialAssortment({ limit: 200 }),
     queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset, productRef: approvalProductRef }),
     queryApprovalBreakdown(),
     queryFocusedMarketHandoff(approvalProductRef),
@@ -377,15 +383,16 @@ async function buildWorkspace(query = {}) {
     : approval.map(({ product_id, ...row }) => row);
   const approvalTotal = Number(summary.approval_pending) || 0;
   const commercialSummary = {
-    approved_products: products.length,
-    closed_lots: [...new Set(products.flatMap(row => row.source_lots || []))].length,
-    markets: [...new Set(products.flatMap(row => row.approved_markets || []))].length,
+    approved_products: commercialProducts.length,
+    closed_lots: [...new Set(commercialProducts.flatMap(row => row.source_lots || []))].length,
+    markets: [...new Set(commercialProducts.flatMap(row => row.approved_markets || []))].length,
   };
   const commercialCurationSummary = { ...summary, active_products: commercialSummary.approved_products };
   return {
-    scope: { mode: 'global_commercial_catalog', label: 'Catalogue global commercial' },
+    scope: { mode: 'global_catalog_registry', label: 'Catalogue global Komerce' },
     summary: {
       ...summary,
+      registry_total: registry.page.total,
       categories: categories.filter(row => row.is_active).length,
       commercial_approved: commercialSummary.approved_products,
       commercial_closed_lots: commercialSummary.closed_lots,
@@ -394,7 +401,9 @@ async function buildWorkspace(query = {}) {
     commercial: commercialSummary,
     curation: buildCurationState(commercialCurationSummary, catalogCap),
     categories,
-    products,
+    products: registry.products,
+    registry_page: registry.page,
+    commercial_products: commercialProducts,
     approval: approvalWithReadiness,
     focused_handoff: focusedHandoff,
     pricing_parameters: pricingParameters,
