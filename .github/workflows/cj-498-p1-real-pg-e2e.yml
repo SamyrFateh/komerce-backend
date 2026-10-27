@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'services/catalog-candidate-product-service.js'
+      - 'services/catalog-commercial-category-evidence.js'
       - 'tests/unit/catalog-candidate-product-service.test.js'
       - 'scripts/cj-498-p1-disposable-pg-e2e.js'
       - '.github/workflows/cj-498-p1-real-pg-e2e.yml'
@@ -42,6 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/cj-498-p1-disposable-pg-e2e.js
+          node --check services/catalog-commercial-category-evidence.js
           npx jest --config jest.unit.config.js tests/unit/catalog-candidate-product-service.test.js --runInBand --no-coverage
       - name: Rebuild canonical empty PostgreSQL database in a disposable container
         shell: bash
