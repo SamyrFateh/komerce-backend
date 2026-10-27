@@ -37,8 +37,8 @@ const REGISTRY_CTE = [
   '        (bc.key IS NOT NULL AND bs.key IS NOT NULL) AS taxonomy_ready,',
   '        (p.description IS NOT NULL AND BTRIM(p.description) <> \'\'',
   '           AND p.needs_review IS FALSE',
-  "           AND (p.content_source <> 'connector_raw' OR",
-  "                p.source_locale = 'fr' OR p.source_locale LIKE 'fr-%')) AS editorial_ready",
+  "           AND (COALESCE(p.content_source, 'connector_raw') <> 'connector_raw' OR",
+  "                COALESCE(p.source_locale, '') = 'fr' OR COALESCE(p.source_locale, '') LIKE 'fr-%')) AS editorial_ready",
   '   FROM products p',
   '   JOIN LATERAL (',
   '     SELECT candidate_ref, supplier_name, supplier_product_id, supplier_category,',
@@ -106,18 +106,64 @@ async function listRegistry(query = {}, executor = db) {
     params.push(value);
     filters.push(sql.replace('?', '$' + params.length));
   };
-  if (query.search) addFilter('%' + String(query.search).trim() + '%',
-    '(name ILIKE ? OR product_ref ILIKE ? OR supplier_product_id ILIKE ?)');
-  // Search is a single bind value reused for all searchable columns.
-  if (query.search) {
-    const position = '$' + params.length;
-    filters[filters.length - 1] = '(name ILIKE ' + position +
-      ' OR product_ref ILIKE ' + position + ' OR supplier_product_id ILIKE ' + position + ')';
+  if (query.search && String(query.search).trim()) {
+    params.push('%' + String(query.search).trim() + '%');
+    const position = '
+  addFilter(query.supplier, 'supplier_name = ?');
+  addFilter(query.category, 'boutique_category_key = ?');
+  addFilter(query.subcategory, 'boutique_subcategory_key = ?');
+  // A product can have several defects. A filter must show any matching
+  // defect, not only the priority status shown on the first line.
+  const statusPredicates = {
+    source_to_normalize: 'NOT source_ready',
+    taxonomy_to_confirm: 'NOT taxonomy_ready',
+    editorial_to_complete: 'NOT editorial_ready',
+    approval_pending: "lifecycle_status = 'candidate'",
+    catalog_approved: "work_status = 'catalog_approved'",
+    rejected: "work_status = 'rejected'",
+    inactive: "work_status = 'inactive'",
+  };
+  if (query.status && statusPredicates[query.status]) {
+    filters.push(statusPredicates[query.status]);
+  }
+  const where = filters.length ? ' WHERE ' + filters.join(' AND ') : '';
+  const count = await executor.query(REGISTRY_CTE + '\nSELECT COUNT(*)::int AS total FROM marked' + where, params);
+  const total = Number(count.rows[0]?.total) || 0;
+  const rows = await executor.query(
+    REGISTRY_CTE + '\nSELECT * FROM marked' + where +
+    '\nORDER BY updated_at DESC NULLS LAST, product_ref ASC LIMIT $' +
+    (params.length + 1) + ' OFFSET $' + (params.length + 2),
+    [...params, limit, offset]
+  );
+  return {
+    products: rows.rows.map(details),
+    page: { total, limit, offset, has_previous: offset > 0,
+      has_next: offset + rows.rows.length < total },
+  };
+}
+
+module.exports = { listRegistry, details };
+ + params.length;
+    filters.push('(name ILIKE ' + position + ' OR product_ref ILIKE ' + position +
+      ' OR supplier_product_id ILIKE ' + position + ')');
   }
   addFilter(query.supplier, 'supplier_name = ?');
   addFilter(query.category, 'boutique_category_key = ?');
   addFilter(query.subcategory, 'boutique_subcategory_key = ?');
-  addFilter(query.status, 'work_status = ?');
+  // A product can have several defects. A filter must show any matching
+  // defect, not only the priority status shown on the first line.
+  const statusPredicates = {
+    source_to_normalize: 'NOT source_ready',
+    taxonomy_to_confirm: 'NOT taxonomy_ready',
+    editorial_to_complete: 'NOT editorial_ready',
+    approval_pending: "lifecycle_status = 'candidate'",
+    catalog_approved: "work_status = 'catalog_approved'",
+    rejected: "work_status = 'rejected'",
+    inactive: "work_status = 'inactive'",
+  };
+  if (query.status && statusPredicates[query.status]) {
+    filters.push(statusPredicates[query.status]);
+  }
   const where = filters.length ? ' WHERE ' + filters.join(' AND ') : '';
   const count = await executor.query(REGISTRY_CTE + '\nSELECT COUNT(*)::int AS total FROM marked' + where, params);
   const total = Number(count.rows[0]?.total) || 0;
