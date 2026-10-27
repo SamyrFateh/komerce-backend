@@ -1,7 +1,8 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {prepareStaticTriage,summarizeTriage}=require('./static-triage');
-const {ENTRY,qualifyStaticTriage,triageCounts}=require('./triage-ledger');
+const {ENTRY,gitBlobHash,reviewerSourceState,qualifyStaticTriage,triageCounts}=require('./triage-ledger');
+const path=require('node:path');
 const samples=[
  ['LS-04','routes/admin/system.js'],['LS-04','routes/parcels.js'],
  ['LS-03','routes/wallet.js'],['LS-04','scripts/research/golden-parcel-maturity-pg.js'],
@@ -54,4 +55,36 @@ test('family grouping is actionable and tracks occurrences without declaring bug
  const paypal=grouped.find(x=>x.rule==='LS-06'&&x.owner==='Payments / PSP');
  assert.equal(paypal.occurrences,4); // payment-paypal twice, refund-service, utils/refunds
  assert.ok(grouped.length>=5);
+});
+
+test('reviewed file Git object is verified against real code, not merely its path',()=>{
+ const root=path.resolve(__dirname,'../..');
+ const source=qualifyStaticTriage(prepareStaticTriage(samples),{root});
+ assert.equal(source.length,22);
+ assert.equal(source.filter(x=>x.currentReviewValid===true).length,22);
+ assert.equal(triageCounts(source).staleOrUnknownReviews,0);
+ assert.equal(reviewerSourceState('routes/wallet.js',{root}),'SOURCE_UNCHANGED');
+});
+test('changed source invalidates manual review without silently erasing original suspicion',()=>{
+ const root=path.resolve(__dirname,'../..');
+ const source=qualifyStaticTriage(prepareStaticTriage([{
+  rule:'LS-03',file:'routes/wallet.js',line:10,priority:'P1',
+ }]),{root,readFile:()=>Buffer.from('changed wallet source')});
+ assert.equal(source[0].reviewedFromSource,true);
+ assert.equal(source[0].currentReviewValid,false);
+ assert.equal(source[0].reviewerSourceState,'SOURCE_CHANGED_REVIEW_STALE');
+ assert.equal(source[0].confirmedBug,false);
+});
+test('source path without review baseline is never considered current',()=>{
+ const root=path.resolve(__dirname,'../..');
+ const r=qualifyStaticTriage(prepareStaticTriage([{
+  rule:'LS-03',file:'routes/new-wallet.js',line:12,priority:'P1',
+ }]),{root});
+ assert.equal(r[0].currentReviewValid,false);
+ assert.equal(r[0].reviewerSourceState,'BASELINE_NOT_RECORDED');
+});
+test('Git blob hashing respects byte lengths and refuses textual similarity',()=>{
+ const a=Buffer.from('hello\n'),b=Buffer.from('hello');
+ assert.notEqual(gitBlobHash(a),gitBlobHash(b));
+ assert.match(gitBlobHash(a),/^[a-f0-9]{40}$/);
 });
