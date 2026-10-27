@@ -20,9 +20,9 @@ const MALE_CLOTHING = /\b(mens? clothing|mens? apparel|male clothing|ropa de hom
 // Provider-neutral child apparel evidence: the actual supplier breadcrumb,
 // not a discovery keyword such as "kids" or a destination preselected by search.
 const CHILD_CLOTHING = /\b(?:girls?|boys?|bab(?:y|ies)|kids?|child(?:ren|rens)?|toddlers?|infants?) (?:clothing|clothes|apparel|garments?|wear)\b|\b(?:ropa infantil|vetements? enfants?|kinderbekleidung|moda infantil|roupa infantil)\b/;
-const CHILD_GARMENT = /\b(?:onesies?|rompers?|jumpsuits?|bodysuits?|pajamas?|pyjamas?|dresses?|shirts?|tops?|shorts?|pants?|trousers?|coats?|jackets?|outfits?|suits?|sets?|skirts?|robes?|chemises?|combinaisons?)\b/;
+const CHILD_GARMENT = /\b(?:onesies?|rompers?|jumpsuits?|bodysuits?|pajamas?|pyjamas?|dress(?:es)?|shirts?|tops?|shorts?|pants?|trousers?|coats?|jackets?|outfits?|suits?|sets?|skirts?|robes?|chemises?|combinaisons?)\b/;
 const ADULT_TITLE = /\b(?:womens?|ladies|female|femmes?|mens?|male|hommes?|mujer(?:es)?|hombre(?:s)?)\b/;
-const CLOTHING_OBJECT = /\b(shirts?|t shirts?|tees?|tops?|dresses?|blouses?|skirts?|shorts?|pants?|trousers?|jackets?|blazers?|coats?|vests?|pullovers?|hoodies?|sweaters?|robes?|chemises?|jupes?|pantalons?|vestes?)\b/;
+const CLOTHING_OBJECT = /\b(shirts?|t shirts?|tees?|tops?|dress(?:es)?|blouses?|skirts?|shorts?|pants?|trousers?|jackets?|blazers?|coats?|vests?|pullovers?|hoodies?|sweaters?|robes?|chemises?|jupes?|pantalons?|vestes?)\b/;
 const NON_CLOTHING_OBJECT = /\b(rings?|necklaces?|pendants?|earrings?|bracelets?|watches?|jewelry|jewellery|bijoux|colliers?|bagues?|parfums?|sprays?|detergents?|repellent|cleaners?|treater|paintings?|canvases?|kennels?|pet beds?)\b/;
 const NON_STORAGE_OBJECT = /\b(stain treater|stain removers?|insect repellents?|mosquito repellents?|pest sprays?|cleaning sprays?|cleaners?|paintings?|canvas prints?|wall art|tableaux?)\b/;
 
