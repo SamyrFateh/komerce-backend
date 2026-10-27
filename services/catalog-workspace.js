@@ -28,6 +28,7 @@ const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
 const catalogRegistry = require('./catalog-registry');
+const catalogProductMutation = require('./catalog-product-mutation-service');
 const { getPricingParameterStatus } = require('./pricing-parameters-status');
 
 const CATALOG_CAP_FALLBACK = 120;
@@ -469,6 +470,31 @@ async function updateProduct(productRef, body, actor) {
   return publicProduct(result.body);
 }
 
+// Classification boutique du produit remis : l'autorité Catalog valide la paire.
+// Cette action n'approuve pas le produit, ne le publie pas et ne modifie
+// jamais sa catégorie économique/douanière.
+async function classifyProduct(productRef, body = {}) {
+  const product = await resolveProduct(productRef);
+  const { rows } = await db.query(
+    "SELECT 1 FROM sourcing_candidates WHERE product_id=$1 AND state='imported_to_catalog' LIMIT 1",
+    [product.id]
+  );
+  if (!rows.length) throw new CatalogWorkspaceError(
+    'catalog_handoff_required', 'Produit non remis par la Raffinerie', 409
+  );
+  const result = await catalogProductMutation.assignBoutiqueTaxonomy(
+    db, product.id, body.category, body.subcategory
+  );
+  if (!result) throw new CatalogWorkspaceError('product_not_found', 'Produit introuvable', 404);
+  return {
+    product_ref: result.product_ref,
+    boutique_category_key: result.boutique_category_key,
+    boutique_subcategory_key: result.boutique_subcategory_key,
+    approved: false,
+    market_exposure_changed: false,
+  };
+}
+
 async function deactivateProduct(productRef) {
   const product = await resolveProduct(productRef);
   const result = await productAdmin.deleteProduct(db, product.id);
@@ -582,6 +608,7 @@ module.exports = {
   buildWorkspace,
   createProduct,
   updateProduct,
+  classifyProduct,
   deactivateProduct,
   prepareCandidateFrench,
   approveCandidate,
