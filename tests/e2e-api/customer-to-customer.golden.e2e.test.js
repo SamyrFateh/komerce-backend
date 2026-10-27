@@ -335,6 +335,16 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       supplier_tracking_number: TRACKING_REF,
     });
 
+    const {collectGoldenTrail,analyzeGoldenTrail}=require('../../scripts/research/golden-identity-trail');
+    const stageProofs=[];
+    const preHubTrail=await collectGoldenTrail(db,orderId);
+    expect(preHubTrail.issues).toEqual([]);
+    expect(preHubTrail.gaps.map(x=>x.code)).toEqual(expect.arrayContaining([
+      'NO_HUB_ALLOCATION','NO_HUB_PHYSICAL_UNIT_PLACEMENT',
+      'NO_PARCEL_MEMBERSHIP','NO_CUSTOMER_HANDOFF_SCAN',
+    ]));
+    stageProofs.push({stage:'SUPPLIER_EXECUTION_NOT_HUB_RECEIPT',status:preHubTrail.status,
+      gaps:preHubTrail.gaps.map(x=>x.code)});
     // La fermeture financière est encore impossible : aucune remise client.
     let close = await reconcileOrderFinancialClose(db, { orderId });
     expect(close).toMatchObject({
@@ -379,6 +389,13 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       [hubUnitId, allocationId]
     );
 
+    const afterHubTrail=await collectGoldenTrail(db,orderId);
+    expect(afterHubTrail.issues).toEqual([]);
+    expect(afterHubTrail.gaps.some(x=>x.code==='NO_HUB_ALLOCATION')).toBe(false);
+    expect(afterHubTrail.gaps.some(x=>x.code==='NO_HUB_PHYSICAL_UNIT_PLACEMENT')).toBe(false);
+    expect(afterHubTrail.gaps.some(x=>x.code==='NO_PARCEL_MEMBERSHIP')).toBe(true);
+    stageProofs.push({stage:'HUB_RECEIPT_BEFORE_PARCEL',status:afterHubTrail.status,
+      gaps:afterHubTrail.gaps.map(x=>x.code)});
     inbound = await reconcileHubInbound(db, { supplierFulfillmentId: fulfillmentId });
     expect(inbound).toMatchObject({
       verdict: 'INBOUND_MATCHED',
@@ -488,6 +505,11 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     );
     expect(confirmedCustoms).toMatchObject({ status: 'confirmed' });
 
+    const beforePickupTrail=await collectGoldenTrail(db,orderId);
+    expect(beforePickupTrail.issues).toEqual([]);
+    expect(beforePickupTrail.gaps).toEqual([{code:'NO_CUSTOMER_HANDOFF_SCAN',stage:'HANDOFF'}]);
+    stageProofs.push({stage:'AT_RELAY_NO_CUSTOMER_SCAN',status:beforePickupTrail.status,
+      gaps:beforePickupTrail.gaps.map(x=>x.code)});
     let handoff = await reconcileCustomerHandoff(db, { orderId });
     expect(handoff).toMatchObject({
       verdict: 'HANDOFF_PENDING',
@@ -591,9 +613,9 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
 
     // R&D seam: independent canonical foreign-key trail on THIS SAME Golden
     // order, after all owners made their own verdicts. Read-only and never GO.
-    const { collectGoldenTrail, analyzeGoldenTrail } =
-      require('../../scripts/research/golden-identity-trail');
     const identityTrail = await collectGoldenTrail(db, orderId);
+    stageProofs.push({stage:'CUSTOMER_HANDOFF_AND_FINANCIAL_CLOSE',status:identityTrail.status,
+      gaps:identityTrail.gaps.map(x=>x.code)});
     expect(identityTrail.status).toBe('NO_IDENTITY_CONTRADICTION_OBSERVED');
     expect(identityTrail.issues).toEqual([]);
     expect(identityTrail.gaps).toEqual([]);
@@ -673,6 +695,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       order_reference:ORDER_REF,canonical_order_id:orderId,
       checkpoint:'FINANCIAL_CLOSE_MATCHED',
       identity_status:identityTrail.status,
+      progressive_checkpoints:stageProofs,
       verified_counts:Object.fromEntries(Object.entries(identityTrail.observed)
         .filter(([key,value])=>Array.isArray(value)).map(([key,value])=>[key,value.length])),
       perturbation:'IN_MEMORY_SKU_REPLACEMENT_AND_SQL_SKU_UPDATE_ATTEMPT',
