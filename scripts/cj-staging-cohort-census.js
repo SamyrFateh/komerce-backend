@@ -34,17 +34,42 @@ async function inspect({database=db,confirm=confirmTarget,replay=audit}={}) {
     await q.query("SET LOCAL statement_timeout='25000ms'");
     const {rows}=await q.query(`
       SELECT ir.id,ir.run_ref,ir.provider,ir.source_total,ir.status,
+        ir.source_type,ir.mode,ir.import_id IS NOT NULL AS has_import_link,
+        ir.intake,ir.stages,
+        sci.total_items AS batch_declared,sci.status AS batch_status,
+        sci.ready_count,sci.quarantined_count,sci.rejected_count,sci.error_code,
+        (SELECT COUNT(*)::int FROM supplier_catalog_import_rejections rej
+          WHERE rej.import_id=ir.import_id) AS rejection_rows,
+        (SELECT COUNT(*)::int FROM import_runtime_item_events ev
+          WHERE ev.run_id=ir.id) AS event_rows,
         (SELECT COUNT(DISTINCT ev.candidate_id)::int
            FROM import_runtime_item_events ev
           WHERE ev.run_id=ir.id AND ev.candidate_id IS NOT NULL) AS event_candidates,
         (SELECT COUNT(*)::int
            FROM sourcing_candidates sc WHERE sc.import_id=ir.import_id) AS batch_candidates
       FROM import_runtime_runs ir
+      LEFT JOIN supplier_catalog_imports sci ON sci.id=ir.import_id
       WHERE LOWER(ir.provider) LIKE 'cj%'
       ORDER BY ir.run_ref DESC LIMIT 50
     `);
+    const {rows:[providerCount]}=await q.query(
+      "SELECT COUNT(*)::int AS n,COUNT(DISTINCT import_id)::int AS batches FROM sourcing_candidates WHERE LOWER(supplier_name) LIKE 'cj%'"
+    );
+    const intakeFields=['accepted','duplicates','rejected','quarantined',
+      'deferred','fx_pending','ready_for_refinery','certification_blocked',
+      'pipeline_status','canonical_resolved'];
     const cohorts=rows.map(r=>({
       run_ref:r.run_ref,provider:r.provider,status:r.status,
+      source_type:r.source_type,mode:r.mode,has_import_link:r.has_import_link,
+      intake:Object.fromEntries(intakeFields.filter(k=>r.intake?.[k]!==undefined)
+        .map(k=>[k,r.intake[k]])),
+      stages:Object.fromEntries(Object.entries(r.stages||{}).map(([k,v])=>
+        [k,{started:!!v?.started_at,finished:!!v?.finished_at}])),
+      batch:{declared:r.batch_declared,status:r.batch_status,
+        ready:r.ready_count,quarantined:r.quarantined_count,
+        rejected:r.rejected_count,error_code:r.error_code},
+      rejection_rows:Number(r.rejection_rows||0),
+      event_rows:Number(r.event_rows||0),
       source_total:Number(r.source_total||0),
       event_candidates:Number(r.event_candidates||0),
       batch_candidates:Number(r.batch_candidates||0),
@@ -80,6 +105,8 @@ async function inspect({database=db,confirm=confirmTarget,replay=audit}={}) {
     await q.query('ROLLBACK');
     return {target:HOST,mode:'READ_ONLY',writes:0,provider_calls:0,
       cj_runs_found:cohorts.length,eligible_exact_twenty:exact.length,
+      provider_candidate_population:Number(providerCount?.n||0),
+      provider_candidate_batches:Number(providerCount?.batches||0),
       candidates:cohorts,selected:chosen?.run_ref||null,
       classification,verdict:classification?.certified_20_of_20
         ?'CJ_20_CLASSIFICATION_CERTIFIED'
@@ -99,6 +126,10 @@ async function main() {
     fs.writeFileSync(OUT,JSON.stringify(report,null,2)+'\n');
     console.log('[CJ_STAGING_CENSUS] '+JSON.stringify({
       verdict:report.verdict,found:report.cj_runs_found,
+      provider_population:report.provider_candidate_population,
+      run_summaries:report.candidates.map(x=>({run:x.run_ref,source_total:x.source_total,
+        linked:x.has_import_link,batch:x.batch,event_rows:x.event_rows,
+        rejection_rows:x.rejection_rows,intake:x.intake})),
       exact_twenty:report.eligible_exact_twenty,
       selected:report.selected,
       classification:report.classification&&{
