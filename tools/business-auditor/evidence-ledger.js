@@ -27,7 +27,7 @@ function assessProof(proof){
  if(!proof.independentReview||proof.independentReview.approved!==true||
   !proof.independentReview.reviewer||!proof.independentReview.issue)
   return {verdict:'COUNTEREXAMPLE_REPRODUCED_PENDING_REVIEW',reason:'Owner independent review is missing'};
- return {verdict:'CONFIRMED_TEST_COUNTEREXAMPLE',reason:'Paired evidence and independent review; not production incident proof'};
+ return {verdict:'COUNTEREXAMPLE_REPRODUCED_PENDING_TRUSTED_CI',reason:'Self-reported proof cannot independently certify test execution'};
 }
 function makeEvidenceLedger(inventory,{proofs={}}={}){
  if(inventory?.contract!=='komerce-business-writer-inventory/v1'||!Array.isArray(inventory.writes))
