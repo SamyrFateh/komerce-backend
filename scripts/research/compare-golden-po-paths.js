@@ -95,6 +95,26 @@ function assertP5P2(p) {
   unpaid_probe_outcome:probe.outcome,
   unpaid_probe_verdict:probe.verdict||'SQL_GUARD_REJECTED'};
 }
+function assertP3P6(p) {
+ const w=p.p1_p7_wiring;
+ const edge=w?.boundaries?.find(x=>x.id==='P3_P6_PURCHASE_COST');
+ const cost=w?.supplier_cost, facts=cost?.facts,diag=cost?.diagnostics;
+ // Our Golden directly seeds an allocation marked actual but DOES NOT
+ // record a supplier_payment_settlements debit. Claiming real verified KMF
+ // from that allocation is specifically a false green.
+ if(!w?.wired_edges?.includes('P3_P6_PURCHASE_COST')||
+    !edge||edge.status!=='EVIDENCE_GAP' ||
+    !Array.isArray(edge.contradictions)||edge.contradictions.length ||
+    !facts||facts.product_purchase_actual_count!==1||
+    Number(facts.allocation_amount_kmf)!==7000||
+    facts.settlement_real_kmf!==null ||
+    !diag||!Array.isArray(diag.contradictions)||diag.contradictions.length ||
+    !Array.isArray(diag.gaps)||
+    !diag.gaps.includes('ACTUAL_ALLOCATION_WITHOUT_SETTLEMENT_PROOF'))
+   throw Error('P3-P6 actual allocation must not become a proved supplier settlement');
+ return {purchase_cost_evidence:'ACTUAL_ALLOCATION_WITHOUT_SETTLEMENT_PROOF',
+  item_allocation_kmf:7000,verified_supplier_settlement_kmf:null};
+}
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
  if(p.identity_status!=='NO_IDENTITY_CONTRADICTION_OBSERVED')
@@ -111,6 +131,7 @@ const norm=(p)=>{
   p2_p4_owner_truth:assertP2P4(p),
   p4_p2_handoff_truth:assertP4P2(p),
   p5_p2_finance_truth:assertP5P2(p),
+  p3_p6_purchase_cost_truth:assertP3P6(p),
   identity_status:p.identity_status,
   final_business_verdict:p.checkpoint,
   stage_projections:p.progressive_checkpoints.map(s=>({
