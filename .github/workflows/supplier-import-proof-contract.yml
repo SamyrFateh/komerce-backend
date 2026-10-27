@@ -1,0 +1,28 @@
+name: Supplier import proof — focused unit contract
+on:
+  pull_request:
+    paths:
+      - 'scripts/lib/supplier-import-proof-gates.js'
+      - 'scripts/cj-20-canonical-staging-replay.js'
+      - 'tests/unit/supplier-import-proof-gates.test.js'
+      - '.github/workflows/supplier-import-proof-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Syntax check reusable gates and guarded staging entrypoint
+        run: |
+          node --check scripts/lib/supplier-import-proof-gates.js
+          node --check scripts/cj-20-canonical-staging-replay.js
+      - name: Validate nominal proof and deliberately broken supplier cohorts
+        run: npx jest --config jest.unit.config.js tests/unit/supplier-import-proof-gates.test.js --runInBand --no-coverage
