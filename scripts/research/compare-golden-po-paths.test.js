@@ -8,12 +8,18 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
   schema:'komerce-p1-p7-cross-boundary-research/v1',
   execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',
   wired_edges:['P7_P1_MARKET_PRICING','P7_P1_MARKET_EXPOSURE','P7_P2_CHECKOUT',
-   'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT'],
+   'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT',
+   'P4_P2_RELAY_HANDOFF'],
   owner_read_errors:[],
   boundaries:[
    {id:'P2_P3_PURCHASE_REQUIREMENT',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
-   {id:'P3_P4_HUB_RECEIPT',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]}
+   {id:'P3_P4_HUB_RECEIPT',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
+   {id:'P4_P2_RELAY_HANDOFF',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]}
   ],
+  physical_handoff:{
+   facts:{parcel_count:1,item_parcel_count:1,scan_count:1,handoff_verdict:'HANDOFF_MATCHED'},
+   diagnostics:{contradictions:[],gaps:[]}
+  },
   purchasing_hub:{
    facts:{line_count:1,allocation_count:1,fulfillment_count:1,
      inbound_verdict:'INBOUND_MATCHED',effective_quantity:1,received_quantity:1,
@@ -136,4 +142,23 @@ test('pair must not pretend historical/po-group shapes are the same',()=>{
  assert.equal(a.p1_p7_wiring.purchasing_hub.facts.po_shape,'grouped');
  assert.equal(b.p1_p7_wiring.purchasing_hub.facts.po_shape,'historical');
  assert.equal(comparePaths(a,b).mismatchCount,0);
+});
+
+test('both Goldens without handoff are not nominally equal',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.physical_handoff;
+ delete b.p1_p7_wiring.physical_handoff;
+ assert.throws(()=>comparePaths(a,b),/P4-P2 true parcel membership/);
+});
+test('shared parcel false green: missing member item identity is fail-closed',()=>{
+ const a=make('grouped'),b=make('historical');
+ a.p1_p7_wiring.physical_handoff.facts.item_parcel_count=0;
+ b.p1_p7_wiring.physical_handoff.facts.item_parcel_count=0;
+ assert.throws(()=>comparePaths(a,b),/P4-P2 true parcel membership/);
+});
+test('both Golden paths must have scan, not just parcel.collected',()=>{
+ const a=make('grouped'),b=make('historical');
+ a.p1_p7_wiring.physical_handoff.facts.scan_count=0;
+ b.p1_p7_wiring.physical_handoff.facts.scan_count=0;
+ assert.throws(()=>comparePaths(a,b),/P4-P2 true parcel membership/);
 });
