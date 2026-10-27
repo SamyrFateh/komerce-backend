@@ -89,6 +89,43 @@ describe('Supplier-agnostic semantic commercial taxonomy',()=>{
     product_name:'Men Gold Ring'}, {category:'Mode & Beauté',subcategory:'Femme'}))
     .toBe('CLOTHING_SOURCE_OBJECT_CONTRADICTION');
  });
+ test.each([
+  ['Childrens New Summer Lightweight, Sheer Doll-style Top And Shorts Set',
+    'Toys, Kids & Babies > Girls Clothing > Girl Clothing Sets'],
+  ["Girls' Checkered Short-sleeved Shorts Suit",
+    'Toys, Kids & Babies > Girls Clothing > Girl Clothing Sets'],
+  ['Heavy Industry High-end Embroidery Smocking Children Shirt Princess Dress',
+    'Toys, Kids & Babies > Girls Clothing > Girl Dresses'],
+  ['Clothes Sweet Lace Flying Sleeve Triangle Jumpsuit',
+    'Toys, Kids & Babies > Girls Clothing > Girl Dresses'],
+  ['Infant Clothing Class A Pure Cotton Seamless Onesie Baby Pajamas Winter Underwear Crawling Suit',
+    'Toys, Kids & Babies > Baby Clothing > Baby Rompers'],
+  ['Baby Cotton Onesie','Toys, Kids & Babies > Baby Clothing > Baby Rompers'],
+ ])('real cross-provider child garment: %s',async(product_name,supplier_category)=>{
+    expect(semanticIntent({product_name,supplier_category}))
+      .toMatchObject({kind:'pair',category:'Mode & Beauté',
+        subcategory:'Enfant',source:'SEMANTIC_SUPPLIER_HIERARCHY'});
+    const resolved=await resolveCommercialTaxonomyVerdict(q(),{
+      supplier_name:'OtherNewProvider',product_name,supplier_category});
+    expect(resolved).toMatchObject({status:'AUTO_CLASSIFIED',
+      category:'Mode & Beauté',subcategory:'Enfant'});
+ });
+ test.each([
+   ['Silver Rings Gift','Toys, Kids & Babies > Girls Clothing > Girl Clothing Sets'],
+   ['Baby Cotton Blanket','Toys, Kids & Babies > Baby Clothing > Baby Rompers'],
+   ['Plush Bunny Toy','Toys, Kids & Babies > Toys & Hobbies > Stuffed & Plush Animals'],
+   ['Cat Dog Kennel','Pet Supplies > Pet Bedding > Pet Nests'],
+   ['Girls Sun Hat','Toys, Kids & Babies > Girls Clothing > Girl Hats & Caps'],
+   ['Women Party Dress','Toys, Kids & Babies > Girls Clothing > Girl Dresses']
+ ])('must never auto-route contradictory/non-garment child item: %s',(product_name,supplier_category)=>{
+   expect(semanticIntent({product_name,supplier_category}).kind).not.toBe('pair');
+ });
+ test('conflicting adult clothing candidate cannot pass a child-category confirmed mapping',()=>{
+   const c={product_name:'Mens Black Jacket',
+     supplier_category:'Toys, Kids & Babies > Boys Clothing > Boy Jackets'};
+   expect(semanticConflict(c,{category:'Mode & Beauté',subcategory:'Enfant'}))
+     .toBe('CHILD_APPAREL_SOURCE_OBJECT_CONTRADICTION');
+ });
  test('inactive boutique destination never becomes automatic',async()=>{
   const db={query:jest.fn(async()=>({rows:[]}))};
   expect(await resolveCommercialTaxonomyVerdict(db,{
