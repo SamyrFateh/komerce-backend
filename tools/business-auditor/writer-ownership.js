@@ -21,10 +21,11 @@ function cardAuthorities(cards){
  const tableMap=new Map(),features=[];
  for(const {file,source} of cards){
   const id=file.replace(/^features\//,'').replace(/\.feature\.js$/,'');
+  const declaredDomain=(String(source).match(/^\s*\*\s*@domain\s+([a-z][a-z0-9-]*)/m)||[])[1]||null;
   const block=String(source).match(/\bdb\s*:\s*\{\s*tables\s*:\s*\[([\s\S]*?)\]\s*,?\s*\}/);
-  if(!block){features.push({id,declaredTables:0,found:false});continue}
+  if(!block){features.push({id,domain:declaredDomain,declaredTables:0,found:false});continue}
   const refs=[...block[1].matchAll(/['"]([a-z][a-z0-9_]*):\s*(R|W|RW)([!~]?)['"]/g)];
-  features.push({id,declaredTables:refs.length,found:true});
+  features.push({id,domain:declaredDomain,declaredTables:refs.length,found:true});
   for(const [,table,access,tag] of refs){
    if(!tableMap.has(table))tableMap.set(table,{
     owners:new Set(),technicalWriters:new Set(),writers:new Set(),readers:new Set()});
