@@ -187,8 +187,8 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261021-4');
-  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261018-1');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261027-1');
+  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
 test('Vue Catalogue ne duplique plus le pipeline Import', () => {
@@ -200,7 +200,7 @@ test('Vue Catalogue ne duplique plus le pipeline Import', () => {
   ['Sources catalogue · LIVE', 'La Raffinerie en temps réel', 'En train d’arriver · LIVE']
     .forEach(label => expect(workspace).not.toContain(label));
 
-  expect(workspace).toContain('Catalogue global commercial');
+  expect(workspace).toContain('Catalogue global · produits');
   expect(workspace).toContain('KIR clos');
   expect(workspace).toContain('Marchés approuvés');
   expect(workspace).toContain('/admin/import-runtime');
@@ -735,7 +735,7 @@ test('Catalogue fini ne declenche jamais une preparation FR automatique', () => 
   expect(source).toContain("if (context.workspaceView === 'refinery' && !reloadOptions.skipAutoFrenchSchedule)");
 });
 
-test('la Raffinerie affiche les manquants certifies par le serveur et laisse le Catalogue commercial intact', () => {
+test('la Raffinerie affiche les manquants certifies par le serveur et laisse la vue commerciale distincte', () => {
   const source = read('public/dashboards/canonical/js/catalog-workspace.js');
   expect(source).toContain("include_readiness: '1'");
   expect(source).toContain("data-refinery-readiness");
