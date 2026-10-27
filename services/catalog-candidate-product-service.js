@@ -21,6 +21,7 @@
 const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
 const { findConfirmed, chooseCommercialPair } = require('./supplier-commercial-category-mapping');
 const {semanticIntent,semanticConflict} = require('./commercial-taxonomy-semantics');
+const {categoryCorroboratedByObject}=require('./catalog-commercial-category-evidence');
 
 function sourceLocaleFromCandidate(candidate = {}) {
   const locale = candidate?.normalized_source_contract?.source_locale;
@@ -156,6 +157,18 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
   if (matched.category && !matched.subcategory) {
     return {status:'CATEGORY_CLASSIFIED',category:matched.category,subcategory:null,
       level:'CATEGORY',source:'OBJECT_TERM_COMMON_PARENT'};
+  }
+  // A supplier hierarchy is not authoritative by itself. Only a product-title
+  // object corroborating the commercial parent may yield a category-only draft.
+  // A title with competing parent-level object identities stays for review.
+  const corroborated=categoryCorroboratedByObject(candidate);
+  if(corroborated){
+    const {rows:[active]}=await q.query(
+      'SELECT key FROM boutique_categories WHERE key=$1 AND is_active=TRUE LIMIT 1',
+      [corroborated.category]);
+    if(active) return {status:'CATEGORY_CLASSIFIED',...corroborated};
+    return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'CORROBORATED_CATEGORY_INACTIVE'};
   }
   if (sourcePath) {
     const {rows:pairs}=await q.query(
