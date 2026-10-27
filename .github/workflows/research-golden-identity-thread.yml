@@ -7,6 +7,8 @@ on:
       - .github/workflows/research-golden-identity-thread.yml
       - scripts/research/golden-identity-trail.js
       - scripts/research/golden-identity-trail.test.js
+      - scripts/research/compare-golden-po-paths.js
+      - scripts/research/compare-golden-po-paths.test.js
       - tests/e2e-api/customer-to-customer.golden.e2e.test.js
 permissions:
   contents: read
@@ -43,20 +45,33 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Pure A/B identity oracle — zero DB
-        run: node --test scripts/research/golden-identity-trail.test.js
+        run: node --test scripts/research/golden-identity-trail.test.js scripts/research/compare-golden-po-paths.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Bootstrap disposable PostgreSQL
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/fp-identity-schema.log
           node scripts/ci-db-bootstrap.js
-      - name: Existing single-order Golden — real database and reconciler
+      - name: Golden 1 — grouped PO, full single-order identity thread
+        env:
+          FP_GOLDEN_PO_SHAPE: grouped
+          FP_IDENTITY_OUTPUT: /tmp/fp-golden-grouped.json
         run: ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/e2e-api/customer-to-customer.golden.e2e.test.js
+      - name: Golden 2 — historical PO, same business thread
+        env:
+          FP_GOLDEN_PO_SHAPE: historical
+          FP_IDENTITY_OUTPUT: /tmp/fp-golden-historical.json
+        run: ./node_modules/.bin/jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/e2e-api/customer-to-customer.golden.e2e.test.js
+      - name: Compare evidence envelopes, not UUIDs
+        run: node scripts/research/compare-golden-po-paths.js /tmp/fp-golden-grouped.json /tmp/fp-golden-historical.json /tmp/fp-golden-po-diff.json
       - name: Persist proof, no Git push
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: golden-identity-trail-${{ github.run_id }}
-          path: /tmp/fp-golden-identity-proof.json
+          path: |
+            /tmp/fp-golden-grouped.json
+            /tmp/fp-golden-historical.json
+            /tmp/fp-golden-po-diff.json
           if-no-files-found: ignore
           retention-days: 5
