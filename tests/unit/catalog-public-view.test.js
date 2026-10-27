@@ -232,3 +232,12 @@ describe('publicProductColumns', () => {
     expect(publicProductColumns()).toContain('p.id');
   });
 });
+
+describe('progressive category-level public projection',()=>{
+  test('public catalog never fills a verified category-only leaf from legacy customs',()=>{
+    const {publicProductColumns}=require('../../services/catalog-public-view');
+    const columns=publicProductColumns('p');
+    expect(columns).toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END AS subcategory');
+    expect(columns).not.toContain('COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory');
+  });
+});
