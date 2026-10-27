@@ -52,7 +52,7 @@ async function replay({database=db,confirm=confirmTarget,dispatch=dispatchToConn
     throw Error('CJ_PROVIDER_COHORT_NOT_EXACT_20_UNIQUE_VALID');
   const result=await importer(body,null,async()=>batch);
   const runRef=result.body?.run_ref||null;
-  if(!/^KIR-\\d{6}$/.test(runRef||''))throw Error('CJ_CANONICAL_RUN_REF_MISSING');
+  if(!/^KIR-\d{6}$/.test(runRef||''))throw Error('CJ_CANONICAL_RUN_REF_MISSING');
   const {rows:[productsAfter]}=await database.query('SELECT COUNT(*)::int AS n FROM products');
   if(productsAfter.n!==productsBefore.n)throw Error('CJ_SCRIPT_PUBLISHED_PRODUCTS_UNEXPECTEDLY');
   const {rows:[persisted]}=await database.query(
