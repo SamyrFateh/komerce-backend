@@ -46,7 +46,7 @@ const FAMILIES=[
     object:/\b(?:lamps?|decorative light|bedside light|night lights?|wall lights?|solar (?:wall|street|path) lights?|outdoor wall lights?|street path lights?)\b/},
   {id:'tech_phone',category:'Tech',
     path:/^phones accessories\b/,
-    object:/\b(?:phones?|smartphones?|chargers?|charging|usb|cables?|bluetooth|phone cases?|phone holders?|phone stands?|touchscreens?|tablets?)\b/},
+    object:/\b(?:phones?|smartphones?|chargers?|charging|usb|usb(?: c)? cables?|type c cables?|lightning cables?|phone cables?|charging cables?|data cables?|bluetooth|phone cases?|phone holders?|phone stands?|touchscreens?|tablets?)\b/},
   {id:'tech_audio',category:'Tech',
     path:/^consumer electronics\b/,
     object:/\b(?:earbuds?|earphones?|headphones?|headsets?|microphones?|speakers?|audio|stereo|bluetooth|smartwatches?|smart watch|wireless receiver|media player|sound mixer)\b/},
