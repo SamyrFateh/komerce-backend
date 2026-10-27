@@ -19,3 +19,21 @@ Les contre-épreuves pures refusent une PO de forme déclarée incorrecte, un ma
 Exiger un run PostgreSQL 16 vérifié avec retour Hub observé et rollback prouvé, puis arbitrage de la doctrine historique pending. Seulement ensuite envisager une PR métier minimale. Aucun changement de main, staging, produit, paiement réel ou environnement fournisseur dans ce protocole.
 
 Run nominal précédent : https://github.com/SamyrFateh/komerce-backend/actions/runs/40480564524
+
+## Résultat vérifié — GitHub Actions #40495565489
+
+**Workflow vert** : 30/30 tests purs, deux Goldens PostgreSQL (regroupée et historique), comparateur, archive JSON. Chaque exécution termine toujours sur FINANCIAL_CLOSE_MATCHED avec neuf catégories d'identité, quatre checkpoints et la garde SQL SKU 23514.
+
+Sur la même intention *avant confirmation* et sans supplier_order_id, supplier_execution_orders ou supplier_execution_payments :
+
+| PO persistée | Réception du vrai service Hub dans une transaction annulée | Allocations avant ROLLBACK |
+| --- | --- | --- |
+| Regroupée draft | QUARANTINED — HUB_PURCHASE_ORDER_NOT_SUBMITTED | 0 |
+| Historique pending | RECEIVED — aucune erreur | 1 |
+
+La sonde vérifie zéro allocation résiduelle après ROLLBACK. Comparaison finale nominale : NO_ASYMMETRY_OBSERVED. Sonde pré-soumission : EARLY_HUB_RECEIPT_ASYMMETRY_HYPOTHESIS.
+
+**Classification : divergence métier reproduite dans PostgreSQL éphémère, bug de production NON confirmé.** Point d'arbitrage : pending historique signifie-t-il « commande réellement soumise » ou « demande créée, soumission incertaine » ? Ce résultat n'implique pas une commande fournisseur effectivement non transmise hors Komerce, ni une régression constatée sur staging.
+
+Preuve : https://github.com/SamyrFateh/komerce-backend/actions/runs/40495565489
+
