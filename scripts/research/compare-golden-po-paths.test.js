@@ -9,6 +9,9 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
   {stage:'AT_RELAY_NO_CUSTOMER_SCAN',status:'MISSING_IDENTITY_EVIDENCE',gaps:['NO_CUSTOMER_HANDOFF_SCAN']},
   {stage:'CUSTOMER_HANDOFF_AND_FINANCIAL_CLOSE',status:'NO_IDENTITY_CONTRADICTION_OBSERVED',gaps:[]},
  ],
+ pre_submission_hub_probe:{outcome:shape==='grouped'?'QUARANTINED':'RECEIVED',
+  reason_code:shape==='grouped'?'HUB_PURCHASE_ORDER_NOT_SUBMITTED':null,
+  allocation_count:shape==='grouped'?0:1},
  pre_submission:{schema:'golden-po-unsubmitted-checkpoint/v1',persisted_shape:shape,
   persisted_status:shape==='grouped'?'draft':'pending',execution_count:0,payment_count:0,
   verdict:'NO_RECORDED_SUPPLIER_EXECUTION',issues:[]},
@@ -73,4 +76,22 @@ test('two equally incomplete trails are not accepted as equivalent',()=>{
  a.verified_counts.supplierPaymentIds=0;
  b.verified_counts.supplierPaymentIds=0;
  assert.throws(()=>comparePaths(a,b),/Full nine-category/);
+});
+
+test('observable Hub entry behavior can be asymmetric even when nominal Goldens agree',()=>{
+ const r=comparePaths(make('grouped'),make('historical'));
+ assert.equal(r.mismatchCount,0);
+ assert.equal(r.earlyHub.hypothesis,'EARLY_HUB_RECEIPT_ASYMMETRY_HYPOTHESIS');
+ assert.equal(r.earlyHub.grouped.outcome,'QUARANTINED');
+ assert.equal(r.earlyHub.historical.outcome,'RECEIVED');
+});
+test('Hub probe exception remains inconclusive, never called a business defect',()=>{
+ const a=make('grouped'),b=make('historical');
+ b.pre_submission_hub_probe={outcome:'ERROR',reason_code:'unexpected',allocation_count:null};
+ assert.equal(comparePaths(a,b).earlyHub.hypothesis,'PROBE_INCONCLUSIVE');
+});
+test('missing real Hub probe is a hard evidence gap',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.pre_submission_hub_probe;
+ assert.throws(()=>comparePaths(a,b),/Both actual PostgreSQL Hub probes required/);
 });
