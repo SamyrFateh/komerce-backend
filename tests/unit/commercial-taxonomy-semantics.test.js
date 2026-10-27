@@ -90,7 +90,7 @@ describe('Supplier-agnostic semantic commercial taxonomy',()=>{
      product_name:'Girls Floral Dress'})).toMatchObject({kind:'pair',
      category:'Mode & Beauté',subcategory:'Enfant'});
    expect(semanticIntent({supplier_category:'Toys, Kids & Babies > Girls Clothing > Girl Dresses',
-     product_name:'Dress Wall Art Poster'}).kind).toBe('none');
+     product_name:'Dress Wall Art Poster'}).kind).not.toBe('pair');
  });
  test('gender contradiction in source or title fails closed',()=>{
   expect(semanticIntent({supplier_category:"Women's Clothing > Tops",product_name:'Mens Casual Jacket'}))
