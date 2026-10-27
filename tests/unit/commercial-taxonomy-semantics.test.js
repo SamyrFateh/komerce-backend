@@ -82,6 +82,16 @@ describe('Supplier-agnostic semantic commercial taxonomy',()=>{
     expect(semanticIntent({supplier_category,product_name}).kind).not.toBe('pair');
   }
  });
+ test('singular dress is a real garment for adult and child, but decorative dress art is not',()=>{
+   expect(semanticIntent({supplier_category:"Women's Clothing > Lady Dresses",
+     product_name:'Summer Floral Dress'})).toMatchObject({kind:'pair',
+     category:'Mode & Beauté',subcategory:'Femme'});
+   expect(semanticIntent({supplier_category:'Toys, Kids & Babies > Girls Clothing > Girl Dresses',
+     product_name:'Girls Floral Dress'})).toMatchObject({kind:'pair',
+     category:'Mode & Beauté',subcategory:'Enfant'});
+   expect(semanticIntent({supplier_category:'Toys, Kids & Babies > Girls Clothing > Girl Dresses',
+     product_name:'Dress Wall Art Poster'}).kind).not.toBe('pair');
+ });
  test('gender contradiction in source or title fails closed',()=>{
   expect(semanticIntent({supplier_category:"Women's Clothing > Tops",product_name:'Mens Casual Jacket'}))
     .toMatchObject({kind:'conflict',reason:'CLOTHING_SOURCE_OBJECT_CONTRADICTION'});

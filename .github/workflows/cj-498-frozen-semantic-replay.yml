@@ -1,0 +1,70 @@
+name: CJ frozen 498 — semantic classifier replay
+on:
+  pull_request:
+    paths:
+      - 'scripts/replay-cj-frozen-semantic-classification.js'
+      - 'scripts/cj-balanced-500-classification-audit.js'
+      - 'tests/unit/cj-frozen-classification-proofs.test.js'
+      - '.github/workflows/cj-498-frozen-semantic-replay.yml'
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  proof-unit:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify source and adversarial provenance controls
+        run: |
+          node --check scripts/replay-cj-frozen-semantic-classification.js
+          node --check scripts/cj-balanced-500-classification-audit.js
+          npx jest --config jest.unit.config.js tests/unit/cj-frozen-classification-proofs.test.js --runInBand --no-coverage
+  offline-real-corpus:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[isolated-op] cj-498-semantic-offline-replay'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install CI tests
+        run: npm ci --ignore-scripts
+      - name: Validate independent classification proof and adversarial tests
+        run: |
+          node --check scripts/replay-cj-frozen-semantic-classification.js
+          node --check scripts/cj-balanced-500-classification-audit.js
+          npx jest --config jest.unit.config.js tests/unit/cj-frozen-classification-proofs.test.js --runInBand --no-coverage
+      - name: Download exact archived 498 real CJ source identities from previous run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p baseline
+          gh run download 40518230098 -R "$GITHUB_REPOSITORY" -n cj-balanced-e2e-500 -D baseline
+          sha256sum baseline/classification-evidence.json
+      - name: Replay current pure commercial semantics on the frozen cohort
+        run: node scripts/replay-cj-frozen-semantic-classification.js baseline/classification-evidence.json artifacts/cj-semantic-offline-replay/report.json
+      - name: Archive positive/negative result even if test fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-frozen-semantic-replay-${{ github.run_id }}
+          path: artifacts/cj-semantic-offline-replay/
+          retention-days: 21
+          if-no-files-found: warn

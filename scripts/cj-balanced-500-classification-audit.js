@@ -21,6 +21,17 @@ const CAMPAIGN='cj-balanced-e2e-500-v1';
 const OUTPUT=path.resolve('artifacts/cj-balanced-e2e-500/classification-evidence.json');
 const inc=(o,key)=>{o[key]=(o[key]||0)+1;};
 const isString=x=>typeof x==='string'&&x.trim().length>0;
+// Product discovery search targets are unverified input, never a human
+// confirmation. Remove only target fields while preserving source identity,
+// category breadcrumb, title and canonical candidate fields.
+function stripUnconfirmedDiscoveryTarget(candidate={}) {
+  const raw={...(candidate.raw_payload||{})};
+  const discovery={...(raw.discovery||{})};
+  delete discovery.target_category;
+  delete discovery.target_subcategory;
+  raw.discovery=discovery;
+  return {...candidate,raw_payload:raw};
+}
 function assertIsolated(env=process.env){
   if(env.GITHUB_ACTIONS!=='true'||env.NODE_ENV!=='test'
     ||env.KOMERCE_ENV!=='staging'||env.DATABASE_URL!==EXPECTED_URL
@@ -33,6 +44,7 @@ function buildReport(items,{target=500,activePairs=[]}={}){
   const details=[],risks=[];
   for(const item of items){
     const c=item.candidate||{},v=item.verdict||{},disc=c.raw_payload?.discovery||{};
+    const operational=item.operationalVerdict||null;
     const ref=String(c.candidate_ref||'');
     const supplierId=String(c.supplier_product_id||'');
     const key=String(disc.segment_id||'NO_SEGMENT');
@@ -43,6 +55,8 @@ function buildReport(items,{target=500,activePairs=[]}={}){
     const source=String(v.source||'UNSPECIFIED');
     const actualConflict=auto?semanticConflict(c,v):null;
     const reasons=[];
+    if(source==='OPERATOR_OR_DISCOVERY')reasons.push('UNVERIFIED_DISCOVERY_TARGET_MASKS_INDEPENDENT_CLASSIFIER');
+    if(operational?.source==='OPERATOR_OR_DISCOVERY')reasons.push('PRODUCTION_DISCOVERY_PROPOSAL_UNVERIFIED');
     if(!isString(supplierId)||seenIds.has(supplierId))reasons.push('MISSING_OR_DUPLICATE_SUPPLIER_ID');
     seenIds.add(supplierId);
     if(auto&&!activePairs.some(p=>p.category===v.category&&p.subcategory===v.subcategory))
@@ -56,6 +70,10 @@ function buildReport(items,{target=500,activePairs=[]}={}){
       product_name:c.product_name||null,supplier_category:c.supplier_category||null,
       segment_id:key,discovery_keyword:disc.keyword||null,discovery_target:intended,
       status:v.status||'NO_VERDICT',category:v.category||null,subcategory:v.subcategory||null,
+      operational_status:operational?.status||null,
+      operational_evidence:operational?.source||null,
+      operational_category:operational?.category||null,
+      operational_subcategory:operational?.subcategory||null,
       evidence:source,conflict:actualConflict||null,review_flags:reasons,
       fx_gate:c.scan_result?.fx_gate?.status||null,
       candidate_state:c.state||null,publication_linked:Boolean(c.product_id)};
@@ -78,6 +96,8 @@ function buildReport(items,{target=500,activePairs=[]}={}){
     active_pair_count:activePairs.length,
     metadata_mismatches:risks.filter(r=>r.reasons.some(z=>z.startsWith('DISCOVERY_TARGET_MISMATCH'))).length,
     explicit_semantic_conflicts:risks.filter(r=>r.reasons.some(z=>z.startsWith('SEMANTIC_CONTRADICTION'))).length,
+    proposal_masking_independent:details.filter(d=>d.operational_evidence==='OPERATOR_OR_DISCOVERY').length,
+    independent_without_discovery:true,
     publication_linked:details.filter(d=>d.publication_linked).length,
     note:'AUTO_CLASSIFIED is not proof of correctness. Discovery targets and search keywords are NOT semantic ground truth. Review product names and source breadcrumbs before GO.',
     products:details};
@@ -97,8 +117,9 @@ async function run({query=db,output=OUTPUT}={}){
     ORDER BY candidate_ref`,[CAMPAIGN]);
   const items=[];
   for(const candidate of candidates){
-    const verdict=await resolveCommercialTaxonomyVerdict(query,candidate);
-    items.push({candidate,verdict});
+    const operationalVerdict=await resolveCommercialTaxonomyVerdict(query,candidate);
+    const verdict=await resolveCommercialTaxonomyVerdict(query,stripUnconfirmedDiscoveryTarget(candidate));
+    items.push({candidate,verdict,operationalVerdict});
   }
   const report=buildReport(items,{activePairs});
   fs.mkdirSync(path.dirname(output),{recursive:true});
@@ -108,6 +129,8 @@ async function run({query=db,output=OUTPUT}={}){
     needs_review:report.needs_review,by_evidence:report.by_evidence,
     by_category:report.by_category,active_pairs:report.active_pair_count,
     metadata_mismatches:report.metadata_mismatches,
+    proposal_masking_independent:report.proposal_masking_independent,
+    independent_without_discovery:report.independent_without_discovery,
     semantic_conflicts:report.explicit_semantic_conflicts,
     publication_linked:report.publication_linked}));
   return report;
@@ -116,4 +139,4 @@ if(require.main===module){
   run().catch(e=>{console.error('[CJ_500_CLASSIFICATION] '+e.stack);process.exitCode=1;})
     .finally(()=>db.pool.end());
 }
-module.exports={assertIsolated,buildReport,run};
+module.exports={assertIsolated,stripUnconfirmedDiscoveryTarget,buildReport,run};
