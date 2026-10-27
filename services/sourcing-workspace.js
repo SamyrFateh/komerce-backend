@@ -138,7 +138,7 @@ async function listImports() {
   return rows;
 }
 
-async function listCandidates() {
+async function listCandidates(focusedCandidateRef = null) {
   const { rows } = await db.query(
     `SELECT sc.candidate_ref,
             si.import_ref,
@@ -176,7 +176,7 @@ async function listCandidates() {
        LEFT JOIN supplier_catalog_imports si ON si.id = sc.import_id
        LEFT JOIN products p ON p.id = sc.product_id
       ORDER BY sc.updated_at DESC
-      LIMIT 250`
+      LIMIT 250`, [focusedCandidateRef]
   );
   return rows;
 }
@@ -229,11 +229,11 @@ function timed(timings, label, promise) {
   });
 }
 
-async function buildWorkspace({ timings = null } = {}) {
+async function buildWorkspace({ timings = null, candidateRef = null } = {}) {
   const [portfolio, imports, candidates, suppliers, sources] = await Promise.all([
     timed(timings, 'portfolio', listPortfolio()),
     timed(timings, 'imports', listImports()),
-    timed(timings, 'candidates', listCandidates()),
+    timed(timings, 'candidates', listCandidates(candidateRef)),
     timed(timings, 'suppliers', listSourcingSuppliers()),
     timed(timings, 'sources', sourceAutopilot.listSources()),
   ]);
