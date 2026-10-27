@@ -62,6 +62,14 @@ async function inspect({database=db,confirm=confirmTarget,replay=audit}={}) {
     const intakeFields=['accepted','duplicates','rejected','quarantined',
       'deferred','fx_pending','ready_for_refinery','certification_blocked',
       'pipeline_status','canonical_resolved'];
+    const {rows:activePairs}=await q.query(
+      `SELECT bc.key AS category,bc.label AS category_label,
+              bs.key AS subcategory,bs.label AS subcategory_label
+         FROM boutique_categories bc
+         JOIN boutique_subcategories bs ON bs.category_key=bc.key
+        WHERE bc.is_active=TRUE AND bs.is_active=TRUE
+        ORDER BY bc.key,bs.key`
+    );
     const cohorts=rows.map(r=>({
       run_ref:r.run_ref,provider:r.provider,status:r.status,
       source_type:r.source_type,mode:r.mode,has_import_link:r.has_import_link,
@@ -114,6 +122,7 @@ async function inspect({database=db,confirm=confirmTarget,replay=audit}={}) {
       cj_runs_found:cohorts.length,eligible_exact_twenty:exact.length,
       provider_candidate_population:Number(providerCount?.n||0),
       provider_candidate_batches:Number(providerCount?.batches||0),
+      boutique_active_pairs:activePairs,
       candidates:cohorts,selected:chosen?.run_ref||null,
       classification,verdict:classification?.certified_20_of_20
         ?'CJ_20_CLASSIFICATION_CERTIFIED'
@@ -139,6 +148,7 @@ async function main() {
         rejection_rows:x.rejection_rows,intake:x.intake,
         reject_reasons:x.reject_reasons,item_outcomes:x.item_outcomes})),
       exact_twenty:report.eligible_exact_twenty,
+      boutique_active_pair_count:report.boutique_active_pairs.length,
       selected:report.selected,
       classification:report.classification&&{
         inspected:report.classification.inspected,
