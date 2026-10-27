@@ -728,8 +728,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     const wiredP1P7=await collectP1P7Canonical(db,{
       productId,orderItemId:itemId,marketCode:'KM',orderReference:ORDER_REF,
     });
-    expect(wiredP1P7.wired_edges).toHaveLength(10);
-    expect(wiredP1P7.totals.notWired).toBe(3);
+    expect(wiredP1P7.wired_edges).toHaveLength(11);
+    expect(wiredP1P7.totals.notWired).toBe(2);
     expect(wiredP1P7.context.actual_product_id).toBe(productId);
     expect(wiredP1P7.context.actual_sku_id).toBe(skuId);
     expect(wiredP1P7.context.persisted_order_market).toBe('KM');
@@ -737,6 +737,14 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect(wiredP1P7.liveCheckoutCertified).toBe(false);
     // Failing owner reads are evidence gaps, never silently a green status.
     expect(wiredP1P7.owner_read_errors).toEqual([]);
+    expect(wiredP1P7.funds_cost?.facts?.mode).toBe('stripe_eur');
+    expect(wiredP1P7.funds_cost?.facts?.collections).toBe(0);
+    expect(wiredP1P7.funds_cost?.facts?.actual_fee_allocations).toBe(0);
+    expect(wiredP1P7.funds_cost?.diagnostics?.gaps)
+      .toContain('SYNTHETIC_GOLDEN_PAYMENT_NOT_EXTERNAL_PROOF');
+    expect(wiredP1P7.funds_cost?.diagnostics?.contradictions).toEqual([]);
+    expect(wiredP1P7.boundaries.find(e=>e.id==='P5_P6_CASH_REALITY')?.status)
+      .toBe('EVIDENCE_GAP');
     expect(wiredP1P7.logistics_cost?.facts?.member_parcel_count).toBe(1);
     expect(wiredP1P7.logistics_cost?.facts?.item_parcel_count).toBe(1);
     expect(wiredP1P7.logistics_cost?.facts?.allocated_kmf).toMatchObject({
@@ -942,6 +950,44 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect(await one('SELECT id FROM parcels WHERE id=$1',[unlinkedParcelId]))
       .toBeUndefined();
 
+    // P5->P6 real PostgreSQL counterexample: a cash collection recorded
+    // against a Stripe-only order is a cross-rail custody contradiction,
+    // even while the margin owner considers payment costs separately.
+    // This is NOT a service-writer attack; it checks persisted DB integrity.
+    const fundsProbeClient=await db.getClient();
+    let crossRailFundsProbe;
+    try{
+      await fundsProbeClient.query('BEGIN');
+      await fundsProbeClient.query('SAVEPOINT p5p6_cross_rail');
+      try{
+        await fundsProbeClient.query(
+          'INSERT INTO cash_collections(order_id,amount_kmf,collected_by,relais_id) '+
+          'VALUES($1,$2,$3,$4)',[orderId,25000,userId,relaisId]
+        );
+        const {collectP5P6Canonical}=require('../../scripts/research/p5-p6-canonical-collector');
+        const poisoned=await collectP5P6Canonical(fundsProbeClient,{
+          item:{order_id:orderId},
+        });
+        expect(poisoned.diagnostics.contradictions)
+          .toContain('STRIPE_ORDER_HAS_CASH_COLLECTION');
+        expect(poisoned.facts.collection_kmf).toBe(25000);
+        crossRailFundsProbe={outcome:'STRIPE_ORDER_CASH_COLLECTION_ACCEPTED',
+          hypothesis:'STRIPE_ORDER_HAS_CASH_COLLECTION'};
+      }catch(error){
+        if(['23514','23503','P0001'].includes(error.code)){
+          await fundsProbeClient.query('ROLLBACK TO SAVEPOINT p5p6_cross_rail');
+          crossRailFundsProbe={outcome:'SQL_CROSS_RAIL_COLLECTION_GUARD',
+            sqlstate:error.code};
+        }else throw error;
+      }
+    }finally{
+      await fundsProbeClient.query('ROLLBACK');
+      fundsProbeClient.release();
+    }
+    expect(crossRailFundsProbe).toBeTruthy();
+    expect((await q('SELECT id FROM cash_collections WHERE order_id=$1',[orderId])).rows)
+      .toEqual([]);
+
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
@@ -950,6 +996,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       customer_finance:wiredP1P7.customer_finance,
       supplier_cost:wiredP1P7.supplier_cost,
       logistics_cost:wiredP1P7.logistics_cost,
+      funds_cost:wiredP1P7.funds_cost,
+      cross_rail_funds_probe:crossRailFundsProbe,
       foreign_parcel_logistics_cost_probe:foreignParcelCostProbe,
       foreign_cost_allocation_probe:foreignCostProbe,
       unpaid_closure_probe:unpaidClosureProbe,
