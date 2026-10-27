@@ -226,7 +226,7 @@ test('tenth seam assembler retains physical parcel and cost lineage without fals
    cost_type:'freight',amount_kmf:'1500',is_actual:true,source:'customs_shipments'},
    {id:'c2',order_id:OTHER,order_item_id:OI,parcel_id:'box1',shipment_id:'ship1',
    cost_type:'customs',amount_kmf:'2500',is_actual:true,source:'customs_shipments'}],
-  shipments:[{shipment_id:'ship1:box1'}],orderItemCount:1,
+  shipments:[{shipment_id:'ship1',parcel_id:'box1'}],orderItemCount:1,
   shadow:{order_id:OTHER,costs:{by_type:{
    freight:{state:'real',real_kmf:1500},customs:{state:'real',real_kmf:2500}}}}});
  const r=await collectP1P7Canonical(f.db,f.args,f.owners);
