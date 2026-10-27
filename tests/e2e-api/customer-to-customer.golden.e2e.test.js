@@ -628,6 +628,29 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       },
     });
 
+    // Ground the compared shapes in actual persisted PO headers, not just
+    // the environment variable that selected the fixture construction.
+    const persistedPoForm=await one(
+      'SELECT order_id,order_item_id,qty,supplier_sku FROM purchase_orders WHERE id=$1',
+      [poId]
+    );
+    const actualPoShape=persistedPoForm?.order_id?'historical':'grouped';
+    expect(actualPoShape).toBe(FP_GOLDEN_PO_SHAPE);
+    if(FP_GOLDEN_PO_SHAPE==='historical'){
+      expect(persistedPoForm.order_id).toBe(orderId);
+      expect(persistedPoForm.order_item_id).toBe(itemId);
+      expect(Number(persistedPoForm.qty)).toBe(1);
+    } else {
+      expect(persistedPoForm.order_id).toBeNull();
+      expect(persistedPoForm.order_item_id).toBeNull();
+    }
+    const persistedLine=await one(
+      'SELECT purchase_order_id,order_item_id FROM purchase_lines WHERE id=$1',
+      [lineId]
+    );
+    expect(persistedLine.purchase_order_id).toBe(poId);
+    expect(persistedLine.order_item_id).toBe(itemId);
+
     // R&D seam: independent canonical foreign-key trail on THIS SAME Golden
     // order, after all owners made their own verdicts. Read-only and never GO.
     const identityTrail = await collectGoldenTrail(db, orderId);
@@ -712,6 +735,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       order_reference:ORDER_REF,canonical_order_id:orderId,
       checkpoint:'FINANCIAL_CLOSE_MATCHED',
       po_shape:FP_GOLDEN_PO_SHAPE,
+      persisted_po_shape:actualPoShape,
+      header_carries_order_item:!!persistedPoForm.order_item_id,
       identity_status:identityTrail.status,
       progressive_checkpoints:stageProofs,
       verified_counts:Object.fromEntries(Object.entries(identityTrail.observed)
