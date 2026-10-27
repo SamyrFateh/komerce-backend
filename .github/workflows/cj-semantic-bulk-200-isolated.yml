@@ -69,6 +69,17 @@ jobs:
           if [ "$has_map" = f ]; then
             psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -v ON_ERROR_STOP=1 -f migrations/292_supplier_commercial_category_mappings.sql >/dev/null
           fi
+      - name: Restore canonical fixed reference data for schema-only CI
+        run: node scripts/seed-reference-data.js
+      - name: Verify fixed KMF parity exists without any fabricated EUR/USD quote
+        shell: bash
+        run: |
+          set -euo pipefail
+          kmf="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT (eur_rate=491.96775)::int FROM currency_parities WHERE currency='KMF'")"
+          test "$kmf" = '1'
+          quote_count="$(psql -h 127.0.0.1 -U komerce -d komerce_semantic_bulk_200 -Atqc "SELECT COUNT(*) FROM fx_rate_observations")"
+          test "$quote_count" = '0'
+          echo "FIXED_CURRENCY_PARITY_PRESENT_AND_EUR_USD_UNSEEDED"
       - name: Import up to 200 real CJ supplier offers and independently classify
         run: node scripts/cj-semantic-bulk-200-isolated.js
       - name: Upload proof whether green or red
