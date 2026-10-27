@@ -1,4 +1,4 @@
-# Komerce Independent Business Auditor — R&D v0.5
+# Komerce Independent Business Auditor — R&D v0.6
 
 **Goal:** detect independently reproducible contradictions between business rules,
 persisted facts and process invariants. A green Golden is not certification.
@@ -211,3 +211,53 @@ main, Railway staging/production, Stripe and PayPal remain unchanged.
 
 Nothing has been merged to main; staging, production and real payment flows
 have not been modified.
+
+
+## V0.6 — owner-level business SQL write inventory, without trusting code as truth
+
+This phase extends the independent code-only scan. It never imports a Komerce
+business service or evaluates feature-card JavaScript.
+
+- writer-sql.js: conservative SQL write *literal* recognition in tracked
+  application JS/TS, with source file/line and whether the literal directly
+  appears as query/execute/run argument. This does **not** prove execution.
+- writer-ownership.js: parse existing @komerce-arch @domain/@role/@db-write
+  header declarations and textual Feature Card db.tables entries. Treat
+  RW! / W! as **declared business owner**, W~ as **technical writer, NOT owner**;
+  RW or W alone does not imply ownership or authorization.
+- writer-schema.js: cross-check apparent target identifiers against the actual
+  checked-in PostgreSQL pg_dump schema. Fragments such as UPDATE SET or
+  English prose that mimic SQL are retained separately rather than presented
+  as real table writes. Schema not live-queried; migrations might be ahead.
+- writer-inventory.js: enumerate git-tracked JS/TS; distinguish service/route
+  etc. candidate runtime sources from scripts, tests, migrations, frontend
+  and tooling. EXCLUDED means NOT SCANNED IN THIS PASS, **not certified safe**.
+- Each source writer gets a stable candidate identifier, declared role/domain,
+  explicit Feature Card owner(s), table existence evidence, header alignment,
+  and owner resolution: same-domain declaration, cross-domain review,
+  absent or competing owner. Every candidate remains STATIC SQL, not a bug.
+- Links the existing KBA-001…007 executable checks to matching tables using
+  their declared **primary evidence grain**. An SQL check referencing a table
+  for context is not incorrectly counted as certifying every writer of it.
+- business-audit.json includes the full table/write registry, examples and
+  owner-status breakdown. Markdown reports highest-volume tables and existing
+  executable-rule targets. Production data is never read.
+
+**First independent CI evidence on schema-filtered scanner:**
+https://github.com/SamyrFateh/komerce-backend/actions/runs/40598862686
+
+- 50/50 pure tests, 3/3 PayPal mock-network tests; no database write,
+  no existing service modified.
+- 3,334 tracked JS/TS files; 649 examined as application candidates;
+  2,685 excluded from that particular subset, not declared safe.
+- 36 Feature Cards (34 with db tables), 213 relations in checked-in schema.
+- 843 raw SQL write-like fragments, **759 candidates targeting physical schema
+  table names**, 84 unresolved/non-schema fragments. 175 distinct schema tables.
+- 338 source occurrences require a business-owner declaration or cross-domain
+  review (including 40 cross-domain occurrences), **not 338 bugs**.
+- Existing arch headers cover the 759 schema-bound candidate occurrences at
+  the table declaration level; this alone does not prove runtime authority.
+
+**Next calibration gate:** inspect the owner-gap breakdown and individually
+reproduce any *new* candidate against a nominal owner path and a controlled
+counterexample. Keep ownership ambiguity separate from a confirmed defect.
