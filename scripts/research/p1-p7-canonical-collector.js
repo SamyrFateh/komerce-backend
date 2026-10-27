@@ -34,7 +34,7 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
   throw Error('Exact productId, marketCode, orderReference and orderItemId required');
  const {rows}=await db.query(
   'SELECT oi.id AS order_item_id, oi.order_id, oi.product_id, oi.sku_id, '+
-  'o.reference, o.simulation_scope, o.market_id, m.code AS order_market_code '+
+  'o.reference, o.simulation_scope, o.market_id, o.relais_id, m.code AS order_market_code '+
   'FROM order_items oi JOIN orders o ON o.id=oi.order_id '+
   'LEFT JOIN markets m ON m.id=o.market_id '+
   'WHERE o.reference=$1 AND oi.id=$2 LIMIT 2',
@@ -103,6 +103,11 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
    return fn(db,{item,upstream});
  });
  if(purchasingHub?.proofs)Object.assign(proofs,purchasingHub.proofs);
+ const physicalHandoff=await safe('scripts/research/p4-p2-canonical-collector.collectP4P2Canonical',()=>{
+   const fn=owners.p4p2||require('./p4-p2-canonical-collector').collectP4P2Canonical;
+   return fn(db,{item});
+ });
+ if(physicalHandoff?.proofs)Object.assign(proofs,physicalHandoff.proofs);
  const report=evaluateP1P7(proofs);
  return {...report,execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',wired_edges:Object.keys(proofs),
    evidence_provenance:['services/market-control-plane.js:getControlPlane',
@@ -114,6 +119,9 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
    purchasing_hub:purchasingHub?{facts:purchasingHub.facts||null,
      diagnostics:purchasingHub.diagnostics||null,
      owner_provenance:purchasingHub.owner_provenance||null}:null,
+   physical_handoff:physicalHandoff?{facts:physicalHandoff.facts||null,
+     diagnostics:physicalHandoff.diagnostics||null,
+     owner_provenance:physicalHandoff.owner_provenance||null}:null,
    context:{...ctx,selected_market:code,persisted_order_market:item.order_market_code||null,
      actual_product_id:item.product_id,actual_sku_id:item.sku_id,
      provenance:'CANONICAL_OWNER_READS_NOT_EXTERNAL_CHECKOUT'},
