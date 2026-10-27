@@ -728,8 +728,8 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     const wiredP1P7=await collectP1P7Canonical(db,{
       productId,orderItemId:itemId,marketCode:'KM',orderReference:ORDER_REF,
     });
-    expect(wiredP1P7.wired_edges).toHaveLength(4);
-    expect(wiredP1P7.totals.notWired).toBe(9);
+    expect(wiredP1P7.wired_edges).toHaveLength(6);
+    expect(wiredP1P7.totals.notWired).toBe(7);
     expect(wiredP1P7.context.actual_product_id).toBe(productId);
     expect(wiredP1P7.context.actual_sku_id).toBe(skuId);
     expect(wiredP1P7.context.persisted_order_market).toBe('KM');
@@ -740,6 +740,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
+      purchasing_hub:wiredP1P7.purchasing_hub,
       boundaries:wiredP1P7.boundaries.filter(b=>wiredP1P7.wired_edges.includes(b.id)),
       stagingCertified:false};
     console.log('FP_P1_P7_CANONICAL_WIRING '+JSON.stringify(wiredSummary));
