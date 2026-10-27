@@ -11,6 +11,7 @@ const os=require('node:os');
 const cp=require('node:child_process');
 const {scanData,withReadOnlyTransaction,summarize,reportMarkdown}=require('./engine');
 const {prepareStaticTriage,summarizeTriage}=require('./static-triage');
+const {qualifyStaticTriage,triageCounts}=require('./triage-ledger');
 const ROOT=path.resolve(__dirname,'../..');
 function parseArgs(argv){
  const o={mode:'code',sampleLimit:25,base:null,out:null};
@@ -95,8 +96,9 @@ async function runIndependent(argv=process.argv.slice(2),env=process.env,deps={}
    scannedFiles:staticResult.scannedFiles,trackedFiles:staticResult.trackedFiles,
    findings:staticResult.findings,newFindings:options.base?staticResult.newFindings:null,
    comparisonBase:staticResult.base,
-   triage:prepareStaticTriage(staticResult.findings),
-   ownerSummary:summarizeTriage(prepareStaticTriage(staticResult.findings))}:null,
+   triage:qualifyStaticTriage(prepareStaticTriage(staticResult.findings)),
+   ownerSummary:summarizeTriage(prepareStaticTriage(staticResult.findings)),
+   reviewSummary:triageCounts(qualifyStaticTriage(prepareStaticTriage(staticResult.findings)))}:null,
   data:dataResults?{status:'EXECUTED_REPEATABLE_READ_READ_ONLY_ROLLBACK',
    sampleLimit:options.sampleLimit,results:dataResults}:null,
   permissions:{dataTarget:wantsData?'LOCAL_KOMERCE_TEST_ONLY':'NO_DATABASE_CONNECTION',
