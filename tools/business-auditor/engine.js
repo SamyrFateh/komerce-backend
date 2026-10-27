@@ -112,9 +112,12 @@ function reportMarkdown(report){
     ' JS/TS suivis (autres périmètres exclus, non certifiés).',
    '- Feature Cards lues : '+w.coverage.featureCardsRead+
     ' ; avec déclaration db.tables : '+w.coverage.featureCardsWithDbDeclarations,
-   '- Écritures SQL candidates : '+w.summary.candidateWrites+
-    ' ; arguments directs query/execute/run : '+w.summary.possibleDirectQueryCalls,
-   '- Tables distinctes : '+w.summary.tablesFound,
+   '- Fragments SQL candidats (bruts) : '+w.summary.candidateWrites+
+    ' ; associés à des tables du schéma : '+w.summary.physicalTableCandidates+
+    ' ; cibles lexicales non confirmées : '+w.summary.notProvenTableCandidates,
+   '- Arguments directs query/execute/run (tables du schéma) : '+w.summary.possibleDirectQueryCalls,
+   '- Tables distinctes retrouvées dans le schéma : '+w.summary.tablesFound+
+    ' / '+w.coverage.canonicalSchemaTables,
    '- Écritures à investiguer pour propriétaire absent/ambigu/autre domaine : '+
       w.summary.ownershipReviewCandidates,
    '- Écritures de domaine différent du propriétaire déclaré : '+w.summary.crossDomainReviewCandidates,
