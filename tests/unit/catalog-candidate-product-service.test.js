@@ -70,10 +70,13 @@ describe('catalog-candidate-product-service', () => {
       estimated_weight_kg: 0.4,
       stock_available: 17,
       description: 'Raw supplier description',
+      commercial_taxonomy_review: {
+        status: 'CONFIRMED', category: 'Mode & Beauté', subcategory: 'Femme',
+      },
       raw_payload: {
         discovery: {
-          target_category: 'Mode & Beauté',
-          target_subcategory: 'Femme',
+          target_category: 'Auto',
+          target_subcategory: 'Éclairage',
         },
       },
     };
@@ -199,10 +202,13 @@ describe('catalog-candidate-product-service', () => {
       candidate: {
         product_name: 'Casque',
         komerce_category: 'electro',
+        commercial_taxonomy_review: {
+          status: 'CONFIRMED', category: 'Tech', subcategory: 'Audio',
+        },
         raw_payload: {
           discovery: {
-            target_category: 'Tech',
-            target_subcategory: 'Audio',
+            target_category: 'Auto',
+            target_subcategory: 'Éclairage',
           },
         },
       },
@@ -255,17 +261,18 @@ describe('catalog draft stock truth', () => {
 });
 
 describe('catalog candidate boutique taxonomy guard', () => {
-  it('refuses an inactive or unknown discovery subcategory before product creation', async () => {
-    const { createDraftProductFromSourcingCandidate } = require('../../services/catalog-candidate-product-service');
-    const q = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+  it('rejects Discovery-only (even a known-looking shelf) before creating a supplier draft', async () => {
+    const q = { query: jest.fn().mockResolvedValue({ rows: [] }) };
     await expect(createDraftProductFromSourcingCandidate(q, {
       candidate: {
-        product_name: 'Produit',
-        raw_payload: { discovery: { target_category: 'Tech', target_subcategory: 'Introuvable' } },
+        supplier_name: 'CJdropshipping',
+        product_name: 'Silky Light Fog Lip Gloss',
+        supplier_category: 'Health, Beauty & Hair > Makeup > Lipstick',
+        raw_payload: { discovery: { target_category: 'Auto', target_subcategory: 'Éclairage' } },
       },
       initialPrice: 1000,
-    })).rejects.toThrow(/BOUTIQUE_TAXONOMY_INVALID/);
-    expect(q.query).toHaveBeenCalledTimes(1);
+    })).rejects.toThrow('BOUTIQUE_TAXONOMY_UNRESOLVED');
+    expect(q.query.mock.calls.every(([sql]) => /^SELECT/i.test(sql.trim()))).toBe(true);
   });
 });
 
@@ -341,15 +348,20 @@ describe('confirmed commercial attachment priority', () => {
     expect(candidate.komerce_category).toBe('douane-originale');
   });
 
-  test('unconfirmed commercial review cannot override existing discovery', () => {
-    expect(boutiqueTaxonomyFromCandidate({
+  test('unconfirmed commercial review and Discovery are both non-authoritative', () => {
+    const {discoveryCommercialPrior}=require('../../services/catalog-candidate-product-service');
+    const candidate={
       commercial_taxonomy_review: {
         status: 'PENDING', category: 'Tech', subcategory: 'Phones',
       },
       raw_payload: {
         discovery: { target_category: 'Auto', target_subcategory: 'Accessoires' },
       },
-    })).toEqual({ category: 'Auto', subcategory: 'Accessoires' });
+    };
+    expect(boutiqueTaxonomyFromCandidate(candidate))
+      .toEqual({category:null,subcategory:null});
+    expect(discoveryCommercialPrior(candidate))
+      .toEqual({category:'Auto',subcategory:'Accessoires'});
   });
 });
 
@@ -400,4 +412,75 @@ test('confirmed supplier mapping overrides conflicting discovery for next produc
   expect(result).toMatchObject({category:'Tech',subcategory:'Phones',
     source:'CONFIRMED_SUPPLIER_PATH'});
   expect(q.query).toHaveBeenCalledTimes(1);
+});
+
+
+describe('real supplier to inactive catalogue draft — independent commercial proof',()=>{
+  const {
+    resolveCommercialTaxonomyVerdict,
+    createDraftProductFromSourcingCandidate,
+  }=require('../../services/catalog-candidate-product-service');
+  const cj=(name,path,category,subcategory)=>({
+    supplier_name:'CJdropshipping',product_name:name,supplier_category:path,
+    komerce_category:'cosmetiques',purchase_price_kmf:450,
+    stock_available:7,
+    raw_payload:{discovery:{target_category:category,target_subcategory:subcategory,
+      keyword:'fog light',segment_id:'auto-eclairage'}},
+  });
+  test('a lip gloss cannot be classified as Auto lighting by a Discovery keyword',async()=>{
+    const candidate=cj('Silky Light Fog Lip Gloss',
+      'Health, Beauty & Hair > Makeup > Lipstick','Auto','Éclairage');
+    const q={query:jest.fn().mockResolvedValue({rows:[]})};
+    const verdict=await resolveCommercialTaxonomyVerdict(q,candidate);
+    expect(verdict).toEqual({status:'REVIEW_REQUIRED',source:'DISCOVERY_PRIOR',
+      category:null,subcategory:null,proposal:{category:'Auto',subcategory:'Éclairage'}});
+    expect(q.query.mock.calls.map(([sql])=>sql).join(' ')).toContain('object_classification_terms');
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_TAXONOMY_UNRESOLVED');
+    expect(q.query.mock.calls.some(([sql])=>/INSERT INTO products/i.test(sql))).toBe(false);
+  });
+  test('real object terms take precedence over a wrong Discovery segment, without publication',async()=>{
+    const candidate=cj('Car Neck Pillow Memory Foam',
+      'Car Accessories > Cushions','Maison','Déco');
+    const query=jest.fn(async sql=>{
+      if(sql.includes('FROM supplier_commercial_category_mappings'))return {rows:[]};
+      if(sql.includes('object_classification_terms'))return {rows:[
+        {category:'Auto',subcategory:'Accessoires',terms:{'car neck pillow':12}}
+      ]};
+      if(sql.includes('INSERT INTO products'))return {rows:[{id:'draft-1'}]};
+      throw Error('Unexpected SQL query in object/draft path: '+sql);
+    });
+    const q={query};
+    expect(await resolveCommercialTaxonomyVerdict(q,candidate)).toEqual({
+      status:'AUTO_CLASSIFIED',category:'Auto',subcategory:'Accessoires',
+      source:'OBJECT_NAME_MATCH',
+    });
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .resolves.toBe('draft-1');
+    const insert=query.mock.calls.find(([sql])=>sql.includes('INSERT INTO products'));
+    expect(insert[1].slice(1,4)).toEqual(['cosmetiques','Auto','Accessoires']);
+    expect(insert[1][5]).toBeNull();
+    expect(insert[0]).toContain("FALSE, FALSE, 'candidate'");
+  });
+  test('human CONFIRMED is authoritative and still validated against active shelves',async()=>{
+    const candidate=cj('Unknown CJ SKU','Miscellaneous','Auto','Éclairage');
+    candidate.commercial_taxonomy_review={status:'CONFIRMED',
+      category:'Tech',subcategory:'Phones'};
+    const q={query:jest.fn().mockResolvedValueOnce({rows:[
+      {category:'Tech',subcategory:'Phones'}]})
+      .mockResolvedValueOnce({rows:[{id:'confirmed-draft'}]})};
+    expect(await createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .toBe('confirmed-draft');
+    expect(q.query.mock.calls[0][1]).toEqual(['Tech','Phones']);
+    expect(q.query.mock.calls[1][1].slice(2,4)).toEqual(['Tech','Phones']);
+  });
+  test('a human-confirmed inactive destination cannot create a draft',async()=>{
+    const candidate=cj('Unknown SKU','Miscellaneous','Auto','Éclairage');
+    candidate.commercial_taxonomy_review={status:'CONFIRMED',
+      category:'Tech',subcategory:'Inactive'};
+    const q={query:jest.fn().mockResolvedValue({rows:[]})};
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_TAXONOMY_INVALID');
+    expect(q.query.mock.calls.every(([sql])=>sql.trim().startsWith('SELECT'))).toBe(true);
+  });
 });
