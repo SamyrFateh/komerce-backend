@@ -74,9 +74,10 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
  const exposureStatus=exposure==null?'UNKNOWN':exposure==='ENABLED'?'PROVED':'BLOCKED';
  const pricingStatus=!marketId?'UNKNOWN':errors.some(e=>e.owner.includes('resolveActiveProductMarketPricingById'))?
   'UNKNOWN':activePrice?'PROVED':'BLOCKED';
+ const catalogGate=upstream?.gates?.find(x=>x.key==='CATALOG_RELEASE_PROVED')||null;
  const catalogStatus=(!sku || !marketId)?'UNKNOWN':
-   !sku.is_active||exposureStatus==='BLOCKED'||pricingStatus==='BLOCKED'?'BLOCKED':
-   exposureStatus==='PROVED'&&pricingStatus==='PROVED'?'PROVED':'UNKNOWN';
+   !sku.is_active||exposureStatus==='BLOCKED'||pricingStatus==='BLOCKED'||catalogGate?.status==='ANOMALIE'?'BLOCKED':
+   exposureStatus==='PROVED'&&pricingStatus==='PROVED'&&catalogGate?.status==='PROVED'?'PROVED':'UNKNOWN';
  const readiness=plane?.readiness||null,delivery=plane?.deliveryProof||null;
  const governancePrice=marketStatus(market,readiness,delivery,false);
  const governanceCheckout=marketStatus(market,readiness,delivery,true);
@@ -95,7 +96,7 @@ async function collectP1P7Canonical(db,{productId,marketCode,orderReference,orde
    {product_id:sku?.product_id||null,sku_id:sku?.id||null,market_code:code},
    {product_id:item.product_id,sku_id:item.sku_id,market_code:item.order_market_code},
    {...ctx,sku_active:sku?.is_active??null,exposure,local_active:!!activePrice,
-    catalog_gate:upstream?.gates?.find(x=>x.key==='CATALOG_RELEASE_PROVED')?.status||'MISSING'}),
+    catalog_gate:catalogGate?.status||'MISSING'}),
  };
  const report=evaluateP1P7(proofs);
  return {...report,execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',wired_edges:Object.keys(proofs),
