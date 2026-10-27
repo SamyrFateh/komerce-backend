@@ -887,6 +887,59 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     );
     expect(restoredAllocation.order_id).toBe(orderId);
 
+    // P4->P6 adversarial physical-cost cross-check: an actual cost can only
+    // be charged to the correct parcel. Use a second physically valid parcel
+    // without this item, and ROLLBACK irrespective of test result.
+    const logisticsProbeClient=await db.getClient();
+    const unlinkedParcelId=uuid();
+    let foreignParcelCostProbe;
+    try{
+      await logisticsProbeClient.query('BEGIN');
+      await logisticsProbeClient.query(
+        "INSERT INTO parcels(id,order_id,reference,status,type,relais_id) "+
+        "SELECT $2,order_id,$3,'draft',type,relais_id FROM parcels WHERE id=$1",
+        [parcelId,unlinkedParcelId,'FP-UNLINKED-COST-'+RUN_TAG]
+      );
+      await logisticsProbeClient.query('SAVEPOINT p4p6_parcel_cost');
+      try{
+        const changed=await logisticsProbeClient.query(
+          "UPDATE order_item_real_cost_allocations SET parcel_id=$2 "+
+          "WHERE order_id=$1 AND order_item_id=$3 AND cost_type='freight' "+
+          "AND is_actual=TRUE RETURNING id",
+          [orderId,unlinkedParcelId,itemId]
+        );
+        expect(changed.rowCount).toBe(1);
+        const {collectP4P6Canonical}=require('../../scripts/research/p4-p6-canonical-collector');
+        const poisoned=await collectP4P6Canonical(logisticsProbeClient,{
+          item:{order_id:orderId,order_item_id:itemId},
+        });
+        expect(poisoned.diagnostics.contradictions)
+          .toContain('LOGISTICS_COST_FOREIGN_PARCEL');
+        expect(poisoned.diagnostics.contradictions)
+          .toContain('LOGISTICS_COST_PARCEL_NOT_CONTAINING_ITEM');
+        foreignParcelCostProbe={outcome:'UNLINKED_LOGISTICS_COST_PARCEL_REPRODUCED',
+          hypotheses:poisoned.diagnostics.contradictions};
+      }catch(error){
+        if(['23514','23503','P0001'].includes(error.code)){
+          await logisticsProbeClient.query('ROLLBACK TO SAVEPOINT p4p6_parcel_cost');
+          foreignParcelCostProbe={outcome:'SQL_LOGISTICS_COST_PARCEL_GUARD',
+            sqlstate:error.code};
+        }else throw error;
+      }
+    }finally{
+      await logisticsProbeClient.query('ROLLBACK');
+      logisticsProbeClient.release();
+    }
+    expect(foreignParcelCostProbe).toBeTruthy();
+    const restoredFreight=await one(
+      "SELECT parcel_id FROM order_item_real_cost_allocations "+
+      "WHERE order_id=$1 AND order_item_id=$2 AND cost_type='freight' "+
+      "AND is_actual=TRUE LIMIT 1",[orderId,itemId]
+    );
+    expect(restoredFreight.parcel_id).toBe(parcelId);
+    expect(await one('SELECT id FROM parcels WHERE id=$1',[unlinkedParcelId]))
+      .toBeUndefined();
+
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
@@ -895,6 +948,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       customer_finance:wiredP1P7.customer_finance,
       supplier_cost:wiredP1P7.supplier_cost,
       logistics_cost:wiredP1P7.logistics_cost,
+      foreign_parcel_logistics_cost_probe:foreignParcelCostProbe,
       foreign_cost_allocation_probe:foreignCostProbe,
       unpaid_closure_probe:unpaidClosureProbe,
       wrong_relay_probe:relayProbe,
