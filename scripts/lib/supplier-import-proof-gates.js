@@ -36,7 +36,7 @@ function assess({provider,expected,source,run,events,candidates,classification,p
         || (fxPending>0&&intake.pipeline_status==='PARTIAL_BLOCKED')));
   const eventRows=Array.isArray(events)?events:[];
   const finished=eventRows.filter(e=>e.finished_at&&e.candidate_id
-    &&e.outcome!=='error'&&e.outcome!==null);
+    &&!['error','auto_rejected','rejected','excluded','failed'].includes(e.outcome)&&e.outcome!==null);
   const eventIds=eventRows.map(e=>String(e.supplier_product_id||'').trim());
   const linkedIds=eventRows.map(e=>String(e.candidate_id||'').trim());
   const eventOk=eventRows.length===expected && finished.length===expected
