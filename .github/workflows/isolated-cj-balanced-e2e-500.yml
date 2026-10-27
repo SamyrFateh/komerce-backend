@@ -122,6 +122,18 @@ jobs:
           printf '%s\n' "$summary" > artifacts/cj-balanced-e2e-500/sourcing-summary.json
           echo "summary=$summary" >> "$GITHUB_OUTPUT"
 
+      # This audit MUST execute after the supplier fetch even when the strict
+      # 500/500 target is not reached. The disposable PostgreSQL is still live.
+      - name: Preserve per-product independent classification even on supplier shortfall
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress'
+          mkdir -p artifacts/cj-balanced-e2e-500
+          node scripts/cj-balanced-500-classification-audit.js
+
       - name: Assert exact balanced sourcing population
         shell: bash
         run: |

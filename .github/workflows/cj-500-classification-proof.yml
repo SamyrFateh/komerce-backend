@@ -1,0 +1,25 @@
+name: CJ 500 classification proof — unit contract
+on:
+  pull_request:
+    paths:
+      - 'scripts/cj-balanced-500-classification-audit.js'
+      - 'tests/unit/cj-balanced-500-classification-audit.test.js'
+      - '.github/workflows/isolated-cj-balanced-e2e-500.yml'
+      - '.github/workflows/cj-500-classification-proof.yml'
+permissions:
+  contents: read
+jobs:
+  classification-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Syntax check read-only CJ classification audit
+        run: node --check scripts/cj-balanced-500-classification-audit.js
+      - name: Calibrate classifier proof against false classifications, incomplete campaigns, and target leakage
+        run: npx jest --config jest.unit.config.js tests/unit/cj-balanced-500-classification-audit.test.js --runInBand --no-coverage
