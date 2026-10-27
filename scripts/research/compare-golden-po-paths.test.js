@@ -32,9 +32,9 @@ test('detects purchasing/hub boundary discrepancy',()=>{
  assert.equal(r.verdict,'CROSS_PATH_ASYMMETRY_HYPOTHESIS');
  assert.deepEqual(r.mismatches.map(x=>x.field),['stage_projections']);
 });
-test('detects wrong supplier/hub item count',()=>{
+test('rejects wrong supplier/hub item count even before differential comparison',()=>{
  const a=make('grouped'),b=make('historical');b.verified_counts.hubAllocationIds=0;
- assert.deepEqual(comparePaths(a,b).mismatches.map(x=>x.field),['identity_categories']);
+ assert.throws(()=>comparePaths(a,b),/Full nine-category canonical identity evidence required: hubAllocationIds/);
 });
 test('rejects missing or wrong final canonical owner proof',()=>{
  const a=make('grouped'),b=make('historical');b.checkpoint='FINANCIAL_CLOSE_PENDING';
