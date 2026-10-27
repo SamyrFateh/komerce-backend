@@ -29,18 +29,22 @@ function sourceLocaleFromCandidate(candidate = {}) {
   return normalized || 'en';
 }
 
+// Only an explicitly confirmed, candidate-specific human decision may be
+// treated as an explicit boutique category. Discovery's target is a search
+// hypothesis, not evidence that the supplier product belongs in that shelf.
 function boutiqueTaxonomyFromCandidate(candidate = {}) {
   const confirmed = candidate?.commercial_taxonomy_review;
   if (confirmed?.status === 'CONFIRMED' && confirmed.category && confirmed.subcategory) {
     return {category:confirmed.category,subcategory:confirmed.subcategory};
   }
+  return {category:null,subcategory:null};
+}
+
+function discoveryCommercialPrior(candidate = {}) {
   const discovery = candidate?.raw_payload?.discovery || {};
   const category = String(discovery.target_category || '').trim() || null;
   const subcategory = String(discovery.target_subcategory || '').trim() || null;
-  return {
-    category,
-    subcategory: category ? subcategory : null,
-  };
+  return category && subcategory ? {category,subcategory} : null;
 }
 
 function normalizedObjectWords(value) {
@@ -132,11 +136,9 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
       return {status:'AUTO_CLASSIFIED',...mapped,source:'CONFIRMED_SUPPLIER_PATH'};
     }
   }
-  const requested = boutiqueTaxonomyFromCandidate(candidate);
-  if (requested.category || requested.subcategory) {
-    return { status:'EXPLICIT_REVIEW', category:requested.category,
-      subcategory:requested.subcategory, source:'OPERATOR_OR_DISCOVERY' };
-  }
+  // This classifier must run even when sourcing Discovery supplied a desired
+  // search segment. That segment is not a category decision and must never
+  // short-circuit object identity matching.
   const matched = await resolveCommercialObjectTaxonomy(q, candidate);
   if (matched.category && matched.subcategory) {
     return { status:'AUTO_CLASSIFIED', ...matched, source:'OBJECT_NAME_MATCH' };
@@ -154,6 +156,13 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
       return {status:'AUTO_CLASSIFIED',category:proposal.category,
         subcategory:proposal.subcategory,source:proposal.source};
     }
+  }
+  const prior = discoveryCommercialPrior(candidate);
+  if (prior) {
+    // The suggestion is retained for review, but never returned as the
+    // authoritative category/subcategory of this candidate.
+    return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'DISCOVERY_PRIOR',proposal:prior};
   }
   return { status:'REVIEW_REQUIRED', category:null, subcategory:null,
     source:'UNRESOLVED_COMMERCIAL_TAXONOMY' };
@@ -286,6 +295,7 @@ module.exports = {
   draftStockFromCandidate,
   sourceLocaleFromCandidate,
   boutiqueTaxonomyFromCandidate,
+  discoveryCommercialPrior,
   resolveActiveBoutiqueTaxonomy,
   resolveCommercialTaxonomyVerdict,
   resolveCommercialObjectTaxonomy,
