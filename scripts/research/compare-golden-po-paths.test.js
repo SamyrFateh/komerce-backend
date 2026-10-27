@@ -227,3 +227,16 @@ test('a synthetic supplier purchase cost must never masquerade as proven real KM
  }
  assert.throws(()=>comparePaths(a,b),/P3-P6 actual allocation/);
 });
+
+test('both matching PO variants missing SQL cost trace must fail comparison',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.foreign_cost_allocation_probe;
+ delete b.p1_p7_wiring.foreign_cost_allocation_probe;
+ assert.throws(()=>comparePaths(a,b),/P3-P6 persisted cross-order cost check is missing/);
+});
+test('a protective SQL constraint is a valid result in both PO variants',()=>{
+ const a=make('grouped'),b=make('historical');
+ a.p1_p7_wiring.foreign_cost_allocation_probe={outcome:'SQL_COST_ALLOCATION_ORDER_GUARD',sqlstate:'23514'};
+ b.p1_p7_wiring.foreign_cost_allocation_probe={outcome:'SQL_COST_ALLOCATION_ORDER_GUARD',sqlstate:'23514'};
+ assert.equal(comparePaths(a,b).mismatchCount,0);
+});
