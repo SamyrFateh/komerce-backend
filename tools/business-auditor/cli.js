@@ -14,6 +14,7 @@ const {prepareStaticTriage,summarizeTriage}=require('./static-triage');
 const {qualifyStaticTriage,triageCounts}=require('./triage-ledger');
 const {scanRelevantCode}=require('./code-detectors');
 const {inspectTrackedPayPalRefundChain}=require('./paypal-refund-boundary');
+const {buildWriterInventory}=require('./writer-inventory');
 const ROOT=path.resolve(__dirname,'../..');
 function parseArgs(argv){
  const o={mode:'code',sampleLimit:25,base:null,out:null};
@@ -104,7 +105,8 @@ async function runIndependent(argv=process.argv.slice(2),env=process.env,deps={}
    ownerSummary:summarizeTriage(preparedTriage),
    reviewSummary:triageCounts(qualifiedTriage),
    independentCodeSignals:deps.codeSignals||scanRelevantCode(staticResult.findings,ROOT),
-   paypalRefundBoundary:deps.paypalBoundary||inspectTrackedPayPalRefundChain(ROOT)}:null,
+   paypalRefundBoundary:deps.paypalBoundary||inspectTrackedPayPalRefundChain(ROOT),
+   writerInventory:deps.writerInventory||buildWriterInventory(ROOT)}:null,
   data:dataResults?{status:'EXECUTED_REPEATABLE_READ_READ_ONLY_ROLLBACK',
    sampleLimit:options.sampleLimit,results:dataResults}:null,
   permissions:{dataTarget:wantsData?'LOCAL_KOMERCE_TEST_ONLY':'NO_DATABASE_CONNECTION',
