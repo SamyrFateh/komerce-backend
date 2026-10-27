@@ -87,3 +87,23 @@ test('markdown report explicitly warns against automatic bug confirmation',()=>{
  assert.match(text,/KBA-001/);assert.match(text,/cost-1/);
  assert.match(text,/jamais une certification métier automatique/);
 });
+
+test('PayPal owner-chain evidence appears in Markdown but never claims PSP duplicate',()=>{
+ const report={contract:'komerce-independent-business-auditor/v1',mode:'code',
+  git:{sha:'test'},summary:{staticFilesReviewed:1,staticSuspicions:0,
+   dataRulesExecuted:null,rulesWithEvidence:0},
+  code:{paypalRefundBoundary:{
+   id:'KBA-C03',owner:'Refunds / PayPal',
+   status:'LIVE_LEGACY_CALL_WITHOUT_DURABLE_REQUEST_KEY',
+   observations:{routeConnected:true,ownerPassesStableProviderKey:false,
+    ownerReservesDurableIntent:false,ownerClaimsDurableIntent:false,
+    clientHasTimestampFallback:true},
+   nextProof:'mocked timeout replay only',
+  }},
+ };
+ const md=reportMarkdown(report);
+ assert.match(md,/KBA-C03/);
+ assert.match(md,/LIVE_LEGACY_CALL_WITHOUT_DURABLE_REQUEST_KEY/);
+ assert.match(md,/Remboursement PSP réellement dupliqué démontré : \*\*NON\*\*/);
+ assert.match(md,/mocked timeout replay only/);
+});
