@@ -740,11 +740,51 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     expect(wiredP1P7.physical_handoff?.facts?.handoff_verdict).toBe('HANDOFF_MATCHED');
     expect(wiredP1P7.boundaries.find(e=>e.id==='P4_P2_RELAY_HANDOFF')?.status)
       .toBe('NO_CONTRADICTION_OBSERVED');
+    // Adversarial PostgreSQL A/B at P4 -> P2 (not a fake in-memory scan):
+    // scan points to a second real relay, while collection owner can still
+    // report MATCHED. Always rollback and verify the original scan survives.
+    const relayProbeClient=await db.getClient();
+    const wrongRelayId=uuid();
+    let relayProbe;
+    try {
+      await relayProbeClient.query('BEGIN');
+      await relayProbeClient.query(
+        "INSERT INTO relais (id,name,agent_name,phone,address,market_id) "+
+        "VALUES($1,$2,'Research Agent','+2693000002','R&D checkpoint',$3)",
+        [wrongRelayId,'FP-WRONG-RELAY-'+RUN_TAG,marketId]
+      );
+      await relayProbeClient.query(
+        'UPDATE scans SET pickup_relais_id=$2 WHERE id=$1',
+        [scanId,wrongRelayId]
+      );
+      const owner=await reconcileCustomerHandoff(relayProbeClient,{orderId});
+      const {collectP4P2Canonical}=require('../../scripts/research/p4-p2-canonical-collector');
+      const seam=await collectP4P2Canonical(relayProbeClient,{
+        item:{order_id:orderId,order_item_id:itemId,relais_id:relaisId},
+      });
+      relayProbe={
+        canonical_handoff_verdict:owner.verdict,
+        scanner_hypotheses:seam.diagnostics.contradictions,
+        actual_relay_differs_from_order:true,
+      };
+      // The fixture is a controlled counterexample, not production history.
+      expect(seam.diagnostics.contradictions)
+        .toContain('COLLECTION_SCAN_FOREIGN_RELAY');
+      expect(owner.verdict).toBe('HANDOFF_MATCHED');
+    } finally {
+      await relayProbeClient.query('ROLLBACK');
+      relayProbeClient.release();
+    }
+    const unchangedRelay=await one('SELECT pickup_relais_id FROM scans WHERE id=$1',[scanId]);
+    expect(unchangedRelay.pickup_relais_id).toBe(relaisId);
+    expect(await one('SELECT id FROM relais WHERE id=$1',[wrongRelayId])).toBeUndefined();
+
     const wiredSummary={schema:wiredP1P7.schema,execution:wiredP1P7.execution,
       context:wiredP1P7.context,wired_edges:wiredP1P7.wired_edges,
       totals:wiredP1P7.totals,owner_read_errors:wiredP1P7.owner_read_errors,
       purchasing_hub:wiredP1P7.purchasing_hub,
       physical_handoff:wiredP1P7.physical_handoff,
+      wrong_relay_probe:relayProbe,
       boundaries:wiredP1P7.boundaries.filter(b=>wiredP1P7.wired_edges.includes(b.id)),
       stagingCertified:false};
     console.log('FP_P1_P7_CANONICAL_WIRING '+JSON.stringify(wiredSummary));
