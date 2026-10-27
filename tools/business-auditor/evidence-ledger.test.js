@@ -32,7 +32,7 @@ test('paired control with deviation remains pending independent review',()=>{
  const proof={nominal:evt('ok','ok'),adversarial:evt('reject','accepted')};
  assert.equal(assessProof(proof).verdict,'COUNTEREXAMPLE_REPRODUCED_PENDING_REVIEW');
  proof.independentReview={approved:true,reviewer:'domain-owner',issue:'#123'};
- assert.equal(assessProof(proof).verdict,'CONFIRMED_TEST_COUNTEREXAMPLE');
+ assert.equal(assessProof(proof).verdict,'COUNTEREXAMPLE_REPRODUCED_PENDING_TRUSTED_CI');
 });
 test('rejects stale and unknown external IDs rather than silently dropping them',()=>{
  assert.throws(()=>makeEvidenceLedger(inventory,{proofs:{'KBA-W-invalid':{}}}),/unknown finding/);
