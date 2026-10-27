@@ -142,6 +142,23 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
       category:'Tech',subcategory:'Inactive'}};
     draftProofs.push(await transactionProof(client,'inactive_human_pair_blocked',inactive,
       {shouldCreate:false}));
+    // Deliberately collide two proven object phrases under ONE active parent.
+    // The transaction must produce a category-only draft, not invent a leaf.
+    for(const subcategory of ['Cuisine','Déco']){
+      const update=await client.query(
+        "UPDATE boutique_subcategories SET object_classification_terms = "+
+        "object_classification_terms || '{\"storage cube\":12}'::jsonb "+
+        "WHERE category_key='Maison' AND key=$1 AND is_active=TRUE",
+        [subcategory]);
+      if(update.rowCount!==1)throw Error('CATEGORY_PARENT_E2E_FIXTURE_MISSING:'+subcategory);
+    }
+    const categoryOnly={supplier_name:'CJdropshipping',
+      product_name:'Storage Cube Organizer',
+      supplier_category:'Unmapped > Unclear Objects',
+      komerce_category:'autre',
+      raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}}};
+    draftProofs.push(await transactionProof(client,'category_only_common_parent',categoryOnly,
+      {shouldCreate:true,expectedCategory:'Maison',expectedSubcategory:null}));
   }finally {
     try{await client.query('ROLLBACK');rolledBack=true;}finally{client.release();}
   }
