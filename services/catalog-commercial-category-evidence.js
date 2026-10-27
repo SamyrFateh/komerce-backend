@@ -68,7 +68,8 @@ const FAMILIES=[
  */
 function categoryCorroboratedByObject(candidate={}){
   const title=words(candidate.product_name);
-  const path=words(candidate.supplier_category||candidate.normalized_source_contract?.supplier_category);
+  const supplierPath=candidate.supplier_category||candidate.normalized_source_contract?.supplier_category;
+  const path=words(supplierPath);
   if(!title||!path) return null;
   const titleHits=FAMILIES.filter(f=>f.object.test(title));
   const categories=new Set(titleHits.map(f=>f.category));
@@ -79,6 +80,6 @@ function categoryCorroboratedByObject(candidate={}){
   if(!matched.every(f=>f.category===category)) return null;
   return {category,subcategory:null,level:'CATEGORY',
     source:'SUPPLIER_PATH_AND_OBJECT',
-    evidence:{object_families:matched.map(f=>f.id),supplier_root:path.split(/\s+(?:>\s*)?/)[0]||null}};
+    evidence:{object_families:matched.map(f=>f.id),supplier_root:words(String(supplierPath).split('>')[0])||null}};
 }
 module.exports={categoryCorroboratedByObject};
