@@ -484,3 +484,62 @@ describe('real supplier to inactive catalogue draft — independent commercial p
     expect(q.query.mock.calls.every(([sql])=>sql.trim().startsWith('SELECT'))).toBe(true);
   });
 });
+
+
+describe('progressive taxonomy — certified parent vs unverified Discovery',()=>{
+  const {resolveCommercialTaxonomyVerdict,
+    createDraftProductFromSourcingCandidate}=require('../../services/catalog-candidate-product-service');
+  const qFor=(rows,insert=true)=>({
+    query:jest.fn(async (sql)=>{
+      if(sql.includes('FROM supplier_commercial_category_mappings'))return {rows:[]};
+      if(sql.includes('object_classification_terms'))return {rows};
+      if(sql.includes('FROM boutique_categories WHERE key='))return {rows:[{key:'Maison'}]};
+      if(sql.includes('INSERT INTO products'))return {rows:insert?[{id:'draft-parent'}]:[]};
+      return {rows:[]};
+    }),
+  });
+  const candidate={supplier_name:'CJdropshipping',
+    product_name:'Storage Cube Organizer',supplier_category:'Unmapped > Unclear Objects',
+    raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}}};
+  test('two equally strong object matches within one parent resolve CATEGORY, never a fictitious leaf',async()=>{
+    const q=qFor([
+      {category:'Maison',subcategory:'Cuisine',terms:{'storage cube':12}},
+      {category:'Maison',subcategory:'Déco',terms:{'storage cube':12}},
+    ]);
+    expect(await resolveCommercialTaxonomyVerdict(q,candidate)).toMatchObject({
+      status:'CATEGORY_CLASSIFIED',level:'CATEGORY',category:'Maison',
+      subcategory:null,source:'OBJECT_TERM_COMMON_PARENT'});
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .resolves.toBe('draft-parent');
+    const insert=q.query.mock.calls.find(([sql])=>sql.includes('INSERT INTO products'));
+    expect(insert[1].slice(2,4)).toEqual(['Maison',null]);
+    expect(insert[1][5]).toBeNull();
+    expect(insert[0]).toContain("FALSE, FALSE, 'candidate'");
+  });
+  test('equally strong terms across root categories are not promoted to a parent',async()=>{
+    const q=qFor([
+      {category:'Maison',subcategory:'Déco',terms:{'storage cube':12}},
+      {category:'Tech',subcategory:'Audio',terms:{'storage cube':12}},
+    ]);
+    await expect(resolveCommercialTaxonomyVerdict(q,candidate)).resolves.toMatchObject({
+      status:'REVIEW_REQUIRED',source:'DISCOVERY_PRIOR',category:null,subcategory:null});
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_TAXONOMY_UNRESOLVED');
+    expect(q.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO products'))).toBe(false);
+  });
+  test('a parent absent from active boutique categories cannot be drafted',async()=>{
+    const q=qFor([
+      {category:'Maison',subcategory:'Cuisine',terms:{'storage cube':12}},
+      {category:'Maison',subcategory:'Déco',terms:{'storage cube':12}},
+    ]);
+    q.query.mockImplementation(async sql=>{
+      if(sql.includes('FROM supplier_commercial_category_mappings'))return {rows:[]};
+      if(sql.includes('object_classification_terms'))return {rows:[
+        {category:'Maison',subcategory:'Cuisine',terms:{'storage cube':12}},
+        {category:'Maison',subcategory:'Déco',terms:{'storage cube':12}}]};
+      return {rows:[]};
+    });
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_CATEGORY_INACTIVE');
+  });
+});
