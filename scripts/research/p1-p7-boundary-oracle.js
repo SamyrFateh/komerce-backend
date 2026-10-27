@@ -58,6 +58,12 @@ function evaluateBoundary(boundary,proof) {
    if(!left||!right)gaps.push('IDENTITY_NOT_LINKED:'+key);
    else if(left!==right)contradictions.push('IDENTITY_CONTRADICTION:'+key);
  }
+ // Cross-authority facts validated by the adapter (e.g. PO ownership or usable
+ // physical quantity) remain HYPOTHESES until independently reproduced.
+ if(Array.isArray(proof.crossContradictions)){
+   for(const code of proof.crossContradictions)if(typeof code==='string'&&code)
+     contradictions.push('OWNER_FACT:'+code);
+ }
  const status=contradictions.length?'CONTRADICTION_HYPOTHESIS':
    gaps.length?'EVIDENCE_GAP':'NO_CONTRADICTION_OBSERVED';
  return {...base,status,contradictions,gaps,evidenceLevel:'OWNER_OUTPUTS_NOT_INDEPENDENTLY_CERTIFIED'};
