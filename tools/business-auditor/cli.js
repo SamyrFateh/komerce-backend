@@ -12,6 +12,7 @@ const cp=require('node:child_process');
 const {scanData,withReadOnlyTransaction,summarize,reportMarkdown}=require('./engine');
 const {prepareStaticTriage,summarizeTriage}=require('./static-triage');
 const {qualifyStaticTriage,triageCounts}=require('./triage-ledger');
+const {scanRelevantCode}=require('./code-detectors');
 const ROOT=path.resolve(__dirname,'../..');
 function parseArgs(argv){
  const o={mode:'code',sampleLimit:25,base:null,out:null};
@@ -98,7 +99,8 @@ async function runIndependent(argv=process.argv.slice(2),env=process.env,deps={}
    comparisonBase:staticResult.base,
    triage:qualifyStaticTriage(prepareStaticTriage(staticResult.findings)),
    ownerSummary:summarizeTriage(prepareStaticTriage(staticResult.findings)),
-   reviewSummary:triageCounts(qualifyStaticTriage(prepareStaticTriage(staticResult.findings)))}:null,
+   reviewSummary:triageCounts(qualifyStaticTriage(prepareStaticTriage(staticResult.findings))),
+   independentCodeSignals:deps.codeSignals||scanRelevantCode(staticResult.findings,ROOT)}:null,
   data:dataResults?{status:'EXECUTED_REPEATABLE_READ_READ_ONLY_ROLLBACK',
    sampleLimit:options.sampleLimit,results:dataResults}:null,
   permissions:{dataTarget:wantsData?'LOCAL_KOMERCE_TEST_ONLY':'NO_DATABASE_CONNECTION',
