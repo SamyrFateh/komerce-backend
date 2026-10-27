@@ -78,7 +78,7 @@ async function replay({database=db,confirm=confirmTarget,dispatch=dispatchToConn
       status:p.status,category:p.category,subcategory:p.subcategory,source:p.source}))
   }:null;
   const proof=assess({
-    provider:cj.SUPPLIER_NAME,expected:20,
+    provider:cj.SUPPLIER_NAME,expected:20,scope:'sourcing_only',
     source:{products:data,invalid_count:(batch.invalid||[]).length},
     run,events,candidates,classification:classificationReport,
     publishedDelta:productsAfter.n-productsBefore.n
