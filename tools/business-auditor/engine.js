@@ -93,6 +93,18 @@ function reportMarkdown(report){
    ' | '+r.status+' | '+r.detectedAtLeast+' | '+r.samples.map(s=>s.replace(/[|]/g,'/')).join(', ')+
    ' | #'+r.issue+' |');
  }else lines.push('Non exécutés (mode sans base PostgreSQL).');
+ if(report.code?.triage){
+  lines.push('', '## Revue statique par propriétaire', '',
+   '| Signal | Règle | Fichier:ligne | P | Propriétaire | Frontière | Action de preuve |',
+   '|---|---|---|---|---|---|---|');
+  for(const t of report.code.triage){
+   const clean=x=>String(x??'').replace(/[|\r\n]/g,' ').slice(0,270);
+   lines.push('| '+t.id+' | '+t.rule+' | '+clean(t.file)+':'+t.line+' | '+
+    clean(t.priority)+' | '+clean(t.owner)+' | '+clean(t.businessBoundary)+
+    ' | '+clean(t.nextIndependentProof)+' |');
+  }
+  lines.push('', '**Toutes ces entrées restent des suspicions, même si elles apparaissent dans du code de production.**');
+ }
  lines.push('', '## Portée et restrictions', '',
   '- Scanner autonome : ne charge aucun service métier Komerce et ne déclenche aucun writer.',
   '- Base locale de test seulement, transaction PostgreSQL REPEATABLE READ READ ONLY et ROLLBACK.',
