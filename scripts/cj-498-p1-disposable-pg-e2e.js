@@ -78,10 +78,11 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   assertEqual(dbName,'komerce_real_catalog_stress','DATABASE_IDENTITY');
   const active=(await db.query('SELECT bc.key AS category, bs.key AS subcategory FROM boutique_subcategories bs JOIN boutique_categories bc ON bc.key=bs.category_key WHERE bc.is_active=TRUE AND bs.is_active=TRUE')).rows;
   const activeSet=new Set(active.map(x=>x.category+'/'+x.subcategory));
+  const activeCategories=new Set(active.map(x=>x.category));
   if(activeSet.size<15||!activeSet.has('Mode & Beauté/Enfant')
     ||!activeSet.has('Auto/Accessoires')||!activeSet.has('Tech/Phones'))throw Error('CANONICAL_TAXONOMY_NOT_READY');
-  const byStatus={},byEvidence={},byPair={},drift=[],samples=[];
-  let ignoredDiscovery=0,discoveryOnly=0,auto=0;
+  const byStatus={},byEvidence={},byPair={},byCategory={},drift=[],samples=[],categorySamples=[];
+  let ignoredDiscovery=0,discoveryOnly=0,auto=0,category=0;
   for(const original of doc.products){
     const candidate=sourceCandidate(original);
     const v=await resolveCommercialTaxonomyVerdict(db,candidate);
@@ -91,6 +92,16 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
       auto++;inc(byPair,p);
       if(!activeSet.has(p)||v.source==='OPERATOR_OR_DISCOVERY'||v.source==='DISCOVERY_PRIOR')
         throw Error('UNJUSTIFIED_AUTO:'+original.candidate_ref+':'+JSON.stringify(v));
+    } else if(v.status==='CATEGORY_CLASSIFIED') {
+      category++;inc(byCategory,v.category);
+      if(!v.category||v.subcategory!==null||!activeCategories.has(v.category)
+        ||!['OBJECT_TERM_COMMON_PARENT','SUPPLIER_PATH_AND_OBJECT'].includes(v.source))
+        throw Error('UNJUSTIFIED_CATEGORY:'+original.candidate_ref+':'+JSON.stringify(v));
+      if(v.source==='SUPPLIER_PATH_AND_OBJECT' && !v.evidence?.object_families?.length)
+        throw Error('CATEGORY_EVIDENCE_MISSING:'+original.candidate_ref);
+      if(categorySamples.length<35) categorySamples.push({ref:original.candidate_ref,
+        title:original.product_name,path:original.supplier_category,
+        category:v.category,source:v.source,evidence:v.evidence||null});
     } else if(v.status==='EXPLICIT_REVIEW'){
       throw Error('HUMAN_CONFIRMATION_FABRICATED:'+original.candidate_ref);
     } else if(v.status==='REVIEW_REQUIRED') {
@@ -165,15 +176,18 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   const out={kind:'REAL_PG_E2E_CJ_SOURCE_TO_CATALOG_DRAFT',
     certification:'PROVEN_BOUNDARY_NOT_PRODUCT_PRECISION',
     source_count:498,previous_automatic:doc.automatic,
-    candidate_automatic:auto,candidate_review:498-auto,
+    candidate_automatic:auto,candidate_category:category,
+    candidate_placement:auto+category,candidate_review:498-auto-category,
     prior_discovery_proposals:ignoredDiscovery,discovery_only:discoveryOnly,
     by_status:byStatus,by_evidence:byEvidence,by_pair:byPair,
+    by_category:byCategory,category_evidence_samples:categorySamples,
     changed_examples:drift,review_samples:samples,product_draft_proofs:draftProofs,
     transaction_rolled_back:rolledBack,publication_performed:false,supplier_calls:0};
   fs.mkdirSync(path.dirname(output),{recursive:true});
   fs.writeFileSync(output,JSON.stringify(out,null,2)+'\n');
   console.log('[CJ_P1_REAL_PG] '+JSON.stringify({inspected:498,automatic:auto,
-    review:498-auto,discovery_only:discoveryOnly,prior_seen:ignoredDiscovery,
+    category,placement:auto+category,review:498-auto-category,
+    discovery_only:discoveryOnly,prior_seen:ignoredDiscovery,
     by_evidence:byEvidence,draft_proofs:draftProofs.length,rollback:rolledBack}));
   return out;
 }
