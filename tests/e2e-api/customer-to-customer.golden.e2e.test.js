@@ -610,6 +610,46 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     }));
     expect(close.verdict).toBe('FINANCIAL_CLOSE_MATCHED');
 
+    // Stronger second A/B: attempt a real SQL substitution using a second
+    // valid SKU on a transaction-bound client. The canonical purchase-line
+    // immutability guard must reject it. Entire probe is ROLLED BACK.
+    const auditClient = await db.getClient();
+    let mutationRejected = false;
+    let mutationCode = null;
+    let mutationMessage = null;
+    try {
+      await auditClient.query('BEGIN');
+      const otherSku = uuid();
+      await auditClient.query(
+        `INSERT INTO product_skus(id,product_id,sku,stock,variant_combo)
+         VALUES($1,$2,$3,5,$4::jsonb)`,
+        [otherSku,productId,'FP-ALT-'+RUN_TAG,JSON.stringify({size:'ALT'})]
+      );
+      await auditClient.query('SAVEPOINT fp_purchase_sku');
+      try {
+        await auditClient.query(
+          'UPDATE purchase_lines SET product_sku_id=$2 WHERE id=$1',
+          [lineId,otherSku]
+        );
+      } catch(error) {
+        mutationRejected=true;
+        mutationCode=error.code;
+        mutationMessage=error.message;
+        await auditClient.query('ROLLBACK TO SAVEPOINT fp_purchase_sku');
+      }
+      // Evaluate after real attempted write, while still in the transaction.
+      const during=await collectGoldenTrail(auditClient,orderId);
+      expect(during.issues).toEqual([]);
+      expect(mutationRejected).toBe(true);
+      expect(mutationCode).toBe('23514');
+      expect(mutationMessage).toContain('purchase_line_frozen');
+    } finally {
+      await auditClient.query('ROLLBACK');
+      auditClient.release();
+    }
+    const afterProbe=await collectGoldenTrail(db,orderId);
+    expect(afterProbe.digest).toBe(identityTrail.digest);
+
     // Tamper a COPY of the observation only — no SQL mutation. This tests
     // the scanner's independent oracle, not exploitability of a route.
     const corrupted = analyzeGoldenTrail({
@@ -635,7 +675,9 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       identity_status:identityTrail.status,
       verified_counts:Object.fromEntries(Object.entries(identityTrail.observed)
         .filter(([key,value])=>Array.isArray(value)).map(([key,value])=>[key,value.length])),
-      perturbation:'IN_MEMORY_ONLY_SKU_REPLACEMENT',
+      perturbation:'IN_MEMORY_SKU_REPLACEMENT_AND_SQL_SKU_UPDATE_ATTEMPT',
+      real_sql_mutation_rejected:mutationRejected,
+      real_sql_guard_code:mutationCode,
       perturbation_detected:corrupted.issues.map(x=>x.code),
       no_staging_or_external_http:true,
       fingerprint:identityTrail.digest};
