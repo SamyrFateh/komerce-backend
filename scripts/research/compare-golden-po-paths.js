@@ -61,6 +61,29 @@ function assertP4P2(p) {
   parcels:facts.parcel_count,item_parcels:facts.item_parcel_count,
   scans:facts.scan_count};
 }
+function assertP5P2(p) {
+ const w=p.p1_p7_wiring;
+ const edge=w?.boundaries?.find(x=>x.id==='P5_P2_PAYMENT_CLOSURE');
+ const finance=w?.customer_finance;
+ const facts=finance?.facts,diag=finance?.diagnostics;
+ // The disposable Golden is synthetic and does NOT attest a real PSP
+ // event. The proper condition is *explicit non-proof*, not false PASS.
+ if(!w?.wired_edges?.includes('P5_P2_PAYMENT_CLOSURE') ||
+    !edge||edge.status!=='EVIDENCE_GAP' ||
+    !Array.isArray(edge.contradictions)||edge.contradictions.length ||
+    !facts||facts.synthetic!==true ||
+    facts.closure_verdict!=='FINANCIAL_CLOSE_MATCHED' ||
+    facts.mode!=='stripe_eur' ||
+    facts.psp_reference_present!==false ||
+    !diag||diag.finance_outcome!=='NOT_CERTIFICATION' ||
+    !Array.isArray(diag.contradictions)||diag.contradictions.length ||
+    !Array.isArray(diag.gaps) ||
+    !diag.gaps.includes('SYNTHETIC_PAYMENT_NOT_PSP_PROOF') ||
+    !diag.gaps.includes('STRIPE_PAID_NO_PSP_REFERENCE'))
+   throw Error('P5-P2 finance: synthetic Golden payment is not PSP evidence; explicit gap required');
+ return {finance_scope:'SYNTHETIC_PAYMENT_NOT_PSP_PROVED',
+  closure_status:facts.closure_verdict,psp_ref_proved:false};
+}
 const norm=(p)=>{
  if(!p || typeof p!=='object')throw Error('Golden evidence JSON object required');
  if(p.identity_status!=='NO_IDENTITY_CONTRADICTION_OBSERVED')
@@ -76,6 +99,7 @@ const norm=(p)=>{
   pre_submission_verdict:p.pre_submission.verdict,
   p2_p4_owner_truth:assertP2P4(p),
   p4_p2_handoff_truth:assertP4P2(p),
+  p5_p2_finance_truth:assertP5P2(p),
   identity_status:p.identity_status,
   final_business_verdict:p.checkpoint,
   stage_projections:p.progressive_checkpoints.map(s=>({
