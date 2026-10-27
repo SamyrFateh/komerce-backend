@@ -3,6 +3,25 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const {comparePaths}=require('./compare-golden-po-paths');
 const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_order_item:shape==='historical',identity_status:'NO_IDENTITY_CONTRADICTION_OBSERVED',
  checkpoint:'FINANCIAL_CLOSE_MATCHED',
+
+ p1_p7_wiring:{
+  schema:'komerce-p1-p7-cross-boundary-research/v1',
+  execution:'CANONICAL_READ_ONLY_OWNER_ADAPTERS',
+  wired_edges:['P7_P1_MARKET_PRICING','P7_P1_MARKET_EXPOSURE','P7_P2_CHECKOUT',
+   'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT'],
+  owner_read_errors:[],
+  boundaries:[
+   {id:'P2_P3_PURCHASE_REQUIREMENT',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
+   {id:'P3_P4_HUB_RECEIPT',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]}
+  ],
+  purchasing_hub:{
+   facts:{line_count:1,allocation_count:1,fulfillment_count:1,
+     inbound_verdict:'INBOUND_MATCHED',effective_quantity:1,received_quantity:1,
+     po_shape:shape},
+   diagnostics:{contradictions:[],gaps:['SYNTHETIC_GOLDEN_CLIENT_PAYMENT_NOT_PROVED']}
+  },
+ },
+
  progressive_checkpoints:[
   {stage:'SUPPLIER_EXECUTION_NOT_HUB_RECEIPT',status:'MISSING_IDENTITY_EVIDENCE',gaps:['NO_HUB_ALLOCATION','NO_PARCEL_MEMBERSHIP']},
   {stage:'HUB_RECEIPT_BEFORE_PARCEL',status:'MISSING_IDENTITY_EVIDENCE',gaps:['NO_PARCEL_MEMBERSHIP']},
@@ -94,4 +113,27 @@ test('missing real Hub probe is a hard evidence gap',()=>{
  const a=make('grouped'),b=make('historical');
  delete a.pre_submission_hub_probe;
  assert.throws(()=>comparePaths(a,b),/Both actual PostgreSQL Hub probes required/);
+});
+
+test('fail closed: both Goldens missing the same new P2-P4 checkpoint',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring;delete b.p1_p7_wiring;
+ assert.throws(()=>comparePaths(a,b),/P2-P4 canonical owner wiring missing/);
+});
+test('fail closed: both Goldens superficially green without usable physical receipts',()=>{
+ const a=make('grouped'),b=make('historical');
+ a.p1_p7_wiring.purchasing_hub.facts.received_quantity=0;
+ b.p1_p7_wiring.purchasing_hub.facts.received_quantity=0;
+ assert.throws(()=>comparePaths(a,b),/P2-P4 physical owner identity and quantity proof incomplete/);
+});
+test('fail closed: one owner real-world stock verdict disagrees with recorded P3-P4 seam',()=>{
+ const a=make('grouped'),b=make('historical');
+ a.p1_p7_wiring.boundaries[1].status='CONTRADICTION_HYPOTHESIS';
+ assert.throws(()=>comparePaths(a,b),/P2-P4 physical owner identity and quantity proof incomplete/);
+});
+test('pair must not pretend historical/po-group shapes are the same',()=>{
+ const a=make('grouped'),b=make('historical');
+ assert.equal(a.p1_p7_wiring.purchasing_hub.facts.po_shape,'grouped');
+ assert.equal(b.p1_p7_wiring.purchasing_hub.facts.po_shape,'historical');
+ assert.equal(comparePaths(a,b).mismatchCount,0);
 });
