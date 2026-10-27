@@ -33,7 +33,7 @@ function assessP4P6({item,memberParcels=[],itemParcels=[],costs=[],shipments=[],
    contradictions.add('PARCEL_ITEM_FOREIGN_ORDER');
   if(!member.has(String(p.parcel_id)))contradictions.add('ITEM_PARCEL_NOT_CANONICAL_MEMBER');
  }
- const declaredShipments=new Set(shipments.map(x=>String(x.shipment_id)));
+ const declaredShipments=new Set(shipments.map(x=>String(x.shipment_id)+':'+String(x.parcel_id)));
  for(const c of owned){
   if(String(c.order_id)!==String(item.order_id))contradictions.add('LOGISTICS_COST_FOREIGN_ORDER');
   if(String(c.order_item_id)!==String(item.order_item_id))contradictions.add('LOGISTICS_COST_FOREIGN_ITEM');
@@ -123,13 +123,12 @@ async function collectP4P6Canonical(db,{item,readers={}}={}){
   'SELECT shipment_id,parcel_id FROM customs_shipment_parcels '+
   'WHERE shipment_id=ANY($1::uuid[])',
   [shipmentIds]):{rows:[]};
- const shipmentKeys=shipments.map(x=>({shipment_id:String(x.shipment_id)+':'+String(x.parcel_id)}));
- const {rows:countRows}=await db.query('SELECT COUNT(*)::int AS n FROM order_items WHERE order_id=$1',
+  const {rows:countRows}=await db.query('SELECT COUNT(*)::int AS n FROM order_items WHERE order_id=$1',
   [item.order_id]);
  const margin=readers.realMargin||
   require('../../services/cost-allocation/real-margin-shadow').computeOrderRealMarginShadow;
  const shadow=await margin(item.order_id,{client:db});
- const r=assessP4P6({item,memberParcels,itemParcels,costs,shipments:shipmentKeys,shadow,
+ const r=assessP4P6({item,memberParcels,itemParcels,costs,shipments,shadow,
   orderItemCount:countRows[0]?.n??null});
  if(itemParcels.length>100||costs.length>100)r.diagnostics.gaps.push('RESEARCH_PAGINATION_LIMIT_REACHED');
  return r;
