@@ -40,7 +40,7 @@ const FAMILIES=[
     object:/\b(?:(?:storage (?:boxes?|bins?|cabinets?|shelves?|benches?|racks?|containers?|cubes?))|organizers?|cabinets?|shel(?:f|ves)|racks?|hampers?|furniture|tables?|chairs?|beds?|sofas?|benches?|kitchen|kitchenware|tableware|hot pots?|electric cookers?|coffee pot|cookware|utensils?|egg boiler|caddy|towels?|lamps?|decor|tapestry|vases?|wall art|paintings?|posters?|pillows?|blankets?|cushions?|drinkware|cups?|mugs?|curtains?|baskets?)\b/},
   {id:'home_children',category:'Maison',
     path:/^toys kids babies\b/,
-    object:/\b(?:toys?|plush|dolls?|strollers?|baby stroller|school bags?|pencil cases?|baby beds?|nursery furniture)\b/},
+    object:/\b(?:toys?|plush toys?|stuffed animals?|teddy bears?|dolls?|strollers?|baby stroller|school bags?|pencil cases?|baby beds?|nursery furniture)\b/},
   {id:'home_lighting',category:'Maison',
     path:/^home improvement (?:indoor|outdoor) lighting\b/,
     object:/\b(?:lamps?|decorative light|bedside light|night lights?|wall lights?|solar (?:wall|street|path) lights?|outdoor wall lights?|street path lights?)\b/},
@@ -77,6 +77,13 @@ function categoryCorroboratedByObject(candidate={}){
   const supplierPath=candidate.supplier_category||candidate.normalized_source_contract?.supplier_category;
   const path=words(supplierPath);
   if(!title||!path) return null;
+  // A finishing material is not a product type: 'plush backpack' is a bag,
+  // never affirmative evidence of a toy merely because the CJ branch says Toys.
+  // Separately, a heat-press machine bundled with mugs is equipment + goods,
+  // so 'mug' must not independently certify a household-product parent.
+  if (/\b(?:heat|tumbler|mug|sublimation) press (?:machine|set|kit)\b/.test(title)
+      && /\b(?:mugs?|cups?|tumblers?|press machines?)\b/.test(title))
+    return null;
   const titleHits=FAMILIES.filter(f=>f.object.test(title));
   const categories=new Set(titleHits.map(f=>f.category));
   if(categories.size!==1) return null;

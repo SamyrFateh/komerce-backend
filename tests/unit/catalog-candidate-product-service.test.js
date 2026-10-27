@@ -695,3 +695,47 @@ describe('CJ real-world evidence generalization: no token-property confusion',()
     expect(categoryCorroboratedByObject(c(product_name,supplier_category))).toBeNull();
   });
 });
+
+
+describe('Object identity counter-audit: material is not an object and kits have multiple purposes',()=>{
+  const {categoryCorroboratedByObject}=require('../../services/catalog-commercial-category-evidence');
+  const {resolveCommercialTaxonomyVerdict}=require('../../services/catalog-candidate-product-service');
+  const toyPath='Toys, Kids & Babies > Toys & Hobbies > Action & Toy Figures';
+  const homePath='Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools';
+  test.each([
+    ['ins dinosaur children plush backpack',toyPath],
+    ['Plush Foam Cushion',toyPath],
+    ['Velvet Plush Baby Blanket',toyPath],
+    ['Tumbler Heat Press Machine And Sublimation Tumblers With Mug Press Cup Press',homePath],
+    ['Mug Press Machine + 8 Ceramic Mugs',homePath],
+  ])('rejects an object that a misleading secondary noun would put in Maison: %s',(product_name,supplier_category)=>{
+    expect(categoryCorroboratedByObject({product_name,supplier_category})).toBeNull();
+  });
+  test.each([
+    ['Plush Bunny Toy',toyPath],
+    ['Large Plush Teddy Bear',toyPath],
+    ['Plush Toy Doll',toyPath],
+    ['Baby Stroller Bag Organizer','Toys, Kids & Babies > Baby & Mother > Activity & Gear'],
+    ['Heat Resistant Ceramic Coffee Mug',homePath],
+    ['Dishwashing Mug Storage Cabinet',homePath],
+  ])('retains evidence for true item identity: %s',(product_name,supplier_category)=>{
+    expect(categoryCorroboratedByObject({product_name,supplier_category}))
+      .toMatchObject({category:'Maison',level:'CATEGORY'});
+  });
+  test.each([
+    ['ins dinosaur children plush backpack',toyPath],
+    ['Tumbler Heat Press Machine And Sublimation Tumblers With Mug Press Cup Press',homePath],
+  ])('uncertainty remains review and never becomes an authoritative draft: %s',
+    async(product_name,supplier_category)=>{
+      const q={query:jest.fn(async sql=>{
+        if(sql.includes('object_classification_terms'))return {rows:[]};
+        if(sql.includes('FROM supplier_commercial_category_mappings'))return {rows:[]};
+        return {rows:[]};
+      })};
+      const verdict=await resolveCommercialTaxonomyVerdict(q,{
+        supplier_name:'CJdropshipping',product_name,supplier_category,
+        raw_payload:{discovery:{target_category:'Maison',target_subcategory:'Enfants'}}});
+      expect(verdict).toMatchObject({status:'REVIEW_REQUIRED',category:null,subcategory:null,
+        source:'DISCOVERY_PRIOR'});
+    });
+});
