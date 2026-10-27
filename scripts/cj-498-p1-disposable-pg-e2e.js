@@ -170,6 +170,37 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
       raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}}};
     draftProofs.push(await transactionProof(client,'category_only_common_parent',categoryOnly,
       {shouldCreate:true,expectedCategory:'Maison',expectedSubcategory:null}));
+    // Human learning is governed, not unsupervised. First a human explicitly
+    // confirms an object's destination. Reuse for other SKUs is only allowed
+    // after an editor separately accepts a reusable multiword OBJECT phrase in
+    // the active boutique vocabulary. Both decisions are rolled back.
+    const first={supplier_name:'CJdropshipping',
+      product_name:'Foldable Rattan Fruit Basket',
+      supplier_category:'Unmapped > Experimental Household',
+      komerce_category:'autre',
+      raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}},
+      commercial_taxonomy_review:{status:'CONFIRMED',category:'Maison',subcategory:'Cuisine'}};
+    const similar={...first,product_name:'Large Foldable Rattan Fruit Basket'};
+    delete similar.commercial_taxonomy_review;
+    const beforeVocabulary=await resolveCommercialTaxonomyVerdict(client,similar);
+    if(beforeVocabulary.status!=='REVIEW_REQUIRED')
+      throw Error('LEARNING_BEFORE_EDITORIAL_APPROVAL:'+JSON.stringify(beforeVocabulary));
+    draftProofs.push(await transactionProof(client,'human_confirms_first_object',first,
+      {shouldCreate:true,expectedCategory:'Maison',expectedSubcategory:'Cuisine'}));
+    const taught=await client.query(
+      "UPDATE boutique_subcategories SET object_classification_terms = "+
+      "object_classification_terms || '{\"foldable rattan fruit basket\":12}'::jsonb "+
+      "WHERE category_key='Maison' AND key='Cuisine' AND is_active=TRUE");
+    if(taught.rowCount!==1)throw Error('REUSABLE_OBJECT_TERM_TARGET_INACTIVE');
+    const learned=await resolveCommercialTaxonomyVerdict(client,similar);
+    if(learned.status!=='AUTO_CLASSIFIED'||learned.category!=='Maison'
+      ||learned.subcategory!=='Cuisine'||learned.source!=='OBJECT_NAME_MATCH')
+      throw Error('EDITOR_APPROVED_OBJECT_NOT_REUSED:'+JSON.stringify(learned));
+    draftProofs.push(await transactionProof(client,'editorial_object_reused_for_similar_sku',similar,
+      {shouldCreate:true,expectedCategory:'Maison',expectedSubcategory:'Cuisine'}));
+    const unrelated={...similar,product_name:'Foldable Rattan Shoe Shelf'};
+    draftProofs.push(await transactionProof(client,'unrelated_object_not_taught',unrelated,
+      {shouldCreate:false}));
   }finally {
     try{await client.query('ROLLBACK');rolledBack=true;}finally{client.release();}
   }
