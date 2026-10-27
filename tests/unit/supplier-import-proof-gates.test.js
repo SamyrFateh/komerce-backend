@@ -51,6 +51,23 @@ describe('Provider-neutral supplier import certification, nominal + fault calibr
     const x=fixture();x.events[0].outcome='auto_rejected';
     expect(assess(x).failed_gates).toContain('trace');
   });
+  test('sourcing-only proof accepts a real KIR RUNNING with complete intake',()=>{
+    const x=fixture();x.run.status='RUNNING';x.scope='sourcing_only';
+    const report=assess(x);
+    expect(report.passed).toBe(true);
+    expect(report.gates.import).toMatchObject({
+      pass:true,scope:'sourcing_only',run_status:'RUNNING',
+      receipt_certified:true,terminal_handoff_certified:false
+    });
+    expect(assess({...x,scope:'full'}).failed_gates).toContain('import');
+  });
+  test('a FAILED run must always fail, even with otherwise complete intake',()=>{
+    const x=fixture();x.run.status='FAILED';x.scope='sourcing_only';
+    expect(assess(x).failed_gates).toContain('import');
+  });
+  test('invalid scope is rejected',()=>{
+    expect(()=>assess({...fixture(),scope:'any'})).toThrow('INVALID_PROOF_SCOPE');
+  });
   test('no approved USD FX: 20 retained WATCH, 20 independently classified, no false sale',()=>{
     const r=assess(fixture(20,{fxPending:20}));
     expect(r.passed).toBe(true);
