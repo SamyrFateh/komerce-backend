@@ -49,6 +49,8 @@ function evaluateBoundary(boundary,proof) {
  // Never call an unsupported/no-data boundary correct or equivalent.
  if(a.status==='BLOCKED'&&b.status==='PROVED')contradictions.push('BLOCKED_OWNER_VS_DOWNSTREAM_PROVED');
  if(a.status==='UNKNOWN'||b.status==='UNKNOWN')gaps.push('UNKNOWN_OWNER_OR_CONSUMER_VERDICT');
+ // BLOCKED/BLOCKED is a coherent refusal, not a proved positive process.
+ if(a.status==='BLOCKED'||b.status==='BLOCKED')gaps.push('BLOCKED_OWNER_OR_CONSUMER');
  if(a.status==='NOT_APPLICABLE'||b.status==='NOT_APPLICABLE')gaps.push('APPLICABILITY_NOT_INDEPENDENTLY_PROVED');
  const idsA=a.ids||{},idsB=b.ids||{};
  for(const key of boundary.keys){
