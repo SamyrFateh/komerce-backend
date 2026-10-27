@@ -12,6 +12,16 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
    'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE','P3_P6_PURCHASE_COST',
    'P4_P6_LOGISTICS_COST','P5_P6_CASH_REALITY','P6_P1_PRICE_REVIEW','P7_P5_COUNTRY_SETTLEMENT'],
   owner_read_errors:[],
+  physical_parcel_counter:{
+    id:'KBA-C01',outcome:'COUNT_INCREASED_WITH_ZERO_PHYSICAL_INSERT',
+    independentProof:'PHYSICAL_POSTGRESQL_CONTROLLED_PREFLIGHT_STALENESS',
+    ownerReportCount:1,postgresNewRows:0,productionIncidentConfirmed:false,
+  },
+  physical_wallet_replay:{
+    id:'KBA-C02',outcome:'SAME_KEY_DEDUPLICATED_DIFFERENT_TIME_KEYS_CREDITED_TWICE',
+    independentProof:'PHYSICAL_POSTGRESQL_WALLET_SERVICE',
+    productionIncidentConfirmed:false,
+  },
   totals:{notWired:0},
   unaudited_price_probe:{outcome:'PRICE_ACTIVATE_EVENT_WITHOUT_ACTOR_ACCEPTED',hypothesis:'UNATTRIBUTED_PRICE_ACTIVATE_EVENT'},
   draft_settlement_probe:{outcome:'DRAFT_ASSIGNMENT_SETTLEMENT_ACCEPTED',hypothesis:'NEW_READY_SETTLEMENT_ON_INACTIVE_ASSIGNMENT'},
@@ -342,4 +352,17 @@ test('both protection constraints are acceptable when PostgreSQL rejects mutatio
   p.p1_p7_wiring.draft_settlement_probe={outcome:'SQL_DRAFT_SETTLEMENT_GUARD',sqlstate:'P0001'};
  }
  assert.equal(comparePaths(a,b).mismatchCount,0);
+});
+
+test('A/B comparator must not accept both variants missing real parcel count evidence',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.physical_parcel_counter;
+ delete b.p1_p7_wiring.physical_parcel_counter;
+ assert.throws(()=>comparePaths(a,b),/Physical PostgreSQL parcel-count/);
+});
+test('A/B comparator must not accept both variants missing wallet stable-vs-temporal replay',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.physical_wallet_replay;
+ delete b.p1_p7_wiring.physical_wallet_replay;
+ assert.throws(()=>comparePaths(a,b),/Physical PostgreSQL wallet idempotency/);
 });
