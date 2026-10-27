@@ -180,6 +180,7 @@ module.exports = {
       'services/product-price-audit.js',
       'services/catalog-publication-decision-audit.js',
       'services/catalog-candidate-product-service.js',
+      'services/catalog-commercial-category-evidence.js',
       'services/commercial-taxonomy-semantics.js',
       'services/catalog-product-mutation-service.js',
       'services/catalog-change-intake.js',
