@@ -1,4 +1,4 @@
-# Komerce Independent Business Auditor — R&D v0.1
+# Komerce Independent Business Auditor — R&D v0.2
 
 **Goal:** detect independently reproducible contradictions between business rules,
 persisted facts and process invariants. A green Golden is not certification.
@@ -78,3 +78,32 @@ queries on a disposable PostgreSQL DB, and archives JSON/Markdown reports.
 - The external-tool packaging and automatic incremental scanning are future
   work. Correct any discovered bugs in the domain owner, not here.
 - Golden synthetic transactions are calibration, not customer/PSP/bank proof.
+
+
+## V0.2 — first code-wide triage and independent code-pattern detector
+
+The first independent CI static run found **22 lexical suspicions across 1,486
+tracked JS/TS files**. They are now represented one by one in a conservative,
+reviewed source-path ledger:
+
+- static-triage.js maps each scanner rule to an owner and the independent
+  business test needed;
+- triage-ledger.js distinguishes runtime candidates from testing, seeding,
+  simulation and canonical-owner activities. The ledger is *source review*,
+  never a declaration that the code is correct, incorrect or reachable;
+- unknown new findings stay UNREVIEWED rather than silently suppressed;
+- code-detectors.js independently detects one concrete control-flow risk:
+  conflict-ignored parcel INSERT followed by success counter increment, without
+  checking affected rows. It analyses actual code files only, not service
+  runtime; SQL row-count and concurrency remain to be demonstrated;
+- issue #2949 already contains a service-mock reproduction for auto-parcel
+  (rowCount=0 with items_assigned=1). The detector records that limited
+  previous evidence instead of rediscovering it as an unqualified new bug.
+
+The JSON report now includes code.triage, code.reviewSummary and
+code.independentCodeSignals; Markdown includes a reviewer-oriented action
+matrix. The scanner is **not** licensed to change application code or claim
+that production data contains any specific anomaly.
+
+This is still an incremental discovery tool, **not** complete formal
+verification of all business code.
