@@ -9,7 +9,11 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
   {stage:'AT_RELAY_NO_CUSTOMER_SCAN',status:'MISSING_IDENTITY_EVIDENCE',gaps:['NO_CUSTOMER_HANDOFF_SCAN']},
   {stage:'CUSTOMER_HANDOFF_AND_FINANCIAL_CLOSE',status:'NO_IDENTITY_CONTRADICTION_OBSERVED',gaps:[]},
  ],
- verified_counts:{itemIds:1,purchaseLineIds:1,hubAllocationIds:1,physicalUnitIds:1,parcelIds:1,scanIds:1},
+ pre_submission:{schema:'golden-po-unsubmitted-checkpoint/v1',persisted_shape:shape,
+  persisted_status:shape==='grouped'?'draft':'pending',execution_count:0,payment_count:0,
+  verdict:'NO_RECORDED_SUPPLIER_EXECUTION',issues:[]},
+ verified_counts:{itemIds:1,purchaseLineIds:1,executionLineIds:1,supplierPaymentIds:1,
+  fulfillmentIds:1,hubAllocationIds:1,physicalUnitIds:1,parcelIds:1,scanIds:1},
  real_sql_mutation_rejected:true,real_sql_guard_code:'23514',
  perturbation_detected:['PURCHASE_SKU_SUBSTITUTION','HUB_ALLOCATION_SKU_MISMATCH'],
  canonical_order_id:'random-order-id',
@@ -42,4 +46,31 @@ test('rejects ungrounded PO shape labels even if nominal signatures match',()=>{
  const a=make('grouped'),b=make('historical');
  b.persisted_po_shape='grouped';
  assert.throws(()=>comparePaths(a,b),/canonical persisted PO headers/);
+});
+
+test('pair is rejected when both lack persisted pre-submission facts',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.pre_submission;delete b.pre_submission;
+ assert.throws(()=>comparePaths(a,b),/not independently proved/);
+});
+test('grouped draft cannot be silently replaced by pending status',()=>{
+ const a=make('grouped'),b=make('historical');
+ a.pre_submission.persisted_status='pending';
+ assert.throws(()=>comparePaths(a,b),/not independently proved/);
+});
+test('historical pending cannot be silently replaced by draft status',()=>{
+ const a=make('grouped'),b=make('historical');
+ b.pre_submission.persisted_status='draft';
+ assert.throws(()=>comparePaths(a,b),/not independently proved/);
+});
+test('supplier execution without submission is not normalised away',()=>{
+ const a=make('grouped'),b=make('historical');
+ a.pre_submission.execution_count=1;
+ assert.throws(()=>comparePaths(a,b),/not independently proved/);
+});
+test('two equally incomplete trails are not accepted as equivalent',()=>{
+ const a=make('grouped'),b=make('historical');
+ a.verified_counts.supplierPaymentIds=0;
+ b.verified_counts.supplierPaymentIds=0;
+ assert.throws(()=>comparePaths(a,b),/Full nine-category/);
 });
