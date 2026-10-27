@@ -28,8 +28,8 @@ function semanticIntent(candidate = {}) {
   const source = words(candidate.supplier_category || candidate.normalized_source_contract?.supplier_category);
   const title = words(candidate.product_name);
   const female = FEMALE_CLOTHING.test(source), male = MALE_CLOTHING.test(source);
-  const oppositeGender = (female && /\\b(mens?|male|hommes?|hombre|herren)\\b/.test(title))
-    || (male && /\\b(womens?|female|femmes?|mujer|damen|ladies)\\b/.test(title));
+  const oppositeGender = (female && /\b(mens?|male|hommes?|hombre|herren)\b/.test(title))
+    || (male && /\b(womens?|female|femmes?|mujer|damen|ladies)\b/.test(title));
   if (female || male) {
     if (female && male || oppositeGender || NON_CLOTHING_OBJECT.test(title))
       return {kind:'conflict',reason:'CLOTHING_SOURCE_OBJECT_CONTRADICTION'};
