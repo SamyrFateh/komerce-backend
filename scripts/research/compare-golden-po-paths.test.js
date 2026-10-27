@@ -11,6 +11,9 @@ const make=(shape)=>({po_shape:shape,persisted_po_shape:shape,header_carries_ord
    'P1_P2_SELLABLE_UNIT','P2_P3_PURCHASE_REQUIREMENT','P3_P4_HUB_RECEIPT',
    'P4_P2_RELAY_HANDOFF','P5_P2_PAYMENT_CLOSURE'],
   owner_read_errors:[],
+  unpaid_closure_probe:{outcome:'OWNER_RECONCILED_AFTER_TEMP_UNPAID',
+   verdict:'FINANCIAL_CLOSE_MISMATCH',
+   reason:'FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID',payment_status:'pending'},
   boundaries:[
    {id:'P2_P3_PURCHASE_REQUIREMENT',status:'EVIDENCE_GAP',contradictions:[],gaps:['UNKNOWN_OWNER_OR_CONSUMER_VERDICT']},
    {id:'P3_P4_HUB_RECEIPT',status:'NO_CONTRADICTION_OBSERVED',contradictions:[],gaps:[]},
@@ -188,4 +191,18 @@ test('one deceptively persisted Stripe ref cannot be treated as a real PSP charg
  const a=make('grouped'),b=make('historical');
  b.p1_p7_wiring.customer_finance.facts.psp_reference_present=true;
  assert.throws(()=>comparePaths(a,b),/P5-P2 finance/);
+});
+
+test('both Goldens must include real unpaid payment PostgreSQL negative outcome',()=>{
+ const a=make('grouped'),b=make('historical');
+ delete a.p1_p7_wiring.unpaid_closure_probe;
+ delete b.p1_p7_wiring.unpaid_closure_probe;
+ assert.throws(()=>comparePaths(a,b),/P5-P2 real PostgreSQL unpaid-close negative probe/);
+});
+test('bad negative probe that still financially matches must reject equal fixtures',()=>{
+ const a=make('grouped'),b=make('historical');
+ for(const x of [a,b]){
+  x.p1_p7_wiring.unpaid_closure_probe.verdict='FINANCIAL_CLOSE_MATCHED';
+ }
+ assert.throws(()=>comparePaths(a,b),/P5-P2 real PostgreSQL unpaid-close negative probe/);
 });
