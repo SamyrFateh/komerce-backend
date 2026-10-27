@@ -40,9 +40,10 @@ test('physical allocation of a different order is not excused by correct SKU',()
  const a=assessP2P4(sample({allocations:[{...allocation,order_id:'different-order'}]}));
  assert.ok(a.diagnostics.contradictions.includes('HUB_ALLOCATION_FOREIGN_ORDER'));
 });
-test('matched inbound but physically unusable quantity is a specific contradiction',()=>{
+test('historical inbound versus currently usable stock is evidence gap, not time-blind bug',()=>{
  const a=assessP2P4(sample({progress:[{...progress,received_quantity:0}]}));
- assert.ok(a.diagnostics.contradictions.includes('INBOUND_MATCHED_WITHOUT_FULL_USABLE_PHYSICAL_QUANTITY'));
+ assert.ok(a.diagnostics.gaps.includes('INBOUND_HISTORY_NOT_EQUAL_CURRENT_USABLE_STOCK'));
+ assert.deepEqual(a.diagnostics.contradictions,[]);
  assert.equal(a.proofs.P3_P4_HUB_RECEIPT.target.status,'UNKNOWN');
 });
 test('supplier fulfillment shipment not Hub receipt',()=>{
@@ -88,4 +89,12 @@ test('read-only collector reads actual SQL and delegates Hub verdict to canonica
  assert.equal(seen.length,4);
  assert.ok(seen.every(x=>x.sql.trimStart().startsWith('SELECT')));
  assert.deepEqual(r.diagnostics.contradictions,[]);
+});
+
+test('synthetic SQL fixture paid flag is never a confirmed P2 payment authorization',()=>{
+ const a=assessP2P4(sample({provenance:'SYNTHETIC_GOLDEN_CREATE',
+  paymentGate:{status:'ANOMALIE'}}));
+ assert.equal(a.diagnostics.source_payment_status,'UNKNOWN');
+ assert.equal(verdict(a,'P2_P3_PURCHASE_REQUIREMENT').status,'EVIDENCE_GAP');
+ assert.ok(a.diagnostics.gaps.includes('SYNTHETIC_GOLDEN_CLIENT_PAYMENT_NOT_PROVED'));
 });
