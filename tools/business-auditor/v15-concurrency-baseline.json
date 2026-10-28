@@ -1,0 +1,13 @@
+{
+  "contract": "komerce-business-concurrency-baseline/v15",
+  "reviewStatus": "RESEARCH_CANDIDATE_UNREVIEWED_BY_OPUS",
+  "issue": 3095,
+  "oracle": "CANONICAL_PG_PARCEL_CAPACITY_TWO_CONNECTIONS",
+  "expectedVerdict": "REPRODUCED_CANONICAL_PG_CONCURRENT_CAPACITY_BREACH",
+  "expectedSequentialMax": 30,
+  "expectedConcurrentMax": 31,
+  "expectedLimit": 30,
+  "expectedCleanupVerified": true,
+  "meaning": "Records a newly reproduced defect candidate for detecting changes; not business acceptance and not proof of HTTP or production incident.",
+  "rule": "Any fix, regression, changed synchronization or changed limit must receive explicit review and baseline update."
+}
