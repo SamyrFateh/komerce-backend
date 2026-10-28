@@ -28,9 +28,13 @@ test('technical writer differs from owner and is not authorized',()=>{
  assert.equal(x.authorized,false);
 });
 test('undeclared cross-domain direct query is a high-priority hypothesis',()=>{
- const x=classify(w('orders',{explicitOwners:['orders'],declaredDomain:'payment'}),aliases(cards));
+ const x=classify(w('orders',{explicitOwners:['orders'],declaredDomain:'payment',declaredFeatureWriters:['orders']}),aliases(cards));
  assert.equal(x.status,'CROSS_DOMAIN_UNDECLARED');assert.equal(x.priority,'HIGH');
  assert.equal(x.confirmedBusinessBug,false);assert.equal(x.verifiedCallPath,false);
+});
+test('a separate feature writer declaration is a hint, not an authorization',()=>{
+ const x=classify(w('orders',{explicitOwners:['orders'],declaredDomain:'payment',declaredFeatureWriters:['payments','orders']}),aliases(cards));
+ assert.equal(x.status,'FEATURE_WRITER_DECLARED');assert.equal(x.authorized,false);
 });
 test('all SQL candidates preserved including unknown targets',()=>{
  const rows=[w('orders',{explicitOwners:['orders'],declaredDomain:'orders'}),
