@@ -28,6 +28,7 @@ const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
 const catalogRegistry = require('./catalog-registry');
+const refineryWorklist = require('./refinery-worklist');
 const catalogProductMutation = require('./catalog-product-mutation-service');
 const { getPricingParameterStatus } = require('./pricing-parameters-status');
 
@@ -348,6 +349,7 @@ async function queryFocusedMarketHandoff(productRef) {
 }
 
 async function buildWorkspace(query = {}) {
+  const isRefinery = query.refinery_view === '1';
   const approvalLimit = Math.min(Math.max(Number(query.approval_limit) || 50, 1), 100);
   const approvalOffset = Math.max(Number.parseInt(query.approval_offset, 10) || 0, 0);
   const approvalProductRef = String(query.product_ref || '').trim() || null;
@@ -355,7 +357,7 @@ async function buildWorkspace(query = {}) {
     querySummary(),
     queryCatalogCap(),
     taxonomy.listCategories(),
-    catalogRegistry.listRegistry({
+    isRefinery ? Promise.resolve({ products: [], page: { total: 0, limit: 0, offset: 0 } }) : catalogRegistry.listRegistry({
       search: query.search,
       supplier: query.supplier,
       category: query.category,
@@ -364,11 +366,11 @@ async function buildWorkspace(query = {}) {
       limit: query.catalog_limit || 50,
       offset: query.catalog_offset || 0,
     }),
-    commercialAssortment.listCommercialAssortment({ limit: 200 }),
+    isRefinery ? Promise.resolve([]) : commercialAssortment.listCommercialAssortment({ limit: 200 }),
     queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset, productRef: approvalProductRef }),
     queryApprovalBreakdown(),
-    queryFocusedMarketHandoff(approvalProductRef),
-    getPricingParameterStatus(db).catch(() => ({ items: [], has_unvalidated: false, unavailable: true })),
+    isRefinery ? Promise.resolve(null) : queryFocusedMarketHandoff(approvalProductRef),
+    isRefinery ? Promise.resolve({ items: [], unavailable: false }) : getPricingParameterStatus(db).catch(() => ({ items: [], has_unvalidated: false, unavailable: true })),
   ]);
   // La projection Raffinerie expose le vrai verdict du moteur de certification,
   // sans déclencher de validation, publication ni mutation.
@@ -382,6 +384,7 @@ async function buildWorkspace(query = {}) {
         };
       }))
     : approval.map(({ product_id, ...row }) => row);
+  const refinery = isRefinery ? await refineryWorklist.buildRefineryWorklist(query) : null;
   const approvalTotal = Number(summary.approval_pending) || 0;
   const commercialSummary = {
     approved_products: commercialProducts.length,
@@ -390,7 +393,9 @@ async function buildWorkspace(query = {}) {
   };
   const commercialCurationSummary = { ...summary, active_products: commercialSummary.approved_products };
   return {
-    scope: { mode: 'global_catalog_registry', label: 'Catalogue global Komerce' },
+    scope: isRefinery
+      ? { mode: 'refinery_preparation', label: 'Raffinerie produits' }
+      : { mode: 'global_catalog_registry', label: 'Catalogue global Komerce' },
     summary: {
       ...summary,
       registry_total: registry.page.total,
@@ -406,6 +411,7 @@ async function buildWorkspace(query = {}) {
     registry_page: registry.page,
     commercial_products: commercialProducts,
     approval: approvalWithReadiness,
+    ...(isRefinery ? { refinery } : {}),
     focused_handoff: focusedHandoff,
     pricing_parameters: pricingParameters,
     approval_breakdown: approvalBreakdown,
