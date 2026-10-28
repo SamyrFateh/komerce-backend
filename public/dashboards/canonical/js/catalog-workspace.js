@@ -747,8 +747,9 @@
     frenchPane.appendChild(assistantActions);
 
     const nameField = editorField(doc, 'Titre français', 'name');
-    const descriptionField = editorField(doc, 'Description française', 'description', true);
-    if (activeRecheck && (row.content_source === 'manual' || isFrenchLocale(row.source_locale))) {
+    const descriptionField = editorField(doc, activeRecheck
+      ? 'Description française (facultative)' : 'Description française', 'description', true);
+    if (activeRecheck && (row.name_override_present || row.content_source === 'manual' || isFrenchLocale(row.source_locale))) {
       nameField.control.value = row.name || '';
       descriptionField.control.value = row.description || '';
     }
@@ -828,7 +829,7 @@
     const cancel = makeButton(doc, 'Annuler', 'cancel-fr-editor', true);
     cancel.addEventListener('click', () => closeFrenchEditor(context, triggerButton));
     actions.appendChild(cancel);
-    const save = makeButton(doc, activeRecheck ? 'Enregistrer la correction FR' : 'Enregistrer la préparation FR', 'save-fr-editor');
+    const save = makeButton(doc, activeRecheck ? 'Enregistrer le brouillon' : 'Enregistrer la préparation FR', 'save-fr-editor');
     const showSaveProblem = (message, control) => {
       footerNotice.className = 'kmc-catalog-fr-footer-notice is-critical';
       footerNotice.textContent = message;
@@ -845,40 +846,42 @@
         footerNotice.textContent = '';
       });
     });
-    save.addEventListener('click', async () => {
+    const submitFrench = async (accept = false) => {
       const name = String(nameField.control.value || '').trim();
       const description = String(descriptionField.control.value || '').trim();
-      if (!name || !description) {
+      if (!name || (!activeRecheck && !description)) {
         showSaveProblem(
-          !name && !description
-            ? 'Enregistrement impossible : renseignez le titre et la description en français.'
-            : !name
-              ? 'Enregistrement impossible : le titre français est vide.'
-              : 'Enregistrement impossible : la description française est vide. Complétez-la avant d’enregistrer.',
+          !name
+            ? 'Le titre français est obligatoire.'
+            : 'La description française est obligatoire pour ce candidat.',
           !name ? nameField.control : descriptionField.control
         );
         return;
       }
       footerNotice.className = 'kmc-catalog-fr-footer-notice';
-      footerNotice.textContent = 'Enregistrement et vérification en cours…';
-      setEditorFeedback(status, 'Enregistrement en cours…');
+      footerNotice.textContent = accept
+        ? 'Validation de suffisance éditoriale en cours…'
+        : 'Enregistrement du brouillon en cours…';
+      setEditorFeedback(status, footerNotice.textContent);
       if (activeRecheck) {
         save.disabled = true;
+        if (validate) validate.disabled = true;
         try {
           const result = await jsonRequest(context.fetch,
             `${ENDPOINT}/refinery/${encodeURIComponent(row.product_ref)}/prepare-fr`, {
               method: 'POST',
-              body: { name, description },
+              body: { name, description, decision: accept ? 'accept' : 'draft' },
             });
-          if (!result?.ok) throw new Error('Réponse de correction inattendue.');
+          if (!result?.ok) throw new Error('Réponse inattendue lors de la préparation FR.');
           closeFrenchEditor(context, triggerButton);
           await context.reload({ skipAutoFrenchSchedule: true });
-          setFeedback(context.root,
-            `${row.product_ref} : préparation FR enregistrée. Réexamen actualisé ; exposition marché inchangée.`,
-            'positive');
+          setFeedback(context.root, accept
+            ? `${row.product_ref} : contenu français accepté comme suffisant par l’opérateur. Autres contrôles et règles de marchés inchangés.`
+            : `${row.product_ref} : brouillon français enregistré, travail restant en Raffinerie.`, 'positive');
         } catch (error) {
           showSaveProblem(actionErrorMessage(error), null);
           save.disabled = false;
+          if (validate) validate.disabled = false;
         }
         return;
       }
@@ -892,8 +895,16 @@
         runningMessage: 'Enregistrement de la préparation française…',
         successMessage: `${row.product_ref} préparé en français sans API IA payante. Vérifiez Avant / après puis validez.`,
       });
-    });
+    };
+    save.addEventListener('click', () => submitFrench(false));
+    const validate = activeRecheck
+      ? makeButton(doc, 'Valider le contenu actuel', 'validate-fr-sufficient') : null;
+    if (validate) {
+      validate.title = 'Décision humaine : le contenu français actuel suffit, même sans description.';
+      validate.addEventListener('click', () => submitFrench(true));
+    }
     actions.appendChild(save);
+    if (validate) actions.appendChild(validate);
     footer.appendChild(actions);
     dialog.appendChild(footer);
 
@@ -912,10 +923,12 @@
     await autoTranslateFrench(row, nameField.control, descriptionField.control, status);
     // Le message reste près de la commande d'enregistrement, même lorsque
     // les champs et la traduction locale sont plus haut dans la fenêtre.
-    if (!String(descriptionField.control.value || '').trim()) {
-      footerNotice.textContent = 'À compléter avant enregistrement : description française obligatoire.';
-    } else if (!String(nameField.control.value || '').trim()) {
-      footerNotice.textContent = 'À compléter avant enregistrement : titre français obligatoire.';
+    if (!String(nameField.control.value || '').trim()) {
+      footerNotice.textContent = 'Renseignez le titre français avant d’enregistrer.';
+    } else if (activeRecheck) {
+      footerNotice.textContent = 'Description facultative : enregistrer un brouillon ou valider que le contenu actuel suffit.';
+    } else if (!String(descriptionField.control.value || '').trim()) {
+      footerNotice.textContent = 'Description française à compléter pour ce candidat.';
     }
     return overlay;
   }
