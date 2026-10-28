@@ -357,3 +357,23 @@ ne constituent plus la voie canonique de préparation.
 utilisé pour obtenir le contenu français ne l'est pas. La source reste la vérité,
 l'humain garde l'autorité de publication, l'IA reste un accélérateur facultatif,
 et **le catalogue distant reste une vérité globale unique projetée par marché**.
+
+
+### P0 — Image acheteur obligatoire (octobre 2026)
+
+La catégorie physique d'un produit et sa commandabilité personnalisée sont distinctes.
+Un mug photo peut conserver `Maison` mais ne pas être vendable. Tant que le checkout
+ne conserve pas de référence d'image acheteur par `order_items` et que cette
+image n'est pas transmise au fournisseur, `product-publication-guard` bloque
+l'activation de tout produit dont le **nom source** exige une image client
+(code `buyer_image_checkout_not_supported`). Cette preuve survit à la
+traduction du nom affiché grâce à `products.name_source`.
+
+La garde est volontairement étroite : toute personnalisation ne suppose pas
+nécessairement une image, et toute personnalisation ne relève pas obligatoirement
+de `Créations personnelles`. Les contrats cibles sont : exigences par SKU,
+upload privé authentifié, stockage durable, contrôle de propriété de l'image,
+snapshot immuable dans la ligne de commande, accès fournisseur contrôlé,
+et E2E de refus d'image absente, substituée ou expirée.
+
+Les routes d'images administratives du catalogue ne satisfont pas ce contrat.
