@@ -22,8 +22,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: refinery-v4-cert-${{ github.ref }}
-  cancel-in-progress: true
+  group: refinery-v4-physical-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   targeted-unit:
