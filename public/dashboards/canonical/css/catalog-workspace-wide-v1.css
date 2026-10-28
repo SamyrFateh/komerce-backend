@@ -929,3 +929,96 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
     max-width: 100%;
   }
 }
+
+/* V4.2 — finition UI du registre, sans changement de logique métier. */
+.kmc-catalog-main-panel .kmc-catalog-registry-table-wrap {
+  border-color: #d9e3f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(19, 44, 79, .055);
+}
+.kmc-catalog-main-panel .kmc-catalog-registry-table th {
+  height: 48px;
+  color: #425873;
+  background: #f5f8fc;
+  text-transform: none;
+  letter-spacing: .012em;
+}
+.kmc-catalog-main-panel .kmc-catalog-registry-table td {
+  padding-block: 18px;
+  color: #263d5c;
+}
+.kmc-catalog-main-panel .kmc-catalog-registry-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.kmc-catalog-main-panel .kmc-catalog-product-title {
+  font-size: 13.5px;
+  font-weight: 750;
+  line-height: 1.48;
+}
+.kmc-catalog-main-panel .kmc-catalog-product-reference {
+  color: #6b7e96;
+  font-size: 11.5px;
+}
+.kmc-catalog-main-panel .kmc-catalog-diagnostic {
+  background: none;
+}
+.kmc-catalog-main-panel .kmc-catalog-diagnostic .kmc-catalog-status {
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+.kmc-catalog-main-panel .kmc-catalog-correction-heading {
+  margin: 11px 0 6px;
+  color: #435a75;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.kmc-catalog-main-panel .kmc-catalog-corrections {
+  gap: 8px;
+}
+.kmc-catalog-main-panel .kmc-catalog-correction-item {
+  align-items: baseline;
+  gap: 9px;
+  line-height: 1.5;
+}
+.kmc-catalog-main-panel .kmc-catalog-correction-item::before {
+  line-height: 1;
+}
+.kmc-catalog-main-panel .kmc-catalog-actions-inner {
+  align-items: center;
+}
+.kmc-catalog-main-panel .kmc-catalog-primary-action {
+  min-height: 44px;
+  font-size: 12.5px;
+  font-weight: 750;
+  padding-inline: 13px;
+  border-radius: 9px;
+}
+.kmc-catalog-main-panel .kmc-catalog-row-more summary {
+  width: 40px;
+  min-height: 44px;
+  border-radius: 9px;
+}
+.kmc-catalog-main-panel .kmc-catalog-primary-action:hover,
+.kmc-catalog-main-panel .kmc-catalog-row-more summary:hover {
+  filter: brightness(.97);
+}
+@media (max-width: 760px) {
+  .kmc-catalog-main-panel .kmc-catalog-registry-table tbody tr {
+    padding: 16px;
+    gap: 14px 12px;
+    border-radius: 13px;
+    box-shadow: 0 3px 14px rgba(19, 44, 79, .045);
+  }
+  .kmc-catalog-main-panel .kmc-catalog-registry-table td {
+    padding: 0;
+  }
+  .kmc-catalog-main-panel .kmc-catalog-registry-table td:nth-child(5) {
+    padding-top: 3px;
+  }
+  .kmc-catalog-main-panel .kmc-catalog-primary-action {
+    min-height: 46px;
+  }
+  .kmc-catalog-main-panel .kmc-catalog-row-more summary {
+    min-height: 46px;
+  }
+}
