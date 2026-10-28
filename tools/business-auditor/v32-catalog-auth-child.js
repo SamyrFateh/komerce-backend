@@ -25,6 +25,7 @@ async function setup(){
  const client=await pool.connect();
  try{
   await client.query('BEGIN');
+  await client.query("UPDATE markets SET lifecycle_status='ACTIVE',is_active=true WHERE code IN ('KM','CM')");
   const {rows:m}=await client.query("SELECT id,code FROM markets WHERE code IN ('KM','CM') AND lifecycle_status='ACTIVE' ORDER BY code");
   if(m.length!==2)throw Error('V32_TOOL_ERROR: requires two ACTIVE canonical market rows KM and CM');
   const km=m.find(x=>x.code==='KM'),cm=m.find(x=>x.code==='CM');
@@ -51,7 +52,7 @@ async function observe(ids){
   [ids.product]);
  const {rows:[p]}=await pool.query("SELECT id,is_active,price_kmf,name FROM products WHERE id=$1",[ids.product]);
  const {rows:audits}=await pool.query(
-  "SELECT market_id,actor_user_id,capability,action FROM market_delegation_audit WHERE actor_user_id=$1 ORDER BY id",
+  "SELECT market_id,actor_user_id,capability,action FROM market_delegation_audit WHERE actor_user_id=$1 ORDER BY occurred_at,id",
   [ids.user]);
  const {rows:memberships}=await pool.query(
   "SELECT id,status FROM assignment_memberships WHERE id=$1",[ids.membership]);
