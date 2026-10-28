@@ -1,0 +1,10 @@
+{
+  "contract": "komerce-business-verdict-baseline/v1",
+  "policy": "EXACT_REVIEWED_EXPECTATIONS",
+  "scope": "RESEARCH_CONTROLLED_TEST_ONLY",
+  "expected": {
+    "KBA-V10-RC9-PAYPAL-RETRY": "REPRODUCED_CONTROLLED_TEST_INVARIANT_VIOLATION",
+    "KBA-V11-LOGISTICS-PARCEL-COUNT": "REPRODUCED_CONTROLLED_TEST_INVARIANT_VIOLATION"
+  },
+  "disclaimer": "Known violations are temporarily acknowledged for change detection; never accepted as valid business behavior. Any fix or new defect requires explicit baseline review."
+}
