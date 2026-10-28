@@ -6,6 +6,7 @@ on:
       - research/business-auditor-v07-writer-qualification-20261028
       - research/business-auditor-v08-sql-calibration-20261028
       - research/business-auditor-v09-sequential-integration-20261028
+      - research/business-auditor-v10-executable-bug-hunt-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -47,7 +48,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -155,6 +156,33 @@ jobs:
              p.ledger.unresolvedEntries.reduce((n,x)=>n+x.occurrenceCount,0)!==84)
            throw Error('V0.9 candidates disappeared');
           console.log('BUSINESS_AUDIT_V09_FULL_RECONCILIATION',JSON.stringify(p.summary));
+          NODE
+      - name: V1.0 observe actual PayPal refund owner against independent RC-9 replay oracle (fake HTTP)
+        env:
+          KOMERCE_V10_OBSERVATION_PATH: /tmp/komerce-independent-business-audit/v10-paypal-observation.json
+        run: npx jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/unit/auditor-v10-paypal-owner-probe.test.js --json --outputFile=/tmp/komerce-independent-business-audit/v10-owner-jest.json
+      - name: V1.0 certify existing and new same-run proofs and write business triage report
+        run: npm run audit:business:v1 -- --mode ci --evidence-dir /tmp/komerce-independent-business-audit
+      - name: V1.0 reject fabricated production evidence, preserve all source candidates
+        run: |
+          node <<'NODE'
+          const p=require('/tmp/komerce-independent-business-audit/v10-bug-hunt.json');
+          const r=p.summary;
+          if(p.contract!=='komerce-business-bug-hunter/v1'||
+             p.sha!==process.env.GITHUB_SHA||p.runId!==process.env.GITHUB_RUN_ID||
+             r.candidateOccurrences!==843||r.triageCases<100||r.reviewCases<100||
+             r.calibratedRuntimeOracles!==1||r.productionIncidentsConfirmed!==0||
+             r.completeBusinessCoverage!==false||p.findings.length!==1||
+             p.triageQueue.cases.reduce((n,x)=>n+x.occurrences,0)!==843||
+             p.findings[0].productionIncidentConfirmed!==false||
+             !['REPRODUCED_CONTROLLED_TEST_INVARIANT_VIOLATION','CONTROLLED_TEST_INVARIANT_SATISFIED']
+               .includes(p.findings[0].verdict))
+            throw Error('V1.0 misclassified or incomplete');
+          console.log('BUSINESS_AUDIT_V10_VERDICT',JSON.stringify({
+            sha:p.sha,run:p.runId,summary:r,oracle:p.findings[0].id,
+            verdict:p.findings[0].verdict,
+            observed:p.findings[0].observed,expected:p.findings[0].expected
+          }));
           NODE
       - name: Archive independent JSON + Markdown evidence
         if: always()
