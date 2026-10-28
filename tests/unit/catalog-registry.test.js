@@ -91,3 +91,25 @@ test('visuel : repli sur la photo fournisseur uniquement pour l’aperçu, sans 
     is_active: false, work_status: 'taxonomy_to_confirm',
   });
 });
+
+
+test('Catalogue opérateur : la liste finale exclut les travaux Raffinerie sans effacer le registre historique', async () => {
+  const finalExecutor = { query: jest.fn()
+    .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+    .mockResolvedValueOnce({ rows: [fixture({
+      lifecycle_status: 'active', is_active: true, work_status: 'catalog_approved',
+      source_ready: true, taxonomy_ready: true, editorial_ready: true,
+    })] }) };
+  const final = await registry.listRegistry({ finalized_only: true }, finalExecutor);
+  expect(final.page.total).toBe(1);
+  expect(final.products[0].work_status).toBe('catalog_approved');
+  expect(finalExecutor.query.mock.calls[0][0]).toContain("work_status = 'catalog_approved'");
+  expect(finalExecutor.query.mock.calls[1][0]).toContain("work_status = 'catalog_approved'");
+
+  const historicalExecutor = { query: jest.fn()
+    .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+    .mockResolvedValueOnce({ rows: [fixture()] }) };
+  await registry.listRegistry({}, historicalExecutor);
+  expect(historicalExecutor.query.mock.calls[0][0]).not.toContain(
+    "WHERE work_status = 'catalog_approved'");
+});
