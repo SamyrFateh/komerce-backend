@@ -36,19 +36,19 @@ async function withClone(env,callback) {
   const result=await callback(cloned.toString(),name);
   return {result,cloneCreated:true,cloneDroppedAfterExecution:true,method:'CREATE_DATABASE_TEMPLATE_AND_DROP'};
  }finally {
-  if(created) {
-   // Never kill application sessions. A live client is a harness leak.
-   // On a disposable CI server the remaining clone dies with the container;
-   // failing closed preserves the real cause instead of terminating pg Pools.
-   const {rows:[active]}=await root.query(
-    'SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=$1',[name]);
-   if(Number(active.n)!==0)
-    throw Error('TOOL_ERROR: '+active.n+' cloned PG connections still active at teardown');
-   await root.query('DROP DATABASE IF EXISTS "'+name+'"');
-   const {rows:[check]}=await root.query('SELECT count(*)::int AS n FROM pg_database WHERE datname=$1',[name]);
-   if(Number(check.n)!==0)throw Error('TOOL_ERROR: cloned database still exists');
-  }
-  if(connected)await root.end();
+  try {
+   if(created) {
+    // Never terminate a server connection; classify pool leaks as tool errors.
+    const {rows:active}=await root.query(
+     'SELECT pid,state,application_name FROM pg_stat_activity WHERE datname=$1',[name]);
+    if(active.length)
+     throw Error('TOOL_ERROR: cloned PG sessions remain open: '+
+      JSON.stringify(active.map(x=>({pid:x.pid,state:x.state,application:x.application_name}))));
+    await root.query('DROP DATABASE IF EXISTS "'+name+'"');
+    const {rows:[check]}=await root.query('SELECT count(*)::int AS n FROM pg_database WHERE datname=$1',[name]);
+    if(Number(check.n)!==0)throw Error('TOOL_ERROR: cloned database still exists');
+   }
+  }finally {if(connected)await root.end()}
  }
 }
 module.exports={localUrls,withClone};
