@@ -5,7 +5,6 @@
  * Scenarios are isolated in their OWN fully cloned local PostgreSQL databases.
  * Unlike V1.5, the gate does not require any final result to be 31.
  */
-const {Pool}=require('pg');
 const {withClone}=require('./v16-cloned-database');
 const {setup,observe}=require('./v15-concurrency-runner');
 const LIMIT=30;
@@ -69,6 +68,7 @@ function classifyPromise(o,order) {
    message:String(o.reason?.message||'').slice(0,120)})};
 }
 async function scenario(databaseUrl,mode){
+ const {Pool}=require('pg');
  const pool=new Pool({connectionString:databaseUrl,max:3,connectionTimeoutMillis:6000});
  const clients=[];
  try{
