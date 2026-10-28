@@ -12,6 +12,8 @@ on:
       - 'routes/admin-catalog-workspace.js'
       - 'scripts/testing/refinery-v4-pg-proof.js'
       - 'scripts/testing/refinery-v4-chromium-proof.js'
+      - 'scripts/testing/market-handoff-v4-chromium-proof.js'
+      - 'tests/unit/market-catalog.test.js'
       - 'public/dashboards/canonical/**'
       - 'tests/unit/catalog-workspace.test.js'
       - 'tests/unit/catalog-registry.test.js'
@@ -69,6 +71,8 @@ jobs:
           npx jest --config jest.unit.config.js --ci --runInBand --no-coverage
           tests/unit/refinery-worklist.test.js
           tests/unit/refinery-fr-recheck.test.js
+          tests/unit/market-catalog.test.js
+          tests/unit/market-catalog-essential-ui.test.js
           tests/unit/catalog-registry.test.js
           tests/unit/catalog-workspace.test.js
           tests/unit/canonical-catalog-workspace-boundary.test.js
@@ -105,11 +109,15 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify Chromium 1440 and 390 px
         run: node scripts/testing/refinery-v4-chromium-proof.js
+      - name: Market handoff Chromium 1440/390 (explicit and focused)
+        run: node scripts/testing/market-handoff-v4-chromium-proof.js
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: refinery-v4-chromium-${{ github.sha }}
-          path: test-results/refinery-v4/*.png
+          path: |
+            test-results/refinery-v4/*.png
+            test-results/market-handoff-v4/*.png
           if-no-files-found: ignore
           retention-days: 7
