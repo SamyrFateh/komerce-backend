@@ -1191,7 +1191,7 @@
     if (row.work_status === 'catalog_approved' && row.is_active === true) {
       return { kind: 'markets', label: 'Décisions marchés', status: 'Approuvé Catalogue' };
     }
-    return { kind: 'detail', label: 'Examiner la fiche', status: 'Inactif · à examiner' };
+    return { kind: 'diagnose', label: 'Vérifier prérequis', status: 'À diagnostiquer' };
   }
 
   function renderCatalogTabs(rootNode, doc, context) {
@@ -1748,8 +1748,13 @@
         const market = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Décisions marchés');
         market.href = '/dashboards/canonical/market-catalog.html?product_ref=' +
           encodeURIComponent(row.product_ref);
+        const diagnose = makeButton(doc, 'Vérifier prérequis', 'diagnose-product', true);
+        diagnose.addEventListener('click', () => {
+          const check = diagnostic.querySelector('.kmc-catalog-readiness-check');
+          if (check) check.click();
+        });
         const primaryByKind = { detail: view, source, classify: editClassification,
-          refinery, markets: market };
+          refinery, markets: market, diagnose };
         const primary = primaryByKind[nextStep.kind] || view;
         primary.textContent = nextStep.label;
         primary.setAttribute('aria-label', nextStep.label + ' pour ' + row.product_ref);

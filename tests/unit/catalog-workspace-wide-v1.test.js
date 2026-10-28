@@ -166,3 +166,9 @@ test('V4 : produits inactifs hors candidats ont un réexamen sans faux GO', () =
   expect(ui).toContain('état métier à réexaminer');
   expect(ui).not.toContain("if (row.lifecycle_status !== 'candidate' || row.is_active === true)");
 });
+
+test('V4 : état inactif sans diagnostic rapide ouvre le contrôle, pas une fiche sans action', () => {
+  expect(ui).toContain("kind: 'diagnose', label: 'Vérifier prérequis', status: 'À diagnostiquer'");
+  expect(ui).toContain("const check = diagnostic.querySelector('.kmc-catalog-readiness-check')");
+  expect(ui).toContain("if (check) check.click()");
+});
