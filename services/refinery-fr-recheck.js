@@ -15,7 +15,7 @@
 'use strict';
 
 const db = require('../db');
-const { upsertOverrides, upsertOverride } = require('./catalog-overrides');
+const { upsertOverride } = require('./catalog-overrides');
 const { frenchLanguageProblems, describeFrenchProblems } = require('./catalog-fr-quality');
 
 class RefineryFrenchRecheckError extends Error {
@@ -35,15 +35,17 @@ function isEditorialIncomplete(row) {
     || (row.content_source === 'connector_raw' && !frenchSource);
 }
 
+
+const EDITORIAL_SUFFICIENCY_REASON = 'KOMERCE_FR_SUFFICIENCY_ACCEPTED_V1';
+
 async function correctActiveFrench(productRef, payload = {}, actor, executor = db) {
   const ref = String(productRef || '').trim();
   const name = String(payload.name || '').trim();
   const description = String(payload.description || '').trim();
+  const decision = payload.decision === 'accept' ? 'accept' : 'draft';
   if (!ref) throw new RefineryFrenchRecheckError('product_ref_required', 'Référence produit obligatoire', 400);
-  if (!name) {
-    throw new RefineryFrenchRecheckError('refinery_fr_title_required',
-      'Le titre français est obligatoire pour enregistrer cette correction.', 422);
-  }
+  if (!name) throw new RefineryFrenchRecheckError('refinery_fr_title_required',
+    'Renseignez le titre français pour enregistrer ou valider.', 422);
   if (!actor?.id) {
     throw new RefineryFrenchRecheckError('refinery_fr_actor_required',
       'Un acteur authentifié est obligatoire pour tracer la correction.', 403);
@@ -75,36 +77,46 @@ async function correctActiveFrench(productRef, payload = {}, actor, executor = d
         'La fiche ne présente plus de défaut éditorial nécessitant un réexamen.', 409);
     }
 
-    const metadata = {
-      reason: description
-        ? 'Raffinerie : correction FR après réexamen du produit actif'
-        : 'Raffinerie : titre FR enregistré sans description, travail éditorial restant',
+    // Save only fields actually supplied. The canonical override writer
+    // preserves supplier provenance and who accepted/edited the presentation.
+    // A draft must never complete certification by a side effect.
+    const reason = decision === 'accept'
+      ? EDITORIAL_SUFFICIENCY_REASON
+      : 'Raffinerie : brouillon de préparation FR, non validé';
+    await upsertOverride(q, {
+      productId: before.id,
+      fieldName: 'name',
+      fieldValue: name,
+      reason,
       setBy: actor.id,
-    };
-    if (!description) {
-      // Save partial work using the canonical field override writer. Unlike
-      // upsertOverrides this cannot accidentally mark a source without a
-      // description as fully prepared. Do NOT change needs_review, lifecycle,
-      // content_source, prices, or the market exposure on a partial save.
+    });
+    if (description) {
       await upsertOverride(q, {
         productId: before.id,
-        fieldName: 'name',
-        fieldValue: name,
-        ...metadata,
+        fieldName: 'description',
+        fieldValue: description,
+        reason,
+        setBy: actor.id,
       });
+    }
+
+    if (decision === 'draft') {
       return {
         product_ref: before.product_ref,
         status: 'editorial_draft_saved',
         remains_in_refinery: true,
-        missing_fields: ['description'],
+        missing_fields: description ? [] : ['description'],
         source_preserved: true,
         approval_granted: false,
         publication_changed: false,
         market_exposure_changed: false,
       };
     }
-    // Both fields supplied: existing canonical domain writer & validation.
-    await upsertOverrides(q, before.id, { name, description }, metadata);
+
+    // An explicit human decision that this presentation is sufficient now.
+    // Other catalogue guards (source and taxonomy) still apply. A missing
+    // description is not fabricated; the decision is recorded on the name
+    // override, tied to its exact field_value and actor.
     const { rows: [after] } = await q.query(
       `UPDATE products
           SET content_source='manual', needs_review=FALSE,
@@ -114,11 +126,12 @@ async function correctActiveFrench(productRef, payload = {}, actor, executor = d
         RETURNING product_ref, content_source, needs_review, is_active, lifecycle_status`,
       [before.id]);
     if (!after) throw new RefineryFrenchRecheckError('refinery_active_conflict',
-      'Produit modifié pendant la correction.', 409);
+      'Produit modifié pendant la validation.', 409);
     return {
       product_ref: after.product_ref,
-      status: 'editorial_recheck_saved',
-      remains_in_refinery: false,
+      status: 'editorial_sufficiency_validated',
+      editorial_description_present: Boolean(description || String(before.description || '').trim()),
+      sufficiency_decision: EDITORIAL_SUFFICIENCY_REASON,
       source_preserved: true,
       approval_granted: false,
       publication_changed: false,
@@ -131,5 +144,5 @@ async function correctActiveFrench(productRef, payload = {}, actor, executor = d
 module.exports = {
   correctActiveFrench,
   RefineryFrenchRecheckError,
-  _test: { isEditorialIncomplete },
+  _test: { isEditorialIncomplete, EDITORIAL_SUFFICIENCY_REASON },
 };
