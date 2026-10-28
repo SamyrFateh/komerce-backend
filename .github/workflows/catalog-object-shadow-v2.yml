@@ -1,0 +1,50 @@
+name: Catalog object family V2 — shadow-only proof
+on:
+  pull_request:
+    paths:
+      - 'scripts/cj-object-shadow-v2.js'
+      - 'tests/unit/cj-object-shadow-v2.test.js'
+      - 'features/catalog.feature.js'
+      - '.github/workflows/catalog-object-shadow-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  shadow-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Check pure scripts and adversarial family propagation
+        run: |
+          set -euo pipefail
+          node --check scripts/cj-object-shadow-v2.js
+          npx jest --config jest.unit.config.js tests/unit/cj-object-shadow-v2.test.js --runInBand --no-coverage
+      - name: Recover exact 498 authentic products and V1 decisions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p baseline v1
+          gh run download 40518230098 -R "$GITHUB_REPOSITORY" -n cj-balanced-e2e-500 -D baseline
+          echo '9ff18f6f902f2e72fc893a90da96b61058c77028d55e941381631fc9fb8116de  baseline/classification-evidence.json' | sha256sum -c -
+          gh run download 40607392815 -R "$GITHUB_REPOSITORY" -n cj-498-p1-real-pg-e2e-40607392815 -D v1
+      - name: Produce blind reviews and 498-identity shadow inventory without API
+        run: |
+          set -euo pipefail
+          node scripts/cj-object-shadow-v2.js prepare baseline/classification-evidence.json v1/all-498-decisions.json artifacts/object-shadow
+          node -e "const r=require('./artifacts/object-shadow/prepare-report.json');if(r.source_count!==498||r.v1_by_status.AUTO_CLASSIFIED!==63||r.v1_by_status.CATEGORY_CLASSIFIED!==240||r.v1_by_status.REVIEW_REQUIRED!==195)process.exit(1)"
+      - name: Preserve review-ready evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-object-shadow-v2-${{ github.run_id }}
+          path: artifacts/object-shadow/
+          if-no-files-found: warn
+          retention-days: 30
