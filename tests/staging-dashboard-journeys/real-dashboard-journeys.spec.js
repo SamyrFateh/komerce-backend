@@ -42,9 +42,9 @@ test('REAL staging: authenticated role, dashboard navigation and contextual prod
         return {h1:(document.querySelector('h1')?.textContent||'').trim().slice(0,130),
           text:document.body.innerText.slice(0,900),size:document.body.innerText.length,
           overflow:document.documentElement.scrollWidth-innerWidth,
-          links:all.map(a=>({href:a.getAttribute('href'),text:short(a.textContent,75)}))
+          links:all.map(a=>({href:a.getAttribute('href'),text:String(a.textContent||'').slice(0,75)}))
             .filter(a=>a.href).slice(0,45),
-          buttons:buttons.map(b=>short(b.innerText||b.getAttribute('aria-label'),70)).filter(Boolean).slice(0,35)};
+          buttons:buttons.map(b=>String(b.innerText||b.getAttribute('aria-label')||'').slice(0,70)).filter(Boolean).slice(0,35)};
       });
       const actual=safeUrl(page.url());
       const blocked=statusError(snap.text);
