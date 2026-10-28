@@ -43,6 +43,8 @@ async function mount(page, { populated = false, autoMarket = false, posts = [] }
   await page.goto(`${ORIGIN}/admin/workspaces/pricing`);
   if (!autoMarket) await page.locator('select').first().selectOption({ label: 'KM · Comores' });
   await expect(page.locator('[data-pricing-economic-cockpit]')).toBeVisible();
+  // Lot A : la vue par défaut est « Vue économique » ; les familles de coûts vivent dans « Modèle de coûts ».
+  if (populated) await page.locator('[data-atelier-view="costs"]').click();
 }
 
 for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mobile', { width: 390, height: 844 }]]) {
@@ -135,10 +137,10 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(cells).toContain('Surcharge pays');
     });
 
-    test('panneau secondaire fermé par défaut et aucun débordement horizontal de la page', async ({ page }) => {
+    test('ancien portefeuille remplacé par la file « Produits à décider » et aucun débordement horizontal de la page', async ({ page }) => {
       await mount(page, { populated: true });
-      await expect(page.locator('details.kmc-cockpit-secondary')).toHaveCount(1);
-      await expect(page.locator('details.kmc-cockpit-secondary')).not.toHaveAttribute('open', '');
+      await expect(page.locator('[data-cockpit-portfolio]')).toBeHidden();
+      await expect(page.locator('[data-atelier-view="products"]')).toBeVisible();
       const widths = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, inner: window.innerWidth }));
       expect(widths.scroll).toBeLessThanOrEqual(widths.inner);
     });
