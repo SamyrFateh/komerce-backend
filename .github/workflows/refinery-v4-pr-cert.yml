@@ -14,6 +14,7 @@ on:
       - 'scripts/testing/refinery-v4-chromium-proof.js'
       - 'scripts/testing/market-handoff-v4-chromium-proof.js'
       - 'tests/unit/market-catalog.test.js'
+      - 'tests/unit/market-catalog-membership-discovery.test.js'
       - 'public/dashboards/canonical/**'
       - 'tests/unit/catalog-workspace.test.js'
       - 'tests/unit/catalog-registry.test.js'
@@ -72,6 +73,7 @@ jobs:
           tests/unit/refinery-worklist.test.js
           tests/unit/refinery-fr-recheck.test.js
           tests/unit/market-catalog.test.js
+          tests/unit/market-catalog-membership-discovery.test.js
           tests/unit/market-catalog-essential-ui.test.js
           tests/unit/catalog-registry.test.js
           tests/unit/catalog-workspace.test.js
