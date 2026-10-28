@@ -1,0 +1,51 @@
+/* Catalogue pays V4 — passage ciblé depuis le Catalogue global.
+   Ce composant n'attribue jamais de marché implicitement. */
+#market-catalog-root .kmc-market-handoff {
+  width:100%; max-width:1120px; box-sizing:border-box;
+  border:1px solid #cfddf0; border-radius:14px;
+  background:linear-gradient(110deg,#f6f9ff,#fff 80%);
+  box-shadow:0 4px 16px rgba(18,46,80,.045);
+  padding:20px 22px; margin:14px 0;
+}
+#market-catalog-root .kmc-market-handoff-chooser { max-width:980px; }
+#market-catalog-root .kmc-market-handoff-kicker {
+  margin:0 0 8px; font-size:11px; letter-spacing:.065em;
+  color:#315d96; font-weight:800;
+}
+#market-catalog-root .kmc-market-handoff h2 {
+  margin:0 0 9px; font-size:clamp(19px,2.1vw,25px);
+  color:#112b52; overflow-wrap:anywhere;
+}
+#market-catalog-root .kmc-market-handoff-note {
+  max-width:840px; margin:0 0 16px;
+  color:#516b89; line-height:1.55; font-size:13.5px;
+}
+#market-catalog-root .kmc-market-handoff-options {
+  display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:12px 0;
+}
+#market-catalog-root .kmc-market-handoff-options .kmc-workspace-action {
+  display:inline-flex; justify-content:center; align-items:center;
+  padding:11px 16px; min-height:44px; border-radius:9px;
+  font-size:13px; text-decoration:none;
+}
+#market-catalog-root .kmc-market-handoff-options [data-handoff-market] {
+  background:#0d2c59; color:#fff; border-color:#0d2c59;
+  font-weight:760; min-width:112px;
+}
+#market-catalog-root .kmc-market-handoff-options [data-handoff-market]:hover { background:#174680; }
+#market-catalog-root .kmc-market-handoff-back {
+  display:inline-flex; min-height:40px; align-items:center;
+  color:#214d82; font-size:13px; font-weight:750;
+  text-underline-offset:3px;
+}
+#market-catalog-root .kmc-market-handoff-error {
+  font-size:13px; color:#a32535; font-weight:700;
+}
+#market-catalog-root .kmc-market-handoff a:focus-visible {
+  outline:3px solid #306fe4; outline-offset:3px;
+}
+@media(max-width:650px) {
+  #market-catalog-root .kmc-market-handoff { padding:17px 15px; }
+  #market-catalog-root .kmc-market-handoff-options [data-handoff-market] { flex:1 1 46%; }
+  #market-catalog-root .kmc-market-handoff-options .kmc-workspace-action { min-height:46px; }
+}
