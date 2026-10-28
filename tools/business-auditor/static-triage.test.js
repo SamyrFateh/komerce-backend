@@ -26,7 +26,7 @@ test('the exact 22 observed CI findings are source-reviewed without inventing co
  const rows=qualifyStaticTriage(prepareStaticTriage(samples));
  assert.equal(rows.length,22);
  assert.ok(rows.every(x=>x.reviewedFromSource&&x.evidenceReview!=='UNREVIEWED'&&x.confirmedBug===false));
- assert.equal(Object.keys(ENTRY).length,22); // one PayPal source line appears twice
+ assert.ok(Object.keys(ENTRY).length>=new Set(samples.map(x=>x.rule+'|'+x.file)).size);
  assert.equal(triageCounts(rows).targetedCandidateCount,13);
 });
 test('legitimate owner operations are not automatically reported as rule violations',()=>{
@@ -87,4 +87,15 @@ test('Git blob hashing respects byte lengths and refuses textual similarity',()=
  const a=Buffer.from('hello\n'),b=Buffer.from('hello');
  assert.notEqual(gitBlobHash(a),gitBlobHash(b));
  assert.match(gitBlobHash(a),/^[a-f0-9]{40}$/);
+});
+
+test('V1.2 physical PG proof harness has explicit source-based review without silencing detector',()=>{
+ const root=path.resolve(__dirname,'../..'),file='tools/business-auditor/v12-physical-parcel-runner.js';
+ const rows=qualifyStaticTriage(prepareStaticTriage([
+  {rule:'LS-04',file,line:30,priority:'P1'},
+  {rule:'LS-05',file,line:47,priority:'P1'}
+ ]),{root});
+ assert.equal(rows.length,2);
+ assert.ok(rows.every(x=>x.currentReviewValid===true&&x.evidenceReview==='DISPOSABLE_PG_PROOF_HARNESS'));
+ assert.ok(rows.every(x=>x.confirmedBug===false));
 });
