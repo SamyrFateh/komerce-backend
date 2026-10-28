@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {scenarioEvidence,domainForTable}=require('./v29-metadata-selector');
-const {validateDiscovery}=require('./v29-unified-discovery');
+const {validateDiscovery,humanDigest}=require('./v29-unified-discovery');
 const sha='12'.repeat(20),rank='af'.repeat(32);
 const source=()=>({
  contract:'komerce-prioritized-pair-selector/v22',rankHash:rank,
@@ -55,4 +55,18 @@ test('full report selection requires source ranking, invariant registry and sour
  assert.throws(()=>validateDiscovery({...d,rules:{count:0}},sha),/V29_SELECTION_TOOL_ERROR/);
  assert.throws(()=>validateDiscovery({...d,calibration:{selected:[],hash:rank}},sha),/V29_SELECTION_TOOL_ERROR/);
  assert.throws(()=>validateDiscovery(d,'ab'.repeat(20)),/V29_SELECTION_TOOL_ERROR/);
+});
+
+test('single report Markdown uses the persisted sourceDiscovery payload',()=>{
+ const r={sourceDiscovery:{sha,selectionHash:rank,
+  summary:{totalWriterPairs:2,equivalenceClasses:1,
+   singleWriterOrUnpairedTables:3},
+  calibration:{selected:[{id:'FIN-REFUND-BA',selectionReason:'OWNER_GRAPH',
+   ownerEvidence:{pairId:'x'}}]},
+  pairs:{reviewQueue:[{table:'refunds',domain:'finance',rankScore:1200,
+   physicalStatus:'ADAPTER_NOT_CERTIFIED_FOR_THIS_PAIR'}]}}};
+ const md=humanDigest(r);
+ assert.match(md,/ADAPTATEUR ET ORACLE À DÉVELOPPER/);
+ assert.match(md,/OWNER_GRAPH/);
+ assert.match(md,/refunds/);
 });
