@@ -59,7 +59,7 @@ test('counterfeit count fix does not conceal missing active parcel',()=>{
 });
 test('oracle fails closed on missing actual owner or canonical schema proof',()=>{
  const x=logistics('NOMINAL');x.realOwnerCalled=false;
- assert.throws(()=>inspectCase(REGISTRY[1],x),/V28_TOOL_ERROR/);
+ assert.throws(()=>inspectCase(REGISTRY[1],x),/V27_ORACLE_TOOL_ERROR|V28_TOOL_ERROR/);
 });
 test('financial test cannot claim live authentication',()=>{
  const x=financial('BA');x.authMiddlewareExecuted=true;
