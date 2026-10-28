@@ -8,7 +8,7 @@ const files=['services/auto-parcel.js','tools/business-auditor/v15-concurrency-r
  'tools/business-auditor/v15-concurrency-predicate.js'];
 const hash=p=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex');
 async function main(out,env=process.env){
- if(!out||!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||'')||!/^\\d+$/.test(env.GITHUB_RUN_ID||''))
+ if(!out||!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||'')||!/^\d+$/.test(env.GITHUB_RUN_ID||''))
   throw Error('TOOL_ERROR: CI SHA, run and output directory required');
  const sha=cp.execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
  if(sha!==env.GITHUB_SHA)throw Error('TOOL_ERROR: checked out source differs from CI');
