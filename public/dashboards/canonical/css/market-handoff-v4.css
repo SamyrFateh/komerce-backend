@@ -64,3 +64,17 @@
   #market-catalog-root .kmc-workspace-header { grid-template-columns:minmax(0,1fr); }
   #market-catalog-root .kmc-market-catalog-hero-controls { grid-column:1; grid-row:auto; }
 }
+
+#market-catalog-root .kmc-market-handoff-blocked {
+  display:inline-flex; align-items:center; min-height:44px; padding:10px 14px;
+  border:1px solid #dfe5ee; border-radius:9px; background:#f3f6fa;
+  color:#64748b; font-size:12.5px; font-weight:700;
+}
+#market-catalog-root .kmc-market-handoff-chooser [data-market-inaccessible] {
+  cursor:not-allowed; user-select:none;
+}
+#market-catalog-root .kmc-market-handoff-chooser .kmc-market-handoff-error {
+  margin:14px 0; padding:12px 14px; border-radius:9px;
+  border:1px solid #eadac5; background:#fff9f0; color:#8b5519;
+  line-height:1.55; max-width:850px;
+}
