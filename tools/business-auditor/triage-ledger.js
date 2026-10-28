@@ -50,6 +50,8 @@ const ENTRY=Object.freeze({
  'LS-05|tools/business-auditor/v12-physical-parcel-runner.js': ['DISPOSABLE_PG_PROOF_HARNESS','NOT_RUNTIME_PROOF','Harness checks the SQL emitted by the real owner and captures physical rowCount; keyword match is not another service-level conflict bug'],
  'LS-03|tools/business-auditor/code-detectors.test.js': ['TEST_SOURCE_FALSE_POSITIVE','NOT_RUNTIME_PROOF','Synthetic clock-based request key in scanner test: the source is not an executing financial writer'],
  'LS-01|tools/business-auditor/engine.test.js': ['TEST_SOURCE_FALSE_POSITIVE','NOT_RUNTIME_PROOF','SQL guard test contains literal UPDATE orders; no runtime business writer'],
+ 'LS-06|tools/business-auditor/v24-durable-intent-counterfactual.js': ['DISPOSABLE_PG_PROOF_HARNESS','NOT_RUNTIME_PROOF','R&D two-owner test-only coordinator; PayPal call delegates to real client only with persisted provider key on kba_* local clone, not a deployed writer. Must still prove crash recovery and other writers'],
+ 'LS-06|tools/business-auditor/v24-durable-intent-counterfactual.test.js': ['TEST_SOURCE_FALSE_POSITIVE','NOT_RUNTIME_PROOF','Synthetic PayPal client method proves the intent COMMIT precedes the fake PSP call; no live network or production entrypoint'],
  'LS-06|utils/refunds.js': ['EXTERNAL_PSP_SIDE_EFFECT','TARGETED_RETRY_TEST','Stripe refund call lacks explicit idempotency key in this helper; verify reachability before declaring vulnerability'],
 });
 const PRIOR_EVIDENCE=Object.freeze({
