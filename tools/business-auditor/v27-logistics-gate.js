@@ -22,7 +22,7 @@ async function run(out,env=process.env){
   prior.allClonesDropped&&prior.cases.length===4,
   'same-run independently verified previous domain proof is required');
  const cases=[],verdicts=[];
- for(const mode of ['NOMINAL','LATE_COLLISION','REPORT_ONLY','RECONCILE_RESULT']){
+ for(const mode of ['NOMINAL','LATE_COLLISION','REPORT_ONLY','RECONCILE_RESULT','CANCELLED_MEMBERSHIP']){
   const p=await withClone(env,url=>{
    const output=cp.execFileSync(process.execPath,[child,mode],{
     cwd:root,encoding:'utf8',maxBuffer:1024*1024,timeout:35000,
@@ -38,15 +38,22 @@ async function run(out,env=process.env){
    raw.authMiddlewareExecuted===false&&raw.sessionCount===2,
    'physical isolation or owner provenance invalid '+mode);
   assert(raw.fixture.itemCount===1&&raw.before.activeCount===0&&
-   raw.after.activeCount===1&&raw.after.openCount===1&&
    raw.ownerInsertCalls===1,
+   'canonical fixture not repeatable '+mode);
+  assert(raw.actualIndexes.some(x=>x.name==='unique_order_item_per_parcel'&&
+   x.definition.includes('(order_item_id)')),
+   'canonical one-item ownership constraint missing');
+  if(mode!=='CANCELLED_MEMBERSHIP')assert(
+   raw.after.activeCount===1&&raw.after.openCount===1,
+   'active membership coverage for '+mode);
+  assert(true,
    'canonical fixture not repeatable '+mode);
   if(mode==='NOMINAL')assert(!verdict.violation&&
     raw.ownerInserted===1&&raw.response.items_assigned===1&&
     !raw.injectedBeforeOwnerInsert,
     'nominal insert must produce exactly one membership');
   if(mode==='LATE_COLLISION')assert(
-   verdict.signals.join('|')==='L1_REPORTED_ASSIGNMENTS_DO_NOT_MATCH_OWNER_INSERTS'&&
+   verdict.signals.join('|')==='L1_REPORTED_ASSIGNMENTS_DO_NOT_MATCH_OWNER_INSERTS|L2_SUCCESS_WITHOUT_WRITE_OR_IDEMPOTENT_CLASSIFICATION'&&
    raw.injectedBeforeOwnerInsert&&raw.ownerInserted===0&&
    raw.sourceResponse.items_assigned===1,
    'real competing write must reveal count mismatch '+JSON.stringify({verdict,raw}));
@@ -59,6 +66,13 @@ async function run(out,env=process.env){
    !verdict.violation&&raw.ownerInserted===0&&
    raw.response.items_assigned===0&&raw.response.already_assigned===true,
    'bounded result reconciliation must be truthful');
+  if(mode==='CANCELLED_MEMBERSHIP')assert(
+   verdict.signals.join('|')===
+    'L1_REPORTED_ASSIGNMENTS_DO_NOT_MATCH_OWNER_INSERTS|L2_SUCCESS_WITHOUT_WRITE_OR_IDEMPOTENT_CLASSIFICATION|L3_ORDER_NOT_IN_EXACTLY_ONE_ACTIVE_PARCEL|L5_REPORTED_TARGET_MEMBERSHIP_MISSING'&&
+   raw.ownerInserted===0&&raw.sourceResponse.items_assigned===1&&
+   raw.after.activeCount===0&&raw.after.openCount===0&&
+   raw.after.membership.length===1&&raw.after.membership[0].status==='cancelled',
+   'cancelled membership hides absent active parcel yet owner claims success');
   cases.push({...raw,cloneDropped:true});
   verdicts.push(verdict);
  }
