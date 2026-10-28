@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261028-1');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261028-2');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -746,7 +746,11 @@ test('la Raffinerie affiche les manquants certifies par le serveur et laisse la 
 test('la Raffinerie ne duplique pas ses compteurs en bas et préserve les métriques du Catalogue', () => {
   const source = read('public/dashboards/canonical/js/catalog-workspace.js');
   const render = source.slice(source.indexOf('function renderPayload('), source.indexOf('async function mount(', source.indexOf('function renderPayload(')));
-  expect(render).toContain('if (!refinery) {');
+  expect(render).toContain("if (context.catalogTab === 'assortment') {");
+  expect(render).toContain("} else if (context.catalogTab === 'taxonomy') {");
+  expect(render).toContain('renderCommercial(rootNode, ui, doc, payload)');
+  expect(render).toContain('renderTaxonomy(rootNode, ui, doc, payload, context)');
+  expect(render).not.toContain('taxonomyPanel');
   expect(render.indexOf('renderCatalogTabs(rootNode, doc, context)')).toBeLessThan(render.indexOf('ui.MetricStrip.render(metrics'));
   expect(render).toContain("!['approval', 'review'].includes(item.key)");
   expect(render).toContain('renderApproval(rootNode, ui, doc, payload, context)');
