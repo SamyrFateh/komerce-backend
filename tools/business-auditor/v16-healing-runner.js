@@ -46,11 +46,14 @@ function rendezvous(monitor,waitPids,{timeoutMs=9000,watchLocks=true}={}) {
  };
 }
 function intercept(c,gate) {
+ let seenRead=false,paused=false;
  return {query:async(sql,params=[])=>{
+  const text=String(sql).trimStart();
+  const read=/^SELECT\b/i.test(text);
+  const write=/^(INSERT|UPDATE|DELETE)\b/i.test(text);
+  if(write&&seenRead&&!paused){paused=true;await gate.wait()}
   const result=await c.query(sql,params);
-  if(String(sql).includes('LEFT JOIN LATERAL')&&
-     String(sql).includes('COALESCE(agg.item_count'))
-   await gate.wait();
+  if(read)seenRead=true;
   return result;
  }};
 }
@@ -122,4 +125,4 @@ async function run(env=process.env){
   realCanonicalSchema:true,realOwnerInvoked:true,productionOwnerModified:false,
   routeHttpExecuted:false,productionIncidentConfirmed:false};
 }
-module.exports={rendezvous,scenario,run};
+module.exports={rendezvous,intercept,scenario,run};
