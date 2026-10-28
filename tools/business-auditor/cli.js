@@ -14,7 +14,8 @@ const {prepareStaticTriage,summarizeTriage}=require('./static-triage');
 const {qualifyStaticTriage,triageCounts}=require('./triage-ledger');
 const {scanRelevantCode}=require('./code-detectors');
 const {inspectTrackedPayPalRefundChain}=require('./paypal-refund-boundary');
-const {buildWriterInventory}=require('./writer-inventory');
+const {buildWriterInventory,trackedJs,sourceScope}=require('./writer-inventory');
+const {collectRouteImportPaths}=require('./v07-import-hints');
 const {buildQualification}=require('./v07-qualification');
 const ROOT=path.resolve(__dirname,'../..');
 function parseArgs(argv){
@@ -113,7 +114,13 @@ async function runIndependent(argv=process.argv.slice(2),env=process.env,deps={}
   permissions:{dataTarget:wantsData?'LOCAL_KOMERCE_TEST_ONLY':'NO_DATABASE_CONNECTION',
    writerCalls:false,mutationTestsExecuted:false},
  };
- if(report.code?.writerInventory)report.code.writerQualification=buildQualification(report.code.writerInventory);
+ if(report.code?.writerInventory){
+  report.code.writerQualification=buildQualification(report.code.writerInventory);
+  const apps=trackedJs(ROOT).filter(f=>sourceScope(f)==='APPLICATION_CANDIDATE');
+  const writers=report.code.writerQualification.cases.map(x=>x.file);
+  report.code.writerQualification.importHints=collectRouteImportPaths(apps,
+   f=>fs.readFileSync(path.join(ROOT,f),'utf8'),writers);
+ }
  report.summary=summarize({staticResult,dataResults,mode:options.mode});
  const out=options.out?path.resolve(options.out):fs.mkdtempSync(path.join(os.tmpdir(),'komerce-independent-audit-'));
  fs.mkdirSync(out,{recursive:true});
