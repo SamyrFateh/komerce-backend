@@ -28,7 +28,7 @@ test('fixed owner makes same oracle satisfied without changing expectations',()=
 });
 test('nominal regression yields finding, not tool error',()=>{
  const f=interpret(record(0,0));
- assert.equal(f.verdict,'REPRODUCED_PHYSICAL_PG_TEMP_INVARIANT_VIOLATION');
+ assert.equal(f.verdict,'NOMINAL_REGRESSION');
  assert.equal(f.mismatches[0].scenario,'NOMINAL_NEW_MEMBERSHIP');
 });
 test('forging a legacy result field cannot be used by the physical predicate',()=>{
