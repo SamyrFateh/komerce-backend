@@ -185,6 +185,18 @@
     return wrap;
   }
 
+  function nextCandidateAction(row = {}) {
+    const state = String(row.state || '').toLowerCase();
+    const decision = String(row.scan_result?.sourcing_decision || '').toUpperCase();
+    if (['imported_to_catalog', 'rejected', 'archived'].includes(state))
+      return { key: 'update-candidate', label: 'Consulter les informations' };
+    if (state === 'quarantined' || decision === 'EXCLUDED')
+      return { key: 'update-candidate', label: 'Examiner le blocage' };
+    if (!row.scan_at && !row.scan_result)
+      return { key: 'scan-candidate', label: 'Scanner le candidat' };
+    return { key: 'classify-boutique', label: 'Vérifier le classement' };
+  }
+
   function renderCandidates(rootNode, ui, doc, payload, context) {
     const slot = createSection(
       rootNode,
@@ -199,7 +211,12 @@
         ? row.candidate_ref === context.focusCandidateRef
         : !['imported_to_catalog', 'rejected'].includes(row.state));
     if (!rows.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat à traiter : les produits transmis poursuivent leur préparation en Raffinerie.'));
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat à traiter. Les remises déjà effectuées poursuivent leur préparation en Raffinerie.'));
+      if (!context.focusCandidateRef && typeof context.selectTab === 'function') {
+        const browse = makeButton(doc, 'Consulter les imports', 'sourcing-open-imports', true);
+        browse.addEventListener('click', () => context.selectTab('imports'));
+        slot.appendChild(browse);
+      }
       return;
     }
 
@@ -236,8 +253,11 @@
       tr.appendChild(priceCell);
       tr.appendChild(pillCell(row.state, 'state'));
       tr.appendChild(pillCell(row.scan_result?.sourcing_decision || row.promotion_status || '—', 'decision'));
+      tr.setAttribute('data-candidate-ref', row.candidate_ref || '');
 
       const actions = doc.createElement('td');
+      actions.className = 'kmc-sourcing-candidate-actions';
+      actions.setAttribute('data-label', 'Action suivante');
       if (row.product_ref) {
         const product = text(doc, 'a', 'kmc-workspace-nav-link', 'Product 360');
         product.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, '/admin/workspaces/sourcing', 'Retour au sourcing');
@@ -328,10 +348,10 @@
         const promote = makeButton(doc, 'Promouvoir', 'promote-candidate');
         promote.className += ' is-approve';
         promote.addEventListener('click', () => {
-          if (!context.confirm(`Promouvoir ${row.candidate_ref} vers le catalogue en brouillon ?`)) return;
+          if (!context.confirm(`Remettre ${row.candidate_ref} à la Raffinerie en brouillon ? Cette action ne publie pas le produit.`)) return;
           runAction(context, promote, {
             url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/promote`,
-            successMessage: `${row.candidate_ref} promu vers le Catalogue.`,
+            successMessage: `${row.candidate_ref} transmis en brouillon à la Raffinerie.`,
           });
         });
         actions.appendChild(promote);
@@ -728,5 +748,5 @@
     return context.reload();
   }
 
-  return Object.freeze({ ENDPOINT, metricItems, mount });
+  return Object.freeze({ ENDPOINT, metricItems, nextCandidateAction, mount });
 });
