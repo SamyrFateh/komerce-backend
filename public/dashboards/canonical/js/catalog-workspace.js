@@ -933,7 +933,8 @@
     [
       ['En validation', coverage.in_approval_queue, 'Brouillons dans la file de contrôle'],
       ['Source à qualifier', coverage.unprepared_candidates, 'Brouillons absents de la file de validation'],
-      ['Déjà actifs après remise', coverage.handoff_already_active, 'Historique, sans action Raffinerie'],
+      ['Actifs à réexaminer', coverage.active_recheck, 'Remis, actifs, mais contrôles encore incomplets'],
+      ['Déjà actifs après remise', coverage.handoff_already_active, 'Contexte historique, non assimilable à une approbation'],
     ].forEach(([label, value, hint]) => {
       const tile = doc.createElement('div');
       tile.className = 'kmc-refinery-count';
@@ -943,6 +944,75 @@
       overview.appendChild(tile);
     });
     slot.appendChild(overview);
+
+    const recheckRows = Array.isArray(data.recheck) ? data.recheck : [];
+    const recheckPage = data.recheck_page || { total: recheckRows.length, limit: 30, offset: 0 };
+    if (Number(recheckPage.total) > 0) {
+      const heading = doc.createElement('div');
+      heading.className = 'kmc-refinery-subsection';
+      heading.appendChild(text(doc, 'h3', '', 'Produits actifs à réexaminer'));
+      heading.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
+        'Des produits déjà actifs présentent encore des défauts de préparation. Leur présence ici ne les suspend pas des marchés : vérifier avant toute décision de retrait.'));
+      slot.appendChild(heading);
+      const table = doc.createElement('table');
+      table.className = 'kmc-workspace-table kmc-refinery-unprepared-table';
+      table.innerHTML = '<thead><tr><th>Produit</th><th>Fournisseur</th><th>Contrôles en écart</th><th>Action</th></tr></thead>';
+      const body = doc.createElement('tbody');
+      const reasons = {
+        source_to_normalize: 'Source fournisseur à vérifier',
+        taxonomy_to_confirm: 'Classement Boutique à confirmer',
+        editorial_to_complete: 'Fiche française à compléter',
+      };
+      recheckRows.forEach(row => {
+        const tr = doc.createElement('tr');
+        const name = doc.createElement('td');
+        const returnPath = `/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(row.product_ref)}`;
+        const detail = text(doc, 'a', 'kmc-refinery-product-link', row.name || row.product_ref);
+        detail.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`,
+          returnPath, 'Retour à la Raffinerie');
+        name.appendChild(detail);
+        name.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', row.product_ref || '—'));
+        tr.appendChild(name);
+        tr.appendChild(td(doc, row.supplier_name || 'Provenance à vérifier'));
+        const issue = doc.createElement('td');
+        (row.issues || []).forEach(code => {
+          issue.appendChild(text(doc, 'div', 'kmc-refinery-issue-label', reasons[code] || code));
+        });
+        tr.appendChild(issue);
+        const action = doc.createElement('td');
+        const inspect = text(doc, 'a', 'kmc-workspace-action', 'Examiner la fiche');
+        inspect.href = detail.href;
+        action.appendChild(inspect);
+        tr.appendChild(action);
+        body.appendChild(tr);
+      });
+      table.appendChild(body);
+      const wrap = doc.createElement('div');
+      wrap.className = 'kmc-workspace-table-wrap kmc-refinery-unprepared-wrap';
+      wrap.appendChild(table);
+      slot.appendChild(wrap);
+      const pager = doc.createElement('div');
+      pager.className = 'kmc-refinery-pager';
+      pager.appendChild(text(doc, 'span', 'kmc-workspace-subtitle',
+        `${recheckPage.total ? recheckPage.offset + 1 : 0}–${Math.min(recheckPage.offset + recheckRows.length, recheckPage.total)} sur ${formatNumber(recheckPage.total)} actif(s) à réexaminer`));
+      if (recheckPage.has_previous) {
+        const previous = makeButton(doc, '← Précédents', 'refinery-recheck-previous', true);
+        previous.addEventListener('click', async () => {
+          context.refineryRecheckOffset = Math.max(0, recheckPage.offset - recheckPage.limit);
+          await context.reload();
+        });
+        pager.appendChild(previous);
+      }
+      if (recheckPage.has_next) {
+        const next = makeButton(doc, 'Suivants →', 'refinery-recheck-next', true);
+        next.addEventListener('click', async () => {
+          context.refineryRecheckOffset = recheckPage.offset + recheckPage.limit;
+          await context.reload();
+        });
+        pager.appendChild(next);
+      }
+      slot.appendChild(pager);
+    }
 
     const rows = Array.isArray(data.unprepared) ? data.unprepared : [];
     const page = data.unprepared_page || { total: rows.length, limit: 30, offset: 0 };
@@ -1037,12 +1107,15 @@
       empty.className = 'kmc-refinery-empty';
       empty.appendChild(text(doc, 'strong', '', 'Aucune fiche dans la file de validation.'));
       const pending = Number(payload.refinery?.coverage?.unprepared_candidates) || 0;
+      const recheck = Number(payload.refinery?.coverage?.active_recheck) || 0;
       const active = Number(payload.refinery?.coverage?.handoff_already_active) || 0;
       empty.appendChild(text(doc, 'p', '', pending
         ? `${formatNumber(pending)} fiche(s) nécessitent encore une qualification du contenu, affichées ci-dessus.`
-        : active
-          ? `${formatNumber(active)} produit(s) déjà actifs après une remise Sourcing : ils relèvent du Catalogue, pas de cette file.`
-          : 'Aucun brouillon en préparation identifié. Vérifiez les remises depuis le Sourcing si des produits sont attendus.'));
+        : recheck
+          ? `${formatNumber(recheck)} produit(s) actifs à réexaminer dans la file dédiée ci-dessus.`
+          : active
+            ? `${formatNumber(active)} produit(s) déjà actifs après une remise Sourcing ; aucun nouveau travail Raffinerie identifié.`
+            : 'Aucun brouillon en préparation identifié. Vérifiez les remises depuis le Sourcing si des produits sont attendus.'));
       const sourcing = text(doc, 'a', 'kmc-workspace-nav-link', 'Ouvrir le Sourcing');
       sourcing.href = '/admin/workspaces/sourcing';
       empty.appendChild(sourcing);
@@ -2154,6 +2227,7 @@
       approvalLimit: 50,
       approvalOffset: 0,
       refineryOffset: 0,
+      refineryRecheckOffset: 0,
       catalogFilters: {
         search: '', supplier: '', category: '', subcategory: '', status: '', offset: 0,
       },
@@ -2166,7 +2240,9 @@
       try {
         const params = new URLSearchParams({
           ...(context.workspaceView === 'refinery'
-            ? { include_readiness: '1', refinery_view: '1', refinery_limit: '30', refinery_offset: String(context.refineryOffset) }
+            ? { include_readiness: '1', refinery_view: '1', refinery_limit: '30',
+              refinery_offset: String(context.refineryOffset),
+              refinery_recheck_offset: String(context.refineryRecheckOffset) }
             : {}),
           approval_limit: String(context.approvalLimit),
           approval_offset: String(context.approvalOffset),
