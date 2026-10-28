@@ -169,6 +169,6 @@ test('V4 : produits inactifs hors candidats ont un réexamen sans faux GO', () =
 
 test('V4 : état inactif sans diagnostic rapide ouvre le contrôle, pas une fiche sans action', () => {
   expect(ui).toContain("kind: 'diagnose', label: 'Vérifier prérequis', status: 'À diagnostiquer'");
-  expect(ui).toContain("const check = diagnostic.querySelector('.kmc-catalog-readiness-check')");
-  expect(ui).toContain("if (check) check.click()");
+  expect(ui).toContain("const readinessCheck = renderRegistryCorrections(doc, diagnostic, row, context, nextStep)");
+  expect(ui).toContain("if (readinessCheck) readinessCheck.click()");
 });

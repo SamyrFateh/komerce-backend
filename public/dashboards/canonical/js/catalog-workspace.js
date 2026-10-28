@@ -1465,7 +1465,7 @@
         ? 'L’approbation Catalogue ne confirme pas la vente sur chaque marché.'
         : 'État à examiner : aucune publication déduite.';
       cell.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint', note));
-      return;
+      return null;
     }
     const check = text(doc, 'button', 'kmc-catalog-readiness-check', 'Vérifier tous les prérequis');
     check.type = 'button';
@@ -1535,6 +1535,7 @@
     });
     cell.appendChild(check);
     cell.appendChild(result);
+    return check;
   }
 
   function renderProducts(rootNode, ui, doc, payload, context) {
@@ -1723,7 +1724,7 @@
         statusChip.title = 'Aller à l’action : ' + nextStep.label;
         statusChip.setAttribute('data-status', row.work_status || 'inactive');
         diagnostic.appendChild(statusChip);
-        renderRegistryCorrections(doc, diagnostic, row, context, nextStep);
+        const readinessCheck = renderRegistryCorrections(doc, diagnostic, row, context, nextStep);
         tr.appendChild(diagnostic);
         const actionCell = doc.createElement('td');
         actionCell.className = 'kmc-catalog-action-cell';
@@ -1750,8 +1751,7 @@
           encodeURIComponent(row.product_ref);
         const diagnose = makeButton(doc, 'Vérifier prérequis', 'diagnose-product', true);
         diagnose.addEventListener('click', () => {
-          const check = diagnostic.querySelector('.kmc-catalog-readiness-check');
-          if (check) check.click();
+          if (readinessCheck) readinessCheck.click();
         });
         const primaryByKind = { detail: view, source, classify: editClassification,
           refinery, markets: market, diagnose };
