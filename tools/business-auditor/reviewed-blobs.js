@@ -24,6 +24,7 @@ const SOURCE_BLOBS=Object.freeze({
  'services/simulator/cleanup.js':'b300145209220dff2fa0446539ac2bb82943fce6',
  'services/simulator/state-advancer.js':'74e349975b4c7a8536f2a37cb79249832cd96bed',
  'tools/business-auditor/engine.test.js':'7ba6cf527b670fe1d32cdbc6a1a67d978f13e7f2',
+ 'tools/business-auditor/v17-quantity-matrix-runner.js':'ed56cbc4461bdad6ff50c7b49f7c4c03a24be907',
  'tools/business-auditor/v15-concurrency-runner.js':'a31e49bcf34e1251cb09241a763d1aaacb5d4683',
  'tools/business-auditor/v12-physical-parcel-runner.js':'11e798fc7b9b77c5b16ef6f5ebb6124c2cc7ed90',
  'tools/business-auditor/code-detectors.test.js':'1bb5c4891821f84e780d6953b16adad3f4f6b064',
