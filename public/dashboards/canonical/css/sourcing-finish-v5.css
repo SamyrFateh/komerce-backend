@@ -1,0 +1,75 @@
+/* Sourcing V5 — même hiérarchie de travail que le Catalogue global. */
+.kmc-sourcing-workspace { width:100%; max-width:100%; min-width:0; }
+.kmc-sourcing-workspace .kmc-sourcing-tabs {
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  margin:14px 0 16px; padding:0 0 13px;
+  border-bottom:1px solid #dbe5f1;
+}
+.kmc-sourcing-workspace .kmc-sourcing-tab {
+  appearance:none; border:1px solid #d8e3f1; border-radius:9px; background:#fff;
+  color:#1d3d65; padding:12px 16px; min-height:44px; font:inherit;
+  font-size:13px; font-weight:750; cursor:pointer;
+}
+.kmc-sourcing-workspace .kmc-sourcing-tab:hover { background:#f1f6ff; }
+.kmc-sourcing-workspace .kmc-sourcing-tab[aria-selected="true"] {
+  background:#1451d2; color:#fff; border-color:#1451d2;
+  box-shadow:0 3px 8px rgba(20,81,210,.16);
+}
+.kmc-sourcing-workspace .kmc-sourcing-tab:focus-visible,
+.kmc-sourcing-workspace .kmc-sourcing-row-more summary:focus-visible {
+  outline:3px solid #286fe2; outline-offset:3px;
+}
+.kmc-sourcing-workspace .kmc-sourcing-tab-panel[hidden] { display:none!important; }
+.kmc-sourcing-workspace .kmc-sourcing-tab-panel { max-width:100%; min-width:0; }
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table { table-layout:fixed; width:100%; }
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table th:nth-child(1) { width:11%; }
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table th:nth-child(2) { width:11%; }
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table th:nth-child(3) { width:24%; }
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table th:nth-child(4) { width:11%; }
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table th:nth-child(5) { width:11%; }
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table th:nth-child(6) { width:13%; }
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table th:nth-child(7) { width:19%; }
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table tbody td {
+  padding-top:16px; padding-bottom:16px; vertical-align:middle;
+}
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table td.kmc-sourcing-candidate-actions {
+  text-align:right; white-space:normal; min-width:0;
+}
+.kmc-sourcing-workspace .kmc-sourcing-candidate-actions > .kmc-sourcing-next-action,
+.kmc-sourcing-workspace .kmc-sourcing-candidate-actions > [data-workspace-action="view-product"] {
+  display:inline-flex; align-items:center; justify-content:center; text-align:center;
+  min-height:44px; min-width:125px; padding:10px 12px;
+  background:#112c56; color:#fff; border:1px solid #112c56;
+  border-radius:9px; font-size:12px; font-weight:750; text-decoration:none;
+  white-space:normal;
+}
+.kmc-sourcing-workspace .kmc-sourcing-row-more {
+  position:relative; display:inline-block; vertical-align:middle; margin-left:8px;
+}
+.kmc-sourcing-workspace .kmc-sourcing-row-more summary {
+  display:flex; align-items:center; justify-content:center; list-style:none;
+  border:1px solid #d9e4f2; border-radius:9px; background:#f8faff;
+  width:42px; height:44px; font-size:20px; font-weight:800; color:#27466d; cursor:pointer;
+}
+.kmc-sourcing-workspace .kmc-sourcing-row-more summary::-webkit-details-marker {display:none;}
+.kmc-sourcing-workspace .kmc-sourcing-row-more-list {
+  position:absolute; right:0; top:calc(100% + 5px); z-index:30;
+  width:min(260px,75vw); display:flex; flex-direction:column; gap:4px;
+  padding:9px; border:1px solid #d4e1f0; border-radius:12px;
+  background:#fff; box-shadow:0 12px 26px rgba(17,43,80,.17);
+}
+.kmc-sourcing-workspace .kmc-sourcing-row-more-list > * {
+  display:flex; align-items:center; justify-content:flex-start; text-align:left;
+  width:100%; min-height:40px; margin:0!important; padding:9px 12px;
+  border-radius:7px; font-size:13px; font-weight:650;
+  background:transparent; box-shadow:none; color:#21436e; text-decoration:none;
+}
+.kmc-sourcing-workspace .kmc-sourcing-row-more-list > *:hover {background:#eff5ff;}
+.kmc-sourcing-workspace .kmc-sourcing-row-more-list .is-danger {color:#a11d31;}
+.kmc-sourcing-workspace .kmc-workspace-table-wrap {max-width:100%; overflow-x:auto;}
+@media(max-width:760px){
+  .kmc-sourcing-workspace .kmc-sourcing-tabs { flex-wrap:nowrap; overflow-x:auto; padding-bottom:12px; }
+  .kmc-sourcing-workspace .kmc-sourcing-tab {flex:0 0 auto; min-height:46px;}
+  .kmc-sourcing-workspace .kmc-sourcing-candidates-table { min-width:930px; }
+  .kmc-sourcing-workspace .kmc-sourcing-row-more-list {right:0;}
+}
