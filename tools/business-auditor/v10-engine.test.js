@@ -62,3 +62,17 @@ test('V0.7 queue preserves every occurrence and never promotes static hints',()=
  const bad=structuredClone(input);bad.cases[0].occurrences=1;
  assert.throws(()=>triage(bad),/lost candidate/);
 });
+
+test('triage case identifiers remain stable when unrelated cases change position',()=>{
+ const q=evidence().audit.code.writerQualification;
+ const id=triage(q).cases.find(x=>x.file==='services/x.js').id;
+ const cloned=structuredClone(q);
+ cloned.cases.reverse();
+ assert.equal(triage(cloned).cases.find(x=>x.file==='services/x.js').id,id);
+});
+test('reject conflicting declaration statuses for one writer/table identity',()=>{
+ const q=structuredClone(evidence().audit.code.writerQualification);
+ q.cases[1].file=q.cases[0].file;
+ q.cases[1].table=q.cases[0].table;
+ assert.throws(()=>triage(q),/conflicting case identity/);
+});
