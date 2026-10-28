@@ -17,7 +17,8 @@ const faultWorker=path.join(__dirname,'v25-fault-worker.js');
 const recoveryWorker=path.join(__dirname,'v26-reconcile-worker.js');
 const assert=(ok,m)=>{if(!ok)throw Error('V26_GATE_FAILED: '+m)};
 function runWorker(file,mode,url,seed,provider,env){
- const run=cp.spawnSync(process.execPath,[file,mode],{
+ const childMode=file===faultWorker?'FAULT':mode;
+ const run=cp.spawnSync(process.execPath,[file,childMode],{
   cwd:root,encoding:'utf8',timeout:35000,maxBuffer:1024*1024,
   env:{...env,DATABASE_URL:url,NODE_ENV:'test',KOMERCE_DISABLE_CRONS:'true',
    KBA_V24_MUTANT:'DURABLE_INTENT_COUNTERFACTUAL',KBA_V23_MUTANT:'',
