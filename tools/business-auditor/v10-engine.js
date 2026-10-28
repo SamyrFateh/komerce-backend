@@ -58,14 +58,14 @@ function evaluateOracle(oracle,observation,jest){
   invariant:oracle.invariant,expected:oracle.expected,
   observed:observation[oracle.observationField],
   verdict:violated?'REPRODUCED_CONTROLLED_TEST_INVARIANT_VIOLATION':'CONTROLLED_TEST_INVARIANT_SATISFIED',
-  proofScope:'ACTUAL_OWNER_REPLAY_MOCKED_HTTP_AND_DB',
+  proofScope:oracle.proofScope,
   actualOwnerInvoked:true,controlValidated:true,
   test:oracle.harness,productionIncidentConfirmed:false,
   duplicateExternalRefundConfirmed:false,
   remediation:violated?oracle.remediation:null};
 }
 function certify(input,{sha,runId}){
- const {v09,audit,jest,observation}=input||{};
+ const {v09,audit,proofs}=input||{};
  if(!/^[a-f0-9]{40}$/.test(sha||'')||!/^\d+$/.test(String(runId||'')))
   throw Error('V1.0 expected exact CI SHA and run ID');
  if(v09?.contract!=='komerce-independent-business-evidence/v09'||
@@ -79,7 +79,11 @@ function certify(input,{sha,runId}){
  if(queue.totalOccurrences!==v09.summary.candidateOccurrences||
   queue.reviewCases!==v09.summary.v07ReviewCases)
   throw Error('V1.0 candidate/owner review coverage mismatch');
- const findings=ORACLES.map(o=>evaluateOracle(o,observation,jest));
+ if(!proofs||typeof proofs!=='object'||Array.isArray(proofs)||
+   Object.keys(proofs).length!==ORACLES.length||
+   ORACLES.some(o=>!proofs[o.id]?.observation||!proofs[o.id]?.jest))
+  throw Error('V1.1 requires exactly one paired same-run proof per registered oracle');
+ const findings=ORACLES.map(o=>evaluateOracle(o,proofs[o.id].observation,proofs[o.id].jest));
  const count=findings.filter(x=>x.verdict==='REPRODUCED_CONTROLLED_TEST_INVARIANT_VIOLATION').length;
  return {contract:'komerce-business-bug-hunter/v1',sha,runId:String(runId),
   summary:{candidateOccurrences:queue.totalOccurrences,triageCases:queue.totalCases,
@@ -90,7 +94,7 @@ function certify(input,{sha,runId}){
   limits:['Runtime oracles cover only explicitly registered business invariants',
    'A controlled-test invariant violation is not proof of a real PSP refund or production incident',
    'Static review cases are unproven and cannot become confirmed bugs without new executable oracles',
-   'Test runs use mocked HTTP and database for PayPal; seven SQL rules used temp fixture shadow tables',
+   'PayPal uses fake HTTP/DB; logistics uses simulated rowCount, not physical PG conflict; seven SQL rules use temp shadow tables',
    'No general claim of business-code completeness or all 209 owner reviews resolved']};
 }
 function reportMarkdown(r){
