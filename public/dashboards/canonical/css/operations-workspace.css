@@ -1214,3 +1214,26 @@
 @media (prefers-reduced-motion: reduce) {
   .kmc-sourcing-workspace .kmc-sourcing-candidates-table tbody tr { transition: none; }
 }
+
+
+/* Sourcing V4.1 — décision principale et formulaires contextualisés. */
+.kmc-sourcing-workspace .kmc-sourcing-action-cluster { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.kmc-sourcing-workspace .kmc-sourcing-primary-action { min-height:42px!important; background:#0c2550; color:#fff; border-color:#0c2550; font-weight:750; }
+.kmc-sourcing-workspace .kmc-sourcing-more { position:relative; min-width:0; }
+.kmc-sourcing-workspace .kmc-sourcing-more > summary { cursor:pointer; border:1px solid #d9e3ef; border-radius:8px; padding:10px 12px; color:#29517c; background:#f7faff; font-size:12px; font-weight:700; list-style:none; }
+.kmc-sourcing-workspace .kmc-sourcing-more > summary::-webkit-details-marker { display:none; }
+.kmc-sourcing-workspace .kmc-sourcing-more[open] > summary { background:#eaf2ff; border-color:#a9c8f2; }
+.kmc-sourcing-workspace .kmc-sourcing-more-list { display:flex; flex-wrap:wrap; align-items:center; gap:6px; max-width:310px; padding:10px; margin-top:6px; border:1px solid #dbe5f0; border-radius:10px; background:#fff; box-shadow:0 8px 24px rgba(16,39,70,.09); }
+.kmc-sourcing-dialog-overlay { position:fixed; inset:0; z-index:1200; display:grid; place-items:center; padding:16px; background:rgba(11,29,52,.55); }
+.kmc-sourcing-dialog { box-sizing:border-box; width:min(540px,100%); max-height:90vh; overflow-y:auto; border-radius:16px; background:#fff; padding:24px; box-shadow:0 20px 60px rgba(9,30,60,.25); color:#183150; }
+.kmc-sourcing-dialog h2 { margin:0 0 8px; font-size:22px; line-height:1.25; }
+.kmc-sourcing-dialog-context { color:#59708f; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+.kmc-sourcing-dialog-form { display:grid; gap:15px; margin-top:20px; }
+.kmc-sourcing-dialog-form label { display:grid; gap:7px; color:#334d6d; font-size:13px; font-weight:700; }
+.kmc-sourcing-dialog-form input,.kmc-sourcing-dialog-form select { box-sizing:border-box; width:100%; min-height:44px; border:1px solid #bdcde0; border-radius:9px; background:#fff; padding:9px 11px; color:#173251; font:inherit; font-weight:450; }
+.kmc-sourcing-dialog-hint { margin:0; padding:10px 12px; border-radius:8px; background:#eef5ff; color:#2556a2; font-size:12px; }
+.kmc-sourcing-dialog-error { margin:0; color:#a72437; font-size:12px; }
+.kmc-sourcing-dialog-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:9px; }
+.kmc-sourcing-dialog-actions .kmc-workspace-action { min-height:42px; padding:10px 16px; }
+.kmc-sourcing-dialog :is(button,input,select):focus-visible,.kmc-sourcing-more summary:focus-visible { outline:2px solid #2563eb; outline-offset:3px; }
+@media(max-width:760px) { .kmc-sourcing-dialog { padding:18px; } .kmc-sourcing-workspace .kmc-sourcing-more-list { max-width:250px; } }
