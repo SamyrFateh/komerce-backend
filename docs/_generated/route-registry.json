@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-22T18:18:25.470Z",
+  "generatedAt": "2026-10-28T17:01:45.044Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 738,
+  "count": 744,
   "routes": [
     {
       "method": "GET",
@@ -724,6 +724,16 @@
       "fullPath": "/api/admin/dashboard/orders/market/:marketCode",
       "mountPrefix": "/api/admin/dashboard",
       "localPath": "/orders/market/:marketCode",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/orders/rct1",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/orders/rct1",
       "routeFile": "routes/admin-dashboard-market.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -2423,6 +2433,16 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/products/:productRef/classify",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/products/:productRef/classify",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/catalog/products/:productRef/deactivate",
       "mountPrefix": "/api/admin/workspaces/catalog",
       "localPath": "/products/:productRef/deactivate",
@@ -2436,6 +2456,16 @@
       "fullPath": "/api/admin/workspaces/catalog/products/:productRef/update",
       "mountPrefix": "/api/admin/workspaces/catalog",
       "localPath": "/products/:productRef/update",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/refinery/:productRef/prepare-fr",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/refinery/:productRef/prepare-fr",
       "routeFile": "routes/admin-catalog-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -2983,9 +3013,29 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/boutique-category-options",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/boutique-category-options",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/category-options",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/candidates/:candidateRef/category-options",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/confirm-boutique-category",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/confirm-boutique-category",
       "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -4803,6 +4853,16 @@
       "mountPrefix": "/api/loyalty",
       "localPath": "/users",
       "routeFile": "routes/loyalty.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/catalog/authorized-markets",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/catalog/authorized-markets",
+      "routeFile": "routes/market-delegation-catalog.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

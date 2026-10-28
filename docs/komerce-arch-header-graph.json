@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 755,
-    "filesWithFullHeaders": 705,
-    "filesWithLiteHeaders": 50,
-    "filesWithAnyHeaders": 755,
+    "scannedCodeFiles": 759,
+    "filesWithFullHeaders": 708,
+    "filesWithLiteHeaders": 51,
+    "filesWithAnyHeaders": 759,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1876,
-    "edges": 9343,
+    "graphNodes": 1884,
+    "edges": 9369,
     "dbTables": 213,
-    "doctrines": 701,
+    "doctrines": 705,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 904,
+    "unresolvedCodeEdges": 906,
     "dbWriteViaOverlapWarnings": 11,
     "multiWriterTables": 90
   },
@@ -35,7 +35,7 @@
     "notification": 21,
     "auth": 14,
     "platform-ops": 2,
-    "catalog": 130,
+    "catalog": 134,
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market-delegation": 35,
@@ -111,7 +111,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 439,
+    "service": 443,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,9 +121,9 @@
   },
   "byCriticality": {
     "critical": 110,
-    "medium": 152,
-    "high": 434,
-    "low": 59
+    "medium": 153,
+    "high": 436,
+    "low": 60
   },
   "nodes": [
     {
@@ -15140,6 +15140,49 @@
       "version": null
     },
     {
+      "id": "services/catalog-registry.js",
+      "file": "services/catalog-registry.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-global-registry-read",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated catalog workspace query"
+      ],
+      "outputs": [
+        "handed-off product registry and actionable quality signals"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/catalog-workspace.js"
+      ],
+      "dbRead": [
+        "products",
+        "sourcing_candidates",
+        "boutique_categories",
+        "boutique_subcategories",
+        "catalog_field_overrides"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "source_handoff_is_not_publication",
+        "global_catalog_not_market_scoped"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/catalog-run-progress.js",
       "file": "services/catalog-run-progress.js",
       "type": "file",
@@ -15711,6 +15754,33 @@
         "boutique"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "services/commercial-taxonomy-semantics.js",
+      "file": "services/commercial-taxonomy-semantics.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "commercial-taxonomy-semantic-intent",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Interpret supplier-independent hierarchy and actual item identity; no customs or provider-specific maps.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "supplier-import"
+      ],
+      "version": null
     },
     {
       "id": "services/confirm-pickup-cash-payment.js",
@@ -28397,6 +28467,81 @@
       "version": "2026-06"
     },
     {
+      "id": "services/refinery-fr-recheck.js",
+      "file": "services/refinery-fr-recheck.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "refinery-active-editorial-recheck",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_admin",
+        "active_handed_off_product_ref",
+        "french_editorial_proposal"
+      ],
+      "outputs": [
+        "traced_editorial_override_only"
+      ],
+      "depends": [
+        "services/catalog-overrides.js",
+        "services/catalog-fr-quality.js"
+      ],
+      "usedBy": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates"
+      ],
+      "dbWrite": [
+        "catalog_field_overrides",
+        "products"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "same_transaction_as_override"
+      ],
+      "doctrine": [
+        "refinery_edits_french_not_publication_market_or_prices"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
+      "id": "services/refinery-worklist.js",
+      "file": "services/refinery-worklist.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "refinery-readonly-coverage",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "canonical_products_and_sourcing_handoffs"
+      ],
+      "outputs": [
+        "refinery_coverage_and_unprepared_candidate_projection"
+      ],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "refinery_prepares_catalog_registers_market_decides",
+        "no_implicit_publication"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
       "id": "services/refund-evidence-verifier.js",
       "file": "services/refund-evidence-verifier.js",
       "type": "file",
@@ -39068,6 +39213,11 @@
       "doctrine": "audit_is_fact_not_authority"
     },
     {
+      "id": "doctrine:source_handoff_is_not_publication",
+      "type": "doctrine",
+      "doctrine": "source_handoff_is_not_publication"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
@@ -40416,6 +40566,21 @@
       "id": "doctrine:qr_pickup_single_validation (P5-L5)",
       "type": "doctrine",
       "doctrine": "qr_pickup_single_validation (P5-L5)"
+    },
+    {
+      "id": "doctrine:refinery_edits_french_not_publication_market_or_prices",
+      "type": "doctrine",
+      "doctrine": "refinery_edits_french_not_publication_market_or_prices"
+    },
+    {
+      "id": "doctrine:refinery_prepares_catalog_registers_market_decides",
+      "type": "doctrine",
+      "doctrine": "refinery_prepares_catalog_registers_market_decides"
+    },
+    {
+      "id": "doctrine:no_implicit_publication",
+      "type": "doctrine",
+      "doctrine": "no_implicit_publication"
     },
     {
       "id": "doctrine:financial_evidence_must_match_capture_amount_currency",
@@ -64578,6 +64743,72 @@
       "label": "sourcing"
     },
     {
+      "from": "services/catalog-registry.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "services/catalog-registry.js",
+      "type": "uses",
+      "label": "services/catalog-workspace.js"
+    },
+    {
+      "from": "services/catalog-registry.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-registry.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/catalog-registry.js",
+      "to": "db:boutique_categories",
+      "type": "db-read",
+      "label": "boutique_categories"
+    },
+    {
+      "from": "services/catalog-registry.js",
+      "to": "db:boutique_subcategories",
+      "type": "db-read",
+      "label": "boutique_subcategories"
+    },
+    {
+      "from": "services/catalog-registry.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-read",
+      "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/catalog-registry.js",
+      "to": "doctrine:source_handoff_is_not_publication",
+      "type": "doctrine",
+      "label": "source_handoff_is_not_publication"
+    },
+    {
+      "from": "services/catalog-registry.js",
+      "to": "doctrine:global_catalog_not_market_scoped",
+      "type": "doctrine",
+      "label": "global_catalog_not_market_scoped"
+    },
+    {
+      "from": "services/catalog-registry.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-registry.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/catalog-run-progress.js",
       "to": "db.js",
       "type": "depends",
@@ -65608,6 +65839,30 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
+    },
+    {
+      "from": "services/commercial-taxonomy-semantics.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/commercial-taxonomy-semantics.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/commercial-taxonomy-semantics.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/commercial-taxonomy-semantics.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
     },
     {
       "from": "services/confirm-pickup-cash-payment.js",
@@ -86503,6 +86758,72 @@
       "to": "impact:unknown",
       "type": "impact",
       "label": "unknown"
+    },
+    {
+      "from": "services/refinery-fr-recheck.js",
+      "to": "services/catalog-overrides.js",
+      "type": "depends",
+      "label": "services/catalog-overrides.js"
+    },
+    {
+      "from": "services/refinery-fr-recheck.js",
+      "to": "services/catalog-fr-quality.js",
+      "type": "depends",
+      "label": "services/catalog-fr-quality.js"
+    },
+    {
+      "from": "services/refinery-fr-recheck.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/refinery-fr-recheck.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/refinery-fr-recheck.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-write",
+      "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/refinery-fr-recheck.js",
+      "to": "db:products",
+      "type": "db-write",
+      "label": "products"
+    },
+    {
+      "from": "services/refinery-fr-recheck.js",
+      "to": "doctrine:refinery_edits_french_not_publication_market_or_prices",
+      "type": "doctrine",
+      "label": "refinery_edits_french_not_publication_market_or_prices"
+    },
+    {
+      "from": "services/refinery-worklist.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/refinery-worklist.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/refinery-worklist.js",
+      "to": "doctrine:refinery_prepares_catalog_registers_market_decides",
+      "type": "doctrine",
+      "label": "refinery_prepares_catalog_registers_market_decides"
+    },
+    {
+      "from": "services/refinery-worklist.js",
+      "to": "doctrine:no_implicit_publication",
+      "type": "doctrine",
+      "label": "no_implicit_publication"
     },
     {
       "from": "services/refund-evidence-verifier.js",
@@ -112839,7 +113160,8 @@
         "impact:product-detail",
         "impact:staging",
         "services/catalog-overrides.js",
-        "services/product-publication-guard.js"
+        "services/product-publication-guard.js",
+        "services/refinery-fr-recheck.js"
       ]
     },
     "services/catalog-market-exposure-service.js": {
@@ -112964,7 +113286,8 @@
         "services/catalog-enrichment.js",
         "services/catalog-fr-quality.js",
         "services/catalog-workspace.js",
-        "services/product-admin-service.js"
+        "services/product-admin-service.js",
+        "services/refinery-fr-recheck.js"
       ]
     },
     "services/catalog-product-detail.js": {
@@ -113586,6 +113909,50 @@
         "impact:sourcing"
       ]
     },
+    "services/catalog-registry.js": {
+      "role": "catalog-global-registry-read",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/catalog-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates",
+        "boutique_categories",
+        "boutique_subcategories",
+        "catalog_field_overrides"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "source_handoff_is_not_publication",
+        "global_catalog_not_market_scoped"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:boutique_categories",
+        "db:boutique_subcategories",
+        "db:catalog_field_overrides",
+        "db:products",
+        "db:sourcing_candidates",
+        "doctrine:global_catalog_not_market_scoped",
+        "doctrine:source_handoff_is_not_publication",
+        "impact:admin-dashboard",
+        "impact:catalog",
+        "services/catalog-workspace.js"
+      ]
+    },
     "services/catalog-run-progress.js": {
       "role": "catalog-run-progress-projection",
       "domain": "catalog",
@@ -113958,6 +114325,7 @@
         "services/catalog-approval.js",
         "services/catalog-commercial-assortment.js",
         "services/catalog-overrides.js",
+        "services/catalog-registry.js",
         "services/pricing-parameters-status.js",
         "services/product-admin-service.js",
         "utils/rules.js"
@@ -114186,6 +114554,32 @@
         "routes/admin/demo-order-flow.js",
         "routes/client-notifications.js",
         "services/order-status-machine.js"
+      ]
+    },
+    "services/commercial-taxonomy-semantics.js": {
+      "role": "commercial-taxonomy-semantic-intent",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Interpret supplier-independent hierarchy and actual item identity; no customs or provider-specific maps.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "supplier-import"
+      ],
+      "mustCheck": [
+        "backend-core",
+        "impact:catalog",
+        "impact:sourcing",
+        "impact:supplier-import"
       ]
     },
     "services/confirm-pickup-cash-payment.js": {
@@ -126994,6 +127388,69 @@
         "utils/parcels.js"
       ]
     },
+    "services/refinery-fr-recheck.js": {
+      "role": "refinery-active-editorial-recheck",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/catalog-overrides.js",
+        "services/catalog-fr-quality.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates"
+      ],
+      "dbWrite": [
+        "catalog_field_overrides",
+        "products"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "refinery_edits_french_not_publication_market_or_prices"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "db:catalog_field_overrides",
+        "db:products",
+        "db:sourcing_candidates",
+        "doctrine:refinery_edits_french_not_publication_market_or_prices",
+        "services/catalog-fr-quality.js",
+        "services/catalog-overrides.js"
+      ]
+    },
+    "services/refinery-worklist.js": {
+      "role": "refinery-readonly-coverage",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "refinery_prepares_catalog_registers_market_decides",
+        "no_implicit_publication"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "db:products",
+        "db:sourcing_candidates",
+        "doctrine:no_implicit_publication",
+        "doctrine:refinery_prepares_catalog_registers_market_decides"
+      ]
+    },
     "services/refund-evidence-verifier.js": {
       "role": "external-refund-evidence-verifier",
       "domain": "refunds",
@@ -134912,7 +135369,7 @@
     },
     {
       "table": "products",
-      "writerCount": 11,
+      "writerCount": 12,
       "writers": [
         "routes/admin/system.js",
         "services/catalog-approval.js",
@@ -134924,7 +135381,8 @@
         "services/hub-operations.js",
         "services/product-admin-service.js",
         "services/product-sku-service.js",
-        "services/product-stock-service.js"
+        "services/product-stock-service.js",
+        "services/refinery-fr-recheck.js"
       ]
     },
     {
@@ -135312,6 +135770,15 @@
       ]
     },
     {
+      "table": "catalog_field_overrides",
+      "writerCount": 3,
+      "writers": [
+        "services/catalog-overrides.js",
+        "services/product-admin-service.js",
+        "services/refinery-fr-recheck.js"
+      ]
+    },
+    {
       "table": "incidents",
       "writerCount": 3,
       "writers": [
@@ -135439,14 +135906,6 @@
       "writers": [
         "routes/cash.js",
         "services/cash-deposit-service.js"
-      ]
-    },
-    {
-      "table": "catalog_field_overrides",
-      "writerCount": 2,
-      "writers": [
-        "services/catalog-overrides.js",
-        "services/product-admin-service.js"
       ]
     },
     {
@@ -138094,6 +138553,12 @@
       "label": "catalog"
     },
     {
+      "from": "services/catalog-registry.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/catalog-run-progress.js",
       "to": "db.js",
       "type": "depends",
@@ -138200,6 +138665,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/commercial-taxonomy-semantics.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
     },
     {
       "from": "services/confirm-pickup-cash-payment.js",

@@ -56,7 +56,7 @@
     "healthy": 35,
     "attention": 5,
     "blocked": 0,
-    "businessDependencies": 317,
+    "businessDependencies": 318,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -2344,6 +2344,8 @@
           "raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique",
           "contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)",
           "projection par lot KIR : préparation Catalogue, publication et visibilité par marché depuis les produits réellement promus ; lecture seule, sans automatiser une décision",
+          "Catalogue global maître : registre paginé de toutes les fiches réellement remises depuis Sourcing/Raffinerie ; fournisseurs, taxonomie boutique, écarts actionnables et corrections par autorité sans confondre remise et vente",
+          "Catalogue pré-publication : contrôle canonique des prérequis candidat à la demande en lecture seule, sans déclencher de publication ni confondre approbation Catalogue, revue visuelle FR et décisions marchés",
           "Catalogue global commercial : projection read-only de l assortiment approuve a la vente, compose uniquement des produits issus de KIR clos et possedant exposition ENABLED + prix LOCAL_ACTIVE sur au moins un marche ; drafts et lots ouverts restent hors de cette lecture",
           "glossaire metier EN->FR (catalog_glossary)",
           "mémoire terminologique externe sourcée et filtrée par corpus (catalog_terminology_reference), avec priorité au glossaire Komerce",
@@ -2380,6 +2382,10 @@
         {
           "statement": "un brouillon Catalogue issu du Sourcing peut exister sans price_kmf uniquement tant qu il reste lifecycle candidate, is_active=false et is_available=false ; le prix de vente strictement positif devient obligatoire au gate de publication, jamais à la remise Sourcing → Catalogue",
           "test": "tests/unit/product-publication-guard.test.js"
+        },
+        {
+          "statement": "le registre global liste les seuls produits canoniquement remis, même candidats inactifs, sans en déduire la vente ; ses diagnostics peuvent se cumuler, le filtrage reste serveur et la correction boutique délègue à Catalog sans publication",
+          "test": "tests/unit/catalog-registry.test.js"
         },
         {
           "statement": "le Catalogue global commercial ne contient que des produits issus de KIR clos avec au moins une approbation de vente reelle (exposition ENABLED + prix LOCAL_ACTIVE sur le meme marche) ; les lots ouverts, drafts et simples publications globales restent hors assortiment",
@@ -3087,7 +3093,7 @@
             ]
           },
           "scripts": {
-            "count": 32,
+            "count": 33,
             "files": [
               {
                 "declared": "scripts/aliexpress-500-catalog-sync.js",
@@ -3240,6 +3246,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "scripts/cj-semantic-bulk-200-isolated.js",
+                "resolvedPath": "scripts/cj-semantic-bulk-200-isolated.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "scripts/ebay-p3-pipeline-proof.js",
                 "resolvedPath": "scripts/ebay-p3-pipeline-proof.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3252,7 +3263,7 @@
             ]
           },
           "services": {
-            "count": 77,
+            "count": 81,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -3400,6 +3411,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/catalog-registry.js",
+                "resolvedPath": "services/catalog-registry.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/catalog-run-progress.js",
                 "resolvedPath": "services/catalog-run-progress.js",
                 "status": "resolved-in-technical-graph"
@@ -3437,6 +3453,11 @@
               {
                 "declared": "services/catalog-workspace.js",
                 "resolvedPath": "services/catalog-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/commercial-taxonomy-semantics.js",
+                "resolvedPath": "services/commercial-taxonomy-semantics.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3487,6 +3508,16 @@
               {
                 "declared": "services/prompts/catalog-enrichment.prompt.js",
                 "resolvedPath": "services/prompts/catalog-enrichment.prompt.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/refinery-fr-recheck.js",
+                "resolvedPath": "services/refinery-fr-recheck.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/refinery-worklist.js",
+                "resolvedPath": "services/refinery-worklist.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3642,7 +3673,7 @@
             ]
           },
           "tests": {
-            "count": 202,
+            "count": 204,
             "files": [
               {
                 "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
@@ -4170,6 +4201,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-registry.test.js",
+                "resolvedPath": "tests/unit/catalog-registry.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/catalog-run-progress.test.js",
                 "resolvedPath": "tests/unit/catalog-run-progress.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4287,6 +4323,11 @@
               {
                 "declared": "tests/unit/cj-refinery-commandability-continuation.test.js",
                 "resolvedPath": "tests/unit/cj-refinery-commandability-continuation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/commercial-taxonomy-semantics.test.js",
+                "resolvedPath": "tests/unit/commercial-taxonomy-semantics.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -4667,7 +4708,7 @@
             ]
           }
         },
-        "totalFiles": 433,
+        "totalFiles": 440,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -6584,7 +6625,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 163,
+            "count": 165,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7047,6 +7088,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/pricing-atelier-views.css",
+                "resolvedPath": "public/dashboards/canonical/css/pricing-atelier-views.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/pricing-decision-chain.css",
                 "resolvedPath": "public/dashboards/canonical/css/pricing-decision-chain.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7254,6 +7300,11 @@
               {
                 "declared": "dashboards/canonical/js/pilotage.js",
                 "resolvedPath": "public/dashboards/canonical/js/pilotage.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/pricing-atelier-views.js",
+                "resolvedPath": "public/dashboards/canonical/js/pricing-atelier-views.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7799,7 +7850,7 @@
             ]
           },
           "tests": {
-            "count": 192,
+            "count": 193,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8269,6 +8320,11 @@
               {
                 "declared": "tests/unit/canonical-pilotage.test.js",
                 "resolvedPath": "tests/unit/canonical-pilotage.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-pricing-atelier-views.test.js",
+                "resolvedPath": "tests/unit/canonical-pricing-atelier-views.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8764,7 +8820,7 @@
             ]
           }
         },
-        "totalFiles": 430,
+        "totalFiles": 433,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -9505,6 +9561,13 @@
         },
         {
           "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -13488,6 +13551,34 @@
       },
       "authority": "backend — ces fichiers sont consommés par toutes les features. Tout changement ici a un impact potentiel global.",
       "invariants": [
+        {
+          "statement": "Le détecteur générique de provenance rend la première rupture de l autorité explicite, accepte le dernier override humain, et ne qualifie un scan comme effectif que si la gouvernance le déclare. Les contrôles négatifs sans édition humaine ne doivent pas signaler un bug.",
+          "test": "tests/unit/sourcing-provenance-invariant.test.js"
+        },
+        {
+          "statement": "A3/A4 contre-expertise : scanner suivi de bout en bout, fail-closed si périmètre vide/illisible, alerte LS-01 sur écriture de statut directe, LS-03 sur idempotence temporelle et LS-06 sur toute frontière PSP même hors transaction apparente",
+          "test": "tests/unit/logic-detectors.test.js"
+        },
+        {
+          "statement": "les neuf requêtes LD-01 à LD-07b sont vérifiées sur une base PostgreSQL de test par scénarios fautifs puis sains isolés en tables TEMP, avec rollback avant le scénario suivant",
+          "test": "tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js"
+        },
+        {
+          "statement": "audit:logic --data contrôle explicitement les neuf règles LD-01 à LD-07b sans écriture PostgreSQL, dans une transaction READ ONLY avec rollback systématique, et rend visible NON EXÉCUTÉ sans base",
+          "test": "tests/unit/logic-data-detectors.test.js"
+        },
+        {
+          "statement": "le scan logique repère les motifs métiers risqués dans tous les fichiers applicatifs suivis, classe les détections comme suspicions statiques, signale toute nouveauté depuis le commit de base et ne confond jamais une absence de signal avec une certification métier",
+          "test": "tests/unit/logic-detectors.test.js"
+        },
+        {
+          "statement": "un accord humain Debt Zero ne vaut que pour un SHA exact publié et examiné : commentaire « DEBT-APPROVAL <sha> » de l’approbateur, PR pointant exactement sur ce SHA, aucune déduction par date de commit ; en local, l’accord en attente est un statut distinct (exit 3) qui laisse publier pour examen tandis que la CI reste bloquante",
+          "test": "tests/unit/debt-zero-gate.test.js"
+        },
+        {
+          "statement": "un invariant exécutable de Feature Card n’est prouvé que par un runner officiel (jest unitaire, intégration, E2E API, Playwright enregistré, boutique) et jamais par un succès à vide (aucun test passé, test ignoré ou base absente) ; aucun nouvel invariant textuel n’est accepté par rapport au commit de base de la PR, sans fichier de tolérance",
+          "test": "tests/unit/feature-invariant-check.test.js"
+        },
         "tout fichier middleware/ non-auth doit être listé ici",
         "tout fichier utils/ à @domain infrastructure doit être listé ici",
         "tout fichier bootstrap/ doit être listé ici",
@@ -14416,7 +14507,7 @@
             ]
           },
           "scripts": {
-            "count": 108,
+            "count": 112,
             "files": [
               {
                 "declared": ".claude/settings.json",
@@ -14539,8 +14630,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "scripts/audit-logic.js",
+                "resolvedPath": "scripts/audit-logic.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "scripts/audit-sourcing.js",
                 "resolvedPath": "scripts/audit-sourcing.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/audits/evaluate-provenance-invariant.js",
+                "resolvedPath": "scripts/audits/evaluate-provenance-invariant.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -14814,6 +14915,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "scripts/lib/logic-data-detectors.js",
+                "resolvedPath": "scripts/lib/logic-data-detectors.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/lib/logic-detectors.js",
+                "resolvedPath": "scripts/lib/logic-detectors.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "scripts/lib/npm-audit-core.js",
                 "resolvedPath": "scripts/lib/npm-audit-core.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -14981,8 +15092,13 @@
             ]
           },
           "tests": {
-            "count": 95,
+            "count": 101,
             "files": [
+              {
+                "declared": "tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/groupe-paiement.manual.js",
                 "resolvedPath": "tests/integration/groupe-paiement.manual.js",
@@ -15076,6 +15192,11 @@
               {
                 "declared": "tests/unit/arch-drift-pending-migration.test.js",
                 "resolvedPath": "tests/unit/arch-drift-pending-migration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/audit-logic.test.js",
+                "resolvedPath": "tests/unit/audit-logic.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15244,6 +15365,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/feature-invariant-check.test.js",
+                "resolvedPath": "tests/unit/feature-invariant-check.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/gen-boutique-360.p3b-ownership.test.js",
                 "resolvedPath": "tests/unit/gen-boutique-360.p3b-ownership.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15281,6 +15407,16 @@
               {
                 "declared": "tests/unit/logger.test.js",
                 "resolvedPath": "tests/unit/logger.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/logic-data-detectors.test.js",
+                "resolvedPath": "tests/unit/logic-data-detectors.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/logic-detectors.test.js",
+                "resolvedPath": "tests/unit/logic-detectors.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15429,6 +15565,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-provenance-invariant.test.js",
+                "resolvedPath": "tests/unit/sourcing-provenance-invariant.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/table-ownership.test.js",
                 "resolvedPath": "tests/unit/table-ownership.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15501,7 +15642,7 @@
             ]
           }
         },
-        "totalFiles": 383,
+        "totalFiles": 393,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -16197,6 +16338,10 @@
       },
       "authority": "backend-core — tout changement de calcul de disponibilite doit etre valide par le proprietaire de inventory-service.js",
       "invariants": [
+        {
+          "statement": "le scan inventaire→colis ne valide jamais une affectation sans membership réel, ni hors marché/relais ou sur colis figé ; mutation, trace et projection restent transactionnelles",
+          "test": "tests/unit/inventory-service.test.js"
+        },
         {
           "statement": "le stock ne descend jamais sous zero sans flag explicite de surventee assumee",
           "test": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js"
@@ -17161,6 +17306,18 @@
       },
       "authority": "backend-core — logistics possède la vérité physique et la custody ; scan-engine.js reste autorité de la machine de scan colis legacy, hub-physical-identity.js possède HUB-001 sans jamais réassigner les vérités Purchasing/Orders/Market",
       "invariants": [
+        {
+          "statement": "RC-2: la clôture par colis groupés ou partiels est prouvée en PostgreSQL isolé sur tables temporaires ; toute ligne encore due empêche collected",
+          "test": "tests/e2e-api/logistics.order-coverage-rc2.e2e.test.js"
+        },
+        {
+          "statement": "RC-2 : aucun passage de commande à collected sans couverture intégrale de toutes ses lignes et quantités réellement collectées sur les colis actifs, même en présence de livraisons partielles ou de lignes jamais affectées",
+          "test": "tests/unit/scan-order-coverage-guard.test.js"
+        },
+        {
+          "statement": "RC-3/RC-4: une remise physique exige chaque commande représentée payée, un acteur authentifié identifié en base et un agent relais attaché à la destination réelle ; le body ne peut usurper actor_role",
+          "test": "tests/unit/scan-collection-guard.test.js"
+        },
         "HUB-A : le Hub organise librement ses colis — un colis représente une commande s'il porte une ligne (order_items) de cette commande, ou si sa commande porteuse (parcels.order_id) n'a aucune ligne rattachée ; parcels.order_id n'est jamais réécrit. Tout ajout/retrait/réaffectation de ligne passe par parcel-item-mutation-service, exige un colis draft/preparation de même destination, conserve identité, quantité et compteurs qty_* (UNIQUE(order_item_id) inchangé) et laisse une trace parcel_events (item_assigned / item_removed / item_reassigned_in|out) dans la même transaction. La règle de paiement à l'expédition s'applique à chaque commande représentée ; aucune règle de facturation ni d'encaissement ne change",
         "le HUB est une primitive logistics Komerce, jamais la propriété d un Market, d une source ou d un fournisseur ; Supplier Leg et Market Leg restent deux jambes distinctes",
         "split/merge/repack changent les enveloppes physiques sans casser la filiation order item → purchase line/PO → allocation/unité Hub → parcel/shipment → relais",
@@ -17592,7 +17749,7 @@
             ]
           },
           "tests": {
-            "count": 64,
+            "count": 67,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -17607,6 +17764,11 @@
               {
                 "declared": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/logistics.order-coverage-rc2.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/logistics.order-coverage-rc2.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17870,6 +18032,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/scan-collection-guard.test.js",
+                "resolvedPath": "tests/unit/scan-collection-guard.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/scan-engine.test.js",
                 "resolvedPath": "tests/unit/scan-engine.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -17877,6 +18044,11 @@
               {
                 "declared": "tests/unit/scan-operations.test.js",
                 "resolvedPath": "tests/unit/scan-operations.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/scan-order-coverage-guard.test.js",
+                "resolvedPath": "tests/unit/scan-order-coverage-guard.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17937,7 +18109,7 @@
             ]
           }
         },
-        "totalFiles": 135,
+        "totalFiles": 138,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19247,7 +19419,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 13,
+            "count": 14,
             "files": [
               {
                 "declared": "migrations/135_markets_foundation.sql",
@@ -19313,6 +19485,11 @@
                 "declared": "migrations/314_fx_authority_foundation.sql",
                 "resolvedPath": "migrations/314_fx_authority_foundation.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/319_fx_public_reference_quotes.sql",
+                "resolvedPath": "migrations/319_fx_public_reference_quotes.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -19337,7 +19514,7 @@
             ]
           },
           "services": {
-            "count": 9,
+            "count": 10,
             "files": [
               {
                 "declared": "middleware/require-market-scope.js",
@@ -19365,6 +19542,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/fx-public-reference-feed.js",
+                "resolvedPath": "services/fx-public-reference-feed.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/market-lifecycle-service.js",
                 "resolvedPath": "services/market-lifecycle-service.js",
                 "status": "resolved-in-technical-graph"
@@ -19387,7 +19569,7 @@
             ]
           },
           "tests": {
-            "count": 28,
+            "count": 30,
             "files": [
               {
                 "declared": "tests/e2e-api/market-operation-guard.e2e.test.js",
@@ -19427,6 +19609,11 @@
               {
                 "declared": "tests/integration/fx-observation-service-postgres.test.js",
                 "resolvedPath": "tests/integration/fx-observation-service-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/fx-public-reference-postgres.test.js",
+                "resolvedPath": "tests/integration/fx-public-reference-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19490,6 +19677,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/fx-public-reference-feed.test.js",
+                "resolvedPath": "tests/unit/fx-public-reference-feed.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/market-lifecycle-schema.test.js",
                 "resolvedPath": "tests/unit/market-lifecycle-schema.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19532,7 +19724,7 @@
             ]
           }
         },
-        "totalFiles": 53,
+        "totalFiles": 57,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19543,6 +19735,14 @@
         "ownsTables": [
           {
             "table": "currency_parities",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "fx_public_reference_quotes",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "fx_rate_observations",
             "resolution": "declared-table-owner"
           },
           {
@@ -19557,6 +19757,18 @@
         "writesTables": [
           {
             "table": "currency_parities",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "fx_public_reference_quotes",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "fx_rate_observations",
             "mode": "RW",
             "lifecycleOwner": "market",
             "ownershipStatus": "owner"
@@ -19583,6 +19795,14 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "fx_public_reference_quotes",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "fx_rate_observations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "markets",
             "resolution": "declared-table-owner"
           },
@@ -19594,6 +19814,18 @@
         "writesTables": [
           {
             "table": "currency_parities",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "fx_public_reference_quotes",
+            "mode": "RW",
+            "lifecycleOwner": "market",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "fx_rate_observations",
             "mode": "RW",
             "lifecycleOwner": "market",
             "ownershipStatus": "owner"
@@ -23513,7 +23745,7 @@
             ]
           },
           "services": {
-            "count": 21,
+            "count": 22,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -23523,6 +23755,11 @@
               {
                 "declared": "services/cancel-order-purchase-orders.js",
                 "resolvedPath": "services/cancel-order-purchase-orders.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-rct1-orders.js",
+                "resolvedPath": "services/dashboard-rct1-orders.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -23893,7 +24130,7 @@
             ]
           }
         },
-        "totalFiles": 88,
+        "totalFiles": 89,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 17,
@@ -24493,6 +24730,13 @@
           ]
         },
         {
+          "provider": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "decision-signals",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -24876,6 +25120,18 @@
       "authority": "backend-core — tout changement de provider, callback, webhook ou logique d idempotence paiement doit etre valide par le propriétaire payments.",
       "invariants": [
         {
+          "statement": "RC-9 : getRefund lit PayPal par GET sans exécuter un refund, rejette tout ID douteux et fournit seulement une preuve à confronter au ledger.",
+          "test": "tests/unit/paypal-client.test.js"
+        },
+        {
+          "statement": "RC-9 préparation : le client PayPal relaie une clé providerRequestKey validée issue de refund_execution_intents, stable au rejeu, tout en laissant les anciennes routes inchangées tant que la réconciliation est incomplète",
+          "test": "tests/unit/paypal-client.test.js"
+        },
+        {
+          "statement": "RC-9 — une requête de remboursement PayPal rejouée exige une clé persistante identique ; test témoin du client PayPal courant avec échec attendu sur la clé temporelle",
+          "test": "tests/unit/paypal-client.test.js"
+        },
+        {
           "statement": "idempotence stricte sur tout webhook/callback externe",
           "test": "tests/invariants/payments.webhook-idempotency.test.js"
         },
@@ -25167,7 +25423,7 @@
             ]
           },
           "tests": {
-            "count": 36,
+            "count": 37,
             "files": [
               {
                 "declared": "public/boutique/tests/unit/b-mobile-money.test.js",
@@ -25295,6 +25551,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/payment-paypal-known-logic-bugs.test.js",
+                "resolvedPath": "tests/unit/payment-paypal-known-logic-bugs.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/payment-paypal.test.js",
                 "resolvedPath": "tests/unit/payment-paypal.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -25352,7 +25613,7 @@
             ]
           }
         },
-        "totalFiles": 81,
+        "totalFiles": 82,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 6,
@@ -29430,14 +29691,61 @@
       },
       "authority": "backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js",
       "invariants": [
+        {
+          "statement": "RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution",
+          "test": "tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js"
+        },
+        {
+          "statement": "RC-9 : reference externe unique par fournisseur et intention, prouvee en PostgreSQL",
+          "test": "tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js"
+        },
+        {
+          "statement": "RC-5/RC-9 : le rapprochement PSP relit la preuve hors transaction, verrouille ensuite commande puis intention, interdit changement de marché/capture/montant, ne marque confirmed que si preuve complète et ne modifie ni refunds ni orders",
+          "test": "tests/e2e-api/refunds.intents-reconciliation.e2e.test.js"
+        },
+        {
+          "statement": "RC-5/RC-9 : timeout PSP reste unknown, refus de capture/montant contradictoires, rejeu confirmed sans double effet et rollback en cas de conflit",
+          "test": "tests/unit/refund-intent-reconciliation.test.js"
+        },
+        {
+          "statement": "RC-5/RC-9 : vérification GET seule de la référence externe, capture, montant EUR et statut PSP. Toute preuve absente ou contradictoire interdit un succès implicite. Aucun writer financier nouveau.",
+          "test": "tests/unit/refund-evidence-verifier.test.js"
+        },
+        {
+          "statement": "RC-5/RC-9 fondation : réservation durable avant PSP, clé de rejeu stable par UUID, refus des lignes refunds historiques, plafond de montant et exclusion des intentions non résolues — sans activer de paiement",
+          "test": "tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js"
+        },
+        {
+          "statement": "RC-5/RC-9 : aucun remboursement externe ne sort du ledger de réservation, rollback et refus si paramètres de rejeu discordants ; statut processing/unknown non relançable",
+          "test": "tests/unit/refund-intent-ledger.test.js"
+        },
+        {
+          "statement": "RC-5 — toute sortie PSP requiert une intention de remboursement committee avant appel externe ; le vrai service et le faux Stripe documentent provisoirement cette rupture sans prétendre la corriger",
+          "test": "tests/unit/refund-stripe-txn-known-risk.test.js"
+        },
         "un remboursement n'est jamais applique deux fois pour le meme evenement source",
         "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement"
       ],
       "implementation": {
         "byCategory": {
           "services": {
-            "count": 1,
+            "count": 4,
             "files": [
+              {
+                "declared": "services/refund-evidence-verifier.js",
+                "resolvedPath": "services/refund-evidence-verifier.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/refund-intent-ledger.js",
+                "resolvedPath": "services/refund-intent-ledger.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/refund-intent-reconciliation.js",
+                "resolvedPath": "services/refund-intent-reconciliation.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/refund-service.js",
                 "resolvedPath": "services/refund-service.js",
@@ -29446,7 +29754,7 @@
             ]
           },
           "tests": {
-            "count": 5,
+            "count": 13,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -29454,8 +29762,43 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/refunds.intents-reconciliation.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.intents-reconciliation.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/refund-evidence-verifier.test.js",
+                "resolvedPath": "tests/unit/refund-evidence-verifier.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/refund-intent-ledger.test.js",
+                "resolvedPath": "tests/unit/refund-intent-ledger.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/refund-intent-reconciliation.test.js",
+                "resolvedPath": "tests/unit/refund-intent-reconciliation.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -29466,6 +29809,11 @@
               {
                 "declared": "tests/unit/refund-service.test.js",
                 "resolvedPath": "tests/unit/refund-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/refund-stripe-txn-known-risk.test.js",
+                "resolvedPath": "tests/unit/refund-stripe-txn-known-risk.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -29486,7 +29834,7 @@
             ]
           }
         },
-        "totalFiles": 7,
+        "totalFiles": 18,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -29496,11 +29844,21 @@
       "ownership": {
         "ownsTables": [
           {
+            "table": "refund_execution_intents",
+            "resolution": "single-writer"
+          },
+          {
             "table": "refunds",
             "resolution": "single-writer"
           }
         ],
         "writesTables": [
+          {
+            "table": "refund_execution_intents",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
           {
             "table": "refunds",
             "mode": "RW",
@@ -29522,11 +29880,21 @@
       "data": {
         "ownsTables": [
           {
+            "table": "refund_execution_intents",
+            "resolution": "single-writer"
+          },
+          {
             "table": "refunds",
             "resolution": "single-writer"
           }
         ],
         "writesTables": [
+          {
+            "table": "refund_execution_intents",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
           {
             "table": "refunds",
             "mode": "RW",
@@ -30912,6 +31280,10 @@
       "authority": "backend-core — tout changement du cycle de vie candidat (states, transitions) doit être validé par le propriétaire de routes/sourcing-scanner.js",
       "invariants": [
         {
+          "statement": "Sourcing provenance: toute correction explicite depuis updateCandidate() fige son champ et son data_sources.<clé>=manual sur tous les réimports successifs. Un autre acteur fournisseur peut rafraîchir raw_payload sans retirer cette autorité. La dernière correction humaine remplace la précédente ; sans override humain la donnée fournisseur reste actualisable. Invariant de provenance distinct de la sémantique scan_result (observation source vs évaluation effective).",
+          "test": "tests/integration/sourcing-manual-provenance-real-db.test.js"
+        },
+        {
           "statement": "GET /import-passages expose un historique paginé des runs KIR en vérité Sourcing seulement (reçus, prêts certified, écartés, action requise, remise déduite de catalogued), chargé en batch sans N+1 ; aucune donnée prix / marché / vente / clôture",
           "test": "tests/unit/import-runtime-runs.test.js"
         },
@@ -31310,7 +31682,7 @@
             ]
           },
           "tests": {
-            "count": 56,
+            "count": 57,
             "files": [
               {
                 "declared": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
@@ -31345,6 +31717,11 @@
               {
                 "declared": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
                 "resolvedPath": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/sourcing-manual-provenance-real-db.test.js",
+                "resolvedPath": "tests/integration/sourcing-manual-provenance-real-db.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -31595,7 +31972,7 @@
             ]
           }
         },
-        "totalFiles": 116,
+        "totalFiles": 117,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

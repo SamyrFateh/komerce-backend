@@ -8,7 +8,7 @@
  * @outputs       traced_editorial_override_only
  * @depends       services/catalog-overrides.js, services/catalog-fr-quality.js
  * @db-read       products, sourcing_candidates
- * @db-write      catalog_field_overrides, products(name,description,content_source,needs_review)
+ * @db-write      catalog_field_overrides, products
  * @db-txn        same_transaction_as_override
  * @doctrine      refinery_edits_french_not_publication_market_or_prices
  */
