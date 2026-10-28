@@ -52,6 +52,7 @@ const ENTRY=Object.freeze({
  'LS-01|tools/business-auditor/engine.test.js': ['TEST_SOURCE_FALSE_POSITIVE','NOT_RUNTIME_PROOF','SQL guard test contains literal UPDATE orders; no runtime business writer'],
  'LS-06|tools/business-auditor/v24-durable-intent-counterfactual.js': ['DISPOSABLE_PG_PROOF_HARNESS','NOT_RUNTIME_PROOF','R&D two-owner test-only coordinator; PayPal call delegates to real client only with persisted provider key on kba_* local clone, not a deployed writer. Must still prove crash recovery and other writers'],
  'LS-06|tools/business-auditor/v24-durable-intent-counterfactual.test.js': ['TEST_SOURCE_FALSE_POSITIVE','NOT_RUNTIME_PROOF','Synthetic PayPal client method proves the intent COMMIT precedes the fake PSP call; no live network or production entrypoint'],
+ 'LS-04|tools/business-auditor/v27-logistics-physical-child.js': ['DISPOSABLE_PG_PROOF_HARNESS','NOT_RUNTIME_PROOF','V2.7 deliberately inserts a physical competing membership with a second PostgreSQL session on local kba_* clone; exact source checked, not an application writer'],
  'LS-06|utils/refunds.js': ['EXTERNAL_PSP_SIDE_EFFECT','TARGETED_RETRY_TEST','Stripe refund call lacks explicit idempotency key in this helper; verify reachability before declaring vulnerability'],
 });
 const PRIOR_EVIDENCE=Object.freeze({

@@ -30,6 +30,7 @@ const SOURCE_BLOBS=Object.freeze({
  'tools/business-auditor/code-detectors.test.js':'1bb5c4891821f84e780d6953b16adad3f4f6b064',
  'tools/business-auditor/v24-durable-intent-counterfactual.js':'33cc0feacc40985e973b3906f474f553bba85040',
  'tools/business-auditor/v24-durable-intent-counterfactual.test.js':'e367166de57dbbdb64947242b360e6eda9343f3b',
+ 'tools/business-auditor/v27-logistics-physical-child.js':'cdd30129c535fcbcb614d371f6a7859a23f88abe',
  'utils/refunds.js':'dcd8869ee1707488af3d7102174d8779ce98e840',
 });
 module.exports={SOURCE_BLOBS};
