@@ -7,6 +7,7 @@ on:
       - research/business-auditor-v08-sql-calibration-20261028
       - research/business-auditor-v09-sequential-integration-20261028
       - research/business-auditor-v10-executable-bug-hunt-20261028
+      - research/business-auditor-v11-multidomain-oracles-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -161,6 +162,10 @@ jobs:
         env:
           KOMERCE_V10_OBSERVATION_PATH: /tmp/komerce-independent-business-audit/v10-paypal-observation.json
         run: npx jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/unit/auditor-v10-paypal-owner-probe.test.js --json --outputFile=/tmp/komerce-independent-business-audit/v10-owner-jest.json
+      - name: V1.1 execute real logistics owner with nominal and simulated conflict SQL rowCounts
+        env:
+          KOMERCE_V11_OBSERVATION_PATH: /tmp/komerce-independent-business-audit/v11-parcel-observation.json
+        run: npx jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/unit/auditor-v11-auto-parcel-owner-probe.test.js --json --outputFile=/tmp/komerce-independent-business-audit/v11-parcel-jest.json
       - name: V1.0 certify existing and new same-run proofs and write business triage report
         run: npm run audit:business:v1 -- --mode ci --evidence-dir /tmp/komerce-independent-business-audit
       - name: V1.0 reject fabricated production evidence, preserve all source candidates
@@ -171,17 +176,15 @@ jobs:
           if(p.contract!=='komerce-business-bug-hunter/v1'||
              p.sha!==process.env.GITHUB_SHA||p.runId!==process.env.GITHUB_RUN_ID||
              r.candidateOccurrences!==843||r.triageCases<100||r.reviewCases<100||
-             r.calibratedRuntimeOracles!==1||r.productionIncidentsConfirmed!==0||
-             r.completeBusinessCoverage!==false||p.findings.length!==1||
+             r.calibratedRuntimeOracles!==2||r.productionIncidentsConfirmed!==0||
+             r.completeBusinessCoverage!==false||p.findings.length!==2||
              p.triageQueue.cases.reduce((n,x)=>n+x.occurrences,0)!==843||
-             p.findings[0].productionIncidentConfirmed!==false||
-             !['REPRODUCED_CONTROLLED_TEST_INVARIANT_VIOLATION','CONTROLLED_TEST_INVARIANT_SATISFIED']
-               .includes(p.findings[0].verdict))
+             p.findings.some(x=>x.productionIncidentConfirmed!==false)||
+             p.findings.some(x=>!['REPRODUCED_CONTROLLED_TEST_INVARIANT_VIOLATION','CONTROLLED_TEST_INVARIANT_SATISFIED']
+               .includes(x.verdict)))
             throw Error('V1.0 misclassified or incomplete');
           console.log('BUSINESS_AUDIT_V10_VERDICT',JSON.stringify({
-            sha:p.sha,run:p.runId,summary:r,oracle:p.findings[0].id,
-            verdict:p.findings[0].verdict,
-            observed:p.findings[0].observed,expected:p.findings[0].expected
+            sha:p.sha,run:p.runId,summary:r,findings:p.findings.map(x=>({oracle:x.id,verdict:x.verdict,observed:x.observed,expected:x.expected}))
           }));
           NODE
       - name: V1.0 independent one-command static repo audit without DB
