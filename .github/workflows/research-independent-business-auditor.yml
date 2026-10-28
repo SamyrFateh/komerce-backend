@@ -5,6 +5,7 @@ on:
       - research/golden-continuity-checkpoints-20261026
       - research/business-auditor-v07-writer-qualification-20261028
       - research/business-auditor-v08-sql-calibration-20261028
+      - research/business-auditor-v09-sequential-integration-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -46,7 +47,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -131,6 +132,29 @@ jobs:
            JSON.stringify(e,null,2)+'\n');
           console.log('BUSINESS_AUDIT_V08_OWNER_REPLAY',JSON.stringify({tests:e.testsPassed,provider:e.provider,
            duplicateMoneyMovementProven:e.duplicateMoneyMovementProven,run:e.runId}));
+          NODE
+      - name: V0.9 integrate same-run qualified write ledger with paired proof artifacts
+        run: node tools/business-auditor/v09-integration.js /tmp/komerce-independent-business-audit
+      - name: V0.9 fail closed on missing source cases or inflated certification
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const f='/tmp/komerce-independent-business-audit/v09-evidence.json';
+          const p=JSON.parse(fs.readFileSync(f,'utf8'));
+          if(p.contract!=='komerce-independent-business-evidence/v09'||
+             p.sha!==process.env.GITHUB_SHA||p.runId!==process.env.GITHUB_RUN_ID||
+             p.summary.candidateOccurrences!==843||
+             p.summary.physicalOccurrences!==759||
+             p.summary.unresolvedOccurrences!==84||
+             p.summary.pairedSqlDetectors!==7||
+             p.summary.mockedOwnerTests!==3||
+             p.summary.productionIncidentsConfirmed!==0||
+             p.summary.caseCoverageComplete!==false)
+           throw Error('V0.9 same-run technical evidence incomplete');
+          if(p.ledger.entries.reduce((n,x)=>n+x.occurrenceCount,0)!==759||
+             p.ledger.unresolvedEntries.reduce((n,x)=>n+x.occurrenceCount,0)!==84)
+           throw Error('V0.9 candidates disappeared');
+          console.log('BUSINESS_AUDIT_V09_FULL_RECONCILIATION',JSON.stringify(p.summary));
           NODE
       - name: Archive independent JSON + Markdown evidence
         if: always()
