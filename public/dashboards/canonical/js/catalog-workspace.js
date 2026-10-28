@@ -772,6 +772,15 @@
     status.setAttribute('role', 'status');
     frenchPane.appendChild(status);
 
+    // La traduction locale ne peut pas créer une description absente de la
+    // source. Ne jamais assimiler un seul titre traduit à une fiche complète.
+    if (!String(row.description_source || '').trim() && !String(row.description || '').trim()) {
+      const missingSource = text(doc, 'p', 'kmc-catalog-fr-source-warning',
+        'Aucune description fournisseur disponible : la traduction automatique ne peut pas la compléter. Rédigez une description factuelle en français, vérifiée sur le produit, avant d’enregistrer.');
+      missingSource.setAttribute('data-fr-missing-source', '');
+      frenchPane.appendChild(missingSource);
+    }
+
     copy.addEventListener('click', async () => {
       try {
         const copied = await copyForAssistant(context, row);
@@ -810,17 +819,48 @@
 
     const footer = doc.createElement('footer');
     footer.className = 'kmc-catalog-fr-footer';
+    const footerNotice = text(doc, 'p', 'kmc-catalog-fr-footer-notice', '');
+    footerNotice.setAttribute('role', 'alert');
+    footerNotice.setAttribute('data-fr-save-feedback', '');
+    footer.appendChild(footerNotice);
+    const actions = doc.createElement('div');
+    actions.className = 'kmc-catalog-fr-footer-buttons';
     const cancel = makeButton(doc, 'Annuler', 'cancel-fr-editor', true);
     cancel.addEventListener('click', () => closeFrenchEditor(context, triggerButton));
-    footer.appendChild(cancel);
+    actions.appendChild(cancel);
     const save = makeButton(doc, activeRecheck ? 'Enregistrer la correction FR' : 'Enregistrer la préparation FR', 'save-fr-editor');
+    const showSaveProblem = (message, control) => {
+      footerNotice.className = 'kmc-catalog-fr-footer-notice is-critical';
+      footerNotice.textContent = message;
+      setEditorFeedback(status, message, 'critical');
+      if (control) {
+        control.setAttribute('aria-invalid', 'true');
+        if (typeof control.focus === 'function') control.focus();
+      }
+    };
+    [nameField.control, descriptionField.control].forEach(control => {
+      control.addEventListener('input', () => {
+        control.removeAttribute('aria-invalid');
+        footerNotice.className = 'kmc-catalog-fr-footer-notice';
+        footerNotice.textContent = '';
+      });
+    });
     save.addEventListener('click', async () => {
       const name = String(nameField.control.value || '').trim();
       const description = String(descriptionField.control.value || '').trim();
       if (!name || !description) {
-        setEditorFeedback(status, 'Titre et description français sont obligatoires.', 'critical');
+        showSaveProblem(
+          !name && !description
+            ? 'Enregistrement impossible : renseignez le titre et la description en français.'
+            : !name
+              ? 'Enregistrement impossible : le titre français est vide.'
+              : 'Enregistrement impossible : la description française est vide. Complétez-la avant d’enregistrer.',
+          !name ? nameField.control : descriptionField.control
+        );
         return;
       }
+      footerNotice.className = 'kmc-catalog-fr-footer-notice';
+      footerNotice.textContent = 'Enregistrement et vérification en cours…';
       setEditorFeedback(status, 'Enregistrement en cours…');
       if (activeRecheck) {
         save.disabled = true;
@@ -837,7 +877,7 @@
             `${row.product_ref} : préparation FR enregistrée. Réexamen actualisé ; exposition marché inchangée.`,
             'positive');
         } catch (error) {
-          setEditorFeedback(status, actionErrorMessage(error), 'critical');
+          showSaveProblem(actionErrorMessage(error), null);
           save.disabled = false;
         }
         return;
@@ -853,7 +893,8 @@
         successMessage: `${row.product_ref} préparé en français sans API IA payante. Vérifiez Avant / après puis validez.`,
       });
     });
-    footer.appendChild(save);
+    actions.appendChild(save);
+    footer.appendChild(actions);
     dialog.appendChild(footer);
 
     overlay.addEventListener('click', (event) => {
