@@ -627,7 +627,12 @@ test('Raffinerie isolée : la vue ne lit ni registre Catalogue ni assortiment co
   }));
   expect(data.products).toEqual([]);
   expect(data.commercial_products).toEqual([]);
-  expect(mockListRegistry).not.toHaveBeenCalled();
+  expect(mockListRegistry).toHaveBeenCalledWith(expect.objectContaining({
+    refinery_recheck_only: true,
+  }));
+  expect(mockListRegistry).not.toHaveBeenCalledWith(expect.objectContaining({
+    finalized_only: true,
+  }));
   expect(mockListCommercialAssortment).not.toHaveBeenCalled();
   expect(mockListCategories).not.toHaveBeenCalled();
 });
