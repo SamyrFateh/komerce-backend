@@ -44,13 +44,13 @@ test('real staging admin/sourcing UX, read-only',async({page},info)=>{
   const visit=async(url,label)=>{
    const response=await page.goto(BASE+url,{waitUntil:'domcontentloaded'});
    expect(response.status()).toBe(200);
-   await expect(page).toHaveURL(new RegExp(url.split('?')[0].replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+   expect(new URL(page.url()).pathname).toBe(url.split('?')[0]);
    result.paths.push({requested:url,landed:new URL(page.url()).pathname});
-   await screenshot(label);
   };
   if(role==='sourcing'){
    await visit('/admin/workspaces/sourcing','sourcing-initial');
    await expect(page.getByRole('tab',{name:/À qualifier/})).toBeVisible({timeout:25000});
+   await screenshot('sourcing-initial');
    const tabs=page.getByRole('tab');
    expect(await tabs.count()).toBe(4);
    await tabs.nth(1).click();
@@ -68,6 +68,7 @@ test('real staging admin/sourcing UX, read-only',async({page},info)=>{
   }else{
    await visit('/admin/workspaces/catalog','catalog-global');
    await expect(page.locator('.kmc-catalog-tabs')).toBeVisible({timeout:25000});
+   await screenshot('catalog-global');
    await expect(page.getByText('Registre produits')).toBeVisible();
    const product=page.locator('tr[data-product-ref]').first();
    const ref=await product.getAttribute('data-product-ref').catch(()=>null);
@@ -75,9 +76,11 @@ test('real staging admin/sourcing UX, read-only',async({page},info)=>{
    if(ref){
      await visit('/admin/workspaces/catalog?product_ref='+encodeURIComponent(ref),'catalog-focused');
      await expect(page.locator('[data-focused-product-result="visible"]')).toBeVisible({timeout:25000});
+     await screenshot('catalog-focused');
    }
    await visit('/admin/workspaces/catalog?view=refinery','refinery');
    await expect(page.getByText('Préparation et validation')).toBeVisible({timeout:25000});
+   await screenshot('refinery');
   }
   expect(result.actionWrites,'no business mutation').toEqual([]);
   result.status='PASS';
