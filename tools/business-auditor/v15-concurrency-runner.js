@@ -51,6 +51,10 @@ async function observe(c,x){
 async function cleanup(c,x){
  await c.query('BEGIN');
  try{
+  // Local isolated test database ONLY: bypass protective deletion triggers
+  // during fixture teardown; SET LOCAL expires at COMMIT/ROLLBACK.
+  // Never change production deletion rules or disable triggers in app code.
+  await c.query('SET LOCAL session_replication_role = replica');
   await c.query('DELETE FROM parcel_items WHERE order_item_id=ANY($1::uuid[])',[x.items]);
   await c.query('DELETE FROM parcels WHERE relais_id=$1',[x.relay]);
   await c.query('DELETE FROM order_items WHERE order_id=ANY($1::uuid[])',[[x.A,x.B,x.carrier]]);
