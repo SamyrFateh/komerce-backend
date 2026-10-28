@@ -44,6 +44,7 @@ const ENTRY=Object.freeze({
  'LS-06|services/refund-service.js': ['EXTERNAL_PSP_SIDE_EFFECT','NEEDS_TRANSACTION_TRACE','Stripe refund carries stable idempotencyKey and inserts pending first; review transaction commit and recovery path'],
  'LS-04|services/simulator/cleanup.js': ['SIMULATOR_WRITER','NOT_RUNTIME_PROOF','Simulator cleanup SQL; check segregation from real business and production access'],
  'LS-04|services/simulator/state-advancer.js': ['SIMULATOR_WRITER','NOT_RUNTIME_PROOF','Simulator state advancement; check segregation from real business'],
+ 'LS-04|tools/business-auditor/v15-concurrency-runner.js': ['DISPOSABLE_PG_PROOF_HARNESS','NOT_RUNTIME_PROOF','Committed fixture seeding in isolated local komerce_test; deleted and checked after two-connection physical race; not a production writer'],
  'LS-04|tools/business-auditor/v12-physical-parcel-runner.js': ['DISPOSABLE_PG_PROOF_HARNESS','NOT_RUNTIME_PROOF','Auditor harness alone pre-seeds physical temp parcel_items to demonstrate conflict; not production application writer'],
  'LS-05|tools/business-auditor/v12-physical-parcel-runner.js': ['DISPOSABLE_PG_PROOF_HARNESS','NOT_RUNTIME_PROOF','Harness checks the SQL emitted by the real owner and captures physical rowCount; keyword match is not another service-level conflict bug'],
  'LS-03|tools/business-auditor/code-detectors.test.js': ['TEST_SOURCE_FALSE_POSITIVE','NOT_RUNTIME_PROOF','Synthetic clock-based request key in scanner test: the source is not an executing financial writer'],
