@@ -14,6 +14,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const db=require('../db');
+const {validatePublicationUpdate}=require('../services/product-publication-guard');
 const {buildCounterAudit}=require('./lib/cj-classification-counter-audit');
 const {resolveCommercialTaxonomyVerdict,
   createDraftProductFromSourcingCandidate}=require('../services/catalog-candidate-product-service');
@@ -85,6 +86,7 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   const byStatus={},byEvidence={},byPair={},byCategory={},drift=[],samples=[],categorySamples=[],decisions=[];
   let ignoredDiscovery=0,discoveryOnly=0,auto=0,category=0;
   const mixedGenderRefs=new Set(['KSC-000012','KSC-000017','KSC-000031']);
+  const photoRefs=new Set(['KSC-000372','KSC-000382','KSC-000383','KSC-000384','KSC-000385']);
   const counterAuditRefs=new Map([
     ['KSC-000094',['REVIEW_REQUIRED',null,null]],
     ['KSC-000479',['REVIEW_REQUIRED',null,null]],
@@ -120,6 +122,18 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
     const v=await resolveCommercialTaxonomyVerdict(db,candidate);
     const p=v.category&&v.subcategory?v.category+'/'+v.subcategory:null;
     inc(byStatus,v.status);inc(byEvidence,v.source);
+    if(photoRefs.has(original.candidate_ref)){
+      const pub=validatePublicationUpdate({
+        before:{name:'Couverture photo',name_source:original.product_name,
+          category:'Maison',price_kmf:10000,stock:2,is_active:false,is_available:false,
+          description:'Description française pour produit avec photo client.',
+          source_locale:'fr',content_source:'manual'},
+        patch:{is_active:true,is_available:true},context:{catalogMediaCount:1}
+      });
+      if(pub.code!=='buyer_image_checkout_not_supported')
+        throw Error('BUYER_IMAGE_PUBLICATION_NOT_BLOCKED:'+original.candidate_ref);
+      photoRefs.delete(original.candidate_ref);
+    }
     if(counterAuditRefs.has(original.candidate_ref)){
       const want=counterAuditRefs.get(original.candidate_ref);
       if([v.status,v.category,v.subcategory].some((x,i)=>x!==want[i]))
@@ -186,6 +200,7 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   if(mixedGenderRefs.size)throw Error('MIXED_GENDER_CORPUS_REFS_MISSING:'+Array.from(mixedGenderRefs).join(','));
   if(realObjectRegression.size)throw Error('REAL_OBJECT_CORPUS_REFS_MISSING:'+Array.from(realObjectRegression.keys()).join(','));
   if(counterAuditRefs.size)throw Error('COUNTER_AUDIT_REFS_MISSING:'+Array.from(counterAuditRefs.keys()).join(','));
+  if(photoRefs.size)throw Error('BUYER_IMAGE_SOURCE_REFS_MISSING:'+Array.from(photoRefs).join(','));
   // These are genuine service calls on a real PostgreSQL transaction and
   // canonical boutique reference tables, not mocked SQL nor live Railway.
   const client=await db.getClient(),draftProofs=[];
