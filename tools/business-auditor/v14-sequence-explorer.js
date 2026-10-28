@@ -12,9 +12,9 @@ const uuid=()=>crypto.randomUUID();
 const ACTIONS=Object.freeze({
  ASSIGN_A:async({client,ids,distributeOrder})=>distributeOrder(ids.A,client),
  ASSIGN_B:async({client,ids,distributeOrder})=>distributeOrder(ids.B,client),
- CANCEL_OPEN:async({client,transitionParcelStatus})=>{
+ CANCEL_OPEN:async({client,ids,transitionParcelStatus})=>{
   const {rows}=await client.query(`SELECT id FROM parcels
-   WHERE status IN ('draft','preparation') ORDER BY created_at DESC,id DESC LIMIT 1`);
+   WHERE relais_id=$1 AND status IN ('draft','preparation') ORDER BY created_at DESC,id DESC LIMIT 1`,[ids.relay]);
   if(rows.length!==1)return {skipped:true,reason:'NO_OPEN_PARCEL'};
   return transitionParcelStatus(client,rows[0].id,'cancelled');
  }
