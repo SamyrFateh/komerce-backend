@@ -15,7 +15,7 @@
 'use strict';
 
 const db = require('../db');
-const { upsertOverrides } = require('./catalog-overrides');
+const { upsertOverrides, upsertOverride } = require('./catalog-overrides');
 const { frenchLanguageProblems, describeFrenchProblems } = require('./catalog-fr-quality');
 
 class RefineryFrenchRecheckError extends Error {
@@ -40,9 +40,9 @@ async function correctActiveFrench(productRef, payload = {}, actor, executor = d
   const name = String(payload.name || '').trim();
   const description = String(payload.description || '').trim();
   if (!ref) throw new RefineryFrenchRecheckError('product_ref_required', 'Référence produit obligatoire', 400);
-  if (!name || !description) {
-    throw new RefineryFrenchRecheckError('refinery_fr_fields_required',
-      'Titre français et description française sont obligatoires.', 422);
+  if (!name) {
+    throw new RefineryFrenchRecheckError('refinery_fr_title_required',
+      'Le titre français est obligatoire pour enregistrer cette correction.', 422);
   }
   if (!actor?.id) {
     throw new RefineryFrenchRecheckError('refinery_fr_actor_required',
@@ -75,13 +75,36 @@ async function correctActiveFrench(productRef, payload = {}, actor, executor = d
         'La fiche ne présente plus de défaut éditorial nécessitant un réexamen.', 409);
     }
 
-    // Canonical domain writer: preserves original supplier fields and audit
-    // reasons; the transaction prevents partial name/description overrides.
-    await upsertOverrides(q, before.id, { name, description }, {
-      reason: 'Raffinerie : correction FR après réexamen du produit actif',
+    const metadata = {
+      reason: description
+        ? 'Raffinerie : correction FR après réexamen du produit actif'
+        : 'Raffinerie : titre FR enregistré sans description, travail éditorial restant',
       setBy: actor.id,
-    });
-    // Explicit human editorial recheck, not a second catalogue approval.
+    };
+    if (!description) {
+      // Save partial work using the canonical field override writer. Unlike
+      // upsertOverrides this cannot accidentally mark a source without a
+      // description as fully prepared. Do NOT change needs_review, lifecycle,
+      // content_source, prices, or the market exposure on a partial save.
+      await upsertOverride(q, {
+        productId: before.id,
+        fieldName: 'name',
+        fieldValue: name,
+        ...metadata,
+      });
+      return {
+        product_ref: before.product_ref,
+        status: 'editorial_draft_saved',
+        remains_in_refinery: true,
+        missing_fields: ['description'],
+        source_preserved: true,
+        approval_granted: false,
+        publication_changed: false,
+        market_exposure_changed: false,
+      };
+    }
+    // Both fields supplied: existing canonical domain writer & validation.
+    await upsertOverrides(q, before.id, { name, description }, metadata);
     const { rows: [after] } = await q.query(
       `UPDATE products
           SET content_source='manual', needs_review=FALSE,
@@ -95,6 +118,7 @@ async function correctActiveFrench(productRef, payload = {}, actor, executor = d
     return {
       product_ref: after.product_ref,
       status: 'editorial_recheck_saved',
+      remains_in_refinery: false,
       source_preserved: true,
       approval_granted: false,
       publication_changed: false,
