@@ -1,0 +1,75 @@
+name: Sourcing + Catalogue V5 — UX finishing certification
+on:
+  push:
+    branches:
+      - feat/finalize-sourcing-catalog-ux-20261028
+    paths:
+      - '.github/workflows/sourcing-catalog-finish-v5.yml'
+      - 'public/dashboards/canonical/js/sourcing-workspace.js'
+      - 'public/dashboards/canonical/js/catalog-workspace.js'
+      - 'public/dashboards/canonical/css/sourcing-finish-v5.css'
+      - 'public/dashboards/canonical/css/catalog-workspace-wide-v1.css'
+      - 'public/dashboards/canonical/index.html'
+      - 'tests/unit/sourcing-catalog-finish-v5.test.js'
+      - 'scripts/testing/sourcing-catalog-v5-chromium-proof.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sourcing-catalog-v5-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  unit:
+    name: Sourcing, Raffinerie, Catalogue — Jest contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Syntax gates
+        run: |
+          node --check public/dashboards/canonical/js/sourcing-workspace.js
+          node --check public/dashboards/canonical/js/catalog-workspace.js
+          node --check scripts/testing/sourcing-catalog-v5-chromium-proof.js
+      - name: Test canonical boundaries
+        run: >
+          npx jest --config jest.unit.config.js --ci --runInBand --no-coverage
+          tests/unit/sourcing-catalog-finish-v5.test.js
+          tests/unit/sourcing-workspace.test.js
+          tests/unit/catalog-workspace.test.js
+          tests/unit/catalog-registry.test.js
+          tests/unit/catalog-workspace-wide-v1.test.js
+          tests/unit/canonical-catalog-workspace-boundary.test.js
+          tests/unit/refinery-worklist.test.js
+          tests/unit/refinery-fr-recheck.test.js
+
+  chromium:
+    name: Chromium UI 1440 / 390 — Sourcing and Catalogue
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Real frontend components on isolated fixtures (NO staging writes)
+        run: node scripts/testing/sourcing-catalog-v5-chromium-proof.js
+      - name: Visual proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sourcing-catalog-v5-${{ github.sha }}
+          path: test-results/sourcing-catalog-v5/*.png
+          if-no-files-found: ignore
+          retention-days: 14

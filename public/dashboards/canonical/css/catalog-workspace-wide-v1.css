@@ -1022,3 +1022,24 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
     min-height: 46px;
   }
 }
+
+/* V5 — preserve product context on return from Product 360; no Raffinerie work in Catalogue. */
+.kmc-catalog-main-panel .kmc-catalog-focused-notice {
+  display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px;
+  margin:9px 0 15px; padding:12px 15px;
+  border:1px solid #d7e4f4; border-radius:10px; background:#f5f9ff;
+  color:#244567; font-size:13px; line-height:1.55;
+}
+.kmc-catalog-main-panel .kmc-catalog-focused-notice strong {
+  color:#102e5a; font-weight:800;
+}
+.kmc-catalog-main-panel .kmc-catalog-focused-notice a {
+  color:#194faf; font-weight:750; text-underline-offset:3px;
+}
+.kmc-catalog-registry-table tbody tr.kmc-catalog-context-target {
+  box-shadow:inset 4px 0 #2762dd; background:#f4f8ff;
+}
+.kmc-catalog-main-panel .kmc-workspace-empty > .kmc-workspace-action {
+  display:inline-flex; width:auto; margin-top:12px; min-height:42px;
+  align-items:center; padding:9px 14px; font-weight:700; text-decoration:none;
+}

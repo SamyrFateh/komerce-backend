@@ -1,0 +1,54 @@
+name: Sourcing Catalogue V5 — real staging acceptance read-only
+on:
+  push:
+    branches: [feat/finalize-sourcing-catalog-ux-20261028]
+    paths:
+      - '.github/workflows/staging-sourcing-catalog-v5.yml'
+      - 'tests/staging-sourcing-catalog-v5/**'
+      - 'playwright.staging-sourcing-catalog-v5.config.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sourcing-catalog-v5-real-staging
+  cancel-in-progress: false
+jobs:
+  e2e:
+    name: Real staging ${{ matrix.role }} Chromium 1440/390 (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        role: [admin, sourcing]
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    env:
+      NODE_ENV: test
+      CI: 'true'
+      E2E_ROLE: ${{ matrix.role }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_SOURCING_EMAIL: ${{ secrets.E2E_SOURCING_EMAIL }}
+      E2E_SOURCING_PASSWORD: ${{ secrets.E2E_SOURCING_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Browser test syntax
+        run: |
+          node --check tests/staging-sourcing-catalog-v5/read-only.spec.js
+          node --check playwright.staging-sourcing-catalog-v5.config.js
+      - name: Real staging Chromium navigation without writes
+        run: npx playwright test --config=playwright.staging-sourcing-catalog-v5.config.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sourcing-catalog-v5-staging-${{ matrix.role }}
+          path: test-results/sourcing-catalog-staging/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-6');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-7');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
