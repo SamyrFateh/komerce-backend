@@ -692,6 +692,7 @@
 
   async function openFrenchEditor(context, row = {}, triggerButton = null) {
     closeFrenchEditor(context);
+    const activeRecheck = row.lifecycle_status === 'active' && row.is_active === true;
     const doc = context.document;
     const overlay = doc.createElement('div');
     overlay.className = 'kmc-catalog-fr-editor';
@@ -713,7 +714,9 @@
       doc,
       'p',
       'kmc-workspace-subtitle',
-      'La source fournisseur reste intacte. Le français est enregistré comme override tracé, puis relu avant validation Catalogue.'
+      activeRecheck
+        ? 'Correction éditoriale Raffinerie d’un produit déjà actif : la source reste intacte. Aucun prix, stock ou marché n’est modifié.'
+        : 'La source fournisseur reste intacte. Le français est enregistré comme override tracé, puis relu avant validation Catalogue.'
     ));
     heading.appendChild(headingCopy);
     const close = makeButton(doc, 'Fermer', 'close-fr-editor', true);
@@ -745,6 +748,10 @@
 
     const nameField = editorField(doc, 'Titre français', 'name');
     const descriptionField = editorField(doc, 'Description française', 'description', true);
+    if (activeRecheck && (row.content_source === 'manual' || isFrenchLocale(row.source_locale))) {
+      nameField.control.value = row.name || '';
+      descriptionField.control.value = row.description || '';
+    }
     frenchPane.appendChild(nameField.wrap);
     frenchPane.appendChild(descriptionField.wrap);
 
@@ -806,7 +813,7 @@
     const cancel = makeButton(doc, 'Annuler', 'cancel-fr-editor', true);
     cancel.addEventListener('click', () => closeFrenchEditor(context, triggerButton));
     footer.appendChild(cancel);
-    const save = makeButton(doc, 'Enregistrer la préparation FR', 'save-fr-editor');
+    const save = makeButton(doc, activeRecheck ? 'Enregistrer la correction FR' : 'Enregistrer la préparation FR', 'save-fr-editor');
     save.addEventListener('click', async () => {
       const name = String(nameField.control.value || '').trim();
       const description = String(descriptionField.control.value || '').trim();
@@ -815,6 +822,26 @@
         return;
       }
       setEditorFeedback(status, 'Enregistrement en cours…');
+      if (activeRecheck) {
+        save.disabled = true;
+        try {
+          const result = await jsonRequest(context.fetch,
+            `${ENDPOINT}/refinery/${encodeURIComponent(row.product_ref)}/prepare-fr`, {
+              method: 'POST',
+              body: { name, description },
+            });
+          if (!result?.ok) throw new Error('Réponse de correction inattendue.');
+          closeFrenchEditor(context, triggerButton);
+          await context.reload({ skipAutoFrenchSchedule: true });
+          setFeedback(context.root,
+            `${row.product_ref} : préparation FR enregistrée. Réexamen actualisé ; exposition marché inchangée.`,
+            'positive');
+        } catch (error) {
+          setEditorFeedback(status, actionErrorMessage(error), 'critical');
+          save.disabled = false;
+        }
+        return;
+      }
       await runAction(context, save, {
         url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/prepare-fr`,
         body: {
@@ -967,9 +994,19 @@
         const tr = doc.createElement('tr');
         const name = doc.createElement('td');
         const returnPath = `/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(row.product_ref)}`;
-        const detail = text(doc, 'a', 'kmc-refinery-product-link', row.name || row.product_ref);
-        detail.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`,
+        const editorRequired = (row.issues || []).includes('editorial_to_complete');
+        const detailPath = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`,
           returnPath, 'Retour à la Raffinerie');
+        const detail = text(doc, editorRequired ? 'button' : 'a',
+          'kmc-refinery-product-link', row.name || row.product_ref);
+        if (editorRequired) {
+          detail.type = 'button';
+          detail.className += ' kmc-refinery-edit-trigger';
+          detail.setAttribute('aria-label', 'Corriger la fiche française de ' + row.product_ref);
+          detail.addEventListener('click', () => openFrenchEditor(context, row, detail));
+        } else {
+          detail.href = detailPath;
+        }
         name.appendChild(detail);
         name.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', row.product_ref || '—'));
         tr.appendChild(name);
@@ -980,9 +1017,19 @@
         });
         tr.appendChild(issue);
         const action = doc.createElement('td');
-        const inspect = text(doc, 'a', 'kmc-workspace-action', 'Examiner la fiche');
-        inspect.href = detail.href;
-        action.appendChild(inspect);
+        if (editorRequired) {
+          const correct = makeButton(doc, 'Corriger la fiche FR', 'refinery-correct-active-fr');
+          correct.className += ' kmc-refinery-recheck-primary';
+          correct.addEventListener('click', () => openFrenchEditor(context, row, correct));
+          action.appendChild(correct);
+          const view = text(doc, 'a', 'kmc-workspace-nav-link', 'Voir Produit 360');
+          view.href = detailPath;
+          action.appendChild(view);
+        } else {
+          const inspect = text(doc, 'a', 'kmc-workspace-action', 'Examiner le produit');
+          inspect.href = detailPath;
+          action.appendChild(inspect);
+        }
         tr.appendChild(action);
         body.appendChild(tr);
       });
