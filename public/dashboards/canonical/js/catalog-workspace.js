@@ -829,7 +829,7 @@
     const cancel = makeButton(doc, 'Annuler', 'cancel-fr-editor', true);
     cancel.addEventListener('click', () => closeFrenchEditor(context, triggerButton));
     actions.appendChild(cancel);
-    const save = makeButton(doc, activeRecheck ? 'Enregistrer le brouillon' : 'Enregistrer la préparation FR', 'save-fr-editor');
+    const save = makeButton(doc, activeRecheck ? 'Enregistrer le brouillon' : 'Enregistrer la préparation FR', 'save-fr-editor', activeRecheck);
     const showSaveProblem = (message, control) => {
       footerNotice.className = 'kmc-catalog-fr-footer-notice is-critical';
       footerNotice.textContent = message;
