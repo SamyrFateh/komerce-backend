@@ -25,7 +25,7 @@ function sourcing(old='archived'){
   authenticatedHttpRouteTested:false,mode:'SOURCING',ids:{supplier:'V33'},
   before:{candidates:items,events:[]},
   archived:1,
-  after:{candidates:items.map(x=>x.supplier_product_id==='MISSING'?{...x,state:'archived'}:x),
+  after:{candidates:items.map(x=>({...x,raw_payload:{...x.raw_payload},state:x.supplier_product_id==='MISSING'?'archived':x.state})),
    events:[{supplier_product_id:'MISSING',old_state:old,new_state:'archived',
     event_type:'state_change'}]}};
 }
