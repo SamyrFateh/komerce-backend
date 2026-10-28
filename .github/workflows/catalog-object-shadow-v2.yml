@@ -4,6 +4,8 @@ on:
     paths:
       - 'scripts/cj-object-shadow-v2.js'
       - 'scripts/cj-deterministic-family-probe.js'
+      - 'scripts/cj-headnoun-ab-experiment.js'
+      - 'tests/unit/cj-headnoun-ab-experiment.test.js'
       - 'tests/unit/cj-deterministic-family-probe.test.js'
       - 'scripts/cj-object-extract-batch.js'
       - 'tests/unit/cj-object-extract-batch.test.js'
@@ -30,8 +32,9 @@ jobs:
           set -euo pipefail
           node --check scripts/cj-object-shadow-v2.js
           node --check scripts/cj-deterministic-family-probe.js
+          node --check scripts/cj-headnoun-ab-experiment.js
           node --check scripts/cj-object-extract-batch.js
-          npx jest --config jest.unit.config.js tests/unit/cj-object-shadow-v2.test.js tests/unit/cj-object-extract-batch.test.js tests/unit/cj-deterministic-family-probe.test.js --runInBand --no-coverage
+          npx jest --config jest.unit.config.js tests/unit/cj-object-shadow-v2.test.js tests/unit/cj-object-extract-batch.test.js tests/unit/cj-deterministic-family-probe.test.js tests/unit/cj-headnoun-ab-experiment.test.js --runInBand --no-coverage
       - name: Recover exact 498 authentic products and V1 decisions
         env:
           GH_TOKEN: ${{ github.token }}
@@ -51,6 +54,11 @@ jobs:
           set -euo pipefail
           node scripts/cj-deterministic-family-probe.js baseline/classification-evidence.json v1/all-498-decisions.json artifacts/object-shadow/deterministic-probe
           node -e "const r=require('./artifacts/object-shadow/deterministic-probe/report.json');if(r.counts.products!==498||r.certification!=='NOT_CERTIFIED'||r.counts.v1_review_products!==195)process.exit(1)"
+      - name: Export A-only head-noun family review without inspecting sealed B
+        run: |
+          set -euo pipefail
+          node scripts/cj-headnoun-ab-experiment.js train baseline/classification-evidence.json v1/all-498-decisions.json artifacts/object-shadow/headnoun-AB
+          node -e "const m=require('./artifacts/object-shadow/headnoun-AB/A-training-manifest.json');if(m.stats.source_A<200||m.stats.source_A>300||m.certification!=='NOT_CERTIFIED'||m.stats.human_decisions!==0)process.exit(1)"
       - name: Preserve review-ready evidence
         if: always()
         uses: actions/upload-artifact@v4
