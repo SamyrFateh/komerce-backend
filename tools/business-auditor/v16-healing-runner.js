@@ -46,11 +46,20 @@ function rendezvous(monitor,waitPids,{timeoutMs=9000,watchLocks=true}={}) {
  };
 }
 function intercept(c,gate) {
+ // SQL-structural boundary, not tied to table names or query aliases.
+ // V1.8 will derive read/write tables from the writer inventory. For this
+ // controlled pilot, recognize simple SELECT followed by INSERT/UPDATE/DELETE.
+ let readSeen=false,pausedOnce=false;
  return {query:async(sql,params=[])=>{
+  const statement=String(sql).trimStart().replace(/^\/\*[\s\S]*?\*\//,'').trimStart();
+  const read=/^SELECT\b/i.test(statement);
+  const write=/^(INSERT|UPDATE|DELETE)\b/i.test(statement);
+  if(write&&readSeen&&!pausedOnce){
+   pausedOnce=true;
+   await gate.wait(); // pause after previous SQL read, before first write
+  }
   const result=await c.query(sql,params);
-  if(String(sql).includes('LEFT JOIN LATERAL')&&
-     String(sql).includes('COALESCE(agg.item_count'))
-   await gate.wait();
+  if(read)readSeen=true;
   return result;
  }};
 }
@@ -122,4 +131,4 @@ async function run(env=process.env){
   realCanonicalSchema:true,realOwnerInvoked:true,productionOwnerModified:false,
   routeHttpExecuted:false,productionIncidentConfirmed:false};
 }
-module.exports={rendezvous,scenario,run};
+module.exports={rendezvous,intercept,scenario,run};
