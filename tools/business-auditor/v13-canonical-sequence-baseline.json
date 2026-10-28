@@ -1,0 +1,12 @@
+{
+  "contract": "komerce-business-sequence-baseline/v13",
+  "reviewStatus": "RESEARCH_BASELINE_REQUIRES_BUSINESS_ARBITRATION",
+  "policy": "ORDER_ORDERED_AND_PAID_MAY_BE_REDISTRIBUTED_AFTER_PARCEL_CANCEL",
+  "expectedVerdict": "REPRODUCED_CANONICAL_PG_SEQUENCE_ANOMALY",
+  "expectedSignals": [
+    "FALSE_SUCCESS_COUNT",
+    "GHOST_OPEN_PARCEL",
+    "ACTIVE_ORDER_STRANDED_AFTER_CANCEL"
+  ],
+  "note": "Existing Opus-reported defect; a baseline matching this verdict does not mean it is accepted business behavior. Changed verdict must trigger explicit review."
+}
