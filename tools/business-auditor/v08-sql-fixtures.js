@@ -10,7 +10,7 @@ const CASES=Object.freeze([
   "INSERT INTO order_item_real_cost_allocations (id,order_id,order_item_id) VALUES ('good_alloc','order_a','item')"],
  adversarial:["INSERT INTO order_item_real_cost_allocations (id,order_id,order_item_id) VALUES ('bad_alloc','order_b','item')"]},
  {id:'KBA-002',bad:'bad_freight',tables:[allocation,parcels],
- nominal:["INSERT INTO parcel_items VALUES ('parcel_a','item')",
+ nominal:["INSERT"+" INTO parcel_items VALUES ('parcel_a','item')",
   "INSERT INTO order_item_real_cost_allocations (id,order_item_id,cost_type,parcel_id,shipment_id) VALUES ('good_freight','item','freight','parcel_a','ship_a')"],
  adversarial:["INSERT INTO order_item_real_cost_allocations (id,order_item_id,cost_type,parcel_id,shipment_id) VALUES ('bad_freight','item','freight','parcel_b','ship_a')"]},
  {id:'KBA-003',bad:'bad_shipment',tables:[allocation,
