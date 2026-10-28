@@ -72,18 +72,6 @@ jobs:
           REFINERY_PG_CERT_ISOLATED: '1'
           REFINERY_PG_CERT_URL: postgres://refinery_test:refinery_test@127.0.0.1:55432/refinery_test
         run: node scripts/testing/refinery-v4-pg-proof.js
-      - name: Install headless Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Chromium 1440/390 UI smoke (isolated fixtures)
-        run: node scripts/testing/refinery-v4-chromium-proof.js
-      - name: Upload visual evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: refinery-v4-chromium-${{ github.sha }}
-          path: test-results/refinery-v4/*.png
-          if-no-files-found: ignore
-          retention-days: 7
       - name: Boundary summary
         if: always()
         run: |
@@ -93,3 +81,29 @@ jobs:
             echo 'Raffinerie/Catalogue isolated unit certification.'
             echo 'PostgreSQL 16 + Chromium 1440/390 using disposable fixtures. Real staging remains to certify.'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  chromium:
+    name: Chromium desktop/mobile isolated (Playwright 1.56.1 Noble)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify Chromium 1440 and 390 px
+        run: node scripts/testing/refinery-v4-chromium-proof.js
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refinery-v4-chromium-${{ github.sha }}
+          path: test-results/refinery-v4/*.png
+          if-no-files-found: ignore
+          retention-days: 7
