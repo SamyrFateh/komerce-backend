@@ -63,9 +63,9 @@ async function seed(){
   await c.query("INSERT INTO relais(id,name,agent_name,phone,address,market_id) VALUES($1,'R','A','+2690','L',$2)",
     [ids.relay,market.id]);
   await c.query("INSERT INTO products(id,name,price_kmf,stock) VALUES($1,'P',10000,10)",[ids.product]);
-  await c.query(\`INSERT INTO orders(id,reference,user_id,relais_id,market_id,total_kmf,total_eur,
+  await c.query(`INSERT INTO orders(id,reference,user_id,relais_id,market_id,total_kmf,total_eur,
      payment_mode,payment_status,status,paypal_capture_id,ordered_at)
-    VALUES($1,$2,$3,$4,$5,10000,20.00,'paypal_eur','paid','ordered','CAP-OFFLINE',now())\`,
+    VALUES($1,$2,$3,$4,$5,10000,20.00,'paypal_eur','paid','ordered','CAP-OFFLINE',now())`,
     [ids.order,'KBA22-'+ids.order.slice(0,8),ids.user,ids.relay,market.id]);
   await c.query("INSERT INTO order_items(order_id,product_id,price_kmf,quantity,fulfillment_source) VALUES($1,$2,10000,1,'IMPORT')",
    [ids.order,ids.product]);
@@ -100,8 +100,8 @@ async function observe(ids){
  const sql=async(q,p)=>(await db.query(q,p)).rows;
  const refunds=await sql("SELECT refund_type,refund_method,amount_kmf::int AS amount_kmf,amount_eur::float AS amount_eur,status,stripe_refund_id FROM refunds WHERE order_id=$1 ORDER BY refund_type,refund_method",[ids.order]);
  const [order]=await sql('SELECT status,payment_status FROM orders WHERE id=$1',[ids.order]);
- const [{kmf:walletCreditKmf}]=await sql(\`SELECT COALESCE(SUM(t.amount_kmf),0)::int AS kmf FROM wallet_transactions t
- JOIN wallets w ON w.id=t.wallet_id WHERE w.user_id=$1 AND t.amount_kmf>0\`,[ids.user]);
+ const [{kmf:walletCreditKmf}]=await sql(`SELECT COALESCE(SUM(t.amount_kmf),0)::int AS kmf FROM wallet_transactions t
+ JOIN wallets w ON w.id=t.wallet_id WHERE w.user_id=$1 AND t.amount_kmf>0`,[ids.user]);
  return {refunds,order,walletCreditKmf,
   pspEvents:psp.events,pspRefundedEur:psp.events.reduce((n,x)=>n+x.amountEur,0)};
 }
