@@ -44,7 +44,7 @@ test('Raffinerie : projection lecture seule, compteurs globaux séparés et pagi
     active_products: 9, rejected_products: 1, handoff_already_active: 4, active_recheck: 0,
   });
   expect(mockListRegistry).toHaveBeenCalledWith(expect.objectContaining({
-    refinery_recheck_only: true, limit: 30, offset: 0,
+    refinery_recheck_only: true, limit: 50, offset: 0,
   }));
   expect(result.unprepared_page).toEqual({
     total: 2, limit: 50, offset: 0, has_previous: false, has_next: true,
