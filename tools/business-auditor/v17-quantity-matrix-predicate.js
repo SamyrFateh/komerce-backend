@@ -95,7 +95,7 @@ function inspect(raw){
    (counts.REUSE_REFUSED_UNDER_UNIT_CAPACITY_POLICY||0)>0
    ?'NO_SINGLE_POLICY_SATISFIED':
    Object.keys(counts).length?'SINGLE_POLICY_PLAUSIBLE_OR_OTHER_SIGNALS':
-   'NO_POLICY_CONTRADICTION_OBSERVED',
+   'NO_POLICY_CONTRADICTION_OBSERVED'),
   approvedCapacityPolicy:null,productionIncidentConfirmed:false,
   note:'Neither line nor unit policy fits all observed cases if both families appear. Weight or volume is a separate business hypothesis.'};
 }
