@@ -39,10 +39,18 @@ async function withClone(env,callback) {
   try {
    if(created) {
     // Never terminate a server connection; classify pool leaks as tool errors.
-    const {rows:active}=await root.query(
-     'SELECT pid,state,application_name FROM pg_stat_activity WHERE datname=$1',[name]);
+    // node-pg may finish socket teardown slightly after pool.end().
+    // Wait for normal graceful disconnect; never terminate another backend.
+    let active=[];
+    const deadline=Date.now()+5000;
+    do {
+     ({rows:active}=await root.query(
+      'SELECT pid,state,application_name FROM pg_stat_activity WHERE datname=$1',[name]));
+     if(!active.length)break;
+     await new Promise(resolve=>setTimeout(resolve,100));
+    }while(Date.now()<deadline);
     if(active.length)
-     throw Error('TOOL_ERROR: cloned PG sessions remain open: '+
+     throw Error('TOOL_ERROR: cloned PG sessions remained open after grace period: '+
       JSON.stringify(active.map(x=>({pid:x.pid,state:x.state,application:x.application_name}))));
     await root.query('DROP DATABASE IF EXISTS "'+name+'"');
     const {rows:[check]}=await root.query('SELECT count(*)::int AS n FROM pg_database WHERE datname=$1',[name]);
