@@ -11,6 +11,7 @@ on:
       - research/business-auditor-v12-opus-proof-pivot-20261028
       - research/business-auditor-v13-canonical-parcel-sequences-20261028
       - research/business-auditor-v14-bounded-sequence-explorer-20261028
+      - research/business-auditor-v15-physical-concurrency-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -29,6 +30,7 @@ on:
       - research/business-auditor-v12-opus-proof-pivot-20261028
       - research/business-auditor-v13-canonical-parcel-sequences-20261028
       - research/business-auditor-v14-bounded-sequence-explorer-20261028
+      - research/business-auditor-v15-physical-concurrency-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -73,7 +75,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -308,6 +310,27 @@ jobs:
             cases:r.verdict.plannedCases,steps:r.verdict.evaluatedSteps,
             signals:r.verdict.totalSignals,known:r.verdict.knownFamilySignals,
             newFamilies:r.verdict.candidateNewFamilySignals
+          }));
+          NODE
+      - name: V1.5 controlled two-connection parcel-capacity race on canonical local PostgreSQL
+        run: node tools/business-auditor/v15-concurrency-gate.js /tmp/komerce-independent-business-audit
+      - name: V1.5 recompute real PG concurrency witness from raw physical snapshots
+        run: |
+          node <<'NODE'
+          const p=require('/tmp/komerce-independent-business-audit/v15-concurrency.json');
+          const {inspect}=require('./tools/business-auditor/v15-concurrency-predicate');
+          const recalculated=inspect(p.raw);
+          if(p.contract!=='komerce-physical-concurrency-proof/v15'||
+             p.sha!==process.env.GITHUB_SHA||p.runId!==process.env.GITHUB_RUN_ID||
+             p.raw.allFixturesDeleted!==true||
+             JSON.stringify(p.verdict)!==JSON.stringify(recalculated)||
+             p.verdict.sequential.maximum>p.verdict.capacity||
+             p.verdict.productionIncidentConfirmed!==false)
+            throw Error('V1.5 physical concurrency evidence invalid or nominal control regressed');
+          console.log('BUSINESS_AUDIT_V15_RECOMPUTED',JSON.stringify({
+           verdict:p.verdict.verdict,capacity:p.verdict.capacity,
+           nominal:p.verdict.sequential.maximum,race:p.verdict.concurrent.maximum,
+           candidate:p.verdict.novelFamilyCandidate
           }));
           NODE
       - name: V1.0 independent one-command static repo audit without DB
