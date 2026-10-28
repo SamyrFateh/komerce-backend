@@ -1,0 +1,62 @@
+name: Raffinerie V4 — isolated PR certification
+
+on:
+  push:
+    branches:
+      - feat/refinery-worklist-v4-20261028
+    paths:
+      - 'services/catalog-workspace.js'
+      - 'services/catalog-registry.js'
+      - 'services/refinery-worklist.js'
+      - 'public/dashboards/canonical/**'
+      - 'tests/unit/catalog-workspace.test.js'
+      - 'tests/unit/catalog-registry.test.js'
+      - 'tests/unit/refinery-worklist.test.js'
+      - 'tests/unit/canonical-catalog-workspace-boundary.test.js'
+      - 'tests/unit/catalog-workspace-wide-v1.test.js'
+      - '.github/workflows/refinery-v4-pr-cert.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refinery-v4-cert-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted-unit:
+    name: Raffinerie + Catalogue boundary (unit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies (no deployment)
+        run: npm ci --no-audit --no-fund
+      - name: Syntax contract
+        run: |
+          node --check services/refinery-worklist.js
+          node --check services/catalog-workspace.js
+          node --check services/catalog-registry.js
+          node --check public/dashboards/canonical/js/catalog-workspace.js
+      - name: Targeted Jest gates
+        run: >
+          npx jest --config jest.unit.config.js --ci --runInBand --no-coverage
+          tests/unit/refinery-worklist.test.js
+          tests/unit/catalog-registry.test.js
+          tests/unit/catalog-workspace.test.js
+          tests/unit/canonical-catalog-workspace-boundary.test.js
+          tests/unit/catalog-workspace-wide-v1.test.js
+      - name: Boundary summary
+        if: always()
+        run: |
+          {
+            echo '## Raffinerie V4'
+            echo
+            echo 'Raffinerie/Catalogue isolated unit certification.'
+            echo 'Not a staging PostgreSQL or Chromium certification.'
+          } >> "$GITHUB_STEP_SUMMARY"
