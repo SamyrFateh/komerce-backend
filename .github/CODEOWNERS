@@ -37,3 +37,8 @@
 /.github/CODEOWNERS           @SamyrFateh
 /AGENTS.md                    @SamyrFateh
 /docs/CARTE_FIRST_INDEX.md    @SamyrFateh
+
+# Business auditor R&D independent proof code, reviewed baselines, source fingerprints.
+# Enforcement REQUIRES branch protection to request code owner approval.
+/tools/business-auditor/    @SamyrFateh
+/tests/unit/auditor-*.test.js @SamyrFateh
