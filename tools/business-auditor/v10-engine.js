@@ -38,7 +38,7 @@ function triage(qualification){
 function evaluateOracle(oracle,observation,jest){
  if(observation?.contract!==oracle.evidenceContract||
   observation.scope!==oracle.evidenceScope||
-  observation.oracle!=='SAME_LOGICAL_REFUND_RETRY_REQUIRES_STABLE_PROVIDER_REQUEST_KEY')
+  observation.oracle!==oracle.observationOracle)
   throw Error('V1.0 observation origin/oracle mismatch');
  if(jest?.success!==true||jest.numFailedTests!==0||jest.numPassedTests!==1||
   !Array.isArray(jest.testResults))throw Error('V1.0 owner Jest proof incomplete');
@@ -46,12 +46,11 @@ function evaluateOracle(oracle,observation,jest){
  const hits=assertions.filter(a=>a.title===oracle.testTitle&&a.status==='passed'&&
   a.suite?.endsWith('/'+oracle.harness));
  if(hits.length!==1||assertions.length!==1)throw Error('V1.0 executed owner probe is absent/duplicated');
- if(observation.ownerRetries!==2||observation.clientControlRetries!==2||
-  observation.samePayload!==true||observation.durableClientKeysEqual!==true||
-  observation.fakeTimeouts!==4||observation.localRefundWrites!==0||
-  observation.providerCallsReal!==0||observation.realMoneyMovementObserved!==false||
-  observation.productionIncidentProven!==false||
-  typeof observation[oracle.observationField]!==oracle.type)
+ for(const [field,expected] of Object.entries(oracle.expectedControls||{})){
+  if(observation[field]!==expected)
+   throw Error('V1.0 negative/nominal owner calibration missing: '+field);
+ }
+ if(typeof observation[oracle.observationField]!==oracle.type)
   throw Error('V1.0 negative/nominal owner calibration missing');
  const violated=observation[oracle.observationField]!==oracle.expected;
  return {id:oracle.id,priority:oracle.priority,boundary:oracle.boundary,
