@@ -70,3 +70,52 @@ test('délégation mono-marché : CM automatique', async () => {
   expect(marketCalls(calls).length).toBeGreaterThan(0);
   expect(marketCalls(calls).every(u => /\/CM(\/|$)/.test(u))).toBe(true);
 });
+
+
+function descend(node, test) {
+  if (!node) return null;
+  if (test(node)) return node;
+  for (const child of node.children || []) {
+    const hit = descend(child, test);
+    if (hit) return hit;
+  }
+  return null;
+}
+function descendants(node, predicate, found = []) {
+  if (!node) return found;
+  if (predicate(node)) found.push(node);
+  for (const child of node.children || []) descendants(child, predicate, found);
+  return found;
+}
+
+test('handoff Produit 360 -> pays : affiche la référence et des choix autorisés, sans marché implicite', async () => {
+  const { root, calls } = await boot(globalCtx, '?product_ref=KPR-000092');
+  const chooser = descend(root, node => node.dataset?.marketHandoff === 'choose');
+  expect(chooser).toBeTruthy();
+  expect(descend(chooser, node => node.textContent === 'KPR-000092')).toBeTruthy();
+  const links = descendants(chooser, node => Boolean(node.attributes?.['data-handoff-market']));
+  expect(links.map(node => node.attributes['data-handoff-market'])).toEqual(['CG','CM','KM']);
+  expect(links.map(node => node.href)).toEqual([
+    'https://komerce.test/x?product_ref=KPR-000092&market=CG',
+    'https://komerce.test/x?product_ref=KPR-000092&market=CM',
+    'https://komerce.test/x?product_ref=KPR-000092&market=KM',
+  ]);
+  expect(marketCalls(calls)).toEqual([]);
+  const back=descend(chooser,node=>node.textContent?.includes('Retour au Catalogue global'));
+  expect(back.href).toContain('product_ref=KPR-000092');
+});
+
+test('handoff avec marché non autorisé ne charge pas des données pays et propose uniquement les marchés autorisés', async () => {
+  const { root, calls } = await boot(globalCtx, '?product_ref=KPR-000092&market=XX');
+  const chooser = descend(root, node => node.dataset?.marketHandoff === 'choose');
+  expect(chooser).toBeTruthy();
+  const links = descendants(chooser, node => Boolean(node.attributes?.['data-handoff-market']));
+  expect(links.map(node => node.attributes['data-handoff-market'])).toEqual(['CG','CM','KM']);
+  expect(links.some(node => node.href.includes('market=XX'))).toBe(false);
+  expect(marketCalls(calls)).toEqual([]);
+});
+
+test('écran pays générique sans référence conserve la seule invite de sélection habituelle', async () => {
+  const { root } = await boot(globalCtx, '');
+  expect(descend(root, node => node.dataset?.marketHandoff === 'choose')).toBeNull();
+});
