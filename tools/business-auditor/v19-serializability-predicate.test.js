@@ -54,6 +54,9 @@ test('stock-like guard error already present in sequential outcome is not new co
 });
 test('physical state equals AB but returns reflect BA is NON_SERIALIZABLE',()=>{
  const p=proof({raceState:state([['preparation',30],['preparation',1]])});
+ // Make the two sequential states distinguishable. Otherwise matching BA's
+ // complete (state + returns) would be valid serializability, not a defect.
+ p.cases[2].after=state([['preparation',29],['preparation',2]]);
  p.cases[3].outcomes=p.cases[2].outcomes;
  assert.equal(inspect(p).verdict,'NON_SERIALIZABLE');
 });
