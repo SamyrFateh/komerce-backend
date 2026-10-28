@@ -24,7 +24,7 @@ const db = require('../db');
 // prerequisite for viewing or repairing that catalog record.
 const REGISTRY_CTE = [
   'WITH handed AS (',
-  " SELECT p.product_ref, p.name, p.description, COALESCE(NULLIF(BTRIM(p.image_url), ''), NULLIF(BTRIM(sc.image_url), '')) AS image_url,",
+  " SELECT p.product_ref, p.name, p.description, p.name_source, p.description_source, p.source_locale AS editorial_locale, COALESCE(NULLIF(BTRIM(p.image_url), ''), NULLIF(BTRIM(sc.image_url), '')) AS image_url,",
   '        p.category AS customs_category, p.boutique_category_key,',
   '        p.boutique_subcategory_key, p.lifecycle_status,',
   '        p.is_active, p.needs_review, p.content_source, p.source_locale,',
@@ -78,6 +78,11 @@ function details(row) {
   return {
     product_ref: row.product_ref,
     name: row.name,
+    description: row.description || null,
+    name_source: row.name_source || null,
+    description_source: row.description_source || null,
+    source_locale: row.source_locale || row.editorial_locale || null,
+    content_source: row.content_source || null,
     image_url: row.image_url || null,
     supplier_image_preview: row.supplier_image_preview === true,
     supplier_name: row.supplier_name || null,
