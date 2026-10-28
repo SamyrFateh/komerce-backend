@@ -10,36 +10,40 @@ const {withClone}=require('./v16-cloned-database');
 const {setup,observe}=require('./v15-concurrency-runner');
 const LIMIT=30;
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-function rendezvous(monitor,waitPids,{timeoutMs=9000,watchLocks=false}={}) {
- let arrived=0,settled=false,serialized=false,resolve,reject;
- const promise=new Promise((a,b)=>{resolve=a;reject=b});
+function rendezvous(monitor,waitPids,{timeoutMs=9000,watchLocks=true}={}) {
+ let arrived=0,releasedArrivals=null,settled=false,serialized=false,resolve,reject;
+ const promise=new Promise((yes,no)=>{resolve=yes;reject=no});
  const finish=(error)=>{
-  if(settled)return;settled=true;
+  if(settled)return;
+  settled=true;
+  releasedArrivals=arrived; // freeze the actual synchronized read count
   if(error)reject(error);else resolve();
  };
  async function watch(){
-  const until=Date.now()+timeoutMs;
-  while(!settled&&Date.now()<until){
-   const {rows}=await monitor.query('SELECT pid,wait_event_type FROM pg_stat_activity WHERE pid=ANY($1::int[])',[waitPids]);
-   if(rows.some(x=>x.wait_event_type==='Lock')){
-    serialized=true;finish();break;
+  const deadline=Date.now()+timeoutMs;
+  while(!settled&&Date.now()<deadline){
+   if(watchLocks){
+    const {rows}=await monitor.query(
+     'SELECT pid,wait_event_type FROM pg_stat_activity WHERE pid=ANY($1::int[])',[waitPids]);
+    if(rows.some(x=>x.wait_event_type==='Lock')){
+     serialized=true;
+     finish();
+     break;
+    }
    }
    await sleep(60);
   }
-  if(!settled)finish(Error('TOOL_ERROR: synchronized race did not reach two SELECTs or a PostgreSQL lock wait'));
+  if(!settled)finish(Error('TOOL_ERROR: no second read or PG lock wait before barrier deadline'));
  }
  return {
   wait:async()=>{
+   if(settled)return promise; // a later serialized read did NOT overlap
    arrived++;
    if(arrived>=2)finish();
-   else if(watchLocks)void watch().catch(finish);
-   else {
-    const timeout=setTimeout(()=>finish(Error('TOOL_ERROR: unlocked race did not reach both SELECTs')),timeoutMs);
-    timeout.unref?.();void promise.finally(()=>clearTimeout(timeout)).catch(()=>{});
-   }
+   else if(arrived===1)void watch().catch(finish);
    return promise;
   },
-  meta:()=>({arrived,serialized})
+  meta:()=>({arrived:releasedArrivals===null?arrived:releasedArrivals,serialized})
  };
 }
 function intercept(c,gate) {
@@ -88,7 +92,7 @@ async function scenario(databaseUrl,mode){
     throw Error('TOOL_ERROR: unknown concurrent experiment');
    const {rows:[pidA]}=await a.query('SELECT pg_backend_pid() AS pid');
    const {rows:[pidB]}=await b.query('SELECT pg_backend_pid() AS pid');
-   const gate=rendezvous(monitor,[pidA.pid,pidB.pid],{watchLocks:isLocked});
+   const gate=rendezvous(monitor,[pidA.pid,pidB.pid],{watchLocks:true});
    outcome=await Promise.allSettled([
     invoke(ids.A,a,distributeOrder,gate,isLocked),
     invoke(ids.B,b,distributeOrder,gate,isLocked)
