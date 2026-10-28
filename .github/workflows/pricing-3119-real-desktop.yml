@@ -1,0 +1,45 @@
+name: Pricing 3119 — deployed UI real desktop C1 C2 C3 C5
+on:
+  push:
+    branches: [audit/pricing-3119-acceptance-20261028]
+    paths:
+      - '.github/workflows/pricing-3119-real-desktop.yml'
+      - 'playwright.pricing-3119-desktop.config.js'
+      - 'tests/pricing-3119-acceptance/real-atelier-desktop.spec.js'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  certify:
+    name: Deployed PR 3119 / ${{ matrix.role }} / Chromium 1440
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: {role: [admin, market_operator]}
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    env:
+      CI: 'true'
+      E2E_ROLE: ${{ matrix.role }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --check tests/pricing-3119-acceptance/real-atelier-desktop.spec.js
+      - name: Run real staging browser / no business writes
+        run: npx playwright test --config=playwright.pricing-3119-desktop.config.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pricing-3119-real-1440-${{ matrix.role }}
+          path: test-results/pricing-3119-desktop-real/
+          if-no-files-found: warn
+          retention-days: 14
