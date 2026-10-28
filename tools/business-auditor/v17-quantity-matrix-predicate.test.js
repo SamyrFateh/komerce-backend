@@ -12,7 +12,7 @@ function makeCase(d,usedOriginal) {
    lines:1,units:d.incomingQty}],
   incoming:{assignments:1,units:d.incomingQty},
   service:{success:true,created:!usedOriginal,usedOriginalParcel:usedOriginal,
-   reportedAssigned:1}};
+   queued:false,alreadyAssigned:false,reportedAssigned:1}};
 }
 const raw=()=>({contract:'komerce-generated-capacity-data-raw/v17',
  schema:'CANONICAL_POSTGRESQL_16',dbLocalOnly:true,allClonesDropped:true,
@@ -43,6 +43,7 @@ test('no business policy is silently approved by divergent alternative oracles',
  const x=inspect(raw());
  assert.equal(x.evaluatedCases,12);
  assert.equal(x.approvedCapacityPolicy,null);
+ assert.equal(x.semanticVerdict,'NO_SINGLE_POLICY_SATISFIED');
  assert.ok(x.counts.UNITS_EXCEED_30_FROM_VALID_PRESTATE>=1);
  assert.ok(x.counts.REUSE_REFUSED_UNDER_LINE_CAPACITY_POLICY>=1);
 });
@@ -51,4 +52,27 @@ test('mismatched SQL counts and a missing generated combination invalidate proof
  assert.throws(()=>inspect(a),/TOOL_ERROR/);
  const b=raw();b.cases.pop();
  assert.throws(()=>inspect(b),/TOOL_ERROR/);
+});
+
+test('corrected owner may queue without any physical assignment; it is not TOOL_ERROR',()=>{
+ const d=cases().find(x=>x.rows===26&&x.existingQty===1&&x.incomingQty===5);
+ const x=makeCase(d,false);
+ x.after=x.after.filter(p=>p.original);
+ x.incoming={assignments:0,units:0};
+ x.service={success:true,queued:true,alreadyAssigned:false,
+  created:false,usedOriginalParcel:false,reportedAssigned:null};
+ const verdict=evaluate(x);
+ assert.equal(verdict.physical.assigned,0);
+ assert.equal(verdict.service.queued,true);
+ assert.ok(verdict.signals.includes('REUSE_REFUSED_UNDER_LINE_CAPACITY_POLICY'));
+ assert.ok(!verdict.signals.includes('REUSE_REFUSED_UNDER_UNIT_CAPACITY_POLICY'));
+});
+test('rejected allocation with unchanged DB is a business observation, not tool error',()=>{
+ const d=cases().find(x=>x.rows===29&&x.existingQty===1&&x.incomingQty===5);
+ const x=makeCase(d,false);
+ x.after=x.after.filter(p=>p.original);
+ x.incoming={assignments:0,units:0};
+ x.service={success:false,queued:false,created:false,
+   usedOriginalParcel:false,reportedAssigned:null};
+ assert.equal(evaluate(x).physical.assigned,0);
 });
