@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-4');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-5');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -171,4 +171,15 @@ test('V4 : état inactif sans diagnostic rapide ouvre le contrôle, pas une fich
   expect(ui).toContain("kind: 'diagnose', label: 'Vérifier prérequis', status: 'À diagnostiquer'");
   expect(ui).toContain("const readinessCheck = renderRegistryCorrections(doc, diagnostic, row, context, nextStep)");
   expect(ui).toContain("if (readinessCheck) readinessCheck.click()");
+});
+
+test('V4.1 : priorité visuelle aux écarts avant marchés et à la prochaine action', () => {
+  expect(css).toContain('V4.1 — registre');
+  expect(css).toContain('.kmc-catalog-main-panel .kmc-catalog-registry-table th:nth-child(4) { width: 29%; }');
+  expect(css).toContain('.kmc-catalog-main-panel .kmc-catalog-diagnostic');
+  expect(css).toContain('.kmc-catalog-main-panel .kmc-catalog-correction-item');
+  expect(css).toContain('.kmc-catalog-main-panel .kmc-catalog-primary-action');
+  expect(css).toContain('@media (max-width: 760px)');
+  expect(ui).toContain('renderRegistryCorrections(doc, diagnostic, row, context, nextStep)');
+  expect(ui).toContain('statusChip.addEventListener');
 });
