@@ -49,11 +49,16 @@ test('REAL staging: authenticated role, dashboard navigation and contextual prod
       const actual=safeUrl(page.url());
       const blocked=statusError(snap.text);
       const http=response?.status()||0;
-      const kind=http>=400||blocked?'BLOCKED':(http===200&&snap.size>30?'OBSERVED':'FAIL');
+      const intendedPath=new URL(ORIGIN+route).pathname;
+      const reachedPath=actual?new URL(actual,ORIGIN).pathname:null;
+      const wrongDestination=Boolean(reachedPath&&reachedPath!==intendedPath);
+      const kind=wrongDestination?'FAIL':http>=400||blocked?'BLOCKED':(http===200&&snap.size>30?'OBSERVED':'FAIL');
       const screenshot=await capture(label);
       report.routes.push({route,actual,http,kind,heading:snap.h1,
         overflow:snap.overflow,bodyLength:snap.size,screenshot,buttons:snap.buttons,links:snap.links});
-      if(kind==='FAIL')finding('P1','ROUTE_INVALID',route,'HTTP='+http+' size='+snap.size+' heading='+snap.h1);
+      if(wrongDestination)finding('P1','WRONG_DASHBOARD_DESTINATION',route,
+        'expected='+intendedPath+' actual='+reachedPath+' HTTP='+http+' heading='+snap.h1);
+      else if(kind==='FAIL')finding('P1','ROUTE_INVALID',route,'HTTP='+http+' size='+snap.size+' heading='+snap.h1);
       if(kind==='BLOCKED')finding('BLOCKED','ACCESS_OR_RENDER_BLOCK',route,'HTTP='+http+' '+snap.h1+' '+short(snap.text,125));
       if(mobile&&snap.overflow>8)finding('P2','HORIZONTAL_OVERFLOW',route,snap.overflow+'px');
       return {snapshot:snap,kind};
@@ -96,6 +101,13 @@ test('REAL staging: authenticated role, dashboard navigation and contextual prod
     await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:15000}).catch(()=>{});
     if(new URL(page.url()).pathname==='/login.html'){report.identity='BLOCKED_REDIRECT';finding('BLOCKED','LOGIN_REDIRECT_FAILED',role,'Login 2xx, redirect not completed');save();return;}
     report.identity='AUTHENTICATED';
+    // Measure role/session context; don't infer permissions from a successful login.
+    const profileResponse=await page.request.get(ORIGIN+'/api/auth/me').catch(()=>null);
+    const profileData=profileResponse?.ok()?await profileResponse.json().catch(()=>({})):{};
+    const adminContextResponse=await page.request.get(ORIGIN+'/api/admin/dashboard/context').catch(()=>null);
+    report.identityAuthority={actualRole:profileData.role||null,
+      profileStatus:profileResponse?.status()||null,
+      dashboardContextStatus:adminContextResponse?.status()||null};
     const checkPaths=[...new Set(pages[role]||[])];
     if(role==='admin')checkPaths.push('/admin/workspaces/catalog?view=refinery','/dashboards/canonical/market-catalog.html?product_ref=KPR-000092');
     if(role==='market_operator')checkPaths.push('/dashboards/canonical/market-catalog.html?product_ref=KPR-000092');
@@ -130,12 +142,19 @@ test('REAL staging: authenticated role, dashboard navigation and contextual prod
         await candidates.first().click({timeout:7000});
         const landed=safeUrl(page.url());
         const ref=new URL(href,ORIGIN).searchParams.get('product_ref');
-        const visible=await page.locator('body').innerText();
+        // Context cards are loaded asynchronously after navigation.
+        // A snapshot of the initial spinner is NOT proof of a lost product.
+        const focused=page.locator('[data-market-handoff="choose"],[data-market-handoff="selected"]');
+        await focused.first().waitFor({state:'visible',timeout:13000}).catch(()=>{});
+        const cardText=await focused.first().innerText().catch(()=>'');
+        const actualRef=await focused.first().locator('h2').first().innerText().catch(()=>'');
+        const retained=Boolean(landed?.includes('product_ref='+ref)&&
+          cardText.includes(ref)&&actualRef.includes(ref));
         report.contextJourneys.push({journey:'CATALOG_GLOBAL_TO_MARKET',ref,landed,
-          status:landed?.includes('product_ref='+ref)&&visible.includes(ref)?'OBSERVED':'FAIL',
-          screenshot:await capture('catalog-to-market')});
-        if(!landed?.includes('product_ref='+ref)||!visible.includes(ref))
-          finding('P0','LOST_PRODUCT_CONTEXT','Catalogue→Marchés',ref+' landed='+landed);
+          status:retained?'OBSERVED':'FAIL',actualRef,
+          screenshot:await capture('catalog-to-market-settled')});
+        if(!retained)finding('P0','LOST_PRODUCT_CONTEXT_AFTER_SETTLE','Catalogue→Marchés',
+          'ref='+ref+' heading='+short(actualRef)+' landed='+landed);
       }else{
         report.contextJourneys.push({journey:'CATALOG_GLOBAL_TO_MARKET',status:'NOT_PROVEN',reason:'No actionable link in live catalog'});
       }
