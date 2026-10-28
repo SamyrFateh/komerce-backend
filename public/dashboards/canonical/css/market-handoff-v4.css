@@ -49,3 +49,18 @@
   #market-catalog-root .kmc-market-handoff-options [data-handoff-market] { flex:1 1 46%; }
   #market-catalog-root .kmc-market-handoff-options .kmc-workspace-action { min-height:46px; }
 }
+
+/* Keep decision tables scrollable *inside* the page on narrow screens. */
+#market-catalog-root { min-width:0; max-width:100%; box-sizing:border-box; }
+#market-catalog-root .kmc-section,
+#market-catalog-root .kmc-workspace-header,
+#market-catalog-root .kmc-market-handoff { min-width:0; max-width:100%; }
+#market-catalog-root .kmc-workspace-table-wrap {
+  min-width:0; max-width:100%; width:100%; overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#market-catalog-root .kmc-ready-head { min-width:0; }
+@media(max-width:650px) {
+  #market-catalog-root .kmc-workspace-header { grid-template-columns:minmax(0,1fr); }
+  #market-catalog-root .kmc-market-catalog-hero-controls { grid-column:1; grid-row:auto; }
+}
