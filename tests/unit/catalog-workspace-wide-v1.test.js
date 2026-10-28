@@ -77,7 +77,7 @@ test('V3 : indicateurs affichés sur page seulement, sans confondre global et li
   expect(ui).toContain("label: 'Fiche FR · page'");
   expect(ui).toContain("label: 'Approuvés · page'");
   expect(ui).toContain('payload.registry_page?.total');
-  expect(ui).toContain('Le contrôle technique candidat uniquement.');
+  expect(ui).toContain('Contrôle technique candidat uniquement.');
 });
 
 test('Catalogue actionnable : en-tête compact, onglets et filtres, sans navigation ni KPI passifs', () => {
