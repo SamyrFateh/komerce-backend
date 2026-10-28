@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 const { Client } = require('pg');
 const registry = require('../../services/catalog-registry');
 const refinery = require('../../services/refinery-worklist');
+const frenchRecheck = require('../../services/refinery-fr-recheck');
 
 async function main() {
   if (process.env.REFINERY_PG_CERT_ISOLATED !== '1') throw new Error('isolated_certification_gate_required');
@@ -24,6 +25,7 @@ async function main() {
     await client.query(`
       CREATE TEMP TABLE products (
         id integer PRIMARY KEY, product_ref text NOT NULL, name text, description text,
+        name_source text, description_source text, enrichment_version text, enrichment_confidence numeric,
         image_url text, category text, boutique_category_key text, boutique_subcategory_key text,
         lifecycle_status text, is_active boolean, needs_review boolean,
         content_source text, source_locale text,
@@ -34,6 +36,12 @@ async function main() {
         supplier_name text, supplier_product_id text, supplier_category text,
         image_url text, normalized_source_contract jsonb,
         created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
+      );
+      CREATE TEMP TABLE catalog_field_overrides (
+        id serial PRIMARY KEY, product_id integer NOT NULL,
+        field_name text NOT NULL, field_value text, reason text,
+        set_by integer, created_at timestamptz DEFAULT now(),
+        updated_at timestamptz DEFAULT now(), UNIQUE(product_id, field_name)
       );
       CREATE TEMP TABLE boutique_categories (key text PRIMARY KEY, label text, is_active boolean);
       CREATE TEMP TABLE boutique_subcategories (
@@ -53,6 +61,9 @@ async function main() {
        (6,'P-REJECTED','Fiche rejetée',NULL,'tech','phones','rejected',false,true,'connector_raw','en'),
        (7,'P-ACTIVE-SOURCE-DEFECT','Source à revoir','Description française','tech','phones','active',true,false,'manual','fr'),
        (8,'P-DRAFT-LEGACY','Brouillon inconnu',NULL,'tech','phones','candidate',false,true,'legacy_unknown','en');
+      UPDATE products SET name_source='English Audio Player',
+        description_source='Original supplier product description'
+        WHERE product_ref='P-ACTIVE-FR-DEFECT';
       INSERT INTO sourcing_candidates
       (id,product_id,state,candidate_ref,supplier_name,supplier_product_id,supplier_category,normalized_source_contract)
       VALUES
@@ -91,6 +102,33 @@ async function main() {
       // as a catalog-approved product or a returned Raffinerie task.
       assert(!refs(approved.products).includes('P-ACTIVE-NOHANDOFF'));
       assert(!refs(work.recheck).includes('P-ACTIVE-NOHANDOFF'));
+      // Same PostgreSQL engine; run a real guarded FR repair on session-only
+      // tables inside an independent transaction that is always rolled back.
+      await client.query('ROLLBACK');
+      await client.query('BEGIN');
+      try {
+        const result = await frenchRecheck.correctActiveFrench('P-ACTIVE-FR-DEFECT', {
+          name:'Coque de protection pour téléphone Mercedes',
+          description:'Cette coque de protection protège votre appareil contre les rayures. Elle est agréable à utiliser chaque jour.',
+        }, {id:42}, client);
+        assert.equal(result.status,'editorial_recheck_saved');
+        const after = await client.query("SELECT name, description, name_source, description_source, source_locale, content_source, needs_review, is_active, lifecycle_status FROM products WHERE product_ref='P-ACTIVE-FR-DEFECT'");
+        assert.equal(after.rows[0].name_source,'English Audio Player');
+        assert.equal(after.rows[0].description_source,'Original supplier product description');
+        assert.equal(after.rows[0].source_locale,'en');
+        assert.equal(after.rows[0].content_source,'manual');
+        assert.equal(after.rows[0].needs_review,false);
+        assert.equal(after.rows[0].is_active,true);
+        assert.equal(after.rows[0].lifecycle_status,'active');
+        const audit=await client.query("SELECT field_name,reason,set_by FROM catalog_field_overrides ORDER BY field_name");
+        assert.deepEqual(audit.rows.map(row=>row.field_name),['description','name']);
+        assert(audit.rows.every(row=>row.reason.includes('Raffinerie') && row.set_by===42));
+        const registryAfter=await registry.listRegistry({finalized_only:true},client);
+        assert.deepEqual(registryAfter.products.map(p=>p.product_ref).sort(),['P-ACTIVE-FR-DEFECT','P-FINALIZED']);
+      } finally {
+        await client.query('ROLLBACK');
+      }
+      await client.query('BEGIN READ ONLY');
       process.stdout.write(JSON.stringify({
         verdict:'PASS', engine:'PostgreSQL (isolated TEMP tables)',
         finalized:approved.page.total, active_recheck:recheck.page.total,
