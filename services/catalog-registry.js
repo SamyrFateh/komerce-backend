@@ -123,6 +123,12 @@ async function listRegistry(query = {}, executor = db) {
   // Raffinerie queue. Direct reads without this option keep the complete
   // canonical historical registry for diagnostics and existing consumers.
   if (query.finalized_only === true) filters.push("work_status = 'catalog_approved'");
+  // Repair queue for previously active canonical handoffs with unresolved
+  // quality signals. These remain live unless their owners suspend them.
+  if (query.refinery_recheck_only === true) {
+    filters.push("is_active = TRUE AND lifecycle_status = 'active'");
+    filters.push("work_status <> 'catalog_approved'");
+  }
   const statusPredicates = {
     source_to_normalize: 'NOT source_ready',
     taxonomy_to_confirm: 'NOT taxonomy_ready',
