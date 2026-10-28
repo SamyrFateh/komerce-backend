@@ -199,6 +199,77 @@
     return { key: 'classify-boutique', label: 'Vérifier le classement' };
   }
 
+  function openCandidateForm(context, title, help, trigger) {
+    const doc = context.root.ownerDocument;
+    const existing = context.root.querySelector('[data-sourcing-editor-overlay]');
+    if (existing) existing.remove();
+    const overlay = doc.createElement('div');
+    overlay.className = 'kmc-sourcing-editor-overlay';
+    overlay.setAttribute('data-sourcing-editor-overlay','');
+    const dialog = doc.createElement('section');
+    dialog.className = 'kmc-sourcing-editor';
+    dialog.setAttribute('role','dialog');
+    dialog.setAttribute('aria-modal','true');
+    dialog.setAttribute('aria-label',title);
+    const header = doc.createElement('header');
+    header.className = 'kmc-sourcing-editor-header';
+    header.appendChild(text(doc,'h2','',title));
+    header.appendChild(text(doc,'p','',help));
+    dialog.appendChild(header);
+    const form = doc.createElement('form');
+    form.className = 'kmc-sourcing-editor-form';
+    dialog.appendChild(form);
+    const feedback = text(doc,'p','kmc-sourcing-editor-feedback','Vérifiez les propositions, puis confirmez.');
+    feedback.setAttribute('role','status');
+    form.appendChild(feedback);
+    const actions = doc.createElement('div');
+    actions.className = 'kmc-sourcing-editor-actions';
+    const cancel = makeButton(doc,'Annuler','cancel-sourcing-edit',true);
+    const submit = makeButton(doc,'Enregistrer','submit-sourcing-edit');
+    submit.type = 'submit';
+    actions.appendChild(cancel);
+    actions.appendChild(submit);
+    form.appendChild(actions);
+    overlay.appendChild(dialog);
+    context.root.appendChild(overlay);
+    const close = () => {overlay.remove();trigger?.focus?.();};
+    cancel.addEventListener('click',close);
+    overlay.addEventListener('click',event=>{if(event.target===overlay)close();});
+    dialog.addEventListener('keydown',event=>{
+      if(event.key==='Escape'){event.preventDefault();close();}
+    });
+    return {form,feedback,submit,close,dialog};
+  }
+
+  function editCandidateField(doc, form, caption, value, type = 'text') {
+    const label = doc.createElement('label');
+    label.className = 'kmc-sourcing-editor-field';
+    label.appendChild(text(doc,'span','',caption));
+    const input = doc.createElement('input');
+    input.type = type;
+    input.value = value == null ? '' : String(value);
+    if(type==='number'){input.min='0';input.step='any';}
+    label.appendChild(input);
+    const actions = form.querySelector('.kmc-sourcing-editor-actions');
+    form.insertBefore(label, actions.previousElementSibling);
+    return input;
+  }
+
+  async function sendCandidateForm(context, formState, path, body, message) {
+    const {feedback,submit,close}=formState;
+    submit.disabled = true;
+    feedback.textContent = 'Enregistrement en cours…';
+    try {
+      await jsonRequest(context.fetch, path, {method:'POST',body});
+      close();
+      await context.reload();
+      setFeedback(context.root,message,'positive');
+    } catch(error){
+      feedback.textContent = error.message || 'Enregistrement refusé.';
+      feedback.className = 'kmc-sourcing-editor-feedback is-critical';
+    } finally {submit.disabled = false;}
+  }
+
   function renderCandidates(rootNode, ui, doc, payload, context) {
     const slot = createSection(
       rootNode,
