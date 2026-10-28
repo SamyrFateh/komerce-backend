@@ -8,7 +8,7 @@ body.kmc-shell-v4:has(.kmc-refinery-main-panel) .kmc-operations-workspace {
 }
 .kmc-refinery-main-panel { min-width:0; width:100%; box-sizing:border-box; }
 .kmc-refinery-main-panel .kmc-section-body { min-width:0; }
-.kmc-refinery-coverage { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:0 0 22px; }
+.kmc-refinery-coverage { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:0 0 22px; }
 .kmc-refinery-count { display:flex; flex-direction:column; gap:5px; min-width:0; padding:17px 18px; border:1px solid #dce6f2; border-radius:12px; background:#f8fbff; }
 .kmc-refinery-count-value { color:#112d52; font-size:27px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15; }
 .kmc-refinery-count-label { color:#294668; font-size:13px; font-weight:750; }
@@ -48,4 +48,8 @@ body.kmc-shell-v4:has(.kmc-refinery-main-panel) .kmc-operations-workspace {
 }
 @media(prefers-reduced-motion:reduce) {
   .kmc-refinery-main-panel * { scroll-behavior:auto; }
+}
+
+@media(min-width:761px) and (max-width:1150px) {
+  .kmc-refinery-coverage { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
