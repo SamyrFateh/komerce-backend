@@ -177,7 +177,7 @@
     if (refinery) copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · RAFFINERIE'));
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', refinery ? 'Raffinerie produits' : 'Catalogue global'));
     if (refinery) {
-      copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Corriger, enrichir, tarifer et valider avant toute mise au catalogue.'));
+      copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Préparer, contrôler et soumettre les fiches à validation. Les prix se décident dans l’Atelier.'));
     }
     header.appendChild(copy);
 
@@ -918,9 +918,110 @@
     slot.appendChild(box);
   }
 
+  // Raffinerie = travail éditorial et certification, jamais registre commercial.
+  // La projection de diagnostic n'autorise aucune mutation ni approbation.
+  function renderRefineryCoverage(slot, doc, payload, context) {
+    const data = payload.refinery;
+    if (!data || !data.coverage) {
+      slot.appendChild(text(doc, 'p', 'kmc-refinery-warning',
+        'Diagnostic de préparation indisponible : impossible de conclure que la Raffinerie est vide.'));
+      return;
+    }
+    const coverage = data.coverage;
+    const overview = doc.createElement('div');
+    overview.className = 'kmc-refinery-coverage';
+    [
+      ['En validation', coverage.in_approval_queue, 'Brouillons dans la file de contrôle'],
+      ['Source à qualifier', coverage.unprepared_candidates, 'Brouillons absents de la file de validation'],
+      ['Déjà actifs après remise', coverage.handoff_already_active, 'Historique, sans action Raffinerie'],
+    ].forEach(([label, value, hint]) => {
+      const tile = doc.createElement('div');
+      tile.className = 'kmc-refinery-count';
+      tile.appendChild(text(doc, 'strong', 'kmc-refinery-count-value', formatNumber(value || 0)));
+      tile.appendChild(text(doc, 'span', 'kmc-refinery-count-label', label));
+      tile.appendChild(text(doc, 'small', 'kmc-refinery-count-hint', hint));
+      overview.appendChild(tile);
+    });
+    slot.appendChild(overview);
+
+    const rows = Array.isArray(data.unprepared) ? data.unprepared : [];
+    const page = data.unprepared_page || { total: rows.length, limit: 30, offset: 0 };
+    if (Number(page.total) > 0) {
+      const heading = doc.createElement('div');
+      heading.className = 'kmc-refinery-subsection';
+      heading.appendChild(text(doc, 'h3', '', 'Fiches à qualifier'));
+      heading.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
+        'Ces brouillons existent, mais leur origine éditoriale ne permet pas leur entrée dans la file de validation. Diagnostic uniquement ; aucune publication.'));
+      slot.appendChild(heading);
+      const table = doc.createElement('table');
+      table.className = 'kmc-workspace-table kmc-refinery-unprepared-table';
+      table.innerHTML = '<thead><tr><th>Produit</th><th>Provenance</th><th>À examiner</th><th>Action</th></tr></thead>';
+      const tbody = doc.createElement('tbody');
+      rows.forEach(row => {
+        const tr = doc.createElement('tr');
+        const name = doc.createElement('td');
+        const detailPath = `/admin/products/${encodeURIComponent(row.product_ref)}`;
+        const returnPath = `/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(row.product_ref)}`;
+        const product = text(doc, 'a', 'kmc-refinery-product-link', row.name || row.product_ref);
+        product.href = contextualHref(detailPath, returnPath, 'Retour à la Raffinerie');
+        name.appendChild(product);
+        name.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', row.product_ref || '—'));
+        tr.appendChild(name);
+        tr.appendChild(td(doc, row.supplier_name || 'Provenance à vérifier'));
+        const issue = doc.createElement('td');
+        const reason = row.reason || {};
+        issue.appendChild(text(doc, 'strong', 'kmc-refinery-issue-label', reason.label || 'Diagnostic à examiner'));
+        issue.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', reason.detail || ''));
+        tr.appendChild(issue);
+        const action = doc.createElement('td');
+        const inspect = text(doc, 'a', 'kmc-workspace-action', 'Examiner la fiche');
+        inspect.href = product.href;
+        action.appendChild(inspect);
+        if (row.candidate_ref) {
+          const source = text(doc, 'a', 'kmc-workspace-nav-link', 'Voir source');
+          source.href = contextualHref(
+            `/admin/workspaces/sourcing?candidate_ref=${encodeURIComponent(row.candidate_ref)}`,
+            returnPath,
+            'Retour à la Raffinerie'
+          );
+          action.appendChild(source);
+        }
+        tr.appendChild(action);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      const wrap = doc.createElement('div');
+      wrap.className = 'kmc-workspace-table-wrap kmc-refinery-unprepared-wrap';
+      wrap.appendChild(table);
+      slot.appendChild(wrap);
+      const pager = doc.createElement('div');
+      pager.className = 'kmc-refinery-pager';
+      pager.appendChild(text(doc, 'span', 'kmc-workspace-subtitle',
+        `${page.total ? page.offset + 1 : 0}–${Math.min(page.offset + rows.length, page.total)} sur ${formatNumber(page.total)} fiche(s) à qualifier`));
+      if (page.has_previous) {
+        const previous = makeButton(doc, '← Précédentes', 'refinery-unprepared-previous', true);
+        previous.addEventListener('click', async () => {
+          context.refineryOffset = Math.max(0, page.offset - page.limit);
+          await context.reload();
+        });
+        pager.appendChild(previous);
+      }
+      if (page.has_next) {
+        const next = makeButton(doc, 'Suivantes →', 'refinery-unprepared-next', true);
+        next.addEventListener('click', async () => {
+          context.refineryOffset = page.offset + page.limit;
+          await context.reload();
+        });
+        pager.appendChild(next);
+      }
+      slot.appendChild(pager);
+    }
+  }
+
   function renderApproval(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Produits à finaliser', 'Préparez les fiches, définissez les prix et validez les produits proposés.');
-    renderPricingParameters(slot, doc, payload);
+    const slot = createSection(rootNode, ui, 'Préparation et validation', 'Préparez les fiches produit puis soumettez-les à la validation humaine. Les prix restent sous l’autorité de l’Atelier.');
+    if (slot.parentNode) slot.parentNode.className += ' kmc-refinery-main-panel';
+    renderRefineryCoverage(slot, doc, payload, context);
     const rows = payload.approval || [];
     const breakdown = payload.approval_breakdown || {};
     const strategy = payload.approval_strategy || {};
@@ -932,9 +1033,28 @@
       has_next: false,
     };
     if (!rows.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat en attente de curation.'));
+      const empty = doc.createElement('div');
+      empty.className = 'kmc-refinery-empty';
+      empty.appendChild(text(doc, 'strong', '', 'Aucune fiche dans la file de validation.'));
+      const pending = Number(payload.refinery?.coverage?.unprepared_candidates) || 0;
+      const active = Number(payload.refinery?.coverage?.handoff_already_active) || 0;
+      empty.appendChild(text(doc, 'p', '', pending
+        ? `${formatNumber(pending)} fiche(s) nécessitent encore une qualification du contenu, affichées ci-dessus.`
+        : active
+          ? `${formatNumber(active)} produit(s) déjà actifs après une remise Sourcing : ils relèvent du Catalogue, pas de cette file.`
+          : 'Aucun brouillon en préparation identifié. Vérifiez les remises depuis le Sourcing si des produits sont attendus.'));
+      const sourcing = text(doc, 'a', 'kmc-workspace-nav-link', 'Ouvrir le Sourcing');
+      sourcing.href = '/admin/workspaces/sourcing';
+      empty.appendChild(sourcing);
+      slot.appendChild(empty);
       return;
     }
+    const queueTitle = doc.createElement('div');
+    queueTitle.className = 'kmc-refinery-subsection';
+    queueTitle.appendChild(text(doc, 'h3', '', 'En attente de contrôle et validation'));
+    queueTitle.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
+      'La présence dans cette file ne vaut ni certification ni autorisation de publication.'));
+    slot.appendChild(queueTitle);
     const summary = doc.createElement('div');
     summary.className = 'kmc-workspace-section-actions';
     ['PRIORITY', 'TEST', 'WATCH', 'AVOID', 'LOSS', 'UNKNOWN'].forEach(key => {
@@ -1068,7 +1188,7 @@
         const pricingPath = nav && typeof nav.withContext === 'function'
           ? nav.withContext(basePricingPath, nav.readContext(globalThis.location && globalThis.location.search))
           : basePricingPath;
-        const returnTo = `/admin/workspaces/catalog?product_ref=${encodeURIComponent(row.product_ref)}`;
+        const returnTo = `/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(row.product_ref)}`;
         pricing.href = `${contextualHref(pricingPath, returnTo, 'Retour à la curation')}#pricing-products`;
         actionContent.appendChild(pricing);
       } else {
@@ -2050,6 +2170,7 @@
       afterRender: typeof options.afterRender === 'function' ? options.afterRender : null,
       approvalLimit: 50,
       approvalOffset: 0,
+      refineryOffset: 0,
       catalogFilters: {
         search: '', supplier: '', category: '', subcategory: '', status: '', offset: 0,
       },
@@ -2061,7 +2182,9 @@
     context.reload = async (reloadOptions = {}) => {
       try {
         const params = new URLSearchParams({
-          ...(context.workspaceView === 'refinery' ? { include_readiness: '1' } : {}),
+          ...(context.workspaceView === 'refinery'
+            ? { include_readiness: '1', refinery_view: '1', refinery_limit: '30', refinery_offset: String(context.refineryOffset) }
+            : {}),
           approval_limit: String(context.approvalLimit),
           approval_offset: String(context.approvalOffset),
         });
