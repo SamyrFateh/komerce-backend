@@ -188,8 +188,10 @@
   function nextCandidateAction(row = {}) {
     const state = String(row.state || '').toLowerCase();
     const decision = String(row.scan_result?.sourcing_decision || '').toUpperCase();
-    if (['imported_to_catalog', 'rejected', 'archived'].includes(state))
-      return { key: 'update-candidate', label: 'Consulter les informations' };
+    if (state === 'imported_to_catalog')
+      return { key: 'view-product', label: 'Voir le produit transmis' };
+    if (['rejected', 'archived'].includes(state))
+      return { key: 'update-candidate', label: 'Examiner les informations' };
     if (state === 'quarantined' || decision === 'EXCLUDED')
       return { key: 'update-candidate', label: 'Examiner le blocage' };
     if (!row.scan_at && !row.scan_result)
@@ -261,6 +263,7 @@
       if (row.product_ref) {
         const product = text(doc, 'a', 'kmc-workspace-nav-link', 'Product 360');
         product.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, '/admin/workspaces/sourcing', 'Retour au sourcing');
+        product.setAttribute('data-workspace-action', 'view-product');
         actions.appendChild(product);
       }
 
@@ -370,6 +373,34 @@
         actions.appendChild(reject);
       }
 
+      // Keep domain operations unchanged but show one contextual action.
+      const next = nextCandidateAction(row);
+      const entries = Array.from(actions.children);
+      const primary = entries.find(item => item.getAttribute('data-workspace-action') === next.key)
+        || entries.find(item => item.tagName === 'BUTTON') || entries[0];
+      if (primary) {
+        if (primary.tagName === 'BUTTON') {
+          primary.className = 'kmc-workspace-action kmc-sourcing-next-action';
+          if (primary.getAttribute('data-workspace-action') === next.key)
+            primary.textContent = next.label;
+        }
+        primary.setAttribute('aria-label', next.label + ' pour ' + row.candidate_ref);
+        const secondary = entries.filter(item => item !== primary);
+        actions.replaceChildren(primary);
+        if (secondary.length) {
+          const menu = doc.createElement('details');
+          menu.className = 'kmc-sourcing-row-more';
+          const trigger = text(doc,'summary','','···');
+          trigger.title = 'Autres actions sur ce candidat';
+          trigger.setAttribute('aria-label','Autres actions pour ' + row.candidate_ref);
+          menu.appendChild(trigger);
+          const choices = doc.createElement('div');
+          choices.className = 'kmc-sourcing-row-more-list';
+          secondary.forEach(item=>choices.appendChild(item));
+          menu.appendChild(choices);
+          actions.appendChild(menu);
+        }
+      }
       tr.appendChild(actions);
       tbody.appendChild(tr);
     });
