@@ -87,6 +87,8 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('[data-atelier-priorities]')).toContainText('1 produit sans coût d’achat');
       await expect(page.locator('[data-atelier-priorities]')).toContainText('1 produit sous le plancher moteur');
       await expect(page.locator('[data-atelier-priorities]')).toContainText('Couverture non décisionnelle');
+      await expect(page.locator('[data-atelier-policy]')).toContainText('Non décisionnelle');
+      await expect(page.locator('[data-atelier-policy]')).toContainText('Aucune version active');
       await expect(page.locator('[data-atelier-products]')).toBeHidden();
       await expect(page.locator('.kmc-cockpit-costs')).toBeHidden();
       await expect(page.locator('[data-cockpit-portfolio]')).toBeHidden();
@@ -150,6 +152,9 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await dossier.locator('[data-atelier-draft-form] input[name="amount"]').fill('31000');
       await dossier.locator('[data-atelier-draft-form] button[type="submit"]').click();
       await expect(page.locator('[data-atelier-feedback]')).toContainText('Brouillon enregistré');
+      await expect(page.locator('[data-atelier-result]')).toContainText('Ce qui change');
+      await expect(page.locator('[data-atelier-result] a[href*="market-catalog.html"]')).toBeVisible();
+      await expect(page.locator('[data-atelier-observations]')).toContainText('Boutique Moroni');
       expect(posts.map(post => post.path)).toEqual([
         '/api/admin/workspaces/pricing/market/KM/simulate-impact',
         '/api/admin/workspaces/pricing/market/KM/products/KPR-900002/local-price',

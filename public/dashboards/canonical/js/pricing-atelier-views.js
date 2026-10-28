@@ -232,6 +232,35 @@
     return nav;
   }
 
+  // Politique de décision et couverture N3 : lecture seule, valeurs serveur uniquement.
+  function policyPanel(doc, decision, reasonLabels) {
+    const section = el(doc, 'section', 'kmc-atelier-policy');
+    section.dataset.atelierPolicy = '';
+    section.appendChild(el(doc, 'h3', '', 'Politique de décision et couverture des charges (N3)'));
+    if (!decision) {
+      section.appendChild(el(doc, 'p', 'kmc-atelier-muted', 'Décision de marché indisponible : le serveur n’a pas répondu.'));
+      return section;
+    }
+    const policy = decision.policy || null;
+    const decisional = decision.decision_status === 'DECISIONAL';
+    section.appendChild(metricLine(doc, 'Couverture N3', decisional ? 'Décisionnelle' : 'Non décisionnelle', decisional ? null : 'warning'));
+    if (!decisional) {
+      section.appendChild(el(doc, 'p', 'kmc-atelier-note', `Aucun ratio affiché. Motif serveur : ${String((reasonLabels && reasonLabels[decision.reason]) || decision.reason || 'non précisé').replace(/\.$/, '')}.`));
+    } else if (decision.coverage && decision.coverage.coverage_ratio != null) {
+      section.appendChild(metricLine(doc, 'Ratio de couverture', String(Math.round(Number(decision.coverage.coverage_ratio) * 100) / 100)));
+    }
+    if (policy) {
+      section.appendChild(metricLine(doc, 'Politique effective', `v${policy.version}${policy.source ? ` · ${policy.source}` : ''}`));
+      if (policy.maturity_threshold != null) section.appendChild(metricLine(doc, 'Seuil de maturité', String(policy.maturity_threshold)));
+      if (policy.coverage_threshold != null) section.appendChild(metricLine(doc, 'Seuil de couverture', String(policy.coverage_threshold)));
+      if (policy.effective_from) section.appendChild(metricLine(doc, 'En vigueur depuis', formatDate(policy.effective_from)));
+    } else {
+      section.appendChild(metricLine(doc, 'Politique effective', 'Aucune version active'));
+    }
+    section.appendChild(el(doc, 'p', 'kmc-atelier-note', 'Lecture seule ici. La modification de la politique relève du droit pricing.policy.set.'));
+    return section;
+  }
+
   function buildPriorities(doc, items, pending) {
     const section = el(doc, 'section', 'kmc-atelier-priorities');
     section.dataset.atelierPriorities = '';
@@ -447,6 +476,7 @@
     panel.appendChild(metricLine(doc, 'Coût d’achat', state.costMissing ? 'MANQUANT' : `${formatKmf(corridor.product.purchase_cost_kmf)} · ${sourceLabel(sources.purchase_price)}`, state.costMissing ? 'danger' : ''));
     panel.appendChild(metricLine(doc, 'Coûts variables hors achat', formatKmf(economics.variable_cost_outside_purchase_kmf)));
     panel.appendChild(metricLine(doc, 'Coût variable complet', formatKmf(economics.variable_cost_complete_kmf)));
+    if (economics.contribution_unit_kmf != null) panel.appendChild(metricLine(doc, 'Contribution par vente (prix actuel)', formatKmf(economics.contribution_unit_kmf)));
     panel.appendChild(metricLine(doc, 'CDR de référence', formatKmf(economics.cdr_reference_kmf)));
     const missing = Array.isArray(quality.missing_fields) ? quality.missing_fields : [];
     panel.appendChild(el(doc, 'p', 'kmc-atelier-note', missing.length
@@ -461,9 +491,16 @@
     panel.appendChild(metricLine(doc, 'Basse · cible · haute', `${point(local.low)} · ${point(local.target)} · ${point(local.high)}`));
     const observations = Array.isArray(local.observations) ? local.observations.slice(0, 5) : [];
     if (observations.length) {
-      const list = el(doc, 'ul', 'kmc-atelier-observations');
-      observations.forEach(obs => list.appendChild(el(doc, 'li', '', `${obs.competitor_name || 'Concurrent'} · ${formatMoney(obs.observed_amount, obs.currency || currency)} · ${formatDate(obs.observed_at)} · ${obs.source || 'source non précisée'}`)));
-      panel.appendChild(list);
+      const table = el(doc, 'div', 'kmc-atelier-obs-table');
+      table.dataset.atelierObservations = '';
+      ['Concurrent', 'Prix', 'Source', 'Observé'].forEach(head => table.appendChild(el(doc, 'strong', 'is-head', head)));
+      observations.forEach(obs => {
+        table.appendChild(el(doc, 'span', '', obs.competitor_name || 'Concurrent'));
+        table.appendChild(el(doc, 'span', 'is-num', formatMoney(obs.observed_amount, obs.currency || currency)));
+        table.appendChild(el(doc, 'span', '', obs.source || '—'));
+        table.appendChild(el(doc, 'span', '', formatDate(obs.observed_at)));
+      });
+      panel.appendChild(table);
     } else {
       panel.appendChild(el(doc, 'p', 'kmc-atelier-note', 'Aucune observation datée et sourcée sur ce marché. La référence globale reste informative.'));
     }
@@ -632,6 +669,33 @@
     return details;
   }
 
+  function buildResult(doc, corridor, ctx) {
+    const box = el(doc, 'section', 'kmc-atelier-result');
+    box.dataset.atelierResult = '';
+    const currency = (corridor.market && corridor.market.currency) || 'KMF';
+    const was = ctx.saved.previous != null ? ` (prix actif : ${formatKmf(ctx.saved.previous)})` : '';
+    box.appendChild(el(doc, 'h4', '', `Brouillon enregistré · ${corridor.product.name || corridor.product.product_ref} · ${ctx.marketCode} · ${formatMoney(ctx.saved.amount, currency)}${was}`));
+    const cols = el(doc, 'div', 'kmc-atelier-result-cols');
+    const change = el(doc, 'div', '');
+    change.appendChild(el(doc, 'strong', '', 'Ce qui change'));
+    ['Le prix pays est enregistré en brouillon ; aucun prix actif n’est modifié.', 'Rien n’est exposé à la vente ; les commandes passées gardent leur prix.', 'Le produit reste à décider jusqu’à l’activation dans le Catalogue pays.']
+      .forEach(text => change.appendChild(el(doc, 'p', 'kmc-atelier-note', text)));
+    cols.appendChild(change);
+    const where = el(doc, 'div', '');
+    where.appendChild(el(doc, 'strong', '', 'Où le retrouver'));
+    const link = el(doc, 'a', 'kmc-atelier-link-button', 'Catalogue pays · activer ce prix ↗');
+    link.href = catalogueHref(ctx.marketCode, corridor.product.product_ref, ctx.returnTo);
+    where.appendChild(link);
+    cols.appendChild(where);
+    const next = el(doc, 'div', '');
+    next.appendChild(el(doc, 'strong', '', 'Étape suivante'));
+    if (ctx.position && ctx.position.next) next.appendChild(button(doc, 'Produit suivant →', 'kmc-atelier-link-button', { atelierOpen: ctx.position.next }));
+    next.appendChild(button(doc, '← Retour à la file', 'kmc-atelier-link-button', { atelierBack: '' }));
+    cols.appendChild(next);
+    box.appendChild(cols);
+    return box;
+  }
+
   function buildDossier(doc, corridor, ctx) {
     const section = el(doc, 'section', 'kmc-atelier-dossier');
     section.dataset.atelierDossier = corridor.product.product_ref;
@@ -657,6 +721,7 @@
     feedback.setAttribute('role', 'status');
     if (ctx.message) feedback.textContent = ctx.message;
     section.appendChild(feedback);
+    if (ctx.saved) section.appendChild(buildResult(doc, corridor, ctx));
     const grid = el(doc, 'div', 'kmc-atelier-dossier-grid');
     grid.appendChild(sourcesPanel(doc, corridor, ctx));
     grid.appendChild(decisionPanel(doc, corridor, ctx));
@@ -755,7 +820,7 @@
         decision: state.decision, components: payload.cost_components, counts: state.rows.length ? counts() : null,
         evaluated: state.rows.length, total: products.length, reasonLabels,
       });
-      prioritiesHost.replaceChildren(buildPriorities(doc, items, state.loading));
+      prioritiesHost.replaceChildren(buildPriorities(doc, items, state.loading), policyPanel(doc, state.decision, reasonLabels));
       const tab = nav.querySelector('[data-atelier-view="products"]');
       if (tab) {
         tab.querySelector('.kmc-atelier-tab-count')?.remove();
@@ -810,7 +875,7 @@
       renderPriorities();
     }
 
-    async function openDossier(productRef, message) {
+    async function openDossier(productRef, message, saved) {
       state.selected = productRef;
       state.view = 'products';
       applyVisibility();
@@ -818,7 +883,7 @@
       productsHost.replaceChildren(el(doc, 'div', 'kmc-atelier-empty', 'Chargement du dossier…'));
       let corridor;
       try {
-        corridor = await fetchCorridor(productRef, Boolean(message));
+        corridor = await fetchCorridor(productRef, Boolean(message || saved));
       } catch (error) {
         const failure = el(doc, 'div', 'kmc-atelier-alert', `Dossier indisponible : ${error && error.message ? error.message : 'erreur serveur'}`);
         failure.setAttribute('role', 'alert');
@@ -838,7 +903,7 @@
       const position = at >= 0 ? { index: at + 1, total: queue.length, next: queue[at + 1] || null } : null;
       productsHost.replaceChildren(buildDossier(doc, corridor, {
         position, marketCode, returnTo: returnTo(), decision: state.decision, reasonLabels, preview, previewError, message,
-        canDraft: caps.local_price_drafts === true, canSimulate: caps.simulation === true,
+        saved, canDraft: caps.local_price_drafts === true, canSimulate: caps.simulation === true,
         canObserve: caps.manage_market_price_observations === true, components: payload.cost_components,
       }));
     }
@@ -898,10 +963,12 @@
           const ref = draftForm.dataset.atelierDraftForm;
           const amount = num(data.get('amount'));
           if (amount === null || amount <= 0) throw new Error('Montant invalide : prix non enregistré.');
+          const before = state.rows.find(item => item.product.product_ref === ref);
+          const previous = before && before.corridor && before.corridor.selected ? before.corridor.selected.price_kmf : null;
           await workspace.jsonRequest(options.fetch, `${endpoint}/products/${encodeURIComponent(ref)}/local-price`, {
             method: 'POST', body: { amount, reason: 'Brouillon de prix pays depuis le dossier de l’Atelier des prix', source: 'atelier_dossier' },
           });
-          await openDossier(ref, 'Brouillon enregistré. Le serveur a évalué l’activation ; rien n’est exposé à la vente.');
+          await openDossier(ref, 'Brouillon enregistré. Le serveur a évalué l’activation ; rien n’est exposé à la vente.', { amount, previous });
         } else if (simForm) {
           const value = num(data.get('value'));
           if (value === null || value < 0) throw new Error('Valeur de scénario invalide.');

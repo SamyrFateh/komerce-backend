@@ -132,3 +132,11 @@
 .kmc-atelier-views .kmc-atelier-corridor-mark.is-cur span{top:30px}
 .kmc-atelier-views .kmc-atelier-observation-add>summary{cursor:pointer;font-weight:600;color:#0a66c2;margin-top:10px}
 .kmc-atelier-views .kmc-atelier-corridor-mark.is-right span{left:auto;right:5px}
+
+.kmc-atelier-views .kmc-atelier-obs-table{display:grid;grid-template-columns:1.4fr .8fr 1fr .9fr;gap:4px 12px;font-size:13px;margin:8px 0}
+.kmc-atelier-views .kmc-atelier-obs-table .is-head{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#5b6b7f;border-bottom:1px solid #dde3ea;padding-bottom:4px}
+.kmc-atelier-views .kmc-atelier-obs-table .is-num{text-align:right;font-variant-numeric:tabular-nums}
+.kmc-atelier-views .kmc-atelier-policy{margin-top:16px;padding:16px;border:1px solid #dde3ea;border-radius:12px;background:#fff}
+.kmc-atelier-views .kmc-atelier-result{margin:0 0 16px;padding:14px 16px;border-left:4px solid #1f7a4d;background:#e8f4ed;border-radius:8px}
+.kmc-atelier-views .kmc-atelier-result h4{margin:0 0 8px}
+.kmc-atelier-views .kmc-atelier-result-cols{display:grid;grid-template-columns:2fr 1.2fr 1fr;gap:16px}
