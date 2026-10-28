@@ -125,4 +125,4 @@ async function run(env=process.env){
    onlyLocalTestDb:true,routeHttpExecuted:false,productionIncidentConfirmed:false};
  }finally{await pool.end()}
 }
-module.exports={run,barrier,observe};
+module.exports={run,barrier,observe,setup};
