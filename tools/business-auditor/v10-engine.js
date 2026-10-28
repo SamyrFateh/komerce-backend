@@ -1,5 +1,6 @@
 'use strict';
 const {ORACLES}=require('./v10-oracles');
+const crypto=require('node:crypto');
 const PRIORITY={P1:0,P2:1,P3:2};
 function triage(qualification){
  if(qualification?.contract!=='komerce-business-writer-qualification/v1'||
@@ -10,7 +11,8 @@ function triage(qualification){
   const highest=(row.status==='CROSS_DOMAIN_UNDECLARED'||row.status==='OWNER_CONFLICT')&&row.directQueryCandidates>0;
   const priority=highest?'P1':row.needsReview&&routes.length?'P1':
    row.needsReview?'P2':'P3';
-  return {id:'TRIAGE-'+String(i+1).padStart(4,'0'),file:row.file,
+  const stable=crypto.createHash('sha256').update([row.file,row.table||row.rawTarget||'<dynamic>'].join('|')).digest('hex').slice(0,12);
+  return {id:'KBA-T-'+stable,file:row.file,
    table:row.table||null,target:row.table||row.rawTarget||null,
    status:row.status,priority,occurrences:row.occurrences,
    declaredOwners:row.owners||[],routeImportHints:routes.slice(0,4),
@@ -21,6 +23,8 @@ function triage(qualification){
     'Trace actual caller, delegated authority and selected invariant; run an isolated nominal/adversarial pair':
     'Check a business invariant before assigning correctness to declared ownership'};
  });
+ if(new Set(cases.map(x=>x.id)).size!==cases.length)
+  throw Error('V1.0 conflicting case identity: duplicate writer/table requires arbitration');
  if(cases.reduce((n,x)=>n+x.occurrences,0)!==qualification.summary.occurrences||
   cases.length!==qualification.summary.cases)
   throw Error('V1.0 review queue lost candidate occurrences');
