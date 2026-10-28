@@ -39,7 +39,8 @@ function interpret(raw){
  if(adverse.reported!==adverse.created)issues.push({
   scenario:adverse.caseId,expected:adverse.created,observed:adverse.reported});
  return {contract:'komerce-physical-membership-oracle/v12',
-  verdict:issues.length?'REPRODUCED_PHYSICAL_PG_TEMP_INVARIANT_VIOLATION':'CONTROLLED_PHYSICAL_PG_TEMP_INVARIANT_SATISFIED',
+  verdict:nominal.reported!==nominal.created?'NOMINAL_REGRESSION':
+   issues.length?'REPRODUCED_PHYSICAL_PG_TEMP_INVARIANT_VIOLATION':'CONTROLLED_PHYSICAL_PG_TEMP_INVARIANT_SATISFIED',
   nominal:{physicalInserts:nominal.created,reported:nominal.reported},
   adverse:{physicalInserts:adverse.created,reported:adverse.reported},
   mismatches:issues,
