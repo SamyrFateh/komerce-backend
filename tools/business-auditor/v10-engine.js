@@ -52,6 +52,15 @@ function evaluateOracle(oracle,observation,jest){
  }
  if(typeof observation[oracle.observationField]!==oracle.type)
   throw Error('V1.0 negative/nominal owner calibration missing');
+ if(oracle.consistencyRelation){
+  const c=oracle.consistencyRelation;
+  const same=observation[c.leftField]===observation[c.rightField];
+  if(!Number.isInteger(observation[c.leftField])||
+     !Number.isInteger(observation[c.rightField])||
+     observation[c.booleanField]!==same)
+   throw Error('V1.1 observation disagrees with raw rowCount and reported values');
+ }
+
  const violated=observation[oracle.observationField]!==oracle.expected;
  return {id:oracle.id,priority:oracle.priority,boundary:oracle.boundary,
   owner:oracle.owner,source:oracle.source,writer:oracle.writer,
