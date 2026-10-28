@@ -49,7 +49,7 @@ async function run(out,env=process.env){
    verdict.signals.join('|')==='L1_REPORTED_ASSIGNMENTS_DO_NOT_MATCH_OWNER_INSERTS'&&
    raw.injectedBeforeOwnerInsert&&raw.ownerInserted===0&&
    raw.sourceResponse.items_assigned===1,
-   'real competing write must reveal count mismatch');
+   'real competing write must reveal count mismatch '+JSON.stringify({verdict,raw}));
   if(mode==='REPORT_ONLY')assert(
    verdict.signals.join('|')==='L2_SUCCESS_WITHOUT_WRITE_OR_IDEMPOTENT_CLASSIFICATION'&&
    raw.ownerInserted===0&&raw.response.items_assigned===0&&
