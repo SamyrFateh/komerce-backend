@@ -280,7 +280,7 @@ async function updateProduct(db, productId, payload, adminUser) {
   // Lire avant — content_source pilote le régime d'écriture (§5), lifecycle_status
   // pilote le garde d'approbation (§6).
   const { rows: [before] } = await db.query(
-    'SELECT id, name, description, source_locale, category, subcategory, price_kmf, stock, is_active, is_available, content_source, lifecycle_status FROM products WHERE id = $1',
+    'SELECT id, name, name_source, description, source_locale, category, subcategory, price_kmf, stock, is_active, is_available, content_source, lifecycle_status FROM products WHERE id = $1',
     [productId]
   );
   if (!before) return { status: 404, body: { error: 'Produit introuvable' } };
