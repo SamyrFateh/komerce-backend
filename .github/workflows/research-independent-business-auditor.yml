@@ -28,6 +28,7 @@ on:
       - research/business-auditor-v29-metadata-selector-20261028
       - research/business-auditor-v30-inventory-provenance-20261028
       - research/business-auditor-v31-fx-market-batch-20261028
+      - research/business-auditor-v32-catalog-auth-batch-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -63,6 +64,7 @@ on:
       - research/business-auditor-v29-metadata-selector-20261028
       - research/business-auditor-v30-inventory-provenance-20261028
       - research/business-auditor-v31-fx-market-batch-20261028
+      - research/business-auditor-v32-catalog-auth-batch-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -107,7 +109,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js tools/business-auditor/v20-stock-predicate.test.js tools/business-auditor/v21-static-pair-selector.test.js tools/business-auditor/v22-financial-invariants.test.js tools/business-auditor/v23-preflight-mutant.test.js tools/business-auditor/v24-durable-intent-counterfactual.test.js tools/business-auditor/v25-reconciliation-oracle.test.js tools/business-auditor/v26-reconciler.test.js tools/business-auditor/v27-logistics-oracle.test.js tools/business-auditor/v28-proof-adapters.test.js tools/business-auditor/v28-unified-engine.test.js tools/business-auditor/v29-metadata-selector.test.js tools/business-auditor/v30-inventory-oracle.test.js tools/business-auditor/v31-fx-market-oracle.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js tools/business-auditor/v20-stock-predicate.test.js tools/business-auditor/v21-static-pair-selector.test.js tools/business-auditor/v22-financial-invariants.test.js tools/business-auditor/v23-preflight-mutant.test.js tools/business-auditor/v24-durable-intent-counterfactual.test.js tools/business-auditor/v25-reconciliation-oracle.test.js tools/business-auditor/v26-reconciler.test.js tools/business-auditor/v27-logistics-oracle.test.js tools/business-auditor/v28-proof-adapters.test.js tools/business-auditor/v28-unified-engine.test.js tools/business-auditor/v29-metadata-selector.test.js tools/business-auditor/v30-inventory-oracle.test.js tools/business-auditor/v31-fx-market-oracle.test.js tools/business-auditor/v32-catalog-auth-oracle.test.js
       - name: V2.1 freeze ranked writer pairs before any physical database experiment
         run: node tools/business-auditor/v21-static-pair-gate.js /tmp/komerce-independent-business-audit/v21-selector
       - name: V2.1 verify source-derived refund pair and dead-code exclusion
@@ -688,7 +690,7 @@ jobs:
            missingDomains:a.summary.domainsNotPhysicallyCovered}));
           NODE
       - name: V3.1 accelerated multi-domain FX and market-lifecycle owners on isolated canonical PostgreSQL
-        run: npm run audit:logic:unified -- --mode full --out /tmp/komerce-independent-business-auditor/v31-unified
+        run: npm run audit:logic:unified:v31 -- --mode full --out /tmp/komerce-independent-business-auditor/v31-unified
       - name: V3.1 certify 8 true physical scenarios, FX oracle, suspended market and missing auth coverage
         run: |
           node <<'NODE'
@@ -723,6 +725,52 @@ jobs:
            fx:f.cases[0].oracle.detail,marketChecks:f.cases[1].oracle.checks,
            forged:f.cases.map(x=>x.negativeControl.signals),
            allClonesDropped:f.allClonesDropped}));
+          NODE
+      - name: V3.2 accelerated market publication exposure and true assignment membership boundaries on two PG clones
+        run: npm run audit:logic:unified -- --mode full --out /tmp/komerce-independent-business-auditor/v32-unified
+      - name: V3.2 assert 10 physical witnesses, true operator 403 and market exposure isolation
+        run: |
+          node <<'NODE'
+          const a=require('/tmp/komerce-independent-business-auditor/v32-unified/unified-audit.json');
+          const p=a.catalogAuthorizationProof;
+          if(a.contract!=='komerce-unified-business-logic-auditor/v32'||
+             a.sha!==process.env.GITHUB_SHA||
+             a.static.scannedFiles!==a.static.trackedFiles||
+             a.static.scannedFiles<1000||
+             a.data.rules.length!==7||
+             a.physical.cases.length!==4||
+             a.inventoryProof.cases.length!==2||
+             a.fxMarketProof.cases.length!==2||
+             a.summary.physicalCasesTotal!==10||
+             a.summary.partialPhysicalDomains!==6||
+             a.summary.domainsNotPhysicallyCovered.join('|')!=='sourcing|orders'||
+             a.summary.marketMembershipVerified!==true||
+             a.summary.authenticatedMarketRouteVerified!==false||
+             a.summary.fullCatalogPublicationReadinessCertified!==false||
+             a.coverage.find(x=>x.domain==='catalogue').status!=='CALIBRATED_PARTIAL'||
+             a.coverage.find(x=>x.domain==='authorization').status!=='CALIBRATED_PARTIAL'||
+             p?.contract!=='komerce-catalog-auth-physical-gate/v32'||
+             !p.allClonesDropped||p.cases.length!==2||
+             p.cases.map(c=>c.mode).join('|')!=='CATALOG|AUTH'||
+             p.cases.some(c=>c.oracle.violation||!c.cloneDropped||
+               c.authenticatedHttpRouteTested!==false)||
+             p.cases[0].oracle.activeExposureCount!==1||
+             p.cases[0].oracle.foreignExposureCount!==0||
+             p.cases[0].oracle.auditCount!==2||
+             p.cases[1].oracle.unauthorizedWrites!==0||
+             !p.cases[0].negativeControl.signals.includes('CAT2_EXPOSURE_LEAKED_TO_ANOTHER_MARKET')||
+             !p.cases[1].negativeControl.signals.includes('AUTH2_MARKET_OR_MEMBERSHIP_ISOLATION_BROKEN')||
+             !p.cases[1].negativeControl.signals.includes('AUTH4_REJECTED_ACTION_CREATED_CATALOG_OR_AUDIT_WRITES')||
+             a.allBusinessDomainsCertified!==false||a.productionFixProven!==false)
+           throw Error('V3.2 no credible physical market membership/exposure proof');
+          console.log('BUSINESS_AUDIT_V32_ACCEPTED',JSON.stringify({
+           sha:a.sha,total:a.summary.physicalCasesTotal,
+           calibrated:a.summary.partialPhysicalDomains,
+           missing:a.summary.domainsNotPhysicallyCovered,
+           sourceHash:p.source.hash,
+           results:p.cases.map(x=>({mode:x.mode,signals:x.oracle.signals,
+            forged:x.negativeControl.signals})),
+           allClonesDropped:p.allClonesDropped}));
           NODE
       - name: V1.0 independent one-command static repo audit without DB
         run: npm run audit:business:v1 -- --mode static --out /tmp/komerce-independent-business-audit/v10-static
