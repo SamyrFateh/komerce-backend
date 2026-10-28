@@ -26,6 +26,7 @@ on:
       - research/business-auditor-v27-logistics-canonical-proof-20261028
       - research/business-auditor-v28-unified-engine-20261028
       - research/business-auditor-v29-metadata-selector-20261028
+      - research/business-auditor-v30-inventory-provenance-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -59,6 +60,7 @@ on:
       - research/business-auditor-v27-logistics-canonical-proof-20261028
       - research/business-auditor-v28-unified-engine-20261028
       - research/business-auditor-v29-metadata-selector-20261028
+      - research/business-auditor-v30-inventory-provenance-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -103,7 +105,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js tools/business-auditor/v20-stock-predicate.test.js tools/business-auditor/v21-static-pair-selector.test.js tools/business-auditor/v22-financial-invariants.test.js tools/business-auditor/v23-preflight-mutant.test.js tools/business-auditor/v24-durable-intent-counterfactual.test.js tools/business-auditor/v25-reconciliation-oracle.test.js tools/business-auditor/v26-reconciler.test.js tools/business-auditor/v27-logistics-oracle.test.js tools/business-auditor/v28-proof-adapters.test.js tools/business-auditor/v28-unified-engine.test.js tools/business-auditor/v29-metadata-selector.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js tools/business-auditor/v20-stock-predicate.test.js tools/business-auditor/v21-static-pair-selector.test.js tools/business-auditor/v22-financial-invariants.test.js tools/business-auditor/v23-preflight-mutant.test.js tools/business-auditor/v24-durable-intent-counterfactual.test.js tools/business-auditor/v25-reconciliation-oracle.test.js tools/business-auditor/v26-reconciler.test.js tools/business-auditor/v27-logistics-oracle.test.js tools/business-auditor/v28-proof-adapters.test.js tools/business-auditor/v28-unified-engine.test.js tools/business-auditor/v29-metadata-selector.test.js tools/business-auditor/v30-inventory-oracle.test.js
       - name: V2.1 freeze ranked writer pairs before any physical database experiment
         run: node tools/business-auditor/v21-static-pair-gate.js /tmp/komerce-independent-business-audit/v21-selector
       - name: V2.1 verify source-derived refund pair and dead-code exclusion
@@ -594,7 +596,7 @@ jobs:
           }));
           NODE
       - name: V2.9 one-command discovered owner graph, 7 independent invariants and strict physical adapter map
-        run: npm run audit:logic:unified -- --mode full --out /tmp/komerce-independent-business-audit/v29-unified
+        run: npm run audit:logic:unified:v29 -- --mode full --out /tmp/komerce-independent-business-audit/v29-unified
       - name: V2.9 prove source ranking precedes DB, report quarantines unsupported pairs and reuses original oracles
         run: |
           node <<'NODE'
@@ -641,6 +643,47 @@ jobs:
            stillMissing:p.summary.domainsNotPhysicallyCovered,
            allClonesDropped:x.allClonesDropped
           }));
+          NODE
+      - name: V3.0 unified third-domain inventory ownership verification on disposable PG
+        run: npm run audit:logic:unified -- --mode full --out /tmp/komerce-independent-business-audit/v30-unified
+      - name: V3.0 independently validate typed 409, physical rollback, and 3-of-8 calibration honesty
+        run: |
+          node <<'NODE'
+          const a=require('/tmp/komerce-independent-business-audit/v30-unified/unified-audit.json');
+          const x=a.inventoryProof;
+          if(a.contract!=='komerce-unified-business-logic-auditor/v30'||
+             a.sha!==process.env.GITHUB_SHA||
+             a.static.scannedFiles<1000||a.static.scannedFiles!==a.static.trackedFiles||
+             a.data.rules.length!==7||
+             a.physical.cases.length!==4||
+             a.summary.physicalCasesTotal!==6||
+             a.summary.partialPhysicalDomains!==3||
+             a.coverage.find(c=>c.domain==='inventory')?.status!=='CALIBRATED_PARTIAL'||
+             a.summary.domainsNotPhysicallyCovered.length!==5||
+             a.productionFixProven!==false||a.allBusinessDomainsCertified!==false||
+             x?.contract!=='komerce-inventory-receipt-cross-order-gate/v30'||
+             !x.allClonesDropped||!x.source.physicalTableDeclared||
+             !/^[0-9a-f]{64}$/.test(x.source.sourceHash)||
+             x.cases.length!==2||
+             x.cases.map(c=>c.mode).join('|')!=='NOMINAL|FOREIGN_ORDER'||
+             x.cases.some(c=>c.oracle.violation||!c.cloneDropped||
+                 c.realHttpAuthProven!==false||c.productionIncidentConfirmed!==false)||
+             x.cases[0].oracle.insertedRows!==1||
+             x.cases[0].oracle.orderACompletionAfter!==1||
+             x.cases[1].oracle.insertedRows!==0||
+             x.cases[1].oracle.orderBCompletionAfter!==0||
+             !x.cases[1].negativeControl.signals.includes('INV1_CANONICAL_ORDER_IDENTITY_BROKEN')||
+             !x.cases[1].negativeControl.signals.includes('INV7_REJECTED_REQUEST_LEFT_PHYSICAL_WRITES')||
+             !a.sourceDiscovery.summary.requiresNewAdapterForFullCoverage)
+           throw Error('V3.0 source-grounded canonical Inventory provenance unproven or overstated');
+          console.log('BUSINESS_AUDIT_V30_ACCEPTED',JSON.stringify({
+           sha:a.sha,source:x.source.service,hash:x.source.sourceHash,
+           inventory:x.cases.map(c=>({mode:c.mode,signals:c.oracle.signals,
+            inserted:c.oracle.insertedRows,orderB:c.oracle.orderBCompletionAfter})),
+           forged:x.cases[1].negativeControl.signals,
+           physicalCases:a.summary.physicalCasesTotal,
+           physicallyCalibrated:a.summary.partialPhysicalDomains,
+           missingDomains:a.summary.domainsNotPhysicallyCovered}));
           NODE
       - name: V1.0 independent one-command static repo audit without DB
         run: npm run audit:business:v1 -- --mode static --out /tmp/komerce-independent-business-audit/v10-static
