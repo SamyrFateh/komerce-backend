@@ -121,3 +121,14 @@
   .kmc-atelier-views .kmc-atelier-dossier [data-atelier-draft-form] .kmc-atelier-actions,
   .kmc-atelier-views .kmc-atelier-dossier [data-atelier-draft-form] > button[type="submit"]{position:sticky;bottom:0;background:var(--kmc-surface,#fff);padding:8px 0;z-index:2}
 }
+
+.kmc-atelier-views .kmc-atelier-corridor{position:relative;height:44px;margin:10px 6px 14px}
+.kmc-atelier-views .kmc-atelier-corridor-track{position:absolute;top:18px;left:0;right:0;height:6px;border-radius:3px;background:#e8edf3}
+.kmc-atelier-views .kmc-atelier-corridor-band{position:absolute;top:18px;height:6px;border-radius:3px;background:#9db4cf}
+.kmc-atelier-views .kmc-atelier-corridor-mark{position:absolute;top:8px;width:2px;height:26px;background:#5b6b7f}
+.kmc-atelier-views .kmc-atelier-corridor-mark span{position:absolute;top:-4px;left:5px;font-size:11px;white-space:nowrap;color:#5b6b7f}
+.kmc-atelier-views .kmc-atelier-corridor-mark.is-floor{background:#b42318}.kmc-atelier-views .kmc-atelier-corridor-mark.is-floor span{color:#b42318}
+.kmc-atelier-views .kmc-atelier-corridor-mark.is-adv{background:#e2600f}.kmc-atelier-views .kmc-atelier-corridor-mark.is-adv span{color:#e2600f}
+.kmc-atelier-views .kmc-atelier-corridor-mark.is-cur span{top:30px}
+.kmc-atelier-views .kmc-atelier-observation-add>summary{cursor:pointer;font-weight:600;color:#0a66c2;margin-top:10px}
+.kmc-atelier-views .kmc-atelier-corridor-mark.is-right span{left:auto;right:5px}

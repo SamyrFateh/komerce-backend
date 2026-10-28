@@ -157,6 +157,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       expect(posts[1].body).toMatchObject({ amount: 31000, source: 'atelier_dossier' });
       expect(posts.some(post => /\/activate$/.test(post.path))).toBe(false);
       // observation sourcée
+      await page.locator('.kmc-atelier-observation-add > summary').click();
       await page.locator('[data-atelier-observation-form] input[name="competitor_name"]').fill('Boutique Mitsamiouli');
       await page.locator('[data-atelier-observation-form] input[name="amount"]').fill('29000');
       await page.locator('[data-atelier-observation-form] input[name="source"]').fill('relevé terrain');

@@ -395,6 +395,43 @@
     return line;
   }
 
+  // Repères serveur positionnés sur une échelle commune ; aucun calcul économique ici.
+  function corridorBar(doc, corridor, economics) {
+    const local = (corridor.corridor && corridor.corridor.local) || {};
+    const selected = corridor.selected || {};
+    const amount = value => (value && value.observed_amount != null && (value.currency || 'KMF') === 'KMF' ? Number(value.observed_amount) : null);
+    const marks = [
+      ['floor', 'plancher', Number(economics.minimum_safe_price_kmf)],
+      ['cur', 'actuel', Number(selected.price_kmf)],
+      ['adv', 'conseillé', Number(economics.coverage_reference_price_kmf)],
+    ].filter(item => Number.isFinite(item[2]) && item[2] > 0);
+    if (marks.length < 2) return null;
+    const low = amount(local.low);
+    const high = amount(local.high);
+    const values = marks.map(item => item[2]).concat([low, high].filter(Number.isFinite));
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || 1;
+    const pct = value => `${(((value - min) / span) * 94 + 3).toFixed(1)}%`;
+    const wrap = el(doc, 'div', 'kmc-atelier-corridor');
+    wrap.dataset.atelierCorridor = '';
+    wrap.appendChild(el(doc, 'div', 'kmc-atelier-corridor-track'));
+    if (Number.isFinite(low) && Number.isFinite(high)) {
+      const band = el(doc, 'div', 'kmc-atelier-corridor-band');
+      band.style.left = pct(low);
+      band.style.width = `${Math.max(((high - low) / span) * 94, 1).toFixed(1)}%`;
+      wrap.appendChild(band);
+    }
+    marks.forEach(([kind, text, value]) => {
+      const mark = el(doc, 'div', `kmc-atelier-corridor-mark is-${kind}`);
+      mark.style.left = pct(value);
+      if ((value - min) / span > 0.7) mark.classList.add('is-right');
+      mark.appendChild(el(doc, 'span', '', `${text} ${formatKmf(value)}`));
+      wrap.appendChild(mark);
+    });
+    return wrap;
+  }
+
   function sourcesPanel(doc, corridor, ctx) {
     const panel = el(doc, 'section', 'kmc-atelier-panel');
     panel.dataset.atelierSources = '';
@@ -404,6 +441,8 @@
     const sources = quality.sources || {};
     const state = classifyProduct(corridor);
 
+    const bar = corridorBar(doc, corridor, economics);
+    if (bar) panel.appendChild(bar);
     panel.appendChild(el(doc, 'h5', '', 'Coûts connus'));
     panel.appendChild(metricLine(doc, 'Coût d’achat', state.costMissing ? 'MANQUANT' : `${formatKmf(corridor.product.purchase_cost_kmf)} · ${sourceLabel(sources.purchase_price)}`, state.costMissing ? 'danger' : ''));
     panel.appendChild(metricLine(doc, 'Coûts variables hors achat', formatKmf(economics.variable_cost_outside_purchase_kmf)));
@@ -436,7 +475,6 @@
     const form = doc.createElement('form');
     form.className = 'kmc-atelier-form';
     form.dataset.atelierObservationForm = productRef;
-    form.appendChild(el(doc, 'h5', '', 'Ajouter une observation'));
     const fields = [['competitor_name', 'Concurrent', 'text'], ['amount', `Prix observé (${currency})`, 'number'], ['source', 'Source (ex. relevé terrain)', 'text']];
     fields.forEach(([name, label, type]) => {
       const wrap = el(doc, 'label', 'kmc-atelier-field');
@@ -451,7 +489,10 @@
     const submit = el(doc, 'button', 'kmc-atelier-secondary', 'Enregistrer l’observation');
     submit.type = 'submit';
     form.appendChild(submit);
-    return form;
+    const details = el(doc, 'details', 'kmc-atelier-observation-add');
+    details.appendChild(el(doc, 'summary', '', 'Ajouter une observation'));
+    details.appendChild(form);
+    return details;
   }
 
   function simulationResult(doc, result) {
