@@ -752,7 +752,12 @@ test('la Raffinerie ne duplique pas ses compteurs en bas et préserve les métri
   expect(render).toContain('renderTaxonomy(rootNode, ui, doc, payload, context)');
   expect(render).not.toContain('taxonomyPanel');
   expect(render.indexOf('renderCatalogTabs(rootNode, doc, context)')).toBeLessThan(render.indexOf('ui.MetricStrip.render(metrics'));
-  expect(render).toContain("!['approval', 'review'].includes(item.key)");
+  // Les compteurs opérationnels du registre sont exclus de la Raffinerie
+  // et des deux rubriques secondaires : aucune métrique hors du bon onglet.
+  expect(render).toContain("if (refinery) {");
+  expect(render).toContain("renderApproval(rootNode, ui, doc, payload, context);");
+  expect(render).toContain("items: registryMetricItems(payload)");
+  expect(render).not.toContain("metricItems(payload.summary, payload.curation).filter");
   expect(render).toContain('renderApproval(rootNode, ui, doc, payload, context)');
   expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
 });
