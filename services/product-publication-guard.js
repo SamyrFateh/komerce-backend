@@ -35,6 +35,7 @@ const db = require('../db');
 const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'product-publication-guard' });
 const { frenchLanguageProblems, describeFrenchProblems } = require('./catalog-fr-quality');
+const {requiresBuyerImage}=require('./catalog-customer-asset-requirement');
 
 const CLIENT_TITLE_MAX_LENGTH = 80;
 const CLIENT_DESCRIPTION_MIN_LENGTH = 20;
@@ -121,6 +122,13 @@ function validatePublicationUpdate({ before, patch, context }) {
 
   if (!wantsActive && !wantsAvailable) {
     return { ok: true };
+  }
+  // The checkout currently cannot receive, freeze, and transmit buyer artwork
+  // per order item. Fail closed on a SOURCE product that explicitly demands it,
+  // even if the editable French title no longer contains that instruction.
+  if (requiresBuyerImage(before.name_source || before.name)) {
+    return {ok:false,code:'buyer_image_checkout_not_supported',
+      error:'Publication refusée : ce produit nécessite une image du client, sans parcours de transmission au fournisseur certifié.'};
   }
 
   const rawPrice = patch.price_kmf !== undefined ? patch.price_kmf : before.price_kmf;
