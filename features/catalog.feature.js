@@ -116,6 +116,7 @@ module.exports = {
     scripts: [
       'scripts/cj-object-shadow-v2.js',
       'scripts/cj-deterministic-family-probe.js',
+      'scripts/cj-headnoun-ab-experiment.js',
       'scripts/cj-object-extract-batch.js',
       'scripts/allegro-sandbox-check.js',
       'scripts/ebay-p3-pipeline-proof.js',
@@ -352,6 +353,7 @@ module.exports = {
     tests: [
       'tests/unit/cj-object-shadow-v2.test.js',
       'tests/unit/cj-deterministic-family-probe.test.js',
+      'tests/unit/cj-headnoun-ab-experiment.test.js',
       'tests/unit/cj-object-extract-batch.test.js',
       'tests/unit/catalog-certification-gate-b.test.js',
       'tests/unit/pipeline-certification-scenario-core.test.js',
