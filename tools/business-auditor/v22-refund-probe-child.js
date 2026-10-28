@@ -15,6 +15,8 @@ if(process.env.NODE_ENV!=='test'||process.env.KOMERCE_DISABLE_CRONS!=='true'||
  throw Error('TOOL_ERROR: refuse to use an external or non-cloned PostgreSQL database');
 const repo=path.resolve(__dirname,'../..');
 const mode=process.argv[2];
+if(process.env.KBA_V23_MUTANT && process.env.KBA_V23_MUTANT!=='PREFLIGHT_ONLY')
+ throw Error('TOOL_ERROR: unknown research mutation (fail closed)');
 if(!['AB','AB_REPEAT','BA','PAR'].includes(mode))throw Error('TOOL_ERROR: invalid probe schedule');
 process.env.PAYPAL_CLIENT_ID='OFFLINE';
 process.env.PAYPAL_CLIENT_SECRET='OFFLINE';
@@ -88,7 +90,9 @@ function cancel(ids){
  });
 }
 async function paypalRefund(ids){
- const {refundPaypalOrder}=require(path.join(repo,'services/payment-paypal'));
+ const {refundPaypalOrder: owner}=require(path.join(repo,'services/payment-paypal'));
+ const refundPaypalOrder=process.env.KBA_V23_MUTANT==='PREFLIGHT_ONLY'
+  ? require('./v23-preflight-mutant').preflightOnly(owner) : owner;
  const paypal=require(path.join(repo,'services/paypal-client'));
  try{
   const r=await refundPaypalOrder({orderId:ids.order,amountEur:20,reason:'isolated-probe',
@@ -131,6 +135,7 @@ async function main(){
   }
   const state=await observe(ids);
   result={mode,outcomes:{cancel:cancelResult,paypal:paypalResult},
+   ...(process.env.KBA_V23_MUTANT ? {researchMutation:process.env.KBA_V23_MUTANT} : {}),
    capture:{eur:20,kmf:10000},state,simulation:'PAYPAL_FETCH_STRICT_NO_EXTERNAL_NETWORK',
    authMiddlewareExecuted:false,localCloneVerified:true};
   console.log('BUSINESS_AUDIT_V22_FINANCIAL_PROBE '+JSON.stringify(result));
