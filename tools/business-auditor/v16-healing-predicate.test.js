@@ -64,3 +64,28 @@ test('rendezvous without lock observes two genuinely overlapping reads',async()=
  await Promise.all([gate.wait(),gate.wait()]);
  assert.deepEqual(gate.meta(),{arrived:2,serialized:false});
 });
+
+test('read/write boundary survives a pure SQL alias rename',async()=>{
+ const {intercept}=require('./v16-healing-runner');
+ async function exercise(sql){
+  let pauses=0;
+  const client={query:async()=>({rows:[],rowCount:1})};
+  const target=intercept(client,{wait:async()=>{pauses++}});
+  await target.query(sql);
+  await target.query('INSERT INTO parcel_items (parcel_id) VALUES ($1)',['P']);
+  await target.query('UPDATE parcels SET status=$1',['preparation']);
+  return pauses;
+ }
+ assert.equal(await exercise('SELECT COALESCE(agg.item_count,0) FROM parcels p'),1);
+ assert.equal(await exercise('SELECT COALESCE(agg.n_items,0) FROM parcels p'),1);
+});
+test('write before any read does not prematurely stall the generic boundary',async()=>{
+ const {intercept}=require('./v16-healing-runner');
+ let pauses=0;
+ const c=intercept({query:async()=>({rowCount:1})},{wait:async()=>{pauses++}});
+ await c.query('INSERT INTO logs (action) VALUES ($1)',['fixture']);
+ assert.equal(pauses,0);
+ await c.query('SELECT 1');
+ await c.query('DELETE FROM logs WHERE action=$1',['fixture']);
+ assert.equal(pauses,1);
+});
