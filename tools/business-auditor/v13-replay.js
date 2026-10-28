@@ -26,7 +26,12 @@ function parse(argv){
 }
 function signature(v){
  return JSON.stringify({verdict:v.verdict,issues:v.issues.map(i=>i.id).sort(),
-  facts:v.facts,stepsEvaluated:v.stepsEvaluated,evidenceLevel:v.evidenceLevel});
+  facts:Object.fromEntries(Object.entries(v.facts).map(([k,f])=>[k,{
+   status:f.status,activeMemberships:f.activeMemberships,
+   cancelledMemberships:f.cancelledMemberships,
+   emptyOpenParcels:f.emptyOpenParcels,openParcels:f.openParcels,
+   representedParcelCount:f.representedParcelIds.length
+  }])),stepsEvaluated:v.stepsEvaluated,evidenceLevel:v.evidenceLevel});
 }
 function compare(reference,verdict,currentHash,sha){
  if(reference?.contract!=='komerce-canonical-pg-sequence-proof/v13'||
@@ -36,7 +41,10 @@ function compare(reference,verdict,currentHash,sha){
  if(signature(original)!==signature(reference.verdict))
   throw Error('TOOL_ERROR: previous raw state disagrees with its claimed verdict');
  const sameSha=reference.sha===sha;
- const sameSources=Object.entries(currentHash).every(([k,v])=>reference.sourceHashes[k]===v);
+ const sameSources=reference.sourceHashes.distributor===currentHash['services/auto-parcel.js']&&
+  reference.sourceHashes.parcelSSOT===currentHash['services/parcel-operations.js']&&
+  reference.sourceHashes.runner===currentHash['tools/business-auditor/v13-canonical-parcel-runner.js']&&
+  reference.sourceHashes.independentPredicate===currentHash['tools/business-auditor/v13-canonical-parcel-predicate.js'];
  const sameFacts=signature(reference.verdict)===signature(verdict);
  return {referenceSha:reference.sha,sameCommit:sameSha,sameSourceHashes:sameSources,
   sameObservations:sameFacts,classification:
