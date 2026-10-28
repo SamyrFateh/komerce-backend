@@ -17,6 +17,10 @@ const repo=path.resolve(__dirname,'../..');
 const mode=process.argv[2];
 if(process.env.KBA_V23_MUTANT && process.env.KBA_V23_MUTANT!=='PREFLIGHT_ONLY')
  throw Error('TOOL_ERROR: unknown research mutation (fail closed)');
+if(process.env.KBA_V24_MUTANT && process.env.KBA_V24_MUTANT!=='DURABLE_INTENT_COUNTERFACTUAL')
+ throw Error('TOOL_ERROR: unknown V2.4 research mutation (fail closed)');
+if(process.env.KBA_V23_MUTANT && process.env.KBA_V24_MUTANT)
+ throw Error('TOOL_ERROR: research mutations must not overlap');
 if(!['AB','AB_REPEAT','BA','PAR'].includes(mode))throw Error('TOOL_ERROR: invalid probe schedule');
 process.env.PAYPAL_CLIENT_ID='OFFLINE';
 process.env.PAYPAL_CLIENT_SECRET='OFFLINE';
@@ -53,6 +57,14 @@ function stub(rel,exp){
 stub('services/documents/refund-receipt',{issue:async()=>null});
 stub('services/notification-service',{notifyCancellation:()=>{}});
 const db=require(path.join(repo,'db'));
+const v24=process.env.KBA_V24_MUTANT ? require('./v24-durable-intent-counterfactual') : null;
+if(v24) {
+ // Install ONLY a test-module wrapper before the real cancel router binds
+ // its destructured processRefund. No application source file is rewritten.
+ const file=require.resolve(path.join(repo,'services/refund-service'));
+ const original=require(file);
+ require.cache[file].exports={...original,processRefund:v24.wrapCancellation(original.processRefund)};
+}
 const uuid=()=>crypto.randomUUID();
 async function seed(){
  const c=await db.getClient();
@@ -91,8 +103,9 @@ function cancel(ids){
 }
 async function paypalRefund(ids){
  const {refundPaypalOrder: owner}=require(path.join(repo,'services/payment-paypal'));
- const refundPaypalOrder=process.env.KBA_V23_MUTANT==='PREFLIGHT_ONLY'
-  ? require('./v23-preflight-mutant').preflightOnly(owner) : owner;
+ const refundPaypalOrder=v24 ? v24.wrapPaypal(owner) :
+  process.env.KBA_V23_MUTANT==='PREFLIGHT_ONLY'
+   ? require('./v23-preflight-mutant').preflightOnly(owner) : owner;
  const paypal=require(path.join(repo,'services/paypal-client'));
  try{
   const r=await refundPaypalOrder({orderId:ids.order,amountEur:20,reason:'isolated-probe',
@@ -112,11 +125,13 @@ async function observe(ids){
 async function main(){
  let result;
  try{
+  if(v24)await v24.bootstrap(db);
   const ids=await seed();
-  let cancelResult,paypalResult;
+  let cancelResult,paypalResult,extraReplay;
   if(['AB','AB_REPEAT'].includes(mode)){
    cancelResult=await cancel(ids);
    paypalResult=await paypalRefund(ids);
+   if(v24&&mode==='AB_REPEAT')extraReplay=await paypalRefund(ids);
   }else if(mode==='BA'){
    paypalResult=await paypalRefund(ids);
    cancelResult=await cancel(ids);
@@ -134,8 +149,13 @@ async function main(){
    paypalResult=await inFlight;
   }
   const state=await observe(ids);
-  result={mode,outcomes:{cancel:cancelResult,paypal:paypalResult},
+  if(v24){
+   state.intents=(await db.query('SELECT owner,state,amount_eur::float,amount_kmf::int,provider_request_key,provider_refund_id FROM kba_refund_intents WHERE order_id=$1',[ids.order])).rows;
+  }
+  result={mode,outcomes:{cancel:cancelResult,paypal:paypalResult,
+   ...(extraReplay ? {replay:extraReplay} : {})},
    ...(process.env.KBA_V23_MUTANT ? {researchMutation:process.env.KBA_V23_MUTANT} : {}),
+   ...(v24 ? {researchMutation:process.env.KBA_V24_MUTANT} : {}),
    capture:{eur:20,kmf:10000},state,simulation:'PAYPAL_FETCH_STRICT_NO_EXTERNAL_NETWORK',
    authMiddlewareExecuted:false,localCloneVerified:true};
   console.log('BUSINESS_AUDIT_V22_FINANCIAL_PROBE '+JSON.stringify(result));
