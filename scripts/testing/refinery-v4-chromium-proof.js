@@ -115,7 +115,7 @@ async function check(page, kind, width) {
     await correct.click();
     const dialog=page.locator('[data-catalog-fr-editor] [role="dialog"]');
     await dialog.waitFor({state:'visible'});
-    assert((await dialog.innerText()).includes('Préparation française'));
+    assert((await dialog.getAttribute('aria-label')).includes('Préparation française'));
     await page.screenshot({path:path.join(out,`refinery-editor-${width}.png`),fullPage:true});
     await dialog.locator('[data-catalog-fr-field="name"]').fill('Coque souple pour téléphone Samsung');
     await dialog.locator('[data-catalog-fr-field="description"]').fill(
