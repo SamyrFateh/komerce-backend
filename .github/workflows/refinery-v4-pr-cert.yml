@@ -8,6 +8,7 @@ on:
       - 'services/catalog-workspace.js'
       - 'services/catalog-registry.js'
       - 'services/refinery-worklist.js'
+      - 'scripts/testing/refinery-v4-pg-proof.js'
       - 'public/dashboards/canonical/**'
       - 'tests/unit/catalog-workspace.test.js'
       - 'tests/unit/catalog-registry.test.js'
@@ -29,6 +30,18 @@ jobs:
     name: Raffinerie + Catalogue boundary (unit)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: refinery_test
+          POSTGRES_PASSWORD: refinery_test
+          POSTGRES_DB: refinery_test
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U refinery_test -d refinery_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -51,6 +64,11 @@ jobs:
           tests/unit/catalog-workspace.test.js
           tests/unit/canonical-catalog-workspace-boundary.test.js
           tests/unit/catalog-workspace-wide-v1.test.js
+      - name: Physical PostgreSQL proof (session TEMP tables, read-only verification)
+        env:
+          REFINERY_PG_CERT_ISOLATED: '1'
+          REFINERY_PG_CERT_URL: postgres://refinery_test:refinery_test@127.0.0.1:55432/refinery_test
+        run: node scripts/testing/refinery-v4-pg-proof.js
       - name: Boundary summary
         if: always()
         run: |
@@ -58,5 +76,5 @@ jobs:
             echo '## Raffinerie V4'
             echo
             echo 'Raffinerie/Catalogue isolated unit certification.'
-            echo 'Not a staging PostgreSQL or Chromium certification.'
+            echo 'PostgreSQL 16 disposable fixture proof. Not a staging PostgreSQL or Chromium certification.'
           } >> "$GITHUB_STEP_SUMMARY"
