@@ -358,6 +358,7 @@ async function buildWorkspace(query = {}) {
     queryCatalogCap(),
     taxonomy.listCategories(),
     isRefinery ? Promise.resolve({ products: [], page: { total: 0, limit: 0, offset: 0 } }) : catalogRegistry.listRegistry({
+      finalized_only: true,
       search: query.search,
       supplier: query.supplier,
       category: query.category,
