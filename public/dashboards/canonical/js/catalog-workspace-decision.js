@@ -153,7 +153,8 @@
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', refinery ? 'Préparer les fiches, définir les prix et valider avant publication.' : 'Produits remis par la Raffinerie : retrouver, classer, compléter et valider.'));
     host.appendChild(header);
 
-    const decisions = refinery ? [] : decisionItems(payload);
+    const isRegistry = !refinery && !['assortment', 'taxonomy'].includes(new URLSearchParams(search).get('tab'));
+    const decisions = isRegistry ? decisionItems(payload) : [];
     if (decisions.length) {
       const decisionHost = doc.createElement('div');
       decisionHost.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';

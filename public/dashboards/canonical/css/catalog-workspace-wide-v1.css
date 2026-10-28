@@ -376,3 +376,100 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
 @media (prefers-reduced-motion: reduce) {
   .kmc-catalog-quick-chip { transition: none; }
 }
+
+/* Catalogue V3 : chaque rubrique est un écran distinct, pas un panneau sous la table. */
+body.kmc-shell-v4:has(.kmc-catalog-tabs) #canonical-admin-root,
+body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-operations-workspace {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-catalog-decision-overview {
+  width: 100%;
+  max-width: none;
+}
+.kmc-catalog-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 12px;
+  border-bottom: 1px solid #dce5f0;
+}
+.kmc-catalog-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 9px 16px;
+  border: 1px solid #d9e3f0;
+  border-radius: 10px;
+  background: #fff;
+  text-decoration: none;
+  color: #38516f;
+  font-size: 13px;
+  font-weight: 750;
+}
+.kmc-catalog-tab[aria-current="page"] {
+  background: #154dcc;
+  border-color: #154dcc;
+  color: #fff;
+}
+.kmc-catalog-tab:focus-visible,
+.kmc-catalog-status:focus-visible,
+.kmc-catalog-row-more summary:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+.kmc-catalog-registry-table th:nth-child(1) { width: 24%; }
+.kmc-catalog-registry-table th:nth-child(2) { width: 9%; }
+.kmc-catalog-registry-table th:nth-child(3) { width: 11%; }
+.kmc-catalog-registry-table th:nth-child(4) { width: 13%; }
+.kmc-catalog-registry-table th:nth-child(5) { width: 16%; }
+.kmc-catalog-registry-table th:nth-child(6) { width: 10%; }
+.kmc-catalog-registry-table th:nth-child(7) { width: 17%; }
+.kmc-catalog-markets {
+  color: #405b7b;
+  font-weight: 700;
+  font-size: 12px;
+}
+.kmc-catalog-diagnostic .kmc-catalog-status {
+  appearance: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: normal;
+  text-align: left;
+}
+.kmc-catalog-primary-action {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  padding: 9px 12px;
+}
+.kmc-catalog-row-more {
+  position: relative;
+  width: 100%;
+  font-size: 12px;
+}
+.kmc-catalog-row-more summary {
+  display: inline-block;
+  cursor: pointer;
+  color: #255caa;
+  font-weight: 700;
+  padding: 6px;
+}
+.kmc-catalog-row-more-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+}
+.kmc-catalog-row-more-list .kmc-workspace-action {
+  font-size: 11px;
+  min-height: 32px;
+}
+@media (max-width: 760px) {
+  .kmc-catalog-tabs { gap: 6px; }
+  .kmc-catalog-tab { flex: 1 1 130px; justify-content: center; text-align: center; }
+  .kmc-catalog-primary-action { min-height: 42px; }
+}
