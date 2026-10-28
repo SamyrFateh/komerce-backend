@@ -347,39 +347,47 @@
         classify.disabled = true;
         try {
           const options = await jsonRequest(context.fetch,
-            `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/boutique-category-options`);
+            ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) + '/boutique-category-options');
           const candidates = options.categories || [];
           const suggestion = options.suggestions?.[0];
           const ordered = suggestion
-            ? [suggestion, ...candidates.filter(x => x.category !== suggestion.category || x.subcategory !== suggestion.subcategory)]
+            ? [suggestion, ...candidates.filter(x =>
+              x.category !== suggestion.category || x.subcategory !== suggestion.subcategory)]
             : candidates;
           if (!ordered.length) throw new Error('Aucune catégorie boutique disponible.');
-          const sample = ordered.map((x,index) =>
-            `${index+1}. ${x.category_label || x.category} › ${x.subcategory_label || x.subcategory}`).join('\n');
-          let chosen = null;
-          if (suggestion && context.confirm(
-            `Catégorie fournisseur : ${options.supplier_category || '—'}\n\n` +
-            `Proposition Komerce : ${suggestion.category_label || suggestion.category} › ` +
-            `${suggestion.subcategory_label || suggestion.subcategory}\n\nValider ?`)) {
-            chosen = suggestion;
-          } else {
-            const reply = context.prompt(
-              `Catégorie fournisseur : ${options.supplier_category || '—'}\n\nChoisir le numéro de la catégorie BOUTIQUE :\n${sample}`,
-              '1');
-            if (reply == null) return;
-            const index = Number(reply);
-            if (!Number.isInteger(index) || index < 1 || index > ordered.length) {
-              throw new Error('Sélectionnez un numéro de catégorie valide.');
-            }
-            chosen = ordered[index-1];
-          }
-          await runAction(context, classify, {
-            url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/confirm-boutique-category`,
-            body: { category:chosen.category, subcategory:chosen.subcategory },
-            successMessage: `Catégorie boutique validée pour ${row.candidate_ref}. Brouillon préparé si éligible.`,
+          const editor = openCandidateForm(context,
+            'Classement boutique · ' + row.candidate_ref,
+            'Catégorie fournisseur : ' + (options.supplier_category || '—') +
+              '. La proposition est préremplie, mais ne sera validée que par votre décision.',
+            classify);
+          const label = doc.createElement('label');
+          label.className = 'kmc-sourcing-editor-field';
+          label.appendChild(text(doc,'span','','Catégorie et sous-catégorie boutique'));
+          const select = doc.createElement('select');
+          select.setAttribute('data-sourcing-category-choice','');
+          ordered.forEach((item,index) => {
+            const opt = doc.createElement('option');
+            opt.value = String(index);
+            opt.textContent = (index === 0 && suggestion ? 'Suggéré · ' : '') +
+              (item.category_label || item.category) + ' › ' +
+              (item.subcategory_label || item.subcategory);
+            select.appendChild(opt);
           });
-        } catch(error) { setFeedback(context.root,error.message,'critical'); }
-        finally { classify.disabled = false; }
+          select.value = '0';
+          label.appendChild(select);
+          editor.form.insertBefore(label, editor.feedback);
+          editor.form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const chosen = ordered[Number(select.value)];
+            if (!chosen) {editor.feedback.textContent='Sélection invalide.';return;}
+            await sendCandidateForm(context,editor,
+              ENDPOINT+'/candidates/'+encodeURIComponent(row.candidate_ref)+'/confirm-boutique-category',
+              {category:chosen.category,subcategory:chosen.subcategory},
+              'Classement boutique confirmé pour '+row.candidate_ref+'. La remise à la Raffinerie reste une action séparée.');
+          });
+          select.focus();
+        } catch(error) {setFeedback(context.root,error.message,'critical');}
+        finally {classify.disabled = false;}
       });
       actions.appendChild(classify);
       }
