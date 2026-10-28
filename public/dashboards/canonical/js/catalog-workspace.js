@@ -843,7 +843,9 @@
       control.addEventListener('input', () => {
         control.removeAttribute('aria-invalid');
         footerNotice.className = 'kmc-catalog-fr-footer-notice';
-        footerNotice.textContent = '';
+        footerNotice.textContent = activeRecheck
+          ? 'Description facultative : enregistrez un brouillon ou validez que le contenu actuel suffit.'
+          : '';
       });
     });
     const submitFrench = async (accept = false) => {
