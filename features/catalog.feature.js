@@ -161,6 +161,7 @@ module.exports = {
       'services/suppliers/allegro-sandbox-client.js',
       'services/suppliers/connectors/allegro-connector.js',
       'services/suppliers/connectors/ebay-connector.js',
+      'services/catalog-customer-asset-requirement.js',
       'services/product-publication-guard.js',
       'services/catalog-certification.js',
       'services/pipeline-certification-scenario-core.js',
