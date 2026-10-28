@@ -14,6 +14,7 @@ on:
       - research/business-auditor-v15-physical-concurrency-20261028
       - research/business-auditor-v16-opus-adversarial-repair-20261028
       - research/business-auditor-v17-generated-quantity-matrix-20261028
+      - research/business-auditor-v18-serializability-pilot-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -35,6 +36,7 @@ on:
       - research/business-auditor-v15-physical-concurrency-20261028
       - research/business-auditor-v16-opus-adversarial-repair-20261028
       - research/business-auditor-v17-generated-quantity-matrix-20261028
+      - research/business-auditor-v18-serializability-pilot-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -79,7 +81,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
