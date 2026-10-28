@@ -33,5 +33,5 @@ test('sensitivity cannot assert production accuracy or reviewer savings',()=>{
  const r=bound([entry('A1','A','Phone Case','s1'),
    entry('A2','A','Blue Phone Case','s2'),entry('B1','B','Blue Phone Case','s3')],2);
  expect(r).not.toHaveProperty('measured_precision');
- expect(r.notes).toEqual(expect.arrayContaining([expect.stringContaining('NOT measured')]).filter(Boolean));
+ expect(r.notes.some(note=>note.includes('NOT measured'))).toBe(true);
 });
