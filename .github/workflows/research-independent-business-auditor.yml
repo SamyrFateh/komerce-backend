@@ -75,7 +75,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -327,6 +327,12 @@ jobs:
              p.verdict.sequential.maximum>p.verdict.capacity||
              p.verdict.productionIncidentConfirmed!==false)
             throw Error('V1.5 physical concurrency evidence invalid or nominal control regressed');
+          const baseline=require('./tools/business-auditor/v15-concurrency-baseline.json');
+          const {compare}=require('./tools/business-auditor/v15-baseline-gate');
+          const check=compare(baseline,p);
+          if(check.outcome!=='BASELINE_MATCH')
+           throw Error('V1.5_REVIEW_REQUIRED '+JSON.stringify(check.changes));
+          console.log('BUSINESS_AUDIT_V15_BASELINE_MATCH',JSON.stringify({issue:check.issue,verdict:p.verdict.verdict}));
           console.log('BUSINESS_AUDIT_V15_RECOMPUTED',JSON.stringify({
            verdict:p.verdict.verdict,capacity:p.verdict.capacity,
            nominal:p.verdict.sequential.maximum,race:p.verdict.concurrent.maximum,
