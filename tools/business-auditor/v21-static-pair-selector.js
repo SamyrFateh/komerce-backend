@@ -82,7 +82,7 @@ function selectPairs({paths,read,writes}){
    const names=destructuredImports(src,caller,group.owner,known);
    for(const symbol of names){
     for(const offset of actualCallSites(src,symbol)){
-     const callerFunction=functionAt(src,offset);
+     const callerFunction=functionAt(normalizeSource(src),offset);
      const ownerSource=graph.sources[group.owner];
      const ownerDeclaration=new RegExp('\\b(?:async\\s+)?function\\s+'+symbol+'\\s*\\(');
      const match=ownerDeclaration.exec(ownerSource);
