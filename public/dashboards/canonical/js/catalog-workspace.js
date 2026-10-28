@@ -1167,8 +1167,25 @@
       rootNode, ui, 'Catalogue global · produits',
       'Tous les produits remis par la Raffinerie, même en attente de classification, préparation ou validation.'
     );
-    if (slot.parentNode) slot.parentNode.setAttribute('id', 'catalog-products');
+    if (slot.parentNode) {
+      slot.parentNode.setAttribute('id', 'catalog-products');
+      slot.parentNode.classList.add('kmc-catalog-main-panel');
+    }
     const filters = context.catalogFilters;
+    const toolbar = doc.createElement('div');
+    toolbar.className = 'kmc-catalog-toolbar';
+    toolbar.appendChild(text(doc, 'p', 'kmc-catalog-toolbar-hint',
+      'Référentiel global · une fiche remise au Catalogue n’est pas automatiquement en vente.'));
+    const destinations = doc.createElement('nav');
+    destinations.className = 'kmc-catalog-toolbar-links';
+    const refineryLink = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Ouvrir la Raffinerie');
+    refineryLink.href = '/admin/workspaces/catalog?view=refinery';
+    destinations.appendChild(refineryLink);
+    const sourcingLink = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Ouvrir le Sourcing');
+    sourcingLink.href = '/admin/workspaces/sourcing';
+    destinations.appendChild(sourcingLink);
+    toolbar.appendChild(destinations);
+    slot.appendChild(toolbar);
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions kmc-catalog-filter-bar';
     const field = (label, control) => {
@@ -1240,6 +1257,28 @@
     });
     bar.appendChild(reset);
     slot.appendChild(bar);
+    const quick = doc.createElement('div');
+    quick.className = 'kmc-catalog-quick-filters';
+    quick.appendChild(text(doc, 'span', 'kmc-catalog-quick-label', 'Accès rapide'));
+    [
+      ['', 'Tous les produits'],
+      ['source_to_normalize', 'Source à vérifier'],
+      ['taxonomy_to_confirm', 'À classer'],
+      ['editorial_to_complete', 'Fiche FR'],
+      ['approval_pending', 'À valider'],
+      ['catalog_approved', 'Approuvés'],
+    ].forEach(([value, label]) => {
+      const chip = text(doc, 'button', 'kmc-catalog-quick-chip', label);
+      chip.type = 'button';
+      chip.setAttribute('aria-pressed', String(filters.status === value));
+      chip.addEventListener('click', async () => {
+        context.catalogFilters.status = value;
+        context.catalogFilters.offset = 0;
+        await context.reload();
+      });
+      quick.appendChild(chip);
+    });
+    slot.appendChild(quick);
 
     const rows = payload.products || [];
     const page = payload.registry_page || { total: rows.length, limit: rows.length, offset: 0 };
@@ -1250,8 +1289,8 @@
         'Aucun produit remis ne correspond aux filtres. Vérifiez les filtres ou le parcours de remise Raffinerie → Catalogue.'));
     } else {
       const table = doc.createElement('table');
-      table.className = 'kmc-workspace-table';
-      table.innerHTML = '<thead><tr><th>Produit</th><th>Fournisseur</th><th>Classification boutique</th><th>Diagnostic</th><th>Corriger / continuer</th></tr></thead>';
+      table.className = 'kmc-workspace-table kmc-catalog-registry-table';
+      table.innerHTML = '<thead><tr><th>Produit</th><th>Référence</th><th>Fournisseur</th><th>Classification boutique</th><th>État de la fiche</th><th>Actions</th></tr></thead>';
       const tbody = doc.createElement('tbody');
       const statusNames = {
         source_to_normalize: 'Source à normaliser',
@@ -1265,6 +1304,7 @@
       rows.forEach(row => {
         const tr = doc.createElement('tr');
         tr.setAttribute('data-product-ref', row.product_ref);
+        tr.setAttribute('data-status', row.work_status || 'inactive');
         const productCell = doc.createElement('td');
         const productWrap = doc.createElement('div');
         productWrap.className = 'kmc-catalog-registry-product';
@@ -1275,28 +1315,66 @@
           picture.alt = '';
           picture.loading = 'lazy';
           productWrap.appendChild(picture);
+        } else {
+          const emptyPicture = text(doc, 'span', 'kmc-catalog-registry-photo-empty', '—');
+          emptyPicture.setAttribute('aria-label', 'Visuel non disponible');
+          productWrap.appendChild(emptyPicture);
         }
         const productCopy = doc.createElement('div');
         const link = text(doc, 'a', 'kmc-catalog-product-title', row.name || row.product_ref);
         link.href = contextualHref('/admin/products/' + encodeURIComponent(row.product_ref),
           '/admin/workspaces/catalog?product_ref=' + encodeURIComponent(row.product_ref), 'Retour au Catalogue');
+        link.title = row.name || row.product_ref;
+        productCopy.className = 'kmc-catalog-product-copy';
         productCopy.appendChild(link);
-        productCopy.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', row.product_ref));
+        productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-helper',
+          row.supplier_category || 'Désignation fournisseur'));
         productWrap.appendChild(productCopy);
         productCell.appendChild(productWrap);
+        productCell.setAttribute('data-label', 'Produit');
         tr.appendChild(productCell);
-        tr.appendChild(td(doc, row.supplier_name || 'Fournisseur à vérifier'));
-        tr.appendChild(td(doc, [row.boutique_category_label || row.boutique_category_key || 'À classer',
-          row.boutique_subcategory_label || row.boutique_subcategory_key].filter(Boolean).join(' › ')));
+        const reference = td(doc, row.product_ref);
+        reference.className = 'kmc-catalog-reference';
+        reference.setAttribute('data-label', 'Référence');
+        tr.appendChild(reference);
+        const supplier = doc.createElement('td');
+        supplier.className = 'kmc-catalog-supplier';
+        supplier.setAttribute('data-label', 'Fournisseur');
+        supplier.appendChild(text(doc, 'span', '', row.supplier_name || 'Fournisseur à vérifier'));
+        if (row.supplier_product_id) {
+          supplier.appendChild(text(doc, 'small', 'kmc-catalog-supplier-ref', row.supplier_product_id));
+        }
+        tr.appendChild(supplier);
+        const category = doc.createElement('td');
+        category.className = 'kmc-catalog-category';
+        category.setAttribute('data-label', 'Classification boutique');
+        category.appendChild(text(doc, 'strong', '',
+          row.boutique_category_label || row.boutique_category_key || 'À classer'));
+        if (row.boutique_subcategory_label || row.boutique_subcategory_key) {
+          category.appendChild(text(doc, 'small', '',
+            row.boutique_subcategory_label || row.boutique_subcategory_key));
+        }
+        tr.appendChild(category);
         const diagnostic = doc.createElement('td');
-        diagnostic.appendChild(text(doc, 'strong', '', statusNames[row.work_status] || 'À examiner'));
+        diagnostic.className = 'kmc-catalog-diagnostic';
+        diagnostic.setAttribute('data-label', 'État de la fiche');
+        const statusChip = text(doc, 'span', 'kmc-catalog-status',
+          statusNames[row.work_status] || 'À examiner');
+        statusChip.setAttribute('data-status', row.work_status || 'inactive');
+        diagnostic.appendChild(statusChip);
         (row.issues || []).filter(issue => issue !== row.work_status).forEach(issue => {
           diagnostic.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', statusNames[issue] || issue));
         });
         tr.appendChild(diagnostic);
         const actionCell = doc.createElement('td');
+        actionCell.className = 'kmc-catalog-action-cell';
+        actionCell.setAttribute('data-label', 'Actions');
         const actions = doc.createElement('div');
         actions.className = 'kmc-catalog-actions-inner';
+        const view = text(doc, 'a', 'kmc-workspace-action is-secondary kmc-catalog-view-link', 'Voir fiche');
+        view.href = contextualHref('/admin/products/' + encodeURIComponent(row.product_ref),
+          '/admin/workspaces/catalog?product_ref=' + encodeURIComponent(row.product_ref), 'Retour au Catalogue');
+        actions.appendChild(view);
         const editClassification = makeButton(doc,
           (row.issues || []).includes('taxonomy_to_confirm') ? 'Classer' : 'Modifier classement',
           'classify-product', true);
@@ -1355,10 +1433,12 @@
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      slot.appendChild(wrapTable(doc, table));
+      const tableWrap = wrapTable(doc, table);
+      tableWrap.classList.add('kmc-catalog-registry-table-wrap');
+      slot.appendChild(tableWrap);
     }
     const pager = doc.createElement('div');
-    pager.className = 'kmc-workspace-section-actions';
+    pager.className = 'kmc-workspace-section-actions kmc-catalog-registry-pager';
     pager.appendChild(text(doc, 'span', 'kmc-workspace-subtitle',
       (page.total ? page.offset + 1 : 0) + '–' + Math.min(page.offset + rows.length, page.total) +
       ' sur ' + formatNumber(page.total)));
