@@ -91,3 +91,41 @@ test('visuel : repli sur la photo fournisseur uniquement pour l’aperçu, sans 
     is_active: false, work_status: 'taxonomy_to_confirm',
   });
 });
+
+
+test('Catalogue opérateur : la liste finale exclut les travaux Raffinerie sans effacer le registre historique', async () => {
+  const finalExecutor = { query: jest.fn()
+    .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+    .mockResolvedValueOnce({ rows: [fixture({
+      lifecycle_status: 'active', is_active: true, work_status: 'catalog_approved',
+      source_ready: true, taxonomy_ready: true, editorial_ready: true,
+    })] }) };
+  const final = await registry.listRegistry({ finalized_only: true }, finalExecutor);
+  expect(final.page.total).toBe(1);
+  expect(final.products[0].work_status).toBe('catalog_approved');
+  expect(finalExecutor.query.mock.calls[0][0]).toContain("work_status = 'catalog_approved'");
+  expect(finalExecutor.query.mock.calls[1][0]).toContain("work_status = 'catalog_approved'");
+
+  const historicalExecutor = { query: jest.fn()
+    .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+    .mockResolvedValueOnce({ rows: [fixture()] }) };
+  await registry.listRegistry({}, historicalExecutor);
+  expect(historicalExecutor.query.mock.calls[0][0]).not.toContain(
+    "WHERE work_status = 'catalog_approved'");
+});
+
+
+test('Raffinerie : un produit actif à défaut canonique revient en file de réexamen, sans dépublication', async () => {
+  const executor = { query: jest.fn()
+    .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+    .mockResolvedValueOnce({ rows: [fixture({
+      lifecycle_status: 'active', is_active: true,
+      work_status: 'editorial_to_complete', editorial_ready: false,
+    })] }) };
+  const view = await registry.listRegistry({ refinery_recheck_only: true }, executor);
+  const [countSql] = executor.query.mock.calls[0];
+  expect(countSql).toContain("is_active = TRUE AND lifecycle_status = 'active'");
+  expect(countSql).toContain("work_status <> 'catalog_approved'");
+  expect(view.products[0].work_status).toBe('editorial_to_complete');
+  expect(view.products[0].is_active).toBe(true);
+});

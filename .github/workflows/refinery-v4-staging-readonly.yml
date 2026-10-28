@@ -1,0 +1,58 @@
+name: Raffinerie V4 — staging read-only acceptance
+
+on:
+  push:
+    branches:
+      - feat/refinery-worklist-v4-20261028
+    paths:
+      - 'scripts/testing/refinery-v4-staging-readonly.js'
+      - '.github/workflows/refinery-v4-staging-readonly.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Staging health and aggregate counts (no mutations)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      REFINERY_STAGING_READONLY: '1'
+      RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      EXPECTED_DEPLOY_SHA: '30eab31b4012a69b57480c468bb8728f1a88b4d7'
+      STAGING_URL: https://komerce-backend-production.up.railway.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Verify staging deployment SHA over HTTPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 --retry-delay 3 --connect-timeout 7 --max-time 25 "$STAGING_URL/health/version" > /tmp/refinery-v4-health.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const payload=JSON.parse(fs.readFileSync('/tmp/refinery-v4-health.json','utf8'));
+          const commit=String(payload.commit||'');
+          if (commit !== process.env.EXPECTED_DEPLOY_SHA) {
+            throw new Error('staging_deployment_mismatch: got '+commit.slice(0,12));
+          }
+          console.log('STAGING_HEALTH_SHA_PASS '+commit.slice(0,12));
+          NODE
+      - name: Read-only PostgreSQL reconciliation
+        if: success()
+        run: node scripts/testing/refinery-v4-staging-readonly.js
+      - name: Record coverage (no mutations)
+        if: always()
+        run: |
+          {
+            echo '## Raffinerie V4 — staging read-only'
+            echo 'The job reads aggregate product counts in a READ ONLY transaction.'
+            echo 'This is not an approval, publication or market exposure test.'
+          } >> "$GITHUB_STEP_SUMMARY"

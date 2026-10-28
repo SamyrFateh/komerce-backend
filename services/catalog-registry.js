@@ -24,10 +24,16 @@ const db = require('../db');
 // prerequisite for viewing or repairing that catalog record.
 const REGISTRY_CTE = [
   'WITH handed AS (',
-  " SELECT p.product_ref, p.name, p.description, COALESCE(NULLIF(BTRIM(p.image_url), ''), NULLIF(BTRIM(sc.image_url), '')) AS image_url,",
+  " SELECT p.product_ref, p.name, p.description, p.name_source, p.description_source, p.source_locale AS editorial_locale, COALESCE(NULLIF(BTRIM(p.image_url), ''), NULLIF(BTRIM(sc.image_url), '')) AS image_url,",
   '        p.category AS customs_category, p.boutique_category_key,',
   '        p.boutique_subcategory_key, p.lifecycle_status,',
   '        p.is_active, p.needs_review, p.content_source, p.source_locale,',
+  "        EXISTS (SELECT 1 FROM catalog_field_overrides ov",
+  "                 WHERE ov.product_id=p.id AND ov.field_name='name') AS name_override_present,",
+  "        EXISTS (SELECT 1 FROM catalog_field_overrides ov",
+  "                 WHERE ov.product_id=p.id AND ov.field_name='name'",
+  "                   AND ov.reason='KOMERCE_FR_SUFFICIENCY_ACCEPTED_V1'",
+  "                   AND ov.set_by IS NOT NULL AND ov.field_value=p.name) AS editorial_sufficiency_accepted,",
   '        p.updated_at, sc.candidate_ref, sc.supplier_name,',
   '        sc.supplier_product_id, sc.supplier_category,',
   "        (NULLIF(BTRIM(p.image_url), '') IS NULL AND NULLIF(BTRIM(sc.image_url), '') IS NOT NULL) AS supplier_image_preview,",
@@ -36,7 +42,11 @@ const REGISTRY_CTE = [
   "           AND NULLIF(BTRIM(sc.supplier_name),'') IS NOT NULL",
   "           AND NULLIF(BTRIM(sc.supplier_product_id),'') IS NOT NULL) AS source_ready,",
   '        (bc.key IS NOT NULL AND bs.key IS NOT NULL) AS taxonomy_ready,',
-  '        (p.description IS NOT NULL AND BTRIM(p.description) <> \'\'',
+  "        (((p.description IS NOT NULL AND BTRIM(p.description) <> '')",
+  "           OR EXISTS (SELECT 1 FROM catalog_field_overrides decision",
+  "                       WHERE decision.product_id=p.id AND decision.field_name='name'",
+  "                         AND decision.reason='KOMERCE_FR_SUFFICIENCY_ACCEPTED_V1'",
+  "                         AND decision.set_by IS NOT NULL AND decision.field_value=p.name))",
   '           AND p.needs_review IS FALSE',
   "           AND (COALESCE(p.content_source, 'connector_raw') <> 'connector_raw' OR",
   "                COALESCE(p.source_locale, '') = 'fr' OR COALESCE(p.source_locale, '') LIKE 'fr-%')) AS editorial_ready",
@@ -78,6 +88,13 @@ function details(row) {
   return {
     product_ref: row.product_ref,
     name: row.name,
+    description: row.description || null,
+    name_source: row.name_source || null,
+    description_source: row.description_source || null,
+    name_override_present: row.name_override_present === true,
+    editorial_sufficiency_accepted: row.editorial_sufficiency_accepted === true,
+    source_locale: row.source_locale || row.editorial_locale || null,
+    content_source: row.content_source || null,
     image_url: row.image_url || null,
     supplier_image_preview: row.supplier_image_preview === true,
     supplier_name: row.supplier_name || null,
@@ -119,6 +136,16 @@ async function listRegistry(query = {}, executor = db) {
   addFilter(query.subcategory, 'boutique_subcategory_key = ?');
   // A product can have several defects. A filter must show any matching
   // defect, not only the priority status shown on the first line.
+  // The operator's Catalogue is a finalized assortment, not a second
+  // Raffinerie queue. Direct reads without this option keep the complete
+  // canonical historical registry for diagnostics and existing consumers.
+  if (query.finalized_only === true) filters.push("work_status = 'catalog_approved'");
+  // Repair queue for previously active canonical handoffs with unresolved
+  // quality signals. These remain live unless their owners suspend them.
+  if (query.refinery_recheck_only === true) {
+    filters.push("is_active = TRUE AND lifecycle_status = 'active'");
+    filters.push("work_status <> 'catalog_approved'");
+  }
   const statusPredicates = {
     source_to_normalize: 'NOT source_ready',
     taxonomy_to_confirm: 'NOT taxonomy_ready',

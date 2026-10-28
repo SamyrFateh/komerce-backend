@@ -24,6 +24,7 @@ const router = express.Router();
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { assertMarketOperationAllowed } = require('../services/market-operation-guard');
+const { listAuthorizedMarketsForCapability } = require('../services/market-delegation-service');
 const {
   resolveAuthorization,
   listExposure,
@@ -68,6 +69,25 @@ function rejectMarketId(body) {
     throw error;
   }
 }
+
+// Only catalog.read delegation is authoritative for this screen. The
+// global dashboard list of active markets is NOT a membership grant.
+// This endpoint returns codes, no commercial data or personal identifiers.
+router.get('/catalog/authorized-markets', authenticate, async (req, res, next) => {
+  try {
+    const markets = await listAuthorizedMarketsForCapability(db, {
+      userId: req.user.id,
+      requiredCapability: 'catalog.read',
+    });
+    res.set('Cache-Control', 'private, no-store');
+    return res.json({
+      required_capability: 'catalog.read',
+      market_codes: [...new Set(markets.map(row => row.market_code))],
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, res, next) => {
   try {
