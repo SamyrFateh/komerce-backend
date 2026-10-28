@@ -134,6 +134,7 @@ async function main(){
    if(v24&&mode==='AB_REPEAT')extraReplay=await paypalRefund(ids);
   }else if(mode==='BA'){
    paypalResult=await paypalRefund(ids);
+   if(v24)extraReplay=await paypalRefund(ids);
    cancelResult=await cancel(ids);
   }else{
    let release;
