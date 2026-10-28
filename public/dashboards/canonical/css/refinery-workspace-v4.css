@@ -53,3 +53,27 @@ body.kmc-shell-v4:has(.kmc-refinery-main-panel) .kmc-operations-workspace {
 @media(min-width:761px) and (max-width:1150px) {
   .kmc-refinery-coverage { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
+
+/* Raffinerie V4.3 — correction contextuelle : le lien produit déclenche son travail FR. */
+.kmc-refinery-main-panel .kmc-refinery-edit-trigger {
+  display:block; width:100%; border:0; background:transparent; padding:0;
+  text-align:left; font:inherit; font-weight:750; font-size:13px;
+  color:#14396a; text-decoration:underline; text-underline-offset:2px;
+  cursor:pointer; line-height:1.5;
+}
+.kmc-refinery-main-panel .kmc-refinery-edit-trigger:hover { color:#1d5daf; }
+.kmc-refinery-main-panel .kmc-refinery-edit-trigger:focus-visible {
+  outline:2px solid #2563eb; outline-offset:3px; border-radius:3px;
+}
+.kmc-refinery-main-panel .kmc-refinery-recheck-primary {
+  background:#0d2c57; border-color:#0d2c57; color:#fff;
+  font-weight:750; min-height:44px; padding:10px 14px;
+}
+.kmc-refinery-main-panel .kmc-refinery-unprepared-table td:last-child > .kmc-workspace-nav-link {
+  margin-left:10px; text-decoration:underline; text-underline-offset:2px;
+}
+@media(max-width:760px) {
+  .kmc-refinery-main-panel .kmc-refinery-unprepared-table td:last-child > .kmc-workspace-nav-link {
+    display:block; margin-left:0; margin-top:7px;
+  }
+}
