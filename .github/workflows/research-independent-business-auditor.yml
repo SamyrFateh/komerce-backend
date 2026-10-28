@@ -46,11 +46,11 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
-        run: npx jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/unit/auditor-paypal-refund-execution.test.js
+        run: npx jest --config jest.config.js --runInBand --no-coverage --runTestsByPath tests/unit/auditor-paypal-refund-execution.test.js --json --outputFile=/tmp/komerce-v08-paypal-jest.json
       - name: Bootstrap isolated PostgreSQL test schema
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/business-auditor-bootstrap.log
@@ -119,6 +119,18 @@ jobs:
              x.adversarial!=='INJECTED_COUNTEREXAMPLE_FOUND'))
            throw Error('V0.8 proof classification invalid');
           console.log('BUSINESS_AUDIT_V08_PAIRED_SQL_PROOF',JSON.stringify(p.summary));
+          NODE
+      - name: V0.8 verify actual owner and client replay tests in same CI run
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const {qualifyPayPalJest}=require('./tools/business-auditor/v08-owner-proof');
+          const jestReport=JSON.parse(fs.readFileSync('/tmp/komerce-v08-paypal-jest.json','utf8'));
+          const e=qualifyPayPalJest(jestReport,{sha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID});
+          fs.writeFileSync('/tmp/komerce-independent-business-audit/v08-owner-replay.json',
+           JSON.stringify(e,null,2)+'\n');
+          console.log('BUSINESS_AUDIT_V08_OWNER_REPLAY',JSON.stringify({tests:e.testsPassed,provider:e.provider,
+           duplicateMoneyMovementProven:e.duplicateMoneyMovementProven,run:e.runId}));
           NODE
       - name: Archive independent JSON + Markdown evidence
         if: always()
