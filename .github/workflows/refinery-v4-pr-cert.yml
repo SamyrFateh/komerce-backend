@@ -30,6 +30,8 @@ jobs:
     name: Raffinerie + Catalogue boundary (unit)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      NODE_ENV: test
     services:
       postgres:
         image: postgres:16
