@@ -1936,9 +1936,35 @@
     const page = payload.registry_page || { total: rows.length, limit: rows.length, offset: 0 };
     slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
       formatNumber(page.total) + ' produit(s) finalisés et approuvés · catalogue global, avant décision de marché'));
+    if (context.focusedProductRef) {
+      const current = rows.some(row => row.product_ref === context.focusedProductRef);
+      const notice = doc.createElement('aside');
+      notice.className = 'kmc-catalog-focused-notice';
+      notice.setAttribute('data-focused-product-result', current ? 'visible' : 'not-in-page');
+      notice.appendChild(text(doc, 'strong', '',
+        (current ? 'Produit retrouvé : ' : 'Produit non visible sur cette page : ') + context.focusedProductRef));
+      notice.appendChild(text(doc, 'span', '',
+        current
+          ? ' La référence reste ciblée dans le Catalogue global.'
+          : ' La liste présente uniquement les produits finalisés correspondant aux filtres. Cette absence ne signifie ni rejet ni dépublication.'));
+      if (!current) {
+        const refinery = text(doc, 'a', '', 'Consulter la Raffinerie');
+        refinery.href = '/admin/workspaces/catalog?view=refinery&product_ref=' +
+          encodeURIComponent(context.focusedProductRef);
+        notice.appendChild(refinery);
+      }
+      slot.appendChild(notice);
+    }
     if (!rows.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty',
-        'Aucun produit finalisé ne correspond aux filtres. Les travaux de préparation et de validation restent dans la Raffinerie.'));
+      const empty = doc.createElement('div');
+      empty.className = 'kmc-workspace-empty';
+      empty.appendChild(text(doc,'p','',
+        'Aucun produit finalisé ne correspond aux filtres. La préparation et la validation restent dans la Raffinerie.'));
+      const openRefinery = text(doc,'a','kmc-workspace-action is-secondary',
+        'Consulter la Raffinerie');
+      openRefinery.href = '/admin/workspaces/catalog?view=refinery';
+      empty.appendChild(openRefinery);
+      slot.appendChild(empty);
     } else {
       const table = doc.createElement('table');
       table.className = 'kmc-workspace-table kmc-catalog-registry-table';
@@ -1957,6 +1983,8 @@
         const tr = doc.createElement('tr');
         tr.setAttribute('data-product-ref', row.product_ref);
         tr.setAttribute('data-status', row.work_status || 'inactive');
+        if (row.product_ref === context.focusedProductRef)
+          tr.className = 'kmc-catalog-context-target';
         const productCell = doc.createElement('td');
         const productWrap = doc.createElement('div');
         productWrap.className = 'kmc-catalog-registry-product';
