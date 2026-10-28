@@ -37,7 +37,14 @@ async function withClone(env,callback) {
   return {result,cloneCreated:true,cloneDroppedAfterExecution:true,method:'CREATE_DATABASE_TEMPLATE_AND_DROP'};
  }finally {
   if(created) {
-   await root.query('DROP DATABASE IF EXISTS "'+name+'" WITH (FORCE)');
+   // Never kill application sessions. A live client is a harness leak.
+   // On a disposable CI server the remaining clone dies with the container;
+   // failing closed preserves the real cause instead of terminating pg Pools.
+   const {rows:[active]}=await root.query(
+    'SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=$1',[name]);
+   if(Number(active.n)!==0)
+    throw Error('TOOL_ERROR: '+active.n+' cloned PG connections still active at teardown');
+   await root.query('DROP DATABASE IF EXISTS "'+name+'"');
    const {rows:[check]}=await root.query('SELECT count(*)::int AS n FROM pg_database WHERE datname=$1',[name]);
    if(Number(check.n)!==0)throw Error('TOOL_ERROR: cloned database still exists');
   }
