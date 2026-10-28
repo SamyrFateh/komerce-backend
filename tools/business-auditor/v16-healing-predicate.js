@@ -19,11 +19,8 @@ function evaluate(c){
   c.after.parcels.some(p=>!Number.isSafeInteger(p.members)||p.members<0)||
   c.after.parcels.reduce((n,p)=>n+p.members,0)!==c.after.total)
   throw Error('TOOL_ERROR: inconsistent physical SQL totals');
- if(c.mode==='UNLOCKED_RACE'&&c.gate?.arrived!==2)
-  throw Error('TOOL_ERROR: unlocked race did not synchronize two reads');
- if(c.mode==='SERIALIZED_MUTANT'&&
-  !(c.gate?.arrived===2||(c.gate?.arrived===1&&c.gate?.serialized===true)))
-  throw Error('TOOL_ERROR: lock-aware gate did not observe a valid interleaving');
+ if(c.mode!=='SEQUENTIAL'&&!(c.gate?.arrived===2||(c.gate?.arrived===1&&c.gate?.serialized===true)))
+  throw Error('TOOL_ERROR: no overlapping reads or verified lock serialization');
  const byOrder=new Map(c.after.assignedByOrder.map(o=>[o.order,o.members]));
  if(byOrder.size!==2||!byOrder.has(c.orderA)||!byOrder.has(c.orderB))
   throw Error('TOOL_ERROR: missing observed order counts');
@@ -60,13 +57,14 @@ function interpret(raw){
  const [seq,race,locked]=observed;
  if(seq.mode!=='SEQUENTIAL'||race.mode!=='UNLOCKED_RACE'||locked.mode!=='SERIALIZED_MUTANT')
   throw Error('TOOL_ERROR: wrong experiment order');
- const healing=(seq.verdict==='CAPACITY_SATISFIED'&&
-   race.verdict==='CAPACITY_BREACH'&&
-   locked.verdict==='CAPACITY_SATISFIED'&&locked.lockWaitObserved);
+ const calibrated=seq.verdict==='CAPACITY_SATISFIED'&&locked.verdict==='CAPACITY_SATISFIED'&&locked.lockWaitObserved;
+ const uncorrected=calibrated&&race.verdict==='CAPACITY_BREACH';
+ const corrected=calibrated&&race.verdict==='CAPACITY_SATISFIED';
  return {contract:'komerce-opus-healing-oracle/v16',
-  verdict:healing?'HEALING_ORACLE_CALIBRATED':'REVIEW_REQUIRED',
+  verdict:uncorrected?'HEALING_ORACLE_CALIBRATED':corrected?'ACTUAL_OWNER_HEALED':'REVIEW_REQUIRED',
   invariant:CAPACITY_INVARIANT,
   observed,actualServiceRaceDemonstrated:race.capacityBreach,
+  actualOwnerFixedRecognized:corrected,
   lockedMutantRecognizedAsFixed:locked.verdict==='CAPACITY_SATISFIED'&&locked.lockWaitObserved,
   noProductionIncidentConfirmed:true,
   note:'This is a manually designed mutation control, NOT autonomous bug discovery. Rule applies to line memberships; quantity semantics are not approved.'};
