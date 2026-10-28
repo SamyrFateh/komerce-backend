@@ -28,8 +28,8 @@ function explainUnprepared(row = {}) {
     : { code: 'content_source_missing', label: 'Source du contenu à qualifier', detail: 'Aucune origine éditoriale reconnue pour ce brouillon' };
 }
 
-async function getRefineryCoverage() {
-  const { rows } = await db.query(`
+async function getRefineryCoverage(executor = db) {
+  const { rows } = await executor.query(`
     SELECT
       COUNT(*) FILTER (
         WHERE p.lifecycle_status = 'candidate' AND p.is_active = FALSE
@@ -61,10 +61,10 @@ async function getRefineryCoverage() {
   };
 }
 
-async function listUnpreparedCandidates({ limit = 30, offset = 0 } = {}) {
+async function listUnpreparedCandidates({ limit = 30, offset = 0 } = {}, executor = db) {
   const safeLimit = Math.min(Math.max(Number.parseInt(limit, 10) || 30, 1), 50);
   const safeOffset = Math.max(Number.parseInt(offset, 10) || 0, 0);
-  const { rows } = await db.query(`
+  const { rows } = await executor.query(`
     SELECT p.product_ref, p.name, p.content_source, p.created_at,
            sc.candidate_ref, sc.supplier_name
       FROM products p
@@ -90,18 +90,18 @@ async function listUnpreparedCandidates({ limit = 30, offset = 0 } = {}) {
   }));
 }
 
-async function buildRefineryWorklist(query = {}) {
+async function buildRefineryWorklist(query = {}, executor = db) {
   const limit = Math.min(Math.max(Number.parseInt(query.refinery_limit, 10) || 30, 1), 50);
   const offset = Math.max(Number.parseInt(query.refinery_offset, 10) || 0, 0);
   const recheckOffset = Math.max(Number.parseInt(query.refinery_recheck_offset, 10) || 0, 0);
   const [coverage, candidates, recheck] = await Promise.all([
-    getRefineryCoverage(),
-    listUnpreparedCandidates({ limit, offset }),
+    getRefineryCoverage(executor),
+    listUnpreparedCandidates({ limit, offset }, executor),
     catalogRegistry.listRegistry({
       refinery_recheck_only: true,
       limit,
       offset: recheckOffset,
-    }),
+    }, executor),
   ]);
   return {
     scope: 'refinery_readonly_diagnostic',
