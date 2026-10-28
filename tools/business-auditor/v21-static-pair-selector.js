@@ -79,8 +79,10 @@ function selectPairs({paths,read,writes}){
  // to its enclosing source function before identifying any caller.
  for(const w of writes){
   if(!w.physicalTableDeclared||!w.table||!known.has(w.file))continue;
-  const src=graph.sources[w.file],offset=offsetForLine(src,w.line);
-  if(offset<0)continue;
+  const src=graph.sources[w.file],lineStart=offsetForLine(src,w.line);
+  if(lineStart<0)continue;
+  const lineEnd=src.indexOf('\n',lineStart);
+  const offset=(lineEnd<0?src.length:lineEnd);
   const method=functionAt(src,offset).name;
   if(method==='ANONYMOUS_BOUNDARY')continue;
   const key=w.file+'|'+w.table;
