@@ -6,8 +6,8 @@
  * persistence or two-connection concurrency certification.
  */
 const {assertLocalTestTarget}=require('./cli');
-const {distributeOrder}=require('../../services/auto-parcel');
-async function runScenario(pg,preseed) {
+// Import the live writer only after the strict local database gate has passed.
+async function runScenario(pg,preseed,distributeOrder) {
  await pg.query('BEGIN');
  let active=true;
  try{
@@ -65,8 +65,9 @@ async function runPhysical(env=process.env) {
  try{
   const client=await pool.connect();
   try{
-   const nominal=await runScenario(client,false);
-   const adverse=await runScenario(client,true);
+   const {distributeOrder}=require('../../services/auto-parcel');
+   const nominal=await runScenario(client,false,distributeOrder);
+   const adverse=await runScenario(client,true,distributeOrder);
    return {contract:'komerce-raw-pg-membership-witness/v12',
     method:'REAL_SERVICE_PG_TEMP_WRITES_WITH_STUBBED_LOOKUPS',
     cases:[nominal,adverse],
