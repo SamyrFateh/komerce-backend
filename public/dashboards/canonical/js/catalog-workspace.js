@@ -1314,6 +1314,9 @@
           picture.src = row.image_url;
           picture.alt = '';
           picture.loading = 'lazy';
+          if (row.supplier_image_preview) {
+            picture.title = 'Aperçu fournisseur · média Catalogue non certifié';
+          }
           productWrap.appendChild(picture);
         } else {
           const emptyPicture = text(doc, 'span', 'kmc-catalog-registry-photo-empty', '—');

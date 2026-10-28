@@ -75,3 +75,19 @@ test('pagination 0 résultat garde un total fiable', async () => {
   expect(result.products).toEqual([]);
   expect(result.page).toMatchObject({ total: 0, limit: 100, has_next: false });
 });
+
+test('visuel : repli sur la photo fournisseur uniquement pour l’aperçu, sans certification', async () => {
+  const executor = { query: jest.fn()
+    .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+    .mockResolvedValueOnce({ rows: [fixture({
+      image_url: 'https://cdn.example.test/produit.jpg', supplier_image_preview: true,
+    })] }) };
+  const result = await registry.listRegistry({}, executor);
+  const sql = executor.query.mock.calls[1][0];
+  expect(sql).toContain("COALESCE(NULLIF(BTRIM(p.image_url), ''), NULLIF(BTRIM(sc.image_url), '')) AS image_url");
+  expect(sql).toContain("state = 'imported_to_catalog'");
+  expect(result.products[0]).toMatchObject({
+    image_url: 'https://cdn.example.test/produit.jpg', supplier_image_preview: true,
+    is_active: false, work_status: 'taxonomy_to_confirm',
+  });
+});
