@@ -46,8 +46,6 @@ async function run(out,env=process.env){
   if(mode!=='CANCELLED_MEMBERSHIP')assert(
    raw.after.activeCount===1&&raw.after.openCount===1,
    'active membership coverage for '+mode);
-  assert(true,
-   'canonical fixture not repeatable '+mode);
   if(mode==='NOMINAL')assert(!verdict.violation&&
     raw.ownerInserted===1&&raw.response.items_assigned===1&&
     !raw.injectedBeforeOwnerInsert,
