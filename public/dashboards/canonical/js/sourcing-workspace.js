@@ -727,10 +727,49 @@
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
-    renderCandidates(rootNode, ui, doc, payload, context);
-    renderImports(rootNode, ui, doc, payload, context);
-    renderPortfolio(rootNode, ui, doc, payload, context);
-    renderSuppliers(rootNode, ui, doc, payload, context);
+    const open = (payload.candidates || []).filter(row =>
+      !['imported_to_catalog','rejected'].includes(row.state)).length;
+    const pages = [
+      {key:'candidates',label:'À qualifier',count:open,render:renderCandidates},
+      {key:'imports',label:'Imports & découvertes',count:(payload.imports || []).length,render:renderImports},
+      {key:'portfolio',label:'Portefeuille sourcing',count:(payload.portfolio?.products || []).length,render:renderPortfolio},
+      {key:'suppliers',label:'Fournisseurs',count:(payload.suppliers || []).length,render:renderSuppliers},
+    ];
+    const nav = doc.createElement('nav');
+    nav.className = 'kmc-sourcing-tabs';
+    nav.setAttribute('role','tablist');
+    nav.setAttribute('aria-label','Rubriques du Sourcing');
+    rootNode.appendChild(nav);
+    const panels = new Map();
+    const tabs = new Map();
+    for (const page of pages) {
+      const button = text(doc,'button','kmc-sourcing-tab',page.label+' · '+formatNumber(page.count));
+      button.type = 'button';
+      button.id = 'kmc-sourcing-tab-'+page.key;
+      button.setAttribute('role','tab');
+      button.setAttribute('aria-controls','kmc-sourcing-panel-'+page.key);
+      button.addEventListener('click',()=>context.selectTab(page.key));
+      nav.appendChild(button);
+      tabs.set(page.key,button);
+      const panel = doc.createElement('div');
+      panel.className = 'kmc-sourcing-tab-panel';
+      panel.id = 'kmc-sourcing-panel-'+page.key;
+      panel.setAttribute('role','tabpanel');
+      panel.setAttribute('aria-labelledby',button.id);
+      rootNode.appendChild(panel);
+      panels.set(page.key,panel);
+    }
+    context.selectTab = key => {
+      context.activeTab = panels.has(key) ? key : 'candidates';
+      panels.forEach((panel,tab) => {
+        const selected = tab === context.activeTab;
+        panel.hidden = !selected;
+        tabs.get(tab).setAttribute('aria-selected',String(selected));
+        tabs.get(tab).tabIndex = selected ? 0 : -1;
+      });
+    };
+    for (const page of pages) page.render(panels.get(page.key),ui,doc,payload,context);
+    context.selectTab(context.focusCandidateRef ? 'candidates' : context.activeTab);
   }
 
   async function mount(options = {}) {
@@ -745,6 +784,9 @@
       (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
     const context = {
       focusCandidateRef: new URLSearchParams(focusSearch || '').get('candidate_ref'),
+      activeTab: ['candidates','imports','portfolio','suppliers'].includes(new URLSearchParams(focusSearch || '').get('tab'))
+        ? new URLSearchParams(focusSearch || '').get('tab') : 'candidates',
+      selectTab: null,
       root: rootNode,
       user: options.user || {},
       fetch: fetchFn,
