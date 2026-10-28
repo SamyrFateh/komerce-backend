@@ -13,6 +13,7 @@
 'use strict';
 
 const db = require('../db');
+const catalogRegistry = require('./catalog-registry');
 const ELIGIBLE_CONTENT_SOURCES = ['connector_raw', 'ai_enriched', 'manual'];
 const MISSING_CONTENT_SOURCE = "(p.content_source IS NULL OR p.content_source NOT IN ('connector_raw', 'ai_enriched', 'manual'))";
 
@@ -92,13 +93,21 @@ async function listUnpreparedCandidates({ limit = 30, offset = 0 } = {}) {
 async function buildRefineryWorklist(query = {}) {
   const limit = Math.min(Math.max(Number.parseInt(query.refinery_limit, 10) || 30, 1), 50);
   const offset = Math.max(Number.parseInt(query.refinery_offset, 10) || 0, 0);
-  const [coverage, candidates] = await Promise.all([
+  const recheckOffset = Math.max(Number.parseInt(query.refinery_recheck_offset, 10) || 0, 0);
+  const [coverage, candidates, recheck] = await Promise.all([
     getRefineryCoverage(),
     listUnpreparedCandidates({ limit, offset }),
+    catalogRegistry.listRegistry({
+      refinery_recheck_only: true,
+      limit,
+      offset: recheckOffset,
+    }),
   ]);
   return {
     scope: 'refinery_readonly_diagnostic',
-    coverage,
+    coverage: { ...coverage, active_recheck: recheck.page.total },
+    recheck: recheck.products,
+    recheck_page: recheck.page,
     unprepared: candidates,
     unprepared_page: {
       total: coverage.unprepared_candidates,
