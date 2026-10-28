@@ -5,7 +5,7 @@
  * supplied unsafe script or writes to the shared test-template database.
  * True service + canonical PG, transaction ROLLBACK, per-case cloned database.
  */
-const crypto=require('node:crypto'),{Client}=require('pg');
+const crypto=require('node:crypto');
 const {withClone}=require('./v16-cloned-database');
 const uuid=()=>crypto.randomUUID();
 const RANGES=Object.freeze({existingRows:[9,26,29],existingQuantity:[1,3],incomingQuantity:[1,5]});
@@ -19,6 +19,7 @@ function cases(){
  return out;
 }
 async function single(databaseUrl,scenario){
+ const {Client}=require('pg');
  const c=new Client({connectionString:databaseUrl,connectionTimeoutMillis:5000});
  await c.connect();let inTx=false;
  try{
