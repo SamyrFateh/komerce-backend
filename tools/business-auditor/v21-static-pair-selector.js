@@ -62,14 +62,30 @@ function actualCallSites(src,name){
  }
  return hits;
 }
+
+function offsetForLine(src,n){
+ if(!Number.isInteger(n)||n<1)return -1;
+ let offset=0;
+ for(let i=1;i<n;i++){
+  const next=src.indexOf('\n',offset);
+  if(next<0)return -1;
+  offset=next+1;
+ }
+ return offset;
+}
 function selectPairs({paths,read,writes}){
- const known=new Set(paths),graph=routesReachable(paths,read);
- const groups=new Map();
+ const known=new Set(paths),graph=routesReachable(paths,read),groups=new Map();
+ // The inventory says WHICH physical table a file writes. Bind that mutation
+ // to its enclosing source function before identifying any caller.
  for(const w of writes){
   if(!w.physicalTableDeclared||!w.table||!known.has(w.file))continue;
+  const src=graph.sources[w.file],offset=offsetForLine(src,w.line);
+  if(offset<0)continue;
+  const method=functionAt(src,offset).name;
+  if(method==='ANONYMOUS_BOUNDARY')continue;
   const key=w.file+'|'+w.table;
-  if(!groups.has(key))groups.set(key,{owner:w.file,table:w.table,actions:new Set()});
-  groups.get(key).actions.add(w.action);
+  if(!groups.has(key))groups.set(key,{owner:w.file,table:w.table,writerFunctions:new Set()});
+  groups.get(key).writerFunctions.add(method);
  }
  const candidates=[],excluded=[];
  for(const group of groups.values()){
@@ -79,22 +95,24 @@ function selectPairs({paths,read,writes}){
    const routePaths=[...(graph.byFile.get(caller)||[])].sort();
    if(!routePaths.length)continue;
    const src=graph.sources[caller];
-   const names=destructuredImports(src,caller,group.owner,known);
+   const names=destructuredImports(src,caller,group.owner,known)
+    .filter(n=>group.writerFunctions.has(n));
    for(const symbol of names){
     for(const offset of actualCallSites(src,symbol)){
      const callerFunction=functionAt(normalizeSource(src),offset);
      const ownerSource=graph.sources[group.owner];
-     const ownerDeclaration=new RegExp('\\b(?:async\\s+)?function\\s+'+symbol+'\\s*\\(');
-     const match=ownerDeclaration.exec(ownerSource);
+     const declaration=new RegExp('\\b(?:async\\s+)?function\\s+'+symbol+'\\s*\\(');
+     const match=declaration.exec(ownerSource);
      if(!match)continue;
      const ownerFunction=functionAt(ownerSource,match.index+match[0].length);
+     if(ownerFunction.name!==symbol)continue;
      const readCandidate=/\bSELECT\b[\s\S]{0,400}?\bFROM\s+\w+|\bassert\w*(?:Within|Prior|Balance|Available)\w*\s*\(/i.test(ownerFunction.body);
      const lock=/\bFOR\s+(?:NO\s+KEY\s+)?UPDATE\b|pg_advisory_(?:xact_)?lock\b/i.test(callerFunction.body);
      boundaries.push({
       source:caller,entry:callerFunction.name,ownerFunction:symbol,
       routePaths,hasOwnerReadPrecheck:readCandidate,hasLocalLock:lock,
       hasBegin:/\bBEGIN\b/.test(callerFunction.body),
-      evidence:'LEXICAL_CALL_AND_IMPORT_REACHABILITY_ONLY',
+      evidence:'FUNCTION_SCOPED_SQL_WRITER_AND_LEXICAL_IMPORT_CALL',
       runtimeReachabilityProven:false
      });
     }
@@ -105,24 +123,25 @@ function selectPairs({paths,read,writes}){
    .sort((a,b)=>a.source.localeCompare(b.source)||a.ownerFunction.localeCompare(b.ownerFunction));
   if(dedup.length<2){
    excluded.push({owner:group.owner,table:group.table,
-    reason:'FEWER_THAN_TWO_REACHABLE_ENTRYPOINT_CANDIDATES'});
+    reason:'FEWER_THAN_TWO_REACHABLE_FUNCTION_SCOPED_WRITERS'});
    continue;
   }
   for(let i=0;i<dedup.length;i++)for(let j=i+1;j<dedup.length;j++){
    const a=dedup[i],b=dedup[j];
-   if(a.source===b.source&&a.entry===b.entry)continue;
-   const readFirst=a.hasOwnerReadPrecheck||b.hasOwnerReadPrecheck;
-   if(!readFirst)continue;
+   if(a.source===b.source)continue;
+   if(!(a.hasOwnerReadPrecheck||b.hasOwnerReadPrecheck))continue;
+   if(a.hasLocalLock&&b.hasLocalLock)continue; // inspect locks first, lower-priority later
    const unlocked=Number(!a.hasLocalLock)+Number(!b.hasLocalLock);
-   const score=100*Number(readFirst)+20*unlocked+10*Number(a.hasLocalLock!==b.hasLocalLock);
+   const score=100+20*unlocked+10*Number(a.hasLocalLock!==b.hasLocalLock);
    const entries=[a,b].sort((x,y)=>x.source.localeCompare(y.source)||
     x.ownerFunction.localeCompare(y.ownerFunction));
    const identity=[group.table,...entries.map(x=>x.source+'#'+x.entry+'#'+x.ownerFunction)].join('|');
    candidates.push({id:'KBA-PAIR-'+crypto.createHash('sha256').update(identity).digest('hex').slice(0,12),
     table:group.table,owner:group.owner,actors:entries,score,
-    scope:'STATIC_PAIR_CANDIDATE_NOT_RUNTIME_PROOF',
-    reason:'Shared physical-table writer with lexical precheck and reachable callers',
-    pending:['Validate real transaction boundary','Prove PSP isolated','Provision canonical fixture']});
+    scope:'STATIC_FUNCTION_SCOPED_CANDIDATE_NOT_RUNTIME_PROOF',
+    reason:'Same physical SQL table, proven lexical writer function, caller import and precheck',
+    pending:['Verify actual SQL statement before running','Verify transaction and shared lock',
+     'Ensure no external provider invoked','Prepare isolated schema-backed fixtures']});
   }
  }
  candidates.sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
@@ -132,10 +151,11 @@ function selectPairs({paths,read,writes}){
   scannedFiles:paths.length,routeRootFiles:graph.routes.length,
   pairs:candidates,excluded,
   limitations:[
-   'Imports are static reachability hints, not a call graph',
-   'Function attribution is lexical and can be confused by nested or anonymous callbacks',
-   'SELECT detection and BEGIN/lock detection are heuristic and can miss imported locks',
-   'No real entrypoint, transaction, PSP or PostgreSQL operation is executed by selection'
+   'Writer association uses enclosing named function from SQL literal source location; imported helper writes can be missed',
+   'Route reachability is import-based, not control-flow or HTTP reachability proof',
+   'SQL preconditions and transaction boundaries are lexical, not an interprocedural AST proof',
+   'Locked/locked candidates are deferred, not certified safe',
+   'No real payment provider, route or database is executed by this selector'
   ]};
 }
 module.exports={routesReachable,destructuredImports,functionAt,actualCallSites,selectPairs};
