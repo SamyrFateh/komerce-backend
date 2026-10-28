@@ -153,6 +153,14 @@ function reportMarkdown(report){
   for(const v of q.cases.filter(x=>x.needsReview).slice(0,50))
    lines.push('| '+clean(v.file)+' | '+clean(v.table||v.rawTarget)+' | '+
     v.status+' | '+v.priority+' | '+v.occurrences+' | '+clean(v.owners.join(', ')||'NON DEFINI')+' |');
+  if(q.importHints){
+   const h=q.importHints.coverage;
+   lines.push('', '### Dependances de route candidates (import statique)', '',
+    '- Fichiers writers avec indice de route : '+h.writersWithRouteHints+' / '+h.writerFiles,
+    '- Nombre de chemins prouves au runtime : **0**.',
+    '- Exemple auto-parcel : '+JSON.stringify((q.importHints.pathsByWriter['services/auto-parcel.js']||[]).slice(0,2)),
+    'Une importation ne demontre pas un appel execute ou une autorisation.');
+  }
   lines.push('', 'Tous les fragments et dossiers figurent dans business-audit.json.',
    'Une correspondance de domaine (y compris un alias) ou une déclaration W~ ne prouve ni délégation ni exécution.');
  }
