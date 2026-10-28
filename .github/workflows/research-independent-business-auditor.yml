@@ -9,6 +9,7 @@ on:
       - research/business-auditor-v10-executable-bug-hunt-20261028
       - research/business-auditor-v11-multidomain-oracles-20261028
       - research/business-auditor-v12-opus-proof-pivot-20261028
+      - research/business-auditor-v13-canonical-parcel-sequences-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -25,6 +26,7 @@ on:
     branches:
       - research/business-auditor-v11-multidomain-oracles-20261028
       - research/business-auditor-v12-opus-proof-pivot-20261028
+      - research/business-auditor-v13-canonical-parcel-sequences-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -69,7 +71,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -241,6 +243,44 @@ jobs:
              r.verdict.productionIncidentConfirmed!==false)
             throw Error('V1.2 PHYSICAL_BASELINE_DRIFT: require explicit review; not production proof');
           console.log('BUSINESS_AUDIT_V12_BASELINE_MATCH',JSON.stringify(r.verdict));
+          NODE
+      - name: V1.3 execute real distribute cancel redistribute sequence on canonical PostgreSQL
+        run: node tools/business-auditor/v13-canonical-parcel-gate.js /tmp/komerce-independent-business-audit
+      - name: V1.3 independently compare raw state and provisional reviewed business baseline
+        run: |
+          node <<'NODE'
+          const record=require('/tmp/komerce-independent-business-audit/v13-canonical-parcel-proof.json');
+          const base=require('./tools/business-auditor/v13-canonical-sequence-baseline.json');
+          const {interpret}=require('./tools/business-auditor/v13-canonical-parcel-predicate');
+          const fresh=interpret(record.raw),v=record.verdict;
+          if(record.contract!=='komerce-canonical-pg-sequence-proof/v13'||
+             record.sha!==process.env.GITHUB_SHA||record.runId!==process.env.GITHUB_RUN_ID||
+             record.raw.rollbackVerified!==true||
+             JSON.stringify(fresh)!==JSON.stringify(v)||
+             base.contract!=='komerce-business-sequence-baseline/v13'||
+             base.policy!==v.policyAssumption||
+             v.verdict!==base.expectedVerdict||
+             JSON.stringify(v.issues.map(i=>i.id))!==JSON.stringify(base.expectedSignals)||
+             v.productionIncidentConfirmed!==false)
+            throw Error('V1.3_CANONICAL_SEQUENCE_BASELINE_DRIFT: investigate controlled business state and source');
+          console.log('BUSINESS_AUDIT_V13_BASELINE_MATCH',JSON.stringify({
+           scope:v.evidenceLevel,issues:v.issues.map(i=>i.id),rollback:record.raw.rollbackVerified
+          }));
+          NODE
+      - name: V1.3 independently replay same canonical sequence and compare physical state
+        run: npm run audit:business:sequence -- --out /tmp/komerce-independent-business-audit/v13-replay --against /tmp/komerce-independent-business-audit/v13-canonical-parcel-proof.json
+      - name: V1.3 refuse unexplained replay drift or missing rollback
+        run: |
+          node <<'NODE'
+          const r=require('/tmp/komerce-independent-business-audit/v13-replay/v13-local-replay.json');
+          if(r.contract!=='komerce-canonical-local-replay/v13'||
+             r.sha!==process.env.GITHUB_SHA||r.raw.rollbackVerified!==true||
+             r.comparison?.sameCommit!==true||
+             r.comparison?.sameSourceHashes!==true||
+             r.comparison?.sameObservations!==true||
+             r.comparison.classification!=='REPLAY_IDENTICAL_ON_SAME_SHA')
+           throw Error('V1.3 sequence cannot be reproduced independently on same source');
+          console.log('BUSINESS_AUDIT_V13_REPLAY_VERIFIED',r.comparison.classification);
           NODE
       - name: V1.0 independent one-command static repo audit without DB
         run: npm run audit:business:v1 -- --mode static --out /tmp/komerce-independent-business-audit/v10-static
