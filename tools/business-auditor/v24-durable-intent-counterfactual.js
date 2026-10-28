@@ -98,6 +98,9 @@ function wrapPaypal(original) {
    if(!committed)await client.query('ROLLBACK').catch(()=>{});
    client.release();
   }
+  // Failpoints are only active inside V2.5's disposable-PG worker.
+  // process.exit deliberately prevents the normal catch/reconciliation path.
+  if(process.env.KBA_V25_FAULT==='PRE_PSP_HARD_EXIT')process.exit(86);
   // The provider key comes from the COMMITTED intent, not Date.now().
   const paypal={...input.paypal,refundCapture:(captureId,options)=>
    input.paypal.refundCapture(captureId,{...options,providerRequestKey:key})};
@@ -128,6 +131,7 @@ function wrapPaypal(original) {
     [input.orderId]);
    throw Error('REFUND_V24_PSP_LEDGER_RECONCILIATION_REQUIRED');
   }
+  if(process.env.KBA_V25_FAULT==='POST_LEDGER_HARD_EXIT')process.exit(86);
   await db.query(
     "UPDATE kba_refund_intents SET state='completed',provider_refund_id=$2 WHERE order_id=$1 AND state='reserved' AND owner='paypal'",
     [input.orderId,extId]);
