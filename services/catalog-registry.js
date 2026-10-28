@@ -46,7 +46,7 @@ const REGISTRY_CTE = [
   "           OR EXISTS (SELECT 1 FROM catalog_field_overrides decision",
   "                       WHERE decision.product_id=p.id AND decision.field_name='name'",
   "                         AND decision.reason='KOMERCE_FR_SUFFICIENCY_ACCEPTED_V1'",
-  "                         AND decision.set_by IS NOT NULL AND decision.field_value=p.name))",
+  "                         AND decision.set_by IS NOT NULL AND decision.field_value=p.name)",
   '           AND p.needs_review IS FALSE',
   "           AND (COALESCE(p.content_source, 'connector_raw') <> 'connector_raw' OR",
   "                COALESCE(p.source_locale, '') = 'fr' OR COALESCE(p.source_locale, '') LIKE 'fr-%')) AS editorial_ready",
