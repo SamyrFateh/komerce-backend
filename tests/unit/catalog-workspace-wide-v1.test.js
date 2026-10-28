@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-2');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-3');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -92,4 +92,56 @@ test('Catalogue actionnable : en-tête compact, onglets et filtres, sans navigat
   expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
   expect(ui).toContain("statusChip.addEventListener('click', () => primary.click())");
   expect(css).toContain('.kmc-catalog-compact-header');
+});
+
+test('Suggestion : la paire boutique actuelle active est proposée sans mutation', () => {
+  const catalog = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const categories = [
+    { key:'tech', label:'Tech', is_active:true, subcategories:[
+      {key:'phones',label:'Téléphones',is_active:true},
+      {key:'cases',label:'Accessoires',is_active:true},
+    ] },
+  ];
+  expect(catalog.suggestBoutiquePair({
+    boutique_category_key:'tech',boutique_subcategory_key:'phones',
+    supplier_category:'Mobile Phone Protective Film',
+  },categories)).toEqual({category:'tech',subcategory:'phones',basis:'current_pair'});
+});
+test('Suggestion : seule sous-catégorie active proposée quand la catégorie est établie', () => {
+  const catalog=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  expect(catalog.suggestBoutiquePair({boutique_category_key:'maison'},
+    [{key:'maison',label:'Maison',is_active:true,subcategories:[
+      {key:'cuisine',label:'Cuisine',is_active:true},
+      {key:'inactif',label:'Non actif',is_active:false},
+    ]}])).toEqual({category:'maison',subcategory:'cuisine',basis:'single_active_child'});
+});
+test('Suggestion : correspondance exacte fournisseur unique, jamais de classement arbitraire', () => {
+  const catalog=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const cats=[
+    {key:'tech',label:'Tech',is_active:true,subcategories:[
+      {key:'phones',label:'Téléphones',is_active:true},
+      {key:'films',label:'Films protecteurs',is_active:true}]},
+    {key:'maison',label:'Maison',is_active:true,subcategories:[
+      {key:'cuisine',label:'Cuisine',is_active:true}]},
+  ];
+  expect(catalog.suggestBoutiquePair({supplier_category:'Accessories > Films protecteurs'},cats))
+    .toEqual({category:'tech',subcategory:'films',basis:'supplier_exact'});
+  expect(catalog.suggestBoutiquePair({supplier_category:'Mobile Phone Protective Film'},cats))
+    .toEqual({category:'',subcategory:'',basis:'none'});
+  expect(catalog.suggestBoutiquePair({supplier_category:'Tech'},cats))
+    .toEqual({category:'tech',subcategory:'',basis:'supplier_parent'});
+});
+test('Classement : formulaire accessible et pas de prompt/confirm avec indices', () => {
+  const source=ui.slice(ui.indexOf('function openProductClassificationDialog'),
+    ui.indexOf('function renderProducts('));
+  expect(source).toContain("doc.createElement('dialog')");
+  expect(source).toContain("doc.createElement('select')");
+  expect(source).toContain("dialog.showModal()");
+  expect(source).toContain("suggestBoutiquePair(row, active)");
+  expect(source).toContain("type = 'submit'");
+  expect(source).toContain("feedbackTarget: feedback");
+  expect(source).toContain("body: { category: category.key, subcategory: subcategory.key }");
+  expect(source).not.toContain("context.prompt(");
+  expect(source).not.toContain("context.confirm(");
+  expect(source).toContain("Si une seule feuille reste possible, la proposer d'emblée.");
 });

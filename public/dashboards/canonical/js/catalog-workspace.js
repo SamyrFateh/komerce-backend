@@ -1224,6 +1224,198 @@
     ];
   }
 
+
+  // Suggestion déterministe et prudente : jamais de taxonomie inventée.
+  function suggestBoutiquePair(row = {}, categories = []) {
+    const active = (Array.isArray(categories) ? categories : [])
+      .filter(cat => cat && cat.is_active === true)
+      .map(cat => ({
+        key: cat.key, label: cat.label || cat.key,
+        children: (cat.subcategories || []).filter(sub => sub && sub.is_active === true)
+          .map(sub => ({ key: sub.key, label: sub.label || sub.key })),
+      }))
+      .filter(cat => cat.children.length);
+    const blank = { category: '', subcategory: '', basis: 'none' };
+    const match = active.find(cat => cat.key === row.boutique_category_key);
+    if (match) {
+      const child = match.children.find(sub => sub.key === row.boutique_subcategory_key);
+      if (child) return { category: match.key, subcategory: child.key, basis: 'current_pair' };
+      if (match.children.length === 1) return {
+        category: match.key, subcategory: match.children[0].key, basis: 'single_active_child',
+      };
+      return { category: match.key, subcategory: '', basis: 'current_category' };
+    }
+    // Correspondance stricte des segments fournisseurs, sans approximer
+    // "Téléphone" = "Film protecteur" ou convertir une famille trop large.
+    const canonical = str => String(str || '').normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+    const fragments = String(row.supplier_category || '')
+      .split(/\s*(?:>|›|»|\/)\s*/).map(canonical).filter(Boolean);
+    if (!fragments.length) return blank;
+    const candidates = active.flatMap(cat => cat.children
+      .filter(sub => fragments.includes(canonical(sub.label)) || fragments.includes(canonical(sub.key)))
+      .map(sub => ({ category: cat.key, subcategory: sub.key })));
+    if (candidates.length === 1) return { ...candidates[0], basis: 'supplier_exact' };
+    const parents = active.filter(cat => fragments.includes(canonical(cat.label)) ||
+      fragments.includes(canonical(cat.key)));
+    if (parents.length === 1) {
+      const cat = parents[0];
+      return { category: cat.key,
+        subcategory: cat.children.length === 1 ? cat.children[0].key : '',
+        basis: cat.children.length === 1 ? 'supplier_unique_child' : 'supplier_parent' };
+    }
+    return blank;
+  }
+
+  function openProductClassificationDialog(context, row, categories, trigger) {
+    const doc = context.document;
+    const active = (categories || []).filter(cat => cat.is_active &&
+      (cat.subcategories || []).some(sub => sub.is_active));
+    if (!active.length) {
+      setFeedback(context.root, 'Aucune paire Boutique active. Vérifiez la Taxonomie boutique.', 'critical');
+      return;
+    }
+    const previous = doc.getElementById && doc.getElementById('kmc-catalog-classification-dialog');
+    if (previous && typeof previous.close === 'function') previous.close();
+    else if (previous?.parentNode) previous.parentNode.removeChild(previous);
+
+    const suggestion = suggestBoutiquePair(row, active);
+    const dialog = doc.createElement('dialog');
+    dialog.className = 'kmc-catalog-classification-dialog';
+    dialog.id = 'kmc-catalog-classification-dialog';
+    dialog.setAttribute('aria-labelledby', 'kmc-classification-title');
+    dialog.setAttribute('aria-describedby', 'kmc-classification-instructions');
+    const heading = doc.createElement('header');
+    heading.className = 'kmc-catalog-classification-heading';
+    heading.appendChild(text(doc, 'span', 'kmc-catalog-classification-eyebrow', 'CLASSIFICATION BOUTIQUE'));
+    const title = text(doc, 'h2', '', 'Classer le produit');
+    title.id = 'kmc-classification-title';
+    heading.appendChild(title);
+    heading.appendChild(text(doc, 'strong', '', row.name || row.product_ref));
+    heading.appendChild(text(doc, 'small', '', row.product_ref));
+    dialog.appendChild(heading);
+
+    const source = doc.createElement('section');
+    source.className = 'kmc-catalog-classification-source';
+    source.appendChild(text(doc, 'span', '', 'Catégorie fournisseur (pour information)'));
+    source.appendChild(text(doc, 'p', '', row.supplier_category || 'Non renseignée'));
+    dialog.appendChild(source);
+
+    const form = doc.createElement('form');
+    form.className = 'kmc-catalog-classification-form';
+    const instructions = text(doc, 'p', '', 'Choisissez une paire active. Ce changement ne valide ni ne publie le produit.');
+    instructions.id = 'kmc-classification-instructions';
+    form.appendChild(instructions);
+    const note = text(doc, 'p', 'kmc-catalog-classification-suggestion', '');
+    note.setAttribute('aria-live', 'polite');
+    form.appendChild(note);
+    const fields = doc.createElement('div');
+    fields.className = 'kmc-catalog-classification-fields';
+    const selectField = (label, id) => {
+      const field = doc.createElement('div');
+      field.className = 'kmc-catalog-classification-field';
+      const caption = text(doc, 'label', '', label);
+      caption.setAttribute('for', id);
+      field.appendChild(caption);
+      const input = doc.createElement('select');
+      input.id = id;
+      input.required = true;
+      field.appendChild(input);
+      fields.appendChild(field);
+      return input;
+    };
+    const categorySelect = selectField('Catégorie boutique', 'kmc-catalog-classification-category');
+    const subcategorySelect = selectField('Sous-catégorie boutique', 'kmc-catalog-classification-subcategory');
+    const addOption = (select, value, label) => {
+      const option = doc.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      select.appendChild(option);
+    };
+    addOption(categorySelect, '', 'Choisir une catégorie');
+    active.forEach(cat => addOption(categorySelect, cat.key, cat.label || cat.key));
+    categorySelect.value = suggestion.category;
+    const message = {
+      current_pair: 'Classement actuel proposé par défaut. Vous pouvez le modifier.',
+      single_active_child: 'Une seule sous-catégorie active existe pour la catégorie actuelle : proposition à confirmer.',
+      current_category: 'Catégorie actuelle conservée. Choisissez la sous-catégorie.',
+      supplier_exact: 'Suggestion : correspondance exacte avec une sous-catégorie fournisseur. À confirmer.',
+      supplier_unique_child: 'Suggestion : catégorie fournisseur reconnue, seule sous-catégorie active. À confirmer.',
+      supplier_parent: 'Catégorie fournisseur reconnue. Choisissez la sous-catégorie.',
+      none: 'Aucune correspondance suffisamment fiable : choisissez la classification.',
+    };
+    note.textContent = message[suggestion.basis] || message.none;
+    const actions = doc.createElement('div');
+    actions.className = 'kmc-catalog-classification-actions';
+    const cancel = makeButton(doc, 'Annuler', 'cancel-classification', true);
+    const save = makeButton(doc, 'Enregistrer le classement', 'save-classification');
+    save.type = 'submit';
+    actions.appendChild(cancel);
+    actions.appendChild(save);
+    const feedback = text(doc, 'p', 'kmc-catalog-classification-feedback', '');
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('aria-live', 'polite');
+    const refresh = preferred => {
+      subcategorySelect.replaceChildren();
+      addOption(subcategorySelect, '', 'Choisir une sous-catégorie');
+      const cat = active.find(c => c.key === categorySelect.value);
+      const children = (cat?.subcategories || []).filter(sub => sub.is_active);
+      children.forEach(sub => addOption(subcategorySelect, sub.key, sub.label || sub.key));
+      // Si une seule feuille reste possible, la proposer d'emblée.
+      const selected = children.some(sub => sub.key === preferred) ? preferred :
+        (children.length === 1 ? children[0].key : '');
+      subcategorySelect.value = selected;
+      subcategorySelect.disabled = !cat;
+      save.disabled = !cat || !selected;
+    };
+    refresh(suggestion.subcategory);
+    categorySelect.addEventListener('change', () => {
+      refresh('');
+      note.textContent = 'Vérifiez le nouveau classement avant de l’enregistrer.';
+      feedback.textContent = '';
+    });
+    subcategorySelect.addEventListener('change', () => {
+      save.disabled = !categorySelect.value || !subcategorySelect.value;
+      feedback.textContent = '';
+    });
+    form.appendChild(fields);
+    form.appendChild(feedback);
+    form.appendChild(actions);
+    dialog.appendChild(form);
+    const cleanup = () => {
+      if (dialog.parentNode) dialog.parentNode.removeChild(dialog);
+      if (trigger?.isConnected && typeof trigger.focus === 'function') trigger.focus();
+    };
+    const close = () => {
+      if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+      else cleanup();
+    };
+    dialog.addEventListener('close', cleanup, { once: true });
+    cancel.addEventListener('click', close);
+    dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const category = active.find(cat => cat.key === categorySelect.value);
+      const subcategory = (category?.subcategories || []).find(sub =>
+        sub.is_active && sub.key === subcategorySelect.value);
+      if (!category || !subcategory) {
+        feedback.textContent = 'Sélectionnez une catégorie et une sous-catégorie actives.';
+        return;
+      }
+      const result = await runAction(context, save, {
+        url: ENDPOINT + '/products/' + encodeURIComponent(row.product_ref) + '/classify',
+        body: { category: category.key, subcategory: subcategory.key },
+        feedbackTarget: feedback,
+        successMessage: 'Classement Boutique enregistré. La fiche a été actualisée sans publication.',
+      });
+      if (result) close();
+    });
+    doc.body.appendChild(dialog);
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+    if (typeof categorySelect.focus === 'function') categorySelect.focus();
+  }
+
   function renderProducts(rootNode, ui, doc, payload, context) {
     const slot = createSection(rootNode, ui, 'Produits', '');
     if (slot.parentNode) {
@@ -1438,35 +1630,8 @@
         const editClassification = makeButton(doc,
           (row.issues || []).includes('taxonomy_to_confirm') ? 'Classer' : 'Modifier classement',
           'classify-product', true);
-        editClassification.addEventListener('click', async () => {
-          const pairs = categories.flatMap(cat => (cat.subcategories || [])
-            .filter(sub => sub.is_active)
-            .map(sub => ({ category: cat.key, subcategory: sub.key,
-              label: (cat.label || cat.key) + ' › ' + (sub.label || sub.key) })));
-          if (!pairs.length) {
-            setFeedback(context.root, 'Aucune paire boutique active : ouvrir Gérer les catégories.', 'critical');
-            return;
-          }
-          const suggestionIndex = pairs.findIndex(pair =>
-            pair.category === row.boutique_category_key && pair.subcategory === row.boutique_subcategory_key);
-          const lines = pairs.map((pair, i) => (i + 1) + '. ' + pair.label).join('\n');
-          const selected = context.prompt('Choisir une paire boutique active pour ' + row.product_ref +
-            '\nSource fournisseur : ' + (row.supplier_category || '—') + '\n\n' + lines,
-            suggestionIndex >= 0 ? String(suggestionIndex + 1) : '1');
-          if (selected === null) return;
-          const index = Number(selected) - 1;
-          if (!Number.isInteger(index) || !pairs[index]) {
-            setFeedback(context.root, 'Numéro de catégorie invalide.', 'critical');
-            return;
-          }
-          if (!context.confirm('Confirmer le classement de ' + row.product_ref + ' : ' + pairs[index].label +
-              ' ? Cela ne publie pas le produit.')) return;
-          await runAction(context, editClassification, {
-            url: ENDPOINT + '/products/' + encodeURIComponent(row.product_ref) + '/classify',
-            body: pairs[index],
-            successMessage: 'Classification enregistrée ; conformité recalculée pour ' + row.product_ref + '.',
-          });
-        });
+        editClassification.addEventListener('click', () =>
+          openProductClassificationDialog(context, row, categories, editClassification));
         const issues = row.issues || [];
         const source = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Examiner source');
         source.href = '/admin/workspaces/sourcing' +
@@ -1828,6 +1993,7 @@
     autoTranslateFrench,
     autoPrepareFrenchQueue,
     scheduleAutoFrenchPreparation,
+    suggestBoutiquePair,
     hasPrimedFrenchTranslator,
     resumeAutoFrenchPreparation,
     mount,

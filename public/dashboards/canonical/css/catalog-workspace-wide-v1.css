@@ -494,3 +494,147 @@ body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-catalog-compact-header .kmc-worksp
 }
 body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-operations-workspace { gap: 11px; }
 body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-catalog-tabs { padding-top: 0; }
+
+/* Classement Boutique : dialogue intégré, accessible et sans prompt navigateur. */
+.kmc-catalog-classification-dialog {
+  box-sizing: border-box;
+  position: fixed;
+  inset: 0;
+  width: min(640px, calc(100vw - 28px));
+  max-width: 640px;
+  max-height: min(86vh, 760px);
+  overflow-y: auto;
+  margin: auto;
+  padding: 0;
+  border: 1px solid #d7e2f0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 80px rgb(10 29 57 / 0.25);
+  color: #183150;
+}
+.kmc-catalog-classification-dialog::backdrop {
+  background: rgb(11 29 52 / 0.58);
+}
+.kmc-catalog-classification-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 23px 26px 17px;
+  border-bottom: 1px solid #e4ebf5;
+}
+.kmc-catalog-classification-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  color: #215acc;
+}
+.kmc-catalog-classification-heading h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+}
+.kmc-catalog-classification-heading strong {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.kmc-catalog-classification-heading small {
+  color: #607896;
+}
+.kmc-catalog-classification-source {
+  margin: 16px 26px 0;
+  padding: 13px 15px;
+  border: 1px solid #dfe8f4;
+  background: #f6f9ff;
+  border-radius: 9px;
+}
+.kmc-catalog-classification-source span {
+  font-size: 11px;
+  font-weight: 800;
+  color: #516987;
+}
+.kmc-catalog-classification-source p {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+}
+.kmc-catalog-classification-form {
+  padding: 0 26px 22px;
+}
+.kmc-catalog-classification-form > p:first-child {
+  margin: 17px 0 7px;
+  color: #415b7c;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.kmc-catalog-classification-suggestion {
+  font-size: 12px;
+  font-weight: 650;
+  color: #1855a6;
+  background: #eef5ff;
+  padding: 9px 12px;
+  border-radius: 8px;
+  margin: 0 0 15px;
+}
+.kmc-catalog-classification-fields {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 12px;
+}
+.kmc-catalog-classification-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 7px;
+}
+.kmc-catalog-classification-field label {
+  color: #2c4362;
+  font-weight: 750;
+  font-size: 12px;
+}
+.kmc-catalog-classification-field select {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  background: #fff;
+  border: 1px solid #bfccdf;
+  border-radius: 8px;
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 13px;
+  color: #183150;
+}
+.kmc-catalog-classification-field select:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.kmc-catalog-classification-field select:disabled {
+  background: #f1f4f8;
+  color: #71849d;
+}
+.kmc-catalog-classification-feedback {
+  min-height: 20px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #a32938;
+  margin: 12px 0 0;
+}
+.kmc-catalog-classification-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+.kmc-catalog-classification-actions .kmc-workspace-action {
+  min-height: 42px;
+  font-size: 13px;
+  padding: 10px 16px;
+}
+@media (max-width: 580px) {
+  .kmc-catalog-classification-heading { padding: 17px 16px 12px; }
+  .kmc-catalog-classification-source { margin: 12px 16px 0; }
+  .kmc-catalog-classification-form { padding: 0 16px 16px; }
+  .kmc-catalog-classification-fields { grid-template-columns: minmax(0, 1fr); }
+  .kmc-catalog-classification-actions .kmc-workspace-action { flex: 1 1 135px; }
+}
