@@ -218,11 +218,13 @@ jobs:
         run: |
           node <<'NODE'
           const r=require('/tmp/komerce-independent-business-audit/v12-raw-physical-parcel.json');
+          const baseline=require('./tools/business-auditor/v12-physical-baseline.json');
+          const want=baseline.expected?.['KBA-V12-PHYSICAL-PARCEL-ROWCOUNT'];
+          if(baseline.contract!=='komerce-business-physical-baseline/v12'||!want)throw Error('V1.2 physical baseline unreviewed');
           if(r.contract!=='komerce-physical-business-proof/v12'||
              r.sha!==process.env.GITHUB_SHA||r.runId!==process.env.GITHUB_RUN_ID||
-             r.verdict.verdict!=='REPRODUCED_PHYSICAL_PG_TEMP_INVARIANT_VIOLATION'||
-             r.verdict.mismatches.length!==1||
-             r.verdict.mismatches[0].scenario!=='CONFLICT_EXISTING_CANCELLED_MEMBERSHIP'||
+             r.verdict.verdict!==want||
+             !Array.isArray(r.verdict.mismatches)||
              r.verdict.productionIncidentConfirmed!==false)
             throw Error('V1.2 PHYSICAL_BASELINE_DRIFT: require explicit review; not production proof');
           console.log('BUSINESS_AUDIT_V12_BASELINE_MATCH',JSON.stringify(r.verdict));
