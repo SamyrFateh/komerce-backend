@@ -22,6 +22,7 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { requireCatalogGlobalAuthority } = require('../middleware/require-catalog-global-authority');
 const workspace = require('../services/catalog-workspace');
+const refineryFrench = require('../services/refinery-fr-recheck');
 const taxonomy = require('../services/boutique-taxonomy-admin');
 const log = require('../utils/logger').child({ module: 'admin-catalog-workspace' });
 
@@ -89,6 +90,16 @@ router.post('/products/:productRef/classify', async (req, res, next) => {
 router.post('/products/:productRef/deactivate', async (req, res, next) => {
   try {
     res.json({ ok: true, action: 'product_deactivated', result: await workspace.deactivateProduct(req.params.productRef) });
+  } catch (err) { sendError(err, res, next); }
+});
+
+// Separate authority: correct an ACTIVE handed-off product editorially.
+ // This does not approve the product, suspend it or affect market exposure.
+router.post('/refinery/:productRef/prepare-fr', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const result = await refineryFrench.correctActiveFrench(req.params.productRef, req.body || {}, req.user);
+    return res.json({ ok: true, action: 'refinery_active_editorial_recheck', result });
   } catch (err) { sendError(err, res, next); }
 });
 
