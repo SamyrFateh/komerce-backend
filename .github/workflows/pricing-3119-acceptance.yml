@@ -1,0 +1,56 @@
+name: Review PR 3119 — independent Pricing UX certification
+on:
+  push:
+    branches: [audit/pricing-3119-acceptance-20261028]
+    paths:
+      - '.github/workflows/pricing-3119-acceptance.yml'
+      - 'tests/pricing-3119-acceptance/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  jest:
+    name: Atelier Pricing / Jest — real PR code
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    env:
+      NODE_ENV: test
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --check public/dashboards/canonical/js/pricing-atelier-views.js
+      - run: npx jest --config jest.unit.config.js --ci --runInBand --no-coverage tests/unit/canonical-pricing-atelier-views.test.js
+  playwright:
+    name: Atelier Pricing / Chromium simulated backend — desktop 1440
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    timeout-minutes: 18
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      ATELIER_SHOTS_DIR: test-results/pricing-3119-review
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: mkdir -p test-results/pricing-3119-review
+      - name: Playwright C1-C5 independent on PR frontend
+        run: npx playwright test --config playwright.config.js tests/e2e/pricing-atelier-views.spec.js tests/e2e/pricing-atelier-mock.spec.js
+      - name: Preserve screenshots and test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pricing-3119-pr-browser-proof
+          path: test-results/pricing-3119-review/
+          if-no-files-found: ignore
+          retention-days: 14
