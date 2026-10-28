@@ -394,21 +394,43 @@
 
       const edit = makeButton(doc, 'Corriger', 'update-candidate', true);
       edit.addEventListener('click', () => {
-        const weight = context.prompt('Poids estimé kg', row.estimated_weight_kg == null ? '' : String(row.estimated_weight_kg));
-        if (weight == null) return;
-        const purchase = context.prompt(`Prix achat · ${row.currency || 'AED'}`, row.purchase_price == null ? '' : String(row.purchase_price));
-        if (purchase == null) return;
-        const currency = context.prompt('Devise (AED/EUR/USD/KMF)', row.currency || 'AED');
-        if (currency == null) return;
-        runAction(context, edit, {
-          url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/update`,
-          body: {
-            ...(weight.trim() ? { estimated_weight_kg: Number(weight) } : {}),
-            ...(purchase.trim() ? { purchase_price: Number(purchase) } : {}),
-            currency: currency.trim().toUpperCase(),
-          },
-          successMessage: `${row.candidate_ref} corrigé.`,
+        const editor = openCandidateForm(context,
+          'Corriger la source · ' + row.candidate_ref,
+          'Ajustez uniquement les champs sourcing connus. Aucune publication ni validation Catalogue.',
+          edit);
+        const weight = editCandidateField(doc, editor.form, 'Poids estimé (kg)',
+          row.estimated_weight_kg, 'number');
+        weight.setAttribute('data-sourcing-edit-weight','');
+        const purchase = editCandidateField(doc, editor.form,
+          'Prix d’achat fournisseur', row.purchase_price, 'number');
+        purchase.setAttribute('data-sourcing-edit-purchase','');
+        const currency = editCandidateField(doc, editor.form, 'Devise',
+          row.currency || 'AED');
+        currency.setAttribute('data-sourcing-edit-currency','');
+        editor.form.addEventListener('submit', async event => {
+          event.preventDefault();
+          const rawWeight = weight.value.trim(), rawPurchase = purchase.value.trim();
+          const valueCurrency = currency.value.trim().toUpperCase();
+          if ((rawWeight && (!Number.isFinite(Number(rawWeight)) || Number(rawWeight)<0))
+            || (rawPurchase && (!Number.isFinite(Number(rawPurchase)) || Number(rawPurchase)<0))) {
+            editor.feedback.textContent = 'Poids et prix doivent être des nombres positifs ou nuls.';
+            return;
+          }
+          if (!/^[A-Z]{3}$/.test(valueCurrency)) {
+            editor.feedback.textContent = 'Indiquez une devise à trois lettres (AED, EUR, USD, KMF…).';
+            currency.focus();
+            return;
+          }
+          const body = {
+            ...(rawWeight ? {estimated_weight_kg:Number(rawWeight)} : {}),
+            ...(rawPurchase ? {purchase_price:Number(rawPurchase)} : {}),
+            currency:valueCurrency,
+          };
+          await sendCandidateForm(context,editor,
+            ENDPOINT+'/candidates/'+encodeURIComponent(row.candidate_ref)+'/update',
+            body,row.candidate_ref+' : correction sourcing enregistrée.');
         });
+        weight.focus();
       });
       actions.appendChild(edit);
 
