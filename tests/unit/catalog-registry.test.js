@@ -113,3 +113,19 @@ test('Catalogue opérateur : la liste finale exclut les travaux Raffinerie sans 
   expect(historicalExecutor.query.mock.calls[0][0]).not.toContain(
     "WHERE work_status = 'catalog_approved'");
 });
+
+
+test('Raffinerie : un produit actif à défaut canonique revient en file de réexamen, sans dépublication', async () => {
+  const executor = { query: jest.fn()
+    .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+    .mockResolvedValueOnce({ rows: [fixture({
+      lifecycle_status: 'active', is_active: true,
+      work_status: 'editorial_to_complete', editorial_ready: false,
+    })] }) };
+  const view = await registry.listRegistry({ refinery_recheck_only: true }, executor);
+  const [countSql] = executor.query.mock.calls[0];
+  expect(countSql).toContain("is_active = TRUE AND lifecycle_status = 'active'");
+  expect(countSql).toContain("work_status <> 'catalog_approved'");
+  expect(view.products[0].work_status).toBe('editorial_to_complete');
+  expect(view.products[0].is_active).toBe(true);
+});
