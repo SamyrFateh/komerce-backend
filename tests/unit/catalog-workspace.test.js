@@ -616,3 +616,22 @@ test('paramètres économiques à valider : la ligne porte la classe de mise en 
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/catalog-workspace.js'), 'utf8');
   expect(src).toContain("line.className = 'kmc-param-line'");
 });
+
+
+test('Raffinerie isolée : la vue ne lit ni registre Catalogue ni assortiment commercial', async () => {
+  const data = await workspace.buildWorkspace({ refinery_view: '1' });
+  expect(data.scope.mode).toBe('refinery_preparation');
+  expect(data.refinery).toEqual(expect.objectContaining({
+    scope: 'refinery_readonly_diagnostic',
+    coverage: expect.objectContaining({ in_approval_queue: expect.any(Number) }),
+  }));
+  expect(data.products).toEqual([]);
+  expect(data.commercial_products).toEqual([]);
+  expect(mockListRegistry).not.toHaveBeenCalled();
+  expect(mockListCommercialAssortment).not.toHaveBeenCalled();
+  expect(mockListCategories).not.toHaveBeenCalled();
+});
+test('Catalogue finalisé : filtre uniquement la projection admin, pas les mutations ni le marché', async () => {
+  await workspace.buildWorkspace({});
+  expect(mockListRegistry).toHaveBeenCalledWith(expect.objectContaining({ finalized_only: true }));
+});
