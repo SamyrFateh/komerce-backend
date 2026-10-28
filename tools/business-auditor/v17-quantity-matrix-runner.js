@@ -60,6 +60,7 @@ async function single(databaseUrl,scenario){
    incoming:{assignments:Number(incoming.assignments),units:Number(incoming.units)},
    service:{success:owner.success,created:owner.parcel_created===true,
     usedOriginalParcel:owner.parcel_id===parcel,
+    queued:owner.queued===true,alreadyAssigned:owner.already_assigned===true,
     reportedAssigned:owner.items_assigned??null},
    rollbackVerified:true};
  }finally{
