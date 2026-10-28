@@ -1,0 +1,8 @@
+{
+  "contract": "komerce-business-physical-baseline/v12",
+  "expected": {
+    "KBA-V12-PHYSICAL-PARCEL-ROWCOUNT": "REPRODUCED_PHYSICAL_PG_TEMP_INVARIANT_VIOLATION"
+  },
+  "scope": "LOCAL_PG_TEMP_REAL_SERVICE_STUBBED_READS",
+  "note": "This is a previously identified defect, not accepted business behavior. A fix or regression requires reviewed baseline change."
+}
