@@ -119,6 +119,10 @@ async function listRegistry(query = {}, executor = db) {
   addFilter(query.subcategory, 'boutique_subcategory_key = ?');
   // A product can have several defects. A filter must show any matching
   // defect, not only the priority status shown on the first line.
+  // The operator's Catalogue is a finalized assortment, not a second
+  // Raffinerie queue. Direct reads without this option keep the complete
+  // canonical historical registry for diagnostics and existing consumers.
+  if (query.finalized_only === true) filters.push("work_status = 'catalog_approved'");
   const statusPredicates = {
     source_to_normalize: 'NOT source_ready',
     taxonomy_to_confirm: 'NOT taxonomy_ready',
