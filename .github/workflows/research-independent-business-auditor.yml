@@ -45,7 +45,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -73,6 +73,15 @@ jobs:
           if(q.summary.reviewCases!==q.cases.filter(x=>x.needsReview).length)throw Error('Review accounting mismatch');
           if(q.findings.some(x=>x.authorized||x.runtimeWriteProven||x.confirmedBusinessBug||x.verifiedCallPath))
             throw Error('Static writer mistakenly certified');
+          const hints=q.importHints;
+          if(hints?.contract!=='komerce-business-route-import-hints/v1'||hints.coverage.writerFiles<40)
+           throw Error('Route import scan missing');
+          if(hints.coverage.pathsProvenAtRuntime!==0)throw Error('Static route hints mislabeled');
+          const paths=hints.pathsByWriter['services/auto-parcel.js']||[];
+          if(!paths.some(x=>x.routeFile==='routes/auto-distribute-api.js'&&
+             x.files[0]==='routes/auto-distribute-api.js'&&
+             x.files.at(-1)==='services/auto-parcel.js'&&!x.runtimePathProven))
+           throw Error('Expected real static route import reference missing');
           const md=fs.readFileSync('/tmp/komerce-independent-business-audit/business-audit.md','utf8');
           if(!md.includes('Qualification statique des responsabilités'))throw Error('Markdown summary missing');
           console.log('BUSINESS_AUDIT_V07_QUALIFICATION',JSON.stringify(q.summary));
