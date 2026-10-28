@@ -9,6 +9,7 @@ on:
       - 'services/catalog-registry.js'
       - 'services/refinery-worklist.js'
       - 'scripts/testing/refinery-v4-pg-proof.js'
+      - 'scripts/testing/refinery-v4-chromium-proof.js'
       - 'public/dashboards/canonical/**'
       - 'tests/unit/catalog-workspace.test.js'
       - 'tests/unit/catalog-registry.test.js'
@@ -71,6 +72,18 @@ jobs:
           REFINERY_PG_CERT_ISOLATED: '1'
           REFINERY_PG_CERT_URL: postgres://refinery_test:refinery_test@127.0.0.1:55432/refinery_test
         run: node scripts/testing/refinery-v4-pg-proof.js
+      - name: Install headless Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Chromium 1440/390 UI smoke (isolated fixtures)
+        run: node scripts/testing/refinery-v4-chromium-proof.js
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refinery-v4-chromium-${{ github.sha }}
+          path: test-results/refinery-v4/*.png
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Boundary summary
         if: always()
         run: |
@@ -78,5 +91,5 @@ jobs:
             echo '## Raffinerie V4'
             echo
             echo 'Raffinerie/Catalogue isolated unit certification.'
-            echo 'PostgreSQL 16 disposable fixture proof. Not a staging PostgreSQL or Chromium certification.'
+            echo 'PostgreSQL 16 + Chromium 1440/390 using disposable fixtures. Real staging remains to certify.'
           } >> "$GITHUB_STEP_SUMMARY"
