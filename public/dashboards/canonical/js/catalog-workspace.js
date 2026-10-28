@@ -172,25 +172,29 @@
 
   function createHeader(doc, refinery = false) {
     const header = doc.createElement('header');
-    header.className = 'kmc-workspace-header';
+    header.className = refinery ? 'kmc-workspace-header' : 'kmc-workspace-header kmc-catalog-compact-header';
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', refinery ? 'WORKSPACE · RAFFINERIE' : 'WORKSPACE · CATALOGUE'));
+    if (refinery) copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · RAFFINERIE'));
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', refinery ? 'Raffinerie produits' : 'Catalogue global'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', refinery ? 'Corriger, enrichir, tarifer et valider avant toute mise au catalogue.' : 'Produits remis par la Raffinerie · classement, corrections et validation.'));
+    if (refinery) {
+      copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Corriger, enrichir, tarifer et valider avant toute mise au catalogue.'));
+    }
     header.appendChild(copy);
 
-    const nav = doc.createElement('nav');
-    nav.className = 'kmc-workspace-nav';
-    const commerce = text(doc, 'a', 'kmc-workspace-nav-link', '← Dashboard Commerce');
-    commerce.href = '/admin/commerce';
-    nav.appendChild(commerce);
-    const cockpit = text(doc, 'a', 'kmc-workspace-nav-link', 'Cockpit des imports');
-    cockpit.href = '/admin/import-runtime';
-    nav.appendChild(cockpit);
-    const next = text(doc, 'a', 'kmc-workspace-nav-link', refinery ? 'Catalogue →' : '← Raffinerie');
-    next.href = refinery ? '/admin/workspaces/catalog' : '/admin/workspaces/catalog?view=refinery';
-    nav.appendChild(next);
-    header.appendChild(nav);
+    if (refinery) {
+      const nav = doc.createElement('nav');
+      nav.className = 'kmc-workspace-nav';
+      const commerce = text(doc, 'a', 'kmc-workspace-nav-link', '← Dashboard Commerce');
+      commerce.href = '/admin/commerce';
+      nav.appendChild(commerce);
+      const cockpit = text(doc, 'a', 'kmc-workspace-nav-link', 'Cockpit des imports');
+      cockpit.href = '/admin/import-runtime';
+      nav.appendChild(cockpit);
+      const next = text(doc, 'a', 'kmc-workspace-nav-link', 'Catalogue →');
+      next.href = '/admin/workspaces/catalog';
+      nav.appendChild(next);
+      header.appendChild(nav);
+    }
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
     feedback.setAttribute('data-workspace-feedback', '');
@@ -1221,29 +1225,12 @@
   }
 
   function renderProducts(rootNode, ui, doc, payload, context) {
-    const slot = createSection(
-      rootNode, ui, 'Catalogue global · produits',
-      'Tous les produits remis par la Raffinerie, même en attente de classification, préparation ou validation.'
-    );
+    const slot = createSection(rootNode, ui, 'Produits', '');
     if (slot.parentNode) {
       slot.parentNode.setAttribute('id', 'catalog-products');
       slot.parentNode.className = (slot.parentNode.className || '') + ' kmc-catalog-main-panel';
     }
     const filters = context.catalogFilters;
-    const toolbar = doc.createElement('div');
-    toolbar.className = 'kmc-catalog-toolbar';
-    toolbar.appendChild(text(doc, 'p', 'kmc-catalog-toolbar-hint',
-      'Référentiel global · une fiche remise au Catalogue n’est pas automatiquement en vente.'));
-    const destinations = doc.createElement('nav');
-    destinations.className = 'kmc-catalog-toolbar-links';
-    const refineryLink = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Ouvrir la Raffinerie');
-    refineryLink.href = '/admin/workspaces/catalog?view=refinery';
-    destinations.appendChild(refineryLink);
-    const sourcingLink = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Ouvrir le Sourcing');
-    sourcingLink.href = '/admin/workspaces/sourcing';
-    destinations.appendChild(sourcingLink);
-    toolbar.appendChild(destinations);
-    slot.appendChild(toolbar);
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions kmc-catalog-filter-bar';
     const field = (label, control) => {
@@ -1747,10 +1734,6 @@
     } else if (context.catalogTab === 'taxonomy') {
       renderTaxonomy(rootNode, ui, doc, payload, context);
     } else {
-      const metrics = doc.createElement('section');
-      metrics.className = 'kmc-workspace-metrics';
-      rootNode.appendChild(metrics);
-      ui.MetricStrip.render(metrics, { items: registryMetricItems(payload) });
       renderProducts(rootNode, ui, doc, payload, context);
     }
   }

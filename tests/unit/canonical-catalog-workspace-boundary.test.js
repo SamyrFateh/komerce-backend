@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261028-2');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261028-3');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -200,7 +200,7 @@ test('Vue Catalogue ne duplique plus le pipeline Import', () => {
   ['Sources catalogue · LIVE', 'La Raffinerie en temps réel', 'En train d’arriver · LIVE']
     .forEach(label => expect(workspace).not.toContain(label));
 
-  expect(workspace).toContain('Catalogue global · produits');
+  expect(workspace).toContain("createSection(rootNode, ui, 'Produits', '')");
   expect(workspace).toContain('KIR clos');
   expect(workspace).toContain('Marchés approuvés');
   expect(workspace).toContain('/admin/import-runtime');
@@ -213,7 +213,9 @@ test('Catalogue garde une seule surface Canonical et délègue provenance/import
   expect(tower).toContain('Compatibility shell only');
   expect(tower).not.toContain("view=advanced");
   expect(workspace).toContain("cockpit.href = '/admin/import-runtime'");
-  expect(workspace).toContain("next.href = refinery ? '/admin/workspaces/catalog' : '/admin/workspaces/catalog?view=refinery'");
+  expect(workspace).toContain("if (refinery) {");
+  expect(workspace).toContain("next.href = '/admin/workspaces/catalog'");
+  expect(workspace).not.toContain('nav.appendChild(refineryLink)');
 });
 
 test('la curation guide explicitement la préparation française avant publication', () => {
@@ -751,12 +753,12 @@ test('la Raffinerie ne duplique pas ses compteurs en bas et préserve les métri
   expect(render).toContain('renderCommercial(rootNode, ui, doc, payload)');
   expect(render).toContain('renderTaxonomy(rootNode, ui, doc, payload, context)');
   expect(render).not.toContain('taxonomyPanel');
-  expect(render.indexOf('renderCatalogTabs(rootNode, doc, context)')).toBeLessThan(render.indexOf('ui.MetricStrip.render(metrics'));
+  expect(render.indexOf('renderCatalogTabs(rootNode, doc, context)')).toBeLessThan(render.indexOf('renderProducts(rootNode, ui, doc, payload, context)'));
   // Les compteurs opérationnels du registre sont exclus de la Raffinerie
   // et des deux rubriques secondaires : aucune métrique hors du bon onglet.
   expect(render).toContain("if (refinery) {");
   expect(render).toContain("renderApproval(rootNode, ui, doc, payload, context);");
-  expect(render).toContain("items: registryMetricItems(payload)");
+  expect(render).not.toContain('ui.MetricStrip.render');
   expect(render).not.toContain("metricItems(payload.summary, payload.curation).filter");
   expect(render).toContain('renderApproval(rootNode, ui, doc, payload, context)');
   expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');

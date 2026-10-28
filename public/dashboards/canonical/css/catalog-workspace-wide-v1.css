@@ -37,9 +37,6 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-operations-workspace > .kmc-
   gap: 8px 16px;
   border-radius: 12px;
 }
-body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-operations-workspace > .kmc-workspace-header > div:first-child {
-  display: none;
-}
 body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-operations-workspace > .kmc-workspace-header .kmc-workspace-feedback {
   flex: 1 1 160px;
   min-width: 0;
@@ -473,3 +470,27 @@ body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-catalog-decision-overview {
   .kmc-catalog-tab { flex: 1 1 130px; justify-content: center; text-align: center; }
   .kmc-catalog-primary-action { min-height: 42px; }
 }
+
+/* Catalogue opératoire : un titre compact suivi immédiatement des commandes. */
+body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-operations-workspace > .kmc-catalog-compact-header {
+  height: auto;
+  min-height: 0;
+  padding: 0 0 5px;
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-operations-workspace > .kmc-catalog-compact-header > div:first-child {
+  display: block;
+}
+body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-catalog-compact-header .kmc-workspace-title {
+  font-size: clamp(21px, 2vw, 29px);
+  line-height: 1.2;
+  margin: 0;
+}
+body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-catalog-compact-header .kmc-workspace-feedback:empty {
+  display: none;
+}
+body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-operations-workspace { gap: 11px; }
+body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-catalog-tabs { padding-top: 0; }

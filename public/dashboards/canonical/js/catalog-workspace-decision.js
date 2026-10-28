@@ -139,6 +139,9 @@
     const ui = options.ui;
     const search = options.location?.search ?? globalThis.location?.search ?? '';
     const refinery = new URLSearchParams(search).get('view') === 'refinery';
+    // Le Catalogue montre directement son registre actionnable.
+    // Conserver le hero et l'aide guidée uniquement pour la Raffinerie.
+    if (!refinery) return null;
     const host = doc.createElement('section');
     host.className = 'kmc-dashboard kmc-decision-dashboard kmc-catalog-decision-overview';
     host.setAttribute('data-dashboard-id', refinery ? 'refinery' : 'catalog');

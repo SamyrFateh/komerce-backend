@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-2');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -77,4 +77,19 @@ test('V3 : indicateurs affichés sur page seulement, sans confondre global et li
   expect(ui).toContain("label: 'Approuvés · page'");
   expect(ui).toContain('payload.registry_page?.total');
   expect(ui).toContain('Marchés de l’assortiment approuvé affiché');
+});
+
+test('Catalogue actionnable : en-tête compact, onglets et filtres, sans navigation ni KPI passifs', () => {
+  const header = ui.slice(ui.indexOf('function createHeader('), ui.indexOf('function createSection('));
+  const products = ui.slice(ui.indexOf('function renderProducts('), ui.indexOf('function renderCommercial('));
+  const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
+  expect(header).toContain('kmc-catalog-compact-header');
+  expect(header).toContain('if (refinery) {');
+  expect(products).not.toContain('kmc-catalog-toolbar-links');
+  expect(products).not.toContain('Ouvrir le Sourcing');
+  expect(render).not.toContain('ui.MetricStrip.render');
+  expect(render).toContain('renderCatalogTabs(rootNode, doc, context)');
+  expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
+  expect(ui).toContain("statusChip.addEventListener('click', () => primary.click())");
+  expect(css).toContain('.kmc-catalog-compact-header');
 });

@@ -10,9 +10,10 @@ const path=require('path');
 const decision=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','catalog-workspace-decision.js'),'utf8');
 const workspace=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','catalog-workspace.js'),'utf8');
 
-test('Raffinerie et Catalogue gardent des identités de Hero distinctes',()=>{
+test('Raffinerie garde le Hero ; Catalogue affiche directement les actions',()=>{
   const start=decision.indexOf('function prependDecisionView');
   const source=decision.slice(start, decision.indexOf('function enhance', start));
+  expect(source).toContain('if (!refinery) return null;');
   expect(source).toContain("data-dashboard-role', 'hero");
   expect(source).toContain("data-dashboard-role', 'attention");
   expect(source).toContain("data-dashboard-role', 'primary");
