@@ -45,6 +45,7 @@ const ORACLES=Object.freeze([
    nominalControlPassed:true,sameItemAndParcel:true,sqlConflictIgnored:true,
    dbQueriesToRealDb:0,physicalSqlConflictReproduced:false,productionIncidentProven:false
   }),
+  consistencyRelation:Object.freeze({booleanField:'conflictReportedAccurately',leftField:'adversarialReported',rightField:'adversarialSqlRowCount'}),
   observationField:'conflictReportedAccurately',
   expected:true,
   type:'boolean',
