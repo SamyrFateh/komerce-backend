@@ -638,3 +638,156 @@ body.kmc-shell-v4:has(.kmc-catalog-tabs) .kmc-catalog-tabs { padding-top: 0; }
   .kmc-catalog-classification-fields { grid-template-columns: minmax(0, 1fr); }
   .kmc-catalog-classification-actions .kmc-workspace-action { flex: 1 1 135px; }
 }
+
+/* V4 : lecture immédiate des écarts avant décision Catalogue / marchés */
+.kmc-catalog-registry-table.kmc-workspace-table {
+  min-width: 940px;
+}
+.kmc-catalog-registry-table th:nth-child(1) { width: 31%; }
+.kmc-catalog-registry-table th:nth-child(2) { width: 13%; }
+.kmc-catalog-registry-table th:nth-child(3) { width: 15%; }
+.kmc-catalog-registry-table th:nth-child(4) { width: 26%; }
+.kmc-catalog-registry-table th:nth-child(5) { width: 15%; }
+.kmc-catalog-main-panel .kmc-catalog-registry-table th {
+  background: #f3f7fb;
+  color: #53657d;
+  letter-spacing: 0.035em;
+}
+.kmc-catalog-main-panel .kmc-catalog-registry-table td {
+  padding-block: 14px;
+  border-bottom-color: #e7edf5;
+}
+.kmc-catalog-main-panel .kmc-catalog-registry-table tbody tr {
+  transition: background-color 120ms ease;
+}
+.kmc-catalog-main-panel .kmc-catalog-registry-table tbody tr:focus-within {
+  background: #f7faff;
+}
+.kmc-catalog-main-panel .kmc-catalog-registry-thumb,
+.kmc-catalog-main-panel .kmc-catalog-registry-photo-empty {
+  flex-basis: 64px;
+  width: 64px;
+  height: 64px;
+  border-radius: 11px;
+}
+.kmc-catalog-product-reference {
+  display: block;
+  margin-top: 5px;
+  color: #607b9c;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+}
+.kmc-catalog-correction-heading {
+  color: #354a65;
+  font-size: 11px;
+  font-weight: 800;
+  margin: 9px 0 5px;
+}
+.kmc-catalog-corrections,
+.kmc-catalog-readiness-reasons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+.kmc-catalog-correction-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: #3c5572;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.kmc-catalog-correction-item::before {
+  content: '•';
+  font-size: 16px;
+  line-height: 15px;
+  color: #d38b26;
+}
+.kmc-catalog-correction-item[data-issue="market"]::before { color: #0a9c76; }
+.kmc-catalog-correction-hint {
+  display: block;
+  margin-top: 7px;
+  color: #71839a;
+  line-height: 1.4;
+  font-size: 11px;
+}
+.kmc-catalog-readiness-check {
+  display: inline-block;
+  margin-top: 9px;
+  padding: 4px 0;
+  color: #1558b7;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.kmc-catalog-readiness-check:disabled { opacity: .65; cursor: wait; }
+.kmc-catalog-readiness-check:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+.kmc-catalog-readiness-result:not(:empty) {
+  margin-top: 9px;
+  border-top: 1px dashed #d9e2ef;
+  padding-top: 9px;
+}
+.kmc-catalog-readiness-title { font-size: 11px; color: #2b4465; }
+.kmc-catalog-readiness-reasons { margin-top: 7px; }
+.kmc-catalog-readiness-reasons li {
+  display: flex;
+  gap: 4px 7px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #314760;
+}
+.kmc-catalog-readiness-reasons li small {
+  font-size: 10px;
+  color: #70829c;
+}
+.kmc-catalog-readiness-reasons li small::before { content: '· '; }
+.kmc-catalog-readiness-error { color: #b52437; font-size: 11px; }
+.kmc-catalog-main-panel .kmc-catalog-actions-inner {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+.kmc-catalog-main-panel .kmc-catalog-primary-action {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 39px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 750;
+}
+.kmc-catalog-row-more { width: auto; flex: 0 0 auto; }
+.kmc-catalog-main-panel .kmc-catalog-row-more summary {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  min-height: 39px;
+  border: 1px solid #d9e2ee;
+  border-radius: 8px;
+  color: #385877;
+  background: #f8fafc;
+  font-size: 18px;
+  padding: 0;
+  letter-spacing: 1px;
+}
+.kmc-catalog-main-panel .kmc-catalog-row-more-list {
+  margin-top: 8px;
+  max-width: 240px;
+}
+@media (max-width: 760px) {
+  .kmc-catalog-main-panel .kmc-catalog-registry-table tbody tr { gap: 13px 12px; }
+  .kmc-catalog-main-panel .kmc-catalog-registry-table td:nth-child(4) { grid-column: 1 / -1; }
+  .kmc-catalog-main-panel .kmc-catalog-actions-inner { justify-content: flex-start; }
+  .kmc-catalog-main-panel .kmc-catalog-primary-action { flex: 1 1 auto; }
+  .kmc-catalog-row-more { flex: 0 0 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kmc-catalog-main-panel .kmc-catalog-registry-table tbody tr { transition: none; }
+}

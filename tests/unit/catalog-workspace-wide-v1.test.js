@@ -15,13 +15,14 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-3');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-4');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
-  expect(ui).toContain('<th>Référence</th><th>Fournisseur</th>');
-  expect(ui).toContain('<th>Statut métier</th><th>Marchés</th><th>Prochaine action</th>');
-  expect(ui).toContain("reference.setAttribute('data-label', 'Référence')");
+  expect(ui).toContain('<th>Produit</th><th>Fournisseur</th><th>Classement boutique</th>');
+  expect(ui).toContain('kmc-catalog-product-reference');
+  expect(ui).toContain('<th>À corriger avant marchés</th><th>Action suivante</th>');
+  expect(ui).toContain("productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-reference', row.product_ref))");
   expect(ui).toContain("statusChip.setAttribute('data-status', row.work_status || 'inactive')");
   expect(ui).toContain("tr.appendChild(actionCell)");
   expect(css).toContain('-webkit-line-clamp: 2');
@@ -76,7 +77,7 @@ test('V3 : indicateurs affichés sur page seulement, sans confondre global et li
   expect(ui).toContain("label: 'Fiche FR · page'");
   expect(ui).toContain("label: 'Approuvés · page'");
   expect(ui).toContain('payload.registry_page?.total');
-  expect(ui).toContain('Marchés de l’assortiment approuvé affiché');
+  expect(ui).toContain('Le contrôle technique candidat uniquement.');
 });
 
 test('Catalogue actionnable : en-tête compact, onglets et filtres, sans navigation ni KPI passifs', () => {
@@ -144,4 +145,17 @@ test('Classement : formulaire accessible et pas de prompt/confirm avec indices',
   expect(source).not.toContain("context.prompt(");
   expect(source).not.toContain("context.confirm(");
   expect(source).toContain("Si une seule feuille reste possible, la proposer d'emblée.");
+});
+
+test('V4 : corrections immédiatement visibles et diagnostic canonique à la demande', () => {
+  expect(ui).toContain('function registryCorrectionItems(row = {})');
+  expect(ui).toContain('renderRegistryCorrections(doc, diagnostic, row, context, nextStep)');
+  expect(ui).toContain('?diagnose_product_ref=');
+  expect(ui).toContain("state.certification.reasons || []");
+  expect(ui).toContain('certificationReasonLabel(reason)');
+  expect(ui).toContain('registryReasonOwner(reason)');
+  expect(ui).toContain('Contrôle technique candidat uniquement.');
+  expect(ui).not.toContain("status: 'Publié'");
+  expect(css).toContain('.kmc-catalog-readiness-reasons');
+  expect(css).toContain('.kmc-catalog-primary-action');
 });
