@@ -159,3 +159,10 @@ test('V4 : corrections immédiatement visibles et diagnostic canonique à la dem
   expect(css).toContain('.kmc-catalog-readiness-reasons');
   expect(css).toContain('.kmc-catalog-primary-action');
 });
+
+test('V4 : produits inactifs hors candidats ont un réexamen sans faux GO', () => {
+  expect(ui).toContain("if (state.phase === 'product_review')");
+  expect(ui).toContain("const reasons = state.findings || []");
+  expect(ui).toContain('état métier à réexaminer');
+  expect(ui).not.toContain("if (row.lifecycle_status !== 'candidate' || row.is_active === true)");
+});

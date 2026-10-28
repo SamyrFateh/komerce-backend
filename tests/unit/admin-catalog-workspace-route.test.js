@@ -238,3 +238,16 @@ test('Contrôle préalable interdit avec dimension marché client', async () => 
   expect(res.status).toBe(400);
   expect(mockRegistryReadiness).not.toHaveBeenCalled();
 });
+
+test('diagnostic hors file candidat : réponse de réexamen sans fausse certification', async () => {
+  mockRegistryReadiness.mockResolvedValueOnce({
+    product_ref: 'KPR-000085', phase: 'product_review', certification: null,
+    findings: ['media_missing', 'description_missing'],
+  });
+  const res = await request(app()).get('/api/admin/workspaces/catalog?diagnose_product_ref=KPR-000085');
+  expect(res.status).toBe(200);
+  expect(res.body.phase).toBe('product_review');
+  expect(res.body.certification).toBeNull();
+  expect(res.body.findings).toEqual(['media_missing', 'description_missing']);
+  expect(mockApproveCandidate).not.toHaveBeenCalled();
+});

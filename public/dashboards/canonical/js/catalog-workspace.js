@@ -1460,7 +1460,7 @@
       checklist.appendChild(item);
     });
     cell.appendChild(checklist);
-    if (row.lifecycle_status !== 'candidate' || row.is_active === true) {
+    if (row.is_active === true) {
       const note = row.is_active === true
         ? 'L’approbation Catalogue ne confirme pas la vente sur chaque marché.'
         : 'État à examiner : aucune publication déduite.';
@@ -1486,7 +1486,23 @@
         const state = await jsonRequest(context.fetch, ENDPOINT + '?diagnose_product_ref=' +
           encodeURIComponent(row.product_ref));
         result.replaceChildren();
-        if (state.phase !== 'catalog_approval' || !state.certification) {
+        if (state.phase === 'product_review') {
+          const reasons = state.findings || [];
+          result.appendChild(text(doc, 'strong', 'kmc-catalog-readiness-title',
+            reasons.length
+              ? reasons.length + ' points techniques à réexaminer'
+              : 'Aucun écart technique courant détecté · état métier à réexaminer'));
+          const list = doc.createElement('ul');
+          list.className = 'kmc-catalog-readiness-reasons';
+          reasons.forEach(reason => {
+            const item = doc.createElement('li');
+            item.appendChild(text(doc, 'span', '', certificationReasonLabel(reason)));
+            item.appendChild(text(doc, 'small', '', registryReasonOwner(reason)));
+            list.appendChild(item);
+          });
+          result.appendChild(list);
+          result.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint', state.note));
+        } else if (state.phase !== 'catalog_approval' || !state.certification) {
           result.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
             state.note || 'Ce contrôle ne s’applique pas à cette étape.'));
         } else {

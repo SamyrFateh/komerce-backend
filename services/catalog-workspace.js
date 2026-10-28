@@ -453,15 +453,28 @@ async function resolveProduct(productRef, { candidateOnly = false } = {}) {
  */
 async function getRegistryReadiness(productRef) {
   const product = await resolveProduct(productRef);
-  if (product.lifecycle_status !== 'candidate' || product.is_active === true) {
+  if (product.is_active === true) {
     return {
       product_ref: product.product_ref,
       phase: 'market_decisions',
       certification: null,
-      note: 'Le contrôle candidat ne s’applique pas à cette fiche. Examiner sa situation commerciale et ses décisions marchés.',
+      note: 'Produit Catalogue actif : vérifier séparément la visibilité et le prix local sur chaque marché.',
     };
   }
   const facts = await certifyCatalogProduct(db, product.id);
+  if (product.lifecycle_status !== 'candidate') {
+    // Ne jamais certifier une fiche hors du gate candidat. Les vérifications
+    // communes restent utiles pour orienter son réexamen, sans GO publication.
+    const stateSpecific = reason => reason === 'not_inactive_candidate' ||
+      reason === 'market_exposure_enabled' || reason.startsWith('publication_guard:');
+    return {
+      product_ref: product.product_ref,
+      phase: 'product_review',
+      certification: null,
+      findings: (facts?.certification?.reasons || []).filter(reason => !stateSpecific(reason)),
+      note: 'Fiche inactive hors file candidat : points techniques indicatifs, aucune certification de publication.',
+    };
+  }
   return {
     product_ref: product.product_ref,
     phase: 'catalog_approval',
