@@ -11,50 +11,61 @@ function evaluate(c){
  if(!d||!expected||JSON.stringify(d)!==JSON.stringify(expected)||
     c.rollbackVerified!==true||c.cloneDropped!==true||
     !Array.isArray(c.after)||!c.before||!c.incoming||!c.service)
-  throw Error('TOOL_ERROR: missing generated data case or physical proof');
+  throw Error('TOOL_ERROR: missing generated case or SQL evidence');
  const initialLines=Number(c.before.lines),initialUnits=Number(c.before.units);
  if(initialLines!==d.rows||initialUnits!==d.rows*d.existingQty)
-  throw Error('TOOL_ERROR: precondition SQL count inconsistent with generator');
+  throw Error('TOOL_ERROR: initial DB state disagrees with fixture');
  const original=c.after.filter(x=>x.original);
  if(original.length!==1||!['draft','preparation'].includes(original[0].status)||
-   c.after.some(p=>!Number.isSafeInteger(p.lines)||p.lines<0||
-    !Number.isSafeInteger(p.units)||p.units<0)||c.after.length>2)
-  throw Error('TOOL_ERROR: invalid physical parcel state');
- if(c.incoming.assignments!==1||c.incoming.units!==d.incomingQty||
-   c.service.success!==true||c.service.reportedAssigned!==1)
-  throw Error('TOOL_ERROR: nominal owner result or incoming item fixture not valid');
- const newParcels=c.after.filter(p=>!p.original);
- const usedOriginal=c.service.usedOriginalParcel;
- const originalDeltaLines=original[0].lines-initialLines;
- const originalDeltaUnits=original[0].units-initialUnits;
- if(usedOriginal){
-  if(c.service.created||newParcels.length!==0||
-    originalDeltaLines!==1||originalDeltaUnits!==d.incomingQty)
-   throw Error('TOOL_ERROR: owner chosen original parcel but physical state differs');
- }else{
-  if(!c.service.created||newParcels.length!==1||
-    originalDeltaLines!==0||originalDeltaUnits!==0||
-    newParcels[0].lines!==1||newParcels[0].units!==d.incomingQty)
-   throw Error('TOOL_ERROR: owner chosen new parcel but physical state differs');
- }
+    c.after.some(p=>!Number.isSafeInteger(p.lines)||p.lines<0||
+     !Number.isSafeInteger(p.units)||p.units<0))
+  throw Error('TOOL_ERROR: invalid parcel SQL state');
+ const assigned=c.incoming.assignments,units=c.incoming.units;
+ if(!Number.isSafeInteger(assigned)||assigned<0||
+    !Number.isSafeInteger(units)||units<0)
+  throw Error('TOOL_ERROR: invalid SQL membership measurements');
+ const fresh=c.after.filter(x=>!x.original);
+ const initialLineDelta=original[0].lines-initialLines;
+ const initialUnitDelta=original[0].units-initialUnits;
+ const freshLines=fresh.reduce((n,x)=>n+x.lines,0);
+ const freshUnits=fresh.reduce((n,x)=>n+x.units,0);
+ if(initialLineDelta<0||initialUnitDelta<0||
+    assigned!==initialLineDelta+freshLines||
+    units!==initialUnitDelta+freshUnits)
+  throw Error('TOOL_ERROR: physical association deltas do not reconcile');
+ const queued=c.service.queued===true,alreadyAssigned=c.service.alreadyAssigned===true;
+ const reused=initialLineDelta>0;
  const validLineBaseline=initialLines<=MAX;
  const validUnitBaseline=initialUnits<=MAX;
- const desiredReuseLines=validLineBaseline && initialLines+1<=MAX;
- const desiredReuseUnits=validUnitBaseline && initialUnits+d.incomingQty<=MAX;
+ const lineCanReuse=validLineBaseline&&initialLines+1<=MAX;
+ const unitCanReuse=validUnitBaseline&&initialUnits+d.incomingQty<=MAX;
  const signals=[];
+ if(assigned>1||assigned===1&&units!==d.incomingQty)
+  signals.push('UNEXPECTED_INCOMING_MEMBERSHIP_QUANTITY');
  if(validLineBaseline&&original[0].lines>MAX)
   signals.push('LINES_EXCEED_30_FROM_VALID_PRESTATE');
  if(validUnitBaseline&&original[0].units>MAX)
   signals.push('UNITS_EXCEED_30_FROM_VALID_PRESTATE');
- if(!usedOriginal&&desiredReuseLines)
+ if(!reused&&lineCanReuse)
   signals.push('REUSE_REFUSED_UNDER_LINE_CAPACITY_POLICY');
- if(!usedOriginal&&desiredReuseUnits)
+ if(!reused&&unitCanReuse)
   signals.push('REUSE_REFUSED_UNDER_UNIT_CAPACITY_POLICY');
+ if((queued||alreadyAssigned)&&assigned>0)
+  signals.push('OWNER_CLAIMED_NOOP_BUT_MEMBERSHIP_CHANGED');
+ if(c.service.success===true&&!queued&&!alreadyAssigned&&
+    c.service.reportedAssigned!==assigned)
+  signals.push('OWNER_REPORTED_COUNT_MISMATCH');
+ if(c.service.success===false&&assigned>0)
+  signals.push('OWNER_REPORTED_REJECTION_AFTER_WRITE');
+ if(c.service.created===true&&fresh.length===0)
+  signals.push('OWNER_REPORTED_PARCEL_CREATION_WITHOUT_PHYSICAL_PARCEL');
  return {key:c.key,dimensions:d,baseline:{lines:initialLines,units:initialUnits},
-  physical:{usedOriginal,originalLines:original[0].lines,originalUnits:original[0].units,
-   totalParcels:c.after.length},
-  linePolicy:{baselineValid:validLineBaseline,reusePossible:desiredReuseLines},
-  unitPolicy:{baselineValid:validUnitBaseline,reusePossible:desiredReuseUnits},
+  physical:{usedOriginal:reused,originalLines:original[0].lines,
+   originalUnits:original[0].units,totalParcels:c.after.length,
+   assigned,assignedUnits:units},
+  service:{queued,alreadyAssigned,success:c.service.success===true},
+  linePolicy:{baselineValid:validLineBaseline,reusePossible:lineCanReuse},
+  unitPolicy:{baselineValid:validUnitBaseline,reusePossible:unitCanReuse},
   signals,policyStatus:'NEEDS_BUSINESS_ARBITRATION'};
 }
 function inspect(raw){
@@ -77,9 +88,15 @@ function inspect(raw){
   counts[signal]=(counts[signal]||0)+1;
  return {contract:'komerce-generated-capacity-interpretation/v17',
   evaluatedCases:results.length,capacity:MAX,counts,results,
-  semanticVerdict:Object.keys(counts).length?'SEMANTIC_INCONSISTENCIES_REPRODUCED':
-   'NO_SEMANTIC_DISAGREEMENT_IN_SEARCHED_CASES',
+  semanticVerdict:(
+   (counts.LINES_EXCEED_30_FROM_VALID_PRESTATE||0)+
+   (counts.REUSE_REFUSED_UNDER_LINE_CAPACITY_POLICY||0)>0 &&
+   (counts.UNITS_EXCEED_30_FROM_VALID_PRESTATE||0)+
+   (counts.REUSE_REFUSED_UNDER_UNIT_CAPACITY_POLICY||0)>0
+   ?'NO_SINGLE_POLICY_SATISFIED':
+   Object.keys(counts).length?'SINGLE_POLICY_PLAUSIBLE_OR_OTHER_SIGNALS':
+   'NO_POLICY_CONTRADICTION_OBSERVED',
   approvedCapacityPolicy:null,productionIncidentConfirmed:false,
-  note:'Alternative line/unit oracles; inconclusive on which business rule is right.'};
+  note:'Neither line nor unit policy fits all observed cases if both families appear. Weight or volume is a separate business hypothesis.'};
 }
 module.exports={inspect,evaluate};
