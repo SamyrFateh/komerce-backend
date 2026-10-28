@@ -54,6 +54,7 @@ async function reconcile({db,orderId,readProvider,crashBeforeCommit=false}){
   // No positive provider evidence is NOT evidence of absence; never auto-release.
   if(evidence?.status!=='AVAILABLE'||!Array.isArray(evidence.events))
    return reject('MANUAL_PROVIDER_UNAVAILABLE_OR_UNKNOWN');
+  if(evidence.events.length===0)return reject('MANUAL_NO_POSITIVE_PROVIDER_PROOF');
   if(evidence.events.length!==1||
     !strictProvider(evidence.events[0],order,intent))
    return reject('MANUAL_PROVIDER_PROOF_MISMATCH');
