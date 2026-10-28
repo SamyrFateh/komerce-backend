@@ -6,9 +6,6 @@
  * PayPal capability for looking up refund by idempotency key.
  */
 const {isolated}=require('./v24-durable-intent-counterfactual');
-const {recordExternalRefund}=require('../../services/refund-service');
-const {markRefunded}=require('../../services/payment-service');
-const {transitionOrderStatus}=require('../../services/order-status-machine');
 const validKey=/^kmr-ref-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function reject(code){return {decision:code,repaired:false,providerWrites:0}}
 function strictProvider(e,order,intent){
@@ -26,6 +23,11 @@ async function reconcile({db,orderId,readProvider,crashBeforeCommit=false}){
  if(typeof db?.getClient!=='function'||typeof orderId!=='string'||
    !/^[a-f0-9-]{36}$/i.test(orderId)||typeof readProvider!=='function')
   throw Error('V26_TOOL_ERROR: invalid dependencies');
+ // App dependencies are intentionally loaded only after clone validation;
+ // static contract tests run before npm dependencies are installed in CI.
+ const {recordExternalRefund}=require('../../services/refund-service');
+ const {markRefunded}=require('../../services/payment-service');
+ const {transitionOrderStatus}=require('../../services/order-status-machine');
  // This transaction uses the REAL order/payment/refund owners, but only for
  // a test-clone repair. It must never be promoted without domain review.
  const c=await db.getClient();
