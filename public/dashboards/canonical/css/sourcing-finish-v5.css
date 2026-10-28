@@ -112,3 +112,15 @@
   .kmc-sourcing-editor-header {padding:18px;}
   .kmc-sourcing-editor-actions .kmc-workspace-action {flex:1 1 135px;}
 }
+
+
+/* Menus in table scroll containers must expand their own row. An absolutely
+   positioned panel visually covered the next candidate's primary action. */
+.kmc-sourcing-workspace .kmc-sourcing-row-more[open] {
+  display:block; width:100%; margin:10px 0 0; text-align:right;
+}
+.kmc-sourcing-workspace .kmc-sourcing-row-more[open] > summary { margin-left:auto; }
+.kmc-sourcing-workspace .kmc-sourcing-row-more-list {
+  position:static; right:auto; top:auto; margin-top:7px;
+  width:100%; min-width:150px; box-shadow:0 4px 14px rgba(17,43,80,.09);
+}
