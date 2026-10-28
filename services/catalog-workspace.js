@@ -445,6 +445,31 @@ async function resolveProduct(productRef, { candidateOnly = false } = {}) {
   return rows[0];
 }
 
+
+/**
+ * Contrôle complet à la demande : ne valide, ne publie ni ne modifie rien.
+ * La certification du candidat est calculée par l'autorité Catalogue existante.
+ * Une fiche déjà approuvée est hors du gate candidat : pas de faux "bloqué".
+ */
+async function getRegistryReadiness(productRef) {
+  const product = await resolveProduct(productRef);
+  if (product.lifecycle_status !== 'candidate' || product.is_active === true) {
+    return {
+      product_ref: product.product_ref,
+      phase: 'market_decisions',
+      certification: null,
+      note: 'Le contrôle candidat ne s’applique pas à cette fiche. Examiner sa situation commerciale et ses décisions marchés.',
+    };
+  }
+  const facts = await certifyCatalogProduct(db, product.id);
+  return {
+    product_ref: product.product_ref,
+    phase: 'catalog_approval',
+    certification: facts?.certification || null,
+    note: 'Contrôle technique de validation Catalogue ; la revue visuelle FR et les prix locaux relèvent de leurs validations propres.',
+  };
+}
+
 function sanitizeProductCreate(body = {}) {
   const allowed = ['name','category','subcategory','price_kmf','price_aed','price_eur','stock','weight_kg','description','image_url','images','badge','emoji','promo_pct','is_available','is_active','has_couture','sourcing_source','requires_secure_transport','customs_risk_coeff','unsold_price_kmf','unsold_channel','has_variants','sort_order'];
   return allowed.reduce((out, key) => {
@@ -609,6 +634,7 @@ async function overrideCandidate(productRef, body, actor) {
 module.exports = {
   CatalogWorkspaceError,
   buildWorkspace,
+  getRegistryReadiness,
   createProduct,
   updateProduct,
   classifyProduct,

@@ -28,6 +28,7 @@ jest.mock('../../middleware/require-catalog-global-authority', () => ({
 }));
 
 const mockBuildWorkspace = jest.fn();
+const mockRegistryReadiness = jest.fn();
 const mockCreateProduct = jest.fn();
 const mockUpdateProduct = jest.fn();
 const mockClassifyProduct = jest.fn();
@@ -48,6 +49,7 @@ jest.mock('../../services/catalog-workspace', () => {
   return {
     CatalogWorkspaceError,
     buildWorkspace: (...args) => mockBuildWorkspace(...args),
+    getRegistryReadiness: (...args) => mockRegistryReadiness(...args),
     createProduct: (...args) => mockCreateProduct(...args),
     updateProduct: (...args) => mockUpdateProduct(...args),
     classifyProduct: (...args) => mockClassifyProduct(...args),
@@ -86,6 +88,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockCatalogAllowed = true;
   mockBuildWorkspace.mockResolvedValue({ scope: { mode: 'global_commercial_catalog' }, summary: {}, categories: [], products: [], approval: [] });
+  mockRegistryReadiness.mockResolvedValue({ product_ref: 'KPR-000088', phase: 'catalog_approval',
+    certification: { certified: false, reasons: ['media_missing', 'active_supplier_sku_missing'] } });
   mockCreateProduct.mockResolvedValue({ product_ref: 'KPR-000001', name: 'Produit' });
   mockUpdateProduct.mockResolvedValue({ product_ref: 'KPR-000001', price_kmf: 5000 });
   mockClassifyProduct.mockResolvedValue({ product_ref: 'KPR-000001', boutique_category_key: 'mode', boutique_subcategory_key: 'robes', approved: false });
@@ -212,4 +216,25 @@ test('classification interdite sans autorité Catalogue globale', async () => {
     .send({ category: 'mode', subcategory: 'robes' });
   expect(res.status).toBe(403);
   expect(mockClassifyProduct).not.toHaveBeenCalled();
+});
+
+test('Contrôle préalable : expose les raisons canoniques sans mutation ni chargement intégral', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/catalog?diagnose_product_ref=KPR-000088');
+  expect(res.status).toBe(200);
+  expect(res.headers['cache-control']).toContain('no-store');
+  expect(res.body.certification.reasons).toEqual(['media_missing', 'active_supplier_sku_missing']);
+  expect(mockRegistryReadiness).toHaveBeenCalledWith('KPR-000088');
+  expect(mockBuildWorkspace).not.toHaveBeenCalled();
+  expect(mockApproveCandidate).not.toHaveBeenCalled();
+});
+test('Contrôle préalable interdit sans le grant Catalogue', async () => {
+  mockCatalogAllowed = false;
+  const res = await request(app()).get('/api/admin/workspaces/catalog?diagnose_product_ref=KPR-000088');
+  expect(res.status).toBe(403);
+  expect(mockRegistryReadiness).not.toHaveBeenCalled();
+});
+test('Contrôle préalable interdit avec dimension marché client', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/catalog?diagnose_product_ref=KPR-000088&market_id=KM');
+  expect(res.status).toBe(400);
+  expect(mockRegistryReadiness).not.toHaveBeenCalled();
 });

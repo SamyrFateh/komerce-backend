@@ -58,7 +58,10 @@ router.use(...guard, rejectMarketDimension);
 router.get('/', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    res.json(await workspace.buildWorkspace(req.query));
+    if (req.query && req.query.diagnose_product_ref) {
+      return res.json(await workspace.getRegistryReadiness(String(req.query.diagnose_product_ref)));
+    }
+    return res.json(await workspace.buildWorkspace(req.query));
   } catch (err) { next(err); }
 });
 
