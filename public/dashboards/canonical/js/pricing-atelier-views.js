@@ -603,6 +603,10 @@
     head.appendChild(title);
     const state = classifyProduct(corridor);
     head.appendChild(badge(doc, state.label, state.tone));
+    if (ctx.position && ctx.position.total > 1) {
+      head.appendChild(el(doc, 'span', 'kmc-atelier-muted', `${ctx.position.index} sur ${ctx.position.total}`));
+      if (ctx.position.next) head.appendChild(button(doc, `Produit suivant →`, 'kmc-atelier-link-button', { atelierOpen: ctx.position.next }));
+    }
     const sheet = el(doc, 'a', 'kmc-atelier-link-button', 'Fiche produit ↗');
     sheet.href = `/admin/products/${encodeURIComponent(corridor.product.product_ref)}?return_to=${encodeURIComponent(ctx.returnTo)}`;
     head.appendChild(sheet);
@@ -788,8 +792,11 @@
         try { preview = await workspace.jsonRequest(options.fetch, `${endpoint}/products/${encodeURIComponent(productRef)}/local-price/activation-preview`); }
         catch (error) { previewError = error && error.message ? error.message : 'erreur serveur'; }
       }
+      const queue = filterRows(state.rows, state.filter, state.search).map(item => item.product.product_ref);
+      const at = queue.indexOf(productRef);
+      const position = at >= 0 ? { index: at + 1, total: queue.length, next: queue[at + 1] || null } : null;
       productsHost.replaceChildren(buildDossier(doc, corridor, {
-        marketCode, returnTo: returnTo(), decision: state.decision, reasonLabels, preview, previewError, message,
+        position, marketCode, returnTo: returnTo(), decision: state.decision, reasonLabels, preview, previewError, message,
         canDraft: caps.local_price_drafts === true, canSimulate: caps.simulation === true,
         canObserve: caps.manage_market_price_observations === true, components: payload.cost_components,
       }));

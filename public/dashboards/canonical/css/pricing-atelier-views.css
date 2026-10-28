@@ -116,3 +116,8 @@
   .kmc-atelier-sim-table { grid-template-columns: 1fr 1fr; }
   .kmc-atelier-menu > a { right: auto; left: 0; }
 }
+
+@media (max-width:760px){
+  .kmc-atelier-views .kmc-atelier-dossier [data-atelier-draft-form] .kmc-atelier-actions,
+  .kmc-atelier-views .kmc-atelier-dossier [data-atelier-draft-form] > button[type="submit"]{position:sticky;bottom:0;background:var(--kmc-surface,#fff);padding:8px 0;z-index:2}
+}
