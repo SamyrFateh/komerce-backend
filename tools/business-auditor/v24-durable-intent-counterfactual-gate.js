@@ -80,7 +80,7 @@ async function run(out,rankingFile,env=process.env){
     report.walletEquivalentCents===0,
     'PSP must be keyed, registered and exclusive '+mode);
    if(mode==='BA')assert(record.outcomes.cancel.http===422&&
-    record.outcomes.replay?.http===409,'BA replay and cancellation guards');
+    record.outcomes.replay?.http===409,'BA replay and cancellation guards '+JSON.stringify(record.outcomes));
    if(mode==='PAR')assert(record.outcomes.cancel.http===409,
     'while PayPal PSP is paused, cancellation must be rejected');
   }
