@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'scripts/cj-object-shadow-v2.js'
+      - 'scripts/cj-object-extract-batch.js'
+      - 'tests/unit/cj-object-extract-batch.test.js'
       - 'tests/unit/cj-object-shadow-v2.test.js'
       - 'features/catalog.feature.js'
       - '.github/workflows/catalog-object-shadow-v2.yml'
@@ -25,7 +27,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/cj-object-shadow-v2.js
-          npx jest --config jest.unit.config.js tests/unit/cj-object-shadow-v2.test.js --runInBand --no-coverage
+          node --check scripts/cj-object-extract-batch.js
+          npx jest --config jest.unit.config.js tests/unit/cj-object-shadow-v2.test.js tests/unit/cj-object-extract-batch.test.js --runInBand --no-coverage
       - name: Recover exact 498 authentic products and V1 decisions
         env:
           GH_TOKEN: ${{ github.token }}
