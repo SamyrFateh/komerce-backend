@@ -7,6 +7,7 @@
  * when extending beyond auto-parcel.
  */
 const {fingerprint}=require('./v18-serializability-predicate');
+const {compareSchedules}=require('./v20-serial-kernel');
 const MODES=['AB','AB_REPEAT','BA','PARALLEL'];
 const ERROR_CODE=/^[0-9A-Z_]{4,64}$/;
 function resultFingerprint(outcomes){
@@ -52,34 +53,17 @@ function inspect(raw){
   throw Error('TOOL_ERROR: missing two owner outcomes');
  if(!(race.gate?.arrived===2||(race.gate?.arrived===1&&race.gate?.serialized===true)))
   throw Error('TOOL_ERROR: concurrency interleaving not observed');
- const [sAB,sABPrime,sBA,sRace]=raw.cases.map(signature);
- const deterministic=sAB===sABPrime;
- const matchAB=deterministic&&sRace===sAB,matchBA=deterministic&&sRace===sBA;
- const raceErrors=race.outcomes.filter(x=>x.status==='rejected').map(x=>x.code||'UNCLASSIFIED');
- const seqErrors=[...ab.outcomes,...ba.outcomes].filter(x=>x.status==='rejected')
-  .map(x=>x.code||'UNCLASSIFIED');
- const newFailure=raceErrors.length>0&&!matchAB&&!matchBA;
- const retryPolicy=raw.retryPolicy;
- const retryDeclared=retryPolicy?.declared===true&&Array.isArray(retryPolicy.codes)&&
-  retryPolicy.codes.length>0&&typeof retryPolicy.source==='string'&&retryPolicy.source.length>0;
- const everyErrorRetryable=retryDeclared&&raceErrors.length>0&&
-  raceErrors.every(c=>retryPolicy.codes.includes(c)&&['40001','40P01'].includes(c));
- const verdict=!deterministic?'NONDETERMINISTIC_FIXTURE':
-  (matchAB||matchBA)?(race.gate?.serialized?'SERIALIZED_BY_LOCK':'NO_CONFLICT'):
-  newFailure?(everyErrorRetryable?'RETRYABLE':'NON_SERIALIZABLE_FAILURE'):
-  'NON_SERIALIZABLE';
+ const result=compareSchedules(raw.cases,{
+  fingerprint,resultFingerprint,retryPolicy:raw.retryPolicy
+ });
  return {contract:'komerce-opus-full-serializability-verdict/v19',
-  verdict,deterministic,matchAB,matchBA,
-  signatures:{AB:sAB,AB_REPEAT:sABPrime,BA:sBA,parallel:sRace},
-  lockObserved:race.gate?.serialized===true,
-  raceErrors,serialErrors:seqErrors,
-  constrainedFailure:raceErrors.some(x=>/^23/.test(x)),
-  retryPolicyDeclared:retryDeclared,retrySuggested:verdict==='RETRYABLE',
+  ...result,
   semanticScope:'FULL_PROJECTED_OWNER_OUTCOMES_AND_CANONICAL_PHYSICAL_STATE',
   adapter:raw.adapter,
   projectionCompleteness:'AUTO_PARCEL_FIELDS_ONLY_NOT_YET_GENERALIZED',
   noAutomaticProductionIncidentClaim:true,
-  note:!deterministic?'Unstable fixture: do not interpret apparent concurrency defects':
+  note:!result.deterministic?'Unstable fixture: do not interpret apparent concurrency defects':
    'Mismatch is a concurrency candidate; assess return projection and allowed concurrent semantics'};
+
 }
 module.exports={MODES,resultFingerprint,signature,inspect};

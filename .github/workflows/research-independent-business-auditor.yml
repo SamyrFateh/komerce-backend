@@ -16,6 +16,7 @@ on:
       - research/business-auditor-v17-generated-quantity-matrix-20261028
       - research/business-auditor-v18-serializability-pilot-20261028
       - research/business-auditor-v19-opus-exception-and-determinism-20261028
+      - research/business-auditor-v20-negative-stock-control-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -39,6 +40,7 @@ on:
       - research/business-auditor-v17-generated-quantity-matrix-20261028
       - research/business-auditor-v18-serializability-pilot-20261028
       - research/business-auditor-v19-opus-exception-and-determinism-20261028
+      - research/business-auditor-v20-negative-stock-control-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -83,7 +85,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js tools/business-auditor/v20-stock-predicate.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -440,6 +442,27 @@ jobs:
           console.log('BUSINESS_AUDIT_V19_PROOF',JSON.stringify(p.scenarios.map(s=>({
             fixture:s.fixture,verdict:s.verdict.verdict,errors:s.verdict.raceErrors
           }))));
+          NODE
+      - name: V2.0 negative stock witness with real atomic UPDATE and canonical PostgreSQL CHECK
+        run: node tools/business-auditor/v20-stock-gate.js /tmp/komerce-independent-business-audit
+      - name: V2.0 verify stock witness has zero false positives and stable serial results
+        run: |
+          node <<'NODE'
+          const p=require('/tmp/komerce-independent-business-audit/v20-stock-control.json');
+          const {inspect}=require('./tools/business-auditor/v20-stock-predicate');
+          if(p.contract!=='komerce-physical-negative-stock-control/v20'||
+             p.sha!==process.env.GITHUB_SHA||p.runId!==process.env.GITHUB_RUN_ID||
+             p.scenarios.length!==2)
+           throw Error('V2.0_STOCK_EVIDENCE_INVALID');
+          for(const r of p.scenarios){
+           const v=inspect(r.raw);
+           if(JSON.stringify(v)!==JSON.stringify(r.verdict)||
+              v.verdict!=='NO_CONFLICT'||v.falsePositiveDetected||
+              !r.raw.allClonesDropped||
+              r.raw.cases[3].after.stock!==r.stock-2&&r.raw.cases[3].after.stock!==0)
+            throw Error('V2.0_STOCK_FALSE_POSITIVE_OR_INCOMPLETE_PROOF');
+          }
+          console.log('BUSINESS_AUDIT_V20_NO_STOCK_FALSE_POSITIVE');
           NODE
       - name: V1.0 independent one-command static repo audit without DB
         run: npm run audit:business:v1 -- --mode static --out /tmp/komerce-independent-business-audit/v10-static
