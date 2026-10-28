@@ -107,12 +107,27 @@ async function main() {
       await client.query('ROLLBACK');
       await client.query('BEGIN');
       try {
-        const result = await frenchRecheck.correctActiveFrench('P-ACTIVE-FR-DEFECT', {
+        // The same product can retain a title-only draft without leaving the
+        // preparation queue, then be accepted explicitly by a human.
+        const draft = await frenchRecheck.correctActiveFrench('P-ACTIVE-FR-DEFECT', {
           name:'Coque de protection pour téléphone Mercedes',
-          description:'Cette coque de protection protège votre appareil contre les rayures. Elle est agréable à utiliser chaque jour.',
+          description:'', decision:'draft',
         }, {id:42}, client);
-        assert.equal(result.status,'editorial_recheck_saved');
+        assert.equal(draft.status,'editorial_draft_saved');
+        const afterDraft=await client.query("SELECT name, description, content_source, needs_review FROM products WHERE product_ref='P-ACTIVE-FR-DEFECT'");
+        assert.equal(afterDraft.rows[0].description,null);
+        assert.equal(afterDraft.rows[0].content_source,'connector_raw');
+        assert.equal(afterDraft.rows[0].needs_review,true);
+        const draftQueue=await registry.listRegistry({refinery_recheck_only:true},client);
+        assert(draftQueue.products.some(p=>p.product_ref==='P-ACTIVE-FR-DEFECT'));
+        const accepted = await frenchRecheck.correctActiveFrench('P-ACTIVE-FR-DEFECT', {
+          name:'Coque de protection pour téléphone Mercedes',
+          description:'', decision:'accept',
+        }, {id:42}, client);
+        assert.equal(accepted.status,'editorial_sufficiency_validated');
+        assert.equal(accepted.editorial_description_present,false);
         const after = await client.query("SELECT name, description, name_source, description_source, source_locale, content_source, needs_review, is_active, lifecycle_status FROM products WHERE product_ref='P-ACTIVE-FR-DEFECT'");
+        assert.equal(after.rows[0].description,null);
         assert.equal(after.rows[0].name_source,'English Audio Player');
         assert.equal(after.rows[0].description_source,'Original supplier product description');
         assert.equal(after.rows[0].source_locale,'en');
@@ -120,11 +135,19 @@ async function main() {
         assert.equal(after.rows[0].needs_review,false);
         assert.equal(after.rows[0].is_active,true);
         assert.equal(after.rows[0].lifecycle_status,'active');
-        const audit=await client.query("SELECT field_name,reason,set_by FROM catalog_field_overrides ORDER BY field_name");
-        assert.deepEqual(audit.rows.map(row=>row.field_name),['description','name']);
-        assert(audit.rows.every(row=>row.reason.includes('Raffinerie') && row.set_by===42));
+        const audit=await client.query("SELECT field_name,reason,set_by,field_value FROM catalog_field_overrides ORDER BY field_name");
+        assert.deepEqual(audit.rows.map(row=>row.field_name),['name']);
+        assert.equal(audit.rows[0].reason,'KOMERCE_FR_SUFFICIENCY_ACCEPTED_V1');
+        assert.equal(audit.rows[0].set_by,42);
+        assert.equal(audit.rows[0].field_value,after.rows[0].name);
         const registryAfter=await registry.listRegistry({finalized_only:true},client);
         assert.deepEqual(registryAfter.products.map(p=>p.product_ref).sort(),['P-ACTIVE-FR-DEFECT','P-FINALIZED']);
+        assert.equal(registryAfter.products.find(p=>p.product_ref==='P-ACTIVE-FR-DEFECT').editorial_sufficiency_accepted,true);
+        // Revoking the acceptance via a later draft edit invalidates the
+        // sufficient-content exception; a further human decision is required.
+        await client.query("UPDATE catalog_field_overrides SET reason='brouillon',updated_at=NOW() WHERE product_id=4 AND field_name='name'");
+        const afterRevocation=await registry.listRegistry({finalized_only:true},client);
+        assert.deepEqual(afterRevocation.products.map(p=>p.product_ref),['P-FINALIZED']);
       } finally {
         await client.query('ROLLBACK');
       }
