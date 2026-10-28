@@ -14,6 +14,7 @@ on:
       - research/business-auditor-v15-physical-concurrency-20261028
       - research/business-auditor-v16-opus-adversarial-repair-20261028
       - research/business-auditor-v17-generated-quantity-matrix-20261028
+      - research/business-auditor-v18-serializability-pilot-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -35,6 +36,7 @@ on:
       - research/business-auditor-v15-physical-concurrency-20261028
       - research/business-auditor-v16-opus-adversarial-repair-20261028
       - research/business-auditor-v17-generated-quantity-matrix-20261028
+      - research/business-auditor-v18-serializability-pilot-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -79,7 +81,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -388,6 +390,24 @@ jobs:
           console.log('BUSINESS_AUDIT_V17_POLICY_AMBIGUITY_CONFIRMED',JSON.stringify({
            dimensions:p.raw.generation.dimensions,signals:v.counts,
            policyApproved:v.approvedCapacityPolicy,allClonesDropped:p.raw.allClonesDropped
+          }));
+          NODE
+      - name: V1.8 real PostgreSQL AB/BA/parallel serializability pilot
+        run: node tools/business-auditor/v18-serializability-gate.js /tmp/komerce-independent-business-audit
+      - name: V1.8 independently re-evaluate serializability and require exact trial evidence
+        run: |
+          node <<'NODE'
+          const r=require('/tmp/komerce-independent-business-audit/v18-serializability.json');
+          const {inspect}=require('./tools/business-auditor/v18-serializability-predicate');
+          const v=inspect(r.raw);
+          if(r.contract!=='komerce-serializability-proof/v18'||
+             r.sha!==process.env.GITHUB_SHA||r.runId!==process.env.GITHUB_RUN_ID||
+             r.raw.selectionMode!=='MANUAL_PILOT_ADAPTER'||!r.raw.allClonesDropped||
+             JSON.stringify(v)!==JSON.stringify(r.verdict)||
+             v.verdict!=='NON_SERIALIZABLE'||!v.noAutomaticBusinessBugClaim)
+           throw Error('V1.8 serializability pilot needs source/evidence review');
+          console.log('BUSINESS_AUDIT_V18_CALIBRATED',JSON.stringify({
+           verdict:v.verdict,matchAB:v.matchAB,matchBA:v.matchBA
           }));
           NODE
       - name: V1.0 independent one-command static repo audit without DB
