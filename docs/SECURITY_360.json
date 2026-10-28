@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-22T18:18:51.095Z",
+  "generatedAt": "2026-10-28T17:05:41.123Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 755,
-    "protected": 700,
+    "total": 757,
+    "protected": 702,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2138,6 +2138,13 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/catalog/refinery/{productRef}/prepare-fr",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /api/admin/workspaces/catalog",
       "level": "PROTECTED",
       "roles": [
@@ -2500,7 +2507,7 @@
       ]
     },
     {
-      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/confirm-boutique-category",
+      "key": "GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/category-options",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -2508,7 +2515,7 @@
       ]
     },
     {
-      "key": "GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/category-options",
+      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/confirm-boutique-category",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -3780,6 +3787,11 @@
       "roles": [
         "admin"
       ]
+    },
+    {
+      "key": "GET /api/market-delegation/catalog/authorized-markets",
+      "level": "PROTECTED",
+      "roles": []
     },
     {
       "key": "GET /api/market-delegation/central/team-matrix",

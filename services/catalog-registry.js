@@ -8,7 +8,7 @@
  * @outputs       handed-off product registry and actionable quality signals
  * @depends       db.js
  * @used-by       services/catalog-workspace.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, catalog_field_overrides
  * @db-write      none
  * @db-txn        none
  * @doctrine      source_handoff_is_not_publication, global_catalog_not_market_scoped
