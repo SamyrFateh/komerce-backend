@@ -27,10 +27,12 @@ test('real original owner breaches 31, lock mutation is recognized as satisfied'
   'CAPACITY_SATISFIED','CAPACITY_BREACH','CAPACITY_SATISFIED']);
  assert.equal(r.lockedMutantRecognizedAsFixed,true);
 });
-test('fixing the original race yields REVIEW_REQUIRED, never tool error',()=>{
+test('fix in the REAL owner is recognized with lock wait, not TOOL_ERROR',()=>{
  const p=proof();p.cases[1].after.parcels=c('SEQUENTIAL').after.parcels;
+ p.cases[1].gate={arrived:1,serialized:true};
  const r=interpret(p);
- assert.equal(r.verdict,'REVIEW_REQUIRED');
+ assert.equal(r.verdict,'ACTUAL_OWNER_HEALED');
+ assert.equal(r.actualOwnerFixedRecognized,true);
  assert.equal(r.actualServiceRaceDemonstrated,false);
 });
 test('owner failure is a business observation, not a tool crash',()=>{
@@ -44,4 +46,21 @@ test('malformed or uncleaned fixture remains TOOL_ERROR',()=>{
  assert.throws(()=>interpret(p),/TOOL_ERROR/);
  const q=proof();q.allClonesDropped=false;
  assert.throws(()=>interpret(q),/TOOL_ERROR/);
+});
+
+test('rendezvous freezes overlap count after a lock wait and accepts later read',async()=>{
+ const {rendezvous}=require('./v16-healing-runner');
+ const monitor={query:async()=>({rows:[{pid:1,wait_event_type:'Lock'}]})};
+ const gate=rendezvous(monitor,[1,2],{timeoutMs:800,watchLocks:true});
+ await gate.wait();
+ assert.deepEqual(gate.meta(),{arrived:1,serialized:true});
+ await gate.wait();
+ assert.deepEqual(gate.meta(),{arrived:1,serialized:true});
+});
+test('rendezvous without lock observes two genuinely overlapping reads',async()=>{
+ const {rendezvous}=require('./v16-healing-runner');
+ const monitor={query:async()=>({rows:[]})};
+ const gate=rendezvous(monitor,[1,2],{timeoutMs:800,watchLocks:true});
+ await Promise.all([gate.wait(),gate.wait()]);
+ assert.deepEqual(gate.meta(),{arrived:2,serialized:false});
 });
