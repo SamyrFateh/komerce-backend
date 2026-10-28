@@ -1,0 +1,45 @@
+name: Pricing 3119 — live staging read-only prerequisite
+on:
+  push:
+    branches: [audit/pricing-3119-acceptance-20261028]
+    paths:
+      - '.github/workflows/pricing-3119-live-preflight.yml'
+      - 'tests/pricing-3119-acceptance/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  access:
+    name: Real staging / ${{ matrix.role }} / Pricing KM
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        role: [admin, market_operator]
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    env:
+      CI: 'true'
+      E2E_ROLE: ${{ matrix.role }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --check tests/pricing-3119-acceptance/live-pricing-preflight.spec.js
+      - run: npx playwright test -c playwright.pricing-3119-preflight.config.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pricing-3119-live-prerequisites-${{ matrix.role }}
+          path: test-results/pricing-3119-live-preflight/
+          if-no-files-found: warn
+          retention-days: 14
