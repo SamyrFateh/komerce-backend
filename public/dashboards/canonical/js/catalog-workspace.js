@@ -910,6 +910,13 @@
     context.root.appendChild(overlay);
     if (typeof nameField.control.focus === 'function') nameField.control.focus();
     await autoTranslateFrench(row, nameField.control, descriptionField.control, status);
+    // Le message reste près de la commande d'enregistrement, même lorsque
+    // les champs et la traduction locale sont plus haut dans la fenêtre.
+    if (!String(descriptionField.control.value || '').trim()) {
+      footerNotice.textContent = 'À compléter avant enregistrement : description française obligatoire.';
+    } else if (!String(nameField.control.value || '').trim()) {
+      footerNotice.textContent = 'À compléter avant enregistrement : titre français obligatoire.';
+    }
     return overlay;
   }
 
