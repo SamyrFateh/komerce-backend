@@ -8,17 +8,37 @@ on:
       - research/business-auditor-v09-sequential-integration-20261028
       - research/business-auditor-v10-executable-bug-hunt-20261028
       - research/business-auditor-v11-multidomain-oracles-20261028
+      - research/business-auditor-v12-opus-proof-pivot-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
-      - tests/unit/auditor-paypal-refund-execution.test.js
+      - tests/unit/auditor-*.test.js
+      - tests/e2e-api/**
+      - services/**
+      - features/**
+      - routes/**
+      - docs/db/railway-live-schema.sql
       - scripts/audit-logic.js
       - scripts/lib/logic-detectors.js
+      - package.json
+  pull_request:
+    branches:
+      - research/business-auditor-v11-multidomain-oracles-20261028
+      - research/business-auditor-v12-opus-proof-pivot-20261028
+    paths:
+      - .github/workflows/research-independent-business-auditor.yml
+      - tools/business-auditor/**
+      - tests/unit/auditor-*.test.js
+      - tests/e2e-api/**
+      - services/**
+      - features/**
+      - routes/**
+      - docs/db/railway-live-schema.sql
       - package.json
 permissions:
   contents: read
 concurrency:
-  group: research-independent-business-auditor
+  group: research-independent-business-auditor-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   proof:
@@ -211,4 +231,4 @@ jobs:
           name: business-auditor-${{ github.run_id }}
           path: /tmp/komerce-independent-business-audit/
           if-no-files-found: ignore
-          retention-days: 5
+          retention-days: 90
