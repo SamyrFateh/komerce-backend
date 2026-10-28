@@ -1,0 +1,103 @@
+name: Real staging dashboard user journey audit — 7 roles x 2 viewports
+on:
+  push:
+    branches: [audit/dashboard-journeys-real-staging-20261028]
+    paths:
+      - '.github/workflows/real-dashboard-journeys-audit.yml'
+      - 'tests/staging-dashboard-journeys/**'
+      - 'playwright.staging-dashboard-journeys.config.js'
+      - 'scripts/recette/summarize-real-dashboard-journeys.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: real-staging-dashboard-journeys
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Real staging · ${{ matrix.role }} · Chromium 1440/390
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        role: [admin, market_operator, finance, sourcing, agent_hub, agent_relais, agent_transitaire]
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    env:
+      CI: 'true'
+      E2E_ROLE: ${{ matrix.role }}
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_EXPECTED_DEPLOY_SHA: dd4c00c7652437eb0a299685a6878d35dd06902c
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_FINANCE_EMAIL: ${{ secrets.E2E_FINANCE_EMAIL }}
+      E2E_FINANCE_PASSWORD: ${{ secrets.E2E_FINANCE_PASSWORD }}
+      E2E_SOURCING_EMAIL: ${{ secrets.E2E_SOURCING_EMAIL }}
+      E2E_SOURCING_PASSWORD: ${{ secrets.E2E_SOURCING_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies (never deploy)
+        run: npm ci --no-audit --no-fund
+      - name: Verify test source is separate from deployed runtime
+        run: |
+          echo "Audit git SHA: $(git rev-parse HEAD)"
+          echo "Pinned staging SHA: $E2E_EXPECTED_DEPLOY_SHA"
+          node --check tests/staging-dashboard-journeys/real-dashboard-journeys.spec.js
+          node --check scripts/recette/summarize-real-dashboard-journeys.js
+      - name: Browse REAL staging, all declared dashboards of this role, desktop and mobile
+        run: npx playwright test --config=playwright.staging-dashboard-journeys.config.js
+      - name: Per-role audit report
+        if: always()
+        run: |
+          node scripts/recette/summarize-real-dashboard-journeys.js
+          cat test-results/real-dashboard-journeys/rapport.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Archive screenshots, discovered actions and findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: journeys-${{ matrix.role }}
+          path: test-results/real-dashboard-journeys/
+          if-no-files-found: warn
+          retention-days: 14
+
+  consolidate:
+    name: Cross-role matrix · evidence and gap register
+    needs: [audit]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: journeys-*
+          merge-multiple: true
+          path: test-results/real-dashboard-journeys/
+      - name: Consolidate seven identities and both viewports
+        run: |
+          node scripts/recette/summarize-real-dashboard-journeys.js
+          cat test-results/real-dashboard-journeys/rapport.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: komerce-real-dashboard-audit-complete
+          path: test-results/real-dashboard-journeys/
+          retention-days: 21
