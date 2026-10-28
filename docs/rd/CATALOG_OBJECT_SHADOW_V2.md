@@ -40,19 +40,43 @@ Puis :
 
 node scripts/cj-object-shadow-v2.js prepare baseline/classification-evidence.json v1/all-498-decisions.json artifacts/object-shadow
 
-L'extracteur IA est **facultatif et explicitement activé** pour une expérience
-limitée (clé non enregistrée dans le dépôt, modèle choisi par l'opérateur).
-Dans cet exemple le maximum est 20 produits, par lots de 5 :
+### Extraction IA locale, gratuite et sans clé payante
 
-SHADOW_ALLOW_API=YES ANTHROPIC_API_KEY=... SHADOW_IDENTITY_MODEL=... \
-node scripts/cj-object-extract-batch.js \
-artifacts/object-shadow/identity-input.jsonl \
-artifacts/object-shadow/identity-extractions.jsonl 20 5
+Nous utilisons **Ollama sur le poste local**, et non Anthropic ou une API
+facturée. Aucun secret ni appel IA distant n'est prévu pour cette R&D.
 
-Le modèle et le prix ne sont pas supposés. Les usages en tokens sont émis,
-pas de prétention à un coût exact avant tarification. Le cache est
-resumable ; pas de clés dans les logs. Si la réponse LLM est invalide,
-les extraits rejetés ne sont pas appliqués.
+Préparation du poste Windows (installation des modèles librement distribués ;
+vérifier séparément leurs licences) :
+
+```powershell
+winget install Ollama.Ollama
+ollama pull qwen2.5:3b
+ollama list
+$env:SHADOW_LOCAL_MODEL = "qwen2.5:3b"
+node scripts/cj-object-extract-batch.js artifacts/object-shadow/identity-input.jsonl artifacts/object-shadow/identity-extractions.jsonl 20 3
+```
+
+Sur macOS/Linux, installer Ollama suivant sa documentation et utiliser
+`SHADOW_LOCAL_MODEL=qwen2.5:3b node ...`.
+
+Le script ne contacte que `http://127.0.0.1:11434/api/generate`.
+La CI interdit les appels au modèle : elle utilise une réponse factice pour
+tester la validation, sans aucun téléchargement de poids ou service payant.
+L'usage du modèle est local et entraîne uniquement des coûts matériels :
+électricité, CPU/RAM et téléchargement initial de poids.
+
+Après validation manuelle des **20 premiers** passeports, lancer la totalité
+en reprenant le cache (conserver les sorties précédentes) :
+
+```powershell
+node scripts/cj-object-extract-batch.js artifacts/object-shadow/identity-input.jsonl artifacts/object-shadow/identity-extractions.jsonl 498 3
+```
+
+Une extraction ne devient jamais une classification certifiée : citation
+source, regroupement, vérification humaine et gold set sont toujours requis.
+Les modèles gratuits ne garantissent ni précision ni stabilité.
+Si le poste ne permet pas une exécution locale, s'en tenir au corpus aveugle
+et à la V1 sans prétendre que les objets ont été extraits.
 
 Après extraction, sans règle humaine :
 
