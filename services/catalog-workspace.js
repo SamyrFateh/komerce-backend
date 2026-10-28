@@ -355,8 +355,8 @@ async function buildWorkspace(query = {}) {
   const approvalProductRef = String(query.product_ref || '').trim() || null;
   const [summary, catalogCap, categories, registry, commercialProducts, approval, approvalBreakdown, focusedHandoff, pricingParameters] = await Promise.all([
     querySummary(),
-    queryCatalogCap(),
-    taxonomy.listCategories(),
+    isRefinery ? Promise.resolve(CATALOG_CAP_FALLBACK) : queryCatalogCap(),
+    isRefinery ? Promise.resolve([]) : taxonomy.listCategories(),
     isRefinery ? Promise.resolve({ products: [], page: { total: 0, limit: 0, offset: 0 } }) : catalogRegistry.listRegistry({
       finalized_only: true,
       search: query.search,
