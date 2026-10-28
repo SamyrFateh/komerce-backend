@@ -10,7 +10,7 @@
 
 ## Implémentation
 
-- `services/refinery-worklist.js` : diagnostic borné en lecture seule du statut `content_source` absent ou non reconnu parmi les brouillons `candidate / is_active = false`. Expose les comptes séparés des brouillons en validation, des brouillons à qualifier, et des produits déjà actifs après une remise canonique.
+- `services/refinery-worklist.js` : diagnostic borné en lecture seule du statut `content_source` absent ou non reconnu parmi les brouillons `candidate / is_active = false`. Expose les comptes séparés des brouillons en validation, des brouillons à qualifier et des produits déjà actifs après une remise canonique. Réutilise la projection canonique pour afficher **les produits actifs dont les contrôles restent en défaut** dans une file de réexamen dédiée, sans les désactiver.
 - `services/catalog-workspace.js` : `refinery_view=1` ajoute la projection Raffinerie, conserve la certification existante en lecture seule et désactive les lectures inutiles du Catalogue. Aucune mutation supplémentaire.
 - `services/catalog-registry.js` : l'option `finalized_only=true` filtre les lignes visibles au Catalogue sur `work_status = catalog_approved`, qui exige source/classification/édition prêtes, `is_active=true` et `lifecycle_status=active`. Le registre historique brut conserve son contrat hors de ce filtre.
 - Interface : tableaux, libellés, actions contextualisées et file « source à qualifier » distincte des candidats à valider.
@@ -31,4 +31,4 @@ Un produit actif qui devient non conforme n'est **pas automatiquement désactiv�
 ## Hors périmètre
 
 - Restructuration des statuts, déclenchement des validations, mutation Catalogue, publication marché, réactivation automatique.
-- La file de réexamen d'un produit actif : nécessite le contrat d'autorité et ses transitions persistées. Ne pas confondre un lien de consultation avec un transfert de responsabilité.
+- La file de réexamen est **lecture seule** : l'entrée visible ne modifie pas l'état persistant, ne suspend aucun marché et ne clôt aucune certification. Un futur parcours de décision par l'autorité doit conserver une trace explicite du retour en préparation.
