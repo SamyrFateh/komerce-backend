@@ -1713,15 +1713,9 @@
     select('Sous-catégorie', 'subcategory', [
       { value: '', label: 'Toutes les sous-catégories' }, ...availableSubcategories,
     ]);
-    select('À traiter', 'status', [
-      { value: '', label: 'Tous les états' },
-      { value: 'source_to_normalize', label: 'Source à normaliser' },
-      { value: 'taxonomy_to_confirm', label: 'Catégorie à confirmer' },
-      { value: 'editorial_to_complete', label: 'Fiche FR à compléter' },
-      { value: 'approval_pending', label: 'Validation attendue' },
-      { value: 'catalog_approved', label: 'Approuvé Catalogue' },
-      { value: 'rejected', label: 'Écarté' },
-      { value: 'inactive', label: 'Inactif' },
+    select('Statut Catalogue', 'status', [
+      { value: '', label: 'Tous les produits approuvés' },
+      { value: 'catalog_approved', label: 'Approuvés Catalogue' },
     ]);
     const apply = makeButton(doc, 'Filtrer', 'catalog-filter');
     apply.addEventListener('click', async () => {
@@ -1740,12 +1734,8 @@
     quick.className = 'kmc-catalog-quick-filters';
     quick.appendChild(text(doc, 'span', 'kmc-catalog-quick-label', 'Accès rapide'));
     [
-      ['', 'Tous les produits'],
-      ['source_to_normalize', 'Source à vérifier'],
-      ['taxonomy_to_confirm', 'À classer'],
-      ['editorial_to_complete', 'Fiche FR'],
-      ['approval_pending', 'À valider'],
-      ['catalog_approved', 'Approuvés'],
+      ['', 'Produits finalisés'],
+      ['catalog_approved', 'Approuvés Catalogue'],
     ].forEach(([value, label]) => {
       const chip = text(doc, 'button', 'kmc-catalog-quick-chip', label);
       chip.type = 'button';
@@ -1762,14 +1752,14 @@
     const rows = payload.products || [];
     const page = payload.registry_page || { total: rows.length, limit: rows.length, offset: 0 };
     slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
-      formatNumber(page.total) + ' produit(s) correspondant aux filtres · source : remise canonique à la Raffinerie'));
+      formatNumber(page.total) + ' produit(s) finalisés et approuvés · catalogue global, avant décision de marché'));
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty',
-        'Aucun produit remis ne correspond aux filtres. Vérifiez les filtres ou le parcours de remise Raffinerie → Catalogue.'));
+        'Aucun produit finalisé ne correspond aux filtres. Les travaux de préparation et de validation restent dans la Raffinerie.'));
     } else {
       const table = doc.createElement('table');
       table.className = 'kmc-workspace-table kmc-catalog-registry-table';
-      table.innerHTML = '<thead><tr><th>Produit</th><th>Fournisseur</th><th>Classement boutique</th><th>À corriger avant marchés</th><th>Action suivante</th></tr></thead>';
+      table.innerHTML = '<thead><tr><th>Produit</th><th>Fournisseur</th><th>Classement boutique</th><th>Statut Catalogue</th><th>Consulter</th></tr></thead>';
       const tbody = doc.createElement('tbody');
       const statusNames = {
         source_to_normalize: 'Source à normaliser',
@@ -1837,7 +1827,7 @@
 
         const diagnostic = doc.createElement('td');
         diagnostic.className = 'kmc-catalog-diagnostic';
-        diagnostic.setAttribute('data-label', 'À corriger avant marchés');
+        diagnostic.setAttribute('data-label', 'Statut Catalogue');
         const nextStep = registryNextStep(row);
         const statusChip = text(doc, 'button', 'kmc-catalog-status', nextStep.status);
         statusChip.type = 'button';
@@ -1848,24 +1838,18 @@
         tr.appendChild(diagnostic);
         const actionCell = doc.createElement('td');
         actionCell.className = 'kmc-catalog-action-cell';
-        actionCell.setAttribute('data-label', 'Action suivante');
+        actionCell.setAttribute('data-label', 'Consulter');
         const actions = doc.createElement('div');
         actions.className = 'kmc-catalog-actions-inner';
         const view = text(doc, 'a', 'kmc-workspace-action is-secondary kmc-catalog-view-link', 'Voir fiche');
         view.href = contextualHref('/admin/products/' + encodeURIComponent(row.product_ref),
           '/admin/workspaces/catalog?product_ref=' + encodeURIComponent(row.product_ref), 'Retour au Catalogue');
-        const editClassification = makeButton(doc,
-          (row.issues || []).includes('taxonomy_to_confirm') ? 'Classer' : 'Modifier classement',
-          'classify-product', true);
+        // Seules des actions Catalogue et marché figurent ici.
+        // Toute préparation fournisseur/éditoriale appartient à la Raffinerie.
+        const editClassification = makeButton(doc, 'Modifier classement', 'classify-product', true);
         editClassification.addEventListener('click', () =>
           openProductClassificationDialog(context, row, categories, editClassification));
         const issues = row.issues || [];
-        const source = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Examiner source');
-        source.href = '/admin/workspaces/sourcing' +
-          (row.candidate_ref ? '?candidate_ref=' + encodeURIComponent(row.candidate_ref) : '');
-        const refinery = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Ouvrir Raffinerie');
-        refinery.href = '/admin/workspaces/catalog?view=refinery&product_ref=' +
-          encodeURIComponent(row.product_ref);
         const market = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Décisions marchés');
         market.href = '/dashboards/canonical/market-catalog.html?product_ref=' +
           encodeURIComponent(row.product_ref);
@@ -1873,8 +1857,8 @@
         diagnose.addEventListener('click', () => {
           if (readinessCheck) readinessCheck.click();
         });
-        const primaryByKind = { detail: view, source, classify: editClassification,
-          refinery, markets: market, diagnose };
+        const primaryByKind = { detail: view, classify: editClassification,
+          markets: market, diagnose };
         const primary = primaryByKind[nextStep.kind] || view;
         primary.textContent = nextStep.label;
         primary.setAttribute('aria-label', nextStep.label + ' pour ' + row.product_ref);
@@ -1893,8 +1877,7 @@
         [
           ['detail', view],
           ['classify', editClassification],
-          ...(issues.includes('source_to_normalize') && row.candidate_ref ? [['source', source]] : []),
-          ...(row.lifecycle_status === 'candidate' ? [['refinery', refinery]] : []),
+          // La Raffinerie n'est jamais une action secondaire du Catalogue finalisé.
           ...(row.lifecycle_status === 'active' && row.is_active ? [['markets', market]] : []),
         ].forEach(([kind, action]) => {
           if (kind !== nextStep.kind && !(kind === 'classify' && row.lifecycle_status === 'rejected')) {
