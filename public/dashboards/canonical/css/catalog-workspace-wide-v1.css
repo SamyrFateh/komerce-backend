@@ -6,12 +6,12 @@
  */
 body.kmc-shell-v4:has(.kmc-catalog-main-panel) #canonical-admin-root {
   width: 100%;
-  max-width: none !important;
+  max-width: none;
   min-width: 0;
 }
 body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-operations-workspace {
   width: 100%;
-  max-width: none !important;
+  max-width: none;
   min-width: 0;
   padding-inline: clamp(12px, 1.5vw, 28px);
   gap: 14px;
@@ -21,7 +21,7 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-workspace-metrics,
 body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-main-panel {
   width: 100%;
   min-width: 0;
-  max-width: none !important;
+  max-width: none;
   box-sizing: border-box;
 }
 body.kmc-shell-v4:has(.kmc-catalog-main-panel) > main {
@@ -156,10 +156,10 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-operations-workspace > .kmc-
   background: #fff;
   box-shadow: 0 4px 20px rgb(16 37 68 / 0.04);
 }
-.kmc-catalog-registry-table.kmc-workspace-table {
-  table-layout: fixed !important;
+body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-workspace-table {
+  table-layout: fixed;
   width: 100%;
-  min-width: 1020px !important;
+  min-width: 1020px;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -168,12 +168,12 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-operations-workspace > .kmc-
   width: auto;
   min-width: 0;
   max-width: none;
-  white-space: normal !important;
+  white-space: normal;
   overflow-wrap: anywhere;
   word-break: normal;
   vertical-align: middle;
   padding: 13px 11px;
-  text-align: left !important;
+  text-align: left;
 }
 .kmc-catalog-registry-table th:nth-child(1) { width: 28%; }
 .kmc-catalog-registry-table th:nth-child(2) { width: 10%; }
@@ -265,7 +265,7 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-operations-workspace > .kmc-
 .kmc-catalog-status[data-status="approval_pending"] { background: #fff6dc; color: #875d06; }
 .kmc-catalog-status[data-status="rejected"] { background: #ffe7ea; color: #a72437; }
 .kmc-catalog-registry-table td.kmc-catalog-action-cell {
-  min-width: 0 !important;
+  min-width: 0;
   width: auto;
 }
 .kmc-catalog-actions-inner {
@@ -330,7 +330,7 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-operations-workspace > .kmc-
   }
   .kmc-catalog-registry-table.kmc-workspace-table {
     display: block;
-    min-width: 0 !important;
+    min-width: 0;
     width: 100%;
   }
   .kmc-catalog-registry-table thead { display: none; }
@@ -347,13 +347,13 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-operations-workspace > .kmc-
     border-radius: 11px;
     background: #fff;
   }
-  .kmc-catalog-registry-table td {
-    display: block !important;
-    width: auto !important;
-    min-width: 0 !important;
+  body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table td {
+    display: block;
+    width: auto;
+    min-width: 0;
     padding: 0;
     border: 0;
-    text-align: left !important;
+    text-align: left;
   }
   .kmc-catalog-registry-table td::before {
     content: attr(data-label);
