@@ -71,7 +71,7 @@
     return url.toString();
   }
 
-  function renderProductMarketChoice(explicit) {
+  function renderProductMarketChoice(explicit, permittedCodes = []) {
     const productRef = focusedRef();
     if (!productRef) return;
     const section = el('section', 'kmc-market-handoff kmc-market-handoff-chooser');
@@ -81,16 +81,25 @@
     section.appendChild(el('p', 'kmc-market-handoff-note',
       'Ce produit vient du Catalogue global. Choisissez le marché sur lequel vous voulez examiner sa commercialisation. Aucun marché n’est choisi automatiquement.'));
     const allowed = Array.isArray(explicit.allowedMarkets) ? explicit.allowedMarkets : [];
-    if (allowed.length) {
-      const choices = el('div', 'kmc-market-handoff-options');
-      allowed.forEach(code => {
-        const link = el('a', 'kmc-workspace-action is-secondary', 'Décider pour ' + code);
+    const permitted = new Set(permittedCodes);
+    const choices = el('div', 'kmc-market-handoff-options');
+    allowed.forEach(code => {
+      if (permitted.has(code)) {
+        const link = el('a', 'kmc-workspace-action is-secondary', 'Ouvrir ' + code);
         link.href = urlWithMarket(code);
         link.setAttribute('data-handoff-market', code);
         choices.appendChild(link);
-      });
-      section.appendChild(choices);
-    } else {
+      } else {
+        const blocked = el('span', 'kmc-market-handoff-blocked', code + ' · accès Catalogue requis');
+        blocked.setAttribute('data-market-inaccessible', code);
+        choices.appendChild(blocked);
+      }
+    });
+    section.appendChild(choices);
+    if (allowed.length && !allowed.some(code => permitted.has(code))) {
+      section.appendChild(el('p', 'kmc-market-handoff-error',
+        'Aucune habilitation Catalogue pays active pour ce compte. Une appartenance active au marché et la capacité catalog.read sont nécessaires. Faites vérifier vos droits auprès de l’administrateur des marchés.'));
+    } else if (!allowed.length) {
       section.appendChild(el('p', 'kmc-market-handoff-error',
         'Aucun marché autorisé : la décision ne peut pas être ouverte avec ce compte.'));
     }
@@ -140,7 +149,7 @@
     root.appendChild(section);
   }
 
-  function renderMarketPrompt(explicit) {
+  function renderMarketPrompt(explicit, permittedCodes = []) {
     root.className = 'canonical-boot';
     root.replaceChildren();
     root.appendChild(el('p', 'canonical-eyebrow', 'KOMERCE · CATALOGUE PAYS'));
@@ -149,7 +158,29 @@
       state: explicit.state,
       requested: explicit.requested,
     });
-    renderProductMarketChoice(explicit);
+    renderProductMarketChoice(explicit, permittedCodes);
+  }
+
+  function renderMarketAccessDenied(marketCode, explicit, permittedCodes = [], reason = '') {
+    root.className = 'canonical-boot';
+    root.replaceChildren();
+    root.appendChild(el('p', 'canonical-eyebrow', 'KOMERCE · ACCÈS CATALOGUE PAYS'));
+    root.appendChild(el('h1', '', 'Habilitation marché requise'));
+    root.appendChild(el('p', 'kmc-market-handoff-error',
+      marketCode + ' : votre compte ne détient pas actuellement la capacité catalog.read via une appartenance active au marché. ' +
+      'L’accès global au back-office ne confère pas automatiquement les droits de Catalogue pays.'));
+    if (reason) root.appendChild(el('p', 'kmc-market-handoff-note', reason));
+    renderProductMarketChoice(explicit, permittedCodes);
+  }
+
+  async function catalogReadableCodes() {
+    // Authentication + active membership + active ceiling tested by the server.
+    // This discovery does NOT authorize an action; market routes still guard.
+    const payload = await request('/api/market-delegation/catalog/authorized-markets');
+    if (!Array.isArray(payload.market_codes)) {
+      throw new Error('Impossible de vérifier les habilitations Catalogue pays.');
+    }
+    return payload.market_codes;
   }
 
   function formatDate(value) {
@@ -387,8 +418,20 @@
         request('/api/admin/dashboard/context'),
       ]);
       const explicit = explicitMarket(context);
-      if (!explicit.marketCode) { renderMarketPrompt(explicit); refreshNavigation(user, context); return; }
+      // Only a focused cross-dashboard handoff needs the effective capability
+      // inventory. Generic market pages preserve their existing behavior.
+      const permittedCodes = focusedRef() ? await catalogReadableCodes() : null;
+      if (!explicit.marketCode) {
+        renderMarketPrompt(explicit, permittedCodes || []);
+        refreshNavigation(user, context);
+        return;
+      }
       const marketCode = explicit.marketCode;
+      if (permittedCodes && !permittedCodes.includes(marketCode)) {
+        renderMarketAccessDenied(marketCode, explicit, permittedCodes);
+        refreshNavigation(user, context);
+        return;
+      }
       const payload = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure`);
 
       root.className = 'kmc-workspace';
@@ -406,6 +449,13 @@
     } catch (error) {
       if (error.status === 401) {
         global.location.replace('/login.html?next=' + encodeURIComponent(global.location.pathname + global.location.search));
+        return;
+      }
+      if (['MARKET_MEMBERSHIP_REQUIRED', 'MARKET_CAPABILITY_REQUIRED',
+        'MARKET_CAPABILITY_OUTSIDE_CEILING'].includes(error.code)) {
+        const marketCode = new URL(global.location.href).searchParams.get('market') || 'Marché';
+        renderMarketAccessDenied(String(marketCode).toUpperCase(),
+          { allowedMarkets: [] }, [], error.message);
         return;
       }
       root.className = 'canonical-boot';
