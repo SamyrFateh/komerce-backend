@@ -14,7 +14,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('max-width: none !important');
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed !important');
-  expect(ui).toContain("slot.parentNode.classList.add('kmc-catalog-main-panel')");
+  expect(ui).toContain("' kmc-catalog-main-panel'");
   expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-1');
 });
 

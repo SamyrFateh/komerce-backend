@@ -1169,7 +1169,7 @@
     );
     if (slot.parentNode) {
       slot.parentNode.setAttribute('id', 'catalog-products');
-      slot.parentNode.classList.add('kmc-catalog-main-panel');
+      slot.parentNode.className = (slot.parentNode.className || '') + ' kmc-catalog-main-panel';
     }
     const filters = context.catalogFilters;
     const toolbar = doc.createElement('div');
@@ -1434,7 +1434,7 @@
       });
       table.appendChild(tbody);
       const tableWrap = wrapTable(doc, table);
-      tableWrap.classList.add('kmc-catalog-registry-table-wrap');
+      tableWrap.className = (tableWrap.className || '') + ' kmc-catalog-registry-table-wrap';
       slot.appendChild(tableWrap);
     }
     const pager = doc.createElement('div');
