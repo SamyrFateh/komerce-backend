@@ -12,6 +12,7 @@ on:
       - research/business-auditor-v13-canonical-parcel-sequences-20261028
       - research/business-auditor-v14-bounded-sequence-explorer-20261028
       - research/business-auditor-v15-physical-concurrency-20261028
+      - research/business-auditor-v16-opus-adversarial-repair-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -31,6 +32,7 @@ on:
       - research/business-auditor-v13-canonical-parcel-sequences-20261028
       - research/business-auditor-v14-bounded-sequence-explorer-20261028
       - research/business-auditor-v15-physical-concurrency-20261028
+      - research/business-auditor-v16-opus-adversarial-repair-20261028
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -75,7 +77,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js
       - name: Install existing dependencies
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: PayPal ambiguous timeout and replay, mocked HTTP transport only
@@ -337,6 +339,31 @@ jobs:
            verdict:p.verdict.verdict,capacity:p.verdict.capacity,
            nominal:p.verdict.sequential.maximum,race:p.verdict.concurrent.maximum,
            candidate:p.verdict.novelFamilyCandidate
+          }));
+          NODE
+      - name: V1.6 Opus counterfactual - real service before/after locking in cloned DBs
+        run: node tools/business-auditor/v16-healing-gate.js /tmp/komerce-independent-business-audit
+      - name: V1.6 independent healing check and explicit reviewed research baseline
+        run: |
+          node <<'NODE'
+          const p=require('/tmp/komerce-independent-business-audit/v16-healing.json');
+          const baseline=require('./tools/business-auditor/v16-healing-baseline.json');
+          const {interpret}=require('./tools/business-auditor/v16-healing-predicate');
+          const current=interpret(p.raw);
+          const expected=baseline.scenarios;
+          if(p.contract!=='komerce-opus-healing-proof/v16'||
+             p.sha!==process.env.GITHUB_SHA||p.runId!==process.env.GITHUB_RUN_ID||
+             JSON.stringify(p.verdict)!==JSON.stringify(current)||
+             baseline.contract!=='komerce-opus-healing-baseline/v16'||
+             current.verdict!==baseline.expected||
+             p.raw.allClonesDropped!==true||
+             Object.entries(expected).some(([mode,want])=>
+              current.observed.find(x=>x.mode===mode)?.verdict!==want)||
+             !current.observed.find(x=>x.mode==='SERIALIZED_MUTANT')?.lockWaitObserved)
+             throw Error('V1.6_REVIEW_REQUIRED: incorrect healing certification or missing physical proof');
+          console.log('BUSINESS_AUDIT_V16_HEALING_CERTIFIED',JSON.stringify({
+            verdict:current.verdict,states:current.observed.map(x=>[x.mode,x.verdict,x.maximum]),
+            noTriggerBypass:true
           }));
           NODE
       - name: V1.0 independent one-command static repo audit without DB
