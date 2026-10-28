@@ -12,7 +12,7 @@ const {assertLocalTestTarget}=require('./cli');
 const {physicalProof}=require('./v28-proof-adapters');
 const {fromRepo}=require('./v29-metadata-selector');
 function humanDigest(r){
- const d=r.discovery;
+ const d=r.sourceDiscovery;
  const lines=[
   '','## V2.9 — découverte des paires depuis le dépôt (statique, sans DB)','',
   '- SHA : '+d.sha+' ; hash de sélection : '+d.selectionHash,
