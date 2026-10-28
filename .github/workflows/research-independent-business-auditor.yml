@@ -507,6 +507,30 @@ jobs:
           }
           console.log('BUSINESS_AUDIT_V20_NO_STOCK_FALSE_POSITIVE');
           NODE
+      - name: V2.2 Opus financial cancellation x PayPal probe on four fully cloned canonical PG databases
+        run: node tools/business-auditor/v22-real-refund-gate.js /tmp/komerce-independent-business-audit /tmp/komerce-independent-business-audit/v22-selector/v22-priority-pairs.json
+      - name: V2.2 independently recompute AB/BA/PAR financial invariants even if serializable
+        run: |
+          node <<'NODE'
+          const p=require('/tmp/komerce-independent-business-audit/v22-refund-probe.json');
+          const {evaluateSchedules}=require('./tools/business-auditor/v22-financial-invariants');
+          const v=evaluateSchedules(p.cases);
+          if(p.contract!=='komerce-real-refund-financial-proof/v22'||
+             p.sha!==process.env.GITHUB_SHA||p.runId!==process.env.GITHUB_RUN_ID||
+             p.selectedPairRank>5||p.selectedPairRank<1||
+             JSON.stringify(p.verdict)!==JSON.stringify(v)||
+             !v.deterministic||
+             v.violatedSchedules.join('|')!=='AB|AB_REPEAT|PAR'||
+             p.cases.some(x=>!x.cloneDropped||x.authMiddlewareExecuted!==false)||
+             p.providerLiveNetworkCalls!==0||
+             p.productionIncidentConfirmed!==false)
+            throw Error('V2.2 financial proof incomplete or economics baseline drifted');
+          console.log('BUSINESS_AUDIT_V22_ECONOMIC_GATE',JSON.stringify({
+            pairRank:p.selectedPairRank,violated:v.violatedSchedules,
+            captured:v.schedules[0].capturedCents,
+            refunded:v.schedules[0].totalRefundValueCents
+          }));
+          NODE
       - name: V1.0 independent one-command static repo audit without DB
         run: npm run audit:business:v1 -- --mode static --out /tmp/komerce-independent-business-audit/v10-static
       - name: V1.0 compare standalone static scan to same-SHA CI evidence
