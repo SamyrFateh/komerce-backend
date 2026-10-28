@@ -98,7 +98,25 @@ function rejectFakeFix(entry,raw){
 }
 async function physicalProof(env,options={},deps={}){
  assertLocalTestTarget(env); // before any subprocess or CREATE DATABASE.
- const selection=frozenSelection(options);
+ // V2.9 may supply a source-owner-grounded plan selected before any DB access.
+ // A dynamic source hypothesis NEVER becomes an executable recipe unless its
+ // exact ID/mode/fixture/expect matches the manually reviewed oracle registry.
+ const plan=options.calibratedSelection;
+ if(plan&&(
+    plan.contract!=='komerce-owner-grounded-calibrated-recipe-selection/v29'||
+    !/^[a-f0-9]{64}$/.test(plan.hash||'')||
+    !Array.isArray(plan.selected)||plan.selected.length<1||
+    plan.selected.length>4||
+    plan.selected.some(x=>{
+     const registered=REGISTRY.find(c=>c.id===x.id);
+     return !registered||registered.domain!==x.domain||
+       registered.mode!==x.mode||registered.fixture!==x.fixture||
+       registered.expect!==x.expect||!x.ownerEvidence||
+       !x.selectionReason;
+    })||new Set(plan.selected.map(x=>x.id)).size!==plan.selected.length))
+   throw Error('V29_SELECTION_TOOL_ERROR: unreviewed or malformed physical recipe');
+ const selection=plan?{...plan,selectionKind:'SOURCE_OWNER_BOUND_REVIEWED_RECIPES'}:
+  frozenSelection(options);
  const results=[];
  const execute=deps.execute||((args,environment)=>{
   const child=args.fixture==='refund'?'v22-refund-probe-child.js':'v27-logistics-physical-child.js';
