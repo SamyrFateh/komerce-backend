@@ -184,6 +184,23 @@ jobs:
             observed:p.findings[0].observed,expected:p.findings[0].expected
           }));
           NODE
+      - name: V1.0 independent one-command static repo audit without DB
+        run: npm run audit:business:v1 -- --mode static --out /tmp/komerce-independent-business-audit/v10-static
+      - name: V1.0 compare standalone static scan to same-SHA CI evidence
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const a=JSON.parse(fs.readFileSync('/tmp/komerce-independent-business-audit/v10-static/v10-static-review.json','utf8'));
+          const b=JSON.parse(fs.readFileSync('/tmp/komerce-independent-business-audit/v10-bug-hunt.json','utf8'));
+          if(a.contract!=='komerce-business-bug-hunter-static/v1'||
+             a.summary.candidateOccurrences!==b.summary.candidateOccurrences||
+             a.summary.triageCases!==b.summary.triageCases||
+             a.summary.reviewCases!==b.summary.reviewCases||
+             a.summary.controlledTestViolations!==null||
+             a.summary.productionIncidentsConfirmed!==0)
+           throw Error('V1.0 standalone scan and CI artifact disagree');
+          console.log('BUSINESS_AUDIT_V10_STANDALONE_OK',JSON.stringify(a.summary));
+          NODE
       - name: Archive independent JSON + Markdown evidence
         if: always()
         uses: actions/upload-artifact@v4
