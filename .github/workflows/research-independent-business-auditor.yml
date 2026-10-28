@@ -392,6 +392,24 @@ jobs:
            policyApproved:v.approvedCapacityPolicy,allClonesDropped:p.raw.allClonesDropped
           }));
           NODE
+      - name: V1.8 real PostgreSQL AB/BA/parallel serializability pilot
+        run: node tools/business-auditor/v18-serializability-gate.js /tmp/komerce-independent-business-audit
+      - name: V1.8 independently re-evaluate serializability and require exact trial evidence
+        run: |
+          node <<'NODE'
+          const r=require('/tmp/komerce-independent-business-audit/v18-serializability.json');
+          const {inspect}=require('./tools/business-auditor/v18-serializability-predicate');
+          const v=inspect(r.raw);
+          if(r.contract!=='komerce-serializability-proof/v18'||
+             r.sha!==process.env.GITHUB_SHA||r.runId!==process.env.GITHUB_RUN_ID||
+             r.raw.selectionMode!=='MANUAL_PILOT_ADAPTER'||!r.raw.allClonesDropped||
+             JSON.stringify(v)!==JSON.stringify(r.verdict)||
+             v.verdict!=='NON_SERIALIZABLE'||!v.noAutomaticBusinessBugClaim)
+           throw Error('V1.8 serializability pilot needs source/evidence review');
+          console.log('BUSINESS_AUDIT_V18_CALIBRATED',JSON.stringify({
+           verdict:v.verdict,matchAB:v.matchAB,matchBA:v.matchBA
+          }));
+          NODE
       - name: V1.0 independent one-command static repo audit without DB
         run: npm run audit:business:v1 -- --mode static --out /tmp/komerce-independent-business-audit/v10-static
       - name: V1.0 compare standalone static scan to same-SHA CI evidence
