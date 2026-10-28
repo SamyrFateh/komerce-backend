@@ -45,7 +45,7 @@ test('Raffinerie : projection lecture seule, compteurs globaux séparés et pagi
   });
   expect(mockListRegistry).toHaveBeenCalledWith(expect.objectContaining({
     refinery_recheck_only: true, limit: 50, offset: 0,
-  }));
+  }), expect.any(Object));
   expect(result.unprepared_page).toEqual({
     total: 2, limit: 50, offset: 0, has_previous: false, has_next: true,
   });
