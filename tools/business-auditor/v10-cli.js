@@ -48,7 +48,14 @@ function execute(o,{root=path.resolve(__dirname,'../..'),env=process.env}={}){
  const read=name=>JSON.parse(fs.readFileSync(path.join(dir,name),'utf8'));
  const result=certify({
   v09:read('v09-evidence.json'),audit:read('business-audit.json'),
-  jest:read('v10-owner-jest.json'),observation:read('v10-paypal-observation.json')
+  proofs:{
+   'KBA-V10-RC9-PAYPAL-RETRY':{
+    jest:read('v10-owner-jest.json'),observation:read('v10-paypal-observation.json')
+   },
+   'KBA-V11-LOGISTICS-PARCEL-COUNT':{
+    jest:read('v11-parcel-jest.json'),observation:read('v11-parcel-observation.json')
+   }
+  }
  },{sha:env.GITHUB_SHA,runId:env.GITHUB_RUN_ID});
  fs.writeFileSync(path.join(output,'v10-bug-hunt.json'),JSON.stringify(result,null,2)+'\n');
  fs.writeFileSync(path.join(output,'v10-bug-hunt.md'),reportMarkdown(result));

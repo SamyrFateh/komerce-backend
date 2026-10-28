@@ -24,7 +24,33 @@ const ORACLES=Object.freeze([
   observationField:'ownerKeysEqual',
   expected:true,
   type:'boolean',
+  proofScope:'ACTUAL_OWNER_REPLAY_MOCKED_HTTP_AND_DB',
   remediation:'Route legacy refund through durable refund_execution_intents and keep the provider request key fixed on retry'
+ }),
+ Object.freeze({
+  id:'KBA-V11-LOGISTICS-PARCEL-COUNT',
+  boundary:'P4_LOGISTICS_PARCEL_MEMBERSHIP',
+  priority:'P1',
+  invariant:'Reported item assignments equal actual successful parcel_items insertions',
+  owner:'Logistics / Parcel Membership',
+  source:'features/logistics.feature.js: HUB-A parcel membership trace and quantity; issue #2949',
+  writer:'services/auto-parcel.js',
+  harness:'tests/unit/auditor-v11-auto-parcel-owner-probe.test.js',
+  testTitle:'V11 actual auto-parcel owner nominal insert vs ignored-conflict counterexample',
+  evidenceContract:'komerce-v11-parcel-count-observation/v1',
+  evidenceScope:'ACTUAL_LOGISTICS_OWNER_MOCKED_SQL_ROWCOUNT',
+  observationOracle:'ASSIGNED_ITEMS_MUST_EQUAL_SUCCESSFUL_MEMBERSHIP_INSERTS',
+  expectedControls:Object.freeze({
+   nominalSqlRowCount:1,nominalReported:1,adversarialSqlRowCount:0,
+   nominalControlPassed:true,sameItemAndParcel:true,sqlConflictIgnored:true,
+   dbQueriesToRealDb:0,physicalSqlConflictReproduced:false,productionIncidentProven:false
+  }),
+  consistencyRelation:Object.freeze({booleanField:'conflictReportedAccurately',leftField:'adversarialReported',rightField:'adversarialSqlRowCount'}),
+  observationField:'conflictReportedAccurately',
+  expected:true,
+  type:'boolean',
+  proofScope:'ACTUAL_OWNER_SQL_ROWCOUNT_SIMULATED_NOT_PHYSICAL_DB',
+  remediation:'Count only inserted rows returned by PostgreSQL and reconcile ignored conflicts through canonical parcel membership owner'
  })
 ]);
 module.exports={ORACLES};
