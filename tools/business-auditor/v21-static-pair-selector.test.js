@@ -10,8 +10,9 @@ function fixture(){
   'services/refund-service.js':"async function processRefund(){await assertRefundWithinCaptured(client,order);await client.query('INSERT INTO refunds(order_id) VALUES ($1)')}\nasync function recordExternalRefund(){await client.query('INSERT INTO refunds(order_id) VALUES ($1)')}\nmodule.exports={processRefund,recordExternalRefund};",
   'utils/refunds.js':"async function legacyRefund(){await client.query('INSERT INTO refunds(order_id) VALUES ($1)')}\nmodule.exports={legacyRefund};"
  };
- const writes=[{file:'services/refund-service.js',table:'refunds',action:'INSERT INTO',physicalTableDeclared:true},
-  {file:'utils/refunds.js',table:'refunds',action:'INSERT INTO',physicalTableDeclared:true}];
+ const writes=[{file:'services/refund-service.js',line:1,table:'refunds',action:'INSERT INTO',physicalTableDeclared:true},
+  {file:'services/refund-service.js',line:2,table:'refunds',action:'INSERT INTO',physicalTableDeclared:true},
+  {file:'utils/refunds.js',line:1,table:'refunds',action:'INSERT INTO',physicalTableDeclared:true}];
  return selectPairs({paths:Object.keys(files),read:p=>files[p],writes});
 }
 test('static selector discovers opposing refund boundaries without naming either explicitly',()=>{
@@ -22,7 +23,7 @@ test('static selector discovers opposing refund boundaries without naming either
  assert.ok(match,'static import and owner-call chain must yield payment/admin pair');
  assert.equal(match.actors.some(a=>a.hasLocalLock===false),true);
  assert.equal(match.actors.some(a=>a.hasLocalLock===true),true);
- assert.equal(match.scope,'STATIC_PAIR_CANDIDATE_NOT_RUNTIME_PROOF');
+ assert.equal(match.scope,'STATIC_FUNCTION_SCOPED_CANDIDATE_NOT_RUNTIME_PROOF');
 });
 test('dead utility is filtered by static route reachability, without hardcoding its basename',()=>{
  const result=fixture();
