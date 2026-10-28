@@ -60,6 +60,16 @@ async function mount(page,kind,search){
       if(opts.method&&opts.method!=='GET'){
         window.__mutationCalls.push(url);throw new Error('Mutation prohibited in visual certification');
       }
+      if(url.includes('/boutique-category-options')){
+        return {ok:true,status:200,json:async()=>({
+          supplier_category:'Téléphone mobile',
+          categories:[
+            {category:'tech',subcategory:'phones',category_label:'Tech',subcategory_label:'Téléphones'},
+            {category:'home',subcategory:'decor',category_label:'Maison',subcategory_label:'Décoration'},
+          ],
+          suggestions:[{category:'tech',subcategory:'phones',category_label:'Tech',subcategory_label:'Téléphones'}],
+        })};
+      }
       return {ok:true,status:200,json:async()=>payload};
    };
    if(kind==='sourcing')return window.KomerceCanonicalSourcingWorkspace.mount({
@@ -91,6 +101,20 @@ async function check(page,width){
  await more.locator('summary').click();
  assert((await more.locator('[data-workspace-action="promote-candidate"]').count())===1);
  assert((await more.locator('[data-workspace-action="reject-candidate"]').count())===1);
+ await more.locator('[data-workspace-action="update-candidate"]').click();
+ const correction=page.locator('[data-sourcing-editor-overlay] [role="dialog"]');
+ await correction.waitFor({state:'visible'});
+ assert((await correction.innerText()).includes('Corriger la source'));
+ assert.equal(await correction.locator('[data-sourcing-edit-weight]').inputValue(),'0.2');
+ await page.screenshot({path:path.join(output,'sourcing-correction-'+width+'.png'),fullPage:true});
+ await correction.locator('[data-workspace-action="cancel-sourcing-edit"]').click();
+ await page.locator('tr[data-candidate-ref="KSC-SCANNED"] [data-workspace-action="classify-boutique"]').click();
+ const chooser=page.locator('[data-sourcing-editor-overlay] [role="dialog"]');
+ await chooser.waitFor({state:'visible'});
+ assert((await chooser.innerText()).includes('Catégorie et sous-catégorie boutique'));
+ assert((await chooser.locator('[data-sourcing-category-choice] option').first().innerText()).includes('Suggéré'));
+ await page.screenshot({path:path.join(output,'sourcing-category-'+width+'.png'),fullPage:true});
+ await chooser.locator('[data-workspace-action="cancel-sourcing-edit"]').click();
  await page.screenshot({path:path.join(output,'sourcing-queue-'+width+'.png'),fullPage:true});
  await tabs.nth(1).click();
  assert.equal(await page.locator('#kmc-sourcing-panel-candidates').isVisible(),false);
