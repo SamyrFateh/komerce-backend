@@ -81,6 +81,7 @@ module.exports = {
       'middleware/require-catalog-global-authority.js',
     ],
     ci: [
+      '.github/workflows/catalog-object-shadow-v2.yml',
       '.github/workflows/showcase-v2-staging-deploy.yml',
       '.github/workflows/cj-real-showcase-contract.yml',
       '.github/workflows-disabled/showcase-catalog-media-audit.yml',
@@ -113,6 +114,7 @@ module.exports = {
       'utils/categories-cache.js',
     ],
     scripts: [
+      'scripts/cj-object-shadow-v2.js',
       'scripts/allegro-sandbox-check.js',
       'scripts/ebay-p3-pipeline-proof.js',
       'scripts/cj-real-showcase-seed.js',
@@ -346,6 +348,7 @@ module.exports = {
       'dashboards/admin/js/views/SuppliersView.js',
     ],
     tests: [
+      'tests/unit/cj-object-shadow-v2.test.js',
       'tests/unit/catalog-certification-gate-b.test.js',
       'tests/unit/pipeline-certification-scenario-core.test.js',
       'tests/unit/e2e-catalog-500-plan.test.js',
