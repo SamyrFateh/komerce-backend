@@ -118,9 +118,19 @@ async function check(page, kind, width) {
     assert((await dialog.getAttribute('aria-label')).includes('Préparation française'));
     await page.screenshot({path:path.join(out,`refinery-editor-${width}.png`),fullPage:true});
     await dialog.locator('[data-catalog-fr-field="name"]').fill('Coque souple pour téléphone Samsung');
+    // Reproduction de la capture réelle : seule la proposition de titre
+    // existe, la description fournisseur et le champ FR sont vides.
+    const save = dialog.locator('[data-workspace-action="save-fr-editor"]');
+    await save.click();
+    const notice = dialog.locator('[data-fr-save-feedback]');
+    assert((await notice.innerText()).includes('description française est vide'));
+    assert.equal(await dialog.locator('[data-catalog-fr-field="description"]').getAttribute('aria-invalid'),'true');
+    assert.equal(await page.evaluate(()=>window.__refineryCalls.length),0);
+    await page.screenshot({path:path.join(out,`refinery-editor-validation-${width}.png`),fullPage:true});
     await dialog.locator('[data-catalog-fr-field="description"]').fill(
       'Cette coque protège votre téléphone des rayures quotidiennes et offre une bonne prise en main.');
-    await dialog.locator('[data-workspace-action="save-fr-editor"]').click();
+    assert.equal(await dialog.locator('[data-catalog-fr-field="description"]').getAttribute('aria-invalid'),null);
+    await save.click();
     await page.waitForFunction(()=>window.__refineryCalls.length===1);
     const calls=await page.evaluate(()=>window.__refineryCalls);
     assert(calls[0].url.includes('/refinery/P-RECHECK/prepare-fr'));
