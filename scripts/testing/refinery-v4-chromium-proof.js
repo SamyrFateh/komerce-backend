@@ -73,10 +73,17 @@ async function check(page, kind, width) {
         return {element:section,slot};
       },
     };
+    window.__refineryCalls=[];
     const result=await window.KomerceCanonicalCatalogWorkspace.mount({
       root,document:doc,ui:{Section},
       location:{search:kind==='refinery'?'?view=refinery':''},
-      fetch:async()=>({ok:true,status:200,json:async()=>payload}),
+      fetch:async(url,options={})=>{
+        if(options.method==='POST'){
+          window.__refineryCalls.push({url,body:JSON.parse(options.body||'{}')});
+          return {ok:true,status:200,json:async()=>({ok:true,action:'refinery_active_editorial_recheck'})};
+        }
+        return {ok:true,status:200,json:async()=>payload};
+      },
     });
     return {visible:root.innerText,result:!!result,view:kind};
   },{kind,payload});
@@ -102,6 +109,26 @@ async function check(page, kind, width) {
   assert(dims.scrollWidth<=dims.innerWidth+2,
     `${kind} ${width}px outer horizontal overflow ${JSON.stringify(dims)}`);
   await page.screenshot({path:path.join(out,`${kind}-${width}.png`),fullPage:true});
+  if(kind==='refinery'){
+    const correct=page.locator('[data-workspace-action="refinery-correct-active-fr"]');
+    assert.equal(await correct.count(),1);
+    await correct.click();
+    const dialog=page.locator('[data-catalog-fr-editor] [role="dialog"]');
+    await dialog.waitFor({state:'visible'});
+    assert((await dialog.innerText()).includes('Préparation française'));
+    await page.screenshot({path:path.join(out,`refinery-editor-${width}.png`),fullPage:true});
+    await dialog.locator('[data-catalog-fr-field="name"]').fill('Coque souple pour téléphone Samsung');
+    await dialog.locator('[data-catalog-fr-field="description"]').fill(
+      'Cette coque protège votre téléphone des rayures quotidiennes et offre une bonne prise en main.');
+    await dialog.locator('[data-workspace-action="save-fr-editor"]').click();
+    await page.waitForFunction(()=>window.__refineryCalls.length===1);
+    const calls=await page.evaluate(()=>window.__refineryCalls);
+    assert(calls[0].url.includes('/refinery/P-RECHECK/prepare-fr'));
+    assert.equal(calls[0].body.name,'Coque souple pour téléphone Samsung');
+    assert(!('price_kmf' in calls[0].body));
+    assert(!('is_active' in calls[0].body));
+    await dialog.waitFor({state:'detached'});
+  }
   return {kind,width,overflow:false,scrollableTables:dims.wrappers.filter(x=>x.scrollWidth>x.clientWidth).length};
 }
 
