@@ -1,6 +1,6 @@
 /* Atelier des prix — trois entrées (Vue économique · Produits à décider · Modèle de coûts) et dossier produit.
    Réutilise les jetons du cockpit ; aucune valeur économique n'est calculée ici. */
-.kmc-atelier-views [hidden] { display: none !important; }
+.kmc-atelier-views [hidden][hidden] { display: none; }
 .kmc-atelier-views .kmc-atelier-compact-header .kmc-cockpit-page-header-left { display: none; }
 .kmc-atelier-views .kmc-atelier-compact-header { justify-content: flex-end; }
 

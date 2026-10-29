@@ -19,7 +19,7 @@
 .kmc-sourcing-workspace .kmc-sourcing-row-more summary:focus-visible {
   outline:3px solid #286fe2; outline-offset:3px;
 }
-.kmc-sourcing-workspace .kmc-sourcing-tab-panel[hidden] { display:none!important; }
+.kmc-sourcing-workspace .kmc-sourcing-tab-panel[hidden][hidden] { display:none; }
 .kmc-sourcing-workspace .kmc-sourcing-tab-panel { max-width:100%; min-width:0; }
 .kmc-sourcing-workspace .kmc-sourcing-candidates-table { table-layout:fixed; width:100%; }
 .kmc-sourcing-workspace .kmc-sourcing-candidates-table th:nth-child(1) { width:11%; }
@@ -60,7 +60,7 @@
 }
 .kmc-sourcing-workspace .kmc-sourcing-row-more-list > * {
   display:flex; align-items:center; justify-content:flex-start; text-align:left;
-  width:100%; min-height:40px; margin:0!important; padding:9px 12px;
+  width:100%; min-height:40px; margin:0; padding:9px 12px;
   border-radius:7px; font-size:13px; font-weight:650;
   background:transparent; box-shadow:none; color:#21436e; text-decoration:none;
 }

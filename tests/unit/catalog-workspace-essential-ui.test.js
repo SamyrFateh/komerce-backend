@@ -26,8 +26,8 @@ test('Raffinerie garde le Hero ; Catalogue affiche directement les actions',()=>
   expect(source).not.toContain("'Santé de la taxonomie'");
   expect(source).not.toContain('TrustFooter.render');
   expect(decision).toContain("href: '#catalog-products'");
-  expect(workspace).toContain("'Produits à finaliser'");
-  expect(workspace).toContain("'Préparez les fiches, définissez les prix et validez les produits proposés.'");
+  expect(workspace).toContain("refinery ? 'Raffinerie produits' : 'Catalogue global'");
+  expect(workspace).toContain("'Préparer, contrôler et soumettre les fiches à validation. Les prix se décident dans l’Atelier.'");
 });
 
 test('Curation : le prix global du fournisseur peut rester différé sans autoriser une vente client',()=>{
