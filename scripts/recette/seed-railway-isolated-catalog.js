@@ -138,4 +138,4 @@ async function main(){
    }catch(err){await client.query('ROLLBACK').catch(()=>{});throw err;}
  }finally{await client.end();}
 }
-main().catch(err=>{console.error('CERT_FIXTURE_FAILED '+String(err?.message||err).slice(0,500));process.exitCode=1;});
+main().then(()=>process.exit(0)).catch(err=>{console.error('CERT_FIXTURE_FAILED '+String(err?.message||err).slice(0,500));process.exitCode=1;});
