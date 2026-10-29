@@ -1,0 +1,40 @@
+name: Catalogue unified lot 1 read-only checks
+
+on:
+  push:
+    branches:
+      - feat/catalog-unified-operator-projection-20261029
+  pull_request:
+    branches:
+      - feat/finalize-sourcing-catalog-ux-20261028
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalogue-unified:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Validate JS syntax
+        run: |
+          node --check services/catalog-unified-registry.js
+          node --check services/catalog-workspace.js
+          node --check routes/admin-catalog-workspace.js
+          node --check public/dashboards/canonical/js/catalog-workspace.js
+      - name: Run targeted Jest
+        run: |
+          npx jest --config jest.unit.config.js --runInBand --forceExit --no-coverage \
+            tests/unit/catalog-unified-registry.test.js \
+            tests/unit/catalog-registry.test.js \
+            tests/unit/catalog-workspace-wide-v1.test.js \
+            tests/unit/canonical-catalog-workspace-boundary.test.js \
+            tests/unit/sourcing-catalog-finish-v5.test.js
