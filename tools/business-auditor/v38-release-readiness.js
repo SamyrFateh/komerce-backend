@@ -22,6 +22,8 @@ function readiness({audit,benchmark,impactPlan=null,mainDiff=null}={}){
   '12 isolated canonical witnesses; 8 partial domains only');
  gate('G2_SEMANTIC_INVARIANT_MAPPING',
   audit.invariantCoverage?.featureCardInvariantsCertified>0&&
+  audit.summary?.featureCardSemanticOracleMappingComplete===true&&
+  audit.semanticInvariantLedger?.summary?.notCovered===0&&
   typeof audit.invariantCoverage?.summary?.coveragePercent==='number'&&
   audit.invariantCoverage.summary.coveragePercent>=0&&
   audit.invariantCoverage.summary.coveragePercent<=100,
