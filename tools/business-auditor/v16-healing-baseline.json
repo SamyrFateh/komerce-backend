@@ -1,0 +1,17 @@
+{
+  "contract": "komerce-opus-healing-baseline/v16",
+  "experiment": "CAPACITY_LINE_MEMBERSHIP",
+  "issue": 3095,
+  "reviewStatus": "RESEARCH_NOT_BUSINESS_ACCEPTED",
+  "expected": "HEALING_ORACLE_CALIBRATED",
+  "scenarios": {
+    "SEQUENTIAL": "CAPACITY_SATISFIED",
+    "UNLOCKED_RACE": "CAPACITY_BREACH",
+    "SERIALIZED_MUTANT": "CAPACITY_SATISFIED"
+  },
+  "constraints": {
+    "lockWaitObserved": true,
+    "allClonesDropped": true
+  },
+  "limits": "This experiment simulates a serialized owner with a test-only pg_advisory_lock wrapper. Business capacity meaning (lines vs units) is NOT approved. No HTTP or production evidence."
+}

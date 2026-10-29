@@ -1,0 +1,21 @@
+{
+  "contract": "komerce-business-exploration-baseline/v14",
+  "baselinePurpose": "CHANGE_DETECTION_NOT_BUSINESS_ACCEPTANCE",
+  "method": "REVIEWED_DETERMINISTIC_SEQUENCE_SNAPSHOT",
+  "expected": {
+    "plannedCases": 68,
+    "evaluatedSteps": 238,
+    "knownFamilySignals": 32,
+    "candidateNewFamilySignals": 0,
+    "exceptions": 0,
+    "signalCounts": {
+      "ASSIGNMENT_COUNT_DISAGREES_WITH_DB": 18,
+      "OPEN_EMPTY_PARCEL_CREATED": 14
+    }
+  },
+  "notes": [
+    "Baseline records previously reported defect families, not authorized business behavior.",
+    "Any new signal family, count shift, or change in generated coverage requires explicit triage.",
+    "A matched baseline does not prove that there are no unknown bugs."
+  ]
+}
