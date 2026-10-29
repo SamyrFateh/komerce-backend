@@ -144,7 +144,7 @@ async function run({auditPath,out}={},env=process.env){
  ledger.summary.coveragePercent=amended.summary.invariantCoveragePercent;
  ledger.summary.gate='PARTIAL_VERIFIED';
  d.certified=1;d.notCovered--;
- fs.writeFileSync(ledgerPath,JSON.stringify(ledger,null,2)+'\\n');
+ fs.writeFileSync(ledgerPath,JSON.stringify(ledger,null,2)+'\n');
  fs.writeFileSync(path.join(directory,'g2-summary.md'),[
   '# G2 exact DB invariant proof','','- Source SHA: '+sha,
   '- Feature Card: '+feature,'- Statement: '+statement,
