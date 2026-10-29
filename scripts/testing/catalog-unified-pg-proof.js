@@ -16,6 +16,8 @@ async function main() {
     user: process.env.PGUSER || 'postgres',
     password: process.env.PGPASSWORD || 'postgres',
     database: process.env.PGDATABASE || 'postgres',
+    connectionTimeoutMillis: 5000,
+    query_timeout: 15000,
   });
   await client.connect();
   try {
@@ -116,7 +118,7 @@ async function main() {
   }
 }
 
-main().catch(err => {
+main().then(() => process.exit(0)).catch(err => {
   console.error('FAIL physical PostgreSQL unified Catalogue', err);
-  process.exitCode = 1;
+  process.exit(1);
 });
