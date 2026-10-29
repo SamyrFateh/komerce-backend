@@ -41,7 +41,7 @@ async function main(){
     customs_review:{status:'REQUIRED',category_key:null,calculation_allowed:false,publication_allowed:false},
     economic_test_health_status:'unknown',
   };
-  await client.query(
+  const fixtureInsert=await client.query(
     `INSERT INTO sourcing_candidates (
        candidate_ref,supplier_name,supplier_product_id,product_name,supplier_category,
        purchase_price,currency,purchase_price_kmf,estimated_weight_kg,
@@ -55,9 +55,11 @@ async function main(){
        komerce_category=NULL, data_sources=EXCLUDED.data_sources,
        scan_result=EXCLUDED.scan_result, state='scanned',
        purchase_price_kmf=1800, estimated_weight_kg=0.150,
-       estimated_volume_m3=0.00100, product_id=NULL`,
+       estimated_volume_m3=0.00100
+     WHERE sourcing_candidates.product_id IS NULL`,
     [candidateRef,JSON.stringify(baseScan)]
   );
+  if(fixtureInsert.rowCount!==1)throw Error('SYNTHETIC_CANDIDATE_ALREADY_HANDED_OFF');
   const email='recette-admin@example.invalid';
   let users=await client.query('SELECT id,role FROM users WHERE email=$1',[email]);
   let user;
