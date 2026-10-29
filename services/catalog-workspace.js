@@ -28,6 +28,8 @@ const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
 const catalogRegistry = require('./catalog-registry');
+const catalogUnifiedRegistry = require('./catalog-unified-registry');
+const catalogMediaRecovery = require('./catalog-media-recovery');
 const refineryWorklist = require('./refinery-worklist');
 const catalogProductMutation = require('./catalog-product-mutation-service');
 const { getPricingParameterStatus } = require('./pricing-parameters-status');
@@ -357,8 +359,8 @@ async function buildWorkspace(query = {}) {
     querySummary(),
     isRefinery ? Promise.resolve(CATALOG_CAP_FALLBACK) : queryCatalogCap(),
     isRefinery ? Promise.resolve([]) : taxonomy.listCategories(),
-    isRefinery ? Promise.resolve({ products: [], page: { total: 0, limit: 0, offset: 0 } }) : catalogRegistry.listRegistry({
-      finalized_only: true,
+    isRefinery ? Promise.resolve({ products: [], page: { total: 0, limit: 0, offset: 0 } }) : (query.unified === '1' ? catalogUnifiedRegistry.listUnified : catalogRegistry.listRegistry)({
+      ...((query.unified === '1') ? {} : { finalized_only: true }),
       search: query.search,
       supplier: query.supplier,
       category: query.category,
@@ -400,6 +402,7 @@ async function buildWorkspace(query = {}) {
     summary: {
       ...summary,
       registry_total: registry.page.total,
+      ...(query.unified === '1' ? { operator_groups: registry.groups } : {}),
       categories: categories.filter(row => row.is_active).length,
       commercial_approved: commercialSummary.approved_products,
       commercial_closed_lots: commercialSummary.closed_lots,
@@ -658,6 +661,7 @@ module.exports = {
   createProduct,
   updateProduct,
   classifyProduct,
+  recoverProductSourceMedia: catalogMediaRecovery.recoverSourceMedia,
   deactivateProduct,
   prepareCandidateFrench,
   approveCandidate,

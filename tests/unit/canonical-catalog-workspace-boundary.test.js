@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261028-11');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-5');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -235,8 +235,8 @@ test('Catalogue montre la file immédiatement et conserve le contexte Product 36
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
   const decision = read('public/dashboards/canonical/js/catalog-workspace-decision.js');
 
-  expect(workspace).toContain("tr.setAttribute('data-product-ref'");
-  expect(workspace).toContain("text(doc, 'a', 'kmc-catalog-product-title'");
+  expect(workspace).toContain("tr.setAttribute(row.product_ref ? 'data-product-ref' : 'data-candidate-ref'");
+  expect(workspace).toContain("text(doc, row.product_ref ? 'a' : 'span'");
   expect(workspace).toContain('Retour à la curation');
   expect(workspace).toContain("params.set('product_ref', context.focusedProductRef)");
   expect(decision).toContain('requestedProductRef');
@@ -762,4 +762,424 @@ test('la Raffinerie ne duplique pas ses compteurs en bas et préserve les métri
   expect(render).not.toContain("metricItems(payload.summary, payload.curation).filter");
   expect(render).toContain('renderApproval(rootNode, ui, doc, payload, context)');
   expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
+});
+
+
+test('Catalogue unifié : candidat pré-handoff affiché et inspectable sans écriture ni product_ref', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument();
+  const root = doc.createElement('main');
+  const ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.summary.operator_groups = {
+    correction: 0, review: 0, validated: 0, processing: 1, excluded: 0,
+  };
+  payload.products = [{
+    record_kind: 'candidate',
+    candidate_ref: 'SC-000442',
+    product_ref: null,
+    name: 'Produit fournisseur à analyser',
+    supplier_name: 'CJdropshipping',
+    supplier_product_id: 'CJ-442',
+    supplier_category: 'Home > Lighting',
+    supplier_name_original: 'Raw supplier product',
+    candidate_state: 'raw_imported',
+    operator_group: 'processing',
+    work_status: 'processing',
+    issues: [],
+  }];
+  payload.registry_page = {
+    total: 1, limit: 50, offset: 0, has_previous: false, has_next: false,
+  };
+  const fetchFn = jest.fn(async () => ({
+    ok: true, status: 200, json: async () => payload,
+  }));
+  await workspace.mount({
+    root, document: doc, ui, fetch: fetchFn, location: { search: '' },
+  });
+  expect(fetchFn.mock.calls[0][0]).toContain('unified=1');
+  const row = root.querySelector('[data-candidate-ref="SC-000442"]');
+  expect(row).not.toBeNull();
+  expect(row.textContent).toContain('Préparation automatique');
+  expect(row.textContent).not.toContain('Approuvé Catalogue');
+  expect(row.querySelector('[data-workspace-action="approve"]')).toBeNull();
+  const inspect = row.querySelector('[data-workspace-action="inspect-candidate"]');
+  expect(inspect).not.toBeNull();
+  await inspect.click();
+  const dossier = root.querySelector('[data-catalog-candidate-inspector="SC-000442"]');
+  expect(dossier).not.toBeNull();
+  expect(dossier.textContent).toContain('Raw supplier product');
+  expect(dossier.textContent).toContain('Lecture seule');
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+
+test('Catalogue unique : confirmation du classement candidat réutilise la suggestion Sourcing avec grant', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.summary.operator_groups = { correction: 0, review: 1, validated: 0, processing: 0, excluded: 0 };
+  payload.products = [{
+    record_kind: 'candidate', candidate_ref: 'KSC-000444', product_ref: null,
+    name: 'Lampe source', supplier_name: 'CJdropshipping',
+    supplier_product_id: 'CJ-444', supplier_category: 'Home > Lamp',
+    candidate_state: 'scanned', sourcing_decision: 'TEST',
+    operator_group: 'review', work_status: 'sourcing_review', issues: [],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const calls = [];
+  const fetchFn = jest.fn(async (url, options = {}) => {
+    calls.push([url, options]);
+    let data = payload;
+    if (url.includes('/boutique-category-options')) data = {
+      categories: [
+        { category: 'maison', category_label: 'Maison', subcategory: 'luminaire', subcategory_label: 'Luminaires' },
+        { category: 'tech', category_label: 'Tech', subcategory: 'accessories', subcategory_label: 'Accessoires' },
+      ],
+      suggestions: [{
+        category: 'maison', category_label: 'Maison', subcategory: 'luminaire',
+        subcategory_label: 'Luminaires', confidence: 'high', reason: 'Supplier product object',
+      }],
+    };
+    if (url.includes('/confirm-boutique-category'))
+      data = { ok: true, result: { confirmed: true, draft_created: true } };
+    return { ok: true, status: 200, json: async () => data };
+  });
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  const row = root.querySelector('[data-candidate-ref="KSC-000444"]');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel = root.querySelector('[data-catalog-candidate-inspector="KSC-000444"]');
+  await panel.querySelector('[data-workspace-action="candidate-boutique-review"]').click();
+  const select = panel.querySelector('[data-catalog-candidate-category-choice]');
+  expect(select).not.toBeNull();
+  expect(select.value).toBe('0');
+  expect(select.children[0].textContent).toContain('Proposé');
+  const form = panel.querySelector('[data-catalog-candidate-category-form]');
+  await form.listeners.submit[0]({ preventDefault() {} });
+  expect(calls.some(([url]) => url.includes('/confirm-boutique-category'))).toBe(true);
+  const [postUrl, postOptions] = calls.find(([url]) => url.includes('/confirm-boutique-category'));
+  expect(postUrl).toContain('/api/admin/workspaces/sourcing/candidates/KSC-000444/');
+  expect(postOptions.method).toBe('POST');
+  expect(JSON.parse(postOptions.body)).toEqual({ category: 'maison', subcategory: 'luminaire' });
+  expect(calls.filter(([, options]) => options.method === 'POST')).toHaveLength(1);
+});
+
+test('Catalogue unique : candidat en préparation ne propose aucune mutation prématurée', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'candidate', candidate_ref: 'KSC-000445', product_ref: null,
+    name: 'Produit importé', candidate_state: 'raw_imported',
+    operator_group: 'processing', work_status: 'processing', issues: [],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const fetchFn = jest.fn(async () => ({ ok: true, status: 200, json: async () => payload }));
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  const row = root.querySelector('[data-candidate-ref="KSC-000445"]');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel = root.querySelector('[data-catalog-candidate-inspector="KSC-000445"]');
+  expect(panel.textContent).toContain('aucune correction humaine présumée');
+  expect(panel.querySelector('[data-workspace-action="candidate-boutique-review"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+test('Catalogue unique : produit remis a correction de catégorie, français et gate de validation dans son panneau', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'product', product_ref: 'KPR-000446', candidate_ref: 'KSC-000446',
+    name: 'Produit source', supplier_name: 'CJdropshipping',
+    lifecycle_status: 'candidate', is_active: false, work_status: 'taxonomy_to_confirm',
+    operator_group: 'correction', issues: ['taxonomy_to_confirm', 'editorial_to_complete'],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const fetchFn = jest.fn(async () => ({ ok: true, status: 200, json: async () => payload }));
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  const row = root.querySelector('[data-product-ref="KPR-000446"]');
+  expect(row.querySelector('[data-workspace-action="open-catalog-inspector"]')).not.toBeNull();
+  await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel = root.querySelector('[data-catalog-product-inspector="KPR-000446"]');
+  expect(panel.textContent).toContain('Classement Boutique à corriger');
+  expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).not.toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-prepare-fr"]')).not.toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+test('Catalogue unique : le serveur refuse la validation si la certification est incomplète', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'product', product_ref: 'KPR-000447', candidate_ref: 'KSC-000447',
+    name: 'Produit prêt', lifecycle_status: 'candidate', is_active: false,
+    work_status: 'approval_pending', operator_group: 'review', issues: ['approval_pending'],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const fetchFn = jest.fn(async url => ({
+    ok: true, status: 200,
+    json: async () => url.includes('diagnose_product_ref=')
+      ? { phase: 'catalog_approval', certification: { certified: false, reasons: ['media_missing'] } }
+      : payload,
+  }));
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel = root.querySelector('[data-catalog-product-inspector="KPR-000447"]');
+  await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
+  expect(panel.textContent).toContain('À compléter');
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+  expect(fetchFn.mock.calls.map(([url]) => url)).toHaveLength(2);
+});
+
+
+test('Catalogue unique : une validation autorisée exige un GET de preuve puis une confirmation humaine', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'product', product_ref: 'KPR-000448', candidate_ref: 'KSC-000448',
+    name: 'Produit prêt', lifecycle_status: 'candidate', is_active: false,
+    work_status: 'approval_pending', operator_group: 'review', issues: ['approval_pending'],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const confirm = jest.fn(() => true);
+  const fetchFn = jest.fn(async (url, options = {}) => ({
+    ok: true, status: 200,
+    json: async () => url.includes('diagnose_product_ref=')
+      ? { phase: 'catalog_approval', certification: { certified: true, reasons: [] } }
+      : options.method === 'POST'
+        ? { ok: true, action: 'catalog_candidate_approved', result: { product_ref: 'KPR-000448' } }
+        : payload,
+  }));
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, confirm, location: { search: '' } });
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel = root.querySelector('[data-catalog-product-inspector="KPR-000448"]');
+  expect(panel).not.toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+  await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
+  const approve = panel.querySelector('[data-workspace-action="inspector-approve"]');
+  expect(approve).not.toBeNull();
+  expect(fetchFn.mock.calls.filter(([, options = {}]) => options.method === 'POST')).toHaveLength(0);
+  await approve.click();
+  expect(confirm).toHaveBeenCalledTimes(1);
+  const posts = fetchFn.mock.calls.filter(([, options = {}]) => options.method === 'POST');
+  expect(posts).toHaveLength(1);
+  expect(posts[0][0]).toContain('/api/admin/workspaces/catalog/approval/KPR-000448/approve');
+  expect(fetchFn.mock.calls.map(([url]) => url).filter(url => url.includes('unified=1'))).toHaveLength(2);
+});
+
+test('Catalogue unique : un refus du Sourcing empêche la proposition et toute mutation', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'candidate', candidate_ref: 'KSC-000449', product_ref: null,
+    name: 'Source', candidate_state: 'scanned',
+    operator_group: 'review', work_status: 'sourcing_review', issues: [],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const fetchFn = jest.fn(async url => url.includes('/boutique-category-options')
+    ? { ok: false, status: 403, json: async () => ({ error: 'Sourcing global requis', code: 'sourcing_global_access_denied' }) }
+    : { ok: true, status: 200, json: async () => payload });
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  await root.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel = root.querySelector('[data-catalog-candidate-inspector="KSC-000449"]');
+  await panel.querySelector('[data-workspace-action="candidate-boutique-review"]').click();
+  expect(panel.querySelector('[data-catalog-candidate-category-form]')).toBeNull();
+  expect(fetchFn.mock.calls.filter(([, opts = {}]) => opts.method === 'POST')).toHaveLength(0);
+});
+
+test('Catalogue unifié : médias fournisseur non confondus avec les médias canoniques', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind:'product', product_ref:'KPR-00450', candidate_ref:'KSC-00450',
+    name:'Lampe à compléter', lifecycle_status:'candidate', is_active:false,
+    work_status:'media_to_complete', operator_group:'correction',
+    active_media_count:0, source_media_count:1, media_status:'source_recoverable',
+    issues:['media_missing'],
+  }];
+  payload.registry_page = { total:1, limit:50, offset:0, has_next:false, has_previous:false };
+  const fetchFn = jest.fn(async () => ({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row = root.querySelector('[data-product-ref="KPR-00450"]');
+  expect(row.textContent).toContain('Média canonique à compléter');
+  await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel = root.querySelector('[data-catalog-product-inspector="KPR-00450"]');
+  expect(panel.textContent).toContain('Médias source identifiés');
+  expect(panel.textContent).toContain('Médias actifs canoniques');
+  expect(panel.textContent).toContain('Réintégration canonique nécessaire');
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+});
+
+test('Catalogue unique : réparation média auditée seulement après consentement, sans approbation', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind:'product', product_ref:'KPR-RECOVER', candidate_ref:'KSC-RECOVER',
+    name:'Luminaire', lifecycle_status:'candidate', is_active:false,
+    work_status:'media_to_complete', operator_group:'correction',
+    active_media_count:0, source_media_count:1, media_status:'source_recoverable',
+    issues:['media_missing'],
+  }];
+  payload.registry_page = {total:1, limit:50, offset:0,has_next:false,has_previous:false};
+  let approved=false;
+  const confirm=jest.fn(()=>approved);
+  const fetchFn=jest.fn(async (url,opts={})=>({
+    ok:true,status:200,json:async()=>opts.method==='POST'
+      ? {ok:true,result:{audit_recorded:true,media_recovered:1,catalog_approved:false}}
+      : payload
+  }));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,confirm,location:{search:''}});
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-RECOVER"]');
+  const btn=panel.querySelector('[data-workspace-action="inspector-recover-media"]');
+  expect(btn).not.toBeNull();
+  await btn.click();
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+  approved=true;
+  await btn.click();
+  const posts=fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST');
+  expect(posts).toHaveLength(1);
+  expect(posts[0][0]).toContain('/products/KPR-RECOVER/recover-source-media');
+  expect(JSON.parse(posts[0][1].body)).toEqual({});
+  expect(fetchFn.mock.calls.filter(([url])=>url.includes('/approve'))).toHaveLength(0);
+});
+
+test('Catalogue unique : aperçu fournisseur sans contrat stable ne déclenche aucune réparation', async () => {
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'product',product_ref:'KPR-PREVIEW',name:'Lampe',
+    lifecycle_status:'candidate',is_active:false,work_status:'media_to_complete',
+    media_status:'preview_only',operator_group:'correction',active_media_count:0,
+    source_media_count:0,issues:['media_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-PREVIEW"]');
+  expect(panel.textContent).toContain('L’image d’aperçu ne constitue pas une preuve');
+  expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
+});
+
+
+test('Catalogue : candidat WATCH visible en surveillance, jamais à valider ni promouvoir', async () => {
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'candidate',candidate_ref:'KSC-WATCH',product_ref:null,
+    name:'Source différée',candidate_state:'scanned',sourcing_decision:'WATCH',
+    operator_group:'processing',work_status:'sourcing_deferred',issues:[]}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-candidate-ref="KSC-WATCH"]');
+  expect(row.textContent).toContain('Surveillance Sourcing');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-WATCH"]');
+  expect(panel.textContent).toContain('Décision Sourcing différée');
+  expect(panel.querySelector('[data-workspace-action="candidate-boutique-review"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+test('Catalogue : cycle de vie contradictoire, dossier lecture seule, zéro validation',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'product',product_ref:'KPR-INCOHERENT',
+    candidate_ref:'KSC-INCOHERENT',name:'Fiche historique',
+    lifecycle_status:'candidate',is_active:true,
+    work_status:'activation_to_reconcile',operator_group:'correction',
+    active_media_count:0,source_media_count:1,media_status:'source_recoverable',
+    issues:['activation_to_reconcile','source_to_normalize','media_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-product-ref="KPR-INCOHERENT"]');
+  expect(row.textContent).toContain('Activation d’un candidat');
+  await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-INCOHERENT"]');
+  expect(panel.textContent).toContain('Activation d’une fiche encore marquée candidate');
+  expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+
+test('Catalogue unique : WATCH bloqué par catégorie économique — suggestion, validation et scan sans promotion',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'candidate',candidate_ref:'KSC-MISSING-ECON',
+    product_ref:null,name:'Adaptateur importé',candidate_state:'scanned',
+    sourcing_decision:'WATCH',source_category_review_required:true,
+    work_status:'sourcing_category_review',operator_group:'correction',
+    issues:['sourcing_economic_category_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const requests=[];
+  const fetchFn=jest.fn(async (url,options={})=>{
+    requests.push([url,options]);
+    const data=url.includes('/category-options')?{
+      categories:[
+        {key:'electronics',label:'Électronique'},
+        {key:'household',label:'Maison'}],
+      suggestions:[{key:'electronics',label:'Électronique',confidence:'high'}],
+      source:'customs_categories',
+    }:url.includes('/resolve-category')?{
+      ok:true,result:{category:{key:'electronics'},scan:{decision:'TEST'}}
+    }:payload;
+    return {ok:true,status:200,json:async()=>data};
+  });
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-candidate-ref="KSC-MISSING-ECON"]');
+  expect(row.textContent).toContain('Catégorie économique manquante');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-MISSING-ECON"]');
+  const action=panel.querySelector('[data-workspace-action="candidate-economic-category-review"]');
+  expect(action).not.toBeNull();
+  await action.click();
+  const select=panel.querySelector('[data-catalog-economic-category-choice]');
+  expect(select).not.toBeNull();
+  expect(select.children[0].textContent).toContain('Proposé');
+  const form=panel.querySelector('[data-catalog-economic-category-form]');
+  await form.listeners.submit[0]({preventDefault(){}});
+  const posts=requests.filter(([,o])=>o.method==='POST');
+  expect(posts).toHaveLength(1);
+  expect(posts[0][0]).toContain('/api/admin/workspaces/sourcing/candidates/KSC-MISSING-ECON/resolve-category');
+  expect(JSON.parse(posts[0][1].body)).toEqual({category_key:'electronics'});
+  expect(requests.filter(([url])=>url.includes('/promote')||url.includes('/approve'))).toHaveLength(0);
+});
+
+
+test('Catalogue : absence de suggestion économique ne sélectionne jamais une catégorie arbitraire',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'candidate',candidate_ref:'KSC-NO-SUGGESTION',product_ref:null,
+    name:'Objet ambigu',candidate_state:'scanned',sourcing_decision:'WATCH',
+    work_status:'sourcing_category_review',operator_group:'correction',
+    issues:['sourcing_economic_category_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async url=>({
+    ok:true,status:200,json:async()=>url.includes('/category-options')
+      ? {categories:[{key:'first',label:'Première catégorie'},{key:'second',label:'Seconde'}],
+         suggestions:[],source:'customs_categories'}:payload
+  }));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  await root.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-NO-SUGGESTION"]');
+  await panel.querySelector('[data-workspace-action="candidate-economic-category-review"]').click();
+  const select=panel.querySelector('[data-catalog-economic-category-choice]');
+  expect(select.value).toBe('');
+  expect(select.children[0].textContent).toContain('aucune suggestion fiable');
+  await panel.querySelector('[data-catalog-economic-category-form]')
+    .listeners.submit[0]({preventDefault(){}});
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });
