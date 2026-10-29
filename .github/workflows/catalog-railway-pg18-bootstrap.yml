@@ -1,0 +1,59 @@
+name: Isolated Railway PG18 bootstrap preflight
+
+on:
+  push:
+    branches: [test/catalog-pricing-integrated-staging-20261029]
+    paths:
+      - '.github/workflows/catalog-railway-pg18-bootstrap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: isolated-ci-only
+          POSTGRES_DB: komerce_catalog_recette
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_catalog_recette"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:isolated-ci-only@127.0.0.1:5432/komerce_catalog_recette
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: komerce_catalog_recette
+      PGUSER: komerce
+      PGPASSWORD: isolated-ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install PostgreSQL client for canonical schema import
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+      - name: Import schema-only, no real customers or payments
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql >/dev/null
+      - name: Migrate isolated schema to current branch including migration 351
+        run: node scripts/ci-migrate.js
+      - name: Assert Catalogue and wallet foundations exist
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT CASE WHEN to_regclass('public.wallets') IS NOT NULL AND to_regclass('public.catalog_media_recovery_audit') IS NOT NULL AND to_regclass('public.sourcing_candidates') IS NOT NULL AND to_regclass('public.catalog_media') IS NOT NULL THEN 'PASS' ELSE 'FAIL' END" | grep -x PASS
+          node scripts/testing/catalog-media-recovery-migration-proof.js
