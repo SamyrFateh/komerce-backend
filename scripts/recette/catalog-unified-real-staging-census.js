@@ -30,7 +30,7 @@ async function main(){
   checked_at:new Date().toISOString(),claimed_target:'staging',app_origin:ORIGIN,
   database_target_confirmed:false,live_commit:null,migration_351_present:null,
   tables:null,source:null,products:null,links:null,media:null,approval:null,
-  source_decisions:[],product_lifecycle:[],operator_work_statuses:{},
+  source_decisions:[],watch_blockers:null,product_lifecycle:[],operator_work_statuses:{},
   operator_issue_counts:{},operator_group_by_kind:{},
   operator_groups:null,operator_projection_status:'NOT_CHECKED',
   executed_with:'BEGIN READ ONLY',no_business_writes:true,blockers:[]};
@@ -134,6 +134,22 @@ async function main(){
        is_active, COUNT(*)::int AS count
        FROM products GROUP BY lifecycle_status,is_active ORDER BY count DESC,lifecycle_status`),
   ]);
+  const watch=await client.query(`
+    SELECT COUNT(*)::int AS watch_total,
+      COUNT(*) FILTER (WHERE purchase_price IS NULL OR purchase_price<=0)::int AS missing_purchase_price,
+      COUNT(*) FILTER (WHERE komerce_category IS NULL OR BTRIM(komerce_category)='')::int AS missing_komerce_category,
+      COUNT(*) FILTER (WHERE
+        scan_result->'commercial_review'->>'status'='PENDING_CLASSIFICATION')::int AS boutique_review_requested,
+      COUNT(*) FILTER (WHERE scan_result->'fx_gate'->>'code'='fx_rate_unavailable')::int AS fx_quote_pending,
+      COUNT(*) FILTER (WHERE
+        scan_result->>'economic_test_health_status'='fragile')::int AS fragile_economics,
+      COUNT(*) FILTER (WHERE
+        scan_result->>'economic_test_health_status'='unknown')::int AS economics_unknown
+    FROM sourcing_candidates
+    WHERE state IN ('scanned','test_ready','watchlist')
+      AND product_id IS NULL
+      AND UPPER(COALESCE(scan_result->>'sourcing_decision',''))='WATCH'`);
+  report.watch_blockers=watch.rows[0];
   report.source_decisions=decisions.rows;
   report.product_lifecycle=lifecycle.rows;
   report.source=src.rows[0];report.products=prod.rows[0];
