@@ -150,171 +150,28 @@ async function main(){
       AND product_id IS NULL
       AND UPPER(COALESCE(scan_result->>'sourcing_decision',''))='WATCH'`);
   const [costInput,costOutput]=await Promise.all([
-    client.query(`SELECT
-      COUNT(*)::int AS scoped_candidates,
-      COUNT(*) FILTER (WHERE UPPER(COALESCE(scan_result->>'sourcing_decision',''))='WATCH')::int AS watch_count,
-      COUNT(*) FILTER (WHERE UPPER(COALESCE(scan_result->>'sourcing_decision',''))='TEST')::int AS test_count,
-      COUNT(*) FILTER (WHERE purchase_price_kmf IS NULL OR purchase_price_kmf<=0)::int AS purchase_kmf_missing,
-      COUNT(*) FILTER (WHERE estimated_weight_kg IS NULL OR estimated_weight_kg<=0)::int AS weight_missing,
-      COUNT(*) FILTER (WHERE estimated_volume_m3 IS NULL OR estimated_volume_m3<=0)::int AS volume_missing,
-      COUNT(*) FILTER (WHERE komerce_category IS NULL OR BTRIM(komerce_category)='')::int AS economic_category_missing
-      FROM sourcing_candidates
-      WHERE state IN ('scanned','test_ready','watchlist')
-        AND product_id IS NULL
-        AND UPPER(COALESCE(scan_result->>'sourcing_decision','')) IN ('WATCH','TEST')`),
-    client.query(`SELECT
-      COUNT(*) FILTER (WHERE (scan_result->>'variable_cost_complete_kmf') ~ '^[0-9]+([.][0-9]+)?
-  report.product_lifecycle=lifecycle.rows;
-  report.source=src.rows[0];report.products=prod.rows[0];
-  report.links=linked.rows[0];report.media=media.rows[0];
-  report.approval=approval.rows[0];
-
-  // Probe the PROPOSED read-model against the real schema without writes.
-  // SAVEPOINT ensures even a schema error cannot contaminate later reads.
-  await client.query('SAVEPOINT unified_preview');
-  try {
-    const preview=await listUnified({limit:100,offset:0},client);
-    report.operator_groups=preview.groups;
-    for(const row of preview.products) {
-      const kind=String(row.record_kind||'unknown');
-      const group=String(row.operator_group||'unknown');
-      const status=String(row.work_status||'unknown');
-      report.operator_group_by_kind[kind+' / '+group]=
-        (report.operator_group_by_kind[kind+' / '+group]||0)+1;
-      report.operator_work_statuses[status]=(report.operator_work_statuses[status]||0)+1;
-      for(const issue of row.issues||[]) {
-        report.operator_issue_counts[issue]=(report.operator_issue_counts[issue]||0)+1;
-      }
-    }
-    if(preview.page.has_next)report.blockers.push('UNIFIED_CENSUS_EXCEEDS_FIRST_100_ROWS');
-    report.operator_projection_status='SQL_COMPATIBLE';
-  } catch(error) {
-    report.operator_projection_status='SQL_INCOMPATIBLE';
-    report.blockers.push('UNIFIED_PROJECTION_SQL_INCOMPATIBLE_'+String(error.code||'UNKNOWN').slice(0,18));
-    await client.query('ROLLBACK TO SAVEPOINT unified_preview');
-  }
-  await client.query('ROLLBACK');transaction=false;
-
-  if(!report.migration_351_present)report.blockers.push('MIGRATION_351_NOT_INSTALLED');
-  if(report.live_commit!=='3b23f91c00af60c768dee16a0a23dc5f86d48e9e')
-    report.blockers.push('CATALOGUE_UNIFIED_PR_NOT_DEPLOYED');
-  report.status=report.blockers.length?'NO_GO_PENDING_DEPLOYMENT':'READ_ONLY_PREFLIGHT_READY';
-  fs.writeFileSync(OUTPUT,JSON.stringify(report,null,2)+'\n');
-  console.log('STAGING_CATALOGUE_CENSUS '+JSON.stringify(report));
- } catch(error) {
-  report.blockers.push(String(error.code||'STAGING_READONLY_PREFLIGHT_FAILED').slice(0,64));
-  if(transaction)await client.query('ROLLBACK').catch(()=>{});
-  fs.writeFileSync(OUTPUT,JSON.stringify(report,null,2)+'\n');
-  console.error('STAGING_CATALOGUE_CENSUS_BLOCKED '+report.blockers.join(','));
-  process.exitCode=1;
- } finally {if(connected)await client.end().catch(()=>{});}
-}
-main().catch(()=>{process.exitCode=1;});
-)::int AS variable_cost_evidenced,
-      COUNT(*) FILTER (WHERE (scan_result->>'test_price_kmf') ~ '^[0-9]+([.][0-9]+)?
-  report.product_lifecycle=lifecycle.rows;
-  report.source=src.rows[0];report.products=prod.rows[0];
-  report.links=linked.rows[0];report.media=media.rows[0];
-  report.approval=approval.rows[0];
-
-  // Probe the PROPOSED read-model against the real schema without writes.
-  // SAVEPOINT ensures even a schema error cannot contaminate later reads.
-  await client.query('SAVEPOINT unified_preview');
-  try {
-    const preview=await listUnified({limit:100,offset:0},client);
-    report.operator_groups=preview.groups;
-    for(const row of preview.products) {
-      const kind=String(row.record_kind||'unknown');
-      const group=String(row.operator_group||'unknown');
-      const status=String(row.work_status||'unknown');
-      report.operator_group_by_kind[kind+' / '+group]=
-        (report.operator_group_by_kind[kind+' / '+group]||0)+1;
-      report.operator_work_statuses[status]=(report.operator_work_statuses[status]||0)+1;
-      for(const issue of row.issues||[]) {
-        report.operator_issue_counts[issue]=(report.operator_issue_counts[issue]||0)+1;
-      }
-    }
-    if(preview.page.has_next)report.blockers.push('UNIFIED_CENSUS_EXCEEDS_FIRST_100_ROWS');
-    report.operator_projection_status='SQL_COMPATIBLE';
-  } catch(error) {
-    report.operator_projection_status='SQL_INCOMPATIBLE';
-    report.blockers.push('UNIFIED_PROJECTION_SQL_INCOMPATIBLE_'+String(error.code||'UNKNOWN').slice(0,18));
-    await client.query('ROLLBACK TO SAVEPOINT unified_preview');
-  }
-  await client.query('ROLLBACK');transaction=false;
-
-  if(!report.migration_351_present)report.blockers.push('MIGRATION_351_NOT_INSTALLED');
-  if(report.live_commit!=='3b23f91c00af60c768dee16a0a23dc5f86d48e9e')
-    report.blockers.push('CATALOGUE_UNIFIED_PR_NOT_DEPLOYED');
-  report.status=report.blockers.length?'NO_GO_PENDING_DEPLOYMENT':'READ_ONLY_PREFLIGHT_READY';
-  fs.writeFileSync(OUTPUT,JSON.stringify(report,null,2)+'\n');
-  console.log('STAGING_CATALOGUE_CENSUS '+JSON.stringify(report));
- } catch(error) {
-  report.blockers.push(String(error.code||'STAGING_READONLY_PREFLIGHT_FAILED').slice(0,64));
-  if(transaction)await client.query('ROLLBACK').catch(()=>{});
-  fs.writeFileSync(OUTPUT,JSON.stringify(report,null,2)+'\n');
-  console.error('STAGING_CATALOGUE_CENSUS_BLOCKED '+report.blockers.join(','));
-  process.exitCode=1;
- } finally {if(connected)await client.end().catch(()=>{});}
-}
-main().catch(()=>{process.exitCode=1;});
-)::int AS test_price_evidenced,
-      COUNT(*) FILTER (WHERE (scan_result->>'minimum_safe_price_kmf') ~ '^[0-9]+([.][0-9]+)?
-  report.product_lifecycle=lifecycle.rows;
-  report.source=src.rows[0];report.products=prod.rows[0];
-  report.links=linked.rows[0];report.media=media.rows[0];
-  report.approval=approval.rows[0];
-
-  // Probe the PROPOSED read-model against the real schema without writes.
-  // SAVEPOINT ensures even a schema error cannot contaminate later reads.
-  await client.query('SAVEPOINT unified_preview');
-  try {
-    const preview=await listUnified({limit:100,offset:0},client);
-    report.operator_groups=preview.groups;
-    for(const row of preview.products) {
-      const kind=String(row.record_kind||'unknown');
-      const group=String(row.operator_group||'unknown');
-      const status=String(row.work_status||'unknown');
-      report.operator_group_by_kind[kind+' / '+group]=
-        (report.operator_group_by_kind[kind+' / '+group]||0)+1;
-      report.operator_work_statuses[status]=(report.operator_work_statuses[status]||0)+1;
-      for(const issue of row.issues||[]) {
-        report.operator_issue_counts[issue]=(report.operator_issue_counts[issue]||0)+1;
-      }
-    }
-    if(preview.page.has_next)report.blockers.push('UNIFIED_CENSUS_EXCEEDS_FIRST_100_ROWS');
-    report.operator_projection_status='SQL_COMPATIBLE';
-  } catch(error) {
-    report.operator_projection_status='SQL_INCOMPATIBLE';
-    report.blockers.push('UNIFIED_PROJECTION_SQL_INCOMPATIBLE_'+String(error.code||'UNKNOWN').slice(0,18));
-    await client.query('ROLLBACK TO SAVEPOINT unified_preview');
-  }
-  await client.query('ROLLBACK');transaction=false;
-
-  if(!report.migration_351_present)report.blockers.push('MIGRATION_351_NOT_INSTALLED');
-  if(report.live_commit!=='3b23f91c00af60c768dee16a0a23dc5f86d48e9e')
-    report.blockers.push('CATALOGUE_UNIFIED_PR_NOT_DEPLOYED');
-  report.status=report.blockers.length?'NO_GO_PENDING_DEPLOYMENT':'READ_ONLY_PREFLIGHT_READY';
-  fs.writeFileSync(OUTPUT,JSON.stringify(report,null,2)+'\n');
-  console.log('STAGING_CATALOGUE_CENSUS '+JSON.stringify(report));
- } catch(error) {
-  report.blockers.push(String(error.code||'STAGING_READONLY_PREFLIGHT_FAILED').slice(0,64));
-  if(transaction)await client.query('ROLLBACK').catch(()=>{});
-  fs.writeFileSync(OUTPUT,JSON.stringify(report,null,2)+'\n');
-  console.error('STAGING_CATALOGUE_CENSUS_BLOCKED '+report.blockers.join(','));
-  process.exitCode=1;
- } finally {if(connected)await client.end().catch(()=>{});}
-}
-main().catch(()=>{process.exitCode=1;});
-)::int AS minimum_safe_evidenced,
-      COUNT(*) FILTER (WHERE scan_result->'cost_breakdown' IS NOT NULL)::int AS cost_breakdown_evidenced,
-      COUNT(*) FILTER (WHERE scan_result->'cost_breakdown'->>'customs_status'='not_estimated')::int AS customs_not_estimated,
-      COUNT(*) FILTER (WHERE scan_result->>'economic_test_health_status' IN ('healthy','strong'))::int AS economically_contributive,
-      COUNT(*) FILTER (WHERE scan_result->>'economic_test_health_status' IN ('fragile','danger','loss'))::int AS economically_risky,
-      COUNT(*)::int AS measured_test_candidates
-      FROM sourcing_candidates WHERE state IN ('scanned','test_ready')
-        AND product_id IS NULL
-        AND UPPER(COALESCE(scan_result->>'sourcing_decision',''))='TEST'`),
+    client.query(`SELECT COUNT(*)::int AS total,
+       COUNT(*) FILTER (WHERE UPPER(COALESCE(scan_result->>'sourcing_decision',''))='WATCH')::int AS watch,
+       COUNT(*) FILTER (WHERE UPPER(COALESCE(scan_result->>'sourcing_decision',''))='TEST')::int AS tested,
+       COUNT(*) FILTER (WHERE purchase_price_kmf IS NULL OR purchase_price_kmf<=0)::int AS no_purchase_cost,
+       COUNT(*) FILTER (WHERE estimated_weight_kg IS NULL OR estimated_weight_kg<=0)::int AS no_weight,
+       COUNT(*) FILTER (WHERE estimated_volume_m3 IS NULL OR estimated_volume_m3<=0)::int AS no_volume,
+       COUNT(*) FILTER (WHERE komerce_category IS NULL OR BTRIM(komerce_category)='')::int AS no_economic_category
+       FROM sourcing_candidates
+       WHERE state IN ('scanned','test_ready','watchlist')
+         AND product_id IS NULL
+         AND UPPER(COALESCE(scan_result->>'sourcing_decision','')) IN ('WATCH','TEST')`),
+    client.query(`SELECT COUNT(*)::int AS tested_candidates,
+       COUNT(*) FILTER (WHERE jsonb_typeof(scan_result->'variable_cost_complete_kmf')='number')::int AS variable_cost_evidenced,
+       COUNT(*) FILTER (WHERE jsonb_typeof(scan_result->'test_price_kmf')='number')::int AS test_price_evidenced,
+       COUNT(*) FILTER (WHERE jsonb_typeof(scan_result->'minimum_safe_price_kmf')='number')::int AS minimum_safe_evidenced,
+       COUNT(*) FILTER (WHERE jsonb_typeof(scan_result->'cost_breakdown')='object')::int AS cost_breakdown_evidenced,
+       COUNT(*) FILTER (WHERE scan_result->'cost_breakdown'->>'customs_status'='not_estimated')::int AS customs_not_estimated,
+       COUNT(*) FILTER (WHERE (scan_result->>'economic_test_health_status') IN ('healthy','strong'))::int AS economically_contributive,
+       COUNT(*) FILTER (WHERE (scan_result->>'economic_test_health_status') IN ('fragile','danger','loss'))::int AS economically_risky
+       FROM sourcing_candidates WHERE state IN ('scanned','test_ready')
+         AND product_id IS NULL
+         AND UPPER(COALESCE(scan_result->>'sourcing_decision',''))='TEST'`),
   ]);
   report.cost_input_health=costInput.rows[0];
   report.cost_output_health=costOutput.rows[0];
