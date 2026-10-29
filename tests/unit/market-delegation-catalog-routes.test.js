@@ -10,9 +10,9 @@ const routeSource = fs.readFileSync(path.join(ROOT, 'routes', 'market-delegation
 const bootstrapSource = fs.readFileSync(path.join(ROOT, 'bootstrap', 'api-routes.js'), 'utf8');
 
 describe('market-delegation catalog routes', () => {
-  test('both routes are authenticated', () => {
+  test('all catalog routes are authenticated', () => {
     const routeDeclarations = routeSource.match(/router\.(get|post|put|delete)\([^\n]+/g) || [];
-    expect(routeDeclarations).toHaveLength(3);
+    expect(routeDeclarations).toHaveLength(4);
     expect(routeDeclarations.every(line => line.includes('authenticate'))).toBe(true);
   });
 

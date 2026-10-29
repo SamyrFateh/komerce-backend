@@ -57,6 +57,15 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+// Only for the dedicated, private Railway recette project. All monetary,
+// ordering and arbitrary admin mutations are denied before route mounting.
+if (process.env.KOMERCE_RECETTE_ISOLATED === 'true') {
+  if (!String(process.env.DATABASE_URL || '').includes('.railway.internal:')) {
+    throw new Error('RECETTE_ISOLATED_PRIVATE_DB_REQUIRED');
+  }
+  app.use(require('./middleware/recette-isolation-guard').recetteIsolationGuard);
+}
+
 const { verifyAuthkeyWebhook } = require('./middleware/verify-authkey-webhook');
 
 app.get('/webhook/authkey-whatsapp', verifyAuthkeyWebhook, async (req, res) => {

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-22T18:18:51.095Z",
+  "generatedAt": "2026-10-28T17:05:41.123Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 754,
-    "protected": 699,
+    "total": 758,
+    "protected": 703,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2110,7 +2110,21 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/catalog/products/{productRef}/classify",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/catalog/products/{productRef}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/products/{productRef}/recover-source-media",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -2125,6 +2139,13 @@
     },
     {
       "key": "POST /api/admin/workspaces/catalog/products",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/refinery/{productRef}/prepare-fr",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -2493,7 +2514,7 @@
       ]
     },
     {
-      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/confirm-boutique-category",
+      "key": "GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/category-options",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -2501,7 +2522,7 @@
       ]
     },
     {
-      "key": "GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/category-options",
+      "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/confirm-boutique-category",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -3773,6 +3794,11 @@
       "roles": [
         "admin"
       ]
+    },
+    {
+      "key": "GET /api/market-delegation/catalog/authorized-markets",
+      "level": "PROTECTED",
+      "roles": []
     },
     {
       "key": "GET /api/market-delegation/central/team-matrix",

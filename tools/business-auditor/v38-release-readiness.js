@@ -4,8 +4,10 @@
  * coverage, an independent withheld-bug benchmark and a reviewed main diff.
  * A green historical CI suite alone is never a release certificate.
  */
+const {accepts:acceptsG3}=require('./v40-g3-proof-admission');
+const {accepts:acceptsInstall}=require('./v42-release-install-smoke');
 const fail=s=>{throw Error('G5_RELEASE_TOOL_ERROR: '+s)};
-function readiness({audit,benchmark,impactPlan=null,mainDiff=null}={}){
+function readiness({audit,benchmark,impactPlan=null,mainDiff=null,installEvidence=null}={}){
  if(!audit||audit.contract!=='komerce-unified-business-logic-auditor/v35'||
   !benchmark||benchmark.contract!=='komerce-retrospective-calibration/v38'||
   audit.sha!==benchmark.sha||!/^[a-f0-9]{40}$/.test(audit.sha||''))
@@ -21,6 +23,8 @@ function readiness({audit,benchmark,impactPlan=null,mainDiff=null}={}){
   '12 isolated canonical witnesses; 8 partial domains only');
  gate('G2_SEMANTIC_INVARIANT_MAPPING',
   audit.invariantCoverage?.featureCardInvariantsCertified>0&&
+  audit.summary?.featureCardSemanticOracleMappingComplete===true&&
+  audit.semanticInvariantLedger?.summary?.notCovered===0&&
   typeof audit.invariantCoverage?.summary?.coveragePercent==='number'&&
   audit.invariantCoverage.summary.coveragePercent>=0&&
   audit.invariantCoverage.summary.coveragePercent<=100,
@@ -28,10 +32,7 @@ function readiness({audit,benchmark,impactPlan=null,mainDiff=null}={}){
   '; semantically certified: '+audit.summary.featureInvariantsCertified+
   '; ratio: '+audit.summary.invariantCoveragePercent);
  gate('G3_AUTONOMOUS_GENERATED_EXPERIMENT',
-  Boolean(impactPlan?.contract==='komerce-generated-experiment-proof/v1'&&
-   impactPlan?.sha===audit.sha&&impactPlan.realOwnerOnClonedPg===true&&
-   impactPlan.generatedCases>0&&impactPlan.independentOracle===true&&
-   impactPlan.withheldMutationDetected===true&&impactPlan.allClonesDropped===true),
+  acceptsG3(impactPlan,audit.sha),
   impactPlan?.contract||'Only static impact selection, no generated physical fixtures');
  gate('G4_REPLAY_KNOWN_CALIBRATIONS',benchmark.calibrationGate==='PASS'&&
   benchmark.calibration.toolErrors===0&&benchmark.calibration.falsePositive===0,
@@ -47,8 +48,7 @@ function readiness({audit,benchmark,impactPlan=null,mainDiff=null}={}){
    mainDiff?.conflicts===0),
   'Current R&D stack must not merge wholesale; main comparison requires review');
  gate('G5_OPERATOR_DOCUMENTATION_AND_INSTALL',
-  Boolean(audit.releaseInstallVerified===true&&audit.releaseModesVerified===true&&
-   audit.releaseSafetyVerified===true),
+  acceptsInstall(installEvidence,audit.sha),
   'Full release smoke and operator instructions still unqualified');
  return {contract:'komerce-independent-business-auditor-release-readiness/v38',
   sha:audit.sha,proposedVersion:'4.0.0',

@@ -88,7 +88,7 @@ router.get('/', async (req, res, next) => {
     // il n'est calculé que pour la vue diagnostic (?include=health).
     const withHealth = req.query.include === 'health';
     const [payload, health] = await Promise.all([
-      workspace.buildWorkspace({ timings }),
+      workspace.buildWorkspace({ timings, candidateRef: req.query.candidate_ref || null }),
       withHealth ? timed(timings, 'health', sourcingHealth.buildHealthDashboard()) : Promise.resolve(null),
     ]);
     res.set('Server-Timing', serverTiming(timings));

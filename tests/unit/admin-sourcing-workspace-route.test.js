@@ -141,6 +141,22 @@ test('grant sourcing ouvre une projection globale sans bloquer sur l’audit de 
   expect(res.body.scope).toEqual({ mode: 'global_sourcing' });
 });
 
+test('deep link Catalogue vers Sourcing : candidate_ref conserve le grant métier', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/sourcing?candidate_ref=KSC-000987');
+  expect(res.status).toBe(200);
+  expect(mockCalls.buildWorkspace).toHaveBeenCalledWith(expect.objectContaining({
+    candidateRef: 'KSC-000987', timings: expect.any(Object),
+  }));
+  expect(res.headers['cache-control']).toContain('no-store');
+});
+
+test('deep link candidat interdit si le grant sourcing est absent', async () => {
+  mockSourcingAllowed = false;
+  const res = await request(app()).get('/api/admin/workspaces/sourcing?candidate_ref=KSC-000987');
+  expect(res.status).toBe(403);
+  expect(mockCalls.buildWorkspace).not.toHaveBeenCalled();
+});
+
 test('la santé canonique n’est calculée que sur demande explicite (?include=health)', async () => {
   const res = await request(app()).get('/api/admin/workspaces/sourcing?include=health');
   expect(res.status).toBe(200);
