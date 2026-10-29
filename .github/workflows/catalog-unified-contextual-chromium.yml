@@ -3,7 +3,7 @@ name: Catalogue unified contextual corrections — Chromium desktop
 on:
   push:
     branches:
-      - feat/catalog-unified-contextual-corrections-20261029
+      - feat/catalog-media-evidence-recovery-20261029
     paths:
       - '.github/workflows/catalog-unified-contextual-chromium.yml'
       - 'public/dashboards/canonical/js/catalog-workspace.js'

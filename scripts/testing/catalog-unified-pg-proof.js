@@ -79,7 +79,7 @@ async function main() {
         'Home','{}','imported_to_catalog','{"sourcing_decision":"PRIORITY"}','high'),
       (6,2,'SC-DRAFT','Suspension source','Texte source','CJdropshipping','CJ-DRAFT',
         'Home','{"schema_version":"2","media":[{"supplier_media_id":"CJ-MEDIA-1","url":"https://example.org/a.jpg","role":"PRODUCT"}]}','imported_to_catalog',NULL,'low');
-      INSERT INTO catalog_media (product_id,is_active) VALUES (1,true);
+      INSERT INTO catalog_media (product_id,is_active) VALUES (1,true),(3,false);
       INSERT INTO catalog_publication_decision_audit
         (id,product_id,action,created_at)
       VALUES (1,1,'CATALOG_PRODUCT_APPROVED',NOW());
@@ -103,7 +103,9 @@ async function main() {
     assert.equal(draft.media_status, 'source_recoverable');
     assert(draft.issues.includes('media_missing'));
     const history = result.products.find(r => r.product_ref === 'KPR-003');
-    assert.equal(history.media_status, 'source_missing');
+    assert.equal(history.active_media_count, 0);
+    assert.equal(history.total_media_count, 1);
+    assert.equal(history.media_status, 'canonical_inactive_review');
     assert.equal(history.operator_group, 'correction',
       'an active legacy product must remain visible without inventing sourcing evidence');
     const raw = result.products.find(r => r.candidate_ref === 'SC-RAW');

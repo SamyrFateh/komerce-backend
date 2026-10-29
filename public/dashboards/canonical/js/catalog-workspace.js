@@ -2057,6 +2057,7 @@
         ['Médias du contrat fournisseur V2', row.source_media_count == null
           ? 'Non mesuré' : String(row.source_media_count)],
         ['Diagnostic', ({
+          canonical_inactive_review: 'Un média canonique existe mais est désactivé. Réexamen humain requis, aucune réactivation automatique.',
           source_recoverable: 'Médias source identifiés avec une identité stable. Réintégration canonique nécessaire.',
           source_requires_review: 'Médias source présents mais non admissibles sans vérification.',
           preview_only: 'L’image d’aperçu ne constitue pas une preuve média canonique.',
@@ -2068,8 +2069,34 @@
         mediaFacts.appendChild(text(doc, 'dd', '', value));
       });
       panel.appendChild(mediaFacts);
+      if (row.media_status === 'source_recoverable' &&
+          row.lifecycle_status === 'candidate' && row.is_active === false) {
+        const recover = makeButton(doc, 'Réintégrer les médias fournisseur', 'inspector-recover-media');
+        recover.addEventListener('click', async () => {
+          if (!context.confirm('Réintégrer les médias du contrat fournisseur pour ' +
+            row.product_ref + ' ? Ce geste sera audité et ne valide ni ne publie le produit.')) return;
+          recover.disabled = true;
+          feedback.textContent = 'Vérification et réintégration des médias canoniques…';
+          try {
+            const response = await jsonRequest(context.fetch,
+              ENDPOINT + '/products/' + encodeURIComponent(row.product_ref) +
+              '/recover-source-media', { method: 'POST', body: {} });
+            if (!response?.ok || response.result?.audit_recorded !== true) {
+              throw new Error('Preuve de réintégration incomplète.');
+            }
+            await context.reload();
+            setFeedback(context.root,
+              row.product_ref + ' · médias réintégrés et tracés. Certification à revérifier.',
+              'positive');
+          } catch (err) {
+            feedback.textContent = actionErrorMessage(err);
+            recover.disabled = false;
+          }
+        });
+        actions.appendChild(recover);
+      }
       panel.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
-        'Aucune photo ajoutée ni publication implicite. Le propriétaire Catalogue doit réintégrer et certifier ces médias.'));
+        'Aucune validation ni publication implicite : la certification devra être relancée.'));
     }
     if (issues.includes('source_to_normalize'))
       feedback.textContent = row.candidate_ref

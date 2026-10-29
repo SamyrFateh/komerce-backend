@@ -3,10 +3,10 @@ name: Catalogue unified lot 1 read-only checks
 on:
   push:
     branches:
-      - feat/catalog-unified-media-provenance-20261029
+      - feat/catalog-media-evidence-recovery-20261029
   pull_request:
     branches:
-      - feat/catalog-unified-contextual-corrections-20261029
+      - feat/catalog-unified-media-provenance-20261029
   workflow_dispatch:
 
 permissions:
@@ -41,6 +41,10 @@ jobs:
       - name: Validate JS syntax
         run: |
           node --check services/catalog-unified-registry.js
+          node --check services/catalog-promotion.js
+          node --check services/catalog-media-recovery.js
+          node --check scripts/testing/catalog-media-recovery-pg-proof.js
+          node --check scripts/testing/catalog-media-recovery-migration-proof.js
           node --check services/catalog-workspace.js
           node --check routes/admin-catalog-workspace.js
           node --check public/dashboards/canonical/js/catalog-workspace.js
@@ -48,6 +52,9 @@ jobs:
         run: |
           npx jest --config jest.unit.config.js --runInBand --forceExit --no-coverage \
             tests/unit/catalog-unified-registry.test.js \
+            tests/unit/catalog-media-recovery.test.js \
+            tests/unit/catalog-promotion-media-recovery.test.js \
+            tests/unit/admin-catalog-workspace-route.test.js \
             tests/unit/catalog-unified-authority.test.js \
             tests/unit/catalog-registry.test.js \
             tests/unit/catalog-workspace-wide-v1.test.js \
@@ -61,3 +68,19 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
         run: node scripts/testing/catalog-unified-pg-proof.js
+      - name: Run isolated physical PostgreSQL audited media recovery proof
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: postgres
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: node scripts/testing/catalog-media-recovery-pg-proof.js
+      - name: Validate actual migration 351 DDL on ephemeral PostgreSQL
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: postgres
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: node scripts/testing/catalog-media-recovery-migration-proof.js

@@ -34,7 +34,9 @@ const catalog = {
       source_locale: 'en', content_source: 'connector_raw',
       lifecycle_status: 'candidate', is_active: false, needs_review: false,
       work_status: 'taxonomy_to_confirm', operator_group: 'correction',
-      issues: ['taxonomy_to_confirm','editorial_to_complete'] },
+      active_media_count: 0, total_media_count: 0, source_media_count: 1,
+      media_status: 'source_recoverable',
+      issues: ['taxonomy_to_confirm','editorial_to_complete','media_missing'] },
     { record_kind: 'product', product_ref: 'KPR-TEST-APPROVED', name: 'Luminaire validé',
       supplier_name: 'CJdropshipping', boutique_category_key: 'maison',
       boutique_subcategory_key: 'luminaire', boutique_category_label: 'Maison',
@@ -128,6 +130,8 @@ async function main() {
     assert((await product.innerText()).includes('Classement Boutique à corriger'));
     assert.equal(await product.locator('[data-workspace-action="inspector-classify"]').count(), 1);
     assert.equal(await product.locator('[data-workspace-action="inspector-prepare-fr"]').count(), 1);
+    assert.equal(await product.locator('[data-workspace-action="inspector-recover-media"]').count(), 1);
+    assert((await product.innerText()).includes('Médias source identifiés'));
     await page.screenshot({ path: path.join(output, 'produit-corrections-contextuelles.png'), fullPage: true });
     await product.locator('[data-workspace-action="inspector-classify"]').click();
     const dialog = page.locator('#kmc-catalog-classification-dialog');
@@ -143,7 +147,7 @@ async function main() {
     assert.equal(dims.writes, 0);
     console.log(JSON.stringify({ verdict: 'PASS', viewport: 1440,
       sourceRows: 2, productRows: 2, suggestedClassification: true,
-      inPlaceCorrection: true, existingDialogReused: true, businessWrites: 0 }));
+      inPlaceCorrection: true, existingDialogReused: true, mediaRecoveryAction: true, businessWrites: 0 }));
   } finally {
     await browser.close();
   }
