@@ -576,6 +576,7 @@ module.exports = {
       'catalog_terminology_reference: RW',
       'catalog_enrichment_runs: W',
       'catalog_media: RW!',
+      'catalog_media_recovery_audit: RW!',
       'order_items: R',
       'orders: R',
       'product_skus: RW!',
