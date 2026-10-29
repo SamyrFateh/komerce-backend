@@ -1181,5 +1181,5 @@ test('Catalogue : absence de suggestion économique ne sélectionne jamais une c
   expect(select.children[0].textContent).toContain('aucune suggestion fiable');
   await panel.querySelector('[data-catalog-economic-category-form]')
     .listeners.submit[0]({preventDefault(){}});
-  expect(fetchFn.mock.calls.filter(([,opts={})=>opts.method==='POST')).toHaveLength(0);
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });
