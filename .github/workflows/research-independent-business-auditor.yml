@@ -31,6 +31,7 @@ on:
       - research/business-auditor-v32-catalog-auth-batch-20261028
       - research/business-auditor-v33-orders-sourcing-20261029
       - research/business-auditor-v34-delivery-foundation-20261029
+      - research/business-auditor-v35-invariant-coverage-20261029
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -69,6 +70,7 @@ on:
       - research/business-auditor-v32-catalog-auth-batch-20261028
       - research/business-auditor-v33-orders-sourcing-20261029
       - research/business-auditor-v34-delivery-foundation-20261029
+      - research/business-auditor-v35-invariant-coverage-20261029
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -113,7 +115,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js tools/business-auditor/v20-stock-predicate.test.js tools/business-auditor/v21-static-pair-selector.test.js tools/business-auditor/v22-financial-invariants.test.js tools/business-auditor/v23-preflight-mutant.test.js tools/business-auditor/v24-durable-intent-counterfactual.test.js tools/business-auditor/v25-reconciliation-oracle.test.js tools/business-auditor/v26-reconciler.test.js tools/business-auditor/v27-logistics-oracle.test.js tools/business-auditor/v28-proof-adapters.test.js tools/business-auditor/v28-unified-engine.test.js tools/business-auditor/v29-metadata-selector.test.js tools/business-auditor/v30-inventory-oracle.test.js tools/business-auditor/v31-fx-market-oracle.test.js tools/business-auditor/v32-catalog-auth-oracle.test.js tools/business-auditor/v33-orders-sourcing-oracle.test.js tools/business-auditor/v34-delivery-engine.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js tools/business-auditor/v20-stock-predicate.test.js tools/business-auditor/v21-static-pair-selector.test.js tools/business-auditor/v22-financial-invariants.test.js tools/business-auditor/v23-preflight-mutant.test.js tools/business-auditor/v24-durable-intent-counterfactual.test.js tools/business-auditor/v25-reconciliation-oracle.test.js tools/business-auditor/v26-reconciler.test.js tools/business-auditor/v27-logistics-oracle.test.js tools/business-auditor/v28-proof-adapters.test.js tools/business-auditor/v28-unified-engine.test.js tools/business-auditor/v29-metadata-selector.test.js tools/business-auditor/v30-inventory-oracle.test.js tools/business-auditor/v31-fx-market-oracle.test.js tools/business-auditor/v32-catalog-auth-oracle.test.js tools/business-auditor/v33-orders-sourcing-oracle.test.js tools/business-auditor/v34-delivery-engine.test.js tools/business-auditor/v35-invariant-coverage.test.js
       - name: V2.1 freeze ranked writer pairs before any physical database experiment
         run: node tools/business-auditor/v21-static-pair-gate.js /tmp/komerce-independent-business-audit/v21-selector
       - name: V2.1 verify source-derived refund pair and dead-code exclusion
@@ -824,7 +826,7 @@ jobs:
           }));
           NODE
       - name: V3.4 flat orchestration full — one discovery and four physical gates
-        run: npm run audit:logic:unified -- --mode full --out /tmp/komerce-independent-business-auditor/v34-unified
+        run: npm run audit:logic:unified:v34 -- --mode full --out /tmp/komerce-independent-business-auditor/v34-unified
       - name: V3.4 gate G1 — genuine 12 clones, independent oracles and no duplicated source passes
         run: |
           node <<'NODE'
@@ -862,6 +864,55 @@ jobs:
            adapters:a.orchestrator.reviewedPhysicalAdapters,clones:a.summary.physicalCasesTotal,
            partialDomains:a.summary.partialPhysicalDomains,
            confirmedCloneViolation:a.ordersSourcingProof.cases[1].oracle.signals}));
+          NODE
+      - name: V3.5 G2 quick feature-card invariant inventory without any PostgreSQL access
+        run: npm run audit:logic:unified -- --mode quick --out /tmp/komerce-independent-business-auditor/v35-quick
+      - name: V3.5 G2 full invariant registry with preserved 12 owner execution proofs
+        run: npm run audit:logic:unified -- --mode full --out /tmp/komerce-independent-business-auditor/v35-unified
+      - name: V3.5 G2 accept real Feature Card denominator without fictional test execution
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const dir='/tmp/komerce-independent-business-auditor/v35-unified';
+          const a=require(dir+'/unified-audit.json');
+          const r=require(dir+'/invariant-coverage.json');
+          const q=require('/tmp/komerce-independent-business-auditor/v35-quick/invariant-coverage.json');
+          const m=r.metrics;
+          if(a.contract!=='komerce-unified-business-logic-auditor/v35'||
+             a.sha!==process.env.GITHUB_SHA||
+             a.static.scannedFiles!==a.static.trackedFiles||
+             a.static.scannedFiles<1000||
+             !r.registryHash||r.registryHash!==q.registryHash||
+             r.contract!=='komerce-invariant-provenance-registry/v35'||
+             m.cards!==36||m.declared<300||
+             m.textOnly+m.declaredWithTest!==m.declared||
+             m.testAddressRegistered+m.testFileMissing+
+             m.testRunnerMissing+m.invalidTestReference!==m.declaredWithTest||
+             m.independentlyCertifiedInvariants!==0||
+             m.actuallyExecutedInvariantTests!==0||
+             m.individuallyLinkedIndependentOracles!==0||
+             r.invariants.length!==m.declared||
+             r.cards.length!==m.cards||
+             r.features.length!==m.cards||
+             r.domains.reduce((x,d)=>x+d.total,0)!==m.declared||
+             r.invariants.some(x=>x.fullyCertified!==false||
+               x.runtimeTestResult!=='NOT_EXECUTED_BY_THIS_AUDIT')||
+             a.invariantCoverage.registryHash!==r.registryHash||
+             a.summary.declaredFeatureInvariants!==m.declared||
+             a.summary.individuallyCertifiedFeatureInvariants!==0||
+             a.summary.actualInvariantCoverageRatio!==0||
+             a.summary.noClaimOfExecutedTestsFromFeatureDeclarations!==true||
+             a.summary.physicalCasesTotal!==12||
+             a.summary.partialPhysicalDomains!==8||
+             a.ordersSourcingProof.cases[1].oracle.signals.join('|')!=='SRC3_ARCHIVE_EVENT_OLD_STATE_LOST'||
+             !fs.readFileSync(dir+'/invariant-coverage.md','utf8').includes('0/'+m.declared))
+           throw Error('G2 failed: feature-card denominator, provenance or no-false-PASS proof');
+          console.log('BUSINESS_AUDIT_V35_G2_ACCEPTED',JSON.stringify({
+           sha:a.sha,cards:m.cards,declared:m.declared,textOnly:m.textOnly,
+           registered:m.testAddressRegistered,missingFile:m.testFileMissing,
+           runnerMissing:m.testRunnerMissing,individuallyCertified:0,
+           scenarios:a.summary.physicalCasesTotal,hash:r.registryHash
+          }));
           NODE
       - name: V1.0 independent one-command static repo audit without DB
         run: npm run audit:business:v1 -- --mode static --out /tmp/komerce-independent-business-audit/v10-static
