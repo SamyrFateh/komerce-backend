@@ -1865,7 +1865,7 @@
     panel.className = 'kmc-catalog-candidate-inspector';
     panel.setAttribute(mode === 'candidate'
       ? 'data-catalog-candidate-inspector' : 'data-catalog-product-inspector',
-      row.candidate_ref || row.product_ref);
+      mode === 'candidate' ? row.candidate_ref : row.product_ref);
     panel.setAttribute('role', 'region');
     panel.setAttribute('aria-label', 'Correction contextuelle · ' +
       (row.product_ref || row.candidate_ref));
