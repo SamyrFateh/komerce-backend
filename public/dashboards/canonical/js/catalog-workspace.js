@@ -2003,12 +2003,20 @@
                 });
               if (!answer?.ok) throw new Error('Correction et nouveau scan non confirmés.');
               const result = answer.result || {};
+              const e = result.scan?.economics || {};
+              const numbers = [
+                ['Coût variable',e.variable_cost_complete_kmf],
+                ['Plancher de sécurité',e.minimum_safe_price_kmf],
+                ['Prix test indicatif',e.test_price_kmf],
+              ].filter(([,v]) => v != null && Number.isFinite(Number(v)) && Number(v)>0)
+               .map(([label,value]) => label + ' : ' + formatKmf(value));
               await context.reload();
               setFeedback(context.root,
                 'Catégorie économique enregistrée pour ' + row.candidate_ref +
                   '. Nouveau verdict Sourcing : ' +
                   (result.scan?.decision || 'à relire') +
-                  '. Aucune publication déclenchée.', 'positive');
+                  (numbers.length ? '. ' + numbers.join(' · ') : '. Coûts encore à qualifier') +
+                  '. Prix de vente marché non décidé, aucune publication.', 'positive');
             } catch (err) {
               feedback.textContent = actionErrorMessage(err);
               save.disabled = false;
