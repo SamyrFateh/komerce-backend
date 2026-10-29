@@ -16,6 +16,20 @@ jobs:
   catalogue-unified:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,3 +52,11 @@ jobs:
             tests/unit/catalog-workspace-wide-v1.test.js \
             tests/unit/canonical-catalog-workspace-boundary.test.js \
             tests/unit/sourcing-catalog-finish-v5.test.js
+      - name: Run isolated physical PostgreSQL proof
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: postgres
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: node scripts/testing/catalog-unified-pg-proof.js
