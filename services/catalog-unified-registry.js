@@ -167,7 +167,7 @@ function publicRow(row) {
   // owns source qualification; absence of a finished scan is not a human task.
   if (candidate && row.work_status === 'handoff_missing') issues.push('handoff_missing');
   if (!candidate) {
-    if (row.work_status === 'activation_to_reconcile') issues.push('state_inconsistent');
+    if (row.work_status === 'activation_to_reconcile') issues.push('activation_to_reconcile');
     if (!row.source_ready) issues.push('source_to_normalize');
     if (!row.taxonomy_ready) issues.push('taxonomy_to_confirm');
     if (!row.editorial_ready) issues.push('editorial_to_complete');
