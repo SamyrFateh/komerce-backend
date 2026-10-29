@@ -40,6 +40,7 @@ WITH picked_source AS (
         sc.description AS supplier_description, sc.product_url,
         sc.state AS candidate_state, sc.scan_result->>'sourcing_decision' AS sourcing_decision,
         sc.confidence AS sourcing_confidence,
+        (sc.scan_result->'commercial_review'->>'status'='PENDING_CLASSIFICATION') AS source_category_review_required,
         (sc.normalized_source_contract IS NOT NULL
           AND NULLIF(BTRIM(sc.supplier_name),'') IS NOT NULL
           AND NULLIF(BTRIM(sc.supplier_product_id),'') IS NOT NULL) AS source_ready,
@@ -102,6 +103,7 @@ WITH picked_source AS (
         sc.supplier_product_id, sc.supplier_category, sc.product_name,
         sc.description, sc.product_url, sc.state,
         sc.scan_result->>'sourcing_decision', sc.confidence,
+        (sc.scan_result->'commercial_review'->>'status'='PENDING_CLASSIFICATION'),
         (sc.normalized_source_contract IS NOT NULL
           AND NULLIF(BTRIM(sc.supplier_name),'') IS NOT NULL
           AND NULLIF(BTRIM(sc.supplier_product_id),'') IS NOT NULL),
@@ -123,9 +125,20 @@ WITH picked_source AS (
        THEN 'excluded'
      WHEN u.record_kind='candidate' AND u.candidate_state='imported_to_catalog'
        THEN 'handoff_missing'
-     WHEN u.record_kind='candidate' AND u.candidate_state IN ('scanned','test_ready','watchlist')
+     WHEN u.record_kind='candidate' AND u.source_category_review_required
+       THEN 'sourcing_category_review'
+     WHEN u.record_kind='candidate' AND
+       (u.candidate_state='watchlist' OR
+        UPPER(COALESCE(u.sourcing_decision,'')) IN ('WATCH','AVOID','LOSS'))
+       THEN 'sourcing_deferred'
+     WHEN u.record_kind='candidate' AND u.candidate_state IN ('scanned','test_ready')
        THEN 'sourcing_review'
      WHEN u.record_kind='candidate' THEN 'processing'
+     -- Prior catalogue activation of a candidate requires lineage review.
+     -- A lifecycle='active' item with is_active=FALSE can be an intentional
+     -- soft deactivation (product-admin-service.deleteProduct).
+     WHEN u.is_active=TRUE AND u.lifecycle_status='candidate'
+       THEN 'activation_to_reconcile'
      WHEN u.lifecycle_status='rejected' THEN 'excluded'
      WHEN NOT u.source_ready THEN 'source_to_normalize'
      WHEN NOT u.taxonomy_ready THEN 'taxonomy_to_confirm'
@@ -143,7 +156,7 @@ WITH picked_source AS (
    CASE
      WHEN m.work_status='catalog_approved' THEN 'validated'
      WHEN m.work_status='excluded' THEN 'excluded'
-     WHEN m.work_status='processing' THEN 'processing'
+     WHEN m.work_status IN ('processing','sourcing_deferred') THEN 'processing'
      WHEN m.work_status IN ('approval_pending','approval_unproven','sourcing_review') THEN 'review'
      ELSE 'correction'
    END AS operator_group
@@ -157,7 +170,10 @@ function publicRow(row) {
   // Null readiness for pre-handoff is NOT an operator defect. Sourcing still
   // owns source qualification; absence of a finished scan is not a human task.
   if (candidate && row.work_status === 'handoff_missing') issues.push('handoff_missing');
+  if (candidate && row.work_status === 'sourcing_category_review')
+    issues.push('sourcing_economic_category_missing');
   if (!candidate) {
+    if (row.work_status === 'activation_to_reconcile') issues.push('activation_to_reconcile');
     if (!row.source_ready) issues.push('source_to_normalize');
     if (!row.taxonomy_ready) issues.push('taxonomy_to_confirm');
     if (!row.editorial_ready) issues.push('editorial_to_complete');
@@ -194,6 +210,7 @@ function publicRow(row) {
     candidate_state: row.candidate_state || null,
     sourcing_decision: row.sourcing_decision || null,
     sourcing_confidence: row.sourcing_confidence || null,
+    source_category_review_required: row.source_category_review_required === true,
     approval_audited: row.approval_audited === true,
     source_locale: row.source_locale || null,
     content_source: row.content_source || null,

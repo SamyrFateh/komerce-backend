@@ -1473,6 +1473,11 @@
 
   function registryNextStep(row) {
     if (row.record_kind === 'candidate') {
+      if (row.work_status === 'sourcing_category_review')
+        return { kind: 'inspect', label: 'Corriger catégorie',
+          status: 'Catégorie économique manquante' };
+      if (row.work_status === 'sourcing_deferred')
+        return { kind: 'inspect', label: 'Suivre', status: 'Surveillance Sourcing · différé' };
       if (row.operator_group === 'processing')
         return { kind: 'inspect', label: 'Suivre', status: 'Préparation automatique' };
       if (row.operator_group === 'excluded')
@@ -1482,6 +1487,10 @@
       return { kind: 'inspect', label: 'Examiner', status: 'À examiner' };
     }
     const issues = Array.isArray(row.issues) ? row.issues : [];
+    if (row.work_status === 'activation_to_reconcile') {
+      return { kind: 'diagnose', label: 'Réconcilier l’état',
+        status: 'Activation à réconcilier' };
+    }
     if (row.lifecycle_status === 'rejected' || row.work_status === 'rejected') {
       return { kind: 'detail', label: 'Examiner le rejet', status: 'Écarté · revoir' };
     }
@@ -1741,6 +1750,8 @@
       return [{ code: 'market', label: 'Validation Catalogue acquise · vérifier chaque marché' }];
     }
     const known = [
+      ['sourcing_economic_category_missing', 'Catégorie économique / douane à corriger'],
+      ['activation_to_reconcile', 'Activation d’un candidat à justifier'],
       ['source_to_normalize', 'Source fournisseur à vérifier'],
       ['taxonomy_to_confirm', 'Classement boutique à corriger'],
       ['editorial_to_complete', 'Contenu français à compléter'],
@@ -1915,6 +1926,110 @@
     panel.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
       'État Sourcing : ' + (row.candidate_state || 'inconnu') +
       ' · Décision de scan : ' + (row.sourcing_decision || 'non mesurée')));
+
+    if (row.work_status === 'sourcing_category_review') {
+      feedback.textContent =
+        'Le scanner demande une catégorie économique/douanière. ' +
+        'La catégorie Boutique est une décision distincte : aucun brouillon ne sera créé.';
+      const classify = makeButton(doc, 'Corriger la catégorie économique',
+        'candidate-economic-category-review');
+      actions.appendChild(classify);
+      classify.addEventListener('click', async () => {
+        classify.disabled = true;
+        feedback.textContent = 'Lecture des catégories économiques actives…';
+        try {
+          const options = await jsonRequest(context.fetch,
+            SOURCING_ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) +
+            '/category-options');
+          const choices = Array.isArray(options.categories) ? options.categories : [];
+          const suggested = (options.suggestions || []).find(item =>
+            choices.some(option => option.key === item.key));
+          if (!choices.length) throw new Error('Aucune catégorie économique active disponible.');
+          const ordered = suggested
+            ? [suggested, ...choices.filter(item => item.key !== suggested.key)]
+            : choices;
+          const prior = panel.querySelector('[data-catalog-economic-category-form]');
+          if (prior) prior.remove();
+          const form = doc.createElement('form');
+          form.className = 'kmc-catalog-inspector-form';
+          form.setAttribute('data-catalog-economic-category-form', '');
+          form.appendChild(text(doc, 'strong', '', 'Catégorie économique / douane'));
+          form.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+            'Proposition calculée par le moteur de classification existant. ' +
+            'Vérifiez les informations fournisseur avant de confirmer.'));
+          const label = text(doc, 'label', 'kmc-catalog-inspector-label',
+            'Catégorie économique');
+          const select = doc.createElement('select');
+          select.setAttribute('data-catalog-economic-category-choice', '');
+          if (!suggested) {
+            const placeholder = doc.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Choisir une catégorie — aucune suggestion fiable';
+            select.appendChild(placeholder);
+          }
+          ordered.forEach((item, index) => {
+            const option = doc.createElement('option');
+            option.value = String(index);
+            option.textContent = (suggested && index === 0 ? 'Proposé · ' : '') +
+              (item.label || item.key);
+            select.appendChild(option);
+          });
+          select.value = suggested ? '0' : '';
+          label.appendChild(select);
+          form.appendChild(label);
+          if (suggested) form.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
+            'Confiance de la suggestion : ' + (suggested.confidence || 'non mesurée')));
+          form.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+            'Confirmer enregistre la correction Sourcing et relance le scanner. ' +
+            'Cela ne crée aucun produit et ne déclenche aucune publication.'));
+          const save = makeButton(doc, 'Confirmer et relancer le scanner',
+            'candidate-resolve-economic-category');
+          save.type = 'submit';
+          form.appendChild(save);
+          form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const chosen = select.value === '' ? null : ordered[Number(select.value)];
+            if (!chosen) {
+              feedback.textContent = 'Choisissez une catégorie existante.';
+              return;
+            }
+            save.disabled = true;
+            feedback.textContent = 'Correction Sourcing et nouveau scan…';
+            try {
+              const answer = await jsonRequest(context.fetch,
+                SOURCING_ENDPOINT + '/candidates/' +
+                encodeURIComponent(row.candidate_ref) + '/resolve-category', {
+                  method: 'POST', body: { category_key: chosen.key },
+                });
+              if (!answer?.ok) throw new Error('Correction et nouveau scan non confirmés.');
+              const result = answer.result || {};
+              await context.reload();
+              setFeedback(context.root,
+                'Catégorie économique enregistrée pour ' + row.candidate_ref +
+                  '. Nouveau verdict Sourcing : ' +
+                  (result.scan?.decision || 'à relire') +
+                  '. Aucune publication déclenchée.', 'positive');
+            } catch (err) {
+              feedback.textContent = actionErrorMessage(err);
+              save.disabled = false;
+            }
+          });
+          panel.appendChild(form);
+          feedback.textContent = '';
+        } catch (err) {
+          feedback.textContent = actionErrorMessage(err);
+        } finally {
+          classify.disabled = false;
+        }
+      });
+      return panel;
+    }
+    if (row.work_status === 'sourcing_deferred' ||
+        ['WATCH','AVOID','LOSS'].includes(String(row.sourcing_decision || '').toUpperCase())) {
+      feedback.textContent = 'Décision Sourcing différée : surveillance ou nouvelles preuves fournisseur. ' +
+        'Aucune validation humaine Catalogue requise, aucun brouillon créé.';
+      return panel;
+    }
     if (['rejected', 'archived', 'quarantined', 'imported_to_catalog'].includes(row.candidate_state)
         || row.work_status === 'handoff_missing'
         || String(row.sourcing_decision || '').toUpperCase() === 'EXCLUDED') {
@@ -2032,12 +2147,20 @@
       taxonomy_to_confirm: 'Classement Boutique à corriger',
       editorial_to_complete: 'Titre / description FR à préparer',
       media_missing: 'Médias canoniques absents',
+      state_inconsistent: 'Activation d’un candidat sans preuve de validation',
       approval_pending: 'Validation Catalogue à réaliser',
     };
     issues.forEach(code => {
       if (labels[code]) list.appendChild(text(doc, 'li', '', labels[code]));
     });
     if (list.children.length) panel.appendChild(list);
+    if (row.work_status === 'activation_to_reconcile') {
+      feedback.textContent =
+        'Activation d’une fiche encore marquée candidate : origine et autorisation à vérifier. ' +
+        'Réconciliation avec la preuve d’origine indispensable. ' +
+        'Aucune approbation ni correction de média proposée automatiquement.';
+      return panel;
+    }
     if (row.lifecycle_status === 'rejected' || row.work_status === 'approval_unproven') {
       feedback.textContent = row.work_status === 'approval_unproven'
         ? 'Produit actif sans décision d’approbation démontrée : réconciliation nécessaire, ' +

@@ -3,10 +3,10 @@ name: Catalogue unified lot 1 read-only checks
 on:
   push:
     branches:
-      - feat/catalog-media-evidence-recovery-20261029
+      - feat/catalog-watch-and-state-integrity-20261029
   pull_request:
     branches:
-      - feat/catalog-unified-media-provenance-20261029
+      - feat/catalog-media-evidence-recovery-20261029
   workflow_dispatch:
 
 permissions:

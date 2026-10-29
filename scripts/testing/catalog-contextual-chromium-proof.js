@@ -27,6 +27,13 @@ const catalog = {
       supplier_name_original: 'LED Desk Lamp', supplier_description: 'Desk lamp',
       candidate_state: 'scanned', sourcing_decision: 'TEST', sourcing_confidence: 'high',
       operator_group: 'review', work_status: 'sourcing_review', issues: [] },
+    { record_kind: 'candidate', candidate_ref: 'KSC-ECON-REVIEW',
+      product_ref: null, name: 'Accessoire à classifier', supplier_name: 'CJdropshipping',
+      supplier_product_id: 'CJ-CAT', supplier_category: 'Electronics > Cables',
+      candidate_state: 'scanned', sourcing_decision: 'WATCH',
+      source_category_review_required: true, operator_group: 'correction',
+      work_status: 'sourcing_category_review',
+      issues: ['sourcing_economic_category_missing'] },
     { record_kind: 'product', product_ref: 'KPR-TEST-DRAFT',
       candidate_ref: 'KSC-TEST-DRAFT', name: 'Lampe LED brouillon',
       supplier_name: 'CJdropshipping', supplier_category: 'Home > Lighting',
@@ -44,7 +51,7 @@ const catalog = {
       lifecycle_status: 'active', is_active: true, needs_review: false,
       work_status: 'catalog_approved', operator_group: 'validated', issues: [] },
   ],
-  registry_page: { total: 4, limit: 50, offset: 0, has_previous: false, has_next: false },
+  registry_page: { total: 5, limit: 50, offset: 0, has_previous: false, has_next: false },
   commercial_products: [], approval: [], approval_page: { total: 0 },
   curation: {}, pricing_parameters: {}, commercial: {}, approval_breakdown: {},
 };
@@ -103,6 +110,13 @@ async function main() {
             ],
           }),
         };
+        if (url.includes('/category-options')) return {
+          ok: true, status: 200, json: async () => ({
+            categories: [{key:'electronics',label:'Électronique'},
+              {key:'household',label:'Maison'}],
+            suggestions: [{key:'electronics',label:'Électronique',confidence:'high'}],
+          }),
+        };
         return { ok: true, status: 200, json: async () => payload };
       };
       await window.KomerceCanonicalCatalogWorkspace.mount({
@@ -112,7 +126,7 @@ async function main() {
       });
     }, catalog);
 
-    assert.equal(await page.locator('tr[data-candidate-ref]').count(), 2);
+    assert.equal(await page.locator('tr[data-candidate-ref]').count(), 3);
     assert.equal(await page.locator('tr[data-product-ref]').count(), 2);
     await page.screenshot({ path: path.join(output, 'catalogue-unifie.png'), fullPage: true });
 
@@ -123,6 +137,18 @@ async function main() {
     assert((await candidate.locator('[data-catalog-candidate-category-choice] option').first().innerText()).includes('Proposé'));
     await page.screenshot({ path: path.join(output, 'candidat-suggestion-contextuelle.png'), fullPage: true });
     await candidate.locator('[data-workspace-action="close-inspector"]').click();
+
+    await page.locator('[data-candidate-ref="KSC-ECON-REVIEW"] [data-workspace-action="inspect-candidate"]').click();
+    const economic=page.locator('[data-catalog-candidate-inspector="KSC-ECON-REVIEW"]');
+    await economic.waitFor({state:'visible'});
+    await economic.locator('[data-workspace-action="candidate-economic-category-review"]').click();
+    assert((await economic.locator('[data-catalog-economic-category-choice] option').first().innerText())
+      .includes('Proposé'));
+    assert((await economic.innerText()).includes('catégorie économique'));
+    await page.screenshot({
+      path:path.join(output,'candidat-categorie-economique-contextuelle.png'),fullPage:true,
+    });
+    await economic.locator('[data-workspace-action="close-inspector"]').click();
 
     await page.locator('[data-product-ref="KPR-TEST-DRAFT"] [data-workspace-action="open-catalog-inspector"]').click();
     const product = page.locator('[data-catalog-product-inspector="KPR-TEST-DRAFT"]');
@@ -146,7 +172,8 @@ async function main() {
     assert(dims.scrollWidth <= dims.viewport + 2, 'Horizontal outer overflow: ' + JSON.stringify(dims));
     assert.equal(dims.writes, 0);
     console.log(JSON.stringify({ verdict: 'PASS', viewport: 1440,
-      sourceRows: 2, productRows: 2, suggestedClassification: true,
+      sourceRows: 3, productRows: 2, suggestedClassification: true,
+      economicCategoryInline: true,
       inPlaceCorrection: true, existingDialogReused: true, mediaRecoveryAction: true, businessWrites: 0 }));
   } finally {
     await browser.close();

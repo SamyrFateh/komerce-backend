@@ -84,9 +84,22 @@ async function main() {
         (id,product_id,action,created_at)
       VALUES (1,1,'CATALOG_PRODUCT_APPROVED',NOW());
     `);
+    await client.query(`
+      INSERT INTO products (id,product_ref,name,lifecycle_status,is_active)
+      VALUES (4,'KPR-ACTIVE-CANDIDATE','Anomalie candidate active','candidate',true),
+             (5,'KPR-INACTIVE-ACTIVE','Anomalie active inactive','active',false);
+      INSERT INTO sourcing_candidates
+        (id,product_id,candidate_ref,product_name,supplier_name,supplier_product_id,
+         state,scan_result)
+      VALUES (7,NULL,'SC-WATCH','Référence en surveillance',
+        'AliExpress','A-WATCH','scanned','{"sourcing_decision":"WATCH"}'),
+             (8,NULL,'SC-WATCH-CATEGORY','Référence à classer',
+        'AliExpress','A-WATCH-CATEGORY','scanned',
+        '{"sourcing_decision":"WATCH","commercial_review":{"status":"PENDING_CLASSIFICATION","action":"REVIEW_BOUTIQUE_TAXONOMY"}}');
+    `);
     const before = await client.query('SELECT COUNT(*)::int AS n FROM sourcing_candidates');
     const result = await listUnified({ limit: 50 }, client);
-    assert.equal(result.page.total, 6, 'product + pre-handoff count');
+    assert.equal(result.page.total, 10, 'product + pre-handoff count');
     assert.equal(result.products.filter(r => r.product_ref === 'KPR-001').length, 1,
       'a handed product with two candidate observations must appear once');
     assert.equal(result.products.filter(r => r.candidate_ref === 'SC-ALT').length, 0,
@@ -118,6 +131,21 @@ async function main() {
     const review = result.products.find(r => r.candidate_ref === 'SC-SCAN');
     assert.equal(review.operator_group, 'review');
     assert.equal(review.product_ref, null);
+    const deferred = result.products.find(r => r.candidate_ref === 'SC-WATCH');
+    assert.equal(deferred.work_status,'sourcing_deferred');
+    assert.equal(deferred.operator_group,'processing');
+    assert.deepEqual(deferred.issues,[]);
+    const categoryReview=result.products.find(r=>r.candidate_ref==='SC-WATCH-CATEGORY');
+    assert.equal(categoryReview.work_status,'sourcing_category_review');
+    assert.equal(categoryReview.operator_group,'correction');
+    assert.deepEqual(categoryReview.issues,['sourcing_economic_category_missing']);
+    const candidateActivated=result.products.find(r=>r.product_ref==='KPR-ACTIVE-CANDIDATE');
+    assert.equal(candidateActivated.work_status,'activation_to_reconcile');
+    assert(candidateActivated.issues.includes('activation_to_reconcile'));
+    const disabled=result.products.find(r=>r.product_ref==='KPR-INACTIVE-ACTIVE');
+    assert.notEqual(disabled.work_status,'activation_to_reconcile',
+      'a soft-deactivated previously approved lifecycle is not necessarily inconsistent');
+    assert(!disabled.issues.includes('activation_to_reconcile'));
     const filtered = await listUnified({ search: 'SC-001', status: 'validated' }, client);
     assert.equal(filtered.page.total, 1);
     assert.equal(filtered.products[0].product_ref, 'KPR-001');

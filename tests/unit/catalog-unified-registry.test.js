@@ -184,3 +184,50 @@ test('image de prévisualisation et média canonique sont des preuves différent
   expect(publicRow({ ...originalCandidate, active_media_count:0, source_media_count:1 }))
     .toMatchObject({media_status:'pre_handoff',issues:[]});
 });
+
+
+test('WATCH est une décision différée, jamais une tâche humaine de validation Catalogue', async () => {
+  const q=executor([{operator_group:'processing',count:1}],[
+    {...originalCandidate,candidate_state:'scanned',sourcing_decision:'WATCH',
+      work_status:'sourcing_deferred',operator_group:'processing'}
+  ]);
+  const result=await listUnified({limit:50},q);
+  expect(result.products[0]).toMatchObject({
+    work_status:'sourcing_deferred',operator_group:'processing',issues:[],
+  });
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("('WATCH','AVOID','LOSS')");
+  expect(sql).toContain("THEN 'sourcing_deferred'");
+  expect(sql).toContain("'sourcing_deferred') THEN 'processing'");
+});
+
+test('candidate actif est à réconcilier, désactivation soft d’un ancien actif reste autorisée',async()=>{
+  const row=publicRow({...canonical,lifecycle_status:'candidate',is_active:true,
+    work_status:'activation_to_reconcile',operator_group:'correction'});
+  expect(row.issues[0]).toBe('activation_to_reconcile');
+  const legitimatelyDisabled=publicRow({...canonical,lifecycle_status:'active',is_active:false,
+    work_status:'source_to_normalize',operator_group:'correction'});
+  expect(legitimatelyDisabled.issues).not.toContain('activation_to_reconcile');
+  const q=executor([],[]);
+  await listUnified({},q);
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("u.is_active=TRUE AND u.lifecycle_status='candidate'");
+  expect(sql).not.toContain("u.is_active=FALSE AND u.lifecycle_status='active'");
+});
+
+
+test('WATCH avec révision commerciale obligatoire reste une correction, pas une simple surveillance',async()=>{
+  const fixture={...originalCandidate,candidate_state:'scanned',
+    sourcing_decision:'WATCH',source_category_review_required:true,
+    work_status:'sourcing_category_review',operator_group:'correction'};
+  expect(publicRow(fixture)).toMatchObject({
+    issues:['sourcing_economic_category_missing'],
+    work_status:'sourcing_category_review',
+  });
+  const q=executor([{operator_group:'correction',count:1}],[fixture]);
+  await listUnified({},q);
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("sc.scan_result->'commercial_review'->>'status'='PENDING_CLASSIFICATION'");
+  expect(sql).toContain("WHEN u.record_kind='candidate' AND u.source_category_review_required");
+  expect(sql).toContain("THEN 'sourcing_category_review'");
+});

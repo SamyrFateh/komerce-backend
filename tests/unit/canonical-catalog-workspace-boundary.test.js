@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-4');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-5');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -1066,4 +1066,120 @@ test('Catalogue unique : aperçu fournisseur sans contrat stable ne déclenche a
   const panel=root.querySelector('[data-catalog-product-inspector="KPR-PREVIEW"]');
   expect(panel.textContent).toContain('L’image d’aperçu ne constitue pas une preuve');
   expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
+});
+
+
+test('Catalogue : candidat WATCH visible en surveillance, jamais à valider ni promouvoir', async () => {
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'candidate',candidate_ref:'KSC-WATCH',product_ref:null,
+    name:'Source différée',candidate_state:'scanned',sourcing_decision:'WATCH',
+    operator_group:'processing',work_status:'sourcing_deferred',issues:[]}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-candidate-ref="KSC-WATCH"]');
+  expect(row.textContent).toContain('Surveillance Sourcing');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-WATCH"]');
+  expect(panel.textContent).toContain('Décision Sourcing différée');
+  expect(panel.querySelector('[data-workspace-action="candidate-boutique-review"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+test('Catalogue : cycle de vie contradictoire, dossier lecture seule, zéro validation',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'product',product_ref:'KPR-INCOHERENT',
+    candidate_ref:'KSC-INCOHERENT',name:'Fiche historique',
+    lifecycle_status:'candidate',is_active:true,
+    work_status:'activation_to_reconcile',operator_group:'correction',
+    active_media_count:0,source_media_count:1,media_status:'source_recoverable',
+    issues:['activation_to_reconcile','source_to_normalize','media_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-product-ref="KPR-INCOHERENT"]');
+  expect(row.textContent).toContain('Activation d’un candidat');
+  await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-INCOHERENT"]');
+  expect(panel.textContent).toContain('Activation d’une fiche encore marquée candidate');
+  expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+
+test('Catalogue unique : WATCH bloqué par catégorie économique — suggestion, validation et scan sans promotion',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'candidate',candidate_ref:'KSC-MISSING-ECON',
+    product_ref:null,name:'Adaptateur importé',candidate_state:'scanned',
+    sourcing_decision:'WATCH',source_category_review_required:true,
+    work_status:'sourcing_category_review',operator_group:'correction',
+    issues:['sourcing_economic_category_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const requests=[];
+  const fetchFn=jest.fn(async (url,options={})=>{
+    requests.push([url,options]);
+    const data=url.includes('/category-options')?{
+      categories:[
+        {key:'electronics',label:'Électronique'},
+        {key:'household',label:'Maison'}],
+      suggestions:[{key:'electronics',label:'Électronique',confidence:'high'}],
+      source:'customs_categories',
+    }:url.includes('/resolve-category')?{
+      ok:true,result:{category:{key:'electronics'},scan:{decision:'TEST'}}
+    }:payload;
+    return {ok:true,status:200,json:async()=>data};
+  });
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-candidate-ref="KSC-MISSING-ECON"]');
+  expect(row.textContent).toContain('Catégorie économique manquante');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-MISSING-ECON"]');
+  const action=panel.querySelector('[data-workspace-action="candidate-economic-category-review"]');
+  expect(action).not.toBeNull();
+  await action.click();
+  const select=panel.querySelector('[data-catalog-economic-category-choice]');
+  expect(select).not.toBeNull();
+  expect(select.children[0].textContent).toContain('Proposé');
+  const form=panel.querySelector('[data-catalog-economic-category-form]');
+  await form.listeners.submit[0]({preventDefault(){}});
+  const posts=requests.filter(([,o])=>o.method==='POST');
+  expect(posts).toHaveLength(1);
+  expect(posts[0][0]).toContain('/api/admin/workspaces/sourcing/candidates/KSC-MISSING-ECON/resolve-category');
+  expect(JSON.parse(posts[0][1].body)).toEqual({category_key:'electronics'});
+  expect(requests.filter(([url])=>url.includes('/promote')||url.includes('/approve'))).toHaveLength(0);
+});
+
+
+test('Catalogue : absence de suggestion économique ne sélectionne jamais une catégorie arbitraire',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'candidate',candidate_ref:'KSC-NO-SUGGESTION',product_ref:null,
+    name:'Objet ambigu',candidate_state:'scanned',sourcing_decision:'WATCH',
+    work_status:'sourcing_category_review',operator_group:'correction',
+    issues:['sourcing_economic_category_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async url=>({
+    ok:true,status:200,json:async()=>url.includes('/category-options')
+      ? {categories:[{key:'first',label:'Première catégorie'},{key:'second',label:'Seconde'}],
+         suggestions:[],source:'customs_categories'}:payload
+  }));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  await root.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-NO-SUGGESTION"]');
+  await panel.querySelector('[data-workspace-action="candidate-economic-category-review"]').click();
+  const select=panel.querySelector('[data-catalog-economic-category-choice]');
+  expect(select.value).toBe('');
+  expect(select.children[0].textContent).toContain('aucune suggestion fiable');
+  await panel.querySelector('[data-catalog-economic-category-form]')
+    .listeners.submit[0]({preventDefault(){}});
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });
