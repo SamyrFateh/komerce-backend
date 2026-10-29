@@ -37,13 +37,27 @@ async function main(){
      (SELECT count(*)::int FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n
        ON n.oid=c.relnamespace
       WHERE n.nspname='public' AND c.relkind IN ('r','p')) AS table_count`);
-   refuse(Number(current.rows[0].table_count)===0,'database_not_empty');
+   if(Number(current.rows[0].table_count)>0){
+     const marker=await client.query("SELECT to_regclass('public.cert_schema_bootstrap_marker') AS marker");
+     refuse(Boolean(marker.rows[0].marker),'existing_database_without_cert_marker');
+     const proof=await client.query('SELECT source_project,source_environment FROM public.cert_schema_bootstrap_marker LIMIT 1');
+     refuse(proof.rows[0]?.source_project===ONLY_PROJECT &&
+       proof.rows[0]?.source_environment===ONLY_ENV,'cert_marker_identity_mismatch');
+     console.log('CERT_SCHEMA_ALREADY_PREPARED '+JSON.stringify({isolated:true,migration351:true}));
+     return;
+   }
    await client.query('BEGIN');
    await client.query("SET LOCAL statement_timeout='120s'");
    try{
      await client.query(dump);
      // The schema snapshot predates the new business audit migration.
      await client.query(migration);
+     await client.query(`CREATE TABLE public.cert_schema_bootstrap_marker (
+       source_project text NOT NULL, source_environment text NOT NULL,
+       bootstrapped_at timestamptz NOT NULL DEFAULT now()
+     )`);
+     await client.query('INSERT INTO public.cert_schema_bootstrap_marker (source_project,source_environment) VALUES ($1,$2)',
+       [ONLY_PROJECT,ONLY_ENV]);
      const result=await client.query(`SELECT
        to_regclass('public.users') IS NOT NULL AS users,
        to_regclass('public.products') IS NOT NULL AS products,
