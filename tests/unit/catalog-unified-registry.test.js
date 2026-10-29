@@ -184,3 +184,37 @@ test('image de prévisualisation et média canonique sont des preuves différent
   expect(publicRow({ ...originalCandidate, active_media_count:0, source_media_count:1 }))
     .toMatchObject({media_status:'pre_handoff',issues:[]});
 });
+
+
+test('WATCH est une décision différée, jamais une tâche humaine de validation Catalogue', async () => {
+  const q=executor([{operator_group:'processing',count:1}],[
+    {...originalCandidate,candidate_state:'scanned',sourcing_decision:'WATCH',
+      work_status:'sourcing_deferred',operator_group:'processing'}
+  ]);
+  const result=await listUnified({limit:50},q);
+  expect(result.products[0]).toMatchObject({
+    work_status:'sourcing_deferred',operator_group:'processing',issues:[],
+  });
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("('WATCH','AVOID','LOSS')");
+  expect(sql).toContain("THEN 'sourcing_deferred'");
+  expect(sql).toContain("'sourcing_deferred') THEN 'processing'");
+});
+
+test('activation contradictoire et cycle de vie refusent tout statut approved implicite',async()=>{
+  for(const combo of [
+    {lifecycle_status:'candidate',is_active:true},
+    {lifecycle_status:'active',is_active:false},
+  ]) {
+    const row=publicRow({...canonical,...combo,work_status:'state_inconsistent',
+      operator_group:'correction'});
+    expect(row.issues[0]).toBe('state_inconsistent');
+    expect(row.operator_group).toBe('correction');
+    expect(row.work_status).not.toBe('catalog_approved');
+  }
+  const q=executor([],[]);
+  await listUnified({},q);
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("u.is_active=TRUE AND u.lifecycle_status IS DISTINCT FROM 'active'");
+  expect(sql).toContain("u.is_active=FALSE AND u.lifecycle_status='active'");
+});
