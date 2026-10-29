@@ -96,6 +96,7 @@
     "audit:logic:targeted": "node tools/business-auditor/v36-targeted-audit.js",
     "audit:logic:generated": "node tools/business-auditor/v37-generated-order-gate.js",
     "audit:logic:benchmark": "node tools/business-auditor/v38-benchmark-cli.js",
+    "audit:logic:release-check": "node tools/business-auditor/v39-release-readiness-cli.js",
     "audit:logic:unified:v34": "node tools/business-auditor/v34-delivery-engine.js",
     "audit:logic:unified:v33": "node tools/business-auditor/v33-unified-audit.js",
     "audit:logic:unified:v32": "node tools/business-auditor/v32-unified-catalog-auth.js",
