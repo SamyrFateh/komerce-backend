@@ -1156,3 +1156,30 @@ test('Catalogue unique : WATCH bloqué par catégorie économique — suggestion
   expect(JSON.parse(posts[0][1].body)).toEqual({category_key:'electronics'});
   expect(requests.filter(([url])=>url.includes('/promote')||url.includes('/approve'))).toHaveLength(0);
 });
+
+
+test('Catalogue : absence de suggestion économique ne sélectionne jamais une catégorie arbitraire',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'candidate',candidate_ref:'KSC-NO-SUGGESTION',product_ref:null,
+    name:'Objet ambigu',candidate_state:'scanned',sourcing_decision:'WATCH',
+    work_status:'sourcing_category_review',operator_group:'correction',
+    issues:['sourcing_economic_category_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async url=>({
+    ok:true,status:200,json:async()=>url.includes('/category-options')
+      ? {categories:[{key:'first',label:'Première catégorie'},{key:'second',label:'Seconde'}],
+         suggestions:[],source:'customs_categories'}:payload
+  }));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  await root.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-NO-SUGGESTION"]');
+  await panel.querySelector('[data-workspace-action="candidate-economic-category-review"]').click();
+  const select=panel.querySelector('[data-catalog-economic-category-choice]');
+  expect(select.value).toBe('');
+  expect(select.children[0].textContent).toContain('aucune suggestion fiable');
+  await panel.querySelector('[data-catalog-economic-category-form]')
+    .listeners.submit[0]({preventDefault(){}});
+  expect(fetchFn.mock.calls.filter(([,opts={})=>opts.method==='POST')).toHaveLength(0);
+});
