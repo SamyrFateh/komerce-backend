@@ -132,12 +132,13 @@ async function main() {
     assert.equal(deferred.work_status,'sourcing_deferred');
     assert.equal(deferred.operator_group,'processing');
     assert.deepEqual(deferred.issues,[]);
-    for (const ref of ['KPR-ACTIVE-CANDIDATE','KPR-INACTIVE-ACTIVE']) {
-      const conflict = result.products.find(r => r.product_ref === ref);
-      assert.equal(conflict.work_status, 'state_inconsistent');
-      assert.equal(conflict.operator_group, 'correction');
-      assert(conflict.issues.includes('state_inconsistent'));
-    }
+    const candidateActivated=result.products.find(r=>r.product_ref==='KPR-ACTIVE-CANDIDATE');
+    assert.equal(candidateActivated.work_status,'activation_to_reconcile');
+    assert(candidateActivated.issues.includes('activation_to_reconcile'));
+    const disabled=result.products.find(r=>r.product_ref==='KPR-INACTIVE-ACTIVE');
+    assert.notEqual(disabled.work_status,'activation_to_reconcile',
+      'a soft-deactivated previously approved lifecycle is not necessarily inconsistent');
+    assert(!disabled.issues.includes('activation_to_reconcile'));
     const filtered = await listUnified({ search: 'SC-001', status: 'validated' }, client);
     assert.equal(filtered.page.total, 1);
     assert.equal(filtered.products[0].product_ref, 'KPR-001');

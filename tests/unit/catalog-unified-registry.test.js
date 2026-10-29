@@ -201,20 +201,16 @@ test('WATCH est une décision différée, jamais une tâche humaine de validatio
   expect(sql).toContain("'sourcing_deferred') THEN 'processing'");
 });
 
-test('activation contradictoire et cycle de vie refusent tout statut approved implicite',async()=>{
-  for(const combo of [
-    {lifecycle_status:'candidate',is_active:true},
-    {lifecycle_status:'active',is_active:false},
-  ]) {
-    const row=publicRow({...canonical,...combo,work_status:'state_inconsistent',
-      operator_group:'correction'});
-    expect(row.issues[0]).toBe('state_inconsistent');
-    expect(row.operator_group).toBe('correction');
-    expect(row.work_status).not.toBe('catalog_approved');
-  }
+test('candidate actif est à réconcilier, désactivation soft d’un ancien actif reste autorisée',async()=>{
+  const row=publicRow({...canonical,lifecycle_status:'candidate',is_active:true,
+    work_status:'activation_to_reconcile',operator_group:'correction'});
+  expect(row.issues[0]).toBe('activation_to_reconcile');
+  const legitimatelyDisabled=publicRow({...canonical,lifecycle_status:'active',is_active:false,
+    work_status:'source_to_normalize',operator_group:'correction'});
+  expect(legitimatelyDisabled.issues).not.toContain('activation_to_reconcile');
   const q=executor([],[]);
   await listUnified({},q);
   const sql=q.query.mock.calls[1][0];
-  expect(sql).toContain("u.is_active=TRUE AND u.lifecycle_status IS DISTINCT FROM 'active'");
-  expect(sql).toContain("u.is_active=FALSE AND u.lifecycle_status='active'");
+  expect(sql).toContain("u.is_active=TRUE AND u.lifecycle_status='candidate'");
+  expect(sql).not.toContain("u.is_active=FALSE AND u.lifecycle_status='active'");
 });

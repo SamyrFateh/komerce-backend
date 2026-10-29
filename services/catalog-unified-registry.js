@@ -130,10 +130,11 @@ WITH picked_source AS (
      WHEN u.record_kind='candidate' AND u.candidate_state IN ('scanned','test_ready')
        THEN 'sourcing_review'
      WHEN u.record_kind='candidate' THEN 'processing'
-     WHEN u.is_active=TRUE AND u.lifecycle_status IS DISTINCT FROM 'active'
-       THEN 'state_inconsistent'
-     WHEN u.is_active=FALSE AND u.lifecycle_status='active'
-       THEN 'state_inconsistent'
+     -- Prior catalogue activation of a candidate requires lineage review.
+     -- A lifecycle='active' item with is_active=FALSE can be an intentional
+     -- soft deactivation (product-admin-service.deleteProduct).
+     WHEN u.is_active=TRUE AND u.lifecycle_status='candidate'
+       THEN 'activation_to_reconcile'
      WHEN u.lifecycle_status='rejected' THEN 'excluded'
      WHEN NOT u.source_ready THEN 'source_to_normalize'
      WHEN NOT u.taxonomy_ready THEN 'taxonomy_to_confirm'
@@ -166,7 +167,7 @@ function publicRow(row) {
   // owns source qualification; absence of a finished scan is not a human task.
   if (candidate && row.work_status === 'handoff_missing') issues.push('handoff_missing');
   if (!candidate) {
-    if (row.work_status === 'state_inconsistent') issues.push('state_inconsistent');
+    if (row.work_status === 'activation_to_reconcile') issues.push('state_inconsistent');
     if (!row.source_ready) issues.push('source_to_normalize');
     if (!row.taxonomy_ready) issues.push('taxonomy_to_confirm');
     if (!row.editorial_ready) issues.push('editorial_to_complete');

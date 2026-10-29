@@ -1484,9 +1484,9 @@
       return { kind: 'inspect', label: 'Examiner', status: 'À examiner' };
     }
     const issues = Array.isArray(row.issues) ? row.issues : [];
-    if (row.work_status === 'state_inconsistent') {
+    if (row.work_status === 'activation_to_reconcile') {
       return { kind: 'diagnose', label: 'Réconcilier l’état',
-        status: 'Cycle de vie incohérent' };
+        status: 'Activation à réconcilier' };
     }
     if (row.lifecycle_status === 'rejected' || row.work_status === 'rejected') {
       return { kind: 'detail', label: 'Examiner le rejet', status: 'Écarté · revoir' };
@@ -1747,7 +1747,7 @@
       return [{ code: 'market', label: 'Validation Catalogue acquise · vérifier chaque marché' }];
     }
     const known = [
-      ['state_inconsistent', 'Incohérence d’activation et de cycle de vie'],
+      ['activation_to_reconcile', 'Activation d’un candidat à justifier'],
       ['source_to_normalize', 'Source fournisseur à vérifier'],
       ['taxonomy_to_confirm', 'Classement boutique à corriger'],
       ['editorial_to_complete', 'Contenu français à compléter'],
@@ -2045,16 +2045,16 @@
       taxonomy_to_confirm: 'Classement Boutique à corriger',
       editorial_to_complete: 'Titre / description FR à préparer',
       media_missing: 'Médias canoniques absents',
-      state_inconsistent: 'Cycle de vie et activation contradictoires',
+      state_inconsistent: 'Activation d’un candidat sans preuve de validation',
       approval_pending: 'Validation Catalogue à réaliser',
     };
     issues.forEach(code => {
       if (labels[code]) list.appendChild(text(doc, 'li', '', labels[code]));
     });
     if (list.children.length) panel.appendChild(list);
-    if (row.work_status === 'state_inconsistent') {
+    if (row.work_status === 'activation_to_reconcile') {
       feedback.textContent =
-        'Anomalie d’intégrité : le cycle de vie et is_active ne concordent pas. ' +
+        'Activation d’une fiche encore marquée candidate : origine et autorisation à vérifier. ' +
         'Réconciliation avec la preuve d’origine indispensable. ' +
         'Aucune approbation ni correction de média proposée automatiquement.';
       return panel;

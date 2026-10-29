@@ -1095,17 +1095,17 @@ test('Catalogue : cycle de vie contradictoire, dossier lecture seule, zéro vali
   payload.products=[{record_kind:'product',product_ref:'KPR-INCOHERENT',
     candidate_ref:'KSC-INCOHERENT',name:'Fiche historique',
     lifecycle_status:'candidate',is_active:true,
-    work_status:'state_inconsistent',operator_group:'correction',
+    work_status:'activation_to_reconcile',operator_group:'correction',
     active_media_count:0,source_media_count:1,media_status:'source_recoverable',
-    issues:['state_inconsistent','source_to_normalize','media_missing']}];
+    issues:['activation_to_reconcile','source_to_normalize','media_missing']}];
   payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
   const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
   await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
   const row=root.querySelector('[data-product-ref="KPR-INCOHERENT"]');
-  expect(row.textContent).toContain('Incohérence d’activation');
+  expect(row.textContent).toContain('Activation d’un candidat');
   await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
   const panel=root.querySelector('[data-catalog-product-inspector="KPR-INCOHERENT"]');
-  expect(panel.textContent).toContain('Anomalie d’intégrité');
+  expect(panel.textContent).toContain('Activation d’une fiche encore marquée candidate');
   expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).toBeNull();
