@@ -1476,6 +1476,8 @@
         return { kind: 'inspect', label: 'Suivre', status: 'Préparation automatique' };
       if (row.operator_group === 'excluded')
         return { kind: 'inspect', label: 'Examiner', status: 'Écarté / archivé' };
+      if (row.work_status === 'handoff_missing')
+        return { kind: 'inspect', label: 'Signaler', status: 'Lien produit absent' };
       return { kind: 'inspect', label: 'Examiner', status: 'À examiner' };
     }
     const issues = Array.isArray(row.issues) ? row.issues : [];
@@ -1495,6 +1497,8 @@
         ? { kind: 'refinery', label: 'Compléter la fiche FR', status: 'Fiche FR à compléter' }
         : { kind: 'detail', label: 'Examiner la fiche FR', status: 'Fiche FR à vérifier' };
     }
+    if (row.work_status === 'approval_unproven')
+      return { kind: 'diagnose', label: 'Vérifier approbation', status: 'Preuve à réconcilier' };
     if (row.lifecycle_status === 'candidate' || row.work_status === 'approval_pending') {
       return { kind: 'refinery', label: 'Examiner pour validation', status: 'À valider en Raffinerie' };
     }
@@ -2083,7 +2087,9 @@
         category.className = 'kmc-catalog-category';
         category.setAttribute('data-label', 'Classification boutique');
         category.appendChild(text(doc, 'strong', '',
-          row.boutique_category_label || row.boutique_category_key || 'À classer'));
+          row.record_kind === 'candidate'
+            ? (row.supplier_category || 'Analyse automatique en cours')
+            : (row.boutique_category_label || row.boutique_category_key || 'À classer')));
         if (row.boutique_subcategory_label || row.boutique_subcategory_key) {
           category.appendChild(text(doc, 'small', '',
             row.boutique_subcategory_label || row.boutique_subcategory_key));
