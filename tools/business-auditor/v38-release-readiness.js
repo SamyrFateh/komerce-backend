@@ -5,8 +5,9 @@
  * A green historical CI suite alone is never a release certificate.
  */
 const {accepts:acceptsG3}=require('./v40-g3-proof-admission');
+const {accepts:acceptsInstall}=require('./v42-release-install-smoke');
 const fail=s=>{throw Error('G5_RELEASE_TOOL_ERROR: '+s)};
-function readiness({audit,benchmark,impactPlan=null,mainDiff=null}={}){
+function readiness({audit,benchmark,impactPlan=null,mainDiff=null,installEvidence=null}={}){
  if(!audit||audit.contract!=='komerce-unified-business-logic-auditor/v35'||
   !benchmark||benchmark.contract!=='komerce-retrospective-calibration/v38'||
   audit.sha!==benchmark.sha||!/^[a-f0-9]{40}$/.test(audit.sha||''))
@@ -47,8 +48,7 @@ function readiness({audit,benchmark,impactPlan=null,mainDiff=null}={}){
    mainDiff?.conflicts===0),
   'Current R&D stack must not merge wholesale; main comparison requires review');
  gate('G5_OPERATOR_DOCUMENTATION_AND_INSTALL',
-  Boolean(audit.releaseInstallVerified===true&&audit.releaseModesVerified===true&&
-   audit.releaseSafetyVerified===true),
+  acceptsInstall(installEvidence,audit.sha),
   'Full release smoke and operator instructions still unqualified');
  return {contract:'komerce-independent-business-auditor-release-readiness/v38',
   sha:audit.sha,proposedVersion:'4.0.0',
