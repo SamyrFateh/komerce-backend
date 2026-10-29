@@ -134,7 +134,7 @@ test('Suggestion : correspondance exacte fournisseur unique, jamais de classemen
 });
 test('Classement : formulaire accessible et pas de prompt/confirm avec indices', () => {
   const source=ui.slice(ui.indexOf('function openProductClassificationDialog'),
-    ui.indexOf('function renderProducts('));
+    ui.indexOf('function inspectorFrame('));
   expect(source).toContain("doc.createElement('dialog')");
   expect(source).toContain("doc.createElement('select')");
   expect(source).toContain("dialog.showModal()");
