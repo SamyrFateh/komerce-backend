@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 759
-- Files with full headers: 708
+- Scanned code files: 762
+- Files with full headers: 711
 - Files with lite headers: 51
-- Files with any headers: 759
+- Files with any headers: 762
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1884
-- Edges: 9369
-- DB tables: 213
-- Doctrines: 705
+- Graph nodes: 1896
+- Edges: 9399
+- DB tables: 214
+- Doctrines: 713
 - Impact areas: 207
-- Unresolved code edges: 906
+- Unresolved code edges: 908
 - Tables multi-écrivains directs (>=2): 90
 - Avertissements db-write / db-write-via en chevauchement: 11
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 21
 - business-rules: 1
-- catalog: 134
+- catalog: 136
 - checkout: 3
 - customs: 8
 - dashboard: 30
@@ -41,7 +41,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - economic-engine: 65
 - external-provider-contracts: 1
 - incident-management: 5
-- infrastructure: 24
+- infrastructure: 25
 - inventory: 2
 - local-stock: 4
 - logistics: 57
@@ -86,12 +86,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - external-adapter: 2
 - machine: 1
 - manual-test: 1
-- middleware: 25
+- middleware: 26
 - presenter: 1
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 443
+- service: 445
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -231,6 +231,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - middleware/auth.js — auth-auth (auth, high, full)
 - middleware/csrf-origin.js — auth-csrf-origin-guard (auth, high, full)
 - middleware/internal-static-guard.js — internal-static-path-guard (platform-ops, high, full)
+- middleware/recette-isolation-guard.js — isolated-recette-write-firewall (infrastructure, high, full)
 - middleware/require-catalog-global-authority.js — catalog-global-authorization-guard (catalog, high, full)
 - middleware/require-dashboard-global-authority.js — dashboard-global-authorization-guard (admin-dashboard, high, full)
 - middleware/require-decision-signal-global-authority.js — decision-signal-global-authorization-guard (decision-signals, high, full)
@@ -386,6 +387,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-enrichment.js — catalog-enrichment (catalog, high, full)
 - services/catalog-fr-quality.js — catalog-french-quality-contract (catalog, high, full)
 - services/catalog-market-exposure-service.js — catalog-market-exposure-service (catalog, high, full)
+- services/catalog-media-recovery.js — explicitly-authorized-canonical-media-recovery (catalog, high, full)
 - services/catalog-overrides.js — catalog-field-overrides (catalog, high, full)
 - services/catalog-product-detail.js — catalog-product-detail-contract (catalog, high, full)
 - services/catalog-product-mutation-service.js — catalog-product-mutation-service (catalog, high, full)
@@ -402,6 +404,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-publication-decision-audit.js — catalog-publication-decision-audit (catalog, high, full)
 - services/catalog-registry.js — catalog-global-registry-read (catalog, high, full)
 - services/catalog-taxonomy-audit.js — catalog-taxonomy-audit-boundary (catalog, high, full)
+- services/catalog-unified-registry.js — unified-catalog-operator-read (catalog, high, full)
 - services/catalog-workspace.js — canonical-catalog-workspace-service (catalog, high, full)
 - services/central-authority.js — central-authority-single-lookup (market-control-plane, high, full)
 - services/client-360.js — canonical-client-360-service (admin-dashboard, high, full)
@@ -776,6 +779,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/product-admin-service.js -> catalog_field_overrides
 - WRITE services/refinery-fr-recheck.js -> catalog_field_overrides
 - WRITE services/catalog-field-sync-application.js -> catalog_field_sync_state
+- WRITE services/catalog-media-recovery.js -> catalog_media_recovery_audit
 - WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media_visual_fr_reviews
 - WRITE services/catalog-promotion.js -> catalog_media
 - WRITE services/catalog-publication-decision-audit.js -> catalog_publication_decision_audit
@@ -838,7 +842,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/local-stock-service.js -> local_stock_allocations
 - WRITE services/local-stock-service.js -> local_stock
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
-- WRITE services/loyalty-service.js -> loyalty_rewards
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -855,6 +858,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/market-operator-provisioning.js -> assignment_memberships (via market-delegation-service)
 - WRITE services/market-provisioning-service.js -> assignment_memberships (via market-delegation-team-service)
 - WRITE services/finance-accounting-workspace.js -> cash_deposits (via cash-deposit-service)
+- WRITE services/catalog-media-recovery.js -> catalog_media (via catalog-promotion)
 - WRITE services/sourcing-candidate-actions.js -> catalog_media (via catalog-promotion)
 - WRITE services/sourcing-source-autopilot.js -> catalog_media (via sourcing-candidate-actions)
 - WRITE services/sourcing-workspace.js -> catalog_media (via sourcing-candidate-actions)
@@ -961,7 +965,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/pickup-collection-recorder.js -> order_status_history (via order-status-machine)
 - WRITE services/pickup-collection-service.js -> order_status_history (via order-status-machine)
 - WRITE services/pickup-collection-service.js -> order_status_history (via pickup-collection-recorder)
-- WRITE services/pickup-exceptional-collection-service.js -> order_status_history (via pickup-collection-recorder)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
