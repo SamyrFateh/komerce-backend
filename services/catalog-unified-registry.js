@@ -208,7 +208,9 @@ async function listUnified(query = {}, executor = db) {
       '\nORDER BY CASE operator_group WHEN \'correction\' THEN 0 WHEN \'review\' THEN 1' +
       ' WHEN \'processing\' THEN 2 WHEN \'validated\' THEN 3 ELSE 4 END,' +
       ' updated_at DESC NULLS LAST, COALESCE(product_ref,candidate_ref) ASC' +
-      ' LIMIT 
+      ' LIMIT $' + (values.length + 1) + ' OFFSET $' + (values.length + 2),
+      [...values, limit, offset]),
+  ]);
   const groups = { correction: 0, review: 0, validated: 0, processing: 0, excluded: 0 };
   for (const item of counts.rows) {
     if (Object.prototype.hasOwnProperty.call(groups, item.operator_group))
