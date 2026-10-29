@@ -1,7 +1,7 @@
 {
   "version": "ARI-1.0",
   "contractVersion": "ARC-1.0",
-  "generatedAt": "2026-10-23",
+  "generatedAt": "2026-10-28",
   "policy": {
     "principle": "1 measured deviation = 1 stable remediation code = 1 canonical owner = 1 allowed repair path",
     "baselineRule": "never increase an allowlist/baseline only to make a gate pass",
@@ -9,7 +9,7 @@
   },
   "backend": {
     "measuredRows": 8,
-    "openDebtCount": 25,
+    "openDebtCount": 35,
     "reviewedExceptionCount": 11,
     "healthyMeasurementCount": 2,
     "measured": [
@@ -229,7 +229,7 @@
       {
         "rule": "CONTRACT",
         "label": "Réponses API 200 sans forme prouvée",
-        "count": 25,
+        "count": 35,
         "entries": [
           "UNKNOWN response #1",
           "UNKNOWN response #2",
@@ -255,7 +255,17 @@
           "UNKNOWN response #22",
           "UNKNOWN response #23",
           "UNKNOWN response #24",
-          "UNKNOWN response #25"
+          "UNKNOWN response #25",
+          "UNKNOWN response #26",
+          "UNKNOWN response #27",
+          "UNKNOWN response #28",
+          "UNKNOWN response #29",
+          "UNKNOWN response #30",
+          "UNKNOWN response #31",
+          "UNKNOWN response #32",
+          "UNKNOWN response #33",
+          "UNKNOWN response #34",
+          "UNKNOWN response #35"
         ],
         "lot": "Fermer chaque UNKNOWN par test, lecture de route/service fiable ou contrat explicite",
         "note": "Source : docs/contract/openapi.json → x-contract-debt.unknown_responses",
@@ -298,7 +308,17 @@
               "UNKNOWN response #22",
               "UNKNOWN response #23",
               "UNKNOWN response #24",
-              "UNKNOWN response #25"
+              "UNKNOWN response #25",
+              "UNKNOWN response #26",
+              "UNKNOWN response #27",
+              "UNKNOWN response #28",
+              "UNKNOWN response #29",
+              "UNKNOWN response #30",
+              "UNKNOWN response #31",
+              "UNKNOWN response #32",
+              "UNKNOWN response #33",
+              "UNKNOWN response #34",
+              "UNKNOWN response #35"
             ]
           }
         }

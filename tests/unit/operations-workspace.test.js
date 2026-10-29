@@ -52,3 +52,12 @@ describe('L9c — gestes Hub réservés à Hub live', () => {
     expect(src).toContain('/admin/hub-live?view=execute&market=${encodeURIComponent(context.marketCode)}');
   });
 });
+
+test('Catalogue global : filtres accessibles et panneau taxonomie secondaire sur mobile', () => {
+  expect(css).toContain('.kmc-catalog-filter-bar');
+  expect(css).toContain('.kmc-catalog-filter input');
+  expect(css).toContain('.kmc-catalog-filter select');
+  expect(css).toContain('.kmc-catalog-taxonomy-panel summary');
+  expect(css).toContain('@media (max-width: 650px)');
+  expect(css).toContain('.kmc-catalog-filter { flex-basis: 100%; }');
+});

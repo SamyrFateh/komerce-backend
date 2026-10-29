@@ -49,7 +49,7 @@
   }
 
   function reviewProducts(payload) {
-    return activeProducts(payload).filter(row => row.needs_review);
+    return (Array.isArray(payload?.products) ? payload.products : []).filter(row => (row.issues || []).length);
   }
 
   function decisionItems(payload) {
@@ -59,29 +59,19 @@
     const approval = Array.isArray(payload && payload.approval) ? payload.approval : [];
     const review = reviewProducts(payload);
 
-    if (review.length > 0 || Number(summary.needs_review) > 0) {
+    if (review.length > 0) {
       items.push({
         key: 'needs-review',
-        label: 'Produits à relire',
-        helper: 'Références publiées signalées par la source canonique',
-        value: String(review.length || Number(summary.needs_review)),
+        label: 'Fiches à compléter sur cette page',
+        helper: 'Chaque écart possède une action de correction',
+        value: String(review.length),
         tone: 'warning',
         icon: 'i',
-        href: '#catalog-curation',
+        href: '#catalog-products',
         actionLabel: 'Voir les produits →',
       });
     }
 
-    if (curation.at_cap) {
-      items.push({
-        key: 'catalog-cap',
-        label: 'Cap catalogue atteint',
-        helper: 'Toute nouvelle entrée doit remplacer une référence sortie',
-        value: `${curation.published_products || 0}/${curation.catalog_cap_mvp || 0}`,
-        tone: 'critical',
-        icon: '!',
-      });
-    }
 
     return items.slice(0, 4);
   }
@@ -90,11 +80,12 @@
     const summary = payload && payload.summary ? payload.summary : {};
     const curation = payload && payload.curation ? payload.curation : {};
     return [
-      { key: 'approved', label: 'Approuvés vente', value: String(Number(summary.commercial_approved) || 0), tone: 'neutral' },
+      { key: 'registry', label: 'Produits remis (filtre)', value: String(Number(summary.registry_total) || 0), tone: 'neutral' },
+      { key: 'approved', label: 'Assortiment approuvé affiché', value: String(Number(summary.commercial_approved) || 0), tone: 'neutral' },
       { key: 'approval', label: 'À curater', value: String(Number(summary.approval_pending) || 0), tone: Number(summary.approval_pending) > 0 ? 'warning' : 'neutral' },
       { key: 'review', label: 'À relire', value: String(Number(summary.needs_review) || 0), tone: Number(summary.needs_review) > 0 ? 'warning' : 'neutral' },
-      { key: 'lots', label: 'KIR clos contributeurs', value: String(Number(summary.commercial_closed_lots) || 0), tone: 'neutral' },
-      { key: 'markets', label: 'Marchés servis', value: String(Number(summary.commercial_markets) || 0), tone: 'neutral' },
+      { key: 'lots', label: 'KIR clos affichés', value: String(Number(summary.commercial_closed_lots) || 0), tone: 'neutral' },
+      { key: 'markets', label: 'Marchés affichés', value: String(Number(summary.commercial_markets) || 0), tone: 'neutral' },
     ];
   }
 
@@ -110,11 +101,11 @@
   }
 
   function productItems(payload) {
-    return activeProducts(payload).map(row => ({
+    return (Array.isArray(payload?.products) ? payload.products : []).map(row => ({
       title: row.name || row.product_ref || 'Produit',
-      helper: [row.category, row.subcategory, row.content_source].filter(Boolean).join(' · '),
-      value: row.needs_review ? 'À relire' : 'Approuvé vente',
-      tone: row.needs_review ? 'warning' : 'positive',
+      helper: [row.supplier_name, row.boutique_category_label, row.boutique_subcategory_label].filter(Boolean).join(' · '),
+      value: (row.issues || []).length ? 'À compléter' : 'Fiche consultable',
+      tone: (row.issues || []).length ? 'warning' : 'positive',
       href: row.product_ref ? `/admin/products/${encodeURIComponent(row.product_ref)}` : undefined,
       actionLabel: 'Product 360 →',
     }));
@@ -148,6 +139,9 @@
     const ui = options.ui;
     const search = options.location?.search ?? globalThis.location?.search ?? '';
     const refinery = new URLSearchParams(search).get('view') === 'refinery';
+    // Le Catalogue montre directement son registre actionnable.
+    // Conserver le hero et l'aide guidée uniquement pour la Raffinerie.
+    if (!refinery) return null;
     const host = doc.createElement('section');
     host.className = 'kmc-dashboard kmc-decision-dashboard kmc-catalog-decision-overview';
     host.setAttribute('data-dashboard-id', refinery ? 'refinery' : 'catalog');
@@ -158,11 +152,12 @@
     header.className = 'kmc-dashboard-header';
     header.setAttribute('data-dashboard-role', 'hero');
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', refinery ? 'RAFFINERIE' : 'CATALOGUE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', refinery ? 'Produits à finaliser' : 'Catalogue commercial'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', refinery ? 'Préparer les fiches, définir les prix et valider avant publication.' : 'Produits approuvés, catégories et disponibilité commerciale.'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', refinery ? 'Produits à finaliser' : 'Catalogue global'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', refinery ? 'Préparer les fiches, définir les prix et valider avant publication.' : 'Produits remis par la Raffinerie : retrouver, classer, compléter et valider.'));
     host.appendChild(header);
 
-    const decisions = refinery ? [] : decisionItems(payload);
+    const isRegistry = !refinery && !['assortment', 'taxonomy'].includes(new URLSearchParams(search).get('tab'));
+    const decisions = isRegistry ? decisionItems(payload) : [];
     if (decisions.length) {
       const decisionHost = doc.createElement('div');
       decisionHost.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';

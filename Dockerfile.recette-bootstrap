@@ -1,0 +1,6 @@
+FROM postgres:18
+COPY docs/db/railway-live-schema.sql /recette/schema.sql
+COPY migrations/351_catalog_media_recovery_audit.sql /recette/migration-351.sql
+COPY scripts/recette/bootstrap-isolated-pg.sh /recette/bootstrap.sh
+USER postgres
+ENTRYPOINT ["bash", "/recette/bootstrap.sh"]

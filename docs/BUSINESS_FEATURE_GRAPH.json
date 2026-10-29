@@ -1671,6 +1671,13 @@
       {
         "feature": "catalog",
         "category": "scripts",
+        "declared": "scripts/cj-semantic-bulk-200-isolated.js",
+        "resolvedPath": "scripts/cj-semantic-bulk-200-isolated.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
         "declared": "scripts/catalog-e2e-700-acceptance.js",
         "resolvedPath": "scripts/catalog-e2e-700-acceptance.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1867,6 +1874,20 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/refinery-fr-recheck.js",
+        "resolvedPath": "services/refinery-fr-recheck.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/refinery-worklist.js",
+        "resolvedPath": "services/refinery-worklist.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/catalog-fr-quality.js",
         "resolvedPath": "services/catalog-fr-quality.js",
         "status": "resolved-in-technical-graph"
@@ -1932,6 +1953,13 @@
         "category": "services",
         "declared": "services/catalog-candidate-product-service.js",
         "resolvedPath": "services/catalog-candidate-product-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/commercial-taxonomy-semantics.js",
+        "resolvedPath": "services/commercial-taxonomy-semantics.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -2275,6 +2303,13 @@
         "category": "services",
         "declared": "services/catalog-workspace.js",
         "resolvedPath": "services/catalog-workspace.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-registry.js",
+        "resolvedPath": "services/catalog-registry.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -3687,6 +3722,13 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/commercial-taxonomy-semantics.test.js",
+        "resolvedPath": "tests/unit/commercial-taxonomy-semantics.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/catalog-product-mutation-service.test.js",
         "resolvedPath": "tests/unit/catalog-product-mutation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4305,6 +4347,13 @@
         "category": "tests",
         "declared": "tests/unit/catalog-workspace.test.js",
         "resolvedPath": "tests/unit/catalog-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-registry.test.js",
+        "resolvedPath": "tests/unit/catalog-registry.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5605,6 +5654,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/pricing-atelier-views.css",
+        "resolvedPath": "public/dashboards/canonical/css/pricing-atelier-views.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/css/pricing-equilibrium-panel.css",
         "resolvedPath": "public/dashboards/canonical/css/pricing-equilibrium-panel.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5670,6 +5726,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/pricing-economic-cockpit.js",
         "resolvedPath": "public/dashboards/canonical/js/pricing-economic-cockpit.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/pricing-atelier-views.js",
+        "resolvedPath": "public/dashboards/canonical/js/pricing-atelier-views.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6958,6 +7021,13 @@
         "category": "tests",
         "declared": "tests/unit/canonical-pricing-economic-cockpit.test.js",
         "resolvedPath": "tests/unit/canonical-pricing-economic-cockpit.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-pricing-atelier-views.test.js",
+        "resolvedPath": "tests/unit/canonical-pricing-atelier-views.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9938,6 +10008,34 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
+        "declared": "scripts/audit-logic.js",
+        "resolvedPath": "scripts/audit-logic.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/audits/evaluate-provenance-invariant.js",
+        "resolvedPath": "scripts/audits/evaluate-provenance-invariant.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/lib/logic-detectors.js",
+        "resolvedPath": "scripts/lib/logic-detectors.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/lib/logic-data-detectors.js",
+        "resolvedPath": "scripts/lib/logic-data-detectors.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
         "declared": "scripts/audit-komerce-arch-headers.js",
         "resolvedPath": "scripts/audit-komerce-arch-headers.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11597,6 +11695,48 @@
       {
         "feature": "infrastructure",
         "category": "tests",
+        "declared": "tests/unit/audit-logic.test.js",
+        "resolvedPath": "tests/unit/audit-logic.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/logic-detectors.test.js",
+        "resolvedPath": "tests/unit/logic-detectors.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-provenance-invariant.test.js",
+        "resolvedPath": "tests/unit/sourcing-provenance-invariant.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/logic-data-detectors.test.js",
+        "resolvedPath": "tests/unit/logic-data-detectors.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/feature-invariant-check.test.js",
+        "resolvedPath": "tests/unit/feature-invariant-check.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
         "declared": "tests/unit/impact-check-security-conventions.test.js",
         "resolvedPath": "tests/unit/impact-check-security-conventions.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13165,6 +13305,27 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/unit/scan-collection-guard.test.js",
+        "resolvedPath": "tests/unit/scan-collection-guard.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/scan-order-coverage-guard.test.js",
+        "resolvedPath": "tests/unit/scan-order-coverage-guard.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/e2e-api/logistics.order-coverage-rc2.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/logistics.order-coverage-rc2.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/unit/parcel-operations.test.js",
         "resolvedPath": "tests/unit/parcel-operations.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13417,6 +13578,13 @@
       {
         "feature": "market",
         "category": "migrations",
+        "declared": "migrations/319_fx_public_reference_quotes.sql",
+        "resolvedPath": "migrations/319_fx_public_reference_quotes.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "migrations",
         "declared": "migrations/135_markets_foundation.sql",
         "resolvedPath": "migrations/135_markets_foundation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13489,6 +13657,13 @@
         "category": "services",
         "declared": "services/fx-chain-service.js",
         "resolvedPath": "services/fx-chain-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market",
+        "category": "services",
+        "declared": "services/fx-public-reference-feed.js",
+        "resolvedPath": "services/fx-public-reference-feed.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -13622,6 +13797,20 @@
         "category": "tests",
         "declared": "tests/unit/fx-chain-service.test.js",
         "resolvedPath": "tests/unit/fx-chain-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/fx-public-reference-feed.test.js",
+        "resolvedPath": "tests/unit/fx-public-reference-feed.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/fx-public-reference-postgres.test.js",
+        "resolvedPath": "tests/integration/fx-public-reference-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15314,6 +15503,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/dashboard-rct1-orders.js",
+        "resolvedPath": "services/dashboard-rct1-orders.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/order-checkout-item-resolution.js",
         "resolvedPath": "services/order-checkout-item-resolution.js",
         "status": "resolved-in-technical-graph"
@@ -16261,6 +16457,13 @@
         "category": "tests",
         "declared": "tests/unit/payment-paypal.test.js",
         "resolvedPath": "tests/unit/payment-paypal.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/payment-paypal-known-logic-bugs.test.js",
+        "resolvedPath": "tests/unit/payment-paypal-known-logic-bugs.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18029,6 +18232,27 @@
       },
       {
         "feature": "refunds",
+        "category": "services",
+        "declared": "services/refund-intent-ledger.js",
+        "resolvedPath": "services/refund-intent-ledger.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
+        "declared": "services/refund-evidence-verifier.js",
+        "resolvedPath": "services/refund-evidence-verifier.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
+        "declared": "services/refund-intent-reconciliation.js",
+        "resolvedPath": "services/refund-intent-reconciliation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
         "category": "tests",
         "declared": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
         "resolvedPath": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
@@ -18046,6 +18270,62 @@
         "category": "tests",
         "declared": "tests/unit/refund-service.test.js",
         "resolvedPath": "tests/unit/refund-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/refund-intent-ledger.test.js",
+        "resolvedPath": "tests/unit/refund-intent-ledger.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/refund-evidence-verifier.test.js",
+        "resolvedPath": "tests/unit/refund-evidence-verifier.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/refund-intent-reconciliation.test.js",
+        "resolvedPath": "tests/unit/refund-intent-reconciliation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.intents-reconciliation.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.intents-reconciliation.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/refund-stripe-txn-known-risk.test.js",
+        "resolvedPath": "tests/unit/refund-stripe-txn-known-risk.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18998,6 +19278,13 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-candidate-import-service.test.js",
         "resolvedPath": "tests/unit/sourcing-candidate-import-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/integration/sourcing-manual-provenance-real-db.test.js",
+        "resolvedPath": "tests/integration/sourcing-manual-provenance-real-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -28158,6 +28445,12 @@
       },
       {
         "from": "orders",
+        "to": "dashboard",
+        "raw": "dashboard (RCT1 canonical projection reuses dashboard-orders LIFECYCLE read-only contract; service dashboard-rct1-orders.js -> services/dashboard-orders.js)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
         "to": "market-control-plane",
         "raw": "market-control-plane (preuve de livrabilité du marché : assertMarketDeliverable, garde checkout Lot B ; refus 409 MARKET_DELIVERY_NOT_PROVEN sans preuve)",
         "resolved": true
@@ -32649,6 +32942,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "scripts/cj-semantic-bulk-200-isolated.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "scripts/catalog-e2e-700-acceptance.js",
                 "targetFile": "db.js"
               },
@@ -32729,6 +33026,14 @@
                 "targetFile": "utils/certification-accounting.js"
               },
               {
+                "sourceFileId": "services/refinery-fr-recheck.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/refinery-worklist.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/product-admin-service.js",
                 "targetFile": "utils/logger.js"
               },
@@ -32778,6 +33083,10 @@
               },
               {
                 "sourceFileId": "services/catalog-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/catalog-registry.js",
                 "targetFile": "db.js"
               },
               {
@@ -35379,6 +35688,10 @@
                 "targetFile": "routes/admin/delete-order-cascade.js"
               },
               {
+                "sourceFileId": "routes/admin-dashboard-market.js",
+                "targetFile": "services/dashboard-rct1-orders.js"
+              },
+              {
                 "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -37685,6 +37998,10 @@
               {
                 "sourceFileId": "utils/rates.js",
                 "targetFile": "services/fx-authority.js"
+              },
+              {
+                "sourceFileId": "bootstrap/crons.js",
+                "targetFile": "services/fx-public-reference-feed.js"
               }
             ]
           }
@@ -38160,6 +38477,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/inventory-service.js",
+                "targetFile": "services/parcel-item-mutation-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/inventory-service.test.js",
                 "targetFile": "services/parcel-item-mutation-service.js"
               }
             ]
@@ -38926,6 +39247,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/scan-collection-guard.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/parcel-operations.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
@@ -39203,6 +39528,10 @@
               },
               {
                 "sourceFileId": "tests/unit/scan-engine.test.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/logistics.order-coverage-rc2.e2e.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
               {
@@ -39538,6 +39867,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/fx-public-reference-feed.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/fx-authority.js",
                 "targetFile": "db.js"
               },
@@ -39587,6 +39920,10 @@
               },
               {
                 "sourceFileId": "tests/integration/order-fx-snapshot-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/fx-public-reference-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -41197,6 +41534,26 @@
       },
       {
         "from": "orders",
+        "to": "dashboard",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/dashboard-rct1-orders.js",
+                "targetFile": "services/dashboard-orders.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-rct1-orders.js",
+                "targetFile": "services/dashboard-metrics/_helpers.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
         "to": "decision-signals",
         "channels": [
           {
@@ -41380,6 +41737,10 @@
               {
                 "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-rct1-orders.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "services/order-checkout-persistence.js",
@@ -43060,6 +43421,14 @@
               },
               {
                 "sourceFileId": "tests/unit/payment-paypal.test.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/payment-paypal-known-logic-bugs.test.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/payment-paypal-known-logic-bugs.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
               {
@@ -45109,6 +45478,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/refund-intent-ledger.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/refund-intent-reconciliation.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/refund-service.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               }
@@ -45877,6 +46254,10 @@
                 "targetFile": "services/suppliers/catalog-import-orchestrator.js"
               },
               {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/catalog-candidate-product-service.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-source-autopilot.js",
                 "targetFile": "services/sourcing-import-dispatch.js"
               },
@@ -45935,6 +46316,10 @@
               {
                 "sourceFileId": "tests/unit/sourcing-candidate-actions.test.js",
                 "targetFile": "services/catalog-candidate-product-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sourcing-candidate-actions.test.js",
+                "targetFile": "services/catalog-promotion.js"
               },
               {
                 "sourceFileId": "tests/unit/sourcing-import-dispatch-connection.test.js",
@@ -46212,6 +46597,14 @@
               {
                 "sourceFileId": "tests/integration/sourcing-candidate-arbitration-real-db.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/sourcing-manual-provenance-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/sourcing-manual-provenance-real-db.test.js",
+                "targetFile": "scripts/audits/evaluate-provenance-invariant.js"
               },
               {
                 "sourceFileId": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
@@ -46704,6 +47097,11 @@
           "raw": "path.join(ROOT, WORKSPACE"
         },
         {
+          "sourceFileId": "tests/unit/canonical-pricing-atelier-views.test.js",
+          "kind": "require",
+          "raw": "path.join(CANONICAL, 'js', 'pricing-atelier-views.js'"
+        },
+        {
           "sourceFileId": "tests/unit/canonical-action-center-boundary.test.js",
           "kind": "require",
           "raw": "path.join(CANONICAL, 'js', 'action-center.js'"
@@ -46751,7 +47149,12 @@
         {
           "sourceFileId": "scripts/feature-invariant-check.js",
           "kind": "require",
-          "raw": "path.join(FEAT_DIR, fname"
+          "raw": "path.join(root, 'jest.unit.config.js'"
+        },
+        {
+          "sourceFileId": "scripts/feature-invariant-check.js",
+          "kind": "require",
+          "raw": "path.join(dir, fname"
         },
         {
           "sourceFileId": "scripts/feature-memo.js",
@@ -46834,7 +47237,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2134
+        "filesObserved": 2173
       },
       "boutique": {
         "filesObserved": 214,
@@ -49558,6 +49961,32 @@
       "lifecycleOwner": "market",
       "resolution": "declared-table-owner"
     },
+    "fx_rate_observations": {
+      "writers": [
+        {
+          "feature": "market",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market",
+      "resolution": "declared-table-owner"
+    },
+    "fx_public_reference_quotes": {
+      "writers": [
+        {
+          "feature": "market",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "market",
+      "resolution": "declared-table-owner"
+    },
     "product_market_price_draft_events": {
       "writers": [
         {
@@ -50154,6 +50583,19 @@
       "lifecycleOwner": "purchasing",
       "resolution": "declared-table-owner"
     },
+    "refund_execution_intents": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
     "market_settlement_events": {
       "writers": [
         {
@@ -50468,8 +50910,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 646,
-        "technicalNodesOwned": 646,
+        "technicalNodesTotal": 655,
+        "technicalNodesOwned": 655,
         "technicalOrphans": 0
       },
       "dash": {
@@ -50888,7 +51330,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "27 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
+        "msg": "29 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",

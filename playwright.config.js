@@ -32,6 +32,7 @@ const DASHBOARD_SPECS = [
   'import-runtime-source-registry',
   'purchasing-workspace',
   'pricing-atelier-mock',
+  'pricing-atelier-views',
   'hub-live-execution',
   'dashboard-role-matrix',
   'order-360-lineage',
