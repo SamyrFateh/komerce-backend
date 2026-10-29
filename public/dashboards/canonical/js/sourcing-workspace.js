@@ -185,6 +185,116 @@
     return wrap;
   }
 
+  // Dialogue contextualisé, sans alert/prompt et sans modifier les contrats API.
+  function sourcingDialog(context, doc, row, mode, config = {}) {
+    return new Promise(resolve => {
+      const overlay = doc.createElement('div');
+      overlay.className = 'kmc-sourcing-dialog-overlay';
+      const panel = doc.createElement('section');
+      panel.className = 'kmc-sourcing-dialog';
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+      panel.setAttribute('aria-label', mode === 'classify' ? 'Classer le candidat' : 'Corriger le candidat');
+      const title = text(doc, 'h2', '', mode === 'classify' ? 'Classement boutique' : 'Correction du candidat');
+      panel.appendChild(title);
+      panel.appendChild(text(doc, 'p', 'kmc-sourcing-dialog-context',
+        `${row.candidate_ref || 'Candidat'} · ${row.product_name || 'Produit'}`));
+      const form = doc.createElement('form');
+      form.className = 'kmc-sourcing-dialog-form';
+      const fields = {};
+      const field = (label, name, initial, type = 'text') => {
+        const wrap = doc.createElement('label');
+        wrap.appendChild(text(doc, 'span', '', label));
+        const input = doc.createElement('input');
+        input.name = name;
+        input.type = type;
+        input.value = initial == null ? '' : String(initial);
+        if (type === 'number') input.step = 'any';
+        wrap.appendChild(input);
+        form.appendChild(wrap);
+        fields[name] = input;
+        return input;
+      };
+      if (mode === 'classify') {
+        panel.appendChild(text(doc, 'p', 'kmc-sourcing-dialog-context',
+          `Catégorie fournisseur : ${config.supplierCategory}`));
+        const wrap = doc.createElement('label');
+        wrap.appendChild(text(doc, 'span', '', 'Catégorie et sous-catégorie Boutique'));
+        const select = doc.createElement('select');
+        select.name = 'classification';
+        (config.options || []).forEach((option, index) => {
+          const choice = doc.createElement('option');
+          choice.value = String(index);
+          choice.textContent = `${option.category_label || option.category} › ${option.subcategory_label || option.subcategory}`;
+          select.appendChild(choice);
+        });
+        wrap.appendChild(select);
+        form.appendChild(wrap);
+        fields.classification = select;
+        if (config.suggested) form.appendChild(text(doc, 'p', 'kmc-sourcing-dialog-hint',
+          'Suggestion préselectionnée — vérifier avant validation.'));
+      } else {
+        field('Poids estimé (kg)', 'weight', row.estimated_weight_kg, 'number');
+        field(`Prix d’achat (${row.currency || 'AED'})`, 'purchase', row.purchase_price, 'number');
+        field('Devise', 'currency', row.currency || 'AED');
+      }
+      const feedback = text(doc, 'p', 'kmc-sourcing-dialog-error', '');
+      feedback.setAttribute('role', 'alert');
+      form.appendChild(feedback);
+      const buttons = doc.createElement('div');
+      buttons.className = 'kmc-sourcing-dialog-actions';
+      const cancel = text(doc, 'button', 'kmc-workspace-action', 'Annuler');
+      cancel.type = 'button';
+      const submit = text(doc, 'button', 'kmc-workspace-action is-primary', 'Valider');
+      submit.type = 'submit';
+      buttons.append(cancel, submit);
+      form.appendChild(buttons);
+      panel.appendChild(form);
+      overlay.appendChild(panel);
+      const previousFocus = doc.activeElement;
+      const close = value => {
+        overlay.remove();
+        if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+        resolve(value);
+      };
+      cancel.addEventListener('click', () => close(null));
+      overlay.addEventListener('click', event => { if (event.target === overlay) close(null); });
+      overlay.addEventListener('keydown', event => {
+        if (event.key === 'Escape') { event.preventDefault(); close(null); }
+        if (event.key === 'Tab') {
+          const all = [fields.classification || fields.weight, fields.purchase, fields.currency, cancel, submit].filter(Boolean);
+          const first = all[0], last = all[all.length - 1];
+          if (event.shiftKey && doc.activeElement === first) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && doc.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
+      });
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        if (mode === 'classify') {
+          const selected = (config.options || [])[Number(fields.classification.value)];
+          if (!selected) { feedback.textContent = 'Sélectionnez une catégorie valide.'; return; }
+          close({ category: selected.category, subcategory: selected.subcategory });
+          return;
+        }
+        const weightRaw = fields.weight.value.trim();
+        const purchaseRaw = fields.purchase.value.trim();
+        const currency = fields.currency.value.trim().toUpperCase();
+        if (!currency || (weightRaw && (!Number.isFinite(Number(weightRaw)) || Number(weightRaw) < 0))
+          || (purchaseRaw && (!Number.isFinite(Number(purchaseRaw)) || Number(purchaseRaw) < 0))) {
+          feedback.textContent = 'Vérifiez la devise, le poids et le prix.';
+          return;
+        }
+        close({
+          ...(weightRaw ? { estimated_weight_kg: Number(weightRaw) } : {}),
+          ...(purchaseRaw ? { purchase_price: Number(purchaseRaw) } : {}),
+          currency,
+        });
+      });
+      context.root.appendChild(overlay);
+      (fields.classification || fields.weight).focus();
+    });
+  }
+
   function renderCandidates(rootNode, ui, doc, payload, context) {
     const slot = createSection(
       rootNode,
@@ -251,25 +361,12 @@
             ? [suggestion, ...candidates.filter(x => x.category !== suggestion.category || x.subcategory !== suggestion.subcategory)]
             : candidates;
           if (!ordered.length) throw new Error('Aucune catégorie boutique disponible.');
-          const sample = ordered.map((x,index) =>
-            `${index+1}. ${x.category_label || x.category} › ${x.subcategory_label || x.subcategory}`).join('\n');
-          let chosen = null;
-          if (suggestion && context.confirm(
-            `Catégorie fournisseur : ${options.supplier_category || '—'}\n\n` +
-            `Proposition Komerce : ${suggestion.category_label || suggestion.category} › ` +
-            `${suggestion.subcategory_label || suggestion.subcategory}\n\nValider ?`)) {
-            chosen = suggestion;
-          } else {
-            const reply = context.prompt(
-              `Catégorie fournisseur : ${options.supplier_category || '—'}\n\nChoisir le numéro de la catégorie BOUTIQUE :\n${sample}`,
-              '1');
-            if (reply == null) return;
-            const index = Number(reply);
-            if (!Number.isInteger(index) || index < 1 || index > ordered.length) {
-              throw new Error('Sélectionnez un numéro de catégorie valide.');
-            }
-            chosen = ordered[index-1];
-          }
+          const chosen = await sourcingDialog(context, doc, row, 'classify', {
+            options: ordered,
+            supplierCategory: options.supplier_category || '—',
+            suggested: Boolean(suggestion),
+          });
+          if (!chosen) return;
           await runAction(context, classify, {
             url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/confirm-boutique-category`,
             body: { category:chosen.category, subcategory:chosen.subcategory },
@@ -281,20 +378,12 @@
       actions.appendChild(classify);
 
       const edit = makeButton(doc, 'Corriger', 'update-candidate', true);
-      edit.addEventListener('click', () => {
-        const weight = context.prompt('Poids estimé kg', row.estimated_weight_kg == null ? '' : String(row.estimated_weight_kg));
-        if (weight == null) return;
-        const purchase = context.prompt(`Prix achat · ${row.currency || 'AED'}`, row.purchase_price == null ? '' : String(row.purchase_price));
-        if (purchase == null) return;
-        const currency = context.prompt('Devise (AED/EUR/USD/KMF)', row.currency || 'AED');
-        if (currency == null) return;
-        runAction(context, edit, {
+      edit.addEventListener('click', async () => {
+        const values = await sourcingDialog(context, doc, row, 'edit');
+        if (!values) return;
+        await runAction(context, edit, {
           url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/update`,
-          body: {
-            ...(weight.trim() ? { estimated_weight_kg: Number(weight) } : {}),
-            ...(purchase.trim() ? { purchase_price: Number(purchase) } : {}),
-            currency: currency.trim().toUpperCase(),
-          },
+          body: values,
           successMessage: `${row.candidate_ref} corrigé.`,
         });
       });
@@ -340,6 +429,29 @@
         actions.appendChild(reject);
       }
 
+      // Le choix de priorité reste visuel : aucune éligibilité métier inventée.
+      // Une promotion reste accessible uniquement après décision explicite.
+      const available = Array.from(actions.children);
+      const primary = available.find(el => el.getAttribute('data-action') === 'scan-candidate')
+        || available.find(el => el.textContent === 'Scanner')
+        || available.find(el => el.textContent === 'Classer');
+      if (primary && available.length > 1) {
+        const cluster = doc.createElement('div');
+        cluster.className = 'kmc-sourcing-action-cluster';
+        primary.classList.add('kmc-sourcing-primary-action');
+        cluster.appendChild(primary);
+        const extra = doc.createElement('details');
+        extra.className = 'kmc-sourcing-more';
+        const summary = text(doc, 'summary', '', 'Autres actions');
+        summary.setAttribute('aria-label', `Autres actions pour ${row.candidate_ref}`);
+        extra.appendChild(summary);
+        const menu = doc.createElement('div');
+        menu.className = 'kmc-sourcing-more-list';
+        Array.from(actions.children).forEach(el => menu.appendChild(el));
+        extra.appendChild(menu);
+        cluster.appendChild(extra);
+        actions.appendChild(cluster);
+      }
       tr.appendChild(actions);
       tbody.appendChild(tr);
     });
