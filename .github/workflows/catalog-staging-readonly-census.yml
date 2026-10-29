@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/catalog-staging-readonly-census.yml'
       - 'scripts/recette/catalog-unified-real-staging-census.js'
+      - 'services/catalog-unified-registry.js'
+      - 'public/dashboards/canonical/js/catalog-workspace.js'
   workflow_dispatch:
 
 permissions:
