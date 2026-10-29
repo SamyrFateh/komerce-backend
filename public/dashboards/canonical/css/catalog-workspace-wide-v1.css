@@ -1104,3 +1104,56 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
     background: #fff;
   }
 }
+
+/* Unified contextual corrections — reuse the existing catalog width and type. */
+.kmc-catalog-inspector-section {
+  display: block;
+  margin-top: 20px;
+  font-weight: 760;
+  font-size: 14px;
+}
+.kmc-catalog-inspector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 10px;
+}
+.kmc-catalog-inspector-actions .kmc-workspace-action {
+  min-height: 38px;
+}
+.kmc-catalog-inspector-feedback {
+  font-size: 13px;
+  color: #47617f;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin-top: 10px;
+}
+.kmc-catalog-inspector-form {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  margin-block: 14px;
+  background: #f4f8ff;
+  border: 1px solid #d7e4f4;
+  border-radius: 10px;
+}
+.kmc-catalog-inspector-label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.kmc-catalog-inspector-label select {
+  min-height: 40px;
+  width: 100%;
+  background: #fff;
+  padding: 8px 10px;
+  border: 1px solid #bbcbe0;
+  border-radius: 8px;
+}
+.kmc-catalog-inspector-issues {
+  padding-left: 18px;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.8;
+}
