@@ -7,7 +7,7 @@
  * @inputs        read-only catalog filters
  * @outputs       single candidate/product projection, counts and safe next steps
  * @depends       db.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, catalog_field_overrides
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, catalog_field_overrides, catalog_publication_decision_audit
  * @db-write      none
  * @doctrine      one_operator_surface_without_cross_domain_write, product_ref_is_public_identity
  * @impact-areas  catalog, admin-dashboard
@@ -55,6 +55,16 @@ WITH picked_source AS (
         p.boutique_category_key, p.boutique_subcategory_key,
         bc.label AS boutique_category_label, bs.label AS boutique_subcategory_label,
         p.lifecycle_status, p.is_active, p.needs_review,
+        (EXISTS (
+          SELECT 1 FROM catalog_publication_decision_audit d
+           WHERE d.product_id=p.id
+             AND d.action IN ('CATALOG_PRODUCT_APPROVED','CATALOG_PRODUCT_OVERRIDDEN_AND_APPROVED')
+             AND NOT EXISTS (
+               SELECT 1 FROM catalog_publication_decision_audit later
+                WHERE later.product_id=p.id
+                  AND (later.created_at, later.id) > (d.created_at, d.id)
+             )
+        )) AS approval_audited,
         (NULLIF(BTRIM(p.image_url),'') IS NULL
          AND NULLIF(BTRIM(sc.image_url),'') IS NOT NULL) AS supplier_image_preview,
         p.updated_at
@@ -77,7 +87,7 @@ WITH picked_source AS (
           AND NULLIF(BTRIM(sc.supplier_product_id),'') IS NOT NULL),
         NULL::boolean, NULL::boolean,
         NULL::text, NULL::text, NULL::text, NULL::text,
-        NULL::text, FALSE, FALSE, FALSE, sc.updated_at
+        NULL::text, FALSE, FALSE, FALSE, FALSE, sc.updated_at
    FROM sourcing_candidates sc
   WHERE NOT EXISTS (SELECT 1 FROM products p WHERE p.id=sc.product_id)
 ), marked AS (
@@ -85,6 +95,8 @@ WITH picked_source AS (
    CASE
      WHEN u.record_kind='candidate' AND u.candidate_state IN ('rejected','archived')
        THEN 'excluded'
+     WHEN u.record_kind='candidate' AND u.candidate_state='imported_to_catalog'
+       THEN 'handoff_missing'
      WHEN u.record_kind='candidate' AND u.candidate_state IN ('scanned','test_ready','watchlist')
        THEN 'sourcing_review'
      WHEN u.record_kind='candidate' THEN 'processing'
@@ -93,7 +105,9 @@ WITH picked_source AS (
      WHEN NOT u.taxonomy_ready THEN 'taxonomy_to_confirm'
      WHEN NOT u.editorial_ready THEN 'editorial_to_complete'
      WHEN u.lifecycle_status='candidate' THEN 'approval_pending'
-     WHEN u.is_active=TRUE AND u.lifecycle_status='active' THEN 'catalog_approved'
+     WHEN u.is_active=TRUE AND u.lifecycle_status='active' AND u.approval_audited
+       THEN 'catalog_approved'
+     WHEN u.is_active=TRUE AND u.lifecycle_status='active' THEN 'approval_unproven'
      ELSE 'inactive'
    END AS work_status
  FROM unified u
@@ -103,7 +117,7 @@ WITH picked_source AS (
      WHEN m.work_status='catalog_approved' THEN 'validated'
      WHEN m.work_status='excluded' THEN 'excluded'
      WHEN m.work_status='processing' THEN 'processing'
-     WHEN m.work_status IN ('approval_pending','sourcing_review') THEN 'review'
+     WHEN m.work_status IN ('approval_pending','approval_unproven','sourcing_review') THEN 'review'
      ELSE 'correction'
    END AS operator_group
  FROM marked m
@@ -115,6 +129,7 @@ function publicRow(row) {
   const issues = [];
   // Null readiness for pre-handoff is NOT an operator defect. Sourcing still
   // owns source qualification; absence of a finished scan is not a human task.
+  if (candidate && row.work_status === 'handoff_missing') issues.push('handoff_missing');
   if (!candidate) {
     if (!row.source_ready) issues.push('source_to_normalize');
     if (!row.taxonomy_ready) issues.push('taxonomy_to_confirm');
@@ -141,6 +156,7 @@ function publicRow(row) {
     candidate_state: row.candidate_state || null,
     sourcing_decision: row.sourcing_decision || null,
     sourcing_confidence: row.sourcing_confidence || null,
+    approval_audited: row.approval_audited === true,
     source_locale: row.source_locale || null,
     content_source: row.content_source || null,
     boutique_category_key: row.boutique_category_key || null,
