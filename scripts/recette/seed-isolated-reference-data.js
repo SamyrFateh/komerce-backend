@@ -4,6 +4,8 @@
  * supplier, order, payment, shipment or customer record is copied.
  */
 const bcrypt=require('bcryptjs');
+const fs=require('node:fs');
+const path=require('node:path');
 const db=require('../../db');
 const {seedReferenceData}=require('../seed-reference-data');
 const TABLES=['dashboard_global_access_grants','catalog_global_access_grants',
@@ -25,6 +27,37 @@ async function main(){
   );
   if(!checks.rows[0].audit||!checks.rows[0].wallet)throw Error('RECETTE_SCHEMA_NOT_READY');
   const ref=await seedReferenceData(client);
+  const {rows:[customsCount]}=await client.query('SELECT COUNT(*)::int AS n FROM customs_categories');
+  if(customsCount.n===0){
+    const sql=fs.readFileSync(path.join(__dirname,'../../migrations/036b_seed_customs_categories.sql'),'utf8');
+    await client.query(sql);
+  }
+  // A single artificial supplier candidate to prove the full cost gate.
+  // Never copied from a real connector, and never sellable/published.
+  const candidateRef='KSC-RECETTE-ECO-01';
+  const baseScan={
+    sourcing_decision:'WATCH',
+    commercial_review:{status:'PENDING_CLASSIFICATION',action:'REVIEW_BOUTIQUE_TAXONOMY'},
+    customs_review:{status:'REQUIRED',category_key:null,calculation_allowed:false,publication_allowed:false},
+    economic_test_health_status:'unknown',
+  };
+  await client.query(
+    `INSERT INTO sourcing_candidates (
+       candidate_ref,supplier_name,supplier_product_id,product_name,supplier_category,
+       purchase_price,currency,purchase_price_kmf,estimated_weight_kg,
+       estimated_volume_m3,confidence,state,data_sources,scan_result,notes
+     ) VALUES ($1,'FAKE-RECETTE','FAKE-RECETTE-001',
+       'Coque de téléphone fictive — recette','Mobile phone accessories',
+       1800,'KMF',1800,0.150,0.00100,'medium','scanned',
+       '{"category":"default","purchase_price":"manual","weight":"manual","volume":"manual"}'::jsonb,
+       $2::jsonb,'Donnée synthétique de recette. Aucune vente ni fournisseur réel.')
+     ON CONFLICT (candidate_ref) DO UPDATE SET
+       komerce_category=NULL, data_sources=EXCLUDED.data_sources,
+       scan_result=EXCLUDED.scan_result, state='scanned',
+       purchase_price_kmf=1800, estimated_weight_kg=0.150,
+       estimated_volume_m3=0.00100, product_id=NULL`,
+    [candidateRef,JSON.stringify(baseScan)]
+  );
   const email='recette-admin@example.invalid';
   let users=await client.query('SELECT id,role FROM users WHERE email=$1',[email]);
   let user;
