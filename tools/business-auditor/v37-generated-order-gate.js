@@ -14,7 +14,7 @@ function sourceAnchor(){
   c.split('if (!allowedRoles.includes(actor.role)) {').length!==2||
   !/order_status_history/.test(c))fail('canonical order owner/role permission anchor drifted');
  return {owner:'services/order-status-machine.js',
-  sourceHash:hash(c),policyHash:hash(POLICY),mutantAllowedOnlyInMemory:true};
+  sourceHash:hash(c),policyHash:hash(JSON.stringify(POLICY)),mutantAllowedOnlyInMemory:true};
 }
 function observe(mode,env,seed,url){
  const output=cp.execFileSync(process.execPath,
