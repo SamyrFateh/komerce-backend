@@ -21,6 +21,7 @@
 const express = require('express');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { requireCatalogGlobalAuthority } = require('../middleware/require-catalog-global-authority');
+const { requireSourcingGlobalAuthority } = require('../middleware/require-sourcing-global-authority');
 const workspace = require('../services/catalog-workspace');
 const refineryFrench = require('../services/refinery-fr-recheck');
 const taxonomy = require('../services/boutique-taxonomy-admin');
@@ -56,7 +57,13 @@ function sendError(err, res, next) {
 
 router.use(...guard, rejectMarketDimension);
 
-router.get('/', async (req, res, next) => {
+// Consolidated projection reads pre-handoff supplier data. Catalogue grants
+// do NOT implicitly authorize Sourcing reads. Preserve both authorities.
+router.get('/', (req, res, next) => {
+  if (req.query && req.query.unified === '1' && req.query.refinery_view !== '1')
+    return requireSourcingGlobalAuthority(req, res, next);
+  return next();
+}, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     if (req.query && req.query.diagnose_product_ref) {
@@ -77,6 +84,23 @@ router.post('/products/:productRef/update', async (req, res, next) => {
     res.json({ ok: true, action: 'product_updated', result: await workspace.updateProduct(req.params.productRef, req.body, req.user) });
   } catch (err) { sendError(err, res, next); }
 });
+
+// A narrow, audited repair: SOURCE and CATALOG global grants are both
+// mandatory, and the service independently rechecks source proof and draft
+// state under a database lock. No URL is accepted in the request body.
+router.post('/products/:productRef/recover-source-media',
+  requireSourcingGlobalAuthority, async (req, res, next) => {
+    try {
+      if (req.body && Object.keys(req.body).length > 0) {
+        return res.status(400).json({
+          code:'catalog_media_body_forbidden',
+          error:'Aucun média ni URL ne peut être fourni par le navigateur',
+        });
+      }
+      res.json({ ok:true, action:'catalog_source_media_recovered',
+        result:await workspace.recoverProductSourceMedia(req.params.productRef,req.user) });
+    } catch (err) { sendError(err,res,next); }
+  });
 
 router.post('/products/:productRef/classify', async (req, res, next) => {
   try {
