@@ -1,0 +1,53 @@
+name: Catalogue - real staging read-only census
+
+on:
+  push:
+    branches: [test/catalog-staging-readonly-inventory-20261029]
+    paths:
+      - '.github/workflows/catalog-staging-readonly-census.yml'
+      - 'scripts/recette/catalog-unified-real-staging-census.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catalogue-staging-census-readonly
+  cancel-in-progress: false
+
+jobs:
+  census:
+    name: Verify exact staging and count real Catalogue exceptions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without hooks
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Static read-only safety check
+        run: |
+          node --check scripts/recette/catalog-unified-real-staging-census.js
+          if grep -Eiq '\b(INSERT[[:space:]]+INTO|UPDATE[[:space:]]+products|DELETE[[:space:]]+FROM|TRUNCATE|ALTER[[:space:]]+TABLE)\b' scripts/recette/catalog-unified-real-staging-census.js; then
+            echo 'Refus : potentiel SQL mutable dans script d\047audit'
+            exit 1
+          fi
+      - name: Verify target fingerprint and read real staging counts
+        run: node scripts/recette/catalog-unified-real-staging-census.js
+      - name: Preserve only counts and typed blockers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalogue-real-staging-readonly-${{ github.run_id }}
+          path: test-results/staging-catalog-readonly/census.json
+          if-no-files-found: warn
+          retention-days: 14
