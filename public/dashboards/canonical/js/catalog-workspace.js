@@ -1891,7 +1891,7 @@
       facts.appendChild(text(doc, 'dt', '', label));
       facts.appendChild(text(doc, 'dd', '', value || 'Non renseigné / non mesuré'));
     });
-    panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section', 'Source fournisseur · lecture seule'));
+    panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section', 'Lecture seule · source fournisseur'));
     panel.appendChild(facts);
     const feedback = text(doc, 'div', 'kmc-catalog-inspector-feedback', '');
     feedback.setAttribute('role', 'status');
@@ -2006,7 +2006,7 @@
             save.disabled = false;
           }
         });
-        panel.insertBefore(form, feedback);
+        panel.appendChild(form);
         feedback.textContent = '';
       } catch (error) {
         feedback.textContent = actionErrorMessage(error);
@@ -2041,8 +2041,10 @@
         : 'Produit écarté : un réexamen autorisé est nécessaire.';
       return panel;
     }
-    if (issues.includes('source_to_normalize') && !row.candidate_ref)
-      feedback.textContent = 'La provenance manque. Aucune source fournisseur ne sera inventée.';
+    if (issues.includes('source_to_normalize'))
+      feedback.textContent = row.candidate_ref
+        ? 'Contrat source à recontrôler via Sourcing : aucune validation Catalogue tant que la source n’est pas certifiée.'
+        : 'La provenance manque. Aucune source fournisseur ne sera inventée.';
     if (issues.includes('taxonomy_to_confirm') && row.candidate_ref) {
       const btn = makeButton(doc, 'Corriger le classement', 'inspector-classify');
       btn.addEventListener('click', () =>
