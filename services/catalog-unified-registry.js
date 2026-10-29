@@ -76,7 +76,8 @@ WITH picked_source AS (
           AND jsonb_typeof(sc.normalized_source_contract->'media')='array'
           AND jsonb_array_length(sc.normalized_source_contract->'media')>0
           AND NOT EXISTS (
-            SELECT 1 FROM jsonb_array_elements(sc.normalized_source_contract->'media') m
+            SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(sc.normalized_source_contract->'media')='array'
+              THEN sc.normalized_source_contract->'media' ELSE '[]'::jsonb END) m
              WHERE jsonb_typeof(m) <> 'object'
                OR NULLIF(BTRIM(m->>'supplier_media_id'),'') IS NULL
                OR m->>'url' !~ '^https://[^[:space:]]+
