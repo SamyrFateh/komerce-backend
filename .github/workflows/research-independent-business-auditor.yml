@@ -33,6 +33,7 @@ on:
       - research/business-auditor-v34-delivery-foundation-20261029
       - research/business-auditor-v35-invariant-coverage-20261029
       - research/business-auditor-v36-targeted-selector-20261029
+      - research/business-auditor-v37-generated-order-matrix-20261029
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -73,6 +74,7 @@ on:
       - research/business-auditor-v34-delivery-foundation-20261029
       - research/business-auditor-v35-invariant-coverage-20261029
       - research/business-auditor-v36-targeted-selector-20261029
+      - research/business-auditor-v37-generated-order-matrix-20261029
     paths:
       - .github/workflows/research-independent-business-auditor.yml
       - tools/business-auditor/**
@@ -117,7 +119,7 @@ jobs:
           node-version: '20'
           cache: npm
       - name: Independent scanner contract + adversarial unit tests (no DB)
-        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js tools/business-auditor/v20-stock-predicate.test.js tools/business-auditor/v21-static-pair-selector.test.js tools/business-auditor/v22-financial-invariants.test.js tools/business-auditor/v23-preflight-mutant.test.js tools/business-auditor/v24-durable-intent-counterfactual.test.js tools/business-auditor/v25-reconciliation-oracle.test.js tools/business-auditor/v26-reconciler.test.js tools/business-auditor/v27-logistics-oracle.test.js tools/business-auditor/v28-proof-adapters.test.js tools/business-auditor/v28-unified-engine.test.js tools/business-auditor/v29-metadata-selector.test.js tools/business-auditor/v30-inventory-oracle.test.js tools/business-auditor/v31-fx-market-oracle.test.js tools/business-auditor/v32-catalog-auth-oracle.test.js tools/business-auditor/v33-orders-sourcing-oracle.test.js tools/business-auditor/v34-delivery-engine.test.js tools/business-auditor/v35-invariant-coverage.test.js tools/business-auditor/v36-targeted-selector.test.js
+        run: node --test tools/business-auditor/engine.test.js tools/business-auditor/cli.test.js tools/business-auditor/static-triage.test.js tools/business-auditor/code-detectors.test.js tools/business-auditor/physical-probes.test.js tools/business-auditor/paypal-refund-boundary.test.js tools/business-auditor/writer-inventory.test.js tools/business-auditor/v07-qualification.test.js tools/business-auditor/v07-import-hints.test.js tools/business-auditor/v08-sql-calibration.test.js tools/business-auditor/v08-owner-proof.test.js tools/business-auditor/evidence-ledger.test.js tools/business-auditor/v09-integration.test.js tools/business-auditor/v10-engine.test.js tools/business-auditor/v12-baseline-gate.test.js tools/business-auditor/v12-physical-parcel-predicate.test.js tools/business-auditor/v13-canonical-parcel-predicate.test.js tools/business-auditor/v13-replay.test.js tools/business-auditor/v14-explorer.test.js tools/business-auditor/v14-baseline-gate.test.js tools/business-auditor/v15-concurrency-predicate.test.js tools/business-auditor/v15-baseline-gate.test.js tools/business-auditor/v16-healing-predicate.test.js tools/business-auditor/v17-quantity-matrix-predicate.test.js tools/business-auditor/v18-serializability-predicate.test.js tools/business-auditor/v19-serializability-predicate.test.js tools/business-auditor/v20-stock-predicate.test.js tools/business-auditor/v21-static-pair-selector.test.js tools/business-auditor/v22-financial-invariants.test.js tools/business-auditor/v23-preflight-mutant.test.js tools/business-auditor/v24-durable-intent-counterfactual.test.js tools/business-auditor/v25-reconciliation-oracle.test.js tools/business-auditor/v26-reconciler.test.js tools/business-auditor/v27-logistics-oracle.test.js tools/business-auditor/v28-proof-adapters.test.js tools/business-auditor/v28-unified-engine.test.js tools/business-auditor/v29-metadata-selector.test.js tools/business-auditor/v30-inventory-oracle.test.js tools/business-auditor/v31-fx-market-oracle.test.js tools/business-auditor/v32-catalog-auth-oracle.test.js tools/business-auditor/v33-orders-sourcing-oracle.test.js tools/business-auditor/v34-delivery-engine.test.js tools/business-auditor/v35-invariant-coverage.test.js tools/business-auditor/v36-targeted-selector.test.js tools/business-auditor/v37-order-matrix-generator.test.js
       - name: V2.1 freeze ranked writer pairs before any physical database experiment
         run: node tools/business-auditor/v21-static-pair-gate.js /tmp/komerce-independent-business-audit/v21-selector
       - name: V2.1 verify source-derived refund pair and dead-code exclusion
@@ -954,6 +956,41 @@ jobs:
            sha:a.sha,impacted:p.impactedInvariants.length,clones:p.plannedClones,
            executed:a.summary.executedAdapters,forged:a.physicalCases[1].signals,
            uncovered:p.unmatchedChanges,autonomousGeneratorProven:false}));
+          NODE
+      - name: V3.7 G3b independent generated order status-role matrix on two canonical PostgreSQL clones
+        run: npm run audit:logic:generated -- --seed independent-g3b-20261029 --out /tmp/komerce-independent-business-auditor/v37-generated
+      - name: V3.7 G3b certify 24 generated cases, untouched owner and detection of unseen in-memory role-bypass mutant
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const r=require('/tmp/komerce-independent-business-auditor/v37-generated/generated-order-audit.json');
+          const [nominal,mutant]=r.cases;
+          if(r.contract!=='komerce-generated-order-matrix-gate/v37'||
+             r.sha!==process.env.GITHUB_SHA||
+             !r.allClonesDropped||
+             r.plan.scenarioCount!==24||
+             r.plan.sourceMutantKnownToGenerator!==false||
+             nominal.mode!=='NOMINAL'||nominal.oracle.violation||
+             nominal.oracle.scenarios!==24||
+             nominal.oracle.accepted!==2||nominal.oracle.rejected!==22||
+             mutant.mode!=='BLIND_MUTANT'||!mutant.oracle.violation||
+             !mutant.oracle.violations.some(x=>x.role==='agent_relais'&&
+               x.target==='ordered'&&
+               x.codes.includes('ORDG1_UNAUTHORIZED_OR_MISSING_STATUS_TRANSITION'))||
+             !nominal.cloneDropped||!mutant.cloneDropped||
+             r.source.mutantAllowedOnlyInMemory!==true||
+             r.hiddenMutationDetectedWithoutScenarioCodeEdit!==true||
+             r.productionPatchApplied!==false||
+             r.arbitraryDomainScenarioGenerationProven!==false||
+             r.fullDomainCoverageCertified!==false||
+             !fs.readFileSync('/tmp/komerce-independent-business-auditor/v37-generated/generated-order-audit.md','utf8').includes('Source files modified: NO'))
+            throw Error('G3b independent generated owner matrix or hidden mutant proof missing');
+          console.log('BUSINESS_AUDIT_V37_G3B_ACCEPTED',JSON.stringify({
+           sha:r.sha,generated:r.plan.scenarioCount,
+           baseline:nominal.oracle.violations.length,
+           blindMutantViolations:mutant.oracle.violations.length,
+           clonesDestroyed:r.allClonesDropped,
+           genericMultiDomainGeneration:false}));
           NODE
       - name: V1.0 independent one-command static repo audit without DB
         run: npm run audit:business:v1 -- --mode static --out /tmp/komerce-independent-business-audit/v10-static
