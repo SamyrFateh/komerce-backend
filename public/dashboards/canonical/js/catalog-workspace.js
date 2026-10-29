@@ -1973,11 +1973,14 @@
     const quick = doc.createElement('div');
     quick.className = 'kmc-catalog-quick-filters';
     quick.appendChild(text(doc, 'span', 'kmc-catalog-quick-label', 'Accès rapide'));
+    const serverCounts = payload.summary?.operator_groups || {};
     [
+      ['', 'Tous'],
       ['correction', 'À corriger'],
       ['review', 'À valider'],
       ['validated', 'Validés'],
     ].forEach(([value, label]) => {
+      if (value) label += ' · ' + formatNumber(serverCounts[value] || 0);
       const chip = text(doc, 'button', 'kmc-catalog-quick-chip', label);
       chip.type = 'button';
       chip.setAttribute('aria-pressed', String(filters.status === value));
