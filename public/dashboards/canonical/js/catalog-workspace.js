@@ -1961,6 +1961,12 @@
             'Catégorie économique');
           const select = doc.createElement('select');
           select.setAttribute('data-catalog-economic-category-choice', '');
+          if (!suggested) {
+            const placeholder = doc.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Choisir une catégorie — aucune suggestion fiable';
+            select.appendChild(placeholder);
+          }
           ordered.forEach((item, index) => {
             const option = doc.createElement('option');
             option.value = String(index);
@@ -1968,7 +1974,7 @@
               (item.label || item.key);
             select.appendChild(option);
           });
-          select.value = '0';
+          select.value = suggested ? '0' : '';
           label.appendChild(select);
           form.appendChild(label);
           if (suggested) form.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
@@ -1982,7 +1988,7 @@
           form.appendChild(save);
           form.addEventListener('submit', async event => {
             event.preventDefault();
-            const chosen = ordered[Number(select.value)];
+            const chosen = select.value === '' ? null : ordered[Number(select.value)];
             if (!chosen) {
               feedback.textContent = 'Choisissez une catégorie existante.';
               return;
