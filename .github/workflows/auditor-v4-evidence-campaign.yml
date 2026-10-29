@@ -69,7 +69,7 @@ jobs:
              semantic.summary.semanticallyVerified!==1||
              audit.summary.featureInvariantsCertified!==1||
              audit.invariantCoverage.featureCardInvariantsCertified!==1||
-             g5.blockers.includes('G2_SEMANTIC_INVARIANT_MAPPING')||
+             !g5.blockers.includes('G2_SEMANTIC_INVARIANT_MAPPING')||
              g3.sha!==audit.sha||g3.generatedCases!==6||
              g3.withheldMutationDetected!==true||
              g3.summary.detected!==2||g3.summary.missed!==0||
