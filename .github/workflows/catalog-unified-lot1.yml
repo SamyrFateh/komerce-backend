@@ -41,6 +41,8 @@ jobs:
       - name: Validate JS syntax
         run: |
           node --check services/catalog-unified-registry.js
+          node --check tests/unit/catalog-sourcing-economic-chain.test.js
+          node --check public/dashboards/canonical/js/pricing-atelier-views.js
           node --check services/catalog-promotion.js
           node --check services/catalog-media-recovery.js
           node --check scripts/testing/catalog-media-recovery-pg-proof.js
@@ -59,7 +61,11 @@ jobs:
             tests/unit/catalog-registry.test.js \
             tests/unit/catalog-workspace-wide-v1.test.js \
             tests/unit/canonical-catalog-workspace-boundary.test.js \
-            tests/unit/sourcing-catalog-finish-v5.test.js
+            tests/unit/sourcing-catalog-finish-v5.test.js \
+            tests/unit/catalog-sourcing-economic-chain.test.js \
+            tests/unit/supplier-catalog-scanner.test.js \
+            tests/unit/sourcing-workspace.test.js \
+            tests/unit/canonical-pricing-atelier-views.test.js
       - name: Run isolated physical PostgreSQL proof
         env:
           PGHOST: 127.0.0.1
