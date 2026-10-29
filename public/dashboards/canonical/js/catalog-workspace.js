@@ -1498,6 +1498,8 @@
         ? { kind: 'refinery', label: 'Compléter la fiche FR', status: 'Fiche FR à compléter' }
         : { kind: 'detail', label: 'Examiner la fiche FR', status: 'Fiche FR à vérifier' };
     }
+    if (issues.includes('media_missing') || row.work_status === 'media_to_complete')
+      return { kind: 'diagnose', label: 'Examiner les médias', status: 'Médias à vérifier' };
     if (row.work_status === 'approval_unproven')
       return { kind: 'diagnose', label: 'Vérifier approbation', status: 'Preuve à réconcilier' };
     if (row.lifecycle_status === 'candidate' || row.work_status === 'approval_pending') {
@@ -1742,6 +1744,7 @@
       ['source_to_normalize', 'Source fournisseur à vérifier'],
       ['taxonomy_to_confirm', 'Classement boutique à corriger'],
       ['editorial_to_complete', 'Contenu français à compléter'],
+      ['media_missing', 'Média canonique à compléter'],
       ['approval_pending', 'Validation Catalogue à réaliser'],
     ].filter(([code]) => issues.includes(code) || row.work_status === code)
       .map(([code, label]) => ({ code, label }));
@@ -2028,6 +2031,7 @@
       source_to_normalize: 'Source fournisseur à vérifier',
       taxonomy_to_confirm: 'Classement Boutique à corriger',
       editorial_to_complete: 'Titre / description FR à préparer',
+      media_missing: 'Médias canoniques absents',
       approval_pending: 'Validation Catalogue à réaliser',
     };
     issues.forEach(code => {
@@ -2040,6 +2044,32 @@
           'aucune validation automatique.'
         : 'Produit écarté : un réexamen autorisé est nécessaire.';
       return panel;
+    }
+
+    if (issues.includes('media_missing')) {
+      panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
+        'Contrôle média · informations vérifiées'));
+      const mediaFacts = doc.createElement('dl');
+      mediaFacts.className = 'kmc-catalog-inspector-fields';
+      const findings = [
+        ['Médias actifs canoniques', row.active_media_count == null
+          ? 'Non mesuré' : String(row.active_media_count)],
+        ['Médias du contrat fournisseur V2', row.source_media_count == null
+          ? 'Non mesuré' : String(row.source_media_count)],
+        ['Diagnostic', ({
+          source_recoverable: 'Médias source identifiés avec une identité stable. Réintégration canonique nécessaire.',
+          source_requires_review: 'Médias source présents mais non admissibles sans vérification.',
+          preview_only: 'L’image d’aperçu ne constitue pas une preuve média canonique.',
+          source_missing: 'Aucun média exploitable détecté dans la source.',
+        })[row.media_status] || 'Recontrôle de certification nécessaire'],
+      ];
+      findings.forEach(([label, value]) => {
+        mediaFacts.appendChild(text(doc, 'dt', '', label));
+        mediaFacts.appendChild(text(doc, 'dd', '', value));
+      });
+      panel.appendChild(mediaFacts);
+      panel.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+        'Aucune photo ajoutée ni publication implicite. Le propriétaire Catalogue doit réintégrer et certifier ces médias.'));
     }
     if (issues.includes('source_to_normalize'))
       feedback.textContent = row.candidate_ref
