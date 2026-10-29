@@ -81,7 +81,7 @@ test.each([
 test('une catégorie nouvelle change explicitement l’entrée économique et doit entraîner nouveau calcul',async()=>{
  pricing.recommend.mockImplementation(async input=>({
    health_status:'unknown',test_price_kmf:5000,
-   variable_cost_complete_kmf:input.category==='electronics'?2500:4900,
+   variable_cost_complete_kmf:input.category==='electronics'?2500:5200,
    final_price_kmf:null,
  }));
  const source={...missing,data_sources:{category:'manual'}};
