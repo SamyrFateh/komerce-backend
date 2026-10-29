@@ -214,3 +214,20 @@ test('candidate actif est à réconcilier, désactivation soft d’un ancien act
   expect(sql).toContain("u.is_active=TRUE AND u.lifecycle_status='candidate'");
   expect(sql).not.toContain("u.is_active=FALSE AND u.lifecycle_status='active'");
 });
+
+
+test('WATCH avec révision commerciale obligatoire reste une correction, pas une simple surveillance',async()=>{
+  const fixture={...originalCandidate,candidate_state:'scanned',
+    sourcing_decision:'WATCH',source_category_review_required:true,
+    work_status:'sourcing_category_review',operator_group:'correction'};
+  expect(publicRow(fixture)).toMatchObject({
+    issues:['sourcing_economic_category_missing'],
+    work_status:'sourcing_category_review',
+  });
+  const q=executor([{operator_group:'correction',count:1}],[fixture]);
+  await listUnified({},q);
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("sc.scan_result->'commercial_review'->>'status'='PENDING_CLASSIFICATION'");
+  expect(sql).toContain("WHEN u.record_kind='candidate' AND u.source_category_review_required");
+  expect(sql).toContain("THEN 'sourcing_category_review'");
+});
