@@ -69,13 +69,23 @@ async function main(){
   assert.equal(result?.scan?.economics?.market_price_decided,false);
   const recalc=Number(result?.scan?.economics?.variable_cost_complete_kmf||0);
   assert(recalc>0,'economic category must produce a positive fully variable cost');
+  const safeFloor=Number(result?.scan?.economics?.minimum_safe_price_kmf||0);
+  const indicativeTest=Number(result?.scan?.economics?.test_price_kmf||0);
+  assert(safeFloor>0,'economic scan must prove the safety floor');
+  assert(indicativeTest>0,'economic scan must prove an indicative test price');
   const db=require('../../db');
   const {rows:[persisted]}=await db.query(
     'SELECT product_id,komerce_category,scan_result FROM sourcing_candidates WHERE candidate_ref=$1',[ref]);
   assert.equal(persisted.product_id,null,'no automatic Catalogue promotion');
   assert.equal(persisted.komerce_category,'phones');
   assert(Number(persisted.scan_result?.variable_cost_complete_kmf)>0);
-  console.log('RECETTE_ECONOMIC_CHAIN_PASS: synthetic category→real Pricing engine→scan→positive cost, product not published');
+  console.log('RECETTE_ECONOMIC_CHAIN_PASS '+JSON.stringify({
+    fixture:ref,category:'phones',decision:result.scan.decision,
+    variable_cost_kmf:recalc,safety_floor_kmf:safeFloor,
+    indicative_test_price_kmf:indicativeTest,
+    health:result.scan.economics.health_status,
+    market_price_decided:false,product_handoff:false,
+  }));
   for(const path of ['/api/orders','/api/payments/stripe/webhook','/api/auth/register']){
     const denied=await read(path,{method:'POST',body:{},cookie});
     assert.equal(denied.status,403,path+' must be blocked');
