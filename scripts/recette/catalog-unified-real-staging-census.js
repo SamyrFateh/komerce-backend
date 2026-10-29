@@ -30,6 +30,8 @@ async function main(){
   checked_at:new Date().toISOString(),claimed_target:'staging',app_origin:ORIGIN,
   database_target_confirmed:false,live_commit:null,migration_351_present:null,
   tables:null,source:null,products:null,links:null,media:null,approval:null,
+  source_decisions:[],product_lifecycle:[],operator_work_statuses:{},
+  operator_issue_counts:{},operator_group_by_kind:{},
   operator_groups:null,operator_projection_status:'NOT_CHECKED',
   executed_with:'BEGIN READ ONLY',no_business_writes:true,blockers:[]};
  const client=new Client({
@@ -121,6 +123,19 @@ async function main(){
           AND d.action IN ('CATALOG_PRODUCT_APPROVED','CATALOG_PRODUCT_OVERRIDDEN_AND_APPROVED')
       )`),
   ]);
+  const [decisions,lifecycle]=await Promise.all([
+    client.query(`SELECT state,
+       COALESCE(UPPER(scan_result->>'sourcing_decision'),'UNKNOWN') AS sourcing_decision,
+       COUNT(*)::int AS count,
+       COUNT(*) FILTER (WHERE product_id IS NULL)::int AS pre_handoff
+       FROM sourcing_candidates GROUP BY state,sourcing_decision
+       ORDER BY count DESC, state, sourcing_decision`),
+    client.query(`SELECT COALESCE(lifecycle_status,'UNKNOWN') AS lifecycle_status,
+       is_active, COUNT(*)::int AS count
+       FROM products GROUP BY lifecycle_status,is_active ORDER BY count DESC,lifecycle_status`),
+  ]);
+  report.source_decisions=decisions.rows;
+  report.product_lifecycle=lifecycle.rows;
   report.source=src.rows[0];report.products=prod.rows[0];
   report.links=linked.rows[0];report.media=media.rows[0];
   report.approval=approval.rows[0];
@@ -129,8 +144,20 @@ async function main(){
   // SAVEPOINT ensures even a schema error cannot contaminate later reads.
   await client.query('SAVEPOINT unified_preview');
   try {
-    const preview=await listUnified({limit:1,offset:0},client);
+    const preview=await listUnified({limit:100,offset:0},client);
     report.operator_groups=preview.groups;
+    for(const row of preview.products) {
+      const kind=String(row.record_kind||'unknown');
+      const group=String(row.operator_group||'unknown');
+      const status=String(row.work_status||'unknown');
+      report.operator_group_by_kind[kind+' / '+group]=
+        (report.operator_group_by_kind[kind+' / '+group]||0)+1;
+      report.operator_work_statuses[status]=(report.operator_work_statuses[status]||0)+1;
+      for(const issue of row.issues||[]) {
+        report.operator_issue_counts[issue]=(report.operator_issue_counts[issue]||0)+1;
+      }
+    }
+    if(preview.page.has_next)report.blockers.push('UNIFIED_CENSUS_EXCEEDS_FIRST_100_ROWS');
     report.operator_projection_status='SQL_COMPATIBLE';
   } catch(error) {
     report.operator_projection_status='SQL_INCOMPATIBLE';
