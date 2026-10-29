@@ -15,14 +15,14 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261028-7');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261029-2');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
   expect(ui).toContain('<th>Produit</th><th>Fournisseur</th><th>Classement boutique</th>');
   expect(ui).toContain('kmc-catalog-product-reference');
   expect(ui).toContain('<th>Statut Catalogue</th><th>Consulter</th>');
-  expect(ui).toContain("productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-reference', row.product_ref))");
+  expect(ui).toContain("productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-reference', ref))");
   expect(ui).toContain("statusChip.setAttribute('data-status', row.work_status || 'inactive')");
   expect(ui).toContain("tr.appendChild(actionCell)");
   expect(css).toContain('-webkit-line-clamp: 2');
@@ -134,7 +134,7 @@ test('Suggestion : correspondance exacte fournisseur unique, jamais de classemen
 });
 test('Classement : formulaire accessible et pas de prompt/confirm avec indices', () => {
   const source=ui.slice(ui.indexOf('function openProductClassificationDialog'),
-    ui.indexOf('function renderProducts('));
+    ui.indexOf('function inspectorFrame('));
   expect(source).toContain("doc.createElement('dialog')");
   expect(source).toContain("doc.createElement('select')");
   expect(source).toContain("dialog.showModal()");
