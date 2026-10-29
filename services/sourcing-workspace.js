@@ -459,6 +459,14 @@ async function getCandidateCategoryOptions(candidateRef) {
   };
 }
 
+// A numeric cost can be displayed only if the canonical Pricing result has
+// a strictly positive finite value; never fabricate missing cost evidence.
+function positiveFinite(value) {
+  if(value === undefined || value === null || value === '') return null;
+  const n=Number(value);
+  return Number.isFinite(n) && n>0 ? n : null;
+}
+
 // Un seul geste opérateur : catégorie active validée, modification tracée,
 // puis nouveau scan dans une transaction. Ne promeut jamais au Catalogue.
 async function resolveCandidateCategory(candidateRef, categoryKey, actor) {
@@ -494,8 +502,17 @@ async function resolveCandidateCategory(candidateRef, categoryKey, actor) {
         decision:scanned.scan_result?.sourcing_decision || null,
         reason:scanned.scan_result?.reason || null,
         recommended_action:scanned.scan_result?.recommended_action || null,
+        // Projection strictly from the canonical scan result. These are
+        // economic diagnostics, not an accepted local selling price.
+        economics:{
+          variable_cost_complete_kmf:positiveFinite(scanned.scan_result?.variable_cost_complete_kmf),
+          minimum_safe_price_kmf:positiveFinite(scanned.scan_result?.minimum_safe_price_kmf),
+          test_price_kmf:positiveFinite(scanned.scan_result?.test_price_kmf),
+          health_status:scanned.scan_result?.economic_test_health_status || 'unknown',
+          market_price_decided:false,
+        },
       },
-      next_step:'Relire la décision du scanner. Aucune promotion Catalogue automatique.',
+      next_step:'Relire les coûts et le verdict. Prix de vente marché non décidé.',
     };
   } catch (error) {
     try { await client.query('ROLLBACK'); } catch (_) { /* erreur d'origine conservée */ }
