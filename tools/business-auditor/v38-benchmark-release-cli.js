@@ -8,11 +8,11 @@ const fs=require('node:fs'),path=require('node:path');
 const {benchmark,markdown:benchmarkMd}=require('./v38-calibration-benchmark');
 const {readiness,markdown:releaseMd}=require('./v38-release-readiness');
 function parse(args){
- const x={audit:null,out:null,impact:null,requireGo:false};
+ const x={audit:null,out:null,impact:null,install:null,requireGo:false};
  for(let i=0;i<args.length;i++){
   if(args[i]==='--help')return {...x,help:true};
   if(args[i]==='--require-go'){x.requireGo=true;continue;}
-  if(!['--audit','--out','--impact'].includes(args[i])||!args[i+1])
+  if(!['--audit','--out','--impact','--install'].includes(args[i])||!args[i+1])
    throw Error('G4_G5_CLI_TOOL_ERROR: --audit PATH --out DIRECTORY [--impact PLAN]');
   const key=args[i].slice(2),value=args[++i];
   x[key]=value;
@@ -24,8 +24,9 @@ function run(argv=process.argv.slice(2),deps={}){
  const opts=parse(argv);
  if(opts.help)return {help:true};
  const read=deps.read||((f)=>JSON.parse(fs.readFileSync(path.resolve(f),'utf8')));
- const audit=read(opts.audit),impactPlan=opts.impact?read(opts.impact):null;
- const b=benchmark(audit),g=readiness({audit,benchmark:b,impactPlan});
+ const audit=read(opts.audit),impactPlan=opts.impact?read(opts.impact):null,
+ installEvidence=opts.install?read(opts.install):null;
+ const b=benchmark(audit),g=readiness({audit,benchmark:b,impactPlan,installEvidence});
  const out=path.resolve(opts.out);
  fs.mkdirSync(out,{recursive:true});
  for(const [name,data] of [['g4-calibration.json',b],['g5-release-readiness.json',g]])
