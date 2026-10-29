@@ -28,6 +28,7 @@ jobs:
       - name: Verify research engine registry and no-go semantics without databases
         run: |
           node --test \
+            tools/business-auditor/business-static-scan-scope.test.js \
             tools/business-auditor/v34-delivery-engine.test.js \
             tools/business-auditor/v35-invariant-census.test.js \
             tools/business-auditor/v36-impact-selector.test.js \
