@@ -93,6 +93,7 @@
     "audit:gate": "node scripts/npm-audit-gate.js",
     "audit:logic": "node scripts/audit-logic.js --static-only",
     "audit:logic:unified": "node tools/business-auditor/v35-delivery-engine.js",
+    "audit:logic:targeted": "node tools/business-auditor/v36-targeted-audit.js",
     "audit:logic:unified:v34": "node tools/business-auditor/v34-delivery-engine.js",
     "audit:logic:unified:v33": "node tools/business-auditor/v33-unified-audit.js",
     "audit:logic:unified:v32": "node tools/business-auditor/v32-unified-catalog-auth.js",
