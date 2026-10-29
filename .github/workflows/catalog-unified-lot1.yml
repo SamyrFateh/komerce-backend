@@ -44,6 +44,7 @@ jobs:
           node --check services/catalog-promotion.js
           node --check services/catalog-media-recovery.js
           node --check scripts/testing/catalog-media-recovery-pg-proof.js
+          node --check scripts/testing/catalog-media-recovery-migration-proof.js
           node --check services/catalog-workspace.js
           node --check routes/admin-catalog-workspace.js
           node --check public/dashboards/canonical/js/catalog-workspace.js
@@ -75,3 +76,11 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
         run: node scripts/testing/catalog-media-recovery-pg-proof.js
+      - name: Validate actual migration 351 DDL on ephemeral PostgreSQL
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: postgres
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: node scripts/testing/catalog-media-recovery-migration-proof.js
