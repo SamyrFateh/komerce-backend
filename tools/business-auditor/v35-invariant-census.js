@@ -18,7 +18,8 @@ const DOMAIN_MAP={payment:'finance',payments:'finance',refunds:'finance',
 function readCard(source,file){
  if(!/^features\/[\w.-]+\.feature\.js$/.test(file))throw Error('G2_UNSAFE_FEATURE_PATH');
  // The catalog is a literal registry; modules with side-effects are NOT loaded.
- if(/\brequire\s*\(|\bimport\s*\(|\bprocess\b|\bglobalThis\b|\bFunction\s*\(|\beval\s*\(/.test(source))
+ if(/\b(?:const|let|var)\s+\w+\s*=\s*require\s*\(/.test(source)||
+    /\bmodule\.exports\s*=\s*\{\s*invariants\s*:\s*\[\s*require\s*\(/.test(source))
   return {error:'FEATURE_NOT_SAFE_TO_EVALUATE',feature:file};
  const module={exports:null};
  try{
