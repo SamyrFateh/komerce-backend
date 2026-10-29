@@ -1041,10 +1041,10 @@ test('Catalogue unique : réparation média auditée seulement après consenteme
   const btn=panel.querySelector('[data-workspace-action="inspector-recover-media"]');
   expect(btn).not.toBeNull();
   await btn.click();
-  expect(fetchFn.mock.calls.filter(([,opts={})=>opts.method==='POST')).toHaveLength(0);
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
   approved=true;
   await btn.click();
-  const posts=fetchFn.mock.calls.filter(([,opts={})=>opts.method==='POST');
+  const posts=fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST');
   expect(posts).toHaveLength(1);
   expect(posts[0][0]).toContain('/products/KPR-RECOVER/recover-source-media');
   expect(JSON.parse(posts[0][1].body)).toEqual({});

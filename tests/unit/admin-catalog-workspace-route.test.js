@@ -82,7 +82,10 @@ jest.mock('../../services/boutique-taxonomy-admin', () => ({
   TaxonomyAdminError: class TaxonomyAdminError extends Error {},
 }));
 
-jest.mock('../../utils/logger', () => ({ child: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn() }) }));
+jest.mock('../../utils/logger', () => ({
+  child: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn() }),
+  forModule: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn() }),
+}));
 
 const express = require('express');
 const request = require('supertest');
