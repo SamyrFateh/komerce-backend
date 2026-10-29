@@ -172,6 +172,8 @@ module.exports = {
       'services/catalog-visual-fr-evidence-read.js',
       'services/catalog-visual-fr-human-review-write.js',
       'services/catalog-refinery-combined-proof.js',
+      'services/catalog-unified-registry.js',
+      'services/catalog-media-recovery.js',
       'services/refinery-fr-recheck.js',
       'services/refinery-worklist.js',
       'services/catalog-fr-quality.js',
