@@ -21,6 +21,7 @@
 const express = require('express');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { requireCatalogGlobalAuthority } = require('../middleware/require-catalog-global-authority');
+const { requireSourcingGlobalAuthority } = require('../middleware/require-sourcing-global-authority');
 const workspace = require('../services/catalog-workspace');
 const refineryFrench = require('../services/refinery-fr-recheck');
 const taxonomy = require('../services/boutique-taxonomy-admin');
@@ -56,7 +57,13 @@ function sendError(err, res, next) {
 
 router.use(...guard, rejectMarketDimension);
 
-router.get('/', async (req, res, next) => {
+// Consolidated projection reads pre-handoff supplier data. Catalogue grants
+// do NOT implicitly authorize Sourcing reads. Preserve both authorities.
+router.get('/', (req, res, next) => {
+  if (req.query && req.query.unified === '1' && req.query.refinery_view !== '1')
+    return requireSourcingGlobalAuthority(req, res, next);
+  return next();
+}, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     if (req.query && req.query.diagnose_product_ref) {
