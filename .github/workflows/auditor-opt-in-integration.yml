@@ -1,0 +1,72 @@
+name: Independent auditor isolated main-integration preflight
+on:
+  pull_request:
+    paths:
+      - 'tools/business-auditor/**'
+      - '.github/workflows/auditor-opt-in-integration.yml'
+      - 'package.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  auditor-main-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without scripts
+        run: npm ci --ignore-scripts
+      - name: Verify research engine registry and no-go semantics without databases
+        run: |
+          node --test \
+            tools/business-auditor/business-static-scan-scope.test.js \
+            tools/business-auditor/v34-delivery-engine.test.js \
+            tools/business-auditor/v35-invariant-census.test.js \
+            tools/business-auditor/v36-impact-selector.test.js \
+            tools/business-auditor/v38-benchmark-release.test.js
+      - name: Run actual repository-wide quick audit, no PostgreSQL
+        run: npm run audit:logic:unified -- --mode quick --out /tmp/komerce-scanner-main-quick
+      - name: Validate quick audit cannot certify physical cases
+        run: |
+          node <<'NODE'
+          const r=require('/tmp/komerce-scanner-main-quick/unified-audit.json');
+          if(r.contract!=='komerce-unified-business-logic-auditor/v35'||
+             r.mode!=='quick'||r.static.scannedFiles!==r.static.trackedFiles||
+             r.summary.physicalCasesTotal!==0||
+             r.summary.featureInvariantsCertified!==0||
+             r.summary.invariantCoveragePercent!==null||
+             r.allBusinessDomainsCertified!==false||
+             r.orchestrator.reviewedPhysicalAdapters.length!==0)
+           throw Error('Opt-in scanner quick proof is invalid or falsely certifies business');
+          console.log('AUDITOR_MAIN_QUICK_ACCEPTED',JSON.stringify({
+           sha:r.sha,files:r.static.scannedFiles,
+           candidates:r.sourceDiscovery.summary.totalWriterPairs,
+           declared:r.summary.featureInvariantsDeclared,
+           physical:r.summary.physicalCasesTotal
+          }));
+          NODE
+      - name: Run static targeted selection, never execute unreviewed risks
+        run: npm run audit:logic:targeted:plan -- --files services/order-status-machine.js,features/orders.feature.js --budget 2 --out /tmp/komerce-scanner-main-impact
+      - name: Validate static impact plan has zero physical experiments
+        run: |
+          node <<'NODE'
+          const p=require('/tmp/komerce-scanner-main-impact/impact-plan.json');
+          if(p.contract!=='komerce-impacted-risk-plan/v36'||
+             p.physicalExecutions!==0||
+             p.newGeneratedExperiments!==0||
+             p.verdict!=='STATIC_TRIAGE_ONLY'||
+             p.selected.length>2||
+             p.selected.some(x=>x.physicalExecutionAuthorized||x.confirmedBug))
+           throw Error('Unexpected physical execution or fabricated targeted proof');
+          console.log('AUDITOR_MAIN_IMPACT_ACCEPTED',JSON.stringify({
+           sha:p.sourceSha,budget:p.budget,selected:p.selected.length}));
+          NODE

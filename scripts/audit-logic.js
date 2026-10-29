@@ -41,6 +41,10 @@ function git(args, required = true) {
 function included(p) {
   if (!/\.(?:cjs|js|mjs|ts)$/.test(p)) return false;
   if (/(^|\/)(?:node_modules|coverage|dist|artifacts|tests|docs|migrations|__tests__)(\/|$)/.test(p)) return false;
+  // Independent auditor harnesses contain deliberately broken SQL/PSP fixtures.
+  // They are tooling to TEST the business, not reachable application code.
+  // Keep all services/routes and the rest of the repository in this scan.
+  if (/^tools\/business-auditor\//.test(p)) return false;
   if (/\.min\.(?:js|mjs)$/.test(p)) return false;
   return true;
 }
