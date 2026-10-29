@@ -70,6 +70,7 @@ function amend(audit,census,proof){
     proof.statementSha!==invariant[0].sha||
     proof.sourceFileHash!==invariant[0].sourceHash||
     proof.oracle?.verdict!=='PASS_WITH_EVIDENCE'||
+    proof.oracle?.contract!=='komerce-independent-db-constraint-oracle/v1'||
     proof.cloneDropped!==true||
     proof.sha!==audit.sha||
     audit?.contract!=='komerce-unified-business-logic-auditor/v35'||
@@ -118,12 +119,32 @@ async function run({auditPath,out}={},env=process.env){
   statementSha:match[0].sha,invariantId:match[0].id,
   cloneDropped:true,dbIsolation:'LOCAL_CANONICAL_POSTGRES_CLONE',
   raw:cloned.result,oracle};
+ const independentlyRechecked=evaluate(proof.raw);
+ if(JSON.stringify(independentlyRechecked)!==JSON.stringify(proof.oracle))
+  fail('proof oracle does not correspond to physical evidence');
  const amended=amend(audit,census,proof);
  const directory=path.resolve(out);fs.mkdirSync(directory,{recursive:true});
  fs.writeFileSync(path.join(directory,'g2-exact-invariant-proof.json'),JSON.stringify(proof,null,2)+'\n');
  const target=path.resolve(auditPath),tmp=target+'.g2tmp';
  fs.writeFileSync(tmp,JSON.stringify(amended,null,2)+'\n');
  fs.renameSync(tmp,target);
+ const ledgerPath=path.join(path.dirname(target),'invariant-semantic-ledger.json');
+ const ledger=JSON.parse(fs.readFileSync(ledgerPath,'utf8'));
+ const item=ledger.rows.find(x=>x.id===proof.invariantId);
+ const d=ledger.byDomain.find(x=>x.domain===match[0].domain);
+ if(ledger.contract!=='komerce-semantic-invariant-ledger/v40'||
+    ledger.summary.semanticallyVerified!==0||!item||!d)
+  fail('semantic ledger source not aligned with full audit');
+ item.verdict='CERTIFIED_DB_CONSTRAINT';
+ item.reason='PG_CHECK_SQLSTATE_23514_INDEPENDENT_NEGATIVE_CONTROL';
+ item.semanticOracleId=oracle.contract;item.exactAssertionVerified=true;
+ item.physicalProofSha=sha;
+ ledger.summary.semanticallyVerified=1;
+ ledger.summary.notCovered=ledger.summary.declared-1;
+ ledger.summary.coveragePercent=amended.summary.invariantCoveragePercent;
+ ledger.summary.gate='PARTIAL_VERIFIED';
+ d.certified=1;d.notCovered--;
+ fs.writeFileSync(ledgerPath,JSON.stringify(ledger,null,2)+'\\n');
  fs.writeFileSync(path.join(directory,'g2-summary.md'),[
   '# G2 exact DB invariant proof','','- Source SHA: '+sha,
   '- Feature Card: '+feature,'- Statement: '+statement,
