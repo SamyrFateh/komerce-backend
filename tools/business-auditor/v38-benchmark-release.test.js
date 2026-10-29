@@ -84,3 +84,15 @@ test('G5 never accepts the static-only impact plan as generated physical scenari
    physicalExecutions:0,newGeneratedExperiments:0,sourceSha:sha}});
  assert.ok(x.blockers.includes('G3_AUTONOMOUS_GENERATED_EXPERIMENT'));
 });
+
+test('G5 strict CLI exit cannot be green on NO_GO',()=>{
+ const {parse,exitCodeFor}=require('./v38-benchmark-release-cli');
+ const normal=parse(['--audit','/tmp/audit.json','--out','/tmp/out']);
+ const strict=parse(['--audit','/tmp/audit.json','--require-go','--out','/tmp/out']);
+ assert.equal(normal.requireGo,false);
+ assert.equal(strict.requireGo,true);
+ assert.equal(exitCodeFor({release:{decision:'NO_GO'}},strict.requireGo),1);
+ assert.equal(exitCodeFor({release:{decision:'GO'}},strict.requireGo),0);
+ assert.equal(exitCodeFor({release:{decision:'NO_GO'}},normal.requireGo),0);
+ assert.throws(()=>parse(['--audit','a','--out','b','--unsafe']),/G4_G5_CLI_TOOL_ERROR/);
+});

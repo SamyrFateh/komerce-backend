@@ -8,9 +8,10 @@ const fs=require('node:fs'),path=require('node:path');
 const {benchmark,markdown:benchmarkMd}=require('./v38-calibration-benchmark');
 const {readiness,markdown:releaseMd}=require('./v38-release-readiness');
 function parse(args){
- const x={audit:null,out:null,impact:null};
+ const x={audit:null,out:null,impact:null,requireGo:false};
  for(let i=0;i<args.length;i++){
   if(args[i]==='--help')return {...x,help:true};
+  if(args[i]==='--require-go'){x.requireGo=true;continue;}
   if(!['--audit','--out','--impact'].includes(args[i])||!args[i+1])
    throw Error('G4_G5_CLI_TOOL_ERROR: --audit PATH --out DIRECTORY [--impact PLAN]');
   const key=args[i].slice(2),value=args[++i];
@@ -40,7 +41,15 @@ function run(argv=process.argv.slice(2),deps={}){
   blockers:g.blockers,out}));
  return {benchmark:b,release:g,out};
 }
-if(require.main===module)try{const x=run();if(x.help)
- console.log('Usage: node v38-benchmark-release-cli.js --audit FULL/unified-audit.json --out DIR');
+function exitCodeFor({release},requireGo){
+ return requireGo&&release?.decision!=='GO'?1:0;
+}
+if(require.main===module)try{
+ const argv=process.argv.slice(2),opts=parse(argv),x=run(argv);
+ if(x.help)console.log('Usage: node v38-benchmark-release-cli.js --audit FULL/unified-audit.json --out DIR [--require-go]');
+ else if(exitCodeFor(x,opts.requireGo)){
+  console.error('G5_RELEASE_NO_GO: certification blocked; see g5-release-readiness.json');
+  process.exitCode=1;
+ }
 }catch(e){console.error('G4_G5_TOOL_ERROR '+e.message);process.exitCode=2}
-module.exports={run,parse};
+module.exports={run,parse,exitCodeFor};
