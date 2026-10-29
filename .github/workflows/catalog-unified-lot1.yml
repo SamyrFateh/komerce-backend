@@ -48,11 +48,15 @@ jobs:
           node --check scripts/testing/catalog-media-recovery-pg-proof.js
           node --check scripts/testing/catalog-media-recovery-migration-proof.js
           node --check services/catalog-workspace.js
+          node --check middleware/recette-isolation-guard.js
+          node --check scripts/recette/seed-isolated-reference-data.js
+          node --check server.js
           node --check routes/admin-catalog-workspace.js
           node --check public/dashboards/canonical/js/catalog-workspace.js
       - name: Run targeted Jest
         run: |
           npx jest --config jest.unit.config.js --runInBand --forceExit --no-coverage \
+            tests/unit/recette-isolation-guard.test.js \
             tests/unit/catalog-unified-registry.test.js \
             tests/unit/catalog-media-recovery.test.js \
             tests/unit/catalog-promotion-media-recovery.test.js \
