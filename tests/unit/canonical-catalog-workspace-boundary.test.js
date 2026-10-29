@@ -1015,3 +1015,55 @@ test('Catalogue unifié : médias fournisseur non confondus avec les médias can
   expect(fetchFn).toHaveBeenCalledTimes(1);
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
 });
+
+test('Catalogue unique : réparation média auditée seulement après consentement, sans approbation', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind:'product', product_ref:'KPR-RECOVER', candidate_ref:'KSC-RECOVER',
+    name:'Luminaire', lifecycle_status:'candidate', is_active:false,
+    work_status:'media_to_complete', operator_group:'correction',
+    active_media_count:0, source_media_count:1, media_status:'source_recoverable',
+    issues:['media_missing'],
+  }];
+  payload.registry_page = {total:1, limit:50, offset:0,has_next:false,has_previous:false};
+  let approved=false;
+  const confirm=jest.fn(()=>approved);
+  const fetchFn=jest.fn(async (url,opts={})=>({
+    ok:true,status:200,json:async()=>opts.method==='POST'
+      ? {ok:true,result:{audit_recorded:true,media_recovered:1,catalog_approved:false}}
+      : payload
+  }));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,confirm,location:{search:''}});
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-RECOVER"]');
+  const btn=panel.querySelector('[data-workspace-action="inspector-recover-media"]');
+  expect(btn).not.toBeNull();
+  await btn.click();
+  expect(fetchFn.mock.calls.filter(([,opts={})=>opts.method==='POST')).toHaveLength(0);
+  approved=true;
+  await btn.click();
+  const posts=fetchFn.mock.calls.filter(([,opts={})=>opts.method==='POST');
+  expect(posts).toHaveLength(1);
+  expect(posts[0][0]).toContain('/products/KPR-RECOVER/recover-source-media');
+  expect(JSON.parse(posts[0][1].body)).toEqual({});
+  expect(fetchFn.mock.calls.filter(([url])=>url.includes('/approve'))).toHaveLength(0);
+});
+
+test('Catalogue unique : aperçu fournisseur sans contrat stable ne déclenche aucune réparation', async () => {
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'product',product_ref:'KPR-PREVIEW',name:'Lampe',
+    lifecycle_status:'candidate',is_active:false,work_status:'media_to_complete',
+    media_status:'preview_only',operator_group:'correction',active_media_count:0,
+    source_media_count:0,issues:['media_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-PREVIEW"]');
+  expect(panel.textContent).toContain('L’image d’aperçu ne constitue pas une preuve');
+  expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
+});
