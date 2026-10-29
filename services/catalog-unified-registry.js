@@ -226,37 +226,3 @@ async function listUnified(query = {}, executor = db) {
 }
 
 module.exports = { listUnified, publicRow };
- + (values.length + 1) + ' OFFSET 
-  const groups = { correction: 0, review: 0, validated: 0, processing: 0, excluded: 0 };
-  for (const item of counts.rows) {
-    if (Object.prototype.hasOwnProperty.call(groups, item.operator_group))
-      groups[item.operator_group] = Number(item.count) || 0;
-  }
-  const total = Object.values(groups).reduce((sum, n) => sum + n, 0);
-  return {
-    products: list.rows.map(publicRow),
-    groups,
-    page: { total, limit, offset, has_previous: offset > 0,
-      has_next: offset + list.rows.length < total },
-  };
-}
-
-module.exports = { listUnified, publicRow };
- + (values.length + 2),
-      [...values, limit, offset]),
-  ]);
-  const groups = { correction: 0, review: 0, validated: 0, processing: 0, excluded: 0 };
-  for (const item of counts.rows) {
-    if (Object.prototype.hasOwnProperty.call(groups, item.operator_group))
-      groups[item.operator_group] = Number(item.count) || 0;
-  }
-  const total = Object.values(groups).reduce((sum, n) => sum + n, 0);
-  return {
-    products: list.rows.map(publicRow),
-    groups,
-    page: { total, limit, offset, has_previous: offset > 0,
-      has_next: offset + list.rows.length < total },
-  };
-}
-
-module.exports = { listUnified, publicRow };
