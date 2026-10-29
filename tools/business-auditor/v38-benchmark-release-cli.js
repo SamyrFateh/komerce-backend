@@ -13,7 +13,6 @@ function parse(args){
   if(args[i]==='--help')return {...x,help:true};
   if(!['--audit','--out','--impact'].includes(args[i])||!args[i+1])
    throw Error('G4_G5_CLI_TOOL_ERROR: --audit PATH --out DIRECTORY [--impact PLAN]');
-  x[args[i]]=null;
   const key=args[i].slice(2),value=args[++i];
   x[key]=value;
  }
