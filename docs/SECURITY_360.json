@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-28T17:05:41.123Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 757,
-    "protected": 702,
+    "total": 758,
+    "protected": 703,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2118,6 +2118,13 @@
     },
     {
       "key": "POST /api/admin/workspaces/catalog/products/{productRef}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/products/{productRef}/recover-source-media",
       "level": "PROTECTED",
       "roles": [
         "admin"
