@@ -1067,3 +1067,47 @@ test('Catalogue unique : aperçu fournisseur sans contrat stable ne déclenche a
   expect(panel.textContent).toContain('L’image d’aperçu ne constitue pas une preuve');
   expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
 });
+
+
+test('Catalogue : candidat WATCH visible en surveillance, jamais à valider ni promouvoir', async () => {
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'candidate',candidate_ref:'KSC-WATCH',product_ref:null,
+    name:'Source différée',candidate_state:'scanned',sourcing_decision:'WATCH',
+    operator_group:'processing',work_status:'sourcing_deferred',issues:[]}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-candidate-ref="KSC-WATCH"]');
+  expect(row.textContent).toContain('Surveillance Sourcing');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-WATCH"]');
+  expect(panel.textContent).toContain('Décision Sourcing différée');
+  expect(panel.querySelector('[data-workspace-action="candidate-boutique-review"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+test('Catalogue : cycle de vie contradictoire, dossier lecture seule, zéro validation',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'product',product_ref:'KPR-INCOHERENT',
+    candidate_ref:'KSC-INCOHERENT',name:'Fiche historique',
+    lifecycle_status:'candidate',is_active:true,
+    work_status:'state_inconsistent',operator_group:'correction',
+    active_media_count:0,source_media_count:1,media_status:'source_recoverable',
+    issues:['state_inconsistent','source_to_normalize','media_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-product-ref="KPR-INCOHERENT"]');
+  expect(row.textContent).toContain('Incohérence d’activation');
+  await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-INCOHERENT"]');
+  expect(panel.textContent).toContain('Anomalie d’intégrité');
+  expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
