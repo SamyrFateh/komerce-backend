@@ -123,9 +123,17 @@ WITH picked_source AS (
        THEN 'excluded'
      WHEN u.record_kind='candidate' AND u.candidate_state='imported_to_catalog'
        THEN 'handoff_missing'
-     WHEN u.record_kind='candidate' AND u.candidate_state IN ('scanned','test_ready','watchlist')
+     WHEN u.record_kind='candidate' AND
+       (u.candidate_state='watchlist' OR
+        UPPER(COALESCE(u.sourcing_decision,'')) IN ('WATCH','AVOID','LOSS'))
+       THEN 'sourcing_deferred'
+     WHEN u.record_kind='candidate' AND u.candidate_state IN ('scanned','test_ready')
        THEN 'sourcing_review'
      WHEN u.record_kind='candidate' THEN 'processing'
+     WHEN u.is_active=TRUE AND u.lifecycle_status IS DISTINCT FROM 'active'
+       THEN 'state_inconsistent'
+     WHEN u.is_active=FALSE AND u.lifecycle_status='active'
+       THEN 'state_inconsistent'
      WHEN u.lifecycle_status='rejected' THEN 'excluded'
      WHEN NOT u.source_ready THEN 'source_to_normalize'
      WHEN NOT u.taxonomy_ready THEN 'taxonomy_to_confirm'
@@ -143,7 +151,7 @@ WITH picked_source AS (
    CASE
      WHEN m.work_status='catalog_approved' THEN 'validated'
      WHEN m.work_status='excluded' THEN 'excluded'
-     WHEN m.work_status='processing' THEN 'processing'
+     WHEN m.work_status IN ('processing','sourcing_deferred') THEN 'processing'
      WHEN m.work_status IN ('approval_pending','approval_unproven','sourcing_review') THEN 'review'
      ELSE 'correction'
    END AS operator_group
@@ -158,6 +166,7 @@ function publicRow(row) {
   // owns source qualification; absence of a finished scan is not a human task.
   if (candidate && row.work_status === 'handoff_missing') issues.push('handoff_missing');
   if (!candidate) {
+    if (row.work_status === 'state_inconsistent') issues.push('state_inconsistent');
     if (!row.source_ready) issues.push('source_to_normalize');
     if (!row.taxonomy_ready) issues.push('taxonomy_to_confirm');
     if (!row.editorial_ready) issues.push('editorial_to_complete');
