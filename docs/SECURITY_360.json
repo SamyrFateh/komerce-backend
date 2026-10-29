@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-22T18:18:51.095Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 754,
-    "protected": 699,
+    "total": 755,
+    "protected": 700,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2104,6 +2104,13 @@
     },
     {
       "key": "POST /api/admin/workspaces/catalog/categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/products/{productRef}/classify",
       "level": "PROTECTED",
       "roles": [
         "admin"

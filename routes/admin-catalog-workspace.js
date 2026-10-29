@@ -58,7 +58,10 @@ router.use(...guard, rejectMarketDimension);
 router.get('/', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    res.json(await workspace.buildWorkspace(req.query));
+    if (req.query && req.query.diagnose_product_ref) {
+      return res.json(await workspace.getRegistryReadiness(String(req.query.diagnose_product_ref)));
+    }
+    return res.json(await workspace.buildWorkspace(req.query));
   } catch (err) { next(err); }
 });
 
@@ -71,6 +74,15 @@ router.post('/products', async (req, res, next) => {
 router.post('/products/:productRef/update', async (req, res, next) => {
   try {
     res.json({ ok: true, action: 'product_updated', result: await workspace.updateProduct(req.params.productRef, req.body, req.user) });
+  } catch (err) { sendError(err, res, next); }
+});
+
+router.post('/products/:productRef/classify', async (req, res, next) => {
+  try {
+    res.json({
+      ok: true, action: 'catalog_product_classified',
+      result: await workspace.classifyProduct(req.params.productRef, req.body || {}),
+    });
   } catch (err) { sendError(err, res, next); }
 });
 

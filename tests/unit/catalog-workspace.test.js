@@ -54,6 +54,14 @@ jest.mock('../../services/catalog-commercial-assortment', () => ({
   listCommercialAssortment: (...args) => mockListCommercialAssortment(...args),
 }));
 
+const mockListRegistry = jest.fn();
+jest.mock('../../services/catalog-registry', () => ({
+  listRegistry: (...args) => mockListRegistry(...args),
+}));
+const mockAssignBoutiqueTaxonomy = jest.fn();
+jest.mock('../../services/catalog-product-mutation-service', () => ({
+  assignBoutiqueTaxonomy: (...args) => mockAssignBoutiqueTaxonomy(...args),
+}));
 const workspace = require('../../services/catalog-workspace');
 
 beforeEach(() => {
@@ -73,6 +81,14 @@ beforeEach(() => {
     },
   });
   mockListCategories.mockResolvedValue([{ key: 'Maison', label: 'Maison', is_active: true, subcategories: [] }]);
+  mockListRegistry.mockResolvedValue({
+    products: [{
+      product_ref: 'KPR-000001', name: 'Produit', supplier_name: 'CJdropshipping',
+      work_status: 'approval_pending', issues: ['approval_pending'],
+      lifecycle_status: 'candidate',
+    }],
+    page: { total: 2, limit: 50, offset: 0, has_previous: false, has_next: false },
+  });
   mockListCommercialAssortment.mockResolvedValue([{
     product_ref: 'KPR-000001',
     name: 'Produit',
@@ -141,7 +157,7 @@ test('projection Catalogue conserve un prix absent à null', () => {
 
 test('projection Catalogue ne sort que les identités métier et expose le cap de curation', async () => {
   const payload = await workspace.buildWorkspace({});
-  expect(payload.scope).toEqual({ mode: 'global_commercial_catalog', label: 'Catalogue global commercial' });
+  expect(payload.scope).toEqual({ mode: 'global_catalog_registry', label: 'Catalogue global Komerce' });
   expect(payload.products[0].product_ref).toBe('KPR-000001');
   expect(payload.approval[0].product_ref).toBe('KPR-000002');
   expect(payload.approval[0]).toEqual(expect.objectContaining({
@@ -173,10 +189,16 @@ test('projection Catalogue ne sort que les identités métier et expose le cap d
     commercial_markets: 1,
   }));
   expect(payload.products[0]).toEqual(expect.objectContaining({
-    source_lots: ['KIR-000004'],
-    approved_markets: ['KM'],
+    supplier_name: 'CJdropshipping',
+    issues: ['approval_pending'],
   }));
+  expect(payload.commercial_products[0]).toEqual(expect.objectContaining({
+    source_lots: ['KIR-000004'], approved_markets: ['KM'],
+  }));
+  expect(payload.registry_page.total).toBe(2);
+  expect(payload.summary.registry_total).toBe(2);
   expect(mockListCommercialAssortment).toHaveBeenCalledWith(expect.objectContaining({ limit: 200 }));
+  expect(mockListRegistry).toHaveBeenCalledWith(expect.objectContaining({ limit: 50, offset: 0 }));
   expect(mockGetRuleNumber).toHaveBeenCalledWith('CATALOG_CAP_MVP', 120);
   expect(payload.approval_page).toEqual({
     total: 1,
@@ -194,6 +216,37 @@ test('projection Catalogue ne sort que les identités métier et expose le cap d
     first_publication_authority: 'human_approval',
     catalog_scope: 'global',
   });
+});
+
+test('le filtre métier est transmis à la projection canonique sans changer la liste commerciale', async () => {
+  await workspace.buildWorkspace({ supplier: 'CJdropshipping', category: 'mode',
+    subcategory: 'enfant', status: 'taxonomy_to_confirm', catalog_offset: '50' });
+  expect(mockListRegistry).toHaveBeenCalledWith(expect.objectContaining({
+    supplier: 'CJdropshipping', category: 'mode', subcategory: 'enfant',
+    status: 'taxonomy_to_confirm', offset: '50',
+  }));
+  expect(mockListCommercialAssortment).toHaveBeenCalledWith({ limit: 200 });
+});
+
+test('classer un produit remis délègue au moteur canonique sans activer la vente', async () => {
+  mockQuery.mockImplementation(async sql => {
+    if (String(sql).includes('WHERE product_ref = $1')) {
+      return { rows: [{ id: 'prod-1', product_ref: 'KPR-000001' }] };
+    }
+    if (String(sql).includes("FROM sourcing_candidates WHERE product_id=$1")) {
+      return { rows: [{ '?column?': 1 }] };
+    }
+    return { rows: [] };
+  });
+  mockAssignBoutiqueTaxonomy.mockResolvedValue({
+    product_ref: 'KPR-000001', boutique_category_key: 'mode',
+    boutique_subcategory_key: 'enfant',
+  });
+  const result = await workspace.classifyProduct('KPR-000001',
+    { category: 'mode', subcategory: 'enfant' });
+  expect(mockAssignBoutiqueTaxonomy).toHaveBeenCalledWith(expect.anything(),
+    'prod-1', 'mode', 'enfant');
+  expect(result).toMatchObject({ approved: false, market_exposure_changed: false });
 });
 
 test('état de curation borne le remplissage à 100 % quand le cap est atteint', () => {

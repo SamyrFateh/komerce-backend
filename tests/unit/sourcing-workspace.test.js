@@ -175,7 +175,9 @@ test('sourcing UI excludes candidates already handed off or rejected from its ac
   const fs = require('node:fs');
   const path = require('node:path');
   const uiSource = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/sourcing-workspace.js'), 'utf8');
-  expect(uiSource).toContain(".filter(row => !['imported_to_catalog', 'rejected'].includes(row.state))");
+  expect(uiSource).toContain('context.focusCandidateRef');
+  expect(uiSource).toContain('row.candidate_ref === context.focusCandidateRef');
+  expect(uiSource).toContain(": !['imported_to_catalog', 'rejected'].includes(row.state)");
   expect(uiSource).toContain('Exceptions sourcing à traiter');
 });
 
@@ -260,4 +262,32 @@ test('workspace delegates the commercial confirmation to its Sourcing mutation o
   expect(actions.confirmCandidateBoutiqueCategory).toHaveBeenCalledWith(
     'KSC-000051',{category:'Tech',subcategory:'Phones'},'operator');
   expect(mockGetClient).not.toHaveBeenCalled();
+});
+
+test('deep link Sourcing : candidate_ref ciblé transporte la référence métier', async () => {
+  const ui = require('../../public/dashboards/canonical/js/sourcing-workspace.js');
+  const doc = {
+    createElement: () => ({
+      children: [], textContent: '', className: '',
+      appendChild(child) { this.children.push(child); return child; },
+      replaceChildren(...children) { this.children = [...children]; },
+      setAttribute() {}, addEventListener() {},
+    }),
+  };
+  const urls = [];
+  const fetch = jest.fn(async url => { urls.push(url); throw new Error('controlled_stop'); });
+  await expect(ui.mount({
+    root: doc.createElement('div'), document: doc, ui: {}, fetch,
+    locationSearch: '?candidate_ref=KSC-000987',
+  })).rejects.toThrow('controlled_stop');
+  expect(urls).toEqual(['/api/admin/workspaces/sourcing?candidate_ref=KSC-000987']);
+});
+
+test('candidat ciblé : lecture priorisée et bornée', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../../services/sourcing-workspace.js'), 'utf8');
+  expect(source).toContain('CASE WHEN sc.candidate_ref = $1 THEN 0 ELSE 1 END');
+  expect(source).toContain('listCandidates(candidateRef)');
+  expect(source).toContain('LIMIT 250');
 });

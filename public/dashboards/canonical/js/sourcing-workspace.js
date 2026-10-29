@@ -194,12 +194,20 @@
     );
     // Une fois remis à la Raffinerie, le candidat reste traçable dans l'historique,
     // mais il ne constitue plus une action Sourcing ouverte.
-    const rows = (payload.candidates || []).filter(row => !['imported_to_catalog', 'rejected'].includes(row.state));
+    const rows = (payload.candidates || []).filter(row =>
+      context.focusCandidateRef
+        ? row.candidate_ref === context.focusCandidateRef
+        : !['imported_to_catalog', 'rejected'].includes(row.state));
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat à traiter : les produits transmis poursuivent leur préparation en Raffinerie.'));
       return;
     }
 
+    if (context.focusCandidateRef) {
+      slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
+        'Source ciblée depuis le Catalogue : corriger les champs autorisés du candidat. ' +
+        'Une correction de source ne republie pas la fiche et ne réécrit pas le contrat fournisseur brut.'));
+    }
     const table = doc.createElement('table');
     table.className = 'kmc-workspace-table kmc-sourcing-candidates-table';
     table.innerHTML = '<thead><tr><th>Référence</th><th>Fournisseur</th><th>Produit</th><th>Prix achat</th><th>État</th><th>Décision</th><th></th></tr></thead>';
@@ -239,6 +247,7 @@
 
       // Le front n'expose aucune catégorie douanière. On confirme la catégorie
       // boutique suggérée ou on choisit une autre paire active existante.
+      if (!['imported_to_catalog', 'rejected', 'archived', 'quarantined'].includes(row.state)) {
       const classify = makeButton(doc, 'Classer', 'classify-boutique', true);
       classify.addEventListener('click', async () => {
         classify.disabled = true;
@@ -279,6 +288,7 @@
         finally { classify.disabled = false; }
       });
       actions.appendChild(classify);
+      }
 
       const edit = makeButton(doc, 'Corriger', 'update-candidate', true);
       edit.addEventListener('click', () => {
@@ -680,7 +690,10 @@
     if (!rootNode || !doc || !ui || typeof fetchFn !== 'function') {
       throw new Error('canonical_sourcing_workspace_dependencies_missing');
     }
+    const focusSearch = options.locationSearch ??
+      (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
     const context = {
+      focusCandidateRef: new URLSearchParams(focusSearch || '').get('candidate_ref'),
       root: rootNode,
       user: options.user || {},
       fetch: fetchFn,
@@ -694,7 +707,11 @@
         const search = options.locationSearch
           ?? (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
         const diagnostic = new URLSearchParams(search || '').get('diagnostic') === '1';
-        const payload = await jsonRequest(fetchFn, diagnostic ? `${ENDPOINT}?include=health` : ENDPOINT, { timeoutMs: diagnostic ? 60000 : LOAD_TIMEOUT_MS });
+        const params = new URLSearchParams();
+        if (diagnostic) params.set('include', 'health');
+        if (context.focusCandidateRef) params.set('candidate_ref', context.focusCandidateRef);
+        const endpoint = ENDPOINT + (params.toString() ? '?' + params.toString() : '');
+        const payload = await jsonRequest(fetchFn, endpoint, { timeoutMs: diagnostic ? 60000 : LOAD_TIMEOUT_MS });
         renderPayload(rootNode, ui, doc, payload, context);
         return payload;
       } catch (error) {

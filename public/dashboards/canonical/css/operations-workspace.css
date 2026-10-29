@@ -1129,3 +1129,42 @@
 .kmc-workspace-receive-tracking { flex: 1 1 220px; min-width: 0; min-height: 40px; padding: 6px 10px; border: 1px solid #c9d3e6; border-radius: 6px; font: inherit; }
 .kmc-workspace-receive-hint { flex: 1 1 100%; }
 @media (max-width: 680px) { .kmc-workspace-receive-card { padding: 10px; } .kmc-workspace-receive-footer .kmc-workspace-action { width: 100%; } }
+
+
+/* Catalogue maître : filtres de catalogue, corrections et vues secondaires. */
+.kmc-catalog-filter-bar {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px;
+  margin-bottom: 14px;
+}
+.kmc-catalog-filter {
+  display: flex; flex: 1 1 176px; flex-direction: column; min-width: 142px; gap: 5px;
+}
+.kmc-catalog-filter input,
+.kmc-catalog-filter select {
+  width: 100%; min-height: 38px; max-width: 100%;
+  border: 1px solid #c7d2e2; border-radius: 7px; padding: 7px 9px;
+  background: #fff; color: #172c4c; font: inherit;
+}
+.kmc-catalog-filter input:focus-visible,
+.kmc-catalog-filter select:focus-visible {
+  outline: 2px solid #2563eb; outline-offset: 2px;
+}
+.kmc-catalog-registry-thumb {
+  width: 48px; height: 48px; object-fit: contain; flex: none;
+  border: 1px solid #e2e8f0; border-radius: 6px; background: #fff;
+}
+.kmc-catalog-registry-product { display: flex; align-items: center; gap: 10px; }
+.kmc-catalog-registry-product > div { min-width: 0; }
+.kmc-catalog-taxonomy-panel,
+.kmc-catalog-commercial-panel {
+  margin-top: 12px; border: 1px solid #dae3ee; border-radius: 9px;
+  background: #fff; padding: 12px 16px;
+}
+.kmc-catalog-taxonomy-panel summary,
+.kmc-catalog-commercial-panel summary { cursor: pointer; font-weight: 700; }
+.kmc-catalog-taxonomy-panel:focus-within,
+.kmc-catalog-commercial-panel:focus-within { border-color: #93b5ee; }
+@media (max-width: 650px) {
+  .kmc-catalog-filter { flex-basis: 100%; }
+  .kmc-catalog-filter-bar .kmc-workspace-action { min-height: 40px; }
+}

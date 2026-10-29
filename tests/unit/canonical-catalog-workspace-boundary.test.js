@@ -187,8 +187,8 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261021-4');
-  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261018-1');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261028-5');
+  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
 test('Vue Catalogue ne duplique plus le pipeline Import', () => {
@@ -200,7 +200,7 @@ test('Vue Catalogue ne duplique plus le pipeline Import', () => {
   ['Sources catalogue · LIVE', 'La Raffinerie en temps réel', 'En train d’arriver · LIVE']
     .forEach(label => expect(workspace).not.toContain(label));
 
-  expect(workspace).toContain('Catalogue global commercial');
+  expect(workspace).toContain("createSection(rootNode, ui, 'Produits', '')");
   expect(workspace).toContain('KIR clos');
   expect(workspace).toContain('Marchés approuvés');
   expect(workspace).toContain('/admin/import-runtime');
@@ -213,7 +213,9 @@ test('Catalogue garde une seule surface Canonical et délègue provenance/import
   expect(tower).toContain('Compatibility shell only');
   expect(tower).not.toContain("view=advanced");
   expect(workspace).toContain("cockpit.href = '/admin/import-runtime'");
-  expect(workspace).toContain("next.href = refinery ? '/admin/workspaces/catalog' : '/admin/workspaces/catalog?view=refinery'");
+  expect(workspace).toContain("if (refinery) {");
+  expect(workspace).toContain("next.href = '/admin/workspaces/catalog'");
+  expect(workspace).not.toContain('nav.appendChild(refineryLink)');
 });
 
 test('la curation guide explicitement la préparation française avant publication', () => {
@@ -735,7 +737,7 @@ test('Catalogue fini ne declenche jamais une preparation FR automatique', () => 
   expect(source).toContain("if (context.workspaceView === 'refinery' && !reloadOptions.skipAutoFrenchSchedule)");
 });
 
-test('la Raffinerie affiche les manquants certifies par le serveur et laisse le Catalogue commercial intact', () => {
+test('la Raffinerie affiche les manquants certifies par le serveur et laisse la vue commerciale distincte', () => {
   const source = read('public/dashboards/canonical/js/catalog-workspace.js');
   expect(source).toContain("include_readiness: '1'");
   expect(source).toContain("data-refinery-readiness");
@@ -746,9 +748,18 @@ test('la Raffinerie affiche les manquants certifies par le serveur et laisse le 
 test('la Raffinerie ne duplique pas ses compteurs en bas et préserve les métriques du Catalogue', () => {
   const source = read('public/dashboards/canonical/js/catalog-workspace.js');
   const render = source.slice(source.indexOf('function renderPayload('), source.indexOf('async function mount(', source.indexOf('function renderPayload(')));
-  expect(render).toContain('if (!refinery) {');
-  expect(render.indexOf('if (!refinery) {')).toBeLessThan(render.indexOf("ui.MetricStrip.render(metrics"));
-  expect(render).toContain("!['approval', 'review'].includes(item.key)");
+  expect(render).toContain("if (context.catalogTab === 'assortment') {");
+  expect(render).toContain("} else if (context.catalogTab === 'taxonomy') {");
+  expect(render).toContain('renderCommercial(rootNode, ui, doc, payload)');
+  expect(render).toContain('renderTaxonomy(rootNode, ui, doc, payload, context)');
+  expect(render).not.toContain('taxonomyPanel');
+  expect(render.indexOf('renderCatalogTabs(rootNode, doc, context)')).toBeLessThan(render.indexOf('renderProducts(rootNode, ui, doc, payload, context)'));
+  // Les compteurs opérationnels du registre sont exclus de la Raffinerie
+  // et des deux rubriques secondaires : aucune métrique hors du bon onglet.
+  expect(render).toContain("if (refinery) {");
+  expect(render).toContain("renderApproval(rootNode, ui, doc, payload, context);");
+  expect(render).not.toContain('ui.MetricStrip.render');
+  expect(render).not.toContain("metricItems(payload.summary, payload.curation).filter");
   expect(render).toContain('renderApproval(rootNode, ui, doc, payload, context)');
   expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
 });
