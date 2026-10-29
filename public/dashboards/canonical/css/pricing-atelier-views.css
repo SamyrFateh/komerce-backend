@@ -140,3 +140,31 @@
 .kmc-atelier-views .kmc-atelier-result{margin:0 0 16px;padding:14px 16px;border-left:4px solid #1f7a4d;background:#e8f4ed;border-radius:8px}
 .kmc-atelier-views .kmc-atelier-result h4{margin:0 0 8px}
 .kmc-atelier-views .kmc-atelier-result-cols{display:grid;grid-template-columns:2fr 1.2fr 1fr;gap:16px}
+
+/* Pricing dossier: preserve viewport on phones after displaying simulation,
+   price-draft results and competitive observations. Children must shrink rather
+   than enlarging the document to their intrinsic min-content width. */
+@media (max-width: 760px) {
+  .kmc-atelier-views .kmc-atelier-dossier,
+  .kmc-atelier-views .kmc-atelier-panel,
+  .kmc-atelier-views .kmc-atelier-dossier-grid,
+  .kmc-atelier-views .kmc-atelier-result,
+  .kmc-atelier-views .kmc-atelier-result-cols > * {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .kmc-atelier-views .kmc-atelier-result-cols {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .kmc-atelier-views .kmc-atelier-obs-table {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px 6px;
+  }
+  .kmc-atelier-views .kmc-atelier-obs-table > *,
+  .kmc-atelier-views .kmc-atelier-sim-table > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
