@@ -4,6 +4,7 @@
  * coverage, an independent withheld-bug benchmark and a reviewed main diff.
  * A green historical CI suite alone is never a release certificate.
  */
+const {accepts:acceptsG3}=require('./v40-g3-proof-admission');
 const fail=s=>{throw Error('G5_RELEASE_TOOL_ERROR: '+s)};
 function readiness({audit,benchmark,impactPlan=null,mainDiff=null}={}){
  if(!audit||audit.contract!=='komerce-unified-business-logic-auditor/v35'||
@@ -28,10 +29,7 @@ function readiness({audit,benchmark,impactPlan=null,mainDiff=null}={}){
   '; semantically certified: '+audit.summary.featureInvariantsCertified+
   '; ratio: '+audit.summary.invariantCoveragePercent);
  gate('G3_AUTONOMOUS_GENERATED_EXPERIMENT',
-  Boolean(impactPlan?.contract==='komerce-generated-experiment-proof/v1'&&
-   impactPlan?.sha===audit.sha&&impactPlan.realOwnerOnClonedPg===true&&
-   impactPlan.generatedCases>0&&impactPlan.independentOracle===true&&
-   impactPlan.withheldMutationDetected===true&&impactPlan.allClonesDropped===true),
+  acceptsG3(impactPlan,audit.sha),
   impactPlan?.contract||'Only static impact selection, no generated physical fixtures');
  gate('G4_REPLAY_KNOWN_CALIBRATIONS',benchmark.calibrationGate==='PASS'&&
   benchmark.calibration.toolErrors===0&&benchmark.calibration.falsePositive===0,
