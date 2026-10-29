@@ -92,11 +92,14 @@ async function main() {
         (id,product_id,candidate_ref,product_name,supplier_name,supplier_product_id,
          state,scan_result)
       VALUES (7,NULL,'SC-WATCH','Référence en surveillance',
-        'AliExpress','A-WATCH','scanned','{"sourcing_decision":"WATCH"}');
+        'AliExpress','A-WATCH','scanned','{"sourcing_decision":"WATCH"}'),
+             (8,NULL,'SC-WATCH-CATEGORY','Référence à classer',
+        'AliExpress','A-WATCH-CATEGORY','scanned',
+        '{"sourcing_decision":"WATCH","commercial_review":{"status":"PENDING_CLASSIFICATION","action":"REVIEW_BOUTIQUE_TAXONOMY"}}');
     `);
     const before = await client.query('SELECT COUNT(*)::int AS n FROM sourcing_candidates');
     const result = await listUnified({ limit: 50 }, client);
-    assert.equal(result.page.total, 9, 'product + pre-handoff count');
+    assert.equal(result.page.total, 10, 'product + pre-handoff count');
     assert.equal(result.products.filter(r => r.product_ref === 'KPR-001').length, 1,
       'a handed product with two candidate observations must appear once');
     assert.equal(result.products.filter(r => r.candidate_ref === 'SC-ALT').length, 0,
@@ -132,6 +135,10 @@ async function main() {
     assert.equal(deferred.work_status,'sourcing_deferred');
     assert.equal(deferred.operator_group,'processing');
     assert.deepEqual(deferred.issues,[]);
+    const categoryReview=result.products.find(r=>r.candidate_ref==='SC-WATCH-CATEGORY');
+    assert.equal(categoryReview.work_status,'sourcing_category_review');
+    assert.equal(categoryReview.operator_group,'correction');
+    assert.deepEqual(categoryReview.issues,['sourcing_economic_category_missing']);
     const candidateActivated=result.products.find(r=>r.product_ref==='KPR-ACTIVE-CANDIDATE');
     assert.equal(candidateActivated.work_status,'activation_to_reconcile');
     assert(candidateActivated.issues.includes('activation_to_reconcile'));
