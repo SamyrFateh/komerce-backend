@@ -69,6 +69,8 @@ WITH picked_source AS (
          AND NULLIF(BTRIM(sc.image_url),'') IS NOT NULL) AS supplier_image_preview,
         (SELECT COUNT(*)::int FROM catalog_media cm
           WHERE cm.product_id=p.id AND cm.is_active=TRUE) AS active_media_count,
+        (SELECT COUNT(*)::int FROM catalog_media cm
+          WHERE cm.product_id=p.id) AS total_media_count,
         CASE WHEN jsonb_typeof(sc.normalized_source_contract->'media')='array'
            THEN jsonb_array_length(sc.normalized_source_contract->'media') ELSE 0 END AS source_media_count,
         (sc.state='imported_to_catalog'
@@ -106,6 +108,7 @@ WITH picked_source AS (
         NULL::boolean, NULL::boolean,
         NULL::text, NULL::text, NULL::text, NULL::text,
         NULL::text, FALSE, FALSE, FALSE, FALSE,
+        0::int,
         0::int,
         CASE WHEN jsonb_typeof(sc.normalized_source_contract->'media')='array'
           THEN jsonb_array_length(sc.normalized_source_contract->'media') ELSE 0 END,
@@ -174,12 +177,14 @@ function publicRow(row) {
     image_url: row.image_url || null,
     supplier_image_preview: row.supplier_image_preview === true,
     active_media_count: row.active_media_count == null ? null : Number(row.active_media_count),
+    total_media_count: row.total_media_count == null ? null : Number(row.total_media_count),
     source_media_count: row.source_media_count == null ? null : Number(row.source_media_count),
     media_status: candidate ? 'pre_handoff'
       : (Number(row.active_media_count) > 0 ? 'canonical_ready'
-        : (row.source_media_repairable === true ? 'source_recoverable'
+        : (Number(row.total_media_count) > 0 ? 'canonical_inactive_review'
+          : (row.source_media_repairable === true ? 'source_recoverable'
           : (Number(row.source_media_count) > 0 ? 'source_requires_review'
-            : (row.image_url ? 'preview_only' : 'source_missing')))),
+            : (row.image_url ? 'preview_only' : 'source_missing'))))),
     supplier_name: row.supplier_name || null,
     supplier_product_id: row.supplier_product_id || null,
     supplier_category: row.supplier_category || null,

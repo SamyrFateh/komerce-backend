@@ -2057,6 +2057,7 @@
         ['Médias du contrat fournisseur V2', row.source_media_count == null
           ? 'Non mesuré' : String(row.source_media_count)],
         ['Diagnostic', ({
+          canonical_inactive_review: 'Un média canonique existe mais est désactivé. Réexamen humain requis, aucune réactivation automatique.',
           source_recoverable: 'Médias source identifiés avec une identité stable. Réintégration canonique nécessaire.',
           source_requires_review: 'Médias source présents mais non admissibles sans vérification.',
           preview_only: 'L’image d’aperçu ne constitue pas une preuve média canonique.',

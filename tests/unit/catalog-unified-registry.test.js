@@ -178,6 +178,9 @@ test('image de prévisualisation et média canonique sont des preuves différent
     source_media_repairable:true }))
     .toMatchObject({media_status:'canonical_ready',issues:[
       'taxonomy_to_confirm','editorial_to_complete']});
+  expect(publicRow({ ...canonical, active_media_count:0, total_media_count:1,
+    source_media_count:1, source_media_repairable:true }))
+    .toMatchObject({media_status:'canonical_inactive_review',issues:expect.arrayContaining(['media_missing'])});
   expect(publicRow({ ...originalCandidate, active_media_count:0, source_media_count:1 }))
     .toMatchObject({media_status:'pre_handoff',issues:[]});
 });
