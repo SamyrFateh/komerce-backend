@@ -3,10 +3,10 @@ name: Catalogue unified lot 1 read-only checks
 on:
   push:
     branches:
-      - feat/catalog-unified-operator-projection-20261029
+      - feat/catalog-unified-contextual-corrections-20261029
   pull_request:
     branches:
-      - feat/finalize-sourcing-catalog-ux-20261028
+      - feat/catalog-unified-operator-projection-20261029
   workflow_dispatch:
 
 permissions:

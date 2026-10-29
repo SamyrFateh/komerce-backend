@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-1');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-2');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -811,4 +811,182 @@ test('Catalogue unifié : candidat pré-handoff affiché et inspectable sans éc
   expect(dossier.textContent).toContain('Raw supplier product');
   expect(dossier.textContent).toContain('Lecture seule');
   expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+
+test('Catalogue unique : confirmation du classement candidat réutilise la suggestion Sourcing avec grant', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.summary.operator_groups = { correction: 0, review: 1, validated: 0, processing: 0, excluded: 0 };
+  payload.products = [{
+    record_kind: 'candidate', candidate_ref: 'KSC-000444', product_ref: null,
+    name: 'Lampe source', supplier_name: 'CJdropshipping',
+    supplier_product_id: 'CJ-444', supplier_category: 'Home > Lamp',
+    candidate_state: 'scanned', sourcing_decision: 'TEST',
+    operator_group: 'review', work_status: 'sourcing_review', issues: [],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const calls = [];
+  const fetchFn = jest.fn(async (url, options = {}) => {
+    calls.push([url, options]);
+    let data = payload;
+    if (url.includes('/boutique-category-options')) data = {
+      categories: [
+        { category: 'maison', category_label: 'Maison', subcategory: 'luminaire', subcategory_label: 'Luminaires' },
+        { category: 'tech', category_label: 'Tech', subcategory: 'accessories', subcategory_label: 'Accessoires' },
+      ],
+      suggestions: [{
+        category: 'maison', category_label: 'Maison', subcategory: 'luminaire',
+        subcategory_label: 'Luminaires', confidence: 'high', reason: 'Supplier product object',
+      }],
+    };
+    if (url.includes('/confirm-boutique-category'))
+      data = { ok: true, result: { confirmed: true, draft_created: true } };
+    return { ok: true, status: 200, json: async () => data };
+  });
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  const row = root.querySelector('[data-candidate-ref="KSC-000444"]');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel = root.querySelector('[data-catalog-candidate-inspector="KSC-000444"]');
+  await panel.querySelector('[data-workspace-action="candidate-boutique-review"]').click();
+  const select = panel.querySelector('[data-catalog-candidate-category-choice]');
+  expect(select).not.toBeNull();
+  expect(select.value).toBe('0');
+  expect(select.children[0].textContent).toContain('Proposé');
+  const form = panel.querySelector('[data-catalog-candidate-category-form]');
+  await form.listeners.submit[0]({ preventDefault() {} });
+  expect(calls.some(([url]) => url.includes('/confirm-boutique-category'))).toBe(true);
+  const [postUrl, postOptions] = calls.find(([url]) => url.includes('/confirm-boutique-category'));
+  expect(postUrl).toContain('/api/admin/workspaces/sourcing/candidates/KSC-000444/');
+  expect(postOptions.method).toBe('POST');
+  expect(JSON.parse(postOptions.body)).toEqual({ category: 'maison', subcategory: 'luminaire' });
+  expect(calls.filter(([, options]) => options.method === 'POST')).toHaveLength(1);
+});
+
+test('Catalogue unique : candidat en préparation ne propose aucune mutation prématurée', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'candidate', candidate_ref: 'KSC-000445', product_ref: null,
+    name: 'Produit importé', candidate_state: 'raw_imported',
+    operator_group: 'processing', work_status: 'processing', issues: [],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const fetchFn = jest.fn(async () => ({ ok: true, status: 200, json: async () => payload }));
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  const row = root.querySelector('[data-candidate-ref="KSC-000445"]');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel = root.querySelector('[data-catalog-candidate-inspector="KSC-000445"]');
+  expect(panel.textContent).toContain('aucune correction humaine présumée');
+  expect(panel.querySelector('[data-workspace-action="candidate-boutique-review"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+test('Catalogue unique : produit remis a correction de catégorie, français et gate de validation dans son panneau', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'product', product_ref: 'KPR-000446', candidate_ref: 'KSC-000446',
+    name: 'Produit source', supplier_name: 'CJdropshipping',
+    lifecycle_status: 'candidate', is_active: false, work_status: 'taxonomy_to_confirm',
+    operator_group: 'correction', issues: ['taxonomy_to_confirm', 'editorial_to_complete'],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const fetchFn = jest.fn(async () => ({ ok: true, status: 200, json: async () => payload }));
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  const row = root.querySelector('[data-product-ref="KPR-000446"]');
+  expect(row.querySelector('[data-workspace-action="open-catalog-inspector"]')).not.toBeNull();
+  await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel = root.querySelector('[data-catalog-product-inspector="KPR-000446"]');
+  expect(panel.textContent).toContain('Classement Boutique à corriger');
+  expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).not.toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-prepare-fr"]')).not.toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+});
+
+test('Catalogue unique : le serveur refuse la validation si la certification est incomplète', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'product', product_ref: 'KPR-000447', candidate_ref: 'KSC-000447',
+    name: 'Produit prêt', lifecycle_status: 'candidate', is_active: false,
+    work_status: 'approval_pending', operator_group: 'review', issues: ['approval_pending'],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const fetchFn = jest.fn(async url => ({
+    ok: true, status: 200,
+    json: async () => url.includes('diagnose_product_ref=')
+      ? { phase: 'catalog_approval', certification: { certified: false, reasons: ['media_missing'] } }
+      : payload,
+  }));
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel = root.querySelector('[data-catalog-product-inspector="KPR-000447"]');
+  await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
+  expect(panel.textContent).toContain('À compléter');
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+  expect(fetchFn.mock.calls.map(([url]) => url)).toHaveLength(2);
+});
+
+
+test('Catalogue unique : une validation autorisée exige un GET de preuve puis une confirmation humaine', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'product', product_ref: 'KPR-000448', candidate_ref: 'KSC-000448',
+    name: 'Produit prêt', lifecycle_status: 'candidate', is_active: false,
+    work_status: 'approval_pending', operator_group: 'review', issues: ['approval_pending'],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const confirm = jest.fn(() => true);
+  const fetchFn = jest.fn(async (url, options = {}) => ({
+    ok: true, status: 200,
+    json: async () => url.includes('diagnose_product_ref=')
+      ? { phase: 'catalog_approval', certification: { certified: true, reasons: [] } }
+      : options.method === 'POST'
+        ? { ok: true, action: 'catalog_candidate_approved', result: { product_ref: 'KPR-000448' } }
+        : payload,
+  }));
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, confirm, location: { search: '' } });
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel = root.querySelector('[data-catalog-product-inspector="KPR-000448"]');
+  expect(panel).not.toBeNull();
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
+  await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
+  const approve = panel.querySelector('[data-workspace-action="inspector-approve"]');
+  expect(approve).not.toBeNull();
+  expect(fetchFn.mock.calls.filter(([, options = {}]) => options.method === 'POST')).toHaveLength(0);
+  await approve.click();
+  expect(confirm).toHaveBeenCalledTimes(1);
+  const posts = fetchFn.mock.calls.filter(([, options = {}]) => options.method === 'POST');
+  expect(posts).toHaveLength(1);
+  expect(posts[0][0]).toContain('/api/admin/workspaces/catalog/approval/KPR-000448/approve');
+  expect(fetchFn.mock.calls.map(([url]) => url).filter(url => url.includes('unified=1'))).toHaveLength(2);
+});
+
+test('Catalogue unique : un refus du Sourcing empêche la proposition et toute mutation', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'candidate', candidate_ref: 'KSC-000449', product_ref: null,
+    name: 'Source', candidate_state: 'scanned',
+    operator_group: 'review', work_status: 'sourcing_review', issues: [],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
+  const fetchFn = jest.fn(async url => url.includes('/boutique-category-options')
+    ? { ok: false, status: 403, json: async () => ({ error: 'Sourcing global requis', code: 'sourcing_global_access_denied' }) }
+    : { ok: true, status: 200, json: async () => payload });
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
+  await root.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel = root.querySelector('[data-catalog-candidate-inspector="KSC-000449"]');
+  await panel.querySelector('[data-workspace-action="candidate-boutique-review"]').click();
+  expect(panel.querySelector('[data-catalog-candidate-category-form]')).toBeNull();
+  expect(fetchFn.mock.calls.filter(([, opts = {}]) => opts.method === 'POST')).toHaveLength(0);
 });

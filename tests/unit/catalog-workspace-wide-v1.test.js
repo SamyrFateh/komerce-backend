@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261029-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261029-2');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -134,7 +134,7 @@ test('Suggestion : correspondance exacte fournisseur unique, jamais de classemen
 });
 test('Classement : formulaire accessible et pas de prompt/confirm avec indices', () => {
   const source=ui.slice(ui.indexOf('function openProductClassificationDialog'),
-    ui.indexOf('function renderProducts('));
+    ui.indexOf('function inspectorFrame('));
   expect(source).toContain("doc.createElement('dialog')");
   expect(source).toContain("doc.createElement('select')");
   expect(source).toContain("dialog.showModal()");

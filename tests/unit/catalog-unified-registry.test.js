@@ -121,10 +121,11 @@ test('recherche, fournisseur, catégorie et filtre groupé s’appliquent aux de
   expect(countSql).toContain('supplier_name = $2');
   expect(countSql).toContain('boutique_category_key = $3');
   expect(countSql).toContain('boutique_subcategory_key = $4');
-  expect(countSql).toContain('operator_group = $5');
+  expect(countSql).not.toContain('operator_group = $5');
+  expect(pageSql).toContain('operator_group = $5');
   expect(pageSql).toContain('LIMIT $6 OFFSET $7');
-  expect(countArgs).toEqual(['%Lampe%', 'CJdropshipping', 'maison', 'luminaire', 'correction']);
-  expect(pageArgs).toEqual([...countArgs, 50, 0]);
+  expect(countArgs).toEqual(['%Lampe%', 'CJdropshipping', 'maison', 'luminaire']);
+  expect(pageArgs).toEqual([...countArgs, 'correction', 50, 0]);
 });
 
 test('statut arbitraire et pagination non fiable ne peuvent pas injecter de SQL', async () => {
@@ -147,4 +148,20 @@ test('zéro ligne conserve un total fiable, sans produit artificiel', async () =
     total: 0, limit: 50, offset: 0, has_previous: false, has_next: false,
   });
   expect(value.products).toEqual([]);
+});
+
+test('compteurs non filtrés par onglet : les autres files ne deviennent pas faussement vides', async () => {
+  const q = executor([
+    { operator_group: 'correction', count: 3 },
+    { operator_group: 'review', count: 9 },
+    { operator_group: 'validated', count: 7 },
+  ], [canonical]);
+  const result = await listUnified({ status: 'correction', limit: 50 }, q);
+  expect(result.groups).toEqual({
+    correction: 3, review: 9, validated: 7, processing: 0, excluded: 0,
+  });
+  expect(result.page.total).toBe(3);
+  expect(q.query.mock.calls[0][0]).not.toContain('operator_group =');
+  expect(q.query.mock.calls[1][0]).toContain('operator_group = $1');
+  expect(q.query.mock.calls[1][1]).toEqual(['correction', 50, 0]);
 });

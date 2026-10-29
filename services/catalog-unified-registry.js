@@ -192,16 +192,19 @@ async function listUnified(query = {}, executor = db) {
   add(query.supplier, 'supplier_name = ?');
   add(query.category, 'boutique_category_key = ?');
   add(query.subcategory, 'boutique_subcategory_key = ?');
-  if (['correction','review','validated','processing','excluded'].includes(query.status)) {
-    add(query.status, 'operator_group = ?');
-  }
-  const where = filters.length ? ' WHERE ' + filters.join(' AND ') : '';
-  // Both queries share the same scope and filters: server counts are never
-  // estimated from just the current page.
+  // The workflow counts must stay stable when a user selects one status.
+  // Search, supplier and taxonomy still scope the counts; status only scopes
+  // the page rows, so switching tabs does not make other tabs read "0".
+  const groupWhere = filters.length ? ' WHERE ' + filters.join(' AND ') : '';
+  const groupValues = [...values];
+  const status = ['correction','review','validated','processing','excluded']
+    .includes(query.status) ? query.status : null;
+  if (status) add(status, 'operator_group = ?');
+  const pageWhere = filters.length ? ' WHERE ' + filters.join(' AND ') : '';
   const [counts, list] = await Promise.all([
     executor.query(UNIFIED_CTE + '\nSELECT operator_group, COUNT(*)::int AS count FROM operator_view' +
-      where + ' GROUP BY operator_group', values),
-    executor.query(UNIFIED_CTE + '\nSELECT * FROM operator_view' + where +
+      groupWhere + ' GROUP BY operator_group', groupValues),
+    executor.query(UNIFIED_CTE + '\nSELECT * FROM operator_view' + pageWhere +
       '\nORDER BY CASE operator_group WHEN \'correction\' THEN 0 WHEN \'review\' THEN 1' +
       ' WHEN \'processing\' THEN 2 WHEN \'validated\' THEN 3 ELSE 4 END,' +
       ' updated_at DESC NULLS LAST, COALESCE(product_ref,candidate_ref) ASC' +
@@ -213,7 +216,7 @@ async function listUnified(query = {}, executor = db) {
     if (Object.prototype.hasOwnProperty.call(groups, item.operator_group))
       groups[item.operator_group] = Number(item.count) || 0;
   }
-  const total = Object.values(groups).reduce((sum, n) => sum + n, 0);
+  const total = status ? groups[status] : Object.values(groups).reduce((sum, n) => sum + n, 0);
   return {
     products: list.rows.map(publicRow),
     groups,

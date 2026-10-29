@@ -24,6 +24,7 @@
   if (root) root.KomerceCanonicalCatalogWorkspace = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createCatalogWorkspace() {
   const ENDPOINT = '/api/admin/workspaces/catalog';
+  const SOURCING_ENDPOINT = '/api/admin/workspaces/sourcing';
   const CATALOG_FR_TRANSLATOR_CACHE_KEY = '__KOMERCE_CATALOG_FR_TRANSLATOR__';
   let activeContext = null;
   let activePayload = null;
@@ -1852,46 +1853,258 @@
     return check;
   }
 
-  // Read-only until each Sourcing action is exposed through an explicit
-  // capability-checked gateway: never invent a product_ref for a candidate.
-  function openCandidateInspector(slot, doc, row) {
+  // The Catalogue is one operator surface; each mutation is still sent to
+  // its canonical domain route, which checks its own grant and business gate.
+  // Supplier originals always remain read-only.
+  function inspectorFrame(slot, doc, row, mode) {
     const previous = slot.querySelector('[data-catalog-candidate-inspector]');
     if (previous) previous.remove();
+    const oldProduct = slot.querySelector('[data-catalog-product-inspector]');
+    if (oldProduct) oldProduct.remove();
     const panel = doc.createElement('aside');
     panel.className = 'kmc-catalog-candidate-inspector';
-    panel.setAttribute('data-catalog-candidate-inspector', row.candidate_ref);
+    panel.setAttribute(mode === 'candidate'
+      ? 'data-catalog-candidate-inspector' : 'data-catalog-product-inspector',
+      mode === 'candidate' ? row.candidate_ref : row.product_ref);
     panel.setAttribute('role', 'region');
-    panel.setAttribute('aria-label', 'Dossier de qualification ' + row.candidate_ref);
+    panel.setAttribute('aria-label', 'Correction contextuelle · ' +
+      (row.product_ref || row.candidate_ref));
     const head = doc.createElement('div');
     head.className = 'kmc-catalog-inspector-head';
-    head.appendChild(text(doc, 'strong', '', row.name || row.candidate_ref));
+    head.appendChild(text(doc, 'strong', '', row.name || row.product_ref || row.candidate_ref));
     const close = makeButton(doc, 'Fermer', 'close-inspector', true);
     close.addEventListener('click', () => panel.remove());
     head.appendChild(close);
     panel.appendChild(head);
     panel.appendChild(text(doc, 'small', 'kmc-workspace-subtitle',
-      'Référence Sourcing : ' + row.candidate_ref + ' · ' + (row.supplier_name || 'Fournisseur non identifié')));
-    const fields = [
-      ['Nom fournisseur', row.supplier_name_original || row.name],
-      ['Référence fournisseur', row.supplier_product_id],
-      ['Catégorie fournisseur', row.supplier_category],
-      ['Description d’origine', row.supplier_description],
-      ['État du traitement', row.candidate_state],
-      ['Décision de scan', row.sourcing_decision],
-      ['Confiance du scan', row.sourcing_confidence],
-    ];
+      'Référence : ' + (row.product_ref || row.candidate_ref) +
+      (row.candidate_ref && row.product_ref ? ' · Source ' + row.candidate_ref : '')));
     const facts = doc.createElement('dl');
     facts.className = 'kmc-catalog-inspector-fields';
-    fields.forEach(([name, value]) => {
-      facts.appendChild(text(doc, 'dt', '', name));
+    [
+      ['Fournisseur', row.supplier_name],
+      ['Référence fournisseur', row.supplier_product_id],
+      ['Titre fournisseur', row.supplier_name_original || row.name_source || row.name],
+      ['Catégorie fournisseur', row.supplier_category],
+      ['Description fournisseur', row.supplier_description || row.description_source],
+    ].forEach(([label, value]) => {
+      facts.appendChild(text(doc, 'dt', '', label));
       facts.appendChild(text(doc, 'dd', '', value || 'Non renseigné / non mesuré'));
     });
+    panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section', 'Lecture seule · source fournisseur'));
     panel.appendChild(facts);
-    panel.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
-      'Lecture seule : les corrections seront activées ici après vérification des habilitations Sourcing. Aucune approbation ni publication implicite.'));
+    const feedback = text(doc, 'div', 'kmc-catalog-inspector-feedback', '');
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('aria-live', 'polite');
+    const actions = doc.createElement('div');
+    actions.className = 'kmc-catalog-inspector-actions';
+    panel.appendChild(actions);
+    panel.appendChild(feedback);
     slot.appendChild(panel);
-    if (typeof panel.scrollIntoView === 'function')
-      panel.scrollIntoView({ block: 'nearest' });
+    if (typeof panel.scrollIntoView === 'function') panel.scrollIntoView({ block: 'nearest' });
+    return { panel, actions, feedback };
+  }
+
+  // The Sourcing category picker is the proven existing form, not a new
+  // classifier. The candidate service supplies the active pairs and evidence.
+  function openCandidateInspector(context, slot, doc, row) {
+    const { panel, actions, feedback } = inspectorFrame(slot, doc, row, 'candidate');
+    panel.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
+      'État Sourcing : ' + (row.candidate_state || 'inconnu') +
+      ' · Décision de scan : ' + (row.sourcing_decision || 'non mesurée')));
+    if (['rejected', 'archived', 'quarantined', 'imported_to_catalog'].includes(row.candidate_state)
+        || row.work_status === 'handoff_missing'
+        || String(row.sourcing_decision || '').toUpperCase() === 'EXCLUDED') {
+      feedback.textContent = 'L’état actuel interdit une correction Boutique automatique. ' +
+        'Une réconciliation de la source est nécessaire ; aucune publication n’est déclenchée.';
+      return panel;
+    }
+    if (row.operator_group === 'processing') {
+      feedback.textContent = 'Traitement de source en cours ou incomplet : aucune correction humaine présumée.';
+      return panel;
+    }
+    const classify = makeButton(doc, 'Vérifier le classement proposé', 'candidate-boutique-review');
+    actions.appendChild(classify);
+    classify.addEventListener('click', async () => {
+      classify.disabled = true;
+      feedback.textContent = 'Chargement des propositions Sourcing…';
+      try {
+        const options = await jsonRequest(context.fetch,
+          SOURCING_ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) +
+          '/boutique-category-options');
+        const candidates = Array.isArray(options.categories) ? options.categories : [];
+        const suggestion = (options.suggestions || []).find(item =>
+          candidates.some(pair => pair.category === item.category &&
+            pair.subcategory === item.subcategory));
+        const ordered = suggestion
+          ? [suggestion, ...candidates.filter(pair =>
+              pair.category !== suggestion.category || pair.subcategory !== suggestion.subcategory)]
+          : candidates;
+        if (!ordered.length) throw new Error('Aucune catégorie Boutique active disponible.');
+        const previous = panel.querySelector('[data-catalog-candidate-category-form]');
+        if (previous) previous.remove();
+        const form = doc.createElement('form');
+        form.className = 'kmc-catalog-inspector-form';
+        form.setAttribute('data-catalog-candidate-category-form', '');
+        form.appendChild(text(doc, 'strong', '', 'Proposition de classement Boutique'));
+        form.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+          suggestion
+            ? 'Proposition issue du moteur Komerce. Vérifiez sa preuve et sa pertinence.'
+            : 'Aucune proposition sûre. Sélectionnez une catégorie Boutique existante.'));
+        if (suggestion) {
+          const basis = [suggestion.basis, suggestion.reason, suggestion.confidence]
+            .filter(Boolean).join(' · ');
+          if (basis) form.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint', basis));
+        }
+        const label = text(doc, 'label', 'kmc-catalog-inspector-label',
+          'Catégorie / sous-catégorie');
+        const select = doc.createElement('select');
+        select.setAttribute('data-catalog-candidate-category-choice', '');
+        ordered.forEach((item, index) => {
+          const option = doc.createElement('option');
+          option.value = String(index);
+          option.textContent = (suggestion && index === 0 ? 'Proposé · ' : '') +
+            (item.category_label || item.category) + ' › ' +
+            (item.subcategory_label || item.subcategory);
+          select.appendChild(option);
+        });
+        select.value = '0';
+        label.appendChild(select);
+        form.appendChild(label);
+        form.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+          'Confirmer cette proposition enregistre le classement et peut créer ' +
+          'automatiquement un brouillon Catalogue non publié. Aucun prix ni marché activé.'));
+        const save = makeButton(doc, 'Confirmer le classement', 'confirm-candidate-boutique');
+        save.type = 'submit';
+        form.appendChild(save);
+        form.addEventListener('submit', async event => {
+          event.preventDefault();
+          const chosen = ordered[Number(select.value)];
+          if (!chosen) { feedback.textContent = 'Choisissez une classification valide.'; return; }
+          save.disabled = true;
+          feedback.textContent = 'Enregistrement auprès de l’autorité Sourcing…';
+          try {
+            const response = await jsonRequest(context.fetch,
+              SOURCING_ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) +
+              '/confirm-boutique-category', {
+                method: 'POST',
+                body: { category: chosen.category, subcategory: chosen.subcategory },
+              });
+            if (!response?.ok) throw new Error('Confirmation Sourcing non acquise.');
+            // A partial handoff is NOT a success for the draft; the mapping
+            // confirmation remains a separate persisted fact.
+            const outcome = response.result || {};
+            await context.reload();
+            setFeedback(context.root,
+              outcome.draft_created
+                ? 'Classement confirmé ; brouillon créé. Le Catalogue a été relu.'
+                : 'Classement confirmé ; la remise nécessite encore une vérification. ' +
+                  (outcome.handoff_error_code || ''),
+              outcome.draft_created ? 'positive' : 'warning');
+          } catch (error) {
+            feedback.textContent = actionErrorMessage(error);
+            save.disabled = false;
+          }
+        });
+        panel.appendChild(form);
+        feedback.textContent = '';
+      } catch (error) {
+        feedback.textContent = actionErrorMessage(error);
+      } finally {
+        classify.disabled = false;
+      }
+    });
+    return panel;
+  }
+
+  function openProductInspector(context, slot, doc, row, categories) {
+    const { panel, actions, feedback } = inspectorFrame(slot, doc, row, 'product');
+    const issues = Array.isArray(row.issues) ? row.issues : [];
+    panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
+      'Situation actuelle · ' + (registryNextStep(row).status)));
+    const list = doc.createElement('ul');
+    list.className = 'kmc-catalog-inspector-issues';
+    const labels = {
+      source_to_normalize: 'Source fournisseur à vérifier',
+      taxonomy_to_confirm: 'Classement Boutique à corriger',
+      editorial_to_complete: 'Titre / description FR à préparer',
+      approval_pending: 'Validation Catalogue à réaliser',
+    };
+    issues.forEach(code => {
+      if (labels[code]) list.appendChild(text(doc, 'li', '', labels[code]));
+    });
+    if (list.children.length) panel.appendChild(list);
+    if (row.lifecycle_status === 'rejected' || row.work_status === 'approval_unproven') {
+      feedback.textContent = row.work_status === 'approval_unproven'
+        ? 'Produit actif sans décision d’approbation démontrée : réconciliation nécessaire, ' +
+          'aucune validation automatique.'
+        : 'Produit écarté : un réexamen autorisé est nécessaire.';
+      return panel;
+    }
+    if (issues.includes('source_to_normalize'))
+      feedback.textContent = row.candidate_ref
+        ? 'Contrat source à recontrôler via Sourcing : aucune validation Catalogue tant que la source n’est pas certifiée.'
+        : 'La provenance manque. Aucune source fournisseur ne sera inventée.';
+    if (issues.includes('taxonomy_to_confirm') && row.candidate_ref) {
+      const btn = makeButton(doc, 'Corriger le classement', 'inspector-classify');
+      btn.addEventListener('click', () =>
+        openProductClassificationDialog(context, row, categories, btn));
+      actions.appendChild(btn);
+    }
+    if (issues.includes('editorial_to_complete') && row.candidate_ref) {
+      const btn = makeButton(doc, 'Préparer le français', 'inspector-prepare-fr');
+      btn.addEventListener('click', () => openFrenchEditor(context, row, btn));
+      actions.appendChild(btn);
+    }
+    if (row.work_status === 'approval_pending' || issues.includes('approval_pending')) {
+      const review = makeButton(doc, 'Vérifier avant validation', 'inspector-check-approval');
+      review.addEventListener('click', async () => {
+        review.disabled = true;
+        feedback.textContent = 'Vérification de la certification Catalogue…';
+        try {
+          const data = await jsonRequest(context.fetch,
+            ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref));
+          const state = data?.certification || null;
+          if (data?.phase !== 'catalog_approval' || !state?.certified) {
+            const reasons = (state?.reasons || []).map(certificationReasonLabel);
+            feedback.textContent = reasons.length
+              ? 'À compléter : ' + reasons.join(' · ')
+              : (data?.note || 'Certification non démontrée. Validation impossible.');
+            return;
+          }
+          const already = panel.querySelector('[data-workspace-action="inspector-approve"]');
+          if (!already) {
+            const approve = makeButton(doc, 'Valider le Catalogue', 'inspector-approve');
+            approve.addEventListener('click', async () => {
+              if (!context.confirm('Valider ' + row.product_ref +
+                ' après relecture ? Cette décision est tracée et ne publie aucun marché.')) return;
+              approve.disabled = true;
+              try {
+                const result = await jsonRequest(context.fetch,
+                  ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/approve',
+                  { method: 'POST' });
+                if (!result?.ok) throw new Error('Validation non confirmée par le serveur.');
+                await context.reload();
+                setFeedback(context.root, row.product_ref +
+                  ' validé dans le Catalogue. Décisions marchés distinctes.', 'positive');
+              } catch (error) {
+                feedback.textContent = actionErrorMessage(error);
+                approve.disabled = false;
+              }
+            });
+            actions.appendChild(approve);
+          }
+          feedback.textContent = 'Certification serveur acquise. Après contrôle visuel, vous pouvez valider.';
+        } catch (error) {
+          feedback.textContent = actionErrorMessage(error);
+        } finally { review.disabled = false; }
+      });
+      actions.appendChild(review);
+    }
+    if (!actions.children.length && !feedback.textContent)
+      feedback.textContent = 'Aucune correction justifiée à cette étape. ' +
+        'Les décisions de prix et de marché restent distinctes.';
+    return panel;
   }
 
   function renderProducts(rootNode, ui, doc, payload, context) {
@@ -2115,7 +2328,7 @@
           const action = doc.createElement('td');
           action.className = 'kmc-catalog-action-cell';
           const inspect = makeButton(doc, nextStep.label, 'inspect-candidate', true);
-          inspect.addEventListener('click', () => openCandidateInspector(slot, doc, row));
+          inspect.addEventListener('click', () => openCandidateInspector(context, slot, doc, row));
           action.appendChild(inspect);
           tr.appendChild(action);
           tbody.appendChild(tr);
@@ -2136,6 +2349,20 @@
         const actionCell = doc.createElement('td');
         actionCell.className = 'kmc-catalog-action-cell';
         actionCell.setAttribute('data-label', 'Consulter');
+        if (row.work_status !== 'catalog_approved') {
+          actionCell.setAttribute('data-label', 'Corriger');
+          const main = makeButton(doc,
+            row.work_status === 'approval_pending' ? 'Examiner / valider' :
+              'Corriger / examiner', 'open-catalog-inspector');
+          main.className = 'kmc-workspace-action kmc-catalog-primary-action';
+          main.addEventListener('click', () =>
+            openProductInspector(context, slot, doc, row, categories));
+          actionCell.appendChild(main);
+          statusChip.addEventListener('click', () => main.click());
+          tr.appendChild(actionCell);
+          tbody.appendChild(tr);
+          return;
+        }
         const actions = doc.createElement('div');
         actions.className = 'kmc-catalog-actions-inner';
         const view = text(doc, 'a', 'kmc-workspace-action is-secondary kmc-catalog-view-link', 'Voir fiche');
