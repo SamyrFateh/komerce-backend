@@ -352,11 +352,20 @@ jobs:
       # plutôt que dans le job changes.
       - name: Touched-tests signal (strict)
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
+        # workflow_dispatch does not populate github.event.pull_request.body.
+        # Fetch the actual PR body from the trusted GitHub API so the existing
+        # tests-or-documented-justification rule can enforce its contract.
         env:
-          PR_BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          PR_BASE_REF: ${{ inputs.base_ref }}
         run: |
-          git fetch origin ${{ inputs.base_ref || github.event.pull_request.base.ref }} --depth=1
-          node scripts/touched-tests-gate.js --base origin/${{ inputs.base_ref || github.event.pull_request.base.ref }} --strict
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[0-9]+$ ]] || { echo 'Invalid PR_NUMBER'; exit 2; }
+          [[ "$PR_BASE_REF" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo 'Invalid PR_BASE_REF'; exit 2; }
+          pr_body="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.body // ""')"
+          git fetch origin "$PR_BASE_REF" --depth=1
+          node scripts/touched-tests-gate.js --base "origin/$PR_BASE_REF" --strict --pr-body "$pr_body"
 
       - name: Npm audit gate
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
