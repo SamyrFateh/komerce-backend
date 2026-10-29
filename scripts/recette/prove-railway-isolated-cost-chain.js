@@ -73,4 +73,4 @@ async function main(){
    reject(complete,'COST_EVIDENCE_INCOMPLETE');
  }finally{await client.end();}
 }
-main().catch(err=>{console.error('CERT_COST_CHAIN_FAILED '+String(err.message||err).slice(0,600));process.exitCode=1;});
+main().then(()=>process.exit(0)).catch(err=>{console.error('CERT_COST_CHAIN_FAILED '+String(err.message||err).slice(0,600));process.exitCode=1;});
