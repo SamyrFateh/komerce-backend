@@ -53,6 +53,7 @@ async function main() {
         id integer PRIMARY KEY, product_id integer, action text,
         created_at timestamptz
       );
+      CREATE TEMP TABLE catalog_media (product_id integer, is_active boolean);
       INSERT INTO boutique_categories VALUES ('maison','Maison',true);
       INSERT INTO boutique_subcategories VALUES ('luminaire','maison','Luminaire',true);
       INSERT INTO products (id,product_ref,name,description,source_locale,content_source,
@@ -77,7 +78,8 @@ async function main() {
       (5,NULL,'SC-ORPHAN','Remise cassée',NULL,'CJdropshipping','CJ-BROKEN',
         'Home','{}','imported_to_catalog','{"sourcing_decision":"PRIORITY"}','high'),
       (6,2,'SC-DRAFT','Suspension source','Texte source','CJdropshipping','CJ-DRAFT',
-        'Home','{}','imported_to_catalog',NULL,'low');
+        'Home','{"schema_version":"2","media":[{"supplier_media_id":"CJ-MEDIA-1","url":"https://example.org/a.jpg","role":"PRODUCT"}]}','imported_to_catalog',NULL,'low');
+      INSERT INTO catalog_media (product_id,is_active) VALUES (1,true);
       INSERT INTO catalog_publication_decision_audit
         (id,product_id,action,created_at)
       VALUES (1,1,'CATALOG_PRODUCT_APPROVED',NOW());
@@ -93,7 +95,15 @@ async function main() {
     assert.equal(approved.candidate_ref, 'SC-001');
     assert.equal(approved.work_status, 'catalog_approved');
     assert.equal(approved.operator_group, 'validated');
+    assert.equal(approved.active_media_count, 1);
+    assert.equal(approved.media_status, 'canonical_ready');
+    const draft = result.products.find(r => r.product_ref === 'KPR-002');
+    assert.equal(draft.active_media_count, 0);
+    assert.equal(draft.source_media_count, 1);
+    assert.equal(draft.media_status, 'source_recoverable');
+    assert(draft.issues.includes('media_missing'));
     const history = result.products.find(r => r.product_ref === 'KPR-003');
+    assert.equal(history.media_status, 'source_missing');
     assert.equal(history.operator_group, 'correction',
       'an active legacy product must remain visible without inventing sourcing evidence');
     const raw = result.products.find(r => r.candidate_ref === 'SC-RAW');

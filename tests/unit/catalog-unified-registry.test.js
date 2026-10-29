@@ -165,3 +165,19 @@ test('compteurs non filtrés par onglet : les autres files ne deviennent pas fau
   expect(q.query.mock.calls[1][0]).toContain('operator_group = $1');
   expect(q.query.mock.calls[1][1]).toEqual(['correction', 50, 0]);
 });
+
+test('image de prévisualisation et média canonique sont des preuves différentes', () => {
+  expect(publicRow({ ...canonical, active_media_count:0, source_media_count:1,
+    source_media_repairable:true, image_url:'https://supplier.example.org/lamp.jpg' }))
+    .toMatchObject({media_status:'source_recoverable',issues:[
+      'taxonomy_to_confirm','editorial_to_complete','media_missing']});
+  expect(publicRow({ ...canonical, active_media_count:0, source_media_count:0,
+    image_url:'https://supplier.example.org/lamp.jpg' }))
+    .toMatchObject({media_status:'preview_only',issues:expect.arrayContaining(['media_missing'])});
+  expect(publicRow({ ...canonical, active_media_count:1, source_media_count:1,
+    source_media_repairable:true }))
+    .toMatchObject({media_status:'canonical_ready',issues:[
+      'taxonomy_to_confirm','editorial_to_complete']});
+  expect(publicRow({ ...originalCandidate, active_media_count:0, source_media_count:1 }))
+    .toMatchObject({media_status:'pre_handoff',issues:[]});
+});
