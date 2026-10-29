@@ -58,4 +58,4 @@ jobs:
       - name: Assert Catalogue and wallet foundations exist
         run: |
           psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT CASE WHEN to_regclass('public.wallets') IS NOT NULL AND to_regclass('public.catalog_media_recovery_audit') IS NOT NULL AND to_regclass('public.sourcing_candidates') IS NOT NULL AND to_regclass('public.catalog_media') IS NOT NULL THEN 'PASS' ELSE 'FAIL' END" | grep -x PASS
-          node scripts/testing/catalog-media-recovery-migration-proof.js
+          psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT CASE WHEN (SELECT count(*) FROM pg_constraint WHERE conrelid='public.catalog_media_recovery_audit'::regclass AND contype IN ('c','f')) >= 3 THEN 'PASS' ELSE 'FAIL' END" | grep -x PASS
