@@ -29,6 +29,7 @@ const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
 const catalogRegistry = require('./catalog-registry');
 const catalogUnifiedRegistry = require('./catalog-unified-registry');
+const catalogMediaRecovery = require('./catalog-media-recovery');
 const refineryWorklist = require('./refinery-worklist');
 const catalogProductMutation = require('./catalog-product-mutation-service');
 const { getPricingParameterStatus } = require('./pricing-parameters-status');
@@ -660,6 +661,7 @@ module.exports = {
   createProduct,
   updateProduct,
   classifyProduct,
+  recoverProductSourceMedia: catalogMediaRecovery.recoverSourceMedia,
   deactivateProduct,
   prepareCandidateFrench,
   approveCandidate,

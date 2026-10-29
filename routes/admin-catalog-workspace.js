@@ -85,6 +85,23 @@ router.post('/products/:productRef/update', async (req, res, next) => {
   } catch (err) { sendError(err, res, next); }
 });
 
+// A narrow, audited repair: SOURCE and CATALOG global grants are both
+// mandatory, and the service independently rechecks source proof and draft
+// state under a database lock. No URL is accepted in the request body.
+router.post('/products/:productRef/recover-source-media',
+  requireSourcingGlobalAuthority, async (req, res, next) => {
+    try {
+      if (req.body && Object.keys(req.body).length > 0) {
+        return res.status(400).json({
+          code:'catalog_media_body_forbidden',
+          error:'Aucun média ni URL ne peut être fourni par le navigateur',
+        });
+      }
+      res.json({ ok:true, action:'catalog_source_media_recovered',
+        result:await workspace.recoverProductSourceMedia(req.params.productRef,req.user) });
+    } catch (err) { sendError(err,res,next); }
+  });
+
 router.post('/products/:productRef/classify', async (req, res, next) => {
   try {
     res.json({
