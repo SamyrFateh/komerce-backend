@@ -106,3 +106,13 @@ test('G5 rejects forged G3 boolean-only attestations even when all flags are tru
  const a=audit(),b=benchmark(a);const g=readiness({audit:a,benchmark:b,impactPlan:fake});
  assert.ok(g.blockers.includes('G3_AUTONOMOUS_GENERATED_EXPERIMENT'));
 });
+
+test('G5 does not certify overall semantic mapping from one correct DB-only invariant',()=>{
+ const a=audit();a.invariantCoverage.featureCardInvariantsCertified=1;
+ a.invariantCoverage.summary.coveragePercent=0.209205;
+ a.summary.featureInvariantsCertified=1;
+ a.summary.featureCardSemanticOracleMappingComplete=false;
+ a.semanticInvariantLedger={summary:{semanticallyVerified:1,notCovered:477}};
+ const g=readiness({audit:a,benchmark:benchmark(a)});
+ assert.ok(g.blockers.includes('G2_SEMANTIC_INVARIANT_MAPPING'));
+});
