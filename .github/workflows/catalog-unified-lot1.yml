@@ -51,6 +51,7 @@ jobs:
           node --check middleware/recette-isolation-guard.js
           node --check scripts/recette/seed-isolated-reference-data.js
           node --check server.js
+          node --check scripts/recette/probe-authenticated-workspaces.js
           node --check routes/admin-catalog-workspace.js
           node --check public/dashboards/canonical/js/catalog-workspace.js
       - name: Run targeted Jest
