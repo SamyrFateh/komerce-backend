@@ -94,6 +94,7 @@
     "audit:logic": "node scripts/audit-logic.js --static-only",
     "audit:logic:unified": "node tools/business-auditor/v35-unified-invariant-census.js",
     "audit:logic:unified:v34": "node tools/business-auditor/v34-delivery-engine.js",
+    "audit:logic:targeted:plan": "node tools/business-auditor/v36-impact-plan.js",
     "audit:logic:unified:v33": "node tools/business-auditor/v33-unified-audit.js",
     "audit:logic:unified:v32": "node tools/business-auditor/v32-unified-catalog-auth.js",
     "audit:logic:unified:v31": "node tools/business-auditor/v31-unified-batch.js",
