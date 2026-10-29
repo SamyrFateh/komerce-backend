@@ -86,11 +86,15 @@ test('catégorie validée : UPDATE audité et scan dans UNE transaction ; aucune
   actions.updateCandidate.mockResolvedValueOnce({state:'watchlist'});
   actions.scanCandidate.mockResolvedValueOnce({state:'scanned',scan_result:{
     sourcing_decision:'TEST',reason:'Économiquement admissible',recommended_action:'Tester',
+    variable_cost_complete_kmf:4250,minimum_safe_price_kmf:6500,
+    test_price_kmf:7900,economic_test_health_status:'healthy',
   }});
   const result=await workspace.resolveCandidateCategory('KSC-000050','home',{id:'operator'});
   expect(result).toMatchObject({
     candidate_ref:'KSC-000050',category:{key:'home',label:'Maison'},
-    state:'scanned',scan:{decision:'TEST',reason:'Économiquement admissible'},
+    state:'scanned',scan:{decision:'TEST',reason:'Économiquement admissible',
+      economics:{variable_cost_complete_kmf:4250,minimum_safe_price_kmf:6500,
+        test_price_kmf:7900,health_status:'healthy',market_price_decided:false}},
   });
   expect(result).not.toHaveProperty('id');
   expect(actions.updateCandidate).toHaveBeenCalledWith(
