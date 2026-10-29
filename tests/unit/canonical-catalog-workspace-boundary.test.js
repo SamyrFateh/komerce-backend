@@ -1111,3 +1111,48 @@ test('Catalogue : cycle de vie contradictoire, dossier lecture seule, zéro vali
   expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).toBeNull();
   expect(fetchFn).toHaveBeenCalledTimes(1);
 });
+
+
+test('Catalogue unique : WATCH bloqué par catégorie économique — suggestion, validation et scan sans promotion',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{record_kind:'candidate',candidate_ref:'KSC-MISSING-ECON',
+    product_ref:null,name:'Adaptateur importé',candidate_state:'scanned',
+    sourcing_decision:'WATCH',source_category_review_required:true,
+    work_status:'sourcing_category_review',operator_group:'correction',
+    issues:['sourcing_economic_category_missing']}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const requests=[];
+  const fetchFn=jest.fn(async (url,options={})=>{
+    requests.push([url,options]);
+    const data=url.includes('/category-options')?{
+      categories:[
+        {key:'electronics',label:'Électronique'},
+        {key:'household',label:'Maison'}],
+      suggestions:[{key:'electronics',label:'Électronique',confidence:'high'}],
+      source:'customs_categories',
+    }:url.includes('/resolve-category')?{
+      ok:true,result:{category:{key:'electronics'},scan:{decision:'TEST'}}
+    }:payload;
+    return {ok:true,status:200,json:async()=>data};
+  });
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-candidate-ref="KSC-MISSING-ECON"]');
+  expect(row.textContent).toContain('Catégorie économique manquante');
+  await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
+  const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-MISSING-ECON"]');
+  const action=panel.querySelector('[data-workspace-action="candidate-economic-category-review"]');
+  expect(action).not.toBeNull();
+  await action.click();
+  const select=panel.querySelector('[data-catalog-economic-category-choice]');
+  expect(select).not.toBeNull();
+  expect(select.children[0].textContent).toContain('Proposé');
+  const form=panel.querySelector('[data-catalog-economic-category-form]');
+  await form.listeners.submit[0]({preventDefault(){}});
+  const posts=requests.filter(([,o])=>o.method==='POST');
+  expect(posts).toHaveLength(1);
+  expect(posts[0][0]).toContain('/api/admin/workspaces/sourcing/candidates/KSC-MISSING-ECON/resolve-category');
+  expect(JSON.parse(posts[0][1].body)).toEqual({category_key:'electronics'});
+  expect(requests.filter(([url])=>url.includes('/promote')||url.includes('/approve'))).toHaveLength(0);
+});
