@@ -1473,6 +1473,8 @@
 
   function registryNextStep(row) {
     if (row.record_kind === 'candidate') {
+      if (row.work_status === 'sourcing_deferred')
+        return { kind: 'inspect', label: 'Suivre', status: 'Surveillance Sourcing · différé' };
       if (row.operator_group === 'processing')
         return { kind: 'inspect', label: 'Suivre', status: 'Préparation automatique' };
       if (row.operator_group === 'excluded')
@@ -1482,6 +1484,10 @@
       return { kind: 'inspect', label: 'Examiner', status: 'À examiner' };
     }
     const issues = Array.isArray(row.issues) ? row.issues : [];
+    if (row.work_status === 'state_inconsistent') {
+      return { kind: 'diagnose', label: 'Réconcilier l’état',
+        status: 'Cycle de vie incohérent' };
+    }
     if (row.lifecycle_status === 'rejected' || row.work_status === 'rejected') {
       return { kind: 'detail', label: 'Examiner le rejet', status: 'Écarté · revoir' };
     }
@@ -1741,6 +1747,7 @@
       return [{ code: 'market', label: 'Validation Catalogue acquise · vérifier chaque marché' }];
     }
     const known = [
+      ['state_inconsistent', 'Incohérence d’activation et de cycle de vie'],
       ['source_to_normalize', 'Source fournisseur à vérifier'],
       ['taxonomy_to_confirm', 'Classement boutique à corriger'],
       ['editorial_to_complete', 'Contenu français à compléter'],
@@ -1915,6 +1922,12 @@
     panel.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
       'État Sourcing : ' + (row.candidate_state || 'inconnu') +
       ' · Décision de scan : ' + (row.sourcing_decision || 'non mesurée')));
+    if (row.work_status === 'sourcing_deferred' ||
+        ['WATCH','AVOID','LOSS'].includes(String(row.sourcing_decision || '').toUpperCase())) {
+      feedback.textContent = 'Décision Sourcing différée : surveillance ou nouvelles preuves fournisseur. ' +
+        'Aucune validation humaine Catalogue requise, aucun brouillon créé.';
+      return panel;
+    }
     if (['rejected', 'archived', 'quarantined', 'imported_to_catalog'].includes(row.candidate_state)
         || row.work_status === 'handoff_missing'
         || String(row.sourcing_decision || '').toUpperCase() === 'EXCLUDED') {
@@ -2032,12 +2045,20 @@
       taxonomy_to_confirm: 'Classement Boutique à corriger',
       editorial_to_complete: 'Titre / description FR à préparer',
       media_missing: 'Médias canoniques absents',
+      state_inconsistent: 'Cycle de vie et activation contradictoires',
       approval_pending: 'Validation Catalogue à réaliser',
     };
     issues.forEach(code => {
       if (labels[code]) list.appendChild(text(doc, 'li', '', labels[code]));
     });
     if (list.children.length) panel.appendChild(list);
+    if (row.work_status === 'state_inconsistent') {
+      feedback.textContent =
+        'Anomalie d’intégrité : le cycle de vie et is_active ne concordent pas. ' +
+        'Réconciliation avec la preuve d’origine indispensable. ' +
+        'Aucune approbation ni correction de média proposée automatiquement.';
+      return panel;
+    }
     if (row.lifecycle_status === 'rejected' || row.work_status === 'approval_unproven') {
       feedback.textContent = row.work_status === 'approval_unproven'
         ? 'Produit actif sans décision d’approbation démontrée : réconciliation nécessaire, ' +
