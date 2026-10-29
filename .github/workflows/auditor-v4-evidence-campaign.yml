@@ -41,20 +41,23 @@ jobs:
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Test semantic census and G4-G5 fail-closed
         run: |
-          node --test tools/business-auditor/v35-invariant-census.test.js tools/business-auditor/v40-semantic-ledger.test.js tools/business-auditor/v38-benchmark-release.test.js
+          node --test tools/business-auditor/v35-invariant-census.test.js tools/business-auditor/v40-semantic-ledger.test.js tools/business-auditor/v40-generated-inventory.test.js tools/business-auditor/v38-benchmark-release.test.js
       - name: Build local test schema
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/auditor-v4-schema.log
           node scripts/ci-db-bootstrap.js
       - name: Twelve real owner physical cases on disposable PG clones
         run: npm run audit:logic:unified -- --mode full --out /tmp/komerce-auditor-v4-full
+      - name: G3 generated physical inventory cases and evaluator-only mutations
+        run: npm run audit:logic:generated:inventory -- --files services/inventory-service.js --budget 6 --evaluate-withheld --out /tmp/komerce-auditor-g3
       - name: G4 known benchmark and honest G5 decision
         run: |
-          node tools/business-auditor/v38-benchmark-release-cli.js --audit /tmp/komerce-auditor-v4-full/unified-audit.json --out /tmp/komerce-auditor-v4-release
+          node tools/business-auditor/v38-benchmark-release-cli.js --audit /tmp/komerce-auditor-v4-full/unified-audit.json --impact /tmp/komerce-auditor-g3/g3-generated-experiment.json --out /tmp/komerce-auditor-v4-release
           node <<'NODE'
           const fs=require('node:fs');
           const audit=require('/tmp/komerce-auditor-v4-full/unified-audit.json');
           const semantic=require('/tmp/komerce-auditor-v4-full/invariant-semantic-ledger.json');
+          const g3=require('/tmp/komerce-auditor-g3/g3-generated-experiment.json');
           const g4=require('/tmp/komerce-auditor-v4-release/g4-calibration.json');
           const g5=require('/tmp/komerce-auditor-v4-release/g5-release-readiness.json');
           if(audit.sha!==process.env.GITHUB_SHA||
@@ -62,12 +65,17 @@ jobs:
              !audit.physicalCaseIndex.every(x=>x.cloneDropped)||
              semantic.summary.declared!==audit.summary.featureInvariantsDeclared||
              semantic.summary.semanticallyVerified!==0||
+             g3.sha!==audit.sha||g3.generatedCases!==6||
+             g3.withheldMutationDetected!==true||
+             g3.summary.detected!==2||g3.summary.missed!==0||
+             !g3.allClonesDropped||
+             g5.blockers.includes('G3_AUTONOMOUS_GENERATED_EXPERIMENT')||
              g4.calibrationGate!=='PASS'||g4.g4ReleaseGate!=='NO_GO'||
              g5.decision!=='NO_GO'||g5.mergeMainAuthorized!==false)
             throw Error('Physical evidence or release claims inconsistent');
           fs.writeFileSync('/tmp/komerce-auditor-v4-release/campaign-summary.json',
             JSON.stringify({sha:audit.sha,g4:g4.calibration,g5:g5.decision,
-              blockers:g5.blockers,semantic:semantic.summary},null,2));
+              blockers:g5.blockers,semantic:semantic.summary,g3:g3.summary},null,2));
           console.log('AUDITOR_G5_UNCERTIFIED',JSON.stringify(g5.blockers));
           NODE
       - name: Archive evidence even on tool failure
@@ -81,5 +89,6 @@ jobs:
             /tmp/komerce-auditor-v4-full/*.md
             /tmp/komerce-auditor-v4-release/*.json
             /tmp/komerce-auditor-v4-release/*.md
+            /tmp/komerce-auditor-g3/*.json
           if-no-files-found: warn
           retention-days: 14
