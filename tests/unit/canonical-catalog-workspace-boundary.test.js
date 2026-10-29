@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-2');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-3');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -989,4 +989,29 @@ test('Catalogue unique : un refus du Sourcing empêche la proposition et toute m
   await panel.querySelector('[data-workspace-action="candidate-boutique-review"]').click();
   expect(panel.querySelector('[data-catalog-candidate-category-form]')).toBeNull();
   expect(fetchFn.mock.calls.filter(([, opts = {}]) => opts.method === 'POST')).toHaveLength(0);
+});
+
+test('Catalogue unifié : médias fournisseur non confondus avec les médias canoniques', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind:'product', product_ref:'KPR-00450', candidate_ref:'KSC-00450',
+    name:'Lampe à compléter', lifecycle_status:'candidate', is_active:false,
+    work_status:'media_to_complete', operator_group:'correction',
+    active_media_count:0, source_media_count:1, media_status:'source_recoverable',
+    issues:['media_missing'],
+  }];
+  payload.registry_page = { total:1, limit:50, offset:0, has_next:false, has_previous:false };
+  const fetchFn = jest.fn(async () => ({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row = root.querySelector('[data-product-ref="KPR-00450"]');
+  expect(row.textContent).toContain('Média canonique à compléter');
+  await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel = root.querySelector('[data-catalog-product-inspector="KPR-00450"]');
+  expect(panel.textContent).toContain('Médias source identifiés');
+  expect(panel.textContent).toContain('Médias actifs canoniques');
+  expect(panel.textContent).toContain('Réintégration canonique nécessaire');
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
 });

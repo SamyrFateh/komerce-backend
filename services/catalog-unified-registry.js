@@ -7,7 +7,7 @@
  * @inputs        read-only catalog filters
  * @outputs       single candidate/product projection, counts and safe next steps
  * @depends       db.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, catalog_field_overrides, catalog_publication_decision_audit
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, catalog_field_overrides, catalog_publication_decision_audit, catalog_media
  * @db-write      none
  * @doctrine      one_operator_surface_without_cross_domain_write, product_ref_is_public_identity
  * @impact-areas  catalog, admin-dashboard
@@ -67,6 +67,24 @@ WITH picked_source AS (
         )) AS approval_audited,
         (NULLIF(BTRIM(p.image_url),'') IS NULL
          AND NULLIF(BTRIM(sc.image_url),'') IS NOT NULL) AS supplier_image_preview,
+        (SELECT COUNT(*)::int FROM catalog_media cm
+          WHERE cm.product_id=p.id AND cm.is_active=TRUE) AS active_media_count,
+        CASE WHEN jsonb_typeof(sc.normalized_source_contract->'media')='array'
+           THEN jsonb_array_length(sc.normalized_source_contract->'media') ELSE 0 END AS source_media_count,
+        (sc.state='imported_to_catalog'
+          AND sc.normalized_source_contract->>'schema_version'='2'
+          AND jsonb_typeof(sc.normalized_source_contract->'media')='array'
+          AND CASE WHEN jsonb_typeof(sc.normalized_source_contract->'media')='array'
+            THEN jsonb_array_length(sc.normalized_source_contract->'media')>0 ELSE FALSE END
+          AND NOT EXISTS (
+            SELECT 1 FROM jsonb_array_elements(CASE
+              WHEN jsonb_typeof(sc.normalized_source_contract->'media')='array'
+              THEN sc.normalized_source_contract->'media' ELSE '[]'::jsonb END) m
+            WHERE jsonb_typeof(m) <> 'object'
+              OR NULLIF(BTRIM(m->>'supplier_media_id'),'') IS NULL
+              OR m->>'url' NOT LIKE 'https://%'
+          )
+        ) AS source_media_repairable,
         p.updated_at
    FROM products p
    LEFT JOIN picked_source sc ON sc.product_id=p.id
@@ -87,7 +105,12 @@ WITH picked_source AS (
           AND NULLIF(BTRIM(sc.supplier_product_id),'') IS NOT NULL),
         NULL::boolean, NULL::boolean,
         NULL::text, NULL::text, NULL::text, NULL::text,
-        NULL::text, FALSE, FALSE, FALSE, FALSE, sc.updated_at
+        NULL::text, FALSE, FALSE, FALSE, FALSE,
+        0::int,
+        CASE WHEN jsonb_typeof(sc.normalized_source_contract->'media')='array'
+          THEN jsonb_array_length(sc.normalized_source_contract->'media') ELSE 0 END,
+        FALSE,
+        sc.updated_at
    FROM sourcing_candidates sc
   WHERE NOT EXISTS (SELECT 1 FROM products p WHERE p.id=sc.product_id)
 ), marked AS (
@@ -104,6 +127,7 @@ WITH picked_source AS (
      WHEN NOT u.source_ready THEN 'source_to_normalize'
      WHEN NOT u.taxonomy_ready THEN 'taxonomy_to_confirm'
      WHEN NOT u.editorial_ready THEN 'editorial_to_complete'
+     WHEN COALESCE(u.active_media_count,0)=0 THEN 'media_to_complete'
      WHEN u.lifecycle_status='candidate' THEN 'approval_pending'
      WHEN u.is_active=TRUE AND u.lifecycle_status='active' AND u.approval_audited
        THEN 'catalog_approved'
@@ -134,6 +158,8 @@ function publicRow(row) {
     if (!row.source_ready) issues.push('source_to_normalize');
     if (!row.taxonomy_ready) issues.push('taxonomy_to_confirm');
     if (!row.editorial_ready) issues.push('editorial_to_complete');
+    if (row.active_media_count != null && Number(row.active_media_count) < 1)
+      issues.push('media_missing');
     if (row.work_status === 'approval_pending' && !issues.length)
       issues.push('approval_pending');
   }
@@ -147,6 +173,13 @@ function publicRow(row) {
     description_source: row.description_source || null,
     image_url: row.image_url || null,
     supplier_image_preview: row.supplier_image_preview === true,
+    active_media_count: row.active_media_count == null ? null : Number(row.active_media_count),
+    source_media_count: row.source_media_count == null ? null : Number(row.source_media_count),
+    media_status: candidate ? 'pre_handoff'
+      : (Number(row.active_media_count) > 0 ? 'canonical_ready'
+        : (row.source_media_repairable === true ? 'source_recoverable'
+          : (Number(row.source_media_count) > 0 ? 'source_requires_review'
+            : (row.image_url ? 'preview_only' : 'source_missing')))),
     supplier_name: row.supplier_name || null,
     supplier_product_id: row.supplier_product_id || null,
     supplier_category: row.supplier_category || null,
