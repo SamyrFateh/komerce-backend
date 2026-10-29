@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261028-11');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-1');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -235,8 +235,8 @@ test('Catalogue montre la file immédiatement et conserve le contexte Product 36
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
   const decision = read('public/dashboards/canonical/js/catalog-workspace-decision.js');
 
-  expect(workspace).toContain("tr.setAttribute('data-product-ref'");
-  expect(workspace).toContain("text(doc, 'a', 'kmc-catalog-product-title'");
+  expect(workspace).toContain("tr.setAttribute(row.product_ref ? 'data-product-ref' : 'data-candidate-ref'");
+  expect(workspace).toContain("text(doc, row.product_ref ? 'a' : 'span'");
   expect(workspace).toContain('Retour à la curation');
   expect(workspace).toContain("params.set('product_ref', context.focusedProductRef)");
   expect(decision).toContain('requestedProductRef');
@@ -762,4 +762,53 @@ test('la Raffinerie ne duplique pas ses compteurs en bas et préserve les métri
   expect(render).not.toContain("metricItems(payload.summary, payload.curation).filter");
   expect(render).toContain('renderApproval(rootNode, ui, doc, payload, context)');
   expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
+});
+
+
+test('Catalogue unifié : candidat pré-handoff affiché et inspectable sans écriture ni product_ref', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument();
+  const root = doc.createElement('main');
+  const ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.summary.operator_groups = {
+    correction: 0, review: 0, validated: 0, processing: 1, excluded: 0,
+  };
+  payload.products = [{
+    record_kind: 'candidate',
+    candidate_ref: 'SC-000442',
+    product_ref: null,
+    name: 'Produit fournisseur à analyser',
+    supplier_name: 'CJdropshipping',
+    supplier_product_id: 'CJ-442',
+    supplier_category: 'Home > Lighting',
+    supplier_name_original: 'Raw supplier product',
+    candidate_state: 'raw_imported',
+    operator_group: 'processing',
+    work_status: 'processing',
+    issues: [],
+  }];
+  payload.registry_page = {
+    total: 1, limit: 50, offset: 0, has_previous: false, has_next: false,
+  };
+  const fetchFn = jest.fn(async () => ({
+    ok: true, status: 200, json: async () => payload,
+  }));
+  await workspace.mount({
+    root, document: doc, ui, fetch: fetchFn, location: { search: '' },
+  });
+  expect(fetchFn.mock.calls[0][0]).toContain('unified=1');
+  const row = root.querySelector('[data-candidate-ref="SC-000442"]');
+  expect(row).not.toBeNull();
+  expect(row.textContent).toContain('Préparation automatique');
+  expect(row.textContent).not.toContain('Approuvé Catalogue');
+  expect(row.querySelector('[data-workspace-action="approve"]')).toBeNull();
+  const inspect = row.querySelector('[data-workspace-action="inspect-candidate"]');
+  expect(inspect).not.toBeNull();
+  await inspect.click();
+  const dossier = root.querySelector('[data-catalog-candidate-inspector="SC-000442"]');
+  expect(dossier).not.toBeNull();
+  expect(dossier.textContent).toContain('Raw supplier product');
+  expect(dossier.textContent).toContain('Lecture seule');
+  expect(fetchFn).toHaveBeenCalledTimes(1);
 });
