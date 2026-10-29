@@ -7,6 +7,16 @@
  */
 const crypto=require('node:crypto'),http=require('node:http'),https=require('node:https');
 const env=process.env,mode=process.argv[2];
+const generated=env.KBA_V40_GENERATED_SPEC?
+ JSON.parse(Buffer.from(env.KBA_V40_GENERATED_SPEC,'base64').toString('utf8')):null;
+if(generated&&(
+ generated.contract!=='komerce-generated-inventory-case/v40'||
+ !Number.isInteger(generated.extraLines)||generated.extraLines<0||
+ generated.extraLines>3||
+ !['IMPLICIT','OWN','FOREIGN'].includes(generated.relation)||
+ mode!==(generated.relation==='FOREIGN'?'FOREIGN_ORDER':'NOMINAL')
+))throw Error('V40_GENERATED_SPEC_INVALID');
+
 const url=new URL(env.DATABASE_URL||'');
 if(!['NOMINAL','FOREIGN_ORDER'].includes(mode)||
  env.NODE_ENV!=='test'||env.KOMERCE_DISABLE_CRONS!=='true'||
@@ -29,7 +39,7 @@ async function seed(){
   await c.query('BEGIN');
   const {rows:[market]}=await c.query("SELECT id FROM markets WHERE code='KM' LIMIT 1");
   if(!market)throw Error('V30_TOOL_ERROR: market KM missing from canonical fixture');
-  const ids={relay:uuid(),product:uuid(),orderA:uuid(),orderB:uuid(),itemA:uuid(),itemB:uuid()};
+  const ids={relay:uuid(),product:uuid(),orderA:uuid(),orderB:uuid(),itemA:uuid(),itemB:uuid(),extraItemIds:[]};
   const nonce=uuid().slice(0,12);
   await c.query("INSERT INTO relais(id,name,phone,address,market_id) VALUES($1,'KBA V30 Inventory','+269100000','LOCAL',$2)",[ids.relay,market.id]);
   await c.query("INSERT INTO products(id,name,price_kmf,stock) VALUES($1,'KBA V30 stock item',5000,20)",[ids.product]);
@@ -38,6 +48,11 @@ async function seed(){
    [ids.orderA,ids.orderB,'KBA30-A-'+nonce,'KBA30-B-'+nonce,ids.relay,market.id]);
   await c.query("INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf) VALUES($1,$3,$5,1,5000),($2,$4,$5,1,5000)",
    [ids.itemA,ids.itemB,ids.orderA,ids.orderB,ids.product]);
+  for(let i=0;i<(generated?.extraLines||0);i++){
+   const extraId=uuid();ids.extraItemIds.push(extraId);
+   await c.query('INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf) VALUES($1,$2,$3,1,5000)',
+    [extraId,ids.orderA,ids.product]);
+  }
   await c.query('COMMIT');
   return ids;
  }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e}finally{c.release()}
@@ -51,7 +66,10 @@ async function observe(ids){
   const {rows:orders}=await c.query(
    'SELECT id,items_received,items_total,completion_ratio FROM orders WHERE id=ANY($1::uuid[]) ORDER BY id',
    [[ids.orderA,ids.orderB]]);
-  return {rows:items,orderA:orders.find(x=>x.id===ids.orderA),
+  const {rows:[itemTotal]}=await c.query(
+   'SELECT COUNT(*)::int AS total FROM order_items WHERE order_id=$1',[ids.orderA]);
+  return {rows:items,orderAItemsCount:itemTotal.total,
+   orderA:orders.find(x=>x.id===ids.orderA),
    orderB:orders.find(x=>x.id===ids.orderB)};
  }finally{c.release()}
 }
@@ -60,8 +78,11 @@ async function main(){
   const ids=await seed(),before=await observe(ids);
   let owner={success:false,errorCode:null,errorStatus:null,response:null};
   try{
-   const output=await receiveItem(mode==='NOMINAL'?
-    {order_item_id:ids.itemA}:{order_item_id:ids.itemA,order_id:ids.orderB});
+   const input=generated?.relation==='OWN'?
+    {order_item_id:ids.itemA,order_id:ids.orderA}:
+    (mode==='NOMINAL'?
+     {order_item_id:ids.itemA}:{order_item_id:ids.itemA,order_id:ids.orderB});
+   const output=await receiveItem(input);
    owner={success:true,errorCode:null,errorStatus:null,
     response:{itemId:output?.item?.id,orderId:output?.item?.order_id,
      orderItemId:output?.item?.order_item_id,proposalStatus:output?.proposal?.status||null}};
@@ -69,7 +90,9 @@ async function main(){
   const after=await observe(ids);
   console.log('BUSINESS_AUDIT_V30_INVENTORY '+JSON.stringify({
    contract:'komerce-inventory-canonical-physical/v30',
-   mode,ids,before,after,owner,realOwnerCalled:true,realCanonicalSchema:true,
+   mode,ids,before,after,owner,generatedSpec:generated,
+   mutationApplied:env.KBA_V40_MUTANT_APPLIED==='YES',
+   realOwnerCalled:true,realCanonicalSchema:true,
    noExternalNetwork:true,authMiddlewareExecuted:false,
    callerPayloadMode:mode==='NOMINAL'?'order_item_id_ONLY':'order_item_id_WITH_FOREIGN_order_id'
   }));
