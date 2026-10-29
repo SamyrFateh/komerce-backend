@@ -13,29 +13,29 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 759,
-    "filesWithFullHeaders": 708,
+    "scannedCodeFiles": 762,
+    "filesWithFullHeaders": 711,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 759,
+    "filesWithAnyHeaders": 762,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1884,
-    "edges": 9369,
-    "dbTables": 213,
-    "doctrines": 705,
+    "graphNodes": 1896,
+    "edges": 9399,
+    "dbTables": 214,
+    "doctrines": 713,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 906,
+    "unresolvedCodeEdges": 908,
     "dbWriteViaOverlapWarnings": 11,
     "multiWriterTables": 90
   },
   "byDomain": {
-    "infrastructure": 24,
+    "infrastructure": 25,
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
     "platform-ops": 2,
-    "catalog": 134,
+    "catalog": 136,
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market-delegation": 35,
@@ -83,7 +83,7 @@
     "cron": 1,
     "composition-root": 1,
     "manual-test": 1,
-    "middleware": 25,
+    "middleware": 26,
     "ui-bootstrap": 4,
     "ui-component": 40,
     "ui-enhancer": 3,
@@ -111,7 +111,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 443,
+    "service": 445,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -122,7 +122,7 @@
   "byCriticality": {
     "critical": 110,
     "medium": 153,
-    "high": 436,
+    "high": 439,
     "low": 60
   },
   "nodes": [
@@ -897,6 +897,33 @@
         "auth"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "middleware/recette-isolation-guard.js",
+      "file": "middleware/recette-isolation-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "isolated-recette-write-firewall",
+      "domain": "infrastructure",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "no_live_payments",
+        "no_real_notifications",
+        "narrow_sourcing_catalog_pricing_writes"
+      ],
+      "impactAreas": [],
+      "version": null
     },
     {
       "id": "middleware/request-id.js",
@@ -14418,6 +14445,65 @@
       "version": "2026-09"
     },
     {
+      "id": "services/catalog-media-recovery.js",
+      "file": "services/catalog-media-recovery.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "explicitly-authorized-canonical-media-recovery",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_ref",
+        "authenticated actor",
+        "source-linked V2 contract"
+      ],
+      "outputs": [
+        "recovered media count",
+        "durable audit proof",
+        "no publication"
+      ],
+      "depends": [
+        "db.js",
+        "services/catalog-promotion.js"
+      ],
+      "usedBy": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates",
+        "catalog_media"
+      ],
+      "dbWrite": [
+        "catalog_media_recovery_audit"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "catalog-promotion",
+          "tables": [
+            "catalog_media"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller_owned"
+      ],
+      "doctrine": [
+        "verified_supplier_snapshot_only",
+        "deny_legacy_url_promotion",
+        "stable_supplier_media_identity",
+        "media_recovery_never_publishes"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "authorization",
+        "admin-dashboard"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/catalog-media-visual-fr-proof.js",
       "file": "services/catalog-media-visual-fr-proof.js",
       "type": "file-lite",
@@ -15417,6 +15503,50 @@
         "staging"
       ],
       "version": "2026-09-v1"
+    },
+    {
+      "id": "services/catalog-unified-registry.js",
+      "file": "services/catalog-unified-registry.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "unified-catalog-operator-read",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "read-only catalog filters"
+      ],
+      "outputs": [
+        "single candidate/product projection",
+        "counts and safe next steps"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates",
+        "boutique_categories",
+        "boutique_subcategories",
+        "catalog_field_overrides",
+        "catalog_publication_decision_audit",
+        "catalog_media"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "one_operator_surface_without_cross_domain_write",
+        "product_ref_is_public_identity"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
+      ],
+      "version": "2026-10"
     },
     {
       "id": "services/catalog-visual-fr-evidence-read.js",
@@ -37238,6 +37368,11 @@
       "table": "sourcing_observations"
     },
     {
+      "id": "db:catalog_media_recovery_audit",
+      "type": "db-table",
+      "table": "catalog_media_recovery_audit"
+    },
+    {
       "id": "db:product_attributes",
       "type": "db-table",
       "table": "product_attributes"
@@ -37656,6 +37791,21 @@
       "id": "doctrine:public_static_serves_app_assets_only",
       "type": "doctrine",
       "doctrine": "public_static_serves_app_assets_only"
+    },
+    {
+      "id": "doctrine:no_live_payments",
+      "type": "doctrine",
+      "doctrine": "no_live_payments"
+    },
+    {
+      "id": "doctrine:no_real_notifications",
+      "type": "doctrine",
+      "doctrine": "no_real_notifications"
+    },
+    {
+      "id": "doctrine:narrow_sourcing_catalog_pricing_writes",
+      "type": "doctrine",
+      "doctrine": "narrow_sourcing_catalog_pricing_writes"
     },
     {
       "id": "doctrine:catalog_global_authority_explicit",
@@ -39108,6 +39258,26 @@
       "doctrine": "missing_exposure_is_disabled"
     },
     {
+      "id": "doctrine:verified_supplier_snapshot_only",
+      "type": "doctrine",
+      "doctrine": "verified_supplier_snapshot_only"
+    },
+    {
+      "id": "doctrine:deny_legacy_url_promotion",
+      "type": "doctrine",
+      "doctrine": "deny_legacy_url_promotion"
+    },
+    {
+      "id": "doctrine:stable_supplier_media_identity",
+      "type": "doctrine",
+      "doctrine": "stable_supplier_media_identity"
+    },
+    {
+      "id": "doctrine:media_recovery_never_publishes",
+      "type": "doctrine",
+      "doctrine": "media_recovery_never_publishes"
+    },
+    {
       "id": "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
       "type": "doctrine",
       "doctrine": "docs/specs/DECISION_MODELE_STOCK_SKU.md"
@@ -39233,14 +39403,19 @@
       "doctrine": "source_provenance_required"
     },
     {
-      "id": "doctrine:reuse_domain_mutation_authorities",
+      "id": "doctrine:one_operator_surface_without_cross_domain_write",
       "type": "doctrine",
-      "doctrine": "reuse_domain_mutation_authorities"
+      "doctrine": "one_operator_surface_without_cross_domain_write"
     },
     {
       "id": "doctrine:product_ref_is_public_identity",
       "type": "doctrine",
       "doctrine": "product_ref_is_public_identity"
+    },
+    {
+      "id": "doctrine:reuse_domain_mutation_authorities",
+      "type": "doctrine",
+      "doctrine": "reuse_domain_mutation_authorities"
     },
     {
       "id": "doctrine:no_paid_ai_api_for_fr_preparation",
@@ -43603,6 +43778,24 @@
       "to": "impact:auth",
       "type": "impact",
       "label": "auth"
+    },
+    {
+      "from": "middleware/recette-isolation-guard.js",
+      "to": "doctrine:no_live_payments",
+      "type": "doctrine",
+      "label": "no_live_payments"
+    },
+    {
+      "from": "middleware/recette-isolation-guard.js",
+      "to": "doctrine:no_real_notifications",
+      "type": "doctrine",
+      "label": "no_real_notifications"
+    },
+    {
+      "from": "middleware/recette-isolation-guard.js",
+      "to": "doctrine:narrow_sourcing_catalog_pricing_writes",
+      "type": "doctrine",
+      "label": "narrow_sourcing_catalog_pricing_writes"
     },
     {
       "from": "server.js",
@@ -63741,6 +63934,97 @@
       "label": "market-delegation"
     },
     {
+      "from": "services/catalog-media-recovery.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "services/catalog-promotion.js",
+      "type": "depends",
+      "label": "services/catalog-promotion.js"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "db:catalog_media",
+      "type": "db-read",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "db:catalog_media_recovery_audit",
+      "type": "db-write",
+      "label": "catalog_media_recovery_audit"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "db:catalog_media",
+      "type": "db-write-via",
+      "label": "catalog_media",
+      "via": "catalog-promotion"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "doctrine:verified_supplier_snapshot_only",
+      "type": "doctrine",
+      "label": "verified_supplier_snapshot_only"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "doctrine:deny_legacy_url_promotion",
+      "type": "doctrine",
+      "label": "deny_legacy_url_promotion"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "doctrine:stable_supplier_media_identity",
+      "type": "doctrine",
+      "label": "stable_supplier_media_identity"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "doctrine:media_recovery_never_publishes",
+      "type": "doctrine",
+      "label": "media_recovery_never_publishes"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
+    },
+    {
+      "from": "services/catalog-media-recovery.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/catalog-media-visual-fr-proof.js",
       "to": "catalog",
       "type": "owned-by",
@@ -65203,6 +65487,78 @@
       "to": "impact:staging",
       "type": "impact",
       "label": "staging"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "db:boutique_categories",
+      "type": "db-read",
+      "label": "boutique_categories"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "db:boutique_subcategories",
+      "type": "db-read",
+      "label": "boutique_subcategories"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-read",
+      "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "db:catalog_publication_decision_audit",
+      "type": "db-read",
+      "label": "catalog_publication_decision_audit"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "db:catalog_media",
+      "type": "db-read",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "doctrine:one_operator_surface_without_cross_domain_write",
+      "type": "doctrine",
+      "label": "one_operator_surface_without_cross_domain_write"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "doctrine:product_ref_is_public_identity",
+      "type": "doctrine",
+      "label": "product_ref_is_public_identity"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/catalog-visual-fr-evidence-read.js",
@@ -99635,6 +99991,31 @@
         "utils/logger.js"
       ]
     },
+    "middleware/recette-isolation-guard.js": {
+      "role": "isolated-recette-write-firewall",
+      "domain": "infrastructure",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "no_live_payments",
+        "no_real_notifications",
+        "narrow_sourcing_catalog_pricing_writes"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "doctrine:narrow_sourcing_catalog_pricing_writes",
+        "doctrine:no_live_payments",
+        "doctrine:no_real_notifications"
+      ]
+    },
     "middleware/request-id.js": {
       "role": "auth-request-id",
       "domain": "infrastructure",
@@ -113218,6 +113599,63 @@
         "services/shared-cart-creation.js"
       ]
     },
+    "services/catalog-media-recovery.js": {
+      "role": "explicitly-authorized-canonical-media-recovery",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/catalog-promotion.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates",
+        "catalog_media"
+      ],
+      "dbWrite": [
+        "catalog_media_recovery_audit"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "catalog-promotion",
+          "tables": [
+            "catalog_media"
+          ]
+        }
+      ],
+      "doctrines": [
+        "verified_supplier_snapshot_only",
+        "deny_legacy_url_promotion",
+        "stable_supplier_media_identity",
+        "media_recovery_never_publishes"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "authorization",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:catalog_media",
+        "db:catalog_media_recovery_audit",
+        "db:products",
+        "db:sourcing_candidates",
+        "doctrine:deny_legacy_url_promotion",
+        "doctrine:media_recovery_never_publishes",
+        "doctrine:stable_supplier_media_identity",
+        "doctrine:verified_supplier_snapshot_only",
+        "impact:admin-dashboard",
+        "impact:authorization",
+        "impact:catalog",
+        "impact:sourcing",
+        "services/catalog-promotion.js"
+      ]
+    },
     "services/catalog-media-visual-fr-proof.js": {
       "role": "catalog-media-visual-fr-proof",
       "domain": "catalog",
@@ -113585,6 +114023,7 @@
         "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
         "impact:catalog",
         "impact:purchasing",
+        "services/catalog-media-recovery.js",
         "services/catalog-promotion/axes.js",
         "services/catalog-promotion/content.js",
         "services/catalog-promotion/sku-media.js",
@@ -114187,6 +114626,51 @@
         "impact:catalog",
         "impact:product-detail",
         "impact:staging"
+      ]
+    },
+    "services/catalog-unified-registry.js": {
+      "role": "unified-catalog-operator-read",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates",
+        "boutique_categories",
+        "boutique_subcategories",
+        "catalog_field_overrides",
+        "catalog_publication_decision_audit",
+        "catalog_media"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "one_operator_surface_without_cross_domain_write",
+        "product_ref_is_public_identity"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:boutique_categories",
+        "db:boutique_subcategories",
+        "db:catalog_field_overrides",
+        "db:catalog_media",
+        "db:catalog_publication_decision_audit",
+        "db:products",
+        "db:sourcing_candidates",
+        "doctrine:one_operator_surface_without_cross_domain_write",
+        "doctrine:product_ref_is_public_identity",
+        "impact:admin-dashboard",
+        "impact:catalog"
       ]
     },
     "services/catalog-visual-fr-evidence-read.js": {
@@ -138397,6 +138881,12 @@
       "label": "scripts/catalog-fr-quality-apply.js"
     },
     {
+      "from": "services/catalog-media-recovery.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/catalog-media-visual-fr-proof.js",
       "to": "catalog",
       "type": "owned-by",
@@ -138623,6 +139113,12 @@
       "to": "services/catalog-terminology-memory.js",
       "type": "uses",
       "label": "scripts/catalog-termium-import.js"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/catalog-visual-fr-evidence-read.js",
