@@ -88,7 +88,7 @@ async function main(){
       err=>err.code==='catalog_media_source_invalid');
     assert.equal((await client.query('SELECT COUNT(*)::int AS n FROM catalog_media WHERE product_id=$1',[ids.p2])).rows[0].n,0);
     // Physical proof that audit failure rolls back the media INSERT.
-    await client.query('ALTER TABLE catalog_media_recovery_audit ADD CONSTRAINT audit_must_fail CHECK (active_after > 1)');
+    await client.query('ALTER TABLE catalog_media_recovery_audit ADD CONSTRAINT audit_must_fail CHECK (active_after > 1) NOT VALID');
     await assert.rejects(recoverSourceMedia('KPR-TEST-3',{id:ACTOR},{database}));
     assert.equal((await client.query('SELECT COUNT(*)::int AS n FROM catalog_media WHERE product_id=$1',[ids.p3])).rows[0].n,0);
     assert.equal((await client.query('SELECT COUNT(*)::int AS n FROM catalog_media_recovery_audit')).rows[0].n,1);
