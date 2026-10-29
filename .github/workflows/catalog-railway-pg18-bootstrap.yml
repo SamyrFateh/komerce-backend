@@ -53,6 +53,8 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql >/dev/null
       - name: Migrate isolated schema to current branch including migration 351
         run: node scripts/ci-migrate.js
+      - name: Apply new Catalogue audit migration explicitly on isolated database
+        run: psql -X -v ON_ERROR_STOP=1 -f migrations/351_catalog_media_recovery_audit.sql >/dev/null
       - name: Assert Catalogue and wallet foundations exist
         run: |
           psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT CASE WHEN to_regclass('public.wallets') IS NOT NULL AND to_regclass('public.catalog_media_recovery_audit') IS NOT NULL AND to_regclass('public.sourcing_candidates') IS NOT NULL AND to_regclass('public.catalog_media') IS NOT NULL THEN 'PASS' ELSE 'FAIL' END" | grep -x PASS
