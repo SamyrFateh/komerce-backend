@@ -43,7 +43,7 @@ test('catégorie absente : pas de CDR, pas de prix test fabriqué, aucune approb
  expect(pricing.recommend).not.toHaveBeenCalled();
 });
 test.each([
- {label:'coût contributif',variable:3000,testPrice:6000,decision:'TEST',health:'healthy'},
+ {label:'coût contributif',variable:3000,testPrice:6000,decision:'TEST',health:'strong'},
  {label:'coût fragile',variable:4800,testPrice:6000,decision:'WATCH',health:'fragile'},
  {label:'coût destructeur',variable:6500,testPrice:6000,decision:'LOSS',health:'loss'},
 ])('après correction économique ($label), recalcul coût puis verdict $decision',async item=>{
