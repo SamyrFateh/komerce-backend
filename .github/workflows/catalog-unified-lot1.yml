@@ -48,6 +48,7 @@ jobs:
         run: |
           npx jest --config jest.unit.config.js --runInBand --forceExit --no-coverage \
             tests/unit/catalog-unified-registry.test.js \
+            tests/unit/catalog-unified-authority.test.js \
             tests/unit/catalog-registry.test.js \
             tests/unit/catalog-workspace-wide-v1.test.js \
             tests/unit/canonical-catalog-workspace-boundary.test.js \
