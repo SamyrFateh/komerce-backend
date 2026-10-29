@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - test/catalog-pricing-integrated-staging-20261029
+      - main
     paths:
       - '.github/workflows/catalog-unified-contextual-chromium.yml'
       - 'public/dashboards/canonical/js/catalog-workspace.js'
@@ -12,6 +13,7 @@ on:
       - 'playwright.catalog-pricing-integration.config.js'
       - 'public/dashboards/canonical/index.html'
       - 'public/dashboards/canonical/js/pricing-atelier-views.js'
+      - 'public/dashboards/canonical/css/pricing-atelier-views.css'
   workflow_dispatch:
 
 permissions:
@@ -35,12 +37,12 @@ jobs:
         run: node --check scripts/testing/catalog-contextual-chromium-proof.js
       - name: Execute real 1440px Catalogue components (isolated fixtures)
         run: node scripts/testing/catalog-contextual-chromium-proof.js
-      - name: Execute Pricing atelier real Chromium desktop 1440 on isolated UI fixtures
+      - name: Execute Pricing atelier Chromium desktop and mobile 1440/390
         env:
           ATELIER_SHOTS_DIR: test-results/catalog-pricing-integrated/shots
         run: |
           mkdir -p "$ATELIER_SHOTS_DIR"
-          npx playwright test --config playwright.catalog-pricing-integration.config.js --grep '1440'
+          npx playwright test --config playwright.catalog-pricing-integration.config.js --grep '1440|390'
       - name: Keep annotated visual evidence
         if: always()
         uses: actions/upload-artifact@v4
