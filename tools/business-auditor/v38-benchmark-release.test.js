@@ -96,3 +96,13 @@ test('G5 strict CLI exit cannot be green on NO_GO',()=>{
  assert.equal(exitCodeFor({release:{decision:'NO_GO'}},normal.requireGo),0);
  assert.throws(()=>parse(['--audit','a','--out','b','--unsafe']),/G4_G5_CLI_TOOL_ERROR/);
 });
+
+test('G5 rejects forged G3 boolean-only attestations even when all flags are true',()=>{
+ const {accepts}=require('./v40-g3-proof-admission');
+ const fake={contract:'komerce-generated-experiment-proof/v1',sha,
+   realOwnerOnClonedPg:true,generatedCases:6,independentOracle:true,
+   withheldMutationDetected:true,allClonesDropped:true};
+ assert.equal(accepts(fake,sha),false);
+ const a=audit(),b=benchmark(a);const g=readiness({audit:a,benchmark:b,impactPlan:fake});
+ assert.ok(g.blockers.includes('G3_AUTONOMOUS_GENERATED_EXPERIMENT'));
+});
