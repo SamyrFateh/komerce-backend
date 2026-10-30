@@ -233,7 +233,8 @@ test('Fiche commerciale complète : galerie, variantes et correction FR disponib
   expect(ui).toContain("availability.requires_secure_transport");
   expect(ui).toContain("row._catalogueDossier = dossier");
   expect(ui).toContain("identity.description_fr || row.description");
-  expect(ui).toContain("issues.includes('editorial_to_complete') ? 'Compléter le français' : 'Corriger le français'");
+  expect(ui).toContain("issues.includes('editorial_to_complete')");
+  expect(ui).toContain("'Compléter titre et description FR' : 'Modifier titre / description FR'");
   expect(css).toContain(".kmc-catalog-dossier-image-strip");
   expect(css).toContain(".kmc-catalog-variant-line");
 });
