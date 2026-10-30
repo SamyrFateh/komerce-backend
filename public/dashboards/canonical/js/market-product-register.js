@@ -96,6 +96,14 @@
     const {root,payload={},marketCode,priceData,request,feedback=()=>{},reload=async()=>{}}=options;
     if(!root?.ownerDocument||!marketCode||typeof request!=='function')return null;
     const doc=root.ownerDocument;
+    // Load versioned register styling even when an older shell HTML is cached.
+    if(doc.head && !doc.querySelector('[data-market-product-register-style]')){
+      const sheet=doc.createElement('link');
+      sheet.rel='stylesheet';
+      sheet.href='/dashboards/canonical/css/market-catalog-essential.css?v=261031-1';
+      sheet.setAttribute('data-market-product-register-style','');
+      doc.head.appendChild(sheet);
+    }
     const node=(tag,cls,txt)=>{
       const n=doc.createElement(tag);
       if(cls)n.className=cls;
