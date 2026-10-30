@@ -2761,14 +2761,16 @@
         diagnose.addEventListener('click', () => {
           if (readinessCheck) readinessCheck.click();
         });
-        const primaryByKind = { detail: view, classify: editClassification,
-          markets: market, diagnose };
-        const primary = primaryByKind[nextStep.kind] || view;
-        primary.textContent = nextStep.label;
-        primary.setAttribute('aria-label', nextStep.label + ' pour ' + row.product_ref);
-        primary.className = 'kmc-workspace-action kmc-catalog-primary-action' +
-          (nextStep.kind === 'detail' ? ' is-secondary' : '');
+        // An already approved product is also a Catalogue dossier, not a
+        // forced navigation to a second dashboard. Market decisions remain
+        // separate audited authorities, accessible as a contextual extra.
+        const primary = makeButton(doc, 'Dossier produit', 'open-catalog-inspector');
+        primary.className = 'kmc-workspace-action kmc-catalog-primary-action';
+        primary.setAttribute('aria-label', 'Consulter le dossier pour ' + row.product_ref);
+        primary.addEventListener('click', () =>
+          openProductInspector(context, slot, doc, row, categories));
         actions.appendChild(primary);
+        statusChip.title = 'Consulter le dossier produit';
         statusChip.addEventListener('click', () => primary.click());
         const extra = doc.createElement('details');
         extra.className = 'kmc-catalog-row-more';
