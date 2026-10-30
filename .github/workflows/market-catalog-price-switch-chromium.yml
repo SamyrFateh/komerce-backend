@@ -1,0 +1,48 @@
+name: Market catalogue — price draft and publication switch (Chromium desktop)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/market-catalog-price-switch-chromium.yml'
+      - 'public/dashboards/canonical/js/market-product-register.js'
+      - 'public/dashboards/canonical/js/market-catalog.js'
+      - 'public/dashboards/canonical/css/market-catalog-essential.css'
+      - 'scripts/testing/market-handoff-v4-chromium-proof.js'
+      - 'tests/unit/market-product-register.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-catalog-price-switch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-market:
+    name: Market price draft OFF / publish ON / mask OFF (1440)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Market pricing/switch targeted unit tests
+        run: npx jest --config jest.unit.config.js --ci --runInBand --no-coverage tests/unit/market-product-register.test.js tests/unit/market-catalog-decision.test.js
+      - name: Real Chromium product / local price / publication flow
+        run: node scripts/testing/market-handoff-v4-chromium-proof.js
+      - name: Store desktop evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-catalogue-switch-${{ github.sha }}
+          path: test-results/market-handoff-v4/*.png
+          retention-days: 7
+          if-no-files-found: ignore

@@ -102,3 +102,44 @@ body.kmc-shell-v4 #market-catalog-root .kmc-market-catalog-priority-title {
     grid-row: auto;
   }
 }
+
+/* Commercial register: one product catalogue, market-owned price and publication. */
+.kmc-market-product-register { min-width: 0; }
+.kmc-market-register-toolbar {
+  display: flex; gap: 12px; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; margin: 14px 0;
+}
+.kmc-market-register-toolbar input { width: min(400px, 100%); min-height: 38px; }
+.kmc-market-register-table { width: 100%; table-layout: fixed; }
+.kmc-market-register-table th:nth-child(1) { width: 31%; }
+.kmc-market-register-table th:nth-child(2) { width: 16%; }
+.kmc-market-register-table th:nth-child(3) { width: 19%; }
+.kmc-market-register-table th:nth-child(4) { width: 21%; }
+.kmc-market-register-table th:nth-child(5) { width: 13%; }
+.kmc-market-register-table td { vertical-align: middle; overflow-wrap: anywhere; }
+.kmc-market-product-line { display:flex; gap:10px; align-items:center; min-width:0; }
+.kmc-market-product-line img { width:48px; height:48px; object-fit:contain; flex:0 0 48px; border-radius:7px; background:#f5f8fc; }
+.kmc-market-product-line strong, .kmc-market-product-line small { display:block; }
+.kmc-market-price-cell .kmc-market-price-input { width: min(130px, 100%); min-height: 38px; }
+.kmc-market-price-currency { font-weight:700; font-size:12px; margin-left:5px; }
+.kmc-market-price-cell small, .kmc-market-publication-cell small { display:block; margin:6px 0; }
+.kmc-market-price-cell button { min-height:36px; margin-top:5px; }
+.kmc-market-economic-facts { margin-top:9px; padding:8px; border:1px solid #dae4f0; border-radius:8px; background:#f8fafc; }
+.kmc-market-economic-line { display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:3px 0; }
+.kmc-market-economic-line span { color:#51627b; }
+.kmc-market-publication-cell { text-align:center; }
+.kmc-market-publish-switch { display:inline-flex; position:relative; align-items:center; cursor:pointer; }
+.kmc-market-publish-switch input { position:absolute; opacity:0; width:48px; height:27px; margin:0; cursor:inherit; }
+.kmc-market-switch-track {
+  display:inline-block; width:48px; height:27px; border-radius:16px;
+  background:#cbd5e1; border:1px solid #94a3b8; position:relative; transition:background .15s;
+}
+.kmc-market-switch-track:before { content:''; position:absolute; left:3px; top:3px; width:19px; height:19px;
+  border-radius:50%; background:#fff; box-shadow:0 1px 3px #0003; transition:transform .15s; }
+.kmc-market-publish-switch input:checked + .kmc-market-switch-track { background:#0f9f58; border-color:#087b43; }
+.kmc-market-publish-switch input:checked + .kmc-market-switch-track:before { transform:translateX(20px); }
+.kmc-market-publish-switch input:focus-visible + .kmc-market-switch-track { outline:3px solid #2563eb; outline-offset:3px; }
+.kmc-market-publish-switch input:disabled + .kmc-market-switch-track { opacity:.55; cursor:not-allowed; }
+.kmc-market-publication-status.is-published { color:#047857; font-weight:700; }
+.kmc-market-publication-status.is-warning { color:#a16207; font-weight:700; }
+@media(max-width:1000px){ .kmc-market-register-table { min-width:1120px; } }

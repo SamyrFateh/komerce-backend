@@ -17,32 +17,51 @@ async function run(page,width,selected=false,emptyQueue=false,denied=false){
   await page.goto('https://komerce.test/dashboards/canonical/market-catalog.html'+qs);
   await page.addStyleTag({content:'html,body{margin:0;width:100%;}*{box-sizing:border-box}#market-catalog-root{padding:18px;max-width:100%;}a,button{cursor:pointer}'});
   await page.addStyleTag({path:path.join(root,'public/dashboards/canonical/css/market-handoff-v4.css')});
+  await page.addStyleTag({path:path.join(root,'public/dashboards/canonical/css/market-catalog-essential.css')});
   await page.addScriptTag({path:path.join(root,'public/dashboards/canonical/js/admin-context.js')});
   await page.addScriptTag({path:path.join(root,'public/dashboards/canonical/js/market-prompt.js')});
   await page.addScriptTag({path:path.join(root,'public/dashboards/canonical/js/market-ready-to-sell.js')});
+  await page.addScriptTag({path:path.join(root,'public/dashboards/canonical/js/market-product-register.js')});
   await page.evaluate(({P,emptyQueue,denied})=>{
     window.__calls=[];
-    window.fetch=async url=>{
+    window.__writes=[];
+    window.__published=false;
+    window.__priceActive=false;
+    window.fetch=async (url,options={})=>{
       window.__calls.push(url);
-      const body=url==='/api/auth/me'?{id:'admin',role:'admin'}:
+      const method=options.method||'GET';
+      if(method!=='GET')window.__writes.push({url,method,body:options.body});
+      if(url.endsWith('/activate')&&method==='POST'){
+        window.__published=true;window.__priceActive=true;
+      }
+      if(url.includes('/catalog/exposure/')&&method==='PUT')
+        window.__published=options.body?.commercial_exposure==='ENABLED';
+      const body=url.includes('/activation-preview')?{
+        activation:{allowed:true},economics:{
+          variable_cost_complete_kmf:800,cdr_complete_kmf:1000,
+          estimated_margin_pct:25,strategy_risk:'contributive',
+        },
+      }:url.includes('/commercial-prices')?{
+        market:{code:'KM',currency:'KMF'},products:emptyQueue?[]:[{
+          product_ref:P,local_price:1500,
+          decision_status:window.__priceActive?'LOCAL_ACTIVE':'DRAFT_PENDING_GATE',
+        }],
+      }:url==='/api/auth/me'?{id:'admin',role:'admin'}:
         url==='/api/market-delegation/catalog/authorized-markets'?{market_codes:denied?[]:['CG','CM','KM']}:
         url==='/api/admin/dashboard/context'?{
           actor:{id:'admin',role:'admin'},
           access:{mode:'global',allowedMarkets:['CG','CM','KM'],defaultMarket:null,capabilities:[]},
         }:{
           market:{name:'Comores',currency:'KMF'},
-          exposure:[],
-          actor_capabilities:[],
-          ready_to_sell:{
-            summary:{ready:1,review:0,blocked:0},
-            items:emptyQueue?[]:[{
-              product_id:'test-p',product_ref:P,product_name:'Produit test',
-              corridor:{low:1000,high:2000,sample_count:3},
-              proposed_price:{amount:1500,source:'MARKET_TARGET'},
-              decision_state:{key:'READY',label:'À décider',tone:'positive'},
-              bulk_eligible:false,can_approve:true,local_price_active:false,
-            }],
-          },
+          exposure:emptyQueue?[]:[{
+            product_id:'test-p',product_ref:P,product_name:'Produit approuvé',
+            category:'Tech',subcategory:'Téléphones',sku:'TEST-SKU',
+            commercial_exposure:window.__published?'ENABLED':'DISABLED',
+            decision_recorded:window.__published,
+            is_available:true,needs_review:false,
+          }],
+          actor_capabilities:['catalog.read','pricing.read','pricing.decide','pricing.activate','catalog.expose'],
+          ready_to_sell:{summary:{ready:0,review:0,blocked:0},items:[]},
         };
       return {ok:true,status:200,json:async()=>body};
     };
@@ -83,8 +102,51 @@ async function run(page,width,selected=false,emptyQueue=false,denied=false){
     assert(calls.some(x=>x.includes('/markets/KM/catalog/exposure')));
     assert(!calls.some(x=>x.includes('/markets/CG/')||x.includes('/markets/CM/')));
     if(!emptyQueue){
-      await page.locator('.kmc-ready-row.is-context-target[data-product-ref="'+P+'"]').waitFor();
-      assert((await card.innerText()).includes('présent dans la file de décision'));
+      await page.locator('[data-market-product-ref="'+P+'"]').waitFor();
+      const row=page.locator('[data-market-product-ref="'+P+'"]');
+      assert((await card.innerText()).includes('Son prix et sa publication se décident'));
+      assert.equal(await row.locator('[role="switch"]').count(),1);
+      assert.equal(await row.locator('.kmc-market-price-input').inputValue(),'1500');
+      assert.equal(await row.locator('[role="switch"]').isChecked(),false);
+      if(width===1440){
+        const economicButton=row.getByRole('button',{name:'Voir coûts et marge'});
+        await economicButton.click();
+        const costDetails=row.locator('.kmc-market-economic-facts');
+        await costDetails.waitFor({state:'visible'});
+        assert((await costDetails.innerText()).includes('Coût variable complet'));
+        assert((await costDetails.innerText()).includes('CDR complet'));
+        // Price save is not publication. Verify actual network mutation order.
+        await row.getByRole('button',{name:'Enregistrer le prix'}).click();
+        await page.waitForFunction(()=>window.__writes.some(x=>x.method==='POST'
+          &&x.url.endsWith('/local-price')));
+        const beforePublication=await page.evaluate(()=>window.__writes);
+        assert.equal(beforePublication.filter(x=>x.url.endsWith('/activate')).length,0);
+        assert.equal(await page.locator('[data-market-product-ref="'+P+'"] [role="switch"]').isChecked(),false);
+        const activeRow=page.locator('[data-market-product-ref="'+P+'"]');
+        await activeRow.locator('.kmc-market-publish-switch').click();
+        await page.waitForFunction(()=>window.__writes.some(x=>x.url.endsWith('/activate')));
+        // The checkbox becomes checked immediately, but the mutation must
+        // finish and the server's new state be reloaded before an OFF click.
+        await page.waitForFunction(P=>{
+          const row=document.querySelector('[data-market-product-ref="'+P+'"]');
+          const switchInput=row?.querySelector('[role="switch"]');
+          const status=row?.querySelector('.kmc-market-publication-status');
+          return switchInput?.checked===true && switchInput.disabled===false
+            &&status?.textContent?.includes('Publié sur ce marché');
+        },P);
+        const afterPublication=await page.evaluate(()=>window.__writes);
+        assert(afterPublication.some(x=>x.url.endsWith('/activate')));
+        assert.equal(afterPublication.filter(x=>x.url.endsWith('/reset')).length,0);
+        await page.screenshot({path:path.join(output,'prix-local-et-publication-on-1440.png'),fullPage:true});
+        await page.locator('[data-market-product-ref="'+P+'"] .kmc-market-publish-switch').click();
+        await page.waitForFunction(()=>window.__writes.some(x=>x.method==='PUT'
+          &&x.body?.commercial_exposure==='DISABLED'));
+        await page.locator('[data-market-product-ref="'+P+'"] [role="switch"]:not(:checked)').waitFor();
+        const finalState=await page.evaluate(()=>({
+          published:window.__published,activePrice:window.__priceActive,
+        }));
+        assert.deepEqual(finalState,{published:false,activePrice:true});
+      }
     }else{
       assert((await card.innerText()).includes('n’est pas actuellement dans la liste'));
       assert((await card.innerText()).includes('sans déduire un refus'));
