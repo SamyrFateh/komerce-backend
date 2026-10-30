@@ -8,7 +8,7 @@
  * @outputs       catalog_work_queue, delegated_catalog_mutations
  * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, finance_config, currency_parities, exchange_rates, cost_components
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
@@ -495,7 +495,7 @@ async function getRegistryReadiness(productRef) {
 
 // Read-only dossier from the SAME certification authority used for approval.
 // It does not grant publication, decide local prices or mutate source records.
-function publicProductDossier(facts, product, marketHandoff = null) {
+function publicProductDossier(facts, product, marketHandoff = null, details = {}) {
   const row = facts?.row || {};
   const candidate = product.lifecycle_status === 'candidate' && product.is_active !== true;
   const positive = value => {
@@ -534,6 +534,11 @@ function publicProductDossier(facts, product, marketHandoff = null) {
         ? null : (Number.isFinite(Number(row.stock)) ? Number(row.stock) : null),
       has_variants: row.has_variants === true,
       weight_kg: positive(row.weight_kg),
+      dimensions_cm: row.dimensions_cm || null,
+      fragility: row.fragility || null,
+      requires_secure_transport: row.requires_secure_transport === true,
+      // products.stock is not the sellable stock authority in SKU mode.
+      stock_is_authoritative: row.inventory_model !== 'SKU',
     },
     purchasing: {
       active_supplier_skus: count(row.active_supplier_skus),
@@ -542,7 +547,35 @@ function publicProductDossier(facts, product, marketHandoff = null) {
         : (Number(row.active_supplier_skus) > 0 &&
           Number(row.active_supplier_skus) === Number(row.complete_supplier_skus)),
     },
-    media: { active_canonical: count(row.active_media) },
+    media: {
+      active_canonical: count(row.active_media),
+      gallery: (Array.isArray(details.media) ? details.media : [])
+        .filter(item => typeof item.url === 'string' && /^https:\/\//i.test(item.url))
+        .slice(0, 24).map(item => ({
+          url: item.url,
+          alt: item.alt || null,
+          role: item.role || 'PRODUCT',
+          source_media_id: item.source_media_id || null,
+        })),
+      gallery_truncated: (details.media || []).length > 24,
+    },
+    variants: {
+      inventory_model: row.inventory_model || 'LEGACY_VARIANTS',
+      rows: (Array.isArray(details.variants) ? details.variants : [])
+        .slice(0, 50).map(item => ({
+          sku: item.sku || null,
+          supplier_sku: row.inventory_model === 'SKU' ? (item.supplier_sku || null) : null,
+          supplier_unit_ref: row.inventory_model === 'SKU' ? (item.supplier_unit_ref || null) : null,
+          variant_type: row.inventory_model === 'SKU' ? null : (item.variant_type || null),
+          variant_value: row.inventory_model === 'SKU' ? null : (item.variant_value || null),
+          variant_combo: row.inventory_model === 'SKU' ? (item.variant_combo || null) : null,
+          stock: item.stock == null ? null : Number(item.stock),
+          is_active: row.inventory_model === 'SKU' ? item.is_active === true : null,
+        })),
+      truncated: (details.variants || []).length > 50,
+      stock_semantics: row.inventory_model === 'SKU' ? 'sellable_sku'
+        : 'legacy_variant_axes_not_combinatorial',
+    },
     economics: {
       reference_cost_kmf: positive(row.cost_kmf),
       reference_price_kmf: positive(row.price_kmf),
@@ -585,7 +618,23 @@ async function getProductDossier(productRef) {
   if (!facts?.row) throw new CatalogWorkspaceError(
     'catalog_facts_unavailable', 'Fiche canonique indisponible', 503
   );
-  return publicProductDossier(facts, product, handoff);
+  const skuStockAuthority = facts.row.inventory_model === 'SKU';
+  const [mediaResult, variantResult] = await Promise.all([
+    db.query(`SELECT url, alt, role, source_media_id, display_order
+       FROM catalog_media WHERE product_id=$1 AND is_active=TRUE
+       ORDER BY display_order ASC NULLS LAST, created_at ASC LIMIT 25`, [product.id]),
+    skuStockAuthority
+      ? db.query(`SELECT sku, supplier_sku, supplier_unit_ref, variant_combo,
+                  stock, is_active FROM product_skus
+                   WHERE product_id=$1 ORDER BY is_active DESC, created_at ASC LIMIT 51`, [product.id])
+      : db.query(`SELECT sku, variant_type, variant_value, stock
+                   FROM product_variants WHERE product_id=$1
+                   ORDER BY display_order ASC, variant_type ASC, variant_value ASC LIMIT 51`, [product.id]),
+  ]);
+  return publicProductDossier(facts, product, handoff, {
+    media: mediaResult.rows,
+    variants: variantResult.rows,
+  });
 }
 
 function sanitizeProductCreate(body = {}) {

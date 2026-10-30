@@ -14,6 +14,13 @@ on:
       - 'public/dashboards/canonical/index.html'
       - 'public/dashboards/canonical/js/pricing-atelier-views.js'
       - 'public/dashboards/canonical/css/pricing-atelier-views.css'
+  pull_request:
+    paths:
+      - '.github/workflows/catalog-unified-contextual-chromium.yml'
+      - 'public/dashboards/canonical/js/catalog-workspace.js'
+      - 'public/dashboards/canonical/css/catalog-workspace-wide-v1.css'
+      - 'scripts/testing/catalog-contextual-chromium-proof.js'
+      - 'public/dashboards/canonical/index.html'
   workflow_dispatch:
 
 permissions:
