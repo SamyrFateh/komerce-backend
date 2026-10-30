@@ -2528,7 +2528,7 @@
     // The classification may also be corrected before an issue is raised,
     // but the server still validates the active Boutique pair and operator grant.
     if ((row.candidate_ref || (row.lifecycle_status === 'active' && row.is_active === true))) {
-      const btn = makeButton(doc, 'Corriger le classement', 'inspector-classify');
+      const btn = makeButton(doc, 'Corriger le classement', 'inspector-classify', true);
       btn.addEventListener('click', () =>
         openProductClassificationDialog(context, row, categories, btn));
       actions.appendChild(btn);
