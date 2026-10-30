@@ -354,6 +354,9 @@
         refreshNavigation(user, context);
         return;
       }
+      if (!global.KomerceMarketProductRegister) {
+        await import('/dashboards/canonical/js/market-product-register.js?v=261031-1');
+      }
       const payload = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure`);
       // Pricing is a separate market capability. A catalog-only viewer may
       // still inspect products, but never receives commercial price amounts.
