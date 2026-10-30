@@ -317,25 +317,15 @@
   }
 
   function priceExplanation(row = {}) {
-    const cost = Number(row.cost_kmf);
-    const costText = Number.isFinite(cost) && cost > 0
-      ? `Coût d’achat estimé : ${formatKmf(cost)} (estimation, pas un coût réel).`
-      : 'Coût d’achat estimé non renseigné.';
-    if (hasGlobalReferencePrice(row)) return `Prix de référence global : ${formatKmf(row.price_kmf)}. ${costText}`;
-    if (hasPublishablePrice(row)) {
-      return `Référence globale sans prix : validation Catalogue possible. Le responsable pays décide ensuite du prix local ; aucune mise en vente acheteur avant LOCAL_ACTIVE. ${costText}`;
-    }
-    return `Prix global manquant ou invalide : ce produit non sourcé reste bloqué à la publication. ${costText}`;
+    return hasPublishablePrice(row)
+      ? 'Fiche Catalogue : la fixation du prix et les coûts commerciaux appartiennent au marché.'
+      : 'Préparation du produit à terminer ; le marché déterminera le prix lorsque la fiche sera éligible.';
   }
 
   function marketPriceLabel(market = {}) {
-    if (market.price_status === 'LOCAL_ACTIVE') {
-      return `Prix local actif · ${market.local_price_amount == null ? '—' : market.local_price_amount} ${market.local_price_currency || market.currency || ''}`.trim();
-    }
-    if (market.price_status === 'LOCAL_MARKET_DECISION') return 'Prix local en brouillon, à activer';
-    if (market.price_status === 'LOCAL_AUTHORIZED_PENDING_CUTOVER') return 'Prix local autorisé, bascule en attente';
-    if (!market.price_status) return 'Prix local non défini pour ce marché : non visible acheteur';
-    return market.price_status;
+    if (market.price_status === 'LOCAL_ACTIVE') return 'Prix défini par le marché';
+    if (market.price_status) return 'Décision tarifaire en cours';
+    return 'Prix à décider par le marché';
   }
 
   function curationState(row = {}) {
@@ -2019,20 +2009,12 @@
                 });
               if (!answer?.ok) throw new Error('Correction et nouveau scan non confirmés.');
               const result = answer.result || {};
-              const e = result.scan?.economics || {};
-              const numbers = [
-                ['Coût variable',e.variable_cost_complete_kmf],
-                ['Plancher de sécurité',e.minimum_safe_price_kmf],
-                ['Prix test indicatif',e.test_price_kmf],
-              ].filter(([,v]) => v != null && Number.isFinite(Number(v)) && Number(v)>0)
-               .map(([label,value]) => label + ' : ' + formatKmf(value));
               await context.reload();
               setFeedback(context.root,
                 'Catégorie économique enregistrée pour ' + row.candidate_ref +
                   '. Nouveau verdict Sourcing : ' +
                   (result.scan?.decision || 'à relire') +
-                  (numbers.length ? '. ' + numbers.join(' · ') : '. Coûts encore à qualifier') +
-                  '. Prix de vente marché non décidé, aucune publication.', 'positive');
+                  '. Le prix reste à décider par le marché ; aucune publication.', 'positive');
             } catch (err) {
               feedback.textContent = actionErrorMessage(err);
               save.disabled = false;
