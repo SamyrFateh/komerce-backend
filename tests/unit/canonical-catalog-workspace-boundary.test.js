@@ -1198,3 +1198,46 @@ test('Catalogue : absence de suggestion économique ne sélectionne jamais une c
     .listeners.submit[0]({preventDefault(){}});
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });
+
+test('Catalogue: la correction française est visible AVANT les coûts et ouvre le vrai formulaire sans écriture automatique', async () => {
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{
+    record_kind:'product',product_ref:'KPR-FR-VISIBLE',candidate_ref:'KSC-FR-VISIBLE',
+    name:'English privacy screen protector',description:null,content_source:'connector_raw',source_locale:'en',
+    lifecycle_status:'candidate',is_active:false,work_status:'editorial_to_complete',
+    operator_group:'correction',issues:['editorial_to_complete'],
+  }];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async url=>({
+    ok:true,status:200,json:async()=>url.includes('dossier_product_ref=')
+      ? {product_ref:'KPR-FR-VISIBLE',identity:{
+        title_fr:'English privacy screen protector',description_fr:null,
+        content_source:'connector_raw',locale:'en',
+      }}
+      : payload,
+  }));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-FR-VISIBLE"]');
+  const dock=panel.querySelector('[data-catalog-action-dock]');
+  const economy=panel.querySelector('[data-catalog-economic-summary]');
+  const dossier=panel.querySelector('[data-catalog-product-dossier]');
+  expect(dock).not.toBeNull();
+  expect(economy).not.toBeNull();
+  expect(dossier).not.toBeNull();
+  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(economy));
+  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(dossier));
+  const buttons=dock.querySelector('.kmc-catalog-inspector-actions');
+  const editor=buttons.querySelector('[data-workspace-action="inspector-prepare-fr"]');
+  expect(editor).not.toBeNull();
+  expect(editor.textContent).toBe('Compléter titre et description FR');
+  expect(buttons.children[0]).toBe(editor);
+  expect(buttons.querySelector('[data-workspace-action="inspector-classify"]')).not.toBeNull();
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+  await editor.click();
+  expect(root.querySelector('[data-catalog-fr-editor]')).not.toBeNull();
+  expect(root.querySelector('[data-workspace-action="save-fr-editor"]')).not.toBeNull();
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+});
