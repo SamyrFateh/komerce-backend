@@ -109,6 +109,12 @@ async function run(page,width,selected=false,emptyQueue=false,denied=false){
       assert.equal(await row.locator('.kmc-market-price-input').inputValue(),'1500');
       assert.equal(await row.locator('[role="switch"]').isChecked(),false);
       if(width===1440){
+        const economicButton=row.getByRole('button',{name:'Voir coûts et marge'});
+        await economicButton.click();
+        const costDetails=row.locator('.kmc-market-economic-facts');
+        await costDetails.waitFor({state:'visible'});
+        assert((await costDetails.innerText()).includes('Coût variable complet'));
+        assert((await costDetails.innerText()).includes('CDR complet'));
         // Price save is not publication. Verify actual network mutation order.
         await row.getByRole('button',{name:'Enregistrer le prix'}).click();
         await page.waitForFunction(()=>window.__writes.some(x=>x.method==='POST'
@@ -117,14 +123,14 @@ async function run(page,width,selected=false,emptyQueue=false,denied=false){
         assert.equal(beforePublication.filter(x=>x.url.endsWith('/activate')).length,0);
         assert.equal(await page.locator('[data-market-product-ref="'+P+'"] [role="switch"]').isChecked(),false);
         const activeRow=page.locator('[data-market-product-ref="'+P+'"]');
-        await activeRow.locator('[role="switch"]').check();
+        await activeRow.locator('.kmc-market-publish-switch').click();
         await page.waitForFunction(()=>window.__writes.some(x=>x.url.endsWith('/activate')));
         await page.locator('[data-market-product-ref="'+P+'"] [role="switch"]:checked').waitFor();
         const afterPublication=await page.evaluate(()=>window.__writes);
         assert(afterPublication.some(x=>x.url.endsWith('/activate')));
         assert.equal(afterPublication.filter(x=>x.url.endsWith('/reset')).length,0);
         await page.screenshot({path:path.join(output,'prix-local-et-publication-on-1440.png'),fullPage:true});
-        await page.locator('[data-market-product-ref="'+P+'"] [role="switch"]').uncheck();
+        await page.locator('[data-market-product-ref="'+P+'"] .kmc-market-publish-switch').click();
         await page.waitForFunction(()=>window.__writes.some(x=>x.method==='PUT'
           &&x.body?.commercial_exposure==='DISABLED'));
         await page.locator('[data-market-product-ref="'+P+'"] [role="switch"]:not(:checked)').waitFor();
