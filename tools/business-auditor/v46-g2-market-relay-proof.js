@@ -36,6 +36,7 @@ function evaluate(raw){
   if(x?.table!==expected.table||x.column!==expected.column||
     x.constraint!==expected.constraint||x.notNull!==true||
     x.negativeSqlState!=='23502'||x.negativeColumn!==expected.column||
+    x.userTriggersDisabledForConstraintProbe!==true||
     x.unchangedAfterRejectedWrite!==true||
     x.validWriteObserved!==true||
     !new RegExp('^FOREIGN KEY \\('+expected.column+'\\) REFERENCES '+
@@ -79,6 +80,12 @@ async function physical(url){
    const {rows:[before]}=await client.query(
     'SELECT '+x.column+' AS link FROM '+x.table+' WHERE id=$1',[id]);
    x.validWriteObserved=before?.link===(i===0?market.id:relay);
+   // DB-level NOT NULL is proved with application BEFORE UPDATE triggers
+   // temporarily disabled on this cloned test DB only. Otherwise an
+   // application trigger can fail first with SQLSTATE P0001, masking 23502.
+   // The enclosing transaction rollback restores the trigger settings.
+   await client.query('ALTER TABLE public.'+x.table+' DISABLE TRIGGER USER');
+   x.userTriggersDisabledForConstraintProbe=true;
    await client.query('SAVEPOINT probe_'+i);
    let negativeSqlState=null,negativeColumn=null;
    try{await client.query('UPDATE '+x.table+' SET '+x.column+'=NULL WHERE id=$1',[id]);}
@@ -88,6 +95,7 @@ async function physical(url){
     'SELECT '+x.column+' AS link FROM '+x.table+' WHERE id=$1',[id]);
    x.unchangedAfterRejectedWrite=after?.link===before?.link;
    x.negativeSqlState=negativeSqlState;x.negativeColumn=negativeColumn;
+   await client.query('ALTER TABLE public.'+x.table+' ENABLE TRIGGER USER');
   }
   const {rows:[chain]}=await client.query(
    'SELECT o.relais_id AS relay, r.market_id AS relay_market, m.id AS resolved_market FROM orders o JOIN relais r ON r.id=o.relais_id JOIN markets m ON m.id=r.market_id WHERE o.id=$1',[order]);
