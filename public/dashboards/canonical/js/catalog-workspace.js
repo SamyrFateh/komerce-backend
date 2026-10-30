@@ -2078,7 +2078,7 @@
               save.disabled = false;
             }
           });
-          panel.appendChild(form);
+          panel.insertBefore(form, panel.querySelector('[data-catalog-economic-summary]'));
           feedback.textContent = '';
         } catch (err) {
           feedback.textContent = actionErrorMessage(err);
@@ -2196,7 +2196,9 @@
             save.disabled = false;
           }
         });
-        panel.appendChild(form);
+        // The proposed classification belongs next to the operator actions,
+        // not underneath the entire supplier/economic read-only dossier.
+        panel.insertBefore(form, panel.querySelector('[data-catalog-economic-summary]'));
         feedback.textContent = '';
       } catch (error) {
         feedback.textContent = actionErrorMessage(error);
