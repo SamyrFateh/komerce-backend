@@ -49,6 +49,15 @@ class FakeNode {
     return child;
   }
 
+  insertBefore(child, reference) {
+    const position = this.children.indexOf(reference);
+    if (position < 0) throw new Error('FakeNode: reference is not a child');
+    if (child.parentNode) child.remove();
+    this.children.splice(position, 0, child);
+    child.parentNode = this;
+    return child;
+  }
+
   replaceChildren(...children) {
     this.children = [];
     this._text = '';
@@ -187,7 +196,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-6');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261030-3');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -855,6 +864,10 @@ test('Catalogue unique : confirmation du classement candidat réutilise la sugge
   expect(select.value).toBe('0');
   expect(select.children[0].textContent).toContain('Proposé');
   const form = panel.querySelector('[data-catalog-candidate-category-form]');
+  const economy = panel.querySelector('[data-catalog-economic-summary]');
+  const dock = panel.querySelector('[data-catalog-action-dock]');
+  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(form));
+  expect(panel.children.indexOf(form)).toBeLessThan(panel.children.indexOf(economy));
   await form.listeners.submit[0]({ preventDefault() {} });
   expect(calls.some(([url]) => url.includes('/confirm-boutique-category'))).toBe(true);
   const [postUrl, postOptions] = calls.find(([url]) => url.includes('/confirm-boutique-category'));
@@ -905,7 +918,8 @@ test('Catalogue unique : produit remis a correction de catégorie, français et 
   expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).not.toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-prepare-fr"]')).not.toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
-  expect(fetchFn).toHaveBeenCalledTimes(1);
+  expect(fetchFn.mock.calls.map(([url]) => url).filter(url => url.includes('dossier_product_ref=KPR-000446'))).toHaveLength(1);
+  expect(fetchFn).toHaveBeenCalledTimes(2);
 });
 
 test('Catalogue unique : le serveur refuse la validation si la certification est incomplète', async () => {
@@ -930,7 +944,10 @@ test('Catalogue unique : le serveur refuse la validation si la certification est
   await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
   expect(panel.textContent).toContain('À compléter');
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
-  expect(fetchFn.mock.calls.map(([url]) => url)).toHaveLength(2);
+  const urls=fetchFn.mock.calls.map(([url]) => url);
+  expect(urls).toHaveLength(3);
+  expect(urls[1]).toContain('dossier_product_ref=KPR-000447');
+  expect(urls[2]).toContain('diagnose_product_ref=KPR-000447');
 });
 
 
@@ -1012,7 +1029,8 @@ test('Catalogue unifié : médias fournisseur non confondus avec les médias can
   expect(panel.textContent).toContain('Médias source identifiés');
   expect(panel.textContent).toContain('Médias actifs canoniques');
   expect(panel.textContent).toContain('Réintégration canonique nécessaire');
-  expect(fetchFn).toHaveBeenCalledTimes(1);
+  expect(fetchFn.mock.calls.map(([url]) => url).filter(url => url.includes('dossier_product_ref=KPR-00450'))).toHaveLength(1);
+  expect(fetchFn).toHaveBeenCalledTimes(2);
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
 });
 
@@ -1109,7 +1127,8 @@ test('Catalogue : cycle de vie contradictoire, dossier lecture seule, zéro vali
   expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).toBeNull();
-  expect(fetchFn).toHaveBeenCalledTimes(1);
+  expect(fetchFn.mock.calls.map(([url]) => url).filter(url => url.includes('dossier_product_ref=KPR-INCOHERENT'))).toHaveLength(1);
+  expect(fetchFn).toHaveBeenCalledTimes(2);
 });
 
 
@@ -1181,5 +1200,48 @@ test('Catalogue : absence de suggestion économique ne sélectionne jamais une c
   expect(select.children[0].textContent).toContain('aucune suggestion fiable');
   await panel.querySelector('[data-catalog-economic-category-form]')
     .listeners.submit[0]({preventDefault(){}});
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+});
+
+test('Catalogue: la correction française est visible AVANT les coûts et ouvre le vrai formulaire sans écriture automatique', async () => {
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{
+    record_kind:'product',product_ref:'KPR-FR-VISIBLE',candidate_ref:'KSC-FR-VISIBLE',
+    name:'English privacy screen protector',description:null,content_source:'connector_raw',source_locale:'en',
+    lifecycle_status:'candidate',is_active:false,work_status:'editorial_to_complete',
+    operator_group:'correction',issues:['editorial_to_complete'],
+  }];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async url=>({
+    ok:true,status:200,json:async()=>url.includes('dossier_product_ref=')
+      ? {product_ref:'KPR-FR-VISIBLE',identity:{
+        title_fr:'English privacy screen protector',description_fr:null,
+        content_source:'connector_raw',locale:'en',
+      }}
+      : payload,
+  }));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-FR-VISIBLE"]');
+  const dock=panel.querySelector('[data-catalog-action-dock]');
+  const economy=panel.querySelector('[data-catalog-economic-summary]');
+  const dossier=panel.querySelector('[data-catalog-product-dossier]');
+  expect(dock).not.toBeNull();
+  expect(economy).not.toBeNull();
+  expect(dossier).not.toBeNull();
+  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(economy));
+  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(dossier));
+  const buttons=dock.querySelector('.kmc-catalog-inspector-actions');
+  const editor=buttons.querySelector('[data-workspace-action="inspector-prepare-fr"]');
+  expect(editor).not.toBeNull();
+  expect(editor.textContent).toBe('Compléter titre et description FR');
+  expect(buttons.children[0]).toBe(editor);
+  expect(buttons.querySelector('[data-workspace-action="inspector-classify"]')).not.toBeNull();
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+  await editor.click();
+  expect(root.querySelector('[data-catalog-fr-editor]')).not.toBeNull();
+  expect(root.querySelector('[data-workspace-action="save-fr-editor"]')).not.toBeNull();
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });

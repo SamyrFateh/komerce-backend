@@ -26,6 +26,7 @@ WITH picked_source AS (
         sc.product_id, sc.candidate_ref, sc.product_name, sc.description,
         sc.supplier_name, sc.supplier_product_id, sc.supplier_category,
         sc.image_url, sc.product_url, sc.normalized_source_contract,
+        sc.purchase_price_kmf, sc.komerce_category,
         sc.state, sc.scan_result, sc.confidence, sc.updated_at
    FROM sourcing_candidates sc
   WHERE sc.product_id IS NOT NULL
@@ -88,6 +89,12 @@ WITH picked_source AS (
               OR m->>'url' NOT LIKE 'https://%'
           )
         ) AS source_media_repairable,
+        sc.purchase_price_kmf,
+        sc.komerce_category AS economic_category_key,
+        sc.scan_result->>'variable_cost_complete_kmf' AS variable_cost_complete_kmf,
+        sc.scan_result->>'minimum_safe_price_kmf' AS minimum_safe_price_kmf,
+        sc.scan_result->>'test_price_kmf' AS test_price_kmf,
+        sc.scan_result->>'economic_test_health_status' AS economic_test_health_status,
         p.updated_at
    FROM products p
    LEFT JOIN picked_source sc ON sc.product_id=p.id
@@ -115,6 +122,12 @@ WITH picked_source AS (
         CASE WHEN jsonb_typeof(sc.normalized_source_contract->'media')='array'
           THEN jsonb_array_length(sc.normalized_source_contract->'media') ELSE 0 END,
         FALSE,
+        sc.purchase_price_kmf,
+        sc.komerce_category,
+        sc.scan_result->>'variable_cost_complete_kmf',
+        sc.scan_result->>'minimum_safe_price_kmf',
+        sc.scan_result->>'test_price_kmf',
+        sc.scan_result->>'economic_test_health_status',
         sc.updated_at
    FROM sourcing_candidates sc
   WHERE NOT EXISTS (SELECT 1 FROM products p WHERE p.id=sc.product_id)
@@ -164,6 +177,14 @@ WITH picked_source AS (
 )
 `;
 
+// Diagnostics only: neither the API nor the browser may turn a scan
+// recommendation into a market selling price.
+function positiveKmf(value) {
+  if (value == null || String(value).trim() === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 function publicRow(row) {
   const candidate = row.record_kind === 'candidate';
   const issues = [];
@@ -211,6 +232,12 @@ function publicRow(row) {
     sourcing_decision: row.sourcing_decision || null,
     sourcing_confidence: row.sourcing_confidence || null,
     source_category_review_required: row.source_category_review_required === true,
+    economic_category_key: row.economic_category_key || null,
+    purchase_price_kmf: positiveKmf(row.purchase_price_kmf),
+    variable_cost_complete_kmf: positiveKmf(row.variable_cost_complete_kmf),
+    minimum_safe_price_kmf: positiveKmf(row.minimum_safe_price_kmf),
+    test_price_kmf: positiveKmf(row.test_price_kmf),
+    economic_test_health_status: row.economic_test_health_status || 'unknown',
     approval_audited: row.approval_audited === true,
     source_locale: row.source_locale || null,
     content_source: row.content_source || null,

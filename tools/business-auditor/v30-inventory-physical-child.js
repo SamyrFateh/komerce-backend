@@ -61,7 +61,7 @@ async function observe(ids){
  const c=await pool.connect();
  try{
   const {rows:items}=await c.query(
-   'SELECT ii.id,ii.order_item_id,ii.order_id AS inventory_order,oi.order_id AS authoritative_order,ii.status FROM inventory_items ii JOIN order_items oi ON oi.id=ii.order_item_id WHERE ii.order_item_id=ANY($1::uuid[]) ORDER BY ii.id',
+   'SELECT ii.id,ii.order_item_id,ii.order_id AS inventory_order,oi.order_id AS authoritative_order,ii.status,ii.buffer_reason,ii.buffer_until,ii.proposed_parcel_id,ii.proposed_at FROM inventory_items ii JOIN order_items oi ON oi.id=ii.order_item_id WHERE ii.order_item_id=ANY($1::uuid[]) ORDER BY ii.id',
    [[ids.itemA,ids.itemB]]);
   const {rows:orders}=await c.query(
    'SELECT id,items_received,items_total,completion_ratio FROM orders WHERE id=ANY($1::uuid[]) ORDER BY id',

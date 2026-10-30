@@ -1044,7 +1044,7 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
   align-items:center; padding:9px 14px; font-weight:700; text-decoration:none;
 }
 
-/* Candidate inspection is an in-page, read-only detail, not a second dashboard. */
+/* Operator dossier: business decision and the existing canonical actions in one place. */
 .kmc-catalog-candidate-inspector {
   margin-block: 16px 4px;
   border: 1px solid #cbd8ed;
@@ -1096,7 +1096,7 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
     top: 62px;
     right: 18px;
     bottom: 16px;
-    width: min(468px, calc(100vw - 40px));
+    width: min(660px, calc(100vw - 40px));
     margin: 0;
     overflow-y: auto;
     z-index: 1100;
@@ -1112,14 +1112,48 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
   font-weight: 760;
   font-size: 14px;
 }
+/* The correction tools belong at the START of the inspector and remain
+   accessible while the operator checks long product evidence below. */
+.kmc-catalog-inspector-action-dock {
+  position: sticky;
+  top: -20px;
+  z-index: 5;
+  margin: 14px -10px 14px;
+  padding: 12px 10px;
+  border: 1px solid #c8d9f2;
+  border-radius: 10px;
+  background: #f7faff;
+  box-shadow: 0 5px 16px rgb(20 55 100 / 0.08);
+}
+.kmc-catalog-action-dock-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  color: #183b67;
+  margin-bottom: 8px;
+}
 .kmc-catalog-inspector-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  margin: 18px 0 10px;
+  margin: 0;
 }
 .kmc-catalog-inspector-actions .kmc-workspace-action {
-  min-height: 38px;
+  min-height: 42px;
+  padding: 9px 13px;
+  font-weight: 730;
+}
+.kmc-catalog-inspector-actions [data-workspace-action="inspector-prepare-fr"] {
+  border: 1px solid #134caa;
+  background: #1756c4;
+  color: #fff;
+}
+.kmc-catalog-inspector-action-dock .kmc-catalog-inspector-feedback:empty {
+  display: none;
+}
+@media (max-width: 700px) {
+  .kmc-catalog-inspector-action-dock { top: 0; margin-inline: 0; }
 }
 .kmc-catalog-inspector-feedback {
   font-size: 13px;
@@ -1156,4 +1190,125 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
   margin: 10px 0;
   font-size: 13px;
   line-height: 1.8;
+}
+
+/* The economics stay readable while supplier originals are collapsed by default. */
+.kmc-catalog-inspector-next-step {
+  font-size: 13px; font-weight: 700; color: #23528a;
+  background: #eef5ff; border-left: 3px solid #427cdf;
+  border-radius: 7px; padding: 10px 12px; margin: 14px 0;
+}
+.kmc-catalog-economic-summary {
+  margin: 16px 0; border: 1px solid #cbd8ed;
+  border-radius: 12px; padding: 2px 16px 12px;
+  background: #f8fbff;
+}
+.kmc-catalog-economic-summary .kmc-catalog-inspector-section {
+  margin: 12px 0 10px;
+}
+.kmc-catalog-economic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px; margin: 0;
+}
+.kmc-catalog-economic-item {
+  border: 1px solid #e1e9f4; border-radius: 8px;
+  padding: 10px 12px; background: #fff; min-width: 0;
+}
+.kmc-catalog-economic-item dt {
+  font-size: 12px; color: #526a8b; margin: 0 0 5px;
+}
+.kmc-catalog-economic-item dd {
+  font-size: 16px; font-weight: 780; color: #172e50;
+  margin: 0; overflow-wrap: anywhere;
+}
+.kmc-catalog-economic-note {
+  color: #506783; font-size: 12px;
+  line-height: 1.5; margin: 12px 0 0;
+}
+.kmc-catalog-source-details {
+  border-top: 1px solid #e1e8f1;
+  border-bottom: 1px solid #e1e8f1;
+  padding: 12px 0; margin: 16px 0 4px;
+}
+.kmc-catalog-source-details summary {
+  cursor: pointer; font-weight: 700; font-size: 13px;
+  color: #385779; padding: 4px 0;
+}
+.kmc-catalog-source-details .kmc-catalog-inspector-fields {
+  margin: 12px 0 4px;
+}
+@media (max-width: 560px) {
+  .kmc-catalog-economic-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* One commercial product dossier, not a disconnected report/dashboard. */
+.kmc-catalog-dossier { margin: 12px 0; min-width: 0; }
+.kmc-catalog-dossier-group {
+  margin: 14px 0; padding: 14px 16px;
+  border: 1px solid #e1e8f1; border-radius: 10px;
+  background: #fff;
+}
+.kmc-catalog-dossier-group > strong {
+  display: block; font-size: 14px; color: #1d3556;
+  margin-bottom: 10px;
+}
+.kmc-catalog-dossier-group .kmc-catalog-inspector-fields {
+  margin: 0; grid-template-columns: minmax(135px, 175px) minmax(0,1fr);
+  gap: 8px 16px;
+}
+.kmc-catalog-dossier-group .kmc-catalog-inspector-fields dd {
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.kmc-catalog-market-row {
+  display: grid; grid-template-columns: minmax(70px, 85px) minmax(0,1fr);
+  gap: 5px 14px; padding: 10px 2px;
+  border-bottom: 1px solid #edf0f5; font-size: 12px;
+}
+.kmc-catalog-market-row:last-of-type { border-bottom: 0; }
+.kmc-catalog-market-row strong { grid-row: span 2; color: #1c365c; }
+.kmc-catalog-market-row span { color: #526681; }
+@media (max-width: 560px) {
+  .kmc-catalog-dossier-group .kmc-catalog-inspector-fields {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+
+/* Product dossier media and variants stay inside the Catalogue inspector. */
+.kmc-catalog-dossier-gallery {
+  padding: 12px 14px; margin: 14px 0;
+  border: 1px solid #dbe5f0; border-radius: 10px;
+}
+.kmc-catalog-dossier-gallery > strong {
+  display: block; font-size: 14px; margin-bottom: 10px; color: #213a5a;
+}
+.kmc-catalog-dossier-image-strip {
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px;
+}
+.kmc-catalog-dossier-image-strip figure {
+  margin: 0; width: 110px; flex: 0 0 110px; min-width: 0;
+  border-radius: 8px; overflow: hidden; border: 1px solid #e3eaf3;
+}
+.kmc-catalog-dossier-image-strip img {
+  display: block; width: 100%; height: 108px;
+  object-fit: contain; background: #f5f8fc;
+}
+.kmc-catalog-dossier-image-strip figcaption {
+  font-size: 10px; line-height: 1.3; color: #556b86;
+  max-height: 42px; overflow: hidden; padding: 6px;
+}
+.kmc-catalog-variant-details summary {
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  color: #1b3454; padding: 2px 0;
+}
+.kmc-catalog-variant-line {
+  display: grid; grid-template-columns: minmax(90px, 1fr) minmax(0, 1.5fr);
+  column-gap: 12px; row-gap: 3px;
+  border-top: 1px solid #edf1f5; padding: 10px 0;
+  font-size: 12px; overflow-wrap: anywhere;
+}
+.kmc-catalog-variant-line strong { color: #284363; }
+.kmc-catalog-variant-line span { color: #576b85; }
+@media (max-width: 560px) {
+  .kmc-catalog-variant-line { grid-template-columns: minmax(0,1fr); }
 }

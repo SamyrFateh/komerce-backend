@@ -640,3 +640,110 @@ test('Catalogue finalisé : filtre uniquement la projection admin, pas les mutat
   await workspace.buildWorkspace({});
   expect(mockListRegistry).toHaveBeenCalledWith(expect.objectContaining({ finalized_only: true }));
 });
+
+test('Dossier canonique : une fiche source, son achat et ses preuves sans UUID ni prix marché inventé', () => {
+  const {publicProductDossier}=workspace._test;
+  const facts={
+    row:{
+      name:'Coque de téléphone', description:'Coque adaptée au mobile.',
+      source_locale:'fr',content_source:'manual', needs_review:false,
+      category:'electronics',boutique_category_key:'mobile',
+      boutique_subcategory_key:'cases',taxonomy_active:true,
+      supplier_name:'CJ',supplier_product_id:'SC-01',
+      normalized_source_contract:{schema_version:'2'},sourcing_decision:'TEST',
+      stock:4,weight_kg:'0.15', inventory_model:'SKU',has_variants:true,
+      active_supplier_skus:2,complete_supplier_skus:2,active_media:3,
+      cost_kmf:'2000',price_kmf:'3500',is_available:true,
+    },
+    certification:{certified:true,reasons:[]},
+  };
+  const product={id:'private-uuid',product_ref:'KPR-001',lifecycle_status:'candidate',is_active:false};
+  const result=publicProductDossier(facts,product);
+  expect(result).toMatchObject({
+    product_ref:'KPR-001',
+    identity:{title_fr:'Coque de téléphone',taxonomy_active:true},
+    supplier:{source_contract_v2:true,reference:'SC-01'},
+    availability:{stock:4,weight_kg:0.15},
+    purchasing:{supplier_identity_complete:true,active_supplier_skus:2},
+    media:{active_canonical:3},
+    economics:{reference_cost_kmf:2000,reference_price_is_market_decision:false},
+    catalogue_gate:{phase:'catalog_approval',technically_certified:true},
+    markets:[],
+    market_data_scope:'not_queried_before_approval',
+  });
+  expect(JSON.stringify(result)).not.toContain('private-uuid');
+  expect(JSON.stringify(result)).not.toContain('market_price_decided');
+});
+test('Produit déjà actif : état marché explicite, pas de fausse recertification candidat', () => {
+  const {publicProductDossier}=workspace._test;
+  const result=publicProductDossier(
+    {row:{name:'Produit actif',is_available:false,active_supplier_skus:0},
+     certification:{certified:false,reasons:['not_inactive_candidate']}},
+    {product_ref:'KPR-A',lifecycle_status:'active',is_active:true},
+    {markets:[{code:'KM',currency:'KMF',commercial_exposure:'ENABLED',
+       price_status:'LOCAL_ACTIVE',local_price_amount:5000,
+       local_price_currency:'KMF',buyer_visible:true}]}
+  );
+  expect(result.catalogue_gate.technically_certified).toBeNull();
+  expect(result.catalogue_gate.reasons).toEqual([]);
+  expect(result.availability.is_available).toBe(false);
+  expect(result.markets[0]).toMatchObject({code:'KM',price_status:'LOCAL_ACTIVE',
+    commercial_exposure:'ENABLED',local_price_amount:5000});
+  expect(result.economics.reference_price_kmf).toBeNull();
+  expect(result.market_data_scope).toBe('active_catalogue_product');
+});
+
+test('Dossier: galerie HTTPS canonique, dimensions, variantes SKU et stock fiable', () => {
+  const project=workspace._test.publicProductDossier;
+  const facts={row:{
+    name:'Coque',description:'Description FR',dimensions_cm:'15 x 8 x 2',
+    fragility:'low',requires_secure_transport:true,weight_kg:'0.25',
+    inventory_model:'SKU',stock:777,has_variants:true,active_media:2,
+    lifecycle_status:'candidate',is_active:false,
+  },certification:{certified:false,reasons:['media_missing']}};
+  const output=project(facts,{product_ref:'KPR-TEST',lifecycle_status:'candidate',is_active:false},null,{
+    media:[
+      {url:'https://cdn.example.test/p1.webp',role:'PRODUCT',alt:'face',source_media_id:'M1'},
+      {url:'http://untrusted.example.test/p2.webp',role:'PRODUCT',alt:'not secure'},
+    ],
+    variants:[{id:'internal-uuid-secret',sku:'SKU-RED',supplier_sku:'CJ-RED',
+      supplier_unit_ref:'CJ-U-1',variant_combo:{couleur:'Rouge'},stock:6,is_active:true}],
+  });
+  expect(output.availability).toMatchObject({
+    dimensions_cm:'15 x 8 x 2',fragility:'low',requires_secure_transport:true,
+    weight_kg:0.25,stock_is_authoritative:false,
+  });
+  expect(output.media.gallery).toEqual([{url:'https://cdn.example.test/p1.webp',
+    role:'PRODUCT',alt:'face',source_media_id:'M1'}]);
+  expect(output.variants).toMatchObject({
+    inventory_model:'SKU',stock_semantics:'sellable_sku',truncated:false,
+    rows:[{sku:'SKU-RED',supplier_sku:'CJ-RED',supplier_unit_ref:'CJ-U-1',
+      variant_combo:{couleur:'Rouge'},stock:6,is_active:true}],
+  });
+  expect(JSON.stringify(output)).not.toContain('internal-uuid-secret');
+  expect(JSON.stringify(output)).not.toContain('http://untrusted');
+});
+test('Dossier: variantes historiques non combinatoires sans faux stock SKU', () => {
+  const project=workspace._test.publicProductDossier;
+  const facts={row:{inventory_model:'LEGACY_VARIANTS',stock:5},certification:{}};
+  const output=project(facts,{product_ref:'KPR-OLD',lifecycle_status:'active',is_active:true},null,{
+    variants:[{variant_type:'couleur',variant_value:'Noir',
+      sku:'LEGACY-BLACK',stock:3,supplier_unit_ref:'secret-ref'}],
+  });
+  expect(output.availability.stock_is_authoritative).toBe(true);
+  expect(output.variants).toMatchObject({inventory_model:'LEGACY_VARIANTS',
+    stock_semantics:'legacy_variant_axes_not_combinatorial',
+    rows:[{variant_type:'couleur',variant_value:'Noir',supplier_unit_ref:null,is_active:null}]});
+  expect(JSON.stringify(output)).not.toContain('secret-ref');
+});
+test('Dossier SQL: lire seulement les variantes du modèle déclaré et les médias actifs', () => {
+  const source=require('fs').readFileSync(
+    require('path').join(__dirname,'../../services/catalog-workspace.js'),'utf8');
+  expect(source).toContain("const skuStockAuthority = facts.row.inventory_model === 'SKU'");
+  expect(source).toContain('FROM catalog_media WHERE product_id=$1 AND is_active=TRUE');
+  expect(source).toContain('FROM product_skus');
+  expect(source).toContain('FROM product_variants');
+  expect(source).toContain('LIMIT 25');
+  expect(source).toContain('LIMIT 51');
+  expect(source).not.toContain('UPDATE catalog_media');
+});
