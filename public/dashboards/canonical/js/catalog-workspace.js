@@ -886,7 +886,7 @@
           reason: 'Préparation FR manuelle/assistée hors runtime',
         },
         runningMessage: 'Enregistrement de la préparation française…',
-        successMessage: `${row.product_ref} préparé en français sans API IA payante. Vérifiez Avant / après puis validez.`,
+        successMessage: `${row.product_ref} : français enregistré. Cette étape ne valide pas le produit. Ouvrez « Contrôler et valider », vérifiez les prérequis, puis confirmez « Valider le Catalogue ».`,
       });
     };
     save.addEventListener('click', () => submitFrench(false));
@@ -1502,7 +1502,7 @@
     if (row.work_status === 'approval_unproven')
       return { kind: 'diagnose', label: 'Vérifier approbation', status: 'Preuve à réconcilier' };
     if (row.lifecycle_status === 'candidate' || row.work_status === 'approval_pending') {
-      return { kind: 'refinery', label: 'Examiner pour validation', status: 'À valider en Raffinerie' };
+      return { kind: 'approve', label: 'Contrôler et valider', status: 'Validation Catalogue requise' };
     }
     if (row.work_status === 'catalog_approved' && row.is_active === true) {
       return { kind: 'markets', label: 'Décisions marchés', status: 'Approuvé Catalogue' };
@@ -2471,7 +2471,11 @@
       actions.appendChild(btn);
     }
     if (row.work_status === 'approval_pending' || issues.includes('approval_pending')) {
-      const review = makeButton(doc, 'Vérifier avant validation', 'inspector-check-approval');
+      const stepNotice = text(doc, 'p', 'kmc-catalog-correction-hint',
+        '1. Contrôler les prérequis (lecture seule) · 2. Valider le Catalogue après relecture humaine. La correction du français ne valide jamais automatiquement le produit.');
+      stepNotice.setAttribute('data-catalog-approval-explanation', '');
+      actionDock.appendChild(stepNotice);
+      const review = makeButton(doc, 'Contrôler les prérequis', 'inspector-check-approval');
       review.addEventListener('click', async () => {
         review.disabled = true;
         feedback.textContent = 'Vérification de la certification Catalogue…';
@@ -2484,6 +2488,8 @@
             feedback.textContent = reasons.length
               ? 'À compléter : ' + reasons.join(' · ')
               : (data?.note || 'Certification non démontrée. Validation impossible.');
+            const approvalAction = panel.querySelector('[data-workspace-action="inspector-approve"]');
+            if (approvalAction) approvalAction.remove();
             return;
           }
           const already = panel.querySelector('[data-workspace-action="inspector-approve"]');
@@ -2502,13 +2508,14 @@
                 setFeedback(context.root, row.product_ref +
                   ' validé dans le Catalogue. Décisions marchés distinctes.', 'positive');
               } catch (error) {
-                feedback.textContent = actionErrorMessage(error);
+                feedback.textContent = 'Validation refusée : ' + actionErrorMessage(error) +
+                  '. La fiche reste en attente ; aucune vente n’a été activée.';
                 approve.disabled = false;
               }
             });
             actions.appendChild(approve);
           }
-          feedback.textContent = 'Certification serveur acquise. Après contrôle visuel, vous pouvez valider.';
+          feedback.textContent = 'Prérequis techniques satisfaits. Vérifiez le titre, la description, les images et la catégorie, puis cliquez sur « Valider le Catalogue ». Aucun marché ne sera publié automatiquement.';
         } catch (error) {
           feedback.textContent = actionErrorMessage(error);
         } finally { review.disabled = false; }
