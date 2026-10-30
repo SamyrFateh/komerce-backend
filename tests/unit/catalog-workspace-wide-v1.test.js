@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-2');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -199,7 +199,7 @@ test('Dossier opérateur : coûts source, prix test distinct et classement charg
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(css).toContain('.kmc-catalog-economic-grid');
-  expect(index).toContain('catalog-workspace.js?v=261030-1');
+  expect(index).toContain('catalog-workspace.js?v=261030-2');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -219,4 +219,25 @@ test('Catalogue : dossier produit complet, y compris les produits approuvés', (
   expect(ui).toContain("openProductInspector(context, slot, doc, row, categories)");
   expect(css).toContain(".kmc-catalog-dossier-group");
   expect(css).toContain(".kmc-catalog-market-row");
+});
+
+test('Fiche commerciale complète : galerie, variantes et correction FR disponibles depuis Catalogue', () => {
+  expect(ui).toContain("data-catalog-canonical-gallery");
+  expect(ui).toContain("Images canoniques actives");
+  expect(ui).toContain("img.loading = 'lazy'");
+  expect(ui).toContain("data-catalog-variants");
+  expect(ui).toContain("stock_semantics");
+  expect(ui).toContain("Géré par les SKU · voir ci-dessous");
+  expect(ui).toContain("availability.dimensions_cm");
+  expect(ui).toContain("availability.fragility");
+  expect(ui).toContain("availability.requires_secure_transport");
+  expect(ui).toContain("row._catalogueDossier = dossier");
+  expect(ui).toContain("identity.description_fr || row.description");
+  expect(ui).toContain("issues.includes('editorial_to_complete') ? 'Compléter le français' : 'Corriger le français'");
+  expect(css).toContain(".kmc-catalog-dossier-image-strip");
+  expect(css).toContain(".kmc-catalog-variant-line");
+});
+test('Un candidat Sourcing à examiner n’est plus absent du compteur des actions', () => {
+  expect(ui).toContain("'sourcing_review'].includes(row.work_status)");
+  expect(ui).toContain("(row.record_kind === 'candidate' && row.operator_group === 'review')");
 });
