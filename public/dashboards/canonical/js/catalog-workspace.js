@@ -1539,7 +1539,8 @@
     const count = code => rows.filter(row =>
       (row.issues || []).includes(code) || row.work_status === code).length;
     const flagged = rows.filter(row => (row.issues || []).length ||
-      ['inactive', 'rejected'].includes(row.work_status)).length;
+      ['inactive', 'rejected', 'sourcing_review'].includes(row.work_status) ||
+      (row.record_kind === 'candidate' && row.operator_group === 'review')).length;
     return [
       { key: 'registry', label: 'Produits connus · filtre', value: formatNumber(payload.registry_page?.total || 0), tone: 'neutral' },
       { key: 'review', label: 'À traiter · page', value: formatNumber(flagged), tone: flagged ? 'warning' : 'neutral' },
