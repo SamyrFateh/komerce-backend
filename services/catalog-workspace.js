@@ -530,15 +530,17 @@ function publicProductDossier(facts, product, marketHandoff = null) {
       is_active: product.is_active === true,
       is_available: row.is_available === true,
       inventory_model: row.inventory_model || null,
-      stock: count(row.stock),
+      stock: row.stock == null || String(row.stock).trim() === ''
+        ? null : (Number.isFinite(Number(row.stock)) ? Number(row.stock) : null),
       has_variants: row.has_variants === true,
       weight_kg: positive(row.weight_kg),
     },
     purchasing: {
       active_supplier_skus: count(row.active_supplier_skus),
       complete_supplier_skus: count(row.complete_supplier_skus),
-      supplier_identity_complete: Number(row.active_supplier_skus) > 0 &&
-        Number(row.active_supplier_skus) === Number(row.complete_supplier_skus),
+      supplier_identity_complete: row.has_sourcing_candidate === false ? null
+        : (Number(row.active_supplier_skus) > 0 &&
+          Number(row.active_supplier_skus) === Number(row.complete_supplier_skus)),
     },
     media: { active_canonical: count(row.active_media) },
     economics: {
@@ -569,7 +571,8 @@ function publicProductDossier(facts, product, marketHandoff = null) {
           buyer_visible_according_to_market_thread: market.buyer_visible,
         }))
       : [],
-    market_data_scope: marketHandoff ? 'active_catalogue_product' : 'not_queried_before_approval',
+    market_data_scope: product.is_active === true
+      ? 'active_catalogue_product' : 'not_queried_before_approval',
   };
 }
 
