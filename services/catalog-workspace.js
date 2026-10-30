@@ -751,7 +751,25 @@ async function prepareCandidateFrench(productRef, body = {}, actor) {
 
 async function approveCandidate(productRef, actor) {
   const product = await resolveProduct(productRef, { candidateOnly: true });
-  const result = await catalogApproval.approveProduct(db, product.id, actor);
+  let result;
+  try {
+    result = await catalogApproval.approveProduct(db, product.id, actor);
+  } catch (error) {
+    // Migration 259 allowed NULL global price for drafts only, contradicting
+    // the certified source-linked approval path. Fail intelligibly if an
+    // environment has not yet applied migration 352; do not force any price.
+    if (error.code === '23514' &&
+        error.constraint === 'chk_products_unpriced_draft_only') {
+      throw new CatalogWorkspaceError(
+        'catalog_unpriced_approval_schema_outdated',
+        'Validation impossible : la base utilise encore une ancienne contrainte de prix global. ' +
+          'Appliquer la migration Catalogue 352, puis relancer la vérification. ' +
+          'Ne saisissez pas de prix fictif et ne publiez aucun marché.',
+        409
+      );
+    }
+    throw error;
+  }
   if (result.status >= 400) {
     const error = new CatalogWorkspaceError(
       result.body.code || 'catalog_approve_rejected',
