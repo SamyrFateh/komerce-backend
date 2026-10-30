@@ -4,6 +4,11 @@ on:
     paths:
       - 'tools/business-auditor/**'
       - '.github/workflows/auditor-v4-evidence-campaign.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/business-auditor/**'
+      - '.github/workflows/auditor-v4-evidence-campaign.yml'
   workflow_dispatch:
 permissions:
   contents: read
