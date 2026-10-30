@@ -211,6 +211,22 @@ async function main() {
     assert.equal(await product.locator('[data-workspace-action="inspector-classify"]').count(), 1);
     assert.equal(await product.locator('[data-workspace-action="inspector-prepare-fr"]').count(), 1);
     assert.equal(await product.locator('[data-workspace-action="inspector-recover-media"]').count(), 1);
+    const actionDock = product.locator('[data-catalog-action-dock]');
+    const frAction = actionDock.locator('[data-workspace-action="inspector-prepare-fr"]');
+    assert.equal((await frAction.innerText()).trim(), 'Compléter titre et description FR');
+    assert(await frAction.isVisible(), 'French correction should be visible on opening the product');
+    const dockRect=await actionDock.boundingBox();
+    const costRect=await product.locator('[data-catalog-economic-summary]').boundingBox();
+    assert(dockRect && costRect && dockRect.y < costRect.y,
+      'Corrective actions must come BEFORE the economic dossier');
+    await page.screenshot({ path: path.join(output, 'dossier-actions-correction-visibles.png'), fullPage: true });
+    await frAction.click();
+    const frenchEditor = page.locator('[data-catalog-fr-editor]');
+    await frenchEditor.waitFor({state:'visible'});
+    assert.equal(await frenchEditor.locator('[data-workspace-action="save-fr-editor"]').count(), 1);
+    assert((await frenchEditor.innerText()).includes('Titre français'));
+    assert((await frenchEditor.innerText()).includes('Description française'));
+    await frenchEditor.locator('[data-workspace-action="cancel-fr-editor"]').click();
     assert((await product.innerText()).includes('Médias source identifiés'));
     await product.locator('[data-catalog-canonical-gallery] img').first().waitFor();
     assert.equal(await product.locator('[data-catalog-canonical-gallery] img').count(),1);
@@ -245,6 +261,7 @@ async function main() {
       sourceRows: 3, productRows: 2, suggestedClassification: true,
       economicCategoryInline: true,
       inPlaceCorrection: true, existingDialogReused: true, mediaRecoveryAction: true,
+      visibleFrenchCorrection: true, frenchEditorOpened: true,
       canonicalGallery: true, skuStockTruth: true, approvedMarketDossier: true,
       businessWrites: 0 }));
   } finally {
