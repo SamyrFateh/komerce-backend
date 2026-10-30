@@ -125,7 +125,15 @@ async function run(page,width,selected=false,emptyQueue=false,denied=false){
         const activeRow=page.locator('[data-market-product-ref="'+P+'"]');
         await activeRow.locator('.kmc-market-publish-switch').click();
         await page.waitForFunction(()=>window.__writes.some(x=>x.url.endsWith('/activate')));
-        await page.locator('[data-market-product-ref="'+P+'"] [role="switch"]:checked').waitFor();
+        // The checkbox becomes checked immediately, but the mutation must
+        // finish and the server's new state be reloaded before an OFF click.
+        await page.waitForFunction(P=>{
+          const row=document.querySelector('[data-market-product-ref="'+P+'"]');
+          const switchInput=row?.querySelector('[role="switch"]');
+          const status=row?.querySelector('.kmc-market-publication-status');
+          return switchInput?.checked===true && switchInput.disabled===false
+            &&status?.textContent?.includes('Publié sur ce marché');
+        },P);
         const afterPublication=await page.evaluate(()=>window.__writes);
         assert(afterPublication.some(x=>x.url.endsWith('/activate')));
         assert.equal(afterPublication.filter(x=>x.url.endsWith('/reset')).length,0);
