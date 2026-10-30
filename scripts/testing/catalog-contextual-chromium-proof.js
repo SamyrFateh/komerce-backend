@@ -226,6 +226,7 @@ async function main() {
     assert((await dialog.innerText()).includes('Catégorie fournisseur'));
     await page.screenshot({ path: path.join(output, 'classement-boutique-reutilise.png'), fullPage: true });
     await dialog.locator('[data-workspace-action="cancel-classification"]').click();
+    await product.locator('[data-workspace-action="close-inspector"]').click();
     await page.locator('[data-product-ref="KPR-TEST-APPROVED"] [data-workspace-action="open-catalog-inspector"]').click();
     const approved = page.locator('[data-catalog-product-inspector="KPR-TEST-APPROVED"]');
     await approved.locator('[data-catalog-canonical-gallery] img').first().waitFor();
