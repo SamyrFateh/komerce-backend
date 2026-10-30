@@ -255,3 +255,17 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(index).toContain('catalog-workspace.js?v=261031-1');
   expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-3');
 });
+
+test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
+  expect(ui).toContain("status: 'Validation Catalogue requise'");
+  expect(ui).toContain('Cette étape ne valide pas le produit.');
+  expect(ui).toContain("stepNotice.setAttribute('data-catalog-approval-explanation', '')");
+  expect(ui).toContain("'Contrôler les prérequis', 'inspector-check-approval'");
+  expect(ui).toContain('Contrôler les prérequis (lecture seule)');
+  expect(ui).toContain('Prérequis techniques satisfaits.');
+  expect(ui).toContain("'Valider le Catalogue', 'inspector-approve'");
+  expect(ui).toContain("ENDPOINT + '/approval/'");
+  expect(ui).toContain('Validation refusée : ');
+  expect(ui).not.toContain("status: 'À valider en Raffinerie'");
+  expect(index).toContain('catalog-workspace.js?v=261031-1');
+});
