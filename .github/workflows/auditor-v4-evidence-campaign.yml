@@ -55,7 +55,7 @@ jobs:
         run: npm run audit:logic:generated:inventory -- --files services/inventory-service.js --budget 6 --evaluate-withheld --out /tmp/komerce-auditor-g3
       - name: G4 adversarial out-of-sample inventory proof (not independent sealed blind)
         run: node tools/business-auditor/v44-inventory-adversarial.js --out /tmp/komerce-auditor-g4-adversarial
-      - name: G4 three real owners: FX, market, orders source mutants on isolated PG
+      - name: 'G4 three real owners: FX, market, orders source mutants on isolated PG'
         run: npm run audit:logic:adversarial:multidomain -- --out /tmp/komerce-auditor-v45-multi
       - name: G5 smoke real quick targeted full and remote DB safety
         run: node tools/business-auditor/v42-release-install-smoke.js --audit /tmp/komerce-auditor-v4-full/unified-audit.json --impact /tmp/komerce-auditor-g3/g3-generated-experiment.json --out /tmp/komerce-auditor-g5-install
