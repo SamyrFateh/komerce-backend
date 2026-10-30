@@ -49,6 +49,15 @@ class FakeNode {
     return child;
   }
 
+  insertBefore(child, reference) {
+    const position = this.children.indexOf(reference);
+    if (position < 0) throw new Error('FakeNode: reference is not a child');
+    if (child.parentNode) child.remove();
+    this.children.splice(position, 0, child);
+    child.parentNode = this;
+    return child;
+  }
+
   replaceChildren(...children) {
     this.children = [];
     this._text = '';
