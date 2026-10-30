@@ -1207,3 +1207,35 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
 @media (max-width: 560px) {
   .kmc-catalog-economic-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* One commercial product dossier, not a disconnected report/dashboard. */
+.kmc-catalog-dossier { margin: 12px 0; min-width: 0; }
+.kmc-catalog-dossier-group {
+  margin: 14px 0; padding: 14px 16px;
+  border: 1px solid #e1e8f1; border-radius: 10px;
+  background: #fff;
+}
+.kmc-catalog-dossier-group > strong {
+  display: block; font-size: 14px; color: #1d3556;
+  margin-bottom: 10px;
+}
+.kmc-catalog-dossier-group .kmc-catalog-inspector-fields {
+  margin: 0; grid-template-columns: minmax(135px, 175px) minmax(0,1fr);
+  gap: 8px 16px;
+}
+.kmc-catalog-dossier-group .kmc-catalog-inspector-fields dd {
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.kmc-catalog-market-row {
+  display: grid; grid-template-columns: minmax(70px, 85px) minmax(0,1fr);
+  gap: 5px 14px; padding: 10px 2px;
+  border-bottom: 1px solid #edf0f5; font-size: 12px;
+}
+.kmc-catalog-market-row:last-of-type { border-bottom: 0; }
+.kmc-catalog-market-row strong { grid-row: span 2; color: #1c365c; }
+.kmc-catalog-market-row span { color: #526681; }
+@media (max-width: 560px) {
+  .kmc-catalog-dossier-group .kmc-catalog-inspector-fields {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
