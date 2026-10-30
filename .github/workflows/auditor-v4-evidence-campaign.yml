@@ -42,7 +42,7 @@ jobs:
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Test semantic census and G4-G5 fail-closed
         run: |
-          node --test tools/business-auditor/v35-invariant-census.test.js tools/business-auditor/v40-semantic-ledger.test.js tools/business-auditor/v40-generated-inventory.test.js tools/business-auditor/v41-g2-local-stock-proof.test.js tools/business-auditor/v46-g2-market-relay-proof.test.js tools/business-auditor/v42-release-install-smoke.test.js tools/business-auditor/v43-main-diff-scope.test.js tools/business-auditor/v44-adversarial-mutations.test.js tools/business-auditor/v45-multidomain-physical.test.js tools/business-auditor/v38-benchmark-release.test.js
+          node --test tools/business-auditor/v35-invariant-census.test.js tools/business-auditor/v40-semantic-ledger.test.js tools/business-auditor/v40-generated-inventory.test.js tools/business-auditor/v41-g2-local-stock-proof.test.js tools/business-auditor/v46-g2-market-relay-proof.test.js tools/business-auditor/v42-release-install-smoke.test.js tools/business-auditor/v43-main-diff-scope.test.js tools/business-auditor/v44-adversarial-mutations.test.js tools/business-auditor/v45-multidomain-physical.test.js tools/business-auditor/v47-bounded-release-evidence.test.js tools/business-auditor/v38-benchmark-release.test.js
       - name: Build local test schema
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/auditor-v4-schema.log
@@ -116,6 +116,20 @@ jobs:
               blockers:g5.blockers,semantic:semantic.summary,g3:g3.summary},null,2));
           console.log('AUDITOR_G5_UNCERTIFIED',JSON.stringify(g5.blockers));
           NODE
+      - name: Re-grade bounded technical release candidate from exact G1-G5 artifacts
+        run: |
+          node tools/business-auditor/v47-bounded-release-evidence.js \
+            --audit /tmp/komerce-auditor-v4-full/unified-audit.json \
+            --ledger /tmp/komerce-auditor-v4-full/invariant-semantic-ledger.json \
+            --stock /tmp/komerce-auditor-g2/g2-exact-invariant-proof.json \
+            --relay /tmp/komerce-auditor-g2-relay/g2-market-relay-proof.json \
+            --g3 /tmp/komerce-auditor-g3/g3-generated-experiment.json \
+            --inventory /tmp/komerce-auditor-g4-adversarial/g4-adversarial-inventory.json \
+            --multi /tmp/komerce-auditor-v45-multi/g4-multidomain-adversarial.json \
+            --diff /tmp/komerce-auditor-g5-diff/g5-main-diff.json \
+            --install /tmp/komerce-auditor-g5-install/g5-install-smoke.json \
+            --release /tmp/komerce-auditor-v4-release/g5-release-readiness.json \
+            --out /tmp/komerce-auditor-v47-rc
       - name: Archive evidence even on tool failure
         if: always()
         uses: actions/upload-artifact@v4
@@ -137,5 +151,7 @@ jobs:
             /tmp/komerce-auditor-g5-install/*.json
             /tmp/komerce-auditor-g5-diff/*.json
             /tmp/komerce-auditor-g5-diff/*.md
+            /tmp/komerce-auditor-v47-rc/*.json
+            /tmp/komerce-auditor-v47-rc/*.md
           if-no-files-found: warn
           retention-days: 14
