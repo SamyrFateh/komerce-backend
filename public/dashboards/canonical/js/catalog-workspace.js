@@ -2249,7 +2249,8 @@
     facts('Fournisseur et achat', [
       ['Fournisseur', supplier.name],
       ['Identifiant fournisseur', supplier.reference],
-      ['Contrat source V2', supplier.source_contract_v2 ? 'Présent' : 'À normaliser'],
+      ['Contrat source V2', supplier.source_contract_v2 == null ? 'Non applicable / historique'
+        : (supplier.source_contract_v2 ? 'Présent' : 'À normaliser')],
       ['Décision Sourcing', supplier.sourcing_decision],
       ['SKU fournisseur actifs', displayNumber(purchasing.active_supplier_skus)],
       ['SKU avec identité d’achat complète', displayNumber(purchasing.complete_supplier_skus)],
