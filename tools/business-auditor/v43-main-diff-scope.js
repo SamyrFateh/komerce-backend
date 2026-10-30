@@ -49,7 +49,7 @@ function run({out}={},env=process.env,deps={}){
  // the PR contributes; no forbidden files can be silently omitted.
  let base=BASE,actualPrHead=null;
  if(prBase){
-  const parents=git('rev-list','--parents','-n','1','HEAD').trim().split(/\\s+/);
+  const parents=git('rev-list','--parents','-n','1','HEAD').trim().split(/\s+/);
   if(parents.length!==3||parents[0]!==head)
    fail('PR checkout must be a two-parent merge commit');
   base=parents[1];actualPrHead=parents[2];
