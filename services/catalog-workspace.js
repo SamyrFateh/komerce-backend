@@ -503,7 +503,8 @@ function publicProductDossier(facts, product, marketHandoff = null) {
     const n = Number(value);
     return Number.isFinite(n) && n > 0 ? n : null;
   };
-  const count = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : null;
+  const count = value => value == null || String(value).trim() === ''
+    ? null : (Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : null);
   return {
     product_ref: product.product_ref,
     identity: {
@@ -520,7 +521,8 @@ function publicProductDossier(facts, product, marketHandoff = null) {
     supplier: {
       name: row.supplier_name || null,
       reference: row.supplier_product_id || null,
-      source_contract_v2: String(row.normalized_source_contract?.schema_version || '') === '2',
+      source_contract_v2: row.has_sourcing_candidate === false ? null
+        : String(row.normalized_source_contract?.schema_version || '') === '2',
       sourcing_decision: row.sourcing_decision || null,
     },
     availability: {
