@@ -47,7 +47,7 @@ jobs:
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Test semantic census and G4-G5 fail-closed
         run: |
-          node --test tools/business-auditor/v35-invariant-census.test.js tools/business-auditor/v40-semantic-ledger.test.js tools/business-auditor/v40-generated-inventory.test.js tools/business-auditor/v41-g2-local-stock-proof.test.js tools/business-auditor/v46-g2-market-relay-proof.test.js tools/business-auditor/v42-release-install-smoke.test.js tools/business-auditor/v43-main-diff-scope.test.js tools/business-auditor/v44-adversarial-mutations.test.js tools/business-auditor/v45-multidomain-physical.test.js tools/business-auditor/v47-bounded-release-evidence.test.js tools/business-auditor/v38-benchmark-release.test.js
+          node --test tools/business-auditor/v35-invariant-census.test.js tools/business-auditor/v40-semantic-ledger.test.js tools/business-auditor/v40-generated-inventory.test.js tools/business-auditor/v41-g2-local-stock-proof.test.js tools/business-auditor/v46-g2-market-relay-proof.test.js tools/business-auditor/v42-release-install-smoke.test.js tools/business-auditor/v43-main-diff-scope.test.js tools/business-auditor/v44-adversarial-mutations.test.js tools/business-auditor/v45-multidomain-physical.test.js tools/business-auditor/v47-bounded-release-evidence.test.js tools/business-auditor/v48-autonomous-discovery.test.js tools/business-auditor/v38-benchmark-release.test.js
       - name: Build local test schema
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/auditor-v4-schema.log
@@ -135,6 +135,52 @@ jobs:
             --install /tmp/komerce-auditor-g5-install/g5-install-smoke.json \
             --release /tmp/komerce-auditor-v4-release/g5-release-readiness.json \
             --out /tmp/komerce-auditor-v47-rc
+      - name: V48 autonomous owner discovery without source mutation inputs
+        run: |
+          npm run audit:logic:discover -- --all-reviewed --out /tmp/komerce-auditor-v48-baseline
+          node <<'NODE'
+          const p=require('/tmp/komerce-auditor-v48-baseline/autonomous-discovery.json');
+          if(p.sha!==process.env.GITHUB_SHA||
+            p.selection.selected.length!==5||
+            p.summary.reviewedOwnersExecuted!==5||
+            p.summary.ownerErrors!==0||
+            p.observations.some(x=>!x.cloneDropped||
+              !x.ownerCodeExecuted||x.sourceMutantIdProvided!==false)||
+            p.certifiedAutonomousUnknownBugDiscovery!==false)
+            throw Error('V48 baseline physical owner proof or claims inconsistent');
+          console.log('AUDITOR_V48_BASELINE',JSON.stringify(p.summary));
+          NODE
+      - name: V48 open novel code-change challenge; scanner receives no mutant ID
+        run: |
+          set -euo pipefail
+          target=services/market-operation-guard.js
+          test -z "$(git status --porcelain -- "$target")"
+          trap 'git restore -- "$target"' EXIT
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('services/market-operation-guard.js')
+          source=path.read_text()
+          old='catalog_exposure_enable: Object.freeze([ACTIVE]),'
+          assert source.count(old)==1, 'Novel unregistered policy defect injection anchor changed'
+          path.write_text(source.replace(old,'catalog_exposure_enable: Object.freeze([ACTIVE, SUSPENDED]),'))
+          PY
+          npm run audit:logic:discover -- --out /tmp/komerce-auditor-v48-novel
+          node <<'NODE'
+          const p=require('/tmp/komerce-auditor-v48-novel/autonomous-discovery.json');
+          if(p.selection.mode!=='GIT_CHANGE_DRIVEN'||
+            p.selection.changedPaths.join(',')!=='services/market-operation-guard.js'||
+            p.selection.selected.join(',')!=='MARKET'||
+            p.summary.ownerErrors!==0||
+            p.summary.status!=='BUSINESS_CONTRADICTION_FOUND'||
+            !p.summary.observedSignals.includes('MK2_MARKET_OPERATION_POLICY_VIOLATION')||
+            p.observations[0].sourceMutantIdProvided!==false||
+            p.certifiedAutonomousUnknownBugDiscovery!==false)
+            throw Error('V48 failed open unregistered policy regression discovery');
+          console.log('AUDITOR_V48_OPEN_NEW_FAULT_DISCOVERED',JSON.stringify(p.summary));
+          NODE
+          git restore -- "$target"
+          trap - EXIT
+          test -z "$(git status --porcelain -- "$target")"
       - name: Archive evidence even on tool failure
         if: always()
         uses: actions/upload-artifact@v4
@@ -158,5 +204,9 @@ jobs:
             /tmp/komerce-auditor-g5-diff/*.md
             /tmp/komerce-auditor-v47-rc/*.json
             /tmp/komerce-auditor-v47-rc/*.md
+            /tmp/komerce-auditor-v48-baseline/*.json
+            /tmp/komerce-auditor-v48-baseline/*.md
+            /tmp/komerce-auditor-v48-novel/*.json
+            /tmp/komerce-auditor-v48-novel/*.md
           if-no-files-found: warn
           retention-days: 14
