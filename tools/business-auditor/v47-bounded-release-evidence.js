@@ -143,7 +143,8 @@ function evaluate({audit,ledger,census,stock,relay,g3,inventory,multi,diff,insta
   fullRelease}={},deps={}){
  const sha=audit?.sha;
  if(!/^[a-f0-9]{40}$/.test(sha||'')||
-   [g3,inventory,multi,diff,install,stock,relay].some(x=>x?.sha!==sha))
+   [g3,inventory,multi,install,stock,relay].some(x=>x?.sha!==sha)||
+   diff?.targetSha!==sha)
   fail('all independent evidence must refer to the same 40-hex SHA');
  const g2=verifyExact({audit,ledger,stock,relay,census,sha});
  const calibrated=benchmark(audit);
