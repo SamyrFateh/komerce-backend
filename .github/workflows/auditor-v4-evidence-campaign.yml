@@ -42,7 +42,7 @@ jobs:
         run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
       - name: Test semantic census and G4-G5 fail-closed
         run: |
-          node --test tools/business-auditor/v35-invariant-census.test.js tools/business-auditor/v40-semantic-ledger.test.js tools/business-auditor/v40-generated-inventory.test.js tools/business-auditor/v41-g2-local-stock-proof.test.js tools/business-auditor/v42-release-install-smoke.test.js tools/business-auditor/v43-main-diff-scope.test.js tools/business-auditor/v44-adversarial-mutations.test.js tools/business-auditor/v38-benchmark-release.test.js
+          node --test tools/business-auditor/v35-invariant-census.test.js tools/business-auditor/v40-semantic-ledger.test.js tools/business-auditor/v40-generated-inventory.test.js tools/business-auditor/v41-g2-local-stock-proof.test.js tools/business-auditor/v46-g2-market-relay-proof.test.js tools/business-auditor/v42-release-install-smoke.test.js tools/business-auditor/v43-main-diff-scope.test.js tools/business-auditor/v44-adversarial-mutations.test.js tools/business-auditor/v45-multidomain-physical.test.js tools/business-auditor/v38-benchmark-release.test.js
       - name: Build local test schema
         run: |
           PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /tmp/auditor-v4-schema.log
@@ -51,10 +51,14 @@ jobs:
         run: npm run audit:logic:unified -- --mode full --out /tmp/komerce-auditor-v4-full
       - name: G2 independently prove local-stock nonnegative DB constraint
         run: node tools/business-auditor/v41-g2-local-stock-proof.js --audit /tmp/komerce-auditor-v4-full/unified-audit.json --out /tmp/komerce-auditor-g2
+      - name: G2 prove physical order-to-relay-to-market NOT NULL and FK chain
+        run: node tools/business-auditor/v46-g2-market-relay-proof.js --audit /tmp/komerce-auditor-v4-full/unified-audit.json --stock-proof /tmp/komerce-auditor-g2/g2-exact-invariant-proof.json --out /tmp/komerce-auditor-g2-relay
       - name: G3 generated physical inventory cases and evaluator-only mutations
         run: npm run audit:logic:generated:inventory -- --files services/inventory-service.js --budget 6 --evaluate-withheld --out /tmp/komerce-auditor-g3
       - name: G4 adversarial out-of-sample inventory proof (not independent sealed blind)
         run: node tools/business-auditor/v44-inventory-adversarial.js --out /tmp/komerce-auditor-g4-adversarial
+      - name: 'G4 three real owners: FX, market, orders source mutants on isolated PG'
+        run: npm run audit:logic:adversarial:multidomain -- --out /tmp/komerce-auditor-v45-multi
       - name: G5 smoke real quick targeted full and remote DB safety
         run: node tools/business-auditor/v42-release-install-smoke.js --audit /tmp/komerce-auditor-v4-full/unified-audit.json --impact /tmp/komerce-auditor-g3/g3-generated-experiment.json --out /tmp/komerce-auditor-g5-install
       - name: G5 inspect entire repository diff against frozen pre-auditor baseline
@@ -69,15 +73,16 @@ jobs:
           const g3=require('/tmp/komerce-auditor-g3/g3-generated-experiment.json');
           const diff=require('/tmp/komerce-auditor-g5-diff/g5-main-diff.json');
           const adversarial=require('/tmp/komerce-auditor-g4-adversarial/g4-adversarial-inventory.json');
+          const multi=require('/tmp/komerce-auditor-v45-multi/g4-multidomain-adversarial.json');
           const g4=require('/tmp/komerce-auditor-v4-release/g4-calibration.json');
           const g5=require('/tmp/komerce-auditor-v4-release/g5-release-readiness.json');
           if(audit.sha!==process.env.GITHUB_SHA||
              audit.summary.physicalCasesTotal!==12||
              !audit.physicalCaseIndex.every(x=>x.cloneDropped)||
              semantic.summary.declared!==audit.summary.featureInvariantsDeclared||
-             semantic.summary.semanticallyVerified!==1||
-             audit.summary.featureInvariantsCertified!==1||
-             audit.invariantCoverage.featureCardInvariantsCertified!==1||
+             semantic.summary.semanticallyVerified!==3||
+             audit.summary.featureInvariantsCertified!==3||
+             audit.invariantCoverage.featureCardInvariantsCertified!==3||
              !g5.blockers.includes('G2_SEMANTIC_INVARIANT_MAPPING')||
              g5.blockers.includes('G5_OPERATOR_DOCUMENTATION_AND_INSTALL')||
              !diff.automatedScopeVerified||diff.unrelatedRuntimeChanges!==0||
@@ -88,6 +93,16 @@ jobs:
              adversarial.summary.falseNegative!==0||
              adversarial.summary.falsePositive!==0||
              adversarial.classification!=='OPEN_REPRODUCIBLE_NOT_SEALED_INDEPENDENT_BLIND'||
+             multi.sha!==audit.sha||
+             multi.summary.ownerFamilies!==3||
+             multi.summary.faults!==6||
+             multi.summary.detected!==6||
+             multi.summary.missed!==0||
+             multi.summary.falsePositives!==0||
+             multi.summary.equivalentControls!==3||
+             multi.summary.allClonesDropped!==true||
+             multi.classification!=='OPEN_REPRODUCIBLE_NOT_SEALED_BLIND'||
+             multi.summary.arbitraryUnknownBugDiscoveryCertified!==false||
              g3.sha!==audit.sha||g3.generatedCases!==6||
              g3.withheldMutationDetected!==true||
              g3.summary.detected!==2||g3.summary.missed!==0||
@@ -114,8 +129,11 @@ jobs:
             /tmp/komerce-auditor-v4-release/*.md
             /tmp/komerce-auditor-g3/*.json
             /tmp/komerce-auditor-g4-adversarial/*.json
+            /tmp/komerce-auditor-v45-multi/*.json
             /tmp/komerce-auditor-g2/*.json
             /tmp/komerce-auditor-g2/*.md
+            /tmp/komerce-auditor-g2-relay/*.json
+            /tmp/komerce-auditor-g2-relay/*.md
             /tmp/komerce-auditor-g5-install/*.json
             /tmp/komerce-auditor-g5-diff/*.json
             /tmp/komerce-auditor-g5-diff/*.md

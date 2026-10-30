@@ -91,7 +91,8 @@ async function main(){
   console.log('BUSINESS_AUDIT_V33_PHYSICAL '+JSON.stringify({
    contract:'komerce-orders-sourcing-physical/v33',...physical,
    ownerInvoked:true,canonicalPg:true,noExternalNetwork:true,
-   noProductionTouch:true,authenticatedHttpRouteTested:false
+   noProductionTouch:true,authenticatedHttpRouteTested:false,
+   v45MutationApplied:env.KBA_V45_MUTANT_APPLIED==='YES'
   }));
  }finally{await Promise.allSettled([pool.end(),db.pool.end()])}
 }

@@ -96,6 +96,7 @@
     "audit:logic:targeted:plan": "node tools/business-auditor/v36-impact-plan.js",
     "audit:logic:release:check": "node tools/business-auditor/v38-benchmark-release-cli.js",
     "audit:logic:generated:inventory": "node tools/business-auditor/v40-generated-inventory.js",
+    "audit:logic:adversarial:multidomain": "node tools/business-auditor/v45-multidomain-physical.js",
     "audit:logic:report": "node scripts/audit-logic-summary.js",
     "audit:gate:observe": "node scripts/npm-audit-gate.js --observe",
     "testkit:check": "node scripts/test-kit-usage-check.js --strict",
