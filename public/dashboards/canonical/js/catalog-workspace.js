@@ -2202,8 +2202,137 @@
     return panel;
   }
 
+  function renderProductDossierDetails(slot, doc, dossier, row) {
+    slot.replaceChildren();
+    const header = text(doc, 'strong', 'kmc-catalog-inspector-section',
+      'Fiche commerciale · état réel du produit');
+    slot.appendChild(header);
+    const identity = dossier.identity || {};
+    const supplier = dossier.supplier || {};
+    const availability = dossier.availability || {};
+    const purchasing = dossier.purchasing || {};
+    const media = dossier.media || {};
+    const gate = dossier.catalogue_gate || {};
+    const status = gate.phase === 'catalog_approval'
+      ? (gate.technically_certified ? 'Contrôles techniques satisfaits · validation humaine distincte'
+        : 'Fiche incomplète · corrections ou preuves manquantes')
+      : (row.work_status === 'catalog_approved'
+        ? 'Catalogue approuvé · décisions marchés à vérifier'
+        : 'État Catalogue à vérifier · aucune nouvelle validation implicite');
+    slot.appendChild(text(doc, 'p', 'kmc-catalog-inspector-next-step', status));
+    const facts = (title, entries) => {
+      const group = doc.createElement('section');
+      group.className = 'kmc-catalog-dossier-group';
+      group.appendChild(text(doc, 'strong', '', title));
+      const grid = doc.createElement('dl');
+      grid.className = 'kmc-catalog-inspector-fields';
+      entries.forEach(([label, value]) => {
+        grid.appendChild(text(doc, 'dt', '', label));
+        grid.appendChild(text(doc, 'dd', '', value == null || value === ''
+          ? 'Non renseigné' : String(value)));
+      });
+      group.appendChild(grid);
+      slot.appendChild(group);
+    };
+    const displayNumber = value => value == null ? 'Non mesuré' : String(value);
+    const price = value => value == null ? 'Non décidé' : formatCatalogKmf(value);
+    facts('Présentation commerciale', [
+      ['Titre boutique FR', identity.title_fr],
+      ['Description boutique FR', identity.description_fr],
+      ['Langue / origine', [identity.locale || 'Non renseignée', identity.content_source || 'Origine inconnue'].join(' · ')],
+      ['Présentation FR', identity.needs_review ? 'Relecture requise' : 'Sans signal de relecture'],
+      ['Catégorie douanière', identity.customs_category],
+      ['Catégorie Boutique', identity.boutique_category_key],
+      ['Sous-catégorie Boutique', identity.boutique_subcategory_key],
+      ['Taxonomie active', identity.taxonomy_active ? 'Oui' : 'Non vérifiée'],
+    ]);
+    facts('Fournisseur et achat', [
+      ['Fournisseur', supplier.name],
+      ['Identifiant fournisseur', supplier.reference],
+      ['Contrat source V2', supplier.source_contract_v2 ? 'Présent' : 'À normaliser'],
+      ['Décision Sourcing', supplier.sourcing_decision],
+      ['SKU fournisseur actifs', displayNumber(purchasing.active_supplier_skus)],
+      ['SKU avec identité d’achat complète', displayNumber(purchasing.complete_supplier_skus)],
+      ['Identité d’achat', purchasing.supplier_identity_complete
+        ? 'Complète' : 'À vérifier / compléter'],
+    ]);
+    facts('Médias, stock et logistique', [
+      ['Médias canoniques actifs', displayNumber(media.active_canonical)],
+      ['Stock produit', displayNumber(availability.stock)],
+      ['Modèle d’inventaire', availability.inventory_model],
+      ['Variantes', availability.has_variants ? 'Oui' : 'Non'],
+      ['Poids', availability.weight_kg == null ? 'Non renseigné' : availability.weight_kg + ' kg'],
+      ['Disponibilité', availability.is_available ? 'Disponible selon la fiche' : 'Non disponible selon la fiche'],
+    ]);
+    facts('Prix de référence · non décision marché', [
+      ['Coût stocké', price(dossier.economics?.reference_cost_kmf)],
+      ['Prix global de référence', price(dossier.economics?.reference_price_kmf)],
+    ]);
+    const markets = Array.isArray(dossier.markets) ? dossier.markets : [];
+    const mgroup = doc.createElement('section');
+    mgroup.className = 'kmc-catalog-dossier-group';
+    mgroup.appendChild(text(doc, 'strong', '', 'Vente par marché'));
+    if (dossier.market_data_scope === 'not_queried_before_approval') {
+      mgroup.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+        'Produit non approuvé : les décisions tarifaires et d’exposition ne sont pas présumées.'));
+    } else if (!markets.length) {
+      mgroup.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+        'Aucun marché actif mesuré pour ce produit.'));
+    } else {
+      markets.forEach(market => {
+        const line = doc.createElement('div');
+        line.className = 'kmc-catalog-market-row';
+        line.appendChild(text(doc, 'strong', '', market.code || 'Marché'));
+        line.appendChild(text(doc, 'span', '',
+          'Exposition : ' + (market.commercial_exposure || 'Non renseignée')));
+        line.appendChild(text(doc, 'span', '',
+          'Prix : ' + (market.price_status || 'Non décidé') +
+          (market.local_price_amount == null ? '' :
+            ' · ' + market.local_price_amount + ' ' +
+            (market.local_price_currency || market.currency || ''))));
+        mgroup.appendChild(line);
+      });
+      mgroup.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+        'Un prix LOCAL_ACTIVE et une exposition ENABLED ne prouvent pas à eux seuls la capacité d’achat en caisse.'));
+    }
+    slot.appendChild(mgroup);
+    const issues = Array.isArray(gate.reasons) ? gate.reasons : [];
+    if (gate.phase === 'catalog_approval' && issues.length) {
+      const problems = doc.createElement('section');
+      problems.className = 'kmc-catalog-dossier-group';
+      problems.appendChild(text(doc, 'strong', '', 'Prérequis à compléter avant approbation'));
+      const list = doc.createElement('ul');
+      list.className = 'kmc-catalog-inspector-issues';
+      issues.forEach(reason => list.appendChild(text(doc, 'li', '',
+        certificationReasonLabel(reason))));
+      problems.appendChild(list);
+      slot.appendChild(problems);
+    }
+  }
+
+  async function loadProductDossier(context, doc, slot, row) {
+    try {
+      const dossier = await jsonRequest(context.fetch, ENDPOINT +
+        '?dossier_product_ref=' + encodeURIComponent(row.product_ref));
+      // A closed inspector must not resurrect content on a different product.
+      if (!slot.isConnected) return;
+      renderProductDossierDetails(slot, doc, dossier, row);
+    } catch (err) {
+      if (!slot.isConnected) return;
+      slot.replaceChildren(text(doc, 'p', 'kmc-catalog-correction-hint',
+        'Dossier de certification indisponible : ' + actionErrorMessage(err)));
+    }
+  }
+
   function openProductInspector(context, slot, doc, row, categories) {
     const { panel, actions, feedback } = inspectorFrame(slot, doc, row, 'product');
+    const dossierSlot = doc.createElement('section');
+    dossierSlot.className = 'kmc-catalog-dossier';
+    dossierSlot.setAttribute('data-catalog-product-dossier', '');
+    dossierSlot.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+      'Lecture des preuves Produit, Sourcing et Commercialisation…'));
+    panel.insertBefore(dossierSlot, actions);
+    void loadProductDossier(context, doc, dossierSlot, row);
     const issues = Array.isArray(row.issues) ? row.issues : [];
     panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
       'Situation actuelle · ' + (registryNextStep(row).status)));
