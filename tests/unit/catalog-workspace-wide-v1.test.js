@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261029-2');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-1');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -182,4 +182,22 @@ test('V4.1 : priorité visuelle aux écarts avant marchés et à la prochaine ac
   expect(css).toContain('@media (max-width: 760px)');
   expect(ui).toContain('renderRegistryCorrections(doc, diagnostic, row, context, nextStep)');
   expect(ui).toContain('statusChip.addEventListener');
+});
+
+test('Dossier opérateur : coûts source, prix test distinct et classement chargé sans second clic', () => {
+  expect(ui).toContain("function appendCatalogEconomicSummary(panel, doc, row)");
+  expect(ui).toContain("row.purchase_price_kmf");
+  expect(ui).toContain("row.variable_cost_complete_kmf");
+  expect(ui).toContain("row.minimum_safe_price_kmf");
+  expect(ui).toContain("row.test_price_kmf");
+  expect(ui).toContain("Aucun prix de vente marché décidé");
+  expect(ui).toContain("sourceDetails.appendChild(facts)");
+  expect(ui).toContain("classify.addEventListener('click', loadBoutiqueProposal)");
+  expect(ui).toContain("void loadBoutiqueProposal()");
+  expect(ui).toContain("select.value = suggestion ? '0' : ''");
+  expect(ui).toContain("Number.parseInt(select.value, 10)");
+  expect(ui).toContain("method: 'POST'");
+  expect(css).toContain('width: min(660px, calc(100vw - 40px))');
+  expect(css).toContain('.kmc-catalog-economic-grid');
+  expect(index).toContain('catalog-workspace.js?v=261030-1');
 });
