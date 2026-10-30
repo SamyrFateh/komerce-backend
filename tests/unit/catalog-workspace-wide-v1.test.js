@@ -201,3 +201,22 @@ test('Dossier opérateur : coûts source, prix test distinct et classement charg
   expect(css).toContain('.kmc-catalog-economic-grid');
   expect(index).toContain('catalog-workspace.js?v=261030-1');
 });
+
+test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
+  expect(ui).toContain("function renderProductDossierDetails(slot, doc, dossier, row)");
+  expect(ui).toContain("?dossier_product_ref=");
+  expect(ui).toContain("title_fr");
+  expect(ui).toContain("description_fr");
+  expect(ui).toContain("supplier_identity_complete");
+  expect(ui).toContain("active_canonical");
+  expect(ui).toContain("weight_kg");
+  expect(ui).toContain("commercial_exposure");
+  expect(ui).toContain("price_status");
+  expect(ui).toContain("local_price_amount");
+  expect(ui).toContain("market_data_scope");
+  expect(ui).toContain("certificationReasonLabel(reason)");
+  expect(ui).toContain("primary.addEventListener('click', () =>");
+  expect(ui).toContain("openProductInspector(context, slot, doc, row, categories)");
+  expect(css).toContain(".kmc-catalog-dossier-group");
+  expect(css).toContain(".kmc-catalog-market-row");
+});
