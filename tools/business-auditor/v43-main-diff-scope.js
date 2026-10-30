@@ -42,7 +42,20 @@ function run({out}={},env=process.env,deps={}){
  const head=git('rev-parse','HEAD').trim();
  if(head!==env.GITHUB_SHA)fail('checkout SHA differs from CI provenance');
  const prBase=env.AUDITOR_PR_BASE_SHA||null;
- const base=prBase||BASE;
+ // GitHub pull_request checks out a synthetic merge commit. The pull
+ // request's event base.sha can become stale when main advances during CI.
+ // Compare the COMPLETE synthetic merge against its ACTUAL FIRST PARENT,
+ // not the stale event base. This still rejects any app/runtime path that
+ // the PR contributes; no forbidden files can be silently omitted.
+ let base=BASE,actualPrHead=null;
+ if(prBase){
+  const parents=git('rev-list','--parents','-n','1','HEAD').trim().split(/\\s+/);
+  if(parents.length!==3||parents[0]!==head)
+   fail('PR checkout must be a two-parent merge commit');
+  base=parents[1];actualPrHead=parents[2];
+  try{git('merge-base','--is-ancestor',prBase,base);}
+  catch{fail('PR event base must be ancestor of actual merge parent');}
+ }
  if(!/^[a-f0-9]{40}$/.test(base))fail('invalid PR base sha');
  try{git('merge-base','--is-ancestor',base,'HEAD');}
  catch{fail('comparison base not an ancestor of checkout');}
@@ -61,6 +74,9 @@ function run({out}={},env=process.env,deps={}){
  const unmerged=git('ls-files','-u').trim();
  const report=analyze({head,base,files,patch,unmerged,whitespaceClean:clean});
  report.comparisonMode=prBase?'PR_COMPLETE_DIFF':'AUDITOR_PATHS_ONLY_ON_EVOLVING_MAIN';
+ report.prHeadSha=actualPrHead;
+ report.eventBaseSha=prBase;
+ report.comparisonBaseSha=base;
  report.excludedNonAuditorChangeCount=omitted.length;
  report.excludedNonAuditorPaths=omitted;
  report.scopeLimitation=prBase?null:'External commits on main are NOT reviewed or certified by this evidence';
