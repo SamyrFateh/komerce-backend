@@ -28,3 +28,12 @@ test('G5 rejects unmerged conflicts, whitespace errors, bad source SHA',()=>{
  assert.equal(allowed('tools/business-auditor/abc.js'),true);
  assert.equal(allowed('services/inventory-service.js'),false);
 });
+
+test('G5 manual comparison honestly labels excluded unrelated main work',()=>{
+ const p=analyze(example());
+ assert.equal(p.fullDiffInspected,false);
+ assert.equal(p.automatedScopeVerified,true);
+ // run() includes comparisonMode and excludedNonAuditorPaths from the git diff;
+ // analyze() never converts a machine scope check to human approval.
+ assert.equal(p.humanReviewApproved,false);
+});

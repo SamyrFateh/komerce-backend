@@ -49,6 +49,21 @@ function assess(x){
     !eq(x.owner.response?.orderItemId,ids.itemA)||
     a.length!==1||!eq(a[0].inventory_order,ids.orderA))
    signals.push('INV_GEN_CANONICAL_RECEIPT_FAILED');
+  // The canonical owner immediately proposes an assignment. With no matching
+  // parcel the persisted item is BUFFERED, not RECEIVED; the INSERT RETURNING
+  // item may still report 'received'. Compare proposal with persisted state.
+  const proposal=x.owner.response?.proposalStatus;
+  if(a.length===1){
+   const row=a[0];
+   if(proposal==='buffered'){
+    if(row.status!=='buffered'||row.buffer_reason!=='no_compatible_parcel'||
+       !row.buffer_until||row.proposed_parcel_id!=null)
+     signals.push('INV_GEN_BUFFER_STATE_INCONSISTENT');
+   }else if(proposal==='proposed'){
+    if(row.status!=='proposed'||!row.proposed_parcel_id||!row.proposed_at)
+     signals.push('INV_GEN_PROPOSAL_STATE_INCONSISTENT');
+   }else signals.push('INV_GEN_MISSING_ASSIGNMENT_DECISION');
+  }
   if(num(after.orderA.items_received)!==1||
      num(after.orderA.items_total)!==1+extraLines||
      Math.abs(num(after.orderA.completion_ratio)-1/(1+extraLines))>1e-9)
