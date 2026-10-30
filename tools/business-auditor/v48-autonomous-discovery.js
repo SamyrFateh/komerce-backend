@@ -11,7 +11,7 @@ const fs=require('node:fs'),path=require('node:path'),
  cp=require('node:child_process'),crypto=require('node:crypto');
 const {assertLocalTestTarget}=require('./cli');
 const {withClone}=require('./v16-cloned-database');
-const {start,one}=require('./v45-multidomain-physical');
+const {one}=require('./v45-multidomain-physical');
 const {plan:inventoryPlan,execute:inventoryExecute}=require('./v40-generated-inventory');
 const {sourceAnchor}=require('./v30-inventory-gate');
 const {inspect:sourcingOracle}=require('./v33-orders-sourcing-oracle');
@@ -61,9 +61,21 @@ function changed(base=null,deps={}){
  ].filter(Boolean))];
  return validatePaths(modified);
 }
+function startSourcing(url,env){
+ const worker=path.join(__dirname,'v33-orders-sourcing-child.js');
+ const output=cp.execFileSync(process.execPath,[worker,'SOURCING'],{
+  cwd:ROOT,encoding:'utf8',timeout:45000,maxBuffer:1024*1024,
+  env:{...env,DATABASE_URL:url,NODE_ENV:'test',
+   KOMERCE_DISABLE_CRONS:'true',KBA_V45_MUTANT:'',KBA_V45_MUTANT_APPLIED:''},
+  stdio:['ignore','pipe','pipe']});
+ const prefix='BUSINESS_AUDIT_V33_PHYSICAL ';
+ const row=output.split('\n').find(x=>x.startsWith(prefix));
+ if(!row)fail('real sourcing owner produced no physical observation');
+ return JSON.parse(row.slice(prefix.length));
+}
 async function sourcing(env,deps={}){
  const physical=await (deps.withClone||withClone)(env,
-  url=>(deps.start||start)(url,'SOURCING',null,env));
+  url=>(deps.startSourcing||startSourcing)(url,env));
  if(physical.cloneCreated!==true||physical.cloneDroppedAfterExecution!==true)
   fail('sourcing disposable clone lifecycle unproven');
  const raw=physical.result;
