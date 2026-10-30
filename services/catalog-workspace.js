@@ -493,6 +493,96 @@ async function getRegistryReadiness(productRef) {
   };
 }
 
+// Read-only dossier from the SAME certification authority used for approval.
+// It does not grant publication, decide local prices or mutate source records.
+function publicProductDossier(facts, product, marketHandoff = null) {
+  const row = facts?.row || {};
+  const candidate = product.lifecycle_status === 'candidate' && product.is_active !== true;
+  const positive = value => {
+    if (value == null || String(value).trim() === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const count = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : null;
+  return {
+    product_ref: product.product_ref,
+    identity: {
+      title_fr: row.name || null,
+      description_fr: row.description || null,
+      content_source: row.content_source || null,
+      locale: row.source_locale || null,
+      needs_review: row.needs_review === true,
+      customs_category: row.category || null,
+      boutique_category_key: row.boutique_category_key || null,
+      boutique_subcategory_key: row.boutique_subcategory_key || null,
+      taxonomy_active: row.taxonomy_active === true,
+    },
+    supplier: {
+      name: row.supplier_name || null,
+      reference: row.supplier_product_id || null,
+      source_contract_v2: String(row.normalized_source_contract?.schema_version || '') === '2',
+      sourcing_decision: row.sourcing_decision || null,
+    },
+    availability: {
+      lifecycle_status: row.lifecycle_status || product.lifecycle_status,
+      is_active: product.is_active === true,
+      is_available: row.is_available === true,
+      inventory_model: row.inventory_model || null,
+      stock: count(row.stock),
+      has_variants: row.has_variants === true,
+      weight_kg: positive(row.weight_kg),
+    },
+    purchasing: {
+      active_supplier_skus: count(row.active_supplier_skus),
+      complete_supplier_skus: count(row.complete_supplier_skus),
+      supplier_identity_complete: Number(row.active_supplier_skus) > 0 &&
+        Number(row.active_supplier_skus) === Number(row.complete_supplier_skus),
+    },
+    media: { active_canonical: count(row.active_media) },
+    economics: {
+      reference_cost_kmf: positive(row.cost_kmf),
+      reference_price_kmf: positive(row.price_kmf),
+      reference_price_is_market_decision: false,
+    },
+    catalogue_gate: {
+      phase: candidate ? 'catalog_approval' : 'other_lifecycle',
+      technically_certified: candidate ? facts?.certification?.certified === true : null,
+      reasons: candidate && Array.isArray(facts?.certification?.reasons)
+        ? facts.certification.reasons : [],
+      note: candidate
+        ? 'Contrôle technique de fiche candidate, distinct de la publication marché.'
+        : 'Une fiche active ne repasse pas automatiquement en validation Catalogue.',
+    },
+    markets: Array.isArray(marketHandoff?.markets)
+      ? marketHandoff.markets.map(market => ({
+          code: market.code,
+          name: market.name,
+          currency: market.currency,
+          commercial_exposure: market.commercial_exposure,
+          exposure_decision_recorded: market.exposure_decision_recorded,
+          price_status: market.price_status,
+          local_price_amount: market.local_price_amount,
+          local_price_currency: market.local_price_currency,
+          // No inference that payment, stock and checkout gates have passed.
+          buyer_visible_according_to_market_thread: market.buyer_visible,
+        }))
+      : [],
+    market_data_scope: marketHandoff ? 'active_catalogue_product' : 'not_queried_before_approval',
+  };
+}
+
+async function getProductDossier(productRef) {
+  const product = await resolveProduct(productRef);
+  const [facts, handoff] = await Promise.all([
+    certifyCatalogProduct(db, product.id),
+    product.is_active === true ? queryFocusedMarketHandoff(product.product_ref) : Promise.resolve(null),
+  ]);
+  if (!facts?.row) throw new CatalogWorkspaceError(
+    'catalog_facts_unavailable', 'Fiche canonique indisponible', 503
+  );
+  return publicProductDossier(facts, product, handoff);
+}
+
 function sanitizeProductCreate(body = {}) {
   const allowed = ['name','category','subcategory','price_kmf','price_aed','price_eur','stock','weight_kg','description','image_url','images','badge','emoji','promo_pct','is_available','is_active','has_couture','sourcing_source','requires_secure_transport','customs_risk_coeff','unsold_price_kmf','unsold_channel','has_variants','sort_order'];
   return allowed.reduce((out, key) => {
@@ -658,6 +748,7 @@ module.exports = {
   CatalogWorkspaceError,
   buildWorkspace,
   getRegistryReadiness,
+  getProductDossier,
   createProduct,
   updateProduct,
   classifyProduct,
@@ -675,6 +766,7 @@ module.exports = {
   deactivateSubcategory: (key, subKey, actor) => taxonomy.deactivateSubcategory(key, subKey, {}, undefined, { ...actor, source_surface: 'canonical_catalog_workspace' }),
   _test: {
     publicProduct,
+    publicProductDossier,
     queryProducts,
     queryApprovalQueue,
     queryApprovalBreakdown,
