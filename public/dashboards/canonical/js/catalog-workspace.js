@@ -750,7 +750,7 @@
     const nameField = editorField(doc, 'Titre français', 'name');
     const descriptionField = editorField(doc, activeRecheck
       ? 'Description française (facultative)' : 'Description française', 'description', true);
-    if (activeRecheck && (row.name_override_present || row.content_source === 'manual' || isFrenchLocale(row.source_locale))) {
+    if (row.name_override_present || row.content_source === 'manual' || isFrenchLocale(row.source_locale)) {
       nameField.control.value = row.name || '';
       descriptionField.control.value = row.description || '';
     }
@@ -2220,6 +2220,34 @@
         ? 'Catalogue approuvé · décisions marchés à vérifier'
         : 'État Catalogue à vérifier · aucune nouvelle validation implicite');
     slot.appendChild(text(doc, 'p', 'kmc-catalog-inspector-next-step', status));
+    const gallery = Array.isArray(media.gallery) ? media.gallery : [];
+    const photos = doc.createElement('section');
+    photos.className = 'kmc-catalog-dossier-gallery';
+    photos.setAttribute('data-catalog-canonical-gallery', '');
+    photos.appendChild(text(doc, 'strong', '', 'Images canoniques actives'));
+    if (!gallery.length) {
+      photos.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+        'Aucune image canonique HTTPS à afficher. Les aperçus fournisseur ne sont pas des médias validés.'));
+    } else {
+      const strip = doc.createElement('div');
+      strip.className = 'kmc-catalog-dossier-image-strip';
+      gallery.forEach((item, index) => {
+        if (!/^https:\/\//i.test(item.url || '')) return;
+        const figure = doc.createElement('figure');
+        const img = doc.createElement('img');
+        img.src = item.url;
+        img.alt = item.alt || 'Image du produit ' + (index + 1);
+        img.loading = 'lazy';
+        figure.appendChild(img);
+        figure.appendChild(text(doc, 'figcaption', '',
+          (item.role || 'PRODUCT') + (item.alt ? ' · ' + item.alt : '')));
+        strip.appendChild(figure);
+      });
+      photos.appendChild(strip);
+      if (media.gallery_truncated) photos.appendChild(text(doc, 'small',
+        'kmc-catalog-correction-hint', 'Galerie partielle : plus de 24 médias actifs.'));
+    }
+    slot.appendChild(photos);
     const facts = (title, entries) => {
       const group = doc.createElement('section');
       group.className = 'kmc-catalog-dossier-group';
@@ -2263,8 +2291,47 @@
       ['Modèle d’inventaire', availability.inventory_model],
       ['Variantes', availability.has_variants ? 'Oui' : 'Non'],
       ['Poids', availability.weight_kg == null ? 'Non renseigné' : availability.weight_kg + ' kg'],
+      ['Dimensions', availability.dimensions_cm],
+      ['Fragilité', availability.fragility || 'Non renseignée'],
+      ['Transport sécurisé', availability.requires_secure_transport ? 'Requis' : 'Non signalé'],
+      ['Stock affiché', availability.stock_is_authoritative
+        ? displayNumber(availability.stock) : 'Géré par les SKU · voir ci-dessous'],
       ['Disponibilité', availability.is_available ? 'Disponible selon la fiche' : 'Non disponible selon la fiche'],
     ]);
+    const variants = dossier.variants || {};
+    const units = Array.isArray(variants.rows) ? variants.rows : [];
+    const unitBox = doc.createElement('details');
+    unitBox.className = 'kmc-catalog-dossier-group kmc-catalog-variant-details';
+    unitBox.setAttribute('data-catalog-variants', '');
+    unitBox.appendChild(text(doc, 'summary', '',
+      (variants.inventory_model === 'SKU' ? 'Unités vendables (SKU)' : 'Axes de variantes historiques') +
+      ' · ' + units.length + (variants.truncated ? '+' : '')));
+    const unitHint = variants.stock_semantics === 'sellable_sku'
+      ? 'Le stock se gère sur les SKU actifs, et non sur le champ stock global du produit.'
+      : 'Ces variantes historiques ne constituent pas nécessairement des combinaisons vendables ; leurs stocks ne doivent pas être additionnés.';
+    unitBox.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint', unitHint));
+    if (!units.length) unitBox.appendChild(text(doc, 'p',
+      'kmc-catalog-correction-hint', 'Aucune variante renseignée dans ce modèle.'));
+    units.forEach(unit => {
+      const line = doc.createElement('div');
+      line.className = 'kmc-catalog-variant-line';
+      const variantLabel = variants.inventory_model === 'SKU'
+        ? (unit.variant_combo ? Object.entries(unit.variant_combo)
+          .map(([key, value]) => key + ' : ' + String(value)).join(' · ') : 'Unité par défaut')
+        : [unit.variant_type, unit.variant_value].filter(Boolean).join(' · ');
+      line.appendChild(text(doc, 'strong', '', variantLabel || 'Sans variante'));
+      line.appendChild(text(doc, 'span', '',
+        'SKU : ' + (unit.sku || 'Non renseigné') +
+        (unit.supplier_sku ? ' · fournisseur : ' + unit.supplier_sku : '')));
+      if (variants.inventory_model === 'SKU') line.appendChild(text(doc, 'span', '',
+        'Stock : ' + displayNumber(unit.stock) +
+        ' · ' + (unit.is_active ? 'Actif' : 'Inactif') +
+        (unit.supplier_unit_ref ? ' · unité fournisseur : ' + unit.supplier_unit_ref : '')));
+      unitBox.appendChild(line);
+    });
+    if (variants.truncated) unitBox.appendChild(text(doc, 'p',
+      'kmc-catalog-correction-hint', 'Liste partielle : plus de 50 lignes de variantes ou SKU.'));
+    slot.appendChild(unitBox);
     facts('Prix de référence · non décision marché', [
       ['Coût stocké', price(dossier.economics?.reference_cost_kmf)],
       ['Prix global de référence', price(dossier.economics?.reference_price_kmf)],
@@ -2428,8 +2495,11 @@
         openProductClassificationDialog(context, row, categories, btn));
       actions.appendChild(btn);
     }
-    if (issues.includes('editorial_to_complete') && row.candidate_ref) {
-      const btn = makeButton(doc, 'Préparer le français', 'inspector-prepare-fr');
+    if (row.candidate_ref && (row.lifecycle_status === 'candidate' ||
+        (row.lifecycle_status === 'active' && row.is_active === true))) {
+      const btn = makeButton(doc,
+        issues.includes('editorial_to_complete') ? 'Compléter le français' : 'Corriger le français',
+        'inspector-prepare-fr');
       btn.addEventListener('click', () => openFrenchEditor(context, row, btn));
       actions.appendChild(btn);
     }
