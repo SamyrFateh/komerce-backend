@@ -716,8 +716,8 @@
       'p',
       'kmc-workspace-subtitle',
       activeRecheck
-        ? 'Correction éditoriale Raffinerie d’un produit déjà actif : la source reste intacte. Aucun prix, stock ou marché n’est modifié.'
-        : 'La source fournisseur reste intacte. Le français est enregistré comme override tracé, puis relu avant validation Catalogue.'
+        ? 'Corrigez ici le français du produit déjà actif. La source fournisseur reste intacte ; prix, stock et marchés ne sont pas modifiés.'
+        : 'Complétez ici le titre et la description en français. Les modifications sont tracées et vérifiées avant validation Catalogue.'
     ));
     heading.appendChild(headingCopy);
     const close = makeButton(doc, 'Fermer', 'close-fr-editor', true);
@@ -880,7 +880,7 @@
           await context.reload({ skipAutoFrenchSchedule: true });
           setFeedback(context.root, accept
             ? `${row.product_ref} : contenu français accepté comme suffisant par l’opérateur. Autres contrôles et règles de marchés inchangés.`
-            : `${row.product_ref} : brouillon français enregistré, travail restant en Raffinerie.`, 'positive');
+            : `${row.product_ref} : brouillon français enregistré. Les contrôles Catalogue restent à effectuer.`, 'positive');
         } catch (error) {
           showSaveProblem(actionErrorMessage(error), null);
           save.disabled = false;
@@ -1937,6 +1937,21 @@
     const nextStep = registryNextStep(row);
     panel.appendChild(text(doc, 'p', 'kmc-catalog-inspector-next-step',
       'Situation : ' + nextStep.status));
+    // Keep all permitted corrections visible before long read-only sections.
+    // This is the same Catalogue inspector; canonical mutation routes remain in charge.
+    const actionDock = doc.createElement('section');
+    actionDock.className = 'kmc-catalog-inspector-action-dock';
+    actionDock.setAttribute('data-catalog-action-dock', '');
+    actionDock.appendChild(text(doc, 'strong', 'kmc-catalog-action-dock-title',
+      'Actions sur cette fiche'));
+    const actions = doc.createElement('div');
+    actions.className = 'kmc-catalog-inspector-actions';
+    actionDock.appendChild(actions);
+    const feedback = text(doc, 'div', 'kmc-catalog-inspector-feedback', '');
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('aria-live', 'polite');
+    actionDock.appendChild(feedback);
+    panel.appendChild(actionDock);
     appendCatalogEconomicSummary(panel, doc, row);
     const facts = doc.createElement('dl');
     facts.className = 'kmc-catalog-inspector-fields';
@@ -1955,13 +1970,6 @@
     sourceDetails.appendChild(text(doc, 'summary', '', 'Informations fournisseur · Lecture seule'));
     sourceDetails.appendChild(facts);
     panel.appendChild(sourceDetails);
-    const feedback = text(doc, 'div', 'kmc-catalog-inspector-feedback', '');
-    feedback.setAttribute('role', 'status');
-    feedback.setAttribute('aria-live', 'polite');
-    const actions = doc.createElement('div');
-    actions.className = 'kmc-catalog-inspector-actions';
-    panel.appendChild(actions);
-    panel.appendChild(feedback);
     slot.appendChild(panel);
     if (typeof panel.scrollIntoView === 'function') panel.scrollIntoView({ block: 'nearest' });
     return { panel, actions, feedback };
@@ -2070,7 +2078,7 @@
               save.disabled = false;
             }
           });
-          panel.appendChild(form);
+          panel.insertBefore(form, panel.querySelector('[data-catalog-economic-summary]'));
           feedback.textContent = '';
         } catch (err) {
           feedback.textContent = actionErrorMessage(err);
@@ -2188,7 +2196,9 @@
             save.disabled = false;
           }
         });
-        panel.appendChild(form);
+        // The proposed classification belongs next to the operator actions,
+        // not underneath the entire supplier/economic read-only dossier.
+        panel.insertBefore(form, panel.querySelector('[data-catalog-economic-summary]'));
         feedback.textContent = '';
       } catch (error) {
         feedback.textContent = actionErrorMessage(error);
@@ -2401,7 +2411,7 @@
     dossierSlot.setAttribute('data-catalog-product-dossier', '');
     dossierSlot.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
       'Lecture des preuves Produit, Sourcing et Commercialisation…'));
-    panel.insertBefore(dossierSlot, actions);
+    panel.appendChild(dossierSlot);
     void loadProductDossier(context, doc, dossierSlot, row);
     const issues = Array.isArray(row.issues) ? row.issues : [];
     panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
@@ -2491,16 +2501,13 @@
       feedback.textContent = row.candidate_ref
         ? 'Contrat source à recontrôler via Sourcing : aucune validation Catalogue tant que la source n’est pas certifiée.'
         : 'La provenance manque. Aucune source fournisseur ne sera inventée.';
-    if (issues.includes('taxonomy_to_confirm') && row.candidate_ref) {
-      const btn = makeButton(doc, 'Corriger le classement', 'inspector-classify');
-      btn.addEventListener('click', () =>
-        openProductClassificationDialog(context, row, categories, btn));
-      actions.appendChild(btn);
-    }
+    // Editorial correction is the primary task whenever the FR sheet is incomplete.
+    // The editor stays on the Catalogue; supplier originals are never overwritten.
     if (row.candidate_ref && (row.lifecycle_status === 'candidate' ||
         (row.lifecycle_status === 'active' && row.is_active === true))) {
       const btn = makeButton(doc,
-        issues.includes('editorial_to_complete') ? 'Compléter le français' : 'Corriger le français',
+        issues.includes('editorial_to_complete')
+          ? 'Compléter titre et description FR' : 'Modifier titre / description FR',
         'inspector-prepare-fr');
       btn.addEventListener('click', async () => {
         try {
@@ -2518,6 +2525,14 @@
           feedback.textContent = actionErrorMessage(err);
         }
       });
+      actions.appendChild(btn);
+    }
+    // The classification may also be corrected before an issue is raised,
+    // but the server still validates the active Boutique pair and operator grant.
+    if ((row.candidate_ref || (row.lifecycle_status === 'active' && row.is_active === true))) {
+      const btn = makeButton(doc, 'Corriger le classement', 'inspector-classify', true);
+      btn.addEventListener('click', () =>
+        openProductClassificationDialog(context, row, categories, btn));
       actions.appendChild(btn);
     }
     if (row.work_status === 'approval_pending' || issues.includes('approval_pending')) {

@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-2');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-3');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -199,7 +199,7 @@ test('Dossier opérateur : coûts source, prix test distinct et classement charg
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(css).toContain('.kmc-catalog-economic-grid');
-  expect(index).toContain('catalog-workspace.js?v=261030-2');
+  expect(index).toContain('catalog-workspace.js?v=261030-3');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -233,11 +233,27 @@ test('Fiche commerciale complète : galerie, variantes et correction FR disponib
   expect(ui).toContain("availability.requires_secure_transport");
   expect(ui).toContain("row._catalogueDossier = dossier");
   expect(ui).toContain("identity.description_fr || row.description");
-  expect(ui).toContain("issues.includes('editorial_to_complete') ? 'Compléter le français' : 'Corriger le français'");
+  expect(ui).toContain("issues.includes('editorial_to_complete')");
+  expect(ui).toContain("'Compléter titre et description FR' : 'Modifier titre / description FR'");
   expect(css).toContain(".kmc-catalog-dossier-image-strip");
   expect(css).toContain(".kmc-catalog-variant-line");
 });
 test('Un candidat Sourcing à examiner n’est plus absent du compteur des actions', () => {
   expect(ui).toContain("'sourcing_review'].includes(row.work_status)");
   expect(ui).toContain("(row.record_kind === 'candidate' && row.operator_group === 'review')");
+});
+
+test('Actions éditoriales toujours visibles avant lecture longue de la fiche', () => {
+  expect(ui).toContain("actionDock.setAttribute('data-catalog-action-dock', '')");
+  expect(ui).toContain("panel.appendChild(actionDock)");
+  expect(ui).toContain("appendCatalogEconomicSummary(panel, doc, row)");
+  expect(ui).toContain("panel.appendChild(dossierSlot)");
+  expect(ui).toContain("Compléter titre et description FR");
+  expect(ui).toContain("Modifier titre / description FR");
+  expect(ui).toContain("openFrenchEditor(context, {");
+  expect(css).toContain(".kmc-catalog-inspector-action-dock");
+  expect(css).toContain("position: sticky");
+  expect(css).toContain('min-height: 42px');
+  expect(index).toContain('catalog-workspace.js?v=261030-3');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-3');
 });

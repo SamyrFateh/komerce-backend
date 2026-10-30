@@ -1112,14 +1112,48 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
   font-weight: 760;
   font-size: 14px;
 }
+/* The correction tools belong at the START of the inspector and remain
+   accessible while the operator checks long product evidence below. */
+.kmc-catalog-inspector-action-dock {
+  position: sticky;
+  top: -20px;
+  z-index: 5;
+  margin: 14px -10px 14px;
+  padding: 12px 10px;
+  border: 1px solid #c8d9f2;
+  border-radius: 10px;
+  background: #f7faff;
+  box-shadow: 0 5px 16px rgb(20 55 100 / 0.08);
+}
+.kmc-catalog-action-dock-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  color: #183b67;
+  margin-bottom: 8px;
+}
 .kmc-catalog-inspector-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  margin: 18px 0 10px;
+  margin: 0;
 }
 .kmc-catalog-inspector-actions .kmc-workspace-action {
-  min-height: 38px;
+  min-height: 42px;
+  padding: 9px 13px;
+  font-weight: 730;
+}
+.kmc-catalog-inspector-actions [data-workspace-action="inspector-prepare-fr"] {
+  border: 1px solid #134caa;
+  background: #1756c4;
+  color: #fff;
+}
+.kmc-catalog-inspector-action-dock .kmc-catalog-inspector-feedback:empty {
+  display: none;
+}
+@media (max-width: 700px) {
+  .kmc-catalog-inspector-action-dock { top: 0; margin-inline: 0; }
 }
 .kmc-catalog-inspector-feedback {
   font-size: 13px;
