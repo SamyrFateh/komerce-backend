@@ -17,32 +17,34 @@ async function run(page,width,selected=false,emptyQueue=false,denied=false){
   await page.goto('https://komerce.test/dashboards/canonical/market-catalog.html'+qs);
   await page.addStyleTag({content:'html,body{margin:0;width:100%;}*{box-sizing:border-box}#market-catalog-root{padding:18px;max-width:100%;}a,button{cursor:pointer}'});
   await page.addStyleTag({path:path.join(root,'public/dashboards/canonical/css/market-handoff-v4.css')});
+  await page.addStyleTag({path:path.join(root,'public/dashboards/canonical/css/market-catalog-essential.css')});
   await page.addScriptTag({path:path.join(root,'public/dashboards/canonical/js/admin-context.js')});
   await page.addScriptTag({path:path.join(root,'public/dashboards/canonical/js/market-prompt.js')});
   await page.addScriptTag({path:path.join(root,'public/dashboards/canonical/js/market-ready-to-sell.js')});
+  await page.addScriptTag({path:path.join(root,'public/dashboards/canonical/js/market-product-register.js')});
   await page.evaluate(({P,emptyQueue,denied})=>{
     window.__calls=[];
     window.fetch=async url=>{
       window.__calls.push(url);
-      const body=url==='/api/auth/me'?{id:'admin',role:'admin'}:
+      const body=url.includes('/commercial-prices')?{
+        market:{code:'KM',currency:'KMF'},products:emptyQueue?[]:[{
+          product_ref:P,local_price:1500,decision_status:'DRAFT_PENDING_GATE',
+        }],
+      }:url==='/api/auth/me'?{id:'admin',role:'admin'}:
         url==='/api/market-delegation/catalog/authorized-markets'?{market_codes:denied?[]:['CG','CM','KM']}:
         url==='/api/admin/dashboard/context'?{
           actor:{id:'admin',role:'admin'},
           access:{mode:'global',allowedMarkets:['CG','CM','KM'],defaultMarket:null,capabilities:[]},
         }:{
           market:{name:'Comores',currency:'KMF'},
-          exposure:[],
-          actor_capabilities:[],
-          ready_to_sell:{
-            summary:{ready:1,review:0,blocked:0},
-            items:emptyQueue?[]:[{
-              product_id:'test-p',product_ref:P,product_name:'Produit test',
-              corridor:{low:1000,high:2000,sample_count:3},
-              proposed_price:{amount:1500,source:'MARKET_TARGET'},
-              decision_state:{key:'READY',label:'À décider',tone:'positive'},
-              bulk_eligible:false,can_approve:true,local_price_active:false,
-            }],
-          },
+          exposure:emptyQueue?[]:[{
+            product_id:'test-p',product_ref:P,product_name:'Produit approuvé',
+            category:'Tech',subcategory:'Téléphones',sku:'TEST-SKU',
+            commercial_exposure:'DISABLED',decision_recorded:false,
+            is_available:true,needs_review:false,
+          }],
+          actor_capabilities:['catalog.read','pricing.read','pricing.decide','pricing.activate','catalog.expose'],
+          ready_to_sell:{summary:{ready:0,review:0,blocked:0},items:[]},
         };
       return {ok:true,status:200,json:async()=>body};
     };
@@ -83,8 +85,12 @@ async function run(page,width,selected=false,emptyQueue=false,denied=false){
     assert(calls.some(x=>x.includes('/markets/KM/catalog/exposure')));
     assert(!calls.some(x=>x.includes('/markets/CG/')||x.includes('/markets/CM/')));
     if(!emptyQueue){
-      await page.locator('.kmc-ready-row.is-context-target[data-product-ref="'+P+'"]').waitFor();
-      assert((await card.innerText()).includes('présent dans la file de décision'));
+      await page.locator('[data-market-product-ref="'+P+'"]').waitFor();
+      const row=page.locator('[data-market-product-ref="'+P+'"]');
+      assert((await card.innerText()).includes('Son prix et sa publication se décident'));
+      assert.equal(await row.locator('[role="switch"]').count(),1);
+      assert.equal(await row.locator('.kmc-market-price-input').inputValue(),'1500');
+      assert.equal(await row.locator('[role="switch"]').isChecked(),false);
     }else{
       assert((await card.innerText()).includes('n’est pas actuellement dans la liste'));
       assert((await card.innerText()).includes('sans déduire un refus'));
