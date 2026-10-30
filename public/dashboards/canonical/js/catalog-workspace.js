@@ -1951,7 +1951,7 @@
     });
     const sourceDetails = doc.createElement('details');
     sourceDetails.className = 'kmc-catalog-source-details';
-    sourceDetails.appendChild(text(doc, 'summary', '', 'Informations fournisseur · lecture seule'));
+    sourceDetails.appendChild(text(doc, 'summary', '', 'Informations fournisseur · Lecture seule'));
     sourceDetails.appendChild(facts);
     panel.appendChild(sourceDetails);
     const feedback = text(doc, 'div', 'kmc-catalog-inspector-feedback', '');
