@@ -640,3 +640,55 @@ test('Catalogue finalisé : filtre uniquement la projection admin, pas les mutat
   await workspace.buildWorkspace({});
   expect(mockListRegistry).toHaveBeenCalledWith(expect.objectContaining({ finalized_only: true }));
 });
+
+test('Dossier canonique : une fiche source, son achat et ses preuves sans UUID ni prix marché inventé', () => {
+  const {publicProductDossier}=workspace._test;
+  const facts={
+    row:{
+      name:'Coque de téléphone', description:'Coque adaptée au mobile.',
+      source_locale:'fr',content_source:'manual', needs_review:false,
+      category:'electronics',boutique_category_key:'mobile',
+      boutique_subcategory_key:'cases',taxonomy_active:true,
+      supplier_name:'CJ',supplier_product_id:'SC-01',
+      normalized_source_contract:{schema_version:'2'},sourcing_decision:'TEST',
+      stock:4,weight_kg:'0.15', inventory_model:'SKU',has_variants:true,
+      active_supplier_skus:2,complete_supplier_skus:2,active_media:3,
+      cost_kmf:'2000',price_kmf:'3500',is_available:true,
+    },
+    certification:{certified:true,reasons:[]},
+  };
+  const product={id:'private-uuid',product_ref:'KPR-001',lifecycle_status:'candidate',is_active:false};
+  const result=publicProductDossier(facts,product);
+  expect(result).toMatchObject({
+    product_ref:'KPR-001',
+    identity:{title_fr:'Coque de téléphone',taxonomy_active:true},
+    supplier:{source_contract_v2:true,reference:'SC-01'},
+    availability:{stock:4,weight_kg:0.15},
+    purchasing:{supplier_identity_complete:true,active_supplier_skus:2},
+    media:{active_canonical:3},
+    economics:{reference_cost_kmf:2000,reference_price_is_market_decision:false},
+    catalogue_gate:{phase:'catalog_approval',technically_certified:true},
+    markets:[],
+    market_data_scope:'not_queried_before_approval',
+  });
+  expect(JSON.stringify(result)).not.toContain('private-uuid');
+  expect(JSON.stringify(result)).not.toContain('market_price_decided');
+});
+test('Produit déjà actif : état marché explicite, pas de fausse recertification candidat', () => {
+  const {publicProductDossier}=workspace._test;
+  const result=publicProductDossier(
+    {row:{name:'Produit actif',is_available:false,active_supplier_skus:0},
+     certification:{certified:false,reasons:['not_inactive_candidate']}},
+    {product_ref:'KPR-A',lifecycle_status:'active',is_active:true},
+    {markets:[{code:'KM',currency:'KMF',commercial_exposure:'ENABLED',
+       price_status:'LOCAL_ACTIVE',local_price_amount:5000,
+       local_price_currency:'KMF',buyer_visible:true}]}
+  );
+  expect(result.catalogue_gate.technically_certified).toBeNull();
+  expect(result.catalogue_gate.reasons).toEqual([]);
+  expect(result.availability.is_available).toBe(false);
+  expect(result.markets[0]).toMatchObject({code:'KM',price_status:'LOCAL_ACTIVE',
+    commercial_exposure:'ENABLED',local_price_amount:5000});
+  expect(result.economics.reference_price_kmf).toBeNull();
+  expect(result.market_data_scope).toBe('active_catalogue_product');
+});
