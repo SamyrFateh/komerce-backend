@@ -2551,8 +2551,12 @@
         category.setAttribute('data-label', 'Classification boutique');
         category.appendChild(text(doc, 'strong', '',
           row.record_kind === 'candidate'
-            ? (row.supplier_category || 'Analyse automatique en cours')
+            ? 'Classement boutique à confirmer'
             : (row.boutique_category_label || row.boutique_category_key || 'À classer')));
+        if (row.record_kind === 'candidate' && row.supplier_category) {
+          category.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
+            'Catégorie fournisseur : ' + row.supplier_category));
+        }
         if (row.boutique_subcategory_label || row.boutique_subcategory_key) {
           category.appendChild(text(doc, 'small', '',
             row.boutique_subcategory_label || row.boutique_subcategory_key));
