@@ -334,7 +334,8 @@ test('un brouillon issu du Sourcing sans prix global atteint la curation humaine
     require('path').join(__dirname,'../../public/dashboards/canonical/js/catalog-workspace.js'),'utf8'
   );
   expect(ui).toContain('row.supplier_source_linked === true && row.price_kmf == null');
-  expect(ui).toContain('aucune mise en vente acheteur avant LOCAL_ACTIVE');
+  expect(ui).toContain('la fixation du prix et les coûts commerciaux appartiennent au marché');
+  expect(ui).not.toContain('Coût d’achat estimé');
 });
 
 test('préparation FR résout product_ref puis applique des overrides manuels sans API IA', async () => {
@@ -666,7 +667,6 @@ test('Dossier canonique : une fiche source, son achat et ses preuves sans UUID n
     availability:{stock:4,weight_kg:0.15},
     purchasing:{supplier_identity_complete:true,active_supplier_skus:2},
     media:{active_canonical:3},
-    economics:{reference_cost_kmf:2000,reference_price_is_market_decision:false},
     catalogue_gate:{phase:'catalog_approval',technically_certified:true},
     markets:[],
     market_data_scope:'not_queried_before_approval',
@@ -688,8 +688,9 @@ test('Produit déjà actif : état marché explicite, pas de fausse recertificat
   expect(result.catalogue_gate.reasons).toEqual([]);
   expect(result.availability.is_available).toBe(false);
   expect(result.markets[0]).toMatchObject({code:'KM',price_status:'LOCAL_ACTIVE',
-    commercial_exposure:'ENABLED',local_price_amount:5000});
-  expect(result.economics.reference_price_kmf).toBeNull();
+    commercial_exposure:'ENABLED'});
+  expect(result.markets[0]).not.toHaveProperty('local_price_amount');
+  expect(result).not.toHaveProperty('economics');
   expect(result.market_data_scope).toBe('active_catalogue_product');
 });
 

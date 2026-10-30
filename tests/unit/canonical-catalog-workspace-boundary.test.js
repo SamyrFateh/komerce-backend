@@ -196,7 +196,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261030-3');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261030-4');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -864,10 +864,10 @@ test('Catalogue unique : confirmation du classement candidat réutilise la sugge
   expect(select.value).toBe('0');
   expect(select.children[0].textContent).toContain('Proposé');
   const form = panel.querySelector('[data-catalog-candidate-category-form]');
-  const economy = panel.querySelector('[data-catalog-economic-summary]');
+  const sourceFacts = panel.querySelector('[data-catalog-source-details]');
   const dock = panel.querySelector('[data-catalog-action-dock]');
   expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(form));
-  expect(panel.children.indexOf(form)).toBeLessThan(panel.children.indexOf(economy));
+  expect(panel.children.indexOf(form)).toBeLessThan(panel.children.indexOf(sourceFacts));
   await form.listeners.submit[0]({ preventDefault() {} });
   expect(calls.some(([url]) => url.includes('/confirm-boutique-category'))).toBe(true);
   const [postUrl, postOptions] = calls.find(([url]) => url.includes('/confirm-boutique-category'));
@@ -1226,12 +1226,13 @@ test('Catalogue: la correction française est visible AVANT les coûts et ouvre 
   await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
   const panel=root.querySelector('[data-catalog-product-inspector="KPR-FR-VISIBLE"]');
   const dock=panel.querySelector('[data-catalog-action-dock]');
-  const economy=panel.querySelector('[data-catalog-economic-summary]');
+  const sourceFacts=panel.querySelector('[data-catalog-source-details]');
   const dossier=panel.querySelector('[data-catalog-product-dossier]');
   expect(dock).not.toBeNull();
-  expect(economy).not.toBeNull();
+  expect(sourceFacts).not.toBeNull();
+  expect(panel.querySelector('[data-catalog-economic-summary]')).toBeNull();
   expect(dossier).not.toBeNull();
-  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(economy));
+  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(sourceFacts));
   expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(dossier));
   const buttons=dock.querySelector('.kmc-catalog-inspector-actions');
   const editor=buttons.querySelector('[data-workspace-action="inspector-prepare-fr"]');
