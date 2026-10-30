@@ -2287,7 +2287,6 @@
     ]);
     facts('Médias, stock et logistique', [
       ['Médias canoniques actifs', displayNumber(media.active_canonical)],
-      ['Stock produit', displayNumber(availability.stock)],
       ['Modèle d’inventaire', availability.inventory_model],
       ['Variantes', availability.has_variants ? 'Oui' : 'Non'],
       ['Poids', availability.weight_kg == null ? 'Non renseigné' : availability.weight_kg + ' kg'],
@@ -2316,7 +2315,8 @@
       const line = doc.createElement('div');
       line.className = 'kmc-catalog-variant-line';
       const variantLabel = variants.inventory_model === 'SKU'
-        ? (unit.variant_combo ? Object.entries(unit.variant_combo)
+        ? (unit.variant_combo && typeof unit.variant_combo === 'object' &&
+            !Array.isArray(unit.variant_combo) ? Object.entries(unit.variant_combo)
           .map(([key, value]) => key + ' : ' + String(value)).join(' · ') : 'Unité par défaut')
         : [unit.variant_type, unit.variant_value].filter(Boolean).join(' · ');
       line.appendChild(text(doc, 'strong', '', variantLabel || 'Sans variante'));
