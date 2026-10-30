@@ -1870,6 +1870,46 @@
   // The Catalogue is one operator surface; each mutation is still sent to
   // its canonical domain route, which checks its own grant and business gate.
   // Supplier originals always remain read-only.
+  function formatCatalogKmf(value) {
+    if (value == null || value === '') return 'Non calculé';
+    const number = Number(value);
+    if (!Number.isFinite(number) || number <= 0) return 'Non calculé';
+    return Math.round(number).toLocaleString('fr-FR') + ' KMF';
+  }
+
+  // Values come from the last persisted Sourcing scan, never from a browser
+  // estimation. The indicative test price is NOT a market selling price.
+  function appendCatalogEconomicSummary(panel, doc, row) {
+    const section = doc.createElement('section');
+    section.className = 'kmc-catalog-economic-summary';
+    section.setAttribute('data-catalog-economic-summary', '');
+    section.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
+      'Économie · diagnostic Sourcing'));
+    const grid = doc.createElement('dl');
+    grid.className = 'kmc-catalog-economic-grid';
+    [
+      ['Achat fournisseur', row.purchase_price_kmf],
+      ['Coût variable complet', row.variable_cost_complete_kmf],
+      ['Plancher de sécurité', row.minimum_safe_price_kmf],
+      ['Prix test indicatif', row.test_price_kmf],
+    ].forEach(([label, amount]) => {
+      const item = doc.createElement('div');
+      item.className = 'kmc-catalog-economic-item';
+      item.appendChild(text(doc, 'dt', '', label));
+      item.appendChild(text(doc, 'dd', '', formatCatalogKmf(amount)));
+      grid.appendChild(item);
+    });
+    section.appendChild(grid);
+    section.appendChild(text(doc, 'p', 'kmc-catalog-economic-note',
+      (row.economic_category_key
+        ? 'Catégorie économique : ' + row.economic_category_key + '. '
+        : 'Catégorie économique non confirmée. ') +
+      (row.record_kind === 'candidate'
+        ? 'Aucun prix de vente marché décidé : candidat non remis au Catalogue.'
+        : 'Les prix de vente par marché relèvent de la décision commerciale, pas du prix test.')));
+    panel.appendChild(section);
+  }
+
   function inspectorFrame(slot, doc, row, mode) {
     const previous = slot.querySelector('[data-catalog-candidate-inspector]');
     if (previous) previous.remove();
@@ -1893,6 +1933,10 @@
     panel.appendChild(text(doc, 'small', 'kmc-workspace-subtitle',
       'Référence : ' + (row.product_ref || row.candidate_ref) +
       (row.candidate_ref && row.product_ref ? ' · Source ' + row.candidate_ref : '')));
+    const nextStep = registryNextStep(row);
+    panel.appendChild(text(doc, 'p', 'kmc-catalog-inspector-next-step',
+      'Situation : ' + nextStep.status));
+    appendCatalogEconomicSummary(panel, doc, row);
     const facts = doc.createElement('dl');
     facts.className = 'kmc-catalog-inspector-fields';
     [
@@ -1905,8 +1949,11 @@
       facts.appendChild(text(doc, 'dt', '', label));
       facts.appendChild(text(doc, 'dd', '', value || 'Non renseigné / non mesuré'));
     });
-    panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section', 'Lecture seule · source fournisseur'));
-    panel.appendChild(facts);
+    const sourceDetails = doc.createElement('details');
+    sourceDetails.className = 'kmc-catalog-source-details';
+    sourceDetails.appendChild(text(doc, 'summary', '', 'Informations fournisseur · lecture seule'));
+    sourceDetails.appendChild(facts);
+    panel.appendChild(sourceDetails);
     const feedback = text(doc, 'div', 'kmc-catalog-inspector-feedback', '');
     feedback.setAttribute('role', 'status');
     feedback.setAttribute('aria-live', 'polite');
@@ -2049,9 +2096,9 @@
       feedback.textContent = 'Traitement de source en cours ou incomplet : aucune correction humaine présumée.';
       return panel;
     }
-    const classify = makeButton(doc, 'Vérifier le classement proposé', 'candidate-boutique-review');
+    const classify = makeButton(doc, 'Recharger les propositions', 'candidate-boutique-review');
     actions.appendChild(classify);
-    classify.addEventListener('click', async () => {
+    const loadBoutiqueProposal = async () => {
       classify.disabled = true;
       feedback.textContent = 'Chargement des propositions Sourcing…';
       try {
@@ -2086,6 +2133,13 @@
           'Catégorie / sous-catégorie');
         const select = doc.createElement('select');
         select.setAttribute('data-catalog-candidate-category-choice', '');
+        if (!suggestion) {
+          const placeholder = doc.createElement('option');
+          placeholder.value = '';
+          placeholder.textContent = 'Choisir une catégorie vérifiée';
+          placeholder.disabled = true;
+          select.appendChild(placeholder);
+        }
         ordered.forEach((item, index) => {
           const option = doc.createElement('option');
           option.value = String(index);
@@ -2094,7 +2148,7 @@
             (item.subcategory_label || item.subcategory);
           select.appendChild(option);
         });
-        select.value = '0';
+        select.value = suggestion ? '0' : '';
         label.appendChild(select);
         form.appendChild(label);
         form.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
@@ -2105,7 +2159,8 @@
         form.appendChild(save);
         form.addEventListener('submit', async event => {
           event.preventDefault();
-          const chosen = ordered[Number(select.value)];
+          const index = Number.parseInt(select.value, 10);
+          const chosen = Number.isInteger(index) ? ordered[index] : null;
           if (!chosen) { feedback.textContent = 'Choisissez une classification valide.'; return; }
           save.disabled = true;
           feedback.textContent = 'Enregistrement auprès de l’autorité Sourcing…';
@@ -2139,7 +2194,11 @@
       } finally {
         classify.disabled = false;
       }
-    });
+    };
+    classify.addEventListener('click', loadBoutiqueProposal);
+    // Display the server's suggestion on opening the dossier; no second click.
+    // This is a read only GET. Only the explicit confirmation can write.
+    void loadBoutiqueProposal();
     return panel;
   }
 
