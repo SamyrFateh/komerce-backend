@@ -2254,8 +2254,8 @@
       ['Décision Sourcing', supplier.sourcing_decision],
       ['SKU fournisseur actifs', displayNumber(purchasing.active_supplier_skus)],
       ['SKU avec identité d’achat complète', displayNumber(purchasing.complete_supplier_skus)],
-      ['Identité d’achat', purchasing.supplier_identity_complete
-        ? 'Complète' : 'À vérifier / compléter'],
+      ['Identité d’achat', purchasing.supplier_identity_complete == null ? 'Non applicable / historique'
+        : (purchasing.supplier_identity_complete ? 'Complète' : 'À vérifier / compléter')],
     ]);
     facts('Médias, stock et logistique', [
       ['Médias canoniques actifs', displayNumber(media.active_canonical)],
