@@ -864,6 +864,10 @@ test('Catalogue unique : confirmation du classement candidat réutilise la sugge
   expect(select.value).toBe('0');
   expect(select.children[0].textContent).toContain('Proposé');
   const form = panel.querySelector('[data-catalog-candidate-category-form]');
+  const economy = panel.querySelector('[data-catalog-economic-summary]');
+  const dock = panel.querySelector('[data-catalog-action-dock]');
+  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(form));
+  expect(panel.children.indexOf(form)).toBeLessThan(panel.children.indexOf(economy));
   await form.listeners.submit[0]({ preventDefault() {} });
   expect(calls.some(([url]) => url.includes('/confirm-boutique-category'))).toBe(true);
   const [postUrl, postOptions] = calls.find(([url]) => url.includes('/confirm-boutique-category'));
