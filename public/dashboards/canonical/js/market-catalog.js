@@ -120,20 +120,20 @@
       ? payload.ready_to_sell.items : [];
     const exposureRows = Array.isArray(payload.exposure) ? payload.exposure : [];
     const readyRow = readyRows.find(row => row.product_ref === productRef);
-    const exposureRow = exposureRows.find(row => row.product_ref === productRef && row.decision_recorded === true);
+    const exposureRow = exposureRows.find(row => row.product_ref === productRef);
     const message = readyRow
-      ? 'Ce produit est présent dans la file de décision ci-dessous. Les conditions et actions disponibles sont propres à ce marché.'
+      ? 'Ce produit est encore en attente de validation du Catalogue global. Il doit y être finalisé avant toute décision de vente locale.'
       : exposureRow
-        ? 'Ce produit possède déjà une décision sur ce marché. Consultez la section des produits déjà décidés ci-dessous.'
+        ? 'Ce produit est approuvé au Catalogue global. Son prix et sa publication se décident dans le tableau du marché ci-dessous.'
         : 'Ce produit n’est pas actuellement dans la liste des produits prêts à vendre ni dans les décisions déjà enregistrées sur ce marché. Vérifiez les prérequis commerciaux, sans déduire un refus.';
     section.appendChild(el('p', 'kmc-market-handoff-note', message));
     const actions = el('div', 'kmc-market-handoff-options');
     if (readyRow) {
-      const target = el('a', 'kmc-workspace-action', 'Voir sa ligne de décision');
-      target.href = '#market-ready-to-sell';
+      const target = el('a', 'kmc-workspace-action is-secondary', 'Corriger dans le Catalogue global');
+      target.href = '/admin/workspaces/catalog?product_ref=' + encodeURIComponent(productRef);
       actions.appendChild(target);
     } else if (exposureRow) {
-      const target = el('a', 'kmc-workspace-action', 'Voir la décision existante');
+      const target = el('a', 'kmc-workspace-action', 'Voir le prix et la publication');
       target.href = '#market-catalog-exposure';
       actions.appendChild(target);
     }
@@ -324,91 +324,13 @@
     });
   }
 
-  function renderExposure(payload, marketCode) {
-    const projection = global.KomerceMarketCatalogDecision;
-    if (!projection) throw new Error('market_catalog_decision_projection_missing');
-
-    const section = el('section', 'kmc-section');
-    section.id = 'market-catalog-exposure';
-    section.appendChild(el('h2', 'kmc-section-title', 'Produits déjà décidés'));
-    section.appendChild(el(
-      'p',
-      'kmc-workspace-note',
-      'Les produits déjà décidés restent pilotables ici : exposer ou masquer ne modifie jamais leur fiche globale.'
-    ));
-
-    const rows = (Array.isArray(payload.exposure) ? payload.exposure : []).filter(row => row.decision_recorded === true);
-    if (!rows.length) {
-      section.appendChild(el('div', 'kmc-workspace-empty', 'Aucun produit actif dans le catalogue global.'));
-      root.appendChild(section);
-      return;
-    }
-
-    const canManage = Array.isArray(payload.actor_capabilities)
-      && payload.actor_capabilities.includes('catalog.expose');
-    const wrap = el('div', 'kmc-workspace-table-wrap');
-    const table = el('table', 'kmc-workspace-table');
-    table.innerHTML = '<thead><tr><th>Produit</th><th>Catégorie</th><th>SKU</th><th>État pays</th><th>Qualité</th><th>Décision</th><th>Action</th></tr></thead>';
-    const tbody = global.document.createElement('tbody');
-
-    async function applyExposure(row, next, button) {
-      button.disabled = true;
-      setFeedback(`${row.sku || row.product_ref || 'Produit'} · mise à jour…`);
-      try {
-        await request(
-          `/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure/${encodeURIComponent(row.product_id)}`,
-          { method: 'PUT', body: { commercial_exposure: next } }
-        );
-        await load();
-      } catch (error) {
-        button.disabled = false;
-        setFeedback(`${error.message}${error.code ? ` · ${error.code}` : ''}`, 'critical');
-      }
-    }
-
-    rows.forEach(row => {
-      const tr = global.document.createElement('tr');
-      const product = el('td');
-      product.appendChild(el('strong', '', row.product_name || row.product_ref || 'Produit'));
-      product.appendChild(el('div', 'kmc-workspace-note', row.product_ref || '—'));
-      tr.appendChild(product);
-      tr.appendChild(el('td', '', [row.category, row.subcategory].filter(Boolean).join(' · ') || '—'));
-      tr.appendChild(el('td', '', row.sku || '—'));
-
-      const status = projection.exposureStatus(row);
-      const statusCell = el('td');
-      statusCell.appendChild(el('strong', '', status.label));
-      tr.appendChild(statusCell);
-
-      const quality = projection.qualityStatus(row);
-      const qualityCell = el('td');
-      qualityCell.appendChild(el('span', 'kmc-workspace-note', quality.label));
-      tr.appendChild(qualityCell);
-      tr.appendChild(el('td', '', row.decision_recorded === true ? formatDate(row.decided_at) : 'Aucune'));
-
-      const actionCell = el('td');
-      if (canManage) {
-        if (row.decision_recorded !== true) {
-          const expose = actionButton('Exposer', 'primary', event => applyExposure(row, 'ENABLED', event.currentTarget));
-          const keepHidden = actionButton('Garder masqué', 'secondary', event => applyExposure(row, 'DISABLED', event.currentTarget));
-          actionCell.appendChild(expose);
-          actionCell.appendChild(keepHidden);
-        } else if (row.commercial_exposure === 'ENABLED') {
-          actionCell.appendChild(actionButton('Masquer', 'secondary', event => applyExposure(row, 'DISABLED', event.currentTarget)));
-        } else {
-          actionCell.appendChild(actionButton('Exposer', 'primary', event => applyExposure(row, 'ENABLED', event.currentTarget)));
-        }
-      } else {
-        actionCell.appendChild(el('span', 'kmc-workspace-note', 'Lecture seule'));
-      }
-      tr.appendChild(actionCell);
-      tbody.appendChild(tr);
+  function renderExposure(payload, marketCode, priceData) {
+    const register=global.KomerceMarketProductRegister;
+    if(!register||typeof register.render!=='function')
+      throw new Error('market_product_register_missing');
+    return register.render({
+      root,payload,marketCode,priceData,request,feedback:setFeedback,reload:load,
     });
-
-    table.appendChild(tbody);
-    wrap.appendChild(table);
-    section.appendChild(wrap);
-    root.appendChild(section);
   }
 
   async function load() {
@@ -433,6 +355,14 @@
         return;
       }
       const payload = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure`);
+      // Pricing is a separate market capability. A catalog-only viewer may
+      // still inspect products, but never receives commercial price amounts.
+      let priceData=null;
+      try {
+        priceData=await request(`/api/admin/workspaces/pricing/market/${encodeURIComponent(marketCode)}/commercial-prices`);
+      } catch (error) {
+        if (error.status!==403) throw error;
+      }
 
       root.className = 'kmc-workspace';
       root.setAttribute('data-workspace-kind', 'market-catalog');
@@ -444,8 +374,7 @@
       renderMarketSelector(context, marketCode, header);
       renderProductMarketFocus(payload, marketCode);
       renderDecisionOverview(payload);
-      renderReadyToSell(payload, marketCode);
-      renderExposure(payload, marketCode);
+      renderExposure(payload, marketCode, priceData);
     } catch (error) {
       if (error.status === 401) {
         global.location.replace('/login.html?next=' + encodeURIComponent(global.location.pathname + global.location.search));
