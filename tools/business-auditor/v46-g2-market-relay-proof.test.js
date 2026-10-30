@@ -10,7 +10,8 @@ function sample(){
   joinResolved:true,rules:RULES.map(r=>({...r,notNull:true,
    foreignKeyDefinition:'FOREIGN KEY ('+r.column+') REFERENCES '+r.references+'('+r.refColumn+')',
    negativeSqlState:'23502',negativeColumn:r.column,
-   unchangedAfterRejectedWrite:true,validWriteObserved:true}))};
+   unchangedAfterRejectedWrite:true,validWriteObserved:true,
+   userTriggersDisabledForConstraintProbe:true}))};
 }
 function prior(){
  const census=normalize(),ledger=semanticLedger(census,[]);
@@ -49,6 +50,7 @@ test('G2 NOT NULL proof requires actual FK, SQLSTATE, unchanged valid row and ro
   x=>{x.rolledBack=false;},
   x=>{x.joinResolved=false;},
   x=>{x.rules[0].notNull=false;},
+  x=>{x.rules[0].userTriggersDisabledForConstraintProbe=false;},
   x=>{x.rules[1].foreignKeyDefinition='FOREIGN KEY (relais_id) REFERENCES strangers(id)';},
   x=>{x.rules[0].negativeSqlState='00000';},
   x=>{x.rules[1].negativeColumn='market_id';},
