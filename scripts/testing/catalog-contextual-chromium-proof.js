@@ -230,7 +230,7 @@ async function main() {
     const approved = page.locator('[data-catalog-product-inspector="KPR-TEST-APPROVED"]');
     await approved.locator('[data-catalog-canonical-gallery] img').first().waitFor();
     assert((await approved.innerText()).includes('LOCAL_ACTIVE'));
-    assert((await approved.innerText()).includes('4 300'));
+    assert((await approved.innerText()).includes('4300'));
     await approved.locator('[data-catalog-variants] summary').click();
     assert((await approved.innerText()).includes('ne constituent pas nécessairement des combinaisons vendables'));
     await page.screenshot({ path: path.join(output, 'produit-approuve-marches.png'), fullPage: true });
