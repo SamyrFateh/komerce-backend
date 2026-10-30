@@ -1871,46 +1871,6 @@
   // The Catalogue is one operator surface; each mutation is still sent to
   // its canonical domain route, which checks its own grant and business gate.
   // Supplier originals always remain read-only.
-  function formatCatalogKmf(value) {
-    if (value == null || value === '') return 'Non calculé';
-    const number = Number(value);
-    if (!Number.isFinite(number) || number <= 0) return 'Non calculé';
-    return Math.round(number).toLocaleString('fr-FR') + ' KMF';
-  }
-
-  // Values come from the last persisted Sourcing scan, never from a browser
-  // estimation. The indicative test price is NOT a market selling price.
-  function appendCatalogEconomicSummary(panel, doc, row) {
-    const section = doc.createElement('section');
-    section.className = 'kmc-catalog-economic-summary';
-    section.setAttribute('data-catalog-economic-summary', '');
-    section.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
-      'Économie · diagnostic Sourcing'));
-    const grid = doc.createElement('dl');
-    grid.className = 'kmc-catalog-economic-grid';
-    [
-      ['Achat fournisseur', row.purchase_price_kmf],
-      ['Coût variable complet', row.variable_cost_complete_kmf],
-      ['Plancher de sécurité', row.minimum_safe_price_kmf],
-      ['Prix test indicatif', row.test_price_kmf],
-    ].forEach(([label, amount]) => {
-      const item = doc.createElement('div');
-      item.className = 'kmc-catalog-economic-item';
-      item.appendChild(text(doc, 'dt', '', label));
-      item.appendChild(text(doc, 'dd', '', formatCatalogKmf(amount)));
-      grid.appendChild(item);
-    });
-    section.appendChild(grid);
-    section.appendChild(text(doc, 'p', 'kmc-catalog-economic-note',
-      (row.economic_category_key
-        ? 'Catégorie économique : ' + row.economic_category_key + '. '
-        : 'Catégorie économique non confirmée. ') +
-      (row.record_kind === 'candidate'
-        ? 'Aucun prix de vente marché décidé : candidat non remis au Catalogue.'
-        : 'Les prix de vente par marché relèvent de la décision commerciale, pas du prix test.')));
-    panel.appendChild(section);
-  }
-
   function inspectorFrame(slot, doc, row, mode) {
     const previous = slot.querySelector('[data-catalog-candidate-inspector]');
     if (previous) previous.remove();
@@ -1952,7 +1912,6 @@
     feedback.setAttribute('aria-live', 'polite');
     actionDock.appendChild(feedback);
     panel.appendChild(actionDock);
-    appendCatalogEconomicSummary(panel, doc, row);
     const facts = doc.createElement('dl');
     facts.className = 'kmc-catalog-inspector-fields';
     [
@@ -1967,6 +1926,7 @@
     });
     const sourceDetails = doc.createElement('details');
     sourceDetails.className = 'kmc-catalog-source-details';
+    sourceDetails.setAttribute('data-catalog-source-details', '');
     sourceDetails.appendChild(text(doc, 'summary', '', 'Informations fournisseur · Lecture seule'));
     sourceDetails.appendChild(facts);
     panel.appendChild(sourceDetails);
@@ -2078,7 +2038,7 @@
               save.disabled = false;
             }
           });
-          panel.insertBefore(form, panel.querySelector('[data-catalog-economic-summary]'));
+          panel.insertBefore(form, panel.querySelector('[data-catalog-source-details]'));
           feedback.textContent = '';
         } catch (err) {
           feedback.textContent = actionErrorMessage(err);
@@ -2198,7 +2158,7 @@
         });
         // The proposed classification belongs next to the operator actions,
         // not underneath the entire supplier/economic read-only dossier.
-        panel.insertBefore(form, panel.querySelector('[data-catalog-economic-summary]'));
+        panel.insertBefore(form, panel.querySelector('[data-catalog-source-details]'));
         feedback.textContent = '';
       } catch (error) {
         feedback.textContent = actionErrorMessage(error);
@@ -2274,7 +2234,6 @@
       slot.appendChild(group);
     };
     const displayNumber = value => value == null ? 'Non mesuré' : String(value);
-    const price = value => value == null ? 'Non décidé' : formatCatalogKmf(value);
     facts('Présentation commerciale', [
       ['Titre boutique FR', identity.title_fr],
       ['Description boutique FR', identity.description_fr],
@@ -2343,14 +2302,10 @@
     if (variants.truncated) unitBox.appendChild(text(doc, 'p',
       'kmc-catalog-correction-hint', 'Liste partielle : plus de 50 lignes de variantes ou SKU.'));
     slot.appendChild(unitBox);
-    facts('Prix de référence · non décision marché', [
-      ['Coût stocké', price(dossier.economics?.reference_cost_kmf)],
-      ['Prix global de référence', price(dossier.economics?.reference_price_kmf)],
-    ]);
     const markets = Array.isArray(dossier.markets) ? dossier.markets : [];
     const mgroup = doc.createElement('section');
     mgroup.className = 'kmc-catalog-dossier-group';
-    mgroup.appendChild(text(doc, 'strong', '', 'Vente par marché'));
+    mgroup.appendChild(text(doc, 'strong', '', 'Suivi de commercialisation par marché'));
     if (dossier.market_data_scope === 'not_queried_before_approval') {
       mgroup.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
         'Produit non approuvé : les décisions tarifaires et d’exposition ne sont pas présumées.'));
@@ -2365,10 +2320,8 @@
         line.appendChild(text(doc, 'span', '',
           'Exposition : ' + (market.commercial_exposure || 'Non renseignée')));
         line.appendChild(text(doc, 'span', '',
-          'Prix : ' + (market.price_status || 'Non décidé') +
-          (market.local_price_amount == null ? '' :
-            ' · ' + market.local_price_amount + ' ' +
-            (market.local_price_currency || market.currency || ''))));
+          'Décision tarifaire : ' + (market.price_status === 'LOCAL_ACTIVE'
+            ? 'Prix local actif sur ce marché' : 'À finaliser dans le marché')));
         mgroup.appendChild(line);
       });
       mgroup.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
