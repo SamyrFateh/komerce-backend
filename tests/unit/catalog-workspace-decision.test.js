@@ -29,6 +29,10 @@ test('le Hero décision est reposé après chaque rendu (rechargement après act
   const base={ mount: jest.fn(async opts=>{ opts.afterRender({ products:[], summary:{}, curation:{} }); opts.afterRender({ products:[], summary:{}, curation:{} }); return {}; }) };
   const decisionUi={ DecisionStrip:{ render(){} }, RankedList:{ render(){} } };
   const enhanced=decision.enhance(base,decisionUi);
+  // Le registre n'affiche plus le Hero passif.
   await enhanced.mount({ root, document:doc, ui:{}, location:{ search:'' } });
+  expect(root.prepend).not.toHaveBeenCalled();
+  // La Raffinerie conserve son aide guidée après chaque rafraîchissement.
+  await enhanced.mount({ root, document:doc, ui:{}, location:{ search:'?view=refinery' } });
   expect(root.prepend).toHaveBeenCalledTimes(2);
 });

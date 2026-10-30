@@ -1,0 +1,109 @@
+/* Raffinerie V4 · préparation, contrôle et validation. Scope indépendant du Catalogue. */
+body.kmc-shell-v4:has(.kmc-refinery-main-panel) #canonical-admin-root,
+body.kmc-shell-v4:has(.kmc-refinery-main-panel) .kmc-operations-workspace {
+  width:100%; max-width:none; min-width:0;
+}
+body.kmc-shell-v4:has(.kmc-refinery-main-panel) .kmc-operations-workspace {
+  padding-inline:clamp(12px,1.5vw,28px); gap:14px;
+}
+.kmc-refinery-main-panel { min-width:0; width:100%; box-sizing:border-box; }
+.kmc-refinery-main-panel .kmc-section-body { min-width:0; }
+.kmc-refinery-coverage { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:0 0 22px; }
+.kmc-refinery-count { display:flex; flex-direction:column; gap:5px; min-width:0; padding:17px 18px; border:1px solid #dce6f2; border-radius:12px; background:#f8fbff; }
+.kmc-refinery-count-value { color:#112d52; font-size:27px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15; }
+.kmc-refinery-count-label { color:#294668; font-size:13px; font-weight:750; }
+.kmc-refinery-count-hint { color:#69809a; font-size:11px; line-height:1.4; }
+.kmc-refinery-subsection { padding:9px 0 11px; margin-top:8px; }
+.kmc-refinery-subsection h3 { color:#183459; font-size:16px; margin:0 0 5px; line-height:1.3; }
+.kmc-refinery-subsection p { margin:0; line-height:1.5; }
+.kmc-refinery-unprepared-wrap { overflow-x:auto; width:100%; border:1px solid #dce6f2; border-radius:12px; }
+.kmc-refinery-unprepared-table { width:100%; table-layout:fixed; min-width:720px; border-collapse:collapse; }
+.kmc-refinery-unprepared-table th:nth-child(1){width:31%}
+.kmc-refinery-unprepared-table th:nth-child(2){width:18%}
+.kmc-refinery-unprepared-table th:nth-child(3){width:30%}
+.kmc-refinery-unprepared-table th:nth-child(4){width:21%}
+.kmc-refinery-main-panel .kmc-refinery-unprepared-table th { padding:13px 14px; background:#f3f7fb; color:#49617e; font-size:11px; letter-spacing:.025em; font-weight:800; }
+.kmc-refinery-main-panel .kmc-refinery-unprepared-table td { padding:16px 14px; border-bottom:1px solid #e5ecf5; vertical-align:middle; color:#2c4563; font-size:12px; overflow-wrap:anywhere; }
+.kmc-refinery-unprepared-table tbody tr:last-child td{border-bottom:0}
+.kmc-refinery-unprepared-table tbody tr:hover{background:#f7faff}
+.kmc-refinery-product-link { display:block; font-size:13px; font-weight:750; color:#14396a; line-height:1.4; }
+.kmc-refinery-unprepared-table td small { display:block; margin-top:5px; color:#70839c; line-height:1.45; }
+.kmc-refinery-issue-label { display:block; color:#805013; font-weight:750; line-height:1.4; }
+.kmc-refinery-main-panel .kmc-refinery-unprepared-table .kmc-workspace-action { display:inline-flex; align-items:center; justify-content:center; min-height:42px; margin-bottom:6px; padding:8px 12px; border-radius:8px; text-align:center; text-decoration:none; }
+.kmc-refinery-main-panel .kmc-refinery-unprepared-table .kmc-workspace-nav-link { display:inline-flex; min-height:34px; align-items:center; }
+.kmc-refinery-pager { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:10px; padding:12px 0; }
+.kmc-refinery-empty { padding:24px 20px; border:1px dashed #d8e3f0; background:#fafcff; border-radius:12px; color:#344d6c; }
+.kmc-refinery-empty strong { display:block; font-size:14px; }
+.kmc-refinery-empty p { font-size:13px; line-height:1.55; margin:8px 0; }
+.kmc-refinery-warning { padding:14px; border:1px solid #e8cb85; color:#805013; border-radius:10px; background:#fffaf0; }
+.kmc-refinery-main-panel .kmc-catalog-curation-table { width:100%; table-layout:fixed; }
+.kmc-refinery-main-panel .kmc-catalog-curation-table th,.kmc-refinery-main-panel .kmc-catalog-curation-table td { vertical-align:middle; padding:15px 13px; overflow-wrap:anywhere; }
+.kmc-refinery-main-panel .kmc-catalog-curation-table th { background:#f4f8fd; font-size:11px; color:#4c607b; }
+@media(max-width:760px) {
+  .kmc-refinery-coverage { grid-template-columns:1fr; gap:8px; }
+  .kmc-refinery-count { padding:12px 14px; }
+  .kmc-refinery-count-value { font-size:22px; }
+  .kmc-refinery-main-panel .kmc-workspace-table-wrap { overflow-x:auto; }
+  .kmc-refinery-main-panel .kmc-catalog-curation-table { min-width:850px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .kmc-refinery-main-panel * { scroll-behavior:auto; }
+}
+
+@media(min-width:761px) and (max-width:1150px) {
+  .kmc-refinery-coverage { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+/* Raffinerie V4.3 — correction contextuelle : le lien produit déclenche son travail FR. */
+.kmc-refinery-main-panel .kmc-refinery-edit-trigger {
+  display:block; width:100%; border:0; background:transparent; padding:0;
+  text-align:left; font:inherit; font-weight:750; font-size:13px;
+  color:#14396a; text-decoration:underline; text-underline-offset:2px;
+  cursor:pointer; line-height:1.5;
+}
+.kmc-refinery-main-panel .kmc-refinery-edit-trigger:hover { color:#1d5daf; }
+.kmc-refinery-main-panel .kmc-refinery-edit-trigger:focus-visible {
+  outline:2px solid #2563eb; outline-offset:3px; border-radius:3px;
+}
+.kmc-refinery-main-panel .kmc-refinery-recheck-primary {
+  background:#0d2c57; border-color:#0d2c57; color:#fff;
+  font-weight:750; min-height:44px; padding:10px 14px;
+}
+.kmc-refinery-main-panel .kmc-refinery-unprepared-table td:last-child > .kmc-workspace-nav-link {
+  margin-left:10px; text-decoration:underline; text-underline-offset:2px;
+}
+@media(max-width:760px) {
+  .kmc-refinery-main-panel .kmc-refinery-unprepared-table td:last-child > .kmc-workspace-nav-link {
+    display:block; margin-left:0; margin-top:7px;
+  }
+}
+
+
+/* Raffinerie V4.4 — une sauvegarde impossible doit être évidente et réparable. */
+.kmc-catalog-fr-editor .kmc-catalog-fr-footer { align-items:center; flex-wrap:wrap; }
+.kmc-catalog-fr-editor .kmc-catalog-fr-footer-notice {
+  flex:1 1 300px; min-width:0; margin:0; color:#476078;
+  font-size:13px; font-weight:650; line-height:1.45;
+}
+.kmc-catalog-fr-editor .kmc-catalog-fr-footer-notice.is-critical {
+  padding:10px 12px; border-radius:8px; background:#fef2f2;
+  border:1px solid #f3bebc; color:#aa2020;
+}
+.kmc-catalog-fr-editor .kmc-catalog-fr-footer-buttons {
+  margin-left:auto; display:flex; justify-content:flex-end; flex-wrap:wrap;
+  align-items:center; gap:10px;
+}
+.kmc-catalog-fr-editor [data-catalog-fr-field][aria-invalid="true"] {
+  border:2px solid #c73336; background:#fffafa;
+  box-shadow:0 0 0 3px rgba(195,51,54,.09);
+}
+.kmc-catalog-fr-editor .kmc-catalog-fr-source-warning {
+  margin:12px 0 0; padding:12px 13px; border-radius:9px;
+  color:#805115; background:#fff7e6; border:1px solid #eed6a2;
+  font-size:12px; font-weight:650; line-height:1.55;
+}
+@media(max-width:760px) {
+  .kmc-catalog-fr-editor .kmc-catalog-fr-footer-buttons,
+  .kmc-catalog-fr-editor .kmc-catalog-fr-footer-notice { width:100%; }
+  .kmc-catalog-fr-editor .kmc-catalog-fr-footer-buttons .kmc-workspace-action { min-height:44px; }
+}

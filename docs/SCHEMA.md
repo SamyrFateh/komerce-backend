@@ -722,3 +722,10 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 `fx_public_reference_quotes` est une nouvelle table **not yet live**, déclarée par `migrations/319_fx_public_reference_quotes.sql`. Cotations publiques BCE EUR/XXX ingérées automatiquement, identifiées par `(base_ccy, quote_ccy, as_of)` ; champs `id`, `rate`, `source_label`, `source_ref`, `ingested_at`. Seules les cotations BCE officielles datées sont acceptées, sans imposer de validation humaine fictive. Invariants : append-only, pas de DELETE/TRUNCATE, pas de réécriture rétroactive, horodatage de collecte ; parités fixes KMF/XAF maintenues exclusivement dans `currency_parities`. Écrivain : `services/fx-public-reference-feed.js` ; lecteur : `services/fx-chain-service.js` ; snapshot transactionnel via `services/fx-authority.js`. Le bloc doit être promu par `schema-promote` lorsque la migration est réellement attestée dans le dump live Railway.
 <!-- /schema-pending -->
+
+
+<!-- schema-pending: catalog_media_recovery_audit (migration 351, not yet live) -->
+### Catalogue — audit de réintégration des médias (migration 351, en attente de promotion)
+
+`catalog_media_recovery_audit` conserve l'identité produit, la référence candidat fournisseur, l'acteur, la liste des identités médias fournisseur et l'empreinte SHA-256 du sous-ensemble média, avec les comptages avant/après. Le service `catalog-media-recovery` n'ajoute des médias à un brouillon inactif précédemment vide qu'après preuve source V2, sous autorisation Catalogue + Sourcing et transaction commune avec la ligne d'audit. Aucune publication ni exposition marché. Migration en PR, **non appliquée au staging** à ce stade.
+<!-- /schema-pending -->

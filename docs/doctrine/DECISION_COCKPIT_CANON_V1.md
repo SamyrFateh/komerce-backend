@@ -89,3 +89,21 @@ Pour chaque dashboard :
 - masquer la technique saine ;
 - conserver les exceptions explicites ;
 - préférer 3 à 5 décisions fiables à 12 KPI décoratifs.
+
+
+## Évolution de la surface Catalogue — 27 octobre 2026
+
+La règle précédente définissait uniquement la vue **Catalogue global
+commercial** (produits approuvés issus de KIR clos). Cette définition reste
+valide pour cette **projection spécialisée de vente**, mais ne définit plus
+la totalité de l'écran de gestion du Catalogue.
+
+Le Catalogue global maître présente maintenant **tous les produits
+canoniquement remis par la Raffinerie** ; il permet recherche, classification,
+préparation et correction avec délégation aux autorités existantes. Il ne
+confond pas la remise au Catalogue avec l'autorisation de vente. Le tableau
+commercial actuel reste une vue secondaire filtrée, sans modifier sa règle
+de clôture KIR / marché / prix local.
+
+La Raffinerie conserve la normalisation fournisseur, ses contrôles et les
+actions de validation humaine. Le Catalogue ne modifie pas la source brute.

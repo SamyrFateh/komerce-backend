@@ -1,0 +1,125 @@
+name: Raffinerie V4 — isolated PR certification
+
+on:
+  push:
+    branches:
+      - feat/refinery-worklist-v4-20261028
+    paths:
+      - 'services/catalog-workspace.js'
+      - 'services/catalog-registry.js'
+      - 'services/refinery-worklist.js'
+      - 'services/refinery-fr-recheck.js'
+      - 'routes/admin-catalog-workspace.js'
+      - 'scripts/testing/refinery-v4-pg-proof.js'
+      - 'scripts/testing/refinery-v4-chromium-proof.js'
+      - 'scripts/testing/market-handoff-v4-chromium-proof.js'
+      - 'tests/unit/market-catalog.test.js'
+      - 'tests/unit/market-catalog-membership-discovery.test.js'
+      - 'public/dashboards/canonical/**'
+      - 'tests/unit/catalog-workspace.test.js'
+      - 'tests/unit/catalog-registry.test.js'
+      - 'tests/unit/refinery-worklist.test.js'
+      - 'tests/unit/refinery-fr-recheck.test.js'
+      - 'tests/unit/canonical-catalog-workspace-boundary.test.js'
+      - 'tests/unit/catalog-workspace-wide-v1.test.js'
+      - '.github/workflows/refinery-v4-pr-cert.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refinery-v4-physical-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  targeted-unit:
+    name: Raffinerie + Catalogue boundary (unit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: refinery_test
+          POSTGRES_PASSWORD: refinery_test
+          POSTGRES_DB: refinery_test
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U refinery_test -d refinery_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies (no deployment)
+        run: npm ci --no-audit --no-fund
+      - name: Syntax contract
+        run: |
+          node --check services/refinery-worklist.js
+          node --check services/refinery-fr-recheck.js
+          node --check routes/admin-catalog-workspace.js
+          node --check services/catalog-workspace.js
+          node --check services/catalog-registry.js
+          node --check public/dashboards/canonical/js/catalog-workspace.js
+      - name: Targeted Jest gates
+        run: >
+          npx jest --config jest.unit.config.js --ci --runInBand --no-coverage
+          tests/unit/refinery-worklist.test.js
+          tests/unit/refinery-fr-recheck.test.js
+          tests/unit/market-catalog.test.js
+          tests/unit/market-catalog-membership-discovery.test.js
+          tests/unit/market-catalog-essential-ui.test.js
+          tests/unit/catalog-registry.test.js
+          tests/unit/catalog-workspace.test.js
+          tests/unit/canonical-catalog-workspace-boundary.test.js
+          tests/unit/catalog-workspace-wide-v1.test.js
+      - name: Physical PostgreSQL proof (session TEMP tables, read-only verification)
+        env:
+          REFINERY_PG_CERT_ISOLATED: '1'
+          REFINERY_PG_CERT_URL: postgres://refinery_test:refinery_test@127.0.0.1:55432/refinery_test
+        run: node scripts/testing/refinery-v4-pg-proof.js
+      - name: Boundary summary
+        if: always()
+        run: |
+          {
+            echo '## Raffinerie V4'
+            echo
+            echo 'Raffinerie/Catalogue isolated unit certification.'
+            echo 'PostgreSQL 16 + Chromium 1440/390 using disposable fixtures. Real staging remains to certify.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  chromium:
+    name: Chromium desktop/mobile isolated (Playwright 1.56.1 Noble)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify Chromium 1440 and 390 px
+        run: node scripts/testing/refinery-v4-chromium-proof.js
+      - name: Market handoff Chromium 1440/390 (explicit and focused)
+        run: node scripts/testing/market-handoff-v4-chromium-proof.js
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refinery-v4-chromium-${{ github.sha }}
+          path: |
+            test-results/refinery-v4/*.png
+            test-results/market-handoff-v4/*.png
+          if-no-files-found: ignore
+          retention-days: 7

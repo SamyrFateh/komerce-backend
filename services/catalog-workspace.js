@@ -27,6 +27,11 @@ const { certifyCatalogProduct } = require('./catalog-certification');
 const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
+const catalogRegistry = require('./catalog-registry');
+const catalogUnifiedRegistry = require('./catalog-unified-registry');
+const catalogMediaRecovery = require('./catalog-media-recovery');
+const refineryWorklist = require('./refinery-worklist');
+const catalogProductMutation = require('./catalog-product-mutation-service');
 const { getPricingParameterStatus } = require('./pricing-parameters-status');
 
 const CATALOG_CAP_FALLBACK = 120;
@@ -346,22 +351,29 @@ async function queryFocusedMarketHandoff(productRef) {
 }
 
 async function buildWorkspace(query = {}) {
+  const isRefinery = query.refinery_view === '1';
   const approvalLimit = Math.min(Math.max(Number(query.approval_limit) || 50, 1), 100);
   const approvalOffset = Math.max(Number.parseInt(query.approval_offset, 10) || 0, 0);
   const approvalProductRef = String(query.product_ref || '').trim() || null;
-  const [summary, catalogCap, categories, products, approval, approvalBreakdown, focusedHandoff, pricingParameters] = await Promise.all([
+  const [summary, catalogCap, categories, registry, commercialProducts, approval, approvalBreakdown, focusedHandoff, pricingParameters] = await Promise.all([
     querySummary(),
-    queryCatalogCap(),
-    taxonomy.listCategories(),
-    commercialAssortment.listCommercialAssortment({
+    isRefinery ? Promise.resolve(CATALOG_CAP_FALLBACK) : queryCatalogCap(),
+    isRefinery ? Promise.resolve([]) : taxonomy.listCategories(),
+    isRefinery ? Promise.resolve({ products: [], page: { total: 0, limit: 0, offset: 0 } }) : (query.unified === '1' ? catalogUnifiedRegistry.listUnified : catalogRegistry.listRegistry)({
+      ...((query.unified === '1') ? {} : { finalized_only: true }),
       search: query.search,
+      supplier: query.supplier,
       category: query.category,
-      limit: query.limit || 200,
+      subcategory: query.subcategory,
+      status: query.status,
+      limit: query.catalog_limit || 50,
+      offset: query.catalog_offset || 0,
     }),
+    isRefinery ? Promise.resolve([]) : commercialAssortment.listCommercialAssortment({ limit: 200 }),
     queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset, productRef: approvalProductRef }),
     queryApprovalBreakdown(),
-    queryFocusedMarketHandoff(approvalProductRef),
-    getPricingParameterStatus(db).catch(() => ({ items: [], has_unvalidated: false, unavailable: true })),
+    isRefinery ? Promise.resolve(null) : queryFocusedMarketHandoff(approvalProductRef),
+    isRefinery ? Promise.resolve({ items: [], unavailable: false }) : getPricingParameterStatus(db).catch(() => ({ items: [], has_unvalidated: false, unavailable: true })),
   ]);
   // La projection Raffinerie expose le vrai verdict du moteur de certification,
   // sans déclencher de validation, publication ni mutation.
@@ -375,17 +387,22 @@ async function buildWorkspace(query = {}) {
         };
       }))
     : approval.map(({ product_id, ...row }) => row);
+  const refinery = isRefinery ? await refineryWorklist.buildRefineryWorklist(query) : null;
   const approvalTotal = Number(summary.approval_pending) || 0;
   const commercialSummary = {
-    approved_products: products.length,
-    closed_lots: [...new Set(products.flatMap(row => row.source_lots || []))].length,
-    markets: [...new Set(products.flatMap(row => row.approved_markets || []))].length,
+    approved_products: commercialProducts.length,
+    closed_lots: [...new Set(commercialProducts.flatMap(row => row.source_lots || []))].length,
+    markets: [...new Set(commercialProducts.flatMap(row => row.approved_markets || []))].length,
   };
   const commercialCurationSummary = { ...summary, active_products: commercialSummary.approved_products };
   return {
-    scope: { mode: 'global_commercial_catalog', label: 'Catalogue global commercial' },
+    scope: isRefinery
+      ? { mode: 'refinery_preparation', label: 'Raffinerie produits' }
+      : { mode: 'global_catalog_registry', label: 'Catalogue global Komerce' },
     summary: {
       ...summary,
+      registry_total: registry.page.total,
+      ...(query.unified === '1' ? { operator_groups: registry.groups } : {}),
       categories: categories.filter(row => row.is_active).length,
       commercial_approved: commercialSummary.approved_products,
       commercial_closed_lots: commercialSummary.closed_lots,
@@ -394,8 +411,11 @@ async function buildWorkspace(query = {}) {
     commercial: commercialSummary,
     curation: buildCurationState(commercialCurationSummary, catalogCap),
     categories,
-    products,
+    products: registry.products,
+    registry_page: registry.page,
+    commercial_products: commercialProducts,
     approval: approvalWithReadiness,
+    ...(isRefinery ? { refinery } : {}),
     focused_handoff: focusedHandoff,
     pricing_parameters: pricingParameters,
     approval_breakdown: approvalBreakdown,
@@ -435,6 +455,44 @@ async function resolveProduct(productRef, { candidateOnly = false } = {}) {
   return rows[0];
 }
 
+
+/**
+ * Contrôle complet à la demande : ne valide, ne publie ni ne modifie rien.
+ * La certification du candidat est calculée par l'autorité Catalogue existante.
+ * Une fiche déjà approuvée est hors du gate candidat : pas de faux "bloqué".
+ */
+async function getRegistryReadiness(productRef) {
+  const product = await resolveProduct(productRef);
+  if (product.is_active === true) {
+    return {
+      product_ref: product.product_ref,
+      phase: 'market_decisions',
+      certification: null,
+      note: 'Produit Catalogue actif : vérifier séparément la visibilité et le prix local sur chaque marché.',
+    };
+  }
+  const facts = await certifyCatalogProduct(db, product.id);
+  if (product.lifecycle_status !== 'candidate') {
+    // Ne jamais certifier une fiche hors du gate candidat. Les vérifications
+    // communes restent utiles pour orienter son réexamen, sans GO publication.
+    const stateSpecific = reason => reason === 'not_inactive_candidate' ||
+      reason === 'market_exposure_enabled' || reason.startsWith('publication_guard:');
+    return {
+      product_ref: product.product_ref,
+      phase: 'product_review',
+      certification: null,
+      findings: (facts?.certification?.reasons || []).filter(reason => !stateSpecific(reason)),
+      note: 'Fiche inactive hors file candidat : points techniques indicatifs, aucune certification de publication.',
+    };
+  }
+  return {
+    product_ref: product.product_ref,
+    phase: 'catalog_approval',
+    certification: facts?.certification || null,
+    note: 'Contrôle technique de validation Catalogue ; la revue visuelle FR et les prix locaux relèvent de leurs validations propres.',
+  };
+}
+
 function sanitizeProductCreate(body = {}) {
   const allowed = ['name','category','subcategory','price_kmf','price_aed','price_eur','stock','weight_kg','description','image_url','images','badge','emoji','promo_pct','is_available','is_active','has_couture','sourcing_source','requires_secure_transport','customs_risk_coeff','unsold_price_kmf','unsold_channel','has_variants','sort_order'];
   return allowed.reduce((out, key) => {
@@ -458,6 +516,34 @@ async function updateProduct(productRef, body, actor) {
   const result = await productAdmin.updateProduct(db, product.id, sanitizeProductUpdate(body), actor);
   if (result.status >= 400) throw new CatalogWorkspaceError(result.body.code || 'product_update_rejected', result.body.error || 'Modification produit refusée', result.status);
   return publicProduct(result.body);
+}
+
+// Classification boutique du produit remis : l'autorité Catalog valide la paire.
+// Cette action n'approuve pas le produit, ne le publie pas et ne modifie
+// jamais sa catégorie économique/douanière.
+async function classifyProduct(productRef, body = {}) {
+  const product = await resolveProduct(productRef);
+  if (product.lifecycle_status === 'rejected') {
+    throw new CatalogWorkspaceError('catalog_product_rejected', 'Produit écarté : réactivation requise avant correction', 409);
+  }
+  const { rows } = await db.query(
+    "SELECT 1 FROM sourcing_candidates WHERE product_id=$1 AND state='imported_to_catalog' LIMIT 1",
+    [product.id]
+  );
+  if (!rows.length) throw new CatalogWorkspaceError(
+    'catalog_handoff_required', 'Produit non remis par la Raffinerie', 409
+  );
+  const result = await catalogProductMutation.assignBoutiqueTaxonomy(
+    db, product.id, body.category, body.subcategory
+  );
+  if (!result) throw new CatalogWorkspaceError('product_not_found', 'Produit introuvable', 404);
+  return {
+    product_ref: result.product_ref,
+    boutique_category_key: result.boutique_category_key,
+    boutique_subcategory_key: result.boutique_subcategory_key,
+    approved: false,
+    market_exposure_changed: false,
+  };
 }
 
 async function deactivateProduct(productRef) {
@@ -571,8 +657,11 @@ async function overrideCandidate(productRef, body, actor) {
 module.exports = {
   CatalogWorkspaceError,
   buildWorkspace,
+  getRegistryReadiness,
   createProduct,
   updateProduct,
+  classifyProduct,
+  recoverProductSourceMedia: catalogMediaRecovery.recoverSourceMedia,
   deactivateProduct,
   prepareCandidateFrench,
   approveCandidate,

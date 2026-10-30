@@ -1,0 +1,6 @@
+[build]
+dockerfilePath = "Dockerfile.recette-bootstrap"
+
+[deploy]
+startCommand = "bash /recette/bootstrap.sh"
+restartPolicyType = "NEVER"

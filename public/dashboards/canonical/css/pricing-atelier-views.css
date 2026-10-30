@@ -1,0 +1,170 @@
+/* Atelier des prix — trois entrées (Vue économique · Produits à décider · Modèle de coûts) et dossier produit.
+   Réutilise les jetons du cockpit ; aucune valeur économique n'est calculée ici. */
+.kmc-atelier-views [hidden][hidden] { display: none; }
+.kmc-atelier-views .kmc-atelier-compact-header .kmc-cockpit-page-header-left { display: none; }
+.kmc-atelier-views .kmc-atelier-compact-header { justify-content: flex-end; }
+
+.kmc-atelier-nav { display: flex; gap: 8px; margin: 14px 0 18px; padding: 6px; background: #f1f6ff; border: 1px solid #dbe5f2; border-radius: 14px; overflow-x: auto; }
+.kmc-atelier-tab { flex: 1 1 0; min-width: max-content; min-height: 44px; padding: 10px 18px; border: 0; border-radius: 10px; background: transparent; color: #355387; font: inherit; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.kmc-atelier-tab:hover { background: #e4eefc; }
+.kmc-atelier-tab.is-active { background: #0b84f3; color: #fff; }
+.kmc-atelier-tab:focus-visible, .kmc-atelier-primary:focus-visible, .kmc-atelier-chip:focus-visible, .kmc-atelier-link-button:focus-visible { outline: 3px solid #0b84f3; outline-offset: 2px; }
+.kmc-atelier-tab-count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #fff; color: #17428a; font-size: .78rem; font-weight: 800; text-align: center; }
+.kmc-atelier-tab:not(.is-active) .kmc-atelier-tab-count { background: #dbe9ff; }
+
+.kmc-atelier-priorities, .kmc-atelier-queue, .kmc-atelier-dossier { background: #fff; border: 1px solid #dbe5f2; border-radius: 16px; padding: 18px; margin-bottom: 18px; min-width: 0; }
+.kmc-atelier-priorities h3, .kmc-atelier-queue h3, .kmc-atelier-dossier h3 { margin: 0 0 10px; color: #102a53; font-size: 1.15rem; }
+.kmc-atelier-muted, .kmc-atelier-note { color: #5a6f8f; font-size: .88rem; margin: 6px 0; }
+.kmc-atelier-priority-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.kmc-atelier-priority { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid #dbe5f2; border-left-width: 5px; background: #fbfdff; }
+.kmc-atelier-priority.is-danger { border-left-color: #c0392b; }
+.kmc-atelier-priority.is-warning { border-left-color: #d98a00; }
+.kmc-atelier-priority.is-info { border-left-color: #0b84f3; }
+.kmc-atelier-priority-copy { display: grid; gap: 2px; min-width: 0; }
+.kmc-atelier-priority-copy strong { color: #18365f; }
+.kmc-atelier-priority-copy span { color: #5a6f8f; font-size: .88rem; overflow-wrap: anywhere; }
+
+.kmc-atelier-link-button { appearance: none; background: transparent; border: 0; color: #0b5fc2; font: inherit; font-weight: 700; cursor: pointer; padding: 8px 10px; min-height: 40px; text-decoration: none; white-space: nowrap; }
+.kmc-atelier-link-button:hover { text-decoration: underline; }
+.kmc-atelier-primary { max-width: 100%; display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 16px; border-radius: 10px; border: 1px solid #0b84f3; background: #0b84f3; color: #fff; font: inherit; font-weight: 750; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.kmc-atelier-primary.is-secondary { background: #fff; color: #0b5fc2; }
+.kmc-atelier-secondary { min-height: 42px; padding: 0 16px; border-radius: 10px; border: 1px solid #0b84f3; background: #fff; color: #0b5fc2; font: inherit; font-weight: 700; cursor: pointer; }
+.kmc-atelier-secondary:disabled { opacity: .55; cursor: progress; }
+
+.kmc-atelier-queue-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kmc-atelier-queue-head input[type="search"] { flex: 1 1 260px; max-width: 420px; min-height: 42px; padding: 0 12px; border: 1px solid #c7d5e8; border-radius: 10px; font: inherit; }
+.kmc-atelier-filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.kmc-atelier-chip { min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid #c7d5e8; background: #fff; color: #355387; font: inherit; font-weight: 650; cursor: pointer; }
+.kmc-atelier-chip.is-active { background: #0b84f3; border-color: #0b84f3; color: #fff; }
+
+.kmc-atelier-list { display: grid; gap: 0; border: 1px solid #dbe5f2; border-radius: 12px; overflow: hidden; }
+.kmc-atelier-row { display: grid; grid-template-columns: minmax(180px, 1.5fr) minmax(110px, .9fr) minmax(100px, .8fr) minmax(110px, .8fr) minmax(200px, 1.5fr) minmax(190px, auto); gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid #e6edf7; border-left: 5px solid transparent; background: #fff; }
+.kmc-atelier-row:last-child { border-bottom: 0; }
+.kmc-atelier-row.is-head { background: #f6faff; border-left-color: transparent; color: #35507d; font-weight: 800; font-size: .84rem; padding-top: 9px; padding-bottom: 9px; }
+.kmc-atelier-row.is-danger { border-left-color: #c0392b; }
+.kmc-atelier-row.is-warning { border-left-color: #d98a00; }
+.kmc-atelier-row.is-info { border-left-color: #0b84f3; }
+.kmc-atelier-row.is-success { border-left-color: #1a9362; }
+.kmc-atelier-cell { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.kmc-atelier-cell.is-product small { color: #5a6f8f; }
+.kmc-atelier-cell.is-status small { color: #5a6f8f; font-size: .82rem; }
+.kmc-atelier-cell.is-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.kmc-atelier-label { display: none; color: #5a6f8f; font-size: .78rem; }
+.kmc-atelier-cell strong.is-missing { color: #b42318; }
+.kmc-atelier-badge { justify-self: start; padding: 3px 10px; border-radius: 999px; font-size: .8rem; font-weight: 750; background: #eef2f8; color: #355387; }
+.kmc-atelier-badge.is-danger { background: #fdeceb; color: #a5271b; }
+.kmc-atelier-badge.is-warning { background: #fff3d6; color: #8a5a00; }
+.kmc-atelier-badge.is-info { background: #e3f0ff; color: #0b5fc2; }
+.kmc-atelier-badge.is-success { background: #e3f6ec; color: #17704c; }
+.kmc-atelier-menu { position: relative; }
+.kmc-atelier-menu > summary { list-style: none; cursor: pointer; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c7d5e8; border-radius: 10px; font-weight: 800; color: #355387; }
+.kmc-atelier-menu > summary::-webkit-details-marker { display: none; }
+.kmc-atelier-menu[open] > a { display: block; }
+.kmc-atelier-menu > a { display: none; position: absolute; right: 0; z-index: 5; min-width: 170px; padding: 10px 14px; background: #fff; border: 1px solid #dbe5f2; box-shadow: 0 6px 20px rgba(27,66,117,.14); color: #18365f; text-decoration: none; font-weight: 650; }
+.kmc-atelier-menu > a:nth-of-type(1) { top: 44px; border-radius: 10px 10px 0 0; }
+.kmc-atelier-menu > a:nth-of-type(2) { top: 84px; border-radius: 0 0 10px 10px; border-top: 0; }
+.kmc-atelier-empty { padding: 26px 16px; text-align: center; color: #5a6f8f; background: #fbfdff; }
+.kmc-atelier-queue-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.kmc-atelier-alert { margin: 10px 0; padding: 10px 14px; border-radius: 10px; background: #fdeceb; border: 1px solid #f3b9b4; color: #8e2218; }
+.kmc-atelier-alert-inline { color: #b42318; }
+
+.kmc-atelier-dossier-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.kmc-atelier-dossier-title { flex: 1 1 240px; min-width: 0; }
+.kmc-atelier-dossier-title h3 { margin: 0; overflow-wrap: anywhere; }
+.kmc-atelier-feedback { min-height: 0; margin: 6px 0; color: #17704c; font-weight: 650; }
+.kmc-atelier-feedback.is-error { color: #a5271b; }
+.kmc-atelier-dossier-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.kmc-atelier-panel { border: 1px solid #dbe5f2; border-radius: 14px; padding: 16px; background: #fbfdff; min-width: 0; }
+.kmc-atelier-panel h4 { margin: 0 0 8px; color: #102a53; }
+.kmc-atelier-panel h5 { margin: 14px 0 6px; color: #355387; font-size: .9rem; text-transform: uppercase; letter-spacing: .03em; }
+.kmc-atelier-metric { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dashed #dbe5f2; }
+.kmc-atelier-metric span { color: #5a6f8f; }
+.kmc-atelier-metric strong { text-align: right; overflow-wrap: anywhere; }
+.kmc-atelier-metric strong.is-danger { color: #b42318; }
+.kmc-atelier-observations { margin: 8px 0; padding-left: 18px; color: #355387; font-size: .88rem; }
+.kmc-atelier-form { display: grid; gap: 10px; margin-top: 12px; }
+.kmc-atelier-field { display: grid; gap: 4px; }
+.kmc-atelier-field span { font-size: .84rem; color: #355387; font-weight: 650; }
+.kmc-atelier-field input, .kmc-atelier-field select { min-height: 42px; padding: 0 10px; border: 1px solid #c7d5e8; border-radius: 10px; font: inherit; max-width: 100%; }
+.kmc-atelier-verdict { display: grid; gap: 2px; margin: 12px 0; padding: 10px 14px; border-radius: 10px; border: 1px solid; }
+.kmc-atelier-verdict.is-success { background: #e3f6ec; border-color: #9ad4b6; color: #17704c; }
+.kmc-atelier-verdict.is-danger { background: #fdeceb; border-color: #f3b9b4; color: #8e2218; }
+.kmc-atelier-sim { margin-top: 14px; border: 1px solid #dbe5f2; border-radius: 12px; padding: 10px 14px; background: #fff; }
+.kmc-atelier-sim > summary { cursor: pointer; font-weight: 700; color: #0b5fc2; min-height: 36px; display: flex; align-items: center; }
+.kmc-atelier-sim-table { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 6px 10px; font-size: .88rem; margin-top: 8px; }
+.kmc-atelier-sim-table .is-head { color: #355387; }
+.kmc-atelier-next { margin-top: 16px; padding-top: 12px; border-top: 1px solid #dbe5f2; display: grid; gap: 8px; }
+.kmc-atelier-next h5 { margin: 0; }
+
+@media (max-width: 1100px) {
+  .kmc-atelier-row.is-head { display: none; }
+  .kmc-atelier-row { grid-template-columns: minmax(160px, 1.4fr) repeat(3, minmax(90px, 1fr)); }
+  .kmc-atelier-cell.is-status, .kmc-atelier-cell.is-actions { grid-column: 1 / -1; }
+  .kmc-atelier-cell.is-actions { justify-content: flex-start; }
+  .kmc-atelier-dossier-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .kmc-atelier-row.is-head { display: none; }
+  .kmc-atelier-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; overflow: visible; }
+  .kmc-atelier-tab { min-width: 0; padding: 8px 4px; font-size: .8rem; text-align: center; line-height: 1.2; flex-direction: column; gap: 2px; }
+  .kmc-atelier-priority { flex-direction: column; align-items: flex-start; }
+  .kmc-atelier-primary { white-space: normal; text-align: center; padding: 8px 14px; }
+  .kmc-atelier-row { grid-template-columns: 1fr 1fr; }
+  .kmc-atelier-cell.is-product { grid-column: 1 / -1; }
+  .kmc-atelier-label { display: block; }
+  .kmc-atelier-priorities, .kmc-atelier-queue, .kmc-atelier-dossier { padding: 14px; }
+  .kmc-atelier-sim-table { grid-template-columns: 1fr 1fr; }
+  .kmc-atelier-menu > a { right: auto; left: 0; }
+}
+
+@media (max-width:760px){
+  .kmc-atelier-views .kmc-atelier-dossier [data-atelier-draft-form] .kmc-atelier-actions,
+  .kmc-atelier-views .kmc-atelier-dossier [data-atelier-draft-form] > button[type="submit"]{position:sticky;bottom:0;background:var(--kmc-surface,#fff);padding:8px 0;z-index:2}
+}
+
+.kmc-atelier-views .kmc-atelier-corridor{position:relative;height:44px;margin:10px 6px 14px}
+.kmc-atelier-views .kmc-atelier-corridor-track{position:absolute;top:18px;left:0;right:0;height:6px;border-radius:3px;background:#e8edf3}
+.kmc-atelier-views .kmc-atelier-corridor-band{position:absolute;top:18px;height:6px;border-radius:3px;background:#9db4cf}
+.kmc-atelier-views .kmc-atelier-corridor-mark{position:absolute;top:8px;width:2px;height:26px;background:#5b6b7f}
+.kmc-atelier-views .kmc-atelier-corridor-mark span{position:absolute;top:-4px;left:5px;font-size:11px;white-space:nowrap;color:#5b6b7f}
+.kmc-atelier-views .kmc-atelier-corridor-mark.is-floor{background:#b42318}.kmc-atelier-views .kmc-atelier-corridor-mark.is-floor span{color:#b42318}
+.kmc-atelier-views .kmc-atelier-corridor-mark.is-adv{background:#e2600f}.kmc-atelier-views .kmc-atelier-corridor-mark.is-adv span{color:#e2600f}
+.kmc-atelier-views .kmc-atelier-corridor-mark.is-cur span{top:30px}
+.kmc-atelier-views .kmc-atelier-observation-add>summary{cursor:pointer;font-weight:600;color:#0a66c2;margin-top:10px}
+.kmc-atelier-views .kmc-atelier-corridor-mark.is-right span{left:auto;right:5px}
+
+.kmc-atelier-views .kmc-atelier-obs-table{display:grid;grid-template-columns:1.4fr .8fr 1fr .9fr;gap:4px 12px;font-size:13px;margin:8px 0}
+.kmc-atelier-views .kmc-atelier-obs-table .is-head{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#5b6b7f;border-bottom:1px solid #dde3ea;padding-bottom:4px}
+.kmc-atelier-views .kmc-atelier-obs-table .is-num{text-align:right;font-variant-numeric:tabular-nums}
+.kmc-atelier-views .kmc-atelier-policy{margin-top:16px;padding:16px;border:1px solid #dde3ea;border-radius:12px;background:#fff}
+.kmc-atelier-views .kmc-atelier-result{margin:0 0 16px;padding:14px 16px;border-left:4px solid #1f7a4d;background:#e8f4ed;border-radius:8px}
+.kmc-atelier-views .kmc-atelier-result h4{margin:0 0 8px}
+.kmc-atelier-views .kmc-atelier-result-cols{display:grid;grid-template-columns:2fr 1.2fr 1fr;gap:16px}
+
+/* Pricing dossier: preserve viewport on phones after displaying simulation,
+   price-draft results and competitive observations. Children must shrink rather
+   than enlarging the document to their intrinsic min-content width. */
+@media (max-width: 760px) {
+  .kmc-atelier-views .kmc-atelier-dossier,
+  .kmc-atelier-views .kmc-atelier-panel,
+  .kmc-atelier-views .kmc-atelier-dossier-grid,
+  .kmc-atelier-views .kmc-atelier-result,
+  .kmc-atelier-views .kmc-atelier-result-cols > * {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .kmc-atelier-views .kmc-atelier-result-cols {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .kmc-atelier-views .kmc-atelier-obs-table {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px 6px;
+  }
+  .kmc-atelier-views .kmc-atelier-obs-table > *,
+  .kmc-atelier-views .kmc-atelier-sim-table > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}

@@ -7,6 +7,7 @@
  */
 
 let mockCatalogAllowed = true;
+let mockSourcingAllowed = true;
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => {
@@ -27,9 +28,20 @@ jest.mock('../../middleware/require-catalog-global-authority', () => ({
   },
 }));
 
+jest.mock('../../middleware/require-sourcing-global-authority', () => ({
+  requireSourcingGlobalAuthority: (req,res,next) => {
+    if (!mockSourcingAllowed) return res.status(403).json({code:'sourcing_global_access_denied'});
+    req.sourcingGlobalAuthority=true;
+    next();
+  },
+}));
+
 const mockBuildWorkspace = jest.fn();
+const mockRegistryReadiness = jest.fn();
 const mockCreateProduct = jest.fn();
 const mockUpdateProduct = jest.fn();
+const mockClassifyProduct = jest.fn();
+const mockRecoverProductSourceMedia = jest.fn();
 const mockDeactivateProduct = jest.fn();
 const mockPrepareCandidateFrench = jest.fn();
 const mockApproveCandidate = jest.fn();
@@ -47,8 +59,11 @@ jest.mock('../../services/catalog-workspace', () => {
   return {
     CatalogWorkspaceError,
     buildWorkspace: (...args) => mockBuildWorkspace(...args),
+    getRegistryReadiness: (...args) => mockRegistryReadiness(...args),
     createProduct: (...args) => mockCreateProduct(...args),
     updateProduct: (...args) => mockUpdateProduct(...args),
+    classifyProduct: (...args) => mockClassifyProduct(...args),
+    recoverProductSourceMedia: (...args) => mockRecoverProductSourceMedia(...args),
     deactivateProduct: (...args) => mockDeactivateProduct(...args),
     prepareCandidateFrench: (...args) => mockPrepareCandidateFrench(...args),
     approveCandidate: (...args) => mockApproveCandidate(...args),
@@ -67,7 +82,10 @@ jest.mock('../../services/boutique-taxonomy-admin', () => ({
   TaxonomyAdminError: class TaxonomyAdminError extends Error {},
 }));
 
-jest.mock('../../utils/logger', () => ({ child: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn() }) }));
+jest.mock('../../utils/logger', () => {
+  const log = () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() });
+  return { child: log, forModule: log };
+});
 
 const express = require('express');
 const request = require('supertest');
@@ -83,9 +101,14 @@ function app() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockCatalogAllowed = true;
+  mockSourcingAllowed = true;
   mockBuildWorkspace.mockResolvedValue({ scope: { mode: 'global_commercial_catalog' }, summary: {}, categories: [], products: [], approval: [] });
+  mockRegistryReadiness.mockResolvedValue({ product_ref: 'KPR-000088', phase: 'catalog_approval',
+    certification: { certified: false, reasons: ['media_missing', 'active_supplier_sku_missing'] } });
   mockCreateProduct.mockResolvedValue({ product_ref: 'KPR-000001', name: 'Produit' });
   mockUpdateProduct.mockResolvedValue({ product_ref: 'KPR-000001', price_kmf: 5000 });
+  mockClassifyProduct.mockResolvedValue({ product_ref: 'KPR-000001', boutique_category_key: 'mode', boutique_subcategory_key: 'robes', approved: false });
+  mockRecoverProductSourceMedia.mockResolvedValue({product_ref:'KPR-000001',media_recovered:2,audit_recorded:true,catalog_approved:false});
   mockDeactivateProduct.mockResolvedValue({ product_ref: 'KPR-000001', deactivated: true });
   mockPrepareCandidateFrench.mockResolvedValue({ product_ref: 'KPR-000001', status: 'ok', needs_review: false });
   mockApproveCandidate.mockResolvedValue({ product_ref: 'KPR-000001', is_active: true });
@@ -189,4 +212,81 @@ test('taxonomie Canonical transmet l’acteur authentifié au workspace owner', 
     { key: 'Maison', label: 'Maison' },
     expect.objectContaining({ id: 'admin-central', role: 'admin' })
   );
+});
+
+test('classement Boutique post-remise : le grant admin délègue sans publier', async () => {
+  const body = { category: 'mode', subcategory: 'robes' };
+  const res = await request(app())
+    .post('/api/admin/workspaces/catalog/products/KPR-000001/classify').send(body);
+  expect(res.status).toBe(200);
+  expect(res.body.action).toBe('catalog_product_classified');
+  expect(res.body.result.approved).toBe(false);
+  expect(mockClassifyProduct).toHaveBeenCalledWith('KPR-000001', body);
+  expect(mockApproveCandidate).not.toHaveBeenCalled();
+});
+
+test('classification interdite sans autorité Catalogue globale', async () => {
+  mockCatalogAllowed = false;
+  const res = await request(app())
+    .post('/api/admin/workspaces/catalog/products/KPR-000001/classify')
+    .send({ category: 'mode', subcategory: 'robes' });
+  expect(res.status).toBe(403);
+  expect(mockClassifyProduct).not.toHaveBeenCalled();
+});
+
+test('Contrôle préalable : expose les raisons canoniques sans mutation ni chargement intégral', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/catalog?diagnose_product_ref=KPR-000088');
+  expect(res.status).toBe(200);
+  expect(res.headers['cache-control']).toContain('no-store');
+  expect(res.body.certification.reasons).toEqual(['media_missing', 'active_supplier_sku_missing']);
+  expect(mockRegistryReadiness).toHaveBeenCalledWith('KPR-000088');
+  expect(mockBuildWorkspace).not.toHaveBeenCalled();
+  expect(mockApproveCandidate).not.toHaveBeenCalled();
+});
+test('Contrôle préalable interdit sans le grant Catalogue', async () => {
+  mockCatalogAllowed = false;
+  const res = await request(app()).get('/api/admin/workspaces/catalog?diagnose_product_ref=KPR-000088');
+  expect(res.status).toBe(403);
+  expect(mockRegistryReadiness).not.toHaveBeenCalled();
+});
+test('Contrôle préalable interdit avec dimension marché client', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/catalog?diagnose_product_ref=KPR-000088&market_id=KM');
+  expect(res.status).toBe(400);
+  expect(mockRegistryReadiness).not.toHaveBeenCalled();
+});
+
+test('diagnostic hors file candidat : réponse de réexamen sans fausse certification', async () => {
+  mockRegistryReadiness.mockResolvedValueOnce({
+    product_ref: 'KPR-000085', phase: 'product_review', certification: null,
+    findings: ['media_missing', 'description_missing'],
+  });
+  const res = await request(app()).get('/api/admin/workspaces/catalog?diagnose_product_ref=KPR-000085');
+  expect(res.status).toBe(200);
+  expect(res.body.phase).toBe('product_review');
+  expect(res.body.certification).toBeNull();
+  expect(res.body.findings).toEqual(['media_missing', 'description_missing']);
+  expect(mockApproveCandidate).not.toHaveBeenCalled();
+});
+
+test('réintégration médias : autorisation Catalogue ET Sourcing, aucun champ navigateur', async () => {
+  const url='/api/admin/workspaces/catalog/products/KPR-000001/recover-source-media';
+  const ok=await request(app()).post(url).send({});
+  expect(ok.status).toBe(200);
+  expect(ok.body.result).toMatchObject({media_recovered:2,audit_recorded:true,catalog_approved:false});
+  expect(mockRecoverProductSourceMedia).toHaveBeenCalledWith(
+    'KPR-000001',expect.objectContaining({id:'admin-central',role:'admin'})
+  );
+  const unsafe=await request(app()).post(url).send({image_url:'https://example.org/image.jpg'});
+  expect(unsafe.status).toBe(400);
+  expect(unsafe.body.code).toBe('catalog_media_body_forbidden');
+  expect(mockRecoverProductSourceMedia).toHaveBeenCalledTimes(1);
+  mockSourcingAllowed=false;
+  const denied=await request(app()).post(url).send({});
+  expect(denied.status).toBe(403);
+  expect(denied.body.code).toBe('sourcing_global_access_denied');
+  mockCatalogAllowed=false;
+  const deniedCatalog=await request(app()).post(url).send({});
+  expect(deniedCatalog.status).toBe(403);
+  expect(deniedCatalog.body.code).toBe('catalog_global_access_denied');
+  expect(mockRecoverProductSourceMedia).toHaveBeenCalledTimes(1);
 });

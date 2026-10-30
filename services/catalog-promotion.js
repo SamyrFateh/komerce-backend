@@ -550,7 +550,45 @@ async function promoteCatalog(client, { productId, normalizedSourceContract }) {
   };
 }
 
+/**
+ * Narrow, auditable recovery path for an empty media set.
+ * No SKU, price, content or product-lifecycle mutation is performed.
+ * The caller must have locked the candidate product and checked absence of
+ * all prior catalog_media rows before invoking this writer.
+ */
+async function restoreSourceMediaOnly(client, productId, contract) {
+  validateForPromotion(contract);
+  const media = contract?.media;
+  if (!Array.isArray(media) || media.length === 0)
+    throw Object.assign(new Error('Médias V2 absents'), {
+      status: 422, code: 'catalog_media_source_empty',
+    });
+  const known = new Set();
+  const roles = new Set(['PRODUCT','SCENE','DETAIL','SIZE_GUIDE','OTHER']);
+  for (const item of media) {
+    const id = String(item?.supplier_media_id || '').trim();
+    if (!id || known.has(id)) throw Object.assign(
+      new Error('Identité fournisseur média manquante ou dupliquée'),
+      { status: 422, code: 'catalog_media_identity_unproven' }
+    );
+    known.add(id);
+    let uri;
+    try { uri = new URL(item.url); } catch (_) { /* deny */ }
+    if (!uri || uri.protocol !== 'https:' || !uri.hostname.includes('.') ||
+        uri.username || uri.password || !roles.has(item.role || 'PRODUCT')) {
+      throw Object.assign(new Error('URL ou rôle média fournisseur invalide'),
+        { status: 422, code: 'catalog_media_source_invalid' });
+    }
+  }
+  const byId = await promoteMedia(client, productId, media);
+  if (byId.size !== known.size) throw Object.assign(
+    new Error('Réconciliation média incomplète'), { status: 409, code: 'catalog_media_recovery_incomplete' }
+  );
+  return [...byId.keys()];
+}
+
 module.exports = {
+  restoreSourceMediaOnly,
   validateForPromotion,
   promoteCatalog,
   _promoteContentProfile: promoteContentProfile,
