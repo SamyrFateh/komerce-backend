@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-2');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -199,7 +199,7 @@ test('Dossier opérateur : coûts source, prix test distinct et classement charg
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(css).toContain('.kmc-catalog-economic-grid');
-  expect(index).toContain('catalog-workspace.js?v=261030-1');
+  expect(index).toContain('catalog-workspace.js?v=261030-2');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
