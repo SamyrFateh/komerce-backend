@@ -216,9 +216,10 @@ async function main() {
     assert.equal((await frAction.innerText()).trim(), 'Compléter titre et description FR');
     assert(await frAction.isVisible(), 'French correction should be visible on opening the product');
     const dockRect=await actionDock.boundingBox();
-    const costRect=await product.locator('[data-catalog-economic-summary]').boundingBox();
-    assert(dockRect && costRect && dockRect.y < costRect.y,
-      'Corrective actions must come BEFORE the economic dossier');
+    const sourceRect=await product.locator('[data-catalog-source-details]').boundingBox();
+    assert(dockRect && sourceRect && dockRect.y < sourceRect.y,
+      'Corrective actions must come BEFORE supplier details');
+    assert.equal(await product.locator('[data-catalog-economic-summary]').count(),0);
     await page.screenshot({ path: path.join(output, 'dossier-actions-correction-visibles.png'), fullPage: true });
     await frAction.click();
     const frenchEditor = page.locator('[data-catalog-fr-editor]');
@@ -247,7 +248,8 @@ async function main() {
     const approved = page.locator('[data-catalog-product-inspector="KPR-TEST-APPROVED"]');
     await approved.locator('[data-catalog-canonical-gallery] img').first().waitFor();
     assert((await approved.innerText()).includes('LOCAL_ACTIVE'));
-    assert((await approved.innerText()).includes('4300'));
+    assert(!(await approved.innerText()).includes('4300'),
+      'Global Catalogue must not display a market price amount');
     await approved.locator('[data-catalog-variants] summary').click();
     assert((await approved.innerText()).includes('ne constituent pas nécessairement des combinaisons vendables'));
     await page.screenshot({ path: path.join(output, 'produit-approuve-marches.png'), fullPage: true });
