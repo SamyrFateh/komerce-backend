@@ -91,7 +91,10 @@ describe('Catalogue pays decision-first', () => {
     expect(source).not.toMatch(/rows\.filter\([^\n]+commercial_exposure/);
     expect(source).toContain('renderReadyToSell(payload, marketCode)');
     expect(source).not.toContain('renderIncomingProducts(payload, marketCode)');
-    expect(source).toContain('Garder masqué');
+    const productRegister = read('public/dashboards/canonical/js/market-product-register.js');
+    expect(productRegister).toContain('Publier ');
+    expect(productRegister).toContain("checkbox.setAttribute('role','switch')");
+    expect(source).toContain('renderExposure(payload, marketCode, priceData)');
     expect(html).toContain('/dashboards/canonical/js/market-ready-to-sell.js?v=261003-1');
     expect(source).not.toMatch(/[?&]market_id=|body\.market_id|body\.marketId/);
   });
