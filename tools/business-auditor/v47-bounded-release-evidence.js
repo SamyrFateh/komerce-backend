@@ -125,10 +125,18 @@ function verifyMultidomain(report,sha,readSource=(p)=>fs.readFileSync(path.join(
  return {ownerFamilies:3,faults:6,detected:6,equivalentControls:3,falsePositives:0};
 }
 function verifyScope(diff,install,sha){
+ const pr=diff?.comparisonMode==='PR_COMPLETE_DIFF';
+ const scopedMain=diff?.comparisonMode==='AUDITOR_PATHS_ONLY_ON_EVOLVING_MAIN';
+ if(!pr&&!scopedMain)fail('G5 comparison mode not recognized');
+ if(pr&&diff.excludedNonAuditorChangeCount!==0)
+  fail('G5 PR cannot ignore changed files');
+ if(scopedMain&&(!Array.isArray(diff.excludedNonAuditorPaths)||
+   diff.excludedNonAuditorPaths.length!==diff.excludedNonAuditorChangeCount||
+   !diff.scopeLimitation||diff.excludedNonAuditorPaths.some(x=>allowedChange(x))))
+  fail('G5 main excluded source changes must remain explicitly disclosed');
  if(diff?.contract!=='komerce-reviewed-main-integration/v1'||
   diff.targetSha!==sha||diff.baseBranch!=='main'||
-  diff.comparisonMode!=='PR_COMPLETE_DIFF'||
-  diff.excludedNonAuditorChangeCount!==0||diff.automatedScopeVerified!==true||
+  diff.automatedScopeVerified!==true||
   diff.unrelatedRuntimeChanges!==0||diff.conflicts!==0||
   diff.humanReviewApproved!==false||
   !Array.isArray(diff.changedFiles)||!diff.changedFiles.length||
@@ -137,6 +145,8 @@ function verifyScope(diff,install,sha){
   !acceptsInstall(install,sha))
   fail('G5 full PR diff, install or local-only controls not proved');
  return {safeDiff:true,changedFiles:diff.changedFiles.length,
+  comparisonMode:diff.comparisonMode,
+  unrelatedMainPathsNotCertified:scopedMain?diff.excludedNonAuditorChangeCount:0,
   installation:'PASS',humanReview:'REQUIRED_NOT_FORGED'};
 }
 function evaluate({audit,ledger,census,stock,relay,g3,inventory,multi,diff,install,
