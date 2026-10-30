@@ -886,7 +886,7 @@
           reason: 'Préparation FR manuelle/assistée hors runtime',
         },
         runningMessage: 'Enregistrement de la préparation française…',
-        successMessage: `${row.product_ref} : français enregistré. Cette étape ne valide pas le produit. Ouvrez « Contrôler et valider », vérifiez les prérequis, puis confirmez « Valider le Catalogue ».`,
+        successMessage: `${row.product_ref} : français enregistré sans API IA payante. Cette étape ne valide pas le produit. Ouvrez « Contrôler et valider », vérifiez les prérequis, puis confirmez « Valider le Catalogue ».`,
       });
     };
     save.addEventListener('click', () => submitFrench(false));
@@ -2474,7 +2474,7 @@
       const stepNotice = text(doc, 'p', 'kmc-catalog-correction-hint',
         '1. Contrôler les prérequis (lecture seule) · 2. Valider le Catalogue après relecture humaine. La correction du français ne valide jamais automatiquement le produit.');
       stepNotice.setAttribute('data-catalog-approval-explanation', '');
-      actionDock.appendChild(stepNotice);
+      panel.querySelector('[data-catalog-action-dock]').appendChild(stepNotice);
       const review = makeButton(doc, 'Contrôler les prérequis', 'inspector-check-approval');
       review.addEventListener('click', async () => {
         review.disabled = true;
