@@ -241,3 +241,18 @@ test('Un candidat Sourcing à examiner n’est plus absent du compteur des actio
   expect(ui).toContain("'sourcing_review'].includes(row.work_status)");
   expect(ui).toContain("(row.record_kind === 'candidate' && row.operator_group === 'review')");
 });
+
+test('Actions éditoriales toujours visibles avant lecture longue de la fiche', () => {
+  expect(ui).toContain("actionDock.setAttribute('data-catalog-action-dock', '')");
+  expect(ui).toContain("panel.appendChild(actionDock)");
+  expect(ui).toContain("appendCatalogEconomicSummary(panel, doc, row)");
+  expect(ui).toContain("panel.appendChild(dossierSlot)");
+  expect(ui).toContain("Compléter titre et description FR");
+  expect(ui).toContain("Modifier titre / description FR");
+  expect(ui).toContain("openFrenchEditor(context, {");
+  expect(css).toContain(".kmc-catalog-inspector-action-dock");
+  expect(css).toContain("position: sticky");
+  expect(css).toContain('min-height: 42px');
+  expect(index).toContain('catalog-workspace.js?v=261030-3');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-3');
+});
