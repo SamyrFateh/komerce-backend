@@ -198,7 +198,7 @@ test('Dossier opérateur : coûts source, prix test distinct et classement charg
   expect(ui).toContain("Number.parseInt(select.value, 10)");
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
-  expect(css).toContain('.kmc-catalog-economic-grid');
+  expect(ui).not.toContain('appendCatalogEconomicSummary');
   expect(index).toContain('catalog-workspace.js?v=261030-3');
 });
 
@@ -212,7 +212,7 @@ test('Catalogue : dossier produit complet, y compris les produits approuvés', (
   expect(ui).toContain("weight_kg");
   expect(ui).toContain("commercial_exposure");
   expect(ui).toContain("price_status");
-  expect(ui).toContain("local_price_amount");
+  expect(ui).not.toContain('local_price_amount');
   expect(ui).toContain("market_data_scope");
   expect(ui).toContain("certificationReasonLabel(reason)");
   expect(ui).toContain("primary.addEventListener('click', () =>");
