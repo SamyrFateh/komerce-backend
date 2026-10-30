@@ -2384,6 +2384,7 @@
         '?dossier_product_ref=' + encodeURIComponent(row.product_ref));
       // A closed inspector must not resurrect content on a different product.
       if (!slot.isConnected) return;
+      row._catalogueDossier = dossier; // local read-only projection, never persisted
       renderProductDossierDetails(slot, doc, dossier, row);
     } catch (err) {
       if (!slot.isConnected) return;
@@ -2500,7 +2501,22 @@
       const btn = makeButton(doc,
         issues.includes('editorial_to_complete') ? 'Compléter le français' : 'Corriger le français',
         'inspector-prepare-fr');
-      btn.addEventListener('click', () => openFrenchEditor(context, row, btn));
+      btn.addEventListener('click', async () => {
+        try {
+          const dossier = row._catalogueDossier || await jsonRequest(context.fetch,
+            ENDPOINT + '?dossier_product_ref=' + encodeURIComponent(row.product_ref));
+          const identity = dossier?.identity || {};
+          await openFrenchEditor(context, {
+            ...row,
+            name: identity.title_fr || row.name,
+            description: identity.description_fr || row.description || '',
+            content_source: identity.content_source || row.content_source,
+            source_locale: identity.locale || row.source_locale,
+          }, btn);
+        } catch (err) {
+          feedback.textContent = actionErrorMessage(err);
+        }
+      });
       actions.appendChild(btn);
     }
     if (row.work_status === 'approval_pending' || issues.includes('approval_pending')) {
