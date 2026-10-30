@@ -199,7 +199,7 @@ test('Dossier opérateur : coûts source, prix test distinct et classement charg
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261030-3');
+  expect(index).toContain('catalog-workspace.js?v=261030-4');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -254,6 +254,6 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261030-3');
+  expect(index).toContain('catalog-workspace.js?v=261030-4');
   expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-3');
 });
