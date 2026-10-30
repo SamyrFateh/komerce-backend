@@ -334,7 +334,8 @@ test('un brouillon issu du Sourcing sans prix global atteint la curation humaine
     require('path').join(__dirname,'../../public/dashboards/canonical/js/catalog-workspace.js'),'utf8'
   );
   expect(ui).toContain('row.supplier_source_linked === true && row.price_kmf == null');
-  expect(ui).toContain('aucune mise en vente acheteur avant LOCAL_ACTIVE');
+  expect(ui).toContain('la fixation du prix et les coûts commerciaux appartiennent au marché');
+  expect(ui).not.toContain('Coût d’achat estimé');
 });
 
 test('préparation FR résout product_ref puis applique des overrides manuels sans API IA', async () => {
