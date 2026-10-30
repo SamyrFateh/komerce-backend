@@ -184,13 +184,11 @@ test('V4.1 : priorité visuelle aux écarts avant marchés et à la prochaine ac
   expect(ui).toContain('statusChip.addEventListener');
 });
 
-test('Dossier opérateur : coûts source, prix test distinct et classement chargé sans second clic', () => {
-  expect(ui).toContain("function appendCatalogEconomicSummary(panel, doc, row)");
-  expect(ui).toContain("row.purchase_price_kmf");
-  expect(ui).toContain("row.variable_cost_complete_kmf");
-  expect(ui).toContain("row.minimum_safe_price_kmf");
-  expect(ui).toContain("row.test_price_kmf");
-  expect(ui).toContain("Aucun prix de vente marché décidé");
+test('Dossier opérateur : correction source accessible sans chiffres économiques globaux', () => {
+  expect(ui).not.toContain('function appendCatalogEconomicSummary(panel, doc, row)');
+  expect(ui).not.toContain('Prix test indicatif');
+  expect(ui).not.toContain('Coût variable complet');
+  expect(ui).not.toContain('Prix de référence · non décision marché');
   expect(ui).toContain("sourceDetails.appendChild(facts)");
   expect(ui).toContain("classify.addEventListener('click', loadBoutiqueProposal)");
   expect(ui).toContain("void loadBoutiqueProposal()");
@@ -246,7 +244,7 @@ test('Un candidat Sourcing à examiner n’est plus absent du compteur des actio
 test('Actions éditoriales toujours visibles avant lecture longue de la fiche', () => {
   expect(ui).toContain("actionDock.setAttribute('data-catalog-action-dock', '')");
   expect(ui).toContain("panel.appendChild(actionDock)");
-  expect(ui).toContain("appendCatalogEconomicSummary(panel, doc, row)");
+  expect(ui).toContain("sourceDetails.setAttribute('data-catalog-source-details', '')");
   expect(ui).toContain("panel.appendChild(dossierSlot)");
   expect(ui).toContain("Compléter titre et description FR");
   expect(ui).toContain("Modifier titre / description FR");
