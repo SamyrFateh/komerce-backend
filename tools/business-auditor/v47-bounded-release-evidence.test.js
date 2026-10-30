@@ -120,6 +120,14 @@ test('V47 multiowner source SHA and real PG provenance are fail-closed',()=>{
 });
 test('V47 G5 requires complete safe PR diff, guarded install and explicit human pending',()=>{
  const x=scope();assert.equal(verifyScope(x.diff,x.install,sha).installation,'PASS');
+ const scoped=scope();
+ scoped.diff.comparisonMode='AUDITOR_PATHS_ONLY_ON_EVOLVING_MAIN';
+ scoped.diff.excludedNonAuditorChangeCount=2;
+ scoped.diff.excludedNonAuditorPaths=['services/catalogue.js','public/boutique/index.js'];
+ scoped.diff.scopeLimitation='External commits NOT reviewed or certified';
+ assert.equal(verifyScope(scoped.diff,scoped.install,sha).unrelatedMainPathsNotCertified,2);
+ scoped.diff.excludedNonAuditorPaths.pop();
+ assert.throws(()=>verifyScope(scoped.diff,scoped.install,sha),/G5 main excluded/);
  const bad=scope();bad.diff.humanReviewApproved=true;
  assert.throws(()=>verifyScope(bad.diff,bad.install,sha),/G5 full PR diff/);
  const y=scope();y.diff.changedFiles=['services/orders.js'];
