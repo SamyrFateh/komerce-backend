@@ -41,7 +41,7 @@ function evaluate(raw){
     !new RegExp('^FOREIGN KEY \\('+expected.column+'\\) REFERENCES '+
       expected.references+'\\('+expected.refColumn+'\\)').test(
        String(x.foreignKeyDefinition||'')))
-   fail('NOT NULL and exact FK with valid write, SQLSTATE 23502 and rollback required: '+expected.table);
+   fail('NOT NULL and exact FK with valid write, SQLSTATE 23502 and rollback required: '+expected.table+' details='+JSON.stringify({notNull:x.notNull,foreignKeyDefinition:x.foreignKeyDefinition,negativeSqlState:x.negativeSqlState,negativeColumn:x.negativeColumn,unchangedAfterRejectedWrite:x.unchangedAfterRejectedWrite,validWriteObserved:x.validWriteObserved}));
  }
  return {contract:'komerce-independent-relay-market-db-oracle/v46',
   verdict:'PASS_WITH_EVIDENCE',scope:'CANONICAL_DB_NON_NULL_AND_FK_CHAIN',
