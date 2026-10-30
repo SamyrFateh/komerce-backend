@@ -49,6 +49,15 @@ class FakeNode {
     return child;
   }
 
+  insertBefore(child, reference) {
+    const position = this.children.indexOf(reference);
+    if (position < 0) throw new Error('FakeNode: reference is not a child');
+    if (child.parentNode) child.remove();
+    this.children.splice(position, 0, child);
+    child.parentNode = this;
+    return child;
+  }
+
   replaceChildren(...children) {
     this.children = [];
     this._text = '';
@@ -187,7 +196,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261029-6');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261030-1');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -905,7 +914,8 @@ test('Catalogue unique : produit remis a correction de catégorie, français et 
   expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).not.toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-prepare-fr"]')).not.toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
-  expect(fetchFn).toHaveBeenCalledTimes(1);
+  expect(fetchFn.mock.calls.map(([url]) => url).filter(url => url.includes('dossier_product_ref=KPR-000446'))).toHaveLength(1);
+  expect(fetchFn).toHaveBeenCalledTimes(2);
 });
 
 test('Catalogue unique : le serveur refuse la validation si la certification est incomplète', async () => {
@@ -930,7 +940,10 @@ test('Catalogue unique : le serveur refuse la validation si la certification est
   await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
   expect(panel.textContent).toContain('À compléter');
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
-  expect(fetchFn.mock.calls.map(([url]) => url)).toHaveLength(2);
+  const urls=fetchFn.mock.calls.map(([url]) => url);
+  expect(urls).toHaveLength(3);
+  expect(urls[1]).toContain('dossier_product_ref=KPR-000447');
+  expect(urls[2]).toContain('diagnose_product_ref=KPR-000447');
 });
 
 
@@ -1012,7 +1025,8 @@ test('Catalogue unifié : médias fournisseur non confondus avec les médias can
   expect(panel.textContent).toContain('Médias source identifiés');
   expect(panel.textContent).toContain('Médias actifs canoniques');
   expect(panel.textContent).toContain('Réintégration canonique nécessaire');
-  expect(fetchFn).toHaveBeenCalledTimes(1);
+  expect(fetchFn.mock.calls.map(([url]) => url).filter(url => url.includes('dossier_product_ref=KPR-00450'))).toHaveLength(1);
+  expect(fetchFn).toHaveBeenCalledTimes(2);
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
 });
 
@@ -1109,7 +1123,8 @@ test('Catalogue : cycle de vie contradictoire, dossier lecture seule, zéro vali
   expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).toBeNull();
-  expect(fetchFn).toHaveBeenCalledTimes(1);
+  expect(fetchFn.mock.calls.map(([url]) => url).filter(url => url.includes('dossier_product_ref=KPR-INCOHERENT'))).toHaveLength(1);
+  expect(fetchFn).toHaveBeenCalledTimes(2);
 });
 
 

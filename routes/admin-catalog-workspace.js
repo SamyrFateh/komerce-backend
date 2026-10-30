@@ -60,7 +60,8 @@ router.use(...guard, rejectMarketDimension);
 // Consolidated projection reads pre-handoff supplier data. Catalogue grants
 // do NOT implicitly authorize Sourcing reads. Preserve both authorities.
 router.get('/', (req, res, next) => {
-  if (req.query && req.query.unified === '1' && req.query.refinery_view !== '1')
+  if (req.query && ((req.query.unified === '1' && req.query.refinery_view !== '1') ||
+      req.query.dossier_product_ref))
     return requireSourcingGlobalAuthority(req, res, next);
   return next();
 }, async (req, res, next) => {
@@ -68,6 +69,9 @@ router.get('/', (req, res, next) => {
     res.set('Cache-Control', 'private, no-store');
     if (req.query && req.query.diagnose_product_ref) {
       return res.json(await workspace.getRegistryReadiness(String(req.query.diagnose_product_ref)));
+    }
+    if (req.query && req.query.dossier_product_ref) {
+      return res.json(await workspace.getProductDossier(String(req.query.dossier_product_ref)));
     }
     return res.json(await workspace.buildWorkspace(req.query));
   } catch (err) { next(err); }

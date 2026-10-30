@@ -231,3 +231,49 @@ test('WATCH avec révision commerciale obligatoire reste une correction, pas une
   expect(sql).toContain("WHEN u.record_kind='candidate' AND u.source_category_review_required");
   expect(sql).toContain("THEN 'sourcing_category_review'");
 });
+
+test('diagnostics économiques source conservés sans transformer le prix test en prix marché', async () => {
+  const candidate = {
+    ...originalCandidate, candidate_state:'scanned',
+    work_status:'sourcing_review', operator_group:'review',
+    economic_category_key:'phones',
+    purchase_price_kmf:'1800',
+    variable_cost_complete_kmf:'1889',
+    minimum_safe_price_kmf:'2990',
+    test_price_kmf:'2990',
+    economic_test_health_status:'healthy',
+  };
+  const projected = publicRow(candidate);
+  expect(projected).toMatchObject({
+    economic_category_key:'phones', purchase_price_kmf:1800,
+    variable_cost_complete_kmf:1889, minimum_safe_price_kmf:2990,
+    test_price_kmf:2990, economic_test_health_status:'healthy',
+    record_kind:'candidate', product_ref:null,
+  });
+  expect(projected).not.toHaveProperty('market_price_decided');
+  expect(projected).not.toHaveProperty('market_price_kmf');
+
+  const q = executor([{operator_group:'review',count:1}], [candidate]);
+  await listUnified({}, q);
+  const sql = q.query.mock.calls[1][0];
+  expect(sql).toContain("sc.purchase_price_kmf");
+  expect(sql).toContain("sc.scan_result->>'variable_cost_complete_kmf'");
+  expect(sql).toContain("sc.scan_result->>'minimum_safe_price_kmf'");
+  expect(sql).toContain("sc.scan_result->>'test_price_kmf'");
+  expect(sql).not.toMatch(/JOIN product_market_price_drafts/);
+});
+
+test('diagnostic absent ou incohérent n’invente jamais un montant', () => {
+  const input = {
+    ...originalCandidate,
+    purchase_price_kmf:0,
+    variable_cost_complete_kmf:'not-a-price',
+    minimum_safe_price_kmf:-20,
+    test_price_kmf:null,
+  };
+  expect(publicRow(input)).toMatchObject({
+    purchase_price_kmf:null,variable_cost_complete_kmf:null,
+    minimum_safe_price_kmf:null,test_price_kmf:null,
+    economic_test_health_status:'unknown',
+  });
+});
