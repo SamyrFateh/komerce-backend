@@ -49,6 +49,7 @@ async function buildReadyToSell({
   exposure = [],
   limit = 100,
   offset = 0,
+  search = '',
 } = {}) {
   if (!market?.id || !market?.code || !market?.currency) {
     throw new TypeError('market-ready-to-sell-projection: market résolu requis');
@@ -102,7 +103,13 @@ async function buildReadyToSell({
 
   const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
   const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
-  const limited = sourceRows.slice(safeOffset, safeOffset + safeLimit);
+  const query = String(search || '').trim().toLocaleLowerCase('fr').slice(0, 120);
+  const matches = query
+    ? sourceRows.filter(row =>
+      String(row.product_name || row.name || '').toLocaleLowerCase('fr').includes(query)
+      || String(row.product_ref || '').toLocaleLowerCase('fr').includes(query))
+    : sourceRows;
+  const limited = matches.slice(safeOffset, safeOffset + safeLimit);
   const selectedIds = limited.map(row => row.product_id);
   const { rows: products } = await executor.query(
     `SELECT id, product_ref, name, description, sku, category, subcategory, image_url,
@@ -242,7 +249,7 @@ async function buildReadyToSell({
       blocked: items.filter(item => item.decision_state.key === 'BLOCKED').length,
       bulk_eligible: items.filter(item => item.bulk_eligible).length,
     },
-    pagination: { offset: safeOffset, limit: safeLimit, total: sourceRows.length, has_more: safeOffset + limited.length < sourceRows.length },
+    pagination: { offset: safeOffset, limit: safeLimit, total: matches.length, has_more: safeOffset + limited.length < matches.length },
     items,
   };
 }
