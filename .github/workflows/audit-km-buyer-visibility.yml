@@ -87,6 +87,23 @@ jobs:
                 buyer_visible:all.filter(x=>x.buyer_visible===true).length,
                 published_last_2h:all.filter(x=>x.exposure_updated_at && Date.now()-new Date(x.exposure_updated_at).getTime()<7200000).length
               }));
+              const diagnosed=all.map(x=>{
+                const blockers=[];
+                if(!x.is_active)blockers.push('CATALOG_NOT_ACTIVE');
+                if(!x.is_available)blockers.push('NOT_AVAILABLE');
+                if(!x.has_public_media)blockers.push('PUBLIC_IMAGE_MISSING');
+                if(!x.has_sellable_unit)blockers.push('NO_SELLABLE_UNIT');
+                if(x.local_price_status!=='LOCAL_ACTIVE')blockers.push('LOCAL_PRICE_NOT_ACTIVE');
+                if(x.buyer_visible!==true&&!blockers.length)blockers.push('PUBLIC_GATE_UNKNOWN');
+                return {ref:x.product_ref,name:x.name,exposure_date:x.exposure_updated_at,
+                  visible:x.buyer_visible===true,price_status:x.local_price_status,
+                  stock:x.stock,inventory_model:x.inventory_model,blockers};
+              });
+              console.log('STAGING_KM_VISIBILITY_DIAGNOSIS '+JSON.stringify({
+                 total_exposed:all.length,visible:diagnosed.filter(x=>x.visible).length,
+                 active_price:diagnosed.filter(x=>x.price_status==='LOCAL_ACTIVE').length,
+                 items:diagnosed,
+              }));
               console.log('STAGING_KM_LATEST_PUBLISHED '+JSON.stringify(all.slice(0,35).map(x=>({
                 ref:x.product_ref, updated_at:x.exposure_updated_at, active:x.is_active,
                 available:x.is_available, price:x.local_price_status, image:x.has_public_media,
