@@ -127,7 +127,13 @@
 
   function priorityItems({ decision, components, counts, evaluated, total, reasonLabels }) {
     const items = [];
-    if (decision && decision.decision_status && decision.decision_status !== 'DECISIONAL') {
+    if (decision?.decision_status === 'UNCOVERED') {
+      items.push({
+        id: 'gate', tone: 'warning', title: 'Couverture insuffisante',
+        detail: 'La contribution réconciliée ne couvre pas encore la structure. Seules les nouvelles positions sous CDR restent soumises au gate.',
+        action: null,
+      });
+    } else if (decision?.decision_status && !['COVERED', 'UNCOVERED'].includes(decision.decision_status)) {
       const reason = (reasonLabels && reasonLabels[decision.reason]) || decision.reason || 'Raison serveur non précisée.';
       items.push({ id: 'gate', tone: 'warning', title: 'Couverture non décisionnelle', detail: reason, action: null });
     }
