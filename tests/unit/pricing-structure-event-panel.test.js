@@ -269,7 +269,7 @@ describe('pricing-structure-event-panel', () => {
     });
 
     expect(doc.body.children.length).toBe(1);
-    doc.listeners.keydown({ key: 'Escape' });
+    doc.listeners.keydown({ key: 'Escape', preventDefault() {} });
     expect(doc.body.children.length).toBe(0);
   });
 });
