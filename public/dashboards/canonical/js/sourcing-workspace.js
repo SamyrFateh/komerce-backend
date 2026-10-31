@@ -772,7 +772,7 @@
     // keep this narrow legacy surface, without multiple operator tabs.
     if (typeof window !== 'undefined' &&
         window.location?.pathname === '/admin/workspaces/sourcing' &&
-        !search.get('candidate_ref') && search.get('mode') !== 'partners') {
+        !search.get('candidate_ref') && !['partners','manual'].includes(search.get('mode'))) {
       const href = '/admin/import-runtime' +
         (search.get('tab') === 'imports' || search.get('tab') === 'suppliers' ? '?view=sources' :
         search.get('tab') === 'candidates' ? '#sourcing-actions' : '');
