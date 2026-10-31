@@ -214,7 +214,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(reading).toContainText('Fixes directs + fixes mutualisés');
       await expect(reading).toContainText('Non encore calculable');
       const costMixLabel = await reading.locator('.kmc-economic-reading-item.is-mix').innerText();
-      expect(costMixLabel).not.toMatch(/\\d+(?:[,.]\\d+)?\\s*%/);
+      expect(costMixLabel).not.toMatch(/\d+(?:[,.]\d+)?\s*%/);
       if (name === '1440') {
         const widths = await page.evaluate(() => {
           const section = document.querySelector('.kmc-cockpit-costs');
