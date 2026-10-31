@@ -324,7 +324,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
   });
 }
 
-test.describe('Moteur économique · détails et édition unifiés des trois colonnes', () => {
+test.describe('Moteur économique · détails et édition unifiés des trois colonnes — 1440', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('ouvre les trois détails avec le même contrôle et restaure le tableau à la fermeture', async ({ page }) => {
@@ -409,7 +409,8 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
   test('rend contribution, couverture, fixes directs et mutualisés sur des valeurs d’exemple cohérentes', async ({ page }) => {
     expect(DEMO.kind).toBe('CHROMIUM_DEMO_ONLY');
     const posts = [];
-    await mount(page, { decision: DEMO.decision, components: DEMO.parameters.variable_components, posts });
+    await mount(page, { decision: DEMO.decision, components: DEMO.parameters.variable_components, posts,
+      caps: { can_manage_structure_events: true } });
     await page.evaluate(() => {
       const marker = document.createElement('div');
       marker.dataset.chromiumDemoNotice = '';
