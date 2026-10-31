@@ -94,51 +94,42 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       }
     });
 
-    test('coûts variables : enregistrement automatique à la validation, valeur vide jamais enregistrée', async ({ page }) => {
+    test('ligne variable : dernière valeur conservée, saisie explicite, refus du vide', async ({ page }) => {
       const posts = [];
       await mount(page, { populated: true, posts });
-      await page.locator('[data-open-cost-detail="variable"]').click();
-      const input = page.locator('[data-variable-cost-input="stripe_fee_pct"]');
+      await expect(page.locator('[data-cost-layout-button]')).toHaveCount(0);
+      const row = page.locator('[data-inline-cost-row="stripe_fee_pct"]');
+      await expect(row).toContainText('2,9 %');
+      await row.locator('[data-edit-inline-cost]').click();
+      await expect(row).toContainText('Valeur actuelle : 2,9 %');
+      const input = row.locator('[data-inline-cost-value]');
+      await expect(input).toHaveValue('2.9');
+      await input.fill('');
+      await row.locator('.kmc-inline-cost-save').click();
+      await expect(row.locator('[data-inline-cost-message]')).toContainText('non enregistré');
+      expect(posts).toHaveLength(0);
       await input.fill('3.1');
-      await input.blur();
+      await row.locator('.kmc-inline-cost-save').click();
       await expect.poll(() => posts.length).toBe(1);
       expect(posts[0].path).toBe('/api/admin/workspaces/pricing/market/KM/cost-components/stripe_fee_pct/update');
       expect(posts[0].body).toMatchObject({ default_value: 3.1 });
-      await input.fill('');
-      await input.blur();
-      await expect(page.locator('.kmc-structure-panel-error')).toBeVisible();
-      expect(posts.length).toBe(1);
     });
 
-    test('présentation : navigation clavier flèches/Home/End sans perdre la sélection', async ({ page }) => {
-      await mount(page, { populated: true });
-      const layouts = page.locator('[data-cost-layout-button]');
-      await layouts.first().focus();
-      await page.keyboard.press('ArrowRight');
-      await expect(layouts.nth(1)).toHaveAttribute('aria-pressed', 'true');
-      await page.keyboard.press('Home');
-      await expect(layouts.nth(0)).toHaveAttribute('aria-pressed', 'true');
-      await page.keyboard.press('End');
-      await expect(layouts.nth(1)).toHaveAttribute('aria-pressed', 'true');
-    });
-
-    test('trois familles visibles et détails intégraux accessibles en version superposée', async ({ page }) => {
+    test('trois familles fixes, le détail reste accessible sans bascule superposée', async ({ page }) => {
       await mount(page, { populated: true });
       const visible = page.locator('.kmc-economic-family-grid .kmc-cockpit-cost-card:visible');
       await expect(visible).toHaveCount(3);
       await expect(visible.nth(0)).toHaveAttribute('data-cost-summary', 'variable');
       await expect(visible.nth(1)).toHaveAttribute('data-cost-summary', 'fixed-direct');
       await expect(visible.nth(2)).toHaveAttribute('data-cost-summary', 'fixed-mutualized');
-      await page.locator('[data-cost-layout-button="stacked"]').click();
+      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
       const cells = (await page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cell').allInnerTexts()).join('|');
       expect(cells).toContain('Valeur');
       expect(cells).toContain('Provenance');
       expect(cells).toContain('2,9 %');
       expect(cells).toContain('500 KMF/commande');
-      expect(cells).toContain('Global hérité');
-      expect(cells).toContain('Surcharge pays');
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeVisible();
-      await page.locator('[data-cost-layout-button="columns"]').click();
+      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeHidden();
     });
 
