@@ -23,7 +23,7 @@ function mount(role='admin',tab='transport',data={}){
 }
 test('3 tabs, one existing dossier list and clear not yet booked N1 status',()=>{
   const {root}=mount();
-  const tabs=all(root,n=>n.className.includes('kmc-journey-tab'));
+  const tabs=all(root,n=>n.tagName==='BUTTON'&&n.className.includes('kmc-journey-tab'));
   expect(tabs.map(x=>x.textContent)).toEqual(['Transport & fret','Arrivée & douane','Vers les relais']);
   expect(tabs.filter(x=>x.className.includes('is-active'))).toHaveLength(1);
   const headings=all(root,n=>n.tagName==='TH').map(n=>n.textContent);
