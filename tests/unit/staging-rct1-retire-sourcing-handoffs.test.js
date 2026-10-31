@@ -15,11 +15,11 @@ const records=EXPECTED.map((item,i)=>({
 
 test('exact five source-to-catalog identities match the UI fixture set',()=>{
   expect(EXPECTED).toEqual([
-    {candidate_ref:'RCT1-P1',product_ref:'KSC-000180'},
-    {candidate_ref:'RCT1-P2',product_ref:'KSC-000181'},
-    {candidate_ref:'RCT1-P3',product_ref:'KSC-000182'},
-    {candidate_ref:'RCT1-P4',product_ref:'KSC-000183'},
-    {candidate_ref:'RCT1-P5',product_ref:'KSC-000184'},
+    {supplier_product_id:'RCT1-P1',product_ref:'KSC-000180'},
+    {supplier_product_id:'RCT1-P2',product_ref:'KSC-000181'},
+    {supplier_product_id:'RCT1-P3',product_ref:'KSC-000182'},
+    {supplier_product_id:'RCT1-P4',product_ref:'KSC-000183'},
+    {supplier_product_id:'RCT1-P5',product_ref:'KSC-000184'},
   ]);
   expect(()=>verifyRows(records)).not.toThrow();
   expect(()=>verifyRows(records.slice(1))).toThrow('RCT1_SOURCING_COUNT_MISMATCH');
@@ -62,7 +62,7 @@ test('all other fields remain identical; apply proves disabled',()=>{
 
 test('SQL audit never mutates candidate lineage and blocks real orders',()=>{
   const script=fs.readFileSync(path.resolve(__dirname,'../../scripts/recette/staging-rct1-retire-sourcing-handoffs.js'),'utf8');
-  expect(script).toContain("sc.candidate_ref=ANY($1::text[])");
+  expect(script).toContain("sc.supplier_product_id=ANY($1::text[])");
   expect(script).toContain("sc.supplier_name");
   expect(script).toContain("o.simulation_scope IS DISTINCT FROM 'RCT1'");
   expect(script).toContain("RCT1_SOURCING_REAL_SOURCE_ASSOCIATED");
