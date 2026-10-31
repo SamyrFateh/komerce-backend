@@ -234,8 +234,12 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
 
     // D — certification réelle (premier passage) puis source prête.
     await wizard(page).locator('[data-wizard-prepare]').click();
-    // La certification ouvre le suivi ; revenir à la section Sources de Live.
-    await expect(page.getByText('Premier passage terminé')).toBeVisible();
+    // La certification ouvre le KIR dans Suivi, pas une bannière masquée sous Sources.
+    await expect(page).toHaveURL(/run=KIR-000010(?:&|$)/);
+    await expect(page.locator('[data-sourcing-tab="overview"]')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('.kir-one-run')).toContainText('KIR-000010');
+    expect(backend.calls.filter(call => call === 'prepare')).toHaveLength(1);
+    expect(backend.runs.map(run => run.run_ref)).toContain('KIR-000010');
     await boot(page);
     await expect(page.locator('[data-source-wizard]')).toHaveCount(0);
     await expect(card(page).locator('.kir-source-badge')).toHaveText('PRÊTE');
