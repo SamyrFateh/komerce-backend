@@ -1526,7 +1526,7 @@
           : candidateRef ? 'Corriger dans le Catalogue' : 'Voir le diagnostic';
       // Historical mocked proof remains available only for technical regression
       // tests. Mounted Sourcing Live and all operator links always use Catalogue.
-      const legacyClassify = global.__KOMERCE_LEGACY_PROOF__ === true && !mountedRoot
+      const legacyClassify = global.__KOMERCE_LEGACY_PROOF__ === true
         && item.action === 'choose' && candidateRef;
       const control = legacyClassify
         ? `<button type="button" class="kir-row-action kir-classify-btn" data-action-classify
@@ -2138,7 +2138,7 @@
   }
 
   function render(root, payload) {
-    if (global.__KOMERCE_LEGACY_PROOF__ === true && !mountedRoot) return renderLegacyTechnicalProof(root, payload);
+    if (global.__KOMERCE_LEGACY_PROOF__ === true) return renderLegacyTechnicalProof(root, payload);
     if (credentialInputInProgress(root)) return;
     const sourceControls = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
     const lots = Array.isArray(payload?.lots) ? payload.lots : [];
