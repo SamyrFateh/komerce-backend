@@ -182,3 +182,15 @@
   .kmc-entity-title { font-size: clamp(23px, 2.5vw, 32px); overflow-wrap: anywhere; }
   .kmc-entity-extras-content { padding: 16px; }
 }
+
+
+/* An Entity 360 is a drill-down, not another Commerce/Live dashboard.
+   Hide the shared top-level domain tabs on entity routes while retaining
+   the sidebar, contextual back link, and underlying role/capability guards.
+   No edit to navigation-policy-v4.js: Sourcing Live owns that shared file. */
+body.kmc-shell-v4[data-kmc-surface="order-360"] #canonical-admin-domain-tabs,
+body.kmc-shell-v4[data-kmc-surface="client-360"] #canonical-admin-domain-tabs,
+body.kmc-shell-v4[data-kmc-surface="product-360"] #canonical-admin-domain-tabs,
+body.kmc-shell-v4[data-kmc-surface="supplier-360"] #canonical-admin-domain-tabs {
+  display: none !important;
+}
