@@ -2454,7 +2454,6 @@
     additional.setAttribute('data-catalog-complementary-info', '');
     additional.appendChild(text(doc, 'summary', '', 'Informations complémentaires'));
     additional.appendChild(dossierSlot);
-    panel.appendChild(additional);
     void loadProductDossier(context, doc, dossierSlot, row);
     const issues = Array.isArray(row.issues) ? row.issues : [];
     const correctionIssues = issues.filter(code => code !== 'approval_pending');
@@ -2480,6 +2479,7 @@
         'Activation d’une fiche encore marquée candidate : origine et autorisation à vérifier. ' +
         'Réconciliation avec la preuve d’origine indispensable. ' +
         'Aucune approbation ni correction de média proposée automatiquement.';
+      panel.appendChild(additional);
       return panel;
     }
     if (row.lifecycle_status === 'rejected' || row.work_status === 'approval_unproven') {
@@ -2487,6 +2487,7 @@
         ? 'Produit actif sans décision d’approbation démontrée : réconciliation nécessaire, ' +
           'aucune validation automatique.'
         : 'Produit écarté : un réexamen autorisé est nécessaire.';
+      panel.appendChild(additional);
       return panel;
     }
 
