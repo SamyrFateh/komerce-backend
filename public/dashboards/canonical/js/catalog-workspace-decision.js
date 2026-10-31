@@ -215,7 +215,11 @@
         const afterRender = payload => {
           // Le focus produit (scroll) ne vaut que pour le premier rendu.
           const search = options.location?.search ?? globalThis.location?.search ?? '';
-          const renderOptions = first ? options : { ...options, location: { search: new URLSearchParams(search).get('view') === 'refinery' ? '?view=refinery' : '' } };
+          const params = new URLSearchParams(search);
+          if (!first) params.delete('product_ref'); // focus/scroll uniquement au premier rendu
+          const renderOptions = first ? options : {
+            ...options, location: { search: params.toString() ? '?' + params.toString() : '' },
+          }; // preserve explicit diagnostic=1; do not accidentally create a second workspace
           first = false;
           prependDecisionView(options.root, payload, renderOptions, base, decisionUi);
         };
