@@ -79,10 +79,24 @@ test('only meaningful alert survives; old top cards, bottom funnel and parallel 
   const link=find(page,x=>x.attrs['data-ord-open']==='CMD-1');
   expect(link.textContent).toBe('Voir 360');
   expect(link.className).toBe('kmc-entity-360-action');
-  const directHub=find(page,x=>x.attrs['data-ord-hub-execution']==='CMD-2');
-  expect(directHub).not.toBeNull();
-  expect(directHub.href).toBe('/admin/hub-live?view=execute&market=KM');
-  expect(findAll(page,x=>x.tagName==='TR'&&x.attrs['data-ord-row']).length).toBe(2);
+  // Exactly as in Clients: the last column is a dossier link, not an
+  // imaginary action list. Execution remains in Hub/Relais workspaces.
+  const headers=findAll(page,x=>x.tagName==='TH').map(x=>x.textContent);
+  expect(headers.at(-1)).toBe('Dossier');
+  expect(headers).not.toContain('Action');
+  const listed=findAll(page,x=>x.tagName==='TR'&&x.attrs['data-ord-row']);
+  expect(listed).toHaveLength(2);
+  for(const row of listed){
+    expect(row.children).toHaveLength(headers.length);
+    const last=row.children.at(-1);
+    expect(last.className).toBe('kmc-ord-cell-dossier');
+    expect(last.children).toHaveLength(1);
+    expect(last.children[0].textContent).toBe('Voir 360');
+    expect(last.children[0].attrs['data-ord-open']).toBe(row.attrs['data-ord-row']);
+    expect(last.textContent).not.toContain('Confirmer le paiement');
+  }
+  expect(find(page,x=>x.attrs['data-ord-hub-execution'])).toBeNull();
+  expect(find(page,x=>x.className==='kmc-ord-action-label')).toBeNull();
 });
 
 test('empty and unavailable signals are not converted into zero or decorative cards',async()=>{
