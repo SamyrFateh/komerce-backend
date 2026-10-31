@@ -83,6 +83,9 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('[data-atelier-nav] [aria-selected="true"]')).toContainText('Vue d’ensemble');
       await expect(page.getByRole('link', { name: 'Catalogue marché →', exact: true })).toHaveAttribute('href', /market-catalog.html\?market=KM/);
       await expect(page.locator('.kmc-metric-card')).toHaveCount(4);
+      await expect(page.locator('.kmc-cockpit-live-badge')).toContainText('Couverture non décisionnelle');
+      await expect(page.locator('.kmc-cockpit-live-badge')).not.toContainText('Données réelles');
+      await expect(page.locator('.kmc-cockpit-live-badge')).toHaveClass(/is-unavailable/);
       await expect(page.locator('[data-atelier-priorities]')).toBeVisible();
       await expect(page.locator('[data-atelier-priorities]')).toContainText('1 ligne du modèle de coûts sans valeur');
       await expect(page.locator('[data-atelier-priorities]')).toContainText('1 produit sans coût d’achat');
@@ -226,6 +229,11 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Global hérité');
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale : 3,2 %');
       await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'true');
+      const principles = page.locator('details.kmc-economic-principles-detail');
+      await expect(principles).not.toHaveAttribute('open', '');
+      await principles.locator('summary').click();
+      await expect(principles).toHaveAttribute('open', '');
+      await expect(principles).toContainText('Toute quote-part mutualisée');
       await page.locator('[data-open-cost-detail="variable"]').click();
       const localCost = page.locator('[data-variable-cost-panel] [data-variable-cost-input="cash_fee_kmf"]');
       await expect(localCost).toHaveValue('500');
