@@ -335,3 +335,29 @@
   .kmc-atelier-views .kmc-economic-reading-grid { padding: 4px 12px 12px; }
   .kmc-atelier-views .kmc-economic-reading-heading { padding: 16px 16px 12px; }
 }
+
+/* Neutral provenance when the economic truth has not matured. */
+.kmc-atelier-views .kmc-cockpit-live-badge.is-unavailable {
+  background: #f0f4f8;
+  border: 1px solid #dbe3ed;
+}
+.kmc-atelier-views .kmc-cockpit-live-badge.is-unavailable strong { color: #46576f; }
+.kmc-atelier-views .kmc-cockpit-live-badge.is-unavailable small { color: #64748b; }
+.kmc-atelier-views .kmc-economic-principles-detail { background: #f8fbff; padding: 0; }
+.kmc-atelier-views .kmc-economic-principles-detail > summary {
+  padding: 14px 18px;
+  list-style: none;
+  cursor: pointer;
+  color: #2b527d;
+}
+.kmc-atelier-views .kmc-economic-principles-detail > summary::-webkit-details-marker { display: none; }
+.kmc-atelier-views .kmc-economic-principles-detail > summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 22px;
+  font-weight: 500;
+}
+.kmc-atelier-views .kmc-economic-principles-detail[open] > summary::after { content: '−'; }
+.kmc-atelier-views .kmc-economic-principles-detail > summary:focus-visible { outline: 3px solid #196cbd; outline-offset: 2px; }
+.kmc-atelier-views .kmc-economic-principles-detail > ul { padding: 0 22px 0 38px; }
+.kmc-atelier-views .kmc-economic-principles-detail > a { display: inline-block; margin: 0 22px 16px; }
