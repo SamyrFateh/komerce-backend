@@ -69,7 +69,7 @@ describe('priorités économiques', () => {
     const items = views.priorityItems({ decision: { decision_status: 'NOT_DECISIONAL', reason: 'MARKET_DECISION_POLICY_REQUIRED' }, components: [], counts: null, reasonLabels: labels });
     expect(items).toEqual([{ id: 'gate', tone: 'warning', title: 'Couverture non décisionnelle', detail: 'Politique requise.', action: null }]);
     expect(views.priorityItems({ decision: { decision_status: 'NOT_DECISIONAL' }, components: [], counts: null })[0].detail).toBe('Raison serveur non précisée.');
-    expect(views.priorityItems({ decision: { decision_status: 'DECISIONAL' }, components: [], counts: null })).toEqual([]);
+    expect(views.priorityItems({ decision: { decision_status: 'COVERED' }, components: [], counts: null })).toEqual([]);
     expect(views.priorityItems({ decision: null, components: undefined, counts: null })).toEqual([]);
   });
 
