@@ -379,8 +379,29 @@
       saveBtn.disabled = true;
       saveBtn.textContent = 'Enregistrement…';
       try {
-        const amountOriginal = Number(built.amountInput.value);
-        const fxRate = Number(built.fxInput.value) || 1;
+        const rawAmount = built.amountInput.value.trim();
+        const amountOriginal = Number(rawAmount);
+        const fxRate = Number(built.fxInput.value);
+        if (!built.chargeSelect.value) throw new Error('Choisissez une charge valide.');
+        if (!built.fromInput.value || !built.toInput.value || built.toInput.value <= built.fromInput.value) {
+          throw new Error('Renseignez une période de début et de fin valide.');
+        }
+        if (!rawAmount || !Number.isFinite(amountOriginal) || amountOriginal === 0) {
+          throw new Error('Saisissez un montant non nul.');
+        }
+        if (built.eventKindSelect.value === 'ACCRUAL' && amountOriginal <= 0) {
+          throw new Error('Une nouvelle charge doit avoir un montant positif.');
+        }
+        if (built.eventKindSelect.value === 'REVERSAL' && amountOriginal >= 0) {
+          throw new Error('Une annulation doit avoir un montant négatif.');
+        }
+        if (!built.adjustsWrap.hidden && !built.adjustsSelect.value) {
+          throw new Error('Choisissez le fait d’origine à corriger.');
+        }
+        if (!built.evidenceInput.value.trim() || built.evidenceInput.value.trim().length < 3) {
+          throw new Error('Une référence de preuve est obligatoire.');
+        }
+        if (!Number.isFinite(fxRate) || fxRate <= 0) throw new Error('Le taux de conversion doit être positif.');
         const body = {
           charge_id: built.chargeSelect.value,
           event_kind: built.eventKindSelect.value,
