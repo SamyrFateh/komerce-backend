@@ -15,6 +15,9 @@ const catalog = {
   categories: [{ key: 'maison', label: 'Maison', is_active: true, subcategories: [
     { key: 'luminaire', label: 'Luminaire', is_active: true },
     { key: 'decor', label: 'Décoration', is_active: true },
+  ] }, { key: 'tech', label: 'Tech', is_active: true, subcategories: [
+    { key: 'phone', label: 'Téléphones', is_active: true },
+    { key: 'phone-accessories', label: 'Accessoires téléphone', is_active: true },
   ] }],
   products: [
     { record_kind: 'candidate', candidate_ref: 'KSC-TEST-RAW',
@@ -45,9 +48,9 @@ const catalog = {
       media_status: 'source_recoverable',
       issues: ['taxonomy_to_confirm','editorial_to_complete','media_missing'] },
     { record_kind: 'product', product_ref: 'KPR-000088',
-      candidate_ref: 'KSC-000169', name: '3Pcs Privacy Hydrogel Film',
+      candidate_ref: 'KSC-000169', name: '3Pcs Privacy Hydrogel Film For Vivo V30 V40 V50 V60 V70 SE Pro Lite 4G 5G For Vivo V40E V60e V70 FE Anti-Spy Screen Protector',
       supplier_name: 'AliExpress', source_locale: 'en', content_source: 'connector_raw',
-      boutique_category_key: 'maison', boutique_subcategory_key: 'luminaire',
+      boutique_category_key: 'tech', boutique_subcategory_key: 'phone',
       lifecycle_status: 'active', is_active: false, work_status: 'editorial_to_complete',
       operator_group: 'correction', issues: ['editorial_to_complete'] },
     { record_kind: 'product', product_ref: 'KPR-TEST-APPROVED', name: 'Luminaire validé',
