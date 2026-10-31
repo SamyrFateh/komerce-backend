@@ -432,7 +432,8 @@
         refreshNavigation(user, context);
         return;
       }
-      const payload = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure`);
+      const pricePage = new URL(global.location.href).searchParams.get('price_page') || '1';
+      const payload = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure?price_page=${encodeURIComponent(pricePage)}`);
 
       root.className = 'kmc-workspace';
       root.setAttribute('data-workspace-kind', 'market-catalog');
