@@ -188,11 +188,6 @@
     if (!items.length) list.appendChild(el(doc, 'p', 'kmc-economic-family-preview-empty', 'Données de période indisponibles.'));
     preview.appendChild(list);
     if (footer) preview.appendChild(el(doc, 'div', 'kmc-economic-family-preview-footer', footer));
-    const detail = el(doc, 'button', 'kmc-economic-family-expand', 'Voir le détail');
-    detail.type = 'button';
-    detail.dataset.expandCostFamily = '';
-    detail.setAttribute('aria-expanded', 'false');
-    preview.appendChild(detail);
     return preview;
   }
 
@@ -263,7 +258,7 @@
     // le portefeuille, comme dans le mock.
     totalRow.appendChild(tableCell(doc, 'Calculé par produit', 'is-total-value is-textual'));
     table.appendChild(totalRow);
-    card.appendChild(table);
+    // No second detail table: the compact list is the sole view.
     return card;
   }
 
@@ -291,6 +286,11 @@
     }));
     card.appendChild(economicPreview(doc, directPreview,
       directValid ? `Total direct : ${formatKmf(directTotal)}` : 'Total à confirmer pour la période'));
+    if (canManage) {
+      const add = el(doc,'button','kmc-inline-add-fixed','+ Ajouter une charge fixe');
+      add.type='button'; add.dataset.addFixedDirect='';
+      card.appendChild(add);
+    }
     rows.forEach(item => {
       table.appendChild(tableCell(doc, item.charge_name || item.charge_family || 'Charge structurelle'));
       table.appendChild(tableCell(doc, formatKmf(item.recognized_amount_kmf), 'is-derived is-number'));
@@ -303,7 +303,7 @@
       totalRow.appendChild(tableCell(doc, formatKmf(totalDirect), 'is-total-value'));
       table.appendChild(totalRow);
     }
-    card.appendChild(table);
+    // No second detail table: the compact list is the sole view.
     return card;
   }
 
@@ -351,7 +351,7 @@
       totalRow.appendChild(tableCell(doc, formatKmf(totalMut), 'is-total-value'));
       table.appendChild(totalRow);
     }
-    card.appendChild(table);
+    // No second detail table: the compact list is the sole view.
     return card;
   }
 
@@ -938,7 +938,10 @@
       container: inlineOptions?.inlineContainer || options.root,
       previousValue: inlineOptions?.previousValue || null,
       previousLabel: isMutualized ? 'Quote-part actuelle du marché' : 'Valeur reconnue sur la période',
+      createChargeEndpoint: inlineOptions?.allowCreateMarketDirect && !isMutualized
+        ? `${marketEndpoint}/structure-charges` : null,
       onClose: () => {
+        if (typeof inlineOptions?.onClose === 'function') inlineOptions.onClose();
         const row = inlineOptions?.inlineContainer;
         const edit = row?.querySelector('[data-edit-structure-charge]');
         if (edit) { edit.hidden = false; }
@@ -1149,6 +1152,29 @@
         row?.querySelector('[data-inline-cost-form]')?.remove();
         const edit = row?.querySelector('[data-edit-inline-cost]');
         if (edit) { edit.hidden = false; edit.focus(); }
+        return;
+      }
+      const addFixed = event.target.closest('[data-add-fixed-direct]');
+      if (addFixed) {
+        if (payload.capabilities?.can_manage_structure_events !== true) return;
+        const card = addFixed.closest('[data-cost-summary="fixed-direct"]');
+        if (!card || card.querySelector('[data-new-fixed-editor-host]')) return;
+        const host = el(doc,'div','kmc-new-fixed-editor-host');
+        host.dataset.newFixedEditorHost = '';
+        card.appendChild(host);
+        addFixed.hidden = true;
+        try {
+          await openStructureEventForm(rootObject,doc,workspace,options,
+            'fixed-direct',null,{
+              inlineContainer:host, previousValue:'—', allowCreateMarketDirect:true,
+              onClose() { addFixed.hidden = false; host.remove(); },
+            });
+        } catch(error) {
+          addFixed.hidden = false;
+          host.remove();
+          card.appendChild(el(doc,'small','kmc-inline-cost-message',
+            'Impossible d’ajouter cette charge : '+error.message));
+        }
         return;
       }
       const structureLine = event.target.closest('[data-edit-structure-charge]');
