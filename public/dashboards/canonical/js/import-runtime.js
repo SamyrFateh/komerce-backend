@@ -1922,6 +1922,100 @@
       .some(input => String(input.value || '') !== '');
   }
 
+  // Compatibility for isolated, read-only-on-mock legacy proof tests only.
+  // This is never selected from operator navigation or runtime mounting.
+  // Keep the backend-detail assertions while new single-screen tests replace
+  // historical mock screenshots. Remove after migration of legacy proofs.
+  function legacyDomainNav(view, run) {
+    // Le shell Canonical porte les trois onglets Sourcing dans sa barre supérieure.
+    // Ne pas reproduire un second rail à l'intérieur du cockpit.
+    if (global.document?.querySelector?.('#canonical-admin-domain-tabs [data-tab="sourcing-suivi"]')) return '';
+    const active = view === 'passages' ? 'passages' : view === 'sources' ? 'sources' : 'live';
+    const tab = (key, label, href) => `<a class="${active === key ? 'is-active' : ''}" href="${href}" data-cockpit-nav ${active === key ? 'aria-current="page"' : ''}>${label}</a>`;
+    return `<nav class="kir-domain-nav" aria-label="Domaine Sourcing"><strong>Sourcing</strong>
+      ${tab('live', 'Suivi', urlFor(run?.run_ref))}${tab('passages', 'Passages', urlFor(run?.run_ref, 'passages'))}${tab('sources', 'Sources', urlFor(run?.run_ref, 'sources'))}
+    </nav>`;
+  }
+
+
+  function renderLegacyTechnicalProof(root, payload) {
+    if (credentialInputInProgress(root)) return;
+    const sourceControls = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
+    const lots = Array.isArray(payload?.lots) ? payload.lots : [];
+    const run = payload?.selected || null;
+    const { view, kind, filters } = params();
+    // L'assistant n'existe que sur la vue Sources.
+    if (view !== 'sources') { wizardState = null; manageState = null; credentialsState = null; }
+    // L'URL fait foi pour les filtres de Passages (Back / Forward / rechargement).
+    if (view === 'passages') Object.assign(passageFilters, filters);
+    root.className = 'kmc-import-runtime kmc-domain-cockpit';
+    root.setAttribute?.('data-cockpit-pattern', 'v1');
+    root.setAttribute?.('data-cockpit-domain', 'imports');
+    root.setAttribute?.('data-cockpit-language', 'live-ops');
+
+    // Vues exclusives : Passages et Sources remplacent le cockpit, avec ou sans passage sélectionné.
+    if (view === 'passages' || view === 'sources') {
+      root.innerHTML = `<section class="kir-page">
+        ${legacyDomainNav(view, run)}
+        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page, payload?.source_controls, payload?.lots) : renderSourcesView(run, sourceControls, lots, Array.isArray(payload?.source_requests) ? payload.source_requests : [])}</main>
+      </section>`;
+      bindAll(root, payload);
+      return;
+    }
+
+    if (!run) {
+      root.innerHTML = `<section class="kir-page">
+        ${legacyDomainNav('overview', null)}
+        <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span><h1>Suivi d’import — Source → Catalogue</h1><p>Aucun passage pour l’instant.</p></div></header>
+        <div class="kir-empty-launch">
+          <div class="kir-empty-launch-copy"><strong>Aucun passage Sourcing</strong><span>Choisissez une source prête, puis lancez son premier passage depuis « Sources ».</span></div>
+          <a class="kir-subtle-link" href="${urlFor(null, 'sources')}" data-cockpit-nav>Gérer les sources →</a>
+        </div>
+      </section>`;
+      bindAll(root, payload);
+      return;
+    }
+
+        // Vue secondaire : elle remplace entièrement le cockpit (jamais empilée dessous).
+    if (view !== 'overview') {
+      root.innerHTML = `<section class="kir-page">
+        ${legacyDomainNav(view, run)}
+        <main class="kir-main">${renderBody(run, view, { population:payload?.population || null, itemTrace:payload?.item_trace || null, kind, sourceControls })}</main>
+      </section>`;
+      bindAll(root, payload);
+      return;
+    }
+
+    // LIVE : le cockpit du passage sélectionné, et rien d'autre.
+    root.innerHTML = `<section class="kir-page">
+      ${legacyDomainNav('overview', run)}
+      <header class="kir-hero kir-live-hero">
+        <div>
+          <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span></div>
+          <div class="kir-live-titlerow"><h1>Suivi d’import — Source → Catalogue</h1><span class="kir-live-badge ${run.status === 'RUNNING' ? 'is-live' : ''}">${run.status === 'RUNNING' ? 'LIVE' : 'RUN'}</span></div>
+          ${lotPicker(run, payload?.run_nav || null, lots)}
+          <p>${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s)</p>
+        </div>
+        <div class="kir-hero-actions kir-live-hero-actions">
+          <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
+          <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
+          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue global →</a>
+        </div>
+      </header>
+
+      ${commandBar(run, sourceControls)}
+      ${persistentRunFlow(run, sourceControls)}
+      ${runTruthStrip(run)}
+      ${providerRuntimeVerdict(run)}
+      ${catalogueHandoff(run)}
+      ${activationState ? '' : runProgressRow(run)}
+      ${renderLiveCore(run)}
+      <main class="kir-main">${renderDecisions(run)}</main>
+    </section>`;
+    bindAll(root, payload);
+  }
+
+
   // The one operator screen. Technically detailed KIR drill-downs remain available
   // for evidence, without becoming competing navigation tabs or writer owners.
   let sourcesExpanded = false;
@@ -2030,6 +2124,7 @@
   }
 
   function render(root, payload) {
+    if (global.__KOMERCE_LEGACY_PROOF__ === true && !mountedRoot) return renderLegacyTechnicalProof(root, payload);
     if (credentialInputInProgress(root)) return;
     const sourceControls = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
     const lots = Array.isArray(payload?.lots) ? payload.lots : [];
