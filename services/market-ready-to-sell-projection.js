@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const pricingMarketCorridor = require('./pricing-market-corridor');
+const { projectAmount } = require('../utils/currency');
 const { assertProductPriceShapeCompatible } = require('./market-local-price-resolution-service');
 
 const ACTIVE_PRICE = 'LOCAL_ACTIVE';
@@ -35,7 +36,7 @@ function decisionState({ priceActive, shapeCompatible, proposalAmount, corridorS
   if (!shapeCompatible) return { key: 'BLOCKED', label: 'Bloqué · prix SKU/variante', tone: 'critical' };
   if (!proposalAmount) return { key: 'NEEDS_PRICE', label: 'Prix à décider', tone: 'warning' };
   if (corridorStatus !== 'READY') return { key: 'REVIEW', label: 'Corridor à confirmer', tone: 'warning' };
-  if (viability === 'NON_VIABLE_STRUCTURAL') return { key: 'BLOCKED', label: 'Économie non viable', tone: 'critical' };
+  if (viability === 'NON_VIABLE_STRUCTURAL') return { key: 'REVIEW', label: 'Coûts / marché à vérifier', tone: 'warning' };
   if (viability === 'VIABLE') return { key: 'READY', label: 'Prêt à vendre', tone: 'positive' };
   return { key: 'REVIEW', label: 'À arbitrer', tone: 'warning' };
 }
@@ -91,9 +92,8 @@ async function buildReadyToSell({
     const id = String(row?.product_id || '');
     if (!id || seen.has(id)) continue;
     const localStatus = priceByProduct.get(id)?.status || null;
-    const stillNeedsDecision = row.decision_recorded !== true
-      || (row.commercial_exposure === 'ENABLED' && localStatus !== ACTIVE_PRICE);
-    if (!stillNeedsDecision) continue;
+    // Catalogue pays = toutes les références, y compris déjà tarifées et exposées.
+    // Le prix actif est affiché sans provoquer une seconde activation.
     seen.add(id);
     sourceRows.push({ ...row, catalog_state: 'published' });
   }
@@ -133,6 +133,21 @@ async function buildReadyToSell({
       shapeReason = error?.code || error?.message || 'market_local_price_shape_conflict';
     }
 
+    const costEconomics = corridor?.selected?.economics || null;
+    async function localCost(value) {
+      const number = positive(value);
+      if (number == null) return null;
+      if (market.currency === 'KMF') return Math.round(number);
+      try {
+        const local = Number(await projectAmount(number, 'KMF', market.currency));
+        return Number.isFinite(local) && local > 0 ? Math.round(local * 100) / 100 : null;
+      } catch (_) { return null; }
+    }
+    const [variableLocal, landedLocal, minimumSafeLocal] = await Promise.all([
+      localCost(costEconomics?.variable_cost_complete_kmf),
+      localCost(costEconomics?.landed_relay_cost_kmf),
+      localCost(costEconomics?.minimum_safe_price_kmf),
+    ]);
     const priceDecision = priceByProduct.get(String(product.id)) || null;
     const priceActive = priceDecision?.status === ACTIVE_PRICE;
     const local = corridor?.corridor?.local || null;
@@ -181,6 +196,12 @@ async function buildReadyToSell({
       exposure_enabled: source.decision_recorded === true && source.commercial_exposure === 'ENABLED',
       local_price_active: priceActive,
       local_price_status: priceDecision?.status || null,
+      variable_cost_kmf: positive(costEconomics?.variable_cost_complete_kmf),
+      variable_cost_local: variableLocal,
+      landed_relay_cost_kmf: positive(costEconomics?.landed_relay_cost_kmf),
+      landed_relay_cost_local: landedLocal,
+      minimum_safe_price_local: minimumSafeLocal,
+      cost_quality: costEconomics?.data_quality || null,
       corridor: {
         status: local?.status || 'UNAVAILABLE',
         confidence: local?.confidence || 'none',
