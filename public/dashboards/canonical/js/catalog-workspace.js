@@ -1805,23 +1805,17 @@
 
   // The Sourcing category picker is the proven existing form, not a new
   // classifier. The candidate service supplies the active pairs and evidence.
-  function openCandidateInspector(context, slot, doc, row) {
+  async function openCandidateInspector(context, slot, doc, row) {
     const { panel, actions, feedback } = inspectorFrame(slot, doc, row, 'candidate');
     panel.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
       'État Sourcing : ' + (row.candidate_state || 'inconnu') +
       ' · Décision de scan : ' + (row.sourcing_decision || 'non mesurée')));
 
     if (row.work_status === 'sourcing_category_review') {
-      feedback.textContent =
-        'Le scanner demande une catégorie économique/douanière. ' +
-        'La catégorie Boutique est une décision distincte : aucun brouillon ne sera créé.';
-      const classify = makeButton(doc, 'Corriger la catégorie économique',
-        'candidate-economic-category-review');
-      actions.appendChild(classify);
-      classify.addEventListener('click', async () => {
-        classify.disabled = true;
-        feedback.textContent = 'Lecture des catégories économiques actives…';
-        try {
+      // One-click correction: the Catalogue row already asked to edit the category.
+      // Fetch the existing authoritative choices immediately, without a second CTA.
+      feedback.textContent = 'Chargement des catégories économiques actives…';
+      try {
           const options = await jsonRequest(context.fetch,
             SOURCING_ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) +
             '/category-options');
@@ -1907,14 +1901,13 @@
               save.disabled = false;
             }
           });
+          if (!panel.parentNode) return panel; // another inspector was opened while loading
           panel.insertBefore(form, panel.querySelector('[data-catalog-source-details]'));
           feedback.textContent = '';
-        } catch (err) {
-          feedback.textContent = actionErrorMessage(err);
-        } finally {
-          classify.disabled = false;
-        }
-      });
+          select.focus();
+      } catch (err) {
+        if (panel.parentNode) feedback.textContent = actionErrorMessage(err);
+      }
       return panel;
     }
     if (row.work_status === 'sourcing_deferred' ||
