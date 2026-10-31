@@ -796,3 +796,48 @@
 .kmc-atelier-views .kmc-inline-add-fixed:focus-visible {
   outline: 3px solid #438be6; outline-offset: 2px;
 }
+
+
+/* Market-owned fixed charge: rename and amend its short note on the same row. */
+.kmc-atelier-views .kmc-inline-cost-form.kmc-structure-reference-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: end;
+  padding: 10px 0;
+}
+.kmc-atelier-views .kmc-structure-reference-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: #39516f;
+}
+.kmc-atelier-views .kmc-structure-reference-field input,
+.kmc-atelier-views .kmc-structure-reference-field textarea {
+  width: 100%;
+  grid-column: auto;
+  grid-row: auto;
+  min-width: 0;
+  border: 1px solid #b9cde1;
+  border-radius: 8px;
+  padding: 8px 9px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+}
+.kmc-atelier-views .kmc-structure-reference-form .kmc-inline-cost-save,
+.kmc-atelier-views .kmc-structure-reference-form .kmc-inline-cost-cancel {
+  grid-column: auto;
+  grid-row: auto;
+  white-space: nowrap;
+}
+.kmc-atelier-views .kmc-structure-reference-form .kmc-inline-cost-message { grid-column: 1 / -1; }
+@media (max-width: 1150px) {
+  .kmc-atelier-views .kmc-inline-cost-form.kmc-structure-reference-form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .kmc-atelier-views .kmc-structure-reference-form .kmc-inline-cost-save,
+  .kmc-atelier-views .kmc-structure-reference-form .kmc-inline-cost-cancel { width: 100%; }
+}
