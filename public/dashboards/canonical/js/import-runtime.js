@@ -1960,7 +1960,7 @@
         <small>${esc(view.label)}</small></li>`;
     }).join('');
     return `<details class="kir-one-panel" id="sourcing-passages" data-unified-passages
-      ${passagesExpanded ? 'open' : ''}>
+      ${passagesExpanded || params().view === 'passages' ? 'open' : ''}>
       <summary><strong>Passages</strong><span>Historique des acquisitions (${list.length} derniers affichés)</span></summary>
       <div class="kir-one-panel-body">
         <ul class="kir-one-passage-list">${rows || '<li>Aucun passage enregistré.</li>'}</ul>
@@ -1972,7 +1972,7 @@
     const sources = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
     const sourceRequests = Array.isArray(payload?.source_requests) ? payload.source_requests : [];
     const active = sources.filter(source => source.state === 'active').length;
-    const open = sourcesExpanded || Boolean(wizardState || manageState || credentialsState);
+    const open = sourcesExpanded || params().view === 'sources' || Boolean(wizardState || manageState || credentialsState);
     return `<details class="kir-one-panel" id="sourcing-sources" data-unified-sources
       ${open ? 'open' : ''}>
       <summary><strong>Sources & imports</strong>
@@ -1983,6 +1983,7 @@
         ${activationStrip(sources)}
         ${wizardMarkup(sources)}
         <p class="kir-one-note">Importer = créer un nouveau passage KIR. Activer = autoriser l’alimentation automatique.</p>
+        <p class="kir-one-note"><a href="/admin/workspaces/sourcing?mode=partners&tab=suppliers">Administration des partenaires fournisseurs →</a></p>
       </div></details>`;
   }
 
