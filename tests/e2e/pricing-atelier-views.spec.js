@@ -46,6 +46,11 @@ async function mount(page, { caps = {}, access = null, posts = [], search = '', 
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
     }
+    if (route.request().method() === 'PATCH' && url.pathname.includes('/structure-charges/')) {
+      const posted = route.request().postDataJSON();
+      posts.push({ path: url.pathname, body: posted, method: 'PATCH' });
+      return json({ ok:true, action:'update_market_direct_structure_details' });
+    }
     if (route.request().method() === 'POST') {
       const posted = route.request().postDataJSON();
       posts.push({ path: url.pathname, body: posted });
@@ -364,6 +369,48 @@ test.describe('Moteur économique · détails et édition unifiés des trois col
       event_kind:'ACCRUAL',evidence_ref:'contract://km/loyer-octobre'});
     expect(posted.body.event.market_id).toBeUndefined();
     expect(posted.body.event.scope_kind).toBeUndefined();
+  });
+
+
+  test('libellé et description : édition directe sur la même ligne, sans modifier le montant', async ({ page }) => {
+    const posts=[];
+    const decision=clone(DEMO.decision);
+    const charge=decision.coverage.structure.evidence
+      .find(item=>item.charge_id==='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+    expect(charge).toBeTruthy();
+    charge.reference_is_market_owned=true;
+    charge.charge_name='Loyer local';
+    charge.charge_description='Ancienne description';
+    await mount(page,{decision,caps:{can_manage_structure_events:true},
+      posts,search:'?market=KM&view=costs'});
+    const row=page.locator('[data-inline-structure-row="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"]');
+    await expect(row.locator('[data-edit-fixed-description]')).toHaveText('Modifier libellé et description');
+    await row.locator('[data-edit-fixed-description]').click();
+    const form=row.locator('[data-edit-fixed-description-form]');
+    await expect(form).toBeVisible();
+    await expect(form.locator('[data-edit-fixed-label]')).toHaveValue('Loyer local');
+    await expect(form.getByRole('textbox',{name:'Description du poste fixe'})).toHaveValue('Ancienne description');
+    await form.locator('[data-edit-fixed-label]').fill('Antenne commerciale KM');
+    await form.getByRole('textbox',{name:'Description du poste fixe'}).fill('Bureau Moroni, abonnement mensuel');
+    expect(posts).toHaveLength(0);
+    await form.getByRole('button',{name:'Enregistrer'}).click();
+    await expect.poll(()=>posts.filter(x=>x.method==='PATCH').length).toBe(1);
+    expect(posts.find(x=>x.method==='PATCH')).toMatchObject({
+      path:'/api/admin/workspaces/pricing/market/KM/structure-charges/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1/description',
+      body:{name:'Antenne commerciale KM',description:'Bureau Moroni, abonnement mensuel'},
+    });
+    expect(posts.filter(x=>x.path.endsWith('/structure-events'))).toHaveLength(0);
+  });
+
+  test('un opérateur marché ne peut pas renommer un coût mutualisé ou partagé', async ({ page }) => {
+    const posts=[];
+    await mount(page,{decision:DEMO.decision,caps:{can_manage_structure_events:true},
+      access:{...FX.market.access,role:'manager'},
+      posts,search:'?market=KM&view=costs'});
+    await expect(page.locator('[data-cost-summary="fixed-mutualized"] [data-edit-fixed-description]')).toHaveCount(0);
+    await expect(page.locator('[data-cost-summary="variable"] [data-edit-fixed-description]')).toHaveCount(0);
+    await expect(page.locator('[data-cost-summary="fixed-direct"] [data-edit-fixed-description]')).toHaveCount(0);
+    expect(posts).toHaveLength(0);
   });
 
   test('chaque famille conserve la même grille libellé / montant / action', async ({ page }) => {
