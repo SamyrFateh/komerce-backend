@@ -752,7 +752,7 @@ test('CAS E/F : Prêts (12) et Action requise (3) — vues exclusives avec exact
   const action = drill('exceptions', '', scenario({ quarantined:3, action_required:3 }, { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }));
   expect((action.match(/kir-row-action/g) || []).length).toBe(3);
   expect(action).not.toContain('kir-run-truth');
-  expect(action).toContain('Action requise · 3');
+  expect(action).toContain('Écarts à traiter · 3');
 });
 
 test('CAS G : Contrôle automatique = Préparation / Classement / Validation + lien détail technique', () => {
@@ -864,7 +864,7 @@ test('audit : sortie Catalogue = return_to exact vers l’objet Sourcing d’ori
   expect(live).toContain('return_label=Retour+au+suivi');
   expect(live).not.toContain('return_label=Retour+au+passage');
   const exc = drill('exceptions', '', scenario({ quarantined:3, action_required:3 }, { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }));
-  expect(exc).toContain('return_label=Retour+%C3%A0+Action+requise');
+  expect(exc).toContain('return_label=Retour+au+passage');
   expect(exc).toContain(`return_to=%2Fadmin%2Fimport-runtime%3Frun%3D${RUN}%26view%3Dexceptions`);
 });
 
