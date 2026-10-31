@@ -237,7 +237,7 @@ function projectSkuViability(corridor = {}, economics = {}) {
   };
 }
 
-async function resolveProduct(productRef, q = db) {
+async function resolveProduct(productRef, q = db, { allowInactive = false } = {}) {
   const ref = normalizeText(productRef, null, 120);
   if (!ref) throw new PricingMarketCorridorError(400, 'pricing_market_corridor_product_ref_required', 'product_ref requis.');
   const { rows } = await q.query(
@@ -250,7 +250,7 @@ async function resolveProduct(productRef, q = db) {
     [ref]
   );
   const product = rows[0];
-  if (!product || !product.is_active) {
+  if (!product || (!product.is_active && !allowInactive)) {
     throw new PricingMarketCorridorError(404, 'pricing_market_corridor_product_not_found', 'Produit actif introuvable.');
   }
   return product;
@@ -446,7 +446,9 @@ async function previewMarketPrice({ market, productRef, amount }) {
   if (amount == null || amount === '' || !Number.isFinite(localAmount) || localAmount <= 0 || localAmount > 1e12) {
     throw new PricingMarketCorridorError(400, 'market_price_preview_invalid', 'Prix de vente invalide.');
   }
-  const product = await resolveProduct(productRef);
+  // A prepared catalogue candidate can be priced before global first publication.
+  // The later validation + activation writer still enforces catalogue readiness.
+  const product = await resolveProduct(productRef, db, { allowInactive: true });
   const projectedPriceKmf = await projectToKmf(localAmount, market.currency);
   const economics = await computeEconomics(product, market, projectedPriceKmf);
   const variableKmf = finitePositive(economics.variable_cost_complete_kmf);
