@@ -242,7 +242,7 @@
       return section;
     }
     const policy = decision.policy || null;
-    const decisional = decision.decision_status === 'DECISIONAL';
+    const decisional = ['COVERED', 'UNCOVERED'].includes(decision.decision_status) && decision.coverage?.coverage_ratio != null;
     section.appendChild(metricLine(doc, 'Couverture N3', decisional ? 'Décisionnelle' : 'Non décisionnelle', decisional ? null : 'warning'));
     if (!decisional) {
       section.appendChild(el(doc, 'p', 'kmc-atelier-note', `Aucun ratio affiché. Motif serveur : ${String((reasonLabels && reasonLabels[decision.reason]) || decision.reason || 'non précisé').replace(/\.$/, '')}.`));
