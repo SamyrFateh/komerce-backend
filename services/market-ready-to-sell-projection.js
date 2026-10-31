@@ -218,6 +218,9 @@ async function buildReadyToSell({
         currency: market.currency,
         source: proposalSource,
       },
+      // Preview of the displayed proposal. The browser never computes business contribution.
+      contribution_at_proposed_local: proposalAmount != null && variableLocal != null
+        ? Math.round((proposalAmount - variableLocal) * 100) / 100 : null,
       decision_state: state,
       can_approve: canApprove,
       required_capabilities: requiredCapabilities,
