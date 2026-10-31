@@ -147,11 +147,11 @@
   function renderAttentionNote(doc, payload) {
     const signals = payload.signals || {};
     const items = [
-      ['retraits_en_retard', 'retraits en retard'],
-      ['litiges_ouverts', 'litiges ouverts'],
-      ['commandes_bloquees', 'commandes bloquées'],
+      ['retraits_en_retard', 'retrait en retard', 'retraits en retard'],
+      ['litiges_ouverts', 'litige ouvert', 'litiges ouverts'],
+      ['commandes_bloquees', 'commande bloquée', 'commandes bloquées'],
     ].filter(([key]) => isNumber(signals[key]) && signals[key] > 0)
-      .map(([key, label]) => `${signals[key]} ${label}`);
+      .map(([key, singular, plural]) => `${signals[key]} ${signals[key] === 1 ? singular : plural}`);
     if (!items.length) return null;
     const notice = el(doc, 'p', 'kmc-ord-attention', `À surveiller : ${items.join(' · ')}`);
     notice.setAttribute('role', 'status');
