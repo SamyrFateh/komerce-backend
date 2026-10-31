@@ -4,6 +4,7 @@ on:
     types: [opened]
 permissions:
   contents: read
+  issues: write
 concurrency:
   group: staging-retire-rct1-fixture-products
   cancel-in-progress: false
@@ -12,7 +13,8 @@ jobs:
     if: >-
       github.actor == github.repository_owner &&
       (github.event.issue.title == '[staging-op] audit-rct1-sourcing-handoffs' ||
-       github.event.issue.title == '[staging-op] retire-rct1-sourcing-handoffs')
+       github.event.issue.title == '[staging-op] retire-rct1-sourcing-handoffs' ||
+       github.event.issue.title == '[staging-op] verify-rct1-sourcing-handoffs')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -43,6 +45,35 @@ jobs:
       - name: Re-read after retirement
         if: github.event.issue.title == '[staging-op] retire-rct1-sourcing-handoffs'
         run: node scripts/recette/staging-rct1-retire-sourcing-handoffs.js --dry-run
+      - name: Require five deactivated products (read only final proof)
+        if: github.event.issue.title == '[staging-op] verify-rct1-sourcing-handoffs'
+        run: |
+          node -e "const r=require('./test-results/staging-rct1-sourcing-retirement/dry-run.json'); if(r.status!=='RCT1_SOURCING_DRY_RUN_VERIFIED'||r.after.length!==5||r.after.some(x=>x.active!==false||x.available!==false)){console.error('RCT1_SOURCING_REMAINING_OR_AUDIT_BLOCKED');process.exit(1)}console.log('RCT1_SOURCING_FIVE_RETIRED_VERIFIED')"
+      - name: Post verified staging report to initiating issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const base = 'test-results/staging-rct1-sourcing-retirement/';
+            const file = base + (fs.existsSync(base + 'apply.json') ? 'apply.json' : 'dry-run.json');
+            const report = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file,'utf8')) : null;
+            const rows = report?.after || [];
+            const evidence = rows.map(r => '- ' + r.candidate + ' / ' + r.product +
+              ': active=' + r.active + ', available=' + r.available).join('\n');
+            const lines = [
+              'RCT1 Sourcing staging — rapport automatisé',
+              'Résultat : ' + (report?.status || 'NO_REPORT'),
+              'Transaction : ' + (report?.transaction || 'NOT_STARTED'),
+              'Lignes : ' + rows.length + ' ; modifiées : ' + (report?.changed ?? 0),
+              'Contrôle : ' + (process.env.GITHUB_JOB || 'retirement'),
+              evidence,
+              'Motif de refus : ' + (report?.reason || 'aucun'),
+            ];
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, body: lines.join('\n'),
+            });
       - name: Save evidence
         if: always()
         uses: actions/upload-artifact@v4
