@@ -883,8 +883,7 @@
       label: 'Économie',
       items: Object.freeze([
         Object.freeze({ id: 'workspace-pricing', label: 'Prix & économie', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read', surfaces: ['pricing-workspace'] }),
-        Object.freeze({ id: 'workspace-refinery', label: 'Raffinerie', href: '/admin/workspaces/catalog?view=refinery', roles: ['admin'], surfaces: [] }),
-        Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
+        Object.freeze({ id: 'workspace-catalog', label: 'Catalogue global', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
       ]),
     }),
     Object.freeze({
@@ -941,8 +940,7 @@
       Object.freeze({ id: 'pricing-overview', label: 'Vue d’ensemble', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'] }),
     ]),
     catalog: Object.freeze([
-      Object.freeze({ id: 'catalog-refinery', label: 'Raffinerie', href: '/admin/workspaces/catalog?view=refinery', roles: ['admin'] }),
-      Object.freeze({ id: 'catalog-overview', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'] }),
+      Object.freeze({ id: 'catalog-overview', label: 'Catalogue global', href: '/admin/workspaces/catalog', roles: ['admin'] }),
 
     ]),
     orders: Object.freeze([
@@ -1029,10 +1027,8 @@
   function sidebarItemActive(item, surface) {
     const current = String(global.location?.pathname || '');
     const search = new URLSearchParams(String(global.location?.search || ''));
-    // Raffinerie et Catalogue partagent un endpoint sans partager la sélection de menu.
-    if (current === '/admin/workspaces/catalog' && ['workspace-refinery', 'workspace-catalog'].includes(item.id)) {
-      return item.id === (search.get('view') === 'refinery' ? 'workspace-refinery' : 'workspace-catalog');
-    }
+    // Le Catalogue global est l'unique destination métier de préparation.
+    if (current === '/admin/workspaces/catalog' && item.id === 'workspace-catalog') return true;
     if ((item.surfaces || []).includes(surface)) return true;
     return Boolean(current && current === String(item.href || '').split('?')[0]);
   }
@@ -1127,7 +1123,7 @@
         { id: 'sourcing-suivi', label: 'Suivi', href: '/admin/import-runtime' + (run ? `?run=${encodeURIComponent(run)}` : '') },
         { id: 'sourcing-passages', label: 'Passages', href: `/admin/import-runtime?${suffix}view=passages` },
         { id: 'sourcing-sources', label: 'Sources', href: `/admin/import-runtime?${suffix}view=sources` },
-        { id: 'sourcing-candidats', label: 'Décisions candidates', href: '/admin/workspaces/sourcing' },
+        { id: 'sourcing-candidats', label: 'Exceptions source', href: '/admin/workspaces/sourcing?tab=candidates' },
       ];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub-live') {
@@ -1180,10 +1176,7 @@
       if (hash && ['pricing-products', 'pricing-costs', 'pricing-strategy'].includes(hash)) return hash;
       return 'pricing-overview';
     }
-    if (domainId === 'catalog') {
-      if (search.get('view') === 'refinery') return 'catalog-refinery';
-      return 'catalog-overview';
-    }
+    if (domainId === 'catalog') return 'catalog-overview';
     if (domainId === 'orders') {
       if (surface === 'client-index' || surface === 'client-360') return 'clients';
       if (surface === 'orders') return 'orders';
