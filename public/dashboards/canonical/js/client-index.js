@@ -31,6 +31,13 @@
       ? nav.withReturnTo(path, returnTo, label)
       : path;
   }
+
+  function clientHref(phone) {
+    const loc = globalThis.location;
+    const fromList = loc?.pathname === '/admin/clients'
+      ? `${loc.pathname}${loc.search || ''}` : '/admin/clients';
+    return contextualHref(`/admin/clients/${encodeURIComponent(phone)}`, fromList, 'Retour aux clients');
+  }
   // GAP 3 / LOT A (A3) : le endpoint marché legacy (/api/admin/entities/clients/market/:code,
   // gated requireAdmin) est remplacé par le endpoint DELEGATION
   // (/api/market-delegation/markets/:marketCode/clients, gated
@@ -43,6 +50,33 @@
     Object.freeze({ value: 'ltv', label: 'Valeur client' }),
     Object.freeze({ value: 'orders', label: 'Nombre de commandes' }),
   ]);
+
+  function initialListState(search) {
+    const q = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+    const sort = q.get('sort') || 'recent';
+    const rawPage = Number(q.get('page'));
+    return {
+      search: String(q.get('search') || '').trim().slice(0, 120),
+      sort: SORT_OPTIONS.some(item => item.value === sort) ? sort : 'recent',
+      page: Number.isSafeInteger(rawPage) && rawPage > 0 && rawPage <= 10000 ? rawPage : 1,
+      page_size: 25,
+    };
+  }
+
+  function reflectListState(state) {
+    const loc = globalThis.location;
+    const history = globalThis.history;
+    if (!loc || loc.pathname !== '/admin/clients' || !history || typeof history.replaceState !== 'function') return;
+    const q = new URLSearchParams(String(loc.search || '').replace(/^\?/, ''));
+    if (state.search) q.set('search', state.search);
+    else q.delete('search');
+    if (state.sort !== 'recent') q.set('sort', state.sort);
+    else q.delete('sort');
+    if (state.page !== 1) q.set('page', String(state.page));
+    else q.delete('page');
+    const query = q.toString();
+    history.replaceState(history.state, '', loc.pathname + (query ? `?${query}` : '') + (loc.hash || ''));
+  }
 
   function endpointForContext(adminContext, contextContract, requestedMarket) {
     if (!contextContract || typeof contextContract.resolveMarketView !== 'function') {
@@ -205,7 +239,7 @@
     table.className = 'kmc-data-table';
     const thead = doc.createElement('thead');
     const header = doc.createElement('tr');
-    ['Client', 'Téléphone', 'Commandes', 'Valeur client', 'Panier moyen', 'Dernière commande', 'Marchés', ''].forEach(label => {
+    ['Client', 'Téléphone', 'Commandes', 'Valeur client', 'Panier moyen', 'Dernière commande', 'Marchés', 'Dossier'].forEach(label => {
       const th = text(doc, 'th', '', label);
       th.setAttribute('scope', 'col');
       header.appendChild(th);
@@ -226,9 +260,12 @@
         Array.isArray(row.markets) && row.markets.length ? row.markets.join(' · ') : '—',
       ].forEach(value => tr.appendChild(text(doc, 'td', '', value)));
       const actionCell = doc.createElement('td');
-      const link = text(doc, 'a', 'kmc-entity-nav-link', 'Client 360');
-      link.setAttribute('href', contextualHref(`/admin/clients/${encodeURIComponent(row.phone)}`, '/admin/clients', 'Retour aux clients'));
-      actionCell.appendChild(link);
+      if (row.phone) {
+        const link = text(doc, 'a', 'kmc-entity-360-action', 'Voir 360');
+        link.setAttribute('href', clientHref(row.phone));
+        link.setAttribute('aria-label', `Voir 360 · client ${row.name || 'sans nom'}`);
+        actionCell.appendChild(link);
+      }
       tr.appendChild(actionCell);
       tbody.appendChild(tr);
     });
@@ -269,7 +306,7 @@
     if (!doc || !ui || !ui.Section || !ui.UIState) throw new Error('canonical_client_index_ui_missing');
 
     const endpoint = endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
-    const state = { search: '', sort: 'recent', page: 1, page_size: 25 };
+    const state = initialListState(globalThis.location?.search);
     rootNode.className = 'kmc-client-index';
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc));
@@ -298,6 +335,7 @@
 
       try {
         const payload = await jsonRequest(fetchFn, buildQueryUrl(endpoint, state));
+        reflectListState(state);
         if (!Array.isArray(payload.clients) || !payload.clients.length) {
           ui.UIState.render(results.slot, 'empty', 'Aucun client visible dans ce périmètre.');
         } else {
@@ -330,6 +368,9 @@
     createFilterForm,
     renderClientTable,
     renderPagination,
+    clientHref,
+    initialListState,
+    reflectListState,
     mount,
   });
 });

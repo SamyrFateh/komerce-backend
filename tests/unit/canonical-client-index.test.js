@@ -69,7 +69,8 @@ test('renderClientTable produit un drill Client 360 sur le téléphone métier',
   expect(table).not.toBeNull();
   const all = [];
   (function walk(n) { all.push(n); (n.children || []).forEach(walk); })(container);
-  const link = all.find(n => n.tagName === 'A' && n.textContent === 'Client 360');
+  const link = all.find(n => n.tagName === 'A' && n.textContent === 'Voir 360');
+  expect(link.className).toBe('kmc-entity-360-action');
   expect(link.setAttribute).toHaveBeenCalledWith('href', '/admin/clients/%2B2691234567');
   expect(index.renderClientTable(container, document, { clients: [] })).toBeNull();
 });

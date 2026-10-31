@@ -78,6 +78,17 @@
         .join(' · ')
     ));
 
+    // Return to the true origin (including its filters), validated by the
+    // shared navigation policy. Deep links without context fall back to the list.
+    const navigation = globalThis.KomerceCanonicalNavigation;
+    const origin = navigation && typeof navigation.resolveBackTarget === 'function'
+      ? navigation.resolveBackTarget('order-360', globalThis.location?.search || '')
+      : null;
+    const back = text(doc, 'a', 'kmc-entity-return', `← ${origin?.label || 'Retour aux commandes'}`);
+    back.setAttribute('href', origin?.href || '/admin/orders');
+    back.setAttribute('data-entity-return', 'order-360');
+    header.appendChild(back);
+
     // Navigation transverse belongs to the shared sidebar. This dossier links
     // only to an entity actually related to the order.
     const clientPhone = order.customer && order.customer.phone;
