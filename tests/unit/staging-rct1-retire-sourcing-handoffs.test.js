@@ -62,7 +62,9 @@ test('all other fields remain identical; apply proves disabled',()=>{
 
 test('SQL audit never mutates candidate lineage and blocks real orders',()=>{
   const script=fs.readFileSync(path.resolve(__dirname,'../../scripts/recette/staging-rct1-retire-sourcing-handoffs.js'),'utf8');
-  expect(script).toContain("sc.supplier_product_id=ANY($1::text[])");
+  expect(script).toContain("WHERE p.product_ref=ANY($1::text[])");
+  expect(script).toContain("FROM sourcing_candidates WHERE product_id=p.id");
+  expect(script).toContain("sc.supplier_product_id");
   expect(script).toContain("sc.supplier_name");
   expect(script).toContain("o.simulation_scope IS DISTINCT FROM 'RCT1'");
   expect(script).toContain("RCT1_SOURCING_REAL_SOURCE_ASSOCIATED");

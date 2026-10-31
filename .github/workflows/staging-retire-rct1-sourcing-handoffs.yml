@@ -59,13 +59,16 @@ jobs:
             const file = base + (fs.existsSync(base + 'apply.json') ? 'apply.json' : 'dry-run.json');
             const report = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file,'utf8')) : null;
             const rows = report?.after || [];
-            const evidence = rows.map(r => '- ' + r.candidate + ' / ' + r.product +
-              ': active=' + r.active + ', available=' + r.available).join('\n');
+            const found = report?.found || [];
+            const evidence = (rows.length ? rows : found).map(r =>
+              '- ' + (r.candidate || r.supplier_ref || 'source absente') +
+              ' / ' + r.product + ': active=' + r.active +
+              ', available=' + r.available).join('\n');
             const lines = [
               'RCT1 Sourcing staging — rapport automatisé',
               'Résultat : ' + (report?.status || 'NO_REPORT'),
               'Transaction : ' + (report?.transaction || 'NOT_STARTED'),
-              'Lignes : ' + rows.length + ' ; modifiées : ' + (report?.changed ?? 0),
+              'Lignes retrouvées : ' + (rows.length || found.length) + ' ; modifiées : ' + (report?.changed ?? 0),
               'Contrôle : ' + (process.env.GITHUB_JOB || 'retirement'),
               evidence,
               'Motif de refus : ' + (report?.reason || 'aucun'),
