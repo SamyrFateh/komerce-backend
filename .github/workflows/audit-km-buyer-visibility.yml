@@ -1,0 +1,67 @@
+name: Audit KM real buyer visibility — one product read only
+on:
+  push:
+    branches: [audit/km-buyer-visibility-20261031]
+    paths: [.github/workflows/audit-km-buyer-visibility.yml]
+permissions:
+  contents: read
+jobs:
+  visibility:
+    if: github.repository == 'SamyrFateh/komerce-backend'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify actual staging DB identity and buyer-visible gate one by one
+        shell: bash
+        run: |
+          node <<'NODE'
+          'use strict';
+          const db=require('./db');
+          const {confirmTarget}=require('./scripts/recette/target-guard');
+          const {publicCatalogVisibilitySql,canonicalProductImageSql,sellableCatalogUnitSql}=require('./services/catalog-public-view');
+          (async()=>{
+            if(process.env.KOMERCE_ENV!=='staging' || !process.env.DATABASE_URL) throw Error('STAGING_ONLY');
+            const target=await confirmTarget({db});
+            if(!target.confirmed)throw Error('STAGING_DB_TARGET_UNCONFIRMED');
+            const client=await db.pool.connect();
+            try {
+              await client.query('BEGIN TRANSACTION READ ONLY');
+              const query=`SELECT p.product_ref,
+                   p.is_active, p.is_available, p.lifecycle_status,
+                   p.inventory_model, p.has_variants, p.stock,
+                   (\${canonicalProductImageSql('p')} IS NOT NULL) AS has_public_media,
+                   (\${sellableCatalogUnitSql('p')}) AS has_sellable_unit,
+                   EXISTS (SELECT 1 FROM product_market_exposure e
+                     JOIN markets m ON m.id=e.market_id
+                     WHERE e.product_id=p.id AND m.code=$1 AND m.is_active=TRUE
+                       AND e.commercial_exposure='ENABLED') AS exposed_km,
+                   EXISTS (SELECT 1 FROM product_market_price_drafts pp
+                     JOIN markets m ON m.id=pp.market_id
+                     WHERE pp.product_id=p.id AND m.code=$1 AND m.is_active=TRUE
+                       AND pp.status='LOCAL_ACTIVE') AS priced_km,
+                   (\${publicCatalogVisibilitySql('p',{marketCodeParamIndex:1})}) AS buyer_visible
+                 FROM products p WHERE p.product_ref=$2 LIMIT 1`;
+              const row=(await client.query(query,['KM','KPR-000093'])).rows[0];
+              if(!row)throw Error('PRODUCT_NOT_FOUND');
+              console.log('STAGING_KM_BUYER_GATE '+JSON.stringify(row));
+              await client.query('ROLLBACK');
+            }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}
+            finally{client.release()}
+            const r=await fetch(process.env.STAGING_BASE_URL+'/api/products?market=KM&limit=1000');
+            const payload=await r.json();
+            console.log('STAGING_KM_BUYER_API '+JSON.stringify({http:r.status,total:payload.total,returned:Array.isArray(payload.products)?payload.products.length:null,contains_product:!!payload.products?.some(p=>p.product_ref==='KPR-000093')}));
+          })().catch(e=>{console.error('DIAG_BLOCKED: '+String(e.code||e.message).slice(0,200));process.exitCode=1}).finally(()=>db.pool.end());
+          NODE
