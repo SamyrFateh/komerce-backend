@@ -1,0 +1,68 @@
+name: Sourcing / Catalogue global master — certification
+on:
+  push:
+    branches:
+      - feat/sourcing-refinery-catalogue-alignment-20261031
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: sourcing-catalogue-master-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  targeted:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Syntax des interfaces réellement utilisées
+        run: |
+          node --check public/dashboards/canonical/js/sourcing-workspace.js
+          node --check public/dashboards/canonical/js/catalog-workspace.js
+          node --check public/dashboards/canonical/js/import-runtime.js
+          node --check public/dashboards/canonical/js/navigation-policy-v4.js
+      - name: Tests UX / frontières et droits
+        run: >
+          npx jest --config jest.unit.config.js --ci --runInBand --no-coverage
+          tests/unit/sourcing-catalog-finish-v5.test.js
+          tests/unit/navigation-policy-v4.test.js
+          tests/unit/canonical-hybrid-shell-v4.test.js
+          tests/unit/import-runtime-journey.test.js
+          tests/unit/canonical-catalog-workspace-boundary.test.js
+          tests/unit/sourcing-workspace.test.js
+          tests/unit/catalog-workspace.test.js
+          tests/unit/refinery-worklist.test.js
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Chromium isolé, sans écriture staging
+        run: |
+          node scripts/testing/sourcing-catalog-v5-chromium-proof.js
+          node scripts/testing/refinery-v4-chromium-proof.js
+      - name: Captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sourcing-catalogue-master-${{ github.sha }}
+          path: |
+            test-results/sourcing-catalog-v5/*.png
+            test-results/refinery-v4/*.png
+          if-no-files-found: ignore
+          retention-days: 14

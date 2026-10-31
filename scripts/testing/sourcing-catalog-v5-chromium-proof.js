@@ -87,41 +87,24 @@ async function check(page,width){
  await mount(page,'sourcing','');
  const tabs=page.getByRole('tab');
  assert.deepEqual(await tabs.allTextContents(),[
-   'À qualifier · 2','Imports & découvertes · 1',
-   'Portefeuille sourcing · 1','Fournisseurs · 1']);
+   'Sources & imports · 1','Exceptions source · 1','Fournisseurs · 1']);
  assert.equal(await tabs.nth(0).getAttribute('aria-selected'),'true');
- assert.equal(await page.locator('tr[data-candidate-ref]').count(),2);
- const row=page.locator('tr[data-candidate-ref="KSC-NEW"]');
- const primary=row.locator('td:last-child > [data-workspace-action]');
- assert.equal(await primary.count(),1);
- assert.equal(await primary.getAttribute('data-workspace-action'),'scan-candidate');
- const second=page.locator('tr[data-candidate-ref="KSC-SCANNED"] td:last-child > [data-workspace-action]');
- assert.equal(await second.getAttribute('data-workspace-action'),'classify-boutique');
- const more=row.locator('.kmc-sourcing-row-more');
- await more.locator('summary').click();
- assert((await more.locator('[data-workspace-action="promote-candidate"]').count())===1);
- assert((await more.locator('[data-workspace-action="reject-candidate"]').count())===1);
- await more.locator('[data-workspace-action="update-candidate"]').click();
- const correction=page.locator('[data-sourcing-editor-overlay] [role="dialog"]');
- await correction.waitFor({state:'visible'});
- assert((await correction.innerText()).includes('Corriger la source'));
- assert.equal(await correction.locator('[data-sourcing-edit-weight]').inputValue(),'0.2');
- await page.screenshot({path:path.join(output,'sourcing-correction-'+width+'.png'),fullPage:true});
- await correction.locator('[data-workspace-action="cancel-sourcing-edit"]').click();
- await page.locator('tr[data-candidate-ref="KSC-SCANNED"] [data-workspace-action="classify-boutique"]').click();
- const chooser=page.locator('[data-sourcing-editor-overlay] [role="dialog"]');
- await chooser.waitFor({state:'visible'});
- assert((await chooser.innerText()).includes('Catégorie et sous-catégorie boutique'));
- assert((await chooser.locator('[data-sourcing-category-choice] option').first().innerText()).includes('Suggéré'));
- await page.screenshot({path:path.join(output,'sourcing-category-'+width+'.png'),fullPage:true});
- await chooser.locator('[data-workspace-action="cancel-sourcing-edit"]').click();
- await page.screenshot({path:path.join(output,'sourcing-queue-'+width+'.png'),fullPage:true});
- await tabs.nth(1).click();
- assert.equal(await page.locator('#kmc-sourcing-panel-candidates').isVisible(),false);
- assert.equal(await page.locator('#kmc-sourcing-panel-imports').isVisible(),true);
  assert((await page.locator('#kmc-sourcing-panel-imports').innerText()).includes('Lancer un import'));
+ assert.equal(await page.getByText('Découvrir 20 CJ').count(),0);
  await page.screenshot({path:path.join(output,'sourcing-imports-'+width+'.png'),fullPage:true});
- await tabs.nth(3).click();
+
+ await tabs.nth(1).click();
+ assert.equal(await page.locator('tr[data-candidate-ref]').count(),1);
+ const row=page.locator('tr[data-candidate-ref="KSC-NEW"]');
+ assert.equal(await row.locator('[data-workspace-action="scan-candidate"]').count(),1);
+ assert.equal(await page.locator('tr[data-candidate-ref="KSC-SCANNED"]').count(),0);
+ assert.equal(await page.locator('[data-workspace-action="classify-boutique"]').count(),0);
+ assert.equal(await page.locator('[data-workspace-action="promote-candidate"]').count(),0);
+ assert.equal(await page.locator('[data-workspace-action="update-candidate"]').count(),0);
+ assert.equal(await row.locator('a[href*="catalog?search=KSC-NEW"]').count(),1);
+ await page.screenshot({path:path.join(output,'sourcing-exceptions-'+width+'.png'),fullPage:true});
+
+ await tabs.nth(2).click();
  assert((await page.locator('#kmc-sourcing-panel-suppliers').innerText()).includes('Fournisseurs sourcing'));
  assert.equal(await page.evaluate(()=>window.__mutationCalls.length),0);
 
@@ -130,14 +113,20 @@ async function check(page,width){
  assert.equal(await page.locator('.kmc-catalog-context-target').count(),1);
  assert.equal(await page.locator('[data-workspace-action="refinery-correct-active-fr"]').count(),0);
  await page.screenshot({path:path.join(output,'catalog-focused-'+width+'.png'),fullPage:true});
+
  await mount(page,'catalog','?product_ref=P-HISTORICAL');
  assert.equal(await page.locator('[data-focused-product-result="not-in-page"]').count(),1);
  assert((await page.locator('[data-focused-product-result]').innerText()).includes('ne signifie ni rejet ni dépublication'));
- assert.equal(await page.locator('a[href*="view=refinery"]').count(),1);
+ assert.equal(await page.locator('a[href*="catalog?search=P-HISTORICAL"]').count(),1);
  await page.screenshot({path:path.join(output,'catalog-unlisted-'+width+'.png'),fullPage:true});
+
+ await mount(page,'catalog','?view=refinery');
+ assert.equal(await page.locator('h1').first().innerText(),'Catalogue global');
+ assert.equal(await page.locator('.kmc-refinery-main-panel').count(),0);
  const dimensions=await page.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth}));
  assert(dimensions.scrollWidth<=dimensions.width+2,'outer overflow '+JSON.stringify(dimensions));
- return {width,tabs:4,primaryActions:2,catalogueFocus:true,noBusinessMutation:true};
+ assert.equal(await page.evaluate(()=>window.__mutationCalls.length),0);
+ return {width,tabs:3,sourceExceptions:1,catalogueFocus:true,noBusinessMutation:true};
 }
 async function main(){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});

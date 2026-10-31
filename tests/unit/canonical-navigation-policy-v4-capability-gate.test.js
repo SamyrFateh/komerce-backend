@@ -129,7 +129,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
     expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients']);
-    expect(labels('economy')).toEqual(['Prix & économie', 'Raffinerie', 'Catalogue']);
+    expect(labels('economy')).toEqual(['Prix & économie', 'Catalogue global']);
     expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Achats fournisseurs']);
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
@@ -318,14 +318,14 @@ describe('Sourcing — navigation locale du shell Canonical', () => {
     global.location = { pathname: '/admin/import-runtime', search, hash: '' };
     const nav = loadPolicy();
     expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.label))
-      .toEqual(['Suivi', 'Passages', 'Sources', 'Décisions candidates']);
+      .toEqual(['Suivi', 'Passages', 'Sources', 'Exceptions source']);
     expect(nav._activeLocalTab('live', 'import-runtime')).toBe(active);
     expect(nav._localTabsFor('live', { role: 'admin' })[1].href)
       .toContain('view=passages');
   });
 });
 
-test('L7 : /admin/workspaces/sourcing est actif sur « Décisions candidates » dans Live › Sourcing', () => {
+test('L7 : /admin/workspaces/sourcing est actif sur « Exceptions source » dans Live › Sourcing', () => {
   global.location = { pathname: '/admin/workspaces/sourcing', search: '', hash: '' };
   try {
     const nav = loadPolicy();

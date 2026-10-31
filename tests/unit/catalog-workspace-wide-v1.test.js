@@ -199,7 +199,7 @@ test('Dossier opérateur : correction source accessible sans chiffres économiqu
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261031-5');
+  expect(index).toContain('catalog-workspace.js?v=261031-6');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -255,7 +255,7 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261031-5');
+  expect(index).toContain('catalog-workspace.js?v=261031-6');
   expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-5');
 });
 
@@ -271,7 +271,7 @@ test('Validation Catalogue : la préparation française et le contrôle sont dis
   expect(ui).toContain("ENDPOINT + '/approval/'");
   expect(ui).toContain('Validation refusée : ');
   expect(ui).not.toContain("status: 'À valider en Raffinerie'");
-  expect(index).toContain('catalog-workspace.js?v=261031-5');
+  expect(index).toContain('catalog-workspace.js?v=261031-6');
 });
 
 test('Examiner V4 : aucun double Enregistrer/Confirmer visible et conformité garantie par serveur', () => {

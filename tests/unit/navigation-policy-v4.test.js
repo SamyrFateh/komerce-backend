@@ -201,7 +201,7 @@ describe('L7 — rattachement du workspace candidats à Live › Sourcing', () =
     expect(src).toContain("'sourcing-workspace': 'live',");
     expect(src).not.toContain("'sourcing-workspace': 'catalog'");
     expect(src).toContain("'sourcing-workspace': 'import-runtime',");
-    expect(src).toContain("id: 'sourcing-candidats', label: 'Décisions candidates', href: '/admin/workspaces/sourcing'");
+    expect(src).toContain("id: 'sourcing-candidats', label: 'Exceptions source', href: '/admin/workspaces/sourcing?tab=candidates'");
   });
 });
 
@@ -226,11 +226,11 @@ describe('L6 — autorité unique de navigation', () => {
     expect(owners['order-360']).toEqual(['flow-orders']);
   });
 
-  test('Économie regroupe Prix & économie, Raffinerie et Catalogue, hors Commerce', () => {
+  test('Économie regroupe Prix & économie et Catalogue global, sans Raffinerie doublon', () => {
     const nav = loadNav();
     const ids = id => nav.SIDEBAR_GROUPS.find(group => group.id === id).items.map(item => item.id);
-    expect(ids('economy')).toEqual(['workspace-pricing', 'workspace-refinery', 'workspace-catalog']);
-    ['workspace-pricing', 'workspace-refinery', 'workspace-catalog'].forEach(id => expect(ids('commerce')).not.toContain(id));
+    expect(ids('economy')).toEqual(['workspace-pricing', 'workspace-catalog']);
+    ['workspace-pricing', 'workspace-catalog'].forEach(id => expect(ids('commerce')).not.toContain(id));
     expect(nav.SIDEBAR_GROUPS.find(group => group.id === 'economy').label).toBe('Économie');
   });
 

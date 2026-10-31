@@ -196,7 +196,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261031-5');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261031-6');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -227,31 +227,23 @@ test('Catalogue garde une seule surface Canonical et délègue provenance/import
   expect(workspace).not.toContain('nav.appendChild(refineryLink)');
 });
 
-test('la curation guide explicitement la préparation française avant publication', () => {
+test('Catalogue maître : une proposition FR et une correction contextuelle sans prépublication', () => {
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
   expect(workspace).toContain('Copier pour ChatGPT');
-  expect(workspace).toContain('Préparer en français');
-  expect(workspace).toContain('Préparation FR automatique…');
-  expect(workspace).toContain('Enregistrer la préparation FR');
   expect(workspace).toContain('Coller la réponse');
+  expect(workspace).toContain('openFrenchEditor');
   expect(workspace).toContain('/prepare-fr');
-  expect(workspace).toContain('Valider après relecture');
-  expect(workspace).toContain('Description corrigée');
-  expect(workspace).toContain('/admin/products/');
+  expect(workspace).toContain('Appliquer la proposition');
+  expect(workspace).not.toContain('function renderApproval(');
 });
 
-test('Catalogue montre la file immédiatement et conserve le contexte Product 360', () => {
-  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
-  const decision = read('public/dashboards/canonical/js/catalog-workspace-decision.js');
-
-  expect(workspace).toContain("tr.setAttribute(row.product_ref ? 'data-product-ref' : 'data-candidate-ref'");
+test('Catalogue maître : le registre identifie même les candidats sans KPR et conserve le contexte', () => {
+  const workspace=read('public/dashboards/canonical/js/catalog-workspace.js');
+  const decision=read('public/dashboards/canonical/js/catalog-workspace-decision.js');
   expect(workspace).toContain("text(doc, row.product_ref ? 'a' : 'span'");
-  expect(workspace).toContain('Retour à la curation');
   expect(workspace).toContain("params.set('product_ref', context.focusedProductRef)");
+  expect(workspace).toContain('openCandidateInspector(context, slot, doc, row)');
   expect(decision).toContain('requestedProductRef');
-  expect(decision).toContain("classList.add('is-context-target')");
-  expect(decision).toContain("host.insertBefore(approvalSection");
-  expect(decision).not.toContain('Voir la file →');
 });
 
 test('Catalogue conserve un relais visible vers la décision marché après publication', () => {
@@ -262,40 +254,23 @@ test('Catalogue conserve un relais visible vers la décision marché après publ
   expect(workspace).toContain('product_ref');
 });
 
-test('la file de curation garde les décisions et actions dans le viewport', () => {
-  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
-  const css = read('public/dashboards/canonical/css/operations-workspace.css');
-
-  expect(workspace).toContain('kmc-catalog-curation-table');
-  expect(workspace).toContain('<th>Produit</th><th>Catégorie</th><th>Signal sourcing</th><th>État</th><th>Action</th>');
-  expect(workspace).toContain('kmc-catalog-reason');
-  expect(workspace).toContain('curationState');
-  expect(workspace).toContain('renderCurationChain');
-  expect(css).toContain('.kmc-catalog-chain-stage.is-current');
-  expect(css).toContain('.kmc-workspace-action.is-approve');
+test('Catalogue maître : la correction se fait dans le registre et pas dans une seconde file Raffinerie', () => {
+  const workspace=read('public/dashboards/canonical/js/catalog-workspace.js');
+  const css=read('public/dashboards/canonical/css/operations-workspace.css');
+  expect(workspace).toContain('function renderProducts(');
+  expect(workspace).toContain('function openCandidateInspector(');
+  expect(workspace).toContain('function openProductInspector(');
+  expect(workspace).toContain('renderRefineryMonitoring(');
+  expect(workspace).not.toContain('function renderApproval(');
   expect(css).toContain('position: sticky');
-  expect(css).toContain('.kmc-catalog-actions-cell');
-  expect(css).toContain('display: table-cell');
-  expect(css).toContain('.kmc-catalog-actions-inner');
-  expect(css).toContain('.kmc-catalog-cell-stack');
-  expect(css).toContain('min-width: 240px');
-  expect(css).toContain('-webkit-line-clamp: 2');
-  expect(css).toContain('word-break: normal');
-  expect(workspace).toContain("actionContent.className = 'kmc-catalog-actions-inner'");
-  expect(workspace).toContain("signalContent.className = 'kmc-catalog-cell-stack'");
 });
 
-test('la préparation FR canonique reste gratuite et assistée hors runtime', () => {
-  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
-
+test('Catalogue : préparation FR assistée et sans API IA payante', () => {
+  const workspace=read('public/dashboards/canonical/js/catalog-workspace.js');
   expect(workspace).toContain('Copier pour ChatGPT');
-  expect(workspace).toContain('Préparer en français');
   expect(workspace).toContain('Aucun appel API depuis Komerce');
   expect(workspace).toContain('parseFrenchAssistantOutput');
-  expect(workspace).toContain('clipboard.readText');
   expect(workspace).toContain('globalThis.Translator');
-  expect(workspace).toContain('Préparation française automatique dans le navigateur');
-  expect(workspace).toContain('sans API IA payante');
   expect(workspace).not.toContain('ANTHROPIC_API_KEY');
 });
 
@@ -312,181 +287,6 @@ test('la curation montre explicitement le avant/après après préparation FR', 
   expect(css).toContain('.kmc-catalog-compare-grid');
 });
 
-test('Avant / après ouvre une fenêtre hors du tableau sans muter la ligne', async () => {
-  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
-  const doc = fakeDocument();
-  const root = doc.createElement('main');
-  const ui = fakeUi(doc);
-  const prepared = candidate({
-    name: 'Haut homme décontracté à col montant',
-    description: 'Description française relue.',
-    content_source: 'manual',
-    needs_review: true,
-  });
-  const fetchFn = jest.fn(async () => ({
-    ok: true,
-    status: 200,
-    json: async () => workspacePayload([prepared]),
-  }));
-
-  await workspace.mount({
-    location: { search: '?view=refinery' },
-    root,
-    document: doc,
-    ui,
-    fetch: fetchFn,
-    confirm: () => true,
-    prompt: jest.fn(),
-  });
-
-  const row = root.querySelector('[data-product-ref="KPR-131956"]');
-  const rowTextBefore = row.textContent;
-  const toggle = row.querySelector('[data-catalog-compare-toggle]');
-  expect(toggle).not.toBeNull();
-  expect(root.querySelector('[data-catalog-compare-dialog]')).toBeNull();
-
-  await toggle.click();
-
-  const overlay = root.querySelector('[data-catalog-compare-dialog]');
-  expect(overlay).not.toBeNull();
-  expect(row.textContent).toBe(rowTextBefore);
-  expect(overlay.textContent).toContain('KPR-131956');
-  expect(overlay.textContent).toContain('Avant · fournisseur');
-  expect(overlay.textContent).toContain('Après · français');
-  expect(overlay.textContent).toContain('Casual Stand Collar Men Top Outdoor Workwear');
-  expect(overlay.textContent).toContain('Haut homme décontracté à col montant');
-
-  await overlay.querySelector('[data-workspace-action="close-compare"]').click();
-  expect(root.querySelector('[data-catalog-compare-dialog]')).toBeNull();
-});
-
-test('une fiche FR sans prix route vers Atelier économique avant toute validation', async () => {
-  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
-  const doc = fakeDocument();
-  const root = doc.createElement('main');
-  const ui = fakeUi(doc);
-  const prepared = candidate({
-    name: 'Haut homme décontracté à col montant',
-    description: 'Description française relue.',
-    content_source: 'manual',
-    needs_review: true,
-    price_kmf: null,
-  });
-  const fetchFn = jest.fn(async () => ({
-    ok: true,
-    status: 200,
-    json: async () => workspacePayload([prepared]),
-  }));
-
-  await workspace.mount({
-    location: { search: '?view=refinery' },
-    root,
-    document: doc,
-    ui,
-    fetch: fetchFn,
-    confirm: () => true,
-    prompt: jest.fn(),
-  });
-
-  const row = root.querySelector('[data-product-ref="KPR-131956"]');
-  expect(row.textContent).toContain('FR préparé · prix à définir');
-  const pricing = row.querySelector('[data-workspace-action="define-price"]');
-  expect(pricing).not.toBeNull();
-  expect(pricing.href).toBe('/admin/workspaces/pricing?product_ref=KPR-131956#pricing-products');
-  expect(row.querySelector('[data-workspace-action="approve"]')).toBeNull();
-  expect(row.querySelector('[data-workspace-action="override"]')).toBeNull();
-});
-
-test('une fiche FR tarifée retrouve ensuite la validation humaine', async () => {
-  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
-  const doc = fakeDocument();
-  const root = doc.createElement('main');
-  const ui = fakeUi(doc);
-  const prepared = candidate({
-    name: 'Haut homme décontracté à col montant',
-    description: 'Description française relue.',
-    content_source: 'manual',
-    needs_review: true,
-    price_kmf: 12000,
-  });
-  const fetchFn = jest.fn(async () => ({
-    ok: true,
-    status: 200,
-    json: async () => workspacePayload([prepared]),
-  }));
-
-  await workspace.mount({
-    location: { search: '?view=refinery' },
-    root,
-    document: doc,
-    ui,
-    fetch: fetchFn,
-    confirm: () => true,
-    prompt: jest.fn(),
-  });
-
-  const row = root.querySelector('[data-product-ref="KPR-131956"]');
-  expect(row.textContent).toContain('FR préparé · à relire');
-  expect(row.textContent).toContain('Valider après relecture');
-  expect(row.querySelector('[data-workspace-action="define-price"]')).toBeNull();
-  expect(row.querySelector('[data-workspace-action="approve"]')).not.toBeNull();
-});
-
-test('un refus de certification reste visible dans la ligne du produit cliqué', async () => {
-  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
-  const doc = fakeDocument();
-  const root = doc.createElement('main');
-  const ui = fakeUi(doc);
-  const prepared = candidate({
-    name: 'Jupe bouffante en coton blanc',
-    description: 'Description française relue.',
-    content_source: 'manual',
-    needs_review: true,
-    price_kmf: 7990,
-  });
-  const fetchFn = jest.fn(async (url, options = {}) => {
-    if (options.method === 'POST') {
-      return {
-        ok: false,
-        status: 422,
-        json: async () => ({
-          error: 'Certification Catalogue incomplète',
-          code: 'catalog_certification_failed',
-          reasons: ['boutique_subcategory_missing', 'media_missing'],
-          certification_version: 'v-test',
-        }),
-      };
-    }
-    return {
-      ok: true,
-      status: 200,
-      json: async () => workspacePayload([prepared]),
-    };
-  });
-
-  await workspace.mount({
-    location: { search: '?view=refinery' },
-    root,
-    document: doc,
-    ui,
-    fetch: fetchFn,
-    confirm: () => true,
-    prompt: jest.fn(),
-  });
-
-  const row = root.querySelector('[data-product-ref="KPR-131956"]');
-  const feedback = row.querySelector('[data-catalog-action-feedback]');
-  expect(feedback).not.toBeNull();
-  expect(feedback.textContent).toBe('');
-
-  await row.querySelector('[data-workspace-action="approve"]').click();
-
-  expect(feedback.textContent).toContain('Certification Catalogue incomplète');
-  expect(feedback.textContent).toContain('sous-catégorie Boutique absente');
-  expect(feedback.textContent).toContain('média Catalogue absent');
-  expect(feedback.className).toContain('is-critical');
-});
-
 test('la réponse ChatGPT se transforme automatiquement en champs FR', () => {
   const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
   expect(workspace.parseFrenchAssistantOutput(
@@ -494,194 +294,6 @@ test('la réponse ChatGPT se transforme automatiquement en champs FR', () => {
   )).toEqual({
     name: 'Haut homme décontracté à col montant',
     description: 'Vêtement pour extérieur et travail, préparé à partir de la source fournisseur.',
-  });
-});
-
-test('l’entrée Catalogue préchauffée prépare le FR sans clic produit puis laisse la validation humaine', async () => {
-  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
-  const doc = fakeDocument();
-  const root = doc.createElement('main');
-  const ui = fakeUi(doc);
-
-  const second = candidate({
-    product_ref: 'KPR-131957',
-    name: 'Produit déjà français',
-    name_source: 'Produit déjà français',
-    description_source: 'Description source déjà française',
-    source_locale: 'fr',
-  });
-  const initial = workspacePayload([candidate(), second]);
-  const prepared = workspacePayload([
-    candidate({
-      name: 'Haut homme décontracté à col montant',
-      description: 'Description française relue.',
-      content_source: 'manual',
-    }),
-    second,
-  ]);
-
-  const translate = jest.fn(async value => (
-    value.includes('Casual Stand Collar')
-      ? 'Haut homme décontracté à col montant'
-      : 'Description française relue.'
-  ));
-  const destroy = jest.fn();
-  globalThis.__KOMERCE_CATALOG_FR_TRANSLATOR__ = {
-    sourceLanguage: 'en',
-    targetLanguage: 'fr',
-    promise: Promise.resolve({ translate, destroy }),
-  };
-
-  let getCount = 0;
-  const fetchFn = jest.fn(async (url, options) => {
-    if (options.method === 'POST') {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ ok: true, result: { product_ref: 'KPR-131956' } }),
-      };
-    }
-    getCount += 1;
-    return {
-      ok: true,
-      status: 200,
-      json: async () => (getCount === 1 ? initial : prepared),
-    };
-  });
-
-  await workspace.mount({
-    location: { search: '?view=refinery' },
-    root,
-    document: doc,
-    ui,
-    fetch: fetchFn,
-    confirm: () => true,
-    prompt: jest.fn(),
-  });
-
-  const firstPaint = root.querySelector('[data-product-ref="KPR-131956"]');
-  expect(firstPaint.querySelector('[data-workspace-action="prepare-fr-auto"]')).not.toBeNull();
-  expect(firstPaint.querySelector('[data-workspace-action="prepare-fr"]')).toBeNull();
-
-  await Promise.resolve();
-  await Promise.resolve();
-  await new Promise(resolve => setImmediate(resolve));
-
-  const post = fetchFn.mock.calls.find(([, options]) => options.method === 'POST');
-  expect(post).toBeDefined();
-  expect(post[0]).toBe('/api/admin/workspaces/catalog/approval/KPR-131956/prepare-fr');
-  expect(JSON.parse(post[1].body)).toMatchObject({
-    name: 'Haut homme décontracté à col montant',
-    description: 'Description française relue.',
-    reason: 'Préparation FR automatique locale au navigateur — zéro API IA payante',
-  });
-  expect(destroy).not.toHaveBeenCalled();
-
-  const refreshed = root.querySelector('[data-product-ref="KPR-131956"]');
-  expect(refreshed.textContent).toContain('Avant / après');
-  expect(refreshed.textContent).not.toContain('Après · français');
-  expect(refreshed.querySelector('[data-catalog-compare-toggle]')).not.toBeNull();
-  expect(refreshed.textContent).toContain('Définir le prix');
-  expect(refreshed.textContent).not.toContain('Valider après relecture');
-  expect(refreshed.textContent).toContain('FR préparé · CJdropshipping');
-  expect(refreshed.textContent).not.toContain('Préparation humaine · CJdropshipping');
-  expect(refreshed.querySelector('[data-workspace-action="prepare-fr"]')).toBeNull();
-});
-
-test('le parcours FR intégré conserve toute la file et rend le avant/après après sauvegarde', async () => {
-  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
-  const doc = fakeDocument();
-  const root = doc.createElement('main');
-  const ui = fakeUi(doc);
-  const prompt = jest.fn();
-
-  const second = candidate({
-    product_ref: 'KPR-131957',
-    name: 'Second supplier product',
-    name_source: 'Second supplier product',
-  });
-  const initial = workspacePayload([candidate(), second]);
-  const prepared = workspacePayload([
-    candidate({
-      name: 'Haut homme décontracté à col montant',
-      description: 'Description française relue.',
-      content_source: 'manual',
-    }),
-    second,
-  ]);
-
-  const translate = jest.fn(async value => (
-    value.includes('Casual Stand Collar')
-      ? 'Haut homme décontracté à col montant'
-      : 'Description française relue.'
-  ));
-  const destroy = jest.fn();
-  globalThis.Translator = {
-    create: jest.fn(async () => ({ translate, destroy })),
-  };
-
-  let getCount = 0;
-  const fetchFn = jest.fn(async (url, options) => {
-    if (options.method === 'POST') {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ ok: true, result: { product_ref: 'KPR-131956' } }),
-      };
-    }
-    getCount += 1;
-    return {
-      ok: true,
-      status: 200,
-      json: async () => (getCount === 1 ? initial : prepared),
-    };
-  });
-
-  await workspace.mount({
-    location: { search: '?view=refinery' },
-    root,
-    document: doc,
-    ui,
-    fetch: fetchFn,
-    confirm: () => true,
-    prompt,
-  });
-
-  expect(root.querySelectorAll('[data-product-ref]')).toHaveLength(2);
-  const firstRow = root.querySelector('[data-product-ref="KPR-131956"]');
-  const prepare = firstRow.querySelector('[data-workspace-action="prepare-fr"]');
-  expect(prepare).not.toBeNull();
-
-  await prepare.click();
-  const editor = root.querySelector('[data-catalog-fr-editor]');
-  expect(editor).not.toBeNull();
-  expect(editor.textContent).toContain('Source fournisseur');
-  expect(editor.textContent).toContain('Casual Stand Collar Men Top Outdoor Workwear');
-  expect(globalThis.Translator.create).toHaveBeenCalledWith(expect.objectContaining({
-    sourceLanguage: 'en',
-    targetLanguage: 'fr',
-  }));
-  expect(editor.querySelector('[data-catalog-fr-field="name"]').value)
-    .toBe('Haut homme décontracté à col montant');
-  expect(editor.querySelector('[data-catalog-fr-field="description"]').value)
-    .toBe('Description française relue.');
-  expect(destroy).toHaveBeenCalledTimes(1);
-
-  await editor.querySelector('[data-workspace-action="save-fr-editor"]').click();
-
-  expect(root.querySelectorAll('[data-product-ref]')).toHaveLength(2);
-  const refreshed = root.querySelector('[data-product-ref="KPR-131956"]');
-  expect(refreshed.textContent).toContain('Avant / après');
-  expect(refreshed.textContent).not.toContain('Après · français');
-  expect(refreshed.querySelector('[data-catalog-compare-toggle]')).not.toBeNull();
-  expect(refreshed.textContent).toContain('Haut homme décontracté à col montant');
-  expect(prompt).not.toHaveBeenCalled();
-
-  const post = fetchFn.mock.calls.find(([, options]) => options.method === 'POST');
-  expect(post[0]).toBe('/api/admin/workspaces/catalog/approval/KPR-131956/prepare-fr');
-  expect(JSON.parse(post[1].body)).toMatchObject({
-    name: 'Haut homme décontracté à col montant',
-    description: 'Description française relue.',
   });
 });
 
@@ -710,13 +322,12 @@ test('la vue business lit uniquement le Workspace Catalogue canonique', () => {
   expect(workspace).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
 });
 
-
-test('le CTA prix cible explicitement l onglet Produits du Pricing', () => {
-  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
-  expect(workspace).toContain("#pricing-products");
-  expect(workspace).toContain("product_ref=");
+test('Catalogue global : les décisions commerciales sont dirigées vers Catalogue pays', () => {
+  const workspace=read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(workspace).toContain('Décisions marchés');
+  expect(workspace).toContain('/dashboards/canonical/market-catalog.html?product_ref=');
+  expect(workspace).not.toContain('function renderApproval(');
 });
-
 
 test('Catalogue affiche les raisons de certification lisibles au lieu du seul 422 générique', () => {
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
@@ -725,54 +336,6 @@ test('Catalogue affiche les raisons de certification lisibles au lieu du seul 42
   expect(workspace).toContain("media_missing: 'média Catalogue absent'");
   expect(workspace).toContain('actionErrorMessage(error)');
 });
-
-test('Raffinerie et Catalogue ont des files actives distinctes', () => {
-  const source = read('public/dashboards/canonical/js/catalog-workspace.js');
-  expect(source).toContain("get('view') === 'refinery'");
-  expect(source).toContain('if (refinery) {');
-  expect(source).toContain('renderApproval(rootNode, ui, doc, payload, context)');
-  expect(source).toContain('renderProducts(rootNode, ui, doc, payload, context)');
-});
-
-test('Catalogue fini ne declenche jamais une preparation FR automatique', () => {
-  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
-  const candidateRow = candidate({ source_locale: 'en', content_source: 'connector_raw' });
-  expect(workspace.scheduleAutoFrenchPreparation(
-    { workspaceView: 'catalog', autoFrenchRunning: false, autoFrenchAttempted: new Set(), autoFrenchFailed: new Set() },
-    { approval: [candidateRow] },
-  )).toBe(false);
-  const source = read('public/dashboards/canonical/js/catalog-workspace.js');
-  expect(source).toContain("if (context.workspaceView !== 'refinery') return false;");
-  expect(source).toContain("if (context.workspaceView === 'refinery' && !reloadOptions.skipAutoFrenchSchedule)");
-});
-
-test('la Raffinerie affiche les manquants certifies par le serveur et laisse la vue commerciale distincte', () => {
-  const source = read('public/dashboards/canonical/js/catalog-workspace.js');
-  expect(source).toContain("include_readiness: '1'");
-  expect(source).toContain("data-refinery-readiness");
-  expect(source).toContain('reasons.map(certificationReasonLabel)');
-  expect(source).toContain('/admin/workspaces/catalog?view=refinery&product_ref=');
-});
-
-test('la Raffinerie ne duplique pas ses compteurs en bas et préserve les métriques du Catalogue', () => {
-  const source = read('public/dashboards/canonical/js/catalog-workspace.js');
-  const render = source.slice(source.indexOf('function renderPayload('), source.indexOf('async function mount(', source.indexOf('function renderPayload(')));
-  expect(render).toContain("if (context.catalogTab === 'assortment') {");
-  expect(render).toContain("} else if (context.catalogTab === 'taxonomy') {");
-  expect(render).toContain('renderCommercial(rootNode, ui, doc, payload)');
-  expect(render).toContain('renderTaxonomy(rootNode, ui, doc, payload, context)');
-  expect(render).not.toContain('taxonomyPanel');
-  expect(render.indexOf('renderCatalogTabs(rootNode, doc, context)')).toBeLessThan(render.indexOf('renderProducts(rootNode, ui, doc, payload, context)'));
-  // Les compteurs opérationnels du registre sont exclus de la Raffinerie
-  // et des deux rubriques secondaires : aucune métrique hors du bon onglet.
-  expect(render).toContain("if (refinery) {");
-  expect(render).toContain("renderApproval(rootNode, ui, doc, payload, context);");
-  expect(render).not.toContain('ui.MetricStrip.render');
-  expect(render).not.toContain("metricItems(payload.summary, payload.curation).filter");
-  expect(render).toContain('renderApproval(rootNode, ui, doc, payload, context)');
-  expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
-});
-
 
 test('Catalogue unifié : candidat pré-handoff affiché et inspectable sans écriture ni product_ref', async () => {
   const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
@@ -821,7 +384,6 @@ test('Catalogue unifié : candidat pré-handoff affiché et inspectable sans éc
   expect(dossier.textContent).toContain('Lecture seule');
   expect(fetchFn).toHaveBeenCalledTimes(1);
 });
-
 
 test('Catalogue unique : confirmation du classement candidat réutilise la suggestion Sourcing avec grant', async () => {
   const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
@@ -923,7 +485,6 @@ test('Catalogue unique : produit remis a correction de catégorie, français et 
   expect(fetchFn).toHaveBeenCalledTimes(2);
 });
 
-
 test('Finaliser un candidat prêt : blocage serveur visible, aucun POST si non certifié',async()=>{
   const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
@@ -1013,6 +574,7 @@ test.each([
   expect(row.textContent).not.toContain('Contrôler les prérequis');
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });
+
 test('Catalogue unique : un refus du Sourcing empêche la proposition et toute mutation', async () => {
   const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
@@ -1112,7 +674,6 @@ test('Catalogue unique : aperçu fournisseur sans contrat stable ne déclenche a
   expect(panel.querySelector('[data-workspace-action="inspector-recover-media"]')).toBeNull();
 });
 
-
 test('Catalogue : candidat WATCH visible en surveillance, jamais à valider ni promouvoir', async () => {
   const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
@@ -1157,7 +718,6 @@ test('Catalogue : cycle de vie contradictoire, dossier lecture seule, zéro vali
   expect(fetchFn).toHaveBeenCalledTimes(2);
 });
 
-
 test('Catalogue unique : WATCH bloqué par catégorie économique — suggestion, validation et scan sans promotion',async()=>{
   const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
@@ -1201,7 +761,6 @@ test('Catalogue unique : WATCH bloqué par catégorie économique — suggestion
   expect(JSON.parse(posts[0][1].body)).toEqual({category_key:'electronics'});
   expect(requests.filter(([url])=>url.includes('/promote')||url.includes('/approve'))).toHaveLength(0);
 });
-
 
 test('Catalogue : absence de suggestion économique ne sélectionne jamais une catégorie arbitraire',async()=>{
   const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
@@ -1384,6 +943,7 @@ test('KPR-000088: fiche source inactive FR a des champs directs et une catégori
   });
   expect(posts[0][0]).not.toContain('/approve');
 });
+
 test('Catégorie Boutique: sélection directe auditée et pas de mutation à la seule ouverture',async()=>{
   const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
@@ -1450,4 +1010,19 @@ test('Proposition FR longue, sans description fournisseur : un clic suffit, aucu
   expect(body.name).toEqual(title.value);
   expect(body.description).toEqual(desc.value);
   expect(body.description).not.toContain('lorem ipsum');
+});
+
+test('Ancienne URL Raffinerie : arrive sur le Catalogue maître, diagnostic séparé et lecture seule', async () => {
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(), root=doc.createElement('main'), ui=fakeUi(doc);
+  const fetch=jest.fn(async ()=>({ok:true,status:200,json:async()=>workspacePayload([])}));
+  await workspace.mount({location:{search:'?view=refinery'},root,document:doc,ui,fetch});
+  expect(root.textContent).toContain('Catalogue global');
+  expect(root.textContent).not.toContain('Produits actifs à réexaminer');
+  expect(root.querySelector('[data-workspace-action="refinery-correct-active-fr"]')).toBeNull();
+  expect(fetch.mock.calls.every(([, options])=>!options||options.method!=='POST')).toBe(true);
+  expect(workspace.scheduleAutoFrenchPreparation({
+    workspaceView:'catalog',autoFrenchRunning:false,autoFrenchAttempted:new Set(),
+    autoFrenchFailed:new Set(),
+  },{approval:[]})).toBe(false);
 });

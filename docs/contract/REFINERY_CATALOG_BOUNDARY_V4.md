@@ -1,5 +1,8 @@
 # Frontière Raffinerie → Catalogue V4 (2026-10-28)
 
+> **Historique UI, remplacé le 31 octobre 2026 par [SOURCING_CATALOGUE_MASTER_20261031.md](SOURCING_CATALOGUE_MASTER_20261031.md).** Les anciennes files humaines Raffinerie décrites ci-dessous ne sont plus la cible. Les contrats backend, traces et invariants restent en vigueur.
+
+
 ## Décision métier
 
 1. **Sourcing** sélectionne et remet explicitement les candidats.

@@ -1128,11 +1128,11 @@ test('LIVE-01/02 : écouteurs retirés avant chaque montage et aucune relecture 
   expect(src).toMatch(/visibilityState === 'hidden'\) return;/);
 });
 
-test('Sourcing : « Continuer → Raffinerie » ouvre la raffinerie sur le produit gardé, réservé à l’admin, avec retour au passage', () => {
+test('Sourcing : le Catalogue global maître reçoit le produit gardé avec retour au passage', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/import-runtime.js'), 'utf8');
   expect(src).toContain("viewer && viewer.role === 'admin'");
-  expect(src).toContain('/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(trace.product_ref)}');
-  expect(src).toContain('data-next-step="refinery"');
+  expect(src).toContain('/admin/workspaces/catalog?product_ref=${encodeURIComponent(trace.product_ref)}');
+  expect(src).toContain('data-next-step="catalogue"');
   expect(src).toContain('viewer = options.user || null;');
 });
 
