@@ -139,3 +139,46 @@
 .kmc-product-thread-next:hover, .kmc-product-thread-next:focus-visible { background: #ffedd5; }
 .kmc-product-thread-empty { margin: 0; font-size: 13px; color: #64748b; }
 @media (max-width: 680px) { .kmc-product-thread-row { grid-template-columns: 1fr; } .kmc-product-thread-next { justify-self: stretch; text-align: center; } }
+
+
+/* Entity dossiers: important facts first, secondary evidence on demand.
+   Shared by Order 360 and Client 360 only; no workspace or pricing overrides. */
+.kmc-entity-shell > .kmc-entity-extras {
+  display: block;
+  margin-top: 16px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 12px;
+  background: var(--kmc-card, #fff);
+  overflow: hidden;
+}
+.kmc-entity-extras-summary {
+  display: list-item;
+  cursor: pointer;
+  padding: 15px 18px;
+  color: var(--kmc-navy, #0f1a2e);
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+.kmc-entity-extras-summary:hover,
+.kmc-entity-extras-summary:focus-visible {
+  background: var(--kmc-blue-soft, #eef5ff);
+  outline-offset: -3px;
+}
+.kmc-entity-extras-content {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+.kmc-entity-extras-content > .kmc-section,
+.kmc-entity-extras-content > section {
+  margin: 0;
+  min-width: 0;
+}
+.kmc-entity-extras:not([open]) .kmc-entity-extras-content { display: none; }
+@media (min-width: 1000px) {
+  .kmc-entity-header { padding: 14px 18px; }
+  .kmc-entity-title { font-size: clamp(23px, 2.5vw, 32px); overflow-wrap: anywhere; }
+  .kmc-entity-extras-content { padding: 16px; }
+}
