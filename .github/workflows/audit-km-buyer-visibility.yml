@@ -110,6 +110,39 @@ jobs:
                 sellable_unit:x.has_sellable_unit, buyer_visible:x.buyer_visible,
                 inventory_model:x.inventory_model, variants:x.has_variants, stock:x.stock
               }))));
+              const sourceRows=await client.query(`
+                SELECT p.product_ref, p.name AS product_name,
+                       p.is_active, p.is_available, p.lifecycle_status,
+                       COALESCE(pme.commercial_exposure, 'DISABLED') AS exposure,
+                       pm.status AS price_status,
+                       sc.candidate_ref, sc.supplier_name, sc.supplier_product_id,
+                       sc.state AS source_state, ir.run_ref, ir.provider,
+                       (${canonicalProductImageSql('p')} IS NOT NULL) AS has_media,
+                       (${sellableCatalogUnitSql('p')}) AS sellable_unit,
+                       (${publicCatalogVisibilitySql('p', {marketCodeParamIndex:1})}) AS buyer_visible
+                  FROM products p
+                  JOIN sourcing_candidates sc ON sc.product_id=p.id
+                  JOIN import_runtime_runs ir ON ir.import_id=sc.import_id
+                  LEFT JOIN markets m ON m.code=$1
+                  LEFT JOIN product_market_exposure pme
+                    ON pme.product_id=p.id AND pme.market_id=m.id
+                  LEFT JOIN LATERAL (
+                    SELECT status FROM product_market_price_drafts
+                     WHERE product_id=p.id AND market_id=m.id
+                     ORDER BY updated_at DESC LIMIT 1
+                  ) pm ON TRUE
+                 WHERE p.product_ref IN ('KPR-000093','KPR-000094','KPR-000095','KPR-000096')
+                    OR (pme.commercial_exposure='ENABLED'
+                        AND p.product_ref NOT LIKE 'RCT1-%')
+                 ORDER BY p.product_ref, sc.updated_at DESC LIMIT 65`,['KM']);
+              console.log('STAGING_KM_REAL_SOURCE_LINKS '+JSON.stringify(sourceRows.rows.map(x=>({
+                 ref:x.product_ref,candidate:x.candidate_ref,run:x.run_ref,
+                 provider:x.provider,supplier:x.supplier_name,
+                 supplier_product_id:x.supplier_product_id,
+                 source_state:x.source_state,active:x.is_active,
+                 exposure:x.exposure,price:x.price_status,image:x.has_media,
+                 sellable_unit:x.sellable_unit,buyer_visible:x.buyer_visible
+              }))));
               await client.query('ROLLBACK');
             }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}
             finally{client.release()}
