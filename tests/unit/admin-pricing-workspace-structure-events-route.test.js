@@ -111,6 +111,7 @@ const mockMarketCharge = {
     charge:{id:'charge-new',market_owner_id:market.id},fact:{id:'fact-new'},
   })),
   updateMarketChargeDescription: jest.fn(async(market,id,description)=>({id,notes:description})),
+  updateMarketChargeDetails: jest.fn(async(market,id,details)=>({id,name:details.name,notes:details.description})),
 };
 jest.mock('../../services/market-structure-charge-reference',()=>mockMarketCharge);
 
@@ -300,6 +301,18 @@ describe('POST /market/:marketCode/structure-charges — MARKET_DIRECT only',()=
     expect(created.status).toBe(403);
     expect(edited.status).toBe(403);
     expect(mockMarketCharge.createMarketChargeAndFact).not.toHaveBeenCalled();
+    expect(mockMarketCharge.updateMarketChargeDescription).not.toHaveBeenCalled();
+    expect(mockMarketCharge.updateMarketChargeDetails).not.toHaveBeenCalled();
+  });
+  test('libellé et description modifiables ensemble sous autorité du marché',async()=>{
+    const details={name:'Loyer bureaux Douala',description:'Antenne locale'};
+    const response=await request(app())
+      .patch('/api/admin/workspaces/pricing/market/CM/structure-charges/charge-1/description')
+      .send(details);
+    expect(response.status).toBe(200);
+    expect(response.body.action).toBe('update_market_direct_structure_details');
+    expect(mockMarketCharge.updateMarketChargeDetails).toHaveBeenCalledWith(
+      expect.objectContaining({id:'market-cm'}),'charge-1',details);
     expect(mockMarketCharge.updateMarketChargeDescription).not.toHaveBeenCalled();
   });
   test('description modifiable uniquement avec autorité structure.event.record',async()=>{
