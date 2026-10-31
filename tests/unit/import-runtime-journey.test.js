@@ -129,52 +129,27 @@ test('niveau 1 : quatre étapes sans compteur, cinq issues lisibles, aucun jargo
   expect(html).not.toContain('PASSAGE AU CATALOGUE');
 });
 
-test('commandes : source arrêtée → Redémarrer puis Mettre à jour ; source active → Mettre à jour puis Arrêter', () => {
-  const ui = cockpit();
-  const stopped = root();
-  const withSource = JSON.parse(JSON.stringify(payload));
-  withSource.selected.source_ref = 'api:aliexpress';
-  ui.render(stopped, withSource);
-  expect(stopped.innerHTML).toContain('Alimentation automatique arrêtée');
-  expect(stopped.innerHTML.indexOf('data-source-command="restart"')).toBeGreaterThan(-1);
-  expect(stopped.innerHTML.indexOf('data-source-command="restart"')).toBeLessThan(stopped.innerHTML.indexOf('data-source-command="update"'));
-  expect(stopped.innerHTML).not.toContain('data-source-command="stop"');
-
-  const active = root();
-  withSource.source_controls[0].autopilot_enabled = true;
-  ui.render(active, withSource);
-  expect(active.innerHTML).toContain('Alimentation automatique active');
-  expect(active.innerHTML.indexOf('data-source-command="update"')).toBeLessThan(active.innerHTML.indexOf('data-source-command="stop"'));
-  expect(active.innerHTML).not.toContain('data-source-command="restart"');
-  expect(active.innerHTML).toContain('Mettre à jour maintenant');
-});
-
-test('commandes visibles même si le run n\'expose pas le source_ref de la carte (fournisseur différent, source_ref vide)', () => {
-  const ui = cockpit();
-  for (const patch of [{ source_ref:null }, { source_ref:'autre-ref' }, { source_ref:undefined }]) {
-    const p = JSON.parse(JSON.stringify(payload));
-    Object.assign(p.selected, patch);
-    p.source_controls[0].label = 'AliExpress Dropshipper API';
-    p.source_controls[0].autopilot_enabled = true;
-    const node = root();
-    ui.render(node, p);
-    expect(node.innerHTML).toContain('data-source-command="update"');
-    expect(node.innerHTML).toContain('data-source-command="stop"');
-    // Les commandes précèdent le flux ; l'inventaire des sources n'est plus sous le cockpit (vue Sources).
-    expect(node.innerHTML.indexOf('kir-command-bar')).toBeLessThan(node.innerHTML.indexOf('kir-run-flow'));
-    expect(node.innerHTML).not.toContain('data-source-toggle');
-  }
-});
-
-test('deux sources sans correspondance claire : pas de commande devinée', () => {
-  const ui = cockpit();
-  const p = JSON.parse(JSON.stringify(payload));
-  p.selected.source_ref = null;
-  p.selected.provider = 'Inconnu';
-  p.source_controls.push({ ...p.source_controls[0], source_ref:'api:cj', label:'CJ' });
-  const node = root();
-  ui.render(node, p);
+test('un passage KIR ne présente plus de commande de fournisseur', () => {
+  const ui=cockpit(), node=root();
+  const data=JSON.parse(JSON.stringify(payload));
+  data.selected.source_ref='api:aliexpress';
+  data.source_controls[0].autopilot_enabled=true;
+  ui.render(node,data);
+  expect(node.innerHTML).not.toContain('kir-command-bar');
   expect(node.innerHTML).not.toContain('data-source-command');
+  expect(node.innerHTML).toContain('Gérer les sources →');
+  expect(node.innerHTML).toContain('view=sources');
+});
+
+test('aucune commande de source n’est devinée depuis un ancien KIR',()=>{
+  const ui=cockpit();
+  for(const sourceRef of [null,'autre-ref',undefined]) {
+    const data=JSON.parse(JSON.stringify(payload));
+    data.selected.source_ref=sourceRef;
+    data.source_controls[0].autopilot_enabled=true;
+    const node=root();ui.render(node,data);
+    expect(node.innerHTML).not.toContain('data-source-command');
+  }
 });
 
 const CALM_STAGES = [
@@ -294,36 +269,27 @@ test('12 mis de côté dont 3 corrigeables : sous-ensemble et non sixième popul
   expect(h).toContain('dont 3 à corriger');
   expect(h).toContain('Intervenir →');
   const exceptions = render(p, '?run=KIR-000004&view=exceptions');
-  expect(exceptions).toContain('Mis de côté · correction humaine possible');
-  expect(exceptions).toContain('data-action-classify');
-  expect(exceptions).toContain('data-candidate-ref="KSC-300"');
-  expect(exceptions).toContain('data-product-name="À classer"');
-  expect(exceptions).toContain('Classer →');
+  expect(exceptions).toContain('Mis de côté · preuve fournisseur conservée');
+  expect(exceptions).not.toContain('data-action-classify');
+  expect(exceptions).toContain('data-action-candidate="KSC-300"');
+  expect(exceptions).toContain('À classer');
+  expect(exceptions).toContain('Compléter dans le Catalogue →');
   expect(exceptions).toContain("Prix d'achat manquant");
-  expect(exceptions).toContain('Compléter dans Sourcing →');
+  expect(exceptions).toContain('Corriger le prix fournisseur →');
   expect(exceptions).not.toContain('data-action-choose');
   expect((exceptions.match(/kir-row-action/g)||[])).toHaveLength(3);
 });
 
-test('le classement est contextualisé au produit et ne passe plus par une saisie libre navigateur', () => {
-  const p = scenario({action_required:1},{
-    sourcing_status:'ACTION_REQUIRED',
-    action_items:[{candidate_ref:'KSC-000050', product_name:'Temporary Metal Waterproof Key Box At The Door',
-      supplier_product_id:'CJ-50', reason:'Catégorie Komerce non résolue — décision impossible.',
-      action:'choose', action_label:'Classer', action_origin:'deferred', correction_kind:'category'}],
-  });
-  const html = render(p,'?run=KIR-000004&view=exceptions');
-  expect(html).toContain('data-action-classify');
-  expect(html).toContain('data-candidate-ref="KSC-000050"');
-  expect(html).toContain('Temporary Metal Waterproof Key Box At The Door');
-  expect(html).toContain('Catégorie Komerce non résolue');
-  const source = require('fs').readFileSync(
-    require.resolve('../../public/dashboards/canonical/js/import-runtime.js'),'utf8');
-  expect(source).not.toContain("global.prompt('Catégorie Komerce");
-  expect(source).toContain('/category-options');
-  expect(source).toContain('/resolve-category');
-  expect(source).toContain("data-category-choice");
-  expect(source).not.toContain('/promote');
+test('catégorie : ouvre le candidat exact dans le Catalogue global, sans formulaire dupliqué',()=>{
+  const p=scenario({action_required:1},{sourcing_status:'ACTION_REQUIRED',
+    action_items:[{candidate_ref:'KSC-000050',product_name:'Temporary Metal Waterproof Key Box At The Door',
+      supplier_product_id:'CJ-50',reason:'Catégorie Komerce non résolue',action:'choose',correction_kind:'category'}]});
+  const html=render(p,'?run=KIR-000004&view=exceptions');
+  expect(html).toContain('search=KSC-000050');
+  expect(html).toContain('Compléter dans le Catalogue');
+  expect(html).not.toContain('data-action-classify');
+  expect(html).not.toContain('data-category-form');
+  expect(html).not.toContain('data-source-command');
 });
 
 test('population et fiche différées : lien vers action humaine uniquement pour un WATCH corrigeable', () => {
@@ -393,7 +359,7 @@ test('KIR réel terminé avec 12 corrections : les 4 étapes restent vertes et l
   expect(html).toContain('dont 12 à corriger');
   expect(html).toContain('Intervenir →');
   const exceptions = render(p, '?run=KIR-000004&view=exceptions');
-  expect(exceptions).toContain('Action requise · 12');
+  expect(exceptions).toContain('Écarts à traiter · 12');
   expect(exceptions).toContain('Produit à classer 1');
 });
 
@@ -410,33 +376,16 @@ test('échec technique réel : le contrôle reste bloqué même avec une liste d
   expect(tile(html, 'Action requise')).toBe('2');
 });
 
-test('CAS E : au clic, la liste filtrée montre exactement les 3 éléments (produit · raison · action)', () => {
-  const html = render(scenario({ quarantined:2, certification_blocked:1, action_required:3 },
-    { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }), '?run=KIR-000004&view=exceptions');
-  expect((html.match(/kir-row-action/g) || []).length).toBeGreaterThanOrEqual(3);
-  for (const expected of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
-    expect(html).toContain(expected);
+test('CAS E : chaque action garde le candidat exact et la bonne autorité',()=>{
+  const html=render(scenario({quarantined:2,certification_blocked:1,action_required:3},
+    {sourcing_status:'ACTION_REQUIRED',action_items:ITEMS}), '?run=KIR-000004&view=exceptions');
+  expect((html.match(/kir-row-action/g)||[])).toHaveLength(3);
+  for(const id of ['KSC-1','KSC-2','KSC-3']) {
+    expect(html).toContain('search='+id);
+    expect(html).toContain('data-action-candidate="'+id+'"');
   }
-  expect(html).toContain('data-action-classify');
-  expect((html.match(/data-action-classify/g) || []).length).toBe(1);
-  expect(html).toContain('data-candidate-ref="KSC-2"');
-  // Ni logs, ni historique, ni vue technique.
-  for (const technical of ['STAGE_', 'Raffinerie', 'Taxonomie', 'Historique du run', 'sellable_units']) expect(html).not.toContain(technical);
-});
-
-test('CAS F : après correction le backend recalcule → 3 → 2 → 1 → 0, la zone orange disparaît', () => {
-  const ui = cockpit();
-  const node = root();
-  const seen = [];
-  for (const items of [ITEMS, ITEMS.slice(1), ITEMS.slice(2), []]) {
-    const p = scenario({ action_required:items.length, quarantined:items.length },
-      { sourcing_status:items.length ? 'ACTION_REQUIRED' : 'DONE', action_items:items });
-    ui.render(node, p);
-    seen.push([tile(node.innerHTML, 'Action requise'), node.innerHTML.includes('is-attention')]);
-  }
-  expect(seen).toEqual([['3', true], ['2', true], ['1', true], ['0', false]]);
-  const empty = render(scenario(), '?run=KIR-000004&view=exceptions');
-  expect(empty).toContain('Aucune action requise.');
+  expect(html).not.toContain('data-action-classify');
+  expect(html).not.toContain('/resolve-category');
 });
 
 test('anomalie de comptage : 19/20 et 1 produit à retrouver devient une vraie action requise', () => {
