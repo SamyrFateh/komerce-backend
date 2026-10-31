@@ -744,7 +744,7 @@
       panels.set(page.key,panel);
     }
     context.selectTab = key => {
-      context.activeTab = panels.has(key) ? key : 'imports';
+      context.activeTab = panels.has(key) ? key : pages[0].key;
       panels.forEach((panel,tab) => {
         const selected = tab === context.activeTab;
         panel.hidden = !selected;
@@ -753,7 +753,7 @@
       });
     };
     for (const page of pages) page.render(panels.get(page.key),ui,doc,payload,context);
-    context.selectTab(context.focusCandidateRef ? 'candidates' : context.activeTab);
+    context.selectTab(context.focusCandidateRef ? 'candidates' : context.partnerManagement ? 'suppliers' : context.activeTab);
   }
 
   async function mount(options = {}) {
