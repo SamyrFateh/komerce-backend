@@ -49,7 +49,7 @@ test('Commandes has the real canonical illustrated Hero, before all business con
   expect(root.children).toHaveLength(1);
   const page = root.children[0];
   expect(page.attributes['data-dashboard-id']).toBe('orders');
-  expect(page.attributes['data-dashboard-hierarchy']).toBe('hero-attention-primary-secondary');
+  expect(page.attributes['data-dashboard-hierarchy']).toBe('hero-primary');
   expect(page.className).toContain('kmc-domain-cockpit');
   const hero = page.children[0];
   expect(hero.tagName).toBe('HEADER');
@@ -59,15 +59,22 @@ test('Commandes has the real canonical illustrated Hero, before all business con
     'COMMERCE · COMMANDES', 'Commandes',
     expect.stringContaining('Ouvrez le dossier 360'),
   ]);
-  expect(page.children[1].attributes['data-dashboard-role']).toBe('attention');
-  expect(page.children[2].attributes['data-dashboard-role']).toBe('primary');
+  expect(page.children).toHaveLength(2);
+  expect(page.children[1].attributes['data-dashboard-role']).toBe('primary');
+  expect(find(page,x=>x.className==='kmc-ord-kpis')).toBeNull();
+  expect(find(page,x=>x.className==='kmc-ord-foot')).toBeNull();
+  expect(find(page,x=>x.className==='kmc-ord-detail')).toBeNull();
 
-  const tab = find(page,x=>x.attributes['data-ord-tab']==='cash');
-  expect(tab).not.toBeNull();
-  tab.listeners.click();
+  const queue = find(page,x=>x.attributes['data-ord-queue']==='');
+  expect(queue).not.toBeNull();
+  expect(queue.value).toBe('all');
+  queue.value='cash';
+  queue.listeners.change();
   const after = root.children.at(-1);
   expect(after.children[0].attributes['data-dashboard-role']).toBe('hero');
   expect(after.children[0].children[1].textContent).toBe('Commandes');
+  expect(after.children[1].attributes['data-dashboard-role']).toBe('primary');
+  expect(find(after,x=>x.attributes['data-ord-queue']==='').value).toBe('cash');
 });
 
 test('existing illustration and styling activate by canonical role, not by a fake image URL', () => {
