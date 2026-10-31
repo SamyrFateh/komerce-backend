@@ -148,3 +148,10 @@ body.kmc-shell-v4 [data-dashboard-hierarchy] [data-dashboard-role="attention"] .
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card .kmc-decision-card-value.is-text {
   font-size: 20px; line-height: 1.25; font-weight: 700; overflow-wrap: anywhere;
 }
+
+/* Common business priority: keep heroes, compress supporting chrome, not the work. */
+@media (min-width: 900px) {
+  body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-strip { gap: 8px; }
+  body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card { padding: 10px 14px; }
+  body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="secondary"] { margin-top: 8px; }
+}
