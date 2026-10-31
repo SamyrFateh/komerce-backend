@@ -292,7 +292,7 @@
   }
 
   function fixedMutualizedCard(doc, structure, marketLabel, canManageGroup = false) {
-    const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-mutualized is-readonly');
+    const card = el(doc, 'section', `kmc-cockpit-cost-card is-fixed-mutualized${canManageGroup ? '' : ' is-readonly'}`);
     card.dataset.costSummary = 'fixed-mutualized';
     card.dataset.readOnly = String(!canManageGroup);
     card.setAttribute('aria-label', canManageGroup
