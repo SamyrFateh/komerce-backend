@@ -274,7 +274,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(row).toContainText('Valeur actuelle : 500 KMF/commande');
       await input.fill('');
       await row.locator('.kmc-inline-cost-save').click();
-      await expect(row.locator('[data-inline-cost-message]')).toContainText('non enregistré');
+      await expect(row.locator('[data-inline-cost-message]')).toContainText('Valeur invalide');
       expect(posts).toHaveLength(0);
       await input.fill('520');
       await row.locator('.kmc-inline-cost-save').click();
