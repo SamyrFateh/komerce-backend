@@ -143,6 +143,19 @@ jobs:
                  exposure:x.exposure,price:x.price_status,image:x.has_media,
                  sellable_unit:x.sellable_unit,buyer_visible:x.buyer_visible
               }))));
+              const skuProof=await client.query(`
+                SELECT p.product_ref,p.inventory_model,p.has_variants,
+                       (SELECT COUNT(*)::int FROM product_skus sku WHERE sku.product_id=p.id) AS sku_total,
+                       (SELECT COUNT(*)::int FROM product_skus sku
+                         WHERE sku.product_id=p.id AND sku.is_active=TRUE AND sku.stock>0) AS active_in_stock_sku,
+                       (SELECT COUNT(*)::int FROM product_variants pv WHERE pv.product_id=p.id) AS variant_rows,
+                       (SELECT jsonb_agg(sub.variant_combo) FROM (
+                          SELECT sku.variant_combo FROM product_skus sku WHERE sku.product_id=p.id
+                            ORDER BY sku.stock DESC LIMIT 4
+                       ) sub) AS sample_sku_combos
+                  FROM products p WHERE p.product_ref IN ('KPR-000096','KPR-000093')
+                  ORDER BY p.product_ref`);
+              console.log('STAGING_REAL_PRODUCT_SKU_MODEL '+JSON.stringify(skuProof.rows));
               await client.query('ROLLBACK');
             }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}
             finally{client.release()}
