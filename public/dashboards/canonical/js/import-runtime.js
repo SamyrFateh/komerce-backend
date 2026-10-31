@@ -1670,11 +1670,11 @@
       : deferred ? 'Décision : mis de côté'
         : discarded ? 'Décision : écarté'
           : reviewed ? 'À examiner' : 'En cours ou en attente';
-    const refineryHref = trace.product_ref && viewer && viewer.role === 'admin'
-      ? withReturnTo(`/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(trace.product_ref)}`, itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')
+    const catalogueHref = trace.product_ref && viewer && viewer.role === 'admin'
+      ? withReturnTo(`/admin/workspaces/catalog?product_ref=${encodeURIComponent(trace.product_ref)}`, itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')
       : '';
     const catalogue = trace.product_ref
-      ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>${refineryHref ? ` <a class="kir-subtle-link" data-next-step="refinery" href="${refineryHref}">Continuer → Raffinerie</a>` : ''}`
+      ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>${catalogueHref ? ` <a class="kir-subtle-link" data-next-step="catalogue" href="${catalogueHref}">Compléter dans le Catalogue global</a>` : ''}`
       : `<span class="kir-item-note">${halted ? 'Aucune fiche Catalogue créée pour ce passage.' : 'Aucune fiche Catalogue créée à ce stade.'}</span>`;
     return drillHeader(run, title, 'Détail métier de ce produit dans le passage sélectionné.')
       + itemVerdict(trace, situation)
@@ -1994,7 +1994,7 @@
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
-          <a href="${withReturnTo('/admin/workspaces/catalog?view=refinery', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Raffinerie →</a>
+          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue global →</a>
         </div>
       </header>
 
