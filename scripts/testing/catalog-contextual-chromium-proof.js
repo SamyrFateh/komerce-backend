@@ -250,6 +250,18 @@ async function main() {
     assert(await inactive.locator('[data-catalog-quick-field="description"]').isVisible());
     assert(await inactive.locator('[data-catalog-quick-category]').isVisible());
     assert(await inactive.locator('[data-catalog-quick-subcategory]').isVisible());
+    const proposedTitle=await inactive.locator('[data-catalog-quick-field="name"]').inputValue();
+    const proposedDescription=await inactive.locator('[data-catalog-quick-field="description"]').inputValue();
+    assert(proposedTitle.includes('Film de protection d’écran hydrogel anti-espion'),
+      'Expected a French starter, not a blank editor');
+    assert(proposedTitle.includes('V40E') && proposedTitle.includes('lot de 3'),
+      'Supplier compatibility and quantity should be preserved');
+    assert(proposedDescription.includes('Compatibilité exacte à vérifier'),
+      'No unsourced compatibility promise');
+    assert(await inactive.locator('[data-workspace-action="apply-catalog-fr-proposal"]').isVisible());
+    assert((await inactive.locator('[data-catalog-subcategory-summary]').innerText()).includes('sous-catégories'));
+    await inactive.locator('[data-catalog-subcategory-summary]').click();
+    assert(await inactive.locator('[data-catalog-subcategory-option="phone"]').isVisible());
     assert(!(await inactive.innerText()).includes('Aucune correction à apporter'));
     await page.screenshot({path:path.join(output,'kpr-000088-completion-directe.png'),fullPage:true});
     await inactive.locator('[data-workspace-action="close-inspector"]').click();

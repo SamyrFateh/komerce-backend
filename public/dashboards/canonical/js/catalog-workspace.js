@@ -1825,6 +1825,95 @@
 
 
 
+
+  // Une proposition de première passe ne doit jamais inventer de caractéristiques.
+  // On ne connaît que les faits expressément présents dans le titre fournisseur.
+  // Le traducteur natif du navigateur, s'il existe, enrichit ensuite cette ébauche.
+  function catalogFrenchStarter(row = {}) {
+    const source = String(row.name_source || row.supplier_name_original || row.name || '').trim();
+    const descriptionSource = String(row.description_source || row.supplier_description || '').trim();
+    const locale = sourceLanguageTag(row);
+    if (locale === 'fr' || row.content_source === 'manual') {
+      return { name: row.name || source, description: row.description || '', complete: true,
+        origin: 'contenu déjà préparé' };
+    }
+    const title = source.replace(/\s+/g, ' ');
+    const quantity = title.match(/\b(\d+)\s*(?:pcs|pieces|pi[eè]ces)\b/i);
+    const count = quantity ? Number(quantity[1]) : 0;
+    const units = count > 1 && count <= 20 ? ' — lot de ' + count : '';
+    const models = [...new Set((title.match(/\bV\d{2,3}[A-Z0-9]*\b/gi) || [])
+      .map(v => v.toUpperCase()))].slice(0,16);
+    const brand = /\bvivo\b/i.test(title) ? 'Vivo'
+      : /\bsamsung\b/i.test(title) ? 'Samsung'
+      : /\biphone\b/i.test(title) ? 'iPhone' : '';
+    const compatibility = brand + (models.length ? ' ' + models.join(', ') : '');
+    if (/\b(?:hydrogel|screen protector|protective film)\b/i.test(title) &&
+        /\b(?:film|screen protector|hydrogel)\b/i.test(title)) {
+      const material = /hydrogel/i.test(title) ? ' hydrogel' : '';
+      const privacy = /privacy|anti[\s-]*spy/i.test(title) ? ' anti-espion' : '';
+      const subject = 'Film de protection d’écran' + material + privacy;
+      const name = subject + (compatibility ? ' pour ' + compatibility : '') + units;
+      const description = (count > 1 ? 'Lot de ' + count + ' films' : 'Film') +
+        ' de protection d’écran' + material + privacy +
+        (compatibility ? ' pour les téléphones ' + compatibility : '') +
+        '. Compatibilité exacte à vérifier avec les références du fournisseur.';
+      return {name,description,complete:true,origin:'proposition issue des références fournisseur'};
+    }
+    if (/\b(?:phone case|silicone case|protective cover|liquid silicone)\b/i.test(title)) {
+      const material = /silicone/i.test(title) ? ' en silicone' : '';
+      const name = 'Coque de protection' + material +
+        (compatibility ? ' pour ' + compatibility : '') + units;
+      const description = 'Coque de protection' + material +
+        (compatibility ? ' adaptée aux modèles ' + compatibility : '') +
+        '. Vérifier les références compatibles indiquées par le fournisseur.';
+      return {name,description,complete:true,origin:'proposition issue des références fournisseur'};
+    }
+    // Si l'on ne peut pas traduire de manière étayée, montrer la source,
+    // plutôt qu'un champ blanc ou une prétendue traduction générique.
+    return {name:title,description:descriptionSource,complete:false,
+      origin:'texte fournisseur affiché ; traduction française à compléter'};
+  }
+
+  // Traduction native locale, sans service payant ni écriture serveur.
+  // Ne remplace jamais une correction commencée par l'opérateur.
+  async function improveFrenchStarterLocally(row, nameControl, descControl, statusNode, section) {
+    const api = typeof globalThis !== 'undefined' ? globalThis.Translator : null;
+    const cached = primedFrenchTranslatorEntry(row);
+    const language = sourceLanguageTag(row) || 'en';
+    if (!cached && (!api || typeof api.create !== 'function')) return false;
+    if (language === 'fr') return false;
+    const initialName = nameControl.value;
+    const initialDescription = descControl.value;
+    const textSource = {
+      ...row,
+      name_source: row.name_source || row.supplier_name_original || row.name || '',
+      description_source: row.description_source || row.supplier_description || '',
+    };
+    let translator=null;
+    let owned=false;
+    try {
+      if (statusNode) statusNode.textContent='Amélioration de la proposition en français…';
+      if(cached) translator=await cached.promise;
+      else {
+        translator=await api.create({sourceLanguage:language,targetLanguage:'fr'});
+        owned=true;
+      }
+      if (!translator || typeof translator.translate !== 'function') return false;
+      const translated=await translateFrenchValues(textSource, translator);
+      if (typeof section.isConnected === 'boolean' && !section.isConnected) return false;
+      if (nameControl.value === initialName && translated.name) nameControl.value=translated.name;
+      if (descControl.value === initialDescription && translated.description) descControl.value=translated.description;
+      if (statusNode) statusNode.textContent='Proposition en français à relire et corriger si nécessaire.';
+      return Boolean(translated.name);
+    } catch (_) {
+      if (statusNode) statusNode.textContent=
+        'Proposition affichée à partir du fournisseur. Relisez et corrigez si nécessaire.';
+      return false;
+    } finally {
+      if (owned && translator && typeof translator.destroy === 'function') translator.destroy();
+    }
+  }
+
   // Correction directe des champs dans la fiche, sans écran intermédiaire.
   function renderProductQuickFields(context,doc,panel,row,categories,feedback) {
     if (!row.candidate_ref || row.lifecycle_status === 'rejected' ||
@@ -1847,10 +1936,17 @@
     if(issues.includes('editorial_to_complete')){
       const name=makeField('Titre français','name');
       const desc=makeField('Description française','description','textarea');
-      const french=row.content_source==='manual'||isFrenchLocale(row.source_locale);
-      name.input.value=french?(row.name||''):'';
-      desc.input.value=french?(row.description||''):'';
-      section.appendChild(name.wrap);section.appendChild(desc.wrap);
+      const proposal=catalogFrenchStarter(row);
+      name.input.value=proposal.name;
+      desc.input.value=proposal.description;
+      const origin=text(doc,'p','kmc-catalog-inline-proposal-note',
+        proposal.complete
+          ? 'Proposition française · à relire et ajuster avant utilisation.'
+          : 'Texte fournisseur prérempli · traduction française à terminer.');
+      origin.setAttribute('data-catalog-french-proposal-note','');
+      section.appendChild(name.wrap);
+      section.appendChild(desc.wrap);
+      section.appendChild(origin);
       let busy=false;
       const save=async()=>{
         if(busy||(typeof section.isConnected==='boolean'&&!section.isConnected))return;
@@ -1884,6 +1980,19 @@
       };
       name.input.addEventListener('change',save);
       desc.input.addEventListener('change',save);
+      // Une seule action pour accepter la proposition telle quelle.
+      // Aucune sauvegarde automatique de texte proposé sans geste humain.
+      if (proposal.complete) {
+        const use=makeButton(doc,'Utiliser cette proposition','apply-catalog-fr-proposal',true);
+        use.className+=' kmc-catalog-proposal-accept';
+        use.addEventListener('click',save);
+        section.appendChild(use);
+      }
+      // Si le navigateur sait traduire localement, enrichir l'ébauche sans
+      // modifier le catalogue ni effacer une saisie en cours.
+      if (!isFrenchLocale(row.source_locale) && row.content_source !== 'manual') {
+        void improveFrenchStarterLocally(row,name.input,desc.input,origin,section);
+      }
     }
     const active=(categories||[]).filter(c=>c.is_active&&
       (c.subcategories||[]).some(sub=>sub.is_active));
@@ -1947,7 +2056,44 @@
       cat.addEventListener('change',()=>{refresh('');apply.hidden=true;void save();});
       sub.addEventListener('change',()=>{apply.hidden=true;void save();});
       apply.addEventListener('click',save);
-      group.appendChild(catField);group.appendChild(subField);group.appendChild(apply);
+      // Liste lisible des sous-catégories de la catégorie sélectionnée.
+      // Le sélecteur demeure la source unique de la décision, aucune autre page.
+      const detail=doc.createElement('details');
+      detail.className='kmc-catalog-subcategory-explorer';
+      detail.setAttribute('data-catalog-subcategory-explorer','');
+      const heading=doc.createElement('summary');
+      heading.setAttribute('data-catalog-subcategory-summary','');
+      const choices=doc.createElement('div');
+      choices.className='kmc-catalog-subcategory-choices';
+      choices.setAttribute('data-catalog-subcategory-choices','');
+      detail.appendChild(heading);detail.appendChild(choices);
+      const redraw=()=>{
+        const current=active.find(c=>c.key===cat.value);
+        const children=(current?.subcategories||[]).filter(c=>c.is_active);
+        heading.textContent='Voir les '+children.length+' sous-catégories'+
+          (current ? ' de '+(current.label||current.key) : '');
+        choices.replaceChildren();
+        children.forEach(entry=>{
+          const choice=makeButton(doc,entry.label||entry.key,'choose-catalog-subcategory',true);
+          choice.setAttribute('data-catalog-subcategory-option',entry.key);
+          if(entry.key===sub.value)choice.className+=' is-selected';
+          choice.addEventListener('click',async()=>{
+            if (busy) return;
+            sub.value=entry.key;
+            redraw();
+            await save();
+          });
+          choices.appendChild(choice);
+        });
+      };
+      // Actualisation de l'explorateur en même temps que les listes natives.
+      cat.addEventListener('change',redraw);
+      sub.addEventListener('change',redraw);
+      redraw();
+      group.appendChild(catField);
+      group.appendChild(subField);
+      group.appendChild(detail);
+      group.appendChild(apply);
       section.appendChild(group);
     }
     panel.insertBefore(section,panel.querySelector('[data-catalog-action-dock]'));

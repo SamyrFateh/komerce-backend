@@ -196,7 +196,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261031-4');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261031-5');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -1359,9 +1359,18 @@ test('KPR-000088: fiche source inactive FR a des champs directs et une catégori
   const title=panel.querySelector('[data-catalog-quick-field="name"]');
   const description=panel.querySelector('[data-catalog-quick-field="description"]');
   expect(title).not.toBeNull();expect(description).not.toBeNull();
+  expect(title.value).toContain('Film de protection d’écran hydrogel anti-espion');
+  expect(description.value).toContain('protection d’écran hydrogel anti-espion');
+  expect(panel.querySelector('[data-catalog-french-proposal-note]')).not.toBeNull();
+  const proposal=panel.querySelector('[data-workspace-action="apply-catalog-fr-proposal"]');
+  expect(proposal).not.toBeNull();
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
   const cat=panel.querySelector('[data-catalog-quick-category]');
   const sub=panel.querySelector('[data-catalog-quick-subcategory]');
   expect(cat.value).toBe('tech');expect(sub.value).toBe('phone');
+  expect(panel.querySelector('[data-catalog-subcategory-summary]').textContent)
+    .toContain('2 sous-catégories de Tech');
+  expect(panel.querySelectorAll('[data-catalog-subcategory-option]')).toHaveLength(2);
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
   title.value='Film de protection hydrogel pour smartphone';
   description.value='Film de protection transparent compatible avec les téléphones indiqués.';
@@ -1396,10 +1405,49 @@ test('Catégorie Boutique: sélection directe auditée et pas de mutation à la 
   const cat=root.querySelector('[data-catalog-quick-category]');
   const sub=root.querySelector('[data-catalog-quick-subcategory]');
   expect(cat.value).toBe('tech');
+  expect(root.querySelector('[data-catalog-subcategory-summary]').textContent)
+    .toContain('2 sous-catégories de Tech');
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
-  sub.value='accessories';
-  await sub.listeners.change[0]();
+  const choice=root.querySelector('[data-catalog-subcategory-option="accessories"]');
+  expect(choice).not.toBeNull();
+  await choice.click();
+  expect(sub.value).toBe('accessories');
   const posts=fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST');
   expect(posts[0][0]).toContain('/products/KPR-CAT-DIRECT/classify');
   expect(JSON.parse(posts[0][1].body)).toEqual({category:'tech',subcategory:'accessories'});
+});
+
+test('Proposition FR longue, sans description fournisseur : un clic suffit, aucune sauvegarde à ouverture',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.categories=[{key:'tech',label:'Tech',is_active:true,subcategories:[
+    {key:'phone',label:'Téléphones',is_active:true}
+  ]}];
+  payload.products=[{record_kind:'product',product_ref:'KPR-000088',candidate_ref:'KSC-000169',
+    name:'3Pcs Privacy Hydrogel Film For Vivo V30 V40 V50 V60 V70 SE Pro Lite 4G 5G For Vivo V40E V60e V70 FE Anti-Spy Screen Protector',
+    description:null,source_locale:'en',content_source:'connector_raw',
+    lifecycle_status:'active',is_active:false,work_status:'editorial_to_complete',
+    operator_group:'correction',issues:['editorial_to_complete'],
+    boutique_category_key:'tech',boutique_subcategory_key:'phone'}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async(url,opts={})=>({ok:true,status:200,
+    json:async()=>opts.method==='POST'?{ok:true}:payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const title=root.querySelector('[data-catalog-quick-field="name"]');
+  const desc=root.querySelector('[data-catalog-quick-field="description"]');
+  expect(title.value).toContain('V40E');
+  expect(title.value).toContain('lot de 3');
+  expect(desc.value).toContain('Compatibilité exacte à vérifier');
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+  const action=root.querySelector('[data-workspace-action="apply-catalog-fr-proposal"]');
+  expect(action).not.toBeNull();
+  await action.click();
+  const posts=fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST');
+  expect(posts).toHaveLength(1);
+  const body=JSON.parse(posts[0][1].body);
+  expect(body.name).toEqual(title.value);
+  expect(body.description).toEqual(desc.value);
+  expect(body.description).not.toContain('lorem ipsum');
 });
