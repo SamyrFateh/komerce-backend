@@ -1294,7 +1294,7 @@
             method: 'POST', body: { default_value: value, source: 'economic_cockpit_inline_row' },
           });
           note.textContent = 'Enregistré. Actualisation…';
-          await rootObject.KomerceCanonicalPricingWorkspace.mount(options);
+          await rootObject.KomerceCanonicalPricingWorkspace.mount({ ...options, refreshEconomicCockpit: true });
         } catch (error) {
           note.textContent = `Non enregistré : ${error.message}`;
           buttons.forEach(button => { button.disabled = false; });
@@ -1368,7 +1368,7 @@
 
   async function enhance(rootObject, workspace, options, payload) {
     if (!options?.requestedMarket || !options.root || !options.document || !payload) return false;
-    if (options.root.querySelector('[data-pricing-economic-cockpit]')) return true;
+    if (!options.refreshEconomicCockpit && options.root.querySelector('[data-pricing-economic-cockpit]')) return true;
     // Contrat exclusif : le cockpit ne dépend plus d'un DOM Legacy préalable.
     // Le payload serveur suffit à construire la surface approuvée ; cela
     // permet un premier rendu atomique sans jamais exposer l'ancien workspace.
