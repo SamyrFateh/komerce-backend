@@ -673,7 +673,7 @@
     const nav = doc.createElement('nav');
     nav.className = 'kmc-purchasing-tabs';
     nav.setAttribute('aria-label', 'Étapes des achats fournisseurs');
-    [['prepare', 'À préparer'], ['ongoing', 'En cours'], ['history', 'Historique']].forEach(([key, label]) => {
+    [['prepare', "Ordre d'Achat à envoyer"], ['ongoing', "Ordre d'Achat en Cours"], ['history', "Ordre d'Achat terminés"]].forEach(([key, label]) => {
       const button = doc.createElement('button');
       button.type = 'button';
       button.className = 'kmc-purchasing-tab';
