@@ -160,13 +160,12 @@
 
   function render(doc, rootNode, payload, state) {
     rootNode.textContent = '';
-    // Use the same Hero authority and illustration as the other Canonical
-    // dashboards. This page used to create an unstyled h2 and silently lost
-    // the orders-specific illustration, despite its existing CSS asset.
+    // Preserve the canonical illustrated Orders Hero; the body matches the
+    // Clients index rather than a second operational dashboard.
     const page = el(doc, 'div', 'kmc-ord kmc-domain-cockpit');
     page.setAttribute('data-canonical-orders', '');
     page.setAttribute('data-dashboard-id', 'orders');
-    page.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
+    page.setAttribute('data-dashboard-hierarchy', 'hero-primary');
     const head = el(doc, 'header', 'kmc-dashboard-header kmc-ord-head');
     head.setAttribute('data-dashboard-role', 'hero');
     head.appendChild(el(doc, 'p', 'canonical-eyebrow', 'COMMERCE · COMMANDES'));
@@ -256,7 +255,7 @@
     listBox.appendChild(scroller);
     const q = payload.work_queues || {};
     if (['pending_cash', 'to_order', 'awaiting_hub_reception', 'ready_for_parcel'].some(k => q[`${k}_total`] > q[`${k}_shown`])) {
-      listBox.appendChild(el(doc, 'p', 'kmc-ord-muted', 'Liste limitée aux plus anciennes ; les totaux des indicateurs portent sur l’ensemble.'));
+      listBox.appendChild(el(doc, 'p', 'kmc-ord-muted', 'Liste partielle : seules les commandes les plus anciennes sont affichées pour certaines files.'));
     }
     main.appendChild(listBox);
     page.appendChild(main);
