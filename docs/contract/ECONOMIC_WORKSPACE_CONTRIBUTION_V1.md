@@ -79,3 +79,15 @@ Un pourcentage ne sera affiché que si le serveur a fourni une projection canoni
 **Preuve requise** : tests Chromium desktop à 1440 px établissant la géométrie côte à côte, les trois familles visibles, les actions éditables seulement où autorisées, le dépliage et le retour à la vue normale ; captures 3 colonnes et superposées conservées comme référence.
 
 Cette décision concerne uniquement la présentation et n'autorise ni seed de production ni publication automatique des produits du Catalogue marché.
+
+## 7. Simplification UX : édition en ligne (décision du 31 octobre 2026)
+
+- La répartition **en trois colonnes est fixe** sur desktop : elle décrit les catégories économiques, pas une navigation entre modes.
+- Chaque coût variable est affiché dans **sa propre ligne**, sans limite artificielle aux quatre premiers postes, avec sa valeur effective héritée ou propre au marché.
+- Le bouton **Modifier** ouvre **sur cette même ligne** une nouvelle valeur, pendant que la précédente reste visible à côté (unité incluse).
+- La saisie n'engendre **aucune écriture à la frappe** : seuls **Enregistrer** et une confirmation de l'API mettent à jour l'affichage. Champ vide, valeur négative ou erreur serveur ne remplacent jamais la dernière valeur connue. Annuler ne déclenche aucune mutation.
+- La provenance « globale héritée » et la surcharge marché restent explicites ; l'API autorise ou refuse la mutation selon les capacités du marché. Les coûts mutualisés restent **lecture seule depuis le marché**.
+- Pour les **charges fixes directes N3**, le montant de synthèse est une vérité de période et non une variable ordinaire. Le clic **Justifier / corriger** ouvre directement la charge concernée dans le formulaire d'événements audité, avec période et justificatif obligatoires ; il n'est jamais remplacé par un simple PUT de montant.
+- « Voir le détail » donne accès aux unités, provenance et règles de calcul sans être un passage obligé pour modifier un coût variable.
+
+Les tests Chromium doivent prouver le rendu desktop, l'absence du basculement colonne/superposé, le maintien de la dernière valeur pendant l'édition, les erreurs sans écriture et la persistance confirmée par un rechargement serveur. Le test mock ne prouve pas à lui seul un comportement en production.

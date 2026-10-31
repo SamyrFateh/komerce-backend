@@ -70,16 +70,23 @@ function verifyAfter(before, after, apply) {
 }
 
 async function readRows(client, lock = false) {
+  // Anchor selection to the five exact KSC catalog references. Supplier
+  // provenance is verified afterwards, never trusted as the row locator.
   const sql = [
     'SELECT p.id, p.product_ref, p.name, p.is_active, p.is_available,',
     'sc.id AS candidate_id, sc.supplier_product_id, sc.candidate_ref, sc.supplier_name,',
     "md5((to_jsonb(p) - 'is_active' - 'is_available' - 'updated_at')::text) AS preserved_hash",
-    'FROM sourcing_candidates sc JOIN products p ON p.id=sc.product_id',
-    'WHERE sc.supplier_product_id=ANY($1::text[])',
-    'ORDER BY sc.supplier_product_id',
+    'FROM products p',
+    'LEFT JOIN LATERAL (',
+    ' SELECT id, candidate_ref, supplier_name, supplier_product_id',
+    ' FROM sourcing_candidates WHERE product_id=p.id',
+    " ORDER BY (state='imported_to_catalog') DESC, updated_at DESC NULLS LAST, id DESC LIMIT 1",
+    ') sc ON TRUE',
+    'WHERE p.product_ref=ANY($1::text[])',
+    'ORDER BY p.product_ref',
     lock ? 'FOR UPDATE OF p' : ''
   ].join('\n');
-  return (await client.query(sql,[EXPECTED.map(row => row.supplier_product_id)])).rows;
+  return (await client.query(sql,[EXPECTED.map(row => row.product_ref)])).rows;
 }
 
 async function checkLinkedData(client, rows) {
@@ -120,6 +127,9 @@ async function run(mode = process.argv[2], deps = {}) {
     await client.query("SET LOCAL lock_timeout='3500ms'");
     await client.query("SET LOCAL statement_timeout='15000ms'");
     const before=await readRows(client,true);
+    report.found=before.map(row=>({product:row.product_ref,
+      supplier:row.supplier_name, supplier_ref:row.supplier_product_id,
+      active:row.is_active, available:row.is_available}));
     verifyRows(before);
     await checkLinkedData(client,before);
     report.before=before.map(row=>({candidate:row.supplier_product_id,product:row.product_ref,
