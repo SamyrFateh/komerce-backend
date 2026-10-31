@@ -57,6 +57,14 @@ jobs:
               const row=(await client.query(query,['KM','KPR-000093'])).rows[0];
               if(!row)throw Error('PRODUCT_NOT_FOUND');
               console.log('STAGING_KM_BUYER_GATE '+JSON.stringify(row));
+              const {rows: [variants]}=await client.query(
+                `SELECT COUNT(*)::int AS variant_total,
+                        COUNT(*) FILTER (WHERE stock IS NULL OR stock > 0)::int AS variants_with_stock,
+                        MIN(stock) AS minimum_stock, MAX(stock) AS maximum_stock
+                   FROM product_variants
+                  WHERE product_id=(SELECT id FROM products WHERE product_ref=$1)`,
+                ['KPR-000093']);
+              console.log('STAGING_KM_VARIANTS '+JSON.stringify(variants));
               await client.query('ROLLBACK');
             }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}
             finally{client.release()}
