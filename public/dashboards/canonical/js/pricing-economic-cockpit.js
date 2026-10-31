@@ -294,8 +294,10 @@
   function fixedMutualizedCard(doc, structure, marketLabel, canManageGroup = false) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-mutualized is-readonly');
     card.dataset.costSummary = 'fixed-mutualized';
-    card.dataset.readOnly = 'true';
-    card.setAttribute('aria-label', 'Charges fixes mutualisées · lecture seule');
+    card.dataset.readOnly = String(!canManageGroup);
+    card.setAttribute('aria-label', canManageGroup
+      ? 'Charges fixes mutualisées · modification globale autorisée avec justificatif'
+      : 'Charges fixes mutualisées · lecture seule sur ce marché');
     card.appendChild(costCardHeader(doc, '🔗', 'Charges fixes mutualisées', 'Charges fixes partagées entre marchés.'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-mutualized');
     ['Élément', 'Coût global', 'Clé d’allocation', '%', `Quote-part ${marketLabel}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
@@ -915,6 +917,12 @@
       inline: Boolean(inlineOptions?.inlineContainer),
       container: inlineOptions?.inlineContainer || options.root,
       previousValue: inlineOptions?.previousValue || null,
+      previousLabel: isMutualized ? 'Quote-part actuelle du marché' : 'Valeur reconnue sur la période',
+      onClose: () => {
+        const row = inlineOptions?.inlineContainer;
+        const edit = row?.querySelector('[data-edit-structure-charge]');
+        if (edit) { edit.hidden = false; }
+      },
       onSaved: async () => {
         if (typeof rootObject.KomerceCanonicalPricingWorkspace?.mount === 'function') {
           await rootObject.KomerceCanonicalPricingWorkspace.mount({ ...options, refreshEconomicCockpit: true });
