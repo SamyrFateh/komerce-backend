@@ -202,7 +202,9 @@
     card.appendChild(costCardHeader(doc, '🛒', 'Coûts variables', 'Valeur actuelle et modification directe de chaque poste.'));
 
     const previewItems = [
-      { label: 'Achat fournisseur', value: 'Par produit', note: 'Sans montant forfaitaire inventé' },
+      { label: 'Achat fournisseur', value: 'Par produit', readOnly: true,
+        readOnlyHint: 'Coût propre à chaque produit : modification depuis la source ou le produit, sans montant global inventé.',
+        note: 'Sans montant forfaitaire inventé' },
       ...components.map(component => ({
         label: component.label || component.key,
         value: componentValue(component),
