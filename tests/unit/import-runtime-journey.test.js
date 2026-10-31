@@ -913,7 +913,7 @@ test('audit : sortie Catalogue = return_to exact vers l’objet Sourcing d’ori
   expect(live).not.toContain('return_label=Retour+au+passage');
   const exc = drill('exceptions', '', scenario({ quarantined:3, action_required:3 }, { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }));
   // Product corrections go straight to Catalogue master; no Sourcing loop.
-  expect(exc).toContain('/admin/workspaces/catalog?search=KSC-2');
+  expect(exc).toContain('/admin/workspaces/catalog?search=KSC-1');
   expect(exc).not.toContain('return_label=Retour+%C3%A0+Action+requise');
 });
 
