@@ -197,7 +197,7 @@ test('Dossier opérateur : correction source accessible sans chiffres économiqu
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261030-4');
+  expect(index).toContain('catalog-workspace.js?v=261031-1');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -252,6 +252,20 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261030-4');
+  expect(index).toContain('catalog-workspace.js?v=261031-1');
   expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-3');
+});
+
+test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
+  expect(ui).toContain("status: 'Validation Catalogue requise'");
+  expect(ui).toContain('Cette étape ne valide pas le produit.');
+  expect(ui).toContain("stepNotice.setAttribute('data-catalog-approval-explanation', '')");
+  expect(ui).toContain("'Contrôler les prérequis', 'inspector-check-approval'");
+  expect(ui).toContain('Contrôler les prérequis (lecture seule)');
+  expect(ui).toContain('Prérequis techniques satisfaits.');
+  expect(ui).toContain("'Valider le Catalogue', 'inspector-approve'");
+  expect(ui).toContain("ENDPOINT + '/approval/'");
+  expect(ui).toContain('Validation refusée : ');
+  expect(ui).not.toContain("status: 'À valider en Raffinerie'");
+  expect(index).toContain('catalog-workspace.js?v=261031-1');
 });

@@ -748,3 +748,44 @@ test('Dossier SQL: lire seulement les variantes du modèle déclaré et les méd
   expect(source).toContain('LIMIT 51');
   expect(source).not.toContain('UPDATE catalog_media');
 });
+
+test('une ancienne contrainte prix global renvoie 409 explicite, jamais un message PostgreSQL opaque', async () => {
+  mockQuery.mockImplementation(async sql => String(sql).includes('WHERE product_ref = $1')
+    ? {rows:[{id:'candidate-internal-id',product_ref:'KPR-000096',lifecycle_status:'candidate',is_active:false}]}
+    : {rows:[]});
+  mockApprove.mockRejectedValueOnce(Object.assign(
+    new Error('new row violates check constraint'),{
+      code:'23514',constraint:'chk_products_unpriced_draft_only',
+    }));
+  await expect(workspace.approveCandidate('KPR-000096',{id:'admin'}))
+    .rejects.toMatchObject({
+      status:409,
+      code:'catalog_unpriced_approval_schema_outdated',
+      message:expect.stringContaining('migration Catalogue 352'),
+    });
+});
+test('une autre contrainte PostgreSQL n’est jamais maquillée comme un défaut de prix global',async()=>{
+  mockQuery.mockImplementation(async sql => String(sql).includes('WHERE product_ref = $1')
+    ? {rows:[{id:'candidate-internal-id',product_ref:'KPR-000096',lifecycle_status:'candidate',is_active:false}]}
+    : {rows:[]});
+  const error=Object.assign(new Error('other constraint'),{
+    code:'23514',constraint:'other_business_constraint',
+  });
+  mockApprove.mockRejectedValueOnce(error);
+  await expect(workspace.approveCandidate('KPR-000096',{id:'admin'})).rejects.toBe(error);
+});
+test('une fiche sourcing validée sans prix global reste approuvable sans activer un marché',async()=>{
+  mockQuery.mockImplementation(async sql => String(sql).includes('WHERE product_ref = $1')
+    ? {rows:[{id:'candidate-internal-id',product_ref:'KPR-000096',lifecycle_status:'candidate',is_active:false}]}
+    : {rows:[]});
+  mockApprove.mockResolvedValueOnce({status:200,body:{
+    product_ref:'KPR-000096',name:'Collier doré vintage',
+    description:'Collier doré pour femme avec pendentifs.',
+    category:'cosmetiques',price_kmf:null,
+    lifecycle_status:'active',is_active:true,is_available:true,
+  }});
+  const result=await workspace.approveCandidate('KPR-000096',{id:'admin'});
+  expect(result).toMatchObject({product_ref:'KPR-000096',price_kmf:null,is_active:true});
+  expect(result).not.toHaveProperty('market_price');
+  expect(mockApprove).toHaveBeenCalledTimes(1);
+});
