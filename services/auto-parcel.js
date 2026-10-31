@@ -88,11 +88,28 @@ async function distributeOrder(orderId, dbClient) {
   }
 
   // Get order items
-  const { rows: items } = await client.query(
-    'SELECT id, quantity, product_id FROM order_items WHERE order_id = $1',
-    [orderId]
-  );
+  const { rows: items } = await client.query(`
+    SELECT oi.id, oi.quantity, oi.product_id,
+           EXISTS (
+             SELECT 1 FROM parcel_items pi
+             JOIN parcels p ON p.id = pi.parcel_id
+             WHERE pi.order_item_id = oi.id AND p.status = 'cancelled'
+           ) AS has_cancelled_membership
+      FROM order_items oi WHERE oi.order_id = $1
+  `, [orderId]);
   if (items.length === 0) return { success: false, error: 'No items in order' };
+  if (items.some(item => item.has_cancelled_membership)) {
+    // UNIQUE(order_item_id) persists even when the former parcel is cancelled.
+    // Automatic retry would create a ghost parcel and report a fictitious allocation.
+    // Explicit canonical custody reassignment is required before redistributing.
+    return {
+      success: false,
+      code: 'CANCELLED_PARCEL_MEMBERSHIP_REQUIRES_REVIEW',
+      error: 'Ligne encore rattachée à un colis annulé : réaffectation contrôlée requise',
+      order_ref: order.reference,
+      items_assigned: 0,
+    };
+  }
 
   const totalQty = items.reduce((s, i) => s + (i.quantity || 1), 0);
   const relaisId = order.relais_id;
@@ -187,25 +204,44 @@ async function distributeOrder(orderId, dbClient) {
   for (const item of items) {
     try {
       // parcel_items has: parcel_id, order_item_id, quantity, product_id
-      await client.query(`
+      const inserted = await client.query(`
         INSERT INTO parcel_items (parcel_id, order_item_id, quantity, product_id)
         VALUES ($1, $2, $3, $4)
         ON CONFLICT DO NOTHING
       `, [parcelId, item.id, item.quantity || 1, item.product_id || null]);
-      assigned++;
+      assigned += Number(inserted.rowCount || 0);
     } catch (e) {
       // Minimal fallback — just core columns
       try {
-        await client.query(`
+        const inserted = await client.query(`
           INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
           VALUES ($1, $2, $3)
           ON CONFLICT DO NOTHING
         `, [parcelId, item.id, item.quantity || 1]);
-        assigned++;
+        assigned += Number(inserted.rowCount || 0);
       } catch (e2) {
         log.warn(`[AUTO-PARCEL] Failed to assign item ${item.id}: ${e2.message}`);
       }
     }
+  }
+
+  // Fail closed on concurrent no-op/partial writes: the output cannot say
+  // "distributed" while the physical membership is missing.
+  if (assigned !== items.length) {
+    if (created && assigned === 0) {
+      await client.query(`
+        DELETE FROM parcels WHERE id = $1
+          AND NOT EXISTS (SELECT 1 FROM parcel_items WHERE parcel_id = $1)
+      `, [parcelId]);
+    }
+    return {
+      success: false,
+      code: 'PARCEL_DISTRIBUTION_INCOMPLETE',
+      error: `Affectations persistées: ${assigned}/${items.length} — rapprochement requis`,
+      order_ref: order.reference,
+      items_assigned: assigned,
+      expected_items: items.length,
+    };
   }
 
   log.info(`[AUTO-PARCEL] ${order.reference} → ${parcelRef} (${assigned}/${items.length} items, ${created ? 'new' : 'existing'})`);

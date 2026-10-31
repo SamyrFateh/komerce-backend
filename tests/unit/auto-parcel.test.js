@@ -71,6 +71,42 @@ describe('auto-parcel', () => {
       expect(db.query.mock.calls[6][0]).toContain('INSERT INTO parcel_items');
     });
 
+    it('REFUS: ligne rattachée à un colis annulé ne génère aucun colis fantôme', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [makeOrder()] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [makeItem({ has_cancelled_membership: true })] });
+      const result = await distributeOrder('order-001');
+      expect(result).toMatchObject({
+        success: false,
+        code: 'CANCELLED_PARCEL_MEMBERSHIP_REQUIRES_REVIEW',
+        items_assigned: 0,
+      });
+      expect(db.query).toHaveBeenCalledTimes(3);
+      expect(db.query.mock.calls.some(c => /INSERT INTO parcels|INSERT INTO parcel_items/i.test(String(c[0])))).toBe(false);
+    });
+
+    it('REFUS: écriture ON CONFLICT sans insertion réelle ne donne jamais un faux succès', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [makeOrder()] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [makeItem()] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: 'parcel-created', reference: 'KOM-P-2026-000001' }] })
+        .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+        .mockResolvedValueOnce({ rowCount: 1, rows: [] });
+      const result = await distributeOrder('order-001');
+      expect(result).toMatchObject({
+        success: false,
+        code: 'PARCEL_DISTRIBUTION_INCOMPLETE',
+        items_assigned: 0,
+        expected_items: 1,
+      });
+      expect(db.query.mock.calls[7][0]).toContain('DELETE FROM parcels');
+      expect(db.query.mock.calls[7][1]).toEqual(['parcel-created']);
+    });
+
     it('utilise un colis ouvert existant quand il reste de la place', async () => {
       db.query
         .mockResolvedValueOnce({ rows: [makeOrder()] })
