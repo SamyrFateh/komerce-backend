@@ -25,8 +25,8 @@ describe('import-runtime.css — le menu latéral appartient à la coque standar
 
 test('Sourcing conserve un seul rail Suivi / Passages / Sources lorsque le shell le porte', () => {
   const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
-  expect(source).toContain('function domainNav(view, run)');
-  expect(source).toContain('#canonical-admin-domain-tabs [data-tab="sourcing-suivi"]');
+  expect(source).toContain('function domainNav()');
+  expect(source).toContain('data-sourcing-single-screen');
   expect(source).toContain("return '';");
 });
 

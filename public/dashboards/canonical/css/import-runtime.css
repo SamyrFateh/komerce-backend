@@ -3343,3 +3343,58 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 .kir-passages-kpis strong.is-na { color: #64748b; font-size: 15px; font-weight: 600; }
 .kir-passages-kpis small { color: #64748b; font-size: 11px; }
 @media (max-width: 980px) { .kir-passages-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+
+/* Single-screen Sourcing Live: actions first, sources and historical evidence on demand. */
+.kmc-import-runtime .kir-one-screen { max-width: 1440px; margin-inline:auto; }
+.kmc-import-runtime .kir-one-hero {
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:25px 30px;border:1px solid #dbe6f4;border-radius:16px;
+  background:#f8fbff;margin-bottom:22px;
+}
+.kmc-import-runtime .kir-one-hero h1 {margin:5px 0 4px;font-size:27px;color:#102c57;}
+.kmc-import-runtime .kir-one-hero p {margin:0;color:#60738b;font-size:13px;}
+.kmc-import-runtime .kir-one-hero a,.kmc-import-runtime .kir-one-run-head a,
+.kmc-import-runtime .kir-one-issue a {font-size:13px;font-weight:750;color:#174f9f;}
+.kmc-import-runtime .kir-one-body {display:flex;flex-direction:column;gap:16px;}
+.kmc-import-runtime .kir-one-run,
+.kmc-import-runtime .kir-one-panel {
+  background:#fff;border:1px solid #dbe4ef;border-radius:13px;
+  box-shadow:0 2px 9px rgb(17 40 80 / .035);
+}
+.kmc-import-runtime .kir-one-run {padding:22px 24px;}
+.kmc-import-runtime .kir-one-run-head {display:flex;justify-content:space-between;align-items:start;gap:15px;}
+.kmc-import-runtime .kir-one-run h2 {font-size:18px;margin:0 0 6px;color:#112e55;}
+.kmc-import-runtime .kir-one-run p {font-size:13px;color:#667c96;margin:0;}
+.kmc-import-runtime .kir-one-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px;}
+.kmc-import-runtime .kir-one-metrics > div {padding:14px 17px;border-radius:10px;background:#f3f7fc;}
+.kmc-import-runtime .kir-one-metrics strong {display:block;font-size:26px;line-height:1.1;color:#152d50;}
+.kmc-import-runtime .kir-one-metrics span {display:block;margin-top:7px;font-size:12px;color:#5f7088;}
+.kmc-import-runtime .kir-one-handoff {margin-top:16px!important;padding:11px 14px;border-radius:8px;background:#fff8ec;color:#744b09!important;}
+.kmc-import-runtime .kir-one-handoff a {margin-left:8px;font-weight:700;color:#854902;}
+.kmc-import-runtime .kir-one-issues {margin-top:20px;padding-top:17px;border-top:1px solid #e0e7f0;}
+.kmc-import-runtime .kir-one-issues h2 {font-size:15px;}
+.kmc-import-runtime .kir-one-issues ul {list-style:none;margin:14px 0 0;padding:0;}
+.kmc-import-runtime .kir-one-issue {display:flex;justify-content:space-between;align-items:center;gap:18px;padding:12px 0;border-top:1px solid #edf1f7;}
+.kmc-import-runtime .kir-one-issue strong {display:block;font-size:13px;color:#183252;}
+.kmc-import-runtime .kir-one-issue small {display:block;margin-top:3px;font-size:12px;color:#687e97;}
+.kmc-import-runtime .kir-one-panel > summary {display:flex;align-items:center;justify-content:space-between;gap:20px;cursor:pointer;padding:19px 24px;list-style:none;}
+.kmc-import-runtime .kir-one-panel > summary::-webkit-details-marker {display:none;}
+.kmc-import-runtime .kir-one-panel > summary::after {content:"⌄";color:#728199;font-size:20px;}
+.kmc-import-runtime .kir-one-panel[open] > summary::after {transform:rotate(180deg);}
+.kmc-import-runtime .kir-one-panel > summary strong {font-size:15px;color:#17365f;}
+.kmc-import-runtime .kir-one-panel > summary span {margin-left:auto;font-size:12px;color:#69809a;}
+.kmc-import-runtime .kir-one-panel-body {padding:4px 24px 23px;border-top:1px solid #ecf0f5;}
+.kmc-import-runtime .kir-one-section-actions {display:flex;justify-content:flex-end;padding:14px 0;}
+.kmc-import-runtime .kir-one-section-actions button {padding:10px 14px;border-radius:8px;background:#0c254c;color:white;border:0;font-weight:700;}
+.kmc-import-runtime .kir-one-note {font-size:12px;color:#60758e;}
+.kmc-import-runtime .kir-one-passage-list {padding:0;list-style:none;}
+.kmc-import-runtime .kir-one-passage-list li {display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:15px;padding:11px 0;border-bottom:1px solid #edf1f6;font-size:13px;}
+.kmc-import-runtime .kir-one-passage-list small {text-align:right;color:#60778f;}
+.kmc-import-runtime .kir-one-panel[hidden] {display:none!important;}
+@media(max-width:800px){
+  .kmc-import-runtime .kir-one-hero,.kmc-import-runtime .kir-one-run-head {flex-wrap:wrap;}
+  .kmc-import-runtime .kir-one-metrics {grid-template-columns:repeat(3,minmax(0,1fr));}
+  .kmc-import-runtime .kir-one-panel > summary {flex-wrap:wrap;}
+  .kmc-import-runtime .kir-one-panel > summary span {margin-left:0;}
+}

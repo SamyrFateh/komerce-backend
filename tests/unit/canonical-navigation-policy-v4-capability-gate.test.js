@@ -310,18 +310,13 @@ describe('navigation Sourcing unique', () => {
 
 describe('Sourcing — navigation locale du shell Canonical', () => {
   afterEach(() => { delete global.location; });
-  test.each([
-    ['', 'sourcing-suivi'],
-    ['?run=KIR-000001&view=passages', 'sourcing-passages'],
-    ['?run=KIR-000001&view=sources', 'sourcing-sources'],
-  ])('sur %s affiche Suivi / Passages / Sources et active %s', (search, active) => {
-    global.location = { pathname: '/admin/import-runtime', search, hash: '' };
-    const nav = loadPolicy();
-    expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.label))
-      .toEqual(['Suivi', 'Passages', 'Sources', 'Exceptions source']);
-    expect(nav._activeLocalTab('live', 'import-runtime')).toBe(active);
-    expect(nav._localTabsFor('live', { role: 'admin' })[1].href)
-      .toContain('view=passages');
+  test.each(['','?run=KIR-000001&view=passages','?run=KIR-000001&view=sources'])
+  ('sur %s conserve une unique entrée Sourcing Live', search => {
+    global.location = { pathname:'/admin/import-runtime', search, hash:'' };
+    const nav=loadPolicy();
+    expect(nav._localTabsFor('live',{role:'admin'}).map(tab=>tab.label)).toEqual(['Sourcing Live']);
+    expect(nav._activeLocalTab('live','import-runtime')).toBe('sourcing-live');
+    expect(nav._localTabsFor('live',{role:'admin'})[0].href).toBe('/admin/import-runtime');
   });
 });
 
@@ -330,8 +325,8 @@ test('L7 : /admin/workspaces/sourcing est actif sur « Exceptions source » dans
   try {
     const nav = loadPolicy();
     expect(nav.activePrimarySurface('sourcing-workspace')).toBe('live');
-    expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.id)).toContain('sourcing-candidats');
-    expect(nav._activeLocalTab('live', 'sourcing-workspace')).toBe('sourcing-candidats');
+    expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.id)).toEqual(['sourcing-live']);
+    expect(nav._activeLocalTab('live', 'sourcing-workspace')).toBe('sourcing-live');
   } finally { delete global.location; }
 });
 

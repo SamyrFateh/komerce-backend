@@ -197,7 +197,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
   expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261031-hero-1');
-  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
+  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261031-2');
 });
 
 test('Vue Catalogue ne duplique plus le pipeline Import', () => {
