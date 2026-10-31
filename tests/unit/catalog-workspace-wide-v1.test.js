@@ -47,15 +47,17 @@ test('Aucune donnée fictive: filtres rapides conservent statuts serveur et dél
   expect(ui).toContain("row.work_status");
 });
 
-test('V3 : trois rubriques exclusives et aucun panneau sous le registre', () => {
+test('Catalogue global : registre et taxonomie uniquement, ancien assortiment retiré sans perdre le passage marché', () => {
   expect(ui).toContain("['registry', 'Registre produits']");
-  expect(ui).toContain("['assortment', 'Assortiment approuvé']");
   expect(ui).toContain("['taxonomy', 'Taxonomie boutique']");
+  expect(ui).not.toContain("['assortment', 'Assortiment approuvé']");
   const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
-  expect(render).toContain("context.catalogTab === 'assortment'");
   expect(render).toContain("context.catalogTab === 'taxonomy'");
-  expect(render).toContain('renderCommercial(rootNode, ui, doc, payload)');
-  expect(render).toContain('renderTaxonomy(rootNode, ui, doc, payload, context)');
+  expect(render).toContain('renderFocusedHandoff(rootNode, ui, doc, payload)');
+  expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
+  expect(render).not.toContain('renderCommercial(');
+  expect(ui).toContain("['registry', 'taxonomy'].includes");
+  expect(ui).not.toContain('function renderCommercial(');
   expect(render).not.toContain('taxonomyPanel');
   expect(ui).not.toContain('kmc-catalog-commercial-panel');
 });
@@ -82,7 +84,7 @@ test('V3 : indicateurs affichés sur page seulement, sans confondre global et li
 
 test('Catalogue actionnable : en-tête compact, onglets et filtres, sans navigation ni KPI passifs', () => {
   const header = ui.slice(ui.indexOf('function createHeader('), ui.indexOf('function createSection('));
-  const products = ui.slice(ui.indexOf('function renderProducts('), ui.indexOf('function renderCommercial('));
+  const products = ui.slice(ui.indexOf('function renderProducts('), ui.indexOf('function renderTaxonomy('));
   const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
   expect(header).toContain('kmc-catalog-compact-header');
   expect(header).toContain('if (refinery) {');

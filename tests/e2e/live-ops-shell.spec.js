@@ -101,9 +101,9 @@ test.describe('Coque Live — menu dédié, coque claire', () => {
       body: getComputedStyle(document.body).backgroundColor,
       position: getComputedStyle(document.querySelector('.kmc-admin-topbar')).position,
     }));
-    // La topbar de gestion est désormais un overlay transparent du Hero :
-    // l'absence de contamination Live se mesure sur le contrôle de recherche et le canvas.
-    expect(surfaces.position).toBe('absolute');
+    // La topbar de gestion reste claire et dans le flux au-dessus du Hero.
+    // La séparation visuelle évite toute contamination Live ou chevauchement.
+    expect(surfaces.position).toBe('relative');
     expect(lum(surfaces.search)).toBeGreaterThan(200);
     expect(lum(surfaces.body)).toBeGreaterThan(180);
   });

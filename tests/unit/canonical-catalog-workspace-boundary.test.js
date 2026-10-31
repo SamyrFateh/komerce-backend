@@ -211,7 +211,10 @@ test('Vue Catalogue ne duplique plus le pipeline Import', () => {
 
   expect(workspace).toContain("createSection(rootNode, ui, 'Produits', '')");
   expect(workspace).toContain('KIR clos');
-  expect(workspace).toContain('Marchés approuvés');
+  // The legacy commercial table is gone; the focused route to market pricing is preserved.
+  expect(workspace).not.toContain('Marchés approuvés');
+  expect(workspace).toContain('Continuer la mise en vente');
+  expect(workspace).toContain('renderFocusedHandoff(rootNode, ui, doc, payload)');
   expect(workspace).toContain('/admin/import-runtime');
   expect(workspace).not.toContain('setInterval(');
 });

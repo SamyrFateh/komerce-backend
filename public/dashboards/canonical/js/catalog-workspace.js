@@ -1171,8 +1171,7 @@
     const nav = doc.createElement('nav');
     nav.className = 'kmc-catalog-tabs';
     nav.setAttribute('aria-label', 'Rubriques du Catalogue');
-    [['registry', 'Registre produits'], ['assortment', 'Assortiment approuvé'],
-      ['taxonomy', 'Taxonomie boutique']].forEach(([tab, label]) => {
+    [['registry', 'Registre produits'], ['taxonomy', 'Taxonomie boutique']].forEach(([tab, label]) => {
       const a = text(doc, 'a', 'kmc-catalog-tab', label);
       a.href = tab === 'registry' ? '/admin/workspaces/catalog' : '/admin/workspaces/catalog?tab=' + tab;
       if (tab === context.catalogTab) a.setAttribute('aria-current', 'page');
@@ -2843,38 +2842,6 @@
 
   }
 
-  function renderCommercial(rootNode, ui, doc, payload) {
-    // The original CLOSED-KIR commercial projection remains available as a
-    // distinct read-only view; it is no longer the Catalog's source of truth.
-    const slot = createSection(rootNode, ui, 'Assortiment approuvé',
-      'Vue commerciale distincte · KIR clos, exposition et prix local actif. Ne confond pas validation Catalogue et vente.');
-    const details = slot;
-    details.className = (details.className || '') + ' kmc-catalog-assortment-view';
-    const commercialRows = payload.commercial_products || [];
-    if (!commercialRows.length) {
-      details.appendChild(text(doc, 'p', 'kmc-workspace-empty', 'Aucun produit actuellement approuvé pour la vente.'));
-    } else {
-      const commercialTable = doc.createElement('table');
-      commercialTable.className = 'kmc-workspace-table';
-      commercialTable.innerHTML = '<thead><tr><th>Produit</th><th>KIR clos</th><th>Marchés approuvés</th></tr></thead>';
-      const body = doc.createElement('tbody');
-      commercialRows.forEach(row => {
-        const tr = doc.createElement('tr');
-        tr.appendChild(td(doc, row.product_ref + ' · ' + row.name));
-        tr.appendChild(td(doc, (row.source_lots || []).join(', ') || '—'));
-        tr.appendChild(td(doc, (row.approved_markets || []).join(', ') || '—'));
-        body.appendChild(tr);
-      });
-      commercialTable.appendChild(body);
-      details.appendChild(wrapTable(doc, commercialTable));
-      if (commercialRows.length === 200) {
-        details.appendChild(text(doc, 'small', 'kmc-workspace-subtitle',
-          '200 premières références affichées ; cet extrait ne représente pas un décompte exhaustif.'));
-      }
-    }
-
-  }
-
   function renderTaxonomy(rootNode, ui, doc, payload, context) {
     const slot = createSection(rootNode, ui, 'Taxonomie boutique', 'Catégories et sous-catégories restent globales et pilotées en base ; aucun Market ID ne duplique la taxonomie.');
     const bar = doc.createElement('div');
@@ -3032,12 +2999,11 @@
       return;
     }
     renderCatalogTabs(rootNode, doc, context);
-    if (context.catalogTab === 'assortment') {
-      renderFocusedHandoff(rootNode, ui, doc, payload);
-      renderCommercial(rootNode, ui, doc, payload);
-    } else if (context.catalogTab === 'taxonomy') {
+    if (context.catalogTab === 'taxonomy') {
       renderTaxonomy(rootNode, ui, doc, payload, context);
     } else {
+      // Keep the focused market handoff available without a separate legacy assortment tab.
+      renderFocusedHandoff(rootNode, ui, doc, payload);
       renderProducts(rootNode, ui, doc, payload, context);
     }
   }
@@ -3064,7 +3030,7 @@
       // Explicit diagnostic mode retains the read-only technical monitoring.
       workspaceView: new URLSearchParams(locationSearch || '').get('view') === 'refinery' &&
         new URLSearchParams(locationSearch || '').get('diagnostic') === '1' ? 'refinery' : 'catalog',
-      catalogTab: ['registry', 'assortment', 'taxonomy'].includes(new URLSearchParams(locationSearch || '').get('tab'))
+      catalogTab: ['registry', 'taxonomy'].includes(new URLSearchParams(locationSearch || '').get('tab'))
         ? new URLSearchParams(locationSearch || '').get('tab') : 'registry',
       root: rootNode,
       document: doc,
