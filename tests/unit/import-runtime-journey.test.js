@@ -147,23 +147,19 @@ test('commandes : source arrêtée → Redémarrer puis Mettre à jour ; source 
   expect(active.innerHTML).toContain('Alimentation automatique active');
   expect(active.innerHTML.indexOf('data-source-command="update"')).toBeLessThan(active.innerHTML.indexOf('data-source-command="stop"'));
   expect(active.innerHTML).not.toContain('data-source-command="restart"');
-  expect(active.innerHTML).toContain('Mettre à jour maintenant');
+  expect(active.innerHTML).toContain('Lancer un nouvel import');
 });
 
-test('commandes visibles même si le run n\'expose pas le source_ref de la carte (fournisseur différent, source_ref vide)', () => {
-  const ui = cockpit();
-  for (const patch of [{ source_ref:null }, { source_ref:'autre-ref' }, { source_ref:undefined }]) {
-    const p = JSON.parse(JSON.stringify(payload));
-    Object.assign(p.selected, patch);
-    p.source_controls[0].label = 'AliExpress Dropshipper API';
-    p.source_controls[0].autopilot_enabled = true;
-    const node = root();
-    ui.render(node, p);
-    expect(node.innerHTML).toContain('data-source-command="update"');
-    expect(node.innerHTML).toContain('data-source-command="stop"');
-    // Les commandes précèdent le flux ; l'inventaire des sources n'est plus sous le cockpit (vue Sources).
-    expect(node.innerHTML.indexOf('kir-command-bar')).toBeLessThan(node.innerHTML.indexOf('kir-run-flow'));
-    expect(node.innerHTML).not.toContain('data-source-toggle');
+test('aucune commande fournisseur n’est devinée sans source_ref exact du passage', () => {
+  const ui=cockpit();
+  for (const patch of [{source_ref:null},{source_ref:'autre-ref'},{source_ref:undefined}]) {
+    const p=JSON.parse(JSON.stringify(payload));
+    Object.assign(p.selected,patch);
+    p.source_controls[0].label='AliExpress Dropshipper API';
+    p.source_controls[0].autopilot_enabled=true;
+    const node=root();
+    ui.render(node,p);
+    expect(node.innerHTML).not.toContain('data-source-command');
   }
 });
 
@@ -1058,7 +1054,12 @@ const SOURCES = () => [
   { source_ref:'api:cj', label:'CJ Dropshipping', state:'ready', connection:{ verified:true }, autopilot_enabled:false, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:null },
   { source_ref:'api:bigbuy', label:'BigBuy', state:'blocked', connection:{ verified:false }, autopilot_enabled:false, autopilot_ready:false, activation_ready:false, blocker:'Clé API manquante', production_runtime_certified:false, last_capture_at:null },
 ];
-const sourcesView = (search = '') => { const p = scenario(); p.source_controls = SOURCES(); return render(p, `?${search}view=sources`); };
+const sourcesView = (search = '') => { const p = scenario(); p.source_controls = SOURCES();
+  // Test fixtures explicitly associate runs with source_ref; no runtime name guessing.
+  p.lots=(p.lots||[]).map(lot => ({...lot,
+    source_ref:/aliexpress/i.test(lot.provider||'')?'api:aliexpress':'api:cj'}));
+  if(p.selected) p.selected.source_ref='api:aliexpress';
+  return render(p, `?${search}view=sources`); };
 
 test('Sources : synthèse compacte calculée depuis source_controls, une carte par fournisseur', () => {
   const html = sourcesView(`run=${RUN}&`);
