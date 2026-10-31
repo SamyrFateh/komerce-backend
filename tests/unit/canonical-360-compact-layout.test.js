@@ -89,8 +89,6 @@ test('Client 360: identity and orders remain visible, other facets folded, priva
   const click=toggle.addEventListener.mock.calls.find(call=>call[0]==='click')[1];
   click();
   expect(extrasOf(h.root).open).toBe(true);
-  const newValues=h.ui.DataTable.render.mock.calls.at(-4)[1].rows;
-  // Same data restored without security changes; the original privacy test
-  // separately covers the exact reveal value.
+  // The separate contact-privacy tests prove masking and explicit reveal.
   expect(h.root.children[0].children.find(c=>c.tagName==='button').textContent).toBe('Masquer les coordonnées');
 });
