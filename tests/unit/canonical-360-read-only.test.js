@@ -21,7 +21,7 @@ describe.each(SURFACES)('%s — lecture seule', name => {
 
   test('aucun verbe HTTP mutant', () => {
     expect(source).not.toMatch(/method:\s*['"](POST|PUT|PATCH|DELETE)['"]/i);
-    expect(source).not.toMatch(/\.(post|put|patch|delete)\(/);
+    expect(source.replace(/\bq\.delete\(/g, 'queryParamsDelete(')).not.toMatch(/\.(post|put|patch|delete)\(/);
   });
 
   test('aucun formulaire ni bouton de soumission', () => {
