@@ -63,3 +63,19 @@ Un pourcentage ne sera affiché que si le serveur a fourni une projection canoni
 4. Recette staging avec **vrais produits CJ** : Catalogue global certifié → prix local → `Publier` → recherche / PDP / panier, même Market ID. Fixtures RCT de test ≠ preuves de boutique réelle.
 
 **Aucune étape 2 seule ne certifie les étapes 3 et 4.**
+
+## 6. Décision UX figée — 31 octobre 2026
+
+**Affichage normal du Moteur économique : trois colonnes côte à côte sur desktop 1440 px.**
+
+- Colonne A : **Coûts variables** (N1/N2, valeurs avec unités et origine global/marché).
+- Colonne B : **Charges fixes directes** (N3 propre au marché).
+- Colonne C : **Charges fixes mutualisées** (N3 réparti, en lecture seule au niveau marché).
+- Les cartes présentent **une synthèse vérifiable** et un accès explicite **Voir le détail** ; les tableaux larges occupent toute la largeur à leur ouverture (pas de tableau à sept colonnes comprimé dans une carte).
+- L'option **Superposées** reste disponible en mode secondaire pour consulter les tableaux complets, mais ne doit pas devenir la vue par défaut.
+- Aucune valeur fictive ou pourcentage calculé par le navigateur n'entre dans les données métier.
+- Une modification future de cette préférence peut se faire après observation Chromium/usage, sans changer la doctrine économique ni la responsabilité de chaque rôle.
+
+**Preuve requise** : tests Chromium desktop à 1440 px établissant la géométrie côte à côte, les trois familles visibles, les actions éditables seulement où autorisées, le dépliage et le retour à la vue normale ; captures 3 colonnes et superposées conservées comme référence.
+
+Cette décision concerne uniquement la présentation et n'autorise ni seed de production ni publication automatique des produits du Catalogue marché.
