@@ -96,7 +96,7 @@ test('La navigation officielle possède une seule entrée Sourcing Live',()=>{
 test('Le formulaire manuel historique obéit au masquage et n’est plus une page de navigation',()=>{
   const css=read('public/dashboards/canonical/css/operations-workspace.css');
   const legacy=read('public/dashboards/canonical/js/sourcing-workspace.js');
-  expect(css).toContain('.kmc-sourcing-workspace [hidden] { display: none !important; }');
+  expect(css).toContain('.kmc-sourcing-workspace [hidden][hidden] { display: none; }');
   expect(legacy).toContain('redirected: true');
   expect(legacy).toContain('partnerManagement');
 });
