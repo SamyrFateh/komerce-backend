@@ -262,13 +262,9 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
         expect(widths.reading).toBeGreaterThan(widths.section * 0.9);
       }
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale héritée');
-      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toHaveAttribute('data-expanded', 'true');
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeVisible();
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale : 3,2 %');
-      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toHaveAttribute('data-expanded', 'false');
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeHidden();
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]')).toHaveCount(0);
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toHaveCount(0);
       await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'false');
       const principles = page.locator('details.kmc-economic-principles-detail');
       await expect(principles).not.toHaveAttribute('open', '');
