@@ -62,6 +62,7 @@ async function mountCockpit(page, data = payload) {
         contentType: 'text/html',
         body: `<!doctype html><html lang="fr"><head><meta charset="utf-8">${links}</head>
           <body class="kmc-shell-v4"><main id="canonical-admin-root"></main>
+          <script>window.__KOMERCE_LEGACY_PROOF__ = true;</script>
           <script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>`,
       });
     }
