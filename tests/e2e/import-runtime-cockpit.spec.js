@@ -168,7 +168,8 @@ test.describe('Cockpit imports — conformité au mock clair', () => {
     expect(bar.update.bg).toBe('rgb(29, 92, 214)');
     expect(bar.stop.bg).toBe('rgb(247, 228, 231)');
     for (const b of [bar.update, bar.stop]) { expect(b.h).toBeGreaterThanOrEqual(48); expect(b.svg).toBe(true); }
-    expect(bar.update.w).toBeGreaterThan(bar.stop.w);
+    expect(bar.update.w).toBeGreaterThanOrEqual(240);
+    expect(bar.stop.w).toBeGreaterThanOrEqual(240);
     expect(bar.update.x).toBeLessThan(bar.stop.x);
     expect(bar.state).toContain('Mise à jour en cours');
   });
@@ -384,7 +385,7 @@ test.describe('Cockpit imports — Action requise', () => {
       window.KomerceCanonicalImportRuntime.render(document.getElementById('canonical-admin-root'), data);
     }, problemPayload);
     const body = page.locator('.kir-main');
-    for (const s of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
+    for (const s of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Corriger dans le Catalogue']) {
       await expect(body).toContainText(s);
     }
     await expect(page.locator('.kir-row-action')).toHaveCount(3);
@@ -504,6 +505,11 @@ test.describe('Cockpit imports — commandes opérateur', () => {
   test('Lancer un nouvel import : « Mise à jour… » pendant l’action, appelle import-now, boutons verrouillés', async ({ page }) => {
     const state = await mountLive(page, calm);
     const update = page.locator('.kir-cmd-update');
+    // A real import requires the operator's explicit confirmation.
+    page.once('dialog', async dialog => {
+      expect(dialog.message()).toContain('nouvel import');
+      await dialog.accept();
+    });
     await update.click();
     await expect(update).toContainText('Mise à jour…');
     await expect(update).toBeDisabled();
@@ -756,7 +762,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
   ];
   const withLots = () => {
     const data = JSON.parse(JSON.stringify(calmPayload));
-    data.lots = [{ run_ref:'KIR-000009', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', provider:'CJ', source_total:20, business_status:'CLOSED' }];
+    data.lots = [{ run_ref:'KIR-000009', source_ref:'api:aliexpress', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', source_ref:'api:cj', provider:'CJ', source_total:20, business_status:'CLOSED' }];
     data.run_nav = { older_ref:'KIR-000008', newer_ref:null };
     return data;
   };
@@ -929,7 +935,7 @@ test.describe('Cockpit imports — vue Sources (cartes opérateur)', () => {
   const board = () => {
     const data = JSON.parse(JSON.stringify(calmPayload));
     data.source_controls = sources();
-    data.lots = [{ run_ref:'KIR-000009', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', provider:'CJ', source_total:20, business_status:'CLOSED' }];
+    data.lots = [{ run_ref:'KIR-000009', source_ref:'api:aliexpress', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', source_ref:'api:cj', provider:'CJ', source_total:20, business_status:'CLOSED' }];
     data.run_nav = { older_ref:'KIR-000008', newer_ref:null };
     return data;
   };
