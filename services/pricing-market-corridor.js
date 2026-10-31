@@ -480,6 +480,7 @@ async function previewMarketPrice({ market, productRef, amount }) {
   ];
   return {
     market_code: market.code, currency: market.currency, amount: localAmount,
+    projected_price_kmf: projectedPriceKmf,
     variable_cost_kmf: variableKmf, variable_cost_local: variableLocal,
     landed_relay_cost_kmf: landedKmf, landed_relay_cost_local: landedLocal,
     minimum_safe_price_local: safeLocal,
