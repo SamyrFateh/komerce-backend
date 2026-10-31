@@ -386,7 +386,9 @@ function aggregateRows(rows, period, marketId) {
       event_id: row.id,
       charge_id: row.charge_id,
       charge_family: row.charge_family_snapshot || null,
-      charge_name: row.charge_name_snapshot || null,
+      charge_name: row.charge_current_name || row.charge_name_snapshot || null,
+      // Keep the historical name immutable for audit, even when its present-day label changes.
+      charge_name_snapshot: row.charge_name_snapshot || null,
       charge_description: row.charge_description || null,
       reference_is_market_owned: !!row.charge_market_owner_id,
       configured_recurrence: row.recurrence_period_snapshot || null,
@@ -932,7 +934,8 @@ async function computePeriodStructureTruth(options = {}) {
             e.economic_from, e.economic_to,
             e.amount_kmf, e.source_kind, e.evidence_ref,
             e.recorded_by, e.recorded_at,
-            c.notes AS charge_description, c.market_owner_id AS charge_market_owner_id
+            c.name AS charge_current_name, c.notes AS charge_description,
+            c.market_owner_id AS charge_market_owner_id
        FROM economic_structure_cost_events e
        LEFT JOIN charges c ON c.id = e.charge_id
       WHERE e.economic_from < $2
