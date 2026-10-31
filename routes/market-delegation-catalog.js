@@ -187,6 +187,7 @@ router.put('/markets/:marketCode/catalog/exposure/:productId', authenticate, asy
       return setExposure(client, {
         marketCode: req.params.marketCode,
         actorUserId: req.user.id,
+        actorRole: req.user.role,
         correlationId: correlationId(req),
         productId: req.params.productId,
         exposure: body.commercial_exposure,
