@@ -59,10 +59,9 @@ async function buildReadyToSell({
   const published = Array.isArray(exposure) ? exposure : [];
   const ids = [...new Set([
     ...incoming.map(row => row?.product_id).filter(Boolean),
-    ...published
-      .filter(row => row && (row.decision_recorded !== true || row.commercial_exposure === 'ENABLED'))
-      .map(row => row.product_id)
-      .filter(Boolean),
+    // Every published product belongs in the country price catalogue,
+    // including intentionally hidden products and products with an active price.
+    ...published.map(row => row?.product_id).filter(Boolean),
   ])];
 
   if (!ids.length) {
@@ -94,7 +93,6 @@ async function buildReadyToSell({
   for (const row of published) {
     const id = String(row?.product_id || '');
     if (!id || seen.has(id)) continue;
-    const localStatus = priceByProduct.get(id)?.status || null;
     // Catalogue pays = toutes les références, y compris déjà tarifées et exposées.
     // Le prix actif est affiché sans provoquer une seconde activation.
     seen.add(id);
