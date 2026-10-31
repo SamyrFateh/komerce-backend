@@ -8647,7 +8647,6 @@ CREATE TABLE public.products (
     CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
     CONSTRAINT chk_products_stock CHECK ((stock >= 0)),
     CONSTRAINT chk_products_target_margin_pct CHECK (((target_margin_pct IS NULL) OR ((target_margin_pct >= (0)::numeric) AND (target_margin_pct < (100)::numeric)))),
-    CONSTRAINT chk_products_unpriced_draft_only CHECK (((price_kmf IS NOT NULL) OR ((COALESCE(is_active, false) = false) AND (COALESCE(is_available, false) = false) AND (COALESCE(lifecycle_status, 'candidate'::text) <> 'active'::text)))),
     CONSTRAINT chk_stock_nonneg CHECK (((stock >= 0) OR (stock IS NULL))),
     CONSTRAINT price_eur_positive CHECK (((price_eur IS NULL) OR (price_eur >= (0)::numeric))),
     CONSTRAINT products_boutique_subcategory_requires_category CHECK (((boutique_subcategory_key IS NULL) OR (boutique_category_key IS NOT NULL)))
@@ -8658,7 +8657,7 @@ CREATE TABLE public.products (
 -- Name: COLUMN products.price_kmf; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.products.price_kmf IS 'Prix de vente KMF. Nullable uniquement pour un brouillon Catalogue inactif/non disponible ; obligatoire avant publication/exposition.';
+COMMENT ON COLUMN public.products.price_kmf IS 'Optional global reference price (KMF); NULL is allowed for certified globally-approved products. Buyer prices are independently gated per market by LOCAL_ACTIVE plus enabled exposure. Positive non-NULL prices remain subject to chk_products_price.';
 
 
 --
