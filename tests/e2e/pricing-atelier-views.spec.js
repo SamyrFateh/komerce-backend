@@ -205,6 +205,24 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('.kmc-metric-card').first()).toBeHidden();
       const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');
       await expect(tabs).toHaveText(['Coûts variables', 'Charges fixes directes', 'Charges fixes mutualisées']);
+      // Le modèle n'invente pas des parts fixes/variables à partir d'unités non comparables.
+      const reading = page.locator('[data-economic-cost-reading]');
+      await expect(reading).toBeVisible();
+      await expect(reading.locator('.kmc-economic-reading-item')).toHaveCount(3);
+      await expect(reading).toContainText('Le produit contribue. Le portefeuille couvre.');
+      await expect(reading).toContainText('Prix − coûts variables (N1 + N2)');
+      await expect(reading).toContainText('Fixes directs + fixes mutualisés');
+      await expect(reading).toContainText('Non encore calculable');
+      const costMixLabel = await reading.locator('.kmc-economic-reading-item.is-mix').innerText();
+      expect(costMixLabel).not.toMatch(/\\d+(?:[,.]\\d+)?\\s*%/);
+      if (name === '1440') {
+        const widths = await page.evaluate(() => {
+          const section = document.querySelector('.kmc-cockpit-costs');
+          const reading = section.querySelector('[data-economic-cost-reading]');
+          return { section: section.getBoundingClientRect().width, reading: reading.getBoundingClientRect().width };
+        });
+        expect(widths.reading).toBeGreaterThan(widths.section * 0.9);
+      }
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Global hérité');
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale : 3,2 %');
       await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'true');
