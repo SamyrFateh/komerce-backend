@@ -148,11 +148,48 @@
     return explicit == null ? componentValue(component) : formatKmf(explicit);
   }
 
+  // Preview cards intentionally reuse server-sourced figures; no totals from
+  // mixed units and no implicit fallback to 0 for missing values.
+  function economicPreview(doc, items, footer) {
+    const preview = el(doc, 'div', 'kmc-economic-family-preview');
+    preview.dataset.costFamilyPreview = '';
+    const list = el(doc, 'div', 'kmc-economic-family-preview-list');
+    items.slice(0, 4).forEach(item => {
+      const row = el(doc, 'div', 'kmc-economic-family-preview-row');
+      const label = el(doc, 'span', 'kmc-economic-family-preview-label', item.label);
+      const value = el(doc, 'strong', 'kmc-economic-family-preview-value', item.value);
+      row.appendChild(label);
+      row.appendChild(value);
+      if (item.note) row.appendChild(el(doc, 'small', 'kmc-economic-family-preview-note', item.note));
+      list.appendChild(row);
+    });
+    if (!items.length) list.appendChild(el(doc, 'p', 'kmc-economic-family-preview-empty', 'Données de période indisponibles.'));
+    preview.appendChild(list);
+    if (items.length > 4) preview.appendChild(el(doc, 'small', 'kmc-economic-family-preview-extra', `+ ${items.length - 4} autre(s) poste(s) dans le détail`));
+    if (footer) preview.appendChild(el(doc, 'div', 'kmc-economic-family-preview-footer', footer));
+    const detail = el(doc, 'button', 'kmc-economic-family-expand', 'Voir le détail');
+    detail.type = 'button';
+    detail.dataset.expandCostFamily = '';
+    detail.setAttribute('aria-expanded', 'false');
+    preview.appendChild(detail);
+    return preview;
+  }
+
   function variableCostCard(doc, components) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-variable');
     card.dataset.costSummary = 'variable';
     card.appendChild(costCardHeader(doc, '🛒', 'Coûts variables', 'Ces coûts affectent directement la contribution.', 'Ajuster les coûts', 'variable'));
 
+    const previewItems = [
+      { label: 'Achat fournisseur', value: 'Par produit', note: 'Sans montant forfaitaire inventé' },
+      ...components.map(component => ({
+        label: component.label || component.key,
+        value: componentValue(component),
+        note: component.inherited === false ? 'Paramètre marché'
+          : component.inherited === true ? 'Base globale héritée' : 'Origine à confirmer',
+      })),
+    ];
+    card.appendChild(economicPreview(doc, previewItems, 'Coût variable complet calculé sur chaque produit'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-variable');
     ['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', 'Valeur', 'Provenance', 'Quote-part marché'].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
 
@@ -212,6 +249,14 @@
     const rows = Array.isArray(structure?.evidence)
       ? structure.evidence.filter(item => item.scope_kind === 'MARKET_DIRECT')
       : [];
+    const directValid = rows.length > 0 && rows.every(item => finite(item.recognized_amount_kmf) != null);
+    const directTotal = directValid ? rows.reduce((sum, item) => sum + Number(item.recognized_amount_kmf), 0) : null;
+    const directPreview = rows.map(item => ({
+      label: item.charge_name || item.charge_family || 'Charge structurelle',
+      value: formatKmf(item.recognized_amount_kmf),
+    }));
+    card.appendChild(economicPreview(doc, directPreview,
+      directValid ? `Total direct : ${formatKmf(directTotal)}` : 'Total à confirmer pour la période'));
     rows.forEach(item => {
       table.appendChild(tableCell(doc, item.charge_name || item.charge_family || 'Charge structurelle'));
       table.appendChild(tableCell(doc, formatKmf(item.recognized_amount_kmf), 'is-derived is-number'));
@@ -237,6 +282,15 @@
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-mutualized');
     ['Élément', 'Coût global', 'Clé d’allocation', '%', `Quote-part ${marketLabel}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
     const charges = Array.isArray(structure?.allocation?.charges) ? structure.allocation.charges : [];
+    const mutualValid = charges.length > 0 && charges.every(charge => finite(charge.market_share_kmf) != null);
+    const mutualTotal = mutualValid ? charges.reduce((sum, charge) => sum + Number(charge.market_share_kmf), 0) : null;
+    const mutualPreview = charges.map(charge => ({
+      label: charge.charge_name || charge.charge_family || 'Charge mutualisée',
+      value: formatKmf(charge.market_share_kmf),
+      note: `Quote-part ${charge.market_allocation_ratio == null ? 'non précisée' : `${formatNumber(Number(charge.market_allocation_ratio) * 100)} %`} · ${charge.policy?.basis_kind || 'Politique à confirmer'}`,
+    }));
+    card.appendChild(economicPreview(doc, mutualPreview,
+      mutualValid ? `Quote-part marché : ${formatKmf(mutualTotal)}` : 'Quote-part marché à confirmer'));
     charges.slice(0, 6).forEach(charge => {
       table.appendChild(tableCell(doc, charge.charge_name || charge.charge_family || 'Charge mutualisée'));
       table.appendChild(tableCell(doc, formatKmf(charge.group_pool_kmf), 'is-derived'));
@@ -291,45 +345,39 @@
     ['fixed-mutualized', 'Charges fixes mutualisées'],
   ];
 
-  // Une seule famille affichée à la fois ; les trois restent dans le DOM (hidden) pour ne rien perdre au recalcul.
-  function costFamilyTabs(doc, section, cards, active) {
-    const tabs = el(doc, 'div', 'kmc-cockpit-tabs kmc-cockpit-cost-tabs');
-    tabs.setAttribute('role', 'tablist');
-    tabs.setAttribute('aria-label', 'Familles économiques');
-    const buttons = COST_FAMILIES.map(([key, label]) => {
-      const button = el(doc, 'button', 'kmc-cockpit-tab', label);
+  // Two genuine layouts over the same three server-backed cards; no data duplication.
+  function costLayoutControl(doc, section, cards, initial) {
+    const controls = el(doc, 'div', 'kmc-cockpit-cost-layout-controls');
+    controls.setAttribute('role', 'group');
+    controls.setAttribute('aria-label', 'Présentation des familles de coûts');
+    const hint = el(doc, 'span', 'kmc-economic-layout-hint', 'Comparer la présentation');
+    controls.appendChild(hint);
+    const buttons = [
+      ['columns', '3 colonnes'],
+      ['stacked', 'Superposées'],
+    ].map(([key, label]) => {
+      const button = el(doc, 'button', 'kmc-economic-layout-button', label);
       button.type = 'button';
-      button.setAttribute('role', 'tab');
-      button.dataset.costFamilyTab = key;
+      button.dataset.costLayoutButton = key;
+      button.addEventListener('click', () => {
+        section.dataset.costLayout = key;
+        controls.querySelectorAll('[data-cost-layout-button]').forEach(node => {
+          const selected = node === button;
+          node.classList.toggle('is-active', selected);
+          node.setAttribute('aria-pressed', String(selected));
+        });
+        if (key === 'stacked') {
+          cards.forEach(card => {
+            card.dataset.expanded = 'false';
+            card.querySelector('[data-expand-cost-family]')?.setAttribute('aria-expanded', 'false');
+          });
+        }
+      });
+      controls.appendChild(button);
       return button;
     });
-    const select = (key) => {
-      section.dataset.activeFamily = key;
-      buttons.forEach((button) => {
-        const on = button.dataset.costFamilyTab === key;
-        button.classList.toggle('is-active', on);
-        button.setAttribute('aria-selected', on ? 'true' : 'false');
-        button.tabIndex = on ? 0 : -1;
-      });
-      cards.forEach((card, i) => { card.hidden = COST_FAMILIES[i][0] !== key; });
-    };
-    buttons.forEach((button, index) => {
-      button.addEventListener('click', () => select(button.dataset.costFamilyTab));
-      // Navigation clavier (flèches, Home/End) conservée de la PR #2624.
-      button.addEventListener('keydown', (event) => {
-        const last = buttons.length - 1;
-        const next = event.key === 'ArrowRight' ? (index === last ? 0 : index + 1)
-          : event.key === 'ArrowLeft' ? (index === 0 ? last : index - 1)
-          : event.key === 'Home' ? 0 : event.key === 'End' ? last : null;
-        if (next === null) return;
-        event.preventDefault();
-        select(buttons[next].dataset.costFamilyTab);
-        buttons[next].focus();
-      });
-      tabs.appendChild(button);
-    });
-    select(active);
-    return tabs;
+    buttons[initial === 'stacked' ? 1 : 0].click();
+    return controls;
   }
 
   // Une contribution par vente, une couverture collective par période.
@@ -396,10 +444,11 @@
     section.appendChild(el(doc, 'p', 'kmc-economic-cost-intro',
       `Coûts et paramètres · ${marketLabel}. Les valeurs héritées et les charges propres au marché sont indiquées séparément. Les montants conservent leur unité de calcul.`));
     const cards = [variableCostCard(doc, groups.variable), fixedDirectCard(doc, structure), fixedMutualizedCard(doc, structure, marketLabel)];
-    const active = COST_FAMILIES.some(([key]) => key === activeFamily) ? activeFamily : COST_FAMILIES[0][0];
     section.appendChild(costReading(doc, decision));
-    section.appendChild(costFamilyTabs(doc, section, cards, active));
-    cards.forEach(card => section.appendChild(card));
+    section.appendChild(costLayoutControl(doc, section, cards, activeFamily));
+    const families = el(doc, 'div', 'kmc-economic-family-grid');
+    cards.forEach(card => families.appendChild(card));
+    section.appendChild(families);
     section.appendChild(principleCard(doc, marketCode));
     return section;
   }
@@ -1027,6 +1076,23 @@
     const marketCode = options.requestedMarket || payload.scope?.market_code || 'Marché';
 
     cockpit.addEventListener('click', async event => {
+      const expand = event.target.closest('[data-expand-cost-family]');
+      if (expand) {
+        const card = expand.closest('[data-cost-summary]');
+        if (card) {
+          const expanded = card.dataset.expanded !== 'true';
+          cockpit.querySelectorAll('.kmc-economic-family-grid > [data-cost-summary]').forEach(other => {
+            other.dataset.expanded = 'false';
+            other.querySelector('[data-expand-cost-family]')?.setAttribute('aria-expanded', 'false');
+            const label = other.querySelector('[data-expand-cost-family]');
+            if (label) label.textContent = 'Voir le détail';
+          });
+          card.dataset.expanded = String(expanded);
+          expand.setAttribute('aria-expanded', String(expanded));
+          expand.textContent = expanded ? 'Masquer le détail' : 'Voir le détail';
+        }
+        return;
+      }
       const openCosts = event.target.closest('[data-open-cost-detail]');
       if (openCosts) {
         const detailKey = openCosts.dataset.openCostDetail;
@@ -1215,7 +1281,7 @@
 
       const oldCosts = cockpit.querySelector('.kmc-cockpit-costs');
       if (oldCosts) {
-        const newCosts = createCostPilotage(doc, payload, marketCode, newDecision, options.user, oldCosts.dataset.activeFamily);
+        const newCosts = createCostPilotage(doc, payload, marketCode, newDecision, options.user, oldCosts.dataset.costLayout);
         newCosts.hidden = oldCosts.hidden;
         oldCosts.replaceWith(newCosts);
       }
