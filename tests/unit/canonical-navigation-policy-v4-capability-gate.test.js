@@ -134,7 +134,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
       .toEqual(['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live']);
-    expect(labels('markets')).toEqual(['Responsables pays']);
+    expect(labels('markets')).toEqual(['Responsables pays', 'Catalogue pays']);
     const all = groups.flatMap(group => group.items);
     expect(all.some(item => item.href === '/admin/suppliers')).toBe(false);
     // « Produits » n'est plus une entrée de menu : onglet local du Catalogue uniquement.
