@@ -174,12 +174,14 @@
   function createHeader(doc, refinery = false) {
     const header = doc.createElement('header');
     header.className = refinery ? 'kmc-workspace-header' : 'kmc-workspace-header kmc-catalog-compact-header';
+    // The Catalogue's one true Hero is the actionable workspace header, not a duplicate decision panel.
+    if (!refinery) header.setAttribute('data-dashboard-role', 'hero');
     const copy = doc.createElement('div');
-    if (refinery) copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · RAFFINERIE'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', refinery ? 'WORKSPACE · RAFFINERIE' : 'CATALOGUE GLOBAL'));
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', refinery ? 'Raffinerie produits' : 'Catalogue global'));
-    if (refinery) {
-      copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Suivi de préparation automatique. Les fiches et leurs corrections sont exclusivement dans le Catalogue.'));
-    }
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', refinery
+      ? 'Suivi de préparation automatique. Les fiches et leurs corrections sont exclusivement dans le Catalogue.'
+      : 'Retrouver, classer, compléter et valider les produits. Prix et mise en vente : Catalogue marché.'));
     header.appendChild(copy);
 
     if (refinery) {

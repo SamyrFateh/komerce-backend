@@ -112,7 +112,7 @@ const dossierFixture = {
 
 const frame = `<html lang="fr"><head>
 <meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body class="kmc-shell-v4"><main id="canonical-admin-root"></main></body></html>`;
+<body class="kmc-shell-v4" data-kmc-surface="catalog-workspace"><main id="canonical-admin-root"></main></body></html>`;
 
 async function main() {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
@@ -189,6 +189,18 @@ async function main() {
       });
     }, {payload:catalog,dossiers:dossierFixture});
 
+    // One Hero on the main Catalogue, restored on all its internal tabs.
+    const hero = page.locator('.kmc-catalog-compact-header[data-dashboard-role="hero"]');
+    assert.equal(await hero.count(), 1, 'Catalogue must retain exactly one Hero');
+    assert.equal(await hero.locator('h1').innerText(), 'Catalogue global');
+    assert((await hero.locator('.kmc-workspace-subtitle').innerText()).includes('Catalogue marché'));
+    const heroStyle = await hero.evaluate(el => ({
+      height: el.getBoundingClientRect().height,
+      image: getComputedStyle(el, '::before').backgroundImage,
+    }));
+    assert(heroStyle.height >= 140, 'Catalogue Hero has been collapsed: ' + JSON.stringify(heroStyle));
+    assert(heroStyle.image.includes('commerce-hero-gold.svg'),
+      'Catalogue Hero illustration is missing: ' + JSON.stringify(heroStyle));
     assert.equal(await page.locator('tr[data-candidate-ref]').count(), 3);
     assert.equal(await page.locator('tr[data-product-ref]').count(), 3);
     await page.screenshot({ path: path.join(output, 'catalogue-unifie.png'), fullPage: true });
