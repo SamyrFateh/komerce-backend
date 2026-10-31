@@ -1008,7 +1008,9 @@
       ${m.canFirstImport ? `<button type="button" class="kir-source-first-import" data-source-first-import data-source-ref="${esc(source.source_ref)}" ${m.firstImportPending ? 'disabled aria-busy="true"' : ''}>${m.firstImportPending ? 'Lancement du passage…' : m.lastRun ? 'Lancer un nouveau passage' : 'Lancer le premier passage'}</button>` : ''}
       ${source.state === 'active' && !m.busy ? `<button type="button"
         class="kir-source-first-import" data-source-command="update"
-        data-source-ref="${esc(source.source_ref)}">Importer maintenant</button>` : ''}
+        data-source-ref="${esc(source.source_ref)}"
+        ${commandState?.sourceRef === source.source_ref ? 'disabled aria-busy="true"' : ''}>
+        ${commandState?.sourceRef === source.source_ref ? 'Import en cours…' : 'Importer maintenant'}</button>` : ''}
       ${firstImportState?.sourceRef === source.source_ref && firstImportState.error ? `<p class="kir-source-first-error" role="alert">${esc(firstImportState.error)}</p>` : ''}
       ${m.lastRun ? `<a class="kir-source-follow" href="${urlFor(m.lastRun)}" data-cockpit-nav>Voir le suivi →</a>` : ''}
     </article>`;
