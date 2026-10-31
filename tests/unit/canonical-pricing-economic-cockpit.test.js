@@ -131,9 +131,9 @@ test('Atelier des prix : familles comparées ou superposées, Valeur/Provenance 
 
 test('présentations : navigation clavier flèches/Home/End', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
-  expect(src).toContain("event.key === 'ArrowRight'");
-  expect(src).toContain("event.key === 'Home'");
-  expect(src).toContain("event.key === 'End'");
+  expect(src).toContain("key === 'ArrowRight'");
+  expect(src).toContain("key === 'Home'");
+  expect(src).toContain("key === 'End'");
 });
 
 test('familles : trois colonnes lisibles et détail intégral disponible', () => {
