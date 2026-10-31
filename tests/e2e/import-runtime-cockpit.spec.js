@@ -143,7 +143,7 @@ test.describe('Cockpit imports — conformité au mock clair', () => {
     await expect(page.locator('.kir-current-item')).toContainText('Dernier produit mis à jour');
   });
 
-  test('barre de commandes : Mettre à jour (bleu, généreux) puis Arrêter (rouge clair) quand la source est active', async ({ page }) => {
+  test('barre de commandes : Mettre à jour (bleu, généreux) puis Suspendre l’automatisation (rouge clair) quand la source est active', async ({ page }) => {
     const bar = await page.evaluate(() => {
       const box = (sel) => {
         const el = document.querySelector(sel);
@@ -164,7 +164,7 @@ test.describe('Cockpit imports — conformité au mock clair', () => {
     // Commandes en haut (avant le flux) ; l'inventaire des sources vit dans sa propre vue.
     expect(bar.barTop).toBeLessThan(bar.flowTop);
     expect(bar.stripBelow).toBe(false);
-    expect(bar.label).toBe('Mettre à jour maintenant');
+    expect(bar.label).toBe('Lancer un nouvel import');
     expect(bar.update.bg).toBe('rgb(29, 92, 214)');
     expect(bar.stop.bg).toBe('rgb(247, 228, 231)');
     for (const b of [bar.update, bar.stop]) { expect(b.h).toBeGreaterThanOrEqual(48); expect(b.svg).toBe(true); }
@@ -501,18 +501,18 @@ async function mountLive(page, data) {
 test.describe('Cockpit imports — commandes opérateur', () => {
   const calm = calmPayload;
 
-  test('Mettre à jour maintenant : « Mise à jour… » pendant l’action, appelle import-now, boutons verrouillés', async ({ page }) => {
+  test('Lancer un nouvel import : « Mise à jour… » pendant l’action, appelle import-now, boutons verrouillés', async ({ page }) => {
     const state = await mountLive(page, calm);
     const update = page.locator('.kir-cmd-update');
     await update.click();
     await expect(update).toContainText('Mise à jour…');
     await expect(update).toBeDisabled();
     await expect(page.locator('.kir-cmd-stop')).toBeDisabled();
-    await expect(page.locator('.kir-cmd-update')).toContainText('Mettre à jour maintenant', { timeout: 6000 });
+    await expect(page.locator('.kir-cmd-update')).toContainText('Lancer un nouvel import', { timeout: 6000 });
     expect(state.calls).toEqual(['import-now']);
   });
 
-  test('Arrêter : « Arrêt… » puis la source arrêtée propose Redémarrer en premier', async ({ page }) => {
+  test('Suspendre l’automatisation : « Arrêt… » puis la source arrêtée propose Activer l’automatisation en premier', async ({ page }) => {
     const state = await mountLive(page, calm);
     await page.locator('.kir-cmd-stop').click();
     await expect(page.locator('.kir-command-state')).toContainText('Alimentation automatique arrêtée', { timeout: 6000 });
@@ -523,7 +523,7 @@ test.describe('Cockpit imports — commandes opérateur', () => {
     expect(bg).toBe('rgb(227, 247, 239)');
   });
 
-  test('Redémarrer : réutilise activate (même mécanique que l’interrupteur historique)', async ({ page }) => {
+  test('Activer l’automatisation : réutilise activate (même mécanique que l’interrupteur historique)', async ({ page }) => {
     const stopped = JSON.parse(JSON.stringify(calm));
     stopped.source_controls[0].autopilot_enabled = false;
     const state = await mountLive(page, stopped);
