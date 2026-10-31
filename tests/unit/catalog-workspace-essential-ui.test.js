@@ -30,21 +30,20 @@ test('Raffinerie garde le Hero ; Catalogue affiche directement les actions',()=>
   expect(workspace).toContain("'Préparer, contrôler et soumettre les fiches à validation. Les prix se décident dans l’Atelier.'");
 });
 
-test('Curation : le prix global du fournisseur peut rester différé sans autoriser une vente client',()=>{
+test('Curation : un produit peut rester sans prix global, sans afficher ses coûts dans le Catalogue',()=>{
   expect(workspace).toContain('function priceExplanation');
-  expect(workspace).toContain("Coût d’achat estimé");
-  expect(workspace).toContain('Prix de référence global');
-  expect(workspace).toContain('Référence globale sans prix : validation Catalogue possible');
-  expect(workspace).toContain('aucune mise en vente acheteur avant LOCAL_ACTIVE');
-  expect(workspace).toContain('Prix global manquant ou invalide');
+  expect(workspace).toContain('la fixation du prix et les coûts commerciaux appartiennent au marché');
+  expect(workspace).not.toContain('Coût d’achat estimé');
+  expect(workspace).not.toContain('Prix de référence global');
+  expect(workspace).not.toContain('Prix test indicatif');
   expect(workspace).toContain('data-price-explanation');
-  expect(workspace).not.toContain("'Prix —'");
 });
 
-test('Suite marché : un prix local absent est expliqué, jamais un code brut',()=>{
+test('Suite marché : le Catalogue global indique l’état sans exposer un prix local',()=>{
   expect(workspace).toContain('function marketPriceLabel');
-  expect(workspace).toContain('Prix local non défini pour ce marché');
-  expect(workspace).toContain('Prix local en brouillon, à activer');
+  expect(workspace).toContain('Prix à décider par le marché');
+  expect(workspace).toContain('Décision tarifaire en cours');
+  expect(workspace).not.toContain('market.local_price_amount');
 });
 
 test('C4 : le repli « autre » est signalé comme non validé, avec la catégorie fournisseur conservée',()=>{

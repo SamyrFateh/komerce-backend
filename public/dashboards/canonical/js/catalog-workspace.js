@@ -317,25 +317,15 @@
   }
 
   function priceExplanation(row = {}) {
-    const cost = Number(row.cost_kmf);
-    const costText = Number.isFinite(cost) && cost > 0
-      ? `Coût d’achat estimé : ${formatKmf(cost)} (estimation, pas un coût réel).`
-      : 'Coût d’achat estimé non renseigné.';
-    if (hasGlobalReferencePrice(row)) return `Prix de référence global : ${formatKmf(row.price_kmf)}. ${costText}`;
-    if (hasPublishablePrice(row)) {
-      return `Référence globale sans prix : validation Catalogue possible. Le responsable pays décide ensuite du prix local ; aucune mise en vente acheteur avant LOCAL_ACTIVE. ${costText}`;
-    }
-    return `Prix global manquant ou invalide : ce produit non sourcé reste bloqué à la publication. ${costText}`;
+    return hasPublishablePrice(row)
+      ? 'Fiche Catalogue : la fixation du prix et les coûts commerciaux appartiennent au marché.'
+      : 'Préparation du produit à terminer ; le marché déterminera le prix lorsque la fiche sera éligible.';
   }
 
   function marketPriceLabel(market = {}) {
-    if (market.price_status === 'LOCAL_ACTIVE') {
-      return `Prix local actif · ${market.local_price_amount == null ? '—' : market.local_price_amount} ${market.local_price_currency || market.currency || ''}`.trim();
-    }
-    if (market.price_status === 'LOCAL_MARKET_DECISION') return 'Prix local en brouillon, à activer';
-    if (market.price_status === 'LOCAL_AUTHORIZED_PENDING_CUTOVER') return 'Prix local autorisé, bascule en attente';
-    if (!market.price_status) return 'Prix local non défini pour ce marché : non visible acheteur';
-    return market.price_status;
+    if (market.price_status === 'LOCAL_ACTIVE') return 'Prix défini par le marché';
+    if (market.price_status) return 'Décision tarifaire en cours';
+    return 'Prix à décider par le marché';
   }
 
   function curationState(row = {}) {
@@ -896,7 +886,7 @@
           reason: 'Préparation FR manuelle/assistée hors runtime',
         },
         runningMessage: 'Enregistrement de la préparation française…',
-        successMessage: `${row.product_ref} préparé en français sans API IA payante. Vérifiez Avant / après puis validez.`,
+        successMessage: `${row.product_ref} : français enregistré sans API IA payante. Cette étape ne valide pas le produit. Ouvrez « Contrôler et valider », vérifiez les prérequis, puis confirmez « Valider le Catalogue ».`,
       });
     };
     save.addEventListener('click', () => submitFrench(false));
@@ -1512,7 +1502,7 @@
     if (row.work_status === 'approval_unproven')
       return { kind: 'diagnose', label: 'Vérifier approbation', status: 'Preuve à réconcilier' };
     if (row.lifecycle_status === 'candidate' || row.work_status === 'approval_pending') {
-      return { kind: 'refinery', label: 'Examiner pour validation', status: 'À valider en Raffinerie' };
+      return { kind: 'approve', label: 'Contrôler et valider', status: 'Validation Catalogue requise' };
     }
     if (row.work_status === 'catalog_approved' && row.is_active === true) {
       return { kind: 'markets', label: 'Décisions marchés', status: 'Approuvé Catalogue' };
@@ -1871,46 +1861,6 @@
   // The Catalogue is one operator surface; each mutation is still sent to
   // its canonical domain route, which checks its own grant and business gate.
   // Supplier originals always remain read-only.
-  function formatCatalogKmf(value) {
-    if (value == null || value === '') return 'Non calculé';
-    const number = Number(value);
-    if (!Number.isFinite(number) || number <= 0) return 'Non calculé';
-    return Math.round(number).toLocaleString('fr-FR') + ' KMF';
-  }
-
-  // Values come from the last persisted Sourcing scan, never from a browser
-  // estimation. The indicative test price is NOT a market selling price.
-  function appendCatalogEconomicSummary(panel, doc, row) {
-    const section = doc.createElement('section');
-    section.className = 'kmc-catalog-economic-summary';
-    section.setAttribute('data-catalog-economic-summary', '');
-    section.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
-      'Économie · diagnostic Sourcing'));
-    const grid = doc.createElement('dl');
-    grid.className = 'kmc-catalog-economic-grid';
-    [
-      ['Achat fournisseur', row.purchase_price_kmf],
-      ['Coût variable complet', row.variable_cost_complete_kmf],
-      ['Plancher de sécurité', row.minimum_safe_price_kmf],
-      ['Prix test indicatif', row.test_price_kmf],
-    ].forEach(([label, amount]) => {
-      const item = doc.createElement('div');
-      item.className = 'kmc-catalog-economic-item';
-      item.appendChild(text(doc, 'dt', '', label));
-      item.appendChild(text(doc, 'dd', '', formatCatalogKmf(amount)));
-      grid.appendChild(item);
-    });
-    section.appendChild(grid);
-    section.appendChild(text(doc, 'p', 'kmc-catalog-economic-note',
-      (row.economic_category_key
-        ? 'Catégorie économique : ' + row.economic_category_key + '. '
-        : 'Catégorie économique non confirmée. ') +
-      (row.record_kind === 'candidate'
-        ? 'Aucun prix de vente marché décidé : candidat non remis au Catalogue.'
-        : 'Les prix de vente par marché relèvent de la décision commerciale, pas du prix test.')));
-    panel.appendChild(section);
-  }
-
   function inspectorFrame(slot, doc, row, mode) {
     const previous = slot.querySelector('[data-catalog-candidate-inspector]');
     if (previous) previous.remove();
@@ -1952,7 +1902,6 @@
     feedback.setAttribute('aria-live', 'polite');
     actionDock.appendChild(feedback);
     panel.appendChild(actionDock);
-    appendCatalogEconomicSummary(panel, doc, row);
     const facts = doc.createElement('dl');
     facts.className = 'kmc-catalog-inspector-fields';
     [
@@ -1967,6 +1916,7 @@
     });
     const sourceDetails = doc.createElement('details');
     sourceDetails.className = 'kmc-catalog-source-details';
+    sourceDetails.setAttribute('data-catalog-source-details', '');
     sourceDetails.appendChild(text(doc, 'summary', '', 'Informations fournisseur · Lecture seule'));
     sourceDetails.appendChild(facts);
     panel.appendChild(sourceDetails);
@@ -2059,26 +2009,18 @@
                 });
               if (!answer?.ok) throw new Error('Correction et nouveau scan non confirmés.');
               const result = answer.result || {};
-              const e = result.scan?.economics || {};
-              const numbers = [
-                ['Coût variable',e.variable_cost_complete_kmf],
-                ['Plancher de sécurité',e.minimum_safe_price_kmf],
-                ['Prix test indicatif',e.test_price_kmf],
-              ].filter(([,v]) => v != null && Number.isFinite(Number(v)) && Number(v)>0)
-               .map(([label,value]) => label + ' : ' + formatKmf(value));
               await context.reload();
               setFeedback(context.root,
                 'Catégorie économique enregistrée pour ' + row.candidate_ref +
                   '. Nouveau verdict Sourcing : ' +
                   (result.scan?.decision || 'à relire') +
-                  (numbers.length ? '. ' + numbers.join(' · ') : '. Coûts encore à qualifier') +
-                  '. Prix de vente marché non décidé, aucune publication.', 'positive');
+                  '. Le prix reste à décider par le marché ; aucune publication.', 'positive');
             } catch (err) {
               feedback.textContent = actionErrorMessage(err);
               save.disabled = false;
             }
           });
-          panel.insertBefore(form, panel.querySelector('[data-catalog-economic-summary]'));
+          panel.insertBefore(form, panel.querySelector('[data-catalog-source-details]'));
           feedback.textContent = '';
         } catch (err) {
           feedback.textContent = actionErrorMessage(err);
@@ -2198,7 +2140,7 @@
         });
         // The proposed classification belongs next to the operator actions,
         // not underneath the entire supplier/economic read-only dossier.
-        panel.insertBefore(form, panel.querySelector('[data-catalog-economic-summary]'));
+        panel.insertBefore(form, panel.querySelector('[data-catalog-source-details]'));
         feedback.textContent = '';
       } catch (error) {
         feedback.textContent = actionErrorMessage(error);
@@ -2274,7 +2216,6 @@
       slot.appendChild(group);
     };
     const displayNumber = value => value == null ? 'Non mesuré' : String(value);
-    const price = value => value == null ? 'Non décidé' : formatCatalogKmf(value);
     facts('Présentation commerciale', [
       ['Titre boutique FR', identity.title_fr],
       ['Description boutique FR', identity.description_fr],
@@ -2343,14 +2284,10 @@
     if (variants.truncated) unitBox.appendChild(text(doc, 'p',
       'kmc-catalog-correction-hint', 'Liste partielle : plus de 50 lignes de variantes ou SKU.'));
     slot.appendChild(unitBox);
-    facts('Prix de référence · non décision marché', [
-      ['Coût stocké', price(dossier.economics?.reference_cost_kmf)],
-      ['Prix global de référence', price(dossier.economics?.reference_price_kmf)],
-    ]);
     const markets = Array.isArray(dossier.markets) ? dossier.markets : [];
     const mgroup = doc.createElement('section');
     mgroup.className = 'kmc-catalog-dossier-group';
-    mgroup.appendChild(text(doc, 'strong', '', 'Vente par marché'));
+    mgroup.appendChild(text(doc, 'strong', '', 'Suivi de commercialisation par marché'));
     if (dossier.market_data_scope === 'not_queried_before_approval') {
       mgroup.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
         'Produit non approuvé : les décisions tarifaires et d’exposition ne sont pas présumées.'));
@@ -2365,10 +2302,8 @@
         line.appendChild(text(doc, 'span', '',
           'Exposition : ' + (market.commercial_exposure || 'Non renseignée')));
         line.appendChild(text(doc, 'span', '',
-          'Prix : ' + (market.price_status || 'Non décidé') +
-          (market.local_price_amount == null ? '' :
-            ' · ' + market.local_price_amount + ' ' +
-            (market.local_price_currency || market.currency || ''))));
+          'Décision tarifaire : ' + (market.price_status === 'LOCAL_ACTIVE'
+            ? 'Prix local actif sur ce marché' : 'À finaliser dans le marché')));
         mgroup.appendChild(line);
       });
       mgroup.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
@@ -2536,7 +2471,11 @@
       actions.appendChild(btn);
     }
     if (row.work_status === 'approval_pending' || issues.includes('approval_pending')) {
-      const review = makeButton(doc, 'Vérifier avant validation', 'inspector-check-approval');
+      const stepNotice = text(doc, 'p', 'kmc-catalog-correction-hint',
+        '1. Contrôler les prérequis (lecture seule) · 2. Valider le Catalogue après relecture humaine. La correction du français ne valide jamais automatiquement le produit.');
+      stepNotice.setAttribute('data-catalog-approval-explanation', '');
+      panel.querySelector('[data-catalog-action-dock]').appendChild(stepNotice);
+      const review = makeButton(doc, 'Contrôler les prérequis', 'inspector-check-approval');
       review.addEventListener('click', async () => {
         review.disabled = true;
         feedback.textContent = 'Vérification de la certification Catalogue…';
@@ -2549,6 +2488,8 @@
             feedback.textContent = reasons.length
               ? 'À compléter : ' + reasons.join(' · ')
               : (data?.note || 'Certification non démontrée. Validation impossible.');
+            const approvalAction = panel.querySelector('[data-workspace-action="inspector-approve"]');
+            if (approvalAction) approvalAction.remove();
             return;
           }
           const already = panel.querySelector('[data-workspace-action="inspector-approve"]');
@@ -2567,13 +2508,14 @@
                 setFeedback(context.root, row.product_ref +
                   ' validé dans le Catalogue. Décisions marchés distinctes.', 'positive');
               } catch (error) {
-                feedback.textContent = actionErrorMessage(error);
+                feedback.textContent = 'Validation refusée : ' + actionErrorMessage(error) +
+                  '. La fiche reste en attente ; aucune vente n’a été activée.';
                 approve.disabled = false;
               }
             });
             actions.appendChild(approve);
           }
-          feedback.textContent = 'Certification serveur acquise. Après contrôle visuel, vous pouvez valider.';
+          feedback.textContent = 'Prérequis techniques satisfaits. Vérifiez le titre, la description, les images et la catégorie, puis cliquez sur « Valider le Catalogue ». Aucun marché ne sera publié automatiquement.';
         } catch (error) {
           feedback.textContent = actionErrorMessage(error);
         } finally { review.disabled = false; }

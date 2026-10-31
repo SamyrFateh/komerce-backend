@@ -334,7 +334,8 @@ test('un brouillon issu du Sourcing sans prix global atteint la curation humaine
     require('path').join(__dirname,'../../public/dashboards/canonical/js/catalog-workspace.js'),'utf8'
   );
   expect(ui).toContain('row.supplier_source_linked === true && row.price_kmf == null');
-  expect(ui).toContain('aucune mise en vente acheteur avant LOCAL_ACTIVE');
+  expect(ui).toContain('la fixation du prix et les coûts commerciaux appartiennent au marché');
+  expect(ui).not.toContain('Coût d’achat estimé');
 });
 
 test('préparation FR résout product_ref puis applique des overrides manuels sans API IA', async () => {
@@ -666,7 +667,6 @@ test('Dossier canonique : une fiche source, son achat et ses preuves sans UUID n
     availability:{stock:4,weight_kg:0.15},
     purchasing:{supplier_identity_complete:true,active_supplier_skus:2},
     media:{active_canonical:3},
-    economics:{reference_cost_kmf:2000,reference_price_is_market_decision:false},
     catalogue_gate:{phase:'catalog_approval',technically_certified:true},
     markets:[],
     market_data_scope:'not_queried_before_approval',
@@ -688,8 +688,9 @@ test('Produit déjà actif : état marché explicite, pas de fausse recertificat
   expect(result.catalogue_gate.reasons).toEqual([]);
   expect(result.availability.is_available).toBe(false);
   expect(result.markets[0]).toMatchObject({code:'KM',price_status:'LOCAL_ACTIVE',
-    commercial_exposure:'ENABLED',local_price_amount:5000});
-  expect(result.economics.reference_price_kmf).toBeNull();
+    commercial_exposure:'ENABLED'});
+  expect(result.markets[0]).not.toHaveProperty('local_price_amount');
+  expect(result).not.toHaveProperty('economics');
   expect(result.market_data_scope).toBe('active_catalogue_product');
 });
 
@@ -746,4 +747,45 @@ test('Dossier SQL: lire seulement les variantes du modèle déclaré et les méd
   expect(source).toContain('LIMIT 25');
   expect(source).toContain('LIMIT 51');
   expect(source).not.toContain('UPDATE catalog_media');
+});
+
+test('une ancienne contrainte prix global renvoie 409 explicite, jamais un message PostgreSQL opaque', async () => {
+  mockQuery.mockImplementation(async sql => String(sql).includes('WHERE product_ref = $1')
+    ? {rows:[{id:'candidate-internal-id',product_ref:'KPR-000096',lifecycle_status:'candidate',is_active:false}]}
+    : {rows:[]});
+  mockApprove.mockRejectedValueOnce(Object.assign(
+    new Error('new row violates check constraint'),{
+      code:'23514',constraint:'chk_products_unpriced_draft_only',
+    }));
+  await expect(workspace.approveCandidate('KPR-000096',{id:'admin'}))
+    .rejects.toMatchObject({
+      status:409,
+      code:'catalog_unpriced_approval_schema_outdated',
+      message:expect.stringContaining('migration Catalogue 352'),
+    });
+});
+test('une autre contrainte PostgreSQL n’est jamais maquillée comme un défaut de prix global',async()=>{
+  mockQuery.mockImplementation(async sql => String(sql).includes('WHERE product_ref = $1')
+    ? {rows:[{id:'candidate-internal-id',product_ref:'KPR-000096',lifecycle_status:'candidate',is_active:false}]}
+    : {rows:[]});
+  const error=Object.assign(new Error('other constraint'),{
+    code:'23514',constraint:'other_business_constraint',
+  });
+  mockApprove.mockRejectedValueOnce(error);
+  await expect(workspace.approveCandidate('KPR-000096',{id:'admin'})).rejects.toBe(error);
+});
+test('une fiche sourcing validée sans prix global reste approuvable sans activer un marché',async()=>{
+  mockQuery.mockImplementation(async sql => String(sql).includes('WHERE product_ref = $1')
+    ? {rows:[{id:'candidate-internal-id',product_ref:'KPR-000096',lifecycle_status:'candidate',is_active:false}]}
+    : {rows:[]});
+  mockApprove.mockResolvedValueOnce({status:200,body:{
+    product_ref:'KPR-000096',name:'Collier doré vintage',
+    description:'Collier doré pour femme avec pendentifs.',
+    category:'cosmetiques',price_kmf:null,
+    lifecycle_status:'active',is_active:true,is_available:true,
+  }});
+  const result=await workspace.approveCandidate('KPR-000096',{id:'admin'});
+  expect(result).toMatchObject({product_ref:'KPR-000096',price_kmf:null,is_active:true});
+  expect(result).not.toHaveProperty('market_price');
+  expect(mockApprove).toHaveBeenCalledTimes(1);
 });

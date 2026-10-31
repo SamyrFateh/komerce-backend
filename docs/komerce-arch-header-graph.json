@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1896,
-    "edges": 9399,
+    "edges": 9402,
     "dbTables": 214,
     "doctrines": 713,
     "impactAreas": 207,
@@ -15650,6 +15650,9 @@
         "markets",
         "product_market_exposure",
         "product_market_price_drafts",
+        "catalog_media",
+        "product_skus",
+        "product_variants",
         "finance_config",
         "currency_parities",
         "exchange_rates",
@@ -65724,6 +65727,24 @@
     },
     {
       "from": "services/catalog-workspace.js",
+      "to": "db:catalog_media",
+      "type": "db-read",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:product_variants",
+      "type": "db-read",
+      "label": "product_variants"
+    },
+    {
+      "from": "services/catalog-workspace.js",
       "to": "db:finance_config",
       "type": "db-read",
       "label": "finance_config"
@@ -114762,6 +114783,9 @@
         "markets",
         "product_market_exposure",
         "product_market_price_drafts",
+        "catalog_media",
+        "product_skus",
+        "product_variants",
         "finance_config",
         "currency_parities",
         "exchange_rates",
@@ -114785,6 +114809,7 @@
       "mustCheck": [
         "db:boutique_categories",
         "db:boutique_subcategories",
+        "db:catalog_media",
         "db:cost_components",
         "db:currency_parities",
         "db:exchange_rates",
@@ -114793,6 +114818,8 @@
         "db:markets",
         "db:product_market_exposure",
         "db:product_market_price_drafts",
+        "db:product_skus",
+        "db:product_variants",
         "db:products",
         "db:sourcing_candidates",
         "doctrine:commercial_catalog_is_union_of_approved_products_from_closed_kirs",

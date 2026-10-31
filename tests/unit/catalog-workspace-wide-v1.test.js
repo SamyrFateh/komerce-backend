@@ -184,13 +184,11 @@ test('V4.1 : priorité visuelle aux écarts avant marchés et à la prochaine ac
   expect(ui).toContain('statusChip.addEventListener');
 });
 
-test('Dossier opérateur : coûts source, prix test distinct et classement chargé sans second clic', () => {
-  expect(ui).toContain("function appendCatalogEconomicSummary(panel, doc, row)");
-  expect(ui).toContain("row.purchase_price_kmf");
-  expect(ui).toContain("row.variable_cost_complete_kmf");
-  expect(ui).toContain("row.minimum_safe_price_kmf");
-  expect(ui).toContain("row.test_price_kmf");
-  expect(ui).toContain("Aucun prix de vente marché décidé");
+test('Dossier opérateur : correction source accessible sans chiffres économiques globaux', () => {
+  expect(ui).not.toContain('function appendCatalogEconomicSummary(panel, doc, row)');
+  expect(ui).not.toContain('Prix test indicatif');
+  expect(ui).not.toContain('Coût variable complet');
+  expect(ui).not.toContain('Prix de référence · non décision marché');
   expect(ui).toContain("sourceDetails.appendChild(facts)");
   expect(ui).toContain("classify.addEventListener('click', loadBoutiqueProposal)");
   expect(ui).toContain("void loadBoutiqueProposal()");
@@ -198,8 +196,8 @@ test('Dossier opérateur : coûts source, prix test distinct et classement charg
   expect(ui).toContain("Number.parseInt(select.value, 10)");
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
-  expect(css).toContain('.kmc-catalog-economic-grid');
-  expect(index).toContain('catalog-workspace.js?v=261030-3');
+  expect(ui).not.toContain('appendCatalogEconomicSummary');
+  expect(index).toContain('catalog-workspace.js?v=261031-1');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -212,7 +210,7 @@ test('Catalogue : dossier produit complet, y compris les produits approuvés', (
   expect(ui).toContain("weight_kg");
   expect(ui).toContain("commercial_exposure");
   expect(ui).toContain("price_status");
-  expect(ui).toContain("local_price_amount");
+  expect(ui).not.toContain('local_price_amount');
   expect(ui).toContain("market_data_scope");
   expect(ui).toContain("certificationReasonLabel(reason)");
   expect(ui).toContain("primary.addEventListener('click', () =>");
@@ -246,7 +244,7 @@ test('Un candidat Sourcing à examiner n’est plus absent du compteur des actio
 test('Actions éditoriales toujours visibles avant lecture longue de la fiche', () => {
   expect(ui).toContain("actionDock.setAttribute('data-catalog-action-dock', '')");
   expect(ui).toContain("panel.appendChild(actionDock)");
-  expect(ui).toContain("appendCatalogEconomicSummary(panel, doc, row)");
+  expect(ui).toContain("sourceDetails.setAttribute('data-catalog-source-details', '')");
   expect(ui).toContain("panel.appendChild(dossierSlot)");
   expect(ui).toContain("Compléter titre et description FR");
   expect(ui).toContain("Modifier titre / description FR");
@@ -254,6 +252,20 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261030-3');
+  expect(index).toContain('catalog-workspace.js?v=261031-1');
   expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-3');
+});
+
+test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
+  expect(ui).toContain("status: 'Validation Catalogue requise'");
+  expect(ui).toContain('Cette étape ne valide pas le produit.');
+  expect(ui).toContain("stepNotice.setAttribute('data-catalog-approval-explanation', '')");
+  expect(ui).toContain("'Contrôler les prérequis', 'inspector-check-approval'");
+  expect(ui).toContain('Contrôler les prérequis (lecture seule)');
+  expect(ui).toContain('Prérequis techniques satisfaits.');
+  expect(ui).toContain("'Valider le Catalogue', 'inspector-approve'");
+  expect(ui).toContain("ENDPOINT + '/approval/'");
+  expect(ui).toContain('Validation refusée : ');
+  expect(ui).not.toContain("status: 'À valider en Raffinerie'");
+  expect(index).toContain('catalog-workspace.js?v=261031-1');
 });
