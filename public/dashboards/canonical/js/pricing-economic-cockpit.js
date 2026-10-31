@@ -332,6 +332,37 @@
     return tabs;
   }
 
+  // Une contribution par vente, une couverture collective par période.
+  // Aucun pourcentage synthétique n'est construit à partir d'unités hétérogènes.
+  function costReading(doc) {
+    const section = el(doc, 'section', 'kmc-economic-reading');
+    section.dataset.economicCostReading = '';
+    section.setAttribute('aria-label', 'Comment lire les coûts et la contribution');
+    const introduction = el(doc, 'div', 'kmc-economic-reading-heading');
+    introduction.appendChild(el(doc, 'span', 'kmc-economic-reading-eyebrow', 'LOGIQUE ÉCONOMIQUE'));
+    introduction.appendChild(el(doc, 'strong', '', 'Le produit contribue. Le portefeuille couvre.'));
+    introduction.appendChild(el(doc, 'p', '', 'On mesure ce que chaque vente apporte, puis on compare les contributions réconciliées aux charges fixes de la même période.'));
+    section.appendChild(introduction);
+    const grid = el(doc, 'div', 'kmc-economic-reading-grid');
+    [
+      { icon: '↗', tone: 'variable', title: 'Contribution par vente', value: 'Prix − coûts variables (N1 + N2)', detail: 'Estimée avant vente ; réconciliée après achat, expédition, douane et livraison.' },
+      { icon: '◈', tone: 'fixed', title: 'Structure à couvrir (N3)', value: 'Fixes directs + fixes mutualisés', detail: 'Charges de période couvertes collectivement, jamais une dette automatique par SKU.' },
+      { icon: '%', tone: 'mix', title: 'Part des coûts totaux', value: 'Non encore calculable', detail: 'Les proportions exigent une même période, des unités compatibles et des données suffisamment réconciliées.' },
+    ].forEach(item => {
+      const card = el(doc, 'article', `kmc-economic-reading-item is-${item.tone}`);
+      card.appendChild(el(doc, 'span', 'kmc-economic-reading-icon', item.icon));
+      const copy = el(doc, 'div', 'kmc-economic-reading-copy');
+      copy.appendChild(el(doc, 'span', 'kmc-economic-reading-label', item.title));
+      copy.appendChild(el(doc, 'strong', 'kmc-economic-reading-value', item.value));
+      copy.appendChild(el(doc, 'small', '', item.detail));
+      card.appendChild(copy);
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);
+    section.appendChild(el(doc, 'p', 'kmc-economic-reading-foot', 'Variable ou fixe décrit la nature ; direct ou mutualisé décrit la répartition. Un même coût n’est compté qu’une fois.'));
+    return section;
+  }
+
   function createCostPilotage(doc, payload, marketCode, decision, user, activeFamily) {
     const groups = classifyComponents(Array.isArray(payload.cost_components) ? payload.cost_components : []);
     const structure = decision?.coverage?.structure || null;
@@ -342,6 +373,7 @@
       `Coûts et paramètres · ${marketLabel}. Les valeurs héritées et les charges propres au marché sont indiquées séparément. Les montants conservent leur unité de calcul.`));
     const cards = [variableCostCard(doc, groups.variable), fixedDirectCard(doc, structure), fixedMutualizedCard(doc, structure, marketLabel)];
     const active = COST_FAMILIES.some(([key]) => key === activeFamily) ? activeFamily : COST_FAMILIES[0][0];
+    section.appendChild(costReading(doc));
     section.appendChild(costFamilyTabs(doc, section, cards, active));
     cards.forEach(card => section.appendChild(card));
     section.appendChild(principleCard(doc, marketCode));
