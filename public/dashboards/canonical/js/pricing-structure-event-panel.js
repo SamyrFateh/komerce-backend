@@ -322,8 +322,20 @@
       const amount = built.form.querySelector('[name="amount_original"]');
       amount?.closest('.kmc-structure-panel-row')?.prepend(current);
       amount.placeholder = 'Nouvelle écriture';
+      // The row itself identifies the charge; other mandatory financial
+      // fields keep their safe defaults but do not overcrowd the ordinary edit.
+      built.chargeSelect.closest('.kmc-structure-panel-field').hidden = true;
+      const advanced = el(doc, 'details', 'kmc-structure-inline-advanced');
+      advanced.appendChild(el(doc, 'summary', '', 'Options avancées · devise, source, notes'));
+      [
+        built.currencyInput.closest('.kmc-structure-panel-field'),
+        built.fxInput.closest('.kmc-structure-panel-row'),
+        built.sourceSelect.closest('.kmc-structure-panel-field'),
+        built.notesInput.closest('.kmc-structure-panel-field'),
+      ].forEach(fieldNode => { if (fieldNode) advanced.appendChild(fieldNode); });
+      built.form.appendChild(advanced);
       const hint = el(doc, 'p', 'kmc-structure-inline-hint',
-        'Les charges fixes sont des faits de période : une nouvelle charge s’ajoute ; pour rectifier un fait, choisissez « Ajustement » et son écriture d’origine. Période et justificatif obligatoires.');
+        'Une nouvelle charge s’ajoute ; pour corriger un fait existant, choisissez « Ajustement » et son écriture d’origine.');
       const history = el(doc, 'details', 'kmc-structure-inline-history');
       history.appendChild(el(doc, 'summary', '', 'Consulter l’historique'));
       history.appendChild(historyList);
