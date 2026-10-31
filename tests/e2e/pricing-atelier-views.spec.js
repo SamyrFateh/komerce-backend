@@ -305,7 +305,11 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
     await expect(mutual).toContainText('Loyer et équipe Hub');
     await expect(mutual).toContainText('650');
     await expect(mutual).toHaveAttribute('data-read-only', 'true');
-    await expect(reading.locator('.kmc-economic-reading-item.is-mix')).toContainText('Non encore calculable');
+    const mix = reading.locator('.kmc-economic-reading-item.is-mix');
+    await expect(mix).toContainText('Variables 66,7 % · Fixes 33,3 %');
+    await expect(mix).toContainText('Directs 70,8 % · Mutualisés 29,2 %');
+    await expect(mix.locator('.kmc-economic-reading-mix-track')).toHaveAttribute('aria-label', /66,7/);
+    await expect(mix).not.toContainText('Non encore calculable');
     await expect(page.locator('[data-chromium-demo-notice]')).toBeVisible();
     await noOverflow(page);
     await shot(page, '6-couts-mutualises-demo', '1440');
