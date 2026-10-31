@@ -52,7 +52,7 @@ async function listReviewQueue(executor, { marketId, limit = 100 }) {
   );
 }
 
-async function listReadyToSell(executor, { market, capabilities, reviewQueue, exposure, limit = 100 }) {
+async function listReadyToSell(executor, { market, capabilities, reviewQueue, exposure, limit = 100, offset = 0 }) {
   return readyToSellProjection.buildReadyToSell({
     executor: requireExecutor(executor),
     market,
@@ -60,6 +60,7 @@ async function listReadyToSell(executor, { market, capabilities, reviewQueue, ex
     reviewQueue,
     exposure,
     limit,
+    offset,
   });
 }
 
