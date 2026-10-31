@@ -361,51 +361,6 @@
     ['fixed-mutualized', 'Charges fixes mutualisées'],
   ];
 
-  // Two genuine layouts over the same three server-backed cards; no data duplication.
-  function costLayoutControl(doc, section, cards, initial) {
-    const controls = el(doc, 'div', 'kmc-cockpit-cost-layout-controls');
-    controls.setAttribute('role', 'group');
-    controls.setAttribute('aria-label', 'Présentation des familles de coûts');
-    const hint = el(doc, 'span', 'kmc-economic-layout-hint', 'Comparer la présentation');
-    controls.appendChild(hint);
-    const buttons = [
-      ['columns', '3 colonnes'],
-      ['stacked', 'Superposées'],
-    ].map(([key, label]) => {
-      const button = el(doc, 'button', 'kmc-economic-layout-button', label);
-      button.type = 'button';
-      button.dataset.costLayoutButton = key;
-      button.addEventListener('click', () => {
-        section.dataset.costLayout = key;
-        controls.querySelectorAll('[data-cost-layout-button]').forEach(node => {
-          const selected = node === button;
-          node.classList.toggle('is-active', selected);
-          node.setAttribute('aria-pressed', String(selected));
-        });
-        if (key === 'stacked') {
-          cards.forEach(card => {
-            card.dataset.expanded = 'false';
-            card.querySelector('[data-expand-cost-family]')?.setAttribute('aria-expanded', 'false');
-          });
-        }
-      });
-      controls.appendChild(button);
-      return button;
-    });
-    buttons.forEach((button, index) => button.addEventListener('keydown', event => {
-      const key = event.key;
-      const next = key === 'ArrowRight' ? (index + 1) % buttons.length
-        : key === 'ArrowLeft' ? (index + buttons.length - 1) % buttons.length
-        : key === 'Home' ? 0 : key === 'End' ? buttons.length - 1 : -1;
-      if (next < 0) return;
-      event.preventDefault();
-      buttons[next].click();
-      buttons[next].focus();
-    }));
-    buttons[initial === 'stacked' ? 1 : 0].click();
-    return controls;
-  }
-
   // Une contribution par vente, une couverture collective par période.
   // Aucun pourcentage synthétique n'est construit à partir d'unités hétérogènes.
   function costReading(doc, decision) {
