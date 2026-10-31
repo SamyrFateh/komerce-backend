@@ -1293,11 +1293,18 @@
           await workspace.jsonRequest(options.fetch, `${endpoint}/cost-components/${encodeURIComponent(key)}/update`, {
             method: 'POST', body: { default_value: value, source: 'economic_cockpit_inline_row' },
           });
-          note.textContent = 'Enregistré. Actualisation…';
-          await rootObject.KomerceCanonicalPricingWorkspace.mount({ ...options, refreshEconomicCockpit: true });
         } catch (error) {
           note.textContent = `Non enregistré : ${error.message}`;
           buttons.forEach(button => { button.disabled = false; });
+          return;
+        }
+        // The backend has accepted the mutation. A subsequent read failure must
+        // never be presented as a failed save (which could prompt duplicate writes).
+        note.textContent = 'Enregistré. Actualisation…';
+        try {
+          await rootObject.KomerceCanonicalPricingWorkspace.mount({ ...options, refreshEconomicCockpit: true });
+        } catch (error) {
+          note.textContent = 'Enregistré côté serveur, mais actualisation indisponible. Rechargez cette page.';
         }
         return;
       }
