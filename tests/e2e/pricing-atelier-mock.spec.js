@@ -106,7 +106,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(input).toHaveValue('2.9');
       await input.fill('');
       await row.locator('.kmc-inline-cost-save').click();
-      await expect(row.locator('[data-inline-cost-message]')).toContainText('non enregistré');
+      await expect(row.locator('[data-inline-cost-message]')).toContainText('Valeur invalide');
       expect(posts).toHaveLength(0);
       await input.fill('3.1');
       await row.locator('.kmc-inline-cost-save').click();
