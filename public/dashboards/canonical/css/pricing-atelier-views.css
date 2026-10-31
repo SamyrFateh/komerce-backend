@@ -189,3 +189,21 @@
 .kmc-atelier-views .kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cell { color: #334155; }
 
 .kmc-atelier-views .kmc-economic-global-value { display: block; margin-top: 6px; color: #4b6280; font-size: 13px; line-height: 1.5; }
+
+/* Desktop: one full-width operating table. The explanatory doctrine follows
+   the costs instead of stealing a third of their usable width. */
+.kmc-atelier-views .kmc-cockpit-costs {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
+}
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-economic-cost-intro,
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-cockpit-cost-tabs,
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-cockpit-cost-card,
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-cockpit-principle {
+  grid-column: 1;
+  grid-row: auto;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-cockpit-principle {
+  margin-top: 8px;
+}
