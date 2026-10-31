@@ -40,6 +40,7 @@ function cockpit(search = '?run=KIR-000004') {
   const context = {
     URLSearchParams,
     window: {
+      __KOMERCE_LEGACY_PROOF__: true,
       location:{ pathname:'/admin/import-runtime', search },
       history:{ pushState:jest.fn() },
       addEventListener:jest.fn(),
@@ -146,23 +147,19 @@ test('commandes : source arrêtée → Redémarrer puis Mettre à jour ; source 
   expect(active.innerHTML).toContain('Alimentation automatique active');
   expect(active.innerHTML.indexOf('data-source-command="update"')).toBeLessThan(active.innerHTML.indexOf('data-source-command="stop"'));
   expect(active.innerHTML).not.toContain('data-source-command="restart"');
-  expect(active.innerHTML).toContain('Mettre à jour maintenant');
+  expect(active.innerHTML).toContain('Lancer un nouvel import');
 });
 
-test('commandes visibles même si le run n\'expose pas le source_ref de la carte (fournisseur différent, source_ref vide)', () => {
-  const ui = cockpit();
-  for (const patch of [{ source_ref:null }, { source_ref:'autre-ref' }, { source_ref:undefined }]) {
-    const p = JSON.parse(JSON.stringify(payload));
-    Object.assign(p.selected, patch);
-    p.source_controls[0].label = 'AliExpress Dropshipper API';
-    p.source_controls[0].autopilot_enabled = true;
-    const node = root();
-    ui.render(node, p);
-    expect(node.innerHTML).toContain('data-source-command="update"');
-    expect(node.innerHTML).toContain('data-source-command="stop"');
-    // Les commandes précèdent le flux ; l'inventaire des sources n'est plus sous le cockpit (vue Sources).
-    expect(node.innerHTML.indexOf('kir-command-bar')).toBeLessThan(node.innerHTML.indexOf('kir-run-flow'));
-    expect(node.innerHTML).not.toContain('data-source-toggle');
+test('aucune commande fournisseur n’est devinée sans source_ref exact du passage', () => {
+  const ui=cockpit();
+  for (const patch of [{source_ref:null},{source_ref:'autre-ref'},{source_ref:undefined}]) {
+    const p=JSON.parse(JSON.stringify(payload));
+    Object.assign(p.selected,patch);
+    p.source_controls[0].label='AliExpress Dropshipper API';
+    p.source_controls[0].autopilot_enabled=true;
+    const node=root();
+    ui.render(node,p);
+    expect(node.innerHTML).not.toContain('data-source-command');
   }
 });
 
@@ -300,7 +297,7 @@ test('12 mis de côté dont 3 corrigeables : sous-ensemble et non sixième popul
   expect(exceptions).toContain('data-product-name="À classer"');
   expect(exceptions).toContain('Classer →');
   expect(exceptions).toContain("Prix d'achat manquant");
-  expect(exceptions).toContain('Compléter dans Sourcing →');
+  expect(exceptions).toContain('Corriger la donnée fournisseur →');
   expect(exceptions).not.toContain('data-action-choose');
   expect((exceptions.match(/kir-row-action/g)||[])).toHaveLength(3);
 });
@@ -414,7 +411,7 @@ test('CAS E : au clic, la liste filtrée montre exactement les 3 éléments (pro
   const html = render(scenario({ quarantined:2, certification_blocked:1, action_required:3 },
     { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }), '?run=KIR-000004&view=exceptions');
   expect((html.match(/kir-row-action/g) || []).length).toBeGreaterThanOrEqual(3);
-  for (const expected of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
+  for (const expected of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Corriger dans le Catalogue']) {
     expect(html).toContain(expected);
   }
   expect(html).toContain('data-action-classify');
@@ -915,8 +912,9 @@ test('audit : sortie Catalogue = return_to exact vers l’objet Sourcing d’ori
   expect(live).toContain('return_label=Retour+au+suivi');
   expect(live).not.toContain('return_label=Retour+au+passage');
   const exc = drill('exceptions', '', scenario({ quarantined:3, action_required:3 }, { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }));
-  expect(exc).toContain('return_label=Retour+%C3%A0+Action+requise');
-  expect(exc).toContain(`return_to=%2Fadmin%2Fimport-runtime%3Frun%3D${RUN}%26view%3Dexceptions`);
+  // Product corrections go straight to Catalogue master; no Sourcing loop.
+  expect(exc).toContain('/admin/workspaces/catalog?search=KSC-1');
+  expect(exc).not.toContain('return_label=Retour+%C3%A0+Action+requise');
 });
 
 test('audit : détail technique — contrôle, produit ou suivi selon l’origine réelle, contexte conservé sur les étapes', () => {
@@ -1057,7 +1055,12 @@ const SOURCES = () => [
   { source_ref:'api:cj', label:'CJ Dropshipping', state:'ready', connection:{ verified:true }, autopilot_enabled:false, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:null },
   { source_ref:'api:bigbuy', label:'BigBuy', state:'blocked', connection:{ verified:false }, autopilot_enabled:false, autopilot_ready:false, activation_ready:false, blocker:'Clé API manquante', production_runtime_certified:false, last_capture_at:null },
 ];
-const sourcesView = (search = '') => { const p = scenario(); p.source_controls = SOURCES(); return render(p, `?${search}view=sources`); };
+const sourcesView = (search = '') => { const p = scenario(); p.source_controls = SOURCES();
+  // Test fixtures explicitly associate runs with source_ref; no runtime name guessing.
+  p.lots=(p.lots||[]).map(lot => ({...lot,
+    source_ref:/aliexpress/i.test(lot.provider||'')?'api:aliexpress':'api:cj'}));
+  if(p.selected) p.selected.source_ref='api:aliexpress';
+  return render(p, `?${search}view=sources`); };
 
 test('Sources : synthèse compacte calculée depuis source_controls, une carte par fournisseur', () => {
   const html = sourcesView(`run=${RUN}&`);
@@ -1128,11 +1131,11 @@ test('LIVE-01/02 : écouteurs retirés avant chaque montage et aucune relecture 
   expect(src).toMatch(/visibilityState === 'hidden'\) return;/);
 });
 
-test('Sourcing : « Continuer → Raffinerie » ouvre la raffinerie sur le produit gardé, réservé à l’admin, avec retour au passage', () => {
+test('Sourcing : le Catalogue global maître reçoit le produit gardé avec retour au passage', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/import-runtime.js'), 'utf8');
   expect(src).toContain("viewer && viewer.role === 'admin'");
-  expect(src).toContain('/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(trace.product_ref)}');
-  expect(src).toContain('data-next-step="refinery"');
+  expect(src).toContain('/admin/workspaces/catalog?product_ref=${encodeURIComponent(trace.product_ref)}');
+  expect(src).toContain('data-next-step="catalogue"');
   expect(src).toContain('viewer = options.user || null;');
 });
 

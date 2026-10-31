@@ -30,7 +30,8 @@ function readiness({audit,benchmark,impactPlan=null,mainDiff=null,installEvidenc
   audit.invariantCoverage.summary.coveragePercent<=100,
   'Known declarations: '+audit.summary.featureInvariantsDeclared+
   '; semantically certified: '+audit.summary.featureInvariantsCertified+
-  '; ratio: '+audit.summary.invariantCoveragePercent);
+  '; coverage: '+(Number.isFinite(audit.summary.invariantCoveragePercent)?
+   audit.summary.invariantCoveragePercent.toFixed(2)+'%':'not measured'));
  gate('G3_AUTONOMOUS_GENERATED_EXPERIMENT',
   acceptsG3(impactPlan,audit.sha),
   impactPlan?.contract||'Only static impact selection, no generated physical fixtures');

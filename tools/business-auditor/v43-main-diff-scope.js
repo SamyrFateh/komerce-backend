@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * G5 comparison against the frozen pre-V4 integration baseline. This is an
+ * G5 PR-wide comparison or explicit auditor-only history comparison. This is an
  * independently reproducible change-scope attestation, NOT a human review.
  * It never authorizes main merges or release tags.
  */
@@ -41,15 +41,45 @@ function run({out}={},env=process.env,deps={}){
   cwd:ROOT,encoding:'utf8',timeout:30000,maxBuffer:30*1024*1024}));
  const head=git('rev-parse','HEAD').trim();
  if(head!==env.GITHUB_SHA)fail('checkout SHA differs from CI provenance');
- try{git('merge-base','--is-ancestor',BASE,'HEAD');}
- catch{fail('frozen baseline not an ancestor of checkout');}
- const fileText=git('diff','--name-only',BASE,'HEAD').trim();
- const files=fileText?fileText.split('\n'):[];
- const patch=git('diff','--binary','--full-index',BASE,'HEAD');
+ const prBase=env.AUDITOR_PR_BASE_SHA||null;
+ // GitHub pull_request checks out a synthetic merge commit. The pull
+ // request's event base.sha can become stale when main advances during CI.
+ // Compare the COMPLETE synthetic merge against its ACTUAL FIRST PARENT,
+ // not the stale event base. This still rejects any app/runtime path that
+ // the PR contributes; no forbidden files can be silently omitted.
+ let base=BASE,actualPrHead=null;
+ if(prBase){
+  const parents=git('rev-list','--parents','-n','1','HEAD').trim().split(/\s+/);
+  if(parents.length!==3||parents[0]!==head)
+   fail('PR checkout must be a two-parent merge commit');
+  base=parents[1];actualPrHead=parents[2];
+  try{git('merge-base','--is-ancestor',prBase,base);}
+  catch{fail('PR event base must be ancestor of actual merge parent');}
+ }
+ if(!/^[a-f0-9]{40}$/.test(base))fail('invalid PR base sha');
+ try{git('merge-base','--is-ancestor',base,'HEAD');}
+ catch{fail('comparison base not an ancestor of checkout');}
+ // For PRs, inspect the COMPLETE changed-file set and reject unauthorized
+ // changes. For manual runs on an evolving main, review auditor paths only:
+ // unrelated application commits are reported but not attributed to V4.
+ const allText=git('diff','--name-only',base,'HEAD').trim();
+ const allFiles=allText?allText.split('\n'):[];
+ const omitted=prBase?[]:allFiles.filter(f=>!allowed(f));
+ const files=prBase?allFiles:allFiles.filter(allowed);
+ const pathArgs=prBase?[]:['--','tools/business-auditor/',
+  '.github/workflows/auditor-v4-evidence-campaign.yml','package.json'];
+ const patch=git('diff','--binary','--full-index',base,'HEAD',...pathArgs);
  let clean=true;
- try{git('diff','--check',BASE,'HEAD');}catch{clean=false;}
+ try{git('diff','--check',base,'HEAD',...pathArgs);}catch{clean=false;}
  const unmerged=git('ls-files','-u').trim();
- const report=analyze({head,files,patch,unmerged,whitespaceClean:clean});
+ const report=analyze({head,base,files,patch,unmerged,whitespaceClean:clean});
+ report.comparisonMode=prBase?'PR_COMPLETE_DIFF':'AUDITOR_PATHS_ONLY_ON_EVOLVING_MAIN';
+ report.prHeadSha=actualPrHead;
+ report.eventBaseSha=prBase;
+ report.comparisonBaseSha=base;
+ report.excludedNonAuditorChangeCount=omitted.length;
+ report.excludedNonAuditorPaths=omitted;
+ report.scopeLimitation=prBase?null:'External commits on main are NOT reviewed or certified by this evidence';
  if(!report.automatedScopeVerified)
   fail('unsafe diff or unresolved conflicts: '+report.forbiddenPaths.join(','));
  // Even a fully inspected machine patch is not an approved human review.
@@ -57,7 +87,9 @@ function run({out}={},env=process.env,deps={}){
  fs.writeFileSync(path.join(dir,'g5-main-diff.json'),JSON.stringify(report,null,2)+'\n');
  fs.writeFileSync(path.join(dir,'g5-main-diff.md'),[
   '# G5 isolated integration boundary','',
-  '- Baseline: '+BASE,
+  '- Baseline: '+base,
+  '- Mode: '+report.comparisonMode,
+  '- Unrelated main changes excluded (NOT certified): '+omitted.length,
   '- Tested SHA: '+head,
   '- Changed files: '+files.length,
   '- Patch SHA256: '+report.patchSha256,
@@ -68,7 +100,9 @@ function run({out}={},env=process.env,deps={}){
   'Machine scope control cannot replace semantic and blind G4 evidence.',
   ''].join('\n'));
  console.log('AUDITOR_G5_MAIN_DIFF '+JSON.stringify({
-  sha:head,files:files.length,forbidden:report.unrelatedRuntimeChanges,
+  sha:head,base,comparisonMode:report.comparisonMode,
+  ignoredNonAuditorChanges:omitted.length,
+  files:files.length,forbidden:report.unrelatedRuntimeChanges,
   scope:report.automatedScopeVerified,humanReviewed:false}));
  return report;
 }

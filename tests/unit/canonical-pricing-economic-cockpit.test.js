@@ -13,7 +13,7 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261023-1');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261031-uniform-3');
   expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261023-1');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
@@ -82,63 +82,77 @@ test('le cockpit lit corridor, décision et quotes-parts serveur sans fallback p
   expect(source).not.toContain('marketId');
 });
 
-test('les trois actions de coûts du mock ouvrent des panneaux séparés, jamais une ancienne rubrique inline', () => {
+test('trois familles : même édition sur la ligne, N3 audité et mutualisé par autorité globale', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
-  const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
+  const panel = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-structure-event-panel.js'), 'utf8');
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
 
-  // Le mock est exclusif : même les coûts variables passent par un panneau dédié.
-  expect(source).toContain("detailKey === 'variable'");
-  expect(source).toContain('await openVariableCostPanel(rootObject, doc, workspace, options, payload)');
-  expect(source).toContain('data-variable-cost-input');
+  expect(source).toContain("row.dataset.inlineCostRow = item.editKey");
+  expect(source).toContain("row.dataset.inlineStructureRow = String(item.chargeId)");
+  expect(source).toContain("edit.dataset.editStructureCharge");
+  expect(source).toContain("edit.dataset.structureScope");
+  expect(source).toContain('inline: Boolean(inlineOptions?.inlineContainer)');
+  expect(source).toContain("payload.capabilities?.can_manage_structure_events === true");
+  expect(source).toContain("payload.access?.role === 'global_admin'");
+  expect(source).toContain("const basePath = isMutualized ? globalEndpoint : marketEndpoint;");
+  expect(source).toContain("card.dataset.readOnly = String(!canManageGroup)");
+  expect(source).toContain("expand.closest('[data-cost-summary]')");
 
-  // Les charges fixes directes gardent leur panneau d'ajustement séparé.
-  expect(source).toContain("detailKey === 'fixed-direct'");
-  expect(source).toContain('await openStructureEventForm(rootObject, doc, workspace, options, detailKey)');
-
-  // Les mutualisées sont une vérité de groupe en lecture seule dans cet
-  // Atelier : encadré grisé, aucune action de gestion exposée.
-  expect(source).toContain("card.dataset.readOnly = 'true'");
-  expect(source).toContain("'Charges fixes mutualisées', 'Charges fixes partagées entre marchés.'");
-  expect(source).not.toContain("detailKey === 'fixed-direct' || detailKey === 'fixed-mutualized'");
-  expect(css).toContain('.kmc-cockpit-cost-card.is-fixed-mutualized');
-  expect(css).toContain('background: #f8fafc');
-
-  // Le support serveur GROUP reste disponible hors de cette surface ; le
-  // cockpit ne le rend simplement plus manipulable.
-  expect(source).toContain("const globalEndpoint = workspace.endpointFor({});");
-  expect(source).toContain('const basePath = isMutualized ? globalEndpoint : marketEndpoint;');
-
-  // Le panneau est un module Canonical natif séparé, chargé dans index.html.
+  expect(panel).toContain("overlay.dataset.structureInlineEditor");
+  expect(panel).toContain("built.form.requestSubmit()");
+  expect(panel).toContain("Une référence de preuve est obligatoire.");
+  expect(panel).toContain("Options avancées · devise, source, notes");
   expect(index).toContain('/dashboards/canonical/js/pricing-structure-event-panel.js');
   expect(index).toContain('/dashboards/canonical/css/pricing-structure-event-panel.css');
 });
 
-test('Atelier des prix : familles en onglets, colonnes Valeur/Provenance, panneau secondaire fermé', () => {
+test('Moteur économique : édition par ligne, Valeur/Provenance en détail', () => {
   const fs = require('fs');
   const path = require('path');
   const dir = path.join(__dirname, '../../public/dashboards/canonical');
   const source = fs.readFileSync(path.join(dir, 'js/pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(dir, 'css/pricing-economic-cockpit.css'), 'utf8');
-  expect(source).toContain('costFamilyTabs');
+  expect(source).toContain('dataset.inlineCostForm');
+  expect(source).toContain('kmc-economic-family-grid');
   expect(source).toContain("'Valeur', 'Provenance'");
   expect(source).toContain("'Surcharge pays'");
   expect(source).toContain('kmc-cockpit-secondary');
-  expect(css).toContain('.kmc-cockpit-costs > .kmc-cockpit-cost-card[hidden]');
+  expect(source).toContain('economicPreview');
   expect(css).toContain('.kmc-cockpit-secondary');
 });
 
-test('familles : navigation clavier flèches/Home/End', () => {
+test('formulaire : statut serveur et sécurités de validation', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
-  expect(src).toContain("event.key === 'ArrowRight'");
-  expect(src).toContain("event.key === 'Home'");
-  expect(src).toContain("event.key === 'End'");
+  expect(src).toContain('dataset.editInlineCost');
+  expect(src).toContain('dataset.inlineCostForm');
+  expect(src).toContain('Valeur invalide : rien n’a été enregistré');
 });
 
-test('familles : onglets répartis sur la largeur et colonnes sans troncature', () => {
+test('familles : colonnes stables et édition contextuelle', () => {
   const css = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/pricing-economic-cockpit.css'), 'utf8');
-  expect(css).toContain('.kmc-cockpit-cost-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));');
-  expect(css).toContain('.kmc-cockpit-costs .kmc-cockpit-cost-table .kmc-cockpit-cell { white-space: normal;');
+  const enhanced = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/pricing-atelier-views.css'), 'utf8');
+  expect(enhanced).toContain('.kmc-economic-family-grid');
+  expect(enhanced).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+  expect(enhanced).toContain('kmc-inline-cost-form');
+  expect(enhanced).toContain('kmc-economic-family-preview-row');
+});
+
+test('trois colonnes : un libellé, la dernière valeur, une action ou un état lecture seule, sans masque au détail', () => {
+  const js = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
+  const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-atelier-views.css'), 'utf8');
+  const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
+  expect(js).toContain("const preview = el(doc, 'div', 'kmc-economic-family-preview')");
+  expect(js).toContain("item.readOnly");
+  expect(js).toContain("kmc-inline-cost-readonly");
+  expect(js).toContain("readOnlyHint");
+  expect(js).toContain("edit.dataset.editInlineCost");
+  expect(js).toContain("edit.dataset.editStructureCharge");
+  expect(css).toContain('grid-template-columns: minmax(0, 1fr) minmax(80px, auto) 79px;');
+  expect(css).toContain('grid-column: 3;');
+  expect(css).toContain('grid-column: auto;');
+  expect(css).toContain('overflow-x: auto;');
+  expect(index).toContain('pricing-atelier-views.css?v=261031-uniform-3');
+  expect(index).toContain('pricing-economic-cockpit.js?v=261031-uniform-3');
 });
 
 test('ajustements : enregistrement automatique (prix à la validation, coûts par champ), jamais à la frappe ni vide', () => {

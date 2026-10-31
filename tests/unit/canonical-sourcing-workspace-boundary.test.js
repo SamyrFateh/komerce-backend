@@ -99,7 +99,7 @@ test('Sourcing ne duplique plus le registre KIR et garde la santé technique en 
   const decision = fs.readFileSync(path.join(CANONICAL, 'js', 'sourcing-workspace-decision.js'), 'utf8');
 
   expect(source).toContain('Lancer un import');
-  expect(source).toContain('Cockpit des imports');
+  expect(source).toContain('/admin/import-runtime');
   expect(source).not.toContain('Aucun import récent.');
   expect(source).not.toContain("const rows = payload.imports || []");
   expect(source).toContain('/admin/import-runtime');
@@ -113,9 +113,9 @@ test('candidats : hiérarchie visuelle par classes, sans changer les valeurs aff
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/sourcing-workspace.js'), 'utf8');
   expect(src).toContain('kmc-cand-ref');
   expect(src).toContain('kmc-cand-product');
-  expect(src).toContain('kmc-cand-price');
-  expect(src).toContain("pillCell(row.state, 'state')");
-  expect(src).toContain(' is-approve');
+  expect(src).toContain('Prix d’achat fournisseur');
+  expect(src).toContain('sourcingRemedy(row)');
+  expect(src).toContain("data-workspace-action', 'view-catalog'");
 });
 
 test('candidats : état et décision affichés en français (libellés mappés, valeur brute en repli)', () => {

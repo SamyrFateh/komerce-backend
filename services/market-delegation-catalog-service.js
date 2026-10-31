@@ -8,13 +8,13 @@
  * @outputs       product exposure read model, auditable exposure mutations
  * @depends       services/market-delegation-team-service.js, services/market-delegation-service.js, services/catalog-market-exposure-service.js, services/catalog-approval.js, services/market-ready-to-sell-projection.js
  * @used-by       routes/market-delegation-catalog.js
- * @db-read       products
+ * @db-read       products, users
  * @db-write      none
  * @db-write-via:catalog-market-exposure-service product_market_exposure
  * @db-write-via:catalog-approval products
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        caller-owned
- * @doctrine      catalog_authority_is_capability_based, client_market_id_never_authority, writer_not_owner_boundary, market_validation_may_delegate_first_publication_to_catalog_owner, catalog_stays_unique_exposure_is_projection
+ * @doctrine      catalog_authority_is_capability_based_except_verified_central_admin, client_market_id_never_authority, writer_not_owner_boundary, market_validation_may_delegate_first_publication_to_catalog_owner, catalog_stays_unique_exposure_is_projection
  * @impact-areas  market, delegation, catalog
  * @version       2026-09
  */
@@ -40,6 +40,27 @@ function delegationError(code, message, status = 403) {
   return error;
 }
 
+// Central Admin authority applies ONLY to the Catalogue pays read/exposure
+// boundary. Delegated actors retain the exact membership + ceiling guards.
+// Re-read the role from PostgreSQL: a caller-supplied role is never authority.
+async function resolveCatalogAuthorization(executor, { userId, marketCode, requiredCapability, actorRole = null }) {
+  const db = requireExecutor(executor);
+  if (actorRole === 'admin' && ['catalog.read', 'catalog.expose'].includes(requiredCapability)) {
+    const { rows } = await db.query('SELECT role FROM users WHERE id=$1::uuid LIMIT 1', [userId]);
+    if (rows[0] && rows[0].role === 'admin') {
+      const assignment = await resolveActiveAssignmentByMarketCode(db, marketCode);
+      return {
+        ...assignment,
+        membership_id: null,
+        membership_user_id: userId,
+        central_authority: true,
+        capabilities: ['catalog.read', 'catalog.expose', 'pricing.decide', 'pricing.activate'],
+      };
+    }
+  }
+  return resolveAuthorization(db, { userId, marketCode, requiredCapability });
+}
+
 async function listExposure(executor, { marketId }) {
   return exposureService.listExposureForMarket(marketId, requireExecutor(executor));
 }
@@ -52,7 +73,7 @@ async function listReviewQueue(executor, { marketId, limit = 100 }) {
   );
 }
 
-async function listReadyToSell(executor, { market, capabilities, reviewQueue, exposure, limit = 100 }) {
+async function listReadyToSell(executor, { market, capabilities, reviewQueue, exposure, limit = 100, offset = 0, search = '' }) {
   return readyToSellProjection.buildReadyToSell({
     executor: requireExecutor(executor),
     market,
@@ -60,6 +81,8 @@ async function listReadyToSell(executor, { market, capabilities, reviewQueue, ex
     reviewQueue,
     exposure,
     limit,
+    offset,
+    search,
   });
 }
 
@@ -89,9 +112,9 @@ function summarizeExposure(rows) {
   });
 }
 
-async function setExposure(executor, { marketCode, actorUserId, correlationId = null, productId, exposure }) {
+async function setExposure(executor, { marketCode, actorUserId, actorRole = null, correlationId = null, productId, exposure }) {
   const db = requireExecutor(executor);
-  const authz = await resolveAuthorization(db, { userId: actorUserId, marketCode, requiredCapability: 'catalog.expose' });
+  const authz = await resolveCatalogAuthorization(db, { userId: actorUserId, actorRole, marketCode, requiredCapability: 'catalog.expose' });
 
   let before;
   try {
@@ -136,12 +159,14 @@ async function setExposure(executor, { marketCode, actorUserId, correlationId = 
 async function validateForMarket(executor, {
   marketCode,
   actorUserId,
+  actorRole = null,
   correlationId = null,
   productId,
 }) {
   const db = requireExecutor(executor);
-  const authz = await resolveAuthorization(db, {
+  const authz = await resolveCatalogAuthorization(db, {
     userId: actorUserId,
+    actorRole,
     marketCode,
     requiredCapability: 'catalog.expose',
   });
@@ -231,6 +256,7 @@ async function validateForMarket(executor, {
 module.exports = {
   resolveActiveAssignmentByMarketCode,
   resolveAuthorization,
+  resolveCatalogAuthorization,
   listExposure,
   listReviewQueue,
   listReadyToSell,

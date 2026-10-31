@@ -148,11 +148,76 @@
     return explicit == null ? componentValue(component) : formatKmf(explicit);
   }
 
-  function variableCostCard(doc, components) {
+  // Preview cards intentionally reuse server-sourced figures; no totals from
+  // mixed units and no implicit fallback to 0 for missing values.
+  function economicPreview(doc, items, footer) {
+    const preview = el(doc, 'div', 'kmc-economic-family-preview');
+    preview.dataset.costFamilyPreview = '';
+    const list = el(doc, 'div', 'kmc-economic-family-preview-list');
+    items.forEach(item => {
+      const row = el(doc, 'div', 'kmc-economic-family-preview-row');
+      const label = el(doc, 'span', 'kmc-economic-family-preview-label', item.label);
+      const value = el(doc, 'strong', 'kmc-economic-family-preview-value', item.value);
+      row.appendChild(label);
+      row.appendChild(value);
+      if (item.note) row.appendChild(el(doc, 'small', 'kmc-economic-family-preview-note', item.note));
+      if (item.editKey) {
+        row.dataset.inlineCostRow = item.editKey;
+        const edit = el(doc, 'button', 'kmc-inline-cost-action', 'Modifier');
+        edit.type = 'button';
+        edit.dataset.editInlineCost = item.editKey;
+        edit.setAttribute('aria-label', `Modifier ${item.label}, valeur actuelle ${item.value}`);
+        row.appendChild(edit);
+      } else if (item.chargeId) {
+        row.dataset.inlineStructureRow = String(item.chargeId);
+        const edit = el(doc, 'button', 'kmc-inline-cost-action', 'Modifier');
+        edit.type = 'button';
+        edit.dataset.editStructureCharge = String(item.chargeId);
+        edit.dataset.structureScope = item.structureScope || 'fixed-direct';
+        edit.setAttribute('aria-label', `Modifier ${item.label} (période et justificatif obligatoires)`);
+        row.appendChild(edit);
+      }
+      if (item.readOnly) {
+        const status = el(doc, 'span', 'kmc-inline-cost-readonly', 'Lecture seule');
+        status.title = item.readOnlyHint || 'Modification non autorisée sur ce périmètre.';
+        status.setAttribute('aria-label', status.title);
+        row.appendChild(status);
+      }
+      list.appendChild(row);
+    });
+    if (!items.length) list.appendChild(el(doc, 'p', 'kmc-economic-family-preview-empty', 'Données de période indisponibles.'));
+    preview.appendChild(list);
+    if (footer) preview.appendChild(el(doc, 'div', 'kmc-economic-family-preview-footer', footer));
+    const detail = el(doc, 'button', 'kmc-economic-family-expand', 'Voir le détail');
+    detail.type = 'button';
+    detail.dataset.expandCostFamily = '';
+    detail.setAttribute('aria-expanded', 'false');
+    preview.appendChild(detail);
+    return preview;
+  }
+
+  function variableCostCard(doc, components, canManage) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-variable');
     card.dataset.costSummary = 'variable';
-    card.appendChild(costCardHeader(doc, '🛒', 'Coûts variables', 'Ces coûts affectent directement la contribution.', 'Ajuster les coûts', 'variable'));
+    card.appendChild(costCardHeader(doc, '🛒', 'Coûts variables', 'Valeur actuelle et modification directe de chaque poste.'));
 
+    const previewItems = [
+      { label: 'Achat fournisseur', value: 'Par produit', readOnly: true,
+        readOnlyHint: 'Coût propre à chaque produit : modification depuis la source ou le produit, sans montant global inventé.',
+        note: 'Sans montant forfaitaire inventé' },
+      ...components.map(component => ({
+        label: component.label || component.key,
+        value: componentValue(component),
+        editKey: canManage && component.key ? component.key : null,
+        readOnly: !canManage || !component.key,
+        readOnlyHint: !canManage
+          ? 'Les paramètres variables sont en lecture seule pour ce profil.'
+          : 'Aucune clé de composante modifiable disponible.',
+        note: component.inherited === false ? 'Paramètre marché'
+          : component.inherited === true ? 'Base globale héritée' : 'Origine à confirmer',
+      })),
+    ];
+    card.appendChild(economicPreview(doc, previewItems, 'Coût variable complet calculé sur chaque produit'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-variable');
     ['Élément', 'Nature', 'Périmètre', 'Clé d’allocation', 'Valeur', 'Provenance', 'Quote-part marché'].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
 
@@ -185,7 +250,9 @@
       const provenance = component.inherited === false ? 'Surcharge pays' : component.inherited === true ? 'Global hérité' : '—';
       // L4/Q6 : un frais de paiement hérité du global n'est pas réputé applicable au marché tant que sa configuration n'est pas vérifiée.
       const paymentNotVerified = component.inherited === true && component.category === 'payment';
-      table.appendChild(tableCell(doc, paymentNotVerified ? `${provenance} · Applicabilité non vérifiée pour ce marché` : provenance, 'is-derived'));
+      const origin = tableCell(doc, paymentNotVerified ? `${provenance} · Applicabilité non vérifiée pour ce marché` : provenance, 'is-derived');
+      if (component.base_default_value != null) origin.appendChild(el(doc, 'small', 'kmc-economic-global-value', `Base globale : ${componentValue(component, true)} · lecture seule`));
+      table.appendChild(origin);
       table.appendChild(tableCell(doc, variableMarketShare(component), 'is-derived'));
     });
 
@@ -200,17 +267,31 @@
     return card;
   }
 
-  function fixedDirectCard(doc, structure) {
+  function fixedDirectCard(doc, structure, canManage) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-direct');
     card.dataset.costSummary = 'fixed-direct';
-    card.appendChild(costCardHeader(doc, '🏠', 'Charges fixes directes', 'Charges structurelles propres au marché.'));
+    card.appendChild(costCardHeader(doc, '🏠', 'Charges fixes directes', 'Ajustements tracés par période et justificatif.'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-direct');
     table.appendChild(tableCell(doc, 'Élément', 'is-head'));
     table.appendChild(tableCell(doc, 'Montant / mois', 'is-head'));
     const rows = Array.isArray(structure?.evidence)
       ? structure.evidence.filter(item => item.scope_kind === 'MARKET_DIRECT')
       : [];
-    rows.slice(0, 6).forEach(item => {
+    const directValid = rows.length > 0 && rows.every(item => finite(item.recognized_amount_kmf) != null);
+    const directTotal = directValid ? rows.reduce((sum, item) => sum + Number(item.recognized_amount_kmf), 0) : null;
+    const directPreview = rows.map(item => ({
+      label: item.charge_name || item.charge_family || 'Charge structurelle',
+      value: formatKmf(item.recognized_amount_kmf),
+      chargeId: canManage ? item.charge_id : null,
+      structureScope: 'fixed-direct',
+      readOnly: !canManage || !item.charge_id,
+      readOnlyHint: !canManage
+        ? 'L’enregistrement des charges de période nécessite la permission structure.event.record.'
+        : 'Référence de charge manquante : aucun événement ne peut être enregistré.',
+    }));
+    card.appendChild(economicPreview(doc, directPreview,
+      directValid ? `Total direct : ${formatKmf(directTotal)}` : 'Total à confirmer pour la période'));
+    rows.forEach(item => {
       table.appendChild(tableCell(doc, item.charge_name || item.charge_family || 'Charge structurelle'));
       table.appendChild(tableCell(doc, formatKmf(item.recognized_amount_kmf), 'is-derived is-number'));
     });
@@ -226,15 +307,32 @@
     return card;
   }
 
-  function fixedMutualizedCard(doc, structure, marketLabel) {
-    const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-mutualized is-readonly');
+  function fixedMutualizedCard(doc, structure, marketLabel, canManageGroup = false) {
+    const card = el(doc, 'section', `kmc-cockpit-cost-card is-fixed-mutualized${canManageGroup ? '' : ' is-readonly'}`);
     card.dataset.costSummary = 'fixed-mutualized';
-    card.dataset.readOnly = 'true';
-    card.setAttribute('aria-label', 'Charges fixes mutualisées · lecture seule');
+    card.dataset.readOnly = String(!canManageGroup);
+    card.setAttribute('aria-label', canManageGroup
+      ? 'Charges fixes mutualisées · modification globale autorisée avec justificatif'
+      : 'Charges fixes mutualisées · lecture seule sur ce marché');
     card.appendChild(costCardHeader(doc, '🔗', 'Charges fixes mutualisées', 'Charges fixes partagées entre marchés.'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-mutualized');
     ['Élément', 'Coût global', 'Clé d’allocation', '%', `Quote-part ${marketLabel}`].forEach(label => table.appendChild(tableCell(doc, label, 'is-head')));
     const charges = Array.isArray(structure?.allocation?.charges) ? structure.allocation.charges : [];
+    const mutualValid = charges.length > 0 && charges.every(charge => finite(charge.market_share_kmf) != null);
+    const mutualTotal = mutualValid ? charges.reduce((sum, charge) => sum + Number(charge.market_share_kmf), 0) : null;
+    const mutualPreview = charges.map(charge => ({
+      label: charge.charge_name || charge.charge_family || 'Charge mutualisée',
+      value: formatKmf(charge.market_share_kmf),
+      chargeId: canManageGroup ? charge.charge_id : null,
+      structureScope: 'fixed-mutualized',
+      readOnly: !canManageGroup || !charge.charge_id,
+      readOnlyHint: !canManageGroup
+        ? 'La charge globale est gérée par un administrateur habilité ; la quote-part marché reste calculée.'
+        : 'Référence de charge manquante : aucun événement ne peut être enregistré.',
+      note: `Quote-part ${charge.market_allocation_ratio == null ? 'non précisée' : `${formatNumber(Number(charge.market_allocation_ratio) * 100)} %`} · ${charge.policy?.basis_kind || 'Politique à confirmer'}`,
+    }));
+    card.appendChild(economicPreview(doc, mutualPreview,
+      mutualValid ? `Quote-part marché : ${formatKmf(mutualTotal)}` : 'Quote-part marché à confirmer'));
     charges.slice(0, 6).forEach(charge => {
       table.appendChild(tableCell(doc, charge.charge_name || charge.charge_family || 'Charge mutualisée'));
       table.appendChild(tableCell(doc, formatKmf(charge.group_pool_kmf), 'is-derived'));
@@ -258,10 +356,10 @@
   }
 
   function principleCard(doc, marketCode) {
-    const card = el(doc, 'aside', 'kmc-cockpit-principle');
-    const head = el(doc, 'div', 'kmc-cockpit-principle-head');
+    const card = el(doc, 'details', 'kmc-cockpit-principle kmc-economic-principles-detail');
+    const head = el(doc, 'summary', 'kmc-cockpit-principle-head');
     head.appendChild(el(doc, 'span', 'kmc-cockpit-cost-icon', '💡'));
-    head.appendChild(el(doc, 'strong', '', 'Rappel du principe'));
+    head.appendChild(el(doc, 'strong', '', 'Voir les règles de répartition (détail)'));
     card.appendChild(head);
     const list = doc.createElement('ul');
     [
@@ -289,45 +387,59 @@
     ['fixed-mutualized', 'Charges fixes mutualisées'],
   ];
 
-  // Une seule famille affichée à la fois ; les trois restent dans le DOM (hidden) pour ne rien perdre au recalcul.
-  function costFamilyTabs(doc, section, cards, active) {
-    const tabs = el(doc, 'div', 'kmc-cockpit-tabs kmc-cockpit-cost-tabs');
-    tabs.setAttribute('role', 'tablist');
-    tabs.setAttribute('aria-label', 'Familles économiques');
-    const buttons = COST_FAMILIES.map(([key, label]) => {
-      const button = el(doc, 'button', 'kmc-cockpit-tab', label);
-      button.type = 'button';
-      button.setAttribute('role', 'tab');
-      button.dataset.costFamilyTab = key;
-      return button;
+  // Une contribution par vente, une couverture collective par période.
+  // Aucun pourcentage synthétique n'est construit à partir d'unités hétérogènes.
+  function costReading(doc, decision) {
+    const mix = decision?.coverage?.cost_mix;
+    // No arithmetic from mixed units in the browser: the four shares must
+    // arrive as a complete, reconciled, server-authored projection.
+    const percentages = ['variable_pct', 'fixed_pct', 'direct_pct', 'mutualized_pct'];
+    const ready = mix?.status === 'READY' && mix?.basis === 'RECONCILED_MARKET_PERIOD'
+      && Boolean(mix.period?.from && mix.period?.to)
+      && percentages.every(key => mix[key] !== null && mix[key] !== undefined
+        && Number.isFinite(Number(mix[key])) && Number(mix[key]) >= 0 && Number(mix[key]) <= 100);
+    const percent = value => `${formatNumber(value, 1)} %`;
+    const section = el(doc, 'section', 'kmc-economic-reading');
+    section.dataset.economicCostReading = '';
+    section.setAttribute('aria-label', 'Comment lire les coûts et la contribution');
+    const introduction = el(doc, 'div', 'kmc-economic-reading-heading');
+    introduction.appendChild(el(doc, 'span', 'kmc-economic-reading-eyebrow', 'LOGIQUE ÉCONOMIQUE'));
+    introduction.appendChild(el(doc, 'strong', '', 'Le produit contribue. Le portefeuille couvre.'));
+    introduction.appendChild(el(doc, 'p', '', 'On mesure ce que chaque vente apporte, puis on compare les contributions réconciliées aux charges fixes de la même période.'));
+    section.appendChild(introduction);
+    const grid = el(doc, 'div', 'kmc-economic-reading-grid');
+    [
+      { icon: '↗', tone: 'variable', title: 'Contribution par vente', value: 'Prix − coûts variables (N1 + N2)', detail: 'Estimée avant vente ; réconciliée après achat, expédition, douane et livraison.' },
+      { icon: '◈', tone: 'fixed', title: 'Structure à couvrir (N3)', value: 'Fixes directs + fixes mutualisés', detail: 'Charges de période couvertes collectivement, jamais une dette automatique par SKU.' },
+      { icon: '%', tone: 'mix', title: 'Part des coûts totaux',
+        value: ready ? `Variables ${percent(mix.variable_pct)} · Fixes ${percent(mix.fixed_pct)}` : 'Non encore calculable',
+        detail: ready ? `Second axe — Directs ${percent(mix.direct_pct)} · Mutualisés ${percent(mix.mutualized_pct)}. Même période réconciliée.`
+          : 'Les proportions exigent une même période, des unités compatibles et des données suffisamment réconciliées.' },
+    ].forEach(item => {
+      const card = el(doc, 'article', `kmc-economic-reading-item is-${item.tone}`);
+      card.appendChild(el(doc, 'span', 'kmc-economic-reading-icon', item.icon));
+      const copy = el(doc, 'div', 'kmc-economic-reading-copy');
+      copy.appendChild(el(doc, 'span', 'kmc-economic-reading-label', item.title));
+      copy.appendChild(el(doc, 'strong', 'kmc-economic-reading-value', item.value));
+      copy.appendChild(el(doc, 'small', '', item.detail));
+      if (item.tone === 'mix' && ready) {
+        const track = el(doc, 'div', 'kmc-economic-reading-mix-track');
+        track.setAttribute('role', 'img');
+        track.setAttribute('aria-label', `Coûts variables ${percent(mix.variable_pct)}, charges fixes ${percent(mix.fixed_pct)}`);
+        const variable = el(doc, 'span', 'kmc-economic-reading-mix-variable');
+        variable.style.width = `${Number(mix.variable_pct)}%`;
+        const fixed = el(doc, 'span', 'kmc-economic-reading-mix-fixed');
+        fixed.style.width = `${Number(mix.fixed_pct)}%`;
+        track.appendChild(variable);
+        track.appendChild(fixed);
+        copy.appendChild(track);
+      }
+      card.appendChild(copy);
+      grid.appendChild(card);
     });
-    const select = (key) => {
-      section.dataset.activeFamily = key;
-      buttons.forEach((button) => {
-        const on = button.dataset.costFamilyTab === key;
-        button.classList.toggle('is-active', on);
-        button.setAttribute('aria-selected', on ? 'true' : 'false');
-        button.tabIndex = on ? 0 : -1;
-      });
-      cards.forEach((card, i) => { card.hidden = COST_FAMILIES[i][0] !== key; });
-    };
-    buttons.forEach((button, index) => {
-      button.addEventListener('click', () => select(button.dataset.costFamilyTab));
-      // Navigation clavier (flèches, Home/End) conservée de la PR #2624.
-      button.addEventListener('keydown', (event) => {
-        const last = buttons.length - 1;
-        const next = event.key === 'ArrowRight' ? (index === last ? 0 : index + 1)
-          : event.key === 'ArrowLeft' ? (index === 0 ? last : index - 1)
-          : event.key === 'Home' ? 0 : event.key === 'End' ? last : null;
-        if (next === null) return;
-        event.preventDefault();
-        select(buttons[next].dataset.costFamilyTab);
-        buttons[next].focus();
-      });
-      tabs.appendChild(button);
-    });
-    select(active);
-    return tabs;
+    section.appendChild(grid);
+    section.appendChild(el(doc, 'p', 'kmc-economic-reading-foot', 'Variable ou fixe décrit la nature ; direct ou mutualisé décrit la répartition. Un même coût n’est compté qu’une fois.'));
+    return section;
   }
 
   function createCostPilotage(doc, payload, marketCode, decision, user, activeFamily) {
@@ -335,10 +447,21 @@
     const structure = decision?.coverage?.structure || null;
     const marketLabel = payload.scope?.market_name || marketCode;
     const section = el(doc, 'section', 'kmc-cockpit-costs');
-    const cards = [variableCostCard(doc, groups.variable), fixedDirectCard(doc, structure), fixedMutualizedCard(doc, structure, marketLabel)];
-    const active = COST_FAMILIES.some(([key]) => key === activeFamily) ? activeFamily : COST_FAMILIES[0][0];
-    section.appendChild(costFamilyTabs(doc, section, cards, active));
-    cards.forEach(card => section.appendChild(card));
+    section.dataset.atelierViews = 'costs';
+    section.appendChild(el(doc, 'p', 'kmc-economic-cost-intro',
+      `Coûts et paramètres · ${marketLabel}. Les valeurs héritées et les charges propres au marché sont indiquées séparément. Les montants conservent leur unité de calcul.`));
+    const canEditVariables = payload.capabilities?.cost_overrides === true || payload.capabilities?.can_manage_costs === true;
+    const canEditStructure = payload.capabilities?.can_manage_structure_events === true;
+    const canManageGroup = payload.access?.role === 'global_admin'
+      && user?.role === 'admin';
+    const cards = [variableCostCard(doc, groups.variable, canEditVariables),
+      fixedDirectCard(doc, structure, canEditStructure),
+      fixedMutualizedCard(doc, structure, marketLabel, canManageGroup)];
+    section.dataset.costLayout = 'columns';
+    section.appendChild(costReading(doc, decision));
+    const families = el(doc, 'div', 'kmc-economic-family-grid');
+    cards.forEach(card => families.appendChild(card));
+    section.appendChild(families);
     section.appendChild(principleCard(doc, marketCode));
     return section;
   }
@@ -738,10 +861,14 @@
 
     const badge = el(doc, 'div', 'kmc-cockpit-live-badge');
     badge.dataset.cockpitLiveBadge = '';
-    badge.appendChild(el(doc, 'strong', '', 'Données réelles'));
+    const decisional = ['COVERED', 'UNCOVERED'].includes(decision?.decision_status)
+      && decision?.coverage?.coverage_ratio != null && Number.isFinite(Number(decision.coverage.coverage_ratio));
+    badge.classList.toggle('is-unavailable', !decisional);
+    badge.appendChild(el(doc, 'strong', '', decisional ? 'Couverture réconciliée' : 'Couverture non décisionnelle'));
     const ts = decision?.evaluated_at;
-    const ago = ts ? timeSince(new Date(ts)) : 'temps réel';
-    const badgeTime = el(doc, 'small', '', `Mises à jour ${ago}`);
+    const ago = ts && !Number.isNaN(Date.parse(ts))
+      ? `Dernière évaluation ${timeSince(new Date(ts))}` : 'Date d’évaluation indisponible';
+    const badgeTime = el(doc, 'small', '', ago);
     badgeTime.dataset.cockpitLiveBadgeTime = '';
     badge.appendChild(badgeTime);
     right.appendChild(badge);
@@ -784,7 +911,7 @@
   // (N3) — jamais un champ inline dans l'Atelier économique. 'fixed-direct'
   // reste scopé au marché courant (manager du marché ou admin) ; le pool
   // 'fixed-mutualized' (GROUP) est admin only, il affecte tous les marchés.
-  async function openStructureEventForm(rootObject, doc, workspace, options, detailKey) {
+  async function openStructureEventForm(rootObject, doc, workspace, options, detailKey, chargeId = null, inlineOptions = null) {
     const panelApi = rootObject && rootObject.KomerceCanonicalStructureEventPanel;
     if (!panelApi || typeof panelApi.open !== 'function') return;
 
@@ -806,9 +933,19 @@
       chargesEndpoint: `${marketEndpoint}/charges`,
       eventsEndpoint: `${basePath}/structure-events`,
       submitEndpoint: `${basePath}/structure-events`,
+      initialChargeId: chargeId,
+      inline: Boolean(inlineOptions?.inlineContainer),
+      container: inlineOptions?.inlineContainer || options.root,
+      previousValue: inlineOptions?.previousValue || null,
+      previousLabel: isMutualized ? 'Quote-part actuelle du marché' : 'Valeur reconnue sur la période',
+      onClose: () => {
+        const row = inlineOptions?.inlineContainer;
+        const edit = row?.querySelector('[data-edit-structure-charge]');
+        if (edit) { edit.hidden = false; }
+      },
       onSaved: async () => {
         if (typeof rootObject.KomerceCanonicalPricingWorkspace?.mount === 'function') {
-          await rootObject.KomerceCanonicalPricingWorkspace.mount(options);
+          await rootObject.KomerceCanonicalPricingWorkspace.mount({ ...options, refreshEconomicCockpit: true });
         }
       },
     });
@@ -962,6 +1099,104 @@
     const marketCode = options.requestedMarket || payload.scope?.market_code || 'Marché';
 
     cockpit.addEventListener('click', async event => {
+      const editInline = event.target.closest('[data-edit-inline-cost]');
+      if (editInline) {
+        const row = editInline.closest('[data-inline-cost-row]');
+        const key = editInline.dataset.editInlineCost;
+        const component = (payload.cost_components || []).find(item => item.key === key);
+        const canUpdate = payload.capabilities?.cost_overrides === true || payload.capabilities?.can_manage_costs === true;
+        if (!row || !component || !canUpdate) return;
+        cockpit.querySelectorAll('[data-inline-cost-form]').forEach(form => {
+          const other = form.closest('[data-inline-cost-row]');
+          form.remove();
+          if (other) other.querySelector('[data-edit-inline-cost]').hidden = false;
+        });
+        const form = el(doc, 'form', 'kmc-inline-cost-form');
+        form.dataset.inlineCostForm = key;
+        form.noValidate = true; // Show our clear inline error instead of browser-only required popup.
+        const last = el(doc, 'span', 'kmc-inline-cost-last', `Valeur actuelle : ${componentValue(component)}`);
+        form.appendChild(last);
+        const input = doc.createElement('input');
+        input.type = 'number';
+        input.step = 'any';
+        input.min = '0';
+        input.required = true;
+        input.name = 'value';
+        input.dataset.inlineCostValue = '';
+        input.value = finite(component.default_value) == null ? '' : String(component.default_value);
+        input.setAttribute('aria-label', `Nouvelle valeur de ${component.label || key}`);
+        form.appendChild(input);
+        form.appendChild(el(doc, 'span', 'kmc-inline-cost-unit', unitLabel(component.unit)));
+        const save = el(doc, 'button', 'kmc-inline-cost-save', 'Enregistrer');
+        save.type = 'submit';
+        form.appendChild(save);
+        const cancel = el(doc, 'button', 'kmc-inline-cost-cancel', 'Annuler');
+        cancel.type = 'button';
+        cancel.dataset.cancelInlineCost = '';
+        form.appendChild(cancel);
+        const message = el(doc, 'small', 'kmc-inline-cost-message');
+        message.dataset.inlineCostMessage = '';
+        message.setAttribute('aria-live', 'polite');
+        form.appendChild(message);
+        row.appendChild(form);
+        editInline.hidden = true;
+        input.focus();
+        return;
+      }
+      const cancelInline = event.target.closest('[data-cancel-inline-cost]');
+      if (cancelInline) {
+        const row = cancelInline.closest('[data-inline-cost-row]');
+        row?.querySelector('[data-inline-cost-form]')?.remove();
+        const edit = row?.querySelector('[data-edit-inline-cost]');
+        if (edit) { edit.hidden = false; edit.focus(); }
+        return;
+      }
+      const structureLine = event.target.closest('[data-edit-structure-charge]');
+      if (structureLine) {
+        // Same inline editing affordance as N1/N2, with an audited N3 event.
+        // Market scope is guarded by structure.event.record; GROUP by global authority.
+        const row = structureLine.closest('[data-inline-structure-row]');
+        const scope = structureLine.dataset.structureScope;
+        const isGroup = scope === 'fixed-mutualized';
+        const allowed = isGroup
+          ? payload.access?.role === 'global_admin' && options.user?.role === 'admin'
+          : payload.capabilities?.can_manage_structure_events === true;
+        if (!row || !allowed) return;
+        const existing = row.querySelector('[data-structure-inline-editor]');
+        if (existing) { existing.querySelector('[data-structure-inline-cancel]')?.click(); return; }
+        const current = row.querySelector('.kmc-economic-family-preview-value')?.textContent || '—';
+        try {
+          await openStructureEventForm(rootObject, doc, workspace, options, scope,
+            structureLine.dataset.editStructureCharge, { inlineContainer: row, previousValue: current });
+          structureLine.hidden = true;
+        } catch (error) {
+          let message = row.querySelector('[data-inline-structure-error]');
+          if (!message) {
+            message = el(doc, 'small', 'kmc-inline-cost-message');
+            message.dataset.inlineStructureError = '';
+            row.appendChild(message);
+          }
+          message.textContent = `Impossible d’ouvrir la modification : ${error.message}`;
+        }
+        return;
+      }
+      const expand = event.target.closest('[data-expand-cost-family]');
+      if (expand) {
+        const card = expand.closest('[data-cost-summary]');
+        if (card) {
+          const expanded = card.dataset.expanded !== 'true';
+          cockpit.querySelectorAll('.kmc-economic-family-grid > [data-cost-summary]').forEach(other => {
+            other.dataset.expanded = 'false';
+            other.querySelector('[data-expand-cost-family]')?.setAttribute('aria-expanded', 'false');
+            const label = other.querySelector('[data-expand-cost-family]');
+            if (label) label.textContent = 'Voir le détail';
+          });
+          card.dataset.expanded = String(expanded);
+          expand.setAttribute('aria-expanded', String(expanded));
+          expand.textContent = expanded ? 'Masquer le détail' : 'Voir le détail';
+        }
+        return;
+      }
       const openCosts = event.target.closest('[data-open-cost-detail]');
       if (openCosts) {
         const detailKey = openCosts.dataset.openCostDetail;
@@ -1098,6 +1333,41 @@
     });
 
     cockpit.addEventListener('submit', async event => {
+      const inlineForm = event.target.closest('[data-inline-cost-form]');
+      if (inlineForm) {
+        event.preventDefault();
+        const input = inlineForm.querySelector('[data-inline-cost-value]');
+        const note = inlineForm.querySelector('[data-inline-cost-message]');
+        const key = inlineForm.dataset.inlineCostForm;
+        const rawValue = input.value.trim();
+        const value = Number(rawValue);
+        if (!rawValue || !Number.isFinite(value) || value < 0) {
+          note.textContent = 'Valeur invalide : rien n’a été enregistré.';
+          return;
+        }
+        const buttons = [...inlineForm.querySelectorAll('button')];
+        buttons.forEach(button => { button.disabled = true; });
+        note.textContent = 'Enregistrement…';
+        try {
+          const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });
+          await workspace.jsonRequest(options.fetch, `${endpoint}/cost-components/${encodeURIComponent(key)}/update`, {
+            method: 'POST', body: { default_value: value, source: 'economic_cockpit_inline_row' },
+          });
+        } catch (error) {
+          note.textContent = `Non enregistré : ${error.message}`;
+          buttons.forEach(button => { button.disabled = false; });
+          return;
+        }
+        // The backend has accepted the mutation. A subsequent read failure must
+        // never be presented as a failed save (which could prompt duplicate writes).
+        note.textContent = 'Enregistré. Actualisation…';
+        try {
+          await rootObject.KomerceCanonicalPricingWorkspace.mount({ ...options, refreshEconomicCockpit: true });
+        } catch (error) {
+          note.textContent = 'Enregistré côté serveur, mais actualisation indisponible. Rechargez cette page.';
+        }
+        return;
+      }
       const priceForm = event.target.closest('[data-cockpit-price-form]');
       if (priceForm) {
         event.preventDefault();
@@ -1149,7 +1419,11 @@
       }
 
       const oldCosts = cockpit.querySelector('.kmc-cockpit-costs');
-      if (oldCosts) oldCosts.replaceWith(createCostPilotage(doc, payload, marketCode, newDecision, options.user, oldCosts.dataset.activeFamily));
+      if (oldCosts) {
+        const newCosts = createCostPilotage(doc, payload, marketCode, newDecision, options.user, oldCosts.dataset.costLayout);
+        newCosts.hidden = oldCosts.hidden;
+        oldCosts.replaceWith(newCosts);
+      }
 
       const oldEquilibrium = cockpit.querySelector('.kmc-flow-equilibrium-panel--cockpit');
       if (oldEquilibrium && rootObject.KomercePricingEquilibriumPanel?.buildPanel) {
@@ -1161,7 +1435,7 @@
 
   async function enhance(rootObject, workspace, options, payload) {
     if (!options?.requestedMarket || !options.root || !options.document || !payload) return false;
-    if (options.root.querySelector('[data-pricing-economic-cockpit]')) return true;
+    if (!options.refreshEconomicCockpit && options.root.querySelector('[data-pricing-economic-cockpit]')) return true;
     // Contrat exclusif : le cockpit ne dépend plus d'un DOM Legacy préalable.
     // Le payload serveur suffit à construire la surface approuvée ; cela
     // permet un premier rendu atomique sans jamais exposer l'ancien workspace.

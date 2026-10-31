@@ -63,11 +63,13 @@ async function main(){
   const email='recette-admin@example.invalid';
   let users=await client.query('SELECT id,role FROM users WHERE email=$1',[email]);
   let user;
+  const hash=await bcrypt.hash(password,12);
   if(users.rows.length){
     user=users.rows[0];
     if(user.role!=='admin')throw Error('RECETTE_ADMIN_ROLE_CONFLICT');
+    await client.query('UPDATE users SET password_hash=$1 WHERE id=$2 AND email=$3 AND role=$4',
+      [hash,user.id,email,'admin']);
   }else{
-    const hash=await bcrypt.hash(password,12);
     const rows=await client.query(
       `INSERT INTO users (full_name,email,phone,password_hash,role,country,currency_pref)
        VALUES ('Opérateur recette fictif',$1,'+2690000099',$2,'admin','KM','KMF')

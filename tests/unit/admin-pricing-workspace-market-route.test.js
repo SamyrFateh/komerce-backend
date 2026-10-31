@@ -163,6 +163,7 @@ beforeEach(() => {
   mockGrantedCapabilities = null;
   mockPricingReadGranted = true;
   db.query.mockImplementation(async (sql, params) => {
+    if (String(sql).includes('SELECT role FROM users')) return { rows: [{ role: mockRole }] };
     if (String(sql).includes('FROM products p')) {
       return { rows: [{ id: 'product-1', commercial_exposure: 'DISABLED' }] };
     }
@@ -177,6 +178,7 @@ test('manager CM lit et modifie uniquement le modèle CM', async () => {
     role: 'manager',
     read_only: false,
     can_manage_costs: true,
+    can_manage_structure_events: true,
     can_manage_decision_policy: true,
     can_draft_local_prices: true,
     can_activate_local_prices: true,
@@ -285,6 +287,7 @@ test('viewer CM consulte Atelier, décision et corridor mais toutes les mutation
     role: 'viewer',
     read_only: true,
     can_manage_costs: false,
+    can_manage_structure_events: false,
     can_manage_decision_policy: false,
     can_draft_local_prices: false,
     can_activate_local_prices: false,
@@ -319,7 +322,7 @@ test('viewer CM consulte Atelier, décision et corridor mais toutes les mutation
   expect(mockCommercialPrice.setMarketPriceDraft).not.toHaveBeenCalled();
 });
 
-test('autorité Pricing globale peut gérer coûts et politique mais ne prend pas la stratégie locale à la place du pays', async () => {
+test('Admin central conserve les droits globaux et accède aux prix du seul Catalogue pays', async () => {
   mockRole = 'admin';
   mockAuthorized = new Set();
   mockCentralPricing = true;
@@ -331,6 +334,7 @@ test('autorité Pricing globale peut gérer coûts et politique mais ne prend pa
     role: 'global_admin',
     read_only: false,
     can_manage_costs: true,
+    can_manage_structure_events: true,
     can_manage_decision_policy: true,
     can_draft_local_prices: false,
     can_activate_local_prices: false,
@@ -345,11 +349,11 @@ test('autorité Pricing globale peut gérer coûts et politique mais ne prend pa
   })).status).toBe(201);
 
   const localPrice = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price').send({ amount: 1000, reason: 'central' });
-  expect(localPrice.status).toBe(403);
-  // requireLocalStrategyCapability n'admet jamais le bypass pricingGlobalAuthority.
-  // Sans membership locale, l'admin central est refusé avant même l'évaluation
-  // de pricing.decide : aucune autorité locale n'est synthétisée depuis son rôle.
-  expect(localPrice.body.code).toBe('MARKET_MEMBERSHIP_REQUIRED');
+  expect(localPrice.status).toBe(200);
+  expect(mockCommercialPrice.setMarketPriceDraft).toHaveBeenCalledWith(expect.objectContaining({productRef:'KPR-1',amount:1000,actorId:'partner-1'}));
+  // Le bypass Admin est uniquement sur les prix du Catalogue pays : les
+  // observations commerciales restent gouvernées par les capabilities locales.
+  expect((await request(app()).post('/api/admin/workspaces/pricing/market/CM/price-observations').send({ product_ref:'KPR-1', amount:1000 })).status).toBe(403);
 });
 
 test('opérateur CM reçoit 403 sur modèle, décision et corridor CG', async () => {
@@ -501,4 +505,25 @@ describe('pricing.decide / pricing.activate priment sur le rôle market_operator
     );
     expect(activate.body.result.catalog_entry.commercial_exposure).toBe('ENABLED');
   });
+});
+
+
+test('Admin sans autorité pricing globale peut prévisualiser un prix Catalogue pays', async () => {
+  mockRole = 'admin';
+  mockAuthorized = new Set();
+  mockCentralPricing = false;
+  const preview = await request(app()).get('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price/activation-preview');
+  expect(preview.status).toBe(200);
+  expect(mockActivation.previewLocalPriceActivation).toHaveBeenCalled();
+  // La gestion économique globale ne devient pas accessible.
+  expect((await request(app()).get('/api/admin/workspaces/pricing/market/CM')).status).toBe(403);
+});
+
+test('Un rôle non-Admin ne bénéficie jamais des droits du Catalogue pays sans membership', async () => {
+  mockRole = 'client';
+  mockAuthorized = new Set();
+  const response = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price').send({amount:20000});
+  expect(response.status).toBe(403);
+  expect(response.body.code).toBe('MARKET_MEMBERSHIP_REQUIRED');
+  expect(mockCommercialPrice.setMarketPriceDraft).not.toHaveBeenCalled();
 });

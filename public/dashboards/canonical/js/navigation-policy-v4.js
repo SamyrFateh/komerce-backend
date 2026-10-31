@@ -883,8 +883,7 @@
       label: 'Économie',
       items: Object.freeze([
         Object.freeze({ id: 'workspace-pricing', label: 'Prix & économie', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read', surfaces: ['pricing-workspace'] }),
-        Object.freeze({ id: 'workspace-refinery', label: 'Raffinerie', href: '/admin/workspaces/catalog?view=refinery', roles: ['admin'], surfaces: [] }),
-        Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
+        Object.freeze({ id: 'workspace-catalog', label: 'Catalogue global', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
       ]),
     }),
     Object.freeze({
@@ -922,7 +921,7 @@
       items: Object.freeze([
         Object.freeze({ id: 'markets-home', label: 'Responsables pays', href: '/dashboards/canonical/access.html', roles: ['admin'], surfaces: ['market-access'] }),
         Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'], surfaces: ['market-autonomy'] }),
-        Object.freeze({ id: 'market-catalog', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['market_operator'], surfaces: ['market-catalog'] }),
+        Object.freeze({ id: 'market-catalog', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['admin', 'market_operator'], surfaces: ['market-catalog'] }),
       ]),
     }),
     Object.freeze({
@@ -941,8 +940,7 @@
       Object.freeze({ id: 'pricing-overview', label: 'Vue d’ensemble', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'] }),
     ]),
     catalog: Object.freeze([
-      Object.freeze({ id: 'catalog-refinery', label: 'Raffinerie', href: '/admin/workspaces/catalog?view=refinery', roles: ['admin'] }),
-      Object.freeze({ id: 'catalog-overview', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'] }),
+      Object.freeze({ id: 'catalog-overview', label: 'Catalogue global', href: '/admin/workspaces/catalog', roles: ['admin'] }),
 
     ]),
     orders: Object.freeze([
@@ -958,7 +956,7 @@
     markets: Object.freeze([
       Object.freeze({ id: 'market-access', label: 'Accès pays', href: '/dashboards/canonical/access.html', roles: ['admin'] }),
       Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'] }),
-      Object.freeze({ id: 'catalog-country', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['market_operator'] }),
+      Object.freeze({ id: 'catalog-country', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['admin', 'market_operator'] }),
     ]),
   });
 
@@ -1029,10 +1027,8 @@
   function sidebarItemActive(item, surface) {
     const current = String(global.location?.pathname || '');
     const search = new URLSearchParams(String(global.location?.search || ''));
-    // Raffinerie et Catalogue partagent un endpoint sans partager la sélection de menu.
-    if (current === '/admin/workspaces/catalog' && ['workspace-refinery', 'workspace-catalog'].includes(item.id)) {
-      return item.id === (search.get('view') === 'refinery' ? 'workspace-refinery' : 'workspace-catalog');
-    }
+    // Le Catalogue global est l'unique destination métier de préparation.
+    if (current === '/admin/workspaces/catalog' && item.id === 'workspace-catalog') return true;
     if ((item.surfaces || []).includes(surface)) return true;
     return Boolean(current && current === String(item.href || '').split('?')[0]);
   }
@@ -1119,16 +1115,11 @@
 
   function localTabsFor(domainId, user, adminContext) {
     const role = roleOf(user);
-    // La navigation N2 du Sourcing suit ses étapes, pas les autres métiers Live.
-    if (domainId === 'live' && ['/admin/import-runtime', '/admin/workspaces/sourcing'].includes(String(global.location?.pathname || ''))) {
-      const run = new URLSearchParams(String(global.location?.search || '')).get('run');
-      const suffix = run ? `run=${encodeURIComponent(run)}&` : '';
-      return [
-        { id: 'sourcing-suivi', label: 'Suivi', href: '/admin/import-runtime' + (run ? `?run=${encodeURIComponent(run)}` : '') },
-        { id: 'sourcing-passages', label: 'Passages', href: `/admin/import-runtime?${suffix}view=passages` },
-        { id: 'sourcing-sources', label: 'Sources', href: `/admin/import-runtime?${suffix}view=sources` },
-        { id: 'sourcing-candidats', label: 'Décisions candidates', href: '/admin/workspaces/sourcing' },
-      ];
+    // One business entry: Sourcing Live. Sources, exceptions and runs are
+    // contextual sections of the same cockpit, not four parallel tabs.
+    if (domainId === 'live' && ['/admin/import-runtime', '/admin/workspaces/sourcing']
+        .includes(String(global.location?.pathname || ''))) {
+      return [{ id:'sourcing-live', label:'Sourcing Live', href:'/admin/import-runtime' }];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub-live') {
       return [
@@ -1163,11 +1154,8 @@
     const hash = String(global.location?.hash || '').replace(/^#/, '');
     const search = new URLSearchParams(String(global.location?.search || ''));
 
-    if (domainId === 'live' && path === '/admin/workspaces/sourcing') return 'sourcing-candidats';
-    if (domainId === 'live' && path === '/admin/import-runtime') {
-      const view = search.get('view');
-      return view === 'passages' ? 'sourcing-passages' : view === 'sources' ? 'sourcing-sources' : 'sourcing-suivi';
-    }
+    if (domainId === 'live' && ['/admin/workspaces/sourcing', '/admin/import-runtime'].includes(path))
+      return 'sourcing-live';
     if (domainId === 'live' && path === '/admin/hub-live') {
       if (search.get('view') === 'execute') return 'hub-execution';
       if (!search.get('view') || search.get('view') === 'flux') return 'hub-flux';
@@ -1180,10 +1168,7 @@
       if (hash && ['pricing-products', 'pricing-costs', 'pricing-strategy'].includes(hash)) return hash;
       return 'pricing-overview';
     }
-    if (domainId === 'catalog') {
-      if (search.get('view') === 'refinery') return 'catalog-refinery';
-      return 'catalog-overview';
-    }
+    if (domainId === 'catalog') return 'catalog-overview';
     if (domainId === 'orders') {
       if (surface === 'client-index' || surface === 'client-360') return 'clients';
       if (surface === 'orders') return 'orders';

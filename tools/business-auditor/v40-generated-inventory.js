@@ -17,6 +17,7 @@ const digest=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('he
 const fail=s=>{throw Error('G3_GENERATED_TOOL_ERROR: '+s)};
 const child=path.join(__dirname,'v30-inventory-physical-child.js');
 const loader=path.join(__dirname,'v40-withheld-mutant-loader.js');
+const adversarialLoader=path.join(__dirname,'v44-adversarial-loader.js');
 function plan({files,budget=6,anchor}){
  if(!Array.isArray(files)||!files.includes('services/inventory-service.js')||
    files.some(f=>typeof f!=='string'||f.startsWith('../')||f.includes('/../'))||
@@ -40,12 +41,15 @@ function plan({files,budget=6,anchor}){
   fixtureDimensions:{extraLines:[0,1,2],relation:['IMPLICIT','FOREIGN','OWN']}};
 }
 function spawnOwner({spec,url,env,mutant=null}){
- const args=mutant?['--require',loader,child]:[child];
+ const adversarial=typeof mutant==='string'&&mutant.startsWith('V44:');
+ const args=mutant?['--require',adversarial?adversarialLoader:loader,child]:[child];
  args.push(spec.relation==='FOREIGN'?'FOREIGN_ORDER':'NOMINAL');
  const childEnv={...env,DATABASE_URL:url,NODE_ENV:'test',
   KOMERCE_DISABLE_CRONS:'true',
   KBA_V40_GENERATED_SPEC:Buffer.from(JSON.stringify(spec)).toString('base64'),
-  KBA_V40_EVALUATOR_MUTANT:mutant||'',KBA_V40_MUTANT_APPLIED:'',
+  KBA_V40_EVALUATOR_MUTANT:adversarial?'':mutant||'',
+  KBA_V44_BENCH_MUTANT:adversarial?mutant.slice(4):'',
+  KBA_V40_MUTANT_APPLIED:'',
   KBA_V23_MUTANT:'',KBA_V24_MUTANT:'',KBA_V25_FAULT:'',
   KBA_V26_CRASH_ALLOWED:''};
  const stdout=cp.execFileSync(process.execPath,args,{

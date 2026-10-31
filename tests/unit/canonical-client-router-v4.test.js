@@ -49,7 +49,7 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
       policy.indexOf('orders: Object.freeze([')
     );
     expect(catalogBlock).toContain("id: 'catalog-overview'");
-    expect(catalogBlock).toContain("id: 'catalog-refinery'");
+    expect(catalogBlock).not.toContain("id: 'catalog-refinery'");
     expect(catalogBlock).not.toContain('catalog-sources');
     expect(catalogBlock).not.toContain('catalog-boutique');
     expect(catalogBlock).not.toContain('catalog-country');

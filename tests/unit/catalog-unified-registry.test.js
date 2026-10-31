@@ -231,3 +231,95 @@ test('WATCH avec révision commerciale obligatoire reste une correction, pas une
   expect(sql).toContain("WHEN u.record_kind='candidate' AND u.source_category_review_required");
   expect(sql).toContain("THEN 'sourcing_category_review'");
 });
+
+test('diagnostics économiques source conservés sans transformer le prix test en prix marché', async () => {
+  const candidate = {
+    ...originalCandidate, candidate_state:'scanned',
+    work_status:'sourcing_review', operator_group:'review',
+    economic_category_key:'phones',
+    purchase_price_kmf:'1800',
+    variable_cost_complete_kmf:'1889',
+    minimum_safe_price_kmf:'2990',
+    test_price_kmf:'2990',
+    economic_test_health_status:'healthy',
+  };
+  const projected = publicRow(candidate);
+  expect(projected).toMatchObject({
+    economic_category_key:'phones', purchase_price_kmf:1800,
+    variable_cost_complete_kmf:1889, minimum_safe_price_kmf:2990,
+    test_price_kmf:2990, economic_test_health_status:'healthy',
+    record_kind:'candidate', product_ref:null,
+  });
+  expect(projected).not.toHaveProperty('market_price_decided');
+  expect(projected).not.toHaveProperty('market_price_kmf');
+
+  const q = executor([{operator_group:'review',count:1}], [candidate]);
+  await listUnified({}, q);
+  const sql = q.query.mock.calls[1][0];
+  expect(sql).toContain("sc.purchase_price_kmf");
+  expect(sql).toContain("sc.scan_result->>'variable_cost_complete_kmf'");
+  expect(sql).toContain("sc.scan_result->>'minimum_safe_price_kmf'");
+  expect(sql).toContain("sc.scan_result->>'test_price_kmf'");
+  expect(sql).not.toMatch(/JOIN product_market_price_drafts/);
+});
+
+test('diagnostic absent ou incohérent n’invente jamais un montant', () => {
+  const input = {
+    ...originalCandidate,
+    purchase_price_kmf:0,
+    variable_cost_complete_kmf:'not-a-price',
+    minimum_safe_price_kmf:-20,
+    test_price_kmf:null,
+  };
+  expect(publicRow(input)).toMatchObject({
+    purchase_price_kmf:null,variable_cost_complete_kmf:null,
+    minimum_safe_price_kmf:null,test_price_kmf:null,
+    economic_test_health_status:'unknown',
+  });
+});
+
+test('produit réparé et désactivé : un état validé ou une revue, jamais une correction vide',async()=>{
+  const q=executor([],[]);
+  await listUnified({},q);
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("WHEN u.lifecycle_status='active' AND u.approval_audited");
+  expect(sql).toContain("THEN 'catalog_approved_inactive'");
+  expect(sql).toContain("WHEN u.lifecycle_status='active' THEN 'approval_to_review'");
+  expect(sql).toContain("('catalog_approved','catalog_approved_inactive') THEN 'validated'");
+  expect(sql).toContain("'approval_to_review','sourcing_review') THEN 'review'");
+  const approved=publicRow({
+    ...canonical,source_ready:true,taxonomy_ready:true,editorial_ready:true,
+    active_media_count:1,lifecycle_status:'active',is_active:false,
+    approval_audited:true,work_status:'catalog_approved_inactive',operator_group:'validated'
+  });
+  expect(approved.issues).toEqual([]);
+  expect(approved).toMatchObject({
+    work_status:'catalog_approved_inactive',operator_group:'validated',is_active:false,
+    approval_audited:true
+  });
+  const pendingProof=publicRow({
+    ...canonical,source_ready:true,taxonomy_ready:true,editorial_ready:true,
+    active_media_count:1,lifecycle_status:'active',is_active:false,
+    approval_audited:false,work_status:'approval_to_review',operator_group:'review'
+  });
+  expect(pendingProof.issues).toEqual([]);
+  expect(pendingProof).toMatchObject({work_status:'approval_to_review',operator_group:'review'});
+});
+
+
+test('les cinq handoffs RCT1 désactivés sont exclus par identité croisée, sans masquer les vrais produits',async()=>{
+  const q=executor([],[]);
+  await listUnified({},q);
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("p.is_active=FALSE AND p.is_available=FALSE");
+  expect(sql).toContain("sc.supplier_name='RCT1-FICTIF-recette'");
+  expect(sql).toContain('(p.product_ref,sc.supplier_product_id) IN (');
+  expect(sql).not.toContain('(p.product_ref,sc.candidate_ref) IN (');
+  for(let i=1;i<=5;i++) {
+    expect(sql).toContain("('KSC-00018"+(i-1)+"','RCT1-P"+i+"')");
+  }
+  expect(sql).toContain('WHERE NOT COALESCE((');
+  expect(sql).toContain('), FALSE)');
+  expect(sql).toContain('UNION ALL');
+  expect(sql).not.toContain("WHERE p.is_active=TRUE");
+});

@@ -16,14 +16,15 @@ function fixture(input=spec){
    orderAItemsCount:1+input.extraLines},
   after:{rows:input.relation==='FOREIGN'?[]:[{
    id:'inv',order_item_id:'a',inventory_order:'A',
-   authoritative_order:'A',status:'received'}],
+   authoritative_order:'A',status:'buffered',buffer_reason:'no_compatible_parcel',
+   buffer_until:'2026-10-30T00:00:00Z',proposed_parcel_id:null}],
    orderA:input.relation==='FOREIGN'?{...a}:{
     ...a,items_received:1,items_total:1+input.extraLines,
     completion_ratio:1/(1+input.extraLines)},
    orderB:{...b},orderAItemsCount:1+input.extraLines},
   owner:input.relation==='FOREIGN'?{
    success:false,errorCode:'INVENTORY_ORDER_MISMATCH',errorStatus:409}:
-   {success:true,response:{orderId:'A',orderItemId:'a'}}};
+   {success:true,response:{orderId:'A',orderItemId:'a',proposalStatus:'buffered'}}};
 }
 test('G3 selection generates varied owner inputs without mutant knowledge',()=>{
  const p=plan({files:['services/inventory-service.js'],budget:9,anchor});
@@ -41,6 +42,25 @@ test('G3 independent oracle detects actual completion drift in generated case',(
  x.after.orderA.completion_ratio=0;
  const y=assess(x);
  assert.ok(y.signals.includes('INV_GEN_COMPLETION_MISMATCH'));
+});
+test('G3 detects missing assignment decision and inconsistent persisted buffer state',()=>{
+ const x=fixture();assert.equal(assess(x).violation,false);
+ x.owner.response.proposalStatus=null;
+ assert.ok(assess(x).signals.includes('INV_GEN_MISSING_ASSIGNMENT_DECISION'));
+ x.owner.response.proposalStatus='buffered';
+ x.after.rows[0].status='received';
+ assert.ok(assess(x).signals.includes('INV_GEN_BUFFER_STATE_INCONSISTENT'));
+ x.after.rows[0].status='buffered';x.after.rows[0].buffer_reason='wrong';
+ assert.ok(assess(x).signals.includes('INV_GEN_BUFFER_STATE_INCONSISTENT'));
+});
+test('G3 accepts a valid proposed parcel state and rejects missing parcel identity',()=>{
+ const x=fixture();const row=x.after.rows[0];
+ x.owner.response.proposalStatus='proposed';
+ row.status='proposed';row.proposed_parcel_id='parcel-1';
+ row.proposed_at='2026-10-30T00:00:00Z';
+ assert.equal(assess(x).violation,false);
+ row.proposed_parcel_id=null;
+ assert.ok(assess(x).signals.includes('INV_GEN_PROPOSAL_STATE_INCONSISTENT'));
 });
 test('G3 independent oracle checks rejected physical writes, not just 409',()=>{
  const f={...spec,relation:'FOREIGN'};

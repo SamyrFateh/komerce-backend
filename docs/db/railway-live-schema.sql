@@ -3848,6 +3848,26 @@ COMMENT ON COLUMN public.catalog_media.source_media_id IS 'supplier_media_id V2 
 
 
 --
+-- Name: catalog_media_recovery_audit; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_media_recovery_audit (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    product_ref text NOT NULL,
+    candidate_ref text NOT NULL,
+    actor_user_id uuid NOT NULL,
+    source_media_ids text[] NOT NULL,
+    source_media_hash text NOT NULL,
+    active_before integer NOT NULL,
+    active_after integer NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_media_recovery_audit_active_after_check CHECK ((active_after > 0)),
+    CONSTRAINT catalog_media_recovery_audit_active_before_check CHECK ((active_before = 0))
+);
+
+
+--
 -- Name: catalog_media_visual_fr_reviews; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -8627,7 +8647,6 @@ CREATE TABLE public.products (
     CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
     CONSTRAINT chk_products_stock CHECK ((stock >= 0)),
     CONSTRAINT chk_products_target_margin_pct CHECK (((target_margin_pct IS NULL) OR ((target_margin_pct >= (0)::numeric) AND (target_margin_pct < (100)::numeric)))),
-    CONSTRAINT chk_products_unpriced_draft_only CHECK (((price_kmf IS NOT NULL) OR ((COALESCE(is_active, false) = false) AND (COALESCE(is_available, false) = false) AND (COALESCE(lifecycle_status, 'candidate'::text) <> 'active'::text)))),
     CONSTRAINT chk_stock_nonneg CHECK (((stock >= 0) OR (stock IS NULL))),
     CONSTRAINT price_eur_positive CHECK (((price_eur IS NULL) OR (price_eur >= (0)::numeric))),
     CONSTRAINT products_boutique_subcategory_requires_category CHECK (((boutique_subcategory_key IS NULL) OR (boutique_category_key IS NOT NULL)))
@@ -8638,7 +8657,7 @@ CREATE TABLE public.products (
 -- Name: COLUMN products.price_kmf; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.products.price_kmf IS 'Prix de vente KMF. Nullable uniquement pour un brouillon Catalogue inactif/non disponible ; obligatoire avant publication/exposition.';
+COMMENT ON COLUMN public.products.price_kmf IS 'Optional global reference price (KMF); NULL is allowed for certified globally-approved products. Buyer prices are independently gated per market by LOCAL_ACTIVE plus enabled exposure. Positive non-NULL prices remain subject to chk_products_price.';
 
 
 --
@@ -11959,6 +11978,14 @@ ALTER TABLE ONLY public.catalog_media
 
 
 --
+-- Name: catalog_media_recovery_audit catalog_media_recovery_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_media_recovery_audit
+    ADD CONSTRAINT catalog_media_recovery_audit_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: catalog_media_visual_fr_reviews catalog_media_visual_fr_one_review_per_media; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14198,6 +14225,13 @@ CREATE INDEX idx_catalog_global_access_user ON public.catalog_global_access_gran
 --
 
 CREATE INDEX idx_catalog_media_product ON public.catalog_media USING btree (product_id, display_order);
+
+
+--
+-- Name: idx_catalog_media_recovery_audit_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_media_recovery_audit_product ON public.catalog_media_recovery_audit USING btree (product_id, created_at DESC);
 
 
 --
@@ -18645,6 +18679,22 @@ ALTER TABLE ONLY public.catalog_global_access_grants
 
 ALTER TABLE ONLY public.catalog_media
     ADD CONSTRAINT catalog_media_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: catalog_media_recovery_audit catalog_media_recovery_audit_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_media_recovery_audit
+    ADD CONSTRAINT catalog_media_recovery_audit_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: catalog_media_recovery_audit catalog_media_recovery_audit_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_media_recovery_audit
+    ADD CONSTRAINT catalog_media_recovery_audit_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE RESTRICT;
 
 
 --

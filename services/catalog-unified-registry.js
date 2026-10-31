@@ -26,6 +26,7 @@ WITH picked_source AS (
         sc.product_id, sc.candidate_ref, sc.product_name, sc.description,
         sc.supplier_name, sc.supplier_product_id, sc.supplier_category,
         sc.image_url, sc.product_url, sc.normalized_source_contract,
+        sc.purchase_price_kmf, sc.komerce_category,
         sc.state, sc.scan_result, sc.confidence, sc.updated_at
    FROM sourcing_candidates sc
   WHERE sc.product_id IS NOT NULL
@@ -88,6 +89,12 @@ WITH picked_source AS (
               OR m->>'url' NOT LIKE 'https://%'
           )
         ) AS source_media_repairable,
+        sc.purchase_price_kmf,
+        sc.komerce_category AS economic_category_key,
+        sc.scan_result->>'variable_cost_complete_kmf' AS variable_cost_complete_kmf,
+        sc.scan_result->>'minimum_safe_price_kmf' AS minimum_safe_price_kmf,
+        sc.scan_result->>'test_price_kmf' AS test_price_kmf,
+        sc.scan_result->>'economic_test_health_status' AS economic_test_health_status,
         p.updated_at
    FROM products p
    LEFT JOIN picked_source sc ON sc.product_id=p.id
@@ -96,6 +103,17 @@ WITH picked_source AS (
    LEFT JOIN boutique_subcategories bs
      ON bs.category_key=bc.key AND bs.key=p.boutique_subcategory_key
     AND bs.is_active=TRUE
+   -- Only retired RCT1 source-backed fixtures are excluded: exact paired
+   -- identities plus test supplier and both disabled flags, never real drafts.
+   WHERE NOT COALESCE((
+     p.is_active=FALSE AND p.is_available=FALSE
+     AND sc.supplier_name='RCT1-FICTIF-recette'
+     AND (p.product_ref,sc.supplier_product_id) IN (
+       ('KSC-000180','RCT1-P1'), ('KSC-000181','RCT1-P2'),
+       ('KSC-000182','RCT1-P3'), ('KSC-000183','RCT1-P4'),
+       ('KSC-000184','RCT1-P5')
+     )
+   ), FALSE)
  UNION ALL
  SELECT 'candidate'::text, NULL::text, sc.candidate_ref,
         sc.product_name, sc.description, NULL::text, NULL::text,
@@ -115,6 +133,12 @@ WITH picked_source AS (
         CASE WHEN jsonb_typeof(sc.normalized_source_contract->'media')='array'
           THEN jsonb_array_length(sc.normalized_source_contract->'media') ELSE 0 END,
         FALSE,
+        sc.purchase_price_kmf,
+        sc.komerce_category,
+        sc.scan_result->>'variable_cost_complete_kmf',
+        sc.scan_result->>'minimum_safe_price_kmf',
+        sc.scan_result->>'test_price_kmf',
+        sc.scan_result->>'economic_test_health_status',
         sc.updated_at
    FROM sourcing_candidates sc
   WHERE NOT EXISTS (SELECT 1 FROM products p WHERE p.id=sc.product_id)
@@ -148,21 +172,36 @@ WITH picked_source AS (
      WHEN u.is_active=TRUE AND u.lifecycle_status='active' AND u.approval_audited
        THEN 'catalog_approved'
      WHEN u.is_active=TRUE AND u.lifecycle_status='active' THEN 'approval_unproven'
-     ELSE 'inactive'
+     -- Correction achevée ≠ activation. Un produit déjà approuvé mais
+     -- volontairement désactivé n'est PAS un produit « à compléter ».
+     WHEN u.lifecycle_status='active' AND u.approval_audited
+       THEN 'catalog_approved_inactive'
+     -- Même sans approbation historique, l'absence d'anomalie de contenu
+     -- relève d'une revue de preuve, pas de la file de correction.
+     WHEN u.lifecycle_status='active' THEN 'approval_to_review'
+     ELSE 'approval_to_review'
    END AS work_status
  FROM unified u
 ), operator_view AS (
  SELECT m.*,
    CASE
-     WHEN m.work_status='catalog_approved' THEN 'validated'
+     WHEN m.work_status IN ('catalog_approved','catalog_approved_inactive') THEN 'validated'
      WHEN m.work_status='excluded' THEN 'excluded'
      WHEN m.work_status IN ('processing','sourcing_deferred') THEN 'processing'
-     WHEN m.work_status IN ('approval_pending','approval_unproven','sourcing_review') THEN 'review'
+     WHEN m.work_status IN ('approval_pending','approval_unproven','approval_to_review','sourcing_review') THEN 'review'
      ELSE 'correction'
    END AS operator_group
  FROM marked m
 )
 `;
+
+// Diagnostics only: neither the API nor the browser may turn a scan
+// recommendation into a market selling price.
+function positiveKmf(value) {
+  if (value == null || String(value).trim() === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
 
 function publicRow(row) {
   const candidate = row.record_kind === 'candidate';
@@ -211,6 +250,12 @@ function publicRow(row) {
     sourcing_decision: row.sourcing_decision || null,
     sourcing_confidence: row.sourcing_confidence || null,
     source_category_review_required: row.source_category_review_required === true,
+    economic_category_key: row.economic_category_key || null,
+    purchase_price_kmf: positiveKmf(row.purchase_price_kmf),
+    variable_cost_complete_kmf: positiveKmf(row.variable_cost_complete_kmf),
+    minimum_safe_price_kmf: positiveKmf(row.minimum_safe_price_kmf),
+    test_price_kmf: positiveKmf(row.test_price_kmf),
+    economic_test_health_status: row.economic_test_health_status || 'unknown',
     approval_audited: row.approval_audited === true,
     source_locale: row.source_locale || null,
     content_source: row.content_source || null,

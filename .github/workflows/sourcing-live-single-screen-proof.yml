@@ -1,0 +1,40 @@
+name: Sourcing Live single-screen targeted proof
+on:
+  push:
+    branches:
+      - feat/sourcing-live-single-screen-20261031
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  jest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Source, navigation and legacy technical proof
+        run: |
+          node --check public/dashboards/canonical/js/import-runtime.js
+          node --check public/dashboards/canonical/js/sourcing-workspace.js
+          node --check public/dashboards/canonical/js/navigation-policy-v4.js
+          npx jest --runInBand --ci --no-coverage tests/unit/sourcing-live-single-screen.test.js tests/unit/import-runtime-journey.test.js tests/unit/import-runtime.test.js tests/unit/navigation-policy-v4.test.js tests/unit/canonical-navigation-policy-v4-capability-gate.test.js
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Chrome mock-only zero writes
+        run: npx playwright test tests/e2e/sourcing-live-single-screen.spec.js --workers=1

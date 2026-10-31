@@ -2,7 +2,7 @@
  * @e2e   pricing-atelier-mock.spec.js
  * @feature dashboard (espace « Atelier des prix », /admin/workspaces/pricing, marché Comores)
  * @brief Conformité au mock validé : titre, 4 KPI (valeur absente = « Indisponible », jamais 0 ni « null »),
- *        trois familles économiques en onglets (une seule visible), colonnes Valeur/Provenance avec unités,
+ *        trois cartes économiques comparables ou superposées, détail Valeur/Provenance avec unités,
  *        panneau secondaire fermé par défaut, aucun texte parasite, aucun débordement horizontal (desktop et mobile).
  *        API simulée avec réponses réelles rejouées : aucun serveur ni base requis.
  */
@@ -53,7 +53,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
 
     test('titre, quatre KPI indisponibles sans zéro ni null, aucun texte parasite', async ({ page }) => {
       await mount(page);
-      await expect(page.locator('h1')).toHaveText('Atelier des prix · Comores');
+      await expect(page.locator('h1')).toHaveText('Moteur économique · Comores');
       const kpis = page.locator('.kmc-metric-card');
       await expect(kpis).toHaveCount(4);
       await expect(kpis.locator('.kmc-metric-label')).toHaveText(['Couverture réelle', 'Contribution reconnue', 'Structure à couvrir', 'Maturité']);
@@ -65,7 +65,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
 
     test('délégation mono-marché : le marché autorisé est chargé sans sélection manuelle, titre inclus (L1)', async ({ page }) => {
       await mount(page, { autoMarket: true });
-      await expect(page.locator('h1')).toHaveText('Atelier des prix · Comores');
+      await expect(page.locator('h1')).toHaveText('Moteur économique · Comores');
     });
 
     test('politique de marché absente : un seul avis neutre, aucun bouton ni code brut (L5)', async ({ page }) => {
@@ -78,69 +78,66 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(body).not.toMatch(/Voir la décision|Voir le gate|MARKET_DECISION_POLICY_REQUIRED/);
     });
 
-    test('familles : onglets répartis sur la largeur du panneau actif', async ({ page }) => {
+    test('familles : trois cartes alignées en desktop, pile lisible en petit écran', async ({ page }) => {
       await mount(page, { populated: true });
-      if (viewport.width < 900) return; // mobile : défilement horizontal des onglets
-      const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');
-      const widths = await tabs.evaluateAll(nodes => nodes.map(n => Math.round(n.getBoundingClientRect().width)));
-      const card = await page.locator('.kmc-cockpit-cost-card:visible').evaluate(n => Math.round(n.getBoundingClientRect().width));
-      expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(2);
-      expect(widths.reduce((a, b) => a + b, 0)).toBeGreaterThan(card * 0.9);
+      const costs = page.locator('.kmc-cockpit-costs');
+      await expect(costs).toHaveAttribute('data-cost-layout', 'columns');
+      const cards = page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card');
+      await expect(cards).toHaveCount(3);
+      if (viewport.width >= 1100) {
+        const xs = await cards.evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().x));
+        expect(xs[0]).toBeLessThan(xs[1]);
+        expect(xs[1]).toBeLessThan(xs[2]);
+      } else {
+        const xs = await cards.evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().x));
+        expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(5);
+      }
     });
 
-    test('coûts variables : enregistrement automatique à la validation, valeur vide jamais enregistrée', async ({ page }) => {
+    test('ligne variable : dernière valeur conservée, saisie explicite, refus du vide', async ({ page }) => {
       const posts = [];
       await mount(page, { populated: true, posts });
-      await page.locator('[data-open-cost-detail="variable"]').click();
-      const input = page.locator('[data-variable-cost-input="stripe_fee_pct"]');
+      await expect(page.locator('[data-cost-layout-button]')).toHaveCount(0);
+      const row = page.locator('[data-inline-cost-row="stripe_fee_pct"]');
+      await expect(row).toContainText('2,9 %');
+      await row.locator('[data-edit-inline-cost]').click();
+      await expect(row).toContainText('Valeur actuelle : 2,9 %');
+      const input = row.locator('[data-inline-cost-value]');
+      await expect(input).toHaveValue('2.9');
+      await input.fill('');
+      await row.locator('.kmc-inline-cost-save').click();
+      await expect(row.locator('[data-inline-cost-message]')).toContainText('Valeur invalide');
+      expect(posts).toHaveLength(0);
       await input.fill('3.1');
-      await input.blur();
+      await row.locator('.kmc-inline-cost-save').click();
       await expect.poll(() => posts.length).toBe(1);
       expect(posts[0].path).toBe('/api/admin/workspaces/pricing/market/KM/cost-components/stripe_fee_pct/update');
       expect(posts[0].body).toMatchObject({ default_value: 3.1 });
-      await input.fill('');
-      await input.blur();
-      await expect(page.locator('.kmc-structure-panel-error')).toBeVisible();
-      expect(posts.length).toBe(1);
     });
 
-    test('familles : navigation clavier (flèches, Home/End)', async ({ page }) => {
+    test('trois familles fixes, le détail reste accessible sans bascule superposée', async ({ page }) => {
       await mount(page, { populated: true });
-      const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');
-      await tabs.nth(0).focus();
-      await page.keyboard.press('ArrowRight');
-      await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
-      await page.keyboard.press('End');
-      await expect(tabs.nth(2)).toHaveAttribute('aria-selected', 'true');
-      await page.keyboard.press('Home');
-      await expect(tabs.nth(0)).toHaveAttribute('aria-selected', 'true');
-    });
-
-    test('trois familles en onglets : une seule visible, bascule au clic', async ({ page }) => {
-      await mount(page, { populated: true });
-      const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');
-      await expect(tabs).toHaveText(['Coûts variables', 'Charges fixes directes', 'Charges fixes mutualisées']);
-      const visible = page.locator('.kmc-cockpit-cost-card:visible');
-      await expect(visible).toHaveCount(1);
-      await expect(visible).toHaveAttribute('data-cost-summary', 'variable');
-      await tabs.nth(1).click();
-      await expect(visible).toHaveAttribute('data-cost-summary', 'fixed-direct');
-      await tabs.nth(2).click();
-      await expect(visible).toHaveAttribute('data-cost-summary', 'fixed-mutualized');
-      await tabs.nth(0).click();
+      const visible = page.locator('.kmc-economic-family-grid .kmc-cockpit-cost-card:visible');
+      await expect(visible).toHaveCount(3);
+      await expect(visible.nth(0)).toHaveAttribute('data-cost-summary', 'variable');
+      await expect(visible.nth(1)).toHaveAttribute('data-cost-summary', 'fixed-direct');
+      await expect(visible.nth(2)).toHaveAttribute('data-cost-summary', 'fixed-mutualized');
+      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
       const cells = (await page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cell').allInnerTexts()).join('|');
       expect(cells).toContain('Valeur');
       expect(cells).toContain('Provenance');
       expect(cells).toContain('2,9 %');
       expect(cells).toContain('500 KMF/commande');
-      expect(cells).toContain('Global hérité');
-      expect(cells).toContain('Surcharge pays');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeVisible();
+      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeHidden();
     });
 
     test('ancien portefeuille remplacé par la file « Produits à décider » et aucun débordement horizontal de la page', async ({ page }) => {
       await mount(page, { populated: true });
       await expect(page.locator('[data-cockpit-portfolio]')).toBeHidden();
-      await expect(page.locator('[data-atelier-view="products"]')).toBeVisible();
+      await expect(page.locator('[data-atelier-view="costs"]')).toBeVisible();
+      await expect(page.locator('[data-atelier-nav]')).toBeVisible();
       const widths = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, inner: window.innerWidth }));
       expect(widths.scroll).toBeLessThanOrEqual(widths.inner);
     });

@@ -69,9 +69,29 @@
     const path = `/admin/orders/${encodeURIComponent(reference)}`;
     const nav = globalThis.KomerceCanonicalNavigation;
     const loc = globalThis.location;
-    return nav && typeof nav.withEntityReturnTo === 'function' && loc
-      ? nav.withEntityReturnTo(path, `${loc.pathname || '/admin/orders'}${loc.search || ''}`, 'Retour aux commandes')
+    const origin = loc && loc.pathname === '/admin/orders'
+      ? `${loc.pathname}${loc.search || ''}` : '/admin/orders';
+    return nav && typeof nav.withEntityReturnTo === 'function'
+      ? nav.withEntityReturnTo(path, origin, 'Retour aux commandes')
       : path;
+  }
+
+  // Keep the server-backed file selected after a 360 drill and browser return.
+  function initialQueue(search) {
+    const params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+    const selected = params.get('queue');
+    return TABS.some(tab => tab.id === selected) ? selected : 'all';
+  }
+
+  function reflectQueueInUrl(queue) {
+    const loc = globalThis.location;
+    const hist = globalThis.history;
+    if (!loc || loc.pathname !== '/admin/orders' || !hist || typeof hist.replaceState !== 'function') return;
+    const params = new URLSearchParams(String(loc.search || '').replace(/^\?/, ''));
+    if (queue === 'all') params.delete('queue');
+    else params.set('queue', queue);
+    const query = params.toString();
+    hist.replaceState(hist.state, '', loc.pathname + (query ? `?${query}` : '') + (loc.hash || ''));
   }
 
   function isNumber(v) { return typeof v === 'number' && Number.isFinite(v); }
@@ -209,7 +229,7 @@
       exec.setAttribute('data-ord-hub-execution', row.reference);
       box.appendChild(exec);
     }
-    const link = el(doc, 'a', 'kmc-ord-open', 'Ouvrir Order 360');
+    const link = el(doc, 'a', 'kmc-entity-360-action', 'Voir 360');
     link.href = orderHref(row.reference);
     link.setAttribute('data-ord-open', row.reference);
     box.appendChild(link);
@@ -218,13 +238,23 @@
 
   function render(doc, rootNode, payload, state) {
     rootNode.textContent = '';
-    const page = el(doc, 'div', 'kmc-ord');
+    // Use the same Hero authority and illustration as the other Canonical
+    // dashboards. This page used to create an unstyled h2 and silently lost
+    // the orders-specific illustration, despite its existing CSS asset.
+    const page = el(doc, 'div', 'kmc-ord kmc-domain-cockpit');
     page.setAttribute('data-canonical-orders', '');
-    const head = el(doc, 'header', 'kmc-ord-head');
-    head.appendChild(el(doc, 'h2', 'kmc-ord-title', 'Commandes'));
-    head.appendChild(el(doc, 'p', 'kmc-ord-sub', 'Ce qui attend une action, commande par commande. Les actions se font dans Order 360 et Opérations.'));
+    page.setAttribute('data-dashboard-id', 'orders');
+    page.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
+    const head = el(doc, 'header', 'kmc-dashboard-header kmc-ord-head');
+    head.setAttribute('data-dashboard-role', 'hero');
+    head.appendChild(el(doc, 'p', 'canonical-eyebrow', 'COMMERCE · COMMANDES'));
+    head.appendChild(el(doc, 'h1', 'kmc-dashboard-title', 'Commandes'));
+    head.appendChild(el(doc, 'p', 'kmc-dashboard-description',
+      'Retrouvez les commandes à suivre et identifiez les prochaines actions. Ouvrez le dossier 360 pour comprendre une commande ; l’exécution reste dans le module métier responsable.'));
     page.appendChild(head);
-    page.appendChild(renderKpis(doc, payload));
+    const priorities = renderKpis(doc, payload);
+    priorities.setAttribute('data-dashboard-role', 'attention');
+    page.appendChild(priorities);
 
     const rows = buildRows(payload);
     const visible = rows.filter(r => state.tab === 'all' || r.queues.includes(state.tab));
@@ -237,7 +267,12 @@
       b.setAttribute('role', 'tab');
       b.setAttribute('aria-selected', String(state.tab === t.id));
       b.setAttribute('data-ord-tab', t.id);
-      b.addEventListener('click', () => { state.tab = t.id; state.selected = null; render(doc, rootNode, payload, state); });
+      b.addEventListener('click', () => {
+        state.tab = t.id;
+        state.selected = null;
+        reflectQueueInUrl(t.id);
+        render(doc, rootNode, payload, state);
+      });
       tabs.appendChild(b);
     });
 
@@ -264,10 +299,22 @@
       tr.setAttribute('data-ord-row', r.reference);
       tr.tabIndex = 0;
       const pick = () => { state.selected = r.reference; render(doc, rootNode, payload, state); };
-      tr.addEventListener('click', pick);
-      tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+      tr.addEventListener('click', e => { if (!e || e.target === tr || !e.target.closest?.('a,button')) pick(); });
+      tr.addEventListener('keydown', e => {
+        if (e.target !== tr && e.target != null) return;
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); }
+      });
       [r.reference, r.market_code || '—', r.client_name || '—', productsLabel(r), parcelsLabel(r), statusLabel(r.status), PAYMENT_LABELS[r.payment_status] || '—',
-        money(r.total_kmf), r.action].forEach((v, i) => tr.appendChild(el(doc, 'td', i === 0 ? 'kmc-ord-ref' : '', v)));
+        money(r.total_kmf)].forEach((v, i) => tr.appendChild(el(doc, 'td', i === 0 ? 'kmc-ord-ref' : '', v)));
+      const actions = el(doc, 'td', 'kmc-ord-cell-action');
+      actions.appendChild(el(doc, 'span', 'kmc-ord-action-label', r.action));
+      const open = el(doc, 'a', 'kmc-entity-360-action', 'Voir 360');
+      open.href = orderHref(r.reference);
+      open.setAttribute('data-ord-open', r.reference);
+      open.setAttribute('aria-label', `Voir 360 · commande ${r.reference}`);
+      open.addEventListener('click', e => e.stopPropagation?.());
+      actions.appendChild(open);
+      tr.appendChild(actions);
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
@@ -280,11 +327,13 @@
     }
     main.appendChild(listBox);
     main.appendChild(renderDetail(doc, selected));
+    main.setAttribute('data-dashboard-role', 'primary');
     page.appendChild(main);
 
     const foot = el(doc, 'div', 'kmc-ord-foot');
     foot.appendChild(renderFunnel(doc, payload));
     foot.appendChild(renderSignals(doc, payload));
+    foot.setAttribute('data-dashboard-role', 'secondary');
     page.appendChild(foot);
     rootNode.appendChild(page);
   }
@@ -298,7 +347,7 @@
     const endpoint = normalEndpoint;
     rootNode.textContent = 'Chargement de Commandes…';
     return jsonRequest(fetchFn, endpoint).then(payload => {
-      render(doc, rootNode, payload, { tab: 'all', selected: null });
+      render(doc, rootNode, payload, { tab: initialQueue(globalThis.location?.search), selected: null });
       return Object.freeze({ payload, endpoint });
     }).catch(error => {
       rootNode.textContent = '';
@@ -309,5 +358,6 @@
     });
   }
 
-  return Object.freeze({ mount, buildRows, endpointForContext, hubExecutionHref, STATUS_LABELS, TABS });
+  return Object.freeze({ mount, buildRows, endpointForContext, hubExecutionHref, STATUS_LABELS, TABS,
+    orderHref, initialQueue, reflectQueueInUrl });
 });

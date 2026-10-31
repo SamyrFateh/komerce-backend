@@ -168,3 +168,593 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* Economic workspace: readable desktop lists, shared visual rhythm with the catalogue. */
+.kmc-atelier-views { width: 100%; max-width: none; min-width: 0; }
+.kmc-atelier-views .kmc-pricing-decision-overview,
+.kmc-atelier-views .kmc-economic-cockpit { width: 100%; max-width: none; }
+.kmc-atelier-views .kmc-atelier-nav { margin: 24px 0; }
+.kmc-atelier-views .kmc-economic-catalog-link { flex: 0 0 auto; text-decoration: none; background: #fff; }
+.kmc-atelier-views .kmc-economic-cost-intro { margin: 0 0 16px; color: #4b6280; font-size: 15px; line-height: 1.6; }
+.kmc-atelier-views .kmc-cockpit-costs { gap: 20px; }
+.kmc-atelier-views .kmc-cockpit-cost-head { gap: 24px; }
+.kmc-atelier-views .kmc-cockpit-cost-identity strong { font-size: 18px; }
+.kmc-atelier-views .kmc-cockpit-cost-identity small { font-size: 14px; line-height: 1.6; }
+.kmc-atelier-views .kmc-cockpit-outline-action { min-height: 44px; padding: 10px 18px; font-size: 14px; }
+.kmc-atelier-views .kmc-cockpit-costs .kmc-cockpit-cell { padding: 18px 20px; line-height: 1.5; }
+.kmc-atelier-views .kmc-cockpit-costs .kmc-cockpit-cost-table.is-variable { grid-template-columns: minmax(180px, 1.5fr) minmax(100px, .7fr) minmax(130px, 1fr) minmax(170px, 1.3fr) minmax(110px, .8fr); }
+/* Nature is already given by the section; allocation remains in the adjustment detail. */
+.kmc-atelier-views .kmc-cockpit-cost-table.is-variable > .kmc-cockpit-cell:nth-child(7n + 2),
+.kmc-atelier-views .kmc-cockpit-cost-table.is-variable > .kmc-cockpit-cell:nth-child(7n + 4) { display: none; }
+.kmc-atelier-views .kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cell { color: #334155; }
+
+.kmc-atelier-views .kmc-economic-global-value { display: block; margin-top: 6px; color: #4b6280; font-size: 13px; line-height: 1.5; }
+
+/* Desktop: one full-width operating table. The explanatory doctrine follows
+   the costs instead of stealing a third of their usable width. */
+.kmc-atelier-views .kmc-cockpit-costs {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
+}
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-economic-cost-intro,
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-cockpit-cost-tabs,
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-cockpit-cost-card,
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-cockpit-principle {
+  grid-column: 1;
+  grid-row: auto;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-cockpit-principle {
+  margin-top: 8px;
+}
+
+/* Komerce economic workspace — contribution narrative and quiet colour hierarchy.
+   Aesthetic only: economic figures remain server-authoritative. */
+.kmc-atelier-views .kmc-pricing-decision-overview .kmc-dashboard-header {
+  background: linear-gradient(115deg, #eaf3ff 0%, #f5faff 63%, #edfbf7 100%);
+  border: 1px solid #d6e6f5;
+  border-radius: 18px;
+  padding: 24px 28px;
+}
+.kmc-atelier-views .kmc-pricing-decision-overview .kmc-dashboard-title {
+  color: #173660;
+  letter-spacing: -.018em;
+}
+.kmc-atelier-views .kmc-atelier-nav {
+  background: #eef4ff;
+  border-color: #d4e3f8;
+  box-shadow: 0 5px 20px rgba(26, 78, 141, .05);
+}
+.kmc-atelier-views .kmc-atelier-tab.is-active {
+  background: #176bb7;
+  box-shadow: 0 5px 14px rgba(18, 96, 173, .19);
+}
+.kmc-atelier-views .kmc-pricing-decision-overview .kmc-metric-card {
+  border-radius: 14px;
+  border: 1px solid #dbe7f4;
+  box-shadow: 0 6px 20px rgba(26, 74, 129, .065);
+  background: #fff;
+}
+.kmc-atelier-views .kmc-pricing-decision-overview .kmc-metric-card:nth-child(4n + 1) { border-top: 3px solid #2b77cc; }
+.kmc-atelier-views .kmc-pricing-decision-overview .kmc-metric-card:nth-child(4n + 2) { border-top: 3px solid #149678; }
+.kmc-atelier-views .kmc-pricing-decision-overview .kmc-metric-card:nth-child(4n + 3) { border-top: 3px solid #8269ba; }
+.kmc-atelier-views .kmc-pricing-decision-overview .kmc-metric-card:nth-child(4n + 4) { border-top: 3px solid #d08b3e; }
+
+.kmc-atelier-views .kmc-cockpit-cost-card {
+  border: 1px solid #dce7f3;
+  border-top: 4px solid var(--cockpit-accent, #377bbb);
+  box-shadow: 0 8px 24px rgba(28, 66, 113, .055);
+}
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-economic-reading {
+  grid-column: 1;
+  grid-row: auto;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-economic-reading {
+  border: 1px solid #d8e7f5;
+  border-radius: 18px;
+  overflow: hidden;
+  background: linear-gradient(110deg, #f5faff, #fff 60%, #f4fbf7);
+}
+.kmc-atelier-views .kmc-economic-reading-heading { padding: 19px 22px 12px; }
+.kmc-atelier-views .kmc-economic-reading-heading strong {
+  display: block;
+  color: #183b65;
+  font-size: 19px;
+  line-height: 1.4;
+  margin: 6px 0 5px;
+}
+.kmc-atelier-views .kmc-economic-reading-heading p {
+  margin: 0;
+  color: #49647e;
+  line-height: 1.55;
+}
+.kmc-atelier-views .kmc-economic-reading-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  color: #2774b5;
+}
+.kmc-atelier-views .kmc-economic-reading-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 4px 18px 14px;
+}
+.kmc-atelier-views .kmc-economic-reading-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+  border: 1px solid #dce7f1;
+  border-radius: 14px;
+  padding: 16px;
+  background: #fff;
+}
+.kmc-atelier-views .kmc-economic-reading-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #e7f0ff;
+  color: #276cb4;
+  font-weight: 900;
+  font-size: 19px;
+}
+.kmc-atelier-views .kmc-economic-reading-item.is-fixed .kmc-economic-reading-icon {
+  color: #6c56a7;
+  background: #f0ecfb;
+}
+.kmc-atelier-views .kmc-economic-reading-item.is-mix .kmc-economic-reading-icon {
+  color: #966322;
+  background: #fff3dd;
+}
+.kmc-atelier-views .kmc-economic-reading-copy { min-width: 0; display: grid; gap: 5px; }
+.kmc-atelier-views .kmc-economic-reading-label { font-size: 12px; font-weight: 750; color: #506782; }
+.kmc-atelier-views .kmc-economic-reading-value {
+  color: #1e426d;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.kmc-atelier-views .kmc-economic-reading-copy small { color: #52687f; font-size: 12px; line-height: 1.5; }
+.kmc-atelier-views .kmc-economic-reading-foot {
+  margin: 0;
+  padding: 10px 22px 14px;
+  border-top: 1px solid #e3edf6;
+  color: #536b83;
+  font-size: 12px;
+  line-height: 1.5;
+}
+@media (max-width: 1050px) {
+  .kmc-atelier-views .kmc-economic-reading-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .kmc-atelier-views .kmc-pricing-decision-overview .kmc-dashboard-header { padding: 16px; }
+  .kmc-atelier-views .kmc-economic-reading-grid { padding: 4px 12px 12px; }
+  .kmc-atelier-views .kmc-economic-reading-heading { padding: 16px 16px 12px; }
+}
+
+/* Neutral provenance when the economic truth has not matured. */
+.kmc-atelier-views .kmc-cockpit-live-badge.is-unavailable {
+  background: #f0f4f8;
+  border: 1px solid #dbe3ed;
+}
+.kmc-atelier-views .kmc-cockpit-live-badge.is-unavailable strong { color: #46576f; }
+.kmc-atelier-views .kmc-cockpit-live-badge.is-unavailable small { color: #64748b; }
+.kmc-atelier-views .kmc-economic-principles-detail { background: #f8fbff; padding: 0; }
+.kmc-atelier-views .kmc-economic-principles-detail > summary {
+  padding: 14px 18px;
+  list-style: none;
+  cursor: pointer;
+  color: #2b527d;
+}
+.kmc-atelier-views .kmc-economic-principles-detail > summary::-webkit-details-marker { display: none; }
+.kmc-atelier-views .kmc-economic-principles-detail > summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 22px;
+  font-weight: 500;
+}
+.kmc-atelier-views .kmc-economic-principles-detail[open] > summary::after { content: '−'; }
+.kmc-atelier-views .kmc-economic-principles-detail > summary:focus-visible { outline: 3px solid #196cbd; outline-offset: 2px; }
+.kmc-atelier-views .kmc-economic-principles-detail > ul { padding: 0 22px 0 38px; }
+.kmc-atelier-views .kmc-economic-principles-detail > a { display: inline-block; margin: 0 22px 16px; }
+
+/* Both cost-mix axes arrive from the server; the bar is purely representational. */
+.kmc-atelier-views .kmc-economic-reading-mix-track {
+  display: flex;
+  width: 100%;
+  height: 10px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5ebf2;
+}
+.kmc-atelier-views .kmc-economic-reading-mix-variable {
+  background: #228d77;
+}
+.kmc-atelier-views .kmc-economic-reading-mix-fixed {
+  background: #8269ba;
+}
+
+/* Desktop: preserve the percentage and the local share on the same readable row. */
+@media (min-width: 1101px) {
+  .kmc-atelier-views .kmc-cockpit-cost-table.is-fixed-mutualized {
+    grid-template-columns: minmax(180px, 1.4fr) minmax(150px, 1fr)
+      minmax(180px, 1.2fr) minmax(85px, .5fr) minmax(185px, 1.1fr);
+  }
+  .kmc-atelier-views .kmc-cockpit-cost-table.is-fixed-mutualized
+    > .kmc-cockpit-cell:nth-child(5n + 4) {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+}
+
+/* Comparison layout: three honest summaries by default, all full-width
+   tables in stacked mode. Narrow cards NEVER cram seven table columns. */
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-cockpit-cost-layout-controls,
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-economic-family-grid {
+  grid-column: 1;
+  grid-row: auto;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-cockpit-cost-layout-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 0;
+}
+.kmc-atelier-views .kmc-economic-layout-hint {
+  color: #4f6885;
+  font-size: 13px;
+  font-weight: 750;
+  margin-right: 6px;
+}
+.kmc-atelier-views .kmc-economic-layout-button {
+  min-height: 42px;
+  padding: 8px 17px;
+  border: 1px solid #c7d8ed;
+  border-radius: 11px;
+  background: #fff;
+  color: #31587f;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.kmc-atelier-views .kmc-economic-layout-button.is-active {
+  color: #fff;
+  border-color: #176ab3;
+  background: #176ab3;
+  box-shadow: 0 4px 13px rgba(32, 97, 173, .16);
+}
+.kmc-atelier-views .kmc-economic-layout-button:focus-visible,
+.kmc-atelier-views .kmc-economic-family-expand:focus-visible {
+  outline: 3px solid #2777cc;
+  outline-offset: 3px;
+}
+.kmc-atelier-views .kmc-economic-family-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+.kmc-atelier-views .kmc-economic-family-grid > .kmc-cockpit-cost-card {
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+}
+.kmc-atelier-views .kmc-economic-family-grid > .kmc-cockpit-cost-card.is-fixed-direct {
+  --cockpit-accent: #a86d39;
+  --cockpit-soft: #fff4e7;
+}
+.kmc-atelier-views .kmc-economic-family-grid > .kmc-cockpit-cost-card.is-fixed-mutualized {
+  --cockpit-accent: #8269ba;
+  --cockpit-soft: #f1ecfc;
+  background: #fbfaff;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-cockpit-cost-head {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 17px;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-cockpit-cost-identity {
+  min-width: 0;
+  align-items: flex-start;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-cockpit-cost-identity > div { min-width: 0; }
+.kmc-atelier-views .kmc-economic-family-grid .kmc-cockpit-cost-identity strong {
+  display: block;
+  color: #183b65;
+  font-size: 16px;
+  line-height: 1.3;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-cockpit-cost-identity small {
+  font-size: 12px;
+  line-height: 1.45;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-cockpit-outline-action {
+  font-size: 12px;
+  min-height: 38px;
+  padding: 8px 12px;
+}
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid .kmc-cockpit-cost-table { display: none; }
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] {
+  grid-column: 1 / -1;
+}
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] .kmc-cockpit-cost-table {
+  display: grid;
+}
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] .kmc-economic-family-preview-list,
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] .kmc-economic-family-preview-extra,
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] .kmc-economic-family-preview-footer {
+  display: none;
+}
+.kmc-atelier-views .kmc-economic-family-preview { display: grid; gap: 12px; padding: 14px 17px 17px; }
+.kmc-atelier-views .kmc-economic-family-preview-list { display: grid; gap: 0; }
+.kmc-atelier-views .kmc-economic-family-preview-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  align-items: baseline;
+  padding: 11px 0;
+  border-bottom: 1px solid #e7eef6;
+}
+.kmc-atelier-views .kmc-economic-family-preview-label {
+  min-width: 0;
+  color: #395474;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 700;
+}
+.kmc-atelier-views .kmc-economic-family-preview-value {
+  color: #193e67;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.kmc-atelier-views .kmc-economic-family-preview-note {
+  grid-column: 1 / -1;
+  color: #718097;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.kmc-atelier-views .kmc-economic-family-preview-extra,
+.kmc-atelier-views .kmc-economic-family-preview-empty { color: #687d94; font-size: 12px; }
+.kmc-atelier-views .kmc-economic-family-preview-footer {
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: #f0f6fd;
+  color: #315780;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+.kmc-atelier-views .kmc-economic-family-expand {
+  min-height: 40px;
+  padding: 8px 13px;
+  border: 1px solid #d2e1f1;
+  border-radius: 10px;
+  background: #fff;
+  color: #2369b1;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.kmc-atelier-views [data-cost-layout="stacked"] .kmc-economic-family-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.kmc-atelier-views [data-cost-layout="stacked"] .kmc-economic-family-grid .kmc-economic-family-preview { display: none; }
+.kmc-atelier-views [data-cost-layout="stacked"] .kmc-economic-family-grid .kmc-cockpit-cost-table { display: grid; }
+.kmc-atelier-views [data-cost-layout="stacked"] .kmc-economic-family-grid .kmc-cockpit-cost-head {
+  justify-content: space-between;
+  align-items: center;
+}
+.kmc-atelier-views [data-cost-layout="stacked"] .kmc-economic-family-grid .kmc-cockpit-cost-card { overflow-x: auto; }
+.kmc-atelier-views [data-cost-layout="stacked"] .kmc-economic-family-grid .kmc-cockpit-cost-table.is-variable {
+  grid-template-columns: minmax(180px, 1.5fr) minmax(100px, .7fr) minmax(130px, 1fr) minmax(170px, 1.3fr) minmax(110px, .8fr);
+}
+@media (max-width: 1050px) {
+  .kmc-atelier-views .kmc-economic-family-grid { grid-template-columns: minmax(0, 1fr); }
+  .kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] { grid-column: 1; }
+  .kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] .kmc-cockpit-cost-table {
+    overflow-x: auto;
+  }
+}
+
+/* Three cost families are the layout, not a second navigation.
+   Editing belongs to each line; last server value stays alongside the input. */
+.kmc-atelier-views .kmc-economic-family-preview-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.kmc-atelier-views .kmc-economic-family-preview-row > .kmc-economic-family-preview-note {
+  grid-row: 2;
+}
+.kmc-atelier-views .kmc-inline-cost-action {
+  grid-column: 2;
+  justify-self: end;
+  padding: 6px 10px;
+  border: 1px solid #c8d9eb;
+  background: #f5f9ff;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #2369b0;
+  cursor: pointer;
+}
+.kmc-atelier-views .kmc-inline-cost-action:focus-visible,
+.kmc-atelier-views .kmc-inline-cost-form button:focus-visible,
+.kmc-atelier-views .kmc-inline-cost-form input:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+}
+.kmc-atelier-views .kmc-inline-cost-action[hidden] { display: none; }
+.kmc-atelier-views .kmc-inline-cost-form {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+  margin-top: 8px;
+  border-top: 1px solid #d8e5f3;
+  padding-top: 12px;
+}
+.kmc-atelier-views .kmc-inline-cost-last {
+  flex: 1 1 100%;
+  color: #536a84;
+  font-size: 12px;
+}
+.kmc-atelier-views .kmc-inline-cost-form input {
+  flex: 1 1 88px;
+  width: 88px;
+  min-width: 0;
+  max-width: 150px;
+  border: 1px solid #a6bdd5;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font: inherit;
+  color: #153a60;
+  font-weight: 750;
+}
+.kmc-atelier-views .kmc-inline-cost-unit { color: #526b85; font-size: 12px; }
+.kmc-atelier-views .kmc-inline-cost-form button {
+  border-radius: 9px;
+  border: 1px solid #cbd9e8;
+  background: white;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #335c84;
+  cursor: pointer;
+}
+.kmc-atelier-views .kmc-inline-cost-form .kmc-inline-cost-save {
+  color: white;
+  border-color: #176ab3;
+  background: #176ab3;
+}
+.kmc-atelier-views .kmc-inline-cost-form button:disabled { opacity: .6; cursor: wait; }
+.kmc-atelier-views .kmc-inline-cost-message {
+  flex: 1 1 100%;
+  color: #7b3d18;
+  line-height: 1.45;
+}
+@media (max-width: 1050px) {
+  .kmc-atelier-views .kmc-economic-family-preview-row { gap: 5px 8px; }
+}
+
+/* The previously confirmed value is literally beside the proposed value. */
+.kmc-atelier-views .kmc-inline-cost-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 118px);
+  gap: 8px;
+  align-items: center;
+}
+.kmc-atelier-views .kmc-inline-cost-last {
+  grid-column: 1;
+  grid-row: 1;
+  flex: none;
+}
+.kmc-atelier-views .kmc-inline-cost-form input {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-inline-cost-unit {
+  grid-column: 2;
+  grid-row: 2;
+  text-align: right;
+  font-size: 11px;
+}
+.kmc-atelier-views .kmc-inline-cost-form .kmc-inline-cost-save {
+  grid-column: 1;
+  grid-row: 3;
+}
+.kmc-atelier-views .kmc-inline-cost-form .kmc-inline-cost-cancel {
+  grid-column: 2;
+  grid-row: 3;
+}
+.kmc-atelier-views .kmc-inline-cost-message { grid-column: 1 / -1; }
+
+/* 31/10 — One line grammar for all three cost families.
+   The existing value and the action are separate cells; no button may wrap
+   underneath its amount or collide with the provenance note. */
+.kmc-atelier-views .kmc-economic-family-grid .kmc-economic-family-preview-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, auto) 79px;
+  grid-template-rows: auto;
+  align-items: center;
+  column-gap: 9px;
+  row-gap: 4px;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-economic-family-preview-label {
+  grid-column: 1;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-economic-family-preview-value {
+  grid-column: 2;
+  justify-self: end;
+  white-space: nowrap;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-inline-cost-action,
+.kmc-atelier-views .kmc-economic-family-grid .kmc-inline-cost-readonly {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  text-align: center;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-inline-cost-readonly {
+  font-size: 11px;
+  color: #64748b;
+  border: 1px solid #dbe3ed;
+  border-radius: 8px;
+  background: #f6f8fb;
+  padding: 7px 5px;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-economic-family-preview-row > .kmc-economic-family-preview-note {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  margin: 0;
+}
+.kmc-atelier-views .kmc-economic-family-grid .kmc-economic-family-preview-row > .kmc-inline-cost-form,
+.kmc-atelier-views .kmc-economic-family-grid .kmc-economic-family-preview-row > .kmc-structure-inline-editor {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  min-width: 0;
+}
+/* Expanded calculation details do not replace the three consistent lists,
+   nor turn a three-column cost overview into a stacked layout. */
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] {
+  grid-column: auto;
+}
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] .kmc-economic-family-preview-list,
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] .kmc-economic-family-preview-extra,
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] .kmc-economic-family-preview-footer {
+  display: grid;
+}
+.kmc-atelier-views [data-cost-layout="columns"] .kmc-economic-family-grid [data-expanded="true"] .kmc-cockpit-cost-table {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border-top: 1px solid #e0e8f2;
+}
+@media (max-width: 1190px) {
+  .kmc-atelier-views .kmc-economic-family-grid .kmc-economic-family-preview-row {
+    grid-template-columns: minmax(0, 1fr) minmax(75px, auto) 77px;
+    gap: 5px 6px;
+  }
+}

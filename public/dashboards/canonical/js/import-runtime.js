@@ -739,12 +739,9 @@
   // du même fournisseur (les passages n'exposent que le fournisseur). Jamais de donnée inventée.
   function lastRunOfSource(source, lots, selectedRun) {
     if (selectedRun?.source_ref && selectedRun.source_ref === source.source_ref) return selectedRun.run_ref;
-    const norm = value => String(value || '').trim().toLowerCase();
-    const names = [source.label, source.supplier_name, source.source_ref].map(norm).filter(Boolean);
-    const match = (Array.isArray(lots) ? lots : []).find(lot => {
-      const provider = norm(lot.provider);
-      return provider && names.some(name => name.includes(provider) || provider.includes(name));
-    });
+    // History links must be backed by the exact source identity. No supplier-name fallback.
+    const match = (Array.isArray(lots) ? lots : []).find(lot =>
+      lot.source_ref && String(lot.source_ref) === String(source.source_ref));
     return match?.run_ref || null;
   }
 
@@ -1009,6 +1006,11 @@
       ${m.busy ? '' : credentialsPanel(source, { context:'card' })}
       ${m.step ? `<button type="button" class="kir-source-step" data-source-step="${m.step.action}" data-source-ref="${esc(source.source_ref)}">${m.step.label}</button>` : ''}
       ${m.canFirstImport ? `<button type="button" class="kir-source-first-import" data-source-first-import data-source-ref="${esc(source.source_ref)}" ${m.firstImportPending ? 'disabled aria-busy="true"' : ''}>${m.firstImportPending ? 'Lancement du passage…' : m.lastRun ? 'Lancer un nouveau passage' : 'Lancer le premier passage'}</button>` : ''}
+      ${source.state === 'active' && !m.busy ? `<button type="button"
+        class="kir-source-first-import" data-source-command="update"
+        data-source-ref="${esc(source.source_ref)}"
+        ${commandState?.sourceRef === source.source_ref ? 'disabled aria-busy="true"' : ''}>
+        ${commandState?.sourceRef === source.source_ref ? 'Import en cours…' : 'Importer maintenant'}</button>` : ''}
       ${firstImportState?.sourceRef === source.source_ref && firstImportState.error ? `<p class="kir-source-first-error" role="alert">${esc(firstImportState.error)}</p>` : ''}
       ${m.lastRun ? `<a class="kir-source-follow" href="${urlFor(m.lastRun)}" data-cockpit-nav>Voir le suivi →</a>` : ''}
     </article>`;
@@ -1095,23 +1097,11 @@
   // de la carte source : on retombe sur l'activation en cours, puis le fournisseur, puis l'unique
   // source active. Jamais de barre manquante parce qu'une correspondance stricte a échoué.
   function sourceForRun(run, sourceControls) {
-    const list = (Array.isArray(sourceControls) ? sourceControls : []).filter(item => item.state !== 'archived');
-    if (!run || !list.length) return null;
-    const norm = value => String(value || '').trim().toLowerCase();
-    const byRef = ref => ref ? list.find(item => item.source_ref === ref) : null;
-    const provider = norm(run.provider);
-    const byProvider = provider
-      ? list.filter(item => [item.label, item.supplier_name, item.source_ref].some(name => {
-        const n = norm(name);
-        return n && (n.includes(provider) || provider.includes(n));
-      }))
-      : [];
-    const enabled = list.filter(item => item.autopilot_enabled === true);
-    return byRef(run.source_ref)
-      || byRef(activationState?.sourceRef)
-      || (byProvider.length === 1 ? byProvider[0] : null)
-      || (enabled.length === 1 ? enabled[0] : null)
-      || (list.length === 1 ? list[0] : null);
+    // Security boundary: a mutation may only target an explicitly linked source_ref.
+    if (!run?.source_ref) return null;
+    return (Array.isArray(sourceControls) ? sourceControls : [])
+      .find(source => source.state !== 'archived' &&
+        source.source_ref === run.source_ref) || null;
   }
 
   // Trois gestes humains, branchés sur les commandes existantes (import-now / deactivate / activate).
@@ -1130,9 +1120,9 @@
       return `<button type="button" class="kir-cmd kir-cmd-${command} ${isBusy ? 'is-busy' : ''}" data-source-command="${command}" data-source-ref="${ref}"
         ${pending || disabled ? 'disabled' : ''} ${isBusy ? 'aria-busy="true"' : ''} ${title ? `title="${esc(title)}"` : ''}>${isBusy ? '<i class="kir-spin" aria-hidden="true"></i>' : ico(icon)}<span>${isBusy ? busyLabel[command] : label}</span></button>`;
     };
-    const update = button('update', 'Mettre à jour maintenant', 'refresh', running && !pending, running ? 'Une mise à jour est déjà en cours' : '');
-    const stop = button('stop', 'Arrêter', 'stop');
-    const restart = button('restart', 'Redémarrer', 'play', !restarting && source.activation_ready !== true, source.blocker || '');
+    const update = button('update', 'Lancer un nouvel import', 'refresh', running && !pending, running ? 'Une mise à jour est déjà en cours' : '');
+    const stop = button('stop', 'Suspendre l’automatisation', 'stop');
+    const restart = button('restart', 'Activer l’automatisation', 'play', !restarting && source.activation_ready !== true, source.blocker || '');
     const last = source.last_capture_at ? `Dernière mise à jour ${fmtDate(source.last_capture_at)}` : 'Aucune mise à jour pour l’instant';
     const state = pending === 'update' || running ? 'Mise à jour en cours' : active ? 'Alimentation automatique active' : 'Alimentation automatique arrêtée';
     return `<section class="kir-command-bar ${active ? 'is-active' : 'is-stopped'}" aria-label="Commandes de la source">
@@ -1522,13 +1512,27 @@
     const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour à Action requise');
     const rows = items.map(item => {
       const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du passage' : 'Produit à examiner');
-      // « Classer » agit sur l'objet exact, sans quitter le cockpit ni saisie libre.
-      const control = item.action === 'choose' && item.candidate_ref
+      const candidateRef = item.candidate_ref || '';
+      const isSupplierFact = ['purchase_price'].includes(item.correction_kind);
+      const isAccounting = item.reason === 'Anomalie de comptage';
+      const destination = isAccounting
+        ? urlFor(run.run_ref, 'history')
+        : !candidateRef ? urlFor(run.run_ref, 'control')
+          : isSupplierFact
+            ? '/admin/workspaces/sourcing?candidate_ref=' + encodeURIComponent(candidateRef)
+            : '/admin/workspaces/catalog?search=' + encodeURIComponent(candidateRef);
+      const label = isAccounting ? 'Voir le diagnostic'
+        : isSupplierFact ? 'Corriger la donnée fournisseur'
+          : candidateRef ? 'Corriger dans le Catalogue' : 'Voir le diagnostic';
+      // Historical mocked proof remains available only for technical regression
+      // tests. Mounted Sourcing Live and all operator links always use Catalogue.
+      const legacyClassify = global.__KOMERCE_LEGACY_PROOF__ === true
+        && item.action === 'choose' && candidateRef;
+      const control = legacyClassify
         ? `<button type="button" class="kir-row-action kir-classify-btn" data-action-classify
-            data-candidate-ref="${esc(item.candidate_ref)}"
-            data-product-name="${esc(title)}"
+            data-candidate-ref="${esc(candidateRef)}" data-product-name="${esc(title)}"
             data-action-reason="${esc(item.reason || '')}">Classer →</button>`
-        : `<a class="kir-row-action" href="${workspace}">${esc(item.action_label || 'Examiner')} dans Sourcing →</a>`;
+        : `<a class="kir-row-action" href="${esc(destination)}">${esc(label)} →</a>`;
       return `<tr>
         <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : ''}<strong>${esc(title)}</strong>${item.supplier_product_id ? `<small>${esc(item.supplier_product_id)}</small>` : ''}</td>
         <td>${esc(item.reason)}${item.action_origin === 'deferred' ? '<small>Mis de côté · correction humaine possible</small>' : ''}</td>
@@ -1670,11 +1674,11 @@
       : deferred ? 'Décision : mis de côté'
         : discarded ? 'Décision : écarté'
           : reviewed ? 'À examiner' : 'En cours ou en attente';
-    const refineryHref = trace.product_ref && viewer && viewer.role === 'admin'
-      ? withReturnTo(`/admin/workspaces/catalog?view=refinery&product_ref=${encodeURIComponent(trace.product_ref)}`, itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')
+    const catalogueHref = trace.product_ref && viewer && viewer.role === 'admin'
+      ? withReturnTo(`/admin/workspaces/catalog?product_ref=${encodeURIComponent(trace.product_ref)}`, itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')
       : '';
     const catalogue = trace.product_ref
-      ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>${refineryHref ? ` <a class="kir-subtle-link" data-next-step="refinery" href="${refineryHref}">Continuer → Raffinerie</a>` : ''}`
+      ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>${catalogueHref ? ` <a class="kir-subtle-link" data-next-step="catalogue" href="${catalogueHref}">Compléter dans le Catalogue global</a>` : ''}`
       : `<span class="kir-item-note">${halted ? 'Aucune fiche Catalogue créée pour ce passage.' : 'Aucune fiche Catalogue créée à ce stade.'}</span>`;
     return drillHeader(run, title, 'Détail métier de ce produit dans le passage sélectionné.')
       + itemVerdict(trace, situation)
@@ -1776,15 +1780,10 @@
   }
 
   // Navigation du domaine : Suivi (passage sélectionné) / Passages / Sources.
-  function domainNav(view, run) {
-    // Le shell Canonical porte les trois onglets Sourcing dans sa barre supérieure.
-    // Ne pas reproduire un second rail à l'intérieur du cockpit.
-    if (global.document?.querySelector?.('#canonical-admin-domain-tabs [data-tab="sourcing-suivi"]')) return '';
-    const active = view === 'passages' ? 'passages' : view === 'sources' ? 'sources' : 'live';
-    const tab = (key, label, href) => `<a class="${active === key ? 'is-active' : ''}" href="${href}" data-cockpit-nav ${active === key ? 'aria-current="page"' : ''}>${label}</a>`;
-    return `<nav class="kir-domain-nav" aria-label="Domaine Sourcing"><strong>Sourcing</strong>
-      ${tab('live', 'Suivi', urlFor(run?.run_ref))}${tab('passages', 'Passages', urlFor(run?.run_ref, 'passages'))}${tab('sources', 'Sources', urlFor(run?.run_ref, 'sources'))}
-    </nav>`;
+  function domainNav() {
+    // The canonical shell owns the single Sourcing Live entry.
+    // This legacy helper deliberately never adds a second tab bar.
+    return '';
   }
 
   // Changer de lot sans rail permanent : précédent · liste compacte · suivant · tous les passages.
@@ -1933,7 +1932,23 @@
       .some(input => String(input.value || '') !== '');
   }
 
-  function render(root, payload) {
+  // Compatibility for isolated, read-only-on-mock legacy proof tests only.
+  // This is never selected from operator navigation or runtime mounting.
+  // Keep the backend-detail assertions while new single-screen tests replace
+  // historical mock screenshots. Remove after migration of legacy proofs.
+  function legacyDomainNav(view, run) {
+    // Le shell Canonical porte les trois onglets Sourcing dans sa barre supérieure.
+    // Ne pas reproduire un second rail à l'intérieur du cockpit.
+    if (global.document?.querySelector?.('#canonical-admin-domain-tabs [data-tab="sourcing-suivi"]')) return '';
+    const active = view === 'passages' ? 'passages' : view === 'sources' ? 'sources' : 'live';
+    const tab = (key, label, href) => `<a class="${active === key ? 'is-active' : ''}" href="${href}" data-cockpit-nav ${active === key ? 'aria-current="page"' : ''}>${label}</a>`;
+    return `<nav class="kir-domain-nav" aria-label="Domaine Sourcing"><strong>Sourcing</strong>
+      ${tab('live', 'Suivi', urlFor(run?.run_ref))}${tab('passages', 'Passages', urlFor(run?.run_ref, 'passages'))}${tab('sources', 'Sources', urlFor(run?.run_ref, 'sources'))}
+    </nav>`;
+  }
+
+
+  function renderLegacyTechnicalProof(root, payload) {
     if (credentialInputInProgress(root)) return;
     const sourceControls = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
     const lots = Array.isArray(payload?.lots) ? payload.lots : [];
@@ -1951,7 +1966,7 @@
     // Vues exclusives : Passages et Sources remplacent le cockpit, avec ou sans passage sélectionné.
     if (view === 'passages' || view === 'sources') {
       root.innerHTML = `<section class="kir-page">
-        ${domainNav(view, run)}
+        ${legacyDomainNav(view, run)}
         <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page, payload?.source_controls, payload?.lots) : renderSourcesView(run, sourceControls, lots, Array.isArray(payload?.source_requests) ? payload.source_requests : [])}</main>
       </section>`;
       bindAll(root, payload);
@@ -1960,7 +1975,7 @@
 
     if (!run) {
       root.innerHTML = `<section class="kir-page">
-        ${domainNav('overview', null)}
+        ${legacyDomainNav('overview', null)}
         <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span><h1>Suivi d’import — Source → Catalogue</h1><p>Aucun passage pour l’instant.</p></div></header>
         <div class="kir-empty-launch">
           <div class="kir-empty-launch-copy"><strong>Aucun passage Sourcing</strong><span>Choisissez une source prête, puis lancez son premier passage depuis « Sources ».</span></div>
@@ -1974,7 +1989,7 @@
         // Vue secondaire : elle remplace entièrement le cockpit (jamais empilée dessous).
     if (view !== 'overview') {
       root.innerHTML = `<section class="kir-page">
-        ${domainNav(view, run)}
+        ${legacyDomainNav(view, run)}
         <main class="kir-main">${renderBody(run, view, { population:payload?.population || null, itemTrace:payload?.item_trace || null, kind, sourceControls })}</main>
       </section>`;
       bindAll(root, payload);
@@ -1983,7 +1998,7 @@
 
     // LIVE : le cockpit du passage sélectionné, et rien d'autre.
     root.innerHTML = `<section class="kir-page">
-      ${domainNav('overview', run)}
+      ${legacyDomainNav('overview', run)}
       <header class="kir-hero kir-live-hero">
         <div>
           <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span></div>
@@ -1994,7 +2009,7 @@
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
-          <a href="${withReturnTo('/admin/workspaces/catalog?view=refinery', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Raffinerie →</a>
+          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue global →</a>
         </div>
       </header>
 
@@ -2010,6 +2025,150 @@
     bindAll(root, payload);
   }
 
+
+  // The one operator screen. Technically detailed KIR drill-downs remain available
+  // for evidence, without becoming competing navigation tabs or writer owners.
+  let sourcesExpanded = false;
+  let passagesExpanded = false;
+  function unifiedSourcingIssues(run) {
+    const items = Array.isArray(run?.action_items) ? run.action_items : [];
+    const count = num(run?.accounting?.action_required);
+    if (!count) return '';
+    const rows = items.slice(0, 8).map(item => {
+      const ref = item.candidate_ref || null;
+      const supplierIssue = item.correction_kind === 'purchase_price';
+      const accounting = item.reason === 'Anomalie de comptage';
+      const href = accounting ? urlFor(run.run_ref, 'history')
+        : !ref ? urlFor(run.run_ref, 'control')
+          : supplierIssue
+            ? '/admin/workspaces/sourcing?candidate_ref=' + encodeURIComponent(ref)
+            : '/admin/workspaces/catalog?search=' + encodeURIComponent(ref);
+      const label = accounting ? 'Diagnostic' : supplierIssue
+        ? 'Corriger la source' : ref ? 'Compléter dans le Catalogue' : 'Diagnostic';
+      return `<li class="kir-one-issue">
+        <span><strong>${esc(item.product_name || ref || 'Anomalie du passage')}</strong>
+        <small>${esc(item.reason || 'Contrôle à examiner')}</small></span>
+        <a href="${esc(href)}">${esc(label)} →</a></li>`;
+    }).join('');
+    return `<section class="kir-one-issues" id="sourcing-actions" aria-label="Actions utiles">
+      <h2>${count} action${count > 1 ? 's' : ''} signalée${count > 1 ? 's' : ''} sur ce passage</h2>
+      <p>Une correction de fiche se fait au Catalogue global. Le passage reste une preuve historique.</p>
+      <ul>${rows}</ul>
+      ${items.length < count ? '<small>Liste partielle : consulter les détails techniques du passage.</small>' : ''}
+    </section>`;
+  }
+
+  function unifiedPassageHistory(run, payload) {
+    const historyMode = params().view === 'passages';
+    const records = historyMode && Array.isArray(payload?.passages) ? payload.passages : payload?.lots;
+    const list = Array.isArray(records) ? records.slice(0, historyMode ? 50 : 10) : [];
+    const page = payload?.passages_page || {};
+    const rows = list.map(lot => {
+      const view = lot.state_label ? {label:lot.state_label} : lotChipView(lot);
+      return `<li><a href="${urlFor(lot.run_ref)}" data-cockpit-nav>${esc(lot.run_ref)}</a>
+        <span>${esc(lot.provider || 'Source inconnue')}</span>
+        <small>${esc(view.label)}</small></li>`;
+    }).join('');
+    return `<details class="kir-one-panel" id="sourcing-passages" data-unified-passages
+      ${passagesExpanded || params().view === 'passages' ? 'open' : ''}>
+      <summary><strong>Passages</strong><span>Historique des acquisitions (${list.length} derniers affichés)</span></summary>
+      <div class="kir-one-panel-body">
+        <ul class="kir-one-passage-list">${rows || '<li>Aucun passage enregistré.</li>'}</ul>
+        ${!historyMode ? `<a href="${urlFor(run?.run_ref, 'passages')}" data-cockpit-nav>Afficher tout l’historique →</a>` : ''}
+        ${historyMode ? `<nav class="kir-passage-pagination">
+          ${Number(page.offset) > 0 ? `<a href="${passagesUrl(run?.run_ref, Math.max(0, Number(page.offset)-50))}" data-cockpit-nav>← Plus récents</a>` : ''}
+          ${page.next_offset != null ? `<a href="${passagesUrl(run?.run_ref, Number(page.next_offset))}" data-cockpit-nav>Plus anciens →</a>` : ''}
+        </nav>` : ''}
+      </div></details>`;
+  }
+
+  function unifiedSourceManagement(run, payload) {
+    const sources = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
+    const sourceRequests = Array.isArray(payload?.source_requests) ? payload.source_requests : [];
+    const active = sources.filter(source => source.state === 'active').length;
+    const open = sourcesExpanded || params().view === 'sources' || Boolean(wizardState || manageState || credentialsState);
+    return `<details class="kir-one-panel" id="sourcing-sources" data-unified-sources
+      ${open ? 'open' : ''}>
+      <summary><strong>Sources & imports</strong>
+        <span>${sources.length} configurée${sources.length > 1 ? 's' : ''} · ${active} active${active > 1 ? 's' : ''} · gérer les acquisitions</span></summary>
+      <div class="kir-one-panel-body">
+        <div class="kir-one-section-actions"><button type="button" data-add-source>+ Ajouter une source</button></div>
+        ${sourcesBoard(sources, run, payload?.lots || [], sourceRequests)}
+        ${activationStrip(sources)}
+        ${wizardMarkup(sources)}
+        <p class="kir-one-note">Importer = créer un nouveau passage KIR. Activer = autoriser l’alimentation automatique.</p>
+        <p class="kir-one-note">
+          <a href="/admin/workspaces/sourcing?mode=manual&tab=imports">Import manuel / CSV →</a>
+          &nbsp;·&nbsp;
+          <a href="/admin/workspaces/sourcing?mode=partners&tab=suppliers">Administration des partenaires →</a>
+        </p>
+      </div></details>`;
+  }
+
+  function unifiedSourcingDashboard(run, payload) {
+    const status = run ? sourcingStatusView(run) : null;
+    const facts = run ? sourcingOutcome(run) : null;
+    const handoff = facts?.handoff;
+    const summary = run
+      ? `<section class="kir-one-run" aria-label="Dernier passage sélectionné">
+        <div class="kir-one-run-head"><div>
+          <h2>${esc(run.run_ref)} · ${esc(run.provider || 'Source')}</h2>
+          <p>${esc(status.label)} · démarré ${fmtDate(run.started_at)}</p></div>
+          <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir les détails techniques</a></div>
+        <div class="kir-one-metrics">
+          <div><strong>${facts.received}</strong><span>Reçus</span></div>
+          <div><strong>${facts.ready}</strong><span>Retenus</span></div>
+          <div><strong>${handoff?.catalogued ?? 0}</strong><span>Remis au Catalogue</span></div>
+        </div>
+        ${handoff && handoff.remaining > 0 ? `<p class="kir-one-handoff">
+          ${handoff.remaining} à remettre automatiquement au Catalogue — état à vérifier.
+          <a href="${urlFor(run.run_ref, 'handoff')}" data-cockpit-nav>Examiner la remise →</a></p>` : ''}
+        ${unifiedSourcingIssues(run)}
+      </section>`
+      : '<section class="kir-one-run"><h2>Aucun passage enregistré</h2><p>Configurez une source, puis lancez un import.</p></section>';
+    return `<section class="kir-page kir-one-screen" data-sourcing-single-screen>
+      <header class="kir-one-hero"><div><span class="kir-eyebrow">SOURCING</span>
+        <h1>Sourcing Live</h1><p>Acquérir des produits et les remettre au Catalogue global.</p></div>
+        <a href="/admin/workspaces/catalog">Catalogue global →</a></header>
+      <main class="kir-one-body">
+        ${summary}
+        ${unifiedSourceManagement(run, payload)}
+        ${unifiedPassageHistory(run, payload)}
+      </main></section>`;
+  }
+
+  function render(root, payload) {
+    if (global.__KOMERCE_LEGACY_PROOF__ === true) return renderLegacyTechnicalProof(root, payload);
+    if (credentialInputInProgress(root)) return;
+    const sourceControls = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
+    const lots = Array.isArray(payload?.lots) ? payload.lots : [];
+    const run = payload?.selected || null;
+    const { view, kind, filters } = params();
+    // The same Sourcing Live screen owns source management and the wizard.
+    // Only technical drill-downs close an open source editor.
+    if (!['overview', 'sources'].includes(view)) { wizardState = null; manageState = null; credentialsState = null; }
+    // L'URL fait foi pour les filtres de Passages (Back / Forward / rechargement).
+    if (view === 'passages') Object.assign(passageFilters, filters);
+    root.className = 'kmc-import-runtime kmc-domain-cockpit';
+    root.setAttribute?.('data-cockpit-pattern', 'v1');
+    root.setAttribute?.('data-cockpit-domain', 'imports');
+    root.setAttribute?.('data-cockpit-language', 'live-ops');
+
+    // Vues exclusives : Passages et Sources remplacent le cockpit, avec ou sans passage sélectionné.
+    // Vue secondaire : elle remplace entièrement le cockpit (jamais empilée dessous).
+    if (view !== 'overview' && view !== 'sources' && view !== 'passages') {
+      root.innerHTML = `<section class="kir-page"><main class="kir-main">
+        ${renderBody(run, view, { population:payload?.population || null,
+          itemTrace:payload?.item_trace || null, kind, sourceControls })}</main></section>`;
+      bindAll(root, payload);
+      return;
+    }
+
+    // One Sourcing Live screen: current run, actionable exceptions, sources and history.
+    root.innerHTML = unifiedSourcingDashboard(run, payload);
+    bindAll(root, payload);
+  }
+
   function bindAll(root, payload) {
     bindNavigation(root);
     bindSourceControls(root, payload);
@@ -2018,6 +2177,10 @@
     bindCredentials(root);
     bindActionList(root);
     bindPassages(root, payload);
+    root.querySelectorAll?.('[data-unified-sources]').forEach(node =>
+      node.addEventListener('toggle', () => { sourcesExpanded = Boolean(node.open); }));
+    root.querySelectorAll?.('[data-unified-passages]').forEach(node =>
+      node.addEventListener('toggle', () => { passagesExpanded = Boolean(node.open); }));
     focusDrill(root);
   }
 
@@ -2596,7 +2759,11 @@
         const sourceRef = button.getAttribute('data-source-ref');
         const command = button.getAttribute('data-source-command');
         if (!sourceRef || button.disabled) return;
-        if (command === 'update') return updateSourceNow(root, sourceRef);
+        if (command === 'update') {
+          if (typeof global.confirm === 'function' &&
+              !global.confirm('Démarrer un nouvel import fournisseur ? Un passage KIR sera créé.')) return;
+          return updateSourceNow(root, sourceRef);
+        }
         if (command === 'restart') return toggleSource(root, payload, sourceRef, false, button);
         if (command === 'stop') {
           commandState = { sourceRef, action:'stop' };
@@ -2869,6 +3036,8 @@
     activationState = null;
     firstImportState = null;
     closeCategoryDialog();
+    sourcesExpanded = false;
+    passagesExpanded = false;
     prepareState = null;
     wizardState = null;
     stopActivationPolling();

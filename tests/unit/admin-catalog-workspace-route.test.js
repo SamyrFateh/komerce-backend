@@ -38,6 +38,7 @@ jest.mock('../../middleware/require-sourcing-global-authority', () => ({
 
 const mockBuildWorkspace = jest.fn();
 const mockRegistryReadiness = jest.fn();
+const mockGetProductDossier = jest.fn();
 const mockCreateProduct = jest.fn();
 const mockUpdateProduct = jest.fn();
 const mockClassifyProduct = jest.fn();
@@ -60,6 +61,7 @@ jest.mock('../../services/catalog-workspace', () => {
     CatalogWorkspaceError,
     buildWorkspace: (...args) => mockBuildWorkspace(...args),
     getRegistryReadiness: (...args) => mockRegistryReadiness(...args),
+    getProductDossier: (...args) => mockGetProductDossier(...args),
     createProduct: (...args) => mockCreateProduct(...args),
     updateProduct: (...args) => mockUpdateProduct(...args),
     classifyProduct: (...args) => mockClassifyProduct(...args),
@@ -103,6 +105,7 @@ beforeEach(() => {
   mockCatalogAllowed = true;
   mockSourcingAllowed = true;
   mockBuildWorkspace.mockResolvedValue({ scope: { mode: 'global_commercial_catalog' }, summary: {}, categories: [], products: [], approval: [] });
+  mockGetProductDossier.mockResolvedValue({product_ref:'KPR-000088',identity:{title_fr:'Produit français'},markets:[]});
   mockRegistryReadiness.mockResolvedValue({ product_ref: 'KPR-000088', phase: 'catalog_approval',
     certification: { certified: false, reasons: ['media_missing', 'active_supplier_sku_missing'] } });
   mockCreateProduct.mockResolvedValue({ product_ref: 'KPR-000001', name: 'Produit' });
@@ -289,4 +292,23 @@ test('réintégration médias : autorisation Catalogue ET Sourcing, aucun champ 
   expect(deniedCatalog.status).toBe(403);
   expect(deniedCatalog.body.code).toBe('catalog_global_access_denied');
   expect(mockRecoverProductSourceMedia).toHaveBeenCalledTimes(1);
+});
+
+test('Dossier Produit : lecture centrale et double autorité, aucun écrit', async () => {
+  const url='/api/admin/workspaces/catalog?dossier_product_ref=KPR-000088';
+  const response=await request(app()).get(url);
+  expect(response.status).toBe(200);
+  expect(response.headers['cache-control']).toContain('no-store');
+  expect(response.body).toMatchObject({product_ref:'KPR-000088',identity:{title_fr:'Produit français'}});
+  expect(mockGetProductDossier).toHaveBeenCalledWith('KPR-000088');
+  expect(mockBuildWorkspace).not.toHaveBeenCalled();
+  mockSourcingAllowed=false;
+  const deniedSource=await request(app()).get(url);
+  expect(deniedSource.status).toBe(403);
+  expect(mockGetProductDossier).toHaveBeenCalledTimes(1);
+  mockSourcingAllowed=true; mockCatalogAllowed=false;
+  const deniedCatalog=await request(app()).get(url);
+  expect(deniedCatalog.status).toBe(403);
+  expect(mockGetProductDossier).toHaveBeenCalledTimes(1);
+  expect(mockApproveCandidate).not.toHaveBeenCalled();
 });

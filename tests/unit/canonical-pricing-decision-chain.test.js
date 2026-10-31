@@ -48,13 +48,13 @@ test('les mutations de preuve marché et de prix restent des actions Workspace p
   expect(source).toContain('/price-observations`');
   expect(source).toContain('/local-price`');
   expect(source).toContain('/local-price/activate`');
-  // MARKET-DELEGATION-P0B (Gap 1) : requireCountryStrategyManager (rôle) a été
-  // remplacé par requireLocalStrategyCapability (capability exacte, jamais de
-  // bypass central — doctrine country_manager_owns_local_strategy inchangée).
+  // Les observations restent strictement déléguées. Exception ciblée :
+  // l'Admin central vérifié peut décider du prix via Catalogue pays, tandis
+  // que les opérateurs restent soumis aux capabilities exactes.
   expect(route).toContain("router.post('/market/:marketCode/price-observations', requireLocalStrategyCapability('market.observation.record')");
   expect(route).toContain("router.post('/market/:marketCode/price-observations/:observationRef/deactivate', requireLocalStrategyCapability('market.observation.record')");
-  expect(route).toContain("router.post('/market/:marketCode/products/:productRef/local-price', requireLocalStrategyCapability('pricing.decide')");
-  expect(route).toContain("router.post('/market/:marketCode/products/:productRef/local-price/activate', requireLocalStrategyCapability('pricing.activate')");
+  expect(route).toContain("router.post('/market/:marketCode/products/:productRef/local-price', requireCatalogPriceCapability('pricing.decide')");
+  expect(route).toContain("router.post('/market/:marketCode/products/:productRef/local-price/activate', requireCatalogPriceCapability('pricing.activate')");
   expect(route).toContain('manage_market_price_observations');
 });
 

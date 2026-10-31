@@ -15,13 +15,13 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261029-2');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-hero-1');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
   expect(ui).toContain('<th>Produit</th><th>Fournisseur</th><th>Classement boutique</th>');
   expect(ui).toContain('kmc-catalog-product-reference');
-  expect(ui).toContain('<th>Statut Catalogue</th><th>Consulter</th>');
+  expect(ui).toContain('<th>À compléter</th><th>Action</th>');
   expect(ui).toContain("productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-reference', ref))");
   expect(ui).toContain("statusChip.setAttribute('data-status', row.work_status || 'inactive')");
   expect(ui).toContain("tr.appendChild(actionCell)");
@@ -47,15 +47,17 @@ test('Aucune donnée fictive: filtres rapides conservent statuts serveur et dél
   expect(ui).toContain("row.work_status");
 });
 
-test('V3 : trois rubriques exclusives et aucun panneau sous le registre', () => {
+test('Catalogue global : registre et taxonomie uniquement, ancien assortiment retiré sans perdre le passage marché', () => {
   expect(ui).toContain("['registry', 'Registre produits']");
-  expect(ui).toContain("['assortment', 'Assortiment approuvé']");
   expect(ui).toContain("['taxonomy', 'Taxonomie boutique']");
+  expect(ui).not.toContain("['assortment', 'Assortiment approuvé']");
   const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
-  expect(render).toContain("context.catalogTab === 'assortment'");
   expect(render).toContain("context.catalogTab === 'taxonomy'");
-  expect(render).toContain('renderCommercial(rootNode, ui, doc, payload)');
-  expect(render).toContain('renderTaxonomy(rootNode, ui, doc, payload, context)');
+  expect(render).toContain('renderFocusedHandoff(rootNode, ui, doc, payload)');
+  expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
+  expect(render).not.toContain('renderCommercial(');
+  expect(ui).toContain("['registry', 'taxonomy'].includes");
+  expect(ui).not.toContain('function renderCommercial(');
   expect(render).not.toContain('taxonomyPanel');
   expect(ui).not.toContain('kmc-catalog-commercial-panel');
 });
@@ -77,14 +79,21 @@ test('V3 : indicateurs affichés sur page seulement, sans confondre global et li
   expect(ui).toContain("label: 'Fiche FR · page'");
   expect(ui).toContain("label: 'Approuvés · page'");
   expect(ui).toContain('payload.registry_page?.total');
-  expect(ui).toContain('Contrôle technique candidat uniquement.');
+  expect(ui).toContain('data-catalog-inline-editor');
 });
 
 test('Catalogue actionnable : en-tête compact, onglets et filtres, sans navigation ni KPI passifs', () => {
   const header = ui.slice(ui.indexOf('function createHeader('), ui.indexOf('function createSection('));
-  const products = ui.slice(ui.indexOf('function renderProducts('), ui.indexOf('function renderCommercial('));
+  const products = ui.slice(ui.indexOf('function renderProducts('), ui.indexOf('function renderTaxonomy('));
   const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
   expect(header).toContain('kmc-catalog-compact-header');
+  expect(header).toContain("header.setAttribute('data-dashboard-role', 'hero')");
+  expect(header).toContain("'CATALOGUE GLOBAL'");
+  expect(header).toContain('Prix et mise en vente : Catalogue marché.');
+  expect(css).toContain('.kmc-catalog-compact-header[data-dashboard-role="hero"]');
+  expect(css).toContain('commerce-hero-gold.svg');
+  expect(css).toContain('height: var(--kmc-layout-hero-h, 150px)');
+
   expect(header).toContain('if (refinery) {');
   expect(products).not.toContain('kmc-catalog-toolbar-links');
   expect(products).not.toContain('Ouvrir le Sourcing');
@@ -147,30 +156,32 @@ test('Classement : formulaire accessible et pas de prompt/confirm avec indices',
   expect(source).toContain("Si une seule feuille reste possible, la proposer d'emblée.");
 });
 
-test('V4 : corrections immédiatement visibles et diagnostic canonique à la demande', () => {
+test('V4 : seules les corrections s’affichent, conformité contrôlée par serveur lors des mutations', () => {
   expect(ui).toContain('function registryCorrectionItems(row = {})');
   expect(ui).toContain('renderRegistryCorrections(doc, diagnostic, row, context, nextStep)');
   expect(ui).toContain('?diagnose_product_ref=');
-  expect(ui).toContain("state.certification.reasons || []");
-  expect(ui).toContain('certificationReasonLabel(reason)');
-  expect(ui).toContain('registryReasonOwner(reason)');
-  expect(ui).toContain('Contrôle technique candidat uniquement.');
+  expect(ui).toContain('renderProductQuickFields(context, doc, panel, row, categories, feedback)');
+  expect(ui).toContain('data-catalog-quick-category');
+  expect(ui).toContain('data-catalog-quick-subcategory');
+  expect(ui).toContain('data-catalog-inline-editor');
   expect(ui).not.toContain("status: 'Publié'");
   expect(css).toContain('.kmc-catalog-readiness-reasons');
   expect(css).toContain('.kmc-catalog-primary-action');
 });
 
-test('V4 : produits inactifs hors candidats ont un réexamen sans faux GO', () => {
-  expect(ui).toContain("if (state.phase === 'product_review')");
-  expect(ui).toContain("const reasons = state.findings || []");
-  expect(ui).toContain('état métier à réexaminer');
-  expect(ui).not.toContain("if (row.lifecycle_status !== 'candidate' || row.is_active === true)");
+test('V4 : fiches inactives hors candidats restent éditables, sans activation implicite', () => {
+  expect(ui).toContain("ENDPOINT+'/products/'+encodeURIComponent(row.product_ref)+'/update'");
+  expect(ui).toContain("const active=row.lifecycle_status==='active'&&row.is_active===true");
+  expect(ui).toContain('data-catalog-quick-field');
+  expect(ui).not.toContain('Aucune correction à apporter.');
 });
 
-test('V4 : état inactif sans diagnostic rapide ouvre le contrôle, pas une fiche sans action', () => {
-  expect(ui).toContain("kind: 'diagnose', label: 'Vérifier prérequis', status: 'À diagnostiquer'");
-  expect(ui).toContain("const readinessCheck = renderRegistryCorrections(doc, diagnostic, row, context, nextStep)");
-  expect(ui).toContain("if (readinessCheck) readinessCheck.click()");
+test('V4 : un produit réparé ne redevient pas une correction fantôme', () => {
+  expect(ui).toContain("row.work_status === 'catalog_approved_inactive'");
+  expect(ui).toContain("row.work_status === 'approval_to_review'");
+  expect(ui).toContain("readyCandidate ? 'Finaliser' : hasMissingContent ? 'Compléter' : 'Voir fiche'");
+  expect(ui).toContain("diagnosis?.certification?.certified !== true");
+  expect(ui).not.toContain("status: 'À diagnostiquer'");
 });
 
 test('V4.1 : priorité visuelle aux écarts avant marchés et à la prochaine action', () => {
@@ -182,4 +193,118 @@ test('V4.1 : priorité visuelle aux écarts avant marchés et à la prochaine ac
   expect(css).toContain('@media (max-width: 760px)');
   expect(ui).toContain('renderRegistryCorrections(doc, diagnostic, row, context, nextStep)');
   expect(ui).toContain('statusChip.addEventListener');
+});
+
+test('Dossier opérateur : correction source accessible sans chiffres économiques globaux', () => {
+  expect(ui).not.toContain('function appendCatalogEconomicSummary(panel, doc, row)');
+  expect(ui).not.toContain('Prix test indicatif');
+  expect(ui).not.toContain('Coût variable complet');
+  expect(ui).not.toContain('Prix de référence · non décision marché');
+  expect(ui).toContain("sourceDetails.appendChild(facts)");
+  expect(ui).toContain("classify.addEventListener('click', loadBoutiqueProposal)");
+  expect(ui).toContain("void loadBoutiqueProposal()");
+  expect(ui).toContain("select.value = suggestion ? '0' : ''");
+  expect(ui).toContain("Number.parseInt(select.value, 10)");
+  expect(ui).toContain("method: 'POST'");
+  expect(css).toContain('width: min(660px, calc(100vw - 40px))');
+  expect(ui).not.toContain('appendCatalogEconomicSummary');
+  expect(index).toContain('catalog-workspace.js?v=261031-hero-1');
+});
+
+test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
+  expect(ui).toContain("function renderProductDossierDetails(slot, doc, dossier, row)");
+  expect(ui).toContain("?dossier_product_ref=");
+  expect(ui).toContain("title_fr");
+  expect(ui).toContain("description_fr");
+  expect(ui).toContain("supplier_identity_complete");
+  expect(ui).toContain("active_canonical");
+  expect(ui).toContain("weight_kg");
+  expect(ui).toContain("commercial_exposure");
+  expect(ui).toContain("price_status");
+  expect(ui).not.toContain('local_price_amount');
+  expect(ui).toContain("market_data_scope");
+  expect(ui).toContain("certificationReasonLabel(reason)");
+  expect(ui).toContain("primary.addEventListener('click', () =>");
+  expect(ui).toContain("openProductInspector(context, slot, doc, row, categories)");
+  expect(css).toContain(".kmc-catalog-dossier-group");
+  expect(css).toContain(".kmc-catalog-market-row");
+});
+
+test('Fiche commerciale complète : galerie, variantes et correction FR disponibles depuis Catalogue', () => {
+  expect(ui).toContain("data-catalog-canonical-gallery");
+  expect(ui).toContain("Images canoniques actives");
+  expect(ui).toContain("img.loading = 'lazy'");
+  expect(ui).toContain("data-catalog-variants");
+  expect(ui).toContain("stock_semantics");
+  expect(ui).toContain("Géré par les SKU · voir ci-dessous");
+  expect(ui).toContain("availability.dimensions_cm");
+  expect(ui).toContain("availability.fragility");
+  expect(ui).toContain("availability.requires_secure_transport");
+  expect(ui).toContain("row._catalogueDossier = dossier");
+  expect(ui).toContain("identity.description_fr || row.description");
+  expect(ui).toContain("issues.includes('editorial_to_complete')");
+  expect(ui).toContain("'Compléter titre et description FR' : 'Modifier titre / description FR'");
+  expect(css).toContain(".kmc-catalog-dossier-image-strip");
+  expect(css).toContain(".kmc-catalog-variant-line");
+});
+test('Un candidat Sourcing à examiner n’est plus absent du compteur des actions', () => {
+  expect(ui).toContain("'sourcing_review'].includes(row.work_status)");
+  expect(ui).toContain("(row.record_kind === 'candidate' && row.operator_group === 'review')");
+});
+
+test('Actions éditoriales toujours visibles avant lecture longue de la fiche', () => {
+  expect(ui).toContain("actionDock.setAttribute('data-catalog-action-dock', '')");
+  expect(ui).toContain("panel.appendChild(actionDock)");
+  expect(ui).toContain("sourceDetails.setAttribute('data-catalog-source-details', '')");
+  expect(ui).toContain("additional.appendChild(dossierSlot)");
+  expect(ui).toContain("additional.setAttribute('data-catalog-complementary-info', '')");
+  expect(ui).toContain("Compléter titre et description FR");
+  expect(ui).toContain("Modifier titre / description FR");
+  expect(ui).toContain("openFrenchEditor(context, {");
+  expect(css).toContain(".kmc-catalog-inspector-action-dock");
+  expect(css).toContain("position: sticky");
+  expect(css).toContain('min-height: 42px');
+  expect(index).toContain('catalog-workspace.js?v=261031-hero-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-hero-1');
+});
+
+test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
+  expect(ui).toContain("status: 'Validation Catalogue requise'");
+  expect(ui).toContain('français enregistré automatiquement');
+  expect(ui).toContain('finishCatalogueAfterCorrection(context, row)');
+  expect(ui).toContain("stepNotice.setAttribute('data-catalog-approval-explanation', '')");
+  expect(ui).toContain("'Contrôler les prérequis', 'inspector-check-approval'");
+  expect(ui).toContain('Contrôler les prérequis (lecture seule)');
+  expect(ui).toContain('Prérequis techniques satisfaits.');
+  expect(ui).toContain("'Valider le Catalogue', 'inspector-approve'");
+  expect(ui).toContain("ENDPOINT + '/approval/'");
+  expect(ui).toContain('Validation refusée : ');
+  expect(ui).not.toContain("status: 'À valider en Raffinerie'");
+  expect(index).toContain('catalog-workspace.js?v=261031-hero-1');
+});
+
+test('Examiner V4 : aucun double Enregistrer/Confirmer visible et conformité garantie par serveur', () => {
+  expect(ui).toContain('save.hidden = true;');
+  expect(ui).toContain('validate.hidden = true;');
+  expect(ui).toContain("nameField.control.addEventListener('change', () => autosaveFrench())");
+  expect(ui).toContain("descriptionField.control.addEventListener('change', () => autosaveFrench())");
+  expect(ui).toContain("select.addEventListener('change', () => {");
+  expect(ui).toContain("form.requestSubmit()");
+  expect(ui).toContain("diagnosis?.certification?.certified !== true");
+  expect(ui).toContain("ENDPOINT + '/approval/'");
+  expect(ui).toContain("approvalDetails.setAttribute('data-catalog-approval-details', '')");
+  expect(ui).toContain("correctionIssues = issues.filter(code => code !== 'approval_pending')");
+  expect(css).toContain(".kmc-catalog-complementary");
+  expect(css).toContain(".kmc-catalog-fr-footer-buttons [hidden]");
+});
+
+test('Registre et Taxonomie réutilisent le même Hero, sans reconstituer un second bandeau', () => {
+  const header = ui.slice(ui.indexOf('function createHeader('), ui.indexOf('function createSection('));
+  const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
+  const oneHeader = 'rootNode.appendChild(createHeader(doc, refinery));';
+  expect(render).toContain(oneHeader);
+  expect(render.indexOf(oneHeader)).toBeLessThan(render.indexOf('renderCatalogTabs(rootNode, doc, context)'));
+  expect(render.indexOf(oneHeader)).toBeLessThan(render.indexOf("context.catalogTab === 'taxonomy'"));
+  expect(header).toContain("if (!refinery) header.setAttribute('data-dashboard-role', 'hero')");
+  expect(header).not.toContain('kmc-catalog-decision-overview');
 });

@@ -72,7 +72,8 @@ async function main(){
    contract:'komerce-fx-market-owner-physical/v31',...evidence,
    ownerExecuted:true,canonicalPg:true,authMiddlewareExecuted:false,
    noProductionAccess:true,noExternalNetwork:true,
-   testNonce:randomUUID()}));
+   testNonce:randomUUID(),
+   v45MutationApplied:env.KBA_V45_MUTANT_APPLIED==='YES'}));
  }finally{await pool.end()}
 }
 main().catch(e=>{console.error('BUSINESS_AUDIT_V31_CHILD_TOOL_ERROR '+(e.stack||e.message));process.exitCode=2});

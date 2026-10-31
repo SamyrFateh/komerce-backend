@@ -1,0 +1,181 @@
+{
+  "kind": "CHROMIUM_DEMO_ONLY",
+  "note": "Chiffres fictifs et cohérents de démonstration. Jamais une vérité de staging ou production.",
+  "market_code": "KM",
+  "period_label": "30 jours réconciliés — scénario illustratif",
+  "parameters": {
+    "variable_components": [
+      {
+        "key": "stripe_fee_pct",
+        "label": "Frais Stripe",
+        "family": "business",
+        "category": "payment",
+        "unit": "pct",
+        "default_value": 2.9,
+        "base_default_value": 3.2,
+        "allocation_method": "per_order",
+        "inherited": true,
+        "is_active": true,
+        "economic_nature": "variable",
+        "allocation_perimeter": "direct"
+      },
+      {
+        "key": "cash_fee_kmf",
+        "label": "Frais collecte cash",
+        "family": "business",
+        "category": "payment",
+        "unit": "kmf_per_order",
+        "default_value": 500,
+        "allocation_method": "per_order",
+        "inherited": false,
+        "is_active": true,
+        "economic_nature": "variable",
+        "allocation_perimeter": "direct"
+      },
+      {
+        "key": "freight_kg",
+        "label": "Fret maritime",
+        "family": "landed_relay",
+        "category": "freight",
+        "unit": "kmf_per_kg",
+        "default_value": 1800,
+        "base_default_value": 1800,
+        "allocation_method": "by_weight",
+        "inherited": true,
+        "is_active": true,
+        "economic_nature": "variable",
+        "allocation_perimeter": "mutualized"
+      }
+    ]
+  },
+  "decision": {
+    "market_id": "c468028e-3aaa-467b-8118-48b74167439d",
+    "decision_status": "UNCOVERED",
+    "authorization": "DENY_NEW_UNDER_CDR_POSITION",
+    "reason": "COVERAGE_THRESHOLD_NOT_MET",
+    "policy": {
+      "version": 2,
+      "source": "CHROMIUM_DEMO_ONLY",
+      "maturity_threshold": 0.9,
+      "coverage_threshold": 1,
+      "effective_from": "2026-10-01T00:00:00Z"
+    },
+    "canonical_period": {
+      "width_days": 30,
+      "from": "2026-09-01T00:00:00Z",
+      "to": "2026-10-01T00:00:00Z",
+      "source": "rolling_demo_fixture"
+    },
+    "coverage": {
+      "coverage_ratio": 0.75,
+      "numerator_contribution_kmf": 900000,
+      "denominator_n3_kmf": 1200000,
+      "maturity": {
+        "maturity_ratio": 0.95,
+        "mature_orders": 90
+      },
+      "structure": {
+        "market_n3_total_kmf": 1200000,
+        "market_n3_decisional": true,
+        "evidence": [
+          {
+            "scope_kind": "MARKET_DIRECT",
+            "charge_name": "Loyer local",
+            "recognized_amount_kmf": 250000,
+            "charge_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"
+          },
+          {
+            "scope_kind": "MARKET_DIRECT",
+            "charge_name": "Équipe fixe du marché",
+            "recognized_amount_kmf": 300000,
+            "charge_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2"
+          }
+        ],
+        "allocation": {
+          "charges": [
+            {
+              "charge_name": "Infrastructure plateforme",
+              "group_pool_kmf": 600000,
+              "market_allocation_ratio": 0.333333,
+              "market_share_kmf": 200000,
+              "policy": {
+                "basis_kind": "Utilisation constatée"
+              },
+              "charge_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1"
+            },
+            {
+              "charge_name": "Loyer et équipe Hub",
+              "group_pool_kmf": 900000,
+              "market_allocation_ratio": 0.5,
+              "market_share_kmf": 450000,
+              "policy": {
+                "basis_kind": "Activité constatée"
+              },
+              "charge_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2"
+            }
+          ]
+        }
+      },
+      "cost_mix": {
+        "status": "READY",
+        "basis": "RECONCILED_MARKET_PERIOD",
+        "period": {
+          "from": "2026-09-01T00:00:00Z",
+          "to": "2026-10-01T00:00:00Z"
+        },
+        "market_code": "KM",
+        "variable_kmf": 2400000,
+        "fixed_kmf": 1200000,
+        "total_kmf": 3600000,
+        "direct_kmf": 2550000,
+        "mutualized_kmf": 1050000,
+        "variable_pct": 66.7,
+        "fixed_pct": 33.3,
+        "direct_pct": 70.8,
+        "mutualized_pct": 29.2,
+        "source": "CHROMIUM_DEMO_ONLY",
+        "warning": "Fictif. Les ratios sont fournis par le fixture comme valeurs serveur, jamais calculés par le DOM."
+      }
+    },
+    "flow_break_even": {
+      "status": "READY",
+      "basis": "CURRENT_RECONCILED_MIX",
+      "observed_mix": {
+        "mature_orders": 90,
+        "article_units": 120,
+        "parcels": 60,
+        "reconciled_contribution_kmf": 900000,
+        "contribution_per_order_kmf": 10000,
+        "contribution_per_article_kmf": 7500,
+        "contribution_per_parcel_kmf": 15000
+      },
+      "economic_break_even": {
+        "status": "CURRENT_MIX_PROJECTABLE",
+        "target_coverage_ratio": 1,
+        "target_contribution_kmf": 1200000,
+        "gap_kmf": 300000,
+        "additional_equivalent_orders": 30,
+        "additional_equivalent_articles": 40,
+        "additional_equivalent_parcels": 20
+      },
+      "policy_safety_target": {
+        "status": "CURRENT_MIX_PROJECTABLE",
+        "target_coverage_ratio": 1.1,
+        "target_contribution_kmf": 1320000,
+        "gap_kmf": 420000,
+        "additional_equivalent_orders": 42,
+        "additional_equivalent_articles": 56,
+        "additional_equivalent_parcels": 28
+      },
+      "flow_velocity": {
+        "window_days": 30,
+        "orders_per_day": 3,
+        "articles_per_day": 4,
+        "parcels_per_day": 2,
+        "contribution_per_day_kmf": 30000,
+        "projected_days_to_break_even": 10
+      }
+    },
+    "evaluated_at": "2026-10-31T10:00:00Z"
+  }
+}

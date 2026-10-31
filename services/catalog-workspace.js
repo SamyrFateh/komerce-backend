@@ -8,7 +8,7 @@
  * @outputs       catalog_work_queue, delegated_catalog_mutations
  * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, finance_config, currency_parities, exchange_rates, cost_components
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
@@ -493,6 +493,143 @@ async function getRegistryReadiness(productRef) {
   };
 }
 
+// Read-only dossier from the SAME certification authority used for approval.
+// It does not grant publication, decide local prices or mutate source records.
+function publicProductDossier(facts, product, marketHandoff = null, details = {}) {
+  const row = facts?.row || {};
+  const candidate = product.lifecycle_status === 'candidate' && product.is_active !== true;
+  const positive = value => {
+    if (value == null || String(value).trim() === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const count = value => value == null || String(value).trim() === ''
+    ? null : (Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : null);
+  return {
+    product_ref: product.product_ref,
+    identity: {
+      title_fr: row.name || null,
+      description_fr: row.description || null,
+      content_source: row.content_source || null,
+      locale: row.source_locale || null,
+      needs_review: row.needs_review === true,
+      customs_category: row.category || null,
+      boutique_category_key: row.boutique_category_key || null,
+      boutique_subcategory_key: row.boutique_subcategory_key || null,
+      taxonomy_active: row.taxonomy_active === true,
+    },
+    supplier: {
+      name: row.supplier_name || null,
+      reference: row.supplier_product_id || null,
+      source_contract_v2: row.has_sourcing_candidate === false ? null
+        : String(row.normalized_source_contract?.schema_version || '') === '2',
+      sourcing_decision: row.sourcing_decision || null,
+    },
+    availability: {
+      lifecycle_status: row.lifecycle_status || product.lifecycle_status,
+      is_active: product.is_active === true,
+      is_available: row.is_available === true,
+      inventory_model: row.inventory_model || null,
+      stock: row.stock == null || String(row.stock).trim() === ''
+        ? null : (Number.isFinite(Number(row.stock)) ? Number(row.stock) : null),
+      has_variants: row.has_variants === true,
+      weight_kg: positive(row.weight_kg),
+      dimensions_cm: row.dimensions_cm || null,
+      fragility: row.fragility || null,
+      requires_secure_transport: row.requires_secure_transport === true,
+      // products.stock is not the sellable stock authority in SKU mode.
+      stock_is_authoritative: row.inventory_model !== 'SKU',
+    },
+    purchasing: {
+      active_supplier_skus: count(row.active_supplier_skus),
+      complete_supplier_skus: count(row.complete_supplier_skus),
+      supplier_identity_complete: row.has_sourcing_candidate === false ? null
+        : (Number(row.active_supplier_skus) > 0 &&
+          Number(row.active_supplier_skus) === Number(row.complete_supplier_skus)),
+    },
+    media: {
+      active_canonical: count(row.active_media),
+      gallery: (Array.isArray(details.media) ? details.media : [])
+        .filter(item => typeof item.url === 'string' && /^https:\/\//i.test(item.url))
+        .slice(0, 24).map(item => ({
+          url: item.url,
+          alt: item.alt || null,
+          role: item.role || 'PRODUCT',
+          source_media_id: item.source_media_id || null,
+        })),
+      gallery_truncated: (details.media || []).length > 24,
+    },
+    variants: {
+      inventory_model: row.inventory_model || 'LEGACY_VARIANTS',
+      rows: (Array.isArray(details.variants) ? details.variants : [])
+        .slice(0, 50).map(item => ({
+          sku: item.sku || null,
+          supplier_sku: row.inventory_model === 'SKU' ? (item.supplier_sku || null) : null,
+          supplier_unit_ref: row.inventory_model === 'SKU' ? (item.supplier_unit_ref || null) : null,
+          variant_type: row.inventory_model === 'SKU' ? null : (item.variant_type || null),
+          variant_value: row.inventory_model === 'SKU' ? null : (item.variant_value || null),
+          variant_combo: row.inventory_model === 'SKU' ? (item.variant_combo || null) : null,
+          stock: item.stock == null ? null : Number(item.stock),
+          is_active: row.inventory_model === 'SKU' ? item.is_active === true : null,
+        })),
+      truncated: (details.variants || []).length > 50,
+      stock_semantics: row.inventory_model === 'SKU' ? 'sellable_sku'
+        : 'legacy_variant_axes_not_combinatorial',
+    },
+    catalogue_gate: {
+      phase: candidate ? 'catalog_approval' : 'other_lifecycle',
+      technically_certified: candidate ? facts?.certification?.certified === true : null,
+      reasons: candidate && Array.isArray(facts?.certification?.reasons)
+        ? facts.certification.reasons : [],
+      note: candidate
+        ? 'Contrôle technique de fiche candidate, distinct de la publication marché.'
+        : 'Une fiche active ne repasse pas automatiquement en validation Catalogue.',
+    },
+    markets: Array.isArray(marketHandoff?.markets)
+      ? marketHandoff.markets.map(market => ({
+          code: market.code,
+          name: market.name,
+          currency: market.currency,
+          commercial_exposure: market.commercial_exposure,
+          exposure_decision_recorded: market.exposure_decision_recorded,
+          price_status: market.price_status,
+          // No inference that payment, stock and checkout gates have passed.
+          buyer_visible_according_to_market_thread: market.buyer_visible,
+        }))
+      : [],
+    market_data_scope: product.is_active === true
+      ? 'active_catalogue_product' : 'not_queried_before_approval',
+  };
+}
+
+async function getProductDossier(productRef) {
+  const product = await resolveProduct(productRef);
+  const [facts, handoff] = await Promise.all([
+    certifyCatalogProduct(db, product.id),
+    product.is_active === true ? queryFocusedMarketHandoff(product.product_ref) : Promise.resolve(null),
+  ]);
+  if (!facts?.row) throw new CatalogWorkspaceError(
+    'catalog_facts_unavailable', 'Fiche canonique indisponible', 503
+  );
+  const skuStockAuthority = facts.row.inventory_model === 'SKU';
+  const [mediaResult, variantResult] = await Promise.all([
+    db.query(`SELECT url, alt, role, source_media_id, display_order
+       FROM catalog_media WHERE product_id=$1 AND is_active=TRUE
+       ORDER BY display_order ASC NULLS LAST, created_at ASC LIMIT 25`, [product.id]),
+    skuStockAuthority
+      ? db.query(`SELECT sku, supplier_sku, supplier_unit_ref, variant_combo,
+                  stock, is_active FROM product_skus
+                   WHERE product_id=$1 ORDER BY is_active DESC, created_at ASC LIMIT 51`, [product.id])
+      : db.query(`SELECT sku, variant_type, variant_value, stock
+                   FROM product_variants WHERE product_id=$1
+                   ORDER BY display_order ASC, variant_type ASC, variant_value ASC LIMIT 51`, [product.id]),
+  ]);
+  return publicProductDossier(facts, product, handoff, {
+    media: mediaResult.rows,
+    variants: variantResult.rows,
+  });
+}
+
 function sanitizeProductCreate(body = {}) {
   const allowed = ['name','category','subcategory','price_kmf','price_aed','price_eur','stock','weight_kg','description','image_url','images','badge','emoji','promo_pct','is_available','is_active','has_couture','sourcing_source','requires_secure_transport','customs_risk_coeff','unsold_price_kmf','unsold_channel','has_variants','sort_order'];
   return allowed.reduce((out, key) => {
@@ -614,7 +751,25 @@ async function prepareCandidateFrench(productRef, body = {}, actor) {
 
 async function approveCandidate(productRef, actor) {
   const product = await resolveProduct(productRef, { candidateOnly: true });
-  const result = await catalogApproval.approveProduct(db, product.id, actor);
+  let result;
+  try {
+    result = await catalogApproval.approveProduct(db, product.id, actor);
+  } catch (error) {
+    // Migration 259 allowed NULL global price for drafts only, contradicting
+    // the certified source-linked approval path. Fail intelligibly if an
+    // environment has not yet applied migration 352; do not force any price.
+    if (error.code === '23514' &&
+        error.constraint === 'chk_products_unpriced_draft_only') {
+      throw new CatalogWorkspaceError(
+        'catalog_unpriced_approval_schema_outdated',
+        'Validation impossible : la base utilise encore une ancienne contrainte de prix global. ' +
+          'Appliquer la migration Catalogue 352, puis relancer la vérification. ' +
+          'Ne saisissez pas de prix fictif et ne publiez aucun marché.',
+        409
+      );
+    }
+    throw error;
+  }
   if (result.status >= 400) {
     const error = new CatalogWorkspaceError(
       result.body.code || 'catalog_approve_rejected',
@@ -658,6 +813,7 @@ module.exports = {
   CatalogWorkspaceError,
   buildWorkspace,
   getRegistryReadiness,
+  getProductDossier,
   createProduct,
   updateProduct,
   classifyProduct,
@@ -675,6 +831,7 @@ module.exports = {
   deactivateSubcategory: (key, subKey, actor) => taxonomy.deactivateSubcategory(key, subKey, {}, undefined, { ...actor, source_surface: 'canonical_catalog_workspace' }),
   _test: {
     publicProduct,
+    publicProductDossier,
     queryProducts,
     queryApprovalQueue,
     queryApprovalBreakdown,

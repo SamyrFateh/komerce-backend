@@ -1,0 +1,71 @@
+name: Catalogue approval — unpriced source-linked product PG16 proof
+
+on:
+  pull_request:
+    paths:
+      - 'migrations/352_catalog_unpriced_approval_market_price_authority.sql'
+      - 'services/catalog-workspace.js'
+      - 'public/dashboards/canonical/js/catalog-workspace.js'
+      - 'public/dashboards/canonical/index.html'
+      - 'scripts/testing/catalog-unpriced-approval-schema-pg-proof.js'
+      - 'tests/unit/catalog-workspace.test.js'
+      - 'tests/unit/catalog-workspace-wide-v1.test.js'
+      - '.github/workflows/catalog-unpriced-approval-pg-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disposable-postgres:
+    name: Reproduce 23514 then prove unpriced Catalogue approval (PG16)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: catalog_proof
+          POSTGRES_PASSWORD: catalog_proof
+          POSTGRES_DB: catalog_unpriced_proof
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U catalog_proof -d catalog_unpriced_proof"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      NODE_ENV: test
+      CATALOG_UNPRICED_SCHEMA_PROOF_ISOLATED: '1'
+      CATALOG_UNPRICED_SCHEMA_PROOF_URL: postgres://catalog_proof:catalog_proof@127.0.0.1:55432/catalog_unpriced_proof
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify JS syntax
+        run: |
+          node --check services/catalog-workspace.js
+          node --check public/dashboards/canonical/js/catalog-workspace.js
+          node --check scripts/testing/catalog-unpriced-approval-schema-pg-proof.js
+      - name: PG16 migration evidence and buyer gate
+        run: node scripts/testing/catalog-unpriced-approval-schema-pg-proof.js
+      - name: Focused catalogue approval unit tests
+        run: >
+          npx jest --config jest.unit.config.js --ci --runInBand --no-coverage
+          tests/unit/catalog-workspace.test.js
+          tests/unit/catalog-approval.test.js
+          tests/unit/catalog-certification.test.js
+          tests/unit/catalog-workspace-wide-v1.test.js
+          tests/unit/canonical-catalog-workspace-boundary.test.js
+      - name: Evidence summary
+        if: always()
+        run: |
+          {
+            echo '## Catalogue approval without global price'
+            echo 'PG16 disposable: migration 259 reproduces 23514, migration 352 allows certified active NULL reference price.'
+            echo 'Buyer visibility and checkout remain market-local LOCAL_ACTIVE gated.'
+            echo 'No Railway, staging or production database accessed.'
+          } >> "$GITHUB_STEP_SUMMARY"
