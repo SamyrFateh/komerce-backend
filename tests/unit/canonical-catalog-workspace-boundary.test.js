@@ -196,7 +196,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261031-2');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261031-3');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261027-1');
 });
 
@@ -1297,4 +1297,83 @@ test.each([true, false])('Examiner autosave FR : certification serveur=%s, appro
   expect(requests.some(({ url }) => url.includes('diagnose_product_ref=KPR-AUTOSAVE-FR'))).toBe(true);
   expect(posts.some(({ url }) => url.endsWith('/approve'))).toBe(certified);
   expect(confirm).not.toHaveBeenCalled();
+});
+
+test('KPR-000088: fiche source inactive FR a des champs directs et une catégorie modifiable',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.categories=[
+    {key:'tech',label:'Tech',is_active:true,subcategories:[
+      {key:'phone',label:'Téléphones',is_active:true},
+      {key:'accessories',label:'Accessoires',is_active:true}
+    ]},
+    {key:'pet',label:'Animaux',is_active:true,subcategories:[
+      {key:'pet-bedding',label:'Couchages',is_active:true}]}
+  ];
+  payload.products=[{
+    record_kind:'product',product_ref:'KPR-000088',candidate_ref:'KSC-000169',
+    name:'3Pcs Privacy Hydrogel Film',description:null,content_source:'connector_raw',source_locale:'en',
+    boutique_category_key:'tech',boutique_subcategory_key:'phone',
+    lifecycle_status:'active',is_active:false,work_status:'editorial_to_complete',
+    operator_group:'correction',issues:['editorial_to_complete']
+  }];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async(url,opts={})=>({
+    ok:true,status:200,json:async()=>opts.method==='POST'?{ok:true,result:{}}:payload
+  }));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const launch=root.querySelector('[data-workspace-action="open-catalog-inspector"]');
+  expect(launch.textContent).toBe('Compléter');
+  await launch.click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-000088"]');
+  expect(panel.textContent).not.toContain('Situation :');
+  expect(panel.textContent).not.toContain('Aucune correction à apporter');
+  expect(panel.querySelector('[data-catalog-inline-editor]')).not.toBeNull();
+  const title=panel.querySelector('[data-catalog-quick-field="name"]');
+  const description=panel.querySelector('[data-catalog-quick-field="description"]');
+  expect(title).not.toBeNull();expect(description).not.toBeNull();
+  const cat=panel.querySelector('[data-catalog-quick-category]');
+  const sub=panel.querySelector('[data-catalog-quick-subcategory]');
+  expect(cat.value).toBe('tech');expect(sub.value).toBe('phone');
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+  title.value='Film de protection hydrogel pour smartphone';
+  description.value='Film de protection transparent compatible avec les téléphones indiqués.';
+  await description.listeners.change[0]();
+  const posts=fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST');
+  expect(posts).toHaveLength(1);
+  expect(posts[0][0]).toBe('/api/admin/workspaces/catalog/products/KPR-000088/update');
+  expect(JSON.parse(posts[0][1].body)).toEqual({
+    name:'Film de protection hydrogel pour smartphone',
+    description:'Film de protection transparent compatible avec les téléphones indiqués.'
+  });
+  expect(posts[0][0]).not.toContain('/approve');
+});
+test('Catégorie Boutique: sélection directe auditée et pas de mutation à la seule ouverture',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.categories=[{key:'tech',label:'Tech',is_active:true,subcategories:[
+    {key:'phone',label:'Téléphones',is_active:true},{key:'accessories',label:'Accessoires',is_active:true}
+  ]}];
+  payload.products=[{record_kind:'product',product_ref:'KPR-CAT-DIRECT',candidate_ref:'KSC-CAT-DIRECT',
+    name:'Écran protecteur',content_source:'manual',source_locale:'fr',
+    lifecycle_status:'candidate',is_active:false,work_status:'taxonomy_to_confirm',
+    boutique_category_key:'tech',boutique_subcategory_key:'phone',
+    issues:['taxonomy_to_confirm'],operator_group:'correction'}];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async(url,opts={})=>({
+    ok:true,status:200,json:async()=>opts.method==='POST'?{ok:true}:payload
+  }));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  const cat=root.querySelector('[data-catalog-quick-category]');
+  const sub=root.querySelector('[data-catalog-quick-subcategory]');
+  expect(cat.value).toBe('tech');
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+  sub.value='accessories';
+  await sub.listeners.change[0]();
+  const posts=fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST');
+  expect(posts[0][0]).toContain('/products/KPR-CAT-DIRECT/classify');
+  expect(JSON.parse(posts[0][1].body)).toEqual({category:'tech',subcategory:'accessories'});
 });
