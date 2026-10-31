@@ -434,6 +434,28 @@ router.post('/market/:marketCode/products/:productRef/local-price/activate', req
   }
 );
 
+// Atomic ACTIVE -> ACTIVE repricing: prevents a live product from dropping into
+// a transient draft between the pricing decision and checkout cutover.
+router.post('/market/:marketCode/products/:productRef/local-price/change-active',
+  requireLocalStrategyCapability('pricing.decide'),
+  requireLocalStrategyCapability('pricing.activate'),
+  requireLocalStrategyCapability('catalog.expose'),
+  requireMarketOperation('local_price_activate'),
+  async (req, res, next) => {
+    try {
+      sendAction(res, 'reprice_market_local_active', await marketLocalPriceActivation.repriceActiveLocalPrice({
+        market: req.workspaceMarket,
+        productRef: req.params.productRef,
+        amount: req.body && req.body.amount,
+        expectedAmount: req.body && req.body.expected_amount,
+        acknowledgedRisk: req.body && req.body.acknowledged_risk === true,
+        actorId: req.user.id,
+        reason: 'Décision de prix depuis le Catalogue pays',
+      }));
+    } catch (error) { handleError(error, res, next); }
+  }
+);
+
 router.post('/market/:marketCode/products/:productRef/local-price/reset', requireLocalStrategyCapability('pricing.decide'), requireMarketOperation('local_price_reset'), async (req, res, next) => {
   try {
     sendAction(res, 'reset_market_local_price_draft', await marketCommercialPrice.resetMarketPriceDraft({
