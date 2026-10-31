@@ -12,6 +12,7 @@ const { test, expect } = require('@playwright/test');
 
 const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical');
 const FX = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'pricing-atelier-km.json'), 'utf8'));
+const DEMO = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'pricing-economic-illustration-km.json'), 'utf8'));
 const ORIGIN = 'http://komerce.test';
 const SHOTS = process.env.ATELIER_SHOTS_DIR || '';
 
@@ -35,7 +36,7 @@ const COMPONENTS = [
   { key: 'freight_kg', label: 'Fret maritime', family: 'landed_relay', category: 'freight', unit: 'kmf_per_kg', default_value: null, allocation_method: 'by_weight', inherited: true, is_active: true },
 ];
 
-async function mount(page, { caps = {}, posts = [], search = '', components = COMPONENTS, corridorStatus = 200, preview = null } = {}) {
+async function mount(page, { caps = {}, posts = [], search = '', components = COMPONENTS, decision = FX.decision, corridorStatus = 200, preview = null } = {}) {
   const market = { ...FX.market, simulation_products: PRODUCTS, cost_components: components, capabilities: { ...FX.market.capabilities, ...caps } };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -53,7 +54,7 @@ async function mount(page, { caps = {}, posts = [], search = '', components = CO
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM') return json(market);
-    if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision') return json(FX.decision);
+    if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision') return json(decision);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision-policy/history') return json(FX.history);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/corridor') {
       if (corridorStatus !== 200) return json({ error: 'Corridor indisponible' }, corridorStatus);
@@ -261,3 +262,53 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
     });
   });
 }
+
+test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée, aucune donnée live)', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('rend contribution, couverture, fixes directs et mutualisés sur des valeurs d’exemple cohérentes', async ({ page }) => {
+    expect(DEMO.kind).toBe('CHROMIUM_DEMO_ONLY');
+    const posts = [];
+    await mount(page, { decision: DEMO.decision, components: DEMO.parameters.variable_components, posts });
+    await page.evaluate(() => {
+      const marker = document.createElement('div');
+      marker.dataset.chromiumDemoNotice = '';
+      marker.textContent = 'SCÉNARIO ILLUSTRATIF · DONNÉES FICTIVES · AUCUNE ÉCRITURE EN PRODUCTION';
+      Object.assign(marker.style, {
+        position: 'fixed', top: '5px', left: '50%', transform: 'translateX(-50%)',
+        background: '#183b65', color: '#fff', padding: '7px 16px', borderRadius: '8px',
+        fontWeight: '800', fontSize: '12px', zIndex: '99999',
+      });
+      document.body.appendChild(marker);
+    });
+
+    await expect(page.locator('.kmc-cockpit-live-badge')).toContainText('Couverture réconciliée');
+    await expect(page.locator('.kmc-cockpit-live-badge')).not.toHaveClass(/is-unavailable/);
+    await expect(page.locator('.kmc-metric-card').first()).toContainText('75');
+    await expect(page.locator('[data-atelier-policy]')).toContainText('Décisionnelle');
+    await expect(page.locator('[data-atelier-policy]')).toContainText('Ratio de couverture');
+    await expect(page.locator('[data-atelier-policy]')).not.toContainText('Aucun ratio affiché');
+    await expect(page.locator('[data-pricing-flow-equilibrium]')).toContainText('900');
+    await shot(page, '5-vue-economique-demo', '1440');
+
+    await page.locator('[data-atelier-view="costs"]').click();
+    const reading = page.locator('[data-economic-cost-reading]');
+    await expect(reading).toBeVisible();
+    await page.locator('[data-cost-family-tab="fixed-direct"]').click();
+    const direct = page.locator('.kmc-cockpit-cost-card.is-fixed-direct');
+    await expect(direct).toContainText('Loyer local');
+    await expect(direct).toContainText('Équipe fixe du marché');
+    await expect(direct).toContainText('550');
+    await page.locator('[data-cost-family-tab="fixed-mutualized"]').click();
+    const mutual = page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized');
+    await expect(mutual).toContainText('Infrastructure plateforme');
+    await expect(mutual).toContainText('Loyer et équipe Hub');
+    await expect(mutual).toContainText('650');
+    await expect(mutual).toHaveAttribute('data-read-only', 'true');
+    await expect(reading.locator('.kmc-economic-reading-item.is-mix')).toContainText('Non encore calculable');
+    await expect(page.locator('[data-chromium-demo-notice]')).toBeVisible();
+    await noOverflow(page);
+    await shot(page, '6-couts-mutualises-demo', '1440');
+    expect(posts).toHaveLength(0);
+  });
+});
