@@ -309,6 +309,12 @@
     const formTitle = el(doc, 'div', 'kmc-structure-panel-section-title',
       inline ? 'Saisie sur cette ligne' : 'Nouvel ajustement');
     const built = buildForm(doc, charges);
+    // The action footer is a sibling of the form: HTML submit alone cannot fire
+    // a form's submit event without an explicit form owner.
+    saveBtn.addEventListener('click', event => {
+      event.preventDefault();
+      if (!saveBtn.disabled) built.form.requestSubmit();
+    });
 
     if (inline) {
       const current = el(doc, 'span', 'kmc-structure-inline-previous',
@@ -354,6 +360,11 @@
       const charge = charges.find(item => String(item.id) === String(config.initialChargeId));
       if (charge) {
         built.chargeSelect.value = String(charge.id);
+        if (inline) {
+          // The row identifies the charge; it must not silently mutate another one.
+          built.chargeSelect.disabled = true;
+          built.chargeSelect.closest('.kmc-structure-panel-field')?.classList.add('is-charge-locked');
+        }
         await loadHistory(built.chargeSelect.value);
       } else {
         built.errorBox.hidden = false;
