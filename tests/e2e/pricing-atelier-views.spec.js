@@ -37,7 +37,7 @@ const COMPONENTS = [
 ];
 
 async function mount(page, { caps = {}, posts = [], search = '', components = COMPONENTS, decision = FX.decision, corridorStatus = 200, preview = null } = {}) {
-  const market = { ...FX.market, simulation_products: PRODUCTS, cost_components: components, capabilities: { ...FX.market.capabilities, ...caps } };
+  const market = { ...FX.market, simulation_products: PRODUCTS, cost_components: components.map(item => ({ ...item })), capabilities: { ...FX.market.capabilities, ...caps } };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -47,7 +47,13 @@ async function mount(page, { caps = {}, posts = [], search = '', components = CO
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
     }
     if (route.request().method() === 'POST') {
-      posts.push({ path: url.pathname, body: route.request().postDataJSON() });
+      const posted = route.request().postDataJSON();
+      posts.push({ path: url.pathname, body: posted });
+      if (url.pathname.includes('/cost-components/') && url.pathname.endsWith('/update')) {
+        const key = decodeURIComponent(url.pathname.split('/cost-components/')[1].split('/update')[0]);
+        const row = market.cost_components.find(item => item.key === key);
+        if (row) { row.default_value = posted.default_value; row.inherited = false; }
+      }
       if (url.pathname.endsWith('/simulate-impact')) return json({ baseline: { metrics: { minimum_safe_price_kmf: 17990, recommended_price_kmf: 26990 } }, scenario: { metrics: { minimum_safe_price_kmf: 18500, recommended_price_kmf: 27600 } }, delta: { minimum_safe_price_kmf: 510, recommended_price_kmf: 610 }, persisted: false });
       return json({ ok: true });
     }
@@ -199,7 +205,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('[data-atelier-draft-form], [data-atelier-sim-form]')).toHaveCount(0);
     });
 
-    test('Modèle de coûts : trois cartes comparables ou superposées, propriétaire des coûts', async ({ page }) => {
+    test('Modèle de coûts : trois colonnes et modification directe par ligne', async ({ page }) => {
       const posts = [];
       await mount(page, { posts });
       await page.locator('[data-atelier-view="costs"]').click();
@@ -209,13 +215,13 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('.kmc-metric-card').first()).toBeHidden();
       const costs = page.locator('.kmc-cockpit-costs');
       await expect(costs).toHaveAttribute('data-cost-layout', 'columns');
-      await expect(page.locator('[data-cost-layout-button]')).toHaveText(['3 colonnes', 'Superposées']);
+      await expect(page.locator('[data-cost-layout-button]')).toHaveCount(0);
       const cards = page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card');
       await expect(cards).toHaveCount(3);
       await expect(cards.nth(0)).toBeVisible();
       await expect(cards.nth(1)).toBeVisible();
       await expect(cards.nth(2)).toBeVisible();
-      await expect(page.locator('[data-cost-layout-button="columns"]')).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable [data-edit-inline-cost]')).toHaveCount(3);
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable [data-cost-family-preview]')).toContainText('Frais Stripe');
       if (name === '1440') {
         const widths = await page.evaluate(() => {
@@ -260,31 +266,37 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await principles.locator('summary').click();
       await expect(principles).toHaveAttribute('open', '');
       await expect(principles).toContainText('Toute quote-part mutualisée');
-      await page.locator('[data-open-cost-detail="variable"]').click();
-      const localCost = page.locator('[data-variable-cost-panel] [data-variable-cost-input="cash_fee_kmf"]');
-      await expect(localCost).toHaveValue('500');
-      await localCost.fill('520');
-      await localCost.blur();
+      const row = page.locator('[data-inline-cost-row="cash_fee_kmf"]');
+      await expect(row).toContainText('500 KMF/commande');
+      await row.locator('[data-edit-inline-cost]').click();
+      const input = row.locator('[data-inline-cost-value]');
+      await expect(input).toHaveValue('500');
+      await expect(row).toContainText('Valeur actuelle : 500 KMF/commande');
+      if (name === '1440') {
+        const xy = await row.evaluate(node => {
+          const previous = node.querySelector('.kmc-inline-cost-last').getBoundingClientRect();
+          const input = node.querySelector('[data-inline-cost-value]').getBoundingClientRect();
+          return { previousX: previous.x, previousY: previous.y, inputX: input.x, inputY: input.y };
+        });
+        expect(xy.inputX).toBeGreaterThan(xy.previousX);
+        expect(Math.abs(xy.inputY - xy.previousY)).toBeLessThan(16);
+      }
+      await shot(page, '4-cout-en-mode-edition', name);
+      await input.fill('');
+      await row.locator('.kmc-inline-cost-save').click();
+      await expect(row.locator('[data-inline-cost-message]')).toContainText('Valeur invalide');
+      expect(posts).toHaveLength(0);
+      await input.fill('520');
+      await row.locator('.kmc-inline-cost-save').click();
       await expect.poll(() => posts.some(post => post.path.endsWith('/market/KM/cost-components/cash_fee_kmf/update')
         && post.body.default_value === 520)).toBe(true);
-      await page.locator('[data-variable-cost-panel] button[aria-label="Fermer"]').click();
+      await expect(page.locator('[data-inline-cost-row="cash_fee_kmf"]')).toContainText('520 KMF/commande');
+      await expect(page.locator('[data-inline-cost-row="cash_fee_kmf"] [data-inline-cost-form]')).toHaveCount(0);
+      await page.locator('[data-inline-cost-row="stripe_fee_pct"] [data-edit-inline-cost]').click();
+      await page.locator('[data-inline-cost-row="stripe_fee_pct"] [data-cancel-inline-cost]').click();
+      await expect(page.locator('[data-inline-cost-row="stripe_fee_pct"] [data-inline-cost-form]')).toHaveCount(0);
       await noOverflow(page);
-      await shot(page, '4-modele-de-couts', name);
-      await page.locator('[data-cost-layout-button="stacked"]').click();
-      await expect(costs).toHaveAttribute('data-cost-layout', 'stacked');
-      await expect(page.locator('[data-cost-layout-button="stacked"]')).toHaveAttribute('aria-pressed', 'true');
-      await expect(cards.nth(1)).toBeVisible();
-      await expect(cards.nth(2)).toBeVisible();
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeVisible();
-      if (name === '1440') {
-        const ys = await page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card').evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().y));
-        expect(ys[0]).toBeLessThan(ys[1]);
-        expect(ys[1]).toBeLessThan(ys[2]);
-        await shot(page, '8-couts-superposes', '1440');
-      }
-      await noOverflow(page);
-      await page.locator('[data-cost-layout-button="columns"]').click();
-      await expect(costs).toHaveAttribute('data-cost-layout', 'columns');
+      await shot(page, '4-couts-edition-en-ligne', name);
     });
 
     test('priorité → file filtrée, retour conservé dans l’URL', async ({ page }) => {
@@ -354,9 +366,9 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
     await expect(page.locator('[data-chromium-demo-notice]')).toBeVisible();
     await noOverflow(page);
     await shot(page, '6-couts-mutualises-demo', '1440');
-    await page.locator('[data-cost-layout-button="stacked"]').click();
-    await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cost-table')).toBeVisible();
-    await shot(page, '7-couts-comparatif-superposes-demo', '1440');
+    await expect(page.locator('[data-cost-layout-button]')).toHaveCount(0);
+    await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized [data-edit-inline-cost]')).toHaveCount(0);
+    await shot(page, '7-couts-edition-en-ligne-demo', '1440');
     expect(posts).toHaveLength(0);
   });
 });

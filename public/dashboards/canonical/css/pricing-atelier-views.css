@@ -571,3 +571,120 @@
     overflow-x: auto;
   }
 }
+
+/* Three cost families are the layout, not a second navigation.
+   Editing belongs to each line; last server value stays alongside the input. */
+.kmc-atelier-views .kmc-economic-family-preview-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.kmc-atelier-views .kmc-economic-family-preview-row > .kmc-economic-family-preview-note {
+  grid-row: 2;
+}
+.kmc-atelier-views .kmc-inline-cost-action {
+  grid-column: 2;
+  justify-self: end;
+  padding: 6px 10px;
+  border: 1px solid #c8d9eb;
+  background: #f5f9ff;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #2369b0;
+  cursor: pointer;
+}
+.kmc-atelier-views .kmc-inline-cost-action:focus-visible,
+.kmc-atelier-views .kmc-inline-cost-form button:focus-visible,
+.kmc-atelier-views .kmc-inline-cost-form input:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+}
+.kmc-atelier-views .kmc-inline-cost-action[hidden] { display: none; }
+.kmc-atelier-views .kmc-inline-cost-form {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+  margin-top: 8px;
+  border-top: 1px solid #d8e5f3;
+  padding-top: 12px;
+}
+.kmc-atelier-views .kmc-inline-cost-last {
+  flex: 1 1 100%;
+  color: #536a84;
+  font-size: 12px;
+}
+.kmc-atelier-views .kmc-inline-cost-form input {
+  flex: 1 1 88px;
+  width: 88px;
+  min-width: 0;
+  max-width: 150px;
+  border: 1px solid #a6bdd5;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font: inherit;
+  color: #153a60;
+  font-weight: 750;
+}
+.kmc-atelier-views .kmc-inline-cost-unit { color: #526b85; font-size: 12px; }
+.kmc-atelier-views .kmc-inline-cost-form button {
+  border-radius: 9px;
+  border: 1px solid #cbd9e8;
+  background: white;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #335c84;
+  cursor: pointer;
+}
+.kmc-atelier-views .kmc-inline-cost-form .kmc-inline-cost-save {
+  color: white;
+  border-color: #176ab3;
+  background: #176ab3;
+}
+.kmc-atelier-views .kmc-inline-cost-form button:disabled { opacity: .6; cursor: wait; }
+.kmc-atelier-views .kmc-inline-cost-message {
+  flex: 1 1 100%;
+  color: #7b3d18;
+  line-height: 1.45;
+}
+@media (max-width: 1050px) {
+  .kmc-atelier-views .kmc-economic-family-preview-row { gap: 5px 8px; }
+}
+
+/* The previously confirmed value is literally beside the proposed value. */
+.kmc-atelier-views .kmc-inline-cost-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 118px);
+  gap: 8px;
+  align-items: center;
+}
+.kmc-atelier-views .kmc-inline-cost-last {
+  grid-column: 1;
+  grid-row: 1;
+  flex: none;
+}
+.kmc-atelier-views .kmc-inline-cost-form input {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-inline-cost-unit {
+  grid-column: 2;
+  grid-row: 2;
+  text-align: right;
+  font-size: 11px;
+}
+.kmc-atelier-views .kmc-inline-cost-form .kmc-inline-cost-save {
+  grid-column: 1;
+  grid-row: 3;
+}
+.kmc-atelier-views .kmc-inline-cost-form .kmc-inline-cost-cancel {
+  grid-column: 2;
+  grid-row: 3;
+}
+.kmc-atelier-views .kmc-inline-cost-message { grid-column: 1 / -1; }
