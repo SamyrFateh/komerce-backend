@@ -151,3 +151,48 @@ jobs:
             console.log('STAGING_KM_BUYER_API '+JSON.stringify({http:r.status,total:payload.total,returned:Array.isArray(payload.products)?payload.products.length:null,contains_product:!!payload.products?.some(p=>p.product_ref==='KPR-000093'),public_products:(payload.products||[]).slice(0,20).map(p=>({ref:p.product_ref,price_kmf:p.price_kmf,market_price_source:p.market_price_source,purchasable:p.purchasable}))}));
           })().catch(e=>{console.error('DIAG_BLOCKED: '+String(e.code||e.message).slice(0,200));process.exitCode=1}).finally(()=>db.pool.end());
           NODE
+      - name: Desktop Chromium — real CJ product to local cart without checkout
+        shell: bash
+        run: |
+          npx playwright install --with-deps chromium
+          node <<'NODE'
+          'use strict';
+          const {chromium}=require('@playwright/test');
+          const {waitForModalOpen,addToCartFromModal}=require('./public/boutique/tests/e2e/helpers/boutique.helpers.js');
+          (async()=>{
+            const base='https://komerce-backend-production.up.railway.app';
+            const api=await fetch(base+'/api/products?market=KM&limit=100');
+            if(api.status!==200)throw Error('BUYER_CATALOG_HTTP_'+api.status);
+            const body=await api.json();
+            const item=(body.products||[]).find(x=>x.product_ref==='KPR-000096');
+            if(!item || !item.purchasable || item.market_price_source!=='LOCAL_ACTIVE') throw Error('REAL_CJ_BUYER_NOT_READY');
+            const browser=await chromium.launch({headless:true});
+            try {
+              const context=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
+              const page=await context.newPage();
+              const attemptedWrites=[];
+              await page.route('**/*',route=>{
+                const req=route.request();
+                if(!['GET','HEAD','OPTIONS'].includes(req.method())){
+                  attemptedWrites.push(req.method()+' '+new URL(req.url()).pathname);
+                  return route.abort('blockedbyclient');
+                }
+                return route.continue();
+              });
+              const navigation=await page.goto(base+'/boutique/?market=KM',{waitUntil:'domcontentloaded',timeout:30000});
+              if(navigation?.status()!==200)throw Error('BOUTIQUE_PAGE_HTTP');
+              const card=page.locator('#k-grid [data-id="'+item.id+'"]');
+              await card.waitFor({state:'visible',timeout:20000});
+              await card.click();
+              await waitForModalOpen(page);
+              await addToCartFromModal(page);
+              const cart=await page.evaluate(()=>JSON.parse(localStorage.getItem('kmrc_cart')||'[]'));
+              const refFound=Array.isArray(cart)&&cart.some(line=>String(line.id||line.product_id||line.productId)===String(item.id));
+              if(!refFound)throw Error('CART_DID_NOT_RETAIN_PRODUCT_ID');
+              if(attemptedWrites.length)throw Error('SERVER_WRITES_ATTEMPTED:'+attemptedWrites.join(','));
+              console.log('STAGING_CJ_REAL_CART '+JSON.stringify({ref:item.product_ref,price_kmf:item.price_kmf,
+                market:'KM',buyer_purchasable:item.purchasable,cart_items:cart.length,
+                product_in_local_cart:refFound,server_writes:attemptedWrites.length}));
+            }finally{await browser.close()}
+          })().catch(e=>{console.error('STAGING_CJ_REAL_CART_BLOCKED '+String(e.message||e).slice(0,500));process.exitCode=1});
+          NODE
