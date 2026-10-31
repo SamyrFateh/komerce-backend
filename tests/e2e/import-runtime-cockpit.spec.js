@@ -142,34 +142,11 @@ test.describe('Cockpit imports — conformité au mock clair', () => {
     await expect(page.locator('.kir-current-item')).toContainText('Dernier produit mis à jour');
   });
 
-  test('barre de commandes : Mettre à jour (bleu, généreux) puis Arrêter (rouge clair) quand la source est active', async ({ page }) => {
-    const bar = await page.evaluate(() => {
-      const box = (sel) => {
-        const el = document.querySelector(sel);
-        if (!el) return null;
-        const r = el.getBoundingClientRect();
-        return { x: r.left, w: r.width, h: r.height, bg: getComputedStyle(el).backgroundColor, svg: Boolean(el.querySelector('svg')) };
-      };
-      return {
-        update: box('.kir-cmd-update'), stop: box('.kir-cmd-stop'), restart: box('.kir-cmd-restart'),
-        label: document.querySelector('.kir-cmd-update')?.textContent.trim(),
-        state: document.querySelector('.kir-command-state')?.textContent,
-        barTop: document.querySelector('.kir-command-bar')?.getBoundingClientRect().top,
-        flowTop: document.querySelector('.kir-run-flow')?.getBoundingClientRect().top,
-        stripBelow: Boolean(document.querySelector('.kir-secondary .kir-source-control')),
-      };
-    });
-    expect(bar.restart).toBeNull();
-    // Commandes en haut (avant le flux) ; l'inventaire des sources vit dans sa propre vue.
-    expect(bar.barTop).toBeLessThan(bar.flowTop);
-    expect(bar.stripBelow).toBe(false);
-    expect(bar.label).toBe('Mettre à jour maintenant');
-    expect(bar.update.bg).toBe('rgb(29, 92, 214)');
-    expect(bar.stop.bg).toBe('rgb(247, 228, 231)');
-    for (const b of [bar.update, bar.stop]) { expect(b.h).toBeGreaterThanOrEqual(48); expect(b.svg).toBe(true); }
-    expect(bar.update.w).toBeGreaterThan(bar.stop.w);
-    expect(bar.update.x).toBeLessThan(bar.stop.x);
-    expect(bar.state).toContain('Mise à jour en cours');
+  test('un passage KIR est consultable sans commande fournisseur ambiguë',async({page})=>{
+    await expect(page.locator('.kir-command-bar')).toHaveCount(0);
+    await expect(page.locator('[data-source-command]')).toHaveCount(0);
+    await expect(page.locator('.kir-live-hero-actions a[href*="view=sources"]'))
+      .toContainText('Gérer les sources');
   });
 
   test('cinq résultats réels, une seule étape courante, aucun débordement horizontal', async ({ page }) => {
@@ -328,45 +305,18 @@ test.describe('Cockpit imports — Action requise', () => {
     await expect(page.locator('.kir-run-flow-step.is-completed').filter({ hasText:'Contrôle automatique' })).toHaveCount(1);
   });
 
-  test('prod : Classer cible le bon candidat, suggère la taxonomie réelle, confirme et re-scanne sans prompt ni promotion', async ({ page }) => {
+  test('un écart de classification renvoie au candidat exact dans le Catalogue global',async({page})=>{
     const state=await mountLive(page,problemPayload);
     await page.evaluate((data)=>{
       history.replaceState({},'','/admin/import-runtime?run=KIR-000009&view=exceptions');
       window.KomerceCanonicalImportRuntime.render(document.getElementById('root'),data);
     },problemPayload);
-    await page.locator('[data-action-classify][data-candidate-ref="KSC-2"]').click();
-    const dialog=page.locator('dialog[data-category-remediation]');
-    await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText('Coque B');
-    await expect(dialog).toContainText('Classement ambigu');
-    await expect(dialog).toContainText('catégorie de calcul Sourcing / Douane');
-    await expect(dialog.locator('select option[value="jewelry"]')).toContainText('Bijoux');
-    await expect(dialog.locator('select option[value="home"]')).toContainText('Maison & déco');
-    expect(state.categoryWrites).toHaveLength(0);
-    await dialog.locator('[data-suggest-key="jewelry"]').click();
-    await expect(dialog.locator('[data-category-choice]')).toHaveValue('jewelry');
-    await dialog.locator('[data-category-confirm]').click();
-    await expect(dialog).toHaveCount(0);
-    await expect(page.locator('.kir-category-success')).toContainText('Catégorie « Bijoux » enregistrée');
-    await expect(page.locator('.kir-category-success')).toContainText('Décision : TEST');
-    expect(state.categoryWrites).toEqual([{ref:'KSC-2',category_key:'jewelry'}]);
-    expect(state.calls.filter(c=>c.startsWith('category-options'))).toEqual(['category-options:KSC-2']);
-    expect(state.calls.filter(c=>c.startsWith('resolve-category'))).toEqual(['resolve-category:KSC-2']);
-    expect(state.calls.some(c=>/promot/i.test(c))).toBe(false);
-  });
-
-  test('prod : le formulaire refuse une catégorie vide et Annuler ne crée aucune écriture', async ({ page }) => {
-    const state=await mountLive(page,problemPayload);
-    await page.evaluate((data)=>{
-      history.replaceState({},'','/admin/import-runtime?run=KIR-000009&view=exceptions');
-      window.KomerceCanonicalImportRuntime.render(document.getElementById('root'),data);
-    },problemPayload);
-    await page.locator('[data-action-classify][data-candidate-ref="KSC-2"]').click();
-    const dialog=page.locator('dialog[data-category-remediation]');
-    await expect(dialog).toBeVisible();
-    await expect(dialog.locator('[data-category-choice]')).toHaveValue('');
-    await dialog.locator('[data-category-cancel]').click();
-    await expect(dialog).toHaveCount(0);
+    const link=page.locator('[data-action-candidate="KSC-2"] a.kir-row-action');
+    await expect(link).toHaveCount(1);
+    await expect(link).toContainText('Compléter dans le Catalogue');
+    await expect(link).toHaveAttribute('href',/catalog\?search=KSC-2/);
+    await expect(page.locator('[data-action-classify]')).toHaveCount(0);
+    await expect(page.locator('[data-category-remediation]')).toHaveCount(0);
     expect(state.categoryWrites).toHaveLength(0);
   });
 
@@ -383,7 +333,7 @@ test.describe('Cockpit imports — Action requise', () => {
       window.KomerceCanonicalImportRuntime.render(document.getElementById('canonical-admin-root'), data);
     }, problemPayload);
     const body = page.locator('.kir-main');
-    for (const s of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
+    for (const s of ['Coque A', 'Image inexploitable', 'Coque B', 'Classement ambigu', 'Coque C', 'Donnée obligatoire manquante', 'Compléter dans le Catalogue']) {
       await expect(body).toContainText(s);
     }
     await expect(page.locator('.kir-row-action')).toHaveCount(3);
