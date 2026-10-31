@@ -15,13 +15,13 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-2');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
   expect(ui).toContain('<th>Produit</th><th>Fournisseur</th><th>Classement boutique</th>');
   expect(ui).toContain('kmc-catalog-product-reference');
-  expect(ui).toContain('<th>Statut Catalogue</th><th>Consulter</th>');
+  expect(ui).toContain('<th>À compléter</th><th>Action</th>');
   expect(ui).toContain("productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-reference', ref))");
   expect(ui).toContain("statusChip.setAttribute('data-status', row.work_status || 'inactive')");
   expect(ui).toContain("tr.appendChild(actionCell)");
@@ -77,7 +77,7 @@ test('V3 : indicateurs affichés sur page seulement, sans confondre global et li
   expect(ui).toContain("label: 'Fiche FR · page'");
   expect(ui).toContain("label: 'Approuvés · page'");
   expect(ui).toContain('payload.registry_page?.total');
-  expect(ui).toContain('Contrôle technique candidat uniquement.');
+  expect(ui).toContain('data-catalog-inline-editor');
 });
 
 test('Catalogue actionnable : en-tête compact, onglets et filtres, sans navigation ni KPI passifs', () => {
@@ -147,24 +147,24 @@ test('Classement : formulaire accessible et pas de prompt/confirm avec indices',
   expect(source).toContain("Si une seule feuille reste possible, la proposer d'emblée.");
 });
 
-test('V4 : corrections immédiatement visibles et diagnostic canonique à la demande', () => {
+test('V4 : seules les corrections s’affichent, conformité contrôlée par serveur lors des mutations', () => {
   expect(ui).toContain('function registryCorrectionItems(row = {})');
   expect(ui).toContain('renderRegistryCorrections(doc, diagnostic, row, context, nextStep)');
   expect(ui).toContain('?diagnose_product_ref=');
-  expect(ui).toContain("state.certification.reasons || []");
-  expect(ui).toContain('certificationReasonLabel(reason)');
-  expect(ui).toContain('registryReasonOwner(reason)');
-  expect(ui).toContain('Contrôle technique candidat uniquement.');
+  expect(ui).toContain('renderProductQuickFields(context, doc, panel, row, categories, feedback)');
+  expect(ui).toContain('data-catalog-quick-category');
+  expect(ui).toContain('data-catalog-quick-subcategory');
+  expect(ui).toContain('data-catalog-inline-editor');
   expect(ui).not.toContain("status: 'Publié'");
   expect(css).toContain('.kmc-catalog-readiness-reasons');
   expect(css).toContain('.kmc-catalog-primary-action');
 });
 
-test('V4 : produits inactifs hors candidats ont un réexamen sans faux GO', () => {
-  expect(ui).toContain("if (state.phase === 'product_review')");
-  expect(ui).toContain("const reasons = state.findings || []");
-  expect(ui).toContain('état métier à réexaminer');
-  expect(ui).not.toContain("if (row.lifecycle_status !== 'candidate' || row.is_active === true)");
+test('V4 : fiches inactives hors candidats restent éditables, sans activation implicite', () => {
+  expect(ui).toContain("ENDPOINT+'/products/'+encodeURIComponent(row.product_ref)+'/update'");
+  expect(ui).toContain("const active=row.lifecycle_status==='active'&&row.is_active===true");
+  expect(ui).toContain('data-catalog-quick-field');
+  expect(ui).not.toContain('Aucune correction à apporter.');
 });
 
 test('V4 : état inactif sans diagnostic rapide ouvre le contrôle, pas une fiche sans action', () => {
@@ -197,7 +197,7 @@ test('Dossier opérateur : correction source accessible sans chiffres économiqu
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261031-2');
+  expect(index).toContain('catalog-workspace.js?v=261031-3');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -253,8 +253,8 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261031-2');
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-1');
+  expect(index).toContain('catalog-workspace.js?v=261031-3');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-2');
 });
 
 test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
@@ -269,7 +269,7 @@ test('Validation Catalogue : la préparation française et le contrôle sont dis
   expect(ui).toContain("ENDPOINT + '/approval/'");
   expect(ui).toContain('Validation refusée : ');
   expect(ui).not.toContain("status: 'À valider en Raffinerie'");
-  expect(index).toContain('catalog-workspace.js?v=261031-2');
+  expect(index).toContain('catalog-workspace.js?v=261031-3');
 });
 
 test('Examiner V4 : aucun double Enregistrer/Confirmer visible et conformité garantie par serveur', () => {
