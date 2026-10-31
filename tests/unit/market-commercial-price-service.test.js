@@ -35,19 +35,20 @@ describe('market commercial price decision boundary', () => {
     expect(migration).not.toMatch(/UPDATE\s+products\s+SET\s+price_kmf/i);
   });
 
-  // MARKET-DELEGATION-P0B (Gap 1) : l'autorité n'est plus le rôle projeté
-  // market_operator + requireMarketScopeRole('manager') mais la capability
-  // delegation exacte (pricing.decide / pricing.activate), sans bypass
-  // pricingGlobalAuthority — requireLocalStrategyCapability ne l'admet jamais,
-  // ce qui préserve "not global-admin-owned" à la lettre.
-  test('country price mutation and activation are capability-owned (pricing.decide/activate), not global-admin-owned', () => {
+  // Exception Admin centrale explicitement bornée au Catalogue pays :
+  // le pricing global seul n'ouvre pas les observations ni les stratégies.
+  test('Catalogue pays : Admin vérifié ou capability locale, sans bypass des observations', () => {
     const route = read('routes/admin-pricing-workspace.js');
     expect(route).toMatch(/function requireLocalStrategyCapability/);
-    const fn = route.match(/function requireLocalStrategyCapability\([^)]*\)\s*{[\s\S]*?\n}/)[0];
-    expect(fn).not.toMatch(/pricingGlobalAuthority/);
-    expect(route).toMatch(/products\/:productRef\/local-price', requireLocalStrategyCapability\('pricing\.decide'\)/);
-    expect(route).toMatch(/products\/:productRef\/local-price\/activate', requireLocalStrategyCapability\('pricing\.activate'\)/);
+    const local = route.match(/function requireLocalStrategyCapability\([^)]*\)\s*{[\s\S]*?\n}/)[0];
+    expect(local).not.toMatch(/pricingGlobalAuthority/);
+    expect(route).toMatch(/function requireCatalogPriceCapability/);
+    expect(route).toMatch(/SELECT role FROM users WHERE id=\$1::uuid/);
+    expect(route).toMatch(/products\/:productRef\/local-price', requireCatalogPriceCapability\('pricing\.decide'\)/);
+    expect(route).toMatch(/products\/:productRef\/local-price\/activate', requireCatalogPriceCapability\('pricing\.activate'\)/);
+    expect(route).toMatch(/price-observations', requireLocalStrategyCapability\('market\.observation\.record'\)/);
     expect(route).toMatch(/local_price_buyer_activation: true/);
+    // La projection Pricing globale reste indépendante de l'exception Catalogue pays.
     expect(route).toMatch(/can_activate_local_prices: false/);
   });
 
@@ -55,7 +56,7 @@ describe('market commercial price decision boundary', () => {
     const route = read('routes/admin-pricing-workspace.js');
     const ui = read('public/dashboards/canonical/js/market-autonomy.js');
     expect(route).toMatch(/local-price\/activation-preview/);
-    expect(route).toMatch(/local-price\/activate', requireLocalStrategyCapability\('pricing\.activate'\)/);
+    expect(route).toMatch(/local-price\/activate', requireCatalogPriceCapability\('pricing\.activate'\)/);
     expect(ui).toMatch(/Voir l’impact/);
     expect(ui).toMatch(/LOCAL_ACTIVE/);
     expect(ui).toMatch(/Viewer · lecture seule/);

@@ -13,7 +13,7 @@
  * @db-write-via:catalog-market-exposure-service product_market_exposure
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        catalog_entry_projection_owned_by_market_delegation_service
- * @doctrine      capability_is_the_authority_not_role, global_pricing_authority_or_exact_market_capability, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate, pricing_market_viability_period_structure_truth, local_active_implies_market_catalog_entry
+ * @doctrine      capability_is_the_authority_not_role, global_pricing_authority_or_exact_market_capability, viewer_reads_manager_writes, country_manager_owns_local_strategy_except_verified_central_admin_catalog_price, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate, pricing_market_viability_period_structure_truth, local_active_implies_market_catalog_entry
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-10-d9
  */
@@ -160,14 +160,29 @@ function requirePricingReadCapability(capability) {
   return requirePricingCapability(capability, { audit: false });
 }
 
-// La stratégie commerciale locale (observations, brouillon/activation/reset de
-// prix local) n'a JAMAIS admis l'autorité Pricing centrale — c'était le
-// comportement exact de requireCountryStrategyManager (doctrine
-// `country_manager_owns_local_strategy`, cf. en-tête du fichier) et il n'y a
-// aucune raison de l'élargir en migrant vers les capabilities : pas de bypass
-// pricingGlobalAuthority ici, seule la capability du membre marché compte.
+// Les observations et politiques locales restent aux mains des membres
+// délégués et n'admettent PAS d'autorité Pricing globale implicite.
+// Exception explicite plus bas : l'Admin central vérifié peut traiter les
+// prix produit du Catalogue pays, mais jamais ces autres actions.
 function requireLocalStrategyCapability(capability) {
   return requireMarketDelegatedCapability(capability);
+}
+
+// Catalogue pays only: central Admin may enter a local price or publish it
+// without becoming a delegated market_operator. This never affects the other
+// pricing strategy, cost-policy, or market-delegation routes. Check the live
+// database role, not a browser claim (or a stale role in the session cache).
+function requireCatalogPriceCapability(capability) {
+  const delegatedGuard = requireMarketDelegatedCapability(capability, { audit: capability !== 'pricing.read' });
+  return async (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+      try {
+        const { rows } = await db.query('SELECT role FROM users WHERE id=$1::uuid LIMIT 1', [req.user.id]);
+        if (rows[0] && rows[0].role === 'admin') return next();
+      } catch (error) { return next(error); }
+    }
+    return delegatedGuard(req, res, next);
+  };
 }
 
 function sendAction(res, action, result, status = 200) {
@@ -344,7 +359,7 @@ router.post('/market/:marketCode/price-observations/:observationRef/deactivate',
 
 // Read-only preview of the human-entered price. No draft write and no browser market authority.
 router.post('/market/:marketCode/products/:productRef/local-price/price-preview',
-  requirePricingReadCapability('pricing.read'), async (req, res, next) => {
+  requireCatalogPriceCapability('pricing.read'), async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
       res.json(await pricingMarketCorridor.previewMarketPrice({
@@ -356,7 +371,7 @@ router.post('/market/:marketCode/products/:productRef/local-price/price-preview'
   }
 );
 
-router.get('/market/:marketCode/products/:productRef/local-price/activation-preview', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
+router.get('/market/:marketCode/products/:productRef/local-price/activation-preview', requireCatalogPriceCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     res.json(await marketLocalPriceActivation.previewLocalPriceActivation({
@@ -366,7 +381,7 @@ router.get('/market/:marketCode/products/:productRef/local-price/activation-prev
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/products/:productRef/local-price', requireLocalStrategyCapability('pricing.decide'), requireMarketOperation('local_price_draft'), async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price', requireCatalogPriceCapability('pricing.decide'), requireMarketOperation('local_price_draft'), async (req, res, next) => {
   try {
     sendAction(res, 'set_market_local_price_draft', await marketCommercialPrice.setMarketPriceDraft({
       market: req.workspaceMarket,
@@ -379,7 +394,7 @@ router.post('/market/:marketCode/products/:productRef/local-price', requireLocal
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/products/:productRef/local-price/activate', requireLocalStrategyCapability('pricing.activate'), requireLocalStrategyCapability('catalog.expose'), requireMarketOperation('local_price_activate'), async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price/activate', requireCatalogPriceCapability('pricing.activate'), requireCatalogPriceCapability('catalog.expose'), requireMarketOperation('local_price_activate'), async (req, res, next) => {
     try {
       const activation = await marketLocalPriceActivation.activateLocalPrice({
         market: req.workspaceMarket,
@@ -421,6 +436,7 @@ router.post('/market/:marketCode/products/:productRef/local-price/activate', req
         catalogEntry = await marketDelegationCatalog.setExposure(db, {
           marketCode: req.workspaceMarket.code,
           actorUserId: req.user.id,
+          actorRole: req.user.role,
           productId: rows[0].id,
           exposure: 'ENABLED',
         });
@@ -437,9 +453,9 @@ router.post('/market/:marketCode/products/:productRef/local-price/activate', req
 // Atomic ACTIVE -> ACTIVE repricing: prevents a live product from dropping into
 // a transient draft between the pricing decision and checkout cutover.
 router.post('/market/:marketCode/products/:productRef/local-price/change-active',
-  requireLocalStrategyCapability('pricing.decide'),
-  requireLocalStrategyCapability('pricing.activate'),
-  requireLocalStrategyCapability('catalog.expose'),
+  requireCatalogPriceCapability('pricing.decide'),
+  requireCatalogPriceCapability('pricing.activate'),
+  requireCatalogPriceCapability('catalog.expose'),
   requireMarketOperation('local_price_activate'),
   async (req, res, next) => {
     try {
@@ -456,7 +472,7 @@ router.post('/market/:marketCode/products/:productRef/local-price/change-active'
   }
 );
 
-router.post('/market/:marketCode/products/:productRef/local-price/reset', requireLocalStrategyCapability('pricing.decide'), requireMarketOperation('local_price_reset'), async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price/reset', requireCatalogPriceCapability('pricing.decide'), requireMarketOperation('local_price_reset'), async (req, res, next) => {
   try {
     sendAction(res, 'reset_market_local_price_draft', await marketCommercialPrice.resetMarketPriceDraft({
       market: req.workspaceMarket,
