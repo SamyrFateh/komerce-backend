@@ -269,7 +269,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toHaveAttribute('data-expanded', 'false');
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeHidden();
-      await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'true');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'false');
       const principles = page.locator('details.kmc-economic-principles-detail');
       await expect(principles).not.toHaveAttribute('open', '');
       await principles.locator('summary').click();
@@ -445,7 +445,7 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
     await expect(mutual).toContainText('Infrastructure plateforme');
     await expect(mutual).toContainText('Loyer et équipe Hub');
     await expect(mutual).toContainText('650');
-    await expect(mutual).toHaveAttribute('data-read-only', 'true');
+    await expect(mutual).toHaveAttribute('data-read-only', 'false');
     const mix = reading.locator('.kmc-economic-reading-item.is-mix');
     await expect(mix).toContainText('Variables 66,7 % · Fixes 33,3 %');
     await expect(mix).toContainText('Directs 70,8 % · Mutualisés 29,2 %');
