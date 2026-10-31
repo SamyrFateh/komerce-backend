@@ -169,10 +169,12 @@
         edit.setAttribute('aria-label', `Modifier ${item.label}, valeur actuelle ${item.value}`);
         row.appendChild(edit);
       } else if (item.chargeId) {
-        const edit = el(doc, 'button', 'kmc-inline-cost-action', 'Justifier / corriger');
+        row.dataset.inlineStructureRow = String(item.chargeId);
+        const edit = el(doc, 'button', 'kmc-inline-cost-action', 'Modifier');
         edit.type = 'button';
         edit.dataset.editStructureCharge = String(item.chargeId);
-        edit.setAttribute('aria-label', `Corriger la charge ${item.label} avec justificatif`);
+        edit.dataset.structureScope = item.structureScope || 'fixed-direct';
+        edit.setAttribute('aria-label', `Modifier ${item.label} (période et justificatif obligatoires)`);
         row.appendChild(edit);
       }
       list.appendChild(row);
@@ -269,6 +271,7 @@
       label: item.charge_name || item.charge_family || 'Charge structurelle',
       value: formatKmf(item.recognized_amount_kmf),
       chargeId: canManage ? item.charge_id : null,
+      structureScope: 'fixed-direct',
     }));
     card.appendChild(economicPreview(doc, directPreview,
       directValid ? `Total direct : ${formatKmf(directTotal)}` : 'Total à confirmer pour la période'));
@@ -288,7 +291,7 @@
     return card;
   }
 
-  function fixedMutualizedCard(doc, structure, marketLabel) {
+  function fixedMutualizedCard(doc, structure, marketLabel, canManageGroup = false) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-mutualized is-readonly');
     card.dataset.costSummary = 'fixed-mutualized';
     card.dataset.readOnly = 'true';
@@ -302,6 +305,8 @@
     const mutualPreview = charges.map(charge => ({
       label: charge.charge_name || charge.charge_family || 'Charge mutualisée',
       value: formatKmf(charge.market_share_kmf),
+      chargeId: canManageGroup ? charge.charge_id : null,
+      structureScope: 'fixed-mutualized',
       note: `Quote-part ${charge.market_allocation_ratio == null ? 'non précisée' : `${formatNumber(Number(charge.market_allocation_ratio) * 100)} %`} · ${charge.policy?.basis_kind || 'Politique à confirmer'}`,
     }));
     card.appendChild(economicPreview(doc, mutualPreview,
@@ -424,10 +429,12 @@
     section.appendChild(el(doc, 'p', 'kmc-economic-cost-intro',
       `Coûts et paramètres · ${marketLabel}. Les valeurs héritées et les charges propres au marché sont indiquées séparément. Les montants conservent leur unité de calcul.`));
     const canEditVariables = payload.capabilities?.cost_overrides === true || payload.capabilities?.can_manage_costs === true;
-    const canEditStructure = payload.capabilities?.can_manage_structure_events === true
-      || payload.capabilities?.structure_events === true || user?.role === 'admin';
+    const canEditStructure = payload.capabilities?.can_manage_structure_events === true;
+    const canManageGroup = payload.access?.role === 'global_admin'
+      && user?.role === 'admin';
     const cards = [variableCostCard(doc, groups.variable, canEditVariables),
-      fixedDirectCard(doc, structure, canEditStructure), fixedMutualizedCard(doc, structure, marketLabel)];
+      fixedDirectCard(doc, structure, canEditStructure),
+      fixedMutualizedCard(doc, structure, marketLabel, canManageGroup)];
     section.dataset.costLayout = 'columns';
     section.appendChild(costReading(doc, decision));
     const families = el(doc, 'div', 'kmc-economic-family-grid');
@@ -882,7 +889,7 @@
   // (N3) — jamais un champ inline dans l'Atelier économique. 'fixed-direct'
   // reste scopé au marché courant (manager du marché ou admin) ; le pool
   // 'fixed-mutualized' (GROUP) est admin only, il affecte tous les marchés.
-  async function openStructureEventForm(rootObject, doc, workspace, options, detailKey, chargeId = null) {
+  async function openStructureEventForm(rootObject, doc, workspace, options, detailKey, chargeId = null, inlineOptions = null) {
     const panelApi = rootObject && rootObject.KomerceCanonicalStructureEventPanel;
     if (!panelApi || typeof panelApi.open !== 'function') return;
 
@@ -905,9 +912,12 @@
       eventsEndpoint: `${basePath}/structure-events`,
       submitEndpoint: `${basePath}/structure-events`,
       initialChargeId: chargeId,
+      inline: Boolean(inlineOptions?.inlineContainer),
+      container: inlineOptions?.inlineContainer || options.root,
+      previousValue: inlineOptions?.previousValue || null,
       onSaved: async () => {
         if (typeof rootObject.KomerceCanonicalPricingWorkspace?.mount === 'function') {
-          await rootObject.KomerceCanonicalPricingWorkspace.mount(options);
+          await rootObject.KomerceCanonicalPricingWorkspace.mount({ ...options, refreshEconomicCockpit: true });
         }
       },
     });
@@ -1115,9 +1125,31 @@
       }
       const structureLine = event.target.closest('[data-edit-structure-charge]');
       if (structureLine) {
-        // N3 is event-sourced: one click targets its charge, but proof + period
-        // remain mandatory. Never overwrite a reconciled N3 amount directly.
-        await openStructureEventForm(rootObject, doc, workspace, options, 'fixed-direct', structureLine.dataset.editStructureCharge);
+        // Same inline editing affordance as N1/N2, with an audited N3 event.
+        // Market scope is guarded by structure.event.record; GROUP by global authority.
+        const row = structureLine.closest('[data-inline-structure-row]');
+        const scope = structureLine.dataset.structureScope;
+        const isGroup = scope === 'fixed-mutualized';
+        const allowed = isGroup
+          ? payload.access?.role === 'global_admin' && options.user?.role === 'admin'
+          : payload.capabilities?.can_manage_structure_events === true;
+        if (!row || !allowed) return;
+        const existing = row.querySelector('[data-structure-inline-editor]');
+        if (existing) { existing.querySelector('[data-structure-inline-cancel]')?.click(); return; }
+        const current = row.querySelector('.kmc-economic-family-preview-value')?.textContent || '—';
+        try {
+          await openStructureEventForm(rootObject, doc, workspace, options, scope,
+            structureLine.dataset.editStructureCharge, { inlineContainer: row, previousValue: current });
+          structureLine.hidden = true;
+        } catch (error) {
+          let message = row.querySelector('[data-inline-structure-error]');
+          if (!message) {
+            message = el(doc, 'small', 'kmc-inline-cost-message');
+            message.dataset.inlineStructureError = '';
+            row.appendChild(message);
+          }
+          message.textContent = `Impossible d’ouvrir la modification : ${error.message}`;
+        }
         return;
       }
       const expand = event.target.closest('[data-expand-cost-family]');
