@@ -139,6 +139,12 @@ async function run(mode = process.argv[2], deps = {}) {
     }
     const after=await readRows(client);
     verifyAfter(before,after,apply);
+    // A final verification issue is stricter than a generic dry-run:
+    // it proves every RCT1 sourced handoff is already retired in the DB.
+    if (!apply && env.GITHUB_ISSUE_TITLE === '[staging-op] verify-rct1-sourcing-handoffs' &&
+        after.some(row=>row.is_active!==false || row.is_available!==false)) {
+      throw Error('RCT1_SOURCING_FINAL_VERIFICATION_FAILED');
+    }
     report.after=after.map(row=>({candidate:row.candidate_ref,product:row.product_ref,
       active:row.is_active,available:row.is_available}));
     report.changed=apply ? before.filter(row=>row.is_available||row.is_active).length : 0;
