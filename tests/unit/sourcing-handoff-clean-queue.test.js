@@ -16,6 +16,6 @@ describe('sourcing handoff boundary', () => {
     expect(source).toContain('Boolean(sourcingRemedy(row))');
     expect(source).toContain("['imported_to_catalog','rejected','archived','quarantined'].includes(state)");
     expect(source).toContain('Exceptions fournisseur à résoudre');
-    expect(source).toContain('classifications, traductions et validations sont dans le Catalogue');
+    expect(source).toContain('Les classements, traductions et validations sont dans le Catalogue');
   });
 });
