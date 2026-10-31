@@ -112,7 +112,7 @@ const dossierFixture = {
 
 const frame = `<html lang="fr"><head>
 <meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body class="kmc-shell-v4"><main id="canonical-admin-root"></main></body></html>`;
+<body class="kmc-shell-v4" data-kmc-surface="catalog-workspace"><main id="canonical-admin-root"></main></body></html>`;
 
 async function main() {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
