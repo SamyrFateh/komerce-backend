@@ -73,7 +73,7 @@ test('les exceptions guident vers la bonne autorité métier',async({page})=>{
 test('une source s’ouvre sur demande et ses commandes utilisent son identité exacte',async({page})=>{
  await mount(page);
  const sources=page.locator('[data-unified-sources]');
- await sources.locator('summary').click();
+ await sources.locator(':scope > summary').click();
  await expect(sources).toHaveAttribute('open','');
  await expect(sources.locator('[data-source-card="api:cj"]')).toBeVisible();
  await expect(sources.locator('[data-source-command="update"][data-source-ref="api:cj"]')).toBeVisible();
@@ -84,7 +84,7 @@ test('la source non identifiée n’hérite jamais d’un lien KIR deviné',asyn
  const payload=data();payload.selected.source_ref=null;payload.lots[0].source_ref=null;
  await mount(page,payload);
  const sources=page.locator('[data-unified-sources]');
- await sources.locator('summary').click();
+ await sources.locator(':scope > summary').click();
  await expect(sources.locator('[data-source-card="api:cj"]')).toBeVisible();
  await expect(sources.locator('[data-source-card="api:cj"] .kir-source-follow')).toHaveCount(0);
 });
