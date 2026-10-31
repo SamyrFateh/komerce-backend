@@ -120,7 +120,8 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(pricing).not.toContain('attachMarketDelegatedRoleFor');
     expect(pricing).toContain("requirePricingReadCapability('pricing.read'");
     expect(pricing).toContain("requirePricingCapability('pricing.policy.set'");
-    expect(pricing).toContain("requireLocalStrategyCapability('pricing.decide'");
+    expect(pricing).toContain("requireCatalogPriceCapability('pricing.decide'");
+    expect(pricing).toContain("requireLocalStrategyCapability('market.observation.record'");
 
     const partners = fs.readFileSync(path.join(ROOT, 'routes', 'admin', 'partners.js'), 'utf8');
     expect(partners).not.toContain('require-market-scope');
