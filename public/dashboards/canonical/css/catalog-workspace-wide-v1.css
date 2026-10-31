@@ -1333,3 +1333,76 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
 .kmc-catalog-fr-footer-buttons [hidden],
 .kmc-catalog-classification-actions [hidden],
 .kmc-catalog-inspector-form [hidden] { display: none !important; }
+
+/* Catalogue V4.3 — compléter directement, sans fiche de diagnostic. */
+.kmc-catalog-inline-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 4px 0 16px;
+}
+.kmc-catalog-inline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #283d59;
+  font-size: 13px;
+  font-weight: 650;
+}
+.kmc-catalog-inline-field input,
+.kmc-catalog-inline-field textarea,
+.kmc-catalog-inline-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  background: #fff;
+  color: #172b45;
+  font: inherit;
+  font-weight: 400;
+  border: 1px solid #cad8e9;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.kmc-catalog-inline-field textarea {
+  resize: vertical;
+  min-height: 95px;
+}
+.kmc-catalog-inline-field :is(input,textarea,select):focus-visible {
+  outline: 2px solid #246ab3;
+  outline-offset: 1px;
+}
+.kmc-catalog-inline-taxonomy {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 12px;
+}
+.kmc-catalog-inline-taxonomy > [data-workspace-action="apply-inline-classification-suggestion"] {
+  justify-self: start;
+  grid-column: 1 / -1;
+}
+.kmc-catalog-candidate-inspector [data-catalog-action-dock][hidden],
+.kmc-catalog-candidate-inspector [data-workspace-action][hidden] {
+  display: none !important;
+}
+@media (max-width: 900px) {
+  .kmc-catalog-inline-taxonomy { grid-template-columns: minmax(0,1fr); }
+}
+
+.kmc-catalog-diagnostic .kmc-catalog-status[hidden] { display: none !important; }
+.kmc-catalog-diagnostic .kmc-catalog-corrections { margin: 0; padding-left: 17px; }
+.kmc-catalog-diagnostic .kmc-catalog-corrections > li { margin: 3px 0; }
+
+/* Un titre fournisseur long n'envoie plus « Fermer » sous la fiche. */
+.kmc-catalog-candidate-inspector .kmc-catalog-inspector-head {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 14px;
+}
+.kmc-catalog-candidate-inspector .kmc-catalog-inspector-head > strong {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
+}
+.kmc-catalog-candidate-inspector .kmc-catalog-inspector-head > button {
+  flex: 0 0 auto;
+}
