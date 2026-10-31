@@ -745,12 +745,14 @@ test('Catalogue unique : WATCH bloqué par catégorie économique — suggestion
   await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
   const row=root.querySelector('[data-candidate-ref="KSC-MISSING-ECON"]');
   expect(row.textContent).toContain('Catégorie économique manquante');
+  expect(requests.filter(([url])=>url.includes('/category-options'))).toHaveLength(0);
   await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
   const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-MISSING-ECON"]');
-  const action=panel.querySelector('[data-workspace-action="candidate-economic-category-review"]');
-  expect(action).not.toBeNull();
-  await action.click();
+  expect(panel.querySelector('[data-workspace-action="candidate-economic-category-review"]')).toBeNull();
+  // One first click opens the actual choice, without a second "Corriger" button.
   const select=panel.querySelector('[data-catalog-economic-category-choice]');
+  expect(requests.filter(([url])=>url.includes('/category-options'))).toHaveLength(1);
+  expect(requests.filter(([,opts])=>opts.method==='POST')).toHaveLength(0);
   expect(select).not.toBeNull();
   expect(select.children[0].textContent).toContain('Proposé');
   const form=panel.querySelector('[data-catalog-economic-category-form]');
@@ -779,7 +781,7 @@ test('Catalogue : absence de suggestion économique ne sélectionne jamais une c
   await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
   await root.querySelector('[data-workspace-action="inspect-candidate"]').click();
   const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-NO-SUGGESTION"]');
-  await panel.querySelector('[data-workspace-action="candidate-economic-category-review"]').click();
+  expect(panel.querySelector('[data-workspace-action="candidate-economic-category-review"]')).toBeNull();
   const select=panel.querySelector('[data-catalog-economic-category-choice]');
   expect(select.value).toBe('');
   expect(select.children[0].textContent).toContain('aucune suggestion fiable');
