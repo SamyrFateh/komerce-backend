@@ -408,11 +408,17 @@
       const ready = Boolean(source.connector_ready && source.discovery_ready
         && source.discovery_enabled && source.sync_enabled && source.import_enabled
         && !['missing', 'invalid'].includes(source.credential_status));
+      if (!ready) {
+        const setup = text(doc, 'a', 'kmc-workspace-nav-link',
+          'Configurer la source · ' + label);
+        setup.href = '/admin/import-runtime?view=sources';
+        setup.title = 'Ouvrir la configuration et les prérequis de la source';
+        discoveryBar.appendChild(setup);
+        return;
+      }
       const button = makeButton(doc, 'Importer · ' + label, 'import-source', true);
-      button.disabled = !ready;
-      button.title = ready ? 'Lancer une acquisition sans publication'
-        : 'Source non prête : vérifier la connexion et les capacités';
-      if (ready) button.addEventListener('click', () => {
+      button.title = 'Lancer une acquisition sans publication';
+      button.addEventListener('click', () => {
         if (!context.confirm('Lancer l’acquisition fournisseur ' + label +
           ' ? Aucun produit ne sera publié automatiquement.')) return;
         runAction(context, button, {
@@ -429,8 +435,13 @@
       });
       discoveryBar.appendChild(button);
     });
-    if (!sources.length) discoveryBar.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
-      'Aucune source configurée. Utilisez un import manuel ou configurez une source fournisseur.'));
+    if (!sources.length) {
+      discoveryBar.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
+        'Aucune source configurée. Un import manuel reste possible.'));
+      const setup = text(doc, 'a', 'kmc-workspace-nav-link', 'Configurer une source');
+      setup.href = '/admin/import-runtime?view=sources';
+      discoveryBar.appendChild(setup);
+    }
     slot.appendChild(discoveryBar);
 
     // Un formulaire opérateur unique remplace les fenêtres prompt() en chaîne.
