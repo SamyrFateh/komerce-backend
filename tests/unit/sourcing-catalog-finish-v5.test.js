@@ -38,5 +38,5 @@ test('Assets Sourcing et Catalogue chargés avec révisions cohérentes',()=>{
  expect(html).toContain('sourcing-finish-v5.css?v=261028-3');
  expect(html).toContain('sourcing-workspace.js?v=261028-3');
  expect(html).toContain('catalog-workspace.js?v=261031-5');
- expect(html).toContain('catalog-workspace-wide-v1.css?v=261031-4');
+ expect(html).toContain('catalog-workspace-wide-v1.css?v=261031-5');
 });
