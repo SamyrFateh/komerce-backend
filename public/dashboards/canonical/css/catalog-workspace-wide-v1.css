@@ -1406,3 +1406,51 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
 .kmc-catalog-candidate-inspector .kmc-catalog-inspector-head > button {
   flex: 0 0 auto;
 }
+
+/* Proposition FR : un seul bloc de relecture utile, sans deuxième écran. */
+.kmc-catalog-inline-proposal-note {
+  margin: -3px 0 2px;
+  font-size: 12px;
+  color: #49627e;
+  line-height: 1.45;
+}
+.kmc-catalog-inline-editor .kmc-catalog-proposal-accept {
+  justify-self: start;
+  margin: 0 0 6px;
+  border: 1px solid #a8c3e7;
+  background: #eef5ff;
+  color: #16458b;
+  font-weight: 650;
+}
+.kmc-catalog-inline-taxonomy .kmc-catalog-subcategory-explorer {
+  grid-column: 1 / -1;
+  border: 1px solid #d9e3f1;
+  border-radius: 8px;
+  background: #f8faff;
+  padding: 9px 12px;
+}
+.kmc-catalog-subcategory-explorer > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+  color: #234875;
+}
+.kmc-catalog-subcategory-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+.kmc-catalog-subcategory-choices .kmc-workspace-action {
+  padding: 7px 10px;
+  min-height: 32px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 7px;
+}
+.kmc-catalog-subcategory-choices .kmc-workspace-action.is-selected {
+  border-color: #2057bb;
+  color: #1745a0;
+  background: #e7f0ff;
+  font-weight: 700;
+}
