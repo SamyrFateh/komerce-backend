@@ -653,3 +653,38 @@
 @media (max-width: 1050px) {
   .kmc-atelier-views .kmc-economic-family-preview-row { gap: 5px 8px; }
 }
+
+/* The previously confirmed value is literally beside the proposed value. */
+.kmc-atelier-views .kmc-inline-cost-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 118px);
+  gap: 8px;
+  align-items: center;
+}
+.kmc-atelier-views .kmc-inline-cost-last {
+  grid-column: 1;
+  grid-row: 1;
+  flex: none;
+}
+.kmc-atelier-views .kmc-inline-cost-form input {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-inline-cost-unit {
+  grid-column: 2;
+  grid-row: 2;
+  text-align: right;
+  font-size: 11px;
+}
+.kmc-atelier-views .kmc-inline-cost-form .kmc-inline-cost-save {
+  grid-column: 1;
+  grid-row: 3;
+}
+.kmc-atelier-views .kmc-inline-cost-form .kmc-inline-cost-cancel {
+  grid-column: 2;
+  grid-row: 3;
+}
+.kmc-atelier-views .kmc-inline-cost-message { grid-column: 1 / -1; }
