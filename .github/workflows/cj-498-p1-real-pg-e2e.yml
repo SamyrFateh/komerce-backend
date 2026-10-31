@@ -3,8 +3,15 @@ on:
   pull_request:
     paths:
       - 'services/catalog-candidate-product-service.js'
+      - 'services/catalog-commercial-category-evidence.js'
       - 'tests/unit/catalog-candidate-product-service.test.js'
       - 'scripts/cj-498-p1-disposable-pg-e2e.js'
+      - 'scripts/lib/cj-classification-counter-audit.js'
+      - 'services/catalog-customer-asset-requirement.js'
+      - 'services/product-publication-guard.js'
+      - 'services/catalog-certification.js'
+      - 'tests/unit/product-publication-guard.test.js'
+      - 'tests/unit/catalog-certification.test.js'
       - '.github/workflows/cj-498-p1-real-pg-e2e.yml'
 permissions:
   contents: read
@@ -42,7 +49,10 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/cj-498-p1-disposable-pg-e2e.js
-          npx jest --config jest.unit.config.js tests/unit/catalog-candidate-product-service.test.js --runInBand --no-coverage
+          node --check scripts/lib/cj-classification-counter-audit.js
+          node --check services/catalog-commercial-category-evidence.js
+          node --check services/catalog-customer-asset-requirement.js
+          npx jest --config jest.unit.config.js tests/unit/catalog-candidate-product-service.test.js tests/unit/product-publication-guard.test.js tests/unit/catalog-certification.test.js --runInBand --no-coverage
       - name: Rebuild canonical empty PostgreSQL database in a disposable container
         shell: bash
         run: |

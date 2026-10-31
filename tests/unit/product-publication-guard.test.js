@@ -391,3 +391,51 @@ describe('product-publication-guard', () => {
       .resolves.toEqual({ skipped: true, reason: 'alerts_down' });
   });
 });
+
+
+describe('P0 mandatory customer image — source identity and sale guard',()=>{
+  const {requiresBuyerImage}=require('../../services/catalog-customer-asset-requirement');
+  const required=[
+    'Custom Mug 11oz Christmas Photo Gift - Must Upload The Image',
+    'Custom Photo Blanket Personalized Fleece Throw | 350gFlannel | Same-Day Shipping | Perfect Gift for Family & Friends 30"X40”',
+    'Custom Photo Blanket Personalized Fleece Throw | 350gFlannel | Same-Day Shipping | Perfect Gift for Family & Friends 60”X80”',
+    'Custom Photo Blanket Personalized Fleece Throw | 350gFlannel | Same-Day Shipping | Perfect Gift for Family & Friends 40"X50”',
+    'Custom Photo Blanket Personalized Fleece Throw | 350gFlannel | Same-Day Shipping | Perfect Gift for Family & Friends 50"X60”'
+  ];
+  const base={name:'Couverture confortable',description:'Fiche produit française descriptive suffisamment longue.',
+    category:'Maison',price_kmf:12000,stock:3,is_active:false,is_available:false,
+    content_source:'manual',source_locale:'fr',lifecycle_status:'candidate'};
+  test.each(required)('blocks explicit image requirement with no order-item upload: %s',name_source=>{
+    expect(requiresBuyerImage(name_source)).toBe(true);
+    expect(validatePublicationUpdate({before:{...base,name_source},
+      patch:{is_active:true,is_available:true},context:{catalogMediaCount:1}}))
+      .toMatchObject({ok:false,code:'buyer_image_checkout_not_supported'});
+    expect(validatePublicationUpdate({before:{...base,name_source},patch:{is_available:true}}))
+      .toMatchObject({ok:false,code:'buyer_image_checkout_not_supported'});
+    expect(validatePublicationUpdate({before:{...base,name_source},patch:{}})).toEqual({ok:true});
+  });
+  test.each([
+    'Cute Dinosaur Ring Love Gift Personalized',
+    'Stainless Steel Bracelet Gift Personalized',
+    'Personalized Wine Glass Gift Decoration Mug',
+    'Unique Wall Hook Personalized Home Gift',
+    '24 Pack Straight Sublimation Tumblers Blank',
+    'Photo Pattern Fleece Blanket',
+    'Mug with Landscape Photo Design',
+    'Heat Press Machine With Blank Mugs'
+  ])('does not invent an image requirement from personalization alone: %s',name_source=>{
+    expect(requiresBuyerImage(name_source)).toBe(false);
+    expect(validatePublicationUpdate({before:{...base,name_source},
+      patch:{is_active:true},context:{catalogMediaCount:1}})).toEqual({ok:true});
+  });
+  test('does not lose requirement after French title enrichment',()=>{
+    expect(validatePublicationUpdate({before:{...base,name:'Couverture classique',
+      name_source:required[1]},patch:{is_active:true},context:{catalogMediaCount:1}}))
+      .toMatchObject({ok:false,code:'buyer_image_checkout_not_supported'});
+  });
+  test('explicit manual title also remains blocked',()=>{
+    expect(validatePublicationUpdate({before:{...base,name:'Mug - Must Upload Your Image',
+      name_source:null},patch:{is_active:true},context:{catalogMediaCount:1}}))
+      .toMatchObject({ok:false,code:'buyer_image_checkout_not_supported'});
+  });
+});
