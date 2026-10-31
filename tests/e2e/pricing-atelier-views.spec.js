@@ -259,10 +259,12 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       if (name === '1440') {
         const widths = await page.evaluate(() => {
           const section = document.querySelector('.kmc-cockpit-costs');
-          const reading = section.querySelector('[data-economic-cost-reading]');
-          return { section: section.getBoundingClientRect().width, reading: reading.getBoundingClientRect().width };
+          const reading = document.querySelector('[data-economic-cost-reading]');
+          return { section: section.getBoundingClientRect().width, readingInCostTab: section.contains(reading), readingInCockpit: Boolean(reading && reading.closest('[data-pricing-economic-cockpit]')) };
         });
-        expect(widths.reading).toBeGreaterThan(widths.section * 0.9);
+        expect(widths.section).toBeGreaterThan(0);
+        expect(widths.readingInCostTab).toBe(false);
+        expect(widths.readingInCockpit).toBe(true);
       }
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale héritée');
       await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
