@@ -232,8 +232,8 @@ async function main() {
     assert(!(await frenchEditor.locator('[data-workspace-action="save-fr-editor"]').isVisible()),
       'Autosave must not expose a second save click');
     await frenchEditor.locator('[data-workspace-action="cancel-fr-editor"]').click();
-    assert((await product.innerText()).includes('Médias source identifiés'));
     await product.locator('[data-catalog-complementary-info] > summary').click();
+    assert((await product.innerText()).includes('Médias source identifiés'));
     await product.locator('[data-catalog-canonical-gallery] img').first().waitFor();
     assert.equal(await product.locator('[data-catalog-canonical-gallery] img').count(),1);
     assert((await product.innerText()).includes('25 x 15 x 10'));
