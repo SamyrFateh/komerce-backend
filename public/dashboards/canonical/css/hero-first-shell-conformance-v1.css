@@ -102,7 +102,8 @@ body.kmc-shell-v4.kmc-hero-first > .kmc-admin-topbar {
   justify-content: flex-end;
   gap: 8px;
   margin: 0 auto;
-  padding: 6px var(--kmc-layout-page-pad-x, 24px);
+  /* Keep a visible gutter between reference controls and the Hero frame edge. */
+  padding: 6px calc(var(--kmc-layout-page-pad-x, 24px) + 8px) 6px var(--kmc-layout-page-pad-x, 24px);
   background: transparent;
   border: 0;
   box-shadow: none;
