@@ -26,7 +26,7 @@ const { authenticate } = require('../middleware/auth');
 const { assertMarketOperationAllowed } = require('../services/market-operation-guard');
 const { listAuthorizedMarketsForCapability } = require('../services/market-delegation-service');
 const {
-  resolveAuthorization,
+  resolveCatalogAuthorization,
   listExposure,
   listReviewQueue,
   listReadyToSell,
@@ -75,10 +75,20 @@ function rejectMarketId(body) {
 // This endpoint returns codes, no commercial data or personal identifiers.
 router.get('/catalog/authorized-markets', authenticate, async (req, res, next) => {
   try {
-    const markets = await listAuthorizedMarketsForCapability(db, {
-      userId: req.user.id,
-      requiredCapability: 'catalog.read',
-    });
+    // A central Admin can choose any actively assigned market, explicitly.
+    // All other roles still require a live catalog.read market membership.
+    const markets = req.user.role === 'admin'
+      ? (await db.query(`
+          SELECT m.code AS market_code
+            FROM markets m
+            JOIN market_operating_assignments a
+              ON a.market_id = m.id AND a.status = 'ACTIVE'
+           WHERE m.lifecycle_status IN ('ACTIVE', 'SUSPENDED')
+           ORDER BY m.code`)).rows
+      : await listAuthorizedMarketsForCapability(db, {
+          userId: req.user.id,
+          requiredCapability: 'catalog.read',
+        });
     res.set('Cache-Control', 'private, no-store');
     return res.json({
       required_capability: 'catalog.read',
@@ -99,8 +109,9 @@ router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, re
       // migration 236_market_delegation_catalog_read_capability.sql pour le
       // pourquoi (catalog.expose n'était jamais accordé à un viewer, par
       // conception de la migration 207 ; ça bloquait donc aussi sa lecture).
-      const authz = await resolveAuthorization(client, {
+      const authz = await resolveCatalogAuthorization(client, {
         userId: req.user.id,
+        actorRole: req.user.role,
         marketCode: req.params.marketCode,
         requiredCapability: 'catalog.read',
       });
@@ -155,6 +166,7 @@ router.post('/markets/:marketCode/catalog/review/:productId/validate', authentic
     const result = await withTransaction(client => validateForMarket(client, {
       marketCode: req.params.marketCode,
       actorUserId: req.user.id,
+      actorRole: req.user.role,
       correlationId: correlationId(req),
       productId: req.params.productId,
     }));
