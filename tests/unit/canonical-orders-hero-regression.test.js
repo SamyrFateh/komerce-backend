@@ -57,7 +57,7 @@ test('Commandes has the real canonical illustrated Hero, before all business con
   expect(hero.className).toContain('kmc-dashboard-header');
   expect(hero.children.map(x=>x.textContent)).toEqual([
     'COMMERCE · COMMANDES', 'Commandes',
-    expect.stringContaining('Ouvrez le dossier 360'),
+    expect.stringContaining('consultez leur dossier 360'),
   ]);
   expect(page.children).toHaveLength(2);
   expect(page.children[1].attributes['data-dashboard-role']).toBe('primary');

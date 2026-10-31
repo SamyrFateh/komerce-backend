@@ -171,7 +171,7 @@
     head.appendChild(el(doc, 'p', 'canonical-eyebrow', 'COMMERCE · COMMANDES'));
     head.appendChild(el(doc, 'h1', 'kmc-dashboard-title', 'Commandes'));
     head.appendChild(el(doc, 'p', 'kmc-dashboard-description',
-      'Retrouvez les commandes à suivre et identifiez les prochaines actions. Ouvrez le dossier 360 pour comprendre une commande ; l’exécution reste dans le module métier responsable.'));
+      'Retrouvez les commandes par file et consultez leur dossier 360. Les opérations se réalisent dans les espaces métier concernés.'));
     page.appendChild(head);
     const rows = buildRows(payload);
     const visible = rows.filter(r => state.tab === 'all' || r.queues.includes(state.tab));
@@ -214,7 +214,7 @@
     const table = el(doc, 'table', 'kmc-ord-table');
     const thead = el(doc, 'thead');
     const hr = el(doc, 'tr');
-    ['Référence', 'Marché', 'Client', 'Produits', 'Colis', 'Statut', 'Paiement', 'Montant', 'Action'].forEach(h => hr.appendChild(el(doc, 'th', '', h)));
+    ['Référence', 'Marché', 'Client', 'Produits', 'Colis', 'Statut', 'Paiement', 'Montant', 'Dossier'].forEach(h => hr.appendChild(el(doc, 'th', '', h)));
     thead.appendChild(hr);
     table.appendChild(thead);
     const tbody = el(doc, 'tbody');
@@ -230,23 +230,16 @@
       tr.setAttribute('data-ord-row', r.reference);
       [r.reference, r.market_code || '—', r.client_name || '—', productsLabel(r), parcelsLabel(r), statusLabel(r.status), PAYMENT_LABELS[r.payment_status] || '—',
         money(r.total_kmf)].forEach((v, i) => tr.appendChild(el(doc, 'td', i === 0 ? 'kmc-ord-ref' : '', v)));
-      const actions = el(doc, 'td', 'kmc-ord-cell-action');
-      actions.appendChild(el(doc, 'span', 'kmc-ord-action-label', r.action));
+      // The list is read-only. Workflow labels are not executable actions here.
+      // Match Clients: one dedicated, final “Dossier” cell for the 360 link.
+      const dossier = el(doc, 'td', 'kmc-ord-cell-dossier');
       const open = el(doc, 'a', 'kmc-entity-360-action', 'Voir 360');
       open.href = orderHref(r.reference);
       open.setAttribute('data-ord-open', r.reference);
       open.setAttribute('aria-label', `Voir 360 · commande ${r.reference}`);
       open.addEventListener('click', e => e.stopPropagation?.());
-      actions.appendChild(open);
-      // Preserve the physical execution shortcut only where the server says
-      // the order is ready for a parcel, not for cash or supplier purchasing.
-      if (r.actionable && r.market_code && r.queues.includes('parcel')) {
-        const hub = el(doc, 'a', 'kmc-ord-exec-link', 'Exécution Hub');
-        hub.href = hubExecutionHref(r.market_code);
-        hub.setAttribute('data-ord-hub-execution', r.reference);
-        actions.appendChild(hub);
-      }
-      tr.appendChild(actions);
+      dossier.appendChild(open);
+      tr.appendChild(dossier);
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
