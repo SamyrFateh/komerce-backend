@@ -40,6 +40,7 @@ function cockpit(search = '?run=KIR-000004') {
   const context = {
     URLSearchParams,
     window: {
+      __KOMERCE_LEGACY_PROOF__: true,
       location:{ pathname:'/admin/import-runtime', search },
       history:{ pushState:jest.fn() },
       addEventListener:jest.fn(),
