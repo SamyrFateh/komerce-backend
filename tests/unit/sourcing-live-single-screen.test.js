@@ -31,12 +31,18 @@ const sample=()=>({
     import_enabled:true,connector_ready:true,last_capture_at:'2026-10-27T10:05:00Z'}],
   source_requests:[],
 });
-test('Un seul écran Sourcing Live : décision puis sources et passages repliés',()=>{
+test('Un seul écran Sourcing Live avec trois onglets métier',()=>{
   const html=rendered(sample());
   expect(html).toContain('data-sourcing-single-screen');
   expect(html).toContain('<h1>Sourcing Live</h1>');
   expect(html).toContain('data-unified-sources');
   expect(html).toContain('data-unified-passages');
+  expect(html).toContain('data-sourcing-tabs');
+  expect(html).toContain('data-sourcing-tab="overview" aria-current="page"');
+  expect(html).toContain('data-sourcing-tab="sources"');
+  expect(html).toContain('data-sourcing-tab="passages"');
+  expect(html).toContain('data-sourcing-panel="overview"');
+  expect(html).not.toContain('Examiner la remise →');
   expect(html).toContain('2 actions signalées sur ce passage');
   expect(html).toContain('>20</strong><span>Reçus');
   expect(html).toContain('>16</strong><span>Retenus');
@@ -93,4 +99,27 @@ test('Le formulaire manuel historique obéit au masquage et n’est plus une pag
   expect(css).toContain('.kmc-sourcing-workspace [hidden] { display: none !important; }');
   expect(legacy).toContain('redirected: true');
   expect(legacy).toContain('partnerManagement');
+});
+
+test('L’ancien lien Remise au Catalogue n’ouvre plus une page technique sans action',()=>{
+  const html=rendered(sample(),'?run=KIR-000013&view=handoff');
+  expect(html).toContain('data-sourcing-active-view="overview"');
+  expect(html).toContain('data-sourcing-tab="overview" aria-current="page"');
+  expect(html).toContain('data-sourcing-panel="overview"');
+  expect(html).not.toContain('class="kir-drill-head"');
+  expect(html).not.toContain('Examiner la remise');
+});
+
+test('Les onglets Sources et Passages ne créent pas deux écrans Sourcing concurrents',()=>{
+  const sources=rendered(sample(),'?run=KIR-000013&view=sources');
+  const passages=rendered(sample(),'?run=KIR-000013&view=passages');
+  expect(sources).toContain('data-sourcing-active-view="sources"');
+  expect(sources).toContain('data-sourcing-tab="sources" aria-current="page"');
+  expect(sources).toContain('data-unified-sources');
+  expect(passages).toContain('data-sourcing-active-view="passages"');
+  expect(passages).toContain('data-sourcing-tab="passages" aria-current="page"');
+  for(const html of [sources,passages]){
+    expect(html).toContain('data-sourcing-single-screen');
+    expect(html).not.toContain('class="kir-domain-nav"');
+  }
 });
