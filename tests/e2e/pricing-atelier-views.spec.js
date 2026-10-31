@@ -288,7 +288,7 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
     await expect(page.locator('[data-atelier-policy]')).toContainText('Décisionnelle');
     await expect(page.locator('[data-atelier-policy]')).toContainText('Ratio de couverture');
     await expect(page.locator('[data-atelier-policy]')).not.toContainText('Aucun ratio affiché');
-    await expect(page.locator('[data-pricing-flow-equilibrium]')).toContainText('900');
+    await expect(page.locator('.kmc-metric-card').nth(1)).toContainText('900');
     await shot(page, '5-vue-economique-demo', '1440');
 
     await page.locator('[data-atelier-view="costs"]').click();
