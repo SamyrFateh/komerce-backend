@@ -98,6 +98,32 @@ describe('market-ready-to-sell-projection', () => {
     expect(result.summary).toEqual({ total: 3, ready: 3, review: 0, blocked: 0, bulk_eligible: 2 });
   });
 
+  test('un produit publié mais volontairement masqué reste dans la liste et peut être republié', async () => {
+    const db = executor(
+      [{ product_id: 'p4', amount: 28000, currency: 'KMF', status: 'LOCAL_ACTIVE' }],
+      [{ id: 'p4', product_ref: 'KPR-4', name: 'Masqué', category: 'audio', price_kmf: 18000, cost_kmf: 9000, is_active: true }]
+    );
+    mockBuildCorridor.mockResolvedValueOnce(corridorFor('KPR-4', true));
+
+    const result = await projection.buildReadyToSell({
+      executor: db,
+      market: { id: 'mkt-km', code: 'KM', name: 'Comores', currency: 'KMF' },
+      capabilities: ['catalog.expose', 'pricing.decide', 'pricing.activate'],
+      reviewQueue: { items: [] },
+      exposure: [
+        { product_id: 'p4', product_ref: 'KPR-4', product_name: 'Masqué',
+          decision_recorded: true, commercial_exposure: 'DISABLED' },
+      ],
+    });
+
+    expect(result.pagination.total).toBe(1);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
+      product_ref: 'KPR-4', local_price_active: true,
+      exposure_enabled: false, proposed_price: { amount: 28000, source: 'LOCAL_ACTIVE' },
+    });
+  });
+
   test('un viewer voit la file mais ne peut pas approuver', async () => {
     const db = executor([], [
       { id: 'p1', product_ref: 'KPR-1', name: 'Candidat', category: 'phones', price_kmf: 18000, cost_kmf: 9000, is_active: false },
