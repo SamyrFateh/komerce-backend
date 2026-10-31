@@ -48,6 +48,7 @@ async function buildReadyToSell({
   reviewQueue = { items: [] },
   exposure = [],
   limit = 100,
+  offset = 0,
 } = {}) {
   if (!market?.id || !market?.code || !market?.currency) {
     throw new TypeError('market-ready-to-sell-projection: market résolu requis');
@@ -67,6 +68,7 @@ async function buildReadyToSell({
     return {
       market: { code: market.code, currency: market.currency },
       summary: { total: 0, ready: 0, review: 0, blocked: 0, bulk_eligible: 0 },
+      pagination: { offset: 0, limit: 100, total: 0, has_more: false },
       items: [],
     };
   }
@@ -98,7 +100,9 @@ async function buildReadyToSell({
     sourceRows.push({ ...row, catalog_state: 'published' });
   }
 
-  const limited = sourceRows.slice(0, Math.min(Math.max(Number(limit) || 100, 1), 200));
+  const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
+  const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
+  const limited = sourceRows.slice(safeOffset, safeOffset + safeLimit);
   const selectedIds = limited.map(row => row.product_id);
   const { rows: products } = await executor.query(
     `SELECT id, product_ref, name, description, sku, category, subcategory, image_url,
@@ -238,6 +242,7 @@ async function buildReadyToSell({
       blocked: items.filter(item => item.decision_state.key === 'BLOCKED').length,
       bulk_eligible: items.filter(item => item.bulk_eligible).length,
     },
+    pagination: { offset: safeOffset, limit: safeLimit, total: sourceRows.length, has_more: safeOffset + limited.length < sourceRows.length },
     items,
   };
 }
