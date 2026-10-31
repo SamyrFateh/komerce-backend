@@ -40,3 +40,7 @@
 .kmc-price-detail-box { margin-top:8px; padding:9px; border-radius:7px; background:#eef3fa; font-size:11.5px; color:#47617e; line-height:1.6; }
 .kmc-price-list-empty { padding:28px; text-align:center; color:#75869c; }
 @media(max-width:1240px){ .kmc-price-list-table{min-width:1130px;} }
+
+.kmc-price-list-pagination { display:flex; justify-content:flex-end; align-items:center; gap:12px; padding:15px 4px 2px; color:#62768f; font-size:12px; }
+.kmc-price-list-pagination button { appearance:none; background:#fff; border:1px solid #cfdbe9; color:#1c4c86; padding:7px 12px; border-radius:8px; cursor:pointer; font:inherit; font-weight:700; }
+.kmc-price-list-pagination button:disabled { opacity:.4; cursor:default; }
