@@ -138,7 +138,8 @@
     const doc = options.document;
     const ui = options.ui;
     const search = options.location?.search ?? globalThis.location?.search ?? '';
-    const refinery = new URLSearchParams(search).get('view') === 'refinery';
+    const query = new URLSearchParams(search);
+    const refinery = query.get('view') === 'refinery' && query.get('diagnostic') === '1';
     // Le Catalogue montre directement son registre actionnable.
     // Conserver le hero et l'aide guidée uniquement pour la Raffinerie.
     if (!refinery) return null;
@@ -153,7 +154,7 @@
     header.setAttribute('data-dashboard-role', 'hero');
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', refinery ? 'RAFFINERIE' : 'CATALOGUE'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', refinery ? 'Produits à finaliser' : 'Catalogue global'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', refinery ? 'Préparer les fiches, définir les prix et valider avant publication.' : 'Produits remis par la Raffinerie : retrouver, classer, compléter et valider.'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', refinery ? 'Suivi technique automatique, sans validation humaine dans cet espace.' : 'Produits remis par la Raffinerie : retrouver, classer, compléter et valider.'));
     host.appendChild(header);
 
     const isRegistry = !refinery && !['assortment', 'taxonomy'].includes(new URLSearchParams(search).get('tab'));
