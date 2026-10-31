@@ -237,9 +237,12 @@
     setInlineActionFeedback(inlineFeedback, runningMessage);
     try {
       const result = await jsonRequest(context.fetch, options.url, { method: 'POST', body: options.body || {} });
-      const successMessage = options.successMessage || 'Action appliquée.';
-      setFeedback(context.root, successMessage, 'positive');
-      setInlineActionFeedback(inlineFeedback, successMessage, 'positive');
+      const followUp = typeof options.afterSuccess === 'function'
+        ? await options.afterSuccess(result) : null;
+      const successMessage = followUp?.message || options.successMessage || 'Action appliquée.';
+      const tone = followUp?.tone || 'positive';
+      setFeedback(context.root, successMessage, tone);
+      setInlineActionFeedback(inlineFeedback, successMessage, tone);
       await context.reload();
       return result;
     } catch (error) {
@@ -249,6 +252,30 @@
       button.disabled = false;
       button.textContent = previous;
       return null;
+    }
+  }
+
+  // Only an operator-initiated correction may finish Catalogue automatically.
+  // This reuses the canonical server certification + audited approval writers.
+  // Merely opening a dossier (GET) must never mutate a product.
+  async function finishCatalogueAfterCorrection(context, row) {
+    if (!row?.product_ref || row.lifecycle_status !== 'candidate' || !row.candidate_ref) return null;
+    try {
+      const diagnosis = await jsonRequest(context.fetch,
+        ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref));
+      if (diagnosis?.phase !== 'catalog_approval' || diagnosis?.certification?.certified !== true)
+        return null; // unresolved server prerequisites remain visible after reload
+      const result = await jsonRequest(context.fetch,
+        ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/approve',
+        { method: 'POST' });
+      if (!result?.ok) throw new Error('Approbation Catalogue non acquise.');
+      return { message: row.product_ref +
+        ' : toutes les corrections sont conformes. Catalogue approuvé et audité ; aucun marché publié.',
+        tone: 'positive' };
+    } catch (error) {
+      return { message: row.product_ref +
+        ' : correction enregistrée, mais approbation Catalogue non acquise : ' +
+        actionErrorMessage(error), tone: 'warning' };
     }
   }
 
@@ -842,7 +869,7 @@
           : '';
       });
     });
-    const submitFrench = async (accept = false) => {
+    const submitFrench = async (accept = false, finalize = false) => {
       const name = String(nameField.control.value || '').trim();
       const description = String(descriptionField.control.value || '').trim();
       if (!name || (!activeRecheck && !description)) {
@@ -889,7 +916,8 @@
           reason: 'Préparation FR manuelle/assistée hors runtime',
         },
         runningMessage: 'Enregistrement de la préparation française…',
-        successMessage: `${row.product_ref} : français enregistré sans API IA payante. Cette étape ne valide pas le produit. Ouvrez « Contrôler et valider », vérifiez les prérequis, puis confirmez « Valider le Catalogue ».`,
+        successMessage: `${row.product_ref} : français enregistré automatiquement. Les autres contrôles restent actifs.`,
+        afterSuccess: finalize ? () => finishCatalogueAfterCorrection(context, row) : null,
       });
     };
     save.addEventListener('click', () => submitFrench(false));
@@ -897,7 +925,7 @@
     // serveur valide la mutation ; une erreur laisse les champs éditables.
     let autoSaving = false;
     const autosaveFrench = async () => {
-      if (autoSaving || !dialog.isConnected) return;
+      if (autoSaving || (typeof dialog.isConnected === 'boolean' && !dialog.isConnected)) return;
       const name = String(nameField.control.value || '').trim();
       const description = String(descriptionField.control.value || '').trim();
       if (!name || (!activeRecheck && !description)) {
@@ -910,7 +938,7 @@
       try {
         // Sur une fiche déjà active, une correction éditoriale vaut décision
         // de suffisance du contenu modifié, enregistrée par le writer canonique.
-        await submitFrench(activeRecheck);
+        await submitFrench(activeRecheck, true);
       } finally {
         autoSaving = false;
         nameField.control.disabled = false;
@@ -1770,6 +1798,7 @@
         body: { category: category.key, subcategory: subcategory.key },
         feedbackTarget: feedback,
         successMessage: 'Classement Boutique enregistré. La fiche a été actualisée sans publication.',
+        afterSuccess: () => finishCatalogueAfterCorrection(context, row),
       });
       if (result) close();
     });
@@ -2037,7 +2066,16 @@
           const save = makeButton(doc, 'Confirmer et relancer le scanner',
             'candidate-resolve-economic-category');
           save.type = 'submit';
+          save.hidden = true;
           form.appendChild(save);
+          if (suggested) {
+            const apply = makeButton(doc, 'Appliquer la proposition', 'candidate-apply-economic-suggestion');
+            apply.addEventListener('click', () => form.requestSubmit());
+            form.appendChild(apply);
+          }
+          select.addEventListener('change', () => {
+            if (select.value !== '') form.requestSubmit();
+          });
           form.addEventListener('submit', async event => {
             event.preventDefault();
             const chosen = select.value === '' ? null : ordered[Number(select.value)];
@@ -2153,7 +2191,16 @@
           'automatiquement un brouillon Catalogue non publié. Aucun prix ni marché activé.'));
         const save = makeButton(doc, 'Confirmer le classement', 'confirm-candidate-boutique');
         save.type = 'submit';
+        save.hidden = true;
         form.appendChild(save);
+        if (suggestion) {
+          const apply = makeButton(doc, 'Appliquer la proposition', 'candidate-apply-boutique-suggestion');
+          apply.addEventListener('click', () => form.requestSubmit());
+          form.appendChild(apply);
+        }
+        select.addEventListener('change', () => {
+          if (select.value !== '') form.requestSubmit();
+        });
         form.addEventListener('submit', async event => {
           event.preventDefault();
           const index = Number.parseInt(select.value, 10);
@@ -2188,8 +2235,10 @@
         // not underneath the entire supplier/economic read-only dossier.
         panel.insertBefore(form, panel.querySelector('[data-catalog-source-details]'));
         feedback.textContent = '';
+        classify.hidden = true; // the proposed correction is the only action to show
       } catch (error) {
         feedback.textContent = actionErrorMessage(error);
+        classify.hidden = false;
       } finally {
         classify.disabled = false;
       }
@@ -2469,10 +2518,12 @@
             if (!response?.ok || response.result?.audit_recorded !== true) {
               throw new Error('Preuve de réintégration incomplète.');
             }
+            const finalized = await finishCatalogueAfterCorrection(context, row);
             await context.reload();
             setFeedback(context.root,
-              row.product_ref + ' · médias réintégrés et tracés. Certification à revérifier.',
-              'positive');
+              finalized?.message || row.product_ref +
+                ' · médias réintégrés et tracés. Autres contrôles à vérifier.',
+              finalized?.tone || 'positive');
           } catch (err) {
             feedback.textContent = actionErrorMessage(err);
             recover.disabled = false;
@@ -2583,8 +2634,9 @@
       approvalDetails.appendChild(review);
     }
     if (!actions.children.length && !feedback.textContent)
-      feedback.textContent = 'Aucune correction justifiée à cette étape. ' +
-        'Les décisions de prix et de marché restent distinctes.';
+      feedback.textContent = 'Aucune correction à apporter. Les décisions de prix et de marché restent distinctes.';
+    // Le dossier complet ne précède jamais la liste des anomalies.
+    panel.appendChild(additional);
     return panel;
   }
 
