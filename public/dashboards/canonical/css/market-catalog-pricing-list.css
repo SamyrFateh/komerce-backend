@@ -31,8 +31,8 @@
 .kmc-price-edit small { max-width:220px; }
 .kmc-price-edit small.is-danger, .kmc-price-contribution.is-negative { color:#bb3041; }
 .kmc-price-edit small.is-warning { color:#a46c18; }
-.kmc-price-contribution { min-width:140px; font-weight:750; color:#13775c !important; white-space:nowrap; }
-.kmc-price-contribution.is-negative { color:#bb3041 !important; }
+.kmc-price-contribution { min-width:140px; font-weight:750; color:#13775c; white-space:nowrap; }
+.kmc-price-contribution.is-negative { color:#bb3041; }
 .kmc-price-action { min-width:130px; }
 .kmc-price-action-button { width:100%; min-width:115px; min-height:38px; font-size:12.5px; }
 .kmc-price-action-button:disabled { opacity:.55; cursor:not-allowed; }
