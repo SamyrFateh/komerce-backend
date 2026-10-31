@@ -2852,7 +2852,7 @@
     } else {
       const table = doc.createElement('table');
       table.className = 'kmc-workspace-table kmc-catalog-registry-table';
-      table.innerHTML = '<thead><tr><th>Produit</th><th>Fournisseur</th><th>Classement boutique</th><th>Statut Catalogue</th><th>Consulter</th></tr></thead>';
+      table.innerHTML = '<thead><tr><th>Produit</th><th>Fournisseur</th><th>Classement boutique</th><th>À compléter</th><th>Action</th></tr></thead>';
       const tbody = doc.createElement('tbody');
       const statusNames = {
         source_to_normalize: 'Source à normaliser',
