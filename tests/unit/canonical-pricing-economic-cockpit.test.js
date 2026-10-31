@@ -82,34 +82,26 @@ test('le cockpit lit corridor, décision et quotes-parts serveur sans fallback p
   expect(source).not.toContain('marketId');
 });
 
-test('les trois actions de coûts du mock ouvrent des panneaux séparés, jamais une ancienne rubrique inline', () => {
+test('trois familles : même édition sur la ligne, N3 audité et mutualisé par autorité globale', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
-  const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
+  const panel = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-structure-event-panel.js'), 'utf8');
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
 
-  // Le mock est exclusif : même les coûts variables passent par un panneau dédié.
-  expect(source).toContain("detailKey === 'variable'");
-  expect(source).toContain('await openVariableCostPanel(rootObject, doc, workspace, options, payload)');
-  expect(source).toContain('data-variable-cost-input');
+  expect(source).toContain("row.dataset.inlineCostRow = item.editKey");
+  expect(source).toContain("row.dataset.inlineStructureRow = String(item.chargeId)");
+  expect(source).toContain("edit.dataset.editStructureCharge");
+  expect(source).toContain("edit.dataset.structureScope");
+  expect(source).toContain('inline: Boolean(inlineOptions?.inlineContainer)');
+  expect(source).toContain("payload.capabilities?.can_manage_structure_events === true");
+  expect(source).toContain("payload.access?.role === 'global_admin'");
+  expect(source).toContain("const basePath = isMutualized ? globalEndpoint : marketEndpoint;");
+  expect(source).toContain("card.dataset.readOnly = String(!canManageGroup)");
+  expect(source).toContain("expand.closest('[data-cost-summary]')");
 
-  // Les charges fixes directes gardent leur panneau d'ajustement séparé.
-  expect(source).toContain("detailKey === 'fixed-direct'");
-  expect(source).toContain('await openStructureEventForm(rootObject, doc, workspace, options, detailKey)');
-
-  // Les mutualisées sont une vérité de groupe en lecture seule dans cet
-  // Atelier : encadré grisé, aucune action de gestion exposée.
-  expect(source).toContain("card.dataset.readOnly = 'true'");
-  expect(source).toContain("'Charges fixes mutualisées', 'Charges fixes partagées entre marchés.'");
-  expect(source).not.toContain("detailKey === 'fixed-direct' || detailKey === 'fixed-mutualized'");
-  expect(css).toContain('.kmc-cockpit-cost-card.is-fixed-mutualized');
-  expect(css).toContain('background: #f8fafc');
-
-  // Le support serveur GROUP reste disponible hors de cette surface ; le
-  // cockpit ne le rend simplement plus manipulable.
-  expect(source).toContain("const globalEndpoint = workspace.endpointFor({});");
-  expect(source).toContain('const basePath = isMutualized ? globalEndpoint : marketEndpoint;');
-
-  // Le panneau est un module Canonical natif séparé, chargé dans index.html.
+  expect(panel).toContain("overlay.dataset.structureInlineEditor");
+  expect(panel).toContain("built.form.requestSubmit()");
+  expect(panel).toContain("Une référence de preuve est obligatoire.");
+  expect(panel).toContain("Options avancées · devise, source, notes");
   expect(index).toContain('/dashboards/canonical/js/pricing-structure-event-panel.js');
   expect(index).toContain('/dashboards/canonical/css/pricing-structure-event-panel.css');
 });
