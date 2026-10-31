@@ -1115,16 +1115,11 @@
 
   function localTabsFor(domainId, user, adminContext) {
     const role = roleOf(user);
-    // La navigation N2 du Sourcing suit ses étapes, pas les autres métiers Live.
-    if (domainId === 'live' && ['/admin/import-runtime', '/admin/workspaces/sourcing'].includes(String(global.location?.pathname || ''))) {
-      const run = new URLSearchParams(String(global.location?.search || '')).get('run');
-      const suffix = run ? `run=${encodeURIComponent(run)}&` : '';
-      return [
-        { id: 'sourcing-suivi', label: 'Suivi', href: '/admin/import-runtime' + (run ? `?run=${encodeURIComponent(run)}` : '') },
-        { id: 'sourcing-passages', label: 'Passages', href: `/admin/import-runtime?${suffix}view=passages` },
-        { id: 'sourcing-sources', label: 'Sources', href: `/admin/import-runtime?${suffix}view=sources` },
-        { id: 'sourcing-candidats', label: 'Exceptions source', href: '/admin/workspaces/sourcing?tab=candidates' },
-      ];
+    // One business entry: Sourcing Live. Sources, exceptions and runs are
+    // contextual sections of the same cockpit, not four parallel tabs.
+    if (domainId === 'live' && ['/admin/import-runtime', '/admin/workspaces/sourcing']
+        .includes(String(global.location?.pathname || ''))) {
+      return [{ id:'sourcing-live', label:'Sourcing Live', href:'/admin/import-runtime' }];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub-live') {
       return [
@@ -1159,11 +1154,8 @@
     const hash = String(global.location?.hash || '').replace(/^#/, '');
     const search = new URLSearchParams(String(global.location?.search || ''));
 
-    if (domainId === 'live' && path === '/admin/workspaces/sourcing') return 'sourcing-candidats';
-    if (domainId === 'live' && path === '/admin/import-runtime') {
-      const view = search.get('view');
-      return view === 'passages' ? 'sourcing-passages' : view === 'sources' ? 'sourcing-sources' : 'sourcing-suivi';
-    }
+    if (domainId === 'live' && ['/admin/workspaces/sourcing', '/admin/import-runtime'].includes(path))
+      return 'sourcing-live';
     if (domainId === 'live' && path === '/admin/hub-live') {
       if (search.get('view') === 'execute') return 'hub-execution';
       if (!search.get('view') || search.get('view') === 'flux') return 'hub-flux';
