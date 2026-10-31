@@ -28,6 +28,7 @@ const DASHBOARD_SPECS = [
   'hub-live-cockpit',
   'relais-live-cockpit',
   'import-runtime-cockpit',
+  'sourcing-live-single-screen',
   'import-runtime-credentials',
   'import-runtime-source-registry',
   'purchasing-workspace',

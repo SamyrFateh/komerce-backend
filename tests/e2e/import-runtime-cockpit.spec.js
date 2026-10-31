@@ -62,6 +62,7 @@ async function mountCockpit(page, data = payload) {
         contentType: 'text/html',
         body: `<!doctype html><html lang="fr"><head><meta charset="utf-8">${links}</head>
           <body class="kmc-shell-v4"><main id="canonical-admin-root"></main>
+          <script>window.__KOMERCE_LEGACY_PROOF__ = true;</script>
           <script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>`,
       });
     }
@@ -142,7 +143,7 @@ test.describe('Cockpit imports — conformité au mock clair', () => {
     await expect(page.locator('.kir-current-item')).toContainText('Dernier produit mis à jour');
   });
 
-  test('barre de commandes : Mettre à jour (bleu, généreux) puis Arrêter (rouge clair) quand la source est active', async ({ page }) => {
+  test('barre de commandes : Mettre à jour (bleu, généreux) puis Suspendre l’automatisation (rouge clair) quand la source est active', async ({ page }) => {
     const bar = await page.evaluate(() => {
       const box = (sel) => {
         const el = document.querySelector(sel);
@@ -163,11 +164,12 @@ test.describe('Cockpit imports — conformité au mock clair', () => {
     // Commandes en haut (avant le flux) ; l'inventaire des sources vit dans sa propre vue.
     expect(bar.barTop).toBeLessThan(bar.flowTop);
     expect(bar.stripBelow).toBe(false);
-    expect(bar.label).toBe('Mettre à jour maintenant');
+    expect(bar.label).toBe('Lancer un nouvel import');
     expect(bar.update.bg).toBe('rgb(29, 92, 214)');
     expect(bar.stop.bg).toBe('rgb(247, 228, 231)');
     for (const b of [bar.update, bar.stop]) { expect(b.h).toBeGreaterThanOrEqual(48); expect(b.svg).toBe(true); }
-    expect(bar.update.w).toBeGreaterThan(bar.stop.w);
+    expect(bar.update.w).toBeGreaterThanOrEqual(240);
+    expect(bar.stop.w).toBeGreaterThanOrEqual(240);
     expect(bar.update.x).toBeLessThan(bar.stop.x);
     expect(bar.state).toContain('Mise à jour en cours');
   });
@@ -383,7 +385,7 @@ test.describe('Cockpit imports — Action requise', () => {
       window.KomerceCanonicalImportRuntime.render(document.getElementById('canonical-admin-root'), data);
     }, problemPayload);
     const body = page.locator('.kir-main');
-    for (const s of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
+    for (const s of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Corriger dans le Catalogue']) {
       await expect(body).toContainText(s);
     }
     await expect(page.locator('.kir-row-action')).toHaveCount(3);
@@ -409,7 +411,7 @@ async function mountLive(page, data) {
     if (url.pathname === '/admin/import-runtime') {
       const links = CSS.map((n) => `<link rel="stylesheet" href="/dashboards/canonical/css/${n}.css">`).join('');
       return route.fulfill({ contentType: 'text/html', body: `<!doctype html><html lang="fr"><head><meta charset="utf-8">${links}</head>
-        <body class="kmc-shell-v4"><main id="root"></main><script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>` });
+        <body class="kmc-shell-v4"><main id="root"></main><script>window.__KOMERCE_LEGACY_PROOF__ = true;</script><script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>` });
     }
     if (url.pathname === '/admin/products/P-42') {
       return route.fulfill({ contentType:'text/html', body:`<!doctype html><html lang="fr"><head><meta charset="utf-8"></head>
@@ -500,18 +502,23 @@ async function mountLive(page, data) {
 test.describe('Cockpit imports — commandes opérateur', () => {
   const calm = calmPayload;
 
-  test('Mettre à jour maintenant : « Mise à jour… » pendant l’action, appelle import-now, boutons verrouillés', async ({ page }) => {
+  test('Lancer un nouvel import : « Mise à jour… » pendant l’action, appelle import-now, boutons verrouillés', async ({ page }) => {
     const state = await mountLive(page, calm);
     const update = page.locator('.kir-cmd-update');
+    // A real import requires the operator's explicit confirmation.
+    page.once('dialog', async dialog => {
+      expect(dialog.message()).toContain('nouvel import');
+      await dialog.accept();
+    });
     await update.click();
     await expect(update).toContainText('Mise à jour…');
     await expect(update).toBeDisabled();
     await expect(page.locator('.kir-cmd-stop')).toBeDisabled();
-    await expect(page.locator('.kir-cmd-update')).toContainText('Mettre à jour maintenant', { timeout: 6000 });
+    await expect(page.locator('.kir-cmd-update')).toContainText('Lancer un nouvel import', { timeout: 6000 });
     expect(state.calls).toEqual(['import-now']);
   });
 
-  test('Arrêter : « Arrêt… » puis la source arrêtée propose Redémarrer en premier', async ({ page }) => {
+  test('Suspendre l’automatisation : « Arrêt… » puis la source arrêtée propose Activer l’automatisation en premier', async ({ page }) => {
     const state = await mountLive(page, calm);
     await page.locator('.kir-cmd-stop').click();
     await expect(page.locator('.kir-command-state')).toContainText('Alimentation automatique arrêtée', { timeout: 6000 });
@@ -522,7 +529,7 @@ test.describe('Cockpit imports — commandes opérateur', () => {
     expect(bg).toBe('rgb(227, 247, 239)');
   });
 
-  test('Redémarrer : réutilise activate (même mécanique que l’interrupteur historique)', async ({ page }) => {
+  test('Activer l’automatisation : réutilise activate (même mécanique que l’interrupteur historique)', async ({ page }) => {
     const stopped = JSON.parse(JSON.stringify(calm));
     stopped.source_controls[0].autopilot_enabled = false;
     const state = await mountLive(page, stopped);
@@ -755,7 +762,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
   ];
   const withLots = () => {
     const data = JSON.parse(JSON.stringify(calmPayload));
-    data.lots = [{ run_ref:'KIR-000009', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', provider:'CJ', source_total:20, business_status:'CLOSED' }];
+    data.lots = [{ run_ref:'KIR-000009', source_ref:'api:aliexpress', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', source_ref:'api:cj', provider:'CJ', source_total:20, business_status:'CLOSED' }];
     data.run_nav = { older_ref:'KIR-000008', newer_ref:null };
     return data;
   };
@@ -928,7 +935,7 @@ test.describe('Cockpit imports — vue Sources (cartes opérateur)', () => {
   const board = () => {
     const data = JSON.parse(JSON.stringify(calmPayload));
     data.source_controls = sources();
-    data.lots = [{ run_ref:'KIR-000009', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', provider:'CJ', source_total:20, business_status:'CLOSED' }];
+    data.lots = [{ run_ref:'KIR-000009', source_ref:'api:aliexpress', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', source_ref:'api:cj', provider:'CJ', source_total:20, business_status:'CLOSED' }];
     data.run_nav = { older_ref:'KIR-000008', newer_ref:null };
     return data;
   };
