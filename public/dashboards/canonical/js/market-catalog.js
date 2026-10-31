@@ -134,7 +134,7 @@
       actions.appendChild(target);
     } else if (exposureRow) {
       const target = el('a', 'kmc-workspace-action', 'Voir la décision existante');
-      target.href = '#market-catalog-exposure';
+      target.href = '#market-ready-to-sell';
       actions.appendChild(target);
     }
     const marketPicker = el('a', 'kmc-workspace-action is-secondary', 'Changer de marché');
@@ -216,11 +216,11 @@
     const header = el('header', 'kmc-workspace-header');
     const copy = el('div');
     copy.appendChild(el('span', 'kmc-workspace-kicker', 'CATALOGUE · PAYS'));
-    copy.appendChild(el('h1', 'kmc-workspace-title', `${payload.market.name || marketCode} · Choisir les produits du marché`));
+    copy.appendChild(el('h1', 'kmc-workspace-title', `${payload.market.name || marketCode} · Catalogue des prix`));
     copy.appendChild(el(
       'p',
       'kmc-workspace-subtitle',
-      `${payload.market.currency || '—'} · choisissez les produits qui ont leur place sur ce marché`
+      `${payload.market.currency || '—'} · choisissez les prix et gérez la publication des produits`
     ));
     header.appendChild(copy);
 
@@ -310,8 +310,8 @@
   }
 
   function renderReadyToSell(payload, marketCode) {
-    const ready = global.KomerceMarketReadyToSell;
-    if (!ready || typeof ready.render !== 'function') throw new Error('market_ready_to_sell_ui_missing');
+    const ready = global.KomerceMarketCatalogPricingList || global.KomerceMarketReadyToSell;
+    if (!ready || typeof ready.render !== 'function') throw new Error('market_country_pricing_list_missing');
     const focusedProductRef = focusedRef();
     ready.render({
       root,
@@ -443,9 +443,11 @@
       header.setAttribute('data-dashboard-role', 'hero');
       renderMarketSelector(context, marketCode, header);
       renderProductMarketFocus(payload, marketCode);
-      renderDecisionOverview(payload);
+      // One principal surface: the market pricing catalogue owns both price
+      // and exposure decisions. The old dashboard strips remain as safe fallback.
+      if (!global.KomerceMarketCatalogPricingList) renderDecisionOverview(payload);
       renderReadyToSell(payload, marketCode);
-      renderExposure(payload, marketCode);
+      if (!global.KomerceMarketCatalogPricingList) renderExposure(payload, marketCode);
     } catch (error) {
       if (error.status === 401) {
         global.location.replace('/login.html?next=' + encodeURIComponent(global.location.pathname + global.location.search));
