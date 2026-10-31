@@ -1,6 +1,5 @@
-/* Panneau latéral « Ajustement de charge » — formulaire séparé, jamais
-   inline dans l'Atelier économique. Ouvert par les boutons « Ajuster les
-   charges » / « Gérer les mutualisations » des cartes de coûts. */
+/* Evenement de structure N3 : une seule UI de saisie auditée, soit
+   intégrée à la ligne du cockpit, soit en panneau historique. */
 
 .kmc-structure-panel-overlay {
   position: fixed;
@@ -198,4 +197,101 @@
   text-align: center;
   color: var(--kmc-muted);
   font-size: 0.85rem;
+}
+
+/* N3 follows the same row-level edit interaction as variable costs.
+   Unlike N1/N2 it also needs a period, source and evidence, always. */
+.kmc-atelier-views .kmc-economic-family-preview-row > .kmc-structure-inline-editor {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  margin-top: 10px;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-inline-panel {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  min-width: 0;
+  overflow: visible;
+  box-shadow: none;
+  border: 1px solid #d8e5f1;
+  border-radius: 13px;
+  animation: none;
+  background: #f7fbff;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-header {
+  padding: 11px 12px;
+  gap: 8px;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-title {
+  font-size: 13px;
+  color: #1d4d7d;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-subtitle {
+  font-size: 11px;
+  line-height: 1.45;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-body {
+  padding: 13px 12px;
+  overflow-y: visible;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-footer {
+  padding: 11px 12px;
+  display: flex;
+  flex-wrap: wrap;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-field {
+  min-width: 0;
+  margin-bottom: 11px;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel input,
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel select,
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel textarea {
+  min-width: 0;
+  font-size: 12px;
+  padding: 9px;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-field.is-charge-locked select {
+  color: #54718d;
+  border-color: #d8e5f1;
+  background: #eff5fb;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-inline-previous {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1c547c;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: #e9f4ff;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-inline-hint {
+  color: #4a647d;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 5px 0 13px;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-inline-history {
+  border-top: 1px solid #dce8f2;
+  padding: 10px 0;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-inline-history summary {
+  color: #1e659f;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-error[hidden] { display: none; }
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-btn-primary {
+  background: #176ab3;
+}
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-btn { flex: 1 1 auto; }
+.kmc-atelier-views .kmc-structure-inline-editor .kmc-structure-panel-btn:focus-visible,
+.kmc-atelier-views .kmc-structure-inline-editor summary:focus-visible {
+  outline: 3px solid #438be6; outline-offset: 2px;
 }
