@@ -124,3 +124,9 @@
   position:static; right:auto; top:auto; margin-top:7px;
   width:100%; min-width:150px; box-shadow:0 4px 14px rgba(17,43,80,.09);
 }
+
+/* Sources and candidates should begin immediately below navigation. */
+@media (min-width: 900px) {
+  body.kmc-shell-v4 .kmc-sourcing-workspace .kmc-sourcing-tabs { margin-block: 8px 12px; }
+  body.kmc-shell-v4 .kmc-sourcing-workspace .kmc-sourcing-tab-panel { margin-top: 0; }
+}

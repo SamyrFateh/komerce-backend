@@ -1170,3 +1170,11 @@
   .kmc-catalog-filter { flex-basis: 100%; }
   .kmc-catalog-filter-bar .kmc-workspace-action { min-height: 40px; }
 }
+
+/* Action-first desktop density: retain the hero, reduce unused vertical chrome. */
+@media (min-width: 900px) {
+  body.kmc-shell-v4 .kmc-operations-workspace { gap: 12px; }
+  body.kmc-shell-v4 .kmc-operations-workspace > .kmc-workspace-header { padding: 16px 22px; }
+  body.kmc-shell-v4 .kmc-operations-workspace > .kmc-workspace-header + .kmc-section { margin-top: 0; }
+  body.kmc-shell-v4 .kmc-operations-workspace .kmc-workspace-table-wrap { margin-top: 8px; }
+}
