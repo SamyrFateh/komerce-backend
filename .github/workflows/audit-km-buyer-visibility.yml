@@ -42,8 +42,8 @@ jobs:
               const query=`SELECT p.product_ref,
                    p.is_active, p.is_available, p.lifecycle_status,
                    p.inventory_model, p.has_variants, p.stock,
-                   (\${canonicalProductImageSql('p')} IS NOT NULL) AS has_public_media,
-                   (\${sellableCatalogUnitSql('p')}) AS has_sellable_unit,
+                   (${canonicalProductImageSql('p')} IS NOT NULL) AS has_public_media,
+                   (${sellableCatalogUnitSql('p')}) AS has_sellable_unit,
                    EXISTS (SELECT 1 FROM product_market_exposure e
                      JOIN markets m ON m.id=e.market_id
                      WHERE e.product_id=p.id AND m.code=$1 AND m.is_active=TRUE
@@ -52,7 +52,7 @@ jobs:
                      JOIN markets m ON m.id=pp.market_id
                      WHERE pp.product_id=p.id AND m.code=$1 AND m.is_active=TRUE
                        AND pp.status='LOCAL_ACTIVE') AS priced_km,
-                   (\${publicCatalogVisibilitySql('p',{marketCodeParamIndex:1})}) AS buyer_visible
+                   (${publicCatalogVisibilitySql('p',{marketCodeParamIndex:1})}) AS buyer_visible
                  FROM products p WHERE p.product_ref=$2 LIMIT 1`;
               const row=(await client.query(query,['KM','KPR-000093'])).rows[0];
               if(!row)throw Error('PRODUCT_NOT_FOUND');
