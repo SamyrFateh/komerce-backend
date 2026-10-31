@@ -102,6 +102,11 @@ function snapshotFromRow(row) {
   if (row.po_status === 'cancelled') {
     fail('HUB_PURCHASE_ORDER_CANCELLED', 'Purchase Order annulée');
   }
+  // Une PO non soumise n'est pas une preuve d'achat fournisseur.
+  // Même autorité que pour les en-têtes regroupés : pas d'allocation HUB sur un brouillon.
+  if (row.po_status === 'pending' || row.po_status === 'draft') {
+    fail('HUB_PURCHASE_ORDER_NOT_SUBMITTED', 'Purchase Order non soumise au fournisseur');
+  }
   if (!row.order_item_id || !row.product_sku_id || !row.supplier_id) {
     fail('HUB_PURCHASE_IDENTITY_INCOMPLETE', 'PO sans identité exacte order_item/SKU/supplier');
   }
