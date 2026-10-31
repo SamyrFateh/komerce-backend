@@ -1980,98 +1980,24 @@
     return 'Raffinerie';
   }
 
-  function renderRegistryCorrections(doc, cell, row, context, nextStep) {
-    const issues = registryCorrectionItems(row);
-    const summary = text(doc, 'div', 'kmc-catalog-correction-heading',
-      row.work_status === 'catalog_approved' && row.is_active
-        ? 'Catalogue validé'
-        : (issues.length === 1 && issues[0].code === 'check'
-          ? 'Contrôle nécessaire' : issues.length + ' point(s) signalé(s)'));
-    cell.appendChild(summary);
-    const checklist = doc.createElement('ul');
-    checklist.className = 'kmc-catalog-corrections';
+  // Une ligne du Catalogue indique les corrections, pas l'état technique.
+  // Les prérequis restent contrôlés par le serveur lors des mutations.
+  function renderRegistryCorrections(doc, cell, row) {
+    const issues = registryCorrectionItems(row)
+      .filter(item => !['check', 'market', 'approval_pending'].includes(item.code));
+    if (!issues.length) {
+      cell.appendChild(text(doc, 'span', 'kmc-catalog-correction-hint', '—'));
+      return null;
+    }
+    const list = doc.createElement('ul');
+    list.className = 'kmc-catalog-corrections';
     issues.forEach(issue => {
       const item = text(doc, 'li', 'kmc-catalog-correction-item', issue.label);
       item.setAttribute('data-issue', issue.code);
-      checklist.appendChild(item);
+      list.appendChild(item);
     });
-    cell.appendChild(checklist);
-    if (row.is_active === true) {
-      const note = row.is_active === true
-        ? 'L’approbation Catalogue ne confirme pas la vente sur chaque marché.'
-        : 'État à examiner : aucune publication déduite.';
-      cell.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint', note));
-      return null;
-    }
-    const check = text(doc, 'button', 'kmc-catalog-readiness-check', 'Vérifier tous les prérequis');
-    check.type = 'button';
-    check.setAttribute('aria-expanded', 'false');
-    const result = doc.createElement('div');
-    result.className = 'kmc-catalog-readiness-result';
-    result.setAttribute('role', 'status');
-    result.setAttribute('aria-live', 'polite');
-    check.addEventListener('click', async () => {
-      if (check.getAttribute('aria-expanded') === 'true') {
-        check.setAttribute('aria-expanded', 'false');
-        result.replaceChildren();
-        return;
-      }
-      check.disabled = true;
-      check.textContent = 'Vérification…';
-      try {
-        const state = await jsonRequest(context.fetch, ENDPOINT + '?diagnose_product_ref=' +
-          encodeURIComponent(row.product_ref));
-        result.replaceChildren();
-        if (state.phase === 'product_review') {
-          const reasons = state.findings || [];
-          result.appendChild(text(doc, 'strong', 'kmc-catalog-readiness-title',
-            reasons.length
-              ? reasons.length + ' points techniques à réexaminer'
-              : 'Aucun écart technique courant détecté · état métier à réexaminer'));
-          const list = doc.createElement('ul');
-          list.className = 'kmc-catalog-readiness-reasons';
-          reasons.forEach(reason => {
-            const item = doc.createElement('li');
-            item.appendChild(text(doc, 'span', '', certificationReasonLabel(reason)));
-            item.appendChild(text(doc, 'small', '', registryReasonOwner(reason)));
-            list.appendChild(item);
-          });
-          result.appendChild(list);
-          result.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint', state.note));
-        } else if (state.phase !== 'catalog_approval' || !state.certification) {
-          result.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
-            state.note || 'Ce contrôle ne s’applique pas à cette étape.'));
-        } else {
-          const reasons = state.certification.reasons || [];
-          result.appendChild(text(doc, 'strong', 'kmc-catalog-readiness-title',
-            state.certification.certified
-              ? 'Contrôle technique réussi · validation humaine toujours requise'
-              : reasons.length + ' prérequis de certification à résoudre'));
-          const list = doc.createElement('ul');
-          list.className = 'kmc-catalog-readiness-reasons';
-          reasons.forEach(reason => {
-            const item = doc.createElement('li');
-            item.appendChild(text(doc, 'span', '', certificationReasonLabel(reason)));
-            item.appendChild(text(doc, 'small', '', registryReasonOwner(reason)));
-            list.appendChild(item);
-          });
-          result.appendChild(list);
-          result.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
-            'Contrôle technique candidat uniquement. Revue visuelle FR et activation par marché restent distinctes.'));
-        }
-        check.setAttribute('aria-expanded', 'true');
-      } catch (err) {
-        result.replaceChildren(text(doc, 'p', 'kmc-catalog-readiness-error',
-          'Diagnostic indisponible : ' + actionErrorMessage(err)));
-        check.setAttribute('aria-expanded', 'true');
-      } finally {
-        check.disabled = false;
-        check.textContent = 'Vérifier tous les prérequis';
-      }
-    });
-    cell.appendChild(check);
-    cell.appendChild(result);
-    return check;
+    cell.appendChild(list);
+    return null;
   }
 
   // The Catalogue is one operator surface; each mutation is still sent to
@@ -3028,12 +2954,13 @@
 
         const diagnostic = doc.createElement('td');
         diagnostic.className = 'kmc-catalog-diagnostic';
-        diagnostic.setAttribute('data-label', 'Statut Catalogue');
+        diagnostic.setAttribute('data-label', 'À compléter');
         const nextStep = registryNextStep(row);
         const statusChip = text(doc, 'button', 'kmc-catalog-status', nextStep.status);
         statusChip.type = 'button';
         statusChip.title = 'Aller à l’action : ' + nextStep.label;
         statusChip.setAttribute('data-status', row.work_status || 'inactive');
+        statusChip.hidden = true; // Statut technique masqué : seules les corrections sont visibles.
         diagnostic.appendChild(statusChip);
         const readinessCheck = renderRegistryCorrections(doc, diagnostic, row, context, nextStep);
         tr.appendChild(diagnostic);
