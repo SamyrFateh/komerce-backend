@@ -59,6 +59,15 @@ async function main(){
   ].join(' '),[ids.items.A]);
   if(!p||p.item_count<1||!allocation)
    throw Error('REAL_ALLOCATION_NOT_CREATED');
+  // Establish a physically valid, allocated parcel line as the scanner would
+  // observe after an allocation/packing step. auto-parcel creates membership
+  // but intentionally leaves qty_allocated at its schema default of zero.
+  // This is SQL fixture setup, NOT a claim that the packed HTTP path was run.
+  const qtySet=await c.query(
+   'UPDATE parcel_items SET qty_allocated=quantity WHERE parcel_id=$1 AND order_item_id=$2 RETURNING qty_allocated',
+   [p.id,ids.items.A]);
+  if(qtySet.rowCount!==1||Number(qtySet.rows[0].qty_allocated)<1)
+   throw Error('PHYSICAL_ALLOCATED_QUANTITY_FIXTURE_NOT_VALID');
   await syncOrderFromParcels(c,ids.A);
   const before=await snapshot(c,ids);
   const cancelled=await transitionParcelStatus(c,p.id,'cancelled');
@@ -76,6 +85,8 @@ async function main(){
     'services/scan-engine.js'],
    realOwnersExecuted:true,canonicalPg:true,networkBlocked:true,
    containsNoProductionData:true,before,intermediate,after,
+   allocatedParcelFixturePreparedBySQL:true,
+   parcelAllocationHttpPathExecuted:false,
    allReadsFromPostgres:true,realCancellationAccepted:true
   }));
  }finally{
