@@ -314,6 +314,7 @@ function projectUnitEconomics(pricing = {}, selectedPriceKmf = null) {
     purchase_cost_kmf: pricing.purchase_cost_kmf ?? null,
     variable_cost_outside_purchase_kmf: pricing.variable_cost_outside_purchase_kmf ?? null,
     variable_cost_complete_kmf: pricing.variable_cost_complete_kmf ?? null,
+    landed_relay_cost_kmf: pricing.landed_relay_cost_kmf ?? null,
     // Contrat canonique (2026-09) : cdr_complete_kmf → fully_loaded_cost_reference_kmf
     cdr_reference_kmf: pricing.fully_loaded_cost_reference_kmf ?? null,
     contribution_unit_kmf: pricing.contribution_kmf ?? null,
@@ -435,6 +436,64 @@ async function buildMarketCorridorForProduct({ market, product, executor = db })
     },
     candidate,
     generated_at: new Date().toISOString(),
+  };
+}
+
+// Read-only simulation at the entered market price. Does not set/activate any draft.
+async function previewMarketPrice({ market, productRef, amount }) {
+  requireMarket(market);
+  const localAmount = Number(amount);
+  if (amount == null || amount === '' || !Number.isFinite(localAmount) || localAmount <= 0 || localAmount > 1e12) {
+    throw new PricingMarketCorridorError(400, 'market_price_preview_invalid', 'Prix de vente invalide.');
+  }
+  const product = await resolveProduct(productRef);
+  const projectedPriceKmf = await projectToKmf(localAmount, market.currency);
+  const economics = await computeEconomics(product, market, projectedPriceKmf);
+  const variableKmf = finitePositive(economics.variable_cost_complete_kmf);
+  const landedKmf = finitePositive(economics.landed_relay_cost_kmf);
+  const safeKmf = finitePositive(economics.minimum_safe_price_kmf);
+  const toLocal = async value => {
+    if (value == null) return null;
+    if (market.currency === 'KMF') return rounded(value);
+    const projected = Number(await projectAmount(value, 'KMF', market.currency));
+    return Number.isFinite(projected) ? Math.round(projected * 100) / 100 : null;
+  };
+  const [variableLocal, landedLocal, safeLocal, localRows, existing] = await Promise.all([
+    toLocal(variableKmf), toLocal(landedKmf), toLocal(safeKmf),
+    loadLocalObservations(market.id, product), loadLocalDecision(market.id, product.id),
+  ]);
+  const corridor = projectObservedCorridor(localRows, { currency: market.currency, scope: 'market' });
+  const observedLow = finitePositive(corridor.low?.observed_amount);
+  const observedHigh = finitePositive(corridor.high?.observed_amount);
+  const previous = existing?.status === 'LOCAL_ACTIVE' ? finitePositive(existing.amount) : null;
+  const belowVariable = variableLocal == null || localAmount <= variableLocal
+    || economics.strategy_risk === 'destructive';
+  const belowSafety = safeLocal != null && localAmount < safeLocal;
+  const belowMarket = observedLow != null && localAmount < observedLow;
+  const aboveMarket = observedHigh != null && localAmount > observedHigh;
+  const sharpDrop = previous != null && localAmount < previous * 0.7;
+  const warnings = [
+    ...(belowMarket ? ['BELOW_OBSERVED_MARKET'] : []),
+    ...(aboveMarket ? ['ABOVE_OBSERVED_MARKET'] : []),
+    ...(sharpDrop ? ['SHARP_DROP_FROM_ACTIVE'] : []),
+    ...(belowSafety ? ['BELOW_SAFETY_BOUNDARY'] : []),
+  ];
+  return {
+    market_code: market.code, currency: market.currency, amount: localAmount,
+    variable_cost_kmf: variableKmf, variable_cost_local: variableLocal,
+    landed_relay_cost_kmf: landedKmf, landed_relay_cost_local: landedLocal,
+    minimum_safe_price_local: safeLocal,
+    contribution_kmf: economics.contribution_unit_kmf,
+    contribution_local: variableLocal == null ? null : Math.round((localAmount - variableLocal) * 100) / 100,
+    cost_quality: economics.data_quality || null,
+    market_low: observedLow, market_high: observedHigh,
+    market_evidence: corridor.status, market_confidence: corridor.confidence,
+    active_price: previous, strategy_risk: economics.strategy_risk || null,
+    below_variable: belowVariable,
+    requires_market_gate: belowSafety,
+    requires_acknowledgement: belowMarket || sharpDrop,
+    warnings, can_proceed: !belowVariable,
+    authority: 'READ_ONLY_SERVER_PREVIEW_NOT_ACTIVATION',
   };
 }
 
@@ -563,6 +622,7 @@ module.exports = {
   projectCorridorEconomics,
   buildMarketCorridorForProduct,
   buildMarketCorridor,
+  previewMarketPrice,
   recordMarketObservation,
   deactivateMarketObservation,
 };
