@@ -297,3 +297,14 @@ test('Examiner V4 : aucun double Enregistrer/Confirmer visible et conformité ga
   expect(css).toContain(".kmc-catalog-complementary");
   expect(css).toContain(".kmc-catalog-fr-footer-buttons [hidden]");
 });
+
+test('Registre et Taxonomie réutilisent le même Hero, sans reconstituer un second bandeau', () => {
+  const header = ui.slice(ui.indexOf('function createHeader('), ui.indexOf('function createSection('));
+  const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
+  const oneHeader = 'rootNode.appendChild(createHeader(doc, refinery));';
+  expect(render).toContain(oneHeader);
+  expect(render.indexOf(oneHeader)).toBeLessThan(render.indexOf('renderCatalogTabs(rootNode, doc, context)'));
+  expect(render.indexOf(oneHeader)).toBeLessThan(render.indexOf("context.catalogTab === 'taxonomy'"));
+  expect(header).toContain("if (!refinery) header.setAttribute('data-dashboard-role', 'hero')");
+  expect(header).not.toContain('kmc-catalog-decision-overview');
+});
