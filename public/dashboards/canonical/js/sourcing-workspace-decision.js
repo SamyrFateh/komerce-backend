@@ -29,18 +29,9 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createSourcingDecision() {
   'use strict';
 
-  const DECISION_COPY = Object.freeze({
-    scanned: Object.freeze({
-      label: 'Candidats scannés à arbitrer',
-      helper: 'Le scan est terminé ; promotion, watchlist ou rejet restent des décisions explicites',
-      icon: '◇',
-    }),
-    watchlist: Object.freeze({
-      label: 'Candidats en watchlist',
-      helper: 'Candidats conservés en observation dans le pipeline sourcing',
-      icon: '◎',
-    }),
-  });
+  // No artificial source decisions from scanned/WATCH totals.
+  // Real fixable exceptions are displayed by the Sourcing workspace itself.
+  const DECISION_COPY = Object.freeze({});
 
   function text(doc, tag, className, value) {
     const node = doc.createElement(tag);
@@ -85,38 +76,12 @@
   function summaryCards(items) {
     const index = indexMetrics(items);
     return [
-      {
-        key: 'pipeline',
-        title: 'Pipeline candidats',
-        subtitle: 'Qualifier avant entrée catalogue',
-        icon: 'S',
-        tone: cardTone(index, ['scanned', 'watchlist']),
-        metrics: [
-          metric(index, 'candidates', 'Candidats'),
-          metric(index, 'scanned', 'Scannés'),
-          metric(index, 'watchlist', 'Watchlist'),
-        ],
-      },
-      {
-        key: 'catalog',
-        title: 'Passage catalogue',
-        subtitle: 'Promotion explicite des candidats retenus',
-        icon: 'C',
-        tone: 'neutral',
-        metrics: [
-          metric(index, 'promoted', 'Promus catalogue'),
-        ],
-      },
-      {
-        key: 'suppliers',
-        title: 'Réseau fournisseurs',
-        subtitle: 'Partenaires sourcing enregistrés',
-        icon: 'F',
-        tone: 'neutral',
-        metrics: [
-          metric(index, 'suppliers', 'Fournisseurs sourcing'),
-        ],
-      },
+      { key:'acquisition', title:'Acquisition fournisseur',
+        subtitle:'Sources et passages configurés', icon:'S', tone:'neutral',
+        metrics:[metric(index,'sources','Sources connectées'),metric(index,'imports','Passages recensés')] },
+      { key:'handoff', title:'Flux vers Catalogue',
+        subtitle:'Statistiques de suivi sans tâche humaine présumée', icon:'C', tone:'neutral',
+        metrics:[metric(index,'candidates','Candidats'),metric(index,'promoted','Transmis')] },
     ];
   }
 
@@ -158,19 +123,10 @@
     return container;
   }
 
-  function decorateUi(ui, decisionUi, doc) {
-    if (!ui || !ui.MetricStrip || typeof ui.MetricStrip.render !== 'function') return ui;
-    if (!decisionUi || !decisionUi.DecisionStrip || !decisionUi.SummaryCards) return ui;
-
-    return Object.freeze({
-      ...ui,
-      MetricStrip: Object.freeze({
-        ...ui.MetricStrip,
-        render(container, config = {}) {
-          return renderMetricOverview(container, config.items, decisionUi, doc);
-        },
-      }),
-    });
+  function decorateUi(ui) {
+    // Keep the ordinary four-metric strip. The old DecisionStrip was hiding
+    // metrics and inventing work from scanned/watchlist aggregate counts.
+    return ui;
   }
 
   function healthTone(status) {
