@@ -908,16 +908,11 @@ body.kmc-shell-v4 .kmc-ord .kmc-ord-row:hover { background: #f8fafc; }
 body.kmc-shell-v4 .kmc-ord .kmc-ord-ref {
   font-weight: 750; color: #0f172a; white-space: nowrap;
 }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-cell-action {
-  min-width: 144px; white-space: normal;
+body.kmc-shell-v4 .kmc-ord .kmc-ord-cell-dossier {
+  width: 116px; min-width: 116px; white-space: nowrap;
 }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-action-label {
-  display: block; color: #475569; font-size: 12px; line-height: 1.4;
-}
-body.kmc-shell-v4 .kmc-ord .kmc-entity-360-action { margin-top: 6px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-exec-link {
-  display: inline-block; margin: 7px 0 0 8px; color: #9a3412;
-  font-size: 12px; font-weight: 700; text-decoration: underline;
+body.kmc-shell-v4 .kmc-ord .kmc-ord-cell-dossier .kmc-entity-360-action {
+  margin: 0;
 }
 body.kmc-shell-v4 .kmc-ord .kmc-ord-error {
   padding: 14px; border: 1px solid #fecaca; background: #fef2f2;
