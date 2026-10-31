@@ -378,3 +378,16 @@
 .kmc-atelier-views .kmc-economic-reading-mix-fixed {
   background: #8269ba;
 }
+
+/* Desktop: preserve the percentage and the local share on the same readable row. */
+@media (min-width: 1101px) {
+  .kmc-atelier-views .kmc-cockpit-cost-table.is-fixed-mutualized {
+    grid-template-columns: minmax(180px, 1.4fr) minmax(150px, 1fr)
+      minmax(180px, 1.2fr) minmax(85px, .5fr) minmax(185px, 1.1fr);
+  }
+  .kmc-atelier-views .kmc-cockpit-cost-table.is-fixed-mutualized
+    > .kmc-cockpit-cell:nth-child(5n + 4) {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+}
