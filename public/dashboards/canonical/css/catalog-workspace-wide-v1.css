@@ -1312,3 +1312,24 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
 @media (max-width: 560px) {
   .kmc-catalog-variant-line { grid-template-columns: minmax(0,1fr); }
 }
+
+/* Examiner V4 — les anomalies occupent la surface, les dossiers restent accessibles. */
+.kmc-catalog-complementary {
+  margin: 14px 0 0;
+  border: 1px solid #dce6f0;
+  border-radius: 9px;
+  background: #fbfdff;
+  padding: 0 12px;
+}
+.kmc-catalog-complementary > summary {
+  cursor: pointer;
+  color: #254a70;
+  font-size: 13px;
+  font-weight: 650;
+  padding: 12px 2px;
+}
+.kmc-catalog-complementary[open] { padding-bottom: 12px; }
+.kmc-catalog-complementary > .kmc-workspace-action { margin: 4px 9px 8px 0; }
+.kmc-catalog-fr-footer-buttons [hidden],
+.kmc-catalog-classification-actions [hidden],
+.kmc-catalog-inspector-form [hidden] { display: none !important; }

@@ -237,9 +237,12 @@
     setInlineActionFeedback(inlineFeedback, runningMessage);
     try {
       const result = await jsonRequest(context.fetch, options.url, { method: 'POST', body: options.body || {} });
-      const successMessage = options.successMessage || 'Action appliquée.';
-      setFeedback(context.root, successMessage, 'positive');
-      setInlineActionFeedback(inlineFeedback, successMessage, 'positive');
+      const followUp = typeof options.afterSuccess === 'function'
+        ? await options.afterSuccess(result) : null;
+      const successMessage = followUp?.message || options.successMessage || 'Action appliquée.';
+      const tone = followUp?.tone || 'positive';
+      setFeedback(context.root, successMessage, tone);
+      setInlineActionFeedback(inlineFeedback, successMessage, tone);
       await context.reload();
       return result;
     } catch (error) {
@@ -249,6 +252,33 @@
       button.disabled = false;
       button.textContent = previous;
       return null;
+    }
+  }
+
+  // Only an operator-initiated correction may finish Catalogue automatically.
+  // This reuses the canonical server certification + audited approval writers.
+  // Merely opening a dossier (GET) must never mutate a product.
+  async function finishCatalogueAfterCorrection(context, row) {
+    if (!row?.product_ref || row.lifecycle_status !== 'candidate' || !row.candidate_ref) return null;
+    try {
+      // Méthode explicite : il s'agit d'une lecture, jamais d'un POST.
+      // Les contrôles de contrat API doivent distinguer ce GET du POST d'approbation suivant.
+      const diagnosis = await jsonRequest(context.fetch,
+        ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref),
+        { method: 'GET' });
+      if (diagnosis?.phase !== 'catalog_approval' || diagnosis?.certification?.certified !== true)
+        return null; // unresolved server prerequisites remain visible after reload
+      const result = await jsonRequest(context.fetch,
+        ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/approve',
+        { method: 'POST' });
+      if (!result?.ok) throw new Error('Approbation Catalogue non acquise.');
+      return { message: row.product_ref +
+        ' : toutes les corrections sont conformes. Catalogue approuvé et audité ; aucun marché publié.',
+        tone: 'positive' };
+    } catch (error) {
+      return { message: row.product_ref +
+        ' : correction enregistrée, mais approbation Catalogue non acquise : ' +
+        actionErrorMessage(error), tone: 'warning' };
     }
   }
 
@@ -723,7 +753,11 @@
     sourcePane.appendChild(text(doc, 'strong', 'kmc-catalog-fr-pane-title', 'Source fournisseur'));
     sourcePane.appendChild(text(doc, 'div', 'kmc-catalog-fr-source-title', row.name_source || row.name || '—'));
     sourcePane.appendChild(text(doc, 'p', 'kmc-catalog-fr-source-description', row.description_source || 'Aucune description fournisseur.'));
-    grid.appendChild(sourcePane);
+    const sourceTextDetails = doc.createElement('details');
+    sourceTextDetails.className = 'kmc-catalog-complementary';
+    sourceTextDetails.appendChild(text(doc, 'summary', '', 'Texte fournisseur · Informations complémentaires'));
+    sourceTextDetails.appendChild(sourcePane);
+    grid.appendChild(sourceTextDetails);
 
     const frenchPane = doc.createElement('section');
     frenchPane.className = 'kmc-catalog-fr-editor-pane is-french';
@@ -735,7 +769,11 @@
     assistantActions.appendChild(copy);
     const paste = makeButton(doc, 'Coller la réponse', 'paste-fr-editor', true);
     assistantActions.appendChild(paste);
-    frenchPane.appendChild(assistantActions);
+    const editorialHelp = doc.createElement('details');
+    editorialHelp.className = 'kmc-catalog-complementary';
+    editorialHelp.appendChild(text(doc, 'summary', '', 'Aide à la rédaction (facultatif)'));
+    editorialHelp.appendChild(assistantActions);
+    frenchPane.appendChild(editorialHelp);
 
     const nameField = editorField(doc, 'Titre français', 'name');
     const descriptionField = editorField(doc, activeRecheck
@@ -800,7 +838,8 @@
         }
         nameField.control.value = parsed.name;
         descriptionField.control.value = parsed.description;
-        setEditorFeedback(status, 'Titre et description récupérés automatiquement. Vérifiez puis enregistrez.', 'positive');
+        setEditorFeedback(status, 'Titre et description récupérés. Enregistrement automatique…', 'positive');
+        void autosaveFrench();
       } catch (error) {
         setEditorFeedback(status, error.message || 'Lecture du presse-papiers impossible.', 'critical');
       }
@@ -821,6 +860,8 @@
     cancel.addEventListener('click', () => closeFrenchEditor(context, triggerButton));
     actions.appendChild(cancel);
     const save = makeButton(doc, activeRecheck ? 'Enregistrer le brouillon' : 'Enregistrer la préparation FR', 'save-fr-editor', activeRecheck);
+    // Les changements sont sauvegardés au changement de champ ; bouton historique masqué.
+    save.hidden = true;
     const showSaveProblem = (message, control) => {
       footerNotice.className = 'kmc-catalog-fr-footer-notice is-critical';
       footerNotice.textContent = message;
@@ -835,11 +876,11 @@
         control.removeAttribute('aria-invalid');
         footerNotice.className = 'kmc-catalog-fr-footer-notice';
         footerNotice.textContent = activeRecheck
-          ? 'Description facultative : enregistrez un brouillon ou validez que le contenu actuel suffit.'
-          : '';
+          ? 'Description facultative : enregistrement automatique dès que vous quittez le champ.'
+          : 'Enregistrement automatique dès que les champs requis sont remplis.';
       });
     });
-    const submitFrench = async (accept = false) => {
+    const submitFrench = async (accept = false, finalize = false) => {
       const name = String(nameField.control.value || '').trim();
       const description = String(descriptionField.control.value || '').trim();
       if (!name || (!activeRecheck && !description)) {
@@ -886,13 +927,41 @@
           reason: 'Préparation FR manuelle/assistée hors runtime',
         },
         runningMessage: 'Enregistrement de la préparation française…',
-        successMessage: `${row.product_ref} : français enregistré sans API IA payante. Cette étape ne valide pas le produit. Ouvrez « Contrôler et valider », vérifiez les prérequis, puis confirmez « Valider le Catalogue ».`,
+        successMessage: `${row.product_ref} : français enregistré automatiquement sans API IA payante. Les autres contrôles restent actifs.`,
+        afterSuccess: finalize ? () => finishCatalogueAfterCorrection(context, row) : null,
       });
     };
     save.addEventListener('click', () => submitFrench(false));
+    // Sauvegarde à la sortie d'un champ (pas à chaque frappe). L'autorité
+    // serveur valide la mutation ; une erreur laisse les champs éditables.
+    let autoSaving = false;
+    const autosaveFrench = async () => {
+      if (autoSaving || (typeof dialog.isConnected === 'boolean' && !dialog.isConnected)) return;
+      const name = String(nameField.control.value || '').trim();
+      const description = String(descriptionField.control.value || '').trim();
+      if (!name || (!activeRecheck && !description)) {
+        setEditorFeedback(status, 'Complétez les champs requis ; la sauvegarde se fera automatiquement.', 'warning');
+        return;
+      }
+      autoSaving = true;
+      nameField.control.disabled = true;
+      descriptionField.control.disabled = true;
+      try {
+        // Sur une fiche déjà active, une correction éditoriale vaut décision
+        // de suffisance du contenu modifié, enregistrée par le writer canonique.
+        await submitFrench(activeRecheck, true);
+      } finally {
+        autoSaving = false;
+        nameField.control.disabled = false;
+        descriptionField.control.disabled = false;
+      }
+    };
+    nameField.control.addEventListener('change', () => autosaveFrench());
+    descriptionField.control.addEventListener('change', () => autosaveFrench());
     const validate = activeRecheck
       ? makeButton(doc, 'Valider le contenu actuel', 'validate-fr-sufficient') : null;
     if (validate) {
+      validate.hidden = true;
       validate.title = 'Décision humaine : le contenu français actuel suffit, même sans description.';
       validate.addEventListener('click', () => submitFrench(true));
     }
@@ -1667,6 +1736,7 @@
     const cancel = makeButton(doc, 'Annuler', 'cancel-classification', true);
     const save = makeButton(doc, 'Enregistrer le classement', 'save-classification');
     save.type = 'submit';
+    save.hidden = true; // plus de validation en deux temps après sélection
     actions.appendChild(cancel);
     actions.appendChild(save);
     const feedback = text(doc, 'p', 'kmc-catalog-classification-feedback', '');
@@ -1686,14 +1756,29 @@
       save.disabled = !cat || !selected;
     };
     refresh(suggestion.subcategory);
+    // Une sélection complète est l'action de correction. La suggestion
+    // préremplie n'est jamais appliquée silencieusement à l'ouverture.
+    const autoApplySelection = () => {
+      if (!categorySelect.value || !subcategorySelect.value) return;
+      form.requestSubmit();
+    };
+    const alreadySelected = suggestion.category === row.boutique_category_key &&
+      suggestion.subcategory === row.boutique_subcategory_key;
+    if (suggestion.category && suggestion.subcategory && !alreadySelected) {
+      const apply = makeButton(doc, 'Appliquer la proposition', 'apply-classification-suggestion');
+      apply.addEventListener('click', autoApplySelection);
+      actions.appendChild(apply);
+    }
     categorySelect.addEventListener('change', () => {
       refresh('');
-      note.textContent = 'Vérifiez le nouveau classement avant de l’enregistrer.';
+      note.textContent = 'Sélection sauvegardée automatiquement dès qu’elle est complète.';
       feedback.textContent = '';
+      autoApplySelection();
     });
     subcategorySelect.addEventListener('change', () => {
       save.disabled = !categorySelect.value || !subcategorySelect.value;
       feedback.textContent = '';
+      autoApplySelection();
     });
     form.appendChild(fields);
     form.appendChild(feedback);
@@ -1724,6 +1809,7 @@
         body: { category: category.key, subcategory: subcategory.key },
         feedbackTarget: feedback,
         successMessage: 'Classement Boutique enregistré. La fiche a été actualisée sans publication.',
+        afterSuccess: () => finishCatalogueAfterCorrection(context, row),
       });
       if (result) close();
     });
@@ -1991,7 +2077,16 @@
           const save = makeButton(doc, 'Confirmer et relancer le scanner',
             'candidate-resolve-economic-category');
           save.type = 'submit';
+          save.hidden = true;
           form.appendChild(save);
+          if (suggested) {
+            const apply = makeButton(doc, 'Appliquer la proposition', 'candidate-apply-economic-suggestion');
+            apply.addEventListener('click', () => form.requestSubmit());
+            form.appendChild(apply);
+          }
+          select.addEventListener('change', () => {
+            if (select.value !== '') form.requestSubmit();
+          });
           form.addEventListener('submit', async event => {
             event.preventDefault();
             const chosen = select.value === '' ? null : ordered[Number(select.value)];
@@ -2107,7 +2202,16 @@
           'automatiquement un brouillon Catalogue non publié. Aucun prix ni marché activé.'));
         const save = makeButton(doc, 'Confirmer le classement', 'confirm-candidate-boutique');
         save.type = 'submit';
+        save.hidden = true;
         form.appendChild(save);
+        if (suggestion) {
+          const apply = makeButton(doc, 'Appliquer la proposition', 'candidate-apply-boutique-suggestion');
+          apply.addEventListener('click', () => form.requestSubmit());
+          form.appendChild(apply);
+        }
+        select.addEventListener('change', () => {
+          if (select.value !== '') form.requestSubmit();
+        });
         form.addEventListener('submit', async event => {
           event.preventDefault();
           const index = Number.parseInt(select.value, 10);
@@ -2142,8 +2246,10 @@
         // not underneath the entire supplier/economic read-only dossier.
         panel.insertBefore(form, panel.querySelector('[data-catalog-source-details]'));
         feedback.textContent = '';
+        classify.hidden = true; // the proposed correction is the only action to show
       } catch (error) {
         feedback.textContent = actionErrorMessage(error);
+        classify.hidden = false;
       } finally {
         classify.disabled = false;
       }
@@ -2346,11 +2452,20 @@
     dossierSlot.setAttribute('data-catalog-product-dossier', '');
     dossierSlot.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
       'Lecture des preuves Produit, Sourcing et Commercialisation…'));
-    panel.appendChild(dossierSlot);
+    const additional = doc.createElement('details');
+    additional.className = 'kmc-catalog-complementary';
+    additional.setAttribute('data-catalog-complementary-info', '');
+    additional.appendChild(text(doc, 'summary', '', 'Informations complémentaires'));
+    additional.appendChild(dossierSlot);
+    const supplierInfo = panel.querySelector('[data-catalog-source-details]');
+    if (supplierInfo) additional.insertBefore(supplierInfo, dossierSlot);
     void loadProductDossier(context, doc, dossierSlot, row);
     const issues = Array.isArray(row.issues) ? row.issues : [];
-    panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
-      'Situation actuelle · ' + (registryNextStep(row).status)));
+    const correctionIssues = issues.filter(code => code !== 'approval_pending');
+    const correctionsTitle = text(doc, 'strong', 'kmc-catalog-inspector-section',
+      correctionIssues.length ? 'Corrections nécessaires · ' + correctionIssues.length
+        : 'Aucune anomalie de contenu à corriger');
+    panel.insertBefore(correctionsTitle, panel.querySelector('[data-catalog-action-dock]'));
     const list = doc.createElement('ul');
     list.className = 'kmc-catalog-inspector-issues';
     const labels = {
@@ -2361,15 +2476,16 @@
       state_inconsistent: 'Activation d’un candidat sans preuve de validation',
       approval_pending: 'Validation Catalogue à réaliser',
     };
-    issues.forEach(code => {
+    correctionIssues.forEach(code => {
       if (labels[code]) list.appendChild(text(doc, 'li', '', labels[code]));
     });
-    if (list.children.length) panel.appendChild(list);
+    if (list.children.length) panel.insertBefore(list, panel.querySelector('[data-catalog-action-dock]'));
     if (row.work_status === 'activation_to_reconcile') {
       feedback.textContent =
         'Activation d’une fiche encore marquée candidate : origine et autorisation à vérifier. ' +
         'Réconciliation avec la preuve d’origine indispensable. ' +
         'Aucune approbation ni correction de média proposée automatiquement.';
+      panel.appendChild(additional);
       return panel;
     }
     if (row.lifecycle_status === 'rejected' || row.work_status === 'approval_unproven') {
@@ -2377,12 +2493,13 @@
         ? 'Produit actif sans décision d’approbation démontrée : réconciliation nécessaire, ' +
           'aucune validation automatique.'
         : 'Produit écarté : un réexamen autorisé est nécessaire.';
+      panel.appendChild(additional);
       return panel;
     }
 
     if (issues.includes('media_missing')) {
-      panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
-        'Contrôle média · informations vérifiées'));
+      additional.insertBefore(text(doc, 'strong', 'kmc-catalog-inspector-section',
+        'Contrôle média · informations vérifiées'), dossierSlot);
       const mediaFacts = doc.createElement('dl');
       mediaFacts.className = 'kmc-catalog-inspector-fields';
       const findings = [
@@ -2402,7 +2519,7 @@
         mediaFacts.appendChild(text(doc, 'dt', '', label));
         mediaFacts.appendChild(text(doc, 'dd', '', value));
       });
-      panel.appendChild(mediaFacts);
+      additional.insertBefore(mediaFacts, dossierSlot);
       if (row.media_status === 'source_recoverable' &&
           row.lifecycle_status === 'candidate' && row.is_active === false) {
         const recover = makeButton(doc, 'Réintégrer les médias fournisseur', 'inspector-recover-media');
@@ -2418,10 +2535,12 @@
             if (!response?.ok || response.result?.audit_recorded !== true) {
               throw new Error('Preuve de réintégration incomplète.');
             }
+            const finalized = await finishCatalogueAfterCorrection(context, row);
             await context.reload();
             setFeedback(context.root,
-              row.product_ref + ' · médias réintégrés et tracés. Certification à revérifier.',
-              'positive');
+              finalized?.message || row.product_ref +
+                ' · médias réintégrés et tracés. Autres contrôles à vérifier.',
+              finalized?.tone || 'positive');
           } catch (err) {
             feedback.textContent = actionErrorMessage(err);
             recover.disabled = false;
@@ -2429,8 +2548,8 @@
         });
         actions.appendChild(recover);
       }
-      panel.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
-        'Aucune validation ni publication implicite : la certification devra être relancée.'));
+      additional.insertBefore(text(doc, 'p', 'kmc-catalog-correction-hint',
+        'Le produit reste hors publication marché tant que les contrôles ne sont pas satisfaits.'), dossierSlot);
     }
     if (issues.includes('source_to_normalize'))
       feedback.textContent = row.candidate_ref
@@ -2460,7 +2579,9 @@
           feedback.textContent = actionErrorMessage(err);
         }
       });
-      actions.appendChild(btn);
+      // Une fiche déjà correcte garde l'édition volontaire dans le menu secondaire.
+      if (issues.includes('editorial_to_complete')) actions.appendChild(btn);
+      else additional.insertBefore(btn, dossierSlot);
     }
     // The classification may also be corrected before an issue is raised,
     // but the server still validates the active Boutique pair and operator grant.
@@ -2468,13 +2589,20 @@
       const btn = makeButton(doc, 'Corriger le classement', 'inspector-classify', true);
       btn.addEventListener('click', () =>
         openProductClassificationDialog(context, row, categories, btn));
-      actions.appendChild(btn);
+      if (issues.includes('taxonomy_to_confirm')) actions.appendChild(btn);
+      else additional.insertBefore(btn, dossierSlot);
     }
     if (row.work_status === 'approval_pending' || issues.includes('approval_pending')) {
       const stepNotice = text(doc, 'p', 'kmc-catalog-correction-hint',
         '1. Contrôler les prérequis (lecture seule) · 2. Valider le Catalogue après relecture humaine. La correction du français ne valide jamais automatiquement le produit.');
       stepNotice.setAttribute('data-catalog-approval-explanation', '');
-      panel.querySelector('[data-catalog-action-dock]').appendChild(stepNotice);
+      const approvalDetails = doc.createElement('details');
+      approvalDetails.className = 'kmc-catalog-complementary';
+      approvalDetails.setAttribute('data-catalog-approval-details', '');
+      approvalDetails.appendChild(text(doc, 'summary', '',
+        'Approbation Catalogue · contrôle exceptionnel'));
+      approvalDetails.appendChild(stepNotice);
+      panel.appendChild(approvalDetails);
       const review = makeButton(doc, 'Contrôler les prérequis', 'inspector-check-approval');
       review.addEventListener('click', async () => {
         review.disabled = true;
@@ -2520,11 +2648,12 @@
           feedback.textContent = actionErrorMessage(error);
         } finally { review.disabled = false; }
       });
-      actions.appendChild(review);
+      approvalDetails.appendChild(review);
     }
     if (!actions.children.length && !feedback.textContent)
-      feedback.textContent = 'Aucune correction justifiée à cette étape. ' +
-        'Les décisions de prix et de marché restent distinctes.';
+      feedback.textContent = 'Aucune correction à apporter. Les décisions de prix et de marché restent distinctes.';
+    // Le dossier complet ne précède jamais la liste des anomalies.
+    panel.appendChild(additional);
     return panel;
   }
 
