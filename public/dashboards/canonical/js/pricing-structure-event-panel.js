@@ -314,6 +314,19 @@
     }
 
     built.chargeSelect.addEventListener('change', () => loadHistory(built.chargeSelect.value));
+    // A line in the economic cockpit opens the existing audited workflow on
+    // that exact charge; never guess its identity from a display label.
+    if (config.initialChargeId) {
+      const charge = charges.find(item => String(item.id) === String(config.initialChargeId));
+      if (charge) {
+        built.chargeSelect.value = String(charge.id);
+        await loadHistory(built.chargeSelect.value);
+      } else {
+        built.errorBox.hidden = false;
+        built.errorBox.textContent = 'Charge introuvable : choisissez une charge autorisée.';
+        saveBtn.disabled = true;
+      }
+    }
 
     built.form.addEventListener('submit', async event => {
       event.preventDefault();
