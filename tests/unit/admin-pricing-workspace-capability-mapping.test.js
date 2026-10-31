@@ -36,7 +36,14 @@ describe('admin-pricing-workspace — mapping endpoint → capability (MARKET-DE
     );
     const match = routeSource.match(routeLineRegex);
     expect(match).not.toBeNull();
-    expect(match[0]).toMatch(new RegExp(`require(Pricing|LocalStrategy)Capability\\('${capability.replace(/\./g, '\\.')}'\\)`));
+    expect(match[0]).toMatch(new RegExp(`require(Pricing|LocalStrategy|CatalogPrice)Capability\\('${capability.replace(/\./g, '\\.')}'\\)`));
+    // Pour les décisions de prix produit, l'Admin doit être revérifié en DB,
+    // et les non-Admin continuent par le garde de délégation canonique.
+    if (routeSuffix.includes('/products/:productRef/local-price')) {
+      expect(match[0]).toContain("requireCatalogPriceCapability('" + capability + "')");
+      expect(routeSource).toContain('const delegatedGuard = requireMarketDelegatedCapability(capability');
+      expect(routeSource).toContain('SELECT role FROM users WHERE id=$1::uuid');
+    }
   });
 
   test('D9 supprime entièrement require-market-scope du workspace marché', () => {
