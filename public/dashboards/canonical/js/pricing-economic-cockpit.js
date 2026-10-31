@@ -217,8 +217,15 @@
         readOnlyHint: !canManage
           ? 'Les paramètres variables sont en lecture seule pour ce profil.'
           : 'Aucune clé de composante modifiable disponible.',
-        note: component.inherited === false ? 'Paramètre marché'
-          : component.inherited === true ? 'Base globale héritée' : 'Origine à confirmer',
+        note: component.inherited === false
+          ? (component.base_default_value != null
+            ? `Paramètre marché · Base globale : ${componentValue(component, true)} (lecture seule)`
+            : 'Paramètre marché')
+          : component.inherited === true
+            ? (component.base_default_value != null
+              ? `Base globale héritée · Base globale : ${componentValue(component, true)} (lecture seule)`
+              : 'Base globale héritée')
+            : 'Origine à confirmer',
       })),
     ];
     card.appendChild(economicPreview(doc, previewItems, 'Coût variable complet calculé sur chaque produit'));
