@@ -199,7 +199,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('[data-atelier-draft-form], [data-atelier-sim-form]')).toHaveCount(0);
     });
 
-    test('Modèle de coûts : familles en onglets, propriétaire des coûts', async ({ page }) => {
+    test('Modèle de coûts : trois cartes comparables ou superposées, propriétaire des coûts', async ({ page }) => {
       const posts = [];
       await mount(page, { posts });
       await page.locator('[data-atelier-view="costs"]').click();
@@ -207,8 +207,27 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('.kmc-cockpit-costs')).toBeVisible();
       await expect(page.locator('[data-atelier-products]')).toBeHidden();
       await expect(page.locator('.kmc-metric-card').first()).toBeHidden();
-      const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');
-      await expect(tabs).toHaveText(['Coûts variables', 'Charges fixes directes', 'Charges fixes mutualisées']);
+      const costs = page.locator('.kmc-cockpit-costs');
+      await expect(costs).toHaveAttribute('data-cost-layout', 'columns');
+      await expect(page.locator('[data-cost-layout-button]')).toHaveText(['3 colonnes', 'Superposées']);
+      const cards = page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card');
+      await expect(cards).toHaveCount(3);
+      await expect(cards.nth(0)).toBeVisible();
+      await expect(cards.nth(1)).toBeVisible();
+      await expect(cards.nth(2)).toBeVisible();
+      await expect(page.locator('[data-cost-layout-button="columns"]')).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable [data-cost-family-preview]')).toContainText('Frais Stripe');
+      if (name === '1440') {
+        const widths = await page.evaluate(() => {
+          const rect = node => node.getBoundingClientRect();
+          const nodes = [...document.querySelectorAll('.kmc-economic-family-grid > .kmc-cockpit-cost-card')];
+          return nodes.map(node => ({x:rect(node).x, y:rect(node).y, width:rect(node).width}));
+        });
+        expect(widths[0].x).toBeLessThan(widths[1].x);
+        expect(widths[1].x).toBeLessThan(widths[2].x);
+        expect(Math.max(...widths.map(x => x.y)) - Math.min(...widths.map(x => x.y))).toBeLessThan(3);
+        expect(Math.min(...widths.map(x => x.width))).toBeGreaterThan(210);
+      }
       // Le modèle n'invente pas des parts fixes/variables à partir d'unités non comparables.
       const reading = page.locator('[data-economic-cost-reading]');
       await expect(reading).toBeVisible();
@@ -227,8 +246,14 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
         });
         expect(widths.reading).toBeGreaterThan(widths.section * 0.9);
       }
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Global hérité');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale héritée');
+      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toHaveAttribute('data-expanded', 'true');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeVisible();
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale : 3,2 %');
+      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toHaveAttribute('data-expanded', 'false');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeHidden();
       await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'true');
       const principles = page.locator('details.kmc-economic-principles-detail');
       await expect(principles).not.toHaveAttribute('open', '');
@@ -245,6 +270,21 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await page.locator('[data-variable-cost-panel] button[aria-label="Fermer"]').click();
       await noOverflow(page);
       await shot(page, '4-modele-de-couts', name);
+      await page.locator('[data-cost-layout-button="stacked"]').click();
+      await expect(costs).toHaveAttribute('data-cost-layout', 'stacked');
+      await expect(page.locator('[data-cost-layout-button="stacked"]')).toHaveAttribute('aria-pressed', 'true');
+      await expect(cards.nth(1)).toBeVisible();
+      await expect(cards.nth(2)).toBeVisible();
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeVisible();
+      if (name === '1440') {
+        const ys = await page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card').evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().y));
+        expect(ys[0]).toBeLessThan(ys[1]);
+        expect(ys[1]).toBeLessThan(ys[2]);
+        await shot(page, '8-couts-superposes', '1440');
+      }
+      await noOverflow(page);
+      await page.locator('[data-cost-layout-button="columns"]').click();
+      await expect(costs).toHaveAttribute('data-cost-layout', 'columns');
     });
 
     test('priorité → file filtrée, retour conservé dans l’URL', async ({ page }) => {
@@ -296,12 +336,11 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
     await page.locator('[data-atelier-view="costs"]').click();
     const reading = page.locator('[data-economic-cost-reading]');
     await expect(reading).toBeVisible();
-    await page.locator('[data-cost-family-tab="fixed-direct"]').click();
+    await expect(page.locator('.kmc-cockpit-costs')).toHaveAttribute('data-cost-layout', 'columns');
     const direct = page.locator('.kmc-cockpit-cost-card.is-fixed-direct');
     await expect(direct).toContainText('Loyer local');
     await expect(direct).toContainText('Équipe fixe du marché');
     await expect(direct).toContainText('550');
-    await page.locator('[data-cost-family-tab="fixed-mutualized"]').click();
     const mutual = page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized');
     await expect(mutual).toContainText('Infrastructure plateforme');
     await expect(mutual).toContainText('Loyer et équipe Hub');
@@ -315,6 +354,9 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
     await expect(page.locator('[data-chromium-demo-notice]')).toBeVisible();
     await noOverflow(page);
     await shot(page, '6-couts-mutualises-demo', '1440');
+    await page.locator('[data-cost-layout-button="stacked"]').click();
+    await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cost-table')).toBeVisible();
+    await shot(page, '7-couts-comparatif-superposes-demo', '1440');
     expect(posts).toHaveLength(0);
   });
 });
