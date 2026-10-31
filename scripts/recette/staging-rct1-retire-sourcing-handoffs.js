@@ -19,11 +19,11 @@ const { updateProduct, deleteProduct } = require('../../services/product-admin-s
 const HOST = 'https://komerce-backend-production.up.railway.app';
 const ISSUE = '[staging-op] retire-rct1-sourcing-handoffs';
 const EXPECTED = Object.freeze([
-  { candidate_ref: 'RCT1-P1', product_ref: 'KSC-000180' },
-  { candidate_ref: 'RCT1-P2', product_ref: 'KSC-000181' },
-  { candidate_ref: 'RCT1-P3', product_ref: 'KSC-000182' },
-  { candidate_ref: 'RCT1-P4', product_ref: 'KSC-000183' },
-  { candidate_ref: 'RCT1-P5', product_ref: 'KSC-000184' },
+  { supplier_product_id: 'RCT1-P1', product_ref: 'KSC-000180' },
+  { supplier_product_id: 'RCT1-P2', product_ref: 'KSC-000181' },
+  { supplier_product_id: 'RCT1-P3', product_ref: 'KSC-000182' },
+  { supplier_product_id: 'RCT1-P4', product_ref: 'KSC-000183' },
+  { supplier_product_id: 'RCT1-P5', product_ref: 'KSC-000184' },
 ]);
 
 function authorize(env, mode) {
@@ -42,15 +42,15 @@ function authorize(env, mode) {
 function verifyRows(rows) {
   if (rows.length !== EXPECTED.length) throw Error('RCT1_SOURCING_COUNT_MISMATCH:' + rows.length);
   for (const expected of EXPECTED) {
-    const matches = rows.filter(row => row.candidate_ref === expected.candidate_ref);
-    if (matches.length !== 1) throw Error('RCT1_SOURCING_CANDIDATE_NOT_UNIQUE:' + expected.candidate_ref);
+    const matches = rows.filter(row => row.supplier_product_id === expected.supplier_product_id);
+    if (matches.length !== 1) throw Error('RCT1_SOURCING_CANDIDATE_NOT_UNIQUE:' + expected.supplier_product_id);
     const row = matches[0];
     if (row.product_ref !== expected.product_ref ||
         row.supplier_name !== 'RCT1-FICTIF-recette' ||
-        !String(row.name || '').startsWith(expected.candidate_ref + ' ') ||
+        !String(row.name || '').startsWith(expected.supplier_product_id + ' ') ||
         !String(row.name || '').includes('FICTIF recette') ||
         !row.id) {
-      throw Error('RCT1_SOURCING_PROVENANCE_UNCONFIRMED:' + expected.candidate_ref);
+      throw Error('RCT1_SOURCING_PROVENANCE_UNCONFIRMED:' + expected.supplier_product_id);
     }
   }
 }
@@ -59,34 +59,34 @@ function verifyAfter(before, after, apply) {
   verifyRows(after);
   for (const old of before) {
     const now = after.find(row => row.id === old.id &&
-      row.candidate_ref === old.candidate_ref && row.product_ref === old.product_ref);
+      row.supplier_product_id === old.supplier_product_id && row.product_ref === old.product_ref);
     if (!now || old.preserved_hash !== now.preserved_hash)
-      throw Error('RCT1_SOURCING_OTHER_FIELDS_CHANGED:' + old.candidate_ref);
+      throw Error('RCT1_SOURCING_OTHER_FIELDS_CHANGED:' + old.supplier_product_id);
     if (apply && (now.is_active !== false || now.is_available !== false))
-      throw Error('RCT1_SOURCING_NOT_DISABLED:' + old.candidate_ref);
+      throw Error('RCT1_SOURCING_NOT_DISABLED:' + old.supplier_product_id);
     if (!apply && (now.is_active !== old.is_active || now.is_available !== old.is_available))
-      throw Error('RCT1_SOURCING_DRY_RUN_CHANGED:' + old.candidate_ref);
+      throw Error('RCT1_SOURCING_DRY_RUN_CHANGED:' + old.supplier_product_id);
   }
 }
 
 async function readRows(client, lock = false) {
   const sql = [
     'SELECT p.id, p.product_ref, p.name, p.is_active, p.is_available,',
-    'sc.id AS candidate_id, sc.candidate_ref, sc.supplier_name,',
+    'sc.id AS candidate_id, sc.supplier_product_id, sc.candidate_ref, sc.supplier_name,',
     "md5((to_jsonb(p) - 'is_active' - 'is_available' - 'updated_at')::text) AS preserved_hash",
     'FROM sourcing_candidates sc JOIN products p ON p.id=sc.product_id',
-    'WHERE sc.candidate_ref=ANY($1::text[])',
-    'ORDER BY sc.candidate_ref',
+    'WHERE sc.supplier_product_id=ANY($1::text[])',
+    'ORDER BY sc.supplier_product_id',
     lock ? 'FOR UPDATE OF p' : ''
   ].join('\n');
-  return (await client.query(sql,[EXPECTED.map(row => row.candidate_ref)])).rows;
+  return (await client.query(sql,[EXPECTED.map(row => row.supplier_product_id)])).rows;
 }
 
 async function checkLinkedData(client, rows) {
   const ids = rows.map(row=>row.id);
   const otherSources = (await client.query(
-    'SELECT candidate_ref FROM sourcing_candidates WHERE product_id=ANY($1::uuid[]) AND candidate_ref <> ALL($2::text[])',
-    [ids,EXPECTED.map(row=>row.candidate_ref)]
+    'SELECT candidate_ref FROM sourcing_candidates WHERE product_id=ANY($1::uuid[]) AND id <> ALL($2::uuid[])',
+    [ids,rows.map(row=>row.candidate_id)]
   )).rows;
   if (otherSources.length) throw Error('RCT1_SOURCING_REAL_SOURCE_ASSOCIATED');
   const outside = (await client.query(
@@ -122,7 +122,7 @@ async function run(mode = process.argv[2], deps = {}) {
     const before=await readRows(client,true);
     verifyRows(before);
     await checkLinkedData(client,before);
-    report.before=before.map(row=>({candidate:row.candidate_ref,product:row.product_ref,
+    report.before=before.map(row=>({candidate:row.supplier_product_id,product:row.product_ref,
       active:row.is_active,available:row.is_available}));
     if (apply) {
       for (const row of before) {
@@ -139,7 +139,7 @@ async function run(mode = process.argv[2], deps = {}) {
     }
     const after=await readRows(client);
     verifyAfter(before,after,apply);
-    report.after=after.map(row=>({candidate:row.candidate_ref,product:row.product_ref,
+    report.after=after.map(row=>({candidate:row.supplier_product_id,product:row.product_ref,
       active:row.is_active,available:row.is_available}));
     // A final verification issue is stricter than a generic dry-run:
     // it proves every RCT1 sourced handoff is already retired in the DB.
