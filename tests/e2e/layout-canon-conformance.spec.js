@@ -245,17 +245,17 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
       expect(g.primaryTop).toBeLessThan(941);
       expect(g.horizontalOverflow).toBeLessThanOrEqual(1);
       expect(g.searchTop).not.toBeNull();
-      expect(g.searchTop).toBeGreaterThanOrEqual(g.heroTop + 8);
-      expect(g.searchBottom).toBeLessThanOrEqual(g.heroBottom - 8);
-      expect(g.topbarPosition).toBe('absolute');
+      // Global search occupies a dedicated row, completely above the Hero.
+      expect(g.searchBottom).toBeLessThanOrEqual(g.heroTop - 8);
+      expect(g.topbarPosition).toBe('relative');
       expect(g.tabsDisplay === null || g.tabsDisplay === 'none' || g.tabsHeight === 0).toBe(true);
     }
 
     for (const route of ['/admin/pilotage','/admin/commerce','/admin/operations']) {
       const g = measured[route];
       expect(g.marketTop).not.toBeNull();
-      expect(g.marketBottom).toBeLessThanOrEqual(g.heroBottom - 12);
-      expect(g.marketTop).toBeGreaterThanOrEqual(g.heroTop + 12);
+      expect(g.marketBottom).toBeLessThanOrEqual(g.heroTop - 8);
+      expect(g.marketTop).toBeGreaterThanOrEqual(g.searchTop - 2);
     }
 
     const illustrations = {
@@ -275,7 +275,7 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
     }
   });
 
-  test('recherche et marché restent à l\'intérieur du Hero sur écran large (cadre de page centré)', async ({ page }) => {
+  test('recherche et marché restent au-dessus du Hero sur écran large (cadre de page centré)', async ({ page }) => {
     await page.setViewportSize({ width: 2142, height: 760 });
     const heroFrames = [];
     for (const route of ['/admin/pilotage','/admin/action-center','/admin/commerce','/admin/operations']) {
@@ -302,14 +302,14 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
       for (const control of [r.search, r.market]) {
         expect(control.right).toBeLessThanOrEqual(r.hero.right - 8);
         expect(control.left).toBeGreaterThanOrEqual(r.hero.left);
-        expect(control.top).toBeGreaterThanOrEqual(r.hero.top);
-        expect(control.bottom).toBeLessThanOrEqual(r.hero.bottom);
+        // Search and market must not obscure the title or Hero illustration.
+        expect(control.bottom).toBeLessThanOrEqual(r.hero.top - 8);
       }
       expect(r.search.right).toBeLessThanOrEqual(r.market.left + 1);
     }
   });
 
-  test('après un changement de rubrique (sans rechargement) le marché reste dans la topbar, dans le Hero', async ({ page }) => {
+  test('après navigation SPA la recherche et le marché restent au-dessus du Hero sans doublon', async ({ page }) => {
     await page.setViewportSize({ width: 2142, height: 760 });
     await page.goto(`${ORIGIN}/admin/pilotage`);
     await page.waitForSelector('[data-dashboard-role="hero"]');
@@ -337,8 +337,7 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
       expect(r.duplicateVisible, route).toBe(false);
       for (const control of [r.search, r.market]) {
         expect(control.right, route).toBeLessThanOrEqual(r.hero.right - 8);
-        expect(control.top, route).toBeGreaterThanOrEqual(r.hero.top);
-        expect(control.bottom, route).toBeLessThanOrEqual(r.hero.bottom);
+        expect(control.bottom, route).toBeLessThanOrEqual(r.hero.top - 8);
       }
       expect(r.search.right, route).toBeLessThanOrEqual(r.market.left + 1);
     }

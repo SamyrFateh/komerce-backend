@@ -54,7 +54,7 @@ function createBackend() {
       };
     },
     cockpit(requestedRun) {
-      const lots = backend.runs.map((r) => ({ run_ref: r.run_ref, provider: 'CJdropshipping', source_total: 1, business_status: 'CLOSED' }));
+      const lots = backend.runs.map((r) => ({ run_ref: r.run_ref, source_ref: 'api:cj', provider: 'CJdropshipping', source_total: 1, business_status: 'CLOSED' }));
       const selected = backend.runs.find((r) => r.run_ref === requestedRun) || backend.runs[backend.runs.length - 1] || null;
       return {
         source_controls: backend.source ? [backend.state()] : [],
@@ -202,7 +202,8 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     await mount(page, backend);
     await boot(page);
     await expect(page.locator('.kir-sources-empty')).toBeVisible();
-    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Sources');
+    await expect(page.locator('[data-unified-sources]')).toHaveAttribute('open', '');
+    await expect(page.locator('.kir-domain-nav')).toHaveCount(0);
 
     // Avant même de créer la source, le registre explique ce qu'il faudra fournir.
     await page.locator('[data-add-source]').click();
@@ -233,9 +234,13 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
 
     // D — certification réelle (premier passage) puis source prête.
     await wizard(page).locator('[data-wizard-prepare]').click();
-    // La certification ouvre le suivi du premier passage ; on revient ensuite au registre des sources.
-    await expect(page.getByText('Premier passage terminé')).toBeVisible();
-    await page.locator('.kir-domain-nav a', { hasText: 'Sources' }).click();
+    // La certification ouvre le KIR dans Suivi, pas une bannière masquée sous Sources.
+    await expect(page).toHaveURL(/run=KIR-000010(?:&|$)/);
+    await expect(page.locator('[data-sourcing-tab="overview"]')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('.kir-one-run')).toContainText('KIR-000010');
+    expect(backend.calls.filter(call => call === 'prepare')).toHaveLength(1);
+    expect(backend.runs.map(run => run.run_ref)).toContain('KIR-000010');
+    await boot(page);
     await expect(page.locator('[data-source-wizard]')).toHaveCount(0);
     await expect(card(page).locator('.kir-source-badge')).toHaveText('PRÊTE');
     await expect(card(page).locator('[data-source-toggle]')).toBeEnabled();
@@ -246,11 +251,11 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     await card(page).locator('[data-source-toggle]').click();
     await expect.poll(() => backend.source.enabled).toBe(true);
     await expect.poll(() => backend.calls.filter((c) => c === 'activate').length).toBe(1);
-    await page.locator('.kir-domain-nav a', { hasText: 'Sources' }).click().catch(() => {});
+    await boot(page);
     await expect(card(page).locator('.kir-source-badge')).toHaveText('ACTIVE');
     await expect(card(page).locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'true');
-    await page.locator('.kir-domain-nav a', { hasText: 'Suivi' }).click();
-    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await boot(page, 'run=KIR-000011');
+    await expect(page.locator('.kir-one-run')).toContainText('KIR-000011');
     expect(backend.runs.map((r) => r.run_ref)).toEqual(['KIR-000010', 'KIR-000011']);
     await page.screenshot({ path: 'test-results/import-runtime-source-registry-active.png' });
   });
@@ -267,11 +272,11 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     await expect(first).toBeDisabled();
     await expect(first).toHaveAttribute('aria-busy', 'true');
     await expect(page).toHaveURL(/run=KIR-000012/);
-    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await expect(page.locator('.kir-one-run')).toContainText('KIR-000012');
     expect(backend.calls.filter(call => call === 'import-now')).toHaveLength(1);
     expect(backend.calls).not.toContain('activate');
     expect(backend.source.enabled).toBe(false);
-    await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
+    await boot(page);
     await expect(card(page).locator('[data-source-first-import]')).toHaveText('Lancer un nouveau passage');
     await expect(card(page).locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'false');
     await expect(card(page).locator('.kir-source-follow')).toContainText('Voir le suivi');
@@ -329,12 +334,14 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     backend.runs.push(emptyRun('KIR-000010', 'CJdropshipping'));
     await mount(page, backend);
     await boot(page, 'run=KIR-000010&view=sources');
-    await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
-    await page.locator('.kir-back').click();
-    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await expect(page.locator('[data-unified-sources]')).toHaveAttribute('open', '');
+    await expect(card(page).locator('.kir-source-follow')).toContainText('Voir le suivi');
+    await card(page).locator('.kir-source-follow').click();
+    await expect(page.locator('.kir-one-run')).toContainText('KIR-000010');
     await page.goBack();
     await expect(page.locator('.kir-sources-board')).toHaveCount(1);
-    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Sources');
+    await expect(page.locator('[data-unified-sources]')).toHaveAttribute('open', '');
+    await expect(page.locator('.kir-domain-nav')).toHaveCount(0);
   });
 
   test('G : doublon — « Voir la source existante », jamais de seconde source', async ({ page }) => {

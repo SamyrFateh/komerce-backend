@@ -104,6 +104,8 @@
   min-width: 0;
 }
 
+.kmc-sourcing-workspace [hidden] { display: none !important; }
+
 .kmc-workspace-section-actions {
   display: flex;
   justify-content: flex-end;

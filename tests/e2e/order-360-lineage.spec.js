@@ -122,6 +122,9 @@ test.describe('Order 360 — lignage métier', () => {
     await mount(page);
 
     await expect(page.locator('.kmc-entity-subtitle')).toContainText('KM');
+    // Order 360 keeps the main facts visible; drill evidence opens on demand.
+    await expect(page.locator('.kmc-entity-extras')).not.toHaveAttribute('open');
+    await page.locator('.kmc-entity-extras summary').click();
     await expect(page.locator('.kmc-entity-subtitle')).toContainText('Amina M.');
     await expect(page.getByRole('cell', { name: 'Golden Elite Pro' })).toBeVisible();
     await expect(page.getByText(/CJ Dropshipping · PO 11111111/)).toBeVisible();
@@ -135,6 +138,7 @@ test.describe('Order 360 — lignage métier', () => {
 
   test('les drills conservent le retour contextuel vers la commande', async ({ page }) => {
     await mount(page);
+    await page.locator('.kmc-entity-extras summary').click();
 
     const product = page.getByRole('link', { name: 'Product 360' });
     await expect(product).toHaveAttribute('href', /\/admin\/products\/GOLDEN-ELITE-PRO\?/);

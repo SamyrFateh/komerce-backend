@@ -856,49 +856,72 @@ body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-links { display: flex; flex-wrap: wrap; ga
 body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-links a { color: #c2410c; font-weight: 700; text-decoration: none; }
 body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-links a:hover { text-decoration: underline; }
 body.kmc-shell-v4 .kmc-fin3 .kmc-fin3-links-muted { color: #64748b; }
-/* ── Commandes (vue distincte) — structure du mock validé, palette Komerce ── */
-body.kmc-shell-v4 .kmc-ord { display: grid; gap: 16px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-title { margin: 0; font-size: 26px; font-weight: 800; color: #0f172a; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-sub { margin: 4px 0 0; color: #475569; font-size: 14px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-kpi { display: grid; gap: 4px; padding: 18px 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-kpi-label { color: #475569; font-size: 13px; font-weight: 600; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-kpi-value { color: #0f172a; font-size: 32px; font-weight: 800; line-height: 1.1; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-kpi-cash .kmc-ord-kpi-value { color: #c2410c; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-kpi-blocked .kmc-ord-kpi-value { color: #b91c1c; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-kpi-hint, body.kmc-shell-v4 .kmc-ord .kmc-ord-muted { color: #64748b; font-size: 12px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-unavailable { color: #64748b; font-size: 16px; font-weight: 600; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-list, body.kmc-shell-v4 .kmc-ord .kmc-ord-detail, body.kmc-shell-v4 .kmc-ord .kmc-ord-funnel, body.kmc-shell-v4 .kmc-ord .kmc-ord-signals { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: #0f172a; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-tab { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-tab.is-active { background: #fff7ed; border-color: #ea580c; color: #c2410c; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-table-wrap { overflow-x: auto; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-table th { text-align: left; color: #64748b; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-row { cursor: pointer; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-row:hover, body.kmc-shell-v4 .kmc-ord .kmc-ord-row.is-selected { background: #fff7ed; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-ref { font-weight: 700; color: #0f172a; white-space: nowrap; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-detail-ref { display: block; font-size: 18px; margin-bottom: 8px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-detail-list { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0 0 12px; font-size: 13px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-detail-list dt { color: #64748b; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-detail-list dd { margin: 0; color: #0f172a; font-weight: 600; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-action { background: #fff7ed; color: #9a3412; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-open { display: inline-block; background: #ea580c; color: #fff; border-radius: 10px; padding: 9px 14px; font-weight: 700; text-decoration: none; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-foot { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-funnel-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 0; padding: 0; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-funnel-step { display: grid; gap: 2px; padding: 10px; background: #f8fafc; border-radius: 10px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-funnel-label { color: #64748b; font-size: 12px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-funnel-value { font-size: 20px; color: #0f172a; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-signal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-signal { display: flex; justify-content: space-between; font-size: 13px; }
-body.kmc-shell-v4 .kmc-ord .kmc-ord-error { padding: 14px; border: 1px solid #fecaca; background: #fef2f2; color: #991b1b; border-radius: 12px; }
+/* Commandes uses the same information hierarchy as Clients:
+ * canonical hero, compact filter, full-width register, row-level 360 action.
+ * Historic KPI / funnel / signals cards and duplicate detail pane are retired. */
+body.kmc-shell-v4 .kmc-ord { display: grid; gap: var(--kmc-layout-gap, 12px); }
+body.kmc-shell-v4 .kmc-ord .kmc-ord-main { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+body.kmc-shell-v4 .kmc-ord .kmc-ord-list {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+  padding: 16px; min-width: 0;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-list-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: 8px 18px; margin-bottom: 12px;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-h3 {
+  margin: 0; font-size: 16px; font-weight: 750; color: #0f172a;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-list-count,
+body.kmc-shell-v4 .kmc-ord .kmc-ord-muted {
+  color: #64748b; font-size: 12px; line-height: 1.45;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-filters {
+  display: flex; align-items: flex-end; justify-content: flex-start;
+  gap: 10px; width: auto; margin: 0 0 12px; padding: 0;
+  background: transparent; border: 0; box-shadow: none;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-filters .kmc-filter-field {
+  display: grid; gap: 5px; width: min(100%, 330px); flex: 0 1 330px;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-filters .kmc-filter-control {
+  width: 100%; min-height: 36px;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-attention {
+  margin: 0 0 12px; padding: 8px 12px; border: 1px solid #f6d8ae;
+  border-left: 3px solid #ea580c; border-radius: 8px;
+  background: #fffaf3; color: #7c2d12; font-size: 12.5px; line-height: 1.45;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-table-wrap { max-width: 100%; overflow-x: auto; }
+body.kmc-shell-v4 .kmc-ord .kmc-ord-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-table th {
+  text-align: left; color: #64748b; font-weight: 650;
+  padding: 9px 10px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-table td {
+  padding: 10px; border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle; max-width: 230px; overflow-wrap: anywhere;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-row:hover { background: #f8fafc; }
+body.kmc-shell-v4 .kmc-ord .kmc-ord-ref {
+  font-weight: 750; color: #0f172a; white-space: nowrap;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-cell-dossier {
+  width: 116px; min-width: 116px; white-space: nowrap;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-cell-dossier .kmc-entity-360-action {
+  margin: 0;
+}
+body.kmc-shell-v4 .kmc-ord .kmc-ord-error {
+  padding: 14px; border: 1px solid #fecaca; background: #fef2f2;
+  color: #991b1b; border-radius: 12px;
+}
 @media (max-width: 980px) {
-  body.kmc-shell-v4 .kmc-ord .kmc-ord-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  body.kmc-shell-v4 .kmc-ord .kmc-ord-main, body.kmc-shell-v4 .kmc-ord .kmc-ord-foot { grid-template-columns: 1fr; }
-  body.kmc-shell-v4 .kmc-ord .kmc-ord-funnel-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.kmc-shell-v4 .kmc-ord .kmc-ord-main { grid-template-columns: minmax(0, 1fr); }
+  body.kmc-shell-v4 .kmc-ord .kmc-ord-list { padding: 12px; }
+  body.kmc-shell-v4 .kmc-ord .kmc-ord-table { min-width: 860px; }
 }
 
 /* Commerce — évolution, répartition par marché, dernières commandes (valeurs servies par le serveur). */

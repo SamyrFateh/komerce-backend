@@ -88,10 +88,15 @@ test('Finance : style des accès utiles', () => {
   expect(css).toContain('.kmc-fin3-links');
 });
 
-test('Commandes : styles de la vue distincte, palette Komerce orange et responsive', () => {
-  expect(css).toContain('.kmc-ord-kpis');
-  expect(css).toContain('.kmc-ord-tab.is-active');
-  expect(css).toContain('#ea580c');
+test('Commandes : la liste compacte reprend Clients, sans KPI ni funnel visuel', () => {
+  expect(css).toContain('.kmc-ord-list-head');
+  expect(css).toContain('.kmc-ord-filters');
+  expect(css).toContain('.kmc-ord-attention');
+  expect(css).toContain('.kmc-ord-table-wrap');
+  expect(css).not.toContain('.kmc-ord-kpis');
+  expect(css).not.toContain('.kmc-ord-funnel');
+  expect(css).not.toContain('.kmc-ord-signals');
+  expect(css).not.toContain('.kmc-ord-detail');
   expect(css).toMatch(/@media \(max-width: 980px\)[\s\S]*kmc-ord-main/);
 });
 
