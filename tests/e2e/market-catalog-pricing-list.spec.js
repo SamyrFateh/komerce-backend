@@ -23,7 +23,7 @@ const product = (id, active = false) => ({
 
 async function mount(page) {
   await page.route('http://komerce.test/market', route =>
-    route.fulfill({contentType:'text/html',body:'<!doctype html><html><body><main id="catalogue"></main></body></html>'}));
+    route.fulfill({contentType:'text/html',body:'<!doctype html><html><body><main id="market-catalog-root" data-workspace-kind="market-catalog"></main></body></html>'}));
   await page.goto('http://komerce.test/market');
   await page.addStyleTag({path:path.join(DIR,'css','market-catalog-pricing-list.css')});
   await page.addScriptTag({path:path.join(DIR,'js','market-ready-to-sell.js')});
@@ -64,7 +64,7 @@ async function mount(page) {
       return {ok:true};
     };
     window.KomerceMarketCatalogPricingList.render({
-      root:document.getElementById('catalogue'),
+      root:document.getElementById('market-catalog-root'),
       payload:{market:{code:'KM',currency:'KMF'},actor_capabilities:['pricing.read','pricing.decide','pricing.activate','catalog.expose'],
         ready_to_sell:{market:{code:'KM',currency:'KMF'},pagination:{offset:0,limit:100,total:2},items:rows}},
       marketCode:'KM',request,feedback:()=>{},reload:async()=>{window.__catalogReloads++;}
