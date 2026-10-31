@@ -59,6 +59,14 @@ describe('createProvider', () => {
       .rejects.toThrow(/market_id/);
   });
 
+  it('refuse un provider actif d’un autre marché — aucune création cross-market', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active', market_id: '99999999-9999-9999-9999-999999999999' }] });
+    await expect(svc.createService({ providerId: PROVIDER_ID, title: 'Installation clim', marketId: MARKET_ID }))
+      .rejects.toThrow(/autre marché/);
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
   it('lève si le marché est introuvable ou inactif', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({ rows: [] });
@@ -127,7 +135,7 @@ describe('createService', () => {
   it('lève si le marché est introuvable ou inactif', async () => {
     const svc = loadService();
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active' }] }) // getProvider
+      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active', market_id: MARKET_ID }] }) // getProvider
       .mockResolvedValueOnce({ rows: [] }); // markets
     await expect(
       svc.createService({ providerId: PROVIDER_ID, title: 'Installation clim', marketId: MARKET_ID })
@@ -137,7 +145,7 @@ describe('createService', () => {
   it('nominal : commercial_exposure toujours DISABLED à la création, jamais un paramètre appelant', async () => {
     const svc = loadService();
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active' }] })
+      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active', market_id: MARKET_ID }] })
       .mockResolvedValueOnce({ rows: [{ id: MARKET_ID }] })
       .mockResolvedValueOnce({ rows: [{
         id: SERVICE_ID, provider_id: PROVIDER_ID, title: 'Installation clim',
@@ -161,6 +169,12 @@ describe('isServiceExposable — les 4 conditions doivent TOUTES tenir (Vague 2 
     await expect(svc.isServiceExposable(SERVICE_ID)).rejects.toThrow(/market_id est requis/);
   });
 
+  it('refuse un service dont le prestataire appartient à un autre marché malgré une exposition active', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ service_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: MARKET_ID, provider_market_id: '99999999-9999-9999-9999-999999999999' }] });
+    expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(false);
+  });
+
   it('service inconnu -> false', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({ rows: [] });
@@ -170,7 +184,7 @@ describe('isServiceExposable — les 4 conditions doivent TOUTES tenir (Vague 2 
   it('service actif + exposure ENABLED + provider actif + market correct -> true', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ service_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: MARKET_ID }],
+      rows: [{ service_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', provider_market_id: MARKET_ID, market_id: MARKET_ID }],
     });
     expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(true);
   });
@@ -195,7 +209,7 @@ describe('isServiceExposable — les 4 conditions doivent TOUTES tenir (Vague 2 
   it('provider actif + exposure ENABLED mais service en draft -> false', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ service_status: 'draft', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: MARKET_ID }],
+      rows: [{ service_status: 'draft', commercial_exposure: 'ENABLED', provider_status: 'active', provider_market_id: MARKET_ID, market_id: MARKET_ID }],
     });
     expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(false);
   });
@@ -203,7 +217,7 @@ describe('isServiceExposable — les 4 conditions doivent TOUTES tenir (Vague 2 
   it('service actif + provider actif mais exposure toujours DISABLED -> false', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ service_status: 'active', commercial_exposure: 'DISABLED', provider_status: 'active', market_id: MARKET_ID }],
+      rows: [{ service_status: 'active', commercial_exposure: 'DISABLED', provider_status: 'active', provider_market_id: MARKET_ID, market_id: MARKET_ID }],
     });
     expect(await svc.isServiceExposable(SERVICE_ID, MARKET_ID)).toBe(false);
   });
@@ -228,10 +242,18 @@ describe('createPhysicalOffer — table sœur de createService, mêmes garanties
     ).rejects.toThrow(/provider non actif/);
   });
 
+  it('refuse une offre portée par un prestataire d’un autre marché', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active', market_id: '99999999-9999-9999-9999-999999999999' }] });
+    await expect(svc.createPhysicalOffer({ providerId: PROVIDER_ID, title: 'Samboussas', marketId: MARKET_ID }))
+      .rejects.toThrow(/autre marché/);
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
   it('lève si le marché est introuvable ou inactif', async () => {
     const svc = loadService();
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active' }] })
+      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active', market_id: MARKET_ID }] })
       .mockResolvedValueOnce({ rows: [] });
     await expect(
       svc.createPhysicalOffer({ providerId: PROVIDER_ID, title: 'Samboussas mariage', marketId: MARKET_ID })
@@ -241,7 +263,7 @@ describe('createPhysicalOffer — table sœur de createService, mêmes garanties
   it('nominal : commercial_exposure toujours DISABLED à la création (cas samboussas de référence)', async () => {
     const svc = loadService();
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active' }] })
+      .mockResolvedValueOnce({ rows: [{ id: PROVIDER_ID, status: 'active', market_id: MARKET_ID }] })
       .mockResolvedValueOnce({ rows: [{ id: MARKET_ID }] })
       .mockResolvedValueOnce({ rows: [{
         id: PHYSICAL_OFFER_ID, provider_id: PROVIDER_ID, title: 'Samboussas mariage',
@@ -268,6 +290,12 @@ describe('isPhysicalOfferExposable — les 4 conditions doivent TOUTES tenir (Va
     await expect(svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID)).rejects.toThrow(/market_id est requis/);
   });
 
+  it('masque une offre d’un prestataire hors marché même si elle est active et exposée', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValueOnce({ rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: MARKET_ID, provider_market_id: '99999999-9999-9999-9999-999999999999' }] });
+    expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID, MARKET_ID)).toBe(false);
+  });
+
   it('offre inconnue -> false', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({ rows: [] });
@@ -277,7 +305,7 @@ describe('isPhysicalOfferExposable — les 4 conditions doivent TOUTES tenir (Va
   it('offre active + exposure ENABLED + provider actif + market correct -> true', async () => {
     const svc = loadService();
     mockQuery.mockResolvedValueOnce({
-      rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', market_id: MARKET_ID }],
+      rows: [{ offer_status: 'active', commercial_exposure: 'ENABLED', provider_status: 'active', provider_market_id: MARKET_ID, market_id: MARKET_ID }],
     });
     expect(await svc.isPhysicalOfferExposable(PHYSICAL_OFFER_ID, MARKET_ID)).toBe(true);
   });
