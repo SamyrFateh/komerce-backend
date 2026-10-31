@@ -80,6 +80,32 @@
     table.appendChild(tbody);
     viewport.appendChild(table);
     section.appendChild(viewport);
+    const pageInfo = payload.ready_to_sell?.pagination || null;
+    if (pageInfo && pageInfo.total > pageInfo.limit) {
+      const nav = doc.createElement('div');
+      nav.className = 'kmc-price-list-pagination';
+      const currentPage = Math.floor(pageInfo.offset / pageInfo.limit) + 1;
+      const totalPages = Math.ceil(pageInfo.total / pageInfo.limit);
+      const counter = doc.createElement('span');
+      counter.textContent = 'Page ' + currentPage + ' / ' + totalPages +
+        ' · ' + pageInfo.total + ' produit(s)';
+      const pageButton = (label, destination, disabled) => {
+        const button = doc.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.disabled = disabled;
+        button.addEventListener('click', () => {
+          const url = new URL(root.location.href);
+          url.searchParams.set('price_page', String(destination));
+          root.location.assign(url.toString());
+        });
+        nav.appendChild(button);
+      };
+      pageButton('Précédent', currentPage - 1, currentPage <= 1);
+      nav.appendChild(counter);
+      pageButton('Suivant', currentPage + 1, currentPage >= totalPages);
+      section.appendChild(nav);
+    }
     const empty = doc.createElement('p');
     empty.className = 'kmc-price-list-empty';
     empty.hidden = true;
