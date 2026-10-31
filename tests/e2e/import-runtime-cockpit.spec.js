@@ -410,7 +410,7 @@ async function mountLive(page, data) {
     if (url.pathname === '/admin/import-runtime') {
       const links = CSS.map((n) => `<link rel="stylesheet" href="/dashboards/canonical/css/${n}.css">`).join('');
       return route.fulfill({ contentType: 'text/html', body: `<!doctype html><html lang="fr"><head><meta charset="utf-8">${links}</head>
-        <body class="kmc-shell-v4"><main id="root"></main><script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>` });
+        <body class="kmc-shell-v4"><main id="root"></main><script>window.__KOMERCE_LEGACY_PROOF__ = true;</script><script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>` });
     }
     if (url.pathname === '/admin/products/P-42') {
       return route.fulfill({ contentType:'text/html', body:`<!doctype html><html lang="fr"><head><meta charset="utf-8"></head>
