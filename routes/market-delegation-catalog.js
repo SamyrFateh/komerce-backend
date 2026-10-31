@@ -91,6 +91,8 @@ router.get('/catalog/authorized-markets', authenticate, async (req, res, next) =
 
 router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, res, next) => {
   try {
+    const requestedPage = Number(req.query.price_page || 1);
+    const pricePage = Number.isSafeInteger(requestedPage) && requestedPage >= 1 ? Math.min(requestedPage, 10000) : 1;
     const result = await withTransaction(async (client) => {
       // Lecture = catalog.read (universel, viewer inclus). L'écriture reste
       // gardée par catalog.expose sur la route PUT ci-dessous — voir
@@ -117,6 +119,8 @@ router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, re
         reviewQueue,
         exposure,
         limit: 100,
+        offset: (pricePage - 1) * 100,
+        search: String(req.query.price_search || '').slice(0,120),
       });
       return {
         authz,

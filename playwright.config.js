@@ -46,6 +46,7 @@ const DASHBOARD_SPECS = [
   'finance-accounting-workspace',
   'golden-cockpit-browser-flow',
   'market-context-explicit',
+  'market-catalog-pricing-list',
 ];
 
 module.exports = defineConfig({
