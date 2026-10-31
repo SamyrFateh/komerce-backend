@@ -94,7 +94,7 @@
     const matches = row => {
       const state = row.decision_state?.key || '';
       const isPublished = Boolean(row.local_price_active && row.exposure_enabled);
-      const missing = !row.local_price_active && row.proposed_price?.source === 'NONE';
+      const missing = !row.local_price_active;
       const attention = state === 'BLOCKED' || state === 'REVIEW' || row.blocker != null;
       const filterMatch = currentFilter === 'all' || (currentFilter === 'missing' && missing)
         || (currentFilter === 'published' && isPublished) || (currentFilter === 'attention' && attention);
@@ -240,8 +240,7 @@
       let busy = false;
       const activePrice = numeric(row.local_price_active ? row.proposed_price?.amount : null);
       const activeAndExposed = row.local_price_active && row.exposure_enabled;
-      const initialContribution = row.proposed_price?.amount != null && row.variable_cost_local != null
-        ? Number(row.proposed_price.amount) - Number(row.variable_cost_local) : null;
+      const initialContribution = row.contribution_at_proposed_local;
       // Initially, only server-projected amounts are displayed; changes require a fresh server preview.
       if (initialContribution != null) contribution.firstChild.textContent = format(initialContribution, currency);
       function updateAction() {
@@ -255,11 +254,9 @@
           || (row.local_price_active && !canExpose && !canDecide)
           || row.decision_state?.key === 'BLOCKED' || entered == null || blockedByCost;
         if (changedActive) {
-          // The old writer turns LOCAL_ACTIVE into a DRAFT before reactivation.
-          // Do not silently break an active buyer price until an atomic repricing writer exists.
-          button.disabled = true;
-          button.textContent = 'Prix actif';
-          actionNote.textContent = 'Modification du prix actif non disponible sans transition atomique.';
+          button.disabled = !canDecide || busy || entered == null || blockedByCost;
+          button.textContent = warningPending ? 'Confirmer ce prix' : 'Appliquer le prix';
+          actionNote.textContent = 'Prix publié conservé jusqu’à validation atomique';
         } else if (sameActive && activeAndExposed) {
           button.textContent = 'Masquer';
           button.disabled = !canExpose || busy;
@@ -339,21 +336,37 @@
           } catch (error) {feedback(error.message, 'critical');busy=false;updateAction();}
           return;
         }
-        if (!canDecide || entered == null || row.local_price_active) return;
+        if (!canDecide || entered == null) return;
         if (!preview || previewAmount !== entered) await requestPreview();
         if (!preview || previewAmount !== entered || !preview.can_proceed) return;
         if (preview.requires_acknowledgement && acknowledgedAmount !== entered) {
           acknowledgedAmount = entered;
-          priceNote.textContent = 'Prix atypique confirmé ? Cliquez à nouveau pour mettre en vente.';
+          priceNote.textContent = 'Prix atypique : cliquez à nouveau pour confirmer la décision.';
           updateAction();
           return;
         }
         busy = true; updateAction();
         try {
-          await root.KomerceMarketReadyToSell.approveOne({row, amount: entered, marketCode, request, feedback});
-          feedback(row.product_ref + ' · prix activé, produit publié.', 'positive');
+          if (row.local_price_active) {
+            // Server performs full economic check and single ACTIVE -> ACTIVE transaction.
+            await request('/api/admin/workspaces/pricing/market/' +
+              encodeURIComponent(marketCode) + '/products/' + encodeURIComponent(row.product_ref) +
+              '/local-price/change-active', {
+                method: 'POST', body: {
+                  amount: entered, expected_amount: activePrice,
+                  acknowledged_risk: preview.requires_acknowledgement === true,
+                },
+              });
+            feedback(row.product_ref + ' · prix modifié sans interruption de publication.', 'positive');
+          } else {
+            await root.KomerceMarketReadyToSell.approveOne({row, amount: entered, marketCode, request, feedback});
+            feedback(row.product_ref + ' · prix activé, produit publié.', 'positive');
+          }
           await reload();
-        } catch (error) {feedback(error.message + (error.code ? ' · ' + error.code : ''), 'critical');busy=false;updateAction();}
+        } catch (error) {
+          feedback(error.message + (error.code ? ' · ' + error.code : ''), 'critical');
+          busy = false; updateAction();
+        }
       });
       updateAction();
       tbody.appendChild(tr);
