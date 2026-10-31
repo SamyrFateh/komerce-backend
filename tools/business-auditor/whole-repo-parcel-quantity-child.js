@@ -68,7 +68,7 @@ async function main(){
   const after=await snapshot(c,ids);
   if(before.qty_allocated<1||before.actual_allocated_active<1||
      after.membership_count_active!==0||after.actual_allocated_active!==0)
-   throw Error('INDEPENDENT_REPRODUCTION_PRECONDITIONS_FAILED');
+   throw Error('INDEPENDENT_REPRODUCTION_PRECONDITIONS_FAILED '+JSON.stringify({before,intermediate,after,allocation}));
   console.log('WHOLE_REPO_PARCEL_PHYSICAL '+JSON.stringify({
    contract:'komerce-real-parcel-resync-observation/v1',
    scenario:'ASSIGN_SYNC_CANCEL_LAST_ACTIVE_PARCEL_RESYNC',
