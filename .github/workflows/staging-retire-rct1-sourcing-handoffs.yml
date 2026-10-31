@@ -1,0 +1,53 @@
+name: Staging retire RCT1 sourced catalog handoffs
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: staging-retire-rct1-fixture-products
+  cancel-in-progress: false
+jobs:
+  retirement:
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] audit-rct1-sourcing-handoffs' ||
+       github.event.issue.title == '[staging-op] retire-rct1-sourcing-handoffs')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      RCT1_SOURCING_RETIRE_CONFIRM: RETIRE_EXACT_RCT1_SOURCING_FIVE
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+      GITHUB_ISSUE_TITLE: ${{ github.event.issue.title }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Audit five RCT1 sourcing handoffs (read only)
+        run: node scripts/recette/staging-rct1-retire-sourcing-handoffs.js --dry-run
+      - name: Disable five verified RCT1 sourcing handoffs
+        if: github.event.issue.title == '[staging-op] retire-rct1-sourcing-handoffs'
+        run: node scripts/recette/staging-rct1-retire-sourcing-handoffs.js --apply
+      - name: Re-read after retirement
+        if: github.event.issue.title == '[staging-op] retire-rct1-sourcing-handoffs'
+        run: node scripts/recette/staging-rct1-retire-sourcing-handoffs.js --dry-run
+      - name: Save evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-rct1-sourcing-retirement-${{ github.run_id }}
+          path: test-results/staging-rct1-sourcing-retirement/
+          retention-days: 30
+          if-no-files-found: warn
