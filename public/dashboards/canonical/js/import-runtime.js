@@ -1006,6 +1006,9 @@
       ${m.busy ? '' : credentialsPanel(source, { context:'card' })}
       ${m.step ? `<button type="button" class="kir-source-step" data-source-step="${m.step.action}" data-source-ref="${esc(source.source_ref)}">${m.step.label}</button>` : ''}
       ${m.canFirstImport ? `<button type="button" class="kir-source-first-import" data-source-first-import data-source-ref="${esc(source.source_ref)}" ${m.firstImportPending ? 'disabled aria-busy="true"' : ''}>${m.firstImportPending ? 'Lancement du passage…' : m.lastRun ? 'Lancer un nouveau passage' : 'Lancer le premier passage'}</button>` : ''}
+      ${source.state === 'active' && !m.busy ? `<button type="button"
+        class="kir-source-first-import" data-source-command="update"
+        data-source-ref="${esc(source.source_ref)}">Importer maintenant</button>` : ''}
       ${firstImportState?.sourceRef === source.source_ref && firstImportState.error ? `<p class="kir-source-first-error" role="alert">${esc(firstImportState.error)}</p>` : ''}
       ${m.lastRun ? `<a class="kir-source-follow" href="${urlFor(m.lastRun)}" data-cockpit-nav>Voir le suivi →</a>` : ''}
     </article>`;
@@ -1951,10 +1954,13 @@
     </section>`;
   }
 
-  function unifiedPassageHistory(run, lots) {
-    const list = Array.isArray(lots) ? lots.slice(0, 10) : [];
+  function unifiedPassageHistory(run, payload) {
+    const historyMode = params().view === 'passages';
+    const rows = historyMode && Array.isArray(payload?.passages) ? payload.passages : payload?.lots;
+    const list = Array.isArray(rows) ? rows.slice(0, historyMode ? 50 : 10) : [];
+    const page = payload?.passages_page || {};
     const rows = list.map(lot => {
-      const view = lotChipView(lot);
+      const view = lot.state_label ? {label:lot.state_label} : lotChipView(lot);
       return `<li><a href="${urlFor(lot.run_ref)}" data-cockpit-nav>${esc(lot.run_ref)}</a>
         <span>${esc(lot.provider || 'Source inconnue')}</span>
         <small>${esc(view.label)}</small></li>`;
@@ -1964,7 +1970,11 @@
       <summary><strong>Passages</strong><span>Historique des acquisitions (${list.length} derniers affichés)</span></summary>
       <div class="kir-one-panel-body">
         <ul class="kir-one-passage-list">${rows || '<li>Aucun passage enregistré.</li>'}</ul>
-        <a href="${urlFor(run?.run_ref, 'passages')}" data-cockpit-nav>Afficher tout l’historique →</a>
+        ${!historyMode ? `<a href="${urlFor(run?.run_ref, 'passages')}" data-cockpit-nav>Afficher tout l’historique →</a>` : ''}
+        ${historyMode ? `<nav class="kir-passage-pagination">
+          ${Number(page.offset) > 0 ? `<a href="${passagesUrl(run?.run_ref, Math.max(0, Number(page.offset)-50))}" data-cockpit-nav>← Plus récents</a>` : ''}
+          ${page.next_offset != null ? `<a href="${passagesUrl(run?.run_ref, Number(page.next_offset))}" data-cockpit-nav>Plus anciens →</a>` : ''}
+        </nav>` : ''}
       </div></details>`;
   }
 
@@ -2015,7 +2025,7 @@
       <main class="kir-one-body">
         ${summary}
         ${unifiedSourceManagement(run, payload)}
-        ${unifiedPassageHistory(run, payload?.lots || [])}
+        ${unifiedPassageHistory(run, payload)}
       </main></section>`;
   }
 
@@ -2640,7 +2650,11 @@
         const sourceRef = button.getAttribute('data-source-ref');
         const command = button.getAttribute('data-source-command');
         if (!sourceRef || button.disabled) return;
-        if (command === 'update') return updateSourceNow(root, sourceRef);
+        if (command === 'update') {
+          if (typeof global.confirm === 'function' &&
+              !global.confirm('Démarrer un nouvel import fournisseur ? Un passage KIR sera créé.')) return;
+          return updateSourceNow(root, sourceRef);
+        }
         if (command === 'restart') return toggleSource(root, payload, sourceRef, false, button);
         if (command === 'stop') {
           commandState = { sourceRef, action:'stop' };
