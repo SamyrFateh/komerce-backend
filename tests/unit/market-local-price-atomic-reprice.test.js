@@ -14,6 +14,7 @@ const snapshot = {activation_allowed:true,local_price:28000,currency:'KMF',strat
 let statements;
 beforeEach(() => {
   statements = [];
+  db.getClient.mockReset();
   db.getClient.mockImplementation(async () => ({
     release: jest.fn(),
     query: jest.fn(async (sql, params=[]) => {
