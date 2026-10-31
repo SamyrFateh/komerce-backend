@@ -49,13 +49,18 @@ async function mount(page,payload=data(),search='?run=KIR-000013'){
  await page.evaluate(payload=>window.KomerceCanonicalImportRuntime.render(
    document.getElementById('root'),payload),payload);
 }
-test('un seul écran : synthèse métier, deux sections repliées et aucun onglet concurrent',async({page})=>{
+test('Suivi : un seul écran, trois onglets locaux et un seul panneau visible',async({page})=>{
  await mount(page);
  await expect(page.locator('[data-sourcing-single-screen]')).toHaveCount(1);
  await expect(page.getByRole('heading',{name:'Sourcing Live'})).toHaveCount(1);
  await expect(page.locator('nav.kir-domain-nav')).toHaveCount(0);
- await expect(page.locator('[data-unified-sources]')).not.toHaveAttribute('open','');
- await expect(page.locator('[data-unified-passages]')).not.toHaveAttribute('open','');
+ await expect(page.locator('[data-sourcing-tabs] a')).toHaveCount(3);
+ await expect(page.locator('[data-sourcing-tab="overview"]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('[data-sourcing-tab="sources"]')).toHaveAttribute('href','/admin/import-runtime?run=KIR-000013&view=sources');
+ await expect(page.locator('[data-sourcing-tab="passages"]')).toHaveAttribute('href','/admin/import-runtime?run=KIR-000013&view=passages');
+ await expect(page.locator('[data-sourcing-panel="overview"]')).toBeVisible();
+ await expect(page.locator('[data-unified-sources]')).toBeHidden();
+ await expect(page.locator('[data-unified-passages]')).toBeHidden();
  await expect(page.getByText('20',{exact:true})).toHaveCount(1);
  await expect(page.getByText('16',{exact:true})).toHaveCount(1);
  await expect(page.getByText('12',{exact:true})).toHaveCount(1);
@@ -71,9 +76,10 @@ test('les exceptions guident vers la bonne autorité métier',async({page})=>{
  await expect(page.getByRole('button',{name:'Classer'})).toHaveCount(0);
 });
 test('une source s’ouvre sur demande et ses commandes utilisent son identité exacte',async({page})=>{
- await mount(page);
+ await mount(page,data(),'?run=KIR-000013&view=sources');
  const sources=page.locator('[data-unified-sources]');
- await sources.locator(':scope > summary').click();
+ await expect(page.locator('[data-sourcing-tab="sources"]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('[data-sourcing-panel="overview"]')).toBeHidden();
  await expect(sources).toHaveAttribute('open','');
  await expect(sources.locator('[data-source-card="api:cj"]')).toBeVisible();
  await expect(sources.locator('[data-source-command="update"][data-source-ref="api:cj"]')).toBeVisible();
@@ -82,15 +88,65 @@ test('une source s’ouvre sur demande et ses commandes utilisent son identité 
 });
 test('la source non identifiée n’hérite jamais d’un lien KIR deviné',async({page})=>{
  const payload=data();payload.selected.source_ref=null;payload.lots[0].source_ref=null;
- await mount(page,payload);
+ await mount(page,payload,'?run=KIR-000013&view=sources');
  const sources=page.locator('[data-unified-sources]');
- await sources.locator(':scope > summary').click();
  await expect(sources.locator('[data-source-card="api:cj"]')).toBeVisible();
  await expect(sources.locator('[data-source-card="api:cj"] .kir-source-follow')).toHaveCount(0);
 });
-test('ancien lien Passages reste dans le même écran et ouvre sa section',async({page})=>{
+test('Passages : onglet actif, historique visible sans second cockpit',async({page})=>{
  await mount(page,data(),'?view=passages');
  await expect(page.locator('[data-sourcing-single-screen]')).toHaveCount(1);
  await expect(page.locator('[data-unified-passages]')).toHaveAttribute('open','');
+ await expect(page.locator('[data-sourcing-tab="passages"]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('[data-sourcing-panel="overview"]')).toBeHidden();
+ await expect(page.locator('[data-unified-sources]')).toBeHidden();
  await expect(page.locator('nav.kir-domain-nav')).toHaveCount(0);
+});
+
+test('ancien lien de remise KIR mène au Suivi sans page technique concurrente',async({page})=>{
+ await mount(page,data(),'?run=KIR-000013&view=handoff');
+ await expect(page.locator('[data-sourcing-panel="overview"]')).toBeVisible();
+ await expect(page.locator('[data-sourcing-tab="overview"]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('.kir-drill-head')).toHaveCount(0);
+ await expect(page.getByText('Examiner la remise')).toHaveCount(0);
+ await expect(page.locator('.kir-one-metrics')).toBeVisible();
+});
+
+
+// Mounted proof: real history.pushState/popstate and async cockpit refresh, API mocked.
+async function mountNavigable(page,payload=data(),search='?run=KIR-000013') {
+ await mount(page,payload,search);
+ await page.route('**/api/admin/workspaces/sourcing/import-cockpit?*', route =>
+   route.fulfill({contentType:'application/json',body:JSON.stringify(payload)}));
+ await page.route('**/api/admin/workspaces/sourcing/import-passages?*', route =>
+   route.fulfill({contentType:'application/json',body:JSON.stringify({
+     passages:payload.lots,offset:0,next_offset:null
+   })}));
+ await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({
+   root:document.getElementById('root')
+ }));
+}
+
+test('onglets navigables : Suivi → Sources → Passages → Back conserve le KIR et son contexte',async({page})=>{
+ await mountNavigable(page);
+ await page.locator('[data-sourcing-tab="sources"]').click();
+ await expect(page).toHaveURL(/run=KIR-000013&view=sources/);
+ await expect(page.locator('[data-unified-sources]')).toBeVisible();
+ await expect(page.locator('[data-sourcing-panel="overview"]')).toBeHidden();
+ await page.locator('[data-sourcing-tab="passages"]').click();
+ await expect(page).toHaveURL(/run=KIR-000013&view=passages/);
+ await expect(page.locator('[data-unified-passages]')).toBeVisible();
+ await expect(page.locator('.kir-one-passage-list')).toContainText('KIR-000013');
+ await page.goBack();
+ await expect(page.locator('[data-sourcing-tab="sources"]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('[data-unified-sources]')).toBeVisible();
+ await expect(page.locator('[data-unified-passages]')).toBeHidden();
+});
+
+test('deep-link historique handoff : URL normalisée et aucun appel de population',async({page})=>{
+ await mountNavigable(page,data(),'?run=KIR-000013&view=handoff');
+ await expect(page).toHaveURL(/\/admin\/import-runtime\?run=KIR-000013$/);
+ await expect(page.locator('[data-sourcing-tab="overview"]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('.kir-drill-head')).toHaveCount(0);
+ await expect(page.locator('[data-sourcing-panel="overview"]')).toBeVisible();
 });
