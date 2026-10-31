@@ -914,7 +914,8 @@ test('Catalogue unique : produit remis a correction de catégorie, français et 
   expect(row.querySelector('[data-workspace-action="open-catalog-inspector"]')).not.toBeNull();
   await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
   const panel = root.querySelector('[data-catalog-product-inspector="KPR-000446"]');
-  expect(panel.textContent).toContain('Classement Boutique à corriger');
+  expect(panel.textContent).toContain('À compléter');
+  expect(panel.querySelector('[data-catalog-inline-editor]')).not.toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-classify"]')).not.toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-prepare-fr"]')).not.toBeNull();
   expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
