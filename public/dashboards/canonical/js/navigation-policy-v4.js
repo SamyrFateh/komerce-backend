@@ -1123,7 +1123,6 @@
         { id: 'sourcing-suivi', label: 'Suivi', href: '/admin/import-runtime' + (run ? `?run=${encodeURIComponent(run)}` : '') },
         { id: 'sourcing-passages', label: 'Passages', href: `/admin/import-runtime?${suffix}view=passages` },
         { id: 'sourcing-sources', label: 'Sources', href: `/admin/import-runtime?${suffix}view=sources` },
-        { id: 'sourcing-candidats', label: 'Exceptions source', href: '/admin/workspaces/sourcing?tab=candidates' },
       ];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub-live') {
