@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 213 | Vérifié sur le dump live Railway. |
+| Tables | 214 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 498 | Performance + contraintes uniques |
-| Foreign keys | 406 | Cohérence relationnelle |
+| Index | 499 | Performance + contraintes uniques |
+| Foreign keys | 408 | Cohérence relationnelle |
 | Fonctions | 91 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 108 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
