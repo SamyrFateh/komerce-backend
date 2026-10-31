@@ -76,7 +76,7 @@ async function check(page, kind, width) {
     window.__refineryCalls=[];
     const result=await window.KomerceCanonicalCatalogWorkspace.mount({
       root,document:doc,ui:{Section},
-      location:{search:kind==='refinery'?'?view=refinery':''},
+      location:{search:kind==='refinery'?'?view=refinery&diagnostic=1':''},
       fetch:async(url,options={})=>{
         if(options.method==='POST'){
           window.__refineryCalls.push({url,body:JSON.parse(options.body||'{}')});
@@ -89,10 +89,14 @@ async function check(page, kind, width) {
   },{kind,payload});
   assert.equal(text.result,true);
   if(kind==='refinery') {
-    for(const label of ['Source à qualifier','Actifs à réexaminer','P-DRAFT','P-RECHECK','Préparation et validation']) {
-      assert(text.visible.includes(label), `Refinery missing ${label} at ${width}px`);
+    for(const label of ['Préparation automatique','Brouillons suivis',
+      'Remises historiques actives','Ouvrir les fiches dans le Catalogue']) {
+      assert(text.visible.includes(label), 'Monitoring missing '+label+' at '+width+'px');
     }
-    assert(!text.visible.includes('Aucun candidat en attente de curation.'));
+    for(const removed of ['Produits actifs à réexaminer','Fiches à qualifier',
+      'En attente de contrôle et validation','Corriger la fiche FR']) {
+      assert(!text.visible.includes(removed), 'Obsolete manual action '+removed);
+    }
   } else {
     assert(text.visible.includes('P-FINALIZED'));
     assert(!text.visible.includes('P-RECHECK'));
@@ -109,43 +113,11 @@ async function check(page, kind, width) {
   assert(dims.scrollWidth<=dims.innerWidth+2,
     `${kind} ${width}px outer horizontal overflow ${JSON.stringify(dims)}`);
   await page.screenshot({path:path.join(out,`${kind}-${width}.png`),fullPage:true});
-  if(kind==='refinery'){
-    const correct=page.locator('[data-workspace-action="refinery-correct-active-fr"]');
-    assert.equal(await correct.count(),1);
-    await correct.click();
-    const dialog=page.locator('[data-catalog-fr-editor] [role="dialog"]');
-    await dialog.waitFor({state:'visible'});
-    assert((await dialog.getAttribute('aria-label')).includes('Préparation française'));
-    await page.screenshot({path:path.join(out,`refinery-editor-${width}.png`),fullPage:true});
-    await dialog.locator('[data-catalog-fr-field="name"]').fill('Coque souple pour téléphone Samsung');
-    // Reproduction de la capture : titre français seul, description vide.
-    const notice = dialog.locator('[data-fr-save-feedback]');
-    assert((await notice.innerText()).includes('Description facultative'));
-    const save = dialog.locator('[data-workspace-action="save-fr-editor"]');
-    await save.click();
-    await page.waitForFunction(()=>window.__refineryCalls.length===1);
-    const draft=await page.evaluate(()=>window.__refineryCalls[0]);
-    assert(draft.url.includes('/refinery/P-RECHECK/prepare-fr'));
-    assert.equal(draft.body.decision,'draft');
-    assert.equal(draft.body.description,'');
-    assert(!('price_kmf' in draft.body) && !('is_active' in draft.body));
-    await dialog.waitFor({state:'detached'});
-
-    // Only a deliberate human click on 'validate' accepts the title as
-    // sufficient; it does not fabricate supplier description.
-    await correct.click();
-    await dialog.waitFor({state:'visible'});
-    await dialog.locator('[data-catalog-fr-field="name"]').fill('Coque souple pour téléphone Samsung');
-    assert.equal(await dialog.locator('[data-catalog-fr-field="description"]').inputValue(),'');
-    await page.screenshot({path:path.join(out,`refinery-editor-title-only-${width}.png`),fullPage:true});
-    await dialog.locator('[data-workspace-action="validate-fr-sufficient"]').click();
-    await page.waitForFunction(()=>window.__refineryCalls.length===2);
-    const accepted=await page.evaluate(()=>window.__refineryCalls[1]);
-    assert.equal(accepted.body.decision,'accept');
-    assert.equal(accepted.body.name,'Coque souple pour téléphone Samsung');
-    assert.equal(accepted.body.description,'');
-    assert(!('price_kmf' in accepted.body) && !('is_active' in accepted.body));
-    await dialog.waitFor({state:'detached'});
+  if(kind==='refinery') {
+    assert.equal(await page.locator('[data-workspace-action="refinery-correct-active-fr"]').count(),0);
+    assert.equal(await page.locator('[data-workspace-action="approve"]').count(),0);
+    assert.equal(await page.locator('.kmc-refinery-unprepared-table').count(),0);
+    assert.equal(await page.evaluate(()=>window.__refineryCalls.length),0);
   }
   return {kind,width,overflow:false,scrollableTables:dims.wrappers.filter(x=>x.scrollWidth>x.clientWidth).length};
 }
