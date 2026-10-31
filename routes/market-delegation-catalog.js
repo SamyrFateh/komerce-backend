@@ -120,6 +120,7 @@ router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, re
         exposure,
         limit: 100,
         offset: (pricePage - 1) * 100,
+        search: String(req.query.price_search || '').slice(0,120),
       });
       return {
         authz,
