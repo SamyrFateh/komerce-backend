@@ -27,9 +27,9 @@
   }
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createPricingAtelierViews() {
   const VIEWS = Object.freeze([
-    { key: 'economic', label: 'Vue économique' },
+    { key: 'economic', label: 'Vue d’ensemble' },
     { key: 'products', label: 'Produits à décider' },
-    { key: 'costs', label: 'Modèle de coûts' },
+    { key: 'costs', label: 'Coûts et paramètres' },
   ]);
   const PAGE_SIZE = 25;
   const CONCURRENCY = 6;
@@ -222,7 +222,7 @@
     nav.dataset.atelierNav = '';
     nav.setAttribute('role', 'tablist');
     nav.setAttribute('aria-label', 'Vues de l’Atelier des prix');
-    VIEWS.forEach(view => {
+    VIEWS.filter(view => view.key !== 'products' || active === 'products').forEach(view => {
       const tab = button(doc, view.label, `kmc-atelier-tab${view.key === active ? ' is-active' : ''}`, { atelierView: view.key });
       tab.setAttribute('role', 'tab');
       tab.setAttribute('aria-selected', view.key === active ? 'true' : 'false');
@@ -747,7 +747,31 @@
   function enhance(rootObject, workspace, options, payload) {
     const doc = options.document;
     const rootNode = options.root;
-    if (!options.requestedMarket || !rootNode || !payload) return false;
+    if (!rootNode || !payload) return false;
+    if (!options.requestedMarket) {
+      const overview = rootNode.querySelector('[data-pricing-decision-overview]');
+      if (!overview || rootNode.querySelector('[data-atelier-nav]')) return false;
+      const blocks = Array.from(rootNode.children).filter(node => node !== overview);
+      const summary = Array.from(overview.children).filter(node => node.getAttribute('data-dashboard-role') !== 'hero');
+      const nav = buildNav(doc, 'economic', null);
+      overview.insertBefore(nav, summary[0] || null);
+      rootNode.classList.add('kmc-atelier-views');
+      const select = view => {
+        blocks.forEach(node => { node.hidden = view !== 'costs'; });
+        summary.forEach(node => { node.hidden = view !== 'economic'; });
+        nav.querySelectorAll('[data-atelier-view]').forEach(tab => {
+          const active = tab.dataset.atelierView === view;
+          tab.classList.toggle('is-active', active);
+          tab.setAttribute('aria-selected', String(active));
+        });
+      };
+      nav.addEventListener('click', event => {
+        const tab = event.target.closest('[data-atelier-view]');
+        if (tab && nav.contains(tab)) select(tab.dataset.atelierView);
+      });
+      select('economic');
+      return true;
+    }
     const cockpit = rootNode.querySelector('[data-pricing-economic-cockpit]');
     const overview = rootNode.querySelector('[data-pricing-decision-overview]');
     if (!cockpit || rootNode.querySelector('[data-atelier-nav]')) return Boolean(cockpit);
@@ -793,6 +817,9 @@
     rootNode.classList.add('kmc-atelier-views');
 
     const nav = buildNav(doc, state.view, null);
+    const catalogLink = el(doc, 'a', 'kmc-atelier-tab kmc-economic-catalog-link', 'Catalogue marché →');
+    catalogLink.href = `/dashboards/canonical/market-catalog.html?market=${encodeURIComponent(marketCode)}`;
+    nav.appendChild(catalogLink);
     const anchor = overview ? overview.querySelector('[data-dashboard-role="hero"]') : null;
     if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(nav, anchor.nextSibling); else rootNode.insertBefore(nav, rootNode.firstChild);
 

@@ -185,7 +185,9 @@
       const provenance = component.inherited === false ? 'Surcharge pays' : component.inherited === true ? 'Global hérité' : '—';
       // L4/Q6 : un frais de paiement hérité du global n'est pas réputé applicable au marché tant que sa configuration n'est pas vérifiée.
       const paymentNotVerified = component.inherited === true && component.category === 'payment';
-      table.appendChild(tableCell(doc, paymentNotVerified ? `${provenance} · Applicabilité non vérifiée pour ce marché` : provenance, 'is-derived'));
+      const origin = tableCell(doc, paymentNotVerified ? `${provenance} · Applicabilité non vérifiée pour ce marché` : provenance, 'is-derived');
+      if (component.base_default_value != null) origin.appendChild(el(doc, 'small', 'kmc-economic-global-value', `Base globale : ${componentValue(component, true)} · lecture seule`));
+      table.appendChild(origin);
       table.appendChild(tableCell(doc, variableMarketShare(component), 'is-derived'));
     });
 
@@ -203,14 +205,14 @@
   function fixedDirectCard(doc, structure) {
     const card = el(doc, 'section', 'kmc-cockpit-cost-card is-fixed-direct');
     card.dataset.costSummary = 'fixed-direct';
-    card.appendChild(costCardHeader(doc, '🏠', 'Charges fixes directes', 'Charges structurelles propres au marché.'));
+    card.appendChild(costCardHeader(doc, '🏠', 'Charges fixes directes', 'Charges structurelles propres au marché.', 'Modifier les charges', 'fixed-direct'));
     const table = el(doc, 'div', 'kmc-cockpit-cost-table is-fixed-direct');
     table.appendChild(tableCell(doc, 'Élément', 'is-head'));
     table.appendChild(tableCell(doc, 'Montant / mois', 'is-head'));
     const rows = Array.isArray(structure?.evidence)
       ? structure.evidence.filter(item => item.scope_kind === 'MARKET_DIRECT')
       : [];
-    rows.slice(0, 6).forEach(item => {
+    rows.forEach(item => {
       table.appendChild(tableCell(doc, item.charge_name || item.charge_family || 'Charge structurelle'));
       table.appendChild(tableCell(doc, formatKmf(item.recognized_amount_kmf), 'is-derived is-number'));
     });
@@ -335,6 +337,9 @@
     const structure = decision?.coverage?.structure || null;
     const marketLabel = payload.scope?.market_name || marketCode;
     const section = el(doc, 'section', 'kmc-cockpit-costs');
+    section.dataset.atelierViews = 'costs';
+    section.appendChild(el(doc, 'p', 'kmc-economic-cost-intro',
+      `Coûts et paramètres · ${marketLabel}. Les valeurs héritées et les charges propres au marché sont indiquées séparément. Les montants conservent leur unité de calcul.`));
     const cards = [variableCostCard(doc, groups.variable), fixedDirectCard(doc, structure), fixedMutualizedCard(doc, structure, marketLabel)];
     const active = COST_FAMILIES.some(([key]) => key === activeFamily) ? activeFamily : COST_FAMILIES[0][0];
     section.appendChild(costFamilyTabs(doc, section, cards, active));
@@ -1149,7 +1154,11 @@
       }
 
       const oldCosts = cockpit.querySelector('.kmc-cockpit-costs');
-      if (oldCosts) oldCosts.replaceWith(createCostPilotage(doc, payload, marketCode, newDecision, options.user, oldCosts.dataset.activeFamily));
+      if (oldCosts) {
+        const newCosts = createCostPilotage(doc, payload, marketCode, newDecision, options.user, oldCosts.dataset.activeFamily);
+        newCosts.hidden = oldCosts.hidden;
+        oldCosts.replaceWith(newCosts);
+      }
 
       const oldEquilibrium = cockpit.querySelector('.kmc-flow-equilibrium-panel--cockpit');
       if (oldEquilibrium && rootObject.KomercePricingEquilibriumPanel?.buildPanel) {

@@ -168,3 +168,24 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* Economic workspace: readable desktop lists, shared visual rhythm with the catalogue. */
+.kmc-atelier-views { width: 100%; max-width: none; min-width: 0; }
+.kmc-atelier-views .kmc-pricing-decision-overview,
+.kmc-atelier-views .kmc-economic-cockpit { width: 100%; max-width: none; }
+.kmc-atelier-views .kmc-atelier-nav { margin: 24px 0; }
+.kmc-atelier-views .kmc-economic-catalog-link { flex: 0 0 auto; text-decoration: none; background: #fff; }
+.kmc-atelier-views .kmc-economic-cost-intro { margin: 0 0 16px; color: #4b6280; font-size: 15px; line-height: 1.6; }
+.kmc-atelier-views .kmc-cockpit-costs { gap: 20px; }
+.kmc-atelier-views .kmc-cockpit-cost-head { gap: 24px; }
+.kmc-atelier-views .kmc-cockpit-cost-identity strong { font-size: 18px; }
+.kmc-atelier-views .kmc-cockpit-cost-identity small { font-size: 14px; line-height: 1.6; }
+.kmc-atelier-views .kmc-cockpit-outline-action { min-height: 44px; padding: 10px 18px; font-size: 14px; }
+.kmc-atelier-views .kmc-cockpit-costs .kmc-cockpit-cell { padding: 18px 20px; line-height: 1.5; }
+.kmc-atelier-views .kmc-cockpit-costs .kmc-cockpit-cost-table.is-variable { grid-template-columns: minmax(180px, 1.5fr) minmax(100px, .7fr) minmax(130px, 1fr) minmax(170px, 1.3fr) minmax(110px, .8fr); }
+/* Nature is already given by the section; allocation remains in the adjustment detail. */
+.kmc-atelier-views .kmc-cockpit-cost-table.is-variable > .kmc-cockpit-cell:nth-child(7n + 2),
+.kmc-atelier-views .kmc-cockpit-cost-table.is-variable > .kmc-cockpit-cell:nth-child(7n + 4) { display: none; }
+.kmc-atelier-views .kmc-cockpit-cost-card.is-fixed-mutualized .kmc-cockpit-cell { color: #334155; }
+
+.kmc-atelier-views .kmc-economic-global-value { display: block; margin-top: 6px; color: #4b6280; font-size: 13px; line-height: 1.5; }

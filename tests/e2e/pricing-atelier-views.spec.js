@@ -77,10 +77,11 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
   test.describe(`Atelier des prix · lot A — ${name}`, () => {
     test.use({ viewport });
 
-    test('trois entrées, Vue économique par défaut : KPI et priorités, rien d’autre', async ({ page }) => {
+    test('deux onglets, Vue d’ensemble par défaut : KPI et priorités, rien d’autre', async ({ page }) => {
       await mount(page);
-      await expect(page.locator('[data-atelier-nav] [role="tab"]')).toHaveText(['Vue économique', 'Produits à décider', 'Modèle de coûts'].map(label => new RegExp(`^${label}`)));
-      await expect(page.locator('[data-atelier-nav] [aria-selected="true"]')).toContainText('Vue économique');
+      await expect(page.locator('[data-atelier-nav] [role="tab"]')).toHaveText(['Vue d’ensemble', 'Coûts et paramètres'].map(label => new RegExp(`^${label}`)));
+      await expect(page.locator('[data-atelier-nav] [aria-selected="true"]')).toContainText('Vue d’ensemble');
+      await expect(page.getByRole('link', { name: 'Catalogue marché →', exact: true })).toHaveAttribute('href', /market-catalog.html\?market=KM/);
       await expect(page.locator('.kmc-metric-card')).toHaveCount(4);
       await expect(page.locator('[data-atelier-priorities]')).toBeVisible();
       await expect(page.locator('[data-atelier-priorities]')).toContainText('1 ligne du modèle de coûts sans valeur');
@@ -101,7 +102,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
 
     test('Produits à décider : file triée par urgence, une action principale par ligne', async ({ page }) => {
       await mount(page);
-      await page.locator('[data-atelier-view="products"]').click();
+      await page.goto(`${ORIGIN}/admin/workspaces/pricing?market=KM&view=products`);
       const rows = page.locator('[data-atelier-queue] .kmc-atelier-row:not(.is-head)');
       await expect(rows).toHaveCount(5); // le produit actif n'est pas « à traiter »
       await expect(rows.first()).toHaveAttribute('data-state', 'cost_missing');
@@ -123,7 +124,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
     test('dossier : sources à gauche, décision à droite, brouillon distinct de l’activation, sortie Catalogue pays', async ({ page }) => {
       const posts = [];
       await mount(page, { caps: { local_price_drafts: true, simulation: true, manage_market_price_observations: true }, posts });
-      await page.locator('[data-atelier-view="products"]').click();
+      await page.goto(`${ORIGIN}/admin/workspaces/pricing?market=KM&view=products`);
       await page.locator('[data-product-ref="KPR-900002"] [data-atelier-open]').click();
       const dossier = page.locator('[data-atelier-dossier="KPR-900002"]');
       await expect(dossier).toBeVisible();
@@ -216,7 +217,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
 
     test('erreur serveur : message explicite par ligne, aucune valeur inventée', async ({ page }) => {
       await mount(page, { corridorStatus: 500 });
-      await page.locator('[data-atelier-view="products"]').click();
+      await page.goto(`${ORIGIN}/admin/workspaces/pricing?market=KM&view=products`);
       await expect(page.locator('.kmc-atelier-alert-inline').first()).toContainText('Indisponible');
       await expect(page.locator('[data-atelier-priorities]')).not.toContainText('produit sans');
     });
