@@ -260,10 +260,10 @@
   }
 
   function principleCard(doc, marketCode) {
-    const card = el(doc, 'aside', 'kmc-cockpit-principle');
-    const head = el(doc, 'div', 'kmc-cockpit-principle-head');
+    const card = el(doc, 'details', 'kmc-cockpit-principle kmc-economic-principles-detail');
+    const head = el(doc, 'summary', 'kmc-cockpit-principle-head');
     head.appendChild(el(doc, 'span', 'kmc-cockpit-cost-icon', '💡'));
-    head.appendChild(el(doc, 'strong', '', 'Rappel du principe'));
+    head.appendChild(el(doc, 'strong', '', 'Voir les règles de répartition (détail)'));
     card.appendChild(head);
     const list = doc.createElement('ul');
     [
@@ -775,10 +775,14 @@
 
     const badge = el(doc, 'div', 'kmc-cockpit-live-badge');
     badge.dataset.cockpitLiveBadge = '';
-    badge.appendChild(el(doc, 'strong', '', 'Données réelles'));
+    const decisional = ['COVERED', 'UNCOVERED'].includes(decision?.decision_status)
+      && decision?.coverage?.coverage_ratio != null && Number.isFinite(Number(decision.coverage.coverage_ratio));
+    badge.classList.toggle('is-unavailable', !decisional);
+    badge.appendChild(el(doc, 'strong', '', decisional ? 'Couverture réconciliée' : 'Couverture non décisionnelle'));
     const ts = decision?.evaluated_at;
-    const ago = ts ? timeSince(new Date(ts)) : 'temps réel';
-    const badgeTime = el(doc, 'small', '', `Mises à jour ${ago}`);
+    const ago = ts && !Number.isNaN(Date.parse(ts))
+      ? `Dernière évaluation ${timeSince(new Date(ts))}` : 'Date d’évaluation indisponible';
+    const badgeTime = el(doc, 'small', '', ago);
     badgeTime.dataset.cockpitLiveBadgeTime = '';
     badge.appendChild(badgeTime);
     right.appendChild(badge);
