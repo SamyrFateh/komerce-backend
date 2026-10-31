@@ -713,11 +713,12 @@
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
     const open = (payload.candidates || []).filter(sourcingRemedy).length;
-    const pages = [
-      {key:'imports',label:'Sources & imports',count:(payload.imports || []).length,render:renderImports},
-      {key:'candidates',label:'Exceptions source',count:open,render:renderCandidates},
-      {key:'suppliers',label:'Fournisseurs',count:(payload.suppliers || []).length,render:renderSuppliers},
-    ];
+    // Technical fallback only: legacy path is no longer a parallel Sourcing dashboard.
+    const pages = context.partnerManagement
+      ? [{key:'suppliers',label:'Partenaires fournisseurs',count:(payload.suppliers || []).length,render:renderSuppliers}]
+      : context.focusCandidateRef
+        ? [{key:'candidates',label:'Corriger les faits fournisseur',count:open,render:renderCandidates}]
+        : [{key:'imports',label:'Importer',count:(payload.imports || []).length,render:renderImports}];
     const nav = doc.createElement('nav');
     nav.className = 'kmc-sourcing-tabs';
     nav.setAttribute('role','tablist');
@@ -743,7 +744,7 @@
       panels.set(page.key,panel);
     }
     context.selectTab = key => {
-      context.activeTab = panels.has(key) ? key : 'imports';
+      context.activeTab = panels.has(key) ? key : pages[0].key;
       panels.forEach((panel,tab) => {
         const selected = tab === context.activeTab;
         panel.hidden = !selected;
@@ -752,7 +753,7 @@
       });
     };
     for (const page of pages) page.render(panels.get(page.key),ui,doc,payload,context);
-    context.selectTab(context.focusCandidateRef ? 'candidates' : context.activeTab);
+    context.selectTab(context.focusCandidateRef ? 'candidates' : context.partnerManagement ? 'suppliers' : context.activeTab);
   }
 
   async function mount(options = {}) {
@@ -765,8 +766,22 @@
     }
     const focusSearch = options.locationSearch ??
       (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
+    const search = new URLSearchParams(focusSearch || '');
+    // In a real browser, old links converge on the single Live screen.
+    // Only a focused source-fact correction and optional partner administration
+    // keep this narrow legacy surface, without multiple operator tabs.
+    if (typeof window !== 'undefined' &&
+        window.location?.pathname === '/admin/workspaces/sourcing' &&
+        !search.get('candidate_ref') && !['partners','manual'].includes(search.get('mode'))) {
+      const href = '/admin/import-runtime' +
+        (search.get('tab') === 'imports' || search.get('tab') === 'suppliers' ? '?view=sources' :
+        search.get('tab') === 'candidates' ? '#sourcing-actions' : '');
+      (options.navigate || (url => window.location.assign(url)))(href);
+      return { redirected: true, href };
+    }
     const context = {
       focusCandidateRef: new URLSearchParams(focusSearch || '').get('candidate_ref'),
+      partnerManagement: search.get('mode') === 'partners',
       activeTab: ['imports','candidates','suppliers'].includes(new URLSearchParams(focusSearch || '').get('tab'))
         ? new URLSearchParams(focusSearch || '').get('tab') : 'imports',
       selectTab: null,
