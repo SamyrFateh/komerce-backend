@@ -1114,7 +1114,7 @@
       || (list.length === 1 ? list[0] : null);
   }
 
-  // Trois gestes humains, branchés sur les commandes existantes (import-now / deactivate / activate).
+  // Deprecated KIR/source command control retained only as a helper; never mounted on a historical passage.
   function commandBar(run, sourceControls) {
     const source = sourceForRun(run, sourceControls);
     if (!source) return '';
@@ -1260,13 +1260,13 @@
   }
 
   function itemHref(run, item) {
-    if (item?.product_ref) {
-      return withReturnTo(
-        `/admin/products/${encodeURIComponent(item.product_ref)}`,
-        urlFor(run.run_ref),
-        'Retour au suivi'
-      );
-    }
+    // A product opens its own exact source trace, never an unrelated pipeline stage.
+    // That trace is the only safe handoff toward a product's global Catalogue fiche.
+    if (item?.supplier_product_id) return itemUrl(run.run_ref, item.supplier_product_id, 'received');
+    if (item?.product_ref) return withReturnTo(
+      `/admin/workspaces/catalog?product_ref=${encodeURIComponent(item.product_ref)}`,
+      urlFor(run.run_ref), 'Retour au suivi'
+    );
     return stageUrl(run.run_ref, item?.stage || run.current_stage);
   }
 
@@ -1519,32 +1519,37 @@
     const items = Array.isArray(run.action_items) ? run.action_items : [];
     const count = num(run.accounting?.action_required);
     const back = urlFor(run.run_ref, 'exceptions');
-    const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour à Action requise');
     const rows = items.map(item => {
-      const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du passage' : 'Produit à examiner');
-      // « Classer » agit sur l'objet exact, sans quitter le cockpit ni saisie libre.
-      const control = item.action === 'choose' && item.candidate_ref
-        ? `<button type="button" class="kir-row-action kir-classify-btn" data-action-classify
-            data-candidate-ref="${esc(item.candidate_ref)}"
-            data-product-name="${esc(title)}"
-            data-action-reason="${esc(item.reason || '')}">Classer →</button>`
-        : `<a class="kir-row-action" href="${workspace}">${esc(item.action_label || 'Examiner')} dans Sourcing →</a>`;
-      return `<tr>
+      const title = item.product_name || item.supplier_product_id ||
+        (item.reason === 'Anomalie de comptage' ? 'Comptage du passage' : 'Écart à diagnostiquer');
+      const sourceFact = item.correction_kind === 'purchase_price';
+      let control;
+      if (item.candidate_ref && sourceFact) {
+        const target = withReturnTo('/admin/workspaces/sourcing?tab=candidates&candidate_ref=' +
+          encodeURIComponent(item.candidate_ref), back, 'Retour au passage');
+        control = `<a class="kir-row-action" href="${target}">Corriger le prix fournisseur →</a>`;
+      } else if (item.candidate_ref) {
+        // The unified Catalogue owns all product classification and media corrections,
+        // even for candidates without a KPR. Never open a second classifier here.
+        const target = withReturnTo('/admin/workspaces/catalog?search=' +
+          encodeURIComponent(item.candidate_ref), back, 'Retour au passage');
+        control = `<a class="kir-row-action" href="${target}">Compléter dans le Catalogue →</a>`;
+      } else {
+        // No stable candidate identity = no invented operator remediation.
+        control = `<a class="kir-row-action" href="${technicalUrl(run.run_ref)}" data-cockpit-nav>Voir le diagnostic du passage →</a>`;
+      }
+      return `<tr data-action-candidate="${esc(item.candidate_ref || '')}">
         <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : ''}<strong>${esc(title)}</strong>${item.supplier_product_id ? `<small>${esc(item.supplier_product_id)}</small>` : ''}</td>
-        <td>${esc(item.reason)}${item.action_origin === 'deferred' ? '<small>Mis de côté · correction humaine possible</small>' : ''}</td>
+        <td>${esc(item.reason || 'Motif non documenté')}${item.action_origin === 'deferred' ? '<small>Mis de côté · preuve fournisseur conservée</small>' : ''}</td>
         <td>${control}</td>
       </tr>`;
     }).join('');
-    return drillHeader(
-      run,
-      count > 0 ? `Action requise · ${count}` : 'Action requise',
-      count > 0
-        ? 'Cette liste peut inclure des produits mis de côté pour une donnée corrigeable. Corrigez dans Sourcing puis relancez une analyse ; le lot source reste une preuve historique.'
-        : 'Komerce ne signale aucune correction humaine nécessaire pour ce passage.'
+    return drillHeader(run, count > 0 ? `Écarts à traiter · ${count}` : 'Écarts à traiter',
+      'Seules les corrections possibles sont actionnables. Données fournisseur dans Sourcing ; catégories et fiches dans le Catalogue global. Les preuves historiques du passage restent inchangées.'
     ) + (rows
       ? `<div class="kir-table-wrap"><table class="kir-table" data-action-list>
-          <thead><tr><th>Produit</th><th>Pourquoi</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`
-      : '<div class="kir-empty">Aucune action requise.</div>');
+          <thead><tr><th>Produit ou constat</th><th>Pourquoi</th><th>Où intervenir</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : '<div class="kir-empty">Aucune intervention humaine requise pour ce passage.</div>');
   }
 
   function stateWords(status) {
@@ -1836,7 +1841,7 @@
         <td>${fmtDate(item.started_at)}</td>
         <td><span class="kir-status is-${tone}">${esc(item.state_label)}</span></td>
         <td>${num(item.source_total)}</td><td>${num(item.certified)}</td><td>${num(item.discarded)}</td>
-        <td>${num(item.action_required) > 0 ? `<strong class="kir-passage-action">${num(item.action_required)}</strong>` : '0'}</td>
+        <td>${num(item.action_required) > 0 ? `<a class="kir-passage-action" href="${urlFor(item.run_ref, 'exceptions')}" data-cockpit-nav title="Voir les écarts de ce passage">${num(item.action_required)} · Voir →</a>` : '—'}</td>
         <td>${esc(item.handoff_label || '—')}</td>
       </tr>`;
     }).join('');
@@ -1994,11 +1999,11 @@
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
+          <a href="${urlFor(run.run_ref, 'sources')}" data-cockpit-nav class="kir-subtle-link">Gérer les sources →</a>
           <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue global →</a>
         </div>
       </header>
 
-      ${commandBar(run, sourceControls)}
       ${persistentRunFlow(run, sourceControls)}
       ${runTruthStrip(run)}
       ${providerRuntimeVerdict(run)}

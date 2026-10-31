@@ -201,7 +201,7 @@ describe('L7 — rattachement du workspace candidats à Live › Sourcing', () =
     expect(src).toContain("'sourcing-workspace': 'live',");
     expect(src).not.toContain("'sourcing-workspace': 'catalog'");
     expect(src).toContain("'sourcing-workspace': 'import-runtime',");
-    expect(src).toContain("id: 'sourcing-candidats', label: 'Exceptions source', href: '/admin/workspaces/sourcing?tab=candidates'");
+    expect(src).not.toContain("id: 'sourcing-candidats', label: 'Exceptions source'");
   });
 });
 

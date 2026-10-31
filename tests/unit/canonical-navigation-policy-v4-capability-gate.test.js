@@ -318,7 +318,7 @@ describe('Sourcing — navigation locale du shell Canonical', () => {
     global.location = { pathname: '/admin/import-runtime', search, hash: '' };
     const nav = loadPolicy();
     expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.label))
-      .toEqual(['Suivi', 'Passages', 'Sources', 'Exceptions source']);
+      .toEqual(['Suivi', 'Passages', 'Sources']);
     expect(nav._activeLocalTab('live', 'import-runtime')).toBe(active);
     expect(nav._localTabsFor('live', { role: 'admin' })[1].href)
       .toContain('view=passages');
@@ -330,7 +330,7 @@ test('L7 : /admin/workspaces/sourcing est actif sur « Exceptions source » dans
   try {
     const nav = loadPolicy();
     expect(nav.activePrimarySurface('sourcing-workspace')).toBe('live');
-    expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.id)).toContain('sourcing-candidats');
+    expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.id)).not.toContain('sourcing-candidats');
     expect(nav._activeLocalTab('live', 'sourcing-workspace')).toBe('sourcing-candidats');
   } finally { delete global.location; }
 });
