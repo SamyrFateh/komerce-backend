@@ -1232,7 +1232,7 @@ test('Catalogue: la correction française est visible AVANT les coûts et ouvre 
   expect(sourceFacts).not.toBeNull();
   expect(panel.querySelector('[data-catalog-economic-summary]')).toBeNull();
   expect(dossier).not.toBeNull();
-  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(sourceFacts));
+  expect(sourceFacts.parentNode).toBe(panel.querySelector('[data-catalog-complementary-info]'));
   const additional=panel.querySelector('[data-catalog-complementary-info]');
   expect(additional).not.toBeNull();
   expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(additional));
