@@ -1956,8 +1956,8 @@
 
   function unifiedPassageHistory(run, payload) {
     const historyMode = params().view === 'passages';
-    const rows = historyMode && Array.isArray(payload?.passages) ? payload.passages : payload?.lots;
-    const list = Array.isArray(rows) ? rows.slice(0, historyMode ? 50 : 10) : [];
+    const records = historyMode && Array.isArray(payload?.passages) ? payload.passages : payload?.lots;
+    const list = Array.isArray(records) ? records.slice(0, historyMode ? 50 : 10) : [];
     const page = payload?.passages_page || {};
     const rows = list.map(lot => {
       const view = lot.state_label ? {label:lot.state_label} : lotChipView(lot);
