@@ -151,8 +151,8 @@ test('trois colonnes : un libellé, la dernière valeur, une action ou un état 
   expect(css).toContain('grid-column: 3;');
   expect(css).toContain('grid-column: auto;');
   expect(css).toContain('overflow-x: auto;');
-  expect(index).toContain('pricing-atelier-views.css?v=261031-fixed-create-4');
-  expect(index).toContain('pricing-economic-cockpit.js?v=261031-fixed-create-4');
+  expect(index).toContain('pricing-atelier-views.css?v=261031-fixed-label-1');
+  expect(index).toContain('pricing-economic-cockpit.js?v=261031-fixed-label-1');
 });
 
 test('ajustements : enregistrement automatique (prix à la validation, coûts par champ), jamais à la frappe ni vide', () => {
