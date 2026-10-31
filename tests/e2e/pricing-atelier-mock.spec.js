@@ -53,7 +53,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
 
     test('titre, quatre KPI indisponibles sans zéro ni null, aucun texte parasite', async ({ page }) => {
       await mount(page);
-      await expect(page.locator('h1')).toHaveText('Atelier des prix · Comores');
+      await expect(page.locator('h1')).toHaveText('Moteur économique · Comores');
       const kpis = page.locator('.kmc-metric-card');
       await expect(kpis).toHaveCount(4);
       await expect(kpis.locator('.kmc-metric-label')).toHaveText(['Couverture réelle', 'Contribution reconnue', 'Structure à couvrir', 'Maturité']);
@@ -65,7 +65,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
 
     test('délégation mono-marché : le marché autorisé est chargé sans sélection manuelle, titre inclus (L1)', async ({ page }) => {
       await mount(page, { autoMarket: true });
-      await expect(page.locator('h1')).toHaveText('Atelier des prix · Comores');
+      await expect(page.locator('h1')).toHaveText('Moteur économique · Comores');
     });
 
     test('politique de marché absente : un seul avis neutre, aucun bouton ni code brut (L5)', async ({ page }) => {
@@ -145,7 +145,8 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('ancien portefeuille remplacé par la file « Produits à décider » et aucun débordement horizontal de la page', async ({ page }) => {
       await mount(page, { populated: true });
       await expect(page.locator('[data-cockpit-portfolio]')).toBeHidden();
-      await expect(page.locator('[data-atelier-view="products"]')).toBeVisible();
+      await expect(page.locator('[data-atelier-view="costs"]')).toBeVisible();
+      await expect(page.locator('[data-atelier-nav]')).toBeVisible();
       const widths = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, inner: window.innerWidth }));
       expect(widths.scroll).toBeLessThanOrEqual(widths.inner);
     });
