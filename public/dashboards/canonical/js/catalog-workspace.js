@@ -1849,7 +1849,7 @@
       section.appendChild(name.wrap);section.appendChild(desc.wrap);
       let busy=false;
       const save=async()=>{
-        if(busy||!section.isConnected)return;
+        if(busy||(typeof section.isConnected==='boolean'&&!section.isConnected))return;
         const nameFR=String(name.input.value||'').trim();
         const descFR=String(desc.input.value||'').trim();
         if(!nameFR||!descFR)return;
@@ -1919,7 +1919,7 @@
         (cat.value!==row.boutique_category_key||sub.value!==row.boutique_subcategory_key));
       let busy=false;
       const save=async()=>{
-        if(busy||!section.isConnected)return;
+        if(busy||(typeof section.isConnected==='boolean'&&!section.isConnected))return;
         const category=active.find(c=>c.key===cat.value);
         const subcategory=(category?.subcategories||[]).find(c=>c.is_active&&c.key===sub.value);
         if(!category||!subcategory)return;
@@ -2590,7 +2590,8 @@
     void loadProductDossier(context, doc, dossierSlot, row);
     const issues = Array.isArray(row.issues) ? row.issues : [];
     const correctionIssues = issues.filter(code => code !== 'approval_pending');
-    const correctionsTitle = text(doc, 'strong', 'kmc-catalog-inspector-section', 'À compléter');
+    const correctionsTitle = text(doc, 'strong', 'kmc-catalog-inspector-section',
+      correctionIssues.length ? 'À compléter' : 'Modifier la catégorie');
     panel.insertBefore(correctionsTitle, panel.querySelector('[data-catalog-action-dock]'));
     const list = doc.createElement('ul');
     list.className = 'kmc-catalog-inspector-issues';
