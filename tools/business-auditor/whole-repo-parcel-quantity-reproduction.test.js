@@ -8,6 +8,7 @@ function input(afterQty){
  return {contract:'komerce-real-parcel-resync-observation/v1',
   scenario:'ASSIGN_SYNC_CANCEL_LAST_ACTIVE_PARCEL_RESYNC',
   realOwnersExecuted:true,canonicalPg:true,networkBlocked:true,
+  allocatedParcelFixturePreparedBySQL:true,parcelAllocationHttpPathExecuted:false,
   allReadsFromPostgres:true,realCancellationAccepted:true,
   before:base,intermediate:{...base,actual_allocated_active:0},
   after:{...base,qty_allocated:afterQty,actual_allocated_active:0,
