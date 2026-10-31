@@ -97,6 +97,7 @@ function marketAccessProjection(req) {
       role: 'global_admin',
       read_only: false,
       can_manage_costs: true,
+      can_manage_structure_events: true,
       can_manage_decision_policy: true,
       can_draft_local_prices: false,
       can_activate_local_prices: false,
@@ -112,18 +113,20 @@ function marketAccessProjection(req) {
   );
   const canManageCosts = capabilities.has('pricing.cost_component.update')
     && capabilities.has('pricing.cost_component.reset');
+  const canManageStructureEvents = capabilities.has('structure.event.record');
   const canManageDecisionPolicy = capabilities.has('pricing.policy.set');
   const canDraftLocalPrices = capabilities.has('pricing.decide');
   const canActivateLocalPrices = capabilities.has('pricing.activate') && capabilities.has('catalog.expose');
   const canManageMarketObservations = capabilities.has('market.observation.record');
   const localStrategyOwner = canDraftLocalPrices && canActivateLocalPrices && canManageMarketObservations;
-  const canManage = canManageCosts || canManageDecisionPolicy || canDraftLocalPrices
+  const canManage = canManageCosts || canManageStructureEvents || canManageDecisionPolicy || canDraftLocalPrices
     || canActivateLocalPrices || canManageMarketObservations;
 
   return {
     role: canManage ? 'manager' : 'viewer',
     read_only: !canManage,
     can_manage_costs: canManageCosts,
+    can_manage_structure_events: canManageStructureEvents,
     can_manage_decision_policy: canManageDecisionPolicy,
     can_draft_local_prices: canDraftLocalPrices,
     can_activate_local_prices: canActivateLocalPrices,
@@ -243,6 +246,7 @@ router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), 
         simulation: true,
         cost_overrides: access.can_manage_costs,
         reset_to_global: access.can_manage_costs,
+        can_manage_structure_events: access.can_manage_structure_events,
         market_decision: true,
         market_corridor: true,
         manage_market_price_observations: access.can_manage_market_observations,
