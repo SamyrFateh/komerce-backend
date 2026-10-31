@@ -188,7 +188,7 @@ async function main() {
     const candidate = page.locator('[data-catalog-candidate-inspector="KSC-TEST-READY"]');
     await candidate.waitFor({ state: 'visible' });
     // La suggestion est affichée dès l'ouverture : pas de clic « Recharger ».
-    await candidate.locator('[data-catalog-candidate-category-choice] option').first().waitFor();
+    await candidate.locator('[data-catalog-candidate-category-choice] option').first().waitFor({state:'attached'});
     assert((await candidate.locator('[data-catalog-candidate-category-choice] option').first().innerText()).includes('Proposé'));
     assert(await candidate.locator('[data-workspace-action="candidate-apply-boutique-suggestion"]').isVisible());
     await page.screenshot({ path: path.join(output, 'candidat-suggestion-contextuelle.png'), fullPage: true });
