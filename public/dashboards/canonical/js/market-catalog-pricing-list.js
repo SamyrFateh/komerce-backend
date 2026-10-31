@@ -46,6 +46,7 @@
   function render({root: host, payload = {}, marketCode, focusedProductRef = null, request, feedback = () => {}, reload = async () => {}} = {}) {
     if (!host || typeof request !== 'function') return null;
     const doc = host.ownerDocument;
+    const win = doc.defaultView || globalThis;
     const rows = Array.isArray(payload.ready_to_sell?.items) ? payload.ready_to_sell.items : [];
     const currency = payload.market?.currency || payload.ready_to_sell?.market?.currency || '';
     const caps = new Set(payload.actor_capabilities || []);
@@ -66,7 +67,7 @@
     const search = doc.createElement('input');
     search.type = 'search';
     search.placeholder = 'Nom ou référence produit…';
-    search.value = new URL(root.location.href).searchParams.get('price_search') || '';
+    search.value = new URL(win.location.href).searchParams.get('price_search') || '';
     search.setAttribute('aria-label', 'Rechercher un produit dans le catalogue pays');
     search.className = 'kmc-price-list-search';
     tools.appendChild(tabs);
@@ -78,12 +79,12 @@
     searchButton.textContent = 'Rechercher';
     searchButton.className = 'kmc-price-list-search-button';
     const searchAll = () => {
-      const url = new URL(root.location.href);
+      const url = new URL(win.location.href);
       const query = search.value.trim();
       if (query) url.searchParams.set('price_search', query);
       else url.searchParams.delete('price_search');
       url.searchParams.delete('price_page');
-      root.location.assign(url.toString());
+      win.location.assign(url.toString());
     };
     searchButton.addEventListener('click', searchAll);
     search.addEventListener('keydown', event => {
@@ -116,9 +117,9 @@
         button.textContent = label;
         button.disabled = disabled;
         button.addEventListener('click', () => {
-          const url = new URL(root.location.href);
+          const url = new URL(win.location.href);
           url.searchParams.set('price_page', String(destination));
-          root.location.assign(url.toString());
+          win.location.assign(url.toString());
         });
         nav.appendChild(button);
       };
@@ -377,7 +378,7 @@
         if (row.local_price_active && entered === activePrice && !row.exposure_enabled) {
           busy = true; updateAction();
           try {
-            await root.KomerceMarketReadyToSell.approveOne({row, amount: entered, marketCode, request, feedback});
+            await win.KomerceMarketReadyToSell.approveOne({row, amount: entered, marketCode, request, feedback});
             feedback(row.product_ref + ' · publié.', 'positive');
             await reload();
           } catch (error) {feedback(error.message, 'critical');busy=false;updateAction();}
@@ -406,7 +407,7 @@
               });
             feedback(row.product_ref + ' · prix modifié sans interruption de publication.', 'positive');
           } else {
-            await root.KomerceMarketReadyToSell.approveOne({row, amount: entered, marketCode, request, feedback});
+            await win.KomerceMarketReadyToSell.approveOne({row, amount: entered, marketCode, request, feedback});
             feedback(row.product_ref + ' · prix activé, produit publié.', 'positive');
           }
           await reload();
