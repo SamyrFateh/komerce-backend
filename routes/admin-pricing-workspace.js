@@ -160,12 +160,10 @@ function requirePricingReadCapability(capability) {
   return requirePricingCapability(capability, { audit: false });
 }
 
-// La stratégie commerciale locale (observations, brouillon/activation/reset de
-// prix local) n'a JAMAIS admis l'autorité Pricing centrale — c'était le
-// comportement exact de requireCountryStrategyManager (doctrine
-// `country_manager_owns_local_strategy`, cf. en-tête du fichier) et il n'y a
-// aucune raison de l'élargir en migrant vers les capabilities : pas de bypass
-// pricingGlobalAuthority ici, seule la capability du membre marché compte.
+// Les observations et politiques locales restent aux mains des membres
+// délégués et n'admettent PAS d'autorité Pricing globale implicite.
+// Exception explicite plus bas : l'Admin central vérifié peut traiter les
+// prix produit du Catalogue pays, mais jamais ces autres actions.
 function requireLocalStrategyCapability(capability) {
   return requireMarketDelegatedCapability(capability);
 }
