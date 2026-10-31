@@ -195,6 +195,12 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     const api = createFakeApi();
     await mountWorkspace(page, api);
 
+    const tabs=page.locator('.kmc-purchasing-tabs .kmc-purchasing-tab');
+    await expect(tabs).toHaveText([
+      "Ordre d'Achat à envoyer", "Ordre d'Achat en Cours", "Ordre d'Achat terminés",
+    ]);
+    await expect(tabs.first()).toHaveAttribute('aria-current','page');
+
     const group = page.locator('[data-purchasing-group]');
     await expect(group).toContainText('Allegro Pologne');
     await expect(group).toContainText('Hub HUB-001');
