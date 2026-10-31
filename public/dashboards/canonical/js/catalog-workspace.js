@@ -679,7 +679,7 @@
   }
 
   function scheduleAutoFrenchPreparation(context, payload = {}) {
-    // La préparation FR appartient exclusivement à la Raffinerie.
+    // Le moteur Raffinerie prépare en amont ; aucune mutation lors de l'ouverture d'un écran.
     if (context.workspaceView !== 'refinery') return false;
     if (context.autoFrenchRunning) return false;
     const rows = Array.isArray(payload.approval) ? payload.approval : [];
@@ -3060,7 +3060,10 @@
       focusedProductRef = null;
     }
     const context = {
-      workspaceView: new URLSearchParams(locationSearch || '').get('view') === 'refinery' ? 'refinery' : 'catalog',
+      // Historical ?view=refinery routes now land on the master Catalogue.
+      // Explicit diagnostic mode retains the read-only technical monitoring.
+      workspaceView: new URLSearchParams(locationSearch || '').get('view') === 'refinery' &&
+        new URLSearchParams(locationSearch || '').get('diagnostic') === '1' ? 'refinery' : 'catalog',
       catalogTab: ['registry', 'assortment', 'taxonomy'].includes(new URLSearchParams(locationSearch || '').get('tab'))
         ? new URLSearchParams(locationSearch || '').get('tab') : 'registry',
       root: rootNode,
@@ -3111,7 +3114,7 @@
         if (context.afterRender) context.afterRender(payload);
         activeContext = context;
         activePayload = payload;
-        if (context.workspaceView === 'refinery' && !reloadOptions.skipAutoFrenchSchedule) scheduleAutoFrenchPreparation(context, payload);
+        // No browser-triggered preparation: workers and explicit Catalogue actions own mutations.
         return payload;
       } catch (error) {
         rootNode.replaceChildren();
