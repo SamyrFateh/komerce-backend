@@ -13,7 +13,7 @@
  * @db-write-via:catalog-market-exposure-service product_market_exposure
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        explicit
- * @doctrine      capabilities_authorize_catalog_exposure, client_market_id_never_authority, market_catalog_summary_is_server_truth
+ * @doctrine      delegated_capabilities_or_verified_central_admin_catalog_only, client_market_id_never_authority, market_catalog_summary_is_server_truth
  * @impact-areas  market, delegation, catalog
  * @version       2026-09
  */
