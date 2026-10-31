@@ -13,7 +13,7 @@
  * @db-write-via:catalog-market-exposure-service product_market_exposure
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        catalog_entry_projection_owned_by_market_delegation_service
- * @doctrine      capability_is_the_authority_not_role, global_pricing_authority_or_exact_market_capability, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate, pricing_market_viability_period_structure_truth, local_active_implies_market_catalog_entry
+ * @doctrine      capability_is_the_authority_not_role, global_pricing_authority_or_exact_market_capability, viewer_reads_manager_writes, country_manager_owns_local_strategy_except_verified_central_admin_catalog_price, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate, pricing_market_viability_period_structure_truth, local_active_implies_market_catalog_entry
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-10-d9
  */
