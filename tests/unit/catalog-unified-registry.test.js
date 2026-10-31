@@ -313,6 +313,8 @@ test('les cinq handoffs RCT1 désactivés sont exclus par identité croisée, sa
   const sql=q.query.mock.calls[1][0];
   expect(sql).toContain("p.is_active=FALSE AND p.is_available=FALSE");
   expect(sql).toContain("sc.supplier_name='RCT1-FICTIF-recette'");
+  expect(sql).toContain('(p.product_ref,sc.supplier_product_id) IN (');
+  expect(sql).not.toContain('(p.product_ref,sc.candidate_ref) IN (');
   for(let i=1;i<=5;i++) {
     expect(sql).toContain("('KSC-00018"+(i-1)+"','RCT1-P"+i+"')");
   }
