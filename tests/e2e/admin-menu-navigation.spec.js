@@ -46,19 +46,19 @@ test.describe('Menu latéral — une entrée active, accès administration', () 
     await serve(page);
   });
 
-  test('Catalogue seul est allumé, y compris en vue avancée', async ({ page }) => {
+  test('Catalogue global seul est actif, y compris avec les anciens paramètres Raffinerie', async ({ page }) => {
     await page.goto(`${ORIGIN}/admin/workspaces/catalog`);
     await page.waitForSelector('.kmc-admin-primary-link.is-active');
-    expect(await activeLabels(page)).toEqual(['Catalogue']);
+    expect(await activeLabels(page)).toEqual(['Catalogue global']);
 
     await page.goto(`${ORIGIN}/admin/workspaces/catalog?view=refinery`);
     await page.waitForSelector('.kmc-admin-primary-link.is-active');
-    expect(await activeLabels(page)).toEqual(['Raffinerie']);
+    expect(await activeLabels(page)).toEqual(['Catalogue global']);
 
     // « Produits » n'est plus une entrée de menu : la vue avancée reste dans le Catalogue.
     await page.goto(`${ORIGIN}/admin/workspaces/catalog?view=advanced`);
     await page.waitForSelector('.kmc-admin-primary-link.is-active');
-    expect(await activeLabels(page)).toEqual(['Catalogue']);
+    expect(await activeLabels(page)).toEqual(['Catalogue global']);
     expect(await page.locator('.kmc-admin-navigation a[data-dashboard="entity-products"]').count()).toBe(0);
   });
 
