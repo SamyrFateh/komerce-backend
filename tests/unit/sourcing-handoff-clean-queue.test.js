@@ -13,9 +13,9 @@ describe('sourcing handoff boundary', () => {
   test('completed sourcing candidates are not actionable after handoff', () => {
     expect(source).toContain("context.focusCandidateRef");
     expect(source).toContain("row.candidate_ref === context.focusCandidateRef");
-    expect(source).toContain(": !['imported_to_catalog', 'rejected'].includes(row.state)");
-    expect(source).toContain("if (!['imported_to_catalog', 'rejected'].includes(row.state))");
-    expect(source).toContain('Exceptions sourcing à traiter');
-    expect(source).toContain('préparation produit relève de la Raffinerie');
+    expect(source).toContain('Boolean(sourcingRemedy(row))');
+    expect(source).toContain("['imported_to_catalog','rejected','archived','quarantined'].includes(state)");
+    expect(source).toContain('Exceptions fournisseur à résoudre');
+    expect(source).toContain('classification et contenu français se corrigent dans le Catalogue');
   });
 });
