@@ -68,7 +68,7 @@ test('only meaningful alert survives; old top cards, bottom funnel and parallel 
   }
   const attention=find(page,x=>x.className==='kmc-ord-attention');
   expect(attention).not.toBeNull();
-  expect(attention.textContent).toContain('1 retraits en retard');
+  expect(attention.textContent).toContain('1 retrait en retard');
   expect(attention.textContent).not.toContain('paiements en attente'); // in file selector already
   expect(attention.textContent).not.toContain('0 litiges');
   expect(find(page,x=>x.className==='kmc-ord-list-count').textContent)
