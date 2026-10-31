@@ -342,6 +342,20 @@ router.post('/market/:marketCode/price-observations/:observationRef/deactivate',
   } catch (error) { handleError(error, res, next); }
 });
 
+// Read-only preview of the human-entered price. No draft write and no browser market authority.
+router.post('/market/:marketCode/products/:productRef/local-price/price-preview',
+  requirePricingReadCapability('pricing.read'), async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      res.json(await pricingMarketCorridor.previewMarketPrice({
+        market: req.workspaceMarket,
+        productRef: req.params.productRef,
+        amount: req.body && req.body.amount,
+      }));
+    } catch (error) { handleError(error, res, next); }
+  }
+);
+
 router.get('/market/:marketCode/products/:productRef/local-price/activation-preview', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
@@ -416,6 +430,28 @@ router.post('/market/:marketCode/products/:productRef/local-price/activate', req
         ...activation,
         catalog_entry: catalogEntry,
       });
+    } catch (error) { handleError(error, res, next); }
+  }
+);
+
+// Atomic ACTIVE -> ACTIVE repricing: prevents a live product from dropping into
+// a transient draft between the pricing decision and checkout cutover.
+router.post('/market/:marketCode/products/:productRef/local-price/change-active',
+  requireLocalStrategyCapability('pricing.decide'),
+  requireLocalStrategyCapability('pricing.activate'),
+  requireLocalStrategyCapability('catalog.expose'),
+  requireMarketOperation('local_price_activate'),
+  async (req, res, next) => {
+    try {
+      sendAction(res, 'reprice_market_local_active', await marketLocalPriceActivation.repriceActiveLocalPrice({
+        market: req.workspaceMarket,
+        productRef: req.params.productRef,
+        amount: req.body && req.body.amount,
+        expectedAmount: req.body && req.body.expected_amount,
+        acknowledgedRisk: req.body && req.body.acknowledged_risk === true,
+        actorId: req.user.id,
+        reason: 'Décision de prix depuis le Catalogue pays',
+      }));
     } catch (error) { handleError(error, res, next); }
   }
 );

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-28T17:05:41.123Z",
+  "generatedAt": "2026-10-31T09:03:51.055Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 758,
-    "protected": 703,
+    "total": 760,
+    "protected": 705,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -5489,6 +5489,16 @@
     {
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/change-active",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/price-preview",
+      "level": "PROTECTED",
       "roles": []
     }
   ]

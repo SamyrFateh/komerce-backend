@@ -336,6 +336,66 @@ async function authorizeMarketPriceDraft({ market, productRef, authorizationSnap
   });
 }
 
+// Atomic replacement of an already buyer-effective price: no transient draft
+// and no disruption of LOCAL_ACTIVE / exposed catalogue state.
+async function replaceActiveMarketPrice({ market, productRef, amount, expectedAmount, authorizationSnapshot, reason, source, actorId }) {
+  requireMarket(market);
+  const localAmount = normalizeAmount(amount);
+  const expected = normalizeAmount(expectedAmount);
+  const decisionReason = normalizeReason(reason);
+  const decisionSource = normalizeSource(source || 'market_catalog_atomic_reprice');
+  if (!actorId || !authorizationSnapshot?.activation_allowed) {
+    throw new MarketCommercialPriceError(400, 'market_price_reprice_authorization_required', 'Preuve économique et acteur requis.');
+  }
+  if (Number(authorizationSnapshot.local_price) !== localAmount
+      || authorizationSnapshot.currency !== market.currency) {
+    throw new MarketCommercialPriceError(409, 'market_price_reprice_snapshot_stale', 'Preuve économique différente du prix demandé.');
+  }
+  return withTransaction(async client => {
+    const product = await resolveProduct(client, productRef);
+    const {rows} = await client.query(
+      `SELECT amount, currency, status
+         FROM product_market_price_drafts
+        WHERE market_id = $1::uuid AND product_id = $2::uuid FOR UPDATE`,
+      [market.id, product.id]
+    );
+    const previous = rows[0];
+    if (!previous || previous.status !== PRICE_STATUSES.ACTIVE) {
+      throw new MarketCommercialPriceError(409, 'market_price_not_active', 'Prix actif absent ou modifié ; actualisez la liste.');
+    }
+    if (Number(previous.amount) !== expected || previous.currency !== market.currency) {
+      throw new MarketCommercialPriceError(409, 'market_price_reprice_concurrent_change', 'Le prix a changé depuis votre lecture ; actualisez avant de confirmer.');
+    }
+    if (expected === localAmount) return projectDecision({
+      product_ref:product.product_ref, name:product.name, category:product.category,
+      global_price_kmf:product.price_kmf, local_amount:previous.amount, status:previous.status
+    }, market);
+    const {rows: updated} = await client.query(
+      `UPDATE product_market_price_drafts
+          SET amount=$3, reason=$4, source=$5, decided_by=$6::uuid,
+              authorized_at=NOW(), authorization_snapshot=$7::jsonb,
+              active_at=NOW(), updated_at=NOW()
+        WHERE market_id=$1::uuid AND product_id=$2::uuid AND status='LOCAL_ACTIVE'
+      RETURNING amount, status, reason, source, updated_at, authorized_at, active_at`,
+      [market.id, product.id, localAmount, decisionReason, decisionSource, actorId, JSON.stringify(authorizationSnapshot)]
+    );
+    await client.query(
+      `INSERT INTO product_market_price_draft_events
+        (market_id, product_id, action, old_amount, new_amount, currency,
+         old_status, new_status, decision_snapshot, reason, source, actor_id)
+       VALUES ($1::uuid, $2::uuid, 'SET', $3, $4, $5,
+         'LOCAL_ACTIVE', 'LOCAL_ACTIVE', $6::jsonb, $7, $8, $9::uuid)`,
+      [market.id, product.id, expected, localAmount, market.currency,
+        JSON.stringify(authorizationSnapshot), decisionReason, decisionSource, actorId]
+    );
+    return projectDecision({...updated[0],
+      product_ref:product.product_ref, name:product.name, category:product.category,
+      global_price_kmf:product.price_kmf, local_amount:updated[0].amount,
+      decision_status:PRICE_STATUSES.ACTIVE, decided_at:updated[0].updated_at
+    }, market);
+  });
+}
+
 async function resetMarketPriceDraft({ market, productRef, reason, source, actorId }) {
   requireMarket(market);
   const decisionReason = normalizeReason(reason);
@@ -393,6 +453,7 @@ module.exports = {
   listMarketPriceDrafts,
   getMarketPriceDecision,
   setMarketPriceDraft,
+  replaceActiveMarketPrice,
   authorizeMarketPriceDraft,
   resetMarketPriceDraft,
 };

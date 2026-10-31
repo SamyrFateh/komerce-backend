@@ -22,6 +22,7 @@ const pricingEngine = require('./pricing-engine');
 const pricingCdr = require('./pricing-cdr');
 const pricingMarketDecisionPolicy = require('./pricing-market-decision-policy');
 const marketCommercialPrice = require('./market-commercial-price-service');
+const pricingMarketCorridor = require('./pricing-market-corridor');
 const { activateMarketPriceDecision } = require('./market-local-price-state-transition');
 const {
   assertProductPriceShapeCompatible,
@@ -202,9 +203,70 @@ async function activateLocalPrice({ market, productRef, actorId, reason, source 
   return { preview, decision, already_active: Boolean(decision.already_active) };
 }
 
+// Atomic repricing of an already published decision. A full economic recheck
+// is performed BEFORE a single transactional ACTIVE -> ACTIVE price replacement.
+// No intermediate DRAFT can make the product disappear from buyer checkout.
+async function repriceActiveLocalPrice({
+  market, productRef, amount, expectedAmount, actorId,
+  acknowledgedRisk = false, reason = 'Actualisation du prix depuis le Catalogue pays',
+}) {
+  if (!actorId) {
+    throw new marketCommercialPrice.MarketCommercialPriceError(
+      400, 'market_price_actor_required', 'Acteur requis pour modifier le prix actif.'
+    );
+  }
+  const current = await marketCommercialPrice.getMarketPriceDecision(market, productRef);
+  if (current.decision.decision_status !== marketCommercialPrice.PRICE_STATUSES.ACTIVE) {
+    throw new marketCommercialPrice.MarketCommercialPriceError(
+      409, 'market_price_not_active', 'Le prix actif a changé. Actualisez avant de modifier.'
+    );
+  }
+  await assertProductPriceShapeCompatible(undefined, current.product.id);
+  const preview = await pricingMarketCorridor.previewMarketPrice({ market, productRef, amount });
+  if (!preview.can_proceed) {
+    throw new marketCommercialPrice.MarketCommercialPriceError(
+      409, 'market_price_below_variable_cost', 'Le prix ne couvre pas le coût variable complet.'
+    );
+  }
+  if (preview.requires_acknowledgement && acknowledgedRisk !== true) {
+    throw new marketCommercialPrice.MarketCommercialPriceError(
+      409, 'market_price_typo_acknowledgement_required',
+      'Prix inhabituellement bas : confirmez explicitement la décision.'
+    );
+  }
+  const evaluation = await evaluateMarketDecisionFailClosed(market.id, new Date());
+  const verdict = activationVerdict({ strategy_risk: preview.strategy_risk }, evaluation);
+  if (!verdict.allowed) {
+    throw new marketCommercialPrice.MarketCommercialPriceError(
+      409, 'market_local_price_activation_denied',
+      'Prix non autorisé par le gate économique : ' + verdict.reason
+    );
+  }
+  const authorizationSnapshot = {
+    product_ref: productRef,
+    market_code: market.code,
+    local_price: Number(amount),
+    currency: market.currency,
+    projected_price_kmf: preview.projected_price_kmf,
+    variable_cost_complete_kmf: preview.variable_cost_kmf,
+    strategy_risk: preview.strategy_risk,
+    market_gate: compactMarketGate(evaluation),
+    activation_allowed: true,
+    activation_reason: verdict.reason,
+    evidence_authority: 'PRICING_SERVER_ATOMIC_ACTIVE_REPRICE',
+    evaluated_at: new Date().toISOString(),
+  };
+  const decision = await marketCommercialPrice.replaceActiveMarketPrice({
+    market, productRef, amount, expectedAmount, authorizationSnapshot,
+    actorId, reason, source: 'market_catalog_atomic_reprice',
+  });
+  return { decision, preview, activation: verdict };
+}
+
 module.exports = {
   activationVerdict,
   evaluateMarketDecisionFailClosed,
   previewLocalPriceActivation,
   activateLocalPrice,
+  repriceActiveLocalPrice,
 };

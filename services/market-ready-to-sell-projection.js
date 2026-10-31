@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const pricingMarketCorridor = require('./pricing-market-corridor');
+const { projectAmount } = require('../utils/currency');
 const { assertProductPriceShapeCompatible } = require('./market-local-price-resolution-service');
 
 const ACTIVE_PRICE = 'LOCAL_ACTIVE';
@@ -35,7 +36,7 @@ function decisionState({ priceActive, shapeCompatible, proposalAmount, corridorS
   if (!shapeCompatible) return { key: 'BLOCKED', label: 'Bloqué · prix SKU/variante', tone: 'critical' };
   if (!proposalAmount) return { key: 'NEEDS_PRICE', label: 'Prix à décider', tone: 'warning' };
   if (corridorStatus !== 'READY') return { key: 'REVIEW', label: 'Corridor à confirmer', tone: 'warning' };
-  if (viability === 'NON_VIABLE_STRUCTURAL') return { key: 'BLOCKED', label: 'Économie non viable', tone: 'critical' };
+  if (viability === 'NON_VIABLE_STRUCTURAL') return { key: 'REVIEW', label: 'Coûts / marché à vérifier', tone: 'warning' };
   if (viability === 'VIABLE') return { key: 'READY', label: 'Prêt à vendre', tone: 'positive' };
   return { key: 'REVIEW', label: 'À arbitrer', tone: 'warning' };
 }
@@ -47,6 +48,8 @@ async function buildReadyToSell({
   reviewQueue = { items: [] },
   exposure = [],
   limit = 100,
+  offset = 0,
+  search = '',
 } = {}) {
   if (!market?.id || !market?.code || !market?.currency) {
     throw new TypeError('market-ready-to-sell-projection: market résolu requis');
@@ -56,16 +59,16 @@ async function buildReadyToSell({
   const published = Array.isArray(exposure) ? exposure : [];
   const ids = [...new Set([
     ...incoming.map(row => row?.product_id).filter(Boolean),
-    ...published
-      .filter(row => row && (row.decision_recorded !== true || row.commercial_exposure === 'ENABLED'))
-      .map(row => row.product_id)
-      .filter(Boolean),
+    // Every published product belongs in the country price catalogue,
+    // including intentionally hidden products and products with an active price.
+    ...published.map(row => row?.product_id).filter(Boolean),
   ])];
 
   if (!ids.length) {
     return {
       market: { code: market.code, currency: market.currency },
       summary: { total: 0, ready: 0, review: 0, blocked: 0, bulk_eligible: 0 },
+      pagination: { offset: 0, limit: 100, total: 0, has_more: false },
       items: [],
     };
   }
@@ -90,15 +93,21 @@ async function buildReadyToSell({
   for (const row of published) {
     const id = String(row?.product_id || '');
     if (!id || seen.has(id)) continue;
-    const localStatus = priceByProduct.get(id)?.status || null;
-    const stillNeedsDecision = row.decision_recorded !== true
-      || (row.commercial_exposure === 'ENABLED' && localStatus !== ACTIVE_PRICE);
-    if (!stillNeedsDecision) continue;
+    // Catalogue pays = toutes les références, y compris déjà tarifées et exposées.
+    // Le prix actif est affiché sans provoquer une seconde activation.
     seen.add(id);
     sourceRows.push({ ...row, catalog_state: 'published' });
   }
 
-  const limited = sourceRows.slice(0, Math.min(Math.max(Number(limit) || 100, 1), 200));
+  const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
+  const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
+  const query = String(search || '').trim().toLocaleLowerCase('fr').slice(0, 120);
+  const matches = query
+    ? sourceRows.filter(row =>
+      String(row.product_name || row.name || '').toLocaleLowerCase('fr').includes(query)
+      || String(row.product_ref || '').toLocaleLowerCase('fr').includes(query))
+    : sourceRows;
+  const limited = matches.slice(safeOffset, safeOffset + safeLimit);
   const selectedIds = limited.map(row => row.product_id);
   const { rows: products } = await executor.query(
     `SELECT id, product_ref, name, description, sku, category, subcategory, image_url,
@@ -133,6 +142,21 @@ async function buildReadyToSell({
       shapeReason = error?.code || error?.message || 'market_local_price_shape_conflict';
     }
 
+    const costEconomics = corridor?.selected?.economics || null;
+    async function localCost(value) {
+      const number = positive(value);
+      if (number == null) return null;
+      if (market.currency === 'KMF') return Math.round(number);
+      try {
+        const local = Number(await projectAmount(number, 'KMF', market.currency));
+        return Number.isFinite(local) && local > 0 ? Math.round(local * 100) / 100 : null;
+      } catch (_) { return null; }
+    }
+    const [variableLocal, landedLocal, minimumSafeLocal] = await Promise.all([
+      localCost(costEconomics?.variable_cost_complete_kmf),
+      localCost(costEconomics?.landed_relay_cost_kmf),
+      localCost(costEconomics?.minimum_safe_price_kmf),
+    ]);
     const priceDecision = priceByProduct.get(String(product.id)) || null;
     const priceActive = priceDecision?.status === ACTIVE_PRICE;
     const local = corridor?.corridor?.local || null;
@@ -181,6 +205,12 @@ async function buildReadyToSell({
       exposure_enabled: source.decision_recorded === true && source.commercial_exposure === 'ENABLED',
       local_price_active: priceActive,
       local_price_status: priceDecision?.status || null,
+      variable_cost_kmf: positive(costEconomics?.variable_cost_complete_kmf),
+      variable_cost_local: variableLocal,
+      landed_relay_cost_kmf: positive(costEconomics?.landed_relay_cost_kmf),
+      landed_relay_cost_local: landedLocal,
+      minimum_safe_price_local: minimumSafeLocal,
+      cost_quality: costEconomics?.data_quality || null,
       corridor: {
         status: local?.status || 'UNAVAILABLE',
         confidence: local?.confidence || 'none',
@@ -197,6 +227,9 @@ async function buildReadyToSell({
         currency: market.currency,
         source: proposalSource,
       },
+      // Preview of the displayed proposal. The browser never computes business contribution.
+      contribution_at_proposed_local: proposalAmount != null && variableLocal != null
+        ? Math.round((proposalAmount - variableLocal) * 100) / 100 : null,
       decision_state: state,
       can_approve: canApprove,
       required_capabilities: requiredCapabilities,
@@ -214,6 +247,7 @@ async function buildReadyToSell({
       blocked: items.filter(item => item.decision_state.key === 'BLOCKED').length,
       bulk_eligible: items.filter(item => item.bulk_eligible).length,
     },
+    pagination: { offset: safeOffset, limit: safeLimit, total: matches.length, has_more: safeOffset + limited.length < matches.length },
     items,
   };
 }
