@@ -750,7 +750,11 @@
     sourcePane.appendChild(text(doc, 'strong', 'kmc-catalog-fr-pane-title', 'Source fournisseur'));
     sourcePane.appendChild(text(doc, 'div', 'kmc-catalog-fr-source-title', row.name_source || row.name || '—'));
     sourcePane.appendChild(text(doc, 'p', 'kmc-catalog-fr-source-description', row.description_source || 'Aucune description fournisseur.'));
-    grid.appendChild(sourcePane);
+    const sourceTextDetails = doc.createElement('details');
+    sourceTextDetails.className = 'kmc-catalog-complementary';
+    sourceTextDetails.appendChild(text(doc, 'summary', '', 'Texte fournisseur · Informations complémentaires'));
+    sourceTextDetails.appendChild(sourcePane);
+    grid.appendChild(sourceTextDetails);
 
     const frenchPane = doc.createElement('section');
     frenchPane.className = 'kmc-catalog-fr-editor-pane is-french';
@@ -762,7 +766,11 @@
     assistantActions.appendChild(copy);
     const paste = makeButton(doc, 'Coller la réponse', 'paste-fr-editor', true);
     assistantActions.appendChild(paste);
-    frenchPane.appendChild(assistantActions);
+    const editorialHelp = doc.createElement('details');
+    editorialHelp.className = 'kmc-catalog-complementary';
+    editorialHelp.appendChild(text(doc, 'summary', '', 'Aide à la rédaction (facultatif)'));
+    editorialHelp.appendChild(assistantActions);
+    frenchPane.appendChild(editorialHelp);
 
     const nameField = editorField(doc, 'Titre français', 'name');
     const descriptionField = editorField(doc, activeRecheck
@@ -865,8 +873,8 @@
         control.removeAttribute('aria-invalid');
         footerNotice.className = 'kmc-catalog-fr-footer-notice';
         footerNotice.textContent = activeRecheck
-          ? 'Description facultative : enregistrez un brouillon ou validez que le contenu actuel suffit.'
-          : '';
+          ? 'Description facultative : enregistrement automatique dès que vous quittez le champ.'
+          : 'Enregistrement automatique dès que les champs requis sont remplis.';
       });
     });
     const submitFrench = async (accept = false, finalize = false) => {
@@ -945,8 +953,8 @@
         descriptionField.control.disabled = false;
       }
     };
-    nameField.control.addEventListener('change', () => { void autosaveFrench(); });
-    descriptionField.control.addEventListener('change', () => { void autosaveFrench(); });
+    nameField.control.addEventListener('change', () => autosaveFrench());
+    descriptionField.control.addEventListener('change', () => autosaveFrench());
     const validate = activeRecheck
       ? makeButton(doc, 'Valider le contenu actuel', 'validate-fr-sufficient') : null;
     if (validate) {
@@ -2449,8 +2457,10 @@
     panel.appendChild(additional);
     void loadProductDossier(context, doc, dossierSlot, row);
     const issues = Array.isArray(row.issues) ? row.issues : [];
+    const correctionIssues = issues.filter(code => code !== 'approval_pending');
     panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
-      'Corrections nécessaires · ' + (registryNextStep(row).status)));
+      correctionIssues.length ? 'Corrections nécessaires · ' + correctionIssues.length
+        : 'Aucune anomalie de contenu à corriger'));
     const list = doc.createElement('ul');
     list.className = 'kmc-catalog-inspector-issues';
     const labels = {
@@ -2461,7 +2471,7 @@
       state_inconsistent: 'Activation d’un candidat sans preuve de validation',
       approval_pending: 'Validation Catalogue à réaliser',
     };
-    issues.forEach(code => {
+    correctionIssues.forEach(code => {
       if (labels[code]) list.appendChild(text(doc, 'li', '', labels[code]));
     });
     if (list.children.length) panel.appendChild(list);
@@ -2564,7 +2574,7 @@
       });
       // Une fiche déjà correcte garde l'édition volontaire dans le menu secondaire.
       if (issues.includes('editorial_to_complete')) actions.appendChild(btn);
-      else additional.appendChild(btn);
+      else additional.insertBefore(btn, dossierSlot);
     }
     // The classification may also be corrected before an issue is raised,
     // but the server still validates the active Boutique pair and operator grant.
@@ -2573,7 +2583,7 @@
       btn.addEventListener('click', () =>
         openProductClassificationDialog(context, row, categories, btn));
       if (issues.includes('taxonomy_to_confirm')) actions.appendChild(btn);
-      else additional.appendChild(btn);
+      else additional.insertBefore(btn, dossierSlot);
     }
     if (row.work_status === 'approval_pending' || issues.includes('approval_pending')) {
       const stepNotice = text(doc, 'p', 'kmc-catalog-correction-hint',
