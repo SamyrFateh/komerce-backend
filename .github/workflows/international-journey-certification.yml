@@ -1,0 +1,65 @@
+name: International shipment chain — PG16 and Jest proof
+
+on:
+  pull_request:
+    paths:
+      - 'migrations/353_international_shipment_journey.sql'
+      - 'services/international-shipment-journey.js'
+      - 'routes/admin-shipping-customs-workspace.js'
+      - 'public/dashboards/canonical/js/international-journey-panel.js'
+      - 'public/dashboards/canonical/js/shipping-customs-workspace.js'
+      - 'tests/unit/international-shipment-journey.test.js'
+      - 'tests/unit/international-journey-panel.test.js'
+      - 'tests/unit/admin-shipping-customs-workspace-route.test.js'
+      - 'scripts/testing/international-journey-pg16-*.sql'
+      - '.github/workflows/international-journey-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pg16-and-unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: journey
+          POSTGRES_PASSWORD: journey_local_only
+          POSTGRES_DB: journey_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U journey -d journey_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: journey
+      PGPASSWORD: journey_local_only
+      PGDATABASE: journey_test
+      NODE_ENV: test
+      DATABASE_URL: postgresql://journey:journey_local_only@127.0.0.1:5432/journey_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: JS source syntax
+        run: |
+          node --check services/international-shipment-journey.js
+          node --check public/dashboards/canonical/js/international-journey-panel.js
+          node --check routes/admin-shipping-customs-workspace.js
+      - name: Jest targeted role/transport/UI
+        run: npx jest --runInBand tests/unit/international-shipment-journey.test.js tests/unit/international-journey-panel.test.js tests/unit/admin-shipping-customs-workspace-route.test.js tests/unit/canonical-shipping-customs-workspace-ui.test.js
+      - name: PostgreSQL 16 migration 353 on disposable schema
+        run: |
+          psql -v ON_ERROR_STOP=1 -f scripts/testing/international-journey-pg16-fixture.sql
+          psql -v ON_ERROR_STOP=1 -f migrations/353_international_shipment_journey.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/testing/international-journey-pg16-assert.sql
