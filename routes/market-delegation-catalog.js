@@ -77,7 +77,10 @@ router.get('/catalog/authorized-markets', authenticate, async (req, res, next) =
   try {
     // A central Admin can choose any actively assigned market, explicitly.
     // All other roles still require a live catalog.read market membership.
-    const markets = req.user.role === 'admin'
+    const centralRole = req.user.role === 'admin'
+      ? (await db.query('SELECT role FROM users WHERE id=$1::uuid LIMIT 1', [req.user.id])).rows[0]?.role === 'admin'
+      : false;
+    const markets = centralRole
       ? (await db.query(`
           SELECT m.code AS market_code
             FROM markets m
