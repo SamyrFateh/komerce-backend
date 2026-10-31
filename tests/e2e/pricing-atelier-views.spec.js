@@ -262,13 +262,9 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
         expect(widths.reading).toBeGreaterThan(widths.section * 0.9);
       }
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale héritée');
-      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toHaveAttribute('data-expanded', 'true');
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeVisible();
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale : 3,2 %');
-      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toHaveAttribute('data-expanded', 'false');
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeHidden();
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]')).toHaveCount(0);
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toHaveCount(0);
       await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'false');
       const principles = page.locator('details.kmc-economic-principles-detail');
       await expect(principles).not.toHaveAttribute('open', '');
@@ -327,28 +323,47 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
 test.describe('Moteur économique · détails et édition unifiés des trois colonnes — 1440', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('ouvre les trois détails avec le même contrôle et restaure le tableau à la fermeture', async ({ page }) => {
+  test('pas de tableau détail redondant : une seule liste et un ajout sur les fixes directs', async ({ page }) => {
     await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true },
-      access: { ...FX.market.access, role: 'global_admin' }, search: '?market=KM&view=costs' });
-    const selectors = ['variable', 'fixed-direct', 'fixed-mutualized'];
-    for (const type of selectors) {
-      const card = page.locator(`[data-cost-summary="${type}"]`);
-      await card.locator('[data-expand-cost-family]').click();
-      await expect(card).toHaveAttribute('data-expanded', 'true');
-      await expect(card.locator('.kmc-cockpit-cost-table')).toBeVisible();
-      // The same row/value/action representation must survive the details.
-      const preview = card.locator('.kmc-economic-family-preview-list');
-      await expect(preview).toBeVisible();
-      await expect(preview.locator('.kmc-economic-family-preview-row').first()).toBeVisible();
-      const familyPositions = await page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card')
-        .evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().x));
-      expect(familyPositions[0]).toBeLessThan(familyPositions[1]);
-      expect(familyPositions[1]).toBeLessThan(familyPositions[2]);
-      await card.locator('[data-expand-cost-family]').click();
-      await expect(card).toHaveAttribute('data-expanded', 'false');
-      await expect(card.locator('.kmc-cockpit-cost-table')).toBeHidden();
+      access: { ...FX.market.access, role:'global_admin' }, search:'?market=KM&view=costs' });
+    const cards=page.locator('.kmc-economic-family-grid [data-cost-summary]');
+    await expect(cards).toHaveCount(3);
+    await expect(page.locator('[data-expand-cost-family]')).toHaveCount(0);
+    await expect(page.locator('.kmc-economic-family-grid .kmc-cockpit-cost-table')).toHaveCount(0);
+    for(const type of ['variable','fixed-direct','fixed-mutualized']){
+      await expect(page.locator(`[data-cost-summary="${type}"] .kmc-economic-family-preview`)).toBeVisible();
     }
+    await expect(page.locator('[data-cost-summary="fixed-direct"] [data-add-fixed-direct]')).toBeVisible();
+    await expect(page.locator('[data-cost-summary="fixed-mutualized"] [data-add-fixed-direct]')).toHaveCount(0);
     await noOverflow(page);
+  });
+
+  test('nouveau fixe direct : un poste et un fait avec preuve, aucun POST avant validation', async ({ page }) => {
+    const posts=[];
+    await mount(page,{decision:DEMO.decision,caps:{can_manage_structure_events:true},posts,
+      search:'?market=KM&view=costs'});
+    await page.locator('[data-add-fixed-direct]').click();
+    const host=page.locator('[data-new-fixed-editor-host]');
+    await expect(host).toBeVisible();
+    await expect(host.locator('[data-new-fixed-reference]')).toBeVisible();
+    await host.locator('[data-new-fixed-name]').fill('Loyer local Moroni');
+    await host.locator('[data-new-fixed-description]').fill('Loyer mensuel exclusivement KM');
+    await host.locator('[name="amount_original"]').fill('85000');
+    await host.locator('.kmc-structure-panel-btn-primary').click();
+    await expect(host.locator('.kmc-structure-panel-error')).toContainText('période');
+    expect(posts.filter(x=>x.path.endsWith('/structure-charges'))).toHaveLength(0);
+    await host.locator('[name="economic_from"]').fill('2026-10-01');
+    await host.locator('[name="economic_to"]').fill('2026-11-01');
+    await host.locator('[name="evidence_ref"]').fill('contract://km/loyer-octobre');
+    await host.locator('.kmc-structure-panel-btn-primary').click();
+    await expect.poll(()=>posts.filter(x=>x.path.endsWith('/structure-charges')).length).toBe(1);
+    const posted=posts.find(x=>x.path.endsWith('/structure-charges'));
+    expect(posted.body.reference).toMatchObject({name:'Loyer local Moroni',
+      description:'Loyer mensuel exclusivement KM',recurrence_period:'monthly'});
+    expect(posted.body.event).toMatchObject({amount_original:85000,
+      event_kind:'ACCRUAL',evidence_ref:'contract://km/loyer-octobre'});
+    expect(posted.body.event.market_id).toBeUndefined();
+    expect(posted.body.event.scope_kind).toBeUndefined();
   });
 
   test('chaque famille conserve la même grille libellé / montant / action', async ({ page }) => {

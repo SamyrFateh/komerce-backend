@@ -195,13 +195,21 @@ async function recordStructureCostEvent(input = {}, actorId, options = {}) {
     if (ownsTransaction) await client.query('BEGIN');
 
     const chargeRes = await client.query(
-      `SELECT id, family, name, recurrence_period, is_active
+      `SELECT id, family, name, recurrence_period, is_active, market_owner_id
          FROM charges
         WHERE id = $1
         FOR SHARE`,
       [input.charge_id]
     );
     if (!chargeRes.rows.length) throw new Error('charge not found');
+    const chargeMarketOwner = chargeRes.rows[0].market_owner_id;
+    if (chargeRes.rows[0].is_active === false ||
+        (chargeMarketOwner && (scope.scopeKind !== SCOPE_KINDS.MARKET_DIRECT ||
+          String(chargeMarketOwner) !== String(scope.marketId)))) {
+      throw Object.assign(new Error('charge scope forbidden'), {
+        status: 403, code: 'structure_charge_scope_forbidden',
+      });
+    }
 
     if (scope.marketId) {
       const marketRes = await client.query(
@@ -379,6 +387,8 @@ function aggregateRows(rows, period, marketId) {
       charge_id: row.charge_id,
       charge_family: row.charge_family_snapshot || null,
       charge_name: row.charge_name_snapshot || null,
+      charge_description: row.charge_description || null,
+      reference_is_market_owned: !!row.charge_market_owner_id,
       configured_recurrence: row.recurrence_period_snapshot || null,
       scope_kind: row.scope_kind,
       market_id: row.market_id || null,
@@ -921,8 +931,10 @@ async function computePeriodStructureTruth(options = {}) {
             e.scope_kind, e.market_id, e.event_kind, e.adjusts_event_id,
             e.economic_from, e.economic_to,
             e.amount_kmf, e.source_kind, e.evidence_ref,
-            e.recorded_by, e.recorded_at
+            e.recorded_by, e.recorded_at,
+            c.notes AS charge_description, c.market_owner_id AS charge_market_owner_id
        FROM economic_structure_cost_events e
+       LEFT JOIN charges c ON c.id = e.charge_id
       WHERE e.economic_from < $2
         AND e.economic_to > $1
         AND ($3::uuid IS NULL OR e.scope_kind = 'GROUP' OR e.market_id = $3::uuid)

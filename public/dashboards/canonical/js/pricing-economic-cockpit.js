@@ -160,7 +160,16 @@
       const value = el(doc, 'strong', 'kmc-economic-family-preview-value', item.value);
       row.appendChild(label);
       row.appendChild(value);
-      if (item.note) row.appendChild(el(doc, 'small', 'kmc-economic-family-preview-note', item.note));
+      if (item.note || item.descriptionChargeId) {
+        const note = el(doc, 'small', 'kmc-economic-family-preview-note', item.note || 'Description à compléter');
+        if (item.descriptionChargeId) {
+          const editNote = el(doc,'button','kmc-inline-cost-note-action','Modifier la description');
+          editNote.type='button';
+          editNote.dataset.editFixedDescription = String(item.descriptionChargeId);
+          note.appendChild(editNote);
+        }
+        row.appendChild(note);
+      }
       if (item.editKey) {
         row.dataset.inlineCostRow = item.editKey;
         const edit = el(doc, 'button', 'kmc-inline-cost-action', 'Modifier');
@@ -188,11 +197,6 @@
     if (!items.length) list.appendChild(el(doc, 'p', 'kmc-economic-family-preview-empty', 'Données de période indisponibles.'));
     preview.appendChild(list);
     if (footer) preview.appendChild(el(doc, 'div', 'kmc-economic-family-preview-footer', footer));
-    const detail = el(doc, 'button', 'kmc-economic-family-expand', 'Voir le détail');
-    detail.type = 'button';
-    detail.dataset.expandCostFamily = '';
-    detail.setAttribute('aria-expanded', 'false');
-    preview.appendChild(detail);
     return preview;
   }
 
@@ -213,8 +217,15 @@
         readOnlyHint: !canManage
           ? 'Les paramètres variables sont en lecture seule pour ce profil.'
           : 'Aucune clé de composante modifiable disponible.',
-        note: component.inherited === false ? 'Paramètre marché'
-          : component.inherited === true ? 'Base globale héritée' : 'Origine à confirmer',
+        note: component.inherited === false
+          ? (component.base_default_value != null
+            ? `Paramètre marché · Base globale : ${componentValue(component, true)} (lecture seule)`
+            : 'Paramètre marché')
+          : component.inherited === true
+            ? (component.base_default_value != null
+              ? `Base globale héritée · Base globale : ${componentValue(component, true)} (lecture seule)`
+              : 'Base globale héritée')
+            : 'Origine à confirmer',
       })),
     ];
     card.appendChild(economicPreview(doc, previewItems, 'Coût variable complet calculé sur chaque produit'));
@@ -263,7 +274,7 @@
     // le portefeuille, comme dans le mock.
     totalRow.appendChild(tableCell(doc, 'Calculé par produit', 'is-total-value is-textual'));
     table.appendChild(totalRow);
-    card.appendChild(table);
+    // No second detail table: the compact list is the sole view.
     return card;
   }
 
@@ -284,6 +295,8 @@
       value: formatKmf(item.recognized_amount_kmf),
       chargeId: canManage ? item.charge_id : null,
       structureScope: 'fixed-direct',
+      note: item.charge_description || null,
+      descriptionChargeId: canManage && item.reference_is_market_owned ? item.charge_id : null,
       readOnly: !canManage || !item.charge_id,
       readOnlyHint: !canManage
         ? 'L’enregistrement des charges de période nécessite la permission structure.event.record.'
@@ -291,6 +304,11 @@
     }));
     card.appendChild(economicPreview(doc, directPreview,
       directValid ? `Total direct : ${formatKmf(directTotal)}` : 'Total à confirmer pour la période'));
+    if (canManage) {
+      const add = el(doc,'button','kmc-inline-add-fixed','+ Ajouter une charge fixe');
+      add.type='button'; add.dataset.addFixedDirect='';
+      card.appendChild(add);
+    }
     rows.forEach(item => {
       table.appendChild(tableCell(doc, item.charge_name || item.charge_family || 'Charge structurelle'));
       table.appendChild(tableCell(doc, formatKmf(item.recognized_amount_kmf), 'is-derived is-number'));
@@ -303,7 +321,7 @@
       totalRow.appendChild(tableCell(doc, formatKmf(totalDirect), 'is-total-value'));
       table.appendChild(totalRow);
     }
-    card.appendChild(table);
+    // No second detail table: the compact list is the sole view.
     return card;
   }
 
@@ -351,7 +369,7 @@
       totalRow.appendChild(tableCell(doc, formatKmf(totalMut), 'is-total-value'));
       table.appendChild(totalRow);
     }
-    card.appendChild(table);
+    // No second detail table: the compact list is the sole view.
     return card;
   }
 
@@ -938,7 +956,10 @@
       container: inlineOptions?.inlineContainer || options.root,
       previousValue: inlineOptions?.previousValue || null,
       previousLabel: isMutualized ? 'Quote-part actuelle du marché' : 'Valeur reconnue sur la période',
+      createChargeEndpoint: inlineOptions?.allowCreateMarketDirect && !isMutualized
+        ? `${marketEndpoint}/structure-charges` : null,
       onClose: () => {
+        if (typeof inlineOptions?.onClose === 'function') inlineOptions.onClose();
         const row = inlineOptions?.inlineContainer;
         const edit = row?.querySelector('[data-edit-structure-charge]');
         if (edit) { edit.hidden = false; }
@@ -1149,6 +1170,67 @@
         row?.querySelector('[data-inline-cost-form]')?.remove();
         const edit = row?.querySelector('[data-edit-inline-cost]');
         if (edit) { edit.hidden = false; edit.focus(); }
+        return;
+      }
+      const editDescription = event.target.closest('[data-edit-fixed-description]');
+      if (editDescription) {
+        const row = editDescription.closest('[data-inline-structure-row]');
+        if (!row || payload.capabilities?.can_manage_structure_events !== true) return;
+        const chargeId = editDescription.dataset.editFixedDescription;
+        if (row.querySelector('[data-edit-fixed-description-form]')) return;
+        const current = row.querySelector('.kmc-economic-family-preview-note')?.firstChild?.textContent?.trim() || '';
+        const form = el(doc,'form','kmc-inline-cost-form');
+        form.dataset.editFixedDescriptionForm=chargeId;
+        const value = doc.createElement('textarea');
+        value.rows=2; value.maxLength=500; value.value=current === 'Description à compléter' ? '' : current;
+        value.setAttribute('aria-label','Description du poste fixe');
+        form.appendChild(value);
+        const save = el(doc,'button','kmc-inline-cost-save','Enregistrer la description');
+        save.type='submit';form.appendChild(save);
+        const cancel = el(doc,'button','kmc-inline-cost-cancel','Annuler');
+        cancel.type='button';form.appendChild(cancel);
+        const message=el(doc,'small','kmc-inline-cost-message','');
+        form.appendChild(message);
+        cancel.addEventListener('click',()=>{form.remove();editDescription.hidden=false;});
+        form.addEventListener('submit',async e=>{
+          e.preventDefault();save.disabled=true;message.textContent='Enregistrement…';
+          try{
+            const endpoint=workspace.endpointFor({requestedMarket:options.requestedMarket});
+            await workspace.jsonRequest(options.fetch,
+              `${endpoint}/structure-charges/${encodeURIComponent(chargeId)}/description`,
+              {method:'PATCH',body:{description:value.value.trim()}});
+            message.textContent='Description enregistrée.';
+            await rootObject.KomerceCanonicalPricingWorkspace.mount({...options,refreshEconomicCockpit:true});
+          }catch(err){
+            message.textContent='Non enregistré : '+err.message;save.disabled=false;
+          }
+        });
+        row.appendChild(form);
+        editDescription.hidden=true;
+        value.focus();
+        return;
+      }
+      const addFixed = event.target.closest('[data-add-fixed-direct]');
+      if (addFixed) {
+        if (payload.capabilities?.can_manage_structure_events !== true) return;
+        const card = addFixed.closest('[data-cost-summary="fixed-direct"]');
+        if (!card || card.querySelector('[data-new-fixed-editor-host]')) return;
+        const host = el(doc,'div','kmc-new-fixed-editor-host');
+        host.dataset.newFixedEditorHost = '';
+        card.appendChild(host);
+        addFixed.hidden = true;
+        try {
+          await openStructureEventForm(rootObject,doc,workspace,options,
+            'fixed-direct',null,{
+              inlineContainer:host, previousValue:'—', allowCreateMarketDirect:true,
+              onClose() { addFixed.hidden = false; host.remove(); },
+            });
+        } catch(error) {
+          addFixed.hidden = false;
+          host.remove();
+          card.appendChild(el(doc,'small','kmc-inline-cost-message',
+            'Impossible d’ajouter cette charge : '+error.message));
+        }
         return;
       }
       const structureLine = event.target.closest('[data-edit-structure-charge]');

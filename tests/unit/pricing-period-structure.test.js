@@ -142,6 +142,24 @@ describe('pricing-period-structure — validation fail-closed', () => {
 describe('pricing-period-structure — enregistrement append-only', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  test('référence possédée par un marché : GROUP et autre marché interdits avant insertion',async()=>{
+    for(const input of [
+      baseInput({scope_kind:'GROUP',market_id:null}),
+      baseInput({scope_kind:'MARKET_DIRECT',market_id:'market-other'}),
+    ]){
+      const client=mockClient();
+      client.query
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({rows:[chargeRow({market_owner_id:'market-owner'})]})
+        .mockResolvedValueOnce({});
+      await expect(recordStructureCostEvent(input,'actor-1'))
+        .rejects.toMatchObject({status:403,code:'structure_charge_scope_forbidden'});
+      expect(client.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO economic_structure_cost_events')))
+        .toBe(false);
+      expect(client.query.mock.calls.map(([sql])=>sql)).toContain('ROLLBACK');
+    }
+  });
+
   test('enregistre un accrual GROUP sans promouvoir charges.amount_kmf en réel', async () => {
     const client = mockClient();
     client.query

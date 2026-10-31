@@ -115,22 +115,15 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(posts[0].body).toMatchObject({ default_value: 3.1 });
     });
 
-    test('trois familles fixes, le détail reste accessible sans bascule superposée', async ({ page }) => {
-      await mount(page, { populated: true });
-      const visible = page.locator('.kmc-economic-family-grid .kmc-cockpit-cost-card:visible');
-      await expect(visible).toHaveCount(3);
-      await expect(visible.nth(0)).toHaveAttribute('data-cost-summary', 'variable');
-      await expect(visible.nth(1)).toHaveAttribute('data-cost-summary', 'fixed-direct');
-      await expect(visible.nth(2)).toHaveAttribute('data-cost-summary', 'fixed-mutualized');
-      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
-      const cells = (await page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cell').allInnerTexts()).join('|');
-      expect(cells).toContain('Valeur');
-      expect(cells).toContain('Provenance');
-      expect(cells).toContain('2,9 %');
-      expect(cells).toContain('500 KMF/commande');
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeVisible();
-      await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeHidden();
+    test('trois familles, sans tableau détail redondant', async ({ page }) => {
+      await mount(page, { populated:true });
+      const cards=page.locator('.kmc-economic-family-grid [data-cost-summary]');
+      await expect(cards).toHaveCount(3);
+      await expect(page.locator('[data-expand-cost-family]')).toHaveCount(0);
+      await expect(page.locator('.kmc-economic-family-grid .kmc-cockpit-cost-table')).toHaveCount(0);
+      await expect(cards.nth(0).locator('.kmc-economic-family-preview-row').first()).toBeVisible();
+      await expect(cards.nth(1).locator('.kmc-economic-family-preview')).toBeVisible();
+      await expect(cards.nth(2).locator('.kmc-economic-family-preview')).toBeVisible();
     });
 
     test('ancien portefeuille remplacé par la file « Produits à décider » et aucun débordement horizontal de la page', async ({ page }) => {
