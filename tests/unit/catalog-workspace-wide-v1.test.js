@@ -21,7 +21,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
   expect(ui).toContain('<th>Produit</th><th>Fournisseur</th><th>Classement boutique</th>');
   expect(ui).toContain('kmc-catalog-product-reference');
-  expect(ui).toContain('<th>Statut Catalogue</th><th>Consulter</th>');
+  expect(ui).toContain('<th>À compléter</th><th>Action</th>');
   expect(ui).toContain("productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-reference', ref))");
   expect(ui).toContain("statusChip.setAttribute('data-status', row.work_status || 'inactive')");
   expect(ui).toContain("tr.appendChild(actionCell)");
