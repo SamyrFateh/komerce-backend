@@ -111,6 +111,26 @@
             }
           ]
         }
+      },
+      "cost_mix": {
+        "status": "READY",
+        "basis": "RECONCILED_MARKET_PERIOD",
+        "period": {
+          "from": "2026-09-01T00:00:00Z",
+          "to": "2026-10-01T00:00:00Z"
+        },
+        "market_code": "KM",
+        "variable_kmf": 2400000,
+        "fixed_kmf": 1200000,
+        "total_kmf": 3600000,
+        "direct_kmf": 2550000,
+        "mutualized_kmf": 1050000,
+        "variable_pct": 66.7,
+        "fixed_pct": 33.3,
+        "direct_pct": 70.8,
+        "mutualized_pct": 29.2,
+        "source": "CHROMIUM_DEMO_ONLY",
+        "warning": "Fictif. Les ratios sont fournis par le fixture comme valeurs serveur, jamais calculés par le DOM."
       }
     },
     "flow_break_even": {
