@@ -131,9 +131,9 @@ test('Moteur économique : édition par ligne, Valeur/Provenance en détail', ()
 
 test('formulaire : statut serveur et sécurités de validation', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
-  expect(src).toContain("key === 'ArrowRight'");
-  expect(src).toContain("key === 'Home'");
-  expect(src).toContain("key === 'End'");
+  expect(src).toContain('dataset.editInlineCost');
+  expect(src).toContain('dataset.inlineCostForm');
+  expect(src).toContain('Valeur invalide : rien n’a été enregistré');
 });
 
 test('familles : colonnes stables et édition contextuelle', () => {
