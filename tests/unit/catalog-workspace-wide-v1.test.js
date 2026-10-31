@@ -167,10 +167,12 @@ test('V4 : fiches inactives hors candidats restent éditables, sans activation i
   expect(ui).not.toContain('Aucune correction à apporter.');
 });
 
-test('V4 : état inactif sans diagnostic rapide ouvre le contrôle, pas une fiche sans action', () => {
-  expect(ui).toContain("kind: 'diagnose', label: 'Vérifier prérequis', status: 'À diagnostiquer'");
-  expect(ui).toContain("const readinessCheck = renderRegistryCorrections(doc, diagnostic, row, context, nextStep)");
-  expect(ui).toContain("if (readinessCheck) readinessCheck.click()");
+test('V4 : un produit réparé ne redevient pas une correction fantôme', () => {
+  expect(ui).toContain("row.work_status === 'catalog_approved_inactive'");
+  expect(ui).toContain("row.work_status === 'approval_to_review'");
+  expect(ui).toContain("readyCandidate ? 'Finaliser' : hasMissingContent ? 'Compléter' : 'Voir fiche'");
+  expect(ui).toContain("diagnosis?.certification?.certified !== true");
+  expect(ui).not.toContain("status: 'À diagnostiquer'");
 });
 
 test('V4.1 : priorité visuelle aux écarts avant marchés et à la prochaine action', () => {

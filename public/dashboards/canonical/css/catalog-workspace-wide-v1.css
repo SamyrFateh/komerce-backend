@@ -1332,7 +1332,7 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
 .kmc-catalog-complementary > .kmc-workspace-action { margin: 4px 9px 8px 0; }
 .kmc-catalog-fr-footer-buttons [hidden],
 .kmc-catalog-classification-actions [hidden],
-.kmc-catalog-inspector-form [hidden] { display: none !important; }
+.kmc-catalog-inspector-form [hidden] { display: none; }
 
 /* Catalogue V4.3 — compléter directement, sans fiche de diagnostic. */
 .kmc-catalog-inline-editor {
@@ -1382,13 +1382,13 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
 }
 .kmc-catalog-candidate-inspector [data-catalog-action-dock][hidden],
 .kmc-catalog-candidate-inspector [data-workspace-action][hidden] {
-  display: none !important;
+  display: none;
 }
 @media (max-width: 900px) {
   .kmc-catalog-inline-taxonomy { grid-template-columns: minmax(0,1fr); }
 }
 
-.kmc-catalog-diagnostic .kmc-catalog-status[hidden] { display: none !important; }
+.kmc-catalog-diagnostic .kmc-catalog-status[hidden] { display: none; }
 .kmc-catalog-diagnostic .kmc-catalog-corrections { margin: 0; padding-left: 17px; }
 .kmc-catalog-diagnostic .kmc-catalog-corrections > li { margin: 3px 0; }
 

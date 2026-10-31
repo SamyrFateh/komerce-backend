@@ -161,16 +161,23 @@ WITH picked_source AS (
      WHEN u.is_active=TRUE AND u.lifecycle_status='active' AND u.approval_audited
        THEN 'catalog_approved'
      WHEN u.is_active=TRUE AND u.lifecycle_status='active' THEN 'approval_unproven'
-     ELSE 'inactive'
+     -- Correction achevée ≠ activation. Un produit déjà approuvé mais
+     -- volontairement désactivé n'est PAS un produit « à compléter ».
+     WHEN u.lifecycle_status='active' AND u.approval_audited
+       THEN 'catalog_approved_inactive'
+     -- Même sans approbation historique, l'absence d'anomalie de contenu
+     -- relève d'une revue de preuve, pas de la file de correction.
+     WHEN u.lifecycle_status='active' THEN 'approval_to_review'
+     ELSE 'approval_to_review'
    END AS work_status
  FROM unified u
 ), operator_view AS (
  SELECT m.*,
    CASE
-     WHEN m.work_status='catalog_approved' THEN 'validated'
+     WHEN m.work_status IN ('catalog_approved','catalog_approved_inactive') THEN 'validated'
      WHEN m.work_status='excluded' THEN 'excluded'
      WHEN m.work_status IN ('processing','sourcing_deferred') THEN 'processing'
-     WHEN m.work_status IN ('approval_pending','approval_unproven','sourcing_review') THEN 'review'
+     WHEN m.work_status IN ('approval_pending','approval_unproven','approval_to_review','sourcing_review') THEN 'review'
      ELSE 'correction'
    END AS operator_group
  FROM marked m
