@@ -85,7 +85,7 @@ async function readRows(client, lock = false) {
     'WHERE p.product_ref=ANY($1::text[])',
     'ORDER BY p.product_ref',
     lock ? 'FOR UPDATE OF p' : ''
-  ].join('\\n');
+  ].join('\n');
   return (await client.query(sql,[EXPECTED.map(row => row.product_ref)])).rows;
 }
 
