@@ -297,7 +297,7 @@ test('12 mis de côté dont 3 corrigeables : sous-ensemble et non sixième popul
   expect(exceptions).toContain('data-product-name="À classer"');
   expect(exceptions).toContain('Classer →');
   expect(exceptions).toContain("Prix d'achat manquant");
-  expect(exceptions).toContain('Compléter dans Sourcing →');
+  expect(exceptions).toContain('Corriger la donnée fournisseur →');
   expect(exceptions).not.toContain('data-action-choose');
   expect((exceptions.match(/kir-row-action/g)||[])).toHaveLength(3);
 });
@@ -411,7 +411,7 @@ test('CAS E : au clic, la liste filtrée montre exactement les 3 éléments (pro
   const html = render(scenario({ quarantined:2, certification_blocked:1, action_required:3 },
     { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }), '?run=KIR-000004&view=exceptions');
   expect((html.match(/kir-row-action/g) || []).length).toBeGreaterThanOrEqual(3);
-  for (const expected of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
+  for (const expected of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Classer', 'Coque C', 'Donnée obligatoire manquante', 'Corriger dans le Catalogue']) {
     expect(html).toContain(expected);
   }
   expect(html).toContain('data-action-classify');
@@ -912,8 +912,9 @@ test('audit : sortie Catalogue = return_to exact vers l’objet Sourcing d’ori
   expect(live).toContain('return_label=Retour+au+suivi');
   expect(live).not.toContain('return_label=Retour+au+passage');
   const exc = drill('exceptions', '', scenario({ quarantined:3, action_required:3 }, { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }));
-  expect(exc).toContain('return_label=Retour+%C3%A0+Action+requise');
-  expect(exc).toContain(`return_to=%2Fadmin%2Fimport-runtime%3Frun%3D${RUN}%26view%3Dexceptions`);
+  // Product corrections go straight to Catalogue master; no Sourcing loop.
+  expect(exc).toContain('/admin/workspaces/catalog?search=KSC-2');
+  expect(exc).not.toContain('return_label=Retour+%C3%A0+Action+requise');
 });
 
 test('audit : détail technique — contrôle, produit ou suivi selon l’origine réelle, contexte conservé sur les étapes', () => {
