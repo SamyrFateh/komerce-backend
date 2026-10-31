@@ -923,71 +923,96 @@ test('Catalogue unique : produit remis a correction de catégorie, français et 
   expect(fetchFn).toHaveBeenCalledTimes(2);
 });
 
-test('Catalogue unique : le serveur refuse la validation si la certification est incomplète', async () => {
-  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
-  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
-  const payload = workspacePayload([]);
-  payload.products = [{
-    record_kind: 'product', product_ref: 'KPR-000447', candidate_ref: 'KSC-000447',
-    name: 'Produit prêt', lifecycle_status: 'candidate', is_active: false,
-    work_status: 'approval_pending', operator_group: 'review', issues: ['approval_pending'],
+
+test('Finaliser un candidat prêt : blocage serveur visible, aucun POST si non certifié',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{
+    record_kind:'product',product_ref:'KPR-000447',candidate_ref:'KSC-000447',
+    name:'Produit prêt',lifecycle_status:'candidate',is_active:false,
+    work_status:'approval_pending',operator_group:'review',issues:['approval_pending']
   }];
-  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
-  const fetchFn = jest.fn(async url => ({
-    ok: true, status: 200,
-    json: async () => url.includes('diagnose_product_ref=')
-      ? { phase: 'catalog_approval', certification: { certified: false, reasons: ['media_missing'] } }
-      : payload,
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async(url,opts={})=>({
+    ok:true,status:200,json:async()=>url.includes('diagnose_product_ref=')
+      ? {phase:'catalog_approval',certification:{certified:false,reasons:['media_missing']}}
+      : payload
   }));
-  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, location: { search: '' } });
-  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
-  const panel = root.querySelector('[data-catalog-product-inspector="KPR-000447"]');
-  await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
-  expect(panel.textContent).toContain('À compléter');
-  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
-  const urls=fetchFn.mock.calls.map(([url]) => url);
-  expect(urls).toHaveLength(3);
-  expect(urls[1]).toContain('dossier_product_ref=KPR-000447');
-  expect(urls[2]).toContain('diagnose_product_ref=KPR-000447');
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const button=root.querySelector('[data-workspace-action="open-catalog-inspector"]');
+  expect(button.textContent).toBe('Finaliser');
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+  await button.click();
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-000447"]');
+  expect(panel).not.toBeNull();
+  expect(panel.textContent).toContain('Encore nécessaire');
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });
 
-
-test('Catalogue unique : une validation autorisée exige un GET de preuve puis une confirmation humaine', async () => {
-  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
-  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
-  const payload = workspacePayload([]);
-  payload.products = [{
-    record_kind: 'product', product_ref: 'KPR-000448', candidate_ref: 'KSC-000448',
-    name: 'Produit prêt', lifecycle_status: 'candidate', is_active: false,
-    work_status: 'approval_pending', operator_group: 'review', issues: ['approval_pending'],
+test('Finalisation candidate certifiée : GET, approbation auditée, rafraîchissement sans deuxième confirmation',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  let approved=false;
+  payload.products=[{
+    record_kind:'product',product_ref:'KPR-000448',candidate_ref:'KSC-000448',
+    name:'Produit prêt',lifecycle_status:'candidate',is_active:false,
+    work_status:'approval_pending',operator_group:'review',issues:['approval_pending']
   }];
-  payload.registry_page = { total: 1, limit: 50, offset: 0, has_next: false, has_previous: false };
-  const confirm = jest.fn(() => true);
-  const fetchFn = jest.fn(async (url, options = {}) => ({
-    ok: true, status: 200,
-    json: async () => url.includes('diagnose_product_ref=')
-      ? { phase: 'catalog_approval', certification: { certified: true, reasons: [] } }
-      : options.method === 'POST'
-        ? { ok: true, action: 'catalog_candidate_approved', result: { product_ref: 'KPR-000448' } }
-        : payload,
-  }));
-  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, confirm, location: { search: '' } });
-  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
-  const panel = root.querySelector('[data-catalog-product-inspector="KPR-000448"]');
-  expect(panel).not.toBeNull();
-  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
-  await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
-  const approve = panel.querySelector('[data-workspace-action="inspector-approve"]');
-  expect(approve).not.toBeNull();
-  expect(fetchFn.mock.calls.filter(([, options = {}]) => options.method === 'POST')).toHaveLength(0);
-  await approve.click();
-  expect(confirm).toHaveBeenCalledTimes(1);
-  const posts = fetchFn.mock.calls.filter(([, options = {}]) => options.method === 'POST');
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const confirm=jest.fn(()=>true);
+  const fetchFn=jest.fn(async(url,opts={})=>{
+    let data=payload;
+    if(url.includes('diagnose_product_ref='))data={phase:'catalog_approval',
+      certification:{certified:true,reasons:[]}};
+    else if(opts.method==='POST'){
+      approved=true;data={ok:true,action:'catalog_candidate_approved'};
+    }else if(approved){
+      data={...payload,products:[{...payload.products[0],lifecycle_status:'active',
+        is_active:true,work_status:'catalog_approved',operator_group:'validated',
+        approval_audited:true,issues:[]}]};
+    }
+    return {ok:true,status:200,json:async()=>data};
+  });
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,confirm,location:{search:''}});
+  const button=root.querySelector('[data-workspace-action="open-catalog-inspector"]');
+  expect(button.textContent).toBe('Finaliser');
+  await button.click();
+  expect(confirm).not.toHaveBeenCalled();
+  const calls=fetchFn.mock.calls;
+  expect(calls.filter(([url])=>url.includes('diagnose_product_ref='))).toHaveLength(1);
+  const posts=calls.filter(([,opts={}])=>opts.method==='POST');
   expect(posts).toHaveLength(1);
   expect(posts[0][0]).toContain('/api/admin/workspaces/catalog/approval/KPR-000448/approve');
-  expect(fetchFn.mock.calls.map(([url]) => url).filter(url => url.includes('unified=1'))).toHaveLength(2);
+  const refreshed=root.querySelector('[data-product-ref="KPR-000448"]');
+  expect(refreshed.querySelector('[data-workspace-action="open-catalog-inspector"]').textContent)
+    .toBe('Dossier produit');
 });
 
+test.each([
+ ['catalog_approved_inactive','validated','Dossier produit'],
+ ['approval_to_review','review','Voir fiche']
+])('Correction terminée et produit désactivé : %s ne dit plus Compléter',async(status,group,expected)=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.products=[{
+    record_kind:'product',product_ref:'KPR-000086',candidate_ref:'KSC-000086',
+    name:'Protection téléphone FR',source_locale:'fr',content_source:'manual',
+    lifecycle_status:'active',is_active:false,approval_audited:status==='catalog_approved_inactive',
+    work_status:status,operator_group:group,issues:[]
+  }];
+  payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const row=root.querySelector('[data-product-ref="KPR-000086"]');
+  const button=row.querySelector('[data-workspace-action="open-catalog-inspector"]');
+  expect(button.textContent).toBe(expected);
+  expect(row.textContent).not.toContain('Compléter');
+  expect(row.textContent).not.toContain('Contrôler les prérequis');
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+});
 test('Catalogue unique : un refus du Sourcing empêche la proposition et toute mutation', async () => {
   const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
