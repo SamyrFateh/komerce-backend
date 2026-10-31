@@ -1066,7 +1066,8 @@
         const row = editInline.closest('[data-inline-cost-row]');
         const key = editInline.dataset.editInlineCost;
         const component = (payload.cost_components || []).find(item => item.key === key);
-        if (!row || !component || payload.capabilities?.cost_overrides !== true) return;
+        const canUpdate = payload.capabilities?.cost_overrides === true || payload.capabilities?.can_manage_costs === true;
+        if (!row || !component || !canUpdate) return;
         cockpit.querySelectorAll('[data-inline-cost-form]').forEach(form => {
           const other = form.closest('[data-inline-cost-row]');
           form.remove();
