@@ -47,3 +47,15 @@
 
 .kmc-price-list-search-controls { display:flex; gap:7px; align-items:center; }
 .kmc-price-list-search-button { padding:9px 13px; border-radius:9px; border:1px solid #99bce9; background:#eaf2ff; color:#16549c; cursor:pointer; font:inherit; font-size:13px; font-weight:750; }
+
+/* Same blue hero authority as the global Catalogue (no new visual shell). */
+body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .kmc-workspace-header {
+  background:linear-gradient(110deg,#133765 0%,#23558b 65%,#2f6aaa 100%);
+  border-color:#1c528b;
+  box-shadow:0 2px 9px rgba(16,53,99,.13);
+}
+body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .kmc-workspace-header .kmc-workspace-title,
+body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .kmc-workspace-header .kmc-workspace-subtitle { color:#fff; }
+body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .kmc-workspace-header .kmc-workspace-kicker {
+  color:#e7f1ff; background:rgba(255,255,255,.14);
+}
