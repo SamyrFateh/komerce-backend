@@ -1075,6 +1075,7 @@
         });
         const form = el(doc, 'form', 'kmc-inline-cost-form');
         form.dataset.inlineCostForm = key;
+        form.noValidate = true; // Show our clear inline error instead of browser-only required popup.
         const last = el(doc, 'span', 'kmc-inline-cost-last', `Valeur actuelle : ${componentValue(component)}`);
         form.appendChild(last);
         const input = doc.createElement('input');
