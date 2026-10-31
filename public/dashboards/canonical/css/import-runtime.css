@@ -3398,3 +3398,36 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
   .kmc-import-runtime .kir-one-panel > summary {flex-wrap:wrap;}
   .kmc-import-runtime .kir-one-panel > summary span {margin-left:0;}
 }
+
+
+/* Sourcing Live: three business-level tabs, one content panel at a time.
+   The technical KIR drill-down is not a competing workspace. */
+.kmc-import-runtime .kir-one-tabs {
+  display:flex; align-items:flex-end; gap:5px;
+  border-bottom:1px solid #ccd9e9; margin:0 0 20px; padding:0 6px;
+  overflow-x:auto;
+}
+.kmc-import-runtime .kir-one-tabs a {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:44px; padding:11px 21px 10px; text-decoration:none;
+  white-space:nowrap; color:#425b7b; font-size:14px; font-weight:700;
+  border:1px solid transparent; border-bottom:3px solid transparent;
+  border-radius:9px 9px 0 0;
+}
+.kmc-import-runtime .kir-one-tabs a:hover { color:#174f9f; background:#f4f8fe; }
+.kmc-import-runtime .kir-one-tabs a[aria-current="page"] {
+  color:#0e4595; background:#f1f6ff; border-bottom-color:#1262cc;
+}
+.kmc-import-runtime .kir-one-tabs a:focus-visible {
+  outline:2px solid #1465c7; outline-offset:-3px;
+}
+.kmc-import-runtime .kir-one-pane[hidden],
+.kmc-import-runtime .kir-one-screen .kir-one-panel[hidden] { display:none !important; }
+/* The visible tab already names the section: do not repeat an accordion bar. */
+.kmc-import-runtime .kir-one-screen .kir-one-panel > summary { display:none; }
+.kmc-import-runtime .kir-one-screen .kir-one-panel-body { border-top:0; padding:18px 24px 23px; }
+.kmc-import-runtime .kir-one-screen .kir-one-pane > .kir-one-run { width:100%; box-sizing:border-box; }
+@media(max-width:800px) {
+  .kmc-import-runtime .kir-one-tabs a { padding-inline:15px; }
+  .kmc-import-runtime .kir-one-screen .kir-one-panel-body { padding:14px; }
+}
