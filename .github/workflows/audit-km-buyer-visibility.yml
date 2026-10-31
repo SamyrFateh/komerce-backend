@@ -98,6 +98,6 @@ jobs:
             finally{client.release()}
             const r=await fetch(process.env.STAGING_BASE_URL+'/api/products?market=KM&limit=1000');
             const payload=await r.json();
-            console.log('STAGING_KM_BUYER_API '+JSON.stringify({http:r.status,total:payload.total,returned:Array.isArray(payload.products)?payload.products.length:null,contains_product:!!payload.products?.some(p=>p.product_ref==='KPR-000093')}));
+            console.log('STAGING_KM_BUYER_API '+JSON.stringify({http:r.status,total:payload.total,returned:Array.isArray(payload.products)?payload.products.length:null,contains_product:!!payload.products?.some(p=>p.product_ref==='KPR-000093'),public_products:(payload.products||[]).slice(0,20).map(p=>({ref:p.product_ref,price_kmf:p.price_kmf,market_price_source:p.market_price_source,purchasable:p.purchasable}))}));
           })().catch(e=>{console.error('DIAG_BLOCKED: '+String(e.code||e.message).slice(0,200));process.exitCode=1}).finally(()=>db.pool.end());
           NODE
