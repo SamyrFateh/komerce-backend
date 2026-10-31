@@ -187,8 +187,10 @@ async function main() {
     await page.locator('[data-candidate-ref="KSC-TEST-READY"] [data-workspace-action="inspect-candidate"]').click();
     const candidate = page.locator('[data-catalog-candidate-inspector="KSC-TEST-READY"]');
     await candidate.waitFor({ state: 'visible' });
-    await candidate.locator('[data-workspace-action="candidate-boutique-review"]').click();
+    // La suggestion est affichée dès l'ouverture : pas de clic « Recharger ».
+    await candidate.locator('[data-catalog-candidate-category-choice] option').first().waitFor();
     assert((await candidate.locator('[data-catalog-candidate-category-choice] option').first().innerText()).includes('Proposé'));
+    assert(await candidate.locator('[data-workspace-action="candidate-apply-boutique-suggestion"]').isVisible());
     await page.screenshot({ path: path.join(output, 'candidat-suggestion-contextuelle.png'), fullPage: true });
     await candidate.locator('[data-workspace-action="close-inspector"]').click();
 
@@ -227,8 +229,11 @@ async function main() {
     assert.equal(await frenchEditor.locator('[data-workspace-action="save-fr-editor"]').count(), 1);
     assert((await frenchEditor.innerText()).includes('Titre français'));
     assert((await frenchEditor.innerText()).includes('Description française'));
+    assert(!(await frenchEditor.locator('[data-workspace-action="save-fr-editor"]').isVisible()),
+      'Autosave must not expose a second save click');
     await frenchEditor.locator('[data-workspace-action="cancel-fr-editor"]').click();
     assert((await product.innerText()).includes('Médias source identifiés'));
+    await product.locator('[data-catalog-complementary-info] > summary').click();
     await product.locator('[data-catalog-canonical-gallery] img').first().waitFor();
     assert.equal(await product.locator('[data-catalog-canonical-gallery] img').count(),1);
     assert((await product.innerText()).includes('25 x 15 x 10'));
@@ -246,6 +251,7 @@ async function main() {
     await product.locator('[data-workspace-action="close-inspector"]').click();
     await page.locator('[data-product-ref="KPR-TEST-APPROVED"] [data-workspace-action="open-catalog-inspector"]').click();
     const approved = page.locator('[data-catalog-product-inspector="KPR-TEST-APPROVED"]');
+    await approved.locator('[data-catalog-complementary-info] > summary').click();
     await approved.locator('[data-catalog-canonical-gallery] img').first().waitFor();
     assert((await approved.innerText()).includes('LOCAL_ACTIVE'));
     assert(!(await approved.innerText()).includes('4300'),
