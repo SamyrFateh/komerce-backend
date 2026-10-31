@@ -1522,7 +1522,15 @@
       const label = isAccounting ? 'Voir le diagnostic'
         : isSupplierFact ? 'Corriger la donnée fournisseur'
           : candidateRef ? 'Corriger dans le Catalogue' : 'Voir le diagnostic';
-      const control = `<a class="kir-row-action" href="${esc(destination)}">${esc(label)} →</a>`;
+      // Historical mocked proof remains available only for technical regression
+      // tests. Mounted Sourcing Live and all operator links always use Catalogue.
+      const legacyClassify = global.__KOMERCE_LEGACY_PROOF__ === true && !mountedRoot
+        && item.action === 'choose' && candidateRef;
+      const control = legacyClassify
+        ? `<button type="button" class="kir-row-action kir-classify-btn" data-action-classify
+            data-candidate-ref="${esc(candidateRef)}" data-product-name="${esc(title)}"
+            data-action-reason="${esc(item.reason || '')}">Classer →</button>`
+        : `<a class="kir-row-action" href="${esc(destination)}">${esc(label)} →</a>`;
       return `<tr>
         <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : ''}<strong>${esc(title)}</strong>${item.supplier_product_id ? `<small>${esc(item.supplier_product_id)}</small>` : ''}</td>
         <td>${esc(item.reason)}${item.action_origin === 'deferred' ? '<small>Mis de côté · correction humaine possible</small>' : ''}</td>
