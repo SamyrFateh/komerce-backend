@@ -1,6 +1,6 @@
 /* Catalogue pays — market-pricing list. Desktop-first; no business calculation. */
 #market-catalog-root[data-workspace-kind="market-catalog"] { width:100%; max-width:none; }
-#market-catalog-root .kmc-market-price-list { width:100%; min-width:0; padding:22px 24px; background:#fff; border:1px solid #e0e7f0; border-radius:14px; }
+#market-catalog-root .kmc-market-price-list { box-sizing:border-box; width:100%; min-width:0; padding:22px 24px; background:#fff; border:1px solid #e0e7f0; border-radius:14px; }
 .kmc-price-list-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
 .kmc-price-list-heading h2 { font-size:21px; letter-spacing:-.02em; margin:0 0 5px; color:#182e4c; }
 .kmc-price-list-heading p { font-size:13px; color:#63758d; margin:0; max-width:760px; line-height:1.5; }
