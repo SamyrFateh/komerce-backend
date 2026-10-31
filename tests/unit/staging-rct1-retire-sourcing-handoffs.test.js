@@ -9,7 +9,7 @@ const {
 const records=EXPECTED.map((item,i)=>({
   ...item, id:'00000000-0000-0000-0000-00000000000'+i,
   supplier_name:'RCT1-FICTIF-recette',
-  name:item.candidate_ref+' Sac de test — FICTIF recette',
+  name:item.supplier_product_id+' Sac de test — FICTIF recette',
   is_active:true, is_available:true, preserved_hash:item.product_ref,
 }));
 
