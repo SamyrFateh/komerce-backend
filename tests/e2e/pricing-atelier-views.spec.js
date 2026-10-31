@@ -336,9 +336,40 @@ test.describe('Moteur économique · détails et édition unifiés des trois col
       await card.locator('[data-expand-cost-family]').click();
       await expect(card).toHaveAttribute('data-expanded', 'true');
       await expect(card.locator('.kmc-cockpit-cost-table')).toBeVisible();
+      // The same row/value/action representation must survive the details.
+      const preview = card.locator('.kmc-economic-family-preview-list');
+      await expect(preview).toBeVisible();
+      await expect(preview.locator('.kmc-economic-family-preview-row').first()).toBeVisible();
+      const familyPositions = await page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card')
+        .evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().x));
+      expect(familyPositions[0]).toBeLessThan(familyPositions[1]);
+      expect(familyPositions[1]).toBeLessThan(familyPositions[2]);
       await card.locator('[data-expand-cost-family]').click();
       await expect(card).toHaveAttribute('data-expanded', 'false');
       await expect(card.locator('.kmc-cockpit-cost-table')).toBeHidden();
+    }
+    await noOverflow(page);
+  });
+
+  test('chaque famille conserve la même grille libellé / montant / action', async ({ page }) => {
+    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true },
+      access: { ...FX.market.access, role: 'global_admin' }, search: '?market=KM&view=costs' });
+    const selectors = ['variable', 'fixed-direct', 'fixed-mutualized'];
+    for (const family of selectors) {
+      const row = page.locator(`[data-cost-summary="${family}"] .kmc-economic-family-preview-row`).first();
+      await expect(row.locator('.kmc-economic-family-preview-label')).toBeVisible();
+      await expect(row.locator('.kmc-economic-family-preview-value')).toBeVisible();
+      const button = row.locator('[data-edit-inline-cost], [data-edit-structure-charge]');
+      const readonly = row.locator('.kmc-inline-cost-readonly');
+      expect((await button.count()) + (await readonly.count())).toBe(1);
+      const positions = await row.evaluate(node => {
+        const label = node.querySelector('.kmc-economic-family-preview-label').getBoundingClientRect();
+        const value = node.querySelector('.kmc-economic-family-preview-value').getBoundingClientRect();
+        const action = node.querySelector('[data-edit-inline-cost], [data-edit-structure-charge], .kmc-inline-cost-readonly').getBoundingClientRect();
+        return { labelRight: label.right, valueLeft: value.left, valueRight: value.right, actionLeft: action.left };
+      });
+      expect(positions.labelRight).toBeLessThanOrEqual(positions.valueLeft + 2);
+      expect(positions.valueRight).toBeLessThanOrEqual(positions.actionLeft + 2);
     }
     await noOverflow(page);
   });
