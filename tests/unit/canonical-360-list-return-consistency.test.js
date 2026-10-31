@@ -46,8 +46,10 @@ afterEach(()=>{
 });
 
 function installNavigation() {
-  const nav=require('../../public/dashboards/canonical/js/navigation-policy-v4');
-  globalThis.KomerceCanonicalNavigation=nav;
+  // This legacy browser-first module writes to globalThis, not module.exports.
+  jest.isolateModules(() => require('../../public/dashboards/canonical/js/navigation-policy-v4'));
+  const nav = globalThis.KomerceCanonicalNavigation;
+  if (!nav || typeof nav.withReturnTo !== 'function') throw Error('Navigation API missing');
   return nav;
 }
 
