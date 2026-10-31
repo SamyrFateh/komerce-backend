@@ -185,6 +185,24 @@ jobs:
               await card.waitFor({state:'visible',timeout:20000});
               await card.click();
               await waitForModalOpen(page);
+              const uiState=await page.evaluate(()=>{
+                const add=document.querySelector('#k-add-cart-btn');
+                const root=document.querySelector('#k-modal-overlay');
+                return {title:document.querySelector('#k-modal-name')?.textContent?.trim(),
+                  cta_disabled:add?.disabled,cta_aria_disabled:add?.getAttribute('aria-disabled'),
+                  add_text:add?.textContent?.trim(),message:document.querySelector('#k-modal-selection-message')?.textContent?.trim(),
+                  axes:Array.from(root?.querySelectorAll('[data-axis-key]')||[]).map(x=>({
+                    axis:x.getAttribute('data-axis-key'),
+                    options:Array.from(x.querySelectorAll('[data-option-value]')).map(b=>({
+                      value:b.getAttribute('data-option-value'),state:b.getAttribute('data-option-state'),
+                      selected:b.getAttribute('aria-pressed')}))
+                  })),selection_elements:Array.from(root?.querySelectorAll('select')||[]).map(x=>({
+                    id:x.id,value:x.value,options:x.options?.length
+                  })),
+                  active_sku_tags:root?.querySelectorAll('[data-sku-id]')?.length,
+                }
+              });
+              console.log('STAGING_CJ_MODAL_STATE '+JSON.stringify(uiState));
               await addToCartFromModal(page);
               const cart=await page.evaluate(()=>JSON.parse(localStorage.getItem('kmrc_cart')||'[]'));
               const refFound=Array.isArray(cart)&&cart.some(line=>String(line.id||line.product_id||line.productId)===String(item.id));
