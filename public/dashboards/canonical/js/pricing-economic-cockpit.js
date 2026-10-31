@@ -163,7 +163,7 @@
       if (item.note || item.descriptionChargeId) {
         const note = el(doc, 'small', 'kmc-economic-family-preview-note', item.note || 'Description à compléter');
         if (item.descriptionChargeId) {
-          const editNote = el(doc,'button','kmc-inline-cost-note-action','Modifier la description');
+          const editNote = el(doc,'button','kmc-inline-cost-note-action','Modifier libellé et description');
           editNote.type='button';
           editNote.dataset.editFixedDescription = String(item.descriptionChargeId);
           note.appendChild(editNote);
@@ -1179,13 +1179,21 @@
         const chargeId = editDescription.dataset.editFixedDescription;
         if (row.querySelector('[data-edit-fixed-description-form]')) return;
         const current = row.querySelector('.kmc-economic-family-preview-note')?.firstChild?.textContent?.trim() || '';
-        const form = el(doc,'form','kmc-inline-cost-form');
+        const currentName = row.querySelector('.kmc-economic-family-preview-label')?.textContent?.trim() || '';
+        const form = el(doc,'form','kmc-inline-cost-form kmc-structure-reference-form');
         form.dataset.editFixedDescriptionForm=chargeId;
+        const nameLabel = el(doc,'label','kmc-structure-reference-field','Libellé');
+        const name = doc.createElement('input');
+        name.type='text'; name.maxLength=120; name.required=true;
+        name.value=currentName; name.setAttribute('aria-label','Libellé du poste fixe');
+        name.dataset.editFixedLabel='';
+        nameLabel.appendChild(name); form.appendChild(nameLabel);
+        const descriptionLabel = el(doc,'label','kmc-structure-reference-field','Description');
         const value = doc.createElement('textarea');
         value.rows=2; value.maxLength=500; value.value=current === 'Description à compléter' ? '' : current;
         value.setAttribute('aria-label','Description du poste fixe');
-        form.appendChild(value);
-        const save = el(doc,'button','kmc-inline-cost-save','Enregistrer la description');
+        descriptionLabel.appendChild(value); form.appendChild(descriptionLabel);
+        const save = el(doc,'button','kmc-inline-cost-save','Enregistrer');
         save.type='submit';form.appendChild(save);
         const cancel = el(doc,'button','kmc-inline-cost-cancel','Annuler');
         cancel.type='button';form.appendChild(cancel);
@@ -1193,13 +1201,18 @@
         form.appendChild(message);
         cancel.addEventListener('click',()=>{form.remove();editDescription.hidden=false;});
         form.addEventListener('submit',async e=>{
-          e.preventDefault();save.disabled=true;message.textContent='Enregistrement…';
+          e.preventDefault();
+          const newName=name.value.trim();
+          if(newName.length<3||newName.length>120){
+            message.textContent='Le libellé doit contenir de 3 à 120 caractères.';return;
+          }
+          save.disabled=true;message.textContent='Enregistrement…';
           try{
             const endpoint=workspace.endpointFor({requestedMarket:options.requestedMarket});
             await workspace.jsonRequest(options.fetch,
               `${endpoint}/structure-charges/${encodeURIComponent(chargeId)}/description`,
-              {method:'PATCH',body:{description:value.value.trim()}});
-            message.textContent='Description enregistrée.';
+              {method:'PATCH',body:{name:newName,description:value.value.trim()}});
+            message.textContent='Libellé et description enregistrés.';
             await rootObject.KomerceCanonicalPricingWorkspace.mount({...options,refreshEconomicCockpit:true});
           }catch(err){
             message.textContent='Non enregistré : '+err.message;save.disabled=false;
@@ -1207,7 +1220,7 @@
         });
         row.appendChild(form);
         editDescription.hidden=true;
-        value.focus();
+        name.focus();
         return;
       }
       const addFixed = event.target.closest('[data-add-fixed-direct]');
