@@ -173,3 +173,31 @@ describe('market-delegation catalog service — résumé pays', () => {
     });
   });
 });
+
+
+describe('Catalogue pays — Admin central (portée strictement catalog)', () => {
+  const assignment = {market_id:'mkt-cm',market_code:'CM',market_name:'Cameroun',currency:'XAF',assignment_id:'a-cm',assignment_status:'ACTIVE'};
+  test('Admin réellement présent en base lit le marché sans membership déléguée', async () => {
+    const db = executor();
+    db.query.mockResolvedValueOnce({rows:[{role:'admin'}]});
+    db.query.mockResolvedValueOnce({rows:[assignment]});
+    const auth = await catalog.resolveCatalogAuthorization(db, {
+      userId:'u1',actorRole:'admin',marketCode:'CM',requiredCapability:'catalog.read',
+    });
+    expect(auth).toMatchObject({
+      market_id:'mkt-cm',central_authority:true,membership_id:null,
+      capabilities:expect.arrayContaining(['catalog.read','catalog.expose','pricing.decide','pricing.activate']),
+    });
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM users'), ['u1']);
+  });
+
+  test('Un rôle prétendu Admin mais absent de la base reste soumis à la délégation', async () => {
+    const db = executor();
+    db.query.mockResolvedValueOnce({rows:[{role:'client'}]});
+    db.query.mockResolvedValueOnce({rows:[assignment]});
+    db.query.mockResolvedValueOnce({rows:[]});
+    await expect(catalog.resolveCatalogAuthorization(db, {
+      userId:'u1',actorRole:'admin',marketCode:'CM',requiredCapability:'catalog.expose',
+    })).rejects.toMatchObject({code:'MARKET_MEMBERSHIP_REQUIRED'});
+  });
+});
