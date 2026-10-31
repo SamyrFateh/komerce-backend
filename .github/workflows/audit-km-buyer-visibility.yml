@@ -65,6 +65,34 @@ jobs:
                   WHERE product_id=(SELECT id FROM products WHERE product_ref=$1)`,
                 ['KPR-000093']);
               console.log('STAGING_KM_VARIANTS '+JSON.stringify(variants));
+              const exposures=await client.query(`
+                SELECT p.product_ref, p.name, p.is_active, p.is_available,
+                       p.inventory_model, p.has_variants, p.stock,
+                       pme.commercial_exposure, pme.decided_at, pme.updated_at AS exposure_updated_at,
+                       (SELECT d.status FROM product_market_price_drafts d
+                         WHERE d.product_id=p.id AND d.market_id=pme.market_id
+                         ORDER BY d.updated_at DESC LIMIT 1) AS local_price_status,
+                       (${canonicalProductImageSql('p')} IS NOT NULL) AS has_public_media,
+                       (${sellableCatalogUnitSql('p')}) AS has_sellable_unit,
+                       (${publicCatalogVisibilitySql('p',{marketCodeParamIndex:1})}) AS buyer_visible
+                  FROM product_market_exposure pme
+                  JOIN products p ON p.id=pme.product_id
+                  JOIN markets m ON m.id=pme.market_id
+                 WHERE m.code=$1 AND pme.commercial_exposure='ENABLED'
+                 ORDER BY pme.updated_at DESC NULLS LAST, p.product_ref ASC`,['KM']);
+              const all=exposures.rows;
+              console.log('STAGING_KM_PUBLISHED_SUMMARY '+JSON.stringify({
+                exposed:all.length,
+                local_active:all.filter(x=>x.local_price_status==='LOCAL_ACTIVE').length,
+                buyer_visible:all.filter(x=>x.buyer_visible===true).length,
+                published_last_2h:all.filter(x=>x.exposure_updated_at && Date.now()-new Date(x.exposure_updated_at).getTime()<7200000).length
+              }));
+              console.log('STAGING_KM_LATEST_PUBLISHED '+JSON.stringify(all.slice(0,35).map(x=>({
+                ref:x.product_ref, updated_at:x.exposure_updated_at, active:x.is_active,
+                available:x.is_available, price:x.local_price_status, image:x.has_public_media,
+                sellable_unit:x.has_sellable_unit, buyer_visible:x.buyer_visible,
+                inventory_model:x.inventory_model, variants:x.has_variants, stock:x.stock
+              }))));
               await client.query('ROLLBACK');
             }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}
             finally{client.release()}
