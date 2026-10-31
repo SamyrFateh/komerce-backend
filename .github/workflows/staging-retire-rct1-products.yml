@@ -1,0 +1,53 @@
+name: Staging retire RCT1 fixture products (retain business tests)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: staging-retire-rct1-fixture-products
+  cancel-in-progress: false
+jobs:
+  retirement:
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] audit-rct1-fixture-products' ||
+       github.event.issue.title == '[staging-op] retire-rct1-fixture-products')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      RCT1_RETIRE_CONFIRM: RETIRE_EXACT_RCT1_P1_TO_P5
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+      GITHUB_ISSUE_TITLE: ${{ github.event.issue.title }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Audit exact RCT1 products (read only)
+        run: node scripts/recette/staging-rct1-retire-fixtures.js --dry-run
+      - name: Retire only after staging identity/provenance/non-RCT1 order verification
+        if: github.event.issue.title == '[staging-op] retire-rct1-fixture-products'
+        run: node scripts/recette/staging-rct1-retire-fixtures.js --apply
+      - name: Verify result read only
+        if: github.event.issue.title == '[staging-op] retire-rct1-fixture-products'
+        run: node scripts/recette/staging-rct1-retire-fixtures.js --dry-run
+      - name: Save evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-rct1-retirement-${{ github.run_id }}
+          path: test-results/staging-rct1-retirement/
+          retention-days: 30
+          if-no-files-found: warn

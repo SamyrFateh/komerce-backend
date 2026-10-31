@@ -1,4 +1,4 @@
-name: RCT1 — moteur staging (plan/dry-run/apply/verify/replay/report)
+name: RCT1 — moteur staging (lecture et contrôle sans réinjection)
 # Issue ouverte par le proprietaire : titre "[staging-op] rct1-<phase>" ; phase dans la liste blanche ci-dessous.
 on:
   workflow_dispatch: {}
@@ -40,9 +40,10 @@ jobs:
         run: |
           phase="${ISSUE_TITLE#\[staging-op\] rct1-}"
           case "$phase" in
-            introspect|pricing-probe|gate-probe|finance-probe|inventory|dump|tables|plan|dry-run|apply|verify|replay|report) ;;
+            introspect|pricing-probe|gate-probe|finance-probe|inventory|dump|tables|plan|dry-run|verify|replay|report) ;;
             *) echo "::error::phase refusee"; exit 1 ;;
           esac
+          # RCT1 est retiré du catalogue commercial : phase apply volontairement interdite.
           # Corps d'issue : lignes TABLES=a,b / ONLY=id1,id2 (liste blanche de caracteres)
           export RCT1_TABLES="$(printf '%s' "$ISSUE_BODY" | sed -n 's/^TABLES=\([a-z_0-9,]*\)\r\?$/\1/p' | head -1)"
           export RCT1_ONLY="$(printf '%s' "$ISSUE_BODY" | sed -n 's/^ONLY=\([A-Za-z0-9_,.-]*\)\r\?$/\1/p' | head -1)"
