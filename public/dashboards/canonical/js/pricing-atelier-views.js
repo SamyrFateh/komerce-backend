@@ -801,6 +801,13 @@
     // Blocs existants rattachés à une vue ; les handlers du cockpit restent propriétaires des coûts.
     const economicBlocks = [];
     const costBlocks = [costs];
+    // The cost tab must start with actionable cost families. The educational
+    // economic reading belongs to the overview and keeps its existing content.
+    const economicReading = costs.querySelector('.kmc-economic-reading');
+    if (economicReading) {
+      cockpit.insertBefore(economicReading, costs);
+      economicBlocks.push(economicReading);
+    }
     if (overview) Array.from(overview.children).forEach(child => { if (child.getAttribute('data-dashboard-role') !== 'hero') economicBlocks.push(child); });
     const header = cockpit.querySelector('.kmc-cockpit-page-header');
     const equilibrium = cockpit.querySelector('[data-pricing-flow-equilibrium]');
