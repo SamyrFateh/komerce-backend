@@ -177,6 +177,12 @@
         edit.setAttribute('aria-label', `Modifier ${item.label} (période et justificatif obligatoires)`);
         row.appendChild(edit);
       }
+      if (item.readOnly) {
+        const status = el(doc, 'span', 'kmc-inline-cost-readonly', 'Lecture seule');
+        status.title = item.readOnlyHint || 'Modification non autorisée sur ce périmètre.';
+        status.setAttribute('aria-label', status.title);
+        row.appendChild(status);
+      }
       list.appendChild(row);
     });
     if (!items.length) list.appendChild(el(doc, 'p', 'kmc-economic-family-preview-empty', 'Données de période indisponibles.'));
@@ -201,6 +207,10 @@
         label: component.label || component.key,
         value: componentValue(component),
         editKey: canManage && component.key ? component.key : null,
+        readOnly: !canManage || !component.key,
+        readOnlyHint: !canManage
+          ? 'Les paramètres variables sont en lecture seule pour ce profil.'
+          : 'Aucune clé de composante modifiable disponible.',
         note: component.inherited === false ? 'Paramètre marché'
           : component.inherited === true ? 'Base globale héritée' : 'Origine à confirmer',
       })),
@@ -272,6 +282,10 @@
       value: formatKmf(item.recognized_amount_kmf),
       chargeId: canManage ? item.charge_id : null,
       structureScope: 'fixed-direct',
+      readOnly: !canManage || !item.charge_id,
+      readOnlyHint: !canManage
+        ? 'L’enregistrement des charges de période nécessite la permission structure.event.record.'
+        : 'Référence de charge manquante : aucun événement ne peut être enregistré.',
     }));
     card.appendChild(economicPreview(doc, directPreview,
       directValid ? `Total direct : ${formatKmf(directTotal)}` : 'Total à confirmer pour la période'));
@@ -309,6 +323,10 @@
       value: formatKmf(charge.market_share_kmf),
       chargeId: canManageGroup ? charge.charge_id : null,
       structureScope: 'fixed-mutualized',
+      readOnly: !canManageGroup || !charge.charge_id,
+      readOnlyHint: !canManageGroup
+        ? 'La charge globale est gérée par un administrateur habilité ; la quote-part marché reste calculée.'
+        : 'Référence de charge manquante : aucun événement ne peut être enregistré.',
       note: `Quote-part ${charge.market_allocation_ratio == null ? 'non précisée' : `${formatNumber(Number(charge.market_allocation_ratio) * 100)} %`} · ${charge.policy?.basis_kind || 'Politique à confirmer'}`,
     }));
     card.appendChild(economicPreview(doc, mutualPreview,
