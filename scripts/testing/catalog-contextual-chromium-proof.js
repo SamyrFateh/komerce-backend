@@ -44,6 +44,12 @@ const catalog = {
       active_media_count: 0, total_media_count: 0, source_media_count: 1,
       media_status: 'source_recoverable',
       issues: ['taxonomy_to_confirm','editorial_to_complete','media_missing'] },
+    { record_kind: 'product', product_ref: 'KPR-000088',
+      candidate_ref: 'KSC-000169', name: '3Pcs Privacy Hydrogel Film',
+      supplier_name: 'AliExpress', source_locale: 'en', content_source: 'connector_raw',
+      boutique_category_key: 'maison', boutique_subcategory_key: 'luminaire',
+      lifecycle_status: 'active', is_active: false, work_status: 'editorial_to_complete',
+      operator_group: 'correction', issues: ['editorial_to_complete'] },
     { record_kind: 'product', product_ref: 'KPR-TEST-APPROVED', name: 'Luminaire validé',
       supplier_name: 'CJdropshipping', boutique_category_key: 'maison',
       boutique_subcategory_key: 'luminaire', boutique_category_label: 'Maison',
@@ -51,7 +57,7 @@ const catalog = {
       lifecycle_status: 'active', is_active: true, needs_review: false,
       work_status: 'catalog_approved', operator_group: 'validated', issues: [] },
   ],
-  registry_page: { total: 5, limit: 50, offset: 0, has_previous: false, has_next: false },
+  registry_page: { total: 6, limit: 50, offset: 0, has_previous: false, has_next: false },
   commercial_products: [], approval: [], approval_page: { total: 0 },
   curation: {}, pricing_parameters: {}, commercial: {}, approval_breakdown: {},
 };
@@ -181,7 +187,7 @@ async function main() {
     }, {payload:catalog,dossiers:dossierFixture});
 
     assert.equal(await page.locator('tr[data-candidate-ref]').count(), 3);
-    assert.equal(await page.locator('tr[data-product-ref]').count(), 2);
+    assert.equal(await page.locator('tr[data-product-ref]').count(), 3);
     await page.screenshot({ path: path.join(output, 'catalogue-unifie.png'), fullPage: true });
 
     await page.locator('[data-candidate-ref="KSC-TEST-READY"] [data-workspace-action="inspect-candidate"]').click();
@@ -209,29 +215,17 @@ async function main() {
     await page.locator('[data-product-ref="KPR-TEST-DRAFT"] [data-workspace-action="open-catalog-inspector"]').click();
     const product = page.locator('[data-catalog-product-inspector="KPR-TEST-DRAFT"]');
     await product.waitFor({ state: 'visible' });
-    assert((await product.innerText()).includes('Classement Boutique à corriger'));
-    assert.equal(await product.locator('[data-workspace-action="inspector-classify"]').count(), 1);
-    assert.equal(await product.locator('[data-workspace-action="inspector-prepare-fr"]').count(), 1);
-    assert.equal(await product.locator('[data-workspace-action="inspector-recover-media"]').count(), 1);
-    const actionDock = product.locator('[data-catalog-action-dock]');
-    const frAction = actionDock.locator('[data-workspace-action="inspector-prepare-fr"]');
-    assert.equal((await frAction.innerText()).trim(), 'Compléter titre et description FR');
-    assert(await frAction.isVisible(), 'French correction should be visible on opening the product');
-    const dockRect=await actionDock.boundingBox();
-    const sourceRect=await product.locator('[data-catalog-source-details]').boundingBox();
-    assert(dockRect && sourceRect && dockRect.y < sourceRect.y,
-      'Corrective actions must come BEFORE supplier details');
+    assert((await product.innerText()).includes('À compléter'));
+    const inline = product.locator('[data-catalog-inline-editor]');
+    await inline.waitFor({state:'visible'});
+    assert(await inline.locator('[data-catalog-quick-field="name"]').isVisible());
+    assert(await inline.locator('[data-catalog-quick-field="description"]').isVisible());
+    assert(await inline.locator('[data-catalog-quick-category]').isVisible());
+    assert(await inline.locator('[data-catalog-quick-subcategory]').isVisible());
+    assert(!(await product.innerText()).includes('Aucune correction à apporter'));
+    assert(!(await product.innerText()).includes('Situation :'));
     assert.equal(await product.locator('[data-catalog-economic-summary]').count(),0);
     await page.screenshot({ path: path.join(output, 'dossier-actions-correction-visibles.png'), fullPage: true });
-    await frAction.click();
-    const frenchEditor = page.locator('[data-catalog-fr-editor]');
-    await frenchEditor.waitFor({state:'visible'});
-    assert.equal(await frenchEditor.locator('[data-workspace-action="save-fr-editor"]').count(), 1);
-    assert((await frenchEditor.innerText()).includes('Titre français'));
-    assert((await frenchEditor.innerText()).includes('Description française'));
-    assert(!(await frenchEditor.locator('[data-workspace-action="save-fr-editor"]').isVisible()),
-      'Autosave must not expose a second save click');
-    await frenchEditor.locator('[data-workspace-action="cancel-fr-editor"]').click();
     await product.locator('[data-catalog-complementary-info] > summary').click();
     assert((await product.innerText()).includes('Médias source identifiés'));
     await product.locator('[data-catalog-canonical-gallery] img').first().waitFor();
@@ -242,13 +236,20 @@ async function main() {
     assert((await product.locator('[data-catalog-variants]').innerText()).includes('LAMP-WHITE'));
     assert((await product.locator('[data-catalog-variants]').innerText()).includes('Stock : 6'));
     await page.screenshot({ path: path.join(output, 'produit-corrections-contextuelles.png'), fullPage: true });
-    await product.locator('[data-workspace-action="inspector-classify"]').click();
-    const dialog = page.locator('#kmc-catalog-classification-dialog');
-    await dialog.waitFor({ state: 'visible' });
-    assert((await dialog.innerText()).includes('Catégorie fournisseur'));
+    assert(!(await product.locator('[data-workspace-action="inspector-classify"]').isVisible()));
+    assert(await product.locator('[data-catalog-quick-category]').isVisible());
     await page.screenshot({ path: path.join(output, 'classement-boutique-reutilise.png'), fullPage: true });
-    await dialog.locator('[data-workspace-action="cancel-classification"]').click();
     await product.locator('[data-workspace-action="close-inspector"]').click();
+    await page.locator('[data-product-ref="KPR-000088"] [data-workspace-action="open-catalog-inspector"]').click();
+    const inactive = page.locator('[data-catalog-product-inspector="KPR-000088"]');
+    await inactive.waitFor({state:'visible'});
+    assert(await inactive.locator('[data-catalog-quick-field="name"]').isVisible());
+    assert(await inactive.locator('[data-catalog-quick-field="description"]').isVisible());
+    assert(await inactive.locator('[data-catalog-quick-category]').isVisible());
+    assert(await inactive.locator('[data-catalog-quick-subcategory]').isVisible());
+    assert(!(await inactive.innerText()).includes('Aucune correction à apporter'));
+    await page.screenshot({path:path.join(output,'kpr-000088-completion-directe.png'),fullPage:true});
+    await inactive.locator('[data-workspace-action="close-inspector"]').click();
     await page.locator('[data-product-ref="KPR-TEST-APPROVED"] [data-workspace-action="open-catalog-inspector"]').click();
     const approved = page.locator('[data-catalog-product-inspector="KPR-TEST-APPROVED"]');
     await approved.locator('[data-catalog-complementary-info] > summary').click();
