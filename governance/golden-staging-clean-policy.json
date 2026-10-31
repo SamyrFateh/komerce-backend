@@ -18,6 +18,7 @@
       "catalog_global_access_grants",
       "catalog_glossary",
       "catalog_media",
+      "catalog_media_recovery_audit",
       "catalog_media_visual_fr_reviews",
       "catalog_publication_decision_audit",
       "catalog_stock_sync_state",
