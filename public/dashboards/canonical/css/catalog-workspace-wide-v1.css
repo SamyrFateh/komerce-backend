@@ -1414,13 +1414,46 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
   color: #49627e;
   line-height: 1.45;
 }
+/* Action prioritaire : contraste fort, ampleur confortable, états visibles. */
 .kmc-catalog-inline-editor .kmc-catalog-proposal-accept {
   justify-self: start;
-  margin: 0 0 6px;
-  border: 1px solid #a8c3e7;
-  background: #eef5ff;
-  color: #16458b;
-  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  min-width: 220px;
+  padding: 11px 20px;
+  margin: 3px 0 9px;
+  border: 1px solid #1245aa;
+  border-radius: 9px;
+  background: #164bc0;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 750;
+  letter-spacing: .01em;
+  box-shadow: 0 3px 10px rgba(15, 60, 150, .20);
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+.kmc-catalog-inline-editor .kmc-catalog-proposal-accept:hover {
+  background: #103b9b;
+  border-color: #103b9b;
+  box-shadow: 0 5px 16px rgba(15, 60, 150, .29);
+}
+.kmc-catalog-inline-editor .kmc-catalog-proposal-accept:focus-visible {
+  outline: 3px solid #ffae35;
+  outline-offset: 3px;
+}
+.kmc-catalog-inline-editor .kmc-catalog-proposal-accept:disabled {
+  background: #9caccb;
+  border-color: #9caccb;
+  color: #fff;
+  box-shadow: none;
+  cursor: wait;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kmc-catalog-inline-editor .kmc-catalog-proposal-accept { transition: none; }
 }
 .kmc-catalog-inline-taxonomy .kmc-catalog-subcategory-explorer {
   grid-column: 1 / -1;
