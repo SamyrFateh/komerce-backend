@@ -154,7 +154,7 @@
     const preview = el(doc, 'div', 'kmc-economic-family-preview');
     preview.dataset.costFamilyPreview = '';
     const list = el(doc, 'div', 'kmc-economic-family-preview-list');
-    items.slice(0, 4).forEach(item => {
+    items.forEach(item => {
       const row = el(doc, 'div', 'kmc-economic-family-preview-row');
       const label = el(doc, 'span', 'kmc-economic-family-preview-label', item.label);
       const value = el(doc, 'strong', 'kmc-economic-family-preview-value', item.value);
@@ -179,7 +179,6 @@
     });
     if (!items.length) list.appendChild(el(doc, 'p', 'kmc-economic-family-preview-empty', 'Données de période indisponibles.'));
     preview.appendChild(list);
-    if (items.length > 4) preview.appendChild(el(doc, 'small', 'kmc-economic-family-preview-extra', `+ ${items.length - 4} autre(s) poste(s) dans le détail`));
     if (footer) preview.appendChild(el(doc, 'div', 'kmc-economic-family-preview-footer', footer));
     const detail = el(doc, 'button', 'kmc-economic-family-expand', 'Voir le détail');
     detail.type = 'button';
