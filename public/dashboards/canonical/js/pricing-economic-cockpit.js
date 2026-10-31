@@ -376,6 +376,16 @@
       controls.appendChild(button);
       return button;
     });
+    buttons.forEach((button, index) => button.addEventListener('keydown', event => {
+      const key = event.key;
+      const next = key === 'ArrowRight' ? (index + 1) % buttons.length
+        : key === 'ArrowLeft' ? (index + buttons.length - 1) % buttons.length
+        : key === 'Home' ? 0 : key === 'End' ? buttons.length - 1 : -1;
+      if (next < 0) return;
+      event.preventDefault();
+      buttons[next].click();
+      buttons[next].focus();
+    }));
     buttons[initial === 'stacked' ? 1 : 0].click();
     return controls;
   }
