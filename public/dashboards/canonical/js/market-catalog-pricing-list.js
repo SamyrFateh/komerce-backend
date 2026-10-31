@@ -65,11 +65,32 @@
     tabs.className = 'kmc-price-list-filters';
     const search = doc.createElement('input');
     search.type = 'search';
-    search.placeholder = 'Rechercher un produit…';
+    search.placeholder = 'Nom ou référence produit…';
+    search.value = new URL(root.location.href).searchParams.get('price_search') || '';
     search.setAttribute('aria-label', 'Rechercher un produit dans le catalogue pays');
     search.className = 'kmc-price-list-search';
     tools.appendChild(tabs);
-    tools.appendChild(search);
+    const searchControls = doc.createElement('div');
+    searchControls.className = 'kmc-price-list-search-controls';
+    searchControls.appendChild(search);
+    const searchButton = doc.createElement('button');
+    searchButton.type = 'button';
+    searchButton.textContent = 'Rechercher';
+    searchButton.className = 'kmc-price-list-search-button';
+    const searchAll = () => {
+      const url = new URL(root.location.href);
+      const query = search.value.trim();
+      if (query) url.searchParams.set('price_search', query);
+      else url.searchParams.delete('price_search');
+      url.searchParams.delete('price_page');
+      root.location.assign(url.toString());
+    };
+    searchButton.addEventListener('click', searchAll);
+    search.addEventListener('keydown', event => {
+      if (event.key === 'Enter') { event.preventDefault(); searchAll(); }
+    });
+    searchControls.appendChild(searchButton);
+    tools.appendChild(searchControls);
     section.appendChild(tools);
     const viewport = doc.createElement('div');
     viewport.className = 'kmc-price-list-scroll';
