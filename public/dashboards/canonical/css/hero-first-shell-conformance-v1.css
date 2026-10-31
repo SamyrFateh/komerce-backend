@@ -4,8 +4,8 @@
  * Presentation only.
  *
  * Composition: Sidebar → Hero (first visible block, 150px) → Attention/KPI → Primary → Secondary.
- * Universal search and market context live INSIDE the Hero's top-right lane; no topbar row,
- * no domain tabs push the Hero down.
+ * Universal search and market context occupy their own in-flow row above the Hero,
+ * so they never cover a page title or illustration. Domain tabs remain hidden.
  *
  * Surfaces: the body carries `kmc-hero-first` (set by navigation-policy-v4 from HERO_FIRST_SURFACES).
  */
@@ -86,26 +86,23 @@ body.kmc-shell-v4[data-kmc-surface="action-center"] #canonical-admin-root {
   padding: var(--kmc-layout-page-pad-top, 18px) var(--kmc-layout-page-pad-x, 24px) var(--kmc-layout-page-pad-bottom, 24px);
 }
 
-/* The former global topbar becomes the Hero's control row.
- * It spans the same centered page frame as the Hero (sidebar excluded, --kmc-layout-max,
- * page padding), so on wide screens the controls stay inside the Hero instead of sticking
- * to the viewport edge. The frame itself ignores pointer events; only the controls take them. */
+/* The universal search and market context use a dedicated, in-flow row.
+ * Unlike the historical absolute overlay, this row cannot cover the Hero title/illustration.
+ * It stays aligned with the same centered page frame on every desktop surface. */
 body.kmc-shell-v4.kmc-hero-first > .kmc-admin-topbar {
-  position: absolute;
+  position: relative;
   z-index: 22;
-  top: var(--kmc-hero-controls-top);
-  left: var(--kmc-hero-sidebar-w);
-  right: 0;
-  width: auto;
-  height: 34px;
-  min-height: 0;
+  width: min(100%, var(--kmc-layout-max, 1680px));
+  height: 46px;
+  min-height: 46px;
   box-sizing: border-box;
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  padding: 0 calc(max(0px, (100% - var(--kmc-hero-sidebar-w) - var(--kmc-layout-max, 1680px)) / 2) + var(--kmc-hero-controls-right)) 0 0;
+  margin: 0 auto;
+  padding: 6px var(--kmc-layout-page-pad-x, 24px);
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -184,12 +181,12 @@ body.kmc-shell-v4.kmc-hero-first > .kmc-admin-domain-tabs {
   display: none;
 }
 
-/* Hero text column leaves the right lane (illustration + controls) free. */
+/* Hero text column leaves the right lane (illustration) free. */
 body.kmc-shell-v4.kmc-hero-first [data-dashboard-role="hero"] {
   padding-right: var(--kmc-hero-lane);
 }
 
-/* Hero-owned period/filter control: compact chip on the controls row, left of search + market. */
+/* Hero-owned period/filter control remains inside the Hero, independent of the search row. */
 body.kmc-shell-v4.kmc-hero-first [data-dashboard-role="hero"] > .kmc-decision-toolbar {
   position: absolute;
   z-index: 23;
