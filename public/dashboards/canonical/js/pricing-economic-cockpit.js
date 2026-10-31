@@ -334,7 +334,16 @@
 
   // Une contribution par vente, une couverture collective par période.
   // Aucun pourcentage synthétique n'est construit à partir d'unités hétérogènes.
-  function costReading(doc) {
+  function costReading(doc, decision) {
+    const mix = decision?.coverage?.cost_mix;
+    // No arithmetic from mixed units in the browser: the four shares must
+    // arrive as a complete, reconciled, server-authored projection.
+    const percentages = ['variable_pct', 'fixed_pct', 'direct_pct', 'mutualized_pct'];
+    const ready = mix?.status === 'READY' && mix?.basis === 'RECONCILED_MARKET_PERIOD'
+      && Boolean(mix.period?.from && mix.period?.to)
+      && percentages.every(key => mix[key] !== null && mix[key] !== undefined
+        && Number.isFinite(Number(mix[key])) && Number(mix[key]) >= 0 && Number(mix[key]) <= 100);
+    const percent = value => `${formatNumber(value, 1)} %`;
     const section = el(doc, 'section', 'kmc-economic-reading');
     section.dataset.economicCostReading = '';
     section.setAttribute('aria-label', 'Comment lire les coûts et la contribution');
@@ -347,7 +356,10 @@
     [
       { icon: '↗', tone: 'variable', title: 'Contribution par vente', value: 'Prix − coûts variables (N1 + N2)', detail: 'Estimée avant vente ; réconciliée après achat, expédition, douane et livraison.' },
       { icon: '◈', tone: 'fixed', title: 'Structure à couvrir (N3)', value: 'Fixes directs + fixes mutualisés', detail: 'Charges de période couvertes collectivement, jamais une dette automatique par SKU.' },
-      { icon: '%', tone: 'mix', title: 'Part des coûts totaux', value: 'Non encore calculable', detail: 'Les proportions exigent une même période, des unités compatibles et des données suffisamment réconciliées.' },
+      { icon: '%', tone: 'mix', title: 'Part des coûts totaux',
+        value: ready ? `Variables ${percent(mix.variable_pct)} · Fixes ${percent(mix.fixed_pct)}` : 'Non encore calculable',
+        detail: ready ? `Second axe — Directs ${percent(mix.direct_pct)} · Mutualisés ${percent(mix.mutualized_pct)}. Même période réconciliée.`
+          : 'Les proportions exigent une même période, des unités compatibles et des données suffisamment réconciliées.' },
     ].forEach(item => {
       const card = el(doc, 'article', `kmc-economic-reading-item is-${item.tone}`);
       card.appendChild(el(doc, 'span', 'kmc-economic-reading-icon', item.icon));
@@ -355,6 +367,18 @@
       copy.appendChild(el(doc, 'span', 'kmc-economic-reading-label', item.title));
       copy.appendChild(el(doc, 'strong', 'kmc-economic-reading-value', item.value));
       copy.appendChild(el(doc, 'small', '', item.detail));
+      if (item.tone === 'mix' && ready) {
+        const track = el(doc, 'div', 'kmc-economic-reading-mix-track');
+        track.setAttribute('role', 'img');
+        track.setAttribute('aria-label', `Coûts variables ${percent(mix.variable_pct)}, charges fixes ${percent(mix.fixed_pct)}`);
+        const variable = el(doc, 'span', 'kmc-economic-reading-mix-variable');
+        variable.style.width = `${Number(mix.variable_pct)}%`;
+        const fixed = el(doc, 'span', 'kmc-economic-reading-mix-fixed');
+        fixed.style.width = `${Number(mix.fixed_pct)}%`;
+        track.appendChild(variable);
+        track.appendChild(fixed);
+        copy.appendChild(track);
+      }
       card.appendChild(copy);
       grid.appendChild(card);
     });
@@ -373,7 +397,7 @@
       `Coûts et paramètres · ${marketLabel}. Les valeurs héritées et les charges propres au marché sont indiquées séparément. Les montants conservent leur unité de calcul.`));
     const cards = [variableCostCard(doc, groups.variable), fixedDirectCard(doc, structure), fixedMutualizedCard(doc, structure, marketLabel)];
     const active = COST_FAMILIES.some(([key]) => key === activeFamily) ? activeFamily : COST_FAMILIES[0][0];
-    section.appendChild(costReading(doc));
+    section.appendChild(costReading(doc, decision));
     section.appendChild(costFamilyTabs(doc, section, cards, active));
     cards.forEach(card => section.appendChild(card));
     section.appendChild(principleCard(doc, marketCode));
