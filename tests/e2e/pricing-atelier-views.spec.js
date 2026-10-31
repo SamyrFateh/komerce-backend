@@ -250,6 +250,8 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       }
       // Le modèle n'invente pas des parts fixes/variables à partir d'unités non comparables.
       const reading = page.locator('[data-economic-cost-reading]');
+      await expect(reading).toBeHidden();
+      await page.locator('[data-atelier-view="economic"]').click();
       await expect(reading).toBeVisible();
       await expect(reading.locator('.kmc-economic-reading-item')).toHaveCount(3);
       await expect(reading).toContainText('Le produit contribue. Le portefeuille couvre.');
@@ -258,13 +260,16 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(reading).toContainText('Non encore calculable');
       const costMixLabel = await reading.locator('.kmc-economic-reading-item.is-mix').innerText();
       expect(costMixLabel).not.toMatch(/\d+(?:[,.]\d+)?\s*%/);
+      await page.locator('[data-atelier-view="costs"]').click();
       if (name === '1440') {
         const widths = await page.evaluate(() => {
           const section = document.querySelector('.kmc-cockpit-costs');
-          const reading = section.querySelector('[data-economic-cost-reading]');
-          return { section: section.getBoundingClientRect().width, reading: reading.getBoundingClientRect().width };
+          const reading = document.querySelector('[data-economic-cost-reading]');
+          return { section: section.getBoundingClientRect().width, readingInCostTab: section.contains(reading), readingInCockpit: Boolean(reading && reading.closest('[data-pricing-economic-cockpit]')) };
         });
-        expect(widths.reading).toBeGreaterThan(widths.section * 0.9);
+        expect(widths.section).toBeGreaterThan(0);
+        expect(widths.readingInCostTab).toBe(false);
+        expect(widths.readingInCockpit).toBe(true);
       }
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale héritée');
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale : 3,2 %');
@@ -529,7 +534,7 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
 
     await page.locator('[data-atelier-view="costs"]').click();
     const reading = page.locator('[data-economic-cost-reading]');
-    await expect(reading).toBeVisible();
+    await expect(reading).toBeHidden();
     await expect(page.locator('.kmc-cockpit-costs')).toHaveAttribute('data-cost-layout', 'columns');
     const direct = page.locator('.kmc-cockpit-cost-card.is-fixed-direct');
     await expect(direct).toContainText('Loyer local');

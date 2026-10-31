@@ -18,6 +18,11 @@ test('Achats fournisseurs garde une vue d’ensemble centrée sur les achats à 
   expect(source).toContain('Sélectionnez les lignes d’un même fournisseur puis préparez la commande.');
 });
 
+test('les trois onglets PO expriment leur rôle métier sans modifier les clés de statut', () => {
+  expect(source).toContain(`[['prepare', "Ordre d'Achat à envoyer"], ['ongoing', "Ordre d'Achat en Cours"], ['history', "Ordre d'Achat terminés"]]`);
+  expect(source).toContain("activeStatuses = { prepare: ['draft'], ongoing: ['notified', 'confirmed'], history: ['hub_received', 'cancelled'] }");
+});
+
 test('l\'en-tête du workspace porte le rôle hero (cadre et illustration communs aux overviews)', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/purchasing-workspace.js'), 'utf8');
   expect(src).toContain("header.setAttribute('data-dashboard-role', 'hero')");
