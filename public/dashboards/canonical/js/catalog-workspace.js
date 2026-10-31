@@ -261,8 +261,11 @@
   async function finishCatalogueAfterCorrection(context, row) {
     if (!row?.product_ref || row.lifecycle_status !== 'candidate' || !row.candidate_ref) return null;
     try {
+      // Méthode explicite : il s'agit d'une lecture, jamais d'un POST.
+      // Les contrôles de contrat API doivent distinguer ce GET du POST d'approbation suivant.
       const diagnosis = await jsonRequest(context.fetch,
-        ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref));
+        ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref),
+        { method: 'GET' });
       if (diagnosis?.phase !== 'catalog_approval' || diagnosis?.certification?.certified !== true)
         return null; // unresolved server prerequisites remain visible after reload
       const result = await jsonRequest(context.fetch,
