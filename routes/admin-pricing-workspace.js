@@ -342,6 +342,20 @@ router.post('/market/:marketCode/price-observations/:observationRef/deactivate',
   } catch (error) { handleError(error, res, next); }
 });
 
+// Read-only preview of the human-entered price. No draft write and no browser market authority.
+router.post('/market/:marketCode/products/:productRef/local-price/price-preview',
+  requirePricingReadCapability('pricing.read'), async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      res.json(await pricingMarketCorridor.previewMarketPrice({
+        market: req.workspaceMarket,
+        productRef: req.params.productRef,
+        amount: req.body && req.body.amount,
+      }));
+    } catch (error) { handleError(error, res, next); }
+  }
+);
+
 router.get('/market/:marketCode/products/:productRef/local-price/activation-preview', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
