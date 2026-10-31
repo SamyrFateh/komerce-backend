@@ -1233,16 +1233,68 @@ test('Catalogue: la correction française est visible AVANT les coûts et ouvre 
   expect(panel.querySelector('[data-catalog-economic-summary]')).toBeNull();
   expect(dossier).not.toBeNull();
   expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(sourceFacts));
-  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(dossier));
+  const additional=panel.querySelector('[data-catalog-complementary-info]');
+  expect(additional).not.toBeNull();
+  expect(panel.children.indexOf(dock)).toBeLessThan(panel.children.indexOf(additional));
+  expect(additional.querySelector('[data-catalog-product-dossier]')).toBe(dossier);
   const buttons=dock.querySelector('.kmc-catalog-inspector-actions');
   const editor=buttons.querySelector('[data-workspace-action="inspector-prepare-fr"]');
   expect(editor).not.toBeNull();
   expect(editor.textContent).toBe('Compléter titre et description FR');
   expect(buttons.children[0]).toBe(editor);
-  expect(buttons.querySelector('[data-workspace-action="inspector-classify"]')).not.toBeNull();
+  expect(buttons.querySelector('[data-workspace-action="inspector-classify"]')).toBeNull();
+  expect(additional.querySelector('[data-workspace-action="inspector-classify"]')).not.toBeNull();
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
   await editor.click();
   expect(root.querySelector('[data-catalog-fr-editor]')).not.toBeNull();
   expect(root.querySelector('[data-workspace-action="save-fr-editor"]')).not.toBeNull();
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+});
+
+test.each([true, false])('Examiner autosave FR : certification serveur=%s, approbation uniquement si conforme', async (certified) => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
+  const payload = workspacePayload([]);
+  payload.products = [{
+    record_kind: 'product', product_ref: 'KPR-AUTOSAVE-FR', candidate_ref: 'KSC-AUTOSAVE-FR',
+    name: 'Earbuds', description: '', content_source: 'connector_raw', source_locale: 'en',
+    lifecycle_status: 'candidate', is_active: false, work_status: 'editorial_to_complete',
+    operator_group: 'correction', issues: ['editorial_to_complete'],
+  }];
+  payload.registry_page = { total: 1, limit: 50, offset: 0,
+    has_next: false, has_previous: false };
+  const confirm = jest.fn(() => true);
+  const fetchFn = jest.fn(async (url, options = {}) => {
+    let result = payload;
+    if (url.includes('dossier_product_ref=')) result = {
+      identity: { title_fr: '', description_fr: '', content_source: 'connector_raw', locale: 'en' },
+    };
+    if (url.includes('diagnose_product_ref=')) result = {
+      phase: 'catalog_approval', certification: {
+        certified, reasons: certified ? [] : ['media_missing'],
+      },
+    };
+    if (options.method === 'POST') result = { ok: true };
+    return { ok: true, status: 200, json: async () => result };
+  });
+  await workspace.mount({ root, document: doc, ui, fetch: fetchFn, confirm,
+    location: { search: '' } });
+  await root.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
+  await root.querySelector('[data-workspace-action="inspector-prepare-fr"]').click();
+  const editor = root.querySelector('[data-catalog-fr-editor]');
+  const title = editor.querySelector('[data-catalog-fr-field="name"]');
+  const description = editor.querySelector('[data-catalog-fr-field="description"]');
+  expect(editor.querySelector('[data-workspace-action="save-fr-editor"]').hidden).toBe(true);
+  title.value = 'Écouteurs Bluetooth sans fil';
+  description.value = 'Écouteurs testés et décrits en français.';
+  // No Enregistrer or Confirmer click: leaving the field persists the correction.
+  await description.listeners.change[0]();
+  const requests = fetchFn.mock.calls.map(([url, opts = {}]) => ({ url, opts }));
+  const posts = requests.filter(({ opts }) => opts.method === 'POST');
+  expect(posts.map(({ url }) => url)).toContain(
+    '/api/admin/workspaces/catalog/approval/KPR-AUTOSAVE-FR/prepare-fr'
+  );
+  expect(requests.some(({ url }) => url.includes('diagnose_product_ref=KPR-AUTOSAVE-FR'))).toBe(true);
+  expect(posts.some(({ url }) => url.endsWith('/approve'))).toBe(certified);
+  expect(confirm).not.toHaveBeenCalled();
 });
