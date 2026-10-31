@@ -8,7 +8,7 @@
  * @outputs       product exposure read model and auditable exposure mutations
  * @depends       middleware/auth.js, services/market-delegation-catalog-service.js
  * @used-by       bootstrap/api-routes.js, market operator dashboard
- * @db-read       none
+ * @db-read       markets, market_operating_assignments, users
  * @db-write      none
  * @db-write-via:catalog-market-exposure-service product_market_exposure
  * @db-write-via:market-delegation-service market_delegation_audit
