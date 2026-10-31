@@ -11,6 +11,8 @@ const decision = require('../../public/dashboards/canonical/js/sourcing-workspac
 
 function summaryFixture() {
   return {
+    sourcing_sources: 3,
+    imports: 5,
     candidates_total: 24,
     candidates_scanned: 6,
     candidates_watchlist: 3,
@@ -23,10 +25,8 @@ describe('Sourcing — decision-first visual', () => {
   test('les décisions reflètent seulement les états candidats déjà exposés', () => {
     const projected = decision.decisionItems(workspace.metricItems(summaryFixture()));
 
-    expect(projected).toEqual([
-      expect.objectContaining({ key: 'scanned', label: 'Candidats scannés à arbitrer', value: '6', tone: 'warning' }),
-      expect.objectContaining({ key: 'watchlist', label: 'Candidats en watchlist', value: '3', tone: 'warning' }),
-    ]);
+    // Scanned and WATCH aggregate volumes do not establish a fixable Sourcing incident.
+    expect(projected).toEqual([]);
   });
 
   test('aucune urgence, rupture, commande d’achat ou retard fournisseur n’est inventé', () => {
@@ -44,13 +44,11 @@ describe('Sourcing — decision-first visual', () => {
     const cards = decision.summaryCards(workspace.metricItems(summaryFixture()));
 
     expect(cards.map(card => card.title)).toEqual([
-      'Pipeline candidats',
-      'Passage catalogue',
-      'Réseau fournisseurs',
+      'Acquisition fournisseur',
+      'Flux vers Catalogue',
     ]);
-    expect(cards[0].metrics.map(metric => metric.value)).toEqual(['24', '6', '3']);
-    expect(cards[1].metrics.map(metric => metric.value)).toEqual(['9']);
-    expect(cards[2].metrics.map(metric => metric.value)).toEqual(['4']);
+    expect(cards[0].metrics.map(metric => metric.value)).toEqual(['3', '5']);
+    expect(cards[1].metrics.map(metric => metric.value)).toEqual(['24', '9']);
   });
 
   test('sans scanned ni watchlist, aucune décision artificielle n’est affichée', () => {
@@ -105,7 +103,8 @@ describe('Sourcing — decision-first visual', () => {
     const result = await enhanced.mount({ ui, document: {}, fetch: fetchFn });
 
     expect(baseMount).toHaveBeenCalledTimes(1);
-    expect(baseMount.mock.calls[0][0].ui.MetricStrip.render).not.toBe(ui.MetricStrip.render);
+    // A normal metric strip is preserved; no fake arbitration layer takes it over.
+    expect(baseMount.mock.calls[0][0].ui.MetricStrip.render).toBe(ui.MetricStrip.render);
     expect(fetchFn).not.toHaveBeenCalled();
     expect(result).toBe(payload);
   });
