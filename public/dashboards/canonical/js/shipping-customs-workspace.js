@@ -581,12 +581,20 @@
     rootNode.setAttribute('data-workspace-kind', 'shipping-customs');
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload, context));
-    const metrics = doc.createElement('section');
-    metrics.className = 'kmc-workspace-metrics';
-    rootNode.appendChild(metrics);
-    ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
-    renderTransit(rootNode, ui, doc, payload, context);
-    renderCustoms(rootNode, ui, doc, payload, context);
+    // The three real-world stages share this ONE workspace and retain the
+    // original customs/transit owners. No second technical dashboard.
+    const panel = globalThis.KomerceInternationalJourneyPanel;
+    if (panel && typeof panel.render === 'function') {
+      panel.render(doc, rootNode, context, payload.international || [],
+        payload.internationalDetail || null, payload.internationalError || null);
+    } else {
+      rootNode.appendChild(text(doc, 'p', 'kmc-workspace-empty',
+        'Chaîne internationale indisponible : module visuel absent.'));
+    }
+    // Legacy parcel confirmation and customs declaration remain functional,
+    // but only in the relevant stage, not as duplicate independent workspaces.
+    if (context.journeyTab === 'transport') renderTransit(rootNode, ui, doc, payload, context);
+    if (context.journeyTab === 'arrival') renderCustoms(rootNode, ui, doc, payload, context);
   }
 
   async function mount(options = {}) {
@@ -608,9 +616,26 @@
       confirm: options.confirm || (typeof window !== 'undefined' ? window.confirm.bind(window) : () => true),
       prompt: options.prompt || (typeof window !== 'undefined' ? window.prompt.bind(window) : () => null),
       reload: null,
+      journeyTab: 'transport',
+      journeyRef: null,
     };
     context.reload = async () => {
       const payload = await jsonRequest(fetchFn, endpointFor(context.marketCode));
+      // The new chain is additive. If migration is not yet installed, show a
+      // visible error in the journey panel without breaking existing customs.
+      try {
+        const international = await jsonRequest(fetchFn, endpointFor(context.marketCode, 'international'));
+        payload.international = Array.isArray(international.shipments) ? international.shipments : [];
+        if (context.journeyRef && payload.international.some(r => r.reference === context.journeyRef)) {
+          payload.internationalDetail = await jsonRequest(fetchFn,
+            endpointFor(context.marketCode, 'international/' + encodeURIComponent(context.journeyRef)));
+        } else {
+          context.journeyRef = null;
+        }
+      } catch (err) {
+        payload.internationalError = err.message;
+        payload.international = [];
+      }
       renderPayload(rootNode, ui, doc, payload, context);
       return payload;
     };
