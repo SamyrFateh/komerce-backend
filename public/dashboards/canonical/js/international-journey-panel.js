@@ -47,7 +47,7 @@
     put(wrapper,text(doc,'span','kmc-journey-label',label));
     const control=doc.createElement(options.length?'select':'input');
     control.name=name;control.required=required;
-    if(!options.length)control.type=type;
+    if(!options.length){ control.type=type; if(type==='number'){control.step='any';control.min='0';} }
     else for(const [v,l] of options){
       const opt=text(doc,'option','',l);opt.value=v;control.appendChild(opt);
     }
