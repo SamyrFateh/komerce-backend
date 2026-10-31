@@ -272,6 +272,16 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       const input = row.locator('[data-inline-cost-value]');
       await expect(input).toHaveValue('500');
       await expect(row).toContainText('Valeur actuelle : 500 KMF/commande');
+      if (name === '1440') {
+        const xy = await row.evaluate(node => {
+          const previous = node.querySelector('.kmc-inline-cost-last').getBoundingClientRect();
+          const input = node.querySelector('[data-inline-cost-value]').getBoundingClientRect();
+          return { previousX: previous.x, previousY: previous.y, inputX: input.x, inputY: input.y };
+        });
+        expect(xy.inputX).toBeGreaterThan(xy.previousX);
+        expect(Math.abs(xy.inputY - xy.previousY)).toBeLessThan(16);
+      }
+      await shot(page, '4-cout-en-mode-edition', name);
       await input.fill('');
       await row.locator('.kmc-inline-cost-save').click();
       await expect(row.locator('[data-inline-cost-message]')).toContainText('Valeur invalide');
