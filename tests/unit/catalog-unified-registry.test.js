@@ -316,7 +316,8 @@ test('les cinq handoffs RCT1 désactivés sont exclus par identité croisée, sa
   for(let i=1;i<=5;i++) {
     expect(sql).toContain("('KSC-00018"+(i-1)+"','RCT1-P"+i+"')");
   }
-  expect(sql).toContain('WHERE NOT (');
+  expect(sql).toContain('WHERE NOT COALESCE((');
+  expect(sql).toContain('), FALSE)');
   expect(sql).toContain('UNION ALL');
   expect(sql).not.toContain("WHERE p.is_active=TRUE");
 });
