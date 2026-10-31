@@ -111,3 +111,42 @@ test('ancien lien de remise KIR mène au Suivi sans page technique concurrente',
  await expect(page.getByText('Examiner la remise')).toHaveCount(0);
  await expect(page.locator('.kir-one-metrics')).toBeVisible();
 });
+
+
+// Mounted proof: real history.pushState/popstate and async cockpit refresh, API mocked.
+async function mountNavigable(page,payload=data(),search='?run=KIR-000013') {
+ await mount(page,payload,search);
+ await page.route('**/api/admin/workspaces/sourcing/import-cockpit?*', route =>
+   route.fulfill({contentType:'application/json',body:JSON.stringify(payload)}));
+ await page.route('**/api/admin/workspaces/sourcing/import-passages?*', route =>
+   route.fulfill({contentType:'application/json',body:JSON.stringify({
+     passages:payload.lots,offset:0,next_offset:null
+   })}));
+ await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({
+   root:document.getElementById('root')
+ }));
+}
+
+test('onglets navigables : Suivi → Sources → Passages → Back conserve le KIR et son contexte',async({page})=>{
+ await mountNavigable(page);
+ await page.locator('[data-sourcing-tab="sources"]').click();
+ await expect(page).toHaveURL(/run=KIR-000013&view=sources/);
+ await expect(page.locator('[data-unified-sources]')).toBeVisible();
+ await expect(page.locator('[data-sourcing-panel="overview"]')).toBeHidden();
+ await page.locator('[data-sourcing-tab="passages"]').click();
+ await expect(page).toHaveURL(/run=KIR-000013&view=passages/);
+ await expect(page.locator('[data-unified-passages]')).toBeVisible();
+ await expect(page.locator('.kir-one-passage-list')).toContainText('KIR-000013');
+ await page.goBack();
+ await expect(page.locator('[data-sourcing-tab="sources"]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('[data-unified-sources]')).toBeVisible();
+ await expect(page.locator('[data-unified-passages]')).toBeHidden();
+});
+
+test('deep-link historique handoff : URL normalisée et aucun appel de population',async({page})=>{
+ await mountNavigable(page,data(),'?run=KIR-000013&view=handoff');
+ await expect(page).toHaveURL(/\/admin\/import-runtime\?run=KIR-000013$/);
+ await expect(page.locator('[data-sourcing-tab="overview"]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('.kir-drill-head')).toHaveCount(0);
+ await expect(page.locator('[data-sourcing-panel="overview"]')).toBeVisible();
+});
