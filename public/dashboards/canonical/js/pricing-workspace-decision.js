@@ -293,10 +293,10 @@
     header.className = 'kmc-dashboard-header';
     header.setAttribute('data-dashboard-role', 'hero');
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'ATELIER ÉCONOMIQUE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', marketMode ? `Atelier des prix · ${(payload && payload.scope && payload.scope.market_name) || options.requestedMarket}` : 'Atelier des prix'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', marketMode ? `Moteur économique · ${(payload && payload.scope && payload.scope.market_name) || options.requestedMarket}` : 'Moteur économique global'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', marketMode
-      ? 'Voir si le marché est économiquement sain et ce qui demande une décision.'
-      : 'Voir la santé économique et ce qui demande une décision avant d’agir sur les prix.'));
+      ? 'Comprendre l’équilibre du marché et régler ses coûts. Les prix de vente se décident dans le Catalogue marché.'
+      : 'Paramétrer les valeurs communes et suivre l’équilibre économique.'));
     overview.appendChild(header);
 
     // Configuration initiale : il ne s'agit ni de deux alertes distinctes ni d'une action disponible.
