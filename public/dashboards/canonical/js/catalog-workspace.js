@@ -1576,7 +1576,11 @@
     if (row.work_status === 'catalog_approved' && row.is_active === true) {
       return { kind: 'markets', label: 'Décisions marchés', status: 'Approuvé Catalogue' };
     }
-    return { kind: 'diagnose', label: 'Vérifier prérequis', status: 'À diagnostiquer' };
+    if (row.work_status === 'catalog_approved_inactive')
+      return { kind: 'detail', label: 'Voir fiche', status: 'Conforme · désactivé' };
+    if (row.work_status === 'approval_to_review')
+      return { kind: 'detail', label: 'Voir la preuve', status: 'Approbation à régulariser' };
+    return { kind: 'detail', label: 'Voir fiche', status: 'Fiche à consulter' };
   }
 
   function renderCatalogTabs(rootNode, doc, context) {
@@ -1953,9 +1957,13 @@
   function registryCorrectionItems(row = {}) {
     const issues = Array.isArray(row.issues) ? row.issues : [];
     if (row.lifecycle_status === 'rejected') return [{ code: 'rejected', label: 'Décision de rejet à examiner' }];
-    if (row.work_status === 'catalog_approved' && row.is_active) {
-      return [{ code: 'market', label: 'Validation Catalogue acquise · vérifier chaque marché' }];
+    if (['catalog_approved','catalog_approved_inactive'].includes(row.work_status)) {
+      return [];
     }
+    if (row.work_status === 'approval_to_review')
+      return [{ code: 'approval_to_review', label: 'Preuve d’approbation Catalogue à régulariser' }];
+    if (row.work_status === 'approval_pending')
+      return [{ code: 'approval_pending', label: 'Prêt pour finalisation Catalogue' }];
     const known = [
       ['sourcing_economic_category_missing', 'Catégorie économique / douane à corriger'],
       ['activation_to_reconcile', 'Activation d’un candidat à justifier'],
@@ -1984,7 +1992,7 @@
   // Les prérequis restent contrôlés par le serveur lors des mutations.
   function renderRegistryCorrections(doc, cell, row) {
     const issues = registryCorrectionItems(row)
-      .filter(item => !['check', 'market', 'approval_pending'].includes(item.code));
+      .filter(item => !['check','market'].includes(item.code));
     if (!issues.length) {
       cell.appendChild(text(doc, 'span', 'kmc-catalog-correction-hint', '—'));
       return null;
@@ -2517,7 +2525,7 @@
     const issues = Array.isArray(row.issues) ? row.issues : [];
     const correctionIssues = issues.filter(code => code !== 'approval_pending');
     const correctionsTitle = text(doc, 'strong', 'kmc-catalog-inspector-section',
-      correctionIssues.length ? 'À compléter' : 'Modifier la catégorie');
+      correctionIssues.length ? 'À compléter' : 'Catégorie boutique');
     panel.insertBefore(correctionsTitle, panel.querySelector('[data-catalog-action-dock]'));
     const list = doc.createElement('ul');
     list.className = 'kmc-catalog-inspector-issues';
@@ -2967,13 +2975,53 @@
         const actionCell = doc.createElement('td');
         actionCell.className = 'kmc-catalog-action-cell';
         actionCell.setAttribute('data-label', 'Consulter');
-        if (row.work_status !== 'catalog_approved') {
-          actionCell.setAttribute('data-label', 'Corriger');
+        const alreadyApproved = ['catalog_approved','catalog_approved_inactive'].includes(row.work_status);
+        if (!alreadyApproved) {
+          const readyCandidate = row.work_status === 'approval_pending' &&
+            row.lifecycle_status === 'candidate' && row.is_active !== true;
+          const hasMissingContent = (row.issues || []).some(issue => issue !== 'approval_pending');
           const main = makeButton(doc,
-            'Compléter', 'open-catalog-inspector');
+            readyCandidate ? 'Finaliser' : hasMissingContent ? 'Compléter' : 'Voir fiche',
+            'open-catalog-inspector');
           main.className = 'kmc-workspace-action kmc-catalog-primary-action';
-          main.addEventListener('click', () =>
-            openProductInspector(context, slot, doc, row, categories));
+          actionCell.setAttribute('data-label', readyCandidate ? 'Finaliser' :
+            hasMissingContent ? 'Compléter' : 'Consulter');
+          main.addEventListener('click', async () => {
+            if (!readyCandidate) {
+              openProductInspector(context, slot, doc, row, categories);
+              return;
+            }
+            // Un geste de finalisation unique, sans second bouton Enregistrer
+            // ou Confirmer. Le backend contrôle tous ses invariants avant écriture.
+            main.disabled = true;
+            try {
+              const diagnosis = await jsonRequest(context.fetch,
+                ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref),
+                { method: 'GET' });
+              if (diagnosis?.phase !== 'catalog_approval' ||
+                  diagnosis?.certification?.certified !== true) {
+                const reasons = (diagnosis?.certification?.reasons || [])
+                  .map(certificationReasonLabel);
+                openProductInspector(context, slot, doc, row, categories);
+                const panel = slot.querySelector('[data-catalog-product-inspector]');
+                const feedback = panel?.querySelector('.kmc-catalog-inspector-feedback');
+                if (feedback) feedback.textContent = reasons.length
+                  ? 'Encore nécessaire : ' + reasons.join(' · ')
+                  : 'La certification n’est pas encore acquise.';
+                return;
+              }
+              const approved = await jsonRequest(context.fetch,
+                ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/approve',
+                { method: 'POST' });
+              if (!approved?.ok) throw new Error('Approbation non confirmée.');
+              await context.reload();
+              setFeedback(context.root, row.product_ref +
+                ' · Catalogue conforme et approuvé. Aucun marché publié.', 'positive');
+            } catch (error) {
+              setFeedback(context.root, 'Finalisation impossible : ' +
+                actionErrorMessage(error), 'critical');
+            } finally { main.disabled = false; }
+          });
           actionCell.appendChild(main);
           statusChip.addEventListener('click', () => main.click());
           tr.appendChild(actionCell);

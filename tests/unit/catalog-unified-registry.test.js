@@ -277,3 +277,31 @@ test('diagnostic absent ou incohérent n’invente jamais un montant', () => {
     economic_test_health_status:'unknown',
   });
 });
+
+test('produit réparé et désactivé : un état validé ou une revue, jamais une correction vide',async()=>{
+  const q=executor([],[]);
+  await listUnified({},q);
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("WHEN u.lifecycle_status='active' AND u.approval_audited");
+  expect(sql).toContain("THEN 'catalog_approved_inactive'");
+  expect(sql).toContain("WHEN u.lifecycle_status='active' THEN 'approval_to_review'");
+  expect(sql).toContain("('catalog_approved','catalog_approved_inactive') THEN 'validated'");
+  expect(sql).toContain("'approval_to_review','sourcing_review') THEN 'review'");
+  const approved=publicRow({
+    ...canonical,source_ready:true,taxonomy_ready:true,editorial_ready:true,
+    active_media_count:1,lifecycle_status:'active',is_active:false,
+    approval_audited:true,work_status:'catalog_approved_inactive',operator_group:'validated'
+  });
+  expect(approved.issues).toEqual([]);
+  expect(approved).toMatchObject({
+    work_status:'catalog_approved_inactive',operator_group:'validated',is_active:false,
+    approval_audited:true
+  });
+  const pendingProof=publicRow({
+    ...canonical,source_ready:true,taxonomy_ready:true,editorial_ready:true,
+    active_media_count:1,lifecycle_status:'active',is_active:false,
+    approval_audited:false,work_status:'approval_to_review',operator_group:'review'
+  });
+  expect(pendingProof.issues).toEqual([]);
+  expect(pendingProof).toMatchObject({work_status:'approval_to_review',operator_group:'review'});
+});
