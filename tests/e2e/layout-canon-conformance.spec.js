@@ -343,6 +343,35 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
     }
   });
 
+  test('Action Center: compteurs compacts visibles avant la file à traiter', async ({ page }) => {
+    await page.goto(`${ORIGIN}/admin/action-center`);
+    const strip = page.locator('.kmc-action-center > .kmc-metric-strip');
+    const firstSection = page.locator('.kmc-action-center > .kmc-section').first();
+    await expect(strip).toBeVisible();
+    await expect(firstSection).toBeVisible();
+    await expect(strip.locator('[data-metric-key]')).toHaveCount(4);
+    await expect(strip.locator('[data-metric-key]').nth(0)).toHaveAttribute('data-metric-key', 'urgent');
+    await expect(strip.locator('[data-metric-key]').nth(1)).toHaveAttribute('data-metric-key', 'warning');
+
+    const placement = await page.evaluate(() => {
+      const parent = document.querySelector('.kmc-action-center');
+      const hero = parent.querySelector(':scope > .kmc-workspace-header').getBoundingClientRect();
+      const attention = parent.querySelector(':scope > .kmc-metric-strip').getBoundingClientRect();
+      const queue = parent.querySelector(':scope > .kmc-section').getBoundingClientRect();
+      const cards = [...parent.querySelectorAll(':scope > .kmc-metric-strip > .kmc-metric-card')];
+      return {
+        attentionTop: attention.top,
+        attentionBottom: attention.bottom,
+        heroBottom: hero.bottom,
+        queueTop: queue.top,
+        cardHeights: cards.map(card => card.getBoundingClientRect().height),
+      };
+    });
+    expect(placement.attentionTop).toBeGreaterThan(placement.heroBottom);
+    expect(placement.attentionBottom).toBeLessThan(placement.queueTop);
+    expect(Math.max(...placement.cardHeights)).toBeLessThanOrEqual(76);
+  });
+
   test('les quatre écrans produisent une capture de référence au même viewport', async ({ page }, testInfo) => {
     for (const route of ['/admin/pilotage','/admin/action-center','/admin/commerce','/admin/operations']) {
       await geometry(page, route);
