@@ -218,13 +218,23 @@
 
   function render(doc, rootNode, payload, state) {
     rootNode.textContent = '';
-    const page = el(doc, 'div', 'kmc-ord');
+    // Use the same Hero authority and illustration as the other Canonical
+    // dashboards. This page used to create an unstyled h2 and silently lost
+    // the orders-specific illustration, despite its existing CSS asset.
+    const page = el(doc, 'div', 'kmc-ord kmc-domain-cockpit');
     page.setAttribute('data-canonical-orders', '');
-    const head = el(doc, 'header', 'kmc-ord-head');
-    head.appendChild(el(doc, 'h2', 'kmc-ord-title', 'Commandes'));
-    head.appendChild(el(doc, 'p', 'kmc-ord-sub', 'Ce qui attend une action, commande par commande. Les actions se font dans Order 360 et Opérations.'));
+    page.setAttribute('data-dashboard-id', 'orders');
+    page.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
+    const head = el(doc, 'header', 'kmc-dashboard-header kmc-ord-head');
+    head.setAttribute('data-dashboard-role', 'hero');
+    head.appendChild(el(doc, 'p', 'canonical-eyebrow', 'COMMERCE · COMMANDES'));
+    head.appendChild(el(doc, 'h1', 'kmc-dashboard-title', 'Commandes'));
+    head.appendChild(el(doc, 'p', 'kmc-dashboard-description',
+      'Retrouvez les commandes à suivre et identifiez les prochaines actions. Ouvrez le dossier 360 pour comprendre une commande ; l’exécution reste dans le module métier responsable.'));
     page.appendChild(head);
-    page.appendChild(renderKpis(doc, payload));
+    const priorities = renderKpis(doc, payload);
+    priorities.setAttribute('data-dashboard-role', 'attention');
+    page.appendChild(priorities);
 
     const rows = buildRows(payload);
     const visible = rows.filter(r => state.tab === 'all' || r.queues.includes(state.tab));
@@ -280,11 +290,13 @@
     }
     main.appendChild(listBox);
     main.appendChild(renderDetail(doc, selected));
+    main.setAttribute('data-dashboard-role', 'primary');
     page.appendChild(main);
 
     const foot = el(doc, 'div', 'kmc-ord-foot');
     foot.appendChild(renderFunnel(doc, payload));
     foot.appendChild(renderSignals(doc, payload));
+    foot.setAttribute('data-dashboard-role', 'secondary');
     page.appendChild(foot);
     rootNode.appendChild(page);
   }
