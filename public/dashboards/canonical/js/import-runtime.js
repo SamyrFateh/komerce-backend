@@ -555,7 +555,10 @@
     const query = new URLSearchParams(global.location.search);
     const run = query.get('run') || null;
     const rawView = query.get('view') || 'overview';
-    const requestedView = LEGACY_VIEWS[rawView] || rawView;
+    // Historical handoff was a read-only duplicate of Catalogue. Preserve mock-only
+    // technical fixtures, but make every real operator deep link land on Suivi.
+    const requestedView = rawView === 'handoff' && global.__KOMERCE_LEGACY_PROOF__ !== true
+      ? 'overview' : (LEGACY_VIEWS[rawView] || rawView);
     const kind = query.get('kind');
     return {
       run,
@@ -2028,8 +2031,6 @@
 
   // The one operator screen. Technically detailed KIR drill-downs remain available
   // for evidence, without becoming competing navigation tabs or writer owners.
-  let sourcesExpanded = false;
-  let passagesExpanded = false;
   function unifiedSourcingIssues(run) {
     const items = Array.isArray(run?.action_items) ? run.action_items : [];
     const count = num(run?.accounting?.action_required);
@@ -2070,7 +2071,7 @@
         <small>${esc(view.label)}</small></li>`;
     }).join('');
     return `<details class="kir-one-panel" id="sourcing-passages" data-unified-passages
-      ${passagesExpanded || params().view === 'passages' ? 'open' : ''}>
+      ${params().view === 'passages' ? 'open' : 'hidden'}>
       <summary><strong>Passages</strong><span>Historique des acquisitions (${list.length} derniers affichés)</span></summary>
       <div class="kir-one-panel-body">
         <ul class="kir-one-passage-list">${rows || '<li>Aucun passage enregistré.</li>'}</ul>
@@ -2086,9 +2087,9 @@
     const sources = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
     const sourceRequests = Array.isArray(payload?.source_requests) ? payload.source_requests : [];
     const active = sources.filter(source => source.state === 'active').length;
-    const open = sourcesExpanded || params().view === 'sources' || Boolean(wizardState || manageState || credentialsState);
+    const open = params().view === 'sources';
     return `<details class="kir-one-panel" id="sourcing-sources" data-unified-sources
-      ${open ? 'open' : ''}>
+      ${open ? 'open' : 'hidden'}>
       <summary><strong>Sources & imports</strong>
         <span>${sources.length} configurée${sources.length > 1 ? 's' : ''} · ${active} active${active > 1 ? 's' : ''} · gérer les acquisitions</span></summary>
       <div class="kir-one-panel-body">
@@ -2105,7 +2106,18 @@
       </div></details>`;
   }
 
+  function unifiedSourcingTabs(run, view) {
+    const active = ['sources', 'passages'].includes(view) ? view : 'overview';
+    const labels = [['overview', 'Suivi'], ['sources', 'Sources'], ['passages', 'Passages']];
+    return `<nav class="kir-one-tabs" data-sourcing-tabs aria-label="Onglets Sourcing Live">
+      ${labels.map(([key,label]) => `<a href="${urlFor(run?.run_ref, key)}"
+        data-cockpit-nav data-sourcing-tab="${key}" ${active === key ? 'aria-current="page"' : ''}>
+        ${label}</a>`).join('')}
+    </nav>`;
+  }
+
   function unifiedSourcingDashboard(run, payload) {
+    const view = params().view;
     const status = run ? sourcingStatusView(run) : null;
     const facts = run ? sourcingOutcome(run) : null;
     const handoff = facts?.handoff;
@@ -2121,8 +2133,7 @@
           <div><strong>${handoff?.catalogued ?? 0}</strong><span>Remis au Catalogue</span></div>
         </div>
         ${handoff && handoff.remaining > 0 ? `<p class="kir-one-handoff">
-          ${handoff.remaining} à remettre automatiquement au Catalogue — état à vérifier.
-          <a href="${urlFor(run.run_ref, 'handoff')}" data-cockpit-nav>Examiner la remise →</a></p>` : ''}
+          ${handoff.remaining} produit${handoff.remaining > 1 ? 's' : ''} en attente de remise automatique au Catalogue. Aucune correction à effectuer ici.</p>` : ''}
         ${unifiedSourcingIssues(run)}
       </section>`
       : '<section class="kir-one-run"><h2>Aucun passage enregistré</h2><p>Configurez une source, puis lancez un import.</p></section>';
@@ -2130,8 +2141,9 @@
       <header class="kir-one-hero"><div><span class="kir-eyebrow">SOURCING</span>
         <h1>Sourcing Live</h1><p>Acquérir des produits et les remettre au Catalogue global.</p></div>
         <a href="/admin/workspaces/catalog">Catalogue global →</a></header>
-      <main class="kir-one-body">
-        ${summary}
+      ${unifiedSourcingTabs(run, view)}
+      <main class="kir-one-body" data-sourcing-active-view="${view}">
+        <div class="kir-one-pane" data-sourcing-panel="overview" ${view === 'overview' ? '' : 'hidden'}>${summary}</div>
         ${unifiedSourceManagement(run, payload)}
         ${unifiedPassageHistory(run, payload)}
       </main></section>`;
@@ -2177,10 +2189,6 @@
     bindCredentials(root);
     bindActionList(root);
     bindPassages(root, payload);
-    root.querySelectorAll?.('[data-unified-sources]').forEach(node =>
-      node.addEventListener('toggle', () => { sourcesExpanded = Boolean(node.open); }));
-    root.querySelectorAll?.('[data-unified-passages]').forEach(node =>
-      node.addEventListener('toggle', () => { passagesExpanded = Boolean(node.open); }));
     focusDrill(root);
   }
 
@@ -3030,14 +3038,20 @@
     if (!options.root) throw new Error('canonical_import_runtime_root_missing');
     viewer = options.user || null;
     mountedRoot = options.root;
+    if (global.__KOMERCE_LEGACY_PROOF__ !== true) {
+      const locationQuery = new URLSearchParams(global.location?.search || '');
+      if (locationQuery.get('view') === 'handoff') {
+        locationQuery.delete('view');
+        const next = '/admin/import-runtime' + (locationQuery.toString() ? '?' + locationQuery.toString() : '');
+        global.history?.replaceState?.({}, '', next);
+      }
+    }
     lastPayload = null;
     // Invalide toute lecture encore en vol d'un montage précédent.
     refreshEpoch += 1;
     activationState = null;
     firstImportState = null;
     closeCategoryDialog();
-    sourcesExpanded = false;
-    passagesExpanded = false;
     prepareState = null;
     wizardState = null;
     stopActivationPolling();
