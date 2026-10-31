@@ -101,7 +101,7 @@
     const client = payload.client || {};
     const header = doc.createElement('header');
     header.className = 'kmc-entity-header';
-    header.appendChild(text(doc, 'span', 'kmc-entity-kicker', 'CLIENT 360'));
+    header.appendChild(text(doc, 'span', 'kmc-entity-kicker', 'DOSSIER CLIENT'));
     header.appendChild(text(doc, 'h1', 'kmc-entity-title', client.name || (client.phone ? (revealContacts ? client.phone : maskPhone(client.phone)) : 'Client')));
     header.appendChild(text(
       doc,
@@ -110,18 +110,8 @@
       [client.phone ? (revealContacts ? client.phone : maskPhone(client.phone)) : null, client.country, marketLabel(payload.scope)].filter(Boolean).join(' · ')
     ));
 
-    const nav = doc.createElement('nav');
-    nav.className = 'kmc-entity-nav';
-    [
-      ['/admin/commerce', 'Commerce'],
-      ['/admin/pilotage', 'Pilotage'],
-      ['/admin/operations', 'Opérations'],
-    ].forEach(([href, label]) => {
-      const link = text(doc, 'a', 'kmc-entity-nav-link', label);
-      link.setAttribute('href', href);
-      nav.appendChild(link);
-    });
-    header.appendChild(nav);
+    // The shared shell owns global destinations. Keep only contact privacy
+    // controls on the client dossier, never a second global navigation.
     if ((client.phone || client.email) && typeof onToggleContacts === 'function') {
       const toggle = text(doc, 'button', 'kmc-entity-nav-link', revealContacts ? 'Masquer les coordonnées' : 'Afficher les coordonnées');
       toggle.type = 'button';
@@ -167,6 +157,7 @@
     const scope = payload.scope || {};
     const security = payload.security || { visibility: 'restricted' };
 
+    const wasExpanded = Boolean(rootNode.querySelector?.('.kmc-entity-extras')?.open);
     rootNode.className = 'kmc-admin-shell kmc-entity-shell';
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload, revealContacts, () => renderPayload(rootNode, ui, doc, payload, !revealContacts)));
@@ -227,7 +218,17 @@
       emptyText: 'Aucune commande visible.',
     });
 
-    renderTableSection(rootNode, ui, {
+    const more = doc.createElement('details');
+    more.className = 'kmc-entity-extras';
+    more.open = wasExpanded;
+    more.appendChild(text(doc, 'summary', 'kmc-entity-extras-summary',
+      'Informations complémentaires · produits, listes, compte et historique'));
+    const moreContent = doc.createElement('div');
+    moreContent.className = 'kmc-entity-extras-content';
+    more.appendChild(moreContent);
+    rootNode.appendChild(more);
+
+    renderTableSection(moreContent, ui, {
       title: 'Produits les plus achetés',
       description: 'Agrégats préparés côté serveur sur les commandes visibles.',
       columns: [
@@ -248,7 +249,7 @@
     });
 
     if (scope.mode === 'global') {
-      renderTableSection(rootNode, ui, {
+      renderTableSection(moreContent, ui, {
         title: 'Listes partagées',
         description: 'Facette compte globale : non exposée aux opérateurs pays.',
         columns: [
@@ -269,7 +270,7 @@
 
     if (security.visibility === 'global') {
       const account = security.account || {};
-      renderTableSection(rootNode, ui, {
+      renderTableSection(moreContent, ui, {
         title: 'Compte',
         description: 'Visible uniquement avec autorité centrale globale explicite.',
         columns: [{ key: 'champ', label: 'Champ' }, { key: 'valeur', label: 'Valeur' }],
@@ -282,7 +283,7 @@
       });
     }
 
-    renderTableSection(rootNode, ui, {
+    renderTableSection(moreContent, ui, {
       title: 'Timeline',
       description: 'Chronologie unifiée produite côté serveur à partir des facettes autorisées.',
       columns: [
