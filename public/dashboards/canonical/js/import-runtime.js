@@ -2095,7 +2095,11 @@
         ${activationStrip(sources)}
         ${wizardMarkup(sources)}
         <p class="kir-one-note">Importer = créer un nouveau passage KIR. Activer = autoriser l’alimentation automatique.</p>
-        <p class="kir-one-note"><a href="/admin/workspaces/sourcing?mode=partners&tab=suppliers">Administration des partenaires fournisseurs →</a></p>
+        <p class="kir-one-note">
+          <a href="/admin/workspaces/sourcing?mode=manual&tab=imports">Import manuel / CSV →</a>
+          &nbsp;·&nbsp;
+          <a href="/admin/workspaces/sourcing?mode=partners&tab=suppliers">Administration des partenaires →</a>
+        </p>
       </div></details>`;
   }
 
