@@ -924,7 +924,7 @@
           reason: 'Préparation FR manuelle/assistée hors runtime',
         },
         runningMessage: 'Enregistrement de la préparation française…',
-        successMessage: `${row.product_ref} : français enregistré automatiquement. Les autres contrôles restent actifs.`,
+        successMessage: `${row.product_ref} : français enregistré automatiquement sans API IA payante. Les autres contrôles restent actifs.`,
         afterSuccess: finalize ? () => finishCatalogueAfterCorrection(context, row) : null,
       });
     };
