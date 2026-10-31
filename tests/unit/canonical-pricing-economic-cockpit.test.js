@@ -137,6 +137,24 @@ test('familles : colonnes stables et édition contextuelle', () => {
   expect(enhanced).toContain('kmc-economic-family-preview-row');
 });
 
+test('trois colonnes : un libellé, la dernière valeur, une action ou un état lecture seule, sans masque au détail', () => {
+  const js = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
+  const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-atelier-views.css'), 'utf8');
+  const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
+  expect(js).toContain("const preview = el(doc, 'div', 'kmc-economic-family-preview')");
+  expect(js).toContain("item.readOnly");
+  expect(js).toContain("kmc-inline-cost-readonly");
+  expect(js).toContain("readOnlyHint");
+  expect(js).toContain("edit.dataset.editInlineCost");
+  expect(js).toContain("edit.dataset.editStructureCharge");
+  expect(css).toContain('grid-template-columns: minmax(0, 1fr) minmax(80px, auto) 79px;');
+  expect(css).toContain('grid-column: 3;');
+  expect(css).toContain('grid-column: auto;');
+  expect(css).toContain('overflow-x: auto;');
+  expect(index).toContain('pricing-atelier-views.css?v=261031-uniform-3');
+  expect(index).toContain('pricing-economic-cockpit.js?v=261031-uniform-3');
+});
+
 test('ajustements : enregistrement automatique (prix à la validation, coûts par champ), jamais à la frappe ni vide', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
   expect(src).toContain("cockpit.addEventListener('change'");
