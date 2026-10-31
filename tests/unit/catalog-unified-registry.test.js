@@ -305,3 +305,19 @@ test('produit réparé et désactivé : un état validé ou une revue, jamais un
   expect(pendingProof.issues).toEqual([]);
   expect(pendingProof).toMatchObject({work_status:'approval_to_review',operator_group:'review'});
 });
+
+
+test('les cinq handoffs RCT1 désactivés sont exclus par identité croisée, sans masquer les vrais produits',async()=>{
+  const q=executor([],[]);
+  await listUnified({},q);
+  const sql=q.query.mock.calls[1][0];
+  expect(sql).toContain("p.is_active=FALSE AND p.is_available=FALSE");
+  expect(sql).toContain("sc.supplier_name='RCT1-FICTIF-recette'");
+  for(let i=1;i<=5;i++) {
+    expect(sql).toContain("('KSC-00018"+(i-1)+"','RCT1-P"+i+"')");
+  }
+  expect(sql).toContain('WHERE NOT COALESCE((');
+  expect(sql).toContain('), FALSE)');
+  expect(sql).toContain('UNION ALL');
+  expect(sql).not.toContain("WHERE p.is_active=TRUE");
+});
