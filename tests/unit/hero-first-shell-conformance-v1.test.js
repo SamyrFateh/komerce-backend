@@ -14,20 +14,23 @@ const html = fs.readFileSync(
 );
 
 describe('Hero-first shell conformance v1', () => {
-  test('les dashboards overview démarrent sur le Hero, sans rangée N2 au-dessus', () => {
+  test('les dashboards overview ont une rangée de recherche au-dessus du Hero, sans onglets N2', () => {
     expect(css).toContain('body.kmc-shell-v4.kmc-hero-first');
     expect(css).not.toContain(':is([data-kmc-surface=');
     expect(css).toContain('> .kmc-admin-domain-tabs');
     expect(css).toContain('display: none');
-    expect(css).toContain('> .kmc-admin-topbar'); 
-    expect(css).toContain('position: absolute');
+    expect(css).toContain('> .kmc-admin-topbar');
+    expect(css).toMatch(/> \.kmc-admin-topbar \{\s*position: relative;/);
+    expect(css).not.toMatch(/> \.kmc-admin-topbar \{\s*position: absolute;/);
   });
 
-  test('la recherche et le marché appartiennent visuellement à la bande Hero', () => {
+  test('la recherche et le marché restent visibles et séparés du Hero', () => {
     expect(css).toContain('--kmc-hero-search-w: 280px');
     expect(css).toContain('--kmc-hero-market-w: 240px');
     expect(css).toContain('> .kmc-admin-topbar .kmc-admin-market-select');
-    expect(css).toContain('top: var(--kmc-hero-controls-top)');
+    expect(css).toContain('height: 46px');
+    expect(css).toContain('margin: 0 auto');
+    expect(css).toContain('width: min(100%, var(--kmc-layout-max, 1680px))');
     expect(css).toContain('[data-dashboard-role="hero"]');
   });
 

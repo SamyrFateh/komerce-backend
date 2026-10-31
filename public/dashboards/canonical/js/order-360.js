@@ -67,7 +67,7 @@
     const order = payload.order;
     const header = doc.createElement('header');
     header.className = 'kmc-entity-header';
-    header.appendChild(text(doc, 'span', 'kmc-entity-kicker', 'ORDER 360'));
+    header.appendChild(text(doc, 'span', 'kmc-entity-kicker', 'DOSSIER COMMANDE'));
     header.appendChild(text(doc, 'h1', 'kmc-entity-title', order.reference));
     header.appendChild(text(
       doc,
@@ -78,23 +78,21 @@
         .join(' · ')
     ));
 
-    const nav = doc.createElement('nav');
-    nav.className = 'kmc-entity-nav';
-    const links = [
-      ['/admin/operations', 'Opérations'],
-      ['/admin/pilotage', 'Pilotage'],
-      ['/admin/finance', 'Finance'],
-    ];
+    // Navigation transverse belongs to the shared sidebar. This dossier links
+    // only to an entity actually related to the order.
     const clientPhone = order.customer && order.customer.phone;
     if (clientPhone) {
-      links.splice(1, 0, [contextualHref(`/admin/clients/${encodeURIComponent(clientPhone)}`, `/admin/orders/${encodeURIComponent(order.reference)}`, 'Retour à la commande'), 'Client 360']);
-    }
-    links.forEach(([href, label]) => {
-      const link = text(doc, 'a', 'kmc-entity-nav-link', label);
-      link.setAttribute('href', href);
+      const nav = doc.createElement('nav');
+      nav.className = 'kmc-entity-nav';
+      const link = text(doc, 'a', 'kmc-entity-nav-link', 'Client 360');
+      link.setAttribute('href', contextualHref(
+        `/admin/clients/${encodeURIComponent(clientPhone)}`,
+        `/admin/orders/${encodeURIComponent(order.reference)}`,
+        'Retour à la commande'
+      ));
       nav.appendChild(link);
-    });
-    header.appendChild(nav);
+      header.appendChild(nav);
+    }
     return header;
   }
 
@@ -229,7 +227,8 @@
 
   function renderThread(rootNode, doc, payload) {
     const steps = threadSteps(payload);
-    if (!steps.length) return;
+    // A single undated current status adds no evidence beyond the header.
+    if (!steps.length || (steps.length === 1 && !(Array.isArray(payload.history) && payload.history.length))) return;
     const section = doc.createElement('section');
     section.className = 'kmc-order-thread';
     section.id = 'parcours';
@@ -393,7 +392,15 @@
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-entity-metrics';
     rootNode.appendChild(metrics);
-    ui.MetricStrip.render(metrics, { items: metricItems(payload) });
+    // Compact first view; critical incidents and missing assignment never disappear.
+    const summary = payload.summary || {};
+    const headline = metricItems(payload).filter(item =>
+      ['status', 'payment', 'total', 'parcels'].includes(item.key)
+      || (item.key === 'incidents' && Number(summary.open_incidents) > 0)
+      || (item.key === 'assigned' && Number(summary.items) > 0 &&
+          Number(summary.items_assigned) < Number(summary.items))
+    );
+    ui.MetricStrip.render(metrics, { items: headline });
 
     const controlPosition = controlPositionItem(payload);
     if (controlPosition) {
@@ -444,10 +451,23 @@
       emptyText: 'Aucun article.',
     });
 
-    renderCosts(rootNode, ui, doc, payload);
+    const more = doc.createElement('details');
+    more.className = 'kmc-entity-extras';
+    // Costs and other deep-link destinations must be reachable after refresh.
+    const currentHash = String(globalThis.location?.hash || '');
+    more.open = ['#couts'].includes(currentHash);
+    const summaryLabel = text(doc, 'summary', 'kmc-entity-extras-summary',
+      'Informations complémentaires · coûts, achats, colis, historique et documents');
+    more.appendChild(summaryLabel);
+    const moreContent = doc.createElement('div');
+    moreContent.className = 'kmc-entity-extras-content';
+    more.appendChild(moreContent);
+    rootNode.appendChild(more);
+
+    renderCosts(moreContent, ui, doc, payload);
 
     const products = doc.createElement('section');
-    rootNode.appendChild(products);
+    moreContent.appendChild(products);
     ui.AlertPanel.render(products, {
       title: 'Produits de la commande',
       emptyText: 'Aucune référence produit navigable.',
@@ -456,7 +476,7 @@
 
     if (payload.purchasing) {
       const purchasing = doc.createElement('section');
-      rootNode.appendChild(purchasing);
+      moreContent.appendChild(purchasing);
       ui.AlertPanel.render(purchasing, {
         title: 'Achats fournisseurs',
         emptyText: 'Aucun bon de commande fournisseur lié à cette commande.',
@@ -464,7 +484,7 @@
       });
     }
 
-    renderTableSection(rootNode, ui, doc, {
+    renderTableSection(moreContent, ui, doc, {
       title: 'Colis',
       description: 'Colis actifs rattachés à cette commande.',
       columns: [
@@ -487,7 +507,7 @@
     });
 
     const alerts = doc.createElement('section');
-    rootNode.appendChild(alerts);
+    moreContent.appendChild(alerts);
     ui.AlertPanel.render(alerts, {
       title: 'Incidents',
       emptyText: 'Aucun incident sur cette commande.',
@@ -498,7 +518,7 @@
       })),
     });
 
-    renderTableSection(rootNode, ui, doc, {
+    renderTableSection(moreContent, ui, doc, {
       title: 'Historique de statut',
       columns: [
         { key: 'date', label: 'Date' },
@@ -510,7 +530,7 @@
       emptyText: 'Aucun historique de statut.',
     });
 
-    renderTableSection(rootNode, ui, doc, {
+    renderTableSection(moreContent, ui, doc, {
       title: 'Scans logistiques',
       columns: [
         { key: 'date', label: 'Date' },
@@ -522,7 +542,7 @@
       emptyText: 'Aucun scan.',
     });
 
-    renderTableSection(rootNode, ui, doc, {
+    renderTableSection(moreContent, ui, doc, {
       title: 'Notifications client',
       columns: [
         { key: 'date', label: 'Date' },
@@ -534,7 +554,7 @@
       emptyText: 'Aucune notification client.',
     });
 
-    renderTableSection(rootNode, ui, doc, {
+    renderTableSection(moreContent, ui, doc, {
       title: 'Factures & documents',
       columns: [
         { key: 'type', label: 'Type' },
@@ -549,7 +569,7 @@
       emptyText: 'Aucun document.',
     });
 
-    renderTableSection(rootNode, ui, doc, {
+    renderTableSection(moreContent, ui, doc, {
       title: 'Commentaires terrain',
       columns: [
         { key: 'date', label: 'Date' },

@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-5');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-hero-1');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -47,15 +47,17 @@ test('Aucune donnée fictive: filtres rapides conservent statuts serveur et dél
   expect(ui).toContain("row.work_status");
 });
 
-test('V3 : trois rubriques exclusives et aucun panneau sous le registre', () => {
+test('Catalogue global : registre et taxonomie uniquement, ancien assortiment retiré sans perdre le passage marché', () => {
   expect(ui).toContain("['registry', 'Registre produits']");
-  expect(ui).toContain("['assortment', 'Assortiment approuvé']");
   expect(ui).toContain("['taxonomy', 'Taxonomie boutique']");
+  expect(ui).not.toContain("['assortment', 'Assortiment approuvé']");
   const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
-  expect(render).toContain("context.catalogTab === 'assortment'");
   expect(render).toContain("context.catalogTab === 'taxonomy'");
-  expect(render).toContain('renderCommercial(rootNode, ui, doc, payload)');
-  expect(render).toContain('renderTaxonomy(rootNode, ui, doc, payload, context)');
+  expect(render).toContain('renderFocusedHandoff(rootNode, ui, doc, payload)');
+  expect(render).toContain('renderProducts(rootNode, ui, doc, payload, context)');
+  expect(render).not.toContain('renderCommercial(');
+  expect(ui).toContain("['registry', 'taxonomy'].includes");
+  expect(ui).not.toContain('function renderCommercial(');
   expect(render).not.toContain('taxonomyPanel');
   expect(ui).not.toContain('kmc-catalog-commercial-panel');
 });
@@ -82,9 +84,16 @@ test('V3 : indicateurs affichés sur page seulement, sans confondre global et li
 
 test('Catalogue actionnable : en-tête compact, onglets et filtres, sans navigation ni KPI passifs', () => {
   const header = ui.slice(ui.indexOf('function createHeader('), ui.indexOf('function createSection('));
-  const products = ui.slice(ui.indexOf('function renderProducts('), ui.indexOf('function renderCommercial('));
+  const products = ui.slice(ui.indexOf('function renderProducts('), ui.indexOf('function renderTaxonomy('));
   const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
   expect(header).toContain('kmc-catalog-compact-header');
+  expect(header).toContain("header.setAttribute('data-dashboard-role', 'hero')");
+  expect(header).toContain("'CATALOGUE GLOBAL'");
+  expect(header).toContain('Prix et mise en vente : Catalogue marché.');
+  expect(css).toContain('.kmc-catalog-compact-header[data-dashboard-role="hero"]');
+  expect(css).toContain('commerce-hero-gold.svg');
+  expect(css).toContain('height: var(--kmc-layout-hero-h, 150px)');
+
   expect(header).toContain('if (refinery) {');
   expect(products).not.toContain('kmc-catalog-toolbar-links');
   expect(products).not.toContain('Ouvrir le Sourcing');
@@ -199,7 +208,7 @@ test('Dossier opérateur : correction source accessible sans chiffres économiqu
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261031-6');
+  expect(index).toContain('catalog-workspace.js?v=261031-hero-1');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -255,8 +264,8 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261031-6');
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-5');
+  expect(index).toContain('catalog-workspace.js?v=261031-hero-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-hero-1');
 });
 
 test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
@@ -271,7 +280,7 @@ test('Validation Catalogue : la préparation française et le contrôle sont dis
   expect(ui).toContain("ENDPOINT + '/approval/'");
   expect(ui).toContain('Validation refusée : ');
   expect(ui).not.toContain("status: 'À valider en Raffinerie'");
-  expect(index).toContain('catalog-workspace.js?v=261031-6');
+  expect(index).toContain('catalog-workspace.js?v=261031-hero-1');
 });
 
 test('Examiner V4 : aucun double Enregistrer/Confirmer visible et conformité garantie par serveur', () => {
@@ -287,4 +296,15 @@ test('Examiner V4 : aucun double Enregistrer/Confirmer visible et conformité ga
   expect(ui).toContain("correctionIssues = issues.filter(code => code !== 'approval_pending')");
   expect(css).toContain(".kmc-catalog-complementary");
   expect(css).toContain(".kmc-catalog-fr-footer-buttons [hidden]");
+});
+
+test('Registre et Taxonomie réutilisent le même Hero, sans reconstituer un second bandeau', () => {
+  const header = ui.slice(ui.indexOf('function createHeader('), ui.indexOf('function createSection('));
+  const render = ui.slice(ui.indexOf('function renderPayload('), ui.indexOf('async function mount('));
+  const oneHeader = 'rootNode.appendChild(createHeader(doc, refinery));';
+  expect(render).toContain(oneHeader);
+  expect(render.indexOf(oneHeader)).toBeLessThan(render.indexOf('renderCatalogTabs(rootNode, doc, context)'));
+  expect(render.indexOf(oneHeader)).toBeLessThan(render.indexOf("context.catalogTab === 'taxonomy'"));
+  expect(header).toContain("if (!refinery) header.setAttribute('data-dashboard-role', 'hero')");
+  expect(header).not.toContain('kmc-catalog-decision-overview');
 });

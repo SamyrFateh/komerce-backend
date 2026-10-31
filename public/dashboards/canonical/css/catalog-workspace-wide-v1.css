@@ -1487,3 +1487,86 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
   background: #e7f0ff;
   font-weight: 700;
 }
+
+/* Single illustrated Catalogue Hero (Registre + Taxonomie), independently of Raffinerie.
+ * The universal search is in a separate row ABOVE this header, never over the illustration. */
+body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+ .kmc-operations-workspace > .kmc-catalog-compact-header[data-dashboard-role="hero"] {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  height: var(--kmc-layout-hero-h, 150px);
+  min-height: var(--kmc-layout-hero-h, 150px);
+  max-height: none;
+  padding: 20px clamp(240px, 32%, 460px) 20px 28px;
+  border: 1px solid #c8dcf8;
+  border-radius: 16px;
+  background: linear-gradient(105deg, #fff 0%, #fff 55%, #f1f7ff 100%);
+  box-shadow: 0 5px 16px rgba(7, 26, 61, .045);
+  overflow: hidden;
+}
+body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+ .kmc-operations-workspace > .kmc-catalog-compact-header[data-dashboard-role="hero"]::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 0 auto;
+  width: min(46%, 610px);
+  opacity: 1;
+  background: url('/dashboards/canonical/assets/commerce-hero-gold.svg') right center / auto 100% no-repeat;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 25%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 25%);
+}
+body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+ .kmc-catalog-compact-header[data-dashboard-role="hero"] > div:first-child {
+  display: block;
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+ .kmc-catalog-compact-header[data-dashboard-role="hero"] .kmc-workspace-kicker {
+  display: inline-flex;
+  margin-bottom: 10px;
+  padding: 5px 9px;
+}
+body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+ .kmc-catalog-compact-header[data-dashboard-role="hero"] .kmc-workspace-title {
+  margin: 0 0 7px;
+  font-size: clamp(26px, 2.1vw, 34px);
+  line-height: 1.12;
+}
+body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+ .kmc-catalog-compact-header[data-dashboard-role="hero"] .kmc-workspace-subtitle {
+  margin: 0;
+  max-width: 640px;
+  color: #526681;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+ .kmc-catalog-compact-header[data-dashboard-role="hero"] .kmc-workspace-feedback:empty {
+  display: none;
+}
+@media (max-width: 1100px) {
+  body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+   .kmc-operations-workspace > .kmc-catalog-compact-header[data-dashboard-role="hero"] {
+    padding-right: clamp(170px, 30%, 300px);
+  }
+}
+@media (max-width: 760px) {
+  body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+   .kmc-operations-workspace > .kmc-catalog-compact-header[data-dashboard-role="hero"] {
+    height: auto;
+    min-height: 150px;
+    padding: 22px 24px;
+  }
+  body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
+   .kmc-operations-workspace > .kmc-catalog-compact-header[data-dashboard-role="hero"]::before {
+    opacity: .18;
+  }
+}
