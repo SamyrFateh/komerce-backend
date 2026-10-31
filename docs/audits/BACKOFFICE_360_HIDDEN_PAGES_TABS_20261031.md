@@ -88,3 +88,30 @@ Trajet : `/admin/orders` → sélectionner commande → `/admin/orders/:referenc
 - Zéro mutation depuis le navigateur d'audit. Une vue 360 ne change jamais paiement, prix, statut, produit ou stock.
 - Une entité = un dossier ; une action = un propriétaire ; un statut = une seule source serveur.
 - Aucun GO visuel sans la **capture Chromium authentifiée** sur le SHA réellement déployé.
+
+
+## 7. Coordination explicite avec les chantiers simultanés (état GitHub du 31/10/2026)
+
+**Ordre d'intégration : code courant `main` → branches métier en cours → navigation partagée → fiches 360 → Chromium.**
+Ce document n'autorise aucune réécriture des workspaces métier déjà décidés.
+
+| Domaine | Référence vérifiée | Contrat gelé / précaution |
+|---|---|---|
+| Catalogue marché | PR #3185 fusionnée ; PR #3189 (droits Admin) fusionnée | Prix local, corridor, plancher et interrupteur publication décidés par marché. Ne pas déplacer ces actions vers Product 360, Catalogue global ou Moteur économique. |
+| Sourcing → Raffinerie → Catalogue global | PR #3204 fusionnée, `docs/contract/SOURCING_CATALOGUE_MASTER_20261031.md` fait autorité | Une correction produit au Catalogue, Raffinerie diagnostic uniquement, Sourcing propriétaire des faits source. Ne pas ressusciter une file Raffinerie ni des éditions concurrentes. |
+| Sourcing Live — navigation actuellement travaillée | Branche `fix/sourcing-live-actions-navigation-20261031`, divergente de `main`, touche `navigation-policy-v4.js` et `import-runtime.js` | Lire `docs/audits/SOURCING_LIVE_UX_AUDIT_20261031.md` sur cette branche ; sa cible est Sources / Passages / détail KIR (Suivi), jamais sept onglets. **Ne pas réécrire son menu dans cette PR 360.** Pas de commande de source depuis un KIR historique. |
+| Catalogue — édition de catégorie | Branche `fix/catalogue-economic-category-direct-editor-20261031`, divergente, touche `catalog-workspace.js` et `index.html` | Laisser au Catalogue maître la correction contextuelle des catégories ; pas de doublon dans Product 360. Rebaser ou intégrer avant tout changement au shell commun. |
+| Moteur économique | PR #3191, #3206, #3213 et #3217 fusionnées ; PR #3220 ouverte **draft** | Préserver les **trois colonnes non superposées**, édition en ligne de la charge concernée, dernière valeur visible, provenance groupe/marché, N3 audité. PR #3220 touche `index.html` / CSS / JS pricing / routes et schéma ; **éviter ces fichiers** depuis une branche navigation. |
+| Hub/Relais | cockpits et workspaces distincts dans le runtime ; parcours physique/QR en cours de conception métier | Conserver les gestes physiques et preuves de transition. Une refonte du shell ne fusionne pas les services ni leurs droits. La décision de supprimer le domaine `Live` est **suspendue**, pas acquise, tant que les parcours Hub/Relais/Sourcing ne sont pas vérifiés. |
+| Audit 360 | PR #3221 uniquement documentaire ; audit Chromium staging #3222 déclenché, résultat non encore attesté | Premier lot exécutable : Order 360 et Client 360, **sans éditer** `pricing-economic-cockpit.js`, `catalog-workspace.js`, `market-catalog.js`, `import-runtime.js`. Le fichier `navigation-policy-v4.js` ne doit être modifié qu'après intégration/rebase de la branche Sourcing Live. |
+
+### Périmètre réduit du premier lot 360
+
+- Page Commandes / fiche Order 360 / Client 360 : corriger onglet parent actif, conserver le `return_to` et les filtres, condenser les en-têtes, rendre les détails secondaires dépliables.
+- Exploiter les facettes API existantes et respecter les rôles/capabilities ; **ne changer aucun calcul de statut/paiement/marge ni le contenu de la commande**.
+- Aucune modification des flows Prix, Catalogue, Sourcing, Hub, Relais ni de leur index HTML pendant ce premier lot.
+- Si la branche Sourcing Live est encore non intégrée : commencer par le renderer 360 et tests, puis faire le patch minimal du menu une fois son propriétaire stabilisé.
+- Le chapitre « supprimer le domaine Live » du plan exploratoire est **à requalifier** ; préserver le Live opérationnel en cours, n'envisager son déplacement qu'après la preuve parcours et sans nouveau doublon.
+- Démo/staging : aucune commande `AUDIT-*` interprétée comme commande réelle sans audit de `simulation_scope`.
+
+**Critère coordination** : fichier partagé modifié par un seul lot à la fois, rebases explicites et aucun merge qui écrase la finition d'une autre équipe.
