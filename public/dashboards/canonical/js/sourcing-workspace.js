@@ -132,8 +132,8 @@
     header.setAttribute('data-dashboard-role', 'hero');
     const copy = doc.createElement('div');
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'SOURCING'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Produits à qualifier'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Voir ce qui doit être qualifié, corrigé ou promu.'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Acquisition fournisseurs'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Connecter les sources, importer les produits et suivre les exceptions fournisseur. Les fiches se corrigent dans le Catalogue.'));
     header.appendChild(copy);
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
@@ -151,11 +151,10 @@
 
   function metricItems(summary = {}) {
     return [
-      { key: 'candidates', label: 'Candidats', value: formatNumber(summary.candidates_total), tone: 'neutral' },
-      { key: 'scanned', label: 'Scannés', value: formatNumber(summary.candidates_scanned), tone: summary.candidates_scanned ? 'warning' : 'neutral' },
-      { key: 'watchlist', label: 'Watchlist', value: formatNumber(summary.candidates_watchlist), tone: summary.candidates_watchlist ? 'warning' : 'neutral' },
-      { key: 'promoted', label: 'Promus catalogue', value: formatNumber(summary.candidates_promoted), tone: 'neutral' },
-      { key: 'suppliers', label: 'Fournisseurs sourcing', value: formatNumber(summary.sourcing_suppliers), tone: 'neutral' },
+      { key: 'sources', label: 'Sources connectées', value: formatNumber(summary.sourcing_sources), tone: 'neutral' },
+      { key: 'imports', label: 'Passages recensés', value: formatNumber(summary.imports), tone: 'neutral' },
+      { key: 'candidates', label: 'Candidats affichés', value: formatNumber(summary.candidates_total), tone: 'neutral' },
+      { key: 'promoted', label: 'Transmis au Catalogue', value: formatNumber(summary.candidates_promoted), tone: 'neutral' },
     ];
   }
 
@@ -185,18 +184,31 @@
     return wrap;
   }
 
-  function nextCandidateAction(row = {}) {
+  // Only actual Sourcing-side remedies belong in this exception list.
+  // Sourcing pipeline / WATCH / classification candidates remain traceable
+  // through the KIR and the unified Catalogue, not as fake source problems.
+  function sourcingRemedy(row = {}) {
     const state = String(row.state || '').toLowerCase();
-    const decision = String(row.scan_result?.sourcing_decision || '').toUpperCase();
-    if (state === 'imported_to_catalog')
+    if (['imported_to_catalog','rejected','archived','quarantined'].includes(state) ||
+        String(row.scan_result?.sourcing_decision || '').toUpperCase() === 'EXCLUDED') return null;
+    const currency = String(row.currency || '').toUpperCase();
+    const price = Number(row.purchase_price);
+    if (!Number.isFinite(price) || price <= 0 || !['AED','EUR','USD','KMF','PLN'].includes(currency)) {
+      return { key: 'update-candidate', label: 'Corriger les données fournisseur',
+        reason: 'Prix d’achat ou devise à compléter' };
+    }
+    if (!row.scan_at && !row.scan_result) return {
+      key: 'scan-candidate', label: 'Contrôler la source',
+      reason: 'Contrôle fournisseur non encore exécuté',
+    };
+    return null;
+  }
+
+  function nextCandidateAction(row = {}) {
+    if (row.state === 'imported_to_catalog')
       return { key: 'view-product', label: 'Voir le produit transmis' };
-    if (['rejected', 'archived'].includes(state))
-      return { key: 'update-candidate', label: 'Examiner les informations' };
-    if (state === 'quarantined' || decision === 'EXCLUDED')
-      return { key: 'update-candidate', label: 'Examiner le blocage' };
-    if (!row.scan_at && !row.scan_result)
-      return { key: 'scan-candidate', label: 'Scanner le candidat' };
-    return { key: 'classify-boutique', label: 'Vérifier le classement' };
+    return sourcingRemedy(row) ||
+      { key: 'view-catalog', label: 'Consulter dans le Catalogue' };
   }
 
   function openCandidateForm(context, title, help, trigger) {
@@ -271,242 +283,102 @@
   }
 
   function renderCandidates(rootNode, ui, doc, payload, context) {
-    const slot = createSection(
-      rootNode,
-      ui,
-      'Exceptions sourcing à traiter',
-      'Seuls les candidats non transmis restent ici ; la préparation produit relève de la Raffinerie.'
-    );
-    // Une fois remis à la Raffinerie, le candidat reste traçable dans l'historique,
-    // mais il ne constitue plus une action Sourcing ouverte.
+    const slot = createSection(rootNode, ui, 'Exceptions fournisseur à résoudre',
+      'Uniquement les faits fournisseur corrigeables ici. Les classements, traductions et validations sont dans le Catalogue.');
     const rows = (payload.candidates || []).filter(row =>
-      context.focusCandidateRef
-        ? row.candidate_ref === context.focusCandidateRef
-        : !['imported_to_catalog', 'rejected'].includes(row.state));
+      context.focusCandidateRef ? row.candidate_ref === context.focusCandidateRef
+        : Boolean(sourcingRemedy(row)));
     if (!rows.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat à traiter. Les remises déjà effectuées poursuivent leur préparation en Raffinerie.'));
-      if (!context.focusCandidateRef && typeof context.selectTab === 'function') {
-        const browse = makeButton(doc, 'Consulter les imports', 'sourcing-open-imports', true);
-        browse.addEventListener('click', () => context.selectTab('imports'));
-        slot.appendChild(browse);
-      }
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty',
+        'Aucun problème fournisseur directement corrigeable ici. Les autres produits restent suivis dans les passages et le Catalogue.'));
+      const link = text(doc, 'a', 'kmc-workspace-nav-link', 'Voir les produits dans le Catalogue');
+      link.href = '/admin/workspaces/catalog';
+      slot.appendChild(link);
       return;
     }
 
-    if (context.focusCandidateRef) {
-      slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
-        'Source ciblée depuis le Catalogue : corriger les champs autorisés du candidat. ' +
-        'Une correction de source ne republie pas la fiche et ne réécrit pas le contrat fournisseur brut.'));
-    }
     const table = doc.createElement('table');
     table.className = 'kmc-workspace-table kmc-sourcing-candidates-table';
-    table.innerHTML = '<thead><tr><th>Référence</th><th>Fournisseur</th><th>Produit</th><th>Prix achat</th><th>État</th><th>Décision</th><th></th></tr></thead>';
+    table.innerHTML = '<thead><tr><th>Produit</th><th>Fournisseur</th><th>À résoudre</th><th>Action</th></tr></thead>';
     const tbody = doc.createElement('tbody');
-
     rows.forEach(row => {
       const tr = doc.createElement('tr');
-      // Hiérarchie visuelle seule : mêmes valeurs, classes de style (référence, produit, prix, pastilles).
-      const pillCell = (value, kind) => {
-        const cell = doc.createElement('td');
-        const raw = value == null || value === '' ? '—' : String(value);
-        const tone = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const label = (kind === 'state' ? CANDIDATE_STATE_LABELS : CANDIDATE_DECISION_LABELS)[raw.toLowerCase()] || raw;
-        cell.appendChild(text(doc, 'span', `kmc-pill is-${kind}-${tone}`, label));
-        return cell;
-      };
-      const refCell = td(doc, row.candidate_ref);
-      refCell.className = 'kmc-cand-ref';
-      tr.appendChild(refCell);
-      tr.appendChild(td(doc, row.supplier_name));
-      const nameCell = td(doc, row.product_name);
-      nameCell.className = 'kmc-cand-product';
-      tr.appendChild(nameCell);
-      const priceCell = td(doc, row.purchase_price_kmf == null ? `${row.purchase_price || '—'} ${row.currency || ''}` : formatKmf(row.purchase_price_kmf));
-      priceCell.className = 'kmc-cand-price';
-      tr.appendChild(priceCell);
-      tr.appendChild(pillCell(row.state, 'state'));
-      tr.appendChild(pillCell(row.scan_result?.sourcing_decision || row.promotion_status || '—', 'decision'));
       tr.setAttribute('data-candidate-ref', row.candidate_ref || '');
+      const product = doc.createElement('td');
+      product.appendChild(text(doc, 'strong', 'kmc-cand-product', row.product_name || row.candidate_ref));
+      product.appendChild(text(doc, 'small', 'kmc-cand-ref', row.candidate_ref || '—'));
+      tr.appendChild(product);
+      tr.appendChild(td(doc, row.supplier_name || '—'));
 
+      const issue = sourcingRemedy(row);
+      tr.appendChild(td(doc, issue?.reason ||
+        'Dossier ouvert depuis le Catalogue · faits fournisseur consultables'));
       const actions = doc.createElement('td');
       actions.className = 'kmc-sourcing-candidate-actions';
-      actions.setAttribute('data-label', 'Action suivante');
-      if (row.product_ref) {
-        const product = text(doc, 'a', 'kmc-workspace-nav-link', 'Product 360');
-        product.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, '/admin/workspaces/sourcing', 'Retour au sourcing');
-        product.setAttribute('data-workspace-action', 'view-product');
-        actions.appendChild(product);
-      }
+      actions.setAttribute('data-label', 'Action');
 
-
-      // Le front n'expose aucune catégorie douanière. On confirme la catégorie
-      // boutique suggérée ou on choisit une autre paire active existante.
-      if (!['imported_to_catalog', 'rejected', 'archived', 'quarantined'].includes(row.state)) {
-      const classify = makeButton(doc, 'Classer', 'classify-boutique', true);
-      classify.addEventListener('click', async () => {
-        classify.disabled = true;
-        try {
-          const options = await jsonRequest(context.fetch,
-            ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) + '/boutique-category-options');
-          const candidates = options.categories || [];
-          const suggestion = options.suggestions?.[0];
-          const ordered = suggestion
-            ? [suggestion, ...candidates.filter(x =>
-              x.category !== suggestion.category || x.subcategory !== suggestion.subcategory)]
-            : candidates;
-          if (!ordered.length) throw new Error('Aucune catégorie boutique disponible.');
+      if (issue?.key === 'update-candidate' && !row.product_ref) {
+        const edit = makeButton(doc, issue.label, 'update-candidate');
+        edit.className += ' kmc-sourcing-next-action';
+        edit.addEventListener('click', () => {
           const editor = openCandidateForm(context,
-            'Classement boutique · ' + row.candidate_ref,
-            'Catégorie fournisseur : ' + (options.supplier_category || '—') +
-              '. La proposition est préremplie, mais ne sera validée que par votre décision.',
-            classify);
-          const label = doc.createElement('label');
-          label.className = 'kmc-sourcing-editor-field';
-          label.appendChild(text(doc,'span','','Catégorie et sous-catégorie boutique'));
-          const select = doc.createElement('select');
-          select.setAttribute('data-sourcing-category-choice','');
-          ordered.forEach((item,index) => {
-            const opt = doc.createElement('option');
-            opt.value = String(index);
-            opt.textContent = (index === 0 && suggestion ? 'Suggéré · ' : '') +
-              (item.category_label || item.category) + ' › ' +
-              (item.subcategory_label || item.subcategory);
-            select.appendChild(opt);
-          });
-          select.value = '0';
-          label.appendChild(select);
-          editor.form.insertBefore(label, editor.feedback);
+            'Corriger les faits fournisseur · ' + row.candidate_ref,
+            'Renseignez uniquement les faits fournis ou vérifiés. Aucune publication ni validation Catalogue.',
+            edit);
+          const weight = editCandidateField(doc, editor.form, 'Poids estimé (kg)',
+            row.estimated_weight_kg, 'number');
+          weight.setAttribute('data-sourcing-edit-weight','');
+          const purchase = editCandidateField(doc, editor.form,
+            'Prix d’achat fournisseur', row.purchase_price, 'number');
+          purchase.setAttribute('data-sourcing-edit-purchase','');
+          const currency = editCandidateField(doc, editor.form, 'Devise',
+            row.currency || '');
+          currency.setAttribute('data-sourcing-edit-currency','');
           editor.form.addEventListener('submit', async event => {
             event.preventDefault();
-            const chosen = ordered[Number(select.value)];
-            if (!chosen) {editor.feedback.textContent='Sélection invalide.';return;}
-            await sendCandidateForm(context,editor,
-              ENDPOINT+'/candidates/'+encodeURIComponent(row.candidate_ref)+'/confirm-boutique-category',
-              {category:chosen.category,subcategory:chosen.subcategory},
-              'Classement boutique confirmé pour '+row.candidate_ref+'. La remise à la Raffinerie reste une action séparée.');
+            const rawWeight = weight.value.trim(), rawPurchase = purchase.value.trim();
+            const valueCurrency = currency.value.trim().toUpperCase();
+            if (rawWeight && (!Number.isFinite(Number(rawWeight)) || Number(rawWeight) < 0)) {
+              editor.feedback.textContent = 'Indiquez un poids positif ou laissez-le vide.';
+              return;
+            }
+            if (!rawPurchase || !Number.isFinite(Number(rawPurchase)) ||
+                Number(rawPurchase) <= 0) {
+              editor.feedback.textContent = 'Prix fournisseur strictement positif requis.';
+              return;
+            }
+            if (!['AED','EUR','USD','KMF','PLN'].includes(valueCurrency)) {
+              editor.feedback.textContent = 'Devise non prise en charge par ce formulaire.';
+              return;
+            }
+            await sendCandidateForm(context, editor,
+              ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) + '/update',
+              { ...(rawWeight ? { estimated_weight_kg:Number(rawWeight) } : {}),
+                purchase_price:Number(rawPurchase), currency:valueCurrency },
+              row.candidate_ref + ' : faits fournisseur mis à jour.');
           });
-          select.focus();
-        } catch(error) {setFeedback(context.root,error.message,'critical');}
-        finally {classify.disabled = false;}
-      });
-      actions.appendChild(classify);
-      }
-
-      const edit = makeButton(doc, 'Corriger', 'update-candidate', true);
-      edit.addEventListener('click', () => {
-        const editor = openCandidateForm(context,
-          'Corriger la source · ' + row.candidate_ref,
-          'Ajustez uniquement les champs sourcing connus. Aucune publication ni validation Catalogue.',
-          edit);
-        const weight = editCandidateField(doc, editor.form, 'Poids estimé (kg)',
-          row.estimated_weight_kg, 'number');
-        weight.setAttribute('data-sourcing-edit-weight','');
-        const purchase = editCandidateField(doc, editor.form,
-          'Prix d’achat fournisseur', row.purchase_price, 'number');
-        purchase.setAttribute('data-sourcing-edit-purchase','');
-        const currency = editCandidateField(doc, editor.form, 'Devise',
-          row.currency || 'AED');
-        currency.setAttribute('data-sourcing-edit-currency','');
-        editor.form.addEventListener('submit', async event => {
-          event.preventDefault();
-          const rawWeight = weight.value.trim(), rawPurchase = purchase.value.trim();
-          const valueCurrency = currency.value.trim().toUpperCase();
-          if ((rawWeight && (!Number.isFinite(Number(rawWeight)) || Number(rawWeight)<0))
-            || (rawPurchase && (!Number.isFinite(Number(rawPurchase)) || Number(rawPurchase)<0))) {
-            editor.feedback.textContent = 'Poids et prix doivent être des nombres positifs ou nuls.';
-            return;
-          }
-          if (!/^[A-Z]{3}$/.test(valueCurrency)) {
-            editor.feedback.textContent = 'Indiquez une devise à trois lettres (AED, EUR, USD, KMF…).';
-            currency.focus();
-            return;
-          }
-          const body = {
-            ...(rawWeight ? {estimated_weight_kg:Number(rawWeight)} : {}),
-            ...(rawPurchase ? {purchase_price:Number(rawPurchase)} : {}),
-            currency:valueCurrency,
-          };
-          await sendCandidateForm(context,editor,
-            ENDPOINT+'/candidates/'+encodeURIComponent(row.candidate_ref)+'/update',
-            body,row.candidate_ref+' : correction sourcing enregistrée.');
+          purchase.focus();
         });
-        weight.focus();
-      });
-      actions.appendChild(edit);
-
-      const scan = makeButton(doc, 'Scanner', 'scan-candidate', true);
-      scan.addEventListener('click', () => runAction(context, scan, {
-        url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/scan`,
-        successMessage: `${row.candidate_ref} re-scanné.`,
-      }));
-      actions.appendChild(scan);
-
-      if (!['imported_to_catalog', 'rejected'].includes(row.state)) {
-        const watch = makeButton(doc, 'Watchlist', 'watchlist-candidate', true);
-        watch.addEventListener('click', () => runAction(context, watch, {
-          url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/watchlist`,
-          successMessage: `${row.candidate_ref} placé en watchlist.`,
+        actions.appendChild(edit);
+      } else if (issue?.key === 'scan-candidate' && !row.product_ref) {
+        const scan = makeButton(doc, issue.label, 'scan-candidate');
+        scan.className += ' kmc-sourcing-next-action';
+        scan.addEventListener('click', () => runAction(context, scan, {
+          url: ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) + '/scan',
+          successMessage: row.candidate_ref + ' : contrôle fournisseur exécuté.',
         }));
-        actions.appendChild(watch);
-
-        const promote = makeButton(doc, 'Promouvoir', 'promote-candidate');
-        promote.className += ' is-approve';
-        promote.addEventListener('click', () => {
-          if (!context.confirm(`Remettre ${row.candidate_ref} à la Raffinerie en brouillon ? Cette action ne publie pas le produit.`)) return;
-          runAction(context, promote, {
-            url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/promote`,
-            successMessage: `${row.candidate_ref} transmis en brouillon à la Raffinerie.`,
-          });
-        });
-        actions.appendChild(promote);
-
-        const reject = makeButton(doc, 'Rejeter', 'reject-candidate', true);
-        reject.className += ' is-danger';
-        reject.addEventListener('click', () => {
-          const reason = context.prompt(`Raison du rejet · ${row.candidate_ref}`);
-          if (!reason || !reason.trim()) return;
-          runAction(context, reject, {
-            url: `${ENDPOINT}/candidates/${encodeURIComponent(row.candidate_ref)}/reject`,
-            body: { reason: reason.trim() },
-            successMessage: `${row.candidate_ref} rejeté.`,
-          });
-        });
-        actions.appendChild(reject);
+        actions.appendChild(scan);
       }
-
-      // Keep domain operations unchanged but show one contextual action.
-      const next = nextCandidateAction(row);
-      const entries = Array.from(actions.children);
-      const primary = entries.find(item => item.getAttribute('data-workspace-action') === next.key)
-        || entries.find(item => item.tagName === 'BUTTON') || entries[0];
-      if (primary) {
-        if (primary.tagName === 'BUTTON') {
-          primary.className = 'kmc-workspace-action kmc-sourcing-next-action';
-          if (primary.getAttribute('data-workspace-action') === next.key)
-            primary.textContent = next.label;
-        }
-        primary.setAttribute('aria-label', next.label + ' pour ' + row.candidate_ref);
-        const secondary = entries.filter(item => item !== primary);
-        actions.replaceChildren(primary);
-        if (secondary.length) {
-          const menu = doc.createElement('details');
-          menu.className = 'kmc-sourcing-row-more';
-          const trigger = text(doc,'summary','','···');
-          trigger.title = 'Autres actions sur ce candidat';
-          trigger.setAttribute('aria-label','Autres actions pour ' + row.candidate_ref);
-          menu.appendChild(trigger);
-          const choices = doc.createElement('div');
-          choices.className = 'kmc-sourcing-row-more-list';
-          secondary.forEach(item=>choices.appendChild(item));
-          menu.appendChild(choices);
-          actions.appendChild(menu);
-        }
-      }
+      const link = text(doc, 'a', 'kmc-workspace-nav-link', 'Catalogue');
+      link.href = '/admin/workspaces/catalog?search=' + encodeURIComponent(
+        row.product_ref || row.candidate_ref || '');
+      link.setAttribute('data-workspace-action', 'view-catalog');
+      actions.appendChild(link);
       tr.appendChild(actions);
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
-    slot.appendChild(wrapTable(doc, table));
+    slot.appendChild(wrapTable(doc,table));
   }
 
   function renderImports(rootNode, ui, doc, payload, context) {
@@ -514,7 +386,7 @@
       rootNode,
       ui,
       'Lancer un import',
-      'Cette surface déclenche l’ingestion. Le suivi, les anciens lots et leur clôture se pilotent ensuite dans le Cockpit des imports.'
+      'Choisir une source réelle ou importer un fichier. Le Cockpit conserve l’historique des passages.'
     );
 
     const bar = doc.createElement('div');
@@ -527,36 +399,48 @@
     bar.appendChild(csv);
     bar.appendChild(cockpit);
     slot.appendChild(bar);
+    // Les sources réelles remplacent les boutons CJ/AliExpress à volume 20 figé.
     const discoveryBar = doc.createElement('div');
     discoveryBar.className = 'kmc-workspace-section-actions';
     const sources = Array.isArray(payload.sources) ? payload.sources : [];
-    for (const [adapter, supplierLabel] of [['cj', 'CJ'], ['aliexpress', 'AliExpress']]) {
-      const source = sources.find(item => item.adapter_type === adapter);
-      const button = makeButton(doc, 'Découvrir 20 ' + supplierLabel, 'discover-' + adapter, true);
-      const ready = Boolean(source && source.status === 'active'
-        && source.connector_ready && source.discovery_ready
+    sources.filter(source => source.status === 'active').forEach(source => {
+      const label = source.label || source.adapter_type || source.source_ref;
+      const ready = Boolean(source.connector_ready && source.discovery_ready
         && source.discovery_enabled && source.sync_enabled && source.import_enabled
         && !['missing', 'invalid'].includes(source.credential_status));
-      button.disabled = !ready;
       if (!ready) {
-        button.title = 'Source non prête : vérifier les capacités et identifiants';
-      } else {
-        button.addEventListener('click', () => {
-          if (!context.confirm('Lancer la découverte fournisseur ' + supplierLabel
-            + ' ? Aucun produit ne sera publié automatiquement.')) return;
-          runAction(context, button, {
-            url: ENDPOINT + '/sources/' + encodeURIComponent(source.source_ref) + '/import-now',
-            runningMessage: 'Découverte ' + supplierLabel + ' en cours…',
-            successMessage: 'Import ' + supplierLabel + ' terminé. Ouverture du suivi…',
-            onSuccess(result) {
-              const runRef = result?.result?.run_ref;
-              if (runRef) context.navigate('/admin/import-runtime?run=' + encodeURIComponent(runRef));
-              else setFeedback(context.root, 'Import terminé, mais aucune référence de passage retournée. Consultez le cockpit avant toute relance.', 'critical');
-            },
-          });
-        });
+        const setup = text(doc, 'a', 'kmc-workspace-nav-link',
+          'Configurer la source · ' + label);
+        setup.href = '/admin/import-runtime?view=sources';
+        setup.title = 'Ouvrir la configuration et les prérequis de la source';
+        discoveryBar.appendChild(setup);
+        return;
       }
+      const button = makeButton(doc, 'Importer · ' + label, 'import-source', true);
+      button.title = 'Lancer une acquisition sans publication';
+      button.addEventListener('click', () => {
+        if (!context.confirm('Lancer l’acquisition fournisseur ' + label +
+          ' ? Aucun produit ne sera publié automatiquement.')) return;
+        runAction(context, button, {
+          url: ENDPOINT + '/sources/' + encodeURIComponent(source.source_ref) + '/import-now',
+          runningMessage: 'Acquisition fournisseur en cours…',
+          successMessage: 'Acquisition terminée. Ouverture du suivi…',
+          onSuccess(result) {
+            const runRef = result?.result?.run_ref;
+            if (runRef) context.navigate('/admin/import-runtime?run=' + encodeURIComponent(runRef));
+            else setFeedback(context.root,
+              'Aucune référence de passage retournée. Vérifiez le Cockpit avant toute relance.', 'critical');
+          },
+        });
+      });
       discoveryBar.appendChild(button);
+    });
+    if (!sources.length) {
+      discoveryBar.appendChild(text(doc, 'p', 'kmc-workspace-subtitle',
+        'Aucune source configurée. Un import manuel reste possible.'));
+      const setup = text(doc, 'a', 'kmc-workspace-nav-link', 'Configurer une source');
+      setup.href = '/admin/import-runtime?view=sources';
+      discoveryBar.appendChild(setup);
     }
     slot.appendChild(discoveryBar);
 
@@ -828,12 +712,10 @@
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
-    const open = (payload.candidates || []).filter(row =>
-      !['imported_to_catalog','rejected'].includes(row.state)).length;
+    const open = (payload.candidates || []).filter(sourcingRemedy).length;
     const pages = [
-      {key:'candidates',label:'À qualifier',count:open,render:renderCandidates},
-      {key:'imports',label:'Imports & découvertes',count:(payload.imports || []).length,render:renderImports},
-      {key:'portfolio',label:'Portefeuille sourcing',count:(payload.portfolio?.products || []).length,render:renderPortfolio},
+      {key:'imports',label:'Sources & imports',count:(payload.imports || []).length,render:renderImports},
+      {key:'candidates',label:'Exceptions source',count:open,render:renderCandidates},
       {key:'suppliers',label:'Fournisseurs',count:(payload.suppliers || []).length,render:renderSuppliers},
     ];
     const nav = doc.createElement('nav');
@@ -861,7 +743,7 @@
       panels.set(page.key,panel);
     }
     context.selectTab = key => {
-      context.activeTab = panels.has(key) ? key : 'candidates';
+      context.activeTab = panels.has(key) ? key : 'imports';
       panels.forEach((panel,tab) => {
         const selected = tab === context.activeTab;
         panel.hidden = !selected;
@@ -885,8 +767,8 @@
       (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
     const context = {
       focusCandidateRef: new URLSearchParams(focusSearch || '').get('candidate_ref'),
-      activeTab: ['candidates','imports','portfolio','suppliers'].includes(new URLSearchParams(focusSearch || '').get('tab'))
-        ? new URLSearchParams(focusSearch || '').get('tab') : 'candidates',
+      activeTab: ['imports','candidates','suppliers'].includes(new URLSearchParams(focusSearch || '').get('tab'))
+        ? new URLSearchParams(focusSearch || '').get('tab') : 'imports',
       selectTab: null,
       root: rootNode,
       user: options.user || {},
@@ -922,5 +804,5 @@
     return context.reload();
   }
 
-  return Object.freeze({ ENDPOINT, metricItems, nextCandidateAction, mount });
+  return Object.freeze({ ENDPOINT, metricItems, sourcingRemedy, nextCandidateAction, mount });
 });

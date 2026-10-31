@@ -30,11 +30,12 @@ test('Sourcing conserve un seul rail Suivi / Passages / Sources lorsque le shell
   expect(source).toContain("return '';");
 });
 
-test('Sourcing transmet des brouillons à la Raffinerie sans promettre une publication Catalogue', () => {
+test('Sourcing remet les brouillons au Catalogue global sans promettre une vente', () => {
   const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
   expect(source).toContain('Retenus par Sourcing');
   expect(source).toContain('Retenus Sourcing');
-  expect(source).toContain('/admin/workspaces/catalog?view=refinery');
+  expect(source).toContain('/admin/workspaces/catalog?product_ref=');
+  expect(source).toContain('Compléter dans le Catalogue global');
 });
 
 test('manual source update navigates to the actual returned KIR, never a guessed passage', () => {

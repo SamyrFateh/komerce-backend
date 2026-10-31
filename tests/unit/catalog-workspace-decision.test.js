@@ -32,7 +32,10 @@ test('le Hero décision est reposé après chaque rendu (rechargement après act
   // Le registre n'affiche plus le Hero passif.
   await enhanced.mount({ root, document:doc, ui:{}, location:{ search:'' } });
   expect(root.prepend).not.toHaveBeenCalled();
-  // La Raffinerie conserve son aide guidée après chaque rafraîchissement.
+  // L'ancien chemin Raffinerie affiche désormais le registre maître, sans Hero supplémentaire.
   await enhanced.mount({ root, document:doc, ui:{}, location:{ search:'?view=refinery' } });
+  expect(root.prepend).not.toHaveBeenCalled();
+  // Seul le mode diagnostic explicite ajoute un en-tête technique en lecture seule.
+  await enhanced.mount({ root, document:doc, ui:{}, location:{ search:'?view=refinery&diagnostic=1' } });
   expect(root.prepend).toHaveBeenCalledTimes(2);
 });

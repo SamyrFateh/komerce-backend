@@ -607,11 +607,13 @@ describe('C4 : un repli technique « autre » n’est pas une classification val
   });
 });
 
-test('Catalogue/Raffinerie : « Définir le prix » transporte marché, période et périmètre de la page quand ils existent', () => {
-  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/catalog-workspace.js'), 'utf8');
-  expect(src).toContain('nav.withContext(basePricingPath, nav.readContext(globalThis.location && globalThis.location.search))');
-  expect(src).toContain("/admin/workspaces/pricing?product_ref=${encodeURIComponent(row.product_ref)}");
+test('Catalogue global : le prix local reste au Catalogue pays sans CTA Raffinerie', () => {
+  const src=require('fs').readFileSync(require('path').join(__dirname,'..','..',
+    'public/dashboards/canonical/js/catalog-workspace.js'),'utf8');
+  expect(src).toContain('/dashboards/canonical/market-catalog.html?product_ref=');
+  expect(src).not.toContain('function renderApproval(');
 });
+
 
 test('paramètres économiques à valider : la ligne porte la classe de mise en page (bouton Configurer sur sa propre ligne)', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/catalog-workspace.js'), 'utf8');
