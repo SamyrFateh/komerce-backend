@@ -14,7 +14,7 @@
  * @db-write-via:catalog-approval products
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        caller-owned
- * @doctrine      catalog_authority_is_capability_based, client_market_id_never_authority, writer_not_owner_boundary, market_validation_may_delegate_first_publication_to_catalog_owner, catalog_stays_unique_exposure_is_projection
+ * @doctrine      catalog_authority_is_capability_based_except_verified_central_admin, client_market_id_never_authority, writer_not_owner_boundary, market_validation_may_delegate_first_publication_to_catalog_owner, catalog_stays_unique_exposure_is_projection
  * @impact-areas  market, delegation, catalog
  * @version       2026-09
  */
