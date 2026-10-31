@@ -36,8 +36,8 @@ const COMPONENTS = [
   { key: 'freight_kg', label: 'Fret maritime', family: 'landed_relay', category: 'freight', unit: 'kmf_per_kg', default_value: null, allocation_method: 'by_weight', inherited: true, is_active: true },
 ];
 
-async function mount(page, { caps = {}, posts = [], search = '', components = COMPONENTS, decision = FX.decision, corridorStatus = 200, preview = null } = {}) {
-  const market = { ...FX.market, simulation_products: PRODUCTS, cost_components: components.map(item => ({ ...item })), capabilities: { ...FX.market.capabilities, ...caps } };
+async function mount(page, { caps = {}, access = null, posts = [], search = '', components = COMPONENTS, decision = FX.decision, corridorStatus = 200, preview = null } = {}) {
+  const market = { ...FX.market, simulation_products: PRODUCTS, cost_components: components.map(item => ({ ...item })), access: access || FX.market.access, capabilities: { ...FX.market.capabilities, ...caps } };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -62,6 +62,15 @@ async function mount(page, { caps = {}, posts = [], search = '', components = CO
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM') return json(market);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision') return json(decision);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision-policy/history') return json(FX.history);
+    if (url.pathname === '/api/admin/workspaces/pricing/market/KM/charges') {
+      const evidence = DEMO.decision.coverage.structure.evidence;
+      const allocations = DEMO.decision.coverage.structure.allocation.charges;
+      return json({ charges: [...evidence, ...allocations].map(row => ({
+        id: row.charge_id, name: row.charge_name, family: 'operationnelle', is_active: true,
+        recurrence_period: 'monthly',
+      })) });
+    }
+    if (url.pathname.endsWith('/structure-events')) return json({ events: [] });
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/corridor') {
       if (corridorStatus !== 200) return json({ error: 'Corridor indisponible' }, corridorStatus);
       return json(corridorFor(url.searchParams.get('product_ref')));
@@ -260,7 +269,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]').click();
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toHaveAttribute('data-expanded', 'false');
       await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toBeHidden();
-      await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'true');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'false');
       const principles = page.locator('details.kmc-economic-principles-detail');
       await expect(principles).not.toHaveAttribute('open', '');
       await principles.locator('summary').click();
@@ -315,13 +324,93 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
   });
 }
 
+test.describe('Moteur économique · détails et édition unifiés des trois colonnes — 1440', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('ouvre les trois détails avec le même contrôle et restaure le tableau à la fermeture', async ({ page }) => {
+    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true },
+      access: { ...FX.market.access, role: 'global_admin' }, search: '?market=KM&view=costs' });
+    const selectors = ['variable', 'fixed-direct', 'fixed-mutualized'];
+    for (const type of selectors) {
+      const card = page.locator(`[data-cost-summary="${type}"]`);
+      await card.locator('[data-expand-cost-family]').click();
+      await expect(card).toHaveAttribute('data-expanded', 'true');
+      await expect(card.locator('.kmc-cockpit-cost-table')).toBeVisible();
+      await card.locator('[data-expand-cost-family]').click();
+      await expect(card).toHaveAttribute('data-expanded', 'false');
+      await expect(card.locator('.kmc-cockpit-cost-table')).toBeHidden();
+    }
+    await noOverflow(page);
+  });
+
+  test('fixe direct : modification sur ligne, valeur précédente à côté, période et preuve obligatoires', async ({ page }) => {
+    const posts = [];
+    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true },
+      posts, search: '?market=KM&view=costs' });
+    const row = page.locator('[data-inline-structure-row="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"]');
+    const edit = row.locator('[data-edit-structure-charge]');
+    await expect(edit).toHaveText('Modifier');
+    await edit.click();
+    const inline = row.locator('[data-structure-inline-editor]');
+    await expect(inline).toBeVisible();
+    await expect(inline).toContainText('250 000 KMF');
+    const from = inline.locator('[name="economic_from"]');
+    const to = inline.locator('[name="economic_to"]');
+    const amount = inline.locator('[name="amount_original"]');
+    await amount.fill('240000');
+    await inline.locator('.kmc-structure-panel-btn-primary').click();
+    await expect(inline.locator('.kmc-structure-panel-error')).toContainText('période');
+    expect(posts.filter(item => item.path.endsWith('/structure-events'))).toHaveLength(0);
+    await from.fill('2026-09-01');
+    await to.fill('2026-10-01');
+    await inline.locator('[name="evidence_ref"]').fill('invoice://km/demo-fixed');
+    const coords = await row.evaluate(node => {
+      const previous = node.querySelector('.kmc-structure-inline-previous').getBoundingClientRect();
+      const input = node.querySelector('[name="amount_original"]').getBoundingClientRect();
+      return { oldX: previous.x, oldY: previous.y, newX: input.x, newY: input.y };
+    });
+    expect(coords.newX).toBeGreaterThan(coords.oldX);
+    expect(Math.abs(coords.newY - coords.oldY)).toBeLessThan(60);
+    await shot(page, '8-charge-fixe-edition-ligne', '1440');
+    await inline.locator('.kmc-structure-panel-btn-primary').click();
+    await expect.poll(() => posts.filter(item => item.path.endsWith('/market/KM/structure-events')).length).toBe(1);
+    const item = posts.find(item => item.path.endsWith('/market/KM/structure-events'));
+    expect(item.body).toMatchObject({
+      charge_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+      amount_original: 240000, currency: 'KMF',
+      event_kind: 'ACCRUAL', evidence_ref: 'invoice://km/demo-fixed',
+    });
+  });
+
+  test('mutualisés : affichage identique, modification GROUP réservée à l’autorité globale', async ({ page }) => {
+    const posts = [];
+    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true }, posts,
+      access: { ...FX.market.access, role: 'global_admin' }, search: '?market=KM&view=costs' });
+    const row = page.locator('[data-inline-structure-row="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1"]');
+    await row.locator('[data-edit-structure-charge]').click();
+    const inline = row.locator('[data-structure-inline-editor]');
+    await expect(inline).toBeVisible();
+    await expect(inline).toContainText('Quote-part actuelle du marché');
+    await inline.locator('[data-structure-inline-cancel]').click();
+    await expect(row.locator('[data-structure-inline-editor]')).toHaveCount(0);
+    await expect(row.locator('[data-edit-structure-charge]')).toBeVisible();
+    expect(posts.filter(item => item.path.endsWith('/structure-events'))).toHaveLength(0);
+
+    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true }, posts,
+      access: { ...FX.market.access, role: 'manager' }, search: '?market=KM&view=costs' });
+    await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized [data-edit-structure-charge]')).toHaveCount(0);
+    await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'true');
+  });
+});
+
 test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée, aucune donnée live)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('rend contribution, couverture, fixes directs et mutualisés sur des valeurs d’exemple cohérentes', async ({ page }) => {
     expect(DEMO.kind).toBe('CHROMIUM_DEMO_ONLY');
     const posts = [];
-    await mount(page, { decision: DEMO.decision, components: DEMO.parameters.variable_components, posts });
+    await mount(page, { decision: DEMO.decision, components: DEMO.parameters.variable_components, posts,
+      caps: { can_manage_structure_events: true } });
     await page.evaluate(() => {
       const marker = document.createElement('div');
       marker.dataset.chromiumDemoNotice = '';
@@ -357,7 +446,7 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
     await expect(mutual).toContainText('Infrastructure plateforme');
     await expect(mutual).toContainText('Loyer et équipe Hub');
     await expect(mutual).toContainText('650');
-    await expect(mutual).toHaveAttribute('data-read-only', 'true');
+    await expect(mutual).toHaveAttribute('data-read-only', 'false');
     const mix = reading.locator('.kmc-economic-reading-item.is-mix');
     await expect(mix).toContainText('Variables 66,7 % · Fixes 33,3 %');
     await expect(mix).toContainText('Directs 70,8 % · Mutualisés 29,2 %');

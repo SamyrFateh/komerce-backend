@@ -231,11 +231,32 @@ describe('pricing-structure-event-panel', () => {
     });
 
     const form = findByTag(doc.body, 'form');
+    findByTag(doc.body, 'select', 'charge_id').value = 'c1';
+    findByTag(doc.body, 'input', 'economic_from').value = '2026-09-01';
+    findByTag(doc.body, 'input', 'economic_to').value = '2026-10-01';
+    findByTag(doc.body, 'input', 'amount_original').value = '2000';
+    findByTag(doc.body, 'input', 'evidence_ref').value = 'invoice://demo';
     await form.listeners.submit({ preventDefault() {} });
 
     const errorBox = findByClass(doc.body, 'kmc-structure-panel-error');
     expect(errorBox.hidden).toBe(false);
     expect(errorBox.textContent).toBe('evidence_ref must be at least 3 characters');
+  });
+
+  test('refuse une écriture sans période et justificatif, sans POST', async () => {
+    const doc = fakeDocument();
+    const fetchFn = jest.fn().mockResolvedValueOnce(jsonResponse({ charges: [{ id: 'c1', family: 'platform', name: 'Railway' }] }));
+    await panel.open({
+      document: doc, fetch: fetchFn, title: 'Ajustement',
+      chargesEndpoint: '/x/charges', eventsEndpoint: '/x/events', submitEndpoint: '/x/events',
+    });
+    const form = findByTag(doc.body, 'form');
+    findByTag(doc.body, 'select', 'charge_id').value = 'c1';
+    findByTag(doc.body, 'input', 'amount_original').value = '2000';
+    await form.listeners.submit({ preventDefault() {} });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    const error = findByClass(doc.body, 'kmc-structure-panel-error');
+    expect(error.textContent).toContain('période');
   });
 
   test('Échap ferme le panneau et retire l’écouteur clavier', async () => {
@@ -248,7 +269,7 @@ describe('pricing-structure-event-panel', () => {
     });
 
     expect(doc.body.children.length).toBe(1);
-    doc.listeners.keydown({ key: 'Escape' });
+    doc.listeners.keydown({ key: 'Escape', preventDefault() {} });
     expect(doc.body.children.length).toBe(0);
   });
 });

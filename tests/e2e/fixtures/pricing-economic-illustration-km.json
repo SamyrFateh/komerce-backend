@@ -81,12 +81,14 @@
           {
             "scope_kind": "MARKET_DIRECT",
             "charge_name": "Loyer local",
-            "recognized_amount_kmf": 250000
+            "recognized_amount_kmf": 250000,
+            "charge_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"
           },
           {
             "scope_kind": "MARKET_DIRECT",
             "charge_name": "Équipe fixe du marché",
-            "recognized_amount_kmf": 300000
+            "recognized_amount_kmf": 300000,
+            "charge_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2"
           }
         ],
         "allocation": {
@@ -98,7 +100,8 @@
               "market_share_kmf": 200000,
               "policy": {
                 "basis_kind": "Utilisation constatée"
-              }
+              },
+              "charge_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1"
             },
             {
               "charge_name": "Loyer et équipe Hub",
@@ -107,7 +110,8 @@
               "market_share_kmf": 450000,
               "policy": {
                 "basis_kind": "Activité constatée"
-              }
+              },
+              "charge_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2"
             }
           ]
         }

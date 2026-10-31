@@ -236,10 +236,18 @@
     const container = config.container || doc.body;
     const fetchFn = config.fetch;
 
-    const overlay = el(doc, 'div', 'kmc-structure-panel-overlay');
-    const panel = el(doc, 'div', 'kmc-structure-panel');
-    panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-modal', 'true');
+    const inline = config.inline === true;
+    const overlay = el(doc, 'div', inline ? 'kmc-structure-inline-editor' : 'kmc-structure-panel-overlay');
+    if (inline) {
+      overlay.dataset.structureInlineEditor = '';
+      overlay.setAttribute('role', 'region');
+      overlay.setAttribute('aria-label', config.title || 'Modification d’une charge');
+    }
+    const panel = el(doc, 'div', inline ? 'kmc-structure-panel kmc-structure-inline-panel' : 'kmc-structure-panel');
+    if (!inline) {
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+    }
     overlay.appendChild(panel);
 
     const header = el(doc, 'div', 'kmc-structure-panel-header');
@@ -260,19 +268,30 @@
     const footer = el(doc, 'div', 'kmc-structure-panel-footer');
     const cancelBtn = el(doc, 'button', 'kmc-structure-panel-btn kmc-structure-panel-btn-secondary', 'Annuler');
     cancelBtn.type = 'button';
-    const saveBtn = el(doc, 'button', 'kmc-structure-panel-btn kmc-structure-panel-btn-primary', 'Enregistrer l’ajustement');
+    const saveBtn = el(doc, 'button', 'kmc-structure-panel-btn kmc-structure-panel-btn-primary',
+      inline ? 'Enregistrer' : 'Enregistrer l’ajustement');
     saveBtn.type = 'submit';
     saveBtn.disabled = true;
     footer.appendChild(cancelBtn);
     footer.appendChild(saveBtn);
     panel.appendChild(footer);
 
-    overlay.__onKeydown = event => { if (event.key === 'Escape') close(overlay); };
+    const closeEditor = () => {
+      close(overlay);
+      if (typeof config.onClose === 'function') config.onClose();
+    };
+    overlay.__onKeydown = event => {
+      if (event.key === 'Escape' && (!inline || overlay.contains(event.target))) {
+        event.preventDefault();
+        closeEditor();
+      }
+    };
     overlay.__doc = doc;
     doc.addEventListener('keydown', overlay.__onKeydown);
-    closeBtn.addEventListener('click', () => close(overlay));
-    cancelBtn.addEventListener('click', () => close(overlay));
-    overlay.addEventListener('click', event => { if (event.target === overlay) close(overlay); });
+    closeBtn.addEventListener('click', closeEditor);
+    cancelBtn.addEventListener('click', closeEditor);
+    if (inline) cancelBtn.dataset.structureInlineCancel = '';
+    if (!inline) overlay.addEventListener('click', event => { if (event.target === overlay) closeEditor(); });
 
     container.appendChild(overlay);
 
@@ -282,15 +301,48 @@
       charges = chargesPayload.charges || [];
     } catch (error) {
       body.replaceChildren(el(doc, 'div', 'kmc-structure-panel-empty', `Impossible de charger les charges : ${error.message}`));
-      return { overlay, close: () => close(overlay) };
+      return { overlay, close: closeEditor };
     }
 
     const historyTitle = el(doc, 'div', 'kmc-structure-panel-section-title', 'Historique');
     const historyList = el(doc, 'div', 'kmc-structure-panel-history');
-    const formTitle = el(doc, 'div', 'kmc-structure-panel-section-title', 'Nouvel ajustement');
+    const formTitle = el(doc, 'div', 'kmc-structure-panel-section-title',
+      inline ? 'Saisie sur cette ligne' : 'Nouvel ajustement');
     const built = buildForm(doc, charges);
+    // The action footer is a sibling of the form: HTML submit alone cannot fire
+    // a form's submit event without an explicit form owner.
+    saveBtn.addEventListener('click', event => {
+      event.preventDefault();
+      if (!saveBtn.disabled) built.form.requestSubmit();
+    });
 
-    body.replaceChildren(historyTitle, historyList, formTitle, built.form);
+    if (inline) {
+      const current = el(doc, 'span', 'kmc-structure-inline-previous',
+        `${config.previousLabel || 'Dernière valeur de période'} : ${config.previousValue || '—'}`);
+      const amount = built.form.querySelector('[name="amount_original"]');
+      amount?.closest('.kmc-structure-panel-row')?.prepend(current);
+      amount.placeholder = 'Nouvelle écriture';
+      // The row itself identifies the charge; other mandatory financial
+      // fields keep their safe defaults but do not overcrowd the ordinary edit.
+      built.chargeSelect.closest('.kmc-structure-panel-field').hidden = true;
+      const advanced = el(doc, 'details', 'kmc-structure-inline-advanced');
+      advanced.appendChild(el(doc, 'summary', '', 'Options avancées · devise, source, notes'));
+      [
+        built.currencyInput.closest('.kmc-structure-panel-field'),
+        built.fxInput.closest('.kmc-structure-panel-row'),
+        built.sourceSelect.closest('.kmc-structure-panel-field'),
+        built.notesInput.closest('.kmc-structure-panel-field'),
+      ].forEach(fieldNode => { if (fieldNode) advanced.appendChild(fieldNode); });
+      built.form.appendChild(advanced);
+      const hint = el(doc, 'p', 'kmc-structure-inline-hint',
+        'Une nouvelle charge s’ajoute ; pour corriger un fait existant, choisissez « Ajustement » et son écriture d’origine.');
+      const history = el(doc, 'details', 'kmc-structure-inline-history');
+      history.appendChild(el(doc, 'summary', '', 'Consulter l’historique'));
+      history.appendChild(historyList);
+      body.replaceChildren(formTitle, hint, built.form, history);
+    } else {
+      body.replaceChildren(historyTitle, historyList, formTitle, built.form);
+    }
     saveBtn.disabled = false;
 
     let historyCache = [];
@@ -320,6 +372,11 @@
       const charge = charges.find(item => String(item.id) === String(config.initialChargeId));
       if (charge) {
         built.chargeSelect.value = String(charge.id);
+        if (inline) {
+          // The row identifies the charge; it must not silently mutate another one.
+          built.chargeSelect.disabled = true;
+          built.chargeSelect.closest('.kmc-structure-panel-field')?.classList.add('is-charge-locked');
+        }
         await loadHistory(built.chargeSelect.value);
       } else {
         built.errorBox.hidden = false;
@@ -334,8 +391,29 @@
       saveBtn.disabled = true;
       saveBtn.textContent = 'Enregistrement…';
       try {
-        const amountOriginal = Number(built.amountInput.value);
-        const fxRate = Number(built.fxInput.value) || 1;
+        const rawAmount = built.amountInput.value.trim();
+        const amountOriginal = Number(rawAmount);
+        const fxRate = Number(built.fxInput.value);
+        if (!built.chargeSelect.value) throw new Error('Choisissez une charge valide.');
+        if (!built.fromInput.value || !built.toInput.value || built.toInput.value <= built.fromInput.value) {
+          throw new Error('Renseignez une période de début et de fin valide.');
+        }
+        if (!rawAmount || !Number.isFinite(amountOriginal) || amountOriginal === 0) {
+          throw new Error('Saisissez un montant non nul.');
+        }
+        if (built.eventKindSelect.value === 'ACCRUAL' && amountOriginal <= 0) {
+          throw new Error('Une nouvelle charge doit avoir un montant positif.');
+        }
+        if (built.eventKindSelect.value === 'REVERSAL' && amountOriginal >= 0) {
+          throw new Error('Une annulation doit avoir un montant négatif.');
+        }
+        if (!built.adjustsWrap.hidden && !built.adjustsSelect.value) {
+          throw new Error('Choisissez le fait d’origine à corriger.');
+        }
+        if (!built.evidenceInput.value.trim() || built.evidenceInput.value.trim().length < 3) {
+          throw new Error('Une référence de preuve est obligatoire.');
+        }
+        if (!Number.isFinite(fxRate) || fxRate <= 0) throw new Error('Le taux de conversion doit être positif.');
         const body = {
           charge_id: built.chargeSelect.value,
           event_kind: built.eventKindSelect.value,
@@ -352,17 +430,21 @@
           notes: built.notesInput.value || undefined,
         };
         await jsonRequest(fetchFn, config.submitEndpoint, { method: 'POST', body });
-        if (typeof config.onSaved === 'function') await config.onSaved();
-        close(overlay);
+        // Do not misreport a saved event as unsaved if subsequent refresh fails.
+        if (typeof config.onSaved === 'function') {
+          try { await config.onSaved(); }
+          catch (_) { /* accepted append-only event remains valid */ }
+        }
+        closeEditor();
       } catch (error) {
         built.errorBox.hidden = false;
         built.errorBox.textContent = error.message;
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Enregistrer l’ajustement';
+        saveBtn.textContent = inline ? 'Enregistrer' : 'Enregistrer l’ajustement';
       }
     });
 
-    return { overlay, close: () => close(overlay) };
+    return { overlay, close: closeEditor };
   }
 
   return { open };
