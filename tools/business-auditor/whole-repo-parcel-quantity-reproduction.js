@@ -18,6 +18,8 @@ function inspect(raw){
   raw.realOwnersExecuted!==true||raw.canonicalPg!==true||
   raw.networkBlocked!==true||raw.allReadsFromPostgres!==true||
   raw.realCancellationAccepted!==true||
+  raw.allocatedParcelFixturePreparedBySQL!==true||
+  raw.parcelAllocationHttpPathExecuted!==false||
   !raw.before||!raw.intermediate||!raw.after||
   raw.before.item_id!==raw.after.item_id||
   raw.before.order_id!==raw.after.order_id||
@@ -69,6 +71,8 @@ async function run({out}={},env=process.env,deps={}){
   productionReachabilityConfirmed:false,
   productionIncidentConfirmed:false,
   businessPolicyReviewRequired:true,
+  allocatedQuantityConstructedInCanonicalDb:true,
+  noEndToEndPackingRouteProof:true,
   noRuntimeSourceChanges:true};
  fs.mkdirSync(path.resolve(out),{recursive:true});
  fs.writeFileSync(path.join(path.resolve(out),'parcel-resync-probe.json'),
