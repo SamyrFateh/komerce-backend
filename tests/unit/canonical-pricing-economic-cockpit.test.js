@@ -13,7 +13,7 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261031-economic-4');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261031-inline-1');
   expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261023-1');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
@@ -114,13 +114,13 @@ test('les trois actions de coûts du mock ouvrent des panneaux séparés, jamais
   expect(index).toContain('/dashboards/canonical/css/pricing-structure-event-panel.css');
 });
 
-test('Atelier des prix : familles comparées ou superposées, Valeur/Provenance en détail', () => {
+test('Moteur économique : édition par ligne, Valeur/Provenance en détail', () => {
   const fs = require('fs');
   const path = require('path');
   const dir = path.join(__dirname, '../../public/dashboards/canonical');
   const source = fs.readFileSync(path.join(dir, 'js/pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(dir, 'css/pricing-economic-cockpit.css'), 'utf8');
-  expect(source).toContain('costLayoutControl');
+  expect(source).toContain('dataset.inlineCostForm');
   expect(source).toContain('kmc-economic-family-grid');
   expect(source).toContain("'Valeur', 'Provenance'");
   expect(source).toContain("'Surcharge pays'");
@@ -129,19 +129,19 @@ test('Atelier des prix : familles comparées ou superposées, Valeur/Provenance 
   expect(css).toContain('.kmc-cockpit-secondary');
 });
 
-test('présentations : navigation clavier flèches/Home/End', () => {
+test('formulaire : statut serveur et sécurités de validation', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/pricing-economic-cockpit.js'), 'utf8');
   expect(src).toContain("key === 'ArrowRight'");
   expect(src).toContain("key === 'Home'");
   expect(src).toContain("key === 'End'");
 });
 
-test('familles : trois colonnes lisibles et détail intégral disponible', () => {
+test('familles : colonnes stables et édition contextuelle', () => {
   const css = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/pricing-economic-cockpit.css'), 'utf8');
   const enhanced = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/pricing-atelier-views.css'), 'utf8');
   expect(enhanced).toContain('.kmc-economic-family-grid');
   expect(enhanced).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
-  expect(enhanced).toContain('[data-cost-layout="stacked"]');
+  expect(enhanced).toContain('kmc-inline-cost-form');
   expect(enhanced).toContain('kmc-economic-family-preview-row');
 });
 
