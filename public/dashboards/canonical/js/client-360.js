@@ -110,6 +110,17 @@
       [client.phone ? (revealContacts ? client.phone : maskPhone(client.phone)) : null, client.country, marketLabel(payload.scope)].filter(Boolean).join(' · ')
     ));
 
+    // Return to the true origin (including its filters), validated by the
+    // shared navigation policy. Deep links without context fall back to the list.
+    const navigation = globalThis.KomerceCanonicalNavigation;
+    const origin = navigation && typeof navigation.resolveBackTarget === 'function'
+      ? navigation.resolveBackTarget('client-360', globalThis.location?.search || '')
+      : null;
+    const back = text(doc, 'a', 'kmc-entity-return', `← ${origin?.label || 'Retour aux clients'}`);
+    back.setAttribute('href', origin?.href || '/admin/clients');
+    back.setAttribute('data-entity-return', 'client-360');
+    header.appendChild(back);
+
     // The shared shell owns global destinations. Keep only contact privacy
     // controls on the client dossier, never a second global navigation.
     if ((client.phone || client.email) && typeof onToggleContacts === 'function') {
