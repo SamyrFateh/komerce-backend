@@ -108,7 +108,7 @@ WITH picked_source AS (
    WHERE NOT COALESCE((
      p.is_active=FALSE AND p.is_available=FALSE
      AND sc.supplier_name='RCT1-FICTIF-recette'
-     AND (p.product_ref,sc.candidate_ref) IN (
+     AND (p.product_ref,sc.supplier_product_id) IN (
        ('KSC-000180','RCT1-P1'), ('KSC-000181','RCT1-P2'),
        ('KSC-000182','RCT1-P3'), ('KSC-000183','RCT1-P4'),
        ('KSC-000184','RCT1-P5')
