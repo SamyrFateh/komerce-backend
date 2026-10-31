@@ -36,7 +36,7 @@ test('Sourcing garde Hero + décisions puis ses vrais outils métier',()=>{
 test('front sourcing shows commercial suggestion and hides customs category correction',()=>{
   expect(workspace).not.toContain('boutique-category-options');
   expect(workspace).not.toContain('confirm-boutique-category');
-  expect(workspace).toContain('Compléter dans le Catalogue');
+  expect(workspace).toContain("'/admin/workspaces/catalog?search='");
   expect(workspace).toContain("label:'Exceptions source'");
   expect(workspace).not.toContain('Catégorie Komerce ·');
 });
