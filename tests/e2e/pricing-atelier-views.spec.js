@@ -1,7 +1,7 @@
 /**
  * @e2e   pricing-atelier-views.spec.js
  * @feature dashboard (Atelier des prix, /admin/workspaces/pricing, marché Comores) — lot UX A
- * @brief Trois entrées (Vue économique, Produits à décider, Modèle de coûts), file de travail à une action principale par ligne,
+ * @brief Deux onglets économiques, Catalogue marché propriétaire du prix, dossier produit historique en route ciblée,
  *        dossier produit (sources, simulation, brouillon distinct de l'activation, sortie vers le Catalogue pays), états droits/erreur/vide,
  *        aucun débordement horizontal (desktop et mobile). API simulée : aucun serveur, aucune base, aucune écriture réelle.
  */
@@ -30,7 +30,7 @@ function corridorFor(ref) {
   return data;
 }
 const COMPONENTS = [
-  { key: 'stripe_fee_pct', label: 'Frais Stripe', family: 'business', category: 'payment', unit: 'pct', default_value: 2.9, allocation_method: 'per_order', inherited: true, is_active: true },
+  { key: 'stripe_fee_pct', label: 'Frais Stripe', family: 'business', category: 'payment', unit: 'pct', default_value: 2.9, base_default_value: 3.2, allocation_method: 'per_order', inherited: true, is_active: true },
   { key: 'cash_fee_kmf', label: 'Frais collecte cash', family: 'business', category: 'payment', unit: 'kmf_per_order', default_value: 500, allocation_method: 'per_order', inherited: false, is_active: true },
   { key: 'freight_kg', label: 'Fret maritime', family: 'landed_relay', category: 'freight', unit: 'kmf_per_kg', default_value: null, allocation_method: 'by_weight', inherited: true, is_active: true },
 ];
@@ -196,7 +196,8 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
     });
 
     test('Modèle de coûts : familles en onglets, propriétaire des coûts', async ({ page }) => {
-      await mount(page);
+      const posts = [];
+      await mount(page, { posts });
       await page.locator('[data-atelier-view="costs"]').click();
       await expect(page).toHaveURL(/view=costs/);
       await expect(page.locator('.kmc-cockpit-costs')).toBeVisible();
@@ -204,6 +205,17 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('.kmc-metric-card').first()).toBeHidden();
       const tabs = page.locator('.kmc-cockpit-cost-tabs [role="tab"]');
       await expect(tabs).toHaveText(['Coûts variables', 'Charges fixes directes', 'Charges fixes mutualisées']);
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Global hérité');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale : 3,2 %');
+      await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'true');
+      await page.locator('[data-open-cost-detail="variable"]').click();
+      const localCost = page.locator('[data-variable-cost-panel] [data-variable-cost-input="cash_fee_kmf"]');
+      await expect(localCost).toHaveValue('500');
+      await localCost.fill('520');
+      await localCost.blur();
+      await expect.poll(() => posts.some(post => post.path.endsWith('/market/KM/cost-components/cash_fee_kmf/update')
+        && post.body.default_value === 520)).toBe(true);
+      await page.locator('[data-variable-cost-panel] button[aria-label="Fermer"]').click();
       await noOverflow(page);
       await shot(page, '4-modele-de-couts', name);
     });
