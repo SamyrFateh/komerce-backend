@@ -1841,7 +1841,7 @@
         <td>${fmtDate(item.started_at)}</td>
         <td><span class="kir-status is-${tone}">${esc(item.state_label)}</span></td>
         <td>${num(item.source_total)}</td><td>${num(item.certified)}</td><td>${num(item.discarded)}</td>
-        <td>${num(item.action_required) > 0 ? `<strong class="kir-passage-action">${num(item.action_required)}</strong>` : '0'}</td>
+        <td>${num(item.action_required) > 0 ? `<a class="kir-passage-action" href="${urlFor(item.run_ref, 'exceptions')}" data-cockpit-nav title="Voir les écarts de ce passage">${num(item.action_required)} · Voir →</a>` : '—'}</td>
         <td>${esc(item.handoff_label || '—')}</td>
       </tr>`;
     }).join('');
