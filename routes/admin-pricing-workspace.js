@@ -552,12 +552,21 @@ router.post('/market/:marketCode/structure-charges',
     } catch(error){ handleStructureEventError(error,res,next); }
   });
 
+// Keep the historical /description URL compatible with deployed clients.
+// A market-owned reference may now update its label and note together; the
+// capability and resolved market scope are identical for both operations.
 router.patch('/market/:marketCode/structure-charges/:chargeId/description',
   requirePricingCapability('structure.event.record'), async (req,res,next) => {
     try {
-      sendAction(res,'update_market_direct_structure_description',
-        await marketChargeReference.updateMarketChargeDescription(
-          req.workspaceMarket,req.params.chargeId,req.body?.description));
+      if (req.body && Object.prototype.hasOwnProperty.call(req.body,'name')) {
+        sendAction(res,'update_market_direct_structure_details',
+          await marketChargeReference.updateMarketChargeDetails(
+            req.workspaceMarket,req.params.chargeId,req.body));
+      } else {
+        sendAction(res,'update_market_direct_structure_description',
+          await marketChargeReference.updateMarketChargeDescription(
+            req.workspaceMarket,req.params.chargeId,req.body?.description));
+      }
     } catch(error){ handleError(error,res,next); }
   });
 
