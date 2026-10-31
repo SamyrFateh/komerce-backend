@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-3');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-1');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -197,7 +197,7 @@ test('Dossier opérateur : correction source accessible sans chiffres économiqu
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261031-1');
+  expect(index).toContain('catalog-workspace.js?v=261031-2');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -245,20 +245,22 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(ui).toContain("actionDock.setAttribute('data-catalog-action-dock', '')");
   expect(ui).toContain("panel.appendChild(actionDock)");
   expect(ui).toContain("sourceDetails.setAttribute('data-catalog-source-details', '')");
-  expect(ui).toContain("panel.appendChild(dossierSlot)");
+  expect(ui).toContain("additional.appendChild(dossierSlot)");
+  expect(ui).toContain("additional.setAttribute('data-catalog-complementary-info', '')");
   expect(ui).toContain("Compléter titre et description FR");
   expect(ui).toContain("Modifier titre / description FR");
   expect(ui).toContain("openFrenchEditor(context, {");
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261031-1');
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261030-3');
+  expect(index).toContain('catalog-workspace.js?v=261031-2');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-1');
 });
 
 test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
   expect(ui).toContain("status: 'Validation Catalogue requise'");
-  expect(ui).toContain('Cette étape ne valide pas le produit.');
+  expect(ui).toContain('français enregistré automatiquement');
+  expect(ui).toContain('finishCatalogueAfterCorrection(context, row)');
   expect(ui).toContain("stepNotice.setAttribute('data-catalog-approval-explanation', '')");
   expect(ui).toContain("'Contrôler les prérequis', 'inspector-check-approval'");
   expect(ui).toContain('Contrôler les prérequis (lecture seule)');
@@ -267,5 +269,20 @@ test('Validation Catalogue : la préparation française et le contrôle sont dis
   expect(ui).toContain("ENDPOINT + '/approval/'");
   expect(ui).toContain('Validation refusée : ');
   expect(ui).not.toContain("status: 'À valider en Raffinerie'");
-  expect(index).toContain('catalog-workspace.js?v=261031-1');
+  expect(index).toContain('catalog-workspace.js?v=261031-2');
+});
+
+test('Examiner V4 : aucun double Enregistrer/Confirmer visible et conformité garantie par serveur', () => {
+  expect(ui).toContain('save.hidden = true;');
+  expect(ui).toContain('validate.hidden = true;');
+  expect(ui).toContain("nameField.control.addEventListener('change', () => autosaveFrench())");
+  expect(ui).toContain("descriptionField.control.addEventListener('change', () => autosaveFrench())");
+  expect(ui).toContain("select.addEventListener('change', () => {");
+  expect(ui).toContain("form.requestSubmit()");
+  expect(ui).toContain("diagnosis?.certification?.certified !== true");
+  expect(ui).toContain("ENDPOINT + '/approval/'");
+  expect(ui).toContain("approvalDetails.setAttribute('data-catalog-approval-details', '')");
+  expect(ui).toContain("correctionIssues = issues.filter(code => code !== 'approval_pending')");
+  expect(css).toContain(".kmc-catalog-complementary");
+  expect(css).toContain(".kmc-catalog-fr-footer-buttons [hidden]");
 });
