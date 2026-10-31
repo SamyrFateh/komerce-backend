@@ -236,10 +236,18 @@
     const container = config.container || doc.body;
     const fetchFn = config.fetch;
 
-    const overlay = el(doc, 'div', 'kmc-structure-panel-overlay');
-    const panel = el(doc, 'div', 'kmc-structure-panel');
-    panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-modal', 'true');
+    const inline = config.inline === true;
+    const overlay = el(doc, 'div', inline ? 'kmc-structure-inline-editor' : 'kmc-structure-panel-overlay');
+    if (inline) {
+      overlay.dataset.structureInlineEditor = '';
+      overlay.setAttribute('role', 'region');
+      overlay.setAttribute('aria-label', config.title || 'Modification d’une charge');
+    }
+    const panel = el(doc, 'div', inline ? 'kmc-structure-panel kmc-structure-inline-panel' : 'kmc-structure-panel');
+    if (!inline) {
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+    }
     overlay.appendChild(panel);
 
     const header = el(doc, 'div', 'kmc-structure-panel-header');
@@ -260,19 +268,30 @@
     const footer = el(doc, 'div', 'kmc-structure-panel-footer');
     const cancelBtn = el(doc, 'button', 'kmc-structure-panel-btn kmc-structure-panel-btn-secondary', 'Annuler');
     cancelBtn.type = 'button';
-    const saveBtn = el(doc, 'button', 'kmc-structure-panel-btn kmc-structure-panel-btn-primary', 'Enregistrer l’ajustement');
+    const saveBtn = el(doc, 'button', 'kmc-structure-panel-btn kmc-structure-panel-btn-primary',
+      inline ? 'Enregistrer' : 'Enregistrer l’ajustement');
     saveBtn.type = 'submit';
     saveBtn.disabled = true;
     footer.appendChild(cancelBtn);
     footer.appendChild(saveBtn);
     panel.appendChild(footer);
 
-    overlay.__onKeydown = event => { if (event.key === 'Escape') close(overlay); };
+    const closeEditor = () => {
+      close(overlay);
+      if (typeof config.onClose === 'function') config.onClose();
+    };
+    overlay.__onKeydown = event => {
+      if (event.key === 'Escape' && (!inline || overlay.contains(event.target))) {
+        event.preventDefault();
+        closeEditor();
+      }
+    };
     overlay.__doc = doc;
     doc.addEventListener('keydown', overlay.__onKeydown);
-    closeBtn.addEventListener('click', () => close(overlay));
-    cancelBtn.addEventListener('click', () => close(overlay));
-    overlay.addEventListener('click', event => { if (event.target === overlay) close(overlay); });
+    closeBtn.addEventListener('click', closeEditor);
+    cancelBtn.addEventListener('click', closeEditor);
+    if (inline) cancelBtn.dataset.structureInlineCancel = '';
+    if (!inline) overlay.addEventListener('click', event => { if (event.target === overlay) closeEditor(); });
 
     container.appendChild(overlay);
 
@@ -282,15 +301,30 @@
       charges = chargesPayload.charges || [];
     } catch (error) {
       body.replaceChildren(el(doc, 'div', 'kmc-structure-panel-empty', `Impossible de charger les charges : ${error.message}`));
-      return { overlay, close: () => close(overlay) };
+      return { overlay, close: closeEditor };
     }
 
     const historyTitle = el(doc, 'div', 'kmc-structure-panel-section-title', 'Historique');
     const historyList = el(doc, 'div', 'kmc-structure-panel-history');
-    const formTitle = el(doc, 'div', 'kmc-structure-panel-section-title', 'Nouvel ajustement');
+    const formTitle = el(doc, 'div', 'kmc-structure-panel-section-title',
+      inline ? 'Saisie sur cette ligne' : 'Nouvel ajustement');
     const built = buildForm(doc, charges);
 
-    body.replaceChildren(historyTitle, historyList, formTitle, built.form);
+    if (inline) {
+      const current = el(doc, 'span', 'kmc-structure-inline-previous',
+        `${config.previousLabel || 'Dernière valeur de période'} : ${config.previousValue || '—'}`);
+      const amount = built.form.querySelector('[name="amount_original"]');
+      amount?.closest('.kmc-structure-panel-row')?.prepend(current);
+      amount.placeholder = 'Nouvelle écriture';
+      const hint = el(doc, 'p', 'kmc-structure-inline-hint',
+        'Les charges fixes sont des faits de période : une nouvelle charge s’ajoute ; pour rectifier un fait, choisissez « Ajustement » et son écriture d’origine. Période et justificatif obligatoires.');
+      const history = el(doc, 'details', 'kmc-structure-inline-history');
+      history.appendChild(el(doc, 'summary', '', 'Consulter l’historique'));
+      history.appendChild(historyList);
+      body.replaceChildren(formTitle, hint, built.form, history);
+    } else {
+      body.replaceChildren(historyTitle, historyList, formTitle, built.form);
+    }
     saveBtn.disabled = false;
 
     let historyCache = [];
@@ -352,17 +386,21 @@
           notes: built.notesInput.value || undefined,
         };
         await jsonRequest(fetchFn, config.submitEndpoint, { method: 'POST', body });
-        if (typeof config.onSaved === 'function') await config.onSaved();
-        close(overlay);
+        // Do not misreport a saved event as unsaved if subsequent refresh fails.
+        if (typeof config.onSaved === 'function') {
+          try { await config.onSaved(); }
+          catch (_) { /* accepted append-only event remains valid */ }
+        }
+        closeEditor();
       } catch (error) {
         built.errorBox.hidden = false;
         built.errorBox.textContent = error.message;
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Enregistrer l’ajustement';
+        saveBtn.textContent = inline ? 'Enregistrer' : 'Enregistrer l’ajustement';
       }
     });
 
-    return { overlay, close: () => close(overlay) };
+    return { overlay, close: closeEditor };
   }
 
   return { open };
