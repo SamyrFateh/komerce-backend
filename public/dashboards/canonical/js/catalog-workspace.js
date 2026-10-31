@@ -2457,12 +2457,15 @@
     additional.setAttribute('data-catalog-complementary-info', '');
     additional.appendChild(text(doc, 'summary', '', 'Informations complémentaires'));
     additional.appendChild(dossierSlot);
+    const supplierInfo = panel.querySelector('[data-catalog-source-details]');
+    if (supplierInfo) additional.insertBefore(supplierInfo, dossierSlot);
     void loadProductDossier(context, doc, dossierSlot, row);
     const issues = Array.isArray(row.issues) ? row.issues : [];
     const correctionIssues = issues.filter(code => code !== 'approval_pending');
-    panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
+    const correctionsTitle = text(doc, 'strong', 'kmc-catalog-inspector-section',
       correctionIssues.length ? 'Corrections nécessaires · ' + correctionIssues.length
-        : 'Aucune anomalie de contenu à corriger'));
+        : 'Aucune anomalie de contenu à corriger');
+    panel.insertBefore(correctionsTitle, panel.querySelector('[data-catalog-action-dock]'));
     const list = doc.createElement('ul');
     list.className = 'kmc-catalog-inspector-issues';
     const labels = {
@@ -2476,7 +2479,7 @@
     correctionIssues.forEach(code => {
       if (labels[code]) list.appendChild(text(doc, 'li', '', labels[code]));
     });
-    if (list.children.length) panel.appendChild(list);
+    if (list.children.length) panel.insertBefore(list, panel.querySelector('[data-catalog-action-dock]'));
     if (row.work_status === 'activation_to_reconcile') {
       feedback.textContent =
         'Activation d’une fiche encore marquée candidate : origine et autorisation à vérifier. ' +
@@ -2495,8 +2498,8 @@
     }
 
     if (issues.includes('media_missing')) {
-      panel.appendChild(text(doc, 'strong', 'kmc-catalog-inspector-section',
-        'Contrôle média · informations vérifiées'));
+      additional.insertBefore(text(doc, 'strong', 'kmc-catalog-inspector-section',
+        'Contrôle média · informations vérifiées'), dossierSlot);
       const mediaFacts = doc.createElement('dl');
       mediaFacts.className = 'kmc-catalog-inspector-fields';
       const findings = [
@@ -2516,7 +2519,7 @@
         mediaFacts.appendChild(text(doc, 'dt', '', label));
         mediaFacts.appendChild(text(doc, 'dd', '', value));
       });
-      panel.appendChild(mediaFacts);
+      additional.insertBefore(mediaFacts, dossierSlot);
       if (row.media_status === 'source_recoverable' &&
           row.lifecycle_status === 'candidate' && row.is_active === false) {
         const recover = makeButton(doc, 'Réintégrer les médias fournisseur', 'inspector-recover-media');
@@ -2545,8 +2548,8 @@
         });
         actions.appendChild(recover);
       }
-      panel.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
-        'Aucune validation ni publication implicite : la certification devra être relancée.'));
+      additional.insertBefore(text(doc, 'p', 'kmc-catalog-correction-hint',
+        'Le produit reste hors publication marché tant que les contrôles ne sont pas satisfaits.'), dossierSlot);
     }
     if (issues.includes('source_to_normalize'))
       feedback.textContent = row.candidate_ref
