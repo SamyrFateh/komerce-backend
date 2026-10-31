@@ -65,3 +65,37 @@ test('description: écriture bornée au seul marché propriétaire',async()=>{
   db.query.mockResolvedValueOnce({rows:[]});
   await expect(service.updateMarketChargeDescription(market,'other-charge','X')).rejects.toMatchObject({status:404});
 });
+
+
+test('libellé + description : mise à jour atomique limitée au propriétaire marché', async () => {
+  db.query.mockResolvedValueOnce({rows:[{id:'charge-1',name:'Loyer antenne Anjouan',notes:'Bureau local',market_owner_id:market.id}]});
+  const result = await service.updateMarketChargeDetails(market,'charge-1',{
+    name:'  Loyer antenne Anjouan  ',description:'  Bureau local  ',
+  });
+  expect(result.name).toBe('Loyer antenne Anjouan');
+  const [sql,params]=db.query.mock.calls[0];
+  expect(sql).toContain('SET name=$1, notes=$2');
+  expect(sql).toContain('market_owner_id=$4');
+  expect(sql).toContain('is_active=TRUE');
+  expect(params).toEqual(['Loyer antenne Anjouan','Bureau local','charge-1',market.id]);
+});
+
+test('renommage : refus des noms vides, trop longs, d\'autres marchés ou d\'un pool GROUP', async () => {
+  await expect(service.updateMarketChargeDetails(market,'charge-1',{name:'X'})).rejects.toMatchObject({
+    status:400,code:'charge_reference_invalid',
+  });
+  await expect(service.updateMarketChargeDetails(market,'charge-1',{name:'A'.repeat(121)})).rejects.toMatchObject({
+    status:400,code:'charge_reference_invalid',
+  });
+  expect(db.query).not.toHaveBeenCalled();
+  db.query.mockResolvedValueOnce({rows:[]});
+  await expect(service.updateMarketChargeDetails(market,'group-charge',{name:'Loyer interne'}))
+    .rejects.toMatchObject({status:404,code:'charge_reference_not_found'});
+  expect(db.query.mock.calls[0][1][3]).toBe(market.id);
+});
+
+test('libellé déjà utilisé sur le même marché : conflit explicite, pas de changement confirmé', async () => {
+  db.query.mockRejectedValueOnce(Object.assign(new Error('duplicate key'),{code:'23505'}));
+  await expect(service.updateMarketChargeDetails(market,'charge-1',{name:'Loyer déjà existant'}))
+    .rejects.toMatchObject({status:409,code:'charge_reference_conflict'});
+});
