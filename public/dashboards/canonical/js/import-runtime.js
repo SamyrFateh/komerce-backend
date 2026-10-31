@@ -535,7 +535,7 @@
         if (routeAtStart !== currentRouteKey()) return;
       }
       if (routeAtStart !== currentRouteKey()) return;
-      if (activationState.runRef && params().run !== activationState.runRef) {
+      if (activationState.runRef && (params().run !== activationState.runRef || params().view !== 'overview')) {
         global.history.pushState({}, '', urlFor(activationState.runRef));
       }
       lastPayload = payload;
@@ -2459,7 +2459,7 @@
         if (runRef) activationState.runRef = runRef;
         activationState.outcome = result?.certification_run?.status || null;
         activationState.done = true;
-        if (activationState.runRef && params().run !== activationState.runRef) {
+        if (activationState.runRef && (params().run !== activationState.runRef || params().view !== 'overview')) {
           global.history.pushState({}, '', urlFor(activationState.runRef));
         }
       }
@@ -2476,7 +2476,7 @@
           : 'failed';
         activationState.error = error.code === 'sourcing_source_certification_incomplete' ? null : message;
         activationState.done = true;
-        if (activationState.runRef && params().run !== activationState.runRef) {
+        if (activationState.runRef && (params().run !== activationState.runRef || params().view !== 'overview')) {
           global.history.pushState({}, '', urlFor(activationState.runRef));
         }
       } else {
