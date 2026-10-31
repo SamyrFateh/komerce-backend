@@ -432,8 +432,10 @@
         refreshNavigation(user, context);
         return;
       }
-      const pricePage = new URL(global.location.href).searchParams.get('price_page') || '1';
-      const payload = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure?price_page=${encodeURIComponent(pricePage)}`);
+      const currentUrl = new URL(global.location.href);
+      const pricePage = currentUrl.searchParams.get('price_page') || '1';
+      const priceSearch = currentUrl.searchParams.get('price_search') || '';
+      const payload = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure?price_page=${encodeURIComponent(pricePage)}&price_search=${encodeURIComponent(priceSearch)}`);
 
       root.className = 'kmc-workspace';
       root.setAttribute('data-workspace-kind', 'market-catalog');
