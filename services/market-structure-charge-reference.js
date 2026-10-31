@@ -77,4 +77,34 @@ async function updateMarketChargeDescription(market, chargeId, description, opti
   return result.rows[0];
 }
 
-module.exports={referenceInput,createMarketChargeAndFact,updateMarketChargeDescription};
+// Edit the label and description together, without touching the immutable
+// facts: each posted event retains its original charge_name_snapshot.
+async function updateMarketChargeDetails(market, chargeId, input = {}, options = {}) {
+  if (!market?.id) throw new TypeError('Resolved market required');
+  const name = String(input.name == null ? '' : input.name).trim();
+  const description = String(input.description == null ? '' : input.description).trim();
+  if (name.length < 3 || name.length > 120)
+    throw Object.assign(new Error('Libellé : 3 à 120 caractères'),{status:400,code:'charge_reference_invalid'});
+  if (description.length > 500)
+    throw Object.assign(new Error('Description : 500 caractères maximum'),{status:400,code:'charge_reference_invalid'});
+  try {
+    const result = await (options.executor || db).query(
+      `UPDATE charges SET name=$1, notes=$2, updated_at=NOW()
+         WHERE id=$3 AND market_owner_id=$4 AND is_active=TRUE
+         RETURNING id,name,notes,market_owner_id,updated_at`,
+      [name,description || null,chargeId,market.id]
+    );
+    if (!result.rows.length) throw Object.assign(new Error('Poste de ce marché introuvable'),{
+      status:404,code:'charge_reference_not_found',
+    });
+    return result.rows[0];
+  } catch (error) {
+    if (error.code === '23505') throw Object.assign(
+      new Error('Ce libellé existe déjà pour ce marché'),{
+        status:409,code:'charge_reference_conflict',
+      });
+    throw error;
+  }
+}
+
+module.exports={referenceInput,createMarketChargeAndFact,updateMarketChargeDescription,updateMarketChargeDetails};
