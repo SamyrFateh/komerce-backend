@@ -97,7 +97,7 @@ test.describe('Catalogue pays — Chromium desktop 1440', () => {
     const tr=page.locator('tr[data-product-ref="KPR-1"]');
     await tr.locator('input').fill('2500');
     await expect(tr).toContainText('mise en vente refusée');
-    await expect(tr.getByRole('button',{name:'Mettre en vente'})).toBeDisabled();
+    await expect(tr.locator('.kmc-price-action-button')).toBeDisabled();
     await tr.locator('input').fill('32000');
     await expect(tr).toContainText('Au-dessus du repère haut');
     await expect(tr.getByRole('button',{name:'Mettre en vente'})).toBeEnabled();
