@@ -571,3 +571,21 @@ describe('listStructureCostEvents', () => {
     expect(db.query).not.toHaveBeenCalled();
   });
 });
+
+test('renommage : le moteur affiche le libellé courant et garde le snapshot comptable original', () => {
+  const rows=[structureEvent({
+    id:'local-1',charge_id:'market-charge-1',scope_kind:'MARKET_DIRECT',market_id:'market-km',
+    charge_name_snapshot:'Loyer initial',charge_current_name:'Loyer antenne Anjouan',
+    charge_description:'Bureau Mutsamudu',charge_market_owner_id:'market-km',
+    amount_kmf:85000,
+  })];
+  const period={from:new Date('2026-09-01T00:00:00Z'),to:new Date('2026-10-01T00:00:00Z')};
+  const actual=_aggregateRows(rows,period,'market-km');
+  expect(actual.market_direct_kmf).toBe(85000);
+  expect(actual.evidence[0]).toMatchObject({
+    charge_name:'Loyer antenne Anjouan',
+    charge_name_snapshot:'Loyer initial',
+    charge_description:'Bureau Mutsamudu',
+    reference_is_market_owned:true,
+  });
+});
