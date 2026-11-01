@@ -796,3 +796,15 @@ Le journal `international_shipment_events` accepte les événements `opened`, `b
 
 `financial_movements` is a new, **not yet live** append-only journal (migration 360, Lot 5). One row per projected business fact, idempotent on `movement_key = source_kind:source_id:facet`. It keeps the **native amount and currency**, the EUR amount (`amount_eur`, `fx_status` ∈ snapshot / converted / native_eur / unavailable) with the frozen FX `fx_legs`, the business `state` (planned → committed → observed → settled → reversed, forward-only), the `provenance` and the links (market, order, purchase order, shipment, parcel, supplier, relay). A trigger freezes identity, native amounts, EUR and rates, forbids DELETE and any state regression. It is **not a double-entry ledger** (no debit/credit accounts). `financial_movement_documents` stores the supporting documents (proof references) of a movement, unique per (movement, kind, reference).
 <!-- /schema-pending -->
+
+
+### Migration 361 — intention de schéma : coûts documentés par expédition (staging)
+
+La **migration 361** harmonise le transport canonique KOM-BOX et la projection économique :
+- `international_n1_reconciliations.total_customs_kmf` : droits/taxes de douane **réellement documentés** pour l'expédition, pas une allocation par article.
+- `international_n1_reconciliations.total_customs_fees_kmf` : coûts annexes facturés dans le dossier douane, consolidés sans doublon.
+- `international_n1_reconciliations.documented_total_kmf` : somme des **postes documentés** du dossier. Ne pas assimiler à un total définitif si des postes sont inconnus.
+- `international_n1_reconciliations.financial_closed_at`, `financial_closed_by`, `financial_close_proof_ref` : clôture économique datée, avec acteur et justificatif, séparée de la réception physique au relais.
+- `international_shipment_events.event_type = customs_amount_confirmed` : événement audité portant la preuve de déclaration des droits d'expédition, distinct des changements d'état physiques.
+- `international_shipment_parcels` et `international_n1_allocation_links` : anciennes tables de jointure **retirées uniquement si vides** ; abort explicite de migration sinon. Le modèle canonique physique est `international_shipment_hub_units`. Toute imputation automatique de fret/douane aux lignes de commande est supprimée pour les expéditions internationales.
+La projection N1 prévisionnelle du pricing reste intacte ; l'ajustement prévision/réel se lit au niveau expédition/marché/période sans doubler les charges.
