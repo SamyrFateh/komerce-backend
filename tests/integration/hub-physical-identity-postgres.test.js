@@ -352,6 +352,54 @@ describe('HUB-001 — market-safe physical identity', () => {
       .toEqual([String(km.market), String(cm.market)].sort());
   });
 
+  test('reconciliation: PO is traceable through two dispatched cartons without losing quantities', async () => {
+    const purchase = await seedPurchase({ qty: 3 });
+    const inbound = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'KOM-RCV-TEST-TRACE', externalRef: 'SUPPLIER-TRACK-123',
+      contents: [{ purchase_order_id: purchase.po, quantity: 3 }],
+    }));
+    expect(inbound.quarantined).toBe(false);
+    await advanceToPicked(inbound.unit.id);
+    const allocationId = inbound.allocations[0].allocation.id;
+    const cartons = [];
+    for (const [index, qty] of [2, 1].entries()) {
+      const carton = await transact((client) => createPhysicalUnit(client, {
+        reference: `KOM-BOX-TEST-${index}`, unitType: 'MARKET_PARCEL', initialState: 'RECEIVED',
+      }));
+      cartons.push(carton);
+      await advanceToPicked(carton.id);
+      const moved = await transact((client) => moveAllocationQuantity(client, {
+        fromUnitId: inbound.unit.id, toUnitId: carton.id,
+        allocationId, quantity: qty, operationType: 'REPACK',
+      }));
+      const { rows: events } = await query(
+        'SELECT event_type FROM hub_custody_events WHERE operation_id=$1',
+        [moved.operation_id]
+      );
+      expect(events.map((event) => event.event_type).sort()).toEqual(['PLACEMENT_IN', 'PLACEMENT_OUT']);
+      await transact(async (client) => {
+        await transitionPhysicalUnit(client, { unitId: carton.id, toState: 'PACKED' });
+        await transitionPhysicalUnit(client, { unitId: carton.id, toState: 'DISPATCHED' });
+      });
+    }
+    const { rows } = await query(`
+      SELECT u.reference, u.state, a.purchase_order_id, a.market_id, a.destination_ref,
+             SUM(p.quantity)::integer AS qty
+        FROM hub_physical_unit_placements p
+        JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+        JOIN hub_physical_units u ON u.id=p.physical_unit_id
+       WHERE a.purchase_order_id=$1 AND p.removed_at IS NULL
+       GROUP BY u.reference, u.state, a.purchase_order_id, a.market_id, a.destination_ref
+       ORDER BY u.reference`, [purchase.po]);
+    expect(rows.map((r) => [r.reference, r.state, r.qty]))
+      .toEqual([['KOM-BOX-TEST-0', 'DISPATCHED', 2], ['KOM-BOX-TEST-1', 'DISPATCHED', 1]]);
+    expect(rows.every((r) => String(r.market_id) === String(purchase.market))).toBe(true);
+    expect(rows.every((r) => String(r.destination_ref) === String(purchase.destination))).toBe(true);
+    const { rows: [supplier] } = await query(
+      'SELECT external_ref, state FROM hub_physical_units WHERE id=$1', [inbound.unit.id]);
+    expect(supplier).toMatchObject({ external_ref: 'SUPPLIER-TRACK-123', state: 'SUPERSEDED' });
+  });
+
   test('economic allocation and custody history are immutable while SPLIT lineage is explicit', async () => {
     const purchase = await seedPurchase({ qty: 2 });
     const inbound = await transact((client) => receiveSupplierPackage(client, {
