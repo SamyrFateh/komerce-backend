@@ -54,6 +54,9 @@ async function reconcile(market,actor,reference,database=db,options={}){
   const closeProof=close?String(options.proof_ref||'').trim():null;
   if(close&&(!closeProof||closeProof.length>240))
     fail('SHIPMENT_COST_CLOSE_PROOF_REQUIRED','Justificatif de clôture économique requis',400);
+  if(close&&options.complete_attested!==true)
+    fail('SHIPMENT_COST_COMPLETENESS_ATTESTATION_REQUIRED',
+      'Confirmer expressément que toutes les factures et absences de charges ont été vérifiées',400);
   return database.withTransaction(async client=>{
     const {rows:[s]}=await client.query(
       'SELECT s.*, cs.is_active AS customs_active, cs.status AS customs_status, cs.freight_kmf AS customs_freight_kmf, cs.customs_paid_kmf, cs.market_id AS customs_market_id '+
@@ -117,14 +120,14 @@ async function reconcile(market,actor,reference,database=db,options={}){
     const {rows:[prior]}=await client.query(
       'SELECT snapshot_hash,financial_closed_at FROM international_n1_reconciliations WHERE shipment_id=$1',
       [s.id]);
-    if(prior?.snapshot_hash===snapshot&&!close)
+    if(prior?.financial_closed_at&&prior.snapshot_hash!==snapshot)
+      fail('SHIPMENT_COST_CLOSED_CHANGED','Faits modifiés après clôture économique : réouverture contrôlée requise');
+    if(prior?.snapshot_hash===snapshot&&(!close||prior.financial_closed_at))
       return {reference:s.reference,idempotent:true,status:prior.financial_closed_at?'closed':'partial',
         documented_total_kmf:format(documented),missing,allocation_rows:0,
         freight_kmf:freight===null?null:format(freight),
         customs_kmf:customsAmount===null?null:format(customsAmount),
         arrival_kmf:format(arrival+customsFee),local_kmf:local===null?null:format(local)};
-    if(prior?.financial_closed_at&&prior.snapshot_hash!==snapshot&&!close)
-      fail('SHIPMENT_COST_CLOSED_CHANGED','Faits corrigés après clôture : réouverture documentée requise');
     await client.query(
       'INSERT INTO international_n1_reconciliations '+
       '(shipment_id,snapshot_hash,total_freight_kmf,total_arrival_kmf,total_local_kmf,allocation_rows,actor_id,freight_known,'+
