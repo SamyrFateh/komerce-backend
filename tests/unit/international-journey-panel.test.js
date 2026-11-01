@@ -27,14 +27,15 @@ test('3 tabs, one existing dossier list and clear not yet booked N1 status',()=>
   expect(tabs.map(x=>x.textContent)).toEqual(['Transport & fret','Arrivée & douane','Vers les relais']);
   expect(tabs.filter(x=>x.className.includes('is-active'))).toHaveLength(1);
   const headings=all(root,n=>n.tagName==='TH').map(n=>n.textContent);
-  expect(headings).toEqual(['Référence','Étape','Transitaire','Colis','Volume facturé','Fret réel','ETA','Dossier']);
+  expect(headings).toEqual(['Référence','Étape','Transitaire','KOM-BOX','Colis historiques','Volume facturé','Fret réel','ETA','Dossier']);
   expect(all(root,n=>n.className==='kmc-journey-cost-alert').at(0).textContent)
     .toContain('Aucun double compte');
 });
-test('admin can prepare shipment + freight, market_operator only reads',()=>{
+test('nouveaux dossiers depuis Hub Live, fret admin et lecture seule responsable marché',()=>{
   const admin=mount('admin');
   const tasks=all(admin.root,n=>n.tagName==='SUMMARY').map(n=>n.textContent);
-  expect(tasks).toContain('Nouvelle expédition · colis remis par le Hub');
+  expect(tasks).not.toContain('Nouvelle expédition · colis remis par le Hub');
+  expect(all(admin.root,n=>n.tagName==='A').map(n=>n.textContent)).toContain('Ouvrir Hub Live · Approvisionnement');
   expect(tasks).toContain('Enregistrer la facture réelle du fret (sans double imputation)');
   const market=mount('market_operator');
   expect(all(market.root,n=>n.tagName==='SUMMARY').map(n=>n.textContent))
@@ -77,4 +78,20 @@ test('only an admin sees N1 reconciliation after customs dossier is linked',()=>
   const market=mount('market_operator','arrival',{customs_reference:'CUS-1'});
   expect(all(market.root,n=>n.tagName==='BUTTON').map(n=>n.textContent))
     .not.toContain('Rapprocher les coûts réels (N1)');
+});
+
+test('un dossier KOM-BOX distingue les vrais cartons des colis historiques et demande transitaire à la remise',()=>{
+  const x=mount('agent_hub','transport',{
+    stage:'hub_ready',hub_draft:true,parcel_count:0,hub_unit_count:2,forwarder_name:null,transport_mode:null,
+  });
+  const tr=all(x.root,n=>n.tagName==='TR').at(1);
+  expect(all(tr,n=>n.tagName==='TD').map(n=>n.textContent)).toEqual(
+    expect.arrayContaining([2,0,'À désigner'])
+  );
+  const summaries=all(x.root,n=>n.tagName==='SUMMARY').map(n=>n.textContent);
+  expect(summaries).toContain('Confirmer : Remis au transitaire');
+  const names=all(x.root,n=>n.tagName==='INPUT'||n.tagName==='SELECT').map(n=>n.name);
+  expect(names).toContain('forwarder_name');
+  expect(names).toContain('transport_mode');
+  expect(names).toContain('proof_ref');
 });
