@@ -11,6 +11,9 @@ test('les libellés propres au marché ne modifient pas le composant global', ()
   expect(service).toContain('description_override');
   expect(service).toContain('base_label: row.label');
   expect(service).toContain('cost_component_market_override_events');
+  expect(service).toContain("component.allocation_perimeter === 'mutualized'");
+  expect(service).toContain("legacyEconomicNature(component) !== 'variable'");
+  expect(service).toContain('market_cost_identity_read_only');
   expect(workspace).toContain('payload.label = body.label');
   expect(workspace).toContain('payload.description = body.description');
 });
