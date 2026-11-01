@@ -132,13 +132,13 @@
     else{
       const table=put(list,doc.createElement('table'));table.className='kmc-workspace-table';
       const thead=put(table,doc.createElement('thead'));const tr=put(thead,doc.createElement('tr'));
-      for(const h of ['Référence','Étape','Transitaire','KOM-BOX','Colis historiques','Volume facturé','Fret réel','ETA','Dossier'])
+      for(const h of ['Référence','Étape','Transitaire','KOM-BOX','Volume facturé','Fret réel','ETA','Dossier'])
         put(tr,text(doc,'th','',h));
       const tbody=put(table,doc.createElement('tbody'));
       for(const s of rows){
         const line=put(tbody,doc.createElement('tr'));
         for(const v of [s.reference,STAGE_LABEL[s.stage]||s.stage,s.forwarder_name||'À désigner',
-          s.hub_unit_count??0,s.parcel_count??0,s.volume_m3==null?'—':s.volume_m3+' m³',money(s.freight_invoice_kmf),date(s.estimated_arrival_at)])
+          s.hub_unit_count??0,s.volume_m3==null?'—':s.volume_m3+' m³',money(s.freight_invoice_kmf),date(s.estimated_arrival_at)])
           put(line,text(doc,'td','',v));
         const cell=put(line,doc.createElement('td'));
         const button=put(cell,text(doc,'button','kmc-entity-360-action',ctx.journeyRef===s.reference?'Ouvert':'Consulter'));
@@ -168,6 +168,9 @@
       ['Fret réel',money(s.freight_invoice_kmf)],
       ['Frais annexes',money(s.supplementary_costs_kmf)],
       ['Dossier douane',s.customs_reference||'Non lié'],
+      ['Droits/taxes constatés',money(s.customs_paid_kmf)],
+      ['Dépenses documentées de l’expédition',money(s.documented_total_kmf)],
+      ['Clôture économique',s.financial_closed_at?'Clôturée le '+date(s.financial_closed_at):'Non clôturée'],
     ];
     for(const [name,value] of facts){
       const item=put(snapshot,doc.createElement('div'));
@@ -175,33 +178,39 @@
       put(item,text(doc,'strong','',value));
     }
     const status=s.cost_reconciliation||'not_reconciled';
-    const message=status==='reconciled'
-      ?'N1 réel rapproché : '+money(s.actual_n1_impact)+' · facture et frais ventilés par article.'
-      :status==='partial_reconciliation'
-        ?'Frais réels ventilés en N1 : '+money(s.actual_n1_impact)+' · fret encore inconnu.'
-        :status==='pending_reconciliation'
-        ?'Nouveaux frais depuis le dernier rapprochement : N1 à actualiser.'
-        :'Fret et frais documentés, non encore imputés au N1. Aucun double compte autorisé.';
+    const message=status==='closed'
+      ?'Dépenses réelles clôturées pour cette expédition, sans ventilation artificielle par article.'
+      :status==='pending_reconciliation'
+        ?'Nouvelles données financières : actualiser le relevé de l’expédition.'
+        :status==='partial'
+          ?'Montants documentés à ce jour, certains postes peuvent encore être inconnus.'
+          :'Dépenses encore à rapprocher. Un coût inconnu ne signifie jamais zéro.';
     const alert=put(dossier,text(doc,'p','kmc-journey-cost-alert',message));
     alert.setAttribute('role','status');
     const ref=encodeURIComponent(s.reference);
     if(actorCan(ctx,['admin'])&&s.customs_reference){
-      const action=put(dossier,text(doc,'button','kmc-workspace-action','Rapprocher les coûts réels (N1)'));
+      const action=put(dossier,text(doc,'button','kmc-workspace-action','Actualiser les coûts constatés de l’expédition'));
       action.type='button';
       const feedback=put(dossier,text(doc,'p','kmc-journey-feedback',''));
       feedback.setAttribute('role','status');
       action.addEventListener('click',async()=>{
-        action.disabled=true;feedback.textContent='Contrôle des factures et ventilation…';
+        action.disabled=true;feedback.textContent='Contrôle des factures et justificatifs…';
         try{
-          const response=await ctx.fetch(endpoint(ctx,ref+'/reconcile-n1'),{
+          const response=await ctx.fetch(endpoint(ctx,ref+'/reconcile-costs'),{
             method:'POST',credentials:'include',headers:{Accept:'application/json'},
           });
           const body=await response.json().catch(()=>({}));
-          if(!response.ok)throw Error(body.error||'Rapprochement refusé');
-          feedback.textContent='N1 rapproché : '+money(body.result?.actual_n1_kmf);
+          if(!response.ok)throw Error(body.error||'Contrôle refusé');
+          feedback.textContent='Dépenses constatées : '+money(body.result?.documented_total_kmf);
           await ctx.reload();
-        }catch(error){feedback.textContent=error.message||'Échec de rapprochement';action.disabled=false;}
+        }catch(error){feedback.textContent=error.message||'Contrôle impossible';action.disabled=false;}
       });
+      if(s.stage==='relay_received'&&!s.financial_closed_at)
+        task(doc,ctx,dossier,{
+          title:'Clôturer économiquement l’expédition (après toutes les factures)',
+          action:ref+'/reconcile-costs',fields:[proof],
+          transform:raw=>({...raw,close:true}),
+        });
     }
     const step=nextStage(s);
     if(canTransition(ctx,step)&&(
@@ -244,6 +253,12 @@
         title:'Lier le dossier douane existant',action:ref+'/link-customs',
         fields:[{name:'customs_reference',label:'Référence douane',required:true},proof],
       });
+      if(s.customs_reference&&s.customs_paid_kmf==null&&STAGES.indexOf(s.stage)>=STAGES.indexOf('arrived'))
+        task(doc,ctx,dossier,{
+          title:'Constater les droits et taxes de douane du dossier (sans imputation aux articles)',
+          action:ref+'/customs-amount',
+          fields:[{name:'amount_kmf',label:'Droits et taxes réels (KMF, 0 confirmé possible)',type:'number',required:true},proof],
+        });
       if(STAGES.indexOf(s.stage)>=STAGES.indexOf('arrived'))
         task(doc,ctx,dossier,{
           title:'Constater un frais à l’arrivée (justificatif obligatoire)',
