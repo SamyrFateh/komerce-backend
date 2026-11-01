@@ -184,6 +184,12 @@ WITH picked_source AS (
  FROM unified u
 ), operator_view AS (
  SELECT m.*,
+   -- Only an explicit operator decision, not an import/scan/proof status.
+   CASE WHEN (m.record_kind='candidate' AND m.work_status IN
+      ('sourcing_category_review','sourcing_review'))
+      OR (m.record_kind='product' AND m.work_status IN
+      ('taxonomy_to_confirm','editorial_to_complete','approval_pending'))
+      THEN TRUE ELSE FALSE END AS requires_arbitration,
    CASE
      WHEN m.work_status IN ('catalog_approved','catalog_approved_inactive') THEN 'validated'
      WHEN m.work_status='excluded' THEN 'excluded'
@@ -268,6 +274,10 @@ function publicRow(row) {
     needs_review: row.needs_review === true,
     work_status: row.work_status,
     operator_group: row.operator_group,
+    requires_arbitration: row.requires_arbitration === true ||
+      (row.requires_arbitration == null &&
+        ((candidate && ['sourcing_category_review','sourcing_review'].includes(row.work_status)) ||
+         (!candidate && ['taxonomy_to_confirm','editorial_to_complete','approval_pending'].includes(row.work_status)))),
     issues,
     updated_at: row.updated_at || null,
   };
@@ -297,12 +307,14 @@ async function listUnified(query = {}, executor = db) {
   // the page rows, so switching tabs does not make other tabs read "0".
   const groupWhere = filters.length ? ' WHERE ' + filters.join(' AND ') : '';
   const groupValues = [...values];
-  const status = ['correction','review','validated','processing','excluded']
+  const status = ['arbitration','correction','review','validated','processing','excluded']
     .includes(query.status) ? query.status : null;
-  if (status) add(status, 'operator_group = ?');
+  if (status === 'arbitration') filters.push('requires_arbitration IS TRUE');
+  else if (status) add(status, 'operator_group = ?');
   const pageWhere = filters.length ? ' WHERE ' + filters.join(' AND ') : '';
   const [counts, list] = await Promise.all([
-    executor.query(UNIFIED_CTE + '\nSELECT operator_group, COUNT(*)::int AS count FROM operator_view' +
+    executor.query(UNIFIED_CTE + '\nSELECT operator_group, COUNT(*)::int AS count, ' +
+      'COUNT(*) FILTER (WHERE requires_arbitration)::int AS arbitration_count FROM operator_view' +
       groupWhere + ' GROUP BY operator_group', groupValues),
     executor.query(UNIFIED_CTE + '\nSELECT * FROM operator_view' + pageWhere +
       '\nORDER BY CASE operator_group WHEN \'correction\' THEN 0 WHEN \'review\' THEN 1' +
@@ -312,14 +324,18 @@ async function listUnified(query = {}, executor = db) {
       [...values, limit, offset]),
   ]);
   const groups = { correction: 0, review: 0, validated: 0, processing: 0, excluded: 0 };
+  let arbitrations = 0;
   for (const item of counts.rows) {
+    arbitrations += Number(item.arbitration_count) || 0;
     if (Object.prototype.hasOwnProperty.call(groups, item.operator_group))
       groups[item.operator_group] = Number(item.count) || 0;
   }
-  const total = status ? groups[status] : Object.values(groups).reduce((sum, n) => sum + n, 0);
+  const total = status === 'arbitration' ? arbitrations
+    : status ? groups[status] : Object.values(groups).reduce((sum, n) => sum + n, 0);
   return {
     products: list.rows.map(publicRow),
     groups,
+    arbitrations,
     page: { total, limit, offset, has_previous: offset > 0,
       has_next: offset + list.rows.length < total },
   };
