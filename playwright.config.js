@@ -27,6 +27,7 @@ const DASHBOARD_SPECS = [
   'dashboards-consolidation',
   'context-return-links',
   'hub-live-cockpit',
+  'relais-live-execution',
   'relais-live-cockpit',
   'import-runtime-cockpit',
   'sourcing-live-single-screen',
