@@ -553,7 +553,7 @@
 
   function renderFinanceAccountingWorkspace(root, user, adminContext, requestedMarket) {
     return canonicalMount(
-      global.KomerceCanonicalFinanceAccountingWorkspace,
+      global.KomerceCanonicalFinanceJournalWorkspace || global.KomerceCanonicalFinanceAccountingWorkspace,
       'canonical_accounting_workspace_module_missing',
       root,
       user,
@@ -611,7 +611,26 @@
     return global.KomerceCanonicalHubLive.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
   }
 
-  function renderRelayLive(root, user) {
+  // Relais live · Exécution : même module d'exécution canonique, restreint aux actions Relais.
+  function renderRelayExecution(root, user, adminContext, requestedMarket) {
+    const moduleApi = global.KomerceCanonicalOperationsWorkspace;
+    if (!moduleApi) throw new Error('canonical_operations_workspace_module_missing');
+    return moduleApi.mount({
+      root, user, adminContext, requestedMarket, mode: 'relay-execution',
+      contextContract: global.KomerceAdminContext, document: global.document, fetch: global.fetch.bind(global),
+      renderer: global.KomerceDashboardRenderer, ui: global.KomerceCanonicalUI,
+    });
+  }
+
+  function renderRelayLive(root, user, adminContext) {
+    if (isHubExecutionRequest()) {
+      return renderMarketSurfaceShell(root, user, adminContext, {
+        surface: 'relais-live-execution',
+        title: 'Relais live · Exécution',
+        requireMarket: true,
+        render: renderRelayExecution,
+      });
+    }
     if (!global.KomerceCanonicalRelayLive) throw new Error('canonical_relay_live_module_missing');
     return global.KomerceCanonicalRelayLive.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
   }
@@ -909,7 +928,7 @@
     if (surface === SURFACES.PURCHASING_WORKSPACE) return renderPurchasingWorkspace(root, user);
     if (surface === SURFACES.IMPORT_RUNTIME) return renderImportRuntime(root, user);
     if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user, adminContext);
-    if (surface === SURFACES.RELAIS_LIVE) return renderRelayLive(root, user);
+    if (surface === SURFACES.RELAIS_LIVE) return renderRelayLive(root, user, adminContext);
     if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);

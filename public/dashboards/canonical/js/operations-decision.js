@@ -281,6 +281,16 @@
           detail.className = 'kmc-control-order-detail';
           detail.hidden = true;
 
+          const panelHead = doc.createElement('div');
+          panelHead.className = 'kmc-control-panel-head';
+          panelHead.appendChild(text(doc, 'strong', 'kmc-control-panel-title', order.reference));
+          panelHead.appendChild(text(doc, 'span', 'kmc-control-panel-stage', `Étape : ${column.label}`));
+          const closeBtn = text(doc, 'button', 'kmc-control-panel-close', '×');
+          closeBtn.type = 'button';
+          closeBtn.setAttribute('aria-label', 'Fermer le panneau');
+          panelHead.appendChild(closeBtn);
+          detail.appendChild(panelHead);
+
           const focus = doc.createElement('div');
           focus.className = 'kmc-control-order-focus';
           focus.appendChild(text(doc, 'span', 'kmc-control-order-detail-label', 'Objet en cause'));
@@ -332,12 +342,23 @@
             detail.appendChild(link);
           }
 
-          item.addEventListener('click', () => {
-            const expanded = item.getAttribute('aria-expanded') === 'true';
-            item.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-            detail.hidden = expanded;
-            row.classList.toggle('is-expanded', !expanded);
-          });
+          const setOpen = open => {
+            if (open) {
+              host.querySelectorAll('.kmc-control-order-row.is-expanded').forEach(other => {
+                if (other === row) return;
+                other.classList.remove('is-expanded');
+                const d = other.querySelector('.kmc-control-order-detail');
+                const b = other.querySelector('.kmc-control-order');
+                if (d) d.hidden = true;
+                if (b) b.setAttribute('aria-expanded', 'false');
+              });
+            }
+            item.setAttribute('aria-expanded', open ? 'true' : 'false');
+            detail.hidden = !open;
+            row.classList.toggle('is-expanded', open);
+          };
+          item.addEventListener('click', () => setOpen(item.getAttribute('aria-expanded') !== 'true'));
+          closeBtn.addEventListener('click', () => { setOpen(false); item.focus(); });
 
           row.appendChild(item);
           row.appendChild(detail);
@@ -461,7 +482,7 @@
         value: displayMetric(base, payments),
         tone: 'warning',
         icon: '¤',
-        href: '#orders-pending-cash',
+        href: '#operations-control-chain',
         actionLabel: 'Voir les paiements →',
       });
     }
@@ -587,24 +608,6 @@
   }
 
   // Files d'action commandes (ex-écran « Suivi des commandes ») — ordre serveur conservé.
-  function workQueueItems(rows, base) {
-    return (Array.isArray(rows) ? rows : []).map(row => ({
-      title: row.reference || row.id || 'Commande',
-      helper: [row.next_action && row.next_action.label, row.status, row.payment_mode, row.total_kmf != null ? `${base.formatNumber(row.total_kmf, 0)} KMF` : null]
-        .filter(Boolean).join(' · '),
-      tone: 'warning',
-      href: row.reference ? contextualHref(`/admin/orders/${encodeURIComponent(row.reference)}`, '/admin/operations', 'Retour aux opérations') : undefined,
-      actionLabel: row.reference ? 'Ouvrir →' : undefined,
-    }));
-  }
-
-  function queueDescription(baseText, shown, total) {
-    if (total != null && shown != null && total > shown) {
-      return `${baseText} ${shown} sur ${total} affichée(s) — les plus anciennes en priorité.`;
-    }
-    return baseText;
-  }
-
   function drillCards(base, user) {
     const schema = base.visibleDrillSchema(base.OPERATIONS_SCHEMA, user);
     return (Array.isArray(schema.drill) ? schema.drill : []).map(item => ({
@@ -706,28 +709,6 @@
       dashboard.appendChild(chain.section);
     }
 
-    const queues = (payload && payload.work_queues) || null;
-    if (queues && decisionUi && decisionUi.RankedList) {
-      const grid = doc.createElement('div');
-      grid.className = 'kmc-decision-dashboard-grid-2 kmc-orders-action-queues';
-      grid.setAttribute('data-dashboard-role', 'secondary');
-      const cash = cardSection(doc, 'Cash à confirmer', queueDescription(
-        'Paiements cash qui attendent une confirmation.', queues.pending_cash_shown, queues.pending_cash_total,
-      ), 'orders-pending-cash');
-      decisionUi.RankedList.render(cash.body, { items: workQueueItems(queues.pending_cash, base) });
-      grid.appendChild(cash.section);
-      [
-        ['À commander', 'Commandes payées à passer au fournisseur.', 'to_order', 'orders-to-order'],
-        ['En attente de réception Hub', 'Commandées : articles pas encore reçus au Hub (aucune action possible).', 'awaiting_hub_reception', 'orders-awaiting-hub-reception'],
-        ['Préparer le colis', 'Articles reçus au Hub : commandes prêtes à passer en préparation.', 'ready_for_parcel', 'orders-ready-for-parcel'],
-      ].forEach(([title, copy, key, id]) => {
-        const card = cardSection(doc, title, queueDescription(copy, queues[`${key}_shown`], queues[`${key}_total`]), id);
-        decisionUi.RankedList.render(card.body, { items: workQueueItems(queues[key], base) });
-        grid.appendChild(card.section);
-      });
-      dashboard.appendChild(grid);
-    }
-
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };
   }
@@ -754,7 +735,6 @@
       projectNetworkProgress: payload => networkProgress(payload, base),
       projectPriorityOrders: payload => priorityOrders(payload, base),
       projectDelayItems: payload => delayItems(payload, base),
-      projectWorkQueueItems: rows => workQueueItems(rows, base),
       projectDrillCards: user => drillCards(base, user),
       projectTrust: trust,
     });
@@ -785,7 +765,6 @@
     networkProgress,
     priorityOrders,
     delayItems,
-    workQueueItems,
     drillCards,
     trust,
     render,

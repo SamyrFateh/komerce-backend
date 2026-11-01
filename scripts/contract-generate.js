@@ -240,6 +240,10 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/deactivate', method: 'post', schema: null },
   // LOT 4D — Canonical Finance / Comptabilité Workspace (single-market cash actions)
   { prefix: '/api/admin/workspaces/accounting/market/{marketCode}', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/journal/summary', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/journal/movements', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/journal/documents', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/journal/reconciliation', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/verify', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/dispute', method: 'post', schema: null },
@@ -752,6 +756,10 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/activate': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4D — réponses Finance / Comptabilité Workspace consommées par Canonical.
   '/api/admin/workspaces/accounting/market/{marketCode}': { get: { fields: ['scope','filters','summary','reconciliation','deposits','uncollected','collections','invoices'], source: 'test' } },
+  '/api/admin/workspaces/accounting/market/{marketCode}/journal/summary': { get: { fields: ['lines','journal_empty','eur_complete','supplier_remaining_native'], source: 'test' } },
+  '/api/admin/workspaces/accounting/market/{marketCode}/journal/movements': { get: { fields: ['total','rows'], source: 'test' } },
+  '/api/admin/workspaces/accounting/market/{marketCode}/journal/documents': { get: { fields: ['documents','missing_documents'], source: 'test' } },
+  '/api/admin/workspaces/accounting/market/{marketCode}/journal/reconciliation': { get: { fields: ['ok','checks'], source: 'test' } },
   '/api/admin/workspaces/accounting/market/{marketCode}/deposits': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/verify': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/dispute': { post: { fields: ['ok','action','result'], source: 'test' } },

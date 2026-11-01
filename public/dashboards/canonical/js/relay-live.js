@@ -66,6 +66,7 @@
     return [
       { key:'suivi', label:'Suivi', href:BASE },
       { key:'colis', label:'Colis', href:listUrl('all') },
+      { key:'execution', label:'Exécution', href:`${BASE}?view=execute` },
     ];
   }
 

@@ -97,7 +97,7 @@ test('Action Center separates business work from signal lifecycle controls', () 
   expect(service).toContain('work_queues: workQueues(list.signals)');
   expect(source).toContain("'Traiter'");
   expect(source).toContain('row.work_item.actionable');
-  expect(source).toContain('Action attendue ·');
+  expect(source).toContain('Prochaine action ·');
   expect(source).toContain("'Vu'");
   expect(source).toContain("'Reporter 24 h'");
   expect(source).toContain("'Résolu'");

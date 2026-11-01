@@ -172,11 +172,12 @@
   }
 
   function metricItems(summary = {}) {
+    const critical = Number(summary.urgent || 0);
+    const warning = Number(summary.warning || 0);
     return [
-      { key: 'urgent', label: 'Urgent / critique', value: Number(summary.urgent || 0), tone: summary.urgent ? 'critical' : 'neutral' },
-      { key: 'warning', label: 'Avertissements', value: Number(summary.warning || 0), tone: summary.warning ? 'warning' : 'neutral' },
-      { key: 'info', label: 'Informations', value: Number(summary.info || 0), tone: 'neutral' },
-      { key: 'total', label: 'Signaux actifs', value: Number(summary.total_active || 0), tone: 'neutral' },
+      { key: 'urgent', label: 'Critiques', value: critical, tone: critical ? 'critical' : 'neutral' },
+      { key: 'warning', label: 'Avertissements', value: warning, tone: warning ? 'warning' : 'neutral' },
+      { key: 'total', label: 'Total à traiter', value: Number(summary.total_active || 0), tone: 'neutral' },
     ];
   }
 
@@ -200,49 +201,84 @@
     return nav.withEntityReturnTo(href, `${loc.pathname || '/admin/action-center'}${loc.search || ''}`, 'Retour à À traiter');
   }
 
+  function ageLabel(value, now = Date.now()) {
+    const t = Date.parse(value);
+    if (!Number.isFinite(t)) return '';
+    const minutes = Math.max(0, Math.round((now - t) / 60000));
+    if (minutes < 60) return `${minutes} min`;
+    if (minutes < 1440) return `${Math.round(minutes / 60)} h`;
+    return `${Math.round(minutes / 1440)} j`;
+  }
+
   function renderSignal(doc, row) {
     const card = doc.createElement('article');
     const severity = ['urgent', 'critical', 'warning', 'info'].includes(String(row.severity || '').toLowerCase())
       ? String(row.severity).toLowerCase()
       : 'info';
-    card.className = `kmc-workspace-detail kmc-action-signal is-${severity}`;
+    card.className = `kmc-action-signal is-${severity}`;
     card.dataset.signalRef = row.signal_ref;
     card.dataset.severity = severity;
 
-    const titleLine = doc.createElement('div');
-    titleLine.className = 'kmc-workspace-detail-title';
-    titleLine.appendChild(text(doc, 'strong', '', row.title));
-    titleLine.appendChild(text(doc, 'span', 'kmc-workspace-note', severityLabel(row.severity)));
-    card.appendChild(titleLine);
+    const refLabel = (row.entity && (row.entity.ref || row.entity.label)) || row.signal_ref;
+    const top = doc.createElement('div');
+    top.className = 'kmc-action-signal-top';
+    top.appendChild(text(doc, 'strong', 'kmc-action-signal-ref', refLabel));
+    top.appendChild(text(doc, 'span', 'kmc-action-signal-domain', FAMILY_LABELS[row.family] || ''));
+    const age = ageLabel(row.created_at);
+    if (age) top.appendChild(text(doc, 'span', 'kmc-action-signal-age', age));
+    card.appendChild(top);
 
-    if (row.summary) card.appendChild(text(doc, 'p', 'kmc-workspace-note', row.summary));
-    if (row.recommendation) card.appendChild(text(doc, 'p', 'kmc-workspace-note', `Action attendue · ${row.recommendation}`));
+    card.appendChild(text(doc, 'p', 'kmc-action-signal-cause', row.summary || row.title));
+    if (row.recommendation) card.appendChild(text(doc, 'p', 'kmc-action-signal-next', `Prochaine action · ${row.recommendation}`));
 
-    const context = doc.createElement('div');
-    context.className = 'kmc-workspace-nav';
+    const bar = doc.createElement('div');
+    bar.className = 'kmc-action-signal-bar';
     if (row.work_item && row.work_item.actionable && row.work_item.href) {
       const work = text(doc, 'a', 'kmc-workspace-action', 'Traiter');
       work.href = withReturn(row.work_item.href);
       work.dataset.actionCenterWorkItem = row.signal_ref;
-      context.appendChild(work);
+      bar.appendChild(work);
     } else if (row.entity && row.entity.href) {
-      const link = text(doc, 'a', 'kmc-workspace-nav-link', `Voir ${row.entity.label || row.entity.ref || row.entity.type}`);
+      const link = text(doc, 'a', 'kmc-workspace-action', 'Traiter');
       link.href = withReturn(row.entity.href);
-      context.appendChild(link);
+      bar.appendChild(link);
     }
-    card.appendChild(context);
-
-    const actions = doc.createElement('div');
-    actions.className = 'kmc-workspace-nav';
     const allowed = new Set(row.actions || []);
-    if (allowed.has('acknowledge')) actions.appendChild(actionButton(doc, 'Vu', 'acknowledge', row.signal_ref));
-    if (allowed.has('snooze')) actions.appendChild(actionButton(doc, 'Reporter 24 h', 'snooze', row.signal_ref));
-    if (allowed.has('resolve')) actions.appendChild(actionButton(doc, 'Résolu', 'resolve', row.signal_ref, false));
-    if (row.auto_resolves) {
-      actions.appendChild(text(doc, 'span', 'kmc-workspace-note', 'Se ferme automatiquement quand la cause disparaît.'));
+    if (allowed.size) {
+      const more = doc.createElement('details');
+      more.className = 'kmc-action-signal-more';
+      more.appendChild(text(doc, 'summary', '', '⋯'));
+      const actions = doc.createElement('div');
+      actions.className = 'kmc-workspace-nav';
+      if (allowed.has('acknowledge')) actions.appendChild(actionButton(doc, 'Vu', 'acknowledge', row.signal_ref));
+      if (allowed.has('snooze')) actions.appendChild(actionButton(doc, 'Reporter 24 h', 'snooze', row.signal_ref));
+      if (allowed.has('resolve')) actions.appendChild(actionButton(doc, 'Résolu', 'resolve', row.signal_ref, false));
+      more.appendChild(actions);
+      bar.appendChild(more);
     }
-    card.appendChild(actions);
+    card.appendChild(bar);
     return card;
+  }
+
+  // Regroupe les incidents de même nature sans masquer les dossiers : le groupe se déplie.
+  function renderSignalGroups(doc, host, rows) {
+    const groups = new Map();
+    rows.forEach(row => {
+      const key = `${row.family || 'other'}|${row.title}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(row);
+    });
+    groups.forEach(list => {
+      if (list.length === 1) { host.appendChild(renderSignal(doc, list[0])); return; }
+      const details = doc.createElement('details');
+      details.className = 'kmc-action-group';
+      const head = doc.createElement('summary');
+      head.appendChild(text(doc, 'strong', '', `${list[0].title} · ${list.length}`));
+      head.appendChild(text(doc, 'span', 'kmc-action-signal-domain', FAMILY_LABELS[list[0].family] || ''));
+      details.appendChild(head);
+      list.forEach(row => details.appendChild(renderSignal(doc, row)));
+      host.appendChild(details);
+    });
   }
 
   function renderAgentSignals(rootNode, ui, doc, payload) {
@@ -257,33 +293,57 @@
     rootNode.appendChild(section.element);
   }
 
-  function renderFamilies(rootNode, ui, doc, payload) {
-    const grouped = new Map();
-    (payload.signals || []).forEach(signal => {
-      const family = signal.family || 'other';
-      if (!grouped.has(family)) grouped.set(family, []);
-      grouped.get(family).push(signal);
-    });
+  function renderFamilies(rootNode, ui, doc, payload, state = {}) {
+    const all = payload.signals || [];
+    const domain = state.domain || '';
+    const rows = all.filter(signal => !domain || (signal.family || 'other') === domain);
 
-    const order = ['ops', 'eco', 'sourcing', 'disputes', 'other'];
-    let rendered = 0;
-    order.forEach(family => {
-      const rows = grouped.get(family) || [];
-      if (!rows.length) return;
-      rendered += rows.length;
-      const section = ui.Section.create({
-        title: `${FAMILY_LABELS[family] || family} · ${rows.length}`,
-        description: 'Traiter ouvre directement le bon contexte.',
+    const bar = doc.createElement('div');
+    bar.className = 'kmc-action-filters';
+    const select = doc.createElement('select');
+    select.setAttribute('aria-label', 'Filtrer par domaine');
+    select.dataset.actionCenterDomain = '';
+    [['', 'Tous les domaines'], ...Object.entries(FAMILY_LABELS)].forEach(([value, label]) => {
+      const option = text(doc, 'option', '', label);
+      option.value = value;
+      if (value === domain) option.selected = true;
+      select.appendChild(option);
+    });
+    select.addEventListener('change', () => { if (state.onDomain) state.onDomain(select.value); });
+    bar.appendChild(select);
+    const markets = state.markets || [];
+    if (markets.length > 1) {
+      const market = doc.createElement('select');
+      market.setAttribute('aria-label', 'Filtrer par marché');
+      market.dataset.actionCenterMarket = '';
+      [['', 'Tous les marchés'], ...markets.map(code => [code, code])].forEach(([value, label]) => {
+        const option = text(doc, 'option', '', label);
+        option.value = value;
+        if (value === (state.market || '')) option.selected = true;
+        market.appendChild(option);
       });
-      rows.forEach(row => section.slot.appendChild(renderSignal(doc, row)));
-      rootNode.appendChild(section.element);
-    });
-
-    if (!rendered) {
-      const section = ui.Section.create({ title: 'Aucun signal actif', description: 'Aucune décision n’est actuellement requise.' });
-      section.slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Tout est en ordre pour les signaux actifs.'));
-      rootNode.appendChild(section.element);
+      market.addEventListener('change', () => { if (state.onMarket) state.onMarket(market.value); });
+      bar.appendChild(market);
     }
+    bar.appendChild(text(doc, 'span', 'kmc-action-signal-age', 'Se ferme automatiquement quand la cause disparaît.'));
+    rootNode.appendChild(bar);
+
+    const grid = doc.createElement('div');
+    grid.className = 'kmc-action-columns';
+    const columns = [
+      ['Urgent / critique', signal => ['urgent', 'critical'].includes(String(signal.severity).toLowerCase()), 'critical'],
+      ['Avertissements', signal => !['urgent', 'critical'].includes(String(signal.severity).toLowerCase()), 'warning'],
+    ];
+    columns.forEach(([title, pick, tone]) => {
+      const list = rows.filter(pick);
+      const col = doc.createElement('section');
+      col.className = `kmc-action-column is-${tone}`;
+      col.appendChild(text(doc, 'h2', 'kmc-action-column-title', `${title} · ${list.length}`));
+      if (!list.length) col.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Rien à traiter.'));
+      else renderSignalGroups(doc, col, list);
+      grid.appendChild(col);
+    });
+    rootNode.appendChild(grid);
   }
 
   async function runAction(context, button, path, body, successMessage) {
@@ -353,6 +413,8 @@
       severity: runtime.severity,
       scopeMode: runtime.mode,
       marketCode: runtime.marketCode,
+      adminContext: runtime.adminContext || null,
+      domain: '',
       reload: null,
     };
 
@@ -372,7 +434,17 @@
 
 
 
-      renderFamilies(rootNode, context.ui, context.document, payload);
+      const markets = ((context.adminContext && context.adminContext.access && context.adminContext.access.allowedMarkets) || []).map(String);
+      renderFamilies(rootNode, context.ui, context.document, payload, {
+        domain: context.domain || '',
+        markets: context.scopeMode === 'global' ? markets : [],
+        market: context.marketCode || '',
+        onDomain: value => { context.domain = value; load(); },
+        onMarket: value => {
+          const loc = globalThis.location;
+          if (loc) loc.href = value ? `/admin/action-center?market=${encodeURIComponent(value)}` : '/admin/action-center';
+        },
+      });
       bind(rootNode, context);
       return payload;
     }

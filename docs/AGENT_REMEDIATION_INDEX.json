@@ -9,7 +9,7 @@
   },
   "backend": {
     "measuredRows": 8,
-    "openDebtCount": 35,
+    "openDebtCount": 49,
     "reviewedExceptionCount": 11,
     "healthyMeasurementCount": 2,
     "measured": [
@@ -229,7 +229,7 @@
       {
         "rule": "CONTRACT",
         "label": "Réponses API 200 sans forme prouvée",
-        "count": 35,
+        "count": 49,
         "entries": [
           "UNKNOWN response #1",
           "UNKNOWN response #2",
@@ -265,7 +265,21 @@
           "UNKNOWN response #32",
           "UNKNOWN response #33",
           "UNKNOWN response #34",
-          "UNKNOWN response #35"
+          "UNKNOWN response #35",
+          "UNKNOWN response #36",
+          "UNKNOWN response #37",
+          "UNKNOWN response #38",
+          "UNKNOWN response #39",
+          "UNKNOWN response #40",
+          "UNKNOWN response #41",
+          "UNKNOWN response #42",
+          "UNKNOWN response #43",
+          "UNKNOWN response #44",
+          "UNKNOWN response #45",
+          "UNKNOWN response #46",
+          "UNKNOWN response #47",
+          "UNKNOWN response #48",
+          "UNKNOWN response #49"
         ],
         "lot": "Fermer chaque UNKNOWN par test, lecture de route/service fiable ou contrat explicite",
         "note": "Source : docs/contract/openapi.json → x-contract-debt.unknown_responses",
@@ -318,7 +332,21 @@
               "UNKNOWN response #32",
               "UNKNOWN response #33",
               "UNKNOWN response #34",
-              "UNKNOWN response #35"
+              "UNKNOWN response #35",
+              "UNKNOWN response #36",
+              "UNKNOWN response #37",
+              "UNKNOWN response #38",
+              "UNKNOWN response #39",
+              "UNKNOWN response #40",
+              "UNKNOWN response #41",
+              "UNKNOWN response #42",
+              "UNKNOWN response #43",
+              "UNKNOWN response #44",
+              "UNKNOWN response #45",
+              "UNKNOWN response #46",
+              "UNKNOWN response #47",
+              "UNKNOWN response #48",
+              "UNKNOWN response #49"
             ]
           }
         }

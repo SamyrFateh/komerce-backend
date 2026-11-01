@@ -156,7 +156,7 @@ async function geometry(page, pathname) {
     : root.locator(':scope > [data-dashboard-role="attention"]');
 
   const primary = actionCenterPage
-    ? root.locator(':scope > .kmc-section').first()
+    ? root.locator(':scope > .kmc-action-columns').first()
     : root.locator(':scope > [data-dashboard-role="primary"]');
 
   await expect(hero).toBeVisible();
@@ -174,7 +174,7 @@ async function geometry(page, pathname) {
       ? root.querySelector(':scope > .kmc-metric-strip')
       : root.querySelector(':scope > [data-dashboard-role="attention"]');
     const primary = actionCenterPage
-      ? root.querySelector(':scope > .kmc-section')
+      ? root.querySelector(':scope > .kmc-action-columns')
       : root.querySelector(':scope > [data-dashboard-role="primary"]');
     const market = document.querySelector('.kmc-admin-topbar .kmc-admin-market-select');
     const search = document.querySelector('.kmc-admin-search');

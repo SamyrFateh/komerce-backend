@@ -141,13 +141,13 @@ test('L12a : les téléphones de la liste sont masqués par défaut et révélab
   const all = [];
   (function visit(element) { all.push(element); (element.children || []).forEach(visit); })(container);
   const masked = all.find(element => element.tagName === 'SPAN' && element.className === 'kmc-client-phone-masked');
-  const reveal = all.find(element => element.tagName === 'BUTTON' && element.textContent === 'Afficher');
+  const reveal = all.find(element => element.tagName === 'BUTTON' && element.className === 'kmc-client-phone-toggle');
   expect(masked.textContent).toBe('•••• 4567');
   expect(reveal.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
   expect(reveal.setAttribute).toHaveBeenCalledWith('aria-expanded', 'false');
   reveal.addEventListener.mock.calls.find(([event]) => event === 'click')[1]();
   expect(masked.textContent).toBe('+2691234567');
-  expect(reveal.textContent).toBe('Masquer');
+  expect(reveal.setAttribute).toHaveBeenCalledWith('aria-label', 'Masquer le téléphone');
   reveal.addEventListener.mock.calls.find(([event]) => event === 'click')[1]();
   expect(masked.textContent).toBe('•••• 4567');
 });

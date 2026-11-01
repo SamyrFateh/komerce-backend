@@ -252,3 +252,30 @@ body.kmc-shell-v4[data-kmc-surface="client-360"] .kmc-admin-back {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Clients : téléphone masqué par défaut, bouton œil discret, largeur de colonne constante */
+.kmc-client-phone-cell { white-space: nowrap; min-width: 11.5rem; width: 11.5rem; }
+.kmc-client-phone-masked { display: inline-block; min-width: 8rem; font-variant-numeric: tabular-nums; margin-right: .6rem; }
+.kmc-client-phone-toggle { border: 0; background: transparent; cursor: pointer; padding: .15rem .35rem; border-radius: 6px; opacity: .6; font-size: 1rem; line-height: 1; }
+.kmc-client-phone-toggle:hover, .kmc-client-phone-toggle:focus-visible { opacity: 1; background: rgba(0,0,0,.06); }
+
+/* À traiter : cockpit compact deux colonnes */
+.kmc-action-filters { display: flex; gap: .6rem; flex-wrap: wrap; margin: .6rem 0; align-items: center; }
+.kmc-action-filters select { padding: .35rem .5rem; border-radius: 8px; }
+.kmc-action-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+@media (max-width: 800px) { .kmc-action-columns { grid-template-columns: 1fr; } }
+.kmc-action-column-title { font-size: 1rem; margin: 0 0 .5rem; }
+.kmc-action-column.is-critical .kmc-action-column-title { color: #b42318; }
+.kmc-action-column.is-warning .kmc-action-column-title { color: #b54708; }
+.kmc-action-signal { border: 1px solid rgba(0,0,0,.1); border-left-width: 4px; border-radius: 8px; padding: .55rem .7rem; margin-bottom: .45rem; background: var(--kmc-card, #fff); }
+.kmc-action-signal.is-urgent, .kmc-action-signal.is-critical { border-left-color: #b42318; }
+.kmc-action-signal.is-warning { border-left-color: #f79009; }
+.kmc-action-signal-top { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.kmc-action-signal-domain, .kmc-action-signal-age { font-size: .78rem; opacity: .65; }
+.kmc-action-signal-top .kmc-action-signal-age { margin-left: auto; }
+.kmc-action-signal-cause, .kmc-action-signal-next { margin: .2rem 0 0; font-size: .86rem; }
+.kmc-action-signal-next { opacity: .75; }
+.kmc-action-signal-bar { display: flex; align-items: center; gap: .6rem; margin-top: .4rem; }
+.kmc-action-signal-more summary { cursor: pointer; opacity: .6; list-style: none; padding: 0 .3rem; }
+.kmc-action-group { margin-bottom: .45rem; }
+.kmc-action-group > summary { cursor: pointer; display: flex; gap: .6rem; padding: .4rem .2rem; }

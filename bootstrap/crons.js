@@ -8,9 +8,9 @@
  * @outputs       automatic_transitions, purges, reminders, incident_sla_escalations, continuous_decision_signals
  * @depends       services/fx-public-reference-feed.js, services/outbox-worker.js, services/cash-reminder-service.js, services/inventory-service.js,
  *                services/mobile-money-reconciliation.js, services/incident-escalation.js,
- *                services/signal-service.js, utils/rules.js
- * @db-write      fx_public_reference_quotes, economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens, signals
- * @db-read       economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
+ *                services/signal-service.js, services/financial-journal-projectors.js, utils/rules.js
+ * @db-write      fx_public_reference_quotes, economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens, signals, financial_movements, financial_movement_documents
+ * @db-read       economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens, financial_movements
  * @used-by       server.js
  * @doctrine      idempotence_cron, retention_snapshots, bounded_mobile_money_reconciliation, bounded_incident_sla_escalation
  * @impact-areas  cash-reminders, inventory, auth-security, economic-engine, payments, incident-management, decision-signals, admin-dashboard
@@ -161,6 +161,31 @@ function startPublicFxReferenceCron({
   log.info({ interval_h: intervalMs / 3600000 }, 'Official ECB FX reference cron scheduled');
 }
 
+// Projection du journal financier (Lot 5) : idempotente, incrémentale, bornée par transaction.
+function startFinancialJournalCron() {
+  let running = false;
+  const run = async () => {
+    if (running) return;
+    running = true;
+    try {
+      const db = require('../db');
+      const { projectAll } = require('../services/financial-journal-projectors');
+      const report = await db.withTransaction(client => projectAll(client));
+      const created = Object.values(report).reduce((n, r) => n + r.created, 0);
+      const conflicts = Object.values(report).reduce((n, r) => n + r.conflicts.length, 0);
+      if (created > 0 || conflicts > 0) log.info({ created, conflicts }, 'Financial journal projected');
+      if (conflicts > 0) log.warn({ conflicts }, 'Financial journal conflicts (source amount changed after journaling)');
+    } catch (err) {
+      log.error({ err }, 'Financial journal projection failed');
+    } finally {
+      running = false;
+    }
+  };
+  setTimeout(run, 90 * 1000).unref?.();
+  setInterval(run, 15 * 60 * 1000).unref?.();
+  log.info({ interval_min: 15, initial_delay_s: 90 }, 'Financial journal projection cron scheduled');
+}
+
 function startOperationalCrons() {
   // ZG-1: migré de utils/sms (Africa's Talking, désactivé) → services/cash-reminder-service (WhatsApp)
   const { processCashRelaisReminders, processBackorderReminders } = require('../services/cash-reminder-service');
@@ -176,6 +201,7 @@ function startOperationalCrons() {
   startSignalGenerationCron(); // Control Tower / Action Center health feed
   startPublicFxReferenceCron(); // BCE cotations publiques, EUR pivot, refresh 7j/7
   startOutboxWorkerCron(); // HUB-000 F0 — consommateur durable de l'outbox (reçus d'audit)
+  startFinancialJournalCron(); // Lot 5 — projection idempotente du journal financier
 }
 
 // HUB-000 F3 — SLA incident : composition root uniquement.
@@ -361,6 +387,7 @@ module.exports = {
   startIncidentSlaEscalationCron,
   startSignalGenerationCron,
   startOutboxWorkerCron,
+  startFinancialJournalCron,
   startMobileMoneyReconciliationCron,
   startSnapshotRetentionCron,
   startPickupTokenCleanupCron,
