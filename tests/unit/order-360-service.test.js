@@ -8,7 +8,9 @@
 
 const mockQuery = jest.fn();
 const mockGetOrderControlSnapshot = jest.fn();
+const mockTraceForOrder = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
+jest.mock('../../services/incident-traceability-projection', () => ({ listForOrder: (...args) => mockTraceForOrder(...args) }));
 jest.mock('../../services/logistics-control-chain-projection', () => ({
   getOrderControlSnapshot: (...args) => mockGetOrderControlSnapshot(...args),
 }));
@@ -23,6 +25,7 @@ const service = require('../../services/order-360');
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetOrderControlSnapshot.mockResolvedValue(null);
+  mockTraceForOrder.mockResolvedValue([]);
 });
 
 test('normalizeReference accepte une référence lisible et refuse les caractères hors contrat', () => {
