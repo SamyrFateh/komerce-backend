@@ -171,6 +171,8 @@ module.exports = {
       'tests/integration/purchase-line-progress-postgres.test.js',
       'tests/integration/purchase-lines-grouped-postgres.test.js',
       'tests/integration/hub-p0-transmission-box-shipment-postgres.test.js',
+      'tests/integration/hub-p0-procurement-chain-postgres.test.js',
+      'tests/integration/hub-p0-authorization-postgres.test.js',
       'tests/integration/purchase-lines-engagement-postgres.test.js',
       'tests/integration/supplier-execution-persistence-postgres.test.js',
       'tests/integration/supplier-execution-payments-postgres.test.js',
