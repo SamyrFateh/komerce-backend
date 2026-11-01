@@ -30,6 +30,7 @@
     draft: 'Brouillon',
     notified: 'Soumise au fournisseur',
     confirmed: 'Confirmée',
+    shipped: 'Expédiée par le fournisseur',
     cancelled: 'Annulée',
     hub_received: 'Reçue au Hub',
   });
@@ -670,10 +671,10 @@
     const orders = (payload && payload.purchase_orders) || [];
     const groups = [
       { title: 'À préparer · PO brouillon', statuses: ['draft'], empty: 'Aucun brouillon à finaliser.' },
-      { title: 'Achats fournisseurs en cours', statuses: ['notified', 'confirmed'], empty: 'Aucune commande fournisseur engagée.' },
+      { title: 'Achats fournisseurs en cours', statuses: ['notified', 'confirmed', 'shipped'], empty: 'Aucune commande fournisseur engagée.' },
       { title: 'Historique des achats', statuses: ['hub_received', 'cancelled'], empty: 'Aucune commande terminée ou annulée dans les 100 dernières.' },
     ];
-    const activeStatuses = { prepare: ['draft'], ongoing: ['notified', 'confirmed'], history: ['hub_received', 'cancelled'] };
+    const activeStatuses = { prepare: ['draft'], ongoing: ['notified', 'confirmed', 'shipped'], history: ['hub_received', 'cancelled'] };
     const visibleGroups = groups.filter((group) => group.statuses.some((status) => (activeStatuses[context.activeTab] || activeStatuses.prepare).includes(status)));
     visibleGroups.forEach((group) => {
       const slot = createSection(rootNode, ui, group.title, 'Commandes fournisseur récentes · lecture seule · 100 dernières maximum');

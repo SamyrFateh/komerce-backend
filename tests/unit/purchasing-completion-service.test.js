@@ -109,6 +109,30 @@ describe('evaluateOrderProcurementCompletion', () => {
     expect(verdict).toMatchObject({ complete: true, transition: 'preparation', purchase_orders_closed: [PO], items_total: 1, items_complete: 1 });
   });
 
+  test('PO fournisseur shipped : uniquement la réception physique complète la clôture et prépare la commande', async () => {
+    const partial = useClient({
+      items: [{ id: 'i1', quantity: 10 }],
+      lines: [line('l1', 'i1', PO, 10, 8)],
+      pos: { [PO]: { id: PO, order_id: null, status: 'shipped' } },
+      poProgress: { [PO]: [{ effective_quantity: 10, received_quantity: 8 }] },
+    });
+    const waiting = await svc.evaluateOrderProcurementCompletion(ORDER);
+    expect(waiting).toMatchObject({ complete: false, transition: 'skipped', purchase_orders_closed: [] });
+    expect(partial.updates).toEqual([]);
+    expect(mockTransition).not.toHaveBeenCalled();
+
+    const complete = useClient({
+      items: [{ id: 'i1', quantity: 10 }],
+      lines: [line('l1', 'i1', PO, 10, 10)],
+      pos: { [PO]: { id: PO, order_id: null, status: 'shipped' } },
+      poProgress: { [PO]: [{ effective_quantity: 10, received_quantity: 10 }] },
+    });
+    const arrived = await svc.evaluateOrderProcurementCompletion(ORDER, { actor: { id: 'hub-operator', role: 'agent_hub' } });
+    expect(complete.updates).toEqual([PO]);
+    expect(arrived).toMatchObject({ complete: true, transition: 'preparation', purchase_orders_closed: [PO] });
+    expect(mockTransition).toHaveBeenCalledWith(expect.objectContaining({ orderId: ORDER, newStatus: 'preparation' }));
+  });
+
   test('acteur absent : rôle system et SCAN 3 sans utilisateur', async () => {
     useClient({ items: [{ id: 'i1', quantity: 1 }], lines: [line('l1', 'i1', null, 1, 1)] });
     await svc.evaluateOrderProcurementCompletion(ORDER);
