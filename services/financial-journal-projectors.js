@@ -40,6 +40,14 @@ async function feed(report, client, rows, build) {
   return report;
 }
 
+// Incrémental : un fait immuable déjà journalisé avec son EUR n'est pas relu (les états évolutifs et les EUR manquants le sont).
+const NOT_JOURNALED = Object.freeze({
+  order_payment: " AND NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key = 'order_payment:' || o.id::text || ':main' AND fm.fx_status <> 'unavailable')",
+  order_refund: " AND NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key = 'order_refund:' || r.id::text || ':main' AND fm.fx_status <> 'unavailable' AND fm.state = 'settled')",
+  cost_allocation: " AND NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key = 'cost_allocation:' || a.id::text || ':main' AND fm.fx_status <> 'unavailable')",
+  supplier_settlement: " AND NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key = 'supplier_settlement:' || s.id::text || ':main' AND fm.fx_status <> 'unavailable')",
+});
+
 const marketFilter = (alias, marketId, params) => {
   if (!marketId) return '';
   params.push(marketId);
@@ -53,7 +61,7 @@ async function projectOrderPayments(client, { marketId = null } = {}) {
     `SELECT o.id, o.reference, o.market_id, o.total_kmf::text AS total_kmf, o.total_eur::text AS total_eur, o.fx_snapshot,
             o.payment_mode::text AS payment_mode, COALESCE(o.payment_received_at, o.cash_paid_at, o.created_at) AS occurred_at
        FROM orders o
-      WHERE o.payment_status IN ('paid', 'refunded') AND o.total_kmf > 0 AND o.simulation_scope IS NULL${marketFilter('o', marketId, params)}
+      WHERE o.payment_status IN ('paid', 'refunded') AND o.total_kmf > 0 AND o.simulation_scope IS NULL${NOT_JOURNALED.order_payment}${marketFilter('o', marketId, params)}
       ORDER BY o.created_at, o.id`, params);
   return feed(emptyReport(), client, rows, row => {
     const snap = row.fx_snapshot || {};
@@ -78,7 +86,7 @@ async function projectOrderRefunds(client, { marketId = null } = {}) {
     `SELECT r.id, r.order_id, r.amount_kmf::text AS amount_kmf, r.amount_eur::text AS amount_eur, r.status, r.refund_type, r.refund_method,
             COALESCE(r.completed_at, r.created_at) AS occurred_at, o.market_id, o.reference
        FROM refunds r JOIN orders o ON o.id = r.order_id
-      WHERE r.status IN ('completed', 'pending') AND r.amount_kmf > 0 AND o.simulation_scope IS NULL${marketFilter('o', marketId, params)}
+      WHERE r.status IN ('completed', 'pending') AND r.amount_kmf > 0 AND o.simulation_scope IS NULL${NOT_JOURNALED.order_refund}${marketFilter('o', marketId, params)}
       ORDER BY r.created_at, r.id`, params);
   return feed(emptyReport(), client, rows, row => ({
     sourceKind: 'order_refund', sourceId: row.id, direction: 'outflow', category: 'refund',
@@ -118,7 +126,7 @@ async function projectSupplierSettlements(client, { marketId = null } = {}) {
        FROM supplier_payment_settlements s
        JOIN supplier_execution_payments p ON p.id = s.supplier_execution_payment_id
        JOIN purchase_orders po ON po.id = p.purchase_order_id
-      WHERE true${marketFilter('po', marketId, params)}
+      WHERE true${NOT_JOURNALED.supplier_settlement}${marketFilter('po', marketId, params)}
       ORDER BY s.recorded_at, s.id`, params);
   const report = emptyReport();
   await feed(report, client, rows, row => ({
@@ -129,7 +137,7 @@ async function projectSupplierSettlements(client, { marketId = null } = {}) {
     documents: [{ kind: 'supplier_payment_proof', ref: row.proof_ref }],
     provenance: { source: 'supplier_payment_settlements', kind: row.kind, origin_kmf: row.amount_kmf },
   }));
-  const withFees = rows.filter(row => Number(row.fees_kmf) > 0);
+  const withFees = rows.filter(row => Number(row.fees_kmf) > 0); // KMF natif : jamais « unavailable » (parité fixe)
   await feed(report, client, withFees, row => ({
     sourceKind: 'supplier_settlement', sourceId: row.id, facet: 'fees', direction: 'outflow', category: 'payment_fee', state: 'settled',
     links: { marketId: row.market_id, purchaseOrderId: row.purchase_order_id, supplierId: row.supplier_id },
@@ -146,7 +154,7 @@ async function projectCostAllocations(client, { marketId = null } = {}) {
   const { rows } = await client.query(
     `SELECT a.id, a.order_id, a.parcel_id, a.shipment_id, a.cost_type, a.amount_kmf::text AS amount_kmf, a.source, a.created_at, o.market_id
        FROM order_item_real_cost_allocations a JOIN orders o ON o.id = a.order_id
-      WHERE a.is_actual = true AND a.amount_kmf > 0 AND o.simulation_scope IS NULL${marketFilter('o', marketId, params)}
+      WHERE a.is_actual = true AND a.amount_kmf > 0 AND o.simulation_scope IS NULL${NOT_JOURNALED.cost_allocation}${marketFilter('o', marketId, params)}
       ORDER BY a.created_at, a.id`, params);
   return feed(emptyReport(), client, rows, row => ({
     sourceKind: 'cost_allocation', sourceId: row.id, direction: 'cost', category: `cost:${row.cost_type}`, state: 'observed',

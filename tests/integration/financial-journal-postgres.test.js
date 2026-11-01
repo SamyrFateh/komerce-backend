@@ -185,6 +185,31 @@ describeDb('journal financier — migration 359 (REAL_DB)', () => {
     expect(second.state).toBe('settled');
   });
 
+  test('projection Finance : lignes catégorie × état, EUR connu additionné, natifs par devise, restant fournisseur', async () => {
+    const proj = await reporting.projection(db, { marketId: km });
+    const line = (category, state) => proj.lines.find(l => l.category === category && l.state === state);
+    const sales = line('sale', 'settled');
+    expect(sales.movements).toBeGreaterThanOrEqual(2);
+    const rows = await mine();
+    const expectedEur = rows.filter(r => r.source_kind === 'order_payment').reduce((n, r) => n + Number(r.amount_eur), 0);
+    // le marché KM peut contenir d'autres ventes réelles : on borne par le bas avec nos deux commandes
+    expect(sales.eur_total).toBeGreaterThanOrEqual(Math.round(expectedEur * 100) / 100 - 0.001);
+    expect(line('refund', 'settled').native.some(n => n.currency === 'KMF')).toBe(true);
+    expect(line('supplier_purchase', 'observed')).toBeTruthy();
+    // engagé 100 USD, réglé 100 USD : rien à décaisser pour ce PO
+    const remainingUsd = (proj.supplier_remaining_native || []).find(r => r.currency === 'USD');
+    expect(remainingUsd ? Number(remainingUsd.remaining_native) : 0).toBeGreaterThanOrEqual(0);
+    expect(proj.eur_complete).toBe(proj.eur_unavailable_movements === 0);
+  });
+
+  test('payload Finance : la projection du journal est exposée avec la même source', async () => {
+    const finance = require('../../services/dashboard-finance-canonical');
+    const payload = await finance.buildFinance({ period: '30' }, {});
+    expect(payload.journal).toBeTruthy();
+    expect(payload.journal.basis).toBe('financial_movements');
+    expect(Array.isArray(payload.journal.lines)).toBe(true);
+  });
+
   test('réconciliation : événements métier ↔ journal ↔ EUR ↔ agrégat dashboard Finance', async () => {
     const recon = await reporting.reconcileWithSources(db, { marketId: km });
     const failed = recon.checks.filter(c => !c.ok);

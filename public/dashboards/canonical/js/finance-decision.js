@@ -612,6 +612,63 @@
     return { section, body };
   }
 
+  // Journal financier (Lot 5) : lecture directe de la projection serveur, jamais recalculée ici.
+  const JOURNAL_CATEGORY = Object.freeze({
+    sale: 'Encaissements clients', refund: 'Remboursements clients', supplier_purchase: 'Achats fournisseurs',
+    supplier_refund: 'Remboursements fournisseurs', payment_fee: 'Frais de paiement', market_settlement: 'Règlements marché',
+  });
+  const JOURNAL_STATE = Object.freeze({ planned: 'Prévu', committed: 'Engagé', observed: 'Constaté', settled: 'Réglé', reversed: 'Annulé' });
+  const eurText = value => `${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0)} €`;
+
+  function journalCategoryLabel(category) {
+    if (String(category).startsWith('cost:')) return `Coût réel · ${String(category).slice(5)}`;
+    return JOURNAL_CATEGORY[category] || category;
+  }
+
+  function renderJournalSection(doc, payload) {
+    const card = cardSection(doc, 'Mouvements financiers (pivot EUR)',
+      'Journal canonique : montants natifs conservés, EUR par l’autorité de conversion, taux figés à la date du mouvement.', 'finance-journal');
+    card.section.setAttribute('data-dashboard-role', 'secondary');
+    const journal = payload && payload.journal;
+    if (!journal) {
+      card.body.appendChild(el(doc, 'p', 'kmc-finance-review-empty', 'Journal financier indisponible pour ce périmètre.'));
+      return card;
+    }
+    if (journal.journal_empty || !journal.lines.length) {
+      card.body.appendChild(el(doc, 'p', 'kmc-finance-review-empty', 'Aucun mouvement journalisé sur la période (la projection est périodique).'));
+      return card;
+    }
+    if (!journal.eur_complete) {
+      card.body.appendChild(el(doc, 'p', 'kmc-decision-dashboard-section-copy kmc-finance-journal-warning',
+        `${journal.eur_unavailable_movements} mouvement(s) sans conversion EUR (taux indisponible) : les totaux EUR sont partiels, jamais estimés.`));
+    }
+    const table = el(doc, 'table', 'kmc-com-table');
+    const head = el(doc, 'tr');
+    ['Mouvement', 'État', 'Nb', 'Montant EUR', 'Montants natifs'].forEach(label => head.appendChild(el(doc, 'th', '', label)));
+    const thead = el(doc, 'thead');
+    thead.appendChild(head);
+    table.appendChild(thead);
+    const tbody = el(doc, 'tbody');
+    journal.lines.forEach(line => {
+      const tr = el(doc, 'tr');
+      tr.setAttribute('data-journal-line', `${line.category}|${line.state}`);
+      tr.appendChild(el(doc, 'td', '', journalCategoryLabel(line.category)));
+      tr.appendChild(el(doc, 'td', '', JOURNAL_STATE[line.state] || line.state));
+      tr.appendChild(el(doc, 'td', '', line.movements));
+      tr.appendChild(el(doc, 'td', '', line.eur_unavailable > 0 && line.eur_total === 0 ? '—' : eurText(line.eur_total)));
+      tr.appendChild(el(doc, 'td', '', line.native.map(item => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(Number(item.total))} ${item.currency}`).join(' · ')));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    card.body.appendChild(table);
+    const remaining = journal.supplier_remaining_native || [];
+    card.body.appendChild(el(doc, 'p', 'kmc-decision-dashboard-section-copy kmc-finance-journal-remaining',
+      remaining.length
+        ? `Restant à décaisser fournisseurs (natif, jamais additionné entre devises) : ${remaining.map(item => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(Number(item.remaining_native))} ${item.currency}`).join(' · ')}.`
+        : 'Aucun restant à décaisser fournisseur sur la période.'));
+    return card;
+  }
+
   function periodControl(doc, period, onPeriodChange) {
     const toolbar = doc.createElement('div');
     toolbar.className = 'kmc-decision-toolbar';
@@ -1083,6 +1140,8 @@
     renderVariances(doc, varianceDetail.body, payload, base);
     const details = el(doc, 'div', 'kmc-fin3-details');
     // Les composants détaillés sont conservés côté code pour migration vers leurs ateliers propriétaires.
+
+    dashboard.appendChild(renderJournalSection(doc, payload).section);
 
     // Une file centrale absente de la projection marché n'est jamais assimilée à zéro.
     const supplierState = supplierReviewState(payload);

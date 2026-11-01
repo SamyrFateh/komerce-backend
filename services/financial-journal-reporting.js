@@ -49,6 +49,47 @@ async function summarize(client, scope = {}) {
   };
 }
 
+// Vue de pilotage : lignes catégorie × état, EUR connus additionnés (jamais entre natifs), natifs conservés par devise.
+async function projection(client, scope = {}) {
+  const base = await summarize(client, scope);
+  const grouped = new Map();
+  for (const row of base.rows) {
+    const key = `${row.direction}|${row.category}|${row.state}`;
+    const line = grouped.get(key) || {
+      direction: row.direction, category: row.category, state: row.state,
+      movements: 0, eur_total: 0, eur_unavailable: 0, native: [],
+    };
+    line.movements += row.movements;
+    line.eur_total = Math.round((line.eur_total + (row.eur_total == null ? 0 : Number(row.eur_total))) * 100) / 100;
+    line.eur_unavailable += row.eur_unavailable;
+    line.native.push({ currency: row.currency, total: row.native_total });
+    grouped.set(key, line);
+  }
+  const params = [];
+  const remaining = (await client.query(
+    `WITH per_po AS (
+       SELECT m.purchase_order_id, m.currency,
+              SUM(m.amount_native) FILTER (WHERE m.facet = 'commitment' AND m.source_kind = 'supplier_payment') AS committed,
+              SUM(m.amount_native) FILTER (WHERE m.facet = 'main' AND m.source_kind = 'supplier_settlement' AND m.direction = 'outflow') AS settled
+         FROM financial_movements m
+        WHERE m.purchase_order_id IS NOT NULL AND m.category = 'supplier_purchase'${periodClause('m', { marketId: scope.marketId }, params)}
+        GROUP BY m.purchase_order_id, m.currency)
+     SELECT currency, SUM(GREATEST(COALESCE(committed, 0) - COALESCE(settled, 0), 0))::text AS remaining_native
+       FROM per_po GROUP BY currency HAVING SUM(GREATEST(COALESCE(committed, 0) - COALESCE(settled, 0), 0)) > 0
+      ORDER BY currency`, params)).rows;
+  const freshness = (await client.query('SELECT MAX(created_at) AS last_projected_at, COUNT(*)::int AS total FROM financial_movements')).rows[0];
+  return {
+    basis: 'financial_movements',
+    period_basis: 'occurred_at',
+    lines: [...grouped.values()],
+    supplier_remaining_native: remaining,
+    eur_unavailable_movements: base.eur_unavailable_movements,
+    eur_complete: base.eur_complete,
+    last_projected_at: freshness.last_projected_at,
+    journal_empty: freshness.total === 0,
+  };
+}
+
 // Même cohorte que le dashboard Finance (CA encaissé) : commandes payées, hors annulées/remboursées, simulations exclues.
 async function reconcileWithSources(client, scope = {}) {
   const checks = [];
@@ -102,4 +143,4 @@ async function reconcileWithSources(client, scope = {}) {
   return { ok: checks.every(check => check.ok), checks };
 }
 
-module.exports = { summarize, reconcileWithSources };
+module.exports = { summarize, projection, reconcileWithSources };

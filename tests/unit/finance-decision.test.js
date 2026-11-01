@@ -39,3 +39,12 @@ test('Finance : « à établir » et « marge finalisée » nomment leur cohorte
   expect(src).toContain('payées)');
   expect(src).toContain('incomplete_cost_orders_total');
 });
+
+test('Finance : la section « Mouvements financiers (pivot EUR) » lit la projection journal et ne devine jamais l’EUR', () => {
+  const mod = require('../../public/dashboards/canonical/js/finance-decision.js');
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/finance-decision.js'), 'utf8');
+  expect(src).toContain("'Mouvements financiers (pivot EUR)'");
+  expect(src).toContain('jamais estimés');
+  expect(src).toContain('jamais additionné entre devises');
+  expect(mod).toBeTruthy();
+});

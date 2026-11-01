@@ -535,6 +535,7 @@ describe('bootstrap/crons', () => {
       expect(typeof crons.startSnapshotRetentionCron).toBe('function');
       expect(typeof crons.startPickupTokenCleanupCron).toBe('function');
       expect(typeof crons.startJwtRevocationCleanupCron).toBe('function');
+      expect(typeof crons.startFinancialJournalCron).toBe('function');
     });
   });
 });

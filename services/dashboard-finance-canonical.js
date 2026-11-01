@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        dashboard_period, server_resolved_market
  * @outputs       canonical_finance_projection
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review
+ * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review, financial-journal-reporting
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, markets, parcel_items, parcels, customs_shipments, customs_shipment_parcels
+ * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, markets, parcel_items, parcels, customs_shipments, customs_shipment_parcels, financial_movements
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, finance_event_date_is_authoritative
@@ -32,6 +32,7 @@ const {
 const { computeOrderCostVariance } = require('./cost-allocation/variance');
 const metrics = require('./dashboard-metrics');
 const { getSupplierPaymentReview } = require('./supplier-payment-review');
+const journalReporting = require('./financial-journal-reporting');
 const {
   buildFiltersClause,
   makeKpi,
@@ -610,6 +611,17 @@ async function getRelayProfitability(filters = {}) {
   });
 }
 
+// Projection du journal financier (Lot 5) : lecture seule, jamais bloquante pour le dashboard.
+async function loadJournalProjection(window, market) {
+  try {
+    return Object.freeze(await journalReporting.projection(db, {
+      marketId: market && market.id, from: window.from, to: window.to,
+    }));
+  } catch (_) {
+    return null;
+  }
+}
+
 async function buildFinance(query = {}, options = {}) {
   const market = options.market || null;
   const window = buildPeriod(query, market && market.id, options.now || new Date(), market);
@@ -634,6 +646,7 @@ async function buildFinance(query = {}, options = {}) {
     relayProfitability,
     supplierPaymentReview,
     marginScope,
+    journal,
   ] = await Promise.all([
     metrics.getCAEncaisse(window.filters),
     metrics.getCoutEstime(window.filters),
@@ -654,6 +667,7 @@ async function buildFinance(query = {}, options = {}) {
     getRelayProfitability(window.filters),
     getSupplierPaymentReview({ limit: 50, ...(market && market.id ? { market_id: market.id } : {}) }),
     getMarginScope(window.filters),
+    loadJournalProjection(window, market),
   ]);
 
   return Object.freeze({
@@ -690,6 +704,7 @@ async function buildFinance(query = {}, options = {}) {
     costing_orders: Object.freeze(costingOrders),
     variance_summary: summarizeVariances(costingOrders),
     margin_scope: marginScope,
+    journal,
     relay_profitability: Object.freeze(relayProfitability),
     payment_mix: Object.freeze(paymentMix),
     refunds: Object.freeze({
