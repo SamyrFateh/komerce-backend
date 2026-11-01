@@ -209,10 +209,21 @@
     return (Array.isArray(payload && payload.top_products) ? payload.top_products : []).map(row => ({
       title: row.name || row.product_ref || 'Produit',
       ...(row.product_ref ? { href: productHref(row.product_ref), actionLabel: 'Fiche produit →' } : {}),
-      helper: `${row.category || 'Sans catégorie'} · ${base.formatNumber(row.quantity, 0)} unité(s)`,
+      helper: `${row.category || 'Sans catégorie'} · ${base.formatNumber(row.quantity, 0)} unité(s)${row.share_pct == null ? '' : ` · ${base.formatNumber(row.share_pct, 1)} % des lignes produit`}`,
       value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit) : base.formatKmf(row.revenue_kmf),
       tone: 'neutral',
     }));
+  }
+
+  // Encaissé net : journal financier (paiements constatés − remboursements, par date de paiement). Autre cohorte que le CA.
+  function collectedText(payload, base) {
+    const collected = payload && payload.collected;
+    if (!collected || !collected.available) {
+      return 'Encaissé net (journal financier) : non disponible pour cette période — jamais remplacé par le CA.';
+    }
+    const native = (collected.native_net || []).map(item => `${base.formatNumber(item.total, 0)} ${item.currency}`).join(' · ');
+    const eur = `${base.formatNumber(collected.eur_net, 2)} €${collected.eur_partial ? ' (EUR partiel : taux indisponible sur certains paiements)' : ''}`;
+    return `Encaissé net (paiements constatés − remboursements, date de paiement) : ${eur}${native ? ` · natif ${native}` : ''}. Cohorte différente du CA.`;
   }
 
   function viabilityItems(payload, base) {
@@ -513,6 +524,8 @@
       activity.body.appendChild(metricsHost);
       activity.body.appendChild(text(doc, 'p', 'kmc-decision-dashboard-section-copy kmc-commerce-revenue-definition',
         'Chiffre d’affaires = commandes payées créées sur la période, avoir wallet inclus, hors annulées et remboursées. Ce n’est pas un encaissement de caisse.'));
+      activity.body.appendChild(text(doc, 'p', 'kmc-decision-dashboard-section-copy kmc-commerce-collected',
+        collectedText(payload, base)));
     }
 
     const flowTitle = text(doc, 'h3', 'kmc-commerce-flow-title', 'Parcours des commandes');
@@ -545,7 +558,7 @@
 
     const products = cardSection(
       doc, 'Top produits',
-      'Montants des lignes produit, hors transport et remises · cinq premiers produits.',
+      'Montants des lignes produit, hors transport et remises · cinq premiers produits · part = part du montant total des lignes produit payées, pas du CA.',
       'commerce-top-products'
     );
     if (top.length) {

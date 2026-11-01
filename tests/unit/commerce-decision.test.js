@@ -17,3 +17,11 @@ test('Vue commerce : plus de carte « Dernières commandes » (dashboard de perf
 test('Vue commerce : la définition du chiffre d’affaires est explicite', () => {
   expect(src).toContain('Chiffre d’affaires = commandes payées');
 });
+
+test('Vue commerce : encaissé net issu du journal (cohorte distincte du CA) et part des lignes produit, jamais un CA de substitution', () => {
+  expect(src).toContain('Encaissé net');
+  expect(src).toContain('non disponible pour cette période — jamais remplacé par le CA');
+  expect(src).toContain('Cohorte différente du CA');
+  expect(src).toContain('% des lignes produit');
+  expect(src).toContain('pas du CA');
+});

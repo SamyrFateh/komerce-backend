@@ -651,6 +651,27 @@
     });
     table.appendChild(tbody);
     card.body.appendChild(table);
+    const levels = Array.isArray(journal.cost_levels) ? journal.cost_levels : [];
+    if (levels.length) {
+      const nf = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
+      const block = el(doc, 'div', 'kmc-finance-cost-levels');
+      block.setAttribute('data-cost-levels', '');
+      levels.forEach(level => {
+        const row = el(doc, 'p', 'kmc-decision-dashboard-section-copy');
+        row.setAttribute('data-cost-level', level.level);
+        const states = level.source_missing
+          ? 'non alimenté : aucune source journalisée à ce jour (jamais affiché comme 0)'
+          : (level.states.length
+            ? level.states.map(item => `${item.state_label} ${item.eur_unavailable > 0 && item.eur_total === 0 ? '— €' : eurText(item.eur_total)}${item.eur_unavailable > 0 ? ' (EUR partiel)' : ''}`).join(' · ')
+            : 'aucun mouvement sur la période');
+        const remainingText = (level.remaining_native || []).length
+          ? ` · restant à décaisser (natif) ${level.remaining_native.map(item => `${nf.format(Number(item.remaining_native))} ${item.currency}`).join(' · ')}`
+          : '';
+        row.textContent = `${level.label} : ${states}${remainingText}`;
+        block.appendChild(row);
+      });
+      card.body.appendChild(block);
+    }
     const remaining = journal.supplier_remaining_native || [];
     card.body.appendChild(el(doc, 'p', 'kmc-decision-dashboard-section-copy kmc-finance-journal-remaining',
       remaining.length

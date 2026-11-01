@@ -1,0 +1,51 @@
+/**
+ * @integration financial-journal-gap-signal-postgres.test.js
+ * @feature Signal financial_journal_gap — écart du journal → Action Center (signal-service)
+ * @brief PostgreSQL réel : signal créé par marché sur écart, idempotent, auto-résolu quand conforme.
+ */
+'use strict';
+const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
+
+describeDb('financial_journal_gap (REAL_DB)', () => {
+  const db = require('../../db');
+  const signals = require('../../services/signal-service');
+  const journal = require('../../services/financial-journal');
+  const tag = `gap-${Date.now()}`;
+  let km;
+  let wasActive;
+  const q = (sql, p) => db.query(sql, p);
+  const active = async () => (await q("SELECT count(*)::int AS n FROM signals WHERE signal_type='financial_journal_gap' AND market_id=$1 AND status IN ('open','acknowledged','snoozed')", [km])).rows[0].n;
+
+  beforeAll(async () => {
+    const row = (await q("SELECT id, is_active FROM markets WHERE code <> 'KM' ORDER BY code DESC LIMIT 1")).rows[0];
+    km = row.id;
+    wasActive = row.is_active;
+    if (!wasActive) await q('UPDATE markets SET is_active = TRUE WHERE id = $1', [km]);
+  });
+  afterAll(async () => { if (!wasActive) await q('UPDATE markets SET is_active = FALSE WHERE id = $1', [km]); await q("DELETE FROM signals WHERE signal_type='financial_journal_gap'"); await q("DELETE FROM financial_movements WHERE source_id = $1", [tag]).catch(() => {}); });
+
+  test('mouvement sans provenance : signal créé, idempotent, puis auto-résolu quand le journal redevient conforme', async () => {
+    await signals.generateSignals(['financial_journal_gap']);
+    const baseline = await active();
+    // Un mouvement sans EUR (taux indisponible) déclenche le signal warning.
+    await db.withTransaction(client => journal.recordMovement(client, {
+      sourceKind: 'gap_test', sourceId: tag, direction: 'outflow', category: 'market_settlement', state: 'committed',
+      amountNative: 150, currency: 'ZZZ', links: { marketId: km }, occurredAt: new Date(), provenance: { source: 'test', tag },
+    }));
+    expect((await q('SELECT fx_status FROM financial_movements WHERE source_id = $1', [tag])).rows[0].fx_status).toBe('unavailable');
+    const first = await signals.generateSignals(['financial_journal_gap']);
+    expect(first.generators.financial_journal_gap.error).toBeUndefined();
+    expect(await active()).toBe(1);
+    await signals.generateSignals(['financial_journal_gap']);
+    expect(await active()).toBe(1);
+    const row = (await q("SELECT severity, summary FROM signals WHERE signal_type='financial_journal_gap' AND market_id=$1 AND status='open'", [km])).rows[0];
+    expect(row.summary).toMatch(/sans conversion EUR/);
+    // Rattrapage : le mouvement reçoit son EUR → condition disparue → auto-résolution.
+    await db.withTransaction(client => journal.recordMovement(client, {
+      sourceKind: 'gap_test', sourceId: tag, direction: 'outflow', category: 'market_settlement', state: 'committed',
+      amountNative: 150, currency: 'ZZZ', links: { marketId: km }, occurredAt: new Date(), eur: { amount: 0.9, legs: [{ id: 'manual-proof' }] }, provenance: { source: 'test', tag },
+    }));
+    await signals.generateSignals(['financial_journal_gap']);
+    expect(await active()).toBeLessThanOrEqual(baseline);
+  });
+});

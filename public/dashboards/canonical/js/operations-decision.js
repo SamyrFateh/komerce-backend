@@ -148,6 +148,7 @@
         causes: controlCauses(order),
         envelope: controlEnvelope(order),
         lineage: controlLineage(order),
+        transitions: (Array.isArray(order.transitions) ? order.transitions : []).filter(item => item && item.status).map(item => ({ status: String(item.status), at: item.at || null })),
         split: order.split === true,
         href: order.order_reference ? contextualHref(`/admin/orders/${encodeURIComponent(order.order_reference)}`, '/admin/operations', 'Retour aux opérations') : null,
       })),
@@ -334,6 +335,18 @@
               lineage.appendChild(group);
             });
             detail.appendChild(lineage);
+          }
+
+          if (order.transitions.length) {
+            const history = doc.createElement('div');
+            history.className = 'kmc-control-order-history';
+            history.setAttribute('data-order-transitions', '');
+            history.appendChild(text(doc, 'span', 'kmc-control-order-detail-label', 'Historique des transitions'));
+            order.transitions.forEach(item => {
+              const when = item.at ? new Date(item.at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+              history.appendChild(text(doc, 'span', 'kmc-control-order-history-line', `${when} · ${item.status}`));
+            });
+            detail.appendChild(history);
           }
 
           if (order.href) {

@@ -72,6 +72,7 @@ describe('logistics-control-chain-projection', () => {
       }],
       envelope: { type: 'HUB_UNIT', refs: ['HU-001'] },
       split: false,
+      transitions: [],
       lineage: {
         purchase_orders: ['po-1'],
         hub_units: ['HU-001'],
@@ -124,8 +125,10 @@ describe('logistics-control-chain-projection', () => {
       hub_unit_refs: ['HU-002'],
       parcel_refs: ['KOM-P-1', 'KOM-P-2'],
       parcels_count: 2,
+      recent_transitions: [{ status: 'shipped', at: '2026-10-30T10:00:00Z' }, { status: 'paid', at: '2026-10-29T10:00:00Z' }, { note: 'sans statut' }],
     });
 
+    expect(row.transitions).toEqual([{ status: 'shipped', at: '2026-10-30T10:00:00Z' }, { status: 'paid', at: '2026-10-29T10:00:00Z' }]);
     expect(row.order_reference).toBe('K-200');
     expect(row.split).toBe(true);
     expect(row.envelope).toEqual({ type: 'PARCEL', refs: ['KOM-P-1', 'KOM-P-2'] });
