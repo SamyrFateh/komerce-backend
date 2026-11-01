@@ -525,7 +525,8 @@
       items: (payload.incidents || []).map(row => ({
         level: ['urgent', 'high'].includes(row.priority) && !['resolved', 'closed'].includes(row.status) ? 'critical' : (row.status === 'resolved' || row.status === 'closed' ? 'info' : 'warning'),
         title: `${row.type || 'Incident'} · ${row.status || '—'}`,
-        message: [row.description, row.reporter, formatDate(row.created_at)].filter(Boolean).join(' · '),
+        message: [row.reference, row.description, row.owner_role ? 'Responsable : ' + row.owner_role : null,
+          row.next_action ? 'Action : ' + row.next_action : null, row.reporter, formatDate(row.created_at)].filter(Boolean).join(' · '),
       })),
     });
 
