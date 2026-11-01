@@ -730,6 +730,14 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 `catalog_media_recovery_audit` conserve l'identité produit, la référence candidat fournisseur, l'acteur, la liste des identités médias fournisseur et l'empreinte SHA-256 du sous-ensemble média, avec les comptages avant/après. Le service `catalog-media-recovery` n'ajoute des médias à un brouillon inactif précédemment vide qu'après preuve source V2, sous autorisation Catalogue + Sourcing et transaction commune avec la ligne d'audit. Aucune publication ni exposition marché. Migration en PR, **non appliquée au staging** à ce stade.
 <!-- /schema-pending -->
 
+### Rattachement des cartons physiques KOM-BOX — migration 356 (intended_migration_schema)
+
+<!-- schema-pending: international_shipment_hub_boxes (migration 356, not yet live) -->
+
+`international_shipment_hub_boxes` — Liaison unique `(shipment_id, physical_unit_id)` entre le dossier de transport `international_shipments` et les cartons physiques `hub_physical_units` (sans modifier les allocations `hub_purchase_allocations`). FK restrictives, PK composite, UNIQUE sur `physical_unit_id` pour empêcher la double expédition. L'attachement applicatif exige un `MARKET_PARCEL` fermé, appartenant au marché autoritatif du dossier, puis vérifie `DISPATCHED` lors de la remise transitaire. Les colis legacy `international_shipment_parcels` restent inchangés.
+
+<!-- /schema-pending -->
+
 ### Expéditions internationales — migration 354 (intended_migration_schema)
 
 <!-- schema-pending: international_shipments (migration 354, not yet live) -->
