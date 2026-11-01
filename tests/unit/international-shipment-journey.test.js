@@ -143,6 +143,56 @@ test('creating real journey requires exact parcel provenance and prevents duplic
   expect(y.executed.every(q=>!q.sql.includes('UPDATE orders'))).toBe(true);
 });
 
+test('un agent Hub ouvre un dossier vide sans transitaire, mode ni fausse preuve', async()=>{
+  const x=fixture();
+  x.client.query.mockImplementation(async(sql,params)=>{
+    x.executed.push({sql:String(sql),params});
+    if(String(sql).startsWith('INSERT INTO international_shipments'))
+      return {rows:[{...base,reference:'KM-DRAFT-001',hub_draft:true,forwarder_name:null,transport_mode:null}]};
+    return {rows:[]};
+  });
+  const opened=await journey.open(market,hub,{reference:'KM-DRAFT-001',hub_unit_ids:[]},x.db);
+  expect(opened).toMatchObject({stage:'hub_ready',hub_draft:true,hub_units:0});
+  expect(x.executed.find(q=>q.sql.includes('INSERT INTO international_shipments')).params).toEqual([market.id,'KM-DRAFT-001',hub.id]);
+  const event=x.executed.find(q=>q.sql.includes('INSERT INTO international_shipment_events'));
+  expect(event.params).toContain(null);
+  expect(event.sql).toContain("'opened'");
+  expect(x.executed.some(q=>q.sql.includes('international_shipment_parcels'))).toBe(false);
+  await expectError(journey.open(market,{id:'op',role:'market_operator'},{reference:'KM-DRAFT-002'},x.db),'JOURNEY_ROLE_FORBIDDEN');
+});
+
+test('la remise du brouillon refuse zéro carton ou carton non expédié, puis exige transitaire et preuve',async()=>{
+  const empty=fixture('hub_ready',{hub_draft:true,forwarder_name:null,transport_mode:null});
+  await expectError(journey.transition(market,hub,'INT-KM-001',
+    {to_stage:'handed_over',proof_ref:'HANDOVER-1',forwarder_name:'Transitaire',transport_mode:'sea'},empty.db),'JOURNEY_HUB_DRAFT_EMPTY');
+  expect(empty.executed.some(q=>q.sql.startsWith('UPDATE international_shipments'))).toBe(false);
+
+  const x=fixture('hub_ready',{hub_draft:true,forwarder_name:null,transport_mode:null});
+  const original=x.client.query.getMockImplementation();
+  x.client.query.mockImplementation(async(sql,params)=>{
+    if(String(sql).startsWith('SELECT u.id,u.reference,u.state,u.outcome_type'))
+      return {rows:[{id:uuid,reference:'BOX-1',state:'PACKED',outcome_type:null}]};
+    return original(sql,params);
+  });
+  await expectError(journey.transition(market,hub,'INT-KM-001',
+    {to_stage:'handed_over',proof_ref:'HANDOVER-2',forwarder_name:'Transitaire',transport_mode:'sea'},x.db),'JOURNEY_HUB_UNITS_NOT_DISPATCHED');
+  expect(x.executed.some(q=>q.sql.startsWith('UPDATE international_shipments'))).toBe(false);
+
+  const y=fixture('hub_ready',{hub_draft:true,forwarder_name:null,transport_mode:null});
+  const old=y.client.query.getMockImplementation();
+  y.client.query.mockImplementation(async(sql,params)=>{
+    if(String(sql).startsWith('SELECT u.id,u.reference,u.state,u.outcome_type'))
+      return {rows:[{id:uuid,reference:'BOX-1',state:'DISPATCHED',outcome_type:null}]};
+    return old(sql,params);
+  });
+  await expectError(journey.transition(market,hub,'INT-KM-001',
+    {to_stage:'handed_over',proof_ref:'HANDOVER-3',transport_mode:'sea'},y.db),'JOURNEY_INVALID_forwarder_name');
+  const done=await journey.transition(market,hub,'INT-KM-001',
+    {to_stage:'handed_over',proof_ref:'HANDOVER-4',forwarder_name:'Transitaire réel',transport_mode:'sea'},y.db);
+  expect(done.stage).toBe('handed_over');
+  expect(y.executed.some(q=>q.sql.includes('forwarder_name=$4')&&q.params.includes('Transitaire réel'))).toBe(true);
+});
+
 test('schema has FK and audit-only financial boundary, no automatic N1 double counting',()=>{
   const fs=require('fs'),path=require('path');
   const migration=fs.readFileSync(path.join(__dirname,'../../migrations/354_international_shipment_journey.sql'),'utf8');
