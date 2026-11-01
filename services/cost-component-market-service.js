@@ -42,9 +42,11 @@ function effectiveRow(row) {
   return {
     id: row.id,
     key: row.key,
-    label: row.label,
+    label: hasOverride && row.override_label ? row.override_label : row.label,
+    base_label: row.label,
     emoji: row.emoji,
-    description: row.description,
+    description: hasOverride && row.override_description !== null && row.override_description !== undefined ? row.override_description : row.description,
+    base_description: row.description,
     family: row.family,
     category: row.category,
     economic_nature: legacyEconomicNature(row),
@@ -91,6 +93,7 @@ async function listEffectiveComponents(marketId, q = db) {
             cc.display_order, cc.notes, cc.updated_at AS base_updated_at,
             o.id AS override_id, o.default_value AS override_default_value,
             o.is_active AS override_is_active, o.notes AS override_notes,
+            o.label_override AS override_label, o.description_override AS override_description,
             o.updated_at AS override_updated_at
        FROM cost_components cc
        LEFT JOIN cost_component_market_overrides o
@@ -105,7 +108,7 @@ async function resolveComponentByKey(q, key) {
   const cleanKey = String(key || '').trim();
   if (!cleanKey) throw new MarketCostComponentError(400, 'Clé composant requise', 'market_cost_key_required');
   const { rows } = await q.query(
-    `SELECT id, key, label, default_value, is_active
+    `SELECT id, key, label, family, category, economic_nature, allocation_perimeter, default_value, is_active
        FROM cost_components
       WHERE key = $1
       LIMIT 1`,
@@ -118,8 +121,14 @@ async function resolveComponentByKey(q, key) {
 function validateOverride(body = {}) {
   const hasValue = Object.prototype.hasOwnProperty.call(body, 'default_value');
   const hasActive = Object.prototype.hasOwnProperty.call(body, 'is_active');
-  if (!hasValue && !hasActive && !Object.prototype.hasOwnProperty.call(body, 'notes')) {
+  if (!hasValue && !hasActive && !Object.prototype.hasOwnProperty.call(body, 'notes') && !Object.prototype.hasOwnProperty.call(body, 'label') && !Object.prototype.hasOwnProperty.call(body, 'description')) {
     throw new MarketCostComponentError(400, 'Aucune surcharge à enregistrer', 'market_cost_no_changes');
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'label') && (typeof body.label !== 'string' || !body.label.trim() || body.label.trim().length > 160)) {
+    throw new MarketCostComponentError(400, 'Libellé invalide (1 à 160 caractères)', 'market_cost_label_invalid');
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'description') && (typeof body.description !== 'string' || body.description.length > 500)) {
+    throw new MarketCostComponentError(400, 'Description invalide (500 caractères maximum)', 'market_cost_description_invalid');
   }
   if (hasValue) {
     const value = Number(body.default_value);
@@ -138,6 +147,14 @@ async function upsertOverride({ marketId, key, body = {}, actorId = null }) {
   try {
     await client.query('BEGIN');
     const component = await resolveComponentByKey(client, key);
+    const editingIdentity = Object.prototype.hasOwnProperty.call(body, 'label')
+      || Object.prototype.hasOwnProperty.call(body, 'description');
+    if (editingIdentity && (component.allocation_perimeter === 'mutualized'
+      || legacyEconomicNature(component) !== 'variable')) {
+      throw new MarketCostComponentError(403,
+        'Libellé et description modifiables uniquement pour les coûts variables directs du marché',
+        'market_cost_identity_read_only');
+    }
     const { rows: currentRows } = await client.query(
       `SELECT * FROM cost_component_market_overrides
         WHERE market_id = $1 AND component_id = $2
@@ -155,18 +172,23 @@ async function upsertOverride({ marketId, key, body = {}, actorId = null }) {
       ? (body.notes || null)
       : (current ? current.notes : null);
 
+    const nextLabel = Object.prototype.hasOwnProperty.call(body, 'label') ? body.label.trim() : (current ? current.label_override : null);
+    const nextDescription = Object.prototype.hasOwnProperty.call(body, 'description') ? body.description.trim() : (current ? current.description_override : null);
+
     const { rows: [saved] } = await client.query(
       `INSERT INTO cost_component_market_overrides
-         (market_id, component_id, default_value, is_active, notes, created_by, updated_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$6)
+         (market_id, component_id, default_value, is_active, notes, label_override, description_override, created_by, updated_by)
+       VALUES ($1,$2,$3,$4,$5,$7,$8,$6,$6)
        ON CONFLICT (market_id, component_id) DO UPDATE SET
          default_value = EXCLUDED.default_value,
          is_active = EXCLUDED.is_active,
          notes = EXCLUDED.notes,
+         label_override = EXCLUDED.label_override,
+         description_override = EXCLUDED.description_override,
          updated_by = EXCLUDED.updated_by,
          updated_at = now()
        RETURNING *`,
-      [marketId, component.id, nextValue, nextActive, nextNotes, actorId]
+      [marketId, component.id, nextValue, nextActive, nextNotes, actorId, nextLabel, nextDescription]
     );
 
     await client.query(
@@ -193,6 +215,8 @@ async function upsertOverride({ marketId, key, body = {}, actorId = null }) {
       base_default_value: Number(component.default_value),
       base_is_active: Boolean(component.is_active),
       inherited: false,
+      label: saved.label_override || component.label,
+      description: saved.description_override,
       override_notes: saved.notes || null,
       override_updated_at: saved.updated_at || null,
     };
