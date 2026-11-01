@@ -19,6 +19,7 @@ const grouped = require('../../services/purchasing-grouped-service');
 const engagement = require('../../services/purchasing-engagement-service');
 const hubOps = require('../../services/hub-operations');
 const boxShipment = require('../../services/hub-box-shipment-service');
+const journey = require('../../services/international-shipment-journey');
 const dossier = require('../../services/hub-procurement-dossier');
 
 const hasDb = Boolean(process.env.DATABASE_URL);
@@ -85,6 +86,18 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
   const received = async (lineId) => Number((await q(
     'SELECT received_quantity FROM v_purchase_line_progress WHERE line_id = $1', [lineId]
   )).rows[0].received_quantity);
+
+  // Carton KOM-BOX de fixture (les triggers d'état Hub sont réservés au parcours opérateur ; ceux de la migration 358 restent actifs).
+  async function makeBox({ market, state, label }) {
+    const boxId = id();
+    const client = await db.getClient();
+    try {
+      await client.query("SET session_replication_role='replica'");
+      await client.query(`INSERT INTO hub_physical_units(id,reference,unit_type,state,market_id) VALUES($1,$2,'MARKET_PARCEL',$3,$4)`,
+        [boxId, `${tag}-BOX-${label}`, state, market]);
+    } finally { await client.query("SET session_replication_role='origin'"); client.release(); }
+    return boxId;
+  }
 
   beforeAll(async () => {
     km = (await q("SELECT id FROM markets WHERE code='KM'")).rows[0].id;
@@ -191,11 +204,13 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
 
       await advance(s.box1, ['PACKED']); await advance(s.box2, ['PACKED']);
 
+      // Création du dossier par le VRAI service métier, directement depuis les KOM-BOX (aucun INSERT SQL).
       s.shipRef = `${tag}-SHIP`;
-      await q(`INSERT INTO international_shipments(id,market_id,reference,forwarder_name,transport_mode,stage,created_by)
-               VALUES($1,$2,$3,'Transitaire test','sea','hub_ready',$4)`, [id(), km, s.shipRef, admin]);
-      await boxShipment.attachBoxToShipment({ unitId: s.box1, shipmentReference: s.shipRef, actor: actor() });
-      await boxShipment.attachBoxToShipment({ unitId: s.box2, shipmentReference: s.shipRef, actor: actor() });
+      const created = await journey.create({ id: km, code: 'KM' }, actor(), {
+        reference: s.shipRef, forwarder_name: 'Transitaire test', transport_mode: 'sea', proof_ref: `BL-${tag}`,
+        hub_unit_ids: [s.box1, s.box2],
+      });
+      expect(created).toMatchObject({ reference: s.shipRef, stage: 'hub_ready', hub_units: 2, parcels: 0 });
 
       // aucun double compte : somme placée active = somme reçue
       const placed = Number((await q(
@@ -215,6 +230,86 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
 
       const d = await dossier.getDossier({ marketId: km });
       expect(d.boxes.filter((b) => b.shipment_ref === s.shipRef)).toHaveLength(2);
+    });
+
+    test('dossier d\'expédition : cartons, PO, quantités et commandes préservés ; remise refusée tant que les cartons ne sont pas DISPATCHED', async () => {
+      const det = await journey.detail({ id: km, code: 'KM' }, s.shipRef);
+      expect(det.hub_units.map((u) => u.unit_id).sort()).toEqual([s.box1, s.box2].sort());
+      const flat = det.hub_units.flatMap((u) => u.contents.map((c) => ({ box: u.unit_id, ...c })));
+      expect(flat.every((c) => c.purchase_order_id === s.po)).toBe(true);
+      expect(flat.reduce((n, c) => n + c.quantity, 0)).toBe(5);
+      const byOrder = (ref) => flat.filter((c) => c.order_ref.endsWith(ref)).reduce((n, c) => n + c.quantity, 0);
+      expect(flat.filter((c) => c.box === s.box2).every((c) => c.order_ref.includes('-O2'))).toBe(true);
+      expect(byOrder('-O1')).toBe(3);
+      expect(byOrder('-O2')).toBe(2);
+      const listed = (await journey.list({ id: km, code: 'KM' })).find((x) => x.reference === s.shipRef);
+      expect(listed.hub_unit_count).toBe(2);
+
+      await expect(journey.transition({ id: km, code: 'KM' }, actor(), s.shipRef, { to_stage: 'handed_over', proof_ref: 'REMISE-1' }))
+        .rejects.toMatchObject({ status: 409, code: 'JOURNEY_HUB_UNITS_NOT_DISPATCHED' });
+      const stage = (await q('SELECT stage FROM international_shipments WHERE reference=$1', [s.shipRef])).rows[0].stage;
+      expect(stage).toBe('hub_ready');
+    });
+
+    test('remise : un seul carton DISPATCHED ne suffit pas ; les deux le sont → remise tracée (preuve, acteur, horodatage) puis composition figée', async () => {
+      const dispatch = async (unitId) => {
+        const res = await hubOps.transitionOperatorUnitCommand({ unit_id: unitId, to_state: 'DISPATCHED', location_ref: 'HUB-DXB-OUT' }, admin);
+        expect(res.status).toBe(200);
+      };
+      await dispatch(s.box1);
+      await expect(journey.transition({ id: km, code: 'KM' }, actor(), s.shipRef, { to_stage: 'handed_over', proof_ref: 'REMISE-2' }))
+        .rejects.toMatchObject({ code: 'JOURNEY_HUB_UNITS_NOT_DISPATCHED' });
+      await dispatch(s.box2);
+      const done = await journey.transition({ id: km, code: 'KM' }, actor(), s.shipRef, { to_stage: 'handed_over', proof_ref: 'REMISE-3' });
+      expect(done).toMatchObject({ from_stage: 'hub_ready', stage: 'handed_over' });
+
+      const ev = (await q(
+        `SELECT e.proof_ref, e.actor_id, e.occurred_at, e.payload FROM international_shipment_events e
+           JOIN international_shipments sh ON sh.id=e.shipment_id WHERE sh.reference=$1 AND e.to_stage='handed_over'`, [s.shipRef])).rows[0];
+      expect(ev.proof_ref).toBe('REMISE-3');
+      expect(String(ev.actor_id)).toBe(String(admin));
+      expect(ev.occurred_at).toBeInstanceOf(Date);
+      expect(ev.payload.hub_units.map((u) => u.id).sort()).toEqual([s.box1, s.box2].sort());
+
+      // Composition figée : ni détachement ni rattachement d'un autre carton après la remise.
+      await expect(boxShipment.detachBoxFromShipment({ unitId: s.box1 })).rejects.toMatchObject({ code: 'HUB_SHIPMENT_CLOSED' });
+      const extra = await makeBox({ market: km, state: 'PACKED', label: 'LATE' });
+      await expect(boxShipment.attachBoxToShipment({ unitId: extra, shipmentReference: s.shipRef })).rejects.toMatchObject({ code: 'HUB_SHIPMENT_CLOSED' });
+    });
+
+    test('création : carton d\'un autre marché, non emballé, ou déjà dans un dossier → refus ; aucune expédition créée', async () => {
+      const mk = (label, extra = {}) => ({ reference: `${tag}-REF-${label}`, forwarder_name: 'Transitaire test', transport_mode: 'sea', proof_ref: `P-${label}`, ...extra });
+      const count = async () => Number((await q('SELECT COUNT(*)::int AS n FROM international_shipments WHERE reference LIKE $1', [`${tag}-REF-%`])).rows[0].n);
+      const boxCm = await makeBox({ market: cm, state: 'PACKED', label: 'CM' });
+      const boxPicked = await makeBox({ market: km, state: 'PICKED', label: 'PICKED' });
+      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('CM', { hub_unit_ids: [boxCm] }))).rejects.toMatchObject({ code: 'HUB_BOX_SHIPMENT_MARKET_MISMATCH' });
+      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('PICKED', { hub_unit_ids: [boxPicked] }))).rejects.toMatchObject({ code: 'HUB_BOX_NOT_PACKED' });
+      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('TWICE', { hub_unit_ids: [s.box1] }))).rejects.toMatchObject({ code: 'HUB_BOX_ALREADY_ATTACHED' });
+      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('GHOST', { hub_unit_ids: [id()] }))).rejects.toMatchObject({ code: 'HUB_BOX_NOT_FOUND' });
+      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('EMPTY', {}))).rejects.toMatchObject({ code: 'JOURNEY_PARCELS_REQUIRED' });
+      expect(await count()).toBe(0);
+    });
+
+    test('concurrence : le même carton demandé par deux créations simultanées → un seul dossier le contient', async () => {
+      const box = await makeBox({ market: km, state: 'PACKED', label: 'RACE' });
+      const run = (n) => journey.create({ id: km, code: 'KM' }, actor(), {
+        reference: `${tag}-RACE-${n}`, forwarder_name: 'Transitaire test', transport_mode: 'sea', proof_ref: `R-${n}`, hub_unit_ids: [box] });
+      const results = await Promise.allSettled([run(1), run(2)]);
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      expect((await q('SELECT 1 FROM international_shipment_hub_units WHERE physical_unit_id=$1', [box])).rows).toHaveLength(1);
+      const lost = results.find((r) => r.status === 'rejected');
+      expect(lost.reason.code).toBe('HUB_BOX_ALREADY_ATTACHED');
+    });
+
+    test('dossier historique (sans KOM-BOX) : la remise garde sa règle d\'origine', async () => {
+      const legacy = `${tag}-LEGACY`;
+      await q(`INSERT INTO international_shipments(id,market_id,reference,forwarder_name,transport_mode,stage,created_by)
+               VALUES($1,$2,$3,'Transitaire historique','sea','hub_ready',$4)`, [id(), km, legacy, admin]);
+      const done = await journey.transition({ id: km, code: 'KM' }, actor(), legacy, { to_stage: 'handed_over', proof_ref: 'REMISE-HIST' });
+      expect(done.stage).toBe('handed_over');
+      const det = await journey.detail({ id: km, code: 'KM' }, legacy);
+      expect(det.hub_units).toEqual([]);
+      expect(det.parcels).toEqual([]);
     });
   });
 

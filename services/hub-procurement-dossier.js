@@ -149,6 +149,13 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
     boxes.get(r.unit_id).contents.push({ order_id: r.order_id, order_ref: r.order_ref, line_id: r.purchase_line_id, qty: Number(r.quantity) });
   }
 
+  // Expéditions encore ouvertes (hub_ready) du marché : cibles de rattachement proposées au Hub, sans ressaisie.
+  const { rows: shipmentRows } = await q.query(
+    `SELECT s.reference, s.forwarder_name, s.transport_mode,
+            (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id = s.id) AS box_count
+       FROM international_shipments s WHERE s.market_id = $1 AND s.stage = 'hub_ready'
+      ORDER BY s.created_at DESC LIMIT 50`, [marketId]);
+
   const hoursSince = (date) => (date ? (now.getTime() - new Date(date).getTime()) / HOUR : 0);
   const toHandle = [];
   for (const po of purchaseOrders) {
@@ -189,6 +196,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
     receipts: receiptRows.map((r) => ({ id: r.id, reference: r.reference, external_ref: r.external_ref, state: r.state,
       received_at: r.created_at, po_ids: r.po_ids, qty: Number(r.qty) })),
     boxes: [...boxes.values()],
+    open_shipments: shipmentRows,
     to_handle: toHandle,
   };
 }

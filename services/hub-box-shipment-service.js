@@ -52,6 +52,39 @@ function requireUuid(value, name) {
   return String(value);
 }
 
+// Contrôles serveur communs à la création d'un dossier depuis des KOM-BOX et au rattachement ultérieur :
+// existence, carton marché, même marché que le dossier, au moins emballé, jamais déjà dans un autre dossier.
+const ATTACHABLE_STATES = Object.freeze(['PACKED', 'DISPATCHED']);
+
+async function lockAttachableBoxes(client, { marketId, unitIds }) {
+  const ids = [...new Set((unitIds || []).map((value) => requireUuid(value, 'hub_unit_ids[]')))];
+  if (!ids.length) return [];
+  const { rows } = await client.query(
+    'SELECT id, reference, unit_type, state, market_id FROM hub_physical_units WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE',
+    [ids]
+  );
+  if (rows.length !== ids.length) throw failure(404, 'HUB_BOX_NOT_FOUND', 'Carton introuvable');
+  for (const unit of rows) {
+    if (unit.unit_type !== 'MARKET_PARCEL') throw failure(409, 'HUB_BOX_NOT_MARKET_PARCEL', `${unit.reference} n’est pas un carton marché (KOM-BOX)`);
+    if (!ATTACHABLE_STATES.includes(unit.state)) throw failure(409, 'HUB_BOX_NOT_PACKED', `${unit.reference} n’est pas emballé (état ${unit.state})`);
+    if (String(unit.market_id || '') !== String(marketId)) throw failure(409, 'HUB_BOX_SHIPMENT_MARKET_MISMATCH', `${unit.reference} n’appartient pas au marché du dossier`);
+  }
+  const { rows: taken } = await client.query(
+    'SELECT physical_unit_id FROM international_shipment_hub_units WHERE physical_unit_id = ANY($1::uuid[]) LIMIT 1', [ids]
+  );
+  if (taken.length) throw failure(409, 'HUB_BOX_ALREADY_ATTACHED', 'Un carton est déjà rattaché à une expédition');
+  return rows;
+}
+
+async function insertBoxLinks(client, { shipmentId, units, actor = null }) {
+  for (const unit of units) {
+    await client.query(
+      'INSERT INTO international_shipment_hub_units(shipment_id, physical_unit_id, attached_by) VALUES ($1, $2, $3)',
+      [shipmentId, unit.id, actor && actor.id ? actor.id : null]
+    );
+  }
+}
+
 async function attachBoxToShipment({ unitId, shipmentReference, expectedMarketId = null, actor = null }) {
   const unit = requireUuid(unitId, 'unit_id');
   const reference = String(shipmentReference || '').trim();
@@ -99,4 +132,4 @@ async function detachBoxFromShipment({ unitId }) {
   }
 }
 
-module.exports = { attachBoxToShipment, detachBoxFromShipment };
+module.exports = { attachBoxToShipment, detachBoxFromShipment, lockAttachableBoxes, insertBoxLinks, translate };
