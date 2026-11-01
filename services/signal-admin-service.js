@@ -134,7 +134,7 @@ async function listSignals(filters = {}) {
           ELSE 4
         END,
         s.created_at DESC
-      LIMIT ${limitIndex} OFFSET ${offsetIndex}`,
+      LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
     [...queryParams, limit, offset]
   );
 
