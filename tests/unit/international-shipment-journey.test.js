@@ -119,8 +119,10 @@ test('la douane suit la composition KOM-BOX et refuse les liens de colis histori
   const x=fixture('arrived');
   const original=x.client.query.getMockImplementation();
   x.client.query.mockImplementation(async(sql,params)=>{
-    if(String(sql).includes('COUNT(*)::int AS total, COUNT(*) FILTER'))
+    if(String(sql).includes('COUNT(*)::int AS total, COUNT(*) FILTER')){
+      x.executed.push({sql:String(sql),params});
       return {rows:[{total:2,bad:0}]};
+    }
     return original(sql,params);
   });
   const linked=await journey.linkCustoms(market,admin,'INT-KM-001',{customs_reference:'CUS-001',proof_ref:'CUSTOMS-1'},x.db);
