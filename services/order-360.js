@@ -363,7 +363,7 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
       generated_at: new Date().toISOString(),
       source_tables: Object.freeze([
         'orders', 'order_items', 'products', 'parcels', 'parcel_items',
-        'order_status_history', 'scans', 'order_incidents', 'order_comments',
+        'order_status_history', 'scans', 'order_incidents', 'incidents', 'order_comments',
         'client_notifications', 'invoices', 'transaction_documents',
         ...(includePurchasing ? ['purchase_orders', 'purchase_lines', 'suppliers'] : []),
       ]),
