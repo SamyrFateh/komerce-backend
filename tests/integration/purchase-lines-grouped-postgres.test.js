@@ -43,7 +43,7 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
     return fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${current}.`);
   }
 
-  async function newSchema({ migrate = true } = {}) {
+  async function newSchema({ migrate = true, marketScope = true } = {}) {
     current = `plg266_${process.pid}_${Date.now()}_${schemas.length}`.replace(/[^a-zA-Z0-9_]/g, '_');
     schemas.push(current);
     await pool.query(`CREATE SCHEMA ${current}`);
@@ -99,6 +99,7 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
       `);
       if (migrate) {
         for (const name of MIGRATIONS) await c.query(migrationSql(name));
+        if (marketScope) await c.query(migrationSql('357_purchase_orders_market_scope.sql'));
       }
     } finally {
       c.release();
@@ -196,7 +197,7 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
   // ─── migration 266 ────────────────────────────────────────────────────────────────────────────
   describe('migration 266 — en-tête', () => {
     it('ajoute draft sans retirer les statuts existants et reste idempotente', async () => {
-      await newSchema();
+      await newSchema({ marketScope: false });
       await q(`INSERT INTO suppliers(id) VALUES ('00000000-0000-0000-0000-0000000000a1')`);
       const draft = (status) => q(
         `INSERT INTO purchase_orders(order_id, supplier_id, status, qty, supplier_sku)
@@ -225,7 +226,7 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
     });
 
     it('chk_purchase_orders_header_shape : historique XOR regroupée', async () => {
-      await newSchema();
+      await newSchema({ marketScope: false });
       const supplier = await seedSupplier();
       const { order } = await seedItem();
       const insert = (orderId, qty, sku, extra = '') => q(
@@ -242,7 +243,7 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
     });
 
     it('is_order_complete : une ligne ouverte non reçue rend la commande incomplète', async () => {
-      await newSchema();
+      await newSchema({ marketScope: false });
       const supplier = await seedSupplier();
       const { order, item } = await seedItem();
       await seedLine({ supplier, item });
@@ -253,7 +254,7 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
   describe('garde I4 — homogénéité', () => {
     let supplier; let po;
     beforeEach(async () => {
-      await newSchema();
+      await newSchema({ marketScope: false });
       supplier = await seedSupplier();
       ({ rows: [{ id: po }] } = await q(
         `INSERT INTO purchase_orders(order_id, supplier_id, status, qty, supplier_sku, procurement_hub_ref)
@@ -332,6 +333,30 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
       expect(alphaDxb.lines[0]).toMatchObject({ groupable: true, expected_unit_price: 10, product_name: 'Produit' });
       const beta = result.groups.find((g) => g.supplier_name === 'Beta');
       expect(beta.lines[0].groupable).toBe(false);
+    });
+
+    it('P0 #3247 — refuse l’ajout inter-marché dans une PO ouverte, même en SQL brut', async () => {
+      const supplier = await seedSupplier();
+      const a = await seedLine({ supplier, market: 'KM' });
+      const b = await seedLine({ supplier, market: 'KM' });
+      const foreign = await seedLine({ supplier, market: 'CM' });
+      const po = (await grouped.preparePurchaseOrder({
+        supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [a],
+      })).purchase_order;
+      expect(po.market_id).toBe(await seedMarket('KM'));
+
+      const attached = await grouped.attachDraftLines(po.id, [b]);
+      expect(attached.lines).toHaveLength(2);
+      expect(attached.markets.map((m) => m.market_code)).toEqual(['KM']);
+
+      await expect(grouped.attachDraftLines(po.id, [foreign]))
+        .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_MARKET_MISMATCH' });
+      await expect(q('UPDATE purchase_lines SET purchase_order_id = $1 WHERE id = $2', [po.id, foreign]))
+        .rejects.toThrow(/purchase_line_market_mismatch/);
+      expect((await q('SELECT purchase_order_id FROM purchase_lines WHERE id = $1', [foreign])).rows[0].purchase_order_id)
+        .toBeNull();
+      await expect(grouped.attachDraftLines(po.id, [a]))
+        .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINES_ALREADY_ATTACHED' });
     });
 
     it('prepare crée une PO draft regroupée et rattache les lignes', async () => {
