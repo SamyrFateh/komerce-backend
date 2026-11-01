@@ -49,6 +49,7 @@ function publicIncident(row) {
     next_action: nextAction(row),
     created_at: row.created_at,
     due_at: row.due_at || null,
+    business_blocking: isBusinessBlocker(row),
     // Only the business navigation destinations are public. Never emit an incident UUID.
     order_reference: row.order_reference || null,
     purchase_order_link: UUID.test(String(row.purchase_order_id || ''))
@@ -58,10 +59,27 @@ function publicIncident(row) {
   });
 }
 
+// A high severity alone is insufficient: only a proven operational block
+// with a persisted client impact or a quarantined upstream reconciliation goes to À traiter.
+const RECONCILIATION_BLOCKERS = Object.freeze([
+  'hub_purchase_identity_conflict', 'hub_purchase_quantity_conflict', 'hub_destination_conflict',
+]);
+function isBusinessBlocker(row) {
+  if (!['open', 'investigating'].includes(row.status)) return false;
+  const highImpact = ['blocked', 'partial_delivery'].includes(row.client_impact)
+    && ['high', 'critical'].includes(row.severity);
+  const physicalHold = row.incident_type === 'reconciliation_error'
+    && RECONCILIATION_BLOCKERS.includes(row.subtype || row.details?.type)
+    && Boolean(row.physical_unit_id || row.details?.physical_unit_id);
+  return highImpact || physicalHold;
+}
+
 const FIELDS = `
   i.id, i.incident_type, i.title, i.description, i.severity, i.status,
-  i.resolver_domain, i.resolution_class, i.created_at, i.due_at,
-  i.details->>'purchase_order_id' AS purchase_order_id
+  i.resolver_domain, i.resolution_class, i.client_impact, i.created_at, i.due_at,
+  i.details->>'purchase_order_id' AS purchase_order_id,
+  i.details->>'type' AS subtype,
+  i.details->>'physical_unit_id' AS physical_unit_id
 `;
 
 // The source is incidents itself, not a snapshot of derived signals.
@@ -106,6 +124,12 @@ const GLOBAL_SQL = `
     LEFT JOIN parcels p ON p.id = i.parcel_id
     LEFT JOIN orders parcel_order ON parcel_order.id = p.order_id
    WHERE i.status IN ${OPEN}
+     AND (
+       (i.client_impact IN ('blocked','partial_delivery') AND i.severity IN ('high','critical'))
+       OR (i.incident_type='reconciliation_error'
+           AND i.details->>'type' IN ('hub_purchase_identity_conflict','hub_purchase_quantity_conflict','hub_destination_conflict')
+           AND NULLIF(i.details->>'physical_unit_id','') IS NOT NULL)
+     )
      AND (i.origin_domain IN ('LOGISTICS','PURCHASING')
        OR i.resolver_domain IN ('LOGISTICS','PURCHASING'))
    ORDER BY CASE i.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,
@@ -135,4 +159,4 @@ async function listGlobalOpen(executor = db) {
 }
 
 module.exports = { nextAction, publicIncident, listForPurchaseOrder, listForOrder, listGlobalOpen,
-  ORDER_SQL, PO_SQL, GLOBAL_SQL };
+  ORDER_SQL, PO_SQL, GLOBAL_SQL, isBusinessBlocker };
