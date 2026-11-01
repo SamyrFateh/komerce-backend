@@ -587,9 +587,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 48
 - routes: 1
-- migrations: 11
+- migrations: 13
 - scripts: 14
-- tests: 79
+- tests: 80
 - tables owned (lifecycle): 11 — `purchase_lines`, `purchase_orders`, `product_suppliers`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
 - tables written: 11
 - interfaces exposed: 20
@@ -2282,7 +2282,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2183 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2184 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_

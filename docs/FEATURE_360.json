@@ -28177,7 +28177,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 11,
+            "count": 13,
             "files": [
               {
                 "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
@@ -28232,6 +28232,16 @@
               {
                 "declared": "migrations/294_supplier_payment_settlements.sql",
                 "resolvedPath": "migrations/294_supplier_payment_settlements.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/357_purchase_orders_market_scope.sql",
+                "resolvedPath": "migrations/357_purchase_orders_market_scope.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/358_hub_po_transmission_and_box_shipment.sql",
+                "resolvedPath": "migrations/358_hub_po_transmission_and_box_shipment.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -28567,7 +28577,7 @@
             ]
           },
           "tests": {
-            "count": 79,
+            "count": 80,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
@@ -28577,6 +28587,11 @@
               {
                 "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-p0-transmission-box-shipment-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-p0-transmission-box-shipment-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -28967,7 +28982,7 @@
             ]
           }
         },
-        "totalFiles": 153,
+        "totalFiles": 156,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
