@@ -1314,6 +1314,13 @@ const KNOWN_RESPONSES = {
   '/api/purchasing/po/{po_id}/submit': {
     post: { fields: ['purchase_order','lines','groups','preflights','notification','place_order_invoked','markets','multi_market'], source: 'route-read' }
   },
+  '/api/purchasing/po/{po_id}/attach': {
+    post: { fields: ['purchase_order_id','line_ids','lines','markets','multi_market'], source: 'route-read' }
+  },
+  // Hub P0 (#3247) — preuve d'envoi d'une PO : « bon émis » (submit) ≠ « envoyé » (sent)
+  '/api/purchasing/po/{po_id}/sent': {
+    post: { fields: ['purchase_order_id','already_sent','status','sent_at','sent_channel','sent_by','supplier_order_id'], source: 'route-read' }
+  },
   '/api/purchasing/po/{po_id}/confirm': {
     post: { fields: ['purchase_order','lines','remnants','markets','multi_market'], source: 'route-read' }
   },
@@ -1754,6 +1761,17 @@ const KNOWN_RESPONSES = {
   },
   '/api/hub/seal': {
     post: { fields: ['data','total'], source: 'route-read' }
+  },
+  // Hub P0 (#3247) — carton KOM-BOX → expédition du même marché, et dossier d'approvisionnement par marché
+  '/api/hub/box/{unit_id}/shipment': {
+    post: { fields: ['unit_id','shipment_id','shipment_reference','already_attached'], source: 'route-read' },
+    delete: { fields: ['unit_id','detached'], source: 'route-read' }
+  },
+  '/api/hub/dossier': {
+    get: { fields: ['market','market_id','generated_at','kpis','needs','purchase_orders','receipts','boxes','to_handle'], source: 'route-read' }
+  },
+  '/api/hub/trace': {
+    get: { fields: ['order_id','purchase_order_id','chain'], source: 'route-read' }
   },
   '/api/hub/batch-scan': {
     post: { fields: ['data','total'], source: 'route-read' }
