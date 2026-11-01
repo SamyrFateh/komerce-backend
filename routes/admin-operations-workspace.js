@@ -235,7 +235,7 @@ router.get(
 );
 
 // Création d'un dossier d'expédition internationale directement depuis des KOM-BOX (service métier unique :
-// international-shipment-journey) ; l'autorité de création reste celle du journey (admin).
+// international-shipment-journey) ; la préparation est possible pour un agent Hub habilité sur son marché.
 router.post(
   '/market/:marketCode/boxes/shipment',
   attachHubExecutionCapability('execution.parcel.ship'),
@@ -243,11 +243,8 @@ router.post(
   async (req, res, next) => {
     try {
       const body = req.body || {};
-      const result = await shipmentJourney.create(req.workspaceMarket, actionActor(req), {
+      const result = await shipmentJourney.open(req.workspaceMarket, actionActor(req), {
         reference: body.reference,
-        forwarder_name: body.forwarder_name,
-        transport_mode: body.transport_mode,
-        proof_ref: body.proof_ref,
         hub_unit_ids: body.hub_unit_ids,
       });
       return res.status(201).json({ ok: true, result });
@@ -273,6 +270,21 @@ router.post(
     } catch (err) {
       return sendWorkspaceError(err, res, next);
     }
+  }
+);
+
+// Retrait autorisé jusqu'à remise physique, avec marché serveur et audit acteur.
+router.post(
+  '/market/:marketCode/boxes/:unitId/detach',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async (req, res, next) => {
+    try {
+      const result = await boxShipment.detachBoxFromShipment({
+        unitId: req.params.unitId, expectedMarketId: req.workspaceMarket.id, actor: actionActor(req),
+      });
+      return res.json({ ok: true, result });
+    } catch (err) { return sendWorkspaceError(err, res, next); }
   }
 );
 
