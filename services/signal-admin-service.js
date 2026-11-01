@@ -28,6 +28,14 @@ const FAMILY_TYPES = Object.freeze({
   disputes: Object.freeze(['dispute_sensitive']),
 });
 
+// À traiter: opt-in filter, not a replacement for observability and audit views.
+const BUSINESS_BLOCKER_TYPES = Object.freeze([
+  'parcel_blocked','ordered_without_purchase_order','purchase_order_overreceived',
+  'purchase_order_receipt_stuck','preparation_stuck','supplier_order_ambiguous',
+  'supplier_payment_review','customs_declaration_pending',
+  'financial_close_economic_facts_pending',
+]);
+
 const TYPE_FAMILY = Object.freeze(Object.entries(FAMILY_TYPES).reduce((map, [family, types]) => {
   types.forEach(type => { map[type] = family; });
   return map;
@@ -92,7 +100,12 @@ async function listSignals(filters = {}) {
   const marketId = exactMarketId(filters.market_id);
   const limit = normalizeLimit(filters.limit);
   const offset = normalizeOffset(filters.offset);
+  const businessOnly = filters.business_only === true;
+  const blockerClause = businessOnly ? ' AND s.signal_type = ANY($7::text[])' : '';
   const filterParams = [status, severityList, signalType, ownerRole, familyTypes, marketId];
+  const queryParams = businessOnly ? [...filterParams, BUSINESS_BLOCKER_TYPES] : filterParams;
+  const limitIndex = businessOnly ? 8 : 7;
+  const offsetIndex = businessOnly ? 9 : 8;
 
   const { rows } = await db.query(
     `SELECT s.*
@@ -105,6 +118,7 @@ async function listSignals(filters = {}) {
         AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
         AND s.market_id IS NOT DISTINCT FROM $6::uuid
         AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
+        ${blockerClause}
       ORDER BY
         CASE s.severity
           WHEN 'urgent' THEN 1
@@ -113,8 +127,8 @@ async function listSignals(filters = {}) {
           ELSE 4
         END,
         s.created_at DESC
-      LIMIT $7 OFFSET $8`,
-    [...filterParams, limit, offset]
+      LIMIT ${limitIndex} OFFSET ${offsetIndex}`,
+    [...queryParams, limit, offset]
   );
 
   const countResult = await db.query(
@@ -127,8 +141,9 @@ async function listSignals(filters = {}) {
         AND ($4::text IS NULL OR s.owner_role = $4)
         AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
         AND s.market_id IS NOT DISTINCT FROM $6::uuid
-        AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}`,
-    filterParams
+        AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
+        ${blockerClause}`,
+    queryParams
   );
 
   return {
@@ -141,6 +156,12 @@ async function listSignals(filters = {}) {
 
 async function getStats(options = {}) {
   const marketId = exactMarketId(options.market_id);
+  const businessOnly = options.business_only === true;
+  const blockerClause = businessOnly ? ' AND s.signal_type = ANY($2::text[])' : '';
+  const arg = businessOnly ? [marketId, BUSINESS_BLOCKER_TYPES] : [marketId];
+  const familyClause = businessOnly ? ' AND s.signal_type = ANY($6::text[])' : '';
+  const familyArgs = [FAMILY_TYPES.ops, FAMILY_TYPES.eco, FAMILY_TYPES.sourcing, FAMILY_TYPES.disputes, marketId];
+  if (businessOnly) familyArgs.push(BUSINESS_BLOCKER_TYPES);
   const [severityResult, typeResult, familyResult] = await Promise.all([
     db.query(`
       SELECT severity, COUNT(*) AS count
@@ -148,15 +169,17 @@ async function getStats(options = {}) {
        WHERE status IN ('open','acknowledged')
          AND market_id IS NOT DISTINCT FROM $1::uuid
          AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
-       GROUP BY severity`, [marketId]),
+          ${blockerClause}
+       GROUP BY severity`, arg),
     db.query(`
       SELECT signal_type, COUNT(*) AS count
         FROM signals s
        WHERE status IN ('open','acknowledged')
          AND market_id IS NOT DISTINCT FROM $1::uuid
          AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
+          ${blockerClause}
        GROUP BY signal_type
-       ORDER BY count DESC`, [marketId]),
+       ORDER BY count DESC`, arg),
     db.query(`
       SELECT
         CASE
@@ -171,8 +194,9 @@ async function getStats(options = {}) {
        WHERE status IN ('open','acknowledged')
          AND market_id IS NOT DISTINCT FROM $5::uuid
          AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
+          ${familyClause}
        GROUP BY family
-       ORDER BY count DESC`, [FAMILY_TYPES.ops, FAMILY_TYPES.eco, FAMILY_TYPES.sourcing, FAMILY_TYPES.disputes, marketId]),
+       ORDER BY count DESC`, familyArgs),
   ]);
 
   const bySeverity = severityResult.rows;
@@ -334,6 +358,7 @@ async function findActiveByEntity(signalType, entityType, entityId, marketId = n
 module.exports = {
   FAMILY_TYPES,
   familyForType,
+  BUSINESS_BLOCKER_TYPES,
   listSignals,
   getStats,
   acknowledgeById,
