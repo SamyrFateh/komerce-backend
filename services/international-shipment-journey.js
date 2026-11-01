@@ -241,13 +241,13 @@ async function recordCost(market,actor,reference,body={},database=db){
 async function list(market,database=db){
   marketOk(market);
   const {rows}=await database.query(
-    "SELECT s.*, (SELECT COUNT(*)::int FROM international_shipment_parcels ip WHERE ip.shipment_id=s.id) AS parcel_count, (SELECT COALESCE(SUM(CASE WHEN c.kind='credit' THEN -c.amount_kmf ELSE c.amount_kmf END),0) FROM international_shipment_charges c WHERE c.shipment_id=s.id) AS supplementary_costs_kmf, cs.reference AS customs_reference, cs.customs_paid_kmf,cs.status AS customs_status FROM international_shipments s LEFT JOIN customs_shipments cs ON cs.id=s.customs_shipment_id AND cs.market_id=s.market_id WHERE s.market_id=$1 ORDER BY s.created_at DESC LIMIT 100",
+    "SELECT s.*, (SELECT COUNT(*)::int FROM international_shipment_parcels ip WHERE ip.shipment_id=s.id) AS parcel_count, (SELECT COALESCE(SUM(CASE WHEN c.kind='credit' THEN -c.amount_kmf ELSE c.amount_kmf END),0) FROM international_shipment_charges c WHERE c.shipment_id=s.id) AS supplementary_costs_kmf, cs.reference AS customs_reference, cs.customs_paid_kmf,cs.status AS customs_status, CASE WHEN n1.shipment_id IS NULL THEN 'not_reconciled' WHEN n1.reconciled_at < GREATEST(s.updated_at, COALESCE(latest_cost.last_at,s.updated_at)) THEN 'pending_reconciliation' WHEN n1.freight_known = false THEN 'partial_reconciliation' ELSE 'reconciled' END AS cost_reconciliation, CASE WHEN n1.shipment_id IS NOT NULL AND n1.reconciled_at >= GREATEST(s.updated_at, COALESCE(latest_cost.last_at,s.updated_at)) THEN n1.total_freight_kmf+n1.total_arrival_kmf+n1.total_local_kmf ELSE NULL END AS actual_n1_impact FROM international_shipments s LEFT JOIN customs_shipments cs ON cs.id=s.customs_shipment_id AND cs.market_id=s.market_id LEFT JOIN international_n1_reconciliations n1 ON n1.shipment_id=s.id LEFT JOIN LATERAL (SELECT MAX(c.recorded_at) AS last_at FROM international_shipment_charges c WHERE c.shipment_id=s.id) latest_cost ON TRUE WHERE s.market_id=$1 ORDER BY s.created_at DESC LIMIT 100",
     [market.id]
   );
   return rows.map(r=>({...r,
     freight_estimated_kmf:r.transport_mode==='sea'&&r.volume_m3!=null&&r.freight_rate_kmf_per_m3!=null
       ?(Number(r.volume_m3)*Number(r.freight_rate_kmf_per_m3)).toFixed(2):null,
-    cost_reconciliation:'not_reconciled',actual_n1_impact:null}));
+    cost_reconciliation:r.cost_reconciliation||'not_reconciled',actual_n1_impact:r.actual_n1_impact??null}));
 }
 async function detail(market,reference,database=db){
   marketOk(market);
@@ -257,7 +257,12 @@ async function detail(market,reference,database=db){
     database.query('SELECT event_type,from_stage,to_stage,proof_ref,occurred_at,actor_id,notes FROM international_shipment_events WHERE shipment_id=$1 ORDER BY occurred_at,id',[s.id]),
     database.query('SELECT fee_type,kind,amount_kmf,proof_ref,recorded_at,notes FROM international_shipment_charges WHERE shipment_id=$1 ORDER BY recorded_at,id',[s.id]),
   ]);
-  return {shipment:{...s,cost_reconciliation:'not_reconciled'},parcels:parcels.rows,events:events.rows,charges:charges.rows};
+  const {rows:[n1]}=await database.query(
+    "SELECT CASE WHEN r.shipment_id IS NULL THEN 'not_reconciled' WHEN r.reconciled_at < GREATEST(s.updated_at,COALESCE((SELECT MAX(c.recorded_at) FROM international_shipment_charges c WHERE c.shipment_id=s.id),s.updated_at)) THEN 'pending_reconciliation' WHEN r.freight_known=false THEN 'partial_reconciliation' ELSE 'reconciled' END AS cost_reconciliation, CASE WHEN r.shipment_id IS NULL THEN NULL ELSE r.total_freight_kmf+r.total_arrival_kmf+r.total_local_kmf END AS actual_n1_impact FROM international_shipments s LEFT JOIN international_n1_reconciliations r ON r.shipment_id=s.id WHERE s.id=$1 AND s.market_id=$2",
+    [s.id,market.id]
+  );
+  return {shipment:{...s,cost_reconciliation:n1?.cost_reconciliation||'not_reconciled',
+    actual_n1_impact:n1?.actual_n1_impact??null},parcels:parcels.rows,events:events.rows,charges:charges.rows};
 }
 module.exports={STAGES,STAGE_ROLES,FEE_TYPES,JourneyError,create,transition,updateTracking,recordFreight,linkCustoms,recordCost,list,detail,
   _internals:{ref,date,number,actorOk}};

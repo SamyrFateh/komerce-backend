@@ -25,6 +25,7 @@ const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const workspace = require('../services/shipping-customs-workspace');
 const journey = require('../services/international-shipment-journey');
+const internationalN1 = require('../services/international-n1-reconciliation');
 const log = require('../utils/logger').child({ module: 'admin-shipping-customs-workspace' });
 
 const router = express.Router();
@@ -255,6 +256,19 @@ router.post('/market/:marketCode/international/:reference/costs',requireCustomsA
   try{
     return res.status(201).json({ok:true,result:await journey.recordCost(req.workspaceMarket,actionActor(req),req.params.reference,req.body||{})});
   }catch(err){return journeyError(err,res,next);}
+});
+
+// Décision économique explicite Admin : la lecture responsable marché reste seule autorisée.
+router.post('/market/:marketCode/international/:reference/reconcile-n1',requireCustomsAction,async(req,res,next)=>{
+  try{
+    const result=await internationalN1.reconcile(req.workspaceMarket,actionActor(req),req.params.reference);
+    return res.json({ok:true,result});
+  }catch(err){
+    if(err instanceof internationalN1.ReconciliationError){
+      return res.status(err.status).json({error:err.message,code:err.code});
+    }
+    return next(err);
+  }
 });
 
 module.exports = router;

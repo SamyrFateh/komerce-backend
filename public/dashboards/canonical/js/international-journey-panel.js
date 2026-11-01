@@ -183,10 +183,35 @@
       put(item,text(doc,'span','kmc-journey-label',name));
       put(item,text(doc,'strong','',value));
     }
-    const alert=put(dossier,text(doc,'p','kmc-journey-cost-alert',
-      'Coûts enregistrés comme faits documentaires. Non encore rapprochés du N1 : aucune double imputation automatique.'));
-    alert.setAttribute('role','note');
+    const status=s.cost_reconciliation||'not_reconciled';
+    const message=status==='reconciled'
+      ?'N1 réel rapproché : '+money(s.actual_n1_impact)+' · facture et frais ventilés par article.'
+      :status==='partial_reconciliation'
+        ?'Frais réels ventilés en N1 : '+money(s.actual_n1_impact)+' · fret encore inconnu.'
+        :status==='pending_reconciliation'
+        ?'Nouveaux frais depuis le dernier rapprochement : N1 à actualiser.'
+        :'Fret et frais documentés, non encore imputés au N1. Aucun double compte autorisé.';
+    const alert=put(dossier,text(doc,'p','kmc-journey-cost-alert',message));
+    alert.setAttribute('role','status');
     const ref=encodeURIComponent(s.reference);
+    if(actorCan(ctx,['admin'])&&s.customs_reference){
+      const action=put(dossier,text(doc,'button','kmc-workspace-action','Rapprocher les coûts réels (N1)'));
+      action.type='button';
+      const feedback=put(dossier,text(doc,'p','kmc-journey-feedback',''));
+      feedback.setAttribute('role','status');
+      action.addEventListener('click',async()=>{
+        action.disabled=true;feedback.textContent='Contrôle des factures et ventilation…';
+        try{
+          const response=await ctx.fetch(endpoint(ctx,ref+'/reconcile-n1'),{
+            method:'POST',credentials:'include',headers:{Accept:'application/json'},
+          });
+          const body=await response.json().catch(()=>({}));
+          if(!response.ok)throw Error(body.error||'Rapprochement refusé');
+          feedback.textContent='N1 rapproché : '+money(body.result?.actual_n1_kmf);
+          await ctx.reload();
+        }catch(error){feedback.textContent=error.message||'Échec de rapprochement';action.disabled=false;}
+      });
+    }
     const step=nextStage(s);
     if(canTransition(ctx,step)&&(
        ctx.journeyTab==='transport'&&['handed_over','forwarder_received','in_transit','arrived'].includes(step)||
