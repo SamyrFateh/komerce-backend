@@ -375,7 +375,9 @@ test('Catalogue unifié : candidat pré-handoff affiché et inspectable sans éc
   expect(fetchFn.mock.calls[0][0]).toContain('unified=1');
   const row = root.querySelector('[data-candidate-ref="SC-000442"]');
   expect(row).not.toBeNull();
-  expect(row.textContent).toContain('Préparation automatique');
+  expect(row.textContent).not.toContain('Préparation automatique');
+  expect(row.textContent).not.toContain('Classement boutique à confirmer');
+  expect(row.textContent).toContain('Voir la source');
   expect(row.textContent).not.toContain('Approuvé Catalogue');
   expect(row.querySelector('[data-workspace-action="approve"]')).toBeNull();
   const inspect = row.querySelector('[data-workspace-action="inspect-candidate"]');
@@ -729,7 +731,7 @@ test('Catalogue unique : WATCH bloqué par catégorie économique — suggestion
     product_ref:null,name:'Adaptateur importé',candidate_state:'scanned',
     sourcing_decision:'WATCH',source_category_review_required:true,
     work_status:'sourcing_category_review',operator_group:'correction',
-    issues:['sourcing_economic_category_missing']}];
+    requires_arbitration:true,issues:['sourcing_economic_category_missing']}];
   payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
   const requests=[];
   const fetchFn=jest.fn(async (url,options={})=>{
@@ -747,7 +749,7 @@ test('Catalogue unique : WATCH bloqué par catégorie économique — suggestion
   });
   await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
   const row=root.querySelector('[data-candidate-ref="KSC-MISSING-ECON"]');
-  expect(row.textContent).toContain('Catégorie économique manquante');
+  expect(row.textContent).toContain('Choisir une famille de calcul');
   await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
   const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-MISSING-ECON"]');
   const action=panel.querySelector('[data-workspace-action="candidate-economic-category-review"]');
@@ -772,7 +774,7 @@ test('Catalogue : absence de suggestion économique ne sélectionne jamais une c
   payload.products=[{record_kind:'candidate',candidate_ref:'KSC-NO-SUGGESTION',product_ref:null,
     name:'Objet ambigu',candidate_state:'scanned',sourcing_decision:'WATCH',
     work_status:'sourcing_category_review',operator_group:'correction',
-    issues:['sourcing_economic_category_missing']}];
+    requires_arbitration:true,issues:['sourcing_economic_category_missing']}];
   payload.registry_page={total:1,limit:50,offset:0,has_next:false,has_previous:false};
   const fetchFn=jest.fn(async url=>({
     ok:true,status:200,json:async()=>url.includes('/category-options')
@@ -1028,4 +1030,35 @@ test('Ancienne URL Raffinerie : arrive sur le Catalogue maître, diagnostic sép
     workspaceView:'catalog',autoFrenchRunning:false,autoFrenchAttempted:new Set(),
     autoFrenchFailed:new Set(),
   },{approval:[]})).toBe(false);
+});
+
+test('Catalogue : affiche seulement les vraies décisions et filtre côté serveur',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
+  const payload=workspacePayload([]);
+  payload.summary.operator_groups={correction:1,review:1,validated:0,processing:2,excluded:0};
+  payload.summary.operator_arbitrations=1;
+  payload.products=[
+    {record_kind:'candidate',candidate_ref:'SC-TECH',name:'Candidat en cours',
+      work_status:'processing',operator_group:'processing',requires_arbitration:false,issues:[]},
+    {record_kind:'candidate',candidate_ref:'SC-DECISION',name:'Produit ambigu',
+      work_status:'sourcing_review',operator_group:'review',requires_arbitration:true,issues:[]},
+    {record_kind:'product',product_ref:'KPR-PROOF',name:'Preuve ancienne',
+      work_status:'approval_to_review',operator_group:'review',requires_arbitration:false,issues:[]},
+  ];
+  payload.registry_page={total:3,limit:50,offset:0,has_next:false,has_previous:false};
+  const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
+  await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
+  const technical=root.querySelector('[data-candidate-ref="SC-TECH"]');
+  const decision=root.querySelector('[data-candidate-ref="SC-DECISION"]');
+  const proof=root.querySelector('[data-product-ref="KPR-PROOF"]');
+  expect(technical.textContent).not.toContain('À examiner');
+  expect(technical.textContent).not.toContain('Candidat fournisseur · aucune validation Catalogue');
+  expect(decision.textContent).toContain('Valider le classement Boutique');
+  expect(proof.textContent).not.toContain('Preuve d’approbation Catalogue à régulariser');
+  const quick=root.querySelectorAll('.kmc-catalog-quick-chip').find(x=>x.textContent.includes('À arbitrer'));
+  expect(quick.textContent).toContain('1');
+  await quick.click();
+  const requested=fetchFn.mock.calls.map(([url])=>String(url));
+  expect(requested.some(url=>url.includes('status=arbitration'))).toBe(true);
 });
