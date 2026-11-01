@@ -78,7 +78,7 @@ module.exports = {
       'migrations/233_hub_physical_identity_allocation_custody.sql',
       'migrations/309_hub_placement_guard_exclude_outcomes.sql',
       'migrations/313_market_transport_sale_rates.sql',
-      'migrations/353_international_shipment_journey.sql',
+      'migrations/354_international_shipment_journey.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',

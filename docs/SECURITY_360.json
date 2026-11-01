@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-31T09:03:51.055Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 768,
-    "protected": 713,
+    "total": 770,
+    "protected": 715,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2870,6 +2870,11 @@
       ]
     },
     {
+      "key": "PATCH /api/admin/workspaces/pricing/market/{marketCode}/structure-charges/{chargeId}/description",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "PATCH /api/admin/workspaces/sourcing/sources/{sourceRef}",
       "level": "PROTECTED",
       "roles": [
@@ -3853,6 +3858,11 @@
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/simulate-impact",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/structure-charges",
       "level": "PROTECTED",
       "roles": []
     },

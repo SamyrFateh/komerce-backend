@@ -106,6 +106,15 @@ const mockStructure = {
 };
 jest.mock('../../services/pricing-period-structure', () => mockStructure);
 
+const mockMarketCharge = {
+  createMarketChargeAndFact: jest.fn(async(market,input)=>({
+    charge:{id:'charge-new',market_owner_id:market.id},fact:{id:'fact-new'},
+  })),
+  updateMarketChargeDescription: jest.fn(async(market,id,description)=>({id,notes:description})),
+  updateMarketChargeDetails: jest.fn(async(market,id,details)=>({id,name:details.name,notes:details.description})),
+};
+jest.mock('../../services/market-structure-charge-reference',()=>mockMarketCharge);
+
 const express = require('express');
 const request = require('supertest');
 const router = require('../../routes/admin-pricing-workspace');
@@ -269,5 +278,48 @@ describe('GET/POST /structure-events — GROUP (mutualisé, admin only)', () => 
       .send(baseEventBody({ scope_kind: 'GROUP' }));
     expect(res.status).toBe(403);
     expect(mockStructure.recordStructureCostEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /market/:marketCode/structure-charges — MARKET_DIRECT only',()=>{
+  test('manager CM peut ajouter un poste et sa preuve dans son marché',async()=>{
+    const input={reference:{name:'Loyer CM',description:'Loyer local'},
+      event:baseEventBody()};
+    const result=await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/structure-charges').send(input);
+    expect(result.status).toBe(201);
+    expect(result.body.action).toBe('create_market_direct_structure_charge');
+    expect(mockMarketCharge.createMarketChargeAndFact).toHaveBeenCalledWith(
+      expect.objectContaining({id:'market-cm'}),input,'partner-1');
+  });
+  test('rôle seul sans capability ne permet pas de créer ni modifier',async()=>{
+    mockScopeRole='viewer';
+    const created=await request(app()).post('/api/admin/workspaces/pricing/market/CM/structure-charges')
+      .send({reference:{name:'loyer'}});
+    const edited=await request(app()).patch('/api/admin/workspaces/pricing/market/CM/structure-charges/charge-1/description')
+      .send({description:'test'});
+    expect(created.status).toBe(403);
+    expect(edited.status).toBe(403);
+    expect(mockMarketCharge.createMarketChargeAndFact).not.toHaveBeenCalled();
+    expect(mockMarketCharge.updateMarketChargeDescription).not.toHaveBeenCalled();
+    expect(mockMarketCharge.updateMarketChargeDetails).not.toHaveBeenCalled();
+  });
+  test('libellé et description modifiables ensemble sous autorité du marché',async()=>{
+    const details={name:'Loyer bureaux Douala',description:'Antenne locale'};
+    const response=await request(app())
+      .patch('/api/admin/workspaces/pricing/market/CM/structure-charges/charge-1/description')
+      .send(details);
+    expect(response.status).toBe(200);
+    expect(response.body.action).toBe('update_market_direct_structure_details');
+    expect(mockMarketCharge.updateMarketChargeDetails).toHaveBeenCalledWith(
+      expect.objectContaining({id:'market-cm'}),'charge-1',details);
+    expect(mockMarketCharge.updateMarketChargeDescription).not.toHaveBeenCalled();
+  });
+  test('description modifiable uniquement avec autorité structure.event.record',async()=>{
+    const response=await request(app()).patch('/api/admin/workspaces/pricing/market/CM/structure-charges/charge-1/description')
+      .send({description:'Loyer de bureau'});
+    expect(response.status).toBe(200);
+    expect(mockMarketCharge.updateMarketChargeDescription).toHaveBeenCalledWith(
+      expect.objectContaining({id:'market-cm'}),'charge-1','Loyer de bureau');
   });
 });

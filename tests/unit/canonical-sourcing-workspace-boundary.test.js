@@ -264,6 +264,7 @@ test('fournisseurs sourcing : création et modification via formulaire, validati
   const root = new Node('div');
   await sourcing.mount({
     root, document: { createElement: tag => new Node(tag) }, fetch,
+    locationSearch: '?mode=partners',
     user: { role: 'admin' },
     ui: {
       Section: { create: () => {

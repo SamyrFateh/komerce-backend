@@ -309,6 +309,44 @@
     const formTitle = el(doc, 'div', 'kmc-structure-panel-section-title',
       inline ? 'Saisie sur cette ligne' : 'Nouvel ajustement');
     const built = buildForm(doc, charges);
+    let newReference = null;
+    if (config.createChargeEndpoint && inline && !config.initialChargeId) {
+      const option = doc.createElement('option');
+      option.value = '__new__';
+      option.textContent = '+ Nouveau poste fixe propre au marché';
+      built.chargeSelect.appendChild(option);
+      const fields = el(doc,'div','kmc-structure-new-charge-ref');
+      fields.dataset.newFixedReference = '';
+      const name = doc.createElement('input');
+      name.type = 'text'; name.maxLength = 120; name.placeholder = 'Ex. Loyer du dépôt local';
+      name.dataset.newFixedName = '';
+      const description = doc.createElement('textarea');
+      description.rows = 2; description.maxLength = 500;
+      description.placeholder = 'Description courte du poste (modifiable par la suite)';
+      description.dataset.newFixedDescription = '';
+      const recurrence = doc.createElement('select');
+      recurrence.dataset.newFixedRecurrence = '';
+      [['monthly','Mensuel'],['weekly','Hebdomadaire'],['quarterly','Trimestriel'],
+        ['annual','Annuel'],['one_time','Ponctuel']].forEach(([value,label])=>{
+        const item = doc.createElement('option'); item.value = value; item.textContent = label;
+        recurrence.appendChild(item);
+      });
+      [[name,'Nom du poste'],[description,'Description'],[recurrence,'Fréquence']].forEach(([field,label])=>{
+        const wrap = el(doc,'label','kmc-structure-new-reference-field',label);
+        wrap.appendChild(field); fields.appendChild(wrap);
+      });
+      built.chargeSelect.closest('.kmc-structure-panel-field').after(fields);
+      const toggle = () => {
+        const creating = built.chargeSelect.value === '__new__';
+        fields.hidden = !creating;
+        if (creating) built.eventKindSelect.value = 'ACCRUAL';
+        built.eventKindSelect.disabled = creating;
+      };
+      built.chargeSelect.addEventListener('change',toggle);
+      built.chargeSelect.value = '__new__';
+      toggle();
+      newReference = {name,description,recurrence};
+    }
     // The action footer is a sibling of the form: HTML submit alone cannot fire
     // a form's submit event without an explicit form owner.
     saveBtn.addEventListener('click', event => {
@@ -324,7 +362,7 @@
       amount.placeholder = 'Nouvelle écriture';
       // The row itself identifies the charge; other mandatory financial
       // fields keep their safe defaults but do not overcrowd the ordinary edit.
-      built.chargeSelect.closest('.kmc-structure-panel-field').hidden = true;
+      if (config.initialChargeId) built.chargeSelect.closest('.kmc-structure-panel-field').hidden = true;
       const advanced = el(doc, 'details', 'kmc-structure-inline-advanced');
       advanced.appendChild(el(doc, 'summary', '', 'Options avancées · devise, source, notes'));
       [
@@ -394,7 +432,11 @@
         const rawAmount = built.amountInput.value.trim();
         const amountOriginal = Number(rawAmount);
         const fxRate = Number(built.fxInput.value);
+        const creating = !!newReference && built.chargeSelect.value === '__new__';
         if (!built.chargeSelect.value) throw new Error('Choisissez une charge valide.');
+        if (creating && newReference.name.value.trim().length < 3) {
+          throw new Error('Nommez le poste fixe (au moins 3 caractères).');
+        }
         if (!built.fromInput.value || !built.toInput.value || built.toInput.value <= built.fromInput.value) {
           throw new Error('Renseignez une période de début et de fin valide.');
         }
@@ -415,8 +457,8 @@
         }
         if (!Number.isFinite(fxRate) || fxRate <= 0) throw new Error('Le taux de conversion doit être positif.');
         const body = {
-          charge_id: built.chargeSelect.value,
-          event_kind: built.eventKindSelect.value,
+          charge_id: creating ? undefined : built.chargeSelect.value,
+          event_kind: creating ? 'ACCRUAL' : built.eventKindSelect.value,
           adjusts_event_id: built.adjustsWrap.hidden ? undefined : (built.adjustsSelect.value || undefined),
           economic_from: built.fromInput.value ? new Date(`${built.fromInput.value}T00:00:00.000Z`).toISOString() : undefined,
           economic_to: built.toInput.value ? new Date(`${built.toInput.value}T00:00:00.000Z`).toISOString() : undefined,
@@ -429,7 +471,17 @@
           evidence_ref: built.evidenceInput.value,
           notes: built.notesInput.value || undefined,
         };
-        await jsonRequest(fetchFn, config.submitEndpoint, { method: 'POST', body });
+        const target = creating ? config.createChargeEndpoint : config.submitEndpoint;
+        const payload = creating ? {
+          reference: {
+            name: newReference.name.value.trim(),
+            description: newReference.description.value.trim(),
+            recurrence_period: newReference.recurrence.value,
+            family: 'operationnelle',
+          },
+          event: body,
+        } : body;
+        await jsonRequest(fetchFn, target, { method: 'POST', body: payload });
         // Do not misreport a saved event as unsaved if subsequent refresh fails.
         if (typeof config.onSaved === 'function') {
           try { await config.onSaved(); }

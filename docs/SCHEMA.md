@@ -51,8 +51,8 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | Tables | 214 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 499 | Performance + contraintes uniques |
-| Foreign keys | 408 | Cohérence relationnelle |
+| Index | 501 | Performance + contraintes uniques |
+| Foreign keys | 409 | Cohérence relationnelle |
 | Fonctions | 91 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 108 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -233,7 +233,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `cost_component_market_override_events` | Journal append-only des créations, mises à jour et resets d'overrides de composantes de coûts par marché. **Migration 159 — `verified_live_schema` (confirmé par dump Railway 2026-09-04).** |
 | `risk_provisions` | Provisions risques. |
 | `cost_benchmarks` | Seuils de part de coût attendue par famille/catégorie (`expected_share_pct`, `warn_ratio` 1.30, `alert_ratio` 1.60). Alimente les alertes d'écart coût. |
-| `charges` | Charges fixes. |
+| `charges` | Charges fixes (référentiel de structure, non une preuve de période). **Migration 353 (`intended_migration_schema`)** : + `market_owner_id` UUID nullable, FK `markets(id)`, pour les références privées d'un marché ; NULL = référence partagée. Index partiel (marché, nom actif) pour empêcher les doublons. Seuls les événements de période append-only alimentent les montants réels ; une référence marché ne peut jamais recevoir un fait GROUP ou d'un autre marché. |
 | `competitor_prices` | Prix concurrents globaux/informatifs ; ils ne constituent pas le corridor local d'un marché. |
 | `price_history` | Historique prix. |
 | `pricing_maturity_disposition_events` | Journal append-only des décisions humaines de disposition de maturité économique ; le dernier événement fait foi sans promouvoir une disposition en maturité réelle. **Migration 165 — promue le 2026-09-06 (schema-promote, dump live verifie).** |
@@ -730,30 +730,28 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 `catalog_media_recovery_audit` conserve l'identité produit, la référence candidat fournisseur, l'acteur, la liste des identités médias fournisseur et l'empreinte SHA-256 du sous-ensemble média, avec les comptages avant/après. Le service `catalog-media-recovery` n'ajoute des médias à un brouillon inactif précédemment vide qu'après preuve source V2, sous autorisation Catalogue + Sourcing et transaction commune avec la ligne d'audit. Aucune publication ni exposition marché. Migration en PR, **non appliquée au staging** à ce stade.
 <!-- /schema-pending -->
 
+### Expéditions internationales — migration 354 (intended_migration_schema)
 
-### Chaîne d'expédition internationale — migration 353 (intended_migration_schema, not yet live)
+<!-- schema-pending: international_shipments (migration 354, not yet live) -->
 
-<!-- schema-pending: international_shipments (migration 353, not yet live) -->
-
-`international_shipments` — Dossier de transport international réel : marché, transitaire, mode, étape prouvée, volume, facture de fret, suivi et ETA, lien optionnel vers le dossier douanier distinct. Source des faits transport, sans écriture N1 automatique.
-
-<!-- /schema-pending -->
-
-<!-- schema-pending: international_shipment_parcels (migration 353, not yet live) -->
-
-`international_shipment_parcels` — Composition physique verrouillée : identifiant du dossier de transport et colis liés ; un colis n'appartient qu'à une expédition internationale. Volume Hub conservé et rattachement contrôlé côté service.
+`international_shipments` — Transport international réel : transitaire, mode, étape prouvée, volume, facture fret, suivi conteneur/BL et ETA ; dossier douane distinct.
 
 <!-- /schema-pending -->
 
-<!-- schema-pending: international_shipment_events (migration 353, not yet live) -->
+<!-- schema-pending: international_shipment_parcels (migration 354, not yet live) -->
 
-`international_shipment_events` — Journal append-only des jalons : acteur, preuve, horodatage, étape précédente/suivante et information de suivi révisable sans effacer l'historique.
-
-<!-- /schema-pending -->
-
-<!-- schema-pending: international_shipment_charges (migration 353, not yet live) -->
-
-`international_shipment_charges` — Journal append-only de frais d'arrivée et transport local (montant, catégorie, preuve, idempotence, correction par crédit). Faits documentaires non encore ventilés en N1 ; rapprochement douane/fret obligatoire avant toute imputation.
+`international_shipment_parcels` — Composition physique : un colis par dossier, volume Hub et identité conservée.
 
 <!-- /schema-pending -->
 
+<!-- schema-pending: international_shipment_events (migration 354, not yet live) -->
+
+`international_shipment_events` — Preuves append-only de transitions, acteur et horodatage ; ETA révisable avec historique.
+
+<!-- /schema-pending -->
+
+<!-- schema-pending: international_shipment_charges (migration 354, not yet live) -->
+
+`international_shipment_charges` — Frais réels d'arrivée et de transport local, documentés, idempotents et append-only ; non ventilés en N1 sans rapprochement.
+
+<!-- /schema-pending -->

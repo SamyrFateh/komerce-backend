@@ -25,7 +25,7 @@ Les transitions sont des attestations, sans mutation automatique de colis, paiem
 Une page Expéditions & Douane, trois onglets : Transport & fret / Arrivée & douane / Vers les relais. Liste de dossiers, détails, factures, coûts, suivi, pièces et preuves. Le workflow douanier existant demeure dans l'onglet Arrivée ; Hub/Relais demeure le propriétaire des scans physiques.
 
 ## Couverture honnête de cette V1
-La migration 353 est automatiquement chargée par preDeploy Railway après la fusion. Tests Jest, marché/role et preuve ; Chromium staging authentifié et test PostgreSQL jetable exigés avant verdict GO.
+La migration 354 est automatiquement chargée par preDeploy Railway après la fusion. Tests Jest, marché/role et preuve ; Chromium staging authentifié et test PostgreSQL jetable exigés avant verdict GO.
 
 Cette première livraison n'est PAS une certification de rapprochement N1 : aucun poste international_shipment_charges n'est encore écrit dans order_item_real_cost_allocations, précisément pour éviter le double-comptage avant validation. Les frais existants conservent leur propriétaire. Les factures sont référencées, non encore stockées comme pièces binaires. La preuve PDF, la gestion multi-devise/FX snapshot et la ventilation certifiée en N1 réel feront l'objet du lot financier suivant.
 

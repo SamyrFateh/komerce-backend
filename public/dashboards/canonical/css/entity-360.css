@@ -192,7 +192,7 @@ body.kmc-shell-v4[data-kmc-surface="order-360"] #canonical-admin-domain-tabs,
 body.kmc-shell-v4[data-kmc-surface="client-360"] #canonical-admin-domain-tabs,
 body.kmc-shell-v4[data-kmc-surface="product-360"] #canonical-admin-domain-tabs,
 body.kmc-shell-v4[data-kmc-surface="supplier-360"] #canonical-admin-domain-tabs {
-  display: none !important;
+  display: none;
 }
 
 

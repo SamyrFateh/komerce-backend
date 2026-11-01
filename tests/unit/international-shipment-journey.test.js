@@ -145,7 +145,7 @@ test('creating real journey requires exact parcel provenance and prevents duplic
 
 test('schema has FK and audit-only financial boundary, no automatic N1 double counting',()=>{
   const fs=require('fs'),path=require('path');
-  const migration=fs.readFileSync(path.join(__dirname,'../../migrations/353_international_shipment_journey.sql'),'utf8');
+  const migration=fs.readFileSync(path.join(__dirname,'../../migrations/354_international_shipment_journey.sql'),'utf8');
   expect(migration).toContain('CONSTRAINT uq_international_parcel UNIQUE(parcel_id)');
   expect(migration).toContain('international_shipment_charges');
   expect(migration).toContain('BEFORE UPDATE OR DELETE');

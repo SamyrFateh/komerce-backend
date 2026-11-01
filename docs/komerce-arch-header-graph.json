@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 762,
-    "filesWithFullHeaders": 711,
+    "scannedCodeFiles": 763,
+    "filesWithFullHeaders": 712,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 762,
+    "filesWithAnyHeaders": 763,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1896,
-    "edges": 9402,
+    "graphNodes": 1900,
+    "edges": 9413,
     "dbTables": 214,
-    "doctrines": 713,
+    "doctrines": 716,
     "impactAreas": 207,
     "unresolvedCodeEdges": 908,
     "dbWriteViaOverlapWarnings": 11,
@@ -40,7 +40,7 @@
     "decision-signals": 14,
     "market-delegation": 35,
     "market": 9,
-    "economic-engine": 65,
+    "economic-engine": 66,
     "sourcing": 37,
     "logistics": 57,
     "boutique": 21,
@@ -111,7 +111,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 445,
+    "service": 446,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,8 @@
     "critical": 110,
     "medium": 153,
     "high": 439,
-    "low": 60
+    "low": 60,
+    "unknown": 1
   },
   "nodes": [
     {
@@ -6932,7 +6933,7 @@
         "capability_is_the_authority_not_role",
         "global_pricing_authority_or_exact_market_capability",
         "viewer_reads_manager_writes",
-        "country_manager_owns_local_strategy",
+        "country_manager_owns_local_strategy_except_verified_central_admin_catalog_price",
         "browser_business_refs_only",
         "simulation_is_read_only",
         "market_decision_policy_is_append_only",
@@ -9761,7 +9762,11 @@
         "bootstrap/api-routes.js",
         "market operator dashboard"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "markets",
+        "market_operating_assignments",
+        "users"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
@@ -9781,7 +9786,7 @@
         "explicit"
       ],
       "doctrine": [
-        "capabilities_authorize_catalog_exposure",
+        "delegated_capabilities_or_verified_central_admin_catalog_only",
         "client_market_id_never_authority",
         "market_catalog_summary_is_server_truth"
       ],
@@ -20793,7 +20798,8 @@
         "routes/market-delegation-catalog.js"
       ],
       "dbRead": [
-        "products"
+        "products",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -20820,7 +20826,7 @@
         "caller-owned"
       ],
       "doctrine": [
-        "catalog_authority_is_capability_based",
+        "catalog_authority_is_capability_based_except_verified_central_admin",
         "client_market_id_never_authority",
         "writer_not_owner_boundary",
         "market_validation_may_delegate_first_publication_to_catalog_owner",
@@ -22316,6 +22322,47 @@
         "settlement"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/market-structure-charge-reference.js",
+      "file": "services/market-structure-charge-reference.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-owned-structure-charge-reference-writer",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": null,
+      "owner": null,
+      "purpose": null,
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "charges",
+        "markets"
+      ],
+      "dbWrite": [
+        "charges"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "create_reference_and_period_fact_atomic"
+      ],
+      "doctrine": [
+        "market_scope_from_resolved_route",
+        "accounting_truth_is_append_only",
+        "zero_reference_is_not_a_fact"
+      ],
+      "impactAreas": [],
+      "version": null
     },
     {
       "id": "services/market-transport-sale-rates.js",
@@ -38551,9 +38598,9 @@
       "doctrine": "viewer_reads_manager_writes"
     },
     {
-      "id": "doctrine:country_manager_owns_local_strategy",
+      "id": "doctrine:country_manager_owns_local_strategy_except_verified_central_admin_catalog_price",
       "type": "doctrine",
-      "doctrine": "country_manager_owns_local_strategy"
+      "doctrine": "country_manager_owns_local_strategy_except_verified_central_admin_catalog_price"
     },
     {
       "id": "doctrine:browser_business_refs_only",
@@ -38776,9 +38823,9 @@
       "doctrine": "no_client_market_id"
     },
     {
-      "id": "doctrine:capabilities_authorize_catalog_exposure",
+      "id": "doctrine:delegated_capabilities_or_verified_central_admin_catalog_only",
       "type": "doctrine",
-      "doctrine": "capabilities_authorize_catalog_exposure"
+      "doctrine": "delegated_capabilities_or_verified_central_admin_catalog_only"
     },
     {
       "id": "doctrine:client_market_id_never_authority",
@@ -39996,9 +40043,9 @@
       "doctrine": "gaps_are_reported_never_repaired"
     },
     {
-      "id": "doctrine:catalog_authority_is_capability_based",
+      "id": "doctrine:catalog_authority_is_capability_based_except_verified_central_admin",
       "type": "doctrine",
-      "doctrine": "catalog_authority_is_capability_based"
+      "doctrine": "catalog_authority_is_capability_based_except_verified_central_admin"
     },
     {
       "id": "doctrine:market_validation_may_delegate_first_publication_to_catalog_owner",
@@ -40269,6 +40316,21 @@
       "id": "doctrine:strict_ready_requested_paid_received_machine",
       "type": "doctrine",
       "doctrine": "strict_ready_requested_paid_received_machine"
+    },
+    {
+      "id": "doctrine:market_scope_from_resolved_route",
+      "type": "doctrine",
+      "doctrine": "market_scope_from_resolved_route"
+    },
+    {
+      "id": "doctrine:accounting_truth_is_append_only",
+      "type": "doctrine",
+      "doctrine": "accounting_truth_is_append_only"
+    },
+    {
+      "id": "doctrine:zero_reference_is_not_a_fact",
+      "type": "doctrine",
+      "doctrine": "zero_reference_is_not_a_fact"
     },
     {
       "id": "doctrine:attested_cost_is_not_a_sale_price",
@@ -52425,9 +52487,9 @@
     },
     {
       "from": "routes/admin-pricing-workspace.js",
-      "to": "doctrine:country_manager_owns_local_strategy",
+      "to": "doctrine:country_manager_owns_local_strategy_except_verified_central_admin_catalog_price",
       "type": "doctrine",
-      "label": "country_manager_owns_local_strategy"
+      "label": "country_manager_owns_local_strategy_except_verified_central_admin_catalog_price"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -56682,6 +56744,24 @@
     },
     {
       "from": "routes/market-delegation-catalog.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/market-delegation-catalog.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "routes/market-delegation-catalog.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "routes/market-delegation-catalog.js",
       "to": "db:product_market_exposure",
       "type": "db-write-via",
       "label": "product_market_exposure",
@@ -56696,9 +56776,9 @@
     },
     {
       "from": "routes/market-delegation-catalog.js",
-      "to": "doctrine:capabilities_authorize_catalog_exposure",
+      "to": "doctrine:delegated_capabilities_or_verified_central_admin_catalog_only",
       "type": "doctrine",
-      "label": "capabilities_authorize_catalog_exposure"
+      "label": "delegated_capabilities_or_verified_central_admin_catalog_only"
     },
     {
       "from": "routes/market-delegation-catalog.js",
@@ -74762,6 +74842,12 @@
     },
     {
       "from": "services/market-delegation-catalog-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/market-delegation-catalog-service.js",
       "to": "db:product_market_exposure",
       "type": "db-write-via",
       "label": "product_market_exposure",
@@ -74783,9 +74869,9 @@
     },
     {
       "from": "services/market-delegation-catalog-service.js",
-      "to": "doctrine:catalog_authority_is_capability_based",
+      "to": "doctrine:catalog_authority_is_capability_based_except_verified_central_admin",
       "type": "doctrine",
-      "label": "catalog_authority_is_capability_based"
+      "label": "catalog_authority_is_capability_based_except_verified_central_admin"
     },
     {
       "from": "services/market-delegation-catalog-service.js",
@@ -77172,6 +77258,49 @@
       "to": "impact:settlement",
       "type": "impact",
       "label": "settlement"
+    },
+    {
+      "from": "services/market-structure-charge-reference.js",
+      "to": "db:charges",
+      "type": "db-read",
+      "label": "charges"
+    },
+    {
+      "from": "services/market-structure-charge-reference.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-structure-charge-reference.js",
+      "to": "db:charges",
+      "type": "db-write",
+      "label": "charges"
+    },
+    {
+      "from": "services/market-structure-charge-reference.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-write-via",
+      "label": "economic_structure_cost_events",
+      "via": "pricing-period-structure"
+    },
+    {
+      "from": "services/market-structure-charge-reference.js",
+      "to": "doctrine:market_scope_from_resolved_route",
+      "type": "doctrine",
+      "label": "market_scope_from_resolved_route"
+    },
+    {
+      "from": "services/market-structure-charge-reference.js",
+      "to": "doctrine:accounting_truth_is_append_only",
+      "type": "doctrine",
+      "label": "accounting_truth_is_append_only"
+    },
+    {
+      "from": "services/market-structure-charge-reference.js",
+      "to": "doctrine:zero_reference_is_not_a_fact",
+      "type": "doctrine",
+      "label": "zero_reference_is_not_a_fact"
     },
     {
       "from": "services/market-transport-sale-rates.js",
@@ -106152,7 +106281,7 @@
         "capability_is_the_authority_not_role",
         "global_pricing_authority_or_exact_market_capability",
         "viewer_reads_manager_writes",
-        "country_manager_owns_local_strategy",
+        "country_manager_owns_local_strategy_except_verified_central_admin_catalog_price",
         "browser_business_refs_only",
         "simulation_is_read_only",
         "market_decision_policy_is_append_only",
@@ -106183,7 +106312,7 @@
         "db:users",
         "doctrine:browser_business_refs_only",
         "doctrine:capability_is_the_authority_not_role",
-        "doctrine:country_manager_owns_local_strategy",
+        "doctrine:country_manager_owns_local_strategy_except_verified_central_admin_catalog_price",
         "doctrine:global_pricing_authority_or_exact_market_capability",
         "doctrine:local_active_implies_market_catalog_entry",
         "doctrine:market_corridor_is_observation_not_gate",
@@ -108928,7 +109057,11 @@
         "market operator dashboard"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "markets",
+        "market_operating_assignments",
+        "users"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
@@ -108945,7 +109078,7 @@
         }
       ],
       "doctrines": [
-        "capabilities_authorize_catalog_exposure",
+        "delegated_capabilities_or_verified_central_admin_catalog_only",
         "client_market_id_never_authority",
         "market_catalog_summary_is_server_truth"
       ],
@@ -108957,9 +109090,12 @@
       "mustCheck": [
         "bootstrap/api-routes.js",
         "db:market_delegation_audit",
+        "db:market_operating_assignments",
+        "db:markets",
         "db:product_market_exposure",
-        "doctrine:capabilities_authorize_catalog_exposure",
+        "db:users",
         "doctrine:client_market_id_never_authority",
+        "doctrine:delegated_capabilities_or_verified_central_admin_catalog_only",
         "doctrine:market_catalog_summary_is_server_truth",
         "impact:catalog",
         "impact:delegation",
@@ -120081,7 +120217,8 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "products"
+        "products",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -120105,7 +120242,7 @@
         }
       ],
       "doctrines": [
-        "catalog_authority_is_capability_based",
+        "catalog_authority_is_capability_based_except_verified_central_admin",
         "client_market_id_never_authority",
         "writer_not_owner_boundary",
         "market_validation_may_delegate_first_publication_to_catalog_owner",
@@ -120120,7 +120257,8 @@
         "db:market_delegation_audit",
         "db:product_market_exposure",
         "db:products",
-        "doctrine:catalog_authority_is_capability_based",
+        "db:users",
+        "doctrine:catalog_authority_is_capability_based_except_verified_central_admin",
         "doctrine:catalog_stays_unique_exposure_is_projection",
         "doctrine:client_market_id_never_authority",
         "doctrine:market_validation_may_delegate_first_publication_to_catalog_owner",
@@ -121636,6 +121774,46 @@
         "impact:settlement",
         "routes/admin-market-settlement.js",
         "services/market-delegation-settlement-service.js"
+      ]
+    },
+    "services/market-structure-charge-reference.js": {
+      "role": "market-owned-structure-charge-reference-writer",
+      "domain": "economic-engine",
+      "criticality": null,
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "charges",
+        "markets"
+      ],
+      "dbWrite": [
+        "charges"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        }
+      ],
+      "doctrines": [
+        "market_scope_from_resolved_route",
+        "accounting_truth_is_append_only",
+        "zero_reference_is_not_a_fact"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "db:charges",
+        "db:economic_structure_cost_events",
+        "db:markets",
+        "doctrine:accounting_truth_is_append_only",
+        "doctrine:market_scope_from_resolved_route",
+        "doctrine:zero_reference_is_not_a_fact"
       ]
     },
     "services/market-transport-sale-rates.js": {
@@ -136290,6 +136468,15 @@
       ]
     },
     {
+      "table": "charges",
+      "writerCount": 3,
+      "writers": [
+        "bootstrap/startup-migrations.js",
+        "services/economic-engine-queries.js",
+        "services/market-structure-charge-reference.js"
+      ]
+    },
+    {
       "table": "incidents",
       "writerCount": 3,
       "writers": [
@@ -136417,14 +136604,6 @@
       "writers": [
         "routes/cash.js",
         "services/cash-deposit-service.js"
-      ]
-    },
-    {
-      "table": "charges",
-      "writerCount": 2,
-      "writers": [
-        "bootstrap/startup-migrations.js",
-        "services/economic-engine-queries.js"
       ]
     },
     {

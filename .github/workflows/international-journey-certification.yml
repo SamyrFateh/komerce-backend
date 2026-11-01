@@ -3,7 +3,7 @@ name: International shipment chain — PG16 and Jest proof
 on:
   pull_request:
     paths:
-      - 'migrations/353_international_shipment_journey.sql'
+      - 'migrations/354_international_shipment_journey.sql'
       - 'services/international-shipment-journey.js'
       - 'routes/admin-shipping-customs-workspace.js'
       - 'public/dashboards/canonical/js/international-journey-panel.js'
@@ -61,5 +61,5 @@ jobs:
       - name: PostgreSQL 16 migration 353 on disposable schema
         run: |
           psql -v ON_ERROR_STOP=1 -f scripts/testing/international-journey-pg16-fixture.sql
-          psql -v ON_ERROR_STOP=1 -f migrations/353_international_shipment_journey.sql
+          psql -v ON_ERROR_STOP=1 -f migrations/354_international_shipment_journey.sql
           psql -v ON_ERROR_STOP=1 -f scripts/testing/international-journey-pg16-assert.sql
