@@ -279,17 +279,26 @@ async function list(market,database=db){
 async function detail(market,reference,database=db){
   marketOk(market);
   const s=await get(database,market,reference);
-  const [parcels,events,charges]=await Promise.all([
+  const [parcels,events,charges,hubBoxes]=await Promise.all([
     database.query('SELECT p.reference,p.status,ip.volume_cm3 FROM international_shipment_parcels ip JOIN parcels p ON p.id=ip.parcel_id WHERE ip.shipment_id=$1 ORDER BY p.reference',[s.id]),
     database.query('SELECT event_type,from_stage,to_stage,proof_ref,occurred_at,actor_id,notes FROM international_shipment_events WHERE shipment_id=$1 ORDER BY occurred_at,id',[s.id]),
     database.query('SELECT fee_type,kind,amount_kmf,proof_ref,recorded_at,notes FROM international_shipment_charges WHERE shipment_id=$1 ORDER BY recorded_at,id',[s.id]),
+    database.query(`SELECT u.reference,u.state,a.purchase_order_id::text AS purchase_order_id,
+                           a.destination_ref,SUM(p.quantity)::int AS quantity
+                      FROM international_shipment_hub_boxes b
+                      JOIN hub_physical_units u ON u.id=b.physical_unit_id
+                      JOIN hub_physical_unit_placements p ON p.physical_unit_id=u.id AND p.removed_at IS NULL
+                      JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+                     WHERE b.shipment_id=$1
+                     GROUP BY u.reference,u.state,a.purchase_order_id,a.destination_ref
+                     ORDER BY u.reference,a.purchase_order_id`,[s.id]),
   ]);
   const {rows:[n1]}=await database.query(
     "SELECT CASE WHEN r.shipment_id IS NULL THEN 'not_reconciled' WHEN r.reconciled_at < GREATEST(s.updated_at,COALESCE((SELECT MAX(c.recorded_at) FROM international_shipment_charges c WHERE c.shipment_id=s.id),s.updated_at)) THEN 'pending_reconciliation' WHEN r.freight_known=false THEN 'partial_reconciliation' ELSE 'reconciled' END AS cost_reconciliation, CASE WHEN r.shipment_id IS NULL THEN NULL ELSE r.total_freight_kmf+r.total_arrival_kmf+r.total_local_kmf END AS actual_n1_impact FROM international_shipments s LEFT JOIN international_n1_reconciliations r ON r.shipment_id=s.id WHERE s.id=$1 AND s.market_id=$2",
     [s.id,market.id]
   );
   return {shipment:{...s,cost_reconciliation:n1?.cost_reconciliation||'not_reconciled',
-    actual_n1_impact:n1?.actual_n1_impact??null},parcels:parcels.rows,events:events.rows,charges:charges.rows};
+    actual_n1_impact:n1?.actual_n1_impact??null},parcels:parcels.rows,hub_boxes:hubBoxes.rows,events:events.rows,charges:charges.rows};
 }
 module.exports={STAGES,STAGE_ROLES,FEE_TYPES,JourneyError,create,transition,updateTracking,recordFreight,linkCustoms,recordCost,list,detail,
   _internals:{ref,date,number,actorOk}};
