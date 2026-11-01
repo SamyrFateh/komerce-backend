@@ -4842,6 +4842,34 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/financial-journal.js",
+        "resolvedPath": "services/financial-journal.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/financial-journal-projectors.js",
+        "resolvedPath": "services/financial-journal-projectors.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/financial-journal-reporting.js",
+        "resolvedPath": "services/financial-journal-reporting.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "migrations/359_financial_journal.sql",
+        "resolvedPath": "migrations/359_financial_journal.sql",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/dashboard-operations.js",
         "resolvedPath": "services/dashboard-operations.js",
         "status": "resolved-in-technical-graph"
@@ -6522,6 +6550,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/e2e/hub-live-supply.spec.js",
+        "resolvedPath": "tests/e2e/hub-live-supply.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/e2e/relais-live-cockpit.spec.js",
         "resolvedPath": "tests/e2e/relais-live-cockpit.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7455,6 +7490,13 @@
         "category": "tests",
         "declared": "tests/unit/dashboard-finance-canonical.test.js",
         "resolvedPath": "tests/unit/dashboard-finance-canonical.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/integration/financial-journal-postgres.test.js",
+        "resolvedPath": "tests/integration/financial-journal-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -17773,6 +17815,20 @@
         "category": "tests",
         "declared": "tests/integration/hub-p0-transmission-box-shipment-postgres.test.js",
         "resolvedPath": "tests/integration/hub-p0-transmission-box-shipment-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/hub-p0-authorization-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-p0-authorization-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -35334,6 +35390,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/financial-journal-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/dashboard-pilotage-markets.test.js",
                 "targetFile": "db.js"
               },
@@ -35482,6 +35542,18 @@
                 "targetFile": "services/scan-write-service.js"
               },
               {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-procurement-dossier.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-box-shipment-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/international-shipment-journey.js"
+              },
+              {
                 "sourceFileId": "routes/admin-shipping-customs-workspace.js",
                 "targetFile": "services/international-shipment-journey.js"
               },
@@ -35608,6 +35680,10 @@
                 "targetFile": "utils/currency.js"
               },
               {
+                "sourceFileId": "services/financial-journal.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
                 "sourceFileId": "routes/admin/users.js",
                 "targetFile": "services/market-scope-admin-service.js"
               },
@@ -35622,6 +35698,10 @@
               {
                 "sourceFileId": "tests/unit/admin-dashboard-market.test.js",
                 "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "tests/integration/financial-journal-postgres.test.js",
+                "targetFile": "services/fx-authority.js"
               },
               {
                 "sourceFileId": "tests/unit/users.test.js",
@@ -44976,6 +45056,18 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-authorization-postgres.test.js",
+                "targetFile": "bootstrap/crons.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-authorization-postgres.test.js",
+                "targetFile": "server.js"
+              },
+              {
                 "sourceFileId": "tests/integration/purchase-lines-engagement-postgres.test.js",
                 "targetFile": "db.js"
               },
@@ -45074,6 +45166,26 @@
               {
                 "sourceFileId": "services/purchasing-completion-service.js",
                 "targetFile": "services/scan-operations.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/hub-operations.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/hub-box-shipment-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/international-shipment-journey.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/hub-procurement-dossier.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-authorization-postgres.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
               {
                 "sourceFileId": "tests/unit/hub-operations-grouped-completion.test.js",
@@ -47415,7 +47527,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2186
+        "filesObserved": 2193
       },
       "boutique": {
         "filesObserved": 214,
@@ -51179,8 +51291,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 663,
-        "technicalNodesOwned": 663,
+        "technicalNodesTotal": 666,
+        "technicalNodesOwned": 666,
         "technicalOrphans": 0
       },
       "dash": {

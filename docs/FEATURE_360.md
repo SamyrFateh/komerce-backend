@@ -598,13 +598,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 433 fichier(s) déclaré(s)
+**Implementation** : 439 fichier(s) déclaré(s)
   - dash : 165
   - middleware : 1
   - migrations : 2
   - routes : 28
-  - services : 44
-  - tests : 193
+  - services : 48
+  - tests : 195
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -2272,12 +2272,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 156 fichier(s) déclaré(s)
+**Implementation** : 158 fichier(s) déclaré(s)
   - migrations : 13
   - routes : 1
   - scripts : 14
   - services : 48
-  - tests : 80
+  - tests : 82
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_
 

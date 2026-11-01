@@ -7655,8 +7655,13 @@
             ]
           },
           "services": {
-            "count": 44,
+            "count": 48,
             "files": [
+              {
+                "declared": "migrations/359_financial_journal.sql",
+                "resolvedPath": "migrations/359_financial_journal.sql",
+                "status": "resolved-on-disk-no-header"
+              },
               {
                 "declared": "public/golden-e2e-cockpit.html",
                 "resolvedPath": "public/golden-e2e-cockpit.html",
@@ -7778,6 +7783,21 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/financial-journal-projectors.js",
+                "resolvedPath": "services/financial-journal-projectors.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/financial-journal-reporting.js",
+                "resolvedPath": "services/financial-journal-reporting.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/financial-journal.js",
+                "resolvedPath": "services/financial-journal.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/golden-checkout-thread.js",
                 "resolvedPath": "services/golden-checkout-thread.js",
                 "status": "resolved-in-technical-graph"
@@ -7880,7 +7900,7 @@
             ]
           },
           "tests": {
-            "count": 193,
+            "count": 195,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -7930,6 +7950,11 @@
               {
                 "declared": "tests/e2e/hub-live-cockpit.spec.js",
                 "resolvedPath": "tests/e2e/hub-live-cockpit.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/hub-live-supply.spec.js",
+                "resolvedPath": "tests/e2e/hub-live-supply.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8000,6 +8025,11 @@
               {
                 "declared": "tests/integration/dashboard-orders-real-db.test.js",
                 "resolvedPath": "tests/integration/dashboard-orders-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/financial-journal-postgres.test.js",
+                "resolvedPath": "tests/integration/financial-journal-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8850,7 +8880,7 @@
             ]
           }
         },
-        "totalFiles": 433,
+        "totalFiles": 439,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -28587,7 +28617,7 @@
             ]
           },
           "tests": {
-            "count": 80,
+            "count": 82,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
@@ -28597,6 +28627,16 @@
               {
                 "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-p0-authorization-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-p0-authorization-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -28992,7 +29032,7 @@
             ]
           }
         },
-        "totalFiles": 156,
+        "totalFiles": 158,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

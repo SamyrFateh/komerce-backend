@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 767
-- Files with full headers: 716
+- Scanned code files: 770
+- Files with full headers: 719
 - Files with lite headers: 51
-- Files with any headers: 767
+- Files with any headers: 770
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1924
-- Edges: 9493
-- DB tables: 221
-- Doctrines: 729
+- Graph nodes: 1938
+- Edges: 9551
+- DB tables: 223
+- Doctrines: 738
 - Impact areas: 207
-- Unresolved code edges: 914
-- Tables multi-écrivains directs (>=2): 90
+- Unresolved code edges: 920
+- Tables multi-écrivains directs (>=2): 93
 - Avertissements db-write / db-write-via en chevauchement: 11
 
 ## Domains
@@ -40,6 +40,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - documents: 15
 - economic-engine: 67
 - external-provider-contracts: 1
+- finance: 3
 - incident-management: 5
 - infrastructure: 25
 - inventory: 2
@@ -91,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 450
+- service: 453
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -162,6 +163,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-stock-sync-decision.js — catalog-stock-sync-decision (catalog, critical, full)
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
 - services/dispute-mutation-service.js — orders-dispute-mutation-boundary (orders, critical, full)
+- services/financial-journal-projectors.js — financial-journal-projectors (finance, critical, full)
+- services/financial-journal-reporting.js — financial-journal-reporting (finance, critical, full)
+- services/financial-journal.js — financial-journal (finance, critical, full)
 - services/fx-authority.js — fx-authority (market, critical, full)
 - services/fx-chain-service.js — fx-chain-service (market, critical, full)
 - services/fx-observation-service.js — fx-observation-service (market, critical, full)
@@ -822,6 +826,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-finance-config.js -> finance_config
 - WRITE services/economic-config.js -> finance_config
 - WRITE services/economic-engine-queries.js -> finance_config
+- WRITE services/financial-journal-projectors.js -> financial_movement_documents
+- WRITE services/financial-journal.js -> financial_movement_documents
+- WRITE services/financial-journal-projectors.js -> financial_movements
+- WRITE services/financial-journal.js -> financial_movements
 - WRITE bootstrap/crons.js -> fx_public_reference_quotes
 - WRITE services/fx-public-reference-feed.js -> fx_public_reference_quotes
 - WRITE routes/admin-finance-config.js -> fx_rate_observations
@@ -842,10 +850,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/international-n1-reconciliation.js -> international_n1_reconciliations
 - WRITE services/international-shipment-journey.js -> international_shipment_charges
 - WRITE services/international-shipment-journey.js -> international_shipment_events
-- WRITE services/hub-box-shipment-service.js -> international_shipment_hub_units
-- WRITE services/international-shipment-journey.js -> international_shipment_parcels
-- WRITE services/international-shipment-journey.js -> international_shipments
-- WRITE services/inventory-service.js -> inventory_items
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -1050,6 +1054,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Unresolved Code Edges
 
 - uses: (see files.tests in features/purchasing.feature.js — not yet -> services/suppliers/purchasing-validators.js ((see files.tests in features/purchasing.feature.js — not yet)
+- uses: accounting workspace -> services/financial-journal-reporting.js (accounting workspace)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
@@ -1092,6 +1097,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
 - uses: evaluateCanonicalProcurementReadiness) -> services/suppliers/canonical-unit-purchasing-gate.js (evaluateCanonicalProcurementReadiness))
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
+- uses: finance journal reconciliation -> services/financial-journal-projectors.js (finance journal reconciliation)
+- uses: finance projections -> services/financial-journal-projectors.js (finance projections)
+- uses: finance projections -> services/financial-journal-reporting.js (finance projections)
 - uses: futur HUB-001 (Physical Identity -> services/outbox-producer.js (futur HUB-001 (Physical Identity)
 - uses: futur HUB-001 (Physical Identity -> services/outbox-worker.js (futur HUB-001 (Physical Identity)
 - uses: future b-modal-core.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-core.js)
@@ -1165,10 +1173,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: middleware/soft-auth.js -> db (db)
 - depends: middleware/upload-hub.js -> middleware/upload.js (validateMagicBytes) (middleware/upload.js (validateMagicBytes))
 - uses: modal-modules -> public/boutique/js/b-scroll-owner.js (modal-modules)
-- uses: modal-suggestions -> routes/boutique-suggestions.js (modal-suggestions)
-- uses: ne migrent pas les affichages *_kmf existants (P2) -> utils/currency.js (ne migrent pas les affichages *_kmf existants (P2))
-- uses: non câblé — M5/P1 livrent l'outil -> utils/currency.js (non câblé — M5/P1 livrent l'outil)
-- uses: notification-service.js -> services/whatsapp-meta.js (notification-service.js)
 
 ## Files Still Without Headers Or Aggregation
 
