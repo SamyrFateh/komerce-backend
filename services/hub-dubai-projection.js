@@ -53,7 +53,7 @@ async function getUnitsByMarket(scope) {
 async function getPoCartonTrace(scope) {
   const { rows } = await db.query(
     `SELECT m.code AS market_code, a.purchase_order_id::text AS purchase_order_id,
-            u.reference AS physical_reference, u.unit_type, u.state,
+            u.reference AS physical_reference, u.unit_type, u.state, u.outcome_type,
             a.destination_ref,
             SUM(p.quantity)::int AS quantity
        FROM hub_physical_unit_placements p
@@ -61,10 +61,9 @@ async function getPoCartonTrace(scope) {
        JOIN hub_physical_units u ON u.id = p.physical_unit_id
        JOIN markets m ON m.id = a.market_id
       WHERE p.removed_at IS NULL
-        AND u.outcome_type IS NULL
         AND u.state <> 'SUPERSEDED'
         AND ($1::uuid[] IS NULL OR a.market_id = ANY($1::uuid[]))
-      GROUP BY m.code,a.purchase_order_id,u.reference,u.unit_type,u.state,a.destination_ref
+      GROUP BY m.code,a.purchase_order_id,u.reference,u.unit_type,u.state,u.outcome_type,a.destination_ref
       ORDER BY m.code,a.purchase_order_id,u.reference
       LIMIT 100`,
     [scope.scoped ? scope.marketIds : null],
