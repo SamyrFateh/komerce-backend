@@ -319,6 +319,7 @@ module.exports = {
       'economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)',
       'notifications (notification fournisseur WhatsApp, via services/notification-service.js)',
       'logistics (declenche scan preparation + notification client apres reception hub complete — services/scan-operations.js triggerScan3, O7.2 Cycle C)',
+      'incident-management (consultation en lecture seule des incidents gouvernés dans la fiche Purchase Order ; aucun cycle de résolution Purchasing dupliqué)',
     ],
   },
 

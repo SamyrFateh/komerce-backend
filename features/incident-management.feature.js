@@ -112,6 +112,7 @@ module.exports = {
       'infrastructure (DB/logger/bootstrap techniques)',
       'logistics (producteur d’incidents physiques via incident-write-service ; consommateur du guard de transition F2/F3)',
       'decision-signals (sink durable Action Center pour escalade SLA via signal-service)',
+      'purchasing (lecture exacte des purchase_orders et purchase_lines pour projeter un incident PO sur les commandes concernées)',
     ],
   },
 
