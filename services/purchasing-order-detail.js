@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        purchase_order_id, database_query_interface
  * @outputs       grouped_purchase_order_with_supplier_execution
- * @depends       db.js, services/purchasing-grouped-service.js
+ * @depends       db.js, services/purchasing-grouped-service.js, services/incident-traceability-projection.js
  * @used-by       routes/purchasing.js
- * @db-read       supplier_execution_orders, supplier_execution_order_lines, supplier_execution_groups, supplier_execution_group_members, supplier_execution_payments, supplier_execution_payment_proofs, supplier_execution_events, purchase_lines
+ * @db-read       incidents, supplier_execution_orders, supplier_execution_order_lines, supplier_execution_groups, supplier_execution_group_members, supplier_execution_payments, supplier_execution_payment_proofs, supplier_execution_events, purchase_lines
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
@@ -19,6 +19,7 @@
 
 const db = require('../db');
 const { getGroupedPurchaseOrder } = require('./purchasing-grouped-service');
+const incidentTrace = require('./incident-traceability-projection');
 
 // One statement gives the execution collections a shared PostgreSQL snapshot.
 // Explicit columns exclude raw facts/messages. Collections keep their identities:
@@ -84,7 +85,8 @@ async function getPurchaseOrderDetail(poId, q = db) {
   // Preserve UUID validation, 404 and rejection of historical POs before reading execution.
   const detail = await getGroupedPurchaseOrder(poId, q);
   const { rows: [{ execution }] } = await q.query(EXECUTION_SQL, [detail.purchase_order.id]);
-  return { ...detail, supplier_execution: execution };
+  const incidents = await incidentTrace.listForPurchaseOrder(detail.purchase_order.id, q);
+  return { ...detail, supplier_execution: execution, incidents };
 }
 
 module.exports = { getPurchaseOrderDetail };
