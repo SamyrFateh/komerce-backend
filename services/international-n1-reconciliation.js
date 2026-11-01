@@ -22,7 +22,7 @@ class ReconciliationError extends Error{
 }
 const fail=(code,message,status=409)=>{throw new ReconciliationError(code,message,status);};
 const cents=v=>{
-  if(v==null||!/^\\d{1,12}(?:\\.\\d{1,2})?$/.test(String(v).trim()))
+  if(v==null||!/^\d{1,12}(?:\.\d{1,2})?$/.test(String(v).trim()))
     fail('SHIPMENT_COST_INVALID','Montant invalide : zéro explicite accepté, inconnu non');
   const n=Math.round(Number(v)*100);
   if(!Number.isSafeInteger(n))fail('SHIPMENT_COST_UNSAFE','Montant hors limite sûre');
