@@ -97,6 +97,20 @@ async function create(market,actor,input={},database=db){
       [parcels.map(p=>p.id)]
     );
     if(used.length)fail(409,'JOURNEY_PARCEL_ALREADY_ASSIGNED','Colis déjà intégré à un transport');
+    let hubBoxes=[];
+    if(hubBoxRefs.length){
+      ({rows:hubBoxes}=await client.query(
+        "SELECT id,reference,state FROM hub_physical_units WHERE market_id=$1 AND reference=ANY($2::text[]) AND unit_type='MARKET_PARCEL' AND state IN ('PACKED','DISPATCHED') AND outcome_type IS NULL FOR UPDATE",
+        [market.id,hubBoxRefs]
+      ));
+      if(hubBoxes.length!==hubBoxRefs.length)
+        fail(409,'JOURNEY_HUB_BOX_NOT_READY','KOM-BOX absent, hors marché ou non fermé');
+      const {rows:previous}=await client.query(
+        'SELECT physical_unit_id FROM international_shipment_hub_boxes WHERE physical_unit_id=ANY($1::uuid[]) LIMIT 1',
+        [hubBoxes.map(b=>b.id)]
+      );
+      if(previous.length)fail(409,'JOURNEY_HUB_BOX_ALREADY_ASSIGNED','KOM-BOX déjà intégré à un transport');
+    }
     const {rows:[s]}=await client.query(
       'INSERT INTO international_shipments (market_id,reference,forwarder_name,transport_mode,volume_m3,freight_rate_kmf_per_m3,estimated_arrival_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7::date,$8) RETURNING *',
       [market.id,reference,forwarder,mode,volume,rate,eta,String(actor.id)]
@@ -105,8 +119,12 @@ async function create(market,actor,input={},database=db){
       'INSERT INTO international_shipment_parcels (shipment_id,parcel_id,volume_cm3) VALUES($1,$2,$3)',
       [s.id,p.id,p.volume_cm3??null]
     );
-    await evidence(client,s,'created',actor,proof,null,'hub_ready',{parcel_refs:refs,volume_m3:volume,rate});
-    return {reference:s.reference,stage:s.stage,parcels:refs.length};
+    for(const box of hubBoxes)await client.query(
+      'INSERT INTO international_shipment_hub_boxes (shipment_id,physical_unit_id) VALUES($1,$2)',
+      [s.id,box.id]
+    );
+    await evidence(client,s,'created',actor,proof,null,'hub_ready',{parcel_refs:refs,hub_box_refs:hubBoxRefs,volume_m3:volume,rate});
+    return {reference:s.reference,stage:s.stage,parcels:refs.length,hub_boxes:hubBoxes.length};
   });
 }
 async function transition(market,actor,reference,body={},database=db){
