@@ -20,12 +20,12 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1938,
-    "edges": 9560,
-    "dbTables": 223,
+    "graphNodes": 1936,
+    "edges": 9548,
+    "dbTables": 221,
     "doctrines": 738,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 921,
+    "unresolvedCodeEdges": 919,
     "dbWriteViaOverlapWarnings": 11,
     "multiWriterTables": 94
   },
@@ -18930,6 +18930,7 @@
       ],
       "dbRead": [
         "financial_movements",
+        "financial_movement_documents",
         "orders",
         "refunds",
         "supplier_payment_settlements",
@@ -20369,7 +20370,7 @@
       "file": "services/international-n1-reconciliation.js",
       "type": "file",
       "headerType": "full",
-      "role": "international-n1-reconciliation-owner",
+      "role": "international-shipment-costs-owner",
       "domain": "economic-engine",
       "layer": "service",
       "criticality": "high",
@@ -20377,59 +20378,48 @@
       "purpose": null,
       "inputs": [
         "server_resolved_market",
-        "authorized_admin_actor",
-        "immutable_international_facts"
+        "admin_actor",
+        "shipment_documented_facts"
       ],
       "outputs": [
-        "traceable_real_order_item_n1",
-        "conserved_cent_balances"
+        "reconciled_real_costs_per_shipment",
+        "financial_closure_evidence"
       ],
       "depends": [
         "db",
-        "crypto",
-        "cost-allocation/_helpers",
-        "cost-allocation/canonical-margin-writer"
+        "crypto"
       ],
       "usedBy": [
         "routes/admin-shipping-customs-workspace.js"
       ],
       "dbRead": [
         "international_shipments",
-        "international_shipment_parcels",
+        "international_shipment_hub_units",
+        "hub_physical_units",
         "international_shipment_charges",
         "international_n1_reconciliations",
-        "international_n1_allocation_links",
         "customs_shipments",
-        "customs_shipment_fees",
-        "customs_shipment_parcels",
-        "parcels",
-        "orders",
-        "order_items",
-        "parcel_items",
-        "order_item_real_cost_allocations"
+        "customs_shipment_fees"
       ],
       "dbWrite": [
-        "international_n1_reconciliations",
-        "international_n1_allocation_links",
-        "order_item_real_cost_allocations"
+        "international_n1_reconciliations"
       ],
       "dbWriteVia": [],
       "dbTxn": [
         "withTransaction"
       ],
       "doctrine": [
-        "N1_actual_only",
-        "no_duplicate_legacy_freight_or_fees",
-        "no_N3",
-        "source_snapshot_idempotency",
-        "conserve_cents"
+        "real_facts_per_shipment",
+        "no_article_cost_allocation",
+        "no_auto_N1",
+        "unknown_is_not_zero",
+        "idempotent_snapshot"
       ],
       "impactAreas": [
-        "economic-engine",
         "logistics",
         "customs",
-        "security",
-        "dashboard"
+        "economic-engine",
+        "dashboards"
       ],
       "version": null
     },
@@ -20458,14 +20448,12 @@
       "usedBy": [],
       "dbRead": [
         "international_shipments",
-        "international_shipment_parcels",
         "international_shipment_hub_units",
         "hub_physical_units",
         "hub_physical_unit_placements",
         "hub_purchase_allocations",
         "international_shipment_charges",
         "international_shipment_events",
-        "parcels",
         "orders",
         "customs_shipments",
         "customs_shipment_parcels",
@@ -20474,12 +20462,18 @@
       ],
       "dbWrite": [
         "international_shipments",
-        "international_shipment_parcels",
         "international_shipment_hub_units",
         "international_shipment_events",
         "international_shipment_charges"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "customs-shipment-service",
+          "tables": [
+            "customs_shipments"
+          ]
+        }
+      ],
       "dbTxn": [
         "withTransaction"
       ],
@@ -37995,11 +37989,6 @@
       "table": "import_runtime_item_events"
     },
     {
-      "id": "db:international_shipment_parcels",
-      "type": "db-table",
-      "table": "international_shipment_parcels"
-    },
-    {
       "id": "db:international_shipment_charges",
       "type": "db-table",
       "table": "international_shipment_charges"
@@ -38008,11 +37997,6 @@
       "id": "db:international_n1_reconciliations",
       "type": "db-table",
       "table": "international_n1_reconciliations"
-    },
-    {
-      "id": "db:international_n1_allocation_links",
-      "type": "db-table",
-      "table": "international_n1_allocation_links"
     },
     {
       "id": "db:inventory_items",
@@ -40485,29 +40469,29 @@
       "doctrine": "F3_PROOF_REVALIDATION_CONTRACT"
     },
     {
-      "id": "doctrine:N1_actual_only",
+      "id": "doctrine:real_facts_per_shipment",
       "type": "doctrine",
-      "doctrine": "N1_actual_only"
+      "doctrine": "real_facts_per_shipment"
     },
     {
-      "id": "doctrine:no_duplicate_legacy_freight_or_fees",
+      "id": "doctrine:no_article_cost_allocation",
       "type": "doctrine",
-      "doctrine": "no_duplicate_legacy_freight_or_fees"
+      "doctrine": "no_article_cost_allocation"
     },
     {
-      "id": "doctrine:no_N3",
+      "id": "doctrine:no_auto_N1",
       "type": "doctrine",
-      "doctrine": "no_N3"
+      "doctrine": "no_auto_N1"
     },
     {
-      "id": "doctrine:source_snapshot_idempotency",
+      "id": "doctrine:unknown_is_not_zero",
       "type": "doctrine",
-      "doctrine": "source_snapshot_idempotency"
+      "doctrine": "unknown_is_not_zero"
     },
     {
-      "id": "doctrine:conserve_cents",
+      "id": "doctrine:idempotent_snapshot",
       "type": "doctrine",
-      "doctrine": "conserve_cents"
+      "doctrine": "idempotent_snapshot"
     },
     {
       "id": "doctrine:market_scope_server_owned",
@@ -72085,6 +72069,12 @@
     },
     {
       "from": "services/financial-journal-reporting.js",
+      "to": "db:financial_movement_documents",
+      "type": "db-read",
+      "label": "financial_movement_documents"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
@@ -74769,18 +74759,6 @@
       "label": "crypto"
     },
     {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "cost-allocation/_helpers",
-      "type": "depends",
-      "label": "cost-allocation/_helpers"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "cost-allocation/canonical-margin-writer",
-      "type": "depends",
-      "label": "cost-allocation/canonical-margin-writer"
-    },
-    {
       "from": "routes/admin-shipping-customs-workspace.js",
       "to": "services/international-n1-reconciliation.js",
       "type": "uses",
@@ -74794,9 +74772,15 @@
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "db:international_shipment_parcels",
+      "to": "db:international_shipment_hub_units",
       "type": "db-read",
-      "label": "international_shipment_parcels"
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/international-n1-reconciliation.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
     },
     {
       "from": "services/international-n1-reconciliation.js",
@@ -74812,12 +74796,6 @@
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "db:international_n1_allocation_links",
-      "type": "db-read",
-      "label": "international_n1_allocation_links"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
       "to": "db:customs_shipments",
       "type": "db-read",
       "label": "customs_shipments"
@@ -74830,93 +74808,39 @@
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "db:customs_shipment_parcels",
-      "type": "db-read",
-      "label": "customs_shipment_parcels"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:order_items",
-      "type": "db-read",
-      "label": "order_items"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:parcel_items",
-      "type": "db-read",
-      "label": "parcel_items"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:order_item_real_cost_allocations",
-      "type": "db-read",
-      "label": "order_item_real_cost_allocations"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
       "to": "db:international_n1_reconciliations",
       "type": "db-write",
       "label": "international_n1_reconciliations"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "db:international_n1_allocation_links",
-      "type": "db-write",
-      "label": "international_n1_allocation_links"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:order_item_real_cost_allocations",
-      "type": "db-write",
-      "label": "order_item_real_cost_allocations"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:N1_actual_only",
+      "to": "doctrine:real_facts_per_shipment",
       "type": "doctrine",
-      "label": "N1_actual_only"
+      "label": "real_facts_per_shipment"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:no_duplicate_legacy_freight_or_fees",
+      "to": "doctrine:no_article_cost_allocation",
       "type": "doctrine",
-      "label": "no_duplicate_legacy_freight_or_fees"
+      "label": "no_article_cost_allocation"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:no_N3",
+      "to": "doctrine:no_auto_N1",
       "type": "doctrine",
-      "label": "no_N3"
+      "label": "no_auto_N1"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:source_snapshot_idempotency",
+      "to": "doctrine:unknown_is_not_zero",
       "type": "doctrine",
-      "label": "source_snapshot_idempotency"
+      "label": "unknown_is_not_zero"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:conserve_cents",
+      "to": "doctrine:idempotent_snapshot",
       "type": "doctrine",
-      "label": "conserve_cents"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "impact:economic-engine",
-      "type": "impact",
-      "label": "economic-engine"
+      "label": "idempotent_snapshot"
     },
     {
       "from": "services/international-n1-reconciliation.js",
@@ -74932,27 +74856,21 @@
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "impact:security",
+      "to": "impact:economic-engine",
       "type": "impact",
-      "label": "security"
+      "label": "economic-engine"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "impact:dashboard",
+      "to": "impact:dashboards",
       "type": "impact",
-      "label": "dashboard"
+      "label": "dashboards"
     },
     {
       "from": "services/international-shipment-journey.js",
       "to": "db:international_shipments",
       "type": "db-read",
       "label": "international_shipments"
-    },
-    {
-      "from": "services/international-shipment-journey.js",
-      "to": "db:international_shipment_parcels",
-      "type": "db-read",
-      "label": "international_shipment_parcels"
     },
     {
       "from": "services/international-shipment-journey.js",
@@ -74992,12 +74910,6 @@
     },
     {
       "from": "services/international-shipment-journey.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/international-shipment-journey.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
@@ -75034,12 +74946,6 @@
     },
     {
       "from": "services/international-shipment-journey.js",
-      "to": "db:international_shipment_parcels",
-      "type": "db-write",
-      "label": "international_shipment_parcels"
-    },
-    {
-      "from": "services/international-shipment-journey.js",
       "to": "db:international_shipment_hub_units",
       "type": "db-write",
       "label": "international_shipment_hub_units"
@@ -75055,6 +74961,13 @@
       "to": "db:international_shipment_charges",
       "type": "db-write",
       "label": "international_shipment_charges"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:customs_shipments",
+      "type": "db-write-via",
+      "label": "customs_shipments",
+      "via": "customs-shipment-service"
     },
     {
       "from": "services/international-shipment-journey.js",
@@ -119749,6 +119662,7 @@
       "ownedFiles": [],
       "dbRead": [
         "financial_movements",
+        "financial_movement_documents",
         "orders",
         "refunds",
         "supplier_payment_settlements",
@@ -119771,6 +119685,7 @@
         "dashboards"
       ],
       "mustCheck": [
+        "db:financial_movement_documents",
         "db:financial_movements",
         "db:order_item_real_cost_allocations",
         "db:orders",
@@ -121253,7 +121168,7 @@
       ]
     },
     "services/international-n1-reconciliation.js": {
-      "role": "international-n1-reconciliation-owner",
+      "role": "international-shipment-costs-owner",
       "domain": "economic-engine",
       "criticality": "high",
       "headerType": "full",
@@ -121261,9 +121176,7 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "crypto",
-        "cost-allocation/_helpers",
-        "cost-allocation/canonical-margin-writer"
+        "crypto"
       ],
       "directUsedBy": [
         "routes/admin-shipping-customs-workspace.js"
@@ -121271,63 +121184,47 @@
       "ownedFiles": [],
       "dbRead": [
         "international_shipments",
-        "international_shipment_parcels",
+        "international_shipment_hub_units",
+        "hub_physical_units",
         "international_shipment_charges",
         "international_n1_reconciliations",
-        "international_n1_allocation_links",
         "customs_shipments",
-        "customs_shipment_fees",
-        "customs_shipment_parcels",
-        "parcels",
-        "orders",
-        "order_items",
-        "parcel_items",
-        "order_item_real_cost_allocations"
+        "customs_shipment_fees"
       ],
       "dbWrite": [
-        "international_n1_reconciliations",
-        "international_n1_allocation_links",
-        "order_item_real_cost_allocations"
+        "international_n1_reconciliations"
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "N1_actual_only",
-        "no_duplicate_legacy_freight_or_fees",
-        "no_N3",
-        "source_snapshot_idempotency",
-        "conserve_cents"
+        "real_facts_per_shipment",
+        "no_article_cost_allocation",
+        "no_auto_N1",
+        "unknown_is_not_zero",
+        "idempotent_snapshot"
       ],
       "impactAreas": [
-        "economic-engine",
         "logistics",
         "customs",
-        "security",
-        "dashboard"
+        "economic-engine",
+        "dashboards"
       ],
       "mustCheck": [
         "db:customs_shipment_fees",
-        "db:customs_shipment_parcels",
         "db:customs_shipments",
-        "db:international_n1_allocation_links",
+        "db:hub_physical_units",
         "db:international_n1_reconciliations",
         "db:international_shipment_charges",
-        "db:international_shipment_parcels",
+        "db:international_shipment_hub_units",
         "db:international_shipments",
-        "db:order_item_real_cost_allocations",
-        "db:order_items",
-        "db:orders",
-        "db:parcel_items",
-        "db:parcels",
-        "doctrine:N1_actual_only",
-        "doctrine:conserve_cents",
-        "doctrine:no_N3",
-        "doctrine:no_duplicate_legacy_freight_or_fees",
-        "doctrine:source_snapshot_idempotency",
+        "doctrine:idempotent_snapshot",
+        "doctrine:no_article_cost_allocation",
+        "doctrine:no_auto_N1",
+        "doctrine:real_facts_per_shipment",
+        "doctrine:unknown_is_not_zero",
         "impact:customs",
-        "impact:dashboard",
+        "impact:dashboards",
         "impact:economic-engine",
         "impact:logistics",
-        "impact:security",
         "routes/admin-shipping-customs-workspace.js"
       ]
     },
@@ -121343,14 +121240,12 @@
       "ownedFiles": [],
       "dbRead": [
         "international_shipments",
-        "international_shipment_parcels",
         "international_shipment_hub_units",
         "hub_physical_units",
         "hub_physical_unit_placements",
         "hub_purchase_allocations",
         "international_shipment_charges",
         "international_shipment_events",
-        "parcels",
         "orders",
         "customs_shipments",
         "customs_shipment_parcels",
@@ -121359,12 +121254,18 @@
       ],
       "dbWrite": [
         "international_shipments",
-        "international_shipment_parcels",
         "international_shipment_hub_units",
         "international_shipment_events",
         "international_shipment_charges"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "customs-shipment-service",
+          "tables": [
+            "customs_shipments"
+          ]
+        }
+      ],
       "doctrines": [
         "market_scope_server_owned",
         "fact_not_financial_allocation",
@@ -121382,10 +121283,8 @@
         "db:international_shipment_charges",
         "db:international_shipment_events",
         "db:international_shipment_hub_units",
-        "db:international_shipment_parcels",
         "db:international_shipments",
         "db:orders",
-        "db:parcels",
         "doctrine:fact_not_financial_allocation",
         "doctrine:market_scope_server_owned",
         "doctrine:no_customs_clearance_inferred"
@@ -138065,18 +137964,6 @@
       ]
     },
     {
-      "table": "order_item_real_cost_allocations",
-      "writerCount": 6,
-      "writers": [
-        "services/cost-allocation/allocate.js",
-        "services/cost-allocation/index.js",
-        "services/cost-allocation/manual-cost-entry-service.js",
-        "services/customs-shipment-service.js",
-        "services/international-n1-reconciliation.js",
-        "services/transport-cost-allocation.js"
-      ]
-    },
-    {
       "table": "pickup_print_tokens",
       "writerCount": 6,
       "writers": [
@@ -138192,6 +138079,17 @@
         "routes/invoices.js",
         "services/invoice-service.js",
         "services/order-payment-confirmation.js"
+      ]
+    },
+    {
+      "table": "order_item_real_cost_allocations",
+      "writerCount": 5,
+      "writers": [
+        "services/cost-allocation/allocate.js",
+        "services/cost-allocation/index.js",
+        "services/cost-allocation/manual-cost-entry-service.js",
+        "services/customs-shipment-service.js",
+        "services/transport-cost-allocation.js"
       ]
     },
     {
@@ -142189,18 +142087,6 @@
       "to": "crypto",
       "type": "depends",
       "label": "crypto"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "cost-allocation/_helpers",
-      "type": "depends",
-      "label": "cost-allocation/_helpers"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "cost-allocation/canonical-margin-writer",
-      "type": "depends",
-      "label": "cost-allocation/canonical-margin-writer"
     },
     {
       "from": "services/inventory-service.js",
