@@ -120,6 +120,8 @@ module.exports = {
       'services/parcelOptimizationService.js',
       'services/parcel-service.js',
       'services/hub-operations.js',
+      'services/hub-box-shipment-service.js',
+      'services/hub-procurement-dossier.js',
       'services/hub-receivable.js',
       'services/hub-dubai-projection.js',
       'services/hub-receive-idempotency.js',

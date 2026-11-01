@@ -47,6 +47,7 @@
  *   POST /api/purchasing/lines/:id/cancel             → annuler une ligne ouverte ou en brouillon
  * Engagement (PR 5) :
  *   POST /api/purchasing/po/:po_id/submit             → soumettre une PO draft (préparation par groupe, message agrégé)
+ *   POST /api/purchasing/po/:po_id/sent               → enregistrer l'envoi réellement effectué (canal, auteur, heure ; immuable)
  *   POST /api/purchasing/po/:po_id/confirm            → confirmer une PO notified ligne par ligne (reliquat en ligne ouverte)
  *   POST /api/purchasing/lines                        → créer une ligne ouverte manuellement (ex. reliquat chez un autre fournisseur)
  *   POST /api/purchasing/lines/:id/settle             → clôturer une ligne confirmée (reliquat en ligne ouverte)
@@ -72,6 +73,8 @@ const engagement = require('../services/purchasing-engagement-service');
 const settlements = require('../services/supplier-payment-settlement-service');
 
 const guard = [authenticate, requireRole(['admin'])];
+// Le Hub constitue et suit ses PO regroupées (mission #3247) ; le reste des achats reste réservé à l'admin.
+const groupedGuard = [authenticate, requireRole(['admin', 'agent_hub'])];
 
 // ─── GET /api/purchasing — pipeline sourcing en cours ────────────────────────
 
@@ -119,53 +122,59 @@ function groupedError(err, res, next) {
   return next(err);
 }
 
-router.get('/open-lines', ...guard, async (req, res, next) => {
+router.get('/open-lines', ...groupedGuard, async (req, res, next) => {
   try { res.json(await grouped.listOpenLines({ market_id: req.query.market_id })); } catch (err) { groupedError(err, res, next); }
 });
 
-router.get('/po/:po_id', ...guard, async (req, res, next) => {
+router.get('/po/:po_id', ...groupedGuard, async (req, res, next) => {
   try { res.json(await getPurchaseOrderDetail(req.params.po_id)); } catch (err) { groupedError(err, res, next); }
 });
 
-router.post('/po/prepare', ...guard, async (req, res, next) => {
+router.post('/po/prepare', ...groupedGuard, async (req, res, next) => {
   try {
     res.status(201).json(await grouped.preparePurchaseOrder(req.body || {}, { actor: req.user }));
   } catch (err) { groupedError(err, res, next); }
 });
 
-router.post('/po/:po_id/attach', ...guard, async (req, res, next) => {
+router.post('/po/:po_id/attach', ...groupedGuard, async (req, res, next) => {
   try { res.json(await grouped.attachDraftLines(req.params.po_id, (req.body || {}).line_ids)); }
   catch (err) { groupedError(err, res, next); }
 });
 
-router.post('/po/:po_id/detach', ...guard, async (req, res, next) => {
+router.post('/po/:po_id/detach', ...groupedGuard, async (req, res, next) => {
   try { res.json(await grouped.detachLines(req.params.po_id, (req.body || {}).line_ids)); } catch (err) { groupedError(err, res, next); }
 });
 
-router.post('/po/:po_id/discard', ...guard, async (req, res, next) => {
+router.post('/po/:po_id/discard', ...groupedGuard, async (req, res, next) => {
   try { res.json(await grouped.discardPurchaseOrder(req.params.po_id)); } catch (err) { groupedError(err, res, next); }
 });
 
-router.post('/lines/:id/cancel', ...guard, async (req, res, next) => {
+router.post('/lines/:id/cancel', ...groupedGuard, async (req, res, next) => {
   try { res.json(await grouped.cancelLine(req.params.id, (req.body || {}).reason)); } catch (err) { groupedError(err, res, next); }
 });
 
 // PR 5 — engagement : soumission, confirmation par PO (reliquat), clôture de ligne, création manuelle de ligne.
-router.post('/po/:po_id/submit', ...guard, async (req, res, next) => {
+router.post('/po/:po_id/submit', ...groupedGuard, async (req, res, next) => {
   try { res.json(await engagement.submitPurchaseOrder(req.params.po_id, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
 });
 
-router.post('/po/:po_id/confirm', ...guard, async (req, res, next) => {
+router.post('/po/:po_id/sent', ...groupedGuard, async (req, res, next) => {
+  try {
+    res.json(await engagement.recordPurchaseOrderSent(req.params.po_id, req.body || {}, { actor: req.user }));
+  } catch (err) { groupedError(err, res, next); }
+});
+
+router.post('/po/:po_id/confirm', ...groupedGuard, async (req, res, next) => {
   try {
     res.json(await engagement.confirmGroupedPurchaseOrder(req.params.po_id, req.body || {}, { actor: req.user }));
   } catch (err) { groupedError(err, res, next); }
 });
 
-router.post('/lines', ...guard, async (req, res, next) => {
+router.post('/lines', ...groupedGuard, async (req, res, next) => {
   try { res.status(201).json(await engagement.createManualLine(req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
 });
 
-router.post('/lines/:id/settle', ...guard, async (req, res, next) => {
+router.post('/lines/:id/settle', ...groupedGuard, async (req, res, next) => {
   try { res.json(await engagement.settleLine(req.params.id, req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
 });
 

@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/hub-operations.js
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/hub-operations.js, services/hub-box-shipment-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, parcel_items, parcels, users, markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write      none
@@ -28,6 +28,7 @@
  * POST /api/hub/outcome      → LOST/STOLEN/DESTROYED/DAMAGED_UNUSABLE
  * POST /api/hub/pack         → MARKET_PARCEL PICKED → PACKED
  * POST /api/hub/seal         → MARKET_PARCEL PACKED → DISPATCHED
+ * POST/DELETE /api/hub/box/:unit_id/shipment → rattacher/détacher une KOM-BOX d'une expédition internationale du même marché
  * POST /api/hub/batch-scan   → legacy fail-closed (410)
  *
  * La réception fournisseur canonique est POST /api/scans/hub/receive.
@@ -44,6 +45,7 @@ const { attachAuthorizedMarketsForCapability } = require('../middleware/require-
 const { validate } = require('../middleware/validate');
 const { hub } = require('../validators');
 const hubOps  = require('../services/hub-operations');
+const boxShipment = require('../services/hub-box-shipment-service');
 const uploadHub = require('../middleware/upload-hub');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
@@ -123,6 +125,52 @@ router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res, 
     const result = await hubOps.sealParcel(parcel_id, req.user.id, notes);
     res.status(result.status).json(result.body);
   } catch (err) { next(err); }
+});
+
+// KOM-BOX → expédition internationale du même marché (migration 358) : garde-fous en base.
+function boxShipmentError(err, res, next) {
+  if (err && err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+  return next(err);
+}
+
+router.post('/box/:unit_id/shipment', ...hubAuth, async (req, res, next) => {
+  try {
+    res.status(201).json(await boxShipment.attachBoxToShipment({
+      unitId: req.params.unit_id, shipmentReference: (req.body || {}).shipment_reference, actor: req.user,
+    }));
+  } catch (err) { boxShipmentError(err, res, next); }
+});
+
+router.delete('/box/:unit_id/shipment', ...hubAuth, async (req, res, next) => {
+  try { res.json(await boxShipment.detachBoxFromShipment({ unitId: req.params.unit_id })); } catch (err) { boxShipmentError(err, res, next); }
+});
+
+// Dossier d'approvisionnement par marché : projection en lecture seule (aucune seconde source de vérité).
+const dossier = require('../services/hub-procurement-dossier');
+
+function marketAllowed(req, marketId) {
+  if (req.user.role !== 'market_operator') return true;
+  return Boolean(req.authorizedMarkets && req.authorizedMarkets.has(marketId));
+}
+
+router.get('/dossier', ...hubRead, async (req, res, next) => {
+  try {
+    const market = await dossier.resolveMarket(req.query.market);
+    if (!marketAllowed(req, market.id)) return res.status(403).json({ error: 'Marché non autorisé', code: 'HUB_MARKET_FORBIDDEN' });
+    const supplierId = req.query.supplier_id ? String(req.query.supplier_id) : null;
+    res.json({ market, ...(await dossier.getDossier({ marketId: market.id, supplierId })) });
+  } catch (err) { boxShipmentError(err, res, next); }
+});
+
+router.get('/trace', ...hubRead, async (req, res, next) => {
+  try {
+    const allowed = req.user.role === 'market_operator'
+      ? (req.authorizedMarkets ? Array.from(req.authorizedMarkets) : [])
+      : null;
+    res.json(await dossier.getTrace({
+      orderId: req.query.order_id || null, purchaseOrderId: req.query.po_id || null, allowedMarketIds: allowed,
+    }));
+  } catch (err) { boxShipmentError(err, res, next); }
 });
 
 router.post('/volume', ...hubAuth, validate({ body: hub.volume }), async (req, res, next) => {
