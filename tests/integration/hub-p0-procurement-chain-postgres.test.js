@@ -206,11 +206,10 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
 
       // Création du dossier par le VRAI service métier, directement depuis les KOM-BOX (aucun INSERT SQL).
       s.shipRef = `${tag}-SHIP`;
-      const created = await journey.create({ id: km, code: 'KM' }, actor(), {
-        reference: s.shipRef, forwarder_name: 'Transitaire test', transport_mode: 'sea', proof_ref: `BL-${tag}`,
-        hub_unit_ids: [s.box1, s.box2],
+      const created = await journey.open({ id: km, code: 'KM' }, actor(), {
+        reference: s.shipRef, hub_unit_ids: [s.box1, s.box2],
       });
-      expect(created).toMatchObject({ reference: s.shipRef, stage: 'hub_ready', hub_units: 2, parcels: 0 });
+      expect(created).toMatchObject({ reference: s.shipRef, stage: 'hub_ready', hub_units: 2, hub_draft: true });
 
       // aucun double compte : somme placée active = somme reçue
       const placed = Number((await q(
@@ -260,7 +259,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       await expect(journey.transition({ id: km, code: 'KM' }, actor(), s.shipRef, { to_stage: 'handed_over', proof_ref: 'REMISE-2' }))
         .rejects.toMatchObject({ code: 'JOURNEY_HUB_UNITS_NOT_DISPATCHED' });
       await dispatch(s.box2);
-      const done = await journey.transition({ id: km, code: 'KM' }, actor(), s.shipRef, { to_stage: 'handed_over', proof_ref: 'REMISE-3' });
+      const done = await journey.transition({ id: km, code: 'KM' }, actor(), s.shipRef, { to_stage: 'handed_over', proof_ref: 'REMISE-3', forwarder_name: 'Transitaire test', transport_mode: 'sea' });
       expect(done).toMatchObject({ from_stage: 'hub_ready', stage: 'handed_over' });
 
       const ev = (await q(
@@ -278,22 +277,23 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
     });
 
     test('création : carton d\'un autre marché, non emballé, ou déjà dans un dossier → refus ; aucune expédition créée', async () => {
-      const mk = (label, extra = {}) => ({ reference: `${tag}-REF-${label}`, forwarder_name: 'Transitaire test', transport_mode: 'sea', proof_ref: `P-${label}`, ...extra });
+      const mk = (label, extra = {}) => ({ reference: `${tag}-REF-${label}`, ...extra });
       const count = async () => Number((await q('SELECT COUNT(*)::int AS n FROM international_shipments WHERE reference LIKE $1', [`${tag}-REF-%`])).rows[0].n);
       const boxCm = await makeBox({ market: cm, state: 'PACKED', label: 'CM' });
       const boxPicked = await makeBox({ market: km, state: 'PICKED', label: 'PICKED' });
-      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('CM', { hub_unit_ids: [boxCm] }))).rejects.toMatchObject({ code: 'HUB_BOX_SHIPMENT_MARKET_MISMATCH' });
-      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('PICKED', { hub_unit_ids: [boxPicked] }))).rejects.toMatchObject({ code: 'HUB_BOX_NOT_PACKED' });
-      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('TWICE', { hub_unit_ids: [s.box1] }))).rejects.toMatchObject({ code: 'HUB_BOX_ALREADY_ATTACHED' });
-      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('GHOST', { hub_unit_ids: [id()] }))).rejects.toMatchObject({ code: 'HUB_BOX_NOT_FOUND' });
-      await expect(journey.create({ id: km, code: 'KM' }, actor(), mk('EMPTY', {}))).rejects.toMatchObject({ code: 'JOURNEY_PARCELS_REQUIRED' });
-      expect(await count()).toBe(0);
+      await expect(journey.open({ id: km, code: 'KM' }, actor(), mk('CM', { hub_unit_ids: [boxCm] }))).rejects.toMatchObject({ code: 'HUB_BOX_SHIPMENT_MARKET_MISMATCH' });
+      await expect(journey.open({ id: km, code: 'KM' }, actor(), mk('PICKED', { hub_unit_ids: [boxPicked] }))).rejects.toMatchObject({ code: 'HUB_BOX_NOT_PACKED' });
+      await expect(journey.open({ id: km, code: 'KM' }, actor(), mk('TWICE', { hub_unit_ids: [s.box1] }))).rejects.toMatchObject({ code: 'HUB_BOX_ALREADY_ATTACHED' });
+      await expect(journey.open({ id: km, code: 'KM' }, actor(), mk('GHOST', { hub_unit_ids: [id()] }))).rejects.toMatchObject({ code: 'HUB_BOX_NOT_FOUND' });
+      const empty = await journey.open({ id: km, code: 'KM' }, actor(), mk('EMPTY', {}));
+      expect(empty).toMatchObject({hub_draft:true,hub_units:0});
+      expect(await count()).toBe(1);
     });
 
     test('concurrence : le même carton demandé par deux créations simultanées → un seul dossier le contient', async () => {
       const box = await makeBox({ market: km, state: 'PACKED', label: 'RACE' });
-      const run = (n) => journey.create({ id: km, code: 'KM' }, actor(), {
-        reference: `${tag}-RACE-${n}`, forwarder_name: 'Transitaire test', transport_mode: 'sea', proof_ref: `R-${n}`, hub_unit_ids: [box] });
+      const run = (n) => journey.open({ id: km, code: 'KM' }, actor(), {
+        reference: `${tag}-RACE-${n}`, hub_unit_ids: [box] });
       const results = await Promise.allSettled([run(1), run(2)]);
       expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
       expect((await q('SELECT 1 FROM international_shipment_hub_units WHERE physical_unit_id=$1', [box])).rows).toHaveLength(1);
@@ -301,15 +301,15 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       expect(lost.reason.code).toBe('HUB_BOX_ALREADY_ATTACHED');
     });
 
-    test('dossier historique (sans KOM-BOX) : la remise garde sa règle d\'origine', async () => {
-      const legacy = `${tag}-LEGACY`;
-      await q(`INSERT INTO international_shipments(id,market_id,reference,forwarder_name,transport_mode,stage,created_by)
-               VALUES($1,$2,$3,'Transitaire historique','sea','hub_ready',$4)`, [id(), km, legacy, admin]);
-      const done = await journey.transition({ id: km, code: 'KM' }, actor(), legacy, { to_stage: 'handed_over', proof_ref: 'REMISE-HIST' });
-      expect(done.stage).toBe('handed_over');
-      const det = await journey.detail({ id: km, code: 'KM' }, legacy);
+    test('dossier canonique vide : remise impossible sans KOM-BOX', async () => {
+      const reference=`${tag}-EMPTY-CANONICAL`;
+      const opened=await journey.open({id:km,code:'KM'},actor(),{reference});
+      expect(opened).toMatchObject({hub_units:0,hub_draft:true});
+      await expect(journey.transition({id:km,code:'KM'},actor(),reference,
+        {to_stage:'handed_over',proof_ref:'REMISE-VIDE',forwarder_name:'Transitaire test',transport_mode:'sea'}))
+        .rejects.toMatchObject({code:'JOURNEY_HUB_DRAFT_EMPTY'});
+      const det=await journey.detail({id:km,code:'KM'},reference);
       expect(det.hub_units).toEqual([]);
-      expect(det.parcels).toEqual([]);
     });
   });
 

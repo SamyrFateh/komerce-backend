@@ -980,7 +980,34 @@ async function deleteShipment(db, id) {
   }
 }
 
+/**
+ * Canonical international shipping: record customs amount at the customs owner's
+ * transaction boundary. The calling journey owns market/role/arrival/box checks.
+ * Never allocate customs duties to historical parcels, orders or item margins.
+ */
+async function declareInternationalCustomsAmount(client,{shipmentId,marketId,amountKmf,actorId}){
+  const {rows:[record]}=await client.query(
+    'SELECT id,status,is_active,customs_paid_kmf FROM customs_shipments WHERE id=$1 AND market_id=$2 FOR UPDATE',
+    [shipmentId,marketId]);
+  if(!record?.is_active){
+    const e=new Error('Dossier douane actif absent');e.status=409;e.code='JOURNEY_CUSTOMS_INACTIVE';throw e;
+  }
+  if(record.customs_paid_kmf!=null){
+    const e=new Error('Droits déjà déclarés, correction documentée requise');e.status=409;e.code='JOURNEY_CUSTOMS_AMOUNT_IMMUTABLE';throw e;
+  }
+  const {rows:[linked]}=await client.query(
+    'SELECT COUNT(*)::int AS n FROM customs_shipment_parcels WHERE shipment_id=$1',[record.id]);
+  if(Number(linked.n)>0){
+    const e=new Error('Composition douanière historique interdite pour KOM-BOX');e.status=409;e.code='JOURNEY_CUSTOMS_LEGACY_MEMBERSHIP';throw e;
+  }
+  await client.query(
+    "UPDATE customs_shipments SET customs_paid_kmf=$3,status='declared',declared_at=now(),declared_by=$4 WHERE id=$1 AND market_id=$2",
+    [record.id,marketId,amountKmf,String(actorId)]);
+  return {id:record.id,status:'declared',amount_kmf:amountKmf};
+}
+
 module.exports = {
+  declareInternationalCustomsAmount,
   assertShipmentParcelMarket,
   declareCustomsPayment,
   isCustomsDeclaredForOrder,

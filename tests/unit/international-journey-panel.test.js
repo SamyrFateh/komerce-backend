@@ -27,9 +27,9 @@ test('3 tabs, one existing dossier list and clear not yet booked N1 status',()=>
   expect(tabs.map(x=>x.textContent)).toEqual(['Transport & fret','Arrivée & douane','Vers les relais']);
   expect(tabs.filter(x=>x.className.includes('is-active'))).toHaveLength(1);
   const headings=all(root,n=>n.tagName==='TH').map(n=>n.textContent);
-  expect(headings).toEqual(['Référence','Étape','Transitaire','KOM-BOX','Colis historiques','Volume facturé','Fret réel','ETA','Dossier']);
+  expect(headings).toEqual(['Référence','Étape','Transitaire','KOM-BOX','Volume facturé','Fret réel','ETA','Dossier']);
   expect(all(root,n=>n.className==='kmc-journey-cost-alert').at(0).textContent)
-    .toContain('Aucun double compte');
+    .toContain('Un coût inconnu ne signifie jamais zéro');
 });
 test('nouveaux dossiers depuis Hub Live, fret admin et lecture seule responsable marché',()=>{
   const admin=mount('admin');
@@ -73,11 +73,11 @@ test('roles only see their next authorized physical step, no implicit payment/ma
 test('only an admin sees N1 reconciliation after customs dossier is linked',()=>{
   const admin=mount('admin','arrival',{customs_reference:'CUS-1',cost_reconciliation:'pending_reconciliation'});
   const controls=all(admin.root,n=>n.tagName==='BUTTON').map(n=>n.textContent);
-  expect(controls).toContain('Rapprocher les coûts réels (N1)');
-  expect(all(admin.root,n=>n.className==='kmc-journey-cost-alert')[0].textContent).toContain('N1 à actualiser');
+  expect(controls).toContain('Actualiser les coûts constatés de l’expédition');
+  expect(all(admin.root,n=>n.className==='kmc-journey-cost-alert')[0].textContent).toContain('actualiser le relevé');
   const market=mount('market_operator','arrival',{customs_reference:'CUS-1'});
   expect(all(market.root,n=>n.tagName==='BUTTON').map(n=>n.textContent))
-    .not.toContain('Rapprocher les coûts réels (N1)');
+    .not.toContain('Actualiser les coûts constatés de l’expédition');
 });
 
 test('un dossier KOM-BOX distingue les vrais cartons des colis historiques et demande transitaire à la remise',()=>{
@@ -86,7 +86,7 @@ test('un dossier KOM-BOX distingue les vrais cartons des colis historiques et de
   });
   const tr=all(x.root,n=>n.tagName==='TR').at(1);
   expect(all(tr,n=>n.tagName==='TD').map(n=>n.textContent)).toEqual(
-    expect.arrayContaining(['2','0','À désigner'])
+    expect.arrayContaining(['2','À désigner'])
   );
   const summaries=all(x.root,n=>n.tagName==='SUMMARY').map(n=>n.textContent);
   expect(summaries).toContain('Confirmer : Remis au transitaire');
