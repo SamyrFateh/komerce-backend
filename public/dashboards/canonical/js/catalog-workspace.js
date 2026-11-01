@@ -1119,8 +1119,11 @@
   function registryNextStep(row) {
     if (row.record_kind === 'candidate') {
       if (row.work_status === 'sourcing_category_review')
-        return { kind: 'inspect', label: 'Corriger catégorie',
-          status: 'Catégorie économique manquante' };
+        return { kind: 'inspect', label: 'Choisir famille',
+          status: 'Famille de calcul à confirmer' };
+      if (row.work_status === 'sourcing_review')
+        return { kind: 'inspect', label: 'Classer Boutique',
+          status: 'Classement Boutique à valider' };
       if (row.work_status === 'sourcing_deferred')
         return { kind: 'inspect', label: 'Suivre', status: 'Surveillance Sourcing · différé' };
       if (row.operator_group === 'processing')
@@ -1129,7 +1132,7 @@
         return { kind: 'inspect', label: 'Examiner', status: 'Écarté / archivé' };
       if (row.work_status === 'handoff_missing')
         return { kind: 'inspect', label: 'Signaler', status: 'Lien produit absent' };
-      return { kind: 'inspect', label: 'Examiner', status: 'À examiner' };
+      return { kind: 'inspect', label: 'Voir la source', status: 'Suivi Sourcing' };
     }
     const issues = Array.isArray(row.issues) ? row.issues : [];
     if (row.work_status === 'activation_to_reconcile') {
@@ -1186,12 +1189,10 @@
     const rows = Array.isArray(payload.products) ? payload.products : [];
     const count = code => rows.filter(row =>
       (row.issues || []).includes(code) || row.work_status === code).length;
-    const flagged = rows.filter(row => (row.issues || []).length ||
-      ['inactive', 'rejected', 'sourcing_review'].includes(row.work_status) ||
-      (row.record_kind === 'candidate' && row.operator_group === 'review')).length;
+    const flagged = rows.filter(row => row.requires_arbitration === true).length;
     return [
       { key: 'registry', label: 'Produits connus · filtre', value: formatNumber(payload.registry_page?.total || 0), tone: 'neutral' },
-      { key: 'review', label: 'À traiter · page', value: formatNumber(flagged), tone: flagged ? 'warning' : 'neutral' },
+      { key: 'review', label: 'Arbitrages · page', value: formatNumber(flagged), tone: flagged ? 'warning' : 'neutral' },
       { key: 'classify', label: 'À classer · page', value: formatNumber(count('taxonomy_to_confirm')), tone: 'neutral' },
       { key: 'french', label: 'Fiche FR · page', value: formatNumber(count('editorial_to_complete')), tone: 'neutral' },
       { key: 'approval', label: 'À valider · page', value: formatNumber(count('approval_pending')), tone: 'neutral' },
@@ -1685,28 +1686,19 @@
     return section;
   }
 
+  // Un statut d'arbitrage correspond exclusivement à une décision opérateur.
+  // Les écarts source, média, preuve d'approbation et scans restent consultables
+  // mais n'encombrent ni les alertes ni les indicateurs de décisions humaines.
   function registryCorrectionItems(row = {}) {
-    const issues = Array.isArray(row.issues) ? row.issues : [];
-    if (row.lifecycle_status === 'rejected') return [{ code: 'rejected', label: 'Décision de rejet à examiner' }];
-    if (['catalog_approved','catalog_approved_inactive'].includes(row.work_status)) {
-      return [];
-    }
-    if (row.work_status === 'approval_to_review')
-      return [{ code: 'approval_to_review', label: 'Preuve d’approbation Catalogue à régulariser' }];
-    if (row.work_status === 'approval_pending')
-      return [{ code: 'approval_pending', label: 'Prêt pour finalisation Catalogue' }];
-    const known = [
-      ['sourcing_economic_category_missing', 'Catégorie économique / douane à corriger'],
-      ['activation_to_reconcile', 'Activation d’un candidat à justifier'],
-      ['source_to_normalize', 'Source fournisseur à vérifier'],
-      ['taxonomy_to_confirm', 'Classement boutique à corriger'],
-      ['editorial_to_complete', 'Contenu français à compléter'],
-      ['media_missing', 'Média canonique à compléter'],
-      ['approval_pending', 'Validation Catalogue à réaliser'],
-    ].filter(([code]) => issues.includes(code) || row.work_status === code)
-      .map(([code, label]) => ({ code, label }));
-    if (known.length) return known;
-    return [{ code: 'check', label: 'Contrôler les prérequis de la fiche' }];
+    if (row.requires_arbitration !== true) return [];
+    const choice = {
+      sourcing_category_review: { code:'family', label:'Choisir une famille de calcul' },
+      sourcing_review: { code:'boutique', label:'Valider le classement Boutique' },
+      taxonomy_to_confirm: { code:'taxonomy', label:'Choisir catégorie et sous-catégorie' },
+      editorial_to_complete: { code:'editorial', label:'Valider le contenu français' },
+      approval_pending: { code:'approval', label:'Décider l’approbation Catalogue' },
+    }[row.work_status];
+    return choice ? [choice] : [];
   }
 
   function registryReasonOwner(reason) {
@@ -1814,9 +1806,9 @@
 
     if (row.work_status === 'sourcing_category_review') {
       feedback.textContent =
-        'Le scanner demande une catégorie économique/douanière. ' +
-        'La catégorie Boutique est une décision distincte : aucun brouillon ne sera créé.';
-      const classify = makeButton(doc, 'Corriger la catégorie économique',
+        'La famille de calcul n’a pas été déterminée automatiquement. ' +
+        'Choisissez une famille seulement si les propositions sont ambiguës ; le Catalogue Boutique reste distinct.';
+      const classify = makeButton(doc, 'Choisir la famille de calcul',
         'candidate-economic-category-review');
       actions.appendChild(classify);
       classify.addEventListener('click', async () => {
@@ -1838,12 +1830,12 @@
           const form = doc.createElement('form');
           form.className = 'kmc-catalog-inspector-form';
           form.setAttribute('data-catalog-economic-category-form', '');
-          form.appendChild(text(doc, 'strong', '', 'Catégorie économique / douane'));
+          form.appendChild(text(doc, 'strong', '', 'Famille de calcul du produit'));
           form.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
             'Proposition calculée par le moteur de classification existant. ' +
             'Vérifiez les informations fournisseur avant de confirmer.'));
           const label = text(doc, 'label', 'kmc-catalog-inspector-label',
-            'Catégorie économique');
+            'Famille de calcul');
           const select = doc.createElement('select');
           select.setAttribute('data-catalog-economic-category-choice', '');
           if (!suggested) {
@@ -2516,8 +2508,7 @@
     ]);
     select('Statut Catalogue', 'status', [
       { value: '', label: 'Tous les produits' },
-      { value: 'correction', label: 'À corriger' },
-      { value: 'review', label: 'À valider / examiner' },
+      { value: 'arbitration', label: 'Arbitrages humains uniquement' },
       { value: 'validated', label: 'Validés' },
       { value: 'processing', label: 'En préparation automatique' },
       { value: 'excluded', label: 'Écartés / archivés' },
@@ -2541,11 +2532,11 @@
     const serverCounts = payload.summary?.operator_groups || {};
     [
       ['', 'Tous'],
-      ['correction', 'À corriger'],
-      ['review', 'À valider'],
+      ['arbitration', 'À arbitrer'],
       ['validated', 'Validés'],
     ].forEach(([value, label]) => {
-      if (value) label += ' · ' + formatNumber(serverCounts[value] || 0);
+      if (value) label += ' · ' + formatNumber(value === 'arbitration' ?
+        (payload.summary?.operator_arbitrations || 0) : (serverCounts[value] || 0));
       const chip = text(doc, 'button', 'kmc-catalog-quick-chip', label);
       chip.type = 'button';
       chip.setAttribute('aria-pressed', String(filters.status === value));
@@ -2591,7 +2582,7 @@
     } else {
       const table = doc.createElement('table');
       table.className = 'kmc-workspace-table kmc-catalog-registry-table';
-      table.innerHTML = '<thead><tr><th>Produit</th><th>Fournisseur</th><th>Classement boutique</th><th>À compléter</th><th>Action</th></tr></thead>';
+      table.innerHTML = '<thead><tr><th>Produit</th><th>Fournisseur</th><th>Classement boutique</th><th>Arbitrage requis</th><th>Action</th></tr></thead>';
       const tbody = doc.createElement('tbody');
       const statusNames = {
         source_to_normalize: 'Source à normaliser',
@@ -2656,7 +2647,7 @@
         category.setAttribute('data-label', 'Classification boutique');
         category.appendChild(text(doc, 'strong', '',
           row.record_kind === 'candidate'
-            ? 'Classement boutique à confirmer'
+            ? '—'
             : (row.boutique_category_label || row.boutique_category_key || 'À classer')));
         if (row.record_kind === 'candidate' && row.supplier_category) {
           category.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
@@ -2671,19 +2662,15 @@
         if (row.record_kind === 'candidate') {
           const diagnostic = doc.createElement('td');
           diagnostic.className = 'kmc-catalog-diagnostic';
-          diagnostic.setAttribute('data-label', 'Situation');
+          diagnostic.setAttribute('data-label', 'Arbitrage requis');
           const nextStep = registryNextStep(row);
-          const chip = text(doc, 'span', 'kmc-catalog-status', nextStep.status);
-          chip.setAttribute('data-status', row.work_status || 'processing');
-          diagnostic.appendChild(chip);
-          diagnostic.appendChild(text(doc, 'small', 'kmc-catalog-correction-hint',
-            row.operator_group === 'processing'
-              ? 'Aucune correction humaine présumée avant le diagnostic.'
-              : 'Candidat fournisseur · aucune validation Catalogue implicite.'));
+          renderRegistryCorrections(doc, diagnostic, row);
           tr.appendChild(diagnostic);
           const action = doc.createElement('td');
           action.className = 'kmc-catalog-action-cell';
-          const inspect = makeButton(doc, nextStep.label, 'inspect-candidate', true);
+          const inspect = makeButton(doc,
+            row.requires_arbitration === true ? nextStep.label : 'Voir la source',
+            'inspect-candidate', true);
           inspect.addEventListener('click', () => openCandidateInspector(context, slot, doc, row));
           action.appendChild(inspect);
           tr.appendChild(action);
@@ -2693,7 +2680,7 @@
 
         const diagnostic = doc.createElement('td');
         diagnostic.className = 'kmc-catalog-diagnostic';
-        diagnostic.setAttribute('data-label', 'À compléter');
+        diagnostic.setAttribute('data-label', 'Arbitrage requis');
         const nextStep = registryNextStep(row);
         const statusChip = text(doc, 'button', 'kmc-catalog-status', nextStep.status);
         statusChip.type = 'button';
@@ -2710,7 +2697,8 @@
         if (!alreadyApproved) {
           const readyCandidate = row.work_status === 'approval_pending' &&
             row.lifecycle_status === 'candidate' && row.is_active !== true;
-          const hasMissingContent = (row.issues || []).some(issue => issue !== 'approval_pending');
+          const hasMissingContent = row.requires_arbitration === true &&
+            row.work_status !== 'approval_pending';
           const main = makeButton(doc,
             readyCandidate ? 'Finaliser' : hasMissingContent ? 'Compléter' : 'Voir fiche',
             'open-catalog-inspector');
