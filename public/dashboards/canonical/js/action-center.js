@@ -175,7 +175,7 @@
     return [
       { key: 'total', label: 'Blocages actifs', value: Number(summary.total_active || 0), tone: summary.total_active ? 'critical' : 'neutral' },
       { key: 'urgent', label: 'Urgents / critiques', value: Number(summary.urgent || 0), tone: summary.urgent ? 'critical' : 'neutral' },
-      { key: 'overdue', label: 'Échéances dépassées', value: Number(summary.overdue || 0), tone: summary.overdue ? 'critical' : 'neutral' },
+      { key: 'overdue', label: 'Incidents hors délai', value: Number(summary.overdue || 0), tone: summary.overdue ? 'critical' : 'neutral' },
       { key: 'unassigned', label: 'Sans responsable', value: Number(summary.unassigned || 0), tone: summary.unassigned ? 'warning' : 'neutral' },
     ];
   }
