@@ -25,12 +25,12 @@ describe('Canonical Action Center — presentation contract', () => {
   });
 
   test('les métriques restent une projection directe du summary serveur', () => {
-    expect(actionCenter.metricItems({ urgent: 2, warning: 1, info: 3, total_active: 6 }))
+    expect(actionCenter.metricItems({ urgent: 2, warning: 1, info: 3, total_active: 6, overdue: 1, unassigned: 0 }))
       .toEqual([
-        { key: 'urgent', label: 'Urgent / critique', value: 2, tone: 'critical' },
-        { key: 'warning', label: 'Avertissements', value: 1, tone: 'warning' },
-        { key: 'info', label: 'Informations', value: 3, tone: 'neutral' },
-        { key: 'total', label: 'Signaux actifs', value: 6, tone: 'neutral' },
+        { key: 'total', label: 'Blocages actifs', value: 6, tone: 'critical' },
+        { key: 'urgent', label: 'Urgents / critiques', value: 2, tone: 'critical' },
+        { key: 'overdue', label: 'Incidents hors délai', value: 1, tone: 'critical' },
+        { key: 'unassigned', label: 'Sans responsable', value: 0, tone: 'neutral' },
       ]);
   });
 

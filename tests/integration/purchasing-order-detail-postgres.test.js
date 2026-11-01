@@ -28,6 +28,14 @@ describeDb('purchasing order detail — real PostgreSQL', () => {
     await client.query(`CREATE SCHEMA ${schema}`);
     await client.query(`SET search_path TO ${schema}`);
     await client.query('CREATE TABLE purchase_orders (id uuid PRIMARY KEY); CREATE TABLE purchase_lines (id uuid PRIMARY KEY, purchase_order_id uuid REFERENCES purchase_orders(id));');
+    // The PO details reader now includes the canonical incidents read model.
+    // Keep this independent PostgreSQL fixture intentionally minimal but real.
+    await client.query(`CREATE TABLE incidents (
+      id uuid PRIMARY KEY, incident_type text NOT NULL, title text,
+      description text, severity text, status text, resolver_domain text,
+      resolution_class text, client_impact text, created_at timestamptz,
+      due_at timestamptz, details jsonb NOT NULL DEFAULT '{}'::jsonb
+    )`);
     for (const file of ['279_supplier_execution_persistence.sql', '280_supplier_execution_payments.sql', '281_supplier_payment_proofs.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', file), 'utf8').replace(/public\./g, `${schema}.`));
     }
