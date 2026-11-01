@@ -1,0 +1,89 @@
+# Reset Staging (LOT 1) : vide les donnees metier/test et retire les fixtures, conserve la fondation.
+# Declenchement MANUEL uniquement. dry-run par defaut (lecture seule) ; execute exige la confirmation texte
+# RESET-STAGING-BUSINESS-DATA, le proprietaire du depot, et l'epingle de base STAGING_DB_PIN (variable de depot
+# host:port/base, non secrete). Jamais lance automatiquement. Code : scripts/recette/staging-reset.js.
+name: Staging reset
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry-run (lecture seule) ou execute (destructif)'
+        required: true
+        type: choice
+        default: dry-run
+        options:
+          - dry-run
+          - execute
+      confirmation:
+        description: 'Pour execute uniquement : saisir exactement RESET-STAGING-BUSINESS-DATA'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-reset
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    name: Staging reset - ${{ inputs.mode }}
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      RESET_MODE: ${{ inputs.mode }}
+      RESET_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Preconditions (secrets, pin, confirmation)
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "${DATABASE_URL:-}" ] || { echo "::error::secret RAILWAY_DATABASE_URL absent"; exit 1; }
+          [ -n "${KOMERCE_STAGING_RESET_DB_PIN:-}" ] || { echo "::error::variable de depot STAGING_DB_PIN absente (host:port/base)"; exit 1; }
+          case "$RESET_MODE" in
+            dry-run) ;;
+            execute)
+              [ "$RESET_CONFIRMATION" = 'RESET-STAGING-BUSINESS-DATA' ] || { echo "::error::confirmation texte invalide"; exit 1; }
+              ;;
+            *) echo "::error::mode inconnu"; exit 1 ;;
+          esac
+      - name: Guard live staging identity
+        run: node scripts/recette/target-guard.js
+      - name: Reset report (${{ inputs.mode }})
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/staging-reset
+          if [ "$RESET_MODE" = 'execute' ]; then
+            export KOMERCE_STAGING_RESET_ACK="$RESET_CONFIRMATION"
+            export KOMERCE_CONTROLLED_PURGE_CONFIRM='PURGE_BUSINESS_DATA_KEEP_FOUNDATION'
+          fi
+          node scripts/recette/staging-reset.js "--$RESET_MODE" | tee test-results/staging-reset/report.json
+      - name: Independent verification (execute only)
+        if: ${{ inputs.mode == 'execute' }}
+        run: node scripts/recette/staging-verify-empty.js | tee test-results/staging-reset/verify.json
+      - name: Publish report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-reset-${{ inputs.mode }}-${{ github.run_id }}
+          path: test-results/staging-reset
+          retention-days: 30
+          if-no-files-found: warn
