@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        signal_ref, signal_filters, authenticated_actor, server_resolved_market
  * @outputs       canonical_action_center_projection, signal_lifecycle_results
- * @depends       db.js, services/signal-admin-service.js, services/signal-service.js
+ * @depends       db.js, services/signal-admin-service.js, services/signal-service.js, services/incident-traceability-projection.js
  * @used-by       routes/admin-action-center.js
- * @db-read       orders, products, parcels, cash_collections, supplier_execution_payments
+ * @db-read       incidents, orders, products, parcels, cash_collections, supplier_execution_payments
  * @db-write      none
  * @db-txn        none
  * @doctrine      action_center_manages_derived_signals_only, browser_business_refs_only, exact_market_scope_or_global_null
@@ -21,6 +21,7 @@
 const db = require('../db');
 const signalAdminService = require('./signal-admin-service');
 const signalService = require('./signal-service');
+const incidentTrace = require('./incident-traceability-projection');
 
 const SIGNAL_REF_RE = /^KSG-\d{6,}$/;
 
@@ -229,9 +230,12 @@ async function buildScopedWorkspace({ market = null, filters = {}, canManage = t
     offset: filters.offset || 0,
     market_id: marketId,
   };
-  const [list, stats] = await Promise.all([
+  const [list, stats, incidentWorkItems] = await Promise.all([
     signalAdminService.listSignals(scopedFilters),
     signalAdminService.getStats({ market_id: marketId }),
+    // Global admin read-only lane; never infer membership from a grouped PO.
+    // Market queues require their own per-order authorization proof.
+    market ? Promise.resolve([]) : incidentTrace.listGlobalOpen(),
   ]);
   const entityMaps = await resolveEntityBusinessRefs(list.signals, marketId);
 
@@ -256,6 +260,7 @@ async function buildScopedWorkspace({ market = null, filters = {}, canManage = t
     summary: summaryFromStats(stats),
     work_queues: workQueues(list.signals),
     signals: list.signals.map(signal => publicSignal(signal, entityMaps, canManage)),
+    physical_incidents: incidentWorkItems,
     pagination: { total: list.total, limit: list.limit, offset: list.offset },
   };
 }
