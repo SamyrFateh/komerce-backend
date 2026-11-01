@@ -21,7 +21,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
   expect(ui).toContain('<th>Produit</th><th>Fournisseur</th><th>Classement boutique</th>');
   expect(ui).toContain('kmc-catalog-product-reference');
-  expect(ui).toContain('<th>À compléter</th><th>Action</th>');
+  expect(ui).toContain('<th>Arbitrage requis</th><th>Action</th>');
   expect(ui).toContain("productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-reference', ref))");
   expect(ui).toContain("statusChip.setAttribute('data-status', row.work_status || 'inactive')");
   expect(ui).toContain("tr.appendChild(actionCell)");
@@ -248,8 +248,9 @@ test('Fiche commerciale complète : galerie, variantes et correction FR disponib
   expect(css).toContain(".kmc-catalog-variant-line");
 });
 test('Un candidat Sourcing à examiner n’est plus absent du compteur des actions', () => {
-  expect(ui).toContain("'sourcing_review'].includes(row.work_status)");
-  expect(ui).toContain("(row.record_kind === 'candidate' && row.operator_group === 'review')");
+  expect(ui).toContain('row.requires_arbitration === true');
+  expect(ui).toContain('operator_arbitrations');
+  expect(ui).toContain("'arbitration', 'À arbitrer'");
 });
 
 test('Actions éditoriales toujours visibles avant lecture longue de la fiche', () => {
@@ -307,4 +308,19 @@ test('Registre et Taxonomie réutilisent le même Hero, sans reconstituer un sec
   expect(render.indexOf(oneHeader)).toBeLessThan(render.indexOf("context.catalogTab === 'taxonomy'"));
   expect(header).toContain("if (!refinery) header.setAttribute('data-dashboard-role', 'hero')");
   expect(header).not.toContain('kmc-catalog-decision-overview');
+});
+
+
+test('Registre : seuls les vrais arbitrages produisent un statut humain',()=>{
+  expect(ui).toContain('function registryCorrectionItems(row = {})');
+  expect(ui).toContain('if (row.requires_arbitration !== true) return [];');
+  expect(ui).toContain("sourcing_category_review: { code:'family'");
+  expect(ui).toContain("sourcing_review: { code:'boutique'");
+  expect(ui).toContain("taxonomy_to_confirm: { code:'taxonomy'");
+  expect(ui).toContain("editorial_to_complete: { code:'editorial'");
+  expect(ui).toContain("approval_pending: { code:'approval'");
+  expect(ui).toContain("row.record_kind === 'candidate'\\n            ? '—'");
+  expect(ui).not.toContain('Catégorie économique manquante');
+  expect(ui).not.toContain('Classement boutique à confirmer');
+  expect(ui).not.toContain('Candidat fournisseur · aucune validation Catalogue implicite.');
 });
