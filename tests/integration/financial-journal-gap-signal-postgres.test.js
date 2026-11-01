@@ -12,11 +12,17 @@ describeDb('financial_journal_gap (REAL_DB)', () => {
   const journal = require('../../services/financial-journal');
   const tag = `gap-${Date.now()}`;
   let km;
+  let wasActive;
   const q = (sql, p) => db.query(sql, p);
   const active = async () => (await q("SELECT count(*)::int AS n FROM signals WHERE signal_type='financial_journal_gap' AND market_id=$1 AND status IN ('open','acknowledged','snoozed')", [km])).rows[0].n;
 
-  beforeAll(async () => { km = (await q("SELECT id FROM markets WHERE code='KM'")).rows[0].id; });
-  afterAll(async () => { await q("DELETE FROM signals WHERE signal_type='financial_journal_gap'"); await q("DELETE FROM financial_movements WHERE source_id = $1", [tag]).catch(() => {}); });
+  beforeAll(async () => {
+    const row = (await q("SELECT id, is_active FROM markets WHERE code='KM'")).rows[0];
+    km = row.id;
+    wasActive = row.is_active;
+    if (!wasActive) await q('UPDATE markets SET is_active = TRUE WHERE id = $1', [km]);
+  });
+  afterAll(async () => { if (!wasActive) await q('UPDATE markets SET is_active = FALSE WHERE id = $1', [km]); await q("DELETE FROM signals WHERE signal_type='financial_journal_gap'"); await q("DELETE FROM financial_movements WHERE source_id = $1", [tag]).catch(() => {}); });
 
   test('mouvement sans provenance : signal créé, idempotent, puis auto-résolu quand le journal redevient conforme', async () => {
     await signals.generateSignals(['financial_journal_gap']);
@@ -24,8 +30,9 @@ describeDb('financial_journal_gap (REAL_DB)', () => {
     // Un mouvement sans EUR (taux indisponible) déclenche le signal warning.
     await db.withTransaction(client => journal.recordMovement(client, {
       sourceKind: 'order_refund', sourceId: tag, direction: 'outflow', category: 'refund', state: 'committed',
-      amountNative: 150, currency: 'JPY', marketId: km, occurredAt: new Date(), provenance: { source: 'test', tag },
+      amountNative: 150, currency: 'ZZZ', marketId: km, occurredAt: new Date(), provenance: { source: 'test', tag },
     }));
+    expect((await q('SELECT fx_status FROM financial_movements WHERE source_id = $1', [tag])).rows[0].fx_status).toBe('unavailable');
     const first = await signals.generateSignals(['financial_journal_gap']);
     expect(first.generators.financial_journal_gap.error).toBeUndefined();
     expect(await active()).toBe(1);
@@ -36,7 +43,7 @@ describeDb('financial_journal_gap (REAL_DB)', () => {
     // Rattrapage : le mouvement reçoit son EUR → condition disparue → auto-résolution.
     await db.withTransaction(client => journal.recordMovement(client, {
       sourceKind: 'order_refund', sourceId: tag, direction: 'outflow', category: 'refund', state: 'committed',
-      amountNative: 150, currency: 'JPY', marketId: km, occurredAt: new Date(), eur: { amount: 0.9, legs: [{ id: 'manual-proof' }] }, provenance: { source: 'test', tag },
+      amountNative: 150, currency: 'ZZZ', marketId: km, occurredAt: new Date(), eur: { amount: 0.9, legs: [{ id: 'manual-proof' }] }, provenance: { source: 'test', tag },
     }));
     await signals.generateSignals(['financial_journal_gap']);
     expect(await active()).toBeLessThanOrEqual(baseline);
