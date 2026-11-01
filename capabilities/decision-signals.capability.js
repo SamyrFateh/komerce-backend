@@ -126,6 +126,7 @@ module.exports = {
       "business-rules (lecture du referentiel de regles metier)",
       "market-delegation (resolution serveur du Market ID, capability dashboard.market.read / decision_signal.manage et audit des mutations pays)",
       "payments (services/cash-deposit-service.js — couverture cash canonique UNCOVERED_COLLECTIONS_CTE : seul un depot verifie couvre un encaissement ; lecture seule, aucune mutation de depot)",
+      "economic-engine (services/financial-journal-reporting.js — lecture seule de la réconciliation du journal financier pour le signal financial_journal_gap ; aucune écriture du journal)",
       "dashboard (services/signal-simulation-scope.js — predicat reel/RCT1 partage : les signaux de commandes de simulation sont exclus de l'Action Center et du compteur radar ; lecture seule)",
     ],
   },
