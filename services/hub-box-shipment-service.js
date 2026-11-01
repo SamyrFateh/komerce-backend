@@ -109,6 +109,8 @@ async function attachBoxToShipment({ unitId, shipmentReference, expectedMarketId
       if (existing && String(existing.shipment_id) === String(shipment.id)) {
         return { unit_id: unit, shipment_id: shipment.id, shipment_reference: reference, already_attached: true };
       }
+      // Same locked validation as initial dossier opening: state, market, anomaly, uniqueness.
+      await lockAttachableBoxes(client,{marketId:shipment.market_id,unitIds:[unit]});
       await client.query(
         'INSERT INTO international_shipment_hub_units(shipment_id, physical_unit_id, attached_by) VALUES ($1, $2, $3)',
         [shipment.id, unit, actor && actor.id ? actor.id : null]
