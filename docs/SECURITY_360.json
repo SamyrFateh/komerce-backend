@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-01T12:11:10.726Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 781,
-    "protected": 726,
+    "total": 782,
+    "protected": 727,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2156,6 +2156,14 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/detach",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
       ]
     },
     {
