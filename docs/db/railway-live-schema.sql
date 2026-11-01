@@ -4074,8 +4074,16 @@ CREATE TABLE public.charges (
     emoji text,
     display_order integer DEFAULT 100,
     is_editable boolean DEFAULT true,
-    is_deletable boolean DEFAULT true
+    is_deletable boolean DEFAULT true,
+    market_owner_id uuid
 );
+
+
+--
+-- Name: COLUMN charges.market_owner_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.charges.market_owner_id IS 'Null = shared reference. Non-null = only this market can select or record facts for the reference; never use as GROUP pool.';
 
 
 --
@@ -14305,6 +14313,20 @@ CREATE INDEX idx_catalog_terminology_reference_term_en ON public.catalog_termino
 
 
 --
+-- Name: idx_charges_market_name_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_charges_market_name_unique ON public.charges USING btree (market_owner_id, lower(name)) WHERE ((market_owner_id IS NOT NULL) AND (is_active = true));
+
+
+--
+-- Name: idx_charges_market_owner_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_charges_market_owner_active ON public.charges USING btree (market_owner_id, is_active) WHERE (market_owner_id IS NOT NULL);
+
+
+--
 -- Name: idx_client_notifications_entity; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -18751,6 +18773,14 @@ ALTER TABLE ONLY public.ceiling_template_capabilities
 
 ALTER TABLE ONLY public.ceiling_template_capabilities
     ADD CONSTRAINT ceiling_template_capabilities_template_id_fkey FOREIGN KEY (template_id) REFERENCES public.ceiling_templates(id) ON DELETE CASCADE;
+
+
+--
+-- Name: charges charges_market_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.charges
+    ADD CONSTRAINT charges_market_owner_id_fkey FOREIGN KEY (market_owner_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
 
 
 --
