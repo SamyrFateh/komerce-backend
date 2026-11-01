@@ -31,3 +31,12 @@ Cette première livraison n'est PAS une certification de rapprochement N1 : aucu
 
 ## Gates pour la réconciliation
 Comparer chacune des factures aux sources douane/fret anciennes ; aucune pièce saisie deux fois. Conserver devise/taux FX à l'opération, allocation maritime selon volume réel ou W/M contractuel, air au poids taxable, frais locaux selon destination/colis, conservation au centime, crédits après clôture et écart prévisionnel/réel. Ne pas utiliser les fixtures AUDIT ou RCT1 comme références commerciales.
+
+## Extension minimale PO / Hub / KOM-BOX (migration 356, en attente)
+
+- `hub_physical_units` et `hub_physical_unit_placements` restent la vérité de composition physique ; chaque placement retrouve la PO, la commande, le marché et la destination via `hub_purchase_allocations`.
+- Le transport international accepte une liste de références `KOM-BOX` comme manifeste physique canonique (`hub_box_refs`). Liaison unique et transactionnelle dans `international_shipment_hub_boxes`, interdiction d'un autre marché, carton vide/non fermé, perte d'identité ou double affectation.
+- La remise au transitaire exige que chaque carton lié soit `DISPATCHED`, plus la preuve et l'acteur de transition ; elle ne déduit pas cette preuve d'une fermeture.
+- Pour éviter toute double identité, un même dossier ne mélange pas `parcel_refs` historiques et `hub_box_refs` canoniques. Les dossiers existants conservent leur ancien modèle.
+- Hub Live projette en lecture seule les quantités PO placées en cartons et celles encore dans des contenants fournisseur, filtrées serveur par marché. Les 100 premières lignes sont affichées : ce n'est pas un KPI exhaustif.
+- Ne pas déduire une imputation de frais N1 de ce nouveau lien : l'imputation financière reste sous autorité du rapprochement N1 existant.
