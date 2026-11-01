@@ -108,7 +108,7 @@ async function resolveComponentByKey(q, key) {
   const cleanKey = String(key || '').trim();
   if (!cleanKey) throw new MarketCostComponentError(400, 'Clé composant requise', 'market_cost_key_required');
   const { rows } = await q.query(
-    `SELECT id, key, label, default_value, is_active
+    `SELECT id, key, label, family, category, economic_nature, allocation_perimeter, default_value, is_active
        FROM cost_components
       WHERE key = $1
       LIMIT 1`,
@@ -147,6 +147,14 @@ async function upsertOverride({ marketId, key, body = {}, actorId = null }) {
   try {
     await client.query('BEGIN');
     const component = await resolveComponentByKey(client, key);
+    const editingIdentity = Object.prototype.hasOwnProperty.call(body, 'label')
+      || Object.prototype.hasOwnProperty.call(body, 'description');
+    if (editingIdentity && (component.allocation_perimeter === 'mutualized'
+      || legacyEconomicNature(component) !== 'variable')) {
+      throw new MarketCostComponentError(403,
+        'Libellé et description modifiables uniquement pour les coûts variables directs du marché',
+        'market_cost_identity_read_only');
+    }
     const { rows: currentRows } = await client.query(
       `SELECT * FROM cost_component_market_overrides
         WHERE market_id = $1 AND component_id = $2
