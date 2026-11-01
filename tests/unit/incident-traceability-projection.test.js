@@ -1,8 +1,8 @@
 'use strict';
 /** @test-kind unit @test-runner jest @test-requires none */
 
-const db = { query: jest.fn() };
-jest.mock('../../db', () => db);
+const mockDb = { query: jest.fn() };
+jest.mock('../../db', () => mockDb);
 const model = require('../../services/incident-traceability-projection');
 
 const ORDER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
@@ -22,7 +22,7 @@ const item = overrides => ({
 });
 
 test('same persistent incident is returned for PO and order without creating a copy',async()=>{
-  db.query.mockResolvedValue({rows:[item({order_reference:'CMD-KM-22'})]});
+  mockDb.query.mockResolvedValue({rows:[item({order_reference:'CMD-KM-22'})]});
   const [poRows,orderRows]=await Promise.all([
     model.listForPurchaseOrder(PO),
     model.listForOrder({id:ORDER,reference:'CMD-KM-22'}),
@@ -31,8 +31,8 @@ test('same persistent incident is returned for PO and order without creating a c
   expect(poRows[0]).toMatchObject({owner_role:'sourcing',business_blocking:true});
   expect(poRows[0].next_action).toContain('Achats');
   expect(JSON.stringify(poRows)).not.toContain(INCIDENT);
-  expect(db.query.mock.calls[0][0]).toContain("i.details->>'purchase_order_id' = $1::text");
-  expect(db.query.mock.calls[1][0]).toContain('pl.purchase_order_id = po.id');
+  expect(mockDb.query.mock.calls[0][0]).toContain("i.details->>'purchase_order_id' = $1::text");
+  expect(mockDb.query.mock.calls[1][0]).toContain('pl.purchase_order_id = po.id');
 });
 
 test('À traiter ne remonte que les blocages prouvés, ouverts et traçables',async()=>{
@@ -46,12 +46,12 @@ test('À traiter ne remonte que les blocages prouvés, ouverts et traçables',as
   ]){
     expect(model.isBusinessBlocker(row)).toBe(blocked);
   }
-  db.query.mockResolvedValue({rows:[item()]});
+  mockDb.query.mockResolvedValue({rows:[item()]});
   const results=await model.listGlobalOpen();
   expect(results).toHaveLength(1);
   expect(results[0].business_blocking).toBe(true);
   expect(results[0].purchase_order_link).toBe('/admin/workspaces/purchasing?po='+PO);
-  const query=db.query.mock.calls[0][0];
+  const query=mockDb.query.mock.calls[0][0];
   expect(query).toContain("i.client_impact IN ('blocked','partial_delivery')");
   expect(query).toContain("i.details->>'physical_unit_id'");
   expect(query).toContain("i.status IN ('open','investigating')");
@@ -60,5 +60,5 @@ test('À traiter ne remonte que les blocages prouvés, ouverts et traçables',as
 test('aucun identifiant de marché ou de PO fourni par le navigateur ne pilote le scope',async()=>{
   await expect(model.listForPurchaseOrder('not-a-uuid')).rejects.toThrow('server_resolved');
   await expect(model.listForOrder({id:'bad',reference:'CMD-KM-22'})).rejects.toThrow('server_resolved');
-  expect(db.query).not.toHaveBeenCalled();
+  expect(mockDb.query).not.toHaveBeenCalled();
 });
