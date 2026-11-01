@@ -616,7 +616,7 @@ test('Catalogue unifié : médias fournisseur non confondus avec les médias can
   const fetchFn = jest.fn(async () => ({ok:true,status:200,json:async()=>payload}));
   await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
   const row = root.querySelector('[data-product-ref="KPR-00450"]');
-  expect(row.textContent).toContain('Média canonique à compléter');
+  expect(row.textContent).not.toContain('Média canonique à compléter');
   await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
   const panel = root.querySelector('[data-catalog-product-inspector="KPR-00450"]');
   expect(panel.textContent).toContain('Médias source identifiés');
@@ -690,7 +690,7 @@ test('Catalogue : candidat WATCH visible en surveillance, jamais à valider ni p
   const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
   await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
   const row=root.querySelector('[data-candidate-ref="KSC-WATCH"]');
-  expect(row.textContent).toContain('Surveillance Sourcing');
+  expect(row.textContent).not.toContain('Surveillance Sourcing');
   await row.querySelector('[data-workspace-action="inspect-candidate"]').click();
   const panel=root.querySelector('[data-catalog-candidate-inspector="KSC-WATCH"]');
   expect(panel.textContent).toContain('Décision Sourcing différée');
@@ -712,7 +712,7 @@ test('Catalogue : cycle de vie contradictoire, dossier lecture seule, zéro vali
   const fetchFn=jest.fn(async()=>({ok:true,status:200,json:async()=>payload}));
   await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
   const row=root.querySelector('[data-product-ref="KPR-INCOHERENT"]');
-  expect(row.textContent).toContain('Activation d’un candidat');
+  expect(row.textContent).not.toContain('Activation d’un candidat');
   await row.querySelector('[data-workspace-action="open-catalog-inspector"]').click();
   const panel=root.querySelector('[data-catalog-product-inspector="KPR-INCOHERENT"]');
   expect(panel.textContent).toContain('Activation d’une fiche encore marquée candidate');
@@ -914,7 +914,7 @@ test('KPR-000088: fiche source inactive FR a des champs directs et une catégori
   }));
   await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
   const launch=root.querySelector('[data-workspace-action="open-catalog-inspector"]');
-  expect(launch.textContent).toBe('Compléter');
+  expect(launch.textContent).toBe('Voir fiche');
   await launch.click();
   const panel=root.querySelector('[data-catalog-product-inspector="KPR-000088"]');
   expect(panel.textContent).not.toContain('Situation :');
