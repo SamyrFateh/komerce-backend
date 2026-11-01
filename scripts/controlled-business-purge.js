@@ -6,121 +6,30 @@
  * @criticality   critical
  * @inputs        DATABASE_URL, explicit execute flag, explicit confirmation token
  * @outputs       dry-run/execute JSON report
- * @depends       db.js
- * @used-by       operator one-shot job only
+ * @depends       db.js, scripts/recette/staging-reset-classification.js, scripts/recette/staging-reset-fixtures.js
+ * @used-by       scripts/recette/staging-reset.js, operator one-shot job only
  * @db-read       pg_catalog, public business tables
- * @db-write      transient business tables, sourcing_sources.autopilot_enabled
+ * @db-write      transient business tables, sourcing_sources.autopilot_enabled, fixture accounts (withFixtures)
  * @db-txn        owned
  * @doctrine      preserve_schema_migrations_reference_and_runtime_configuration
  * @impact-areas  database, sourcing, catalog, orders, payments, logistics
- * @version       2026-09
+ * @version       2026-11
  */
 'use strict';
 
 const db = require('../db');
+const classification = require('./recette/staging-reset-classification');
+const fixtures = require('./recette/staging-reset-fixtures');
 
 const CONFIRM_TOKEN = 'PURGE_BUSINESS_DATA_KEEP_FOUNDATION';
 
-// Explicit business/transient roots only. Missing tables are ignored. FK children
-// are discovered from PostgreSQL and included through TRUNCATE ... CASCADE, but
-// only after the protected-table guard proves the cascade cannot touch foundation.
-const ROOT_CANDIDATES = Object.freeze([
-  'orders',
-  'purchase_orders',
-  'supplier_orders',
-  'payments',
-  'payment_attempts',
-  'payment_events',
-  'refunds',
-  'invoices',
-  'transaction_documents',
-  'notification_log',
-  'notifications',
-  'sms_log',
-  'parcels',
-  'shipping_sessions',
-  'scan_events',
-  'customs_history',
-  'inventory_items',
-  'incidents',
-  'outbox_events',
-  'physical_outcome_receipts',
-  // Full customer→customer certification runtime added after the original purge.
-  // These are business facts, not foundation/configuration. Listing the roots
-  // explicitly keeps the purge auditable while PostgreSQL still computes the
-  // FK cascade closure before any destructive statement.
-  'supplier_execution_orders',
-  'supplier_execution_order_lines',
-  'supplier_execution_payments',
-  'supplier_execution_events',
-  'supplier_execution_group_members',
-  'supplier_execution_fulfillments',
-  'supplier_execution_payment_proofs',
-  'hub_physical_units',
-  'hub_physical_unit_placements',
-  'hub_custody_events',
-  'hub_purchase_allocations',
-  'cash_collections',
-  'cash_deposits',
-  'cash_deposit_allocations',
-  'cash_custody_receipts',
-  'cash_custody_losses',
-  'cash_custody_transfers',
-  'market_settlements',
-  'market_settlement_events',
-  'signals',
-  'baskets',
-  'recipients',
-  'cart_shares',
-  'shared_carts',
-  'shared_cart_items',
-  'shared_lists',
-  'shared_list_items',
-  'supplier_catalog_imports',
-  'supplier_catalog_sync_checkpoints',
-  'sourcing_candidates',
-  'sourcing_observations',
-  'sourcing_candidate_events',
-  'sourcing_resolutions',
-  'sourcing_offers',
-  'sourcing_canonical_entities',
-  'sourcing_canonical_entity_refs',
-  'products',
-]);
-
-const PROTECTED_TABLES = Object.freeze(new Set([
-  'schema_migrations',
-  'migrations',
-  'knex_migrations',
-  'knex_migrations_lock',
-  'markets',
-  'relais',
-  'partners',
-  'users',
-  'roles',
-  'permissions',
-  'finance_config',
-  'economic_variables',
-  'charges',
-  'business_rules',
-  'business_rules_history',
-  'supplier_oauth_connections',
-  'sourcing_sources',
-  'sourcing_source_provides',
-  'sourcing_source_execution_modes',
-  'market_delegations',
-  'market_operator_delegations',
-  'loyalty_tiers',
-  'pricing_rules',
-  'catalog_exclusions',
-  'catalog_global_access_grants',
-  'catalog_glossary',
-  'sourcing_global_access_grants',
-  'market_payment_providers',
-  'decision_signal_global_access_grants',
-  'market_cash_control_policies',
-  'market_cash_destinations',
-]));
+// Source unique : scripts/recette/staging-reset-classification.js (chaque table du schema y est classee).
+// Racines = classe purge_root ; les enfants FK sont decouverts dans PostgreSQL et vides par TRUNCATE ... CASCADE,
+// uniquement apres que la garde "fondation" ait prouve que la cascade ne peut pas la toucher.
+// Les racines absentes du schema sont ignorees (voir listSchemaTablesStatic / test de derive).
+const ROOT_CANDIDATES = classification.ROOTS_TRUNCATE;
+const DELETE_ROOTS = classification.ROOTS_DELETE; // videes par DELETE (FK retour vers un registre protege)
+const PROTECTED_TABLES = classification.PROTECTED; // foundation + fixture_scoped
 
 const TRANSIENT_HINT_RE = /(order|purchase|supplier_execution|payment|refund|invoice|notification|parcel|scan|shipping|basket|cart|sourcing|catalog|product|incident|inventory|outbox|receipt|hub_|custody|cash_|settlement|signal)/i;
 
@@ -187,36 +96,69 @@ function nonZeroEntries(counts) {
   return Object.fromEntries(Object.entries(counts).filter(([, count]) => Number(count) > 0));
 }
 
-async function buildPlan(q = db) {
+async function buildPlan(q = db, { withFixtures = false, env = process.env } = {}) {
   const allTables = await listPublicTables(q);
   const existing = new Set(allTables);
   const roots = ROOT_CANDIDATES.filter((table) => existing.has(table));
+  const deleteRoots = DELETE_ROOTS.filter((table) => existing.has(table));
   const edges = await foreignKeyEdges(q);
   const cascadeTables = computeCascadeClosure(roots, edges);
   const protectedCascadeHits = protectedHits(cascadeTables);
 
+  // Garde anti-derive : toute table doit etre classee ; la fermeture FK doit coincider avec la classe purge_*.
+  const { unclassified } = classification.diffAgainstSchema(allTables);
+  const purgeClassed = allTables.filter((t) => classification.isPurgeClass(t) && !deleteRoots.includes(t));
+  const classificationDrift = {
+    unclassified_tables: unclassified,
+    purge_class_outside_closure: purgeClassed.filter((t) => !cascadeTables.includes(t)),
+    closure_outside_purge_class: cascadeTables.filter((t) => !classification.isPurgeClass(t)),
+  };
+
   const protectedExisting = [...PROTECTED_TABLES].filter((table) => existing.has(table)).sort();
   const cascadeCounts = await countTables(cascadeTables, q);
+  const deleteRootCounts = await countTables(deleteRoots, q);
   const protectedCounts = await countTables(protectedExisting, q);
 
   const hintedOutsideCascade = allTables
     .filter((table) => TRANSIENT_HINT_RE.test(table))
     .filter((table) => !cascadeTables.includes(table))
-    .filter((table) => !PROTECTED_TABLES.has(table));
+    .filter((table) => !PROTECTED_TABLES.has(table) && !deleteRoots.includes(table));
   const hintedOutsideCounts = await countTables(hintedOutsideCascade, q);
 
-  return {
+  const plan = {
     roots,
+    delete_roots: deleteRoots,
     cascade_tables: cascadeTables,
     protected_cascade_hits: protectedCascadeHits,
-    before: nonZeroEntries(cascadeCounts),
+    classification_drift: classificationDrift,
+    before: nonZeroEntries({ ...cascadeCounts, ...deleteRootCounts }),
     protected_before: protectedCounts,
     nonzero_transient_hints_outside_plan: nonZeroEntries(hintedOutsideCounts),
+    uncertain_foundation: classification.UNCERTAIN_FOUNDATION.filter((t) => existing.has(t)),
   };
+  if (withFixtures) {
+    const { _exec, ...report } = await fixtures.buildFixturePlan(q, { env, purgeTables: [...cascadeTables, ...deleteRoots] });
+    plan.fixtures = report;
+  }
+  return plan;
 }
 
-async function run({ execute = false, env = process.env, q = db } = {}) {
-  const plan = await buildPlan(q);
+function assertPlanSafe(plan, base) {
+  const drift = plan.classification_drift;
+  if (drift.unclassified_tables.length || drift.purge_class_outside_closure.length || drift.closure_outside_purge_class.length) {
+    const error = new Error(`PURGE_ABORTED_CLASSIFICATION_DRIFT:${JSON.stringify(drift)}`);
+    error.report = base;
+    throw error;
+  }
+  if (plan.protected_cascade_hits.length) {
+    const error = new Error(`PURGE_ABORTED_PROTECTED_CASCADE:${plan.protected_cascade_hits.join(',')}`);
+    error.report = base;
+    throw error;
+  }
+}
+
+async function run({ execute = false, withFixtures = false, env = process.env, q = db } = {}) {
+  const plan = await buildPlan(q, { withFixtures, env });
   const base = {
     mode: execute ? 'execute' : 'dry-run',
     runtime: env.KOMERCE_ENV || env.NODE_ENV || null,
@@ -224,13 +166,10 @@ async function run({ execute = false, env = process.env, q = db } = {}) {
     ...plan,
   };
 
-  if (plan.protected_cascade_hits.length) {
-    const error = new Error(`PURGE_ABORTED_PROTECTED_CASCADE:${plan.protected_cascade_hits.join(',')}`);
-    error.report = base;
-    throw error;
-  }
-
+  // Une cascade vers la fondation ou un schema non classe interdit meme un dry-run "vert".
+  if (plan.protected_cascade_hits.length || plan.classification_drift.unclassified_tables.length) assertPlanSafe(plan, base);
   if (!execute) return base;
+  assertPlanSafe(plan, base);
   if (String(env.KOMERCE_CONTROLLED_PURGE_CONFIRM || '') !== CONFIRM_TOKEN) {
     const error = new Error('PURGE_CONFIRMATION_TOKEN_MISSING');
     error.report = base;
@@ -241,10 +180,18 @@ async function run({ execute = false, env = process.env, q = db } = {}) {
     error.report = base;
     throw error;
   }
+  if (plan.fixtures && plan.fixtures.blockers.length) {
+    const error = new Error(`FIXTURE_RETIREMENT_BLOCKED:${JSON.stringify(plan.fixtures.blockers)}`);
+    error.report = base;
+    throw error;
+  }
 
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
+    // Ne jamais bloquer l'environnement partage : echec franc si un verrou n'est pas obtenu.
+    await client.query("SET LOCAL lock_timeout = '15s'");
+    await client.query("SET LOCAL statement_timeout = '300s'");
 
     // Freeze acquisition before deleting its captures/candidates. Keep source
     // definitions so operators can deliberately re-enable one source afterwards.
@@ -269,23 +216,28 @@ async function run({ execute = false, env = process.env, q = db } = {}) {
     // protected source registry. Its append-only children are already emptied
     // by the roots above; DELETE can now safely clear captures and lets the FK
     // null the certification pointer without touching sourcing_sources.
-    if ((await listPublicTables(client)).includes('sourcing_captures')) {
-      await client.query('DELETE FROM sourcing_captures');
+    for (const table of plan.delete_roots) {
+      await client.query(`DELETE FROM ${quoteIdent(table)}`);
     }
 
+    // Fixtures (comptes/relais/partenaires de test) : meme transaction, plan recalcule sur l'etat reel post-purge.
+    let fixturesDeleted = {};
+    if (withFixtures) {
+      const fixturePlan = await fixtures.buildFixturePlan(client, { env, purgeTables: [...plan.cascade_tables, ...plan.delete_roots] });
+      fixturesDeleted = await fixtures.retireFixtures(client, fixturePlan, { env });
+    }
+
+    // Fondation : lignes strictement inchangees. fixture_scoped : uniquement les suppressions planifiees.
     const protectedAfter = await countTables(Object.keys(plan.protected_before), client);
-    const protectedChanged = Object.keys(plan.protected_before).filter(
-      (table) => Number(protectedAfter[table]) !== Number(plan.protected_before[table])
-    );
+    const protectedChanged = Object.keys(plan.protected_before).filter((table) => {
+      const expected = Number(plan.protected_before[table]) - Number(fixturesDeleted[table] || 0);
+      return Number(protectedAfter[table]) !== expected;
+    });
     if (protectedChanged.length) {
       throw new Error(`PURGE_PROTECTED_ROWCOUNT_CHANGED:${protectedChanged.join(',')}`);
     }
 
-    const afterCounts = await countTables(plan.cascade_tables, client);
-    if ((await listPublicTables(client)).includes('sourcing_captures')) {
-      const { rows: [captureRow] } = await client.query('SELECT COUNT(*)::bigint AS c FROM sourcing_captures');
-      afterCounts.sourcing_captures = Number(captureRow.c);
-    }
+    const afterCounts = await countTables([...plan.cascade_tables, ...plan.delete_roots], client);
     const residual = nonZeroEntries(afterCounts);
     if (Object.keys(residual).length) {
       throw new Error(`PURGE_RESIDUAL_ROWS:${JSON.stringify(residual)}`);
@@ -296,6 +248,7 @@ async function run({ execute = false, env = process.env, q = db } = {}) {
       ...base,
       success: true,
       sourcing_sources_disabled: sourcesDisabled,
+      fixtures_deleted: fixturesDeleted,
       after: residual,
       protected_after: protectedAfter,
     };
@@ -309,7 +262,8 @@ async function run({ execute = false, env = process.env, q = db } = {}) {
 
 if (require.main === module) {
   const execute = process.argv.includes('--execute');
-  run({ execute })
+  const withFixtures = process.argv.includes('--with-fixtures');
+  run({ execute, withFixtures })
     .then((report) => {
       console.log(JSON.stringify(report, null, 2));
       process.exitCode = 0;
@@ -327,9 +281,11 @@ if (require.main === module) {
 module.exports = {
   CONFIRM_TOKEN,
   ROOT_CANDIDATES,
+  DELETE_ROOTS,
   PROTECTED_TABLES,
   computeCascadeClosure,
   protectedHits,
+  assertPlanSafe,
   buildPlan,
   run,
 };

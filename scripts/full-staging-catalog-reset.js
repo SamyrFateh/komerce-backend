@@ -2,6 +2,7 @@
 /**
  * @komerce-arch
  * @role          staging-clean-room-reset
+ * @deprecated 2026-11 (LOT 1) : remplace par scripts/recette/staging-reset.js (classification exhaustive, fixtures, verification). Conserve sans suppression ; ne plus utiliser pour un reset Staging.
  * @domain        catalog,sourcing
  * @layer         script
  * @criticality   high

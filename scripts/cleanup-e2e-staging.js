@@ -1,4 +1,6 @@
 /**
+ * @deprecated 2026-11 (LOT 1) : remplace par scripts/recette/staging-reset.js (classification exhaustive, fixtures, verification). Conserve sans suppression ; ne plus utiliser pour un reset Staging.
+ *
  * scripts/cleanup-e2e-staging.js
  *
  * Supprime toutes les données laissées par les suites e2e-api
