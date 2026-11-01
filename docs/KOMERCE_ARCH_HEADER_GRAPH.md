@@ -14,7 +14,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 1916
-- Edges: 9460
+- Edges: 9461
 - DB tables: 220
 - Doctrines: 724
 - Impact areas: 207

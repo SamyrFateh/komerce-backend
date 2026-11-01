@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1916,
-    "edges": 9460,
+    "edges": 9461,
     "dbTables": 220,
     "doctrines": 724,
     "impactAreas": 207,
@@ -20180,7 +20180,8 @@
         "orders",
         "customs_shipments",
         "customs_shipment_parcels",
-        "customs_shipment_fees"
+        "customs_shipment_fees",
+        "international_n1_reconciliations"
       ],
       "dbWrite": [
         "international_shipments",
@@ -74058,6 +74059,12 @@
     },
     {
       "from": "services/international-shipment-journey.js",
+      "to": "db:international_n1_reconciliations",
+      "type": "db-read",
+      "label": "international_n1_reconciliations"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
       "to": "db:international_shipments",
       "type": "db-write",
       "label": "international_shipments"
@@ -120076,7 +120083,8 @@
         "orders",
         "customs_shipments",
         "customs_shipment_parcels",
-        "customs_shipment_fees"
+        "customs_shipment_fees",
+        "international_n1_reconciliations"
       ],
       "dbWrite": [
         "international_shipments",
@@ -120095,6 +120103,7 @@
         "db:customs_shipment_fees",
         "db:customs_shipment_parcels",
         "db:customs_shipments",
+        "db:international_n1_reconciliations",
         "db:international_shipment_charges",
         "db:international_shipment_events",
         "db:international_shipment_parcels",
