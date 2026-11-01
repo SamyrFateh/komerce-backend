@@ -21,6 +21,7 @@
 const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
 const { findConfirmed, chooseCommercialPair } = require('./supplier-commercial-category-mapping');
 const {semanticIntent,semanticConflict} = require('./commercial-taxonomy-semantics');
+const {categoryCorroboratedByObject,genericObjectIdentityReason}=require('./catalog-commercial-category-evidence');
 
 function sourceLocaleFromCandidate(candidate = {}) {
   const locale = candidate?.normalized_source_contract?.source_locale;
@@ -87,10 +88,20 @@ async function resolveCommercialObjectTaxonomy(q, candidate) {
         && objectPhraseMatch(title, term))
       .map(([term, weight]) => Number(weight) + normalizedObjectWords(term).length / 1000)),
   })).filter(hit => hit.score > 0).sort((a, b) => b.score - a.score);
-  if (!ranked.length || (ranked[1] && ranked[0].score === ranked[1].score)) {
-    return { category:null, subcategory:null };
+  if (!ranked.length) return {category:null,subcategory:null};
+  // A tied high-confidence object phrase that points to different leaves in
+  // ONE boutique category proves the parent, not either leaf. Disagreements
+  // across root categories never become an authoritative placement.
+  const best=ranked[0].score;
+  const tied=ranked.filter(hit=>hit.score===best);
+  if(tied.length>1){
+    const parents=new Set(tied.map(hit=>hit.row.category));
+    if(parents.size===1) return {category:tied[0].row.category,subcategory:null,
+      level:'CATEGORY',source:'OBJECT_TERM_COMMON_PARENT'};
+    return {category:null,subcategory:null};
   }
-  return { category:ranked[0].row.category, subcategory:ranked[0].row.subcategory };
+  return {category:ranked[0].row.category,subcategory:ranked[0].row.subcategory};
+
 }
 
 async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
@@ -101,6 +112,12 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
     return {status:'EXPLICIT_REVIEW',category:human.category,
       subcategory:human.subcategory,source:'OPERATOR_CONFIRMED'};
   }
+  // A generic category label masquerading as a product title does not prove
+  // the item itself. Fail closed before supplier mapping, object term and
+  // supplier-path corroboration. An explicit human decision remains sovereign.
+  const missingIdentity=genericObjectIdentityReason(candidate);
+  if(missingIdentity) return {status:'REVIEW_REQUIRED',
+    category:null,subcategory:null,source:missingIdentity};
   // Analyse de la hiérarchie entière AVANT les correspondances fournisseur :
   // un chemin "Women's Clothing" est une preuve métier, même lorsque la feuille
   // "Shirts" ne partage aucun mot avec la catégorie française "Femme".
@@ -109,6 +126,15 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
   if (semantic.kind==='conflict') {
     return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
       source:semantic.reason};
+  }
+  if (semantic.kind==='category') {
+    const {rows:[active]}=await q.query(
+      'SELECT key FROM boutique_categories WHERE key=$1 AND is_active=TRUE LIMIT 1',
+      [semantic.category]);
+    if(active) return {status:'CATEGORY_CLASSIFIED',category:semantic.category,
+      subcategory:null,level:'CATEGORY',source:semantic.source,evidence:semantic.evidence};
+    return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'SEMANTIC_CATEGORY_INACTIVE'};
   }
   if (semantic.kind==='pair') {
     const {rows:[active]}=await q.query(
@@ -133,6 +159,13 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
       const contradiction=semanticConflict(candidate,mapped);
       if (contradiction) return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
         source:contradiction};
+      // A broad supplier path may be polluted: a reusable mapping is NOT
+      // permission to ignore a contradictory object-family proof.
+      const corroborated=categoryCorroboratedByObject(candidate);
+      if(corroborated && corroborated.category!==mapped.category)
+        return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+          source:'CONFIRMED_MAPPING_OBJECT_CONFLICT',
+          evidence:{mapping_category:mapped.category,object_category:corroborated.category}};
       return {status:'AUTO_CLASSIFIED',...mapped,source:'CONFIRMED_SUPPLIER_PATH'};
     }
   }
@@ -142,6 +175,22 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
   const matched = await resolveCommercialObjectTaxonomy(q, candidate);
   if (matched.category && matched.subcategory) {
     return { status:'AUTO_CLASSIFIED', ...matched, source:'OBJECT_NAME_MATCH' };
+  }
+  if (matched.category && !matched.subcategory) {
+    return {status:'CATEGORY_CLASSIFIED',category:matched.category,subcategory:null,
+      level:'CATEGORY',source:'OBJECT_TERM_COMMON_PARENT'};
+  }
+  // A supplier hierarchy is not authoritative by itself. Only a product-title
+  // object corroborating the commercial parent may yield a category-only draft.
+  // A title with competing parent-level object identities stays for review.
+  const corroborated=categoryCorroboratedByObject(candidate);
+  if(corroborated){
+    const {rows:[active]}=await q.query(
+      'SELECT key FROM boutique_categories WHERE key=$1 AND is_active=TRUE LIMIT 1',
+      [corroborated.category]);
+    if(active) return {status:'CATEGORY_CLASSIFIED',...corroborated};
+    return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'CORROBORATED_CATEGORY_INACTIVE'};
   }
   if (sourcePath) {
     const {rows:pairs}=await q.query(
@@ -171,6 +220,13 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
 async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
   const verdict = await resolveCommercialTaxonomyVerdict(q, candidate);
   const requested = { category:verdict.category, subcategory:verdict.subcategory };
+  if (verdict.status === 'CATEGORY_CLASSIFIED') {
+    const {rows:[active]}=await q.query(
+      'SELECT key FROM boutique_categories WHERE key=$1 AND is_active=TRUE LIMIT 1',
+      [requested.category]);
+    if(!active) throw new Error('BOUTIQUE_CATEGORY_INACTIVE');
+    return requested;
+  }
   if (verdict.status !== 'EXPLICIT_REVIEW') return requested;
   if (!requested.category || !requested.subcategory) {
     throw new Error('BOUTIQUE_TAXONOMY_INCOMPLETE: target_category + target_subcategory requis ensemble');
@@ -236,7 +292,7 @@ async function createDraftProductFromSourcingCandidate(q, {
   const commercialProvider = String(candidate?.normalized_source_contract?.supplier_name
     || candidate?.supplier_name || '').trim().toLowerCase();
   const strictSupplier = ['aliexpress', 'cj', 'cjdropshipping'].includes(commercialProvider);
-  if (strictSupplier && (!boutiqueTaxonomy?.category || !boutiqueTaxonomy?.subcategory)) {
+  if (strictSupplier && !boutiqueTaxonomy?.category) {
     throw new Error('BOUTIQUE_TAXONOMY_UNRESOLVED: category/subcategory review required before draft creation');
   }
   // Identité client (nom court, description proposée) dérivée mécaniquement
@@ -273,7 +329,11 @@ async function createDraftProductFromSourcingCandidate(q, {
       boutiqueTaxonomy.category,
       boutiqueTaxonomy.subcategory,
       purchaseCostKmf,
-      initialPrice == null ? null : initialPrice,
+      // A category-only candidate is still awaiting leaf-level commercial review.
+      // Never carry a sale price into this intermediate draft, even when the
+      // sourcing caller happens to supply an initial price.
+      boutiqueTaxonomy.category && !boutiqueTaxonomy.subcategory
+        ? null : (initialPrice == null ? null : initialPrice),
       stock,
       weightKg,
       hasVariants,
