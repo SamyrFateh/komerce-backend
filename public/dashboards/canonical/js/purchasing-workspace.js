@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, grouping_key_supplier_and_hub_never_market, market_is_a_line_property, browser_never_supplies_market_id_authority, browser_no_business_recompute
+ * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, grouping_key_supplier_hub_market, market_derived_from_order_lines_on_server, browser_never_supplies_market_id_authority, browser_no_business_recompute
  * @impact-areas  admin-dashboard, purchasing, operations
  * @version       2026-10
  */
@@ -160,7 +160,7 @@
   // ─── Lignes ouvertes ──────────────────────────────────────────────────────────────────────────
 
   function groupKey(group) {
-    return `${group.supplier_id}|${group.procurement_hub_ref}`;
+    return `${group.supplier_id}|${group.procurement_hub_ref}|${group.market_id}`;
   }
 
   function renderGroup(doc, slot, group, context) {
@@ -572,6 +572,59 @@
     renderSupplierExecution(doc, executionPanel, detail.supplier_execution);
     slot.appendChild(executionPanel);
 
+    // Une PO ouverte peut accueillir de nouveaux besoins CLIENTS du même fournisseur,
+    // Hub et marché. Le navigateur filtre pour la lisibilité ; l'API et la base font autorité.
+    if (isDraft && po.market_id) {
+      const candidates = ((context.openLines && context.openLines.groups) || [])
+        .filter((g) => g.supplier_id === po.supplier_id
+          && g.procurement_hub_ref === po.procurement_hub_ref
+          && g.market_id === po.market_id)
+        .flatMap((g) => g.lines || [])
+        .filter((l) => !l.cancelled && l.groupable);
+      if (candidates.length) {
+        const wrap = doc.createElement('section');
+        wrap.className = 'kmc-purchasing-draft-add';
+        wrap.appendChild(text(doc, 'h3', 'kmc-purchasing-execution-heading', 'Ajouter des besoins à cette PO ouverte'));
+        const pickTable = doc.createElement('table');
+        pickTable.className = 'kmc-workspace-table';
+        pickTable.innerHTML = '<thead><tr><th></th><th>Commande client</th><th>Produit</th><th>Variante fournisseur</th><th>Qté</th></tr></thead>';
+        const pickBody = doc.createElement('tbody');
+        const selection = new Set();
+        const attach = makeButton(doc, 'Ajouter à la PO', 'attach-lines');
+        attach.disabled = true;
+        candidates.forEach((l) => {
+          const tr = doc.createElement('tr');
+          const pick = doc.createElement('td');
+          const box = doc.createElement('input');
+          box.type = 'checkbox';
+          box.setAttribute('aria-label', `Ajouter le besoin ${l.order_reference || l.line_id}`);
+          box.addEventListener('change', () => {
+            if (box.checked) selection.add(l.line_id); else selection.delete(l.line_id);
+            attach.disabled = selection.size === 0;
+          });
+          pick.appendChild(box);
+          tr.appendChild(pick);
+          tr.appendChild(td(doc, l.order_reference));
+          tr.appendChild(td(doc, l.product_name));
+          tr.appendChild(td(doc, l.supplier_unit_ref || l.supplier_sku));
+          tr.appendChild(td(doc, formatNumber(l.quantity)));
+          pickBody.appendChild(tr);
+        });
+        pickTable.appendChild(pickBody);
+        wrap.appendChild(wrapTable(doc, pickTable));
+        attach.addEventListener('click', () => {
+          if (!selection.size) return;
+          context.act(attach, 'attach', {
+            url: `${ENDPOINT}/po/${encodeURIComponent(po.id)}/attach`,
+            body: { line_ids: [...selection] },
+            successMessage: 'Besoins clients ajoutés à la PO ouverte.',
+          });
+        });
+        wrap.appendChild(attach);
+        slot.appendChild(wrap);
+      }
+    }
+
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions';
     if (isDraft) {
@@ -658,6 +711,7 @@
   }
 
   function renderPayload(rootNode, ui, doc, state, context) {
+    context.openLines = state.openLines;
     rootNode.replaceChildren();
     rootNode.classList.add('kmc-purchasing-workspace');
     rootNode.setAttribute('data-workspace-kind', 'purchasing');
