@@ -210,6 +210,24 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     await expect(page.locator('[data-workspace-action="prepare-po"]')).toBeDisabled();
   });
 
+  test('PO expédiée par le fournisseur reste visible en cours, jamais terminée avant réception Hub', async ({ page }) => {
+    const api = createFakeApi();
+    const id = 'cccccccc-cccc-4ccc-8ccc-000000000088';
+    api.state.pos.set(id, {
+      id, status: 'shipped', supplier_name: SUPPLIER.name,
+      procurement_hub_ref: HUB, order_ref: 'KOM-TRACE-88',
+    });
+    await mountWorkspace(page, api);
+    await page.getByRole('button', { name: "Ordre d'Achat en Cours" }).click();
+    const ongoing = page.locator('.kmc-purchasing-po-list .kmc-purchasing-po-link');
+    await expect(ongoing).toHaveCount(1);
+    await expect(ongoing).toContainText('Expédiée par le fournisseur');
+    await expect(ongoing).toContainText('KOM-TRACE-88');
+    await page.getByRole('button', { name: "Ordre d'Achat terminés" }).click();
+    await expect(page.locator('.kmc-purchasing-po-link')).toHaveCount(0);
+    expect(mutatingCalls(api, '/po/prepare')).toHaveLength(0);
+  });
+
   test('sélection puis préparation : un double clic ne crée qu\'une seule commande', async ({ page }) => {
     const api = createFakeApi();
     await mountWorkspace(page, api);
