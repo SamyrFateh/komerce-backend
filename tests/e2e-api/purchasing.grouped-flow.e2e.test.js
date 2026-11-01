@@ -10,7 +10,7 @@
  *
  * Feature propriétaire : purchasing — traversées : orders (machine d'états), logistics (réception Hub)
  *
- * Scénario : 3 commandes (KM, CM, CG), 2 fournisseurs. Lignes ouvertes → 2 PO regroupées (une multi-marché)
+ * Scénario : 3 commandes (KM, KM, CG), 2 fournisseurs. Lignes ouvertes → 2 PO regroupées mono-marché
  * → soumission → confirmation partielle (reliquat ouvert) → réceptions → PO `hub_received`, commande `preparation`
  * uniquement quand chaque item est couvert ET reçu ; une ligne soldée sans reliquat laisse la commande bloquée.
  *
@@ -268,10 +268,10 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
 
   it('3 commandes / 2 fournisseurs : préparation, soumission, confirmation partielle, réceptions, complétude', async () => {
     const a = await seedNeed('a', { market: 'KM', quantity: 2, supplier: supplier1 });
-    const b = await seedNeed('b', { market: 'CM', quantity: 3, supplier: supplier1 });
+    const b = await seedNeed('b', { market: 'KM', quantity: 3, supplier: supplier1 });
     const c = await seedNeed('c', { market: 'CG', quantity: 1, supplier: supplier2 });
 
-    // Lignes ouvertes : visibles, une PO regroupée par (fournisseur, Hub), marché porté par la ligne.
+    // Lignes ouvertes : groupes distincts par (fournisseur, Hub, marché), marché déduit des commandes.
     const open = await grouped.listOpenLines();
     const ids = open.groups.flatMap((g) => g.lines.map((l) => l.line_id || l.id));
     expect(ids).toEqual(expect.arrayContaining([a.lineId, b.lineId, c.lineId]));
@@ -285,7 +285,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     await engagement.submitPurchaseOrder(po2.id);
     expect(await poStatus(po1.id)).toBe('notified');
 
-    // Confirmation partielle de PO1 : A 2/2, B 2/3 → reliquat ouvert de 1 sur B (même marché).
+    // Confirmation partielle de PO1 (KM) : A 2/2, B 2/3 → reliquat ouvert de 1 sur B.
     await engagement.confirmGroupedPurchaseOrder(po1.id, {
       supplier_order_id: `SUP-${tag('po1')}`,
       lines: [{ purchase_line_id: a.lineId, confirmed_quantity: 2 }, { purchase_line_id: b.lineId, confirmed_quantity: 2 }],
@@ -320,6 +320,46 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     const verdict = await evaluateOrderProcurementCompletion(c.orderId);
     expect(verdict).toMatchObject({ complete: false, transition: 'skipped' });
     expect(await orderStatus(c.orderId)).toBe('ordered');
+  });
+
+  it('P0 #3247 — PO fournisseur mono-marché, enrichissement du brouillon, garde PostgreSQL', async () => {
+    const a = await seedNeed('scope-a', { market: 'KM', quantity: 2, supplier: supplier1 });
+    const b = await seedNeed('scope-b', { market: 'KM', quantity: 3, supplier: supplier1 });
+    const foreign = await seedNeed('scope-c', { market: 'CM', quantity: 1, supplier: supplier1 });
+
+    const open = await grouped.listOpenLines();
+    const ownGroups = open.groups.filter((g) => g.lines.some((l) =>
+      [a.lineId, b.lineId, foreign.lineId].includes(l.line_id)));
+    expect(ownGroups).toHaveLength(2);
+    expect(ownGroups.map((g) => g.market_code).sort()).toEqual(['CM', 'KM']);
+    expect(ownGroups.every((g) => g.multi_market === false)).toBe(true);
+
+    await expect(grouped.preparePurchaseOrder({
+      supplier_id: supplier1, procurement_hub_ref: hubRef, line_ids: [a.lineId, foreign.lineId],
+    })).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_MARKET_REQUIRED' });
+
+    const draft = (await grouped.preparePurchaseOrder({
+      supplier_id: supplier1, procurement_hub_ref: hubRef, line_ids: [a.lineId],
+    })).purchase_order;
+    const market = await one('SELECT id FROM markets WHERE code = $1', ['KM']);
+    expect(draft).toMatchObject({ status: 'draft', market_id: market.id });
+
+    const result = await grouped.attachDraftLines(draft.id, [b.lineId]);
+    expect(result.line_ids).toEqual([b.lineId]);
+    expect(result.markets.map((m) => m.market_code)).toEqual(['KM']);
+    expect(result.lines.map((l) => l.order_id)).toEqual(expect.arrayContaining([a.orderId, b.orderId]));
+
+    // Impossible de forcer un autre marché par service ou écriture directe PostgreSQL.
+    await expect(grouped.attachDraftLines(draft.id, [foreign.lineId]))
+      .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_MARKET_MISMATCH' });
+    await expect(q('UPDATE purchase_lines SET purchase_order_id = $1 WHERE id = $2', [draft.id, foreign.lineId]))
+      .rejects.toThrow(/purchase_line_market_mismatch/);
+    expect((await one('SELECT purchase_order_id FROM purchase_lines WHERE id = $1', [foreign.lineId])).purchase_order_id)
+      .toBeNull();
+
+    await engagement.submitPurchaseOrder(draft.id);
+    await expect(grouped.attachDraftLines(draft.id, [foreign.lineId]))
+      .rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_DRAFT' });
   });
 
   it('signal « commande sans achat couvert » : lu sur les lignes (couverte, non couverte, soldée sans reliquat)', async () => {
