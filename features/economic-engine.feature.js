@@ -362,6 +362,8 @@ module.exports = {
       'exchange_rates: RW',
       'fabrics: R',
       'finance_config: RW',
+      'international_n1_allocation_links: RW!',
+      'international_n1_reconciliations: RW!',
       'garment_models: R',
       'market_price_observations: RW!',
       'market_price_observation_events: W!',
