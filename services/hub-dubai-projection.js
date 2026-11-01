@@ -5,10 +5,10 @@
  * @layer         service
  * @criticality   medium
  * @inputs        authorized markets (server resolved), db
- * @outputs       hub_dubai_flow_read_model (réceptions fournisseur, unités physiques par marché, groupages attendus)
+ * @outputs       hub_dubai_flow_read_model (réceptions fournisseur, unités physiques, traçabilité PO-cartons par marché)
  * @depends       db, services/hub-receivable.js
  * @used-by       routes/hub-dashboard.js
- * @db-read       hub_physical_units, markets, purchase_orders, purchase_lines, v_purchase_line_progress
+ * @db-read       hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, markets, purchase_orders, purchase_lines, v_purchase_line_progress
  * @db-write      none
  * @db-txn        none
  * @doctrine      read_model_minimal_for_hub_reception, missing_data_never_means_zero, no_new_business_engine, server_market_scope_is_authority
@@ -47,6 +47,30 @@ async function getUnitsByMarket(scope) {
   return rows;
 }
 
+// Projection de faits physiques enregistrés, jamais d'allocation inventée au dashboard.
+// Une ligne par PO / contenant actif ; les inbound non emballés restent visibles.
+// La portée marché provient de l'allocation immuable, et non du colis fournisseur (souvent multi-marché).
+async function getPoCartonTrace(scope) {
+  const { rows } = await db.query(
+    `SELECT m.code AS market_code, a.purchase_order_id::text AS purchase_order_id,
+            u.reference AS physical_reference, u.unit_type, u.state, u.outcome_type,
+            a.destination_ref,
+            SUM(p.quantity)::int AS quantity
+       FROM hub_physical_unit_placements p
+       JOIN hub_purchase_allocations a ON a.id = p.allocation_id
+       JOIN hub_physical_units u ON u.id = p.physical_unit_id
+       JOIN markets m ON m.id = a.market_id
+      WHERE p.removed_at IS NULL
+        AND u.state <> 'SUPERSEDED'
+        AND ($1::uuid[] IS NULL OR a.market_id = ANY($1::uuid[]))
+      GROUP BY m.code,a.purchase_order_id,u.reference,u.unit_type,u.state,u.outcome_type,a.destination_ref
+      ORDER BY m.code,a.purchase_order_id,u.reference
+      LIMIT 100`,
+    [scope.scoped ? scope.marketIds : null],
+  );
+  return Object.freeze(rows.map(r => Object.freeze({ ...r })));
+}
+
 function sum(rows, key) {
   return rows.reduce((a, r) => a + (Number(r[key]) || 0), 0);
 }
@@ -56,6 +80,7 @@ async function buildHubDubai({ authorizedMarkets = null } = {}) {
   const scoped = authorizedMarkets !== null && authorizedMarkets !== undefined;
   const scope = { scoped, marketIds: scoped ? Array.from(authorizedMarkets) : [] };
   const unitsByMarket = await getUnitsByMarket(scope);
+  const poCartonTrace = await getPoCartonTrace(scope);
 
   // Les PO fournisseur ne portent pas de marché : visibles uniquement du Hub global.
   let receptions;
@@ -88,6 +113,7 @@ async function buildHubDubai({ authorizedMarkets = null } = {}) {
       quarantined: sum(unitsByMarket, 'quarantined'),
       by_market: Object.freeze(unitsByMarket.map(r => Object.freeze({ ...r }))),
     }),
+    trace: Object.freeze({ available: true, rows: poCartonTrace, limited_to: 100 }),
     gaps: GAPS,
   });
 }
