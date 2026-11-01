@@ -43,9 +43,8 @@ jobs:
       RESET_MODE: ${{ inputs.mode }}
       RESET_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
+      # Code execute = la ref depuis laquelle le workflow est lance (la PR avant merge : preuve dry-run, puis main).
       - uses: actions/checkout@v4
-        with:
-          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
