@@ -6,7 +6,7 @@
  * @criticality high
  * @inputs authenticated_actor, server_resolved_market, physical_evidence, real_invoices
  * @outputs immutable_shipment_facts, read_only_cost_reconciliation
- * @db-read international_shipments, parcels, orders, customs_shipments, customs_shipment_fees
+ * @db-read international_shipments, international_shipment_parcels, international_shipment_charges, international_shipment_events, parcels, orders, customs_shipments, customs_shipment_parcels, customs_shipment_fees
  * @db-write international_shipments, international_shipment_parcels, international_shipment_events, international_shipment_charges
  * @db-txn withTransaction
  * @doctrine market_scope_server_owned, fact_not_financial_allocation, no_customs_clearance_inferred
