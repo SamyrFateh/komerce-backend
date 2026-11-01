@@ -231,4 +231,14 @@ describeDb('journal financier — migration 359 (REAL_DB)', () => {
     expect(sales.length).toBeGreaterThan(0);
     expect(typeof summary.eur_complete).toBe('boolean');
   });
+
+  test('lecture Comptabilité : listMovements et listDocuments étiquetés et bornés au marché', async () => {
+    const list = await reporting.listMovements(db, { marketId: km, limit: 5 });
+    expect(list.total).toBeGreaterThan(0);
+    expect(list.rows.length).toBeLessThanOrEqual(5);
+    list.rows.forEach(r => { expect(typeof r.label).toBe('string'); expect(typeof r.state_label).toBe('string'); });
+    const docs = await reporting.listDocuments(db, { marketId: km });
+    expect(Array.isArray(docs.documents)).toBe(true);
+    expect(Array.isArray(docs.missing_documents)).toBe(true);
+  });
 });

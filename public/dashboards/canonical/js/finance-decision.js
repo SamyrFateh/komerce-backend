@@ -613,17 +613,7 @@
   }
 
   // Journal financier (Lot 5) : lecture directe de la projection serveur, jamais recalculée ici.
-  const JOURNAL_CATEGORY = Object.freeze({
-    sale: 'Encaissements clients', refund: 'Remboursements clients', supplier_purchase: 'Achats fournisseurs',
-    supplier_refund: 'Remboursements fournisseurs', payment_fee: 'Frais de paiement', market_settlement: 'Règlements marché',
-  });
-  const JOURNAL_STATE = Object.freeze({ planned: 'Prévu', committed: 'Engagé', observed: 'Constaté', settled: 'Réglé', reversed: 'Annulé' });
   const eurText = value => `${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0)} €`;
-
-  function journalCategoryLabel(category) {
-    if (String(category).startsWith('cost:')) return `Coût réel · ${String(category).slice(5)}`;
-    return JOURNAL_CATEGORY[category] || category;
-  }
 
   function renderJournalSection(doc, payload) {
     const card = cardSection(doc, 'Mouvements financiers (pivot EUR)',
@@ -652,8 +642,8 @@
     journal.lines.forEach(line => {
       const tr = el(doc, 'tr');
       tr.setAttribute('data-journal-line', `${line.category}|${line.state}`);
-      tr.appendChild(el(doc, 'td', '', journalCategoryLabel(line.category)));
-      tr.appendChild(el(doc, 'td', '', JOURNAL_STATE[line.state] || line.state));
+      tr.appendChild(el(doc, 'td', '', line.label || line.category));
+      tr.appendChild(el(doc, 'td', '', line.state_label || line.state));
       tr.appendChild(el(doc, 'td', '', line.movements));
       tr.appendChild(el(doc, 'td', '', line.eur_unavailable > 0 && line.eur_total === 0 ? '—' : eurText(line.eur_total)));
       tr.appendChild(el(doc, 'td', '', line.native.map(item => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(Number(item.total))} ${item.currency}`).join(' · ')));

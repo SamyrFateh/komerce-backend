@@ -56,8 +56,8 @@ async function projection(client, scope = {}) {
   for (const row of base.rows) {
     const key = `${row.direction}|${row.category}|${row.state}`;
     const line = grouped.get(key) || {
-      direction: row.direction, category: row.category, state: row.state,
-      movements: 0, eur_total: 0, eur_unavailable: 0, native: [],
+      direction: row.direction, category: row.category, label: categoryLabel(row.category),
+      state: row.state, state_label: stateLabel(row.state), movements: 0, eur_total: 0, eur_unavailable: 0, native: [],
     };
     line.movements += row.movements;
     line.eur_total = Math.round((line.eur_total + (row.eur_total == null ? 0 : Number(row.eur_total))) * 100) / 100;
@@ -90,11 +90,70 @@ async function projection(client, scope = {}) {
   };
 }
 
+// Libellés métier : seule source (les écrans Finance et Comptabilité les lisent, ne les redéfinissent pas).
+const CATEGORY_LABELS = Object.freeze({
+  sale: 'Encaissements clients', refund: 'Remboursements clients', supplier_purchase: 'Achats fournisseurs',
+  supplier_refund: 'Remboursements fournisseurs', payment_fee: 'Frais de paiement', market_settlement: 'Règlements marché',
+});
+const STATE_LABELS = Object.freeze({ planned: 'Prévu', committed: 'Engagé', observed: 'Constaté', settled: 'Réglé', reversed: 'Annulé' });
+const categoryLabel = category => (String(category).startsWith('cost:') ? `Coût réel · ${String(category).slice(5)}` : (CATEGORY_LABELS[category] || category));
+const stateLabel = state => STATE_LABELS[state] || state;
+
+const CHECK_LABELS = Object.freeze({
+  order_payments_origin_kmf: 'Encaissements : journal ↔ commandes payées (KMF)',
+  order_refunds_kmf: 'Remboursements : journal ↔ table des remboursements (KMF)',
+  cost_allocations_kmf: 'Coûts réels : journal ↔ allocations de coûts (KMF)',
+  supplier_settlements_native: 'Règlements fournisseurs : journal ↔ règlements prouvés (natif)',
+  movements_without_provenance: 'Mouvements sans provenance (doit être 0)',
+});
+
+const MOVEMENT_STATES = new Set(['planned', 'committed', 'observed', 'settled', 'reversed']);
+
+// Journal : lecture paginée, filtrable. Référence métier lisible issue de la provenance (jamais d'identifiant brut seul).
+async function listMovements(client, scope = {}) {
+  const params = [];
+  let where = periodClause('m', scope, params);
+  if (scope.state && MOVEMENT_STATES.has(scope.state)) { params.push(scope.state); where += ` AND m.state = $${params.length}`; }
+  if (scope.direction && ['inflow', 'outflow', 'cost'].includes(scope.direction)) { params.push(scope.direction); where += ` AND m.direction = $${params.length}`; }
+  const limit = Math.min(Math.max(parseInt(scope.limit, 10) || 50, 1), 200);
+  const offset = Math.max(parseInt(scope.offset, 10) || 0, 0);
+  const total = (await client.query(`SELECT COUNT(*)::int AS n FROM financial_movements m WHERE true${where}`, params)).rows[0].n;
+  params.push(limit, offset);
+  const { rows } = await client.query(
+    `SELECT m.id, m.source_kind, m.facet, m.direction, m.category, m.state, m.amount_native::text AS amount_native, m.currency,
+            m.amount_eur::text AS amount_eur, m.fx_status, m.occurred_at, m.provenance->>'reference' AS reference,
+            m.order_id, m.purchase_order_id, m.shipment_id, m.parcel_id, m.supplier_id, m.relais_id,
+            (SELECT COUNT(*)::int FROM financial_movement_documents d WHERE d.movement_id = m.id) AS documents
+       FROM financial_movements m
+      WHERE true${where}
+      ORDER BY m.occurred_at DESC, m.id
+      LIMIT $${params.length - 1} OFFSET $${params.length}`, params);
+  return { total, limit, offset, rows: rows.map(row => ({ ...row, label: categoryLabel(row.category), state_label: stateLabel(row.state) })) };
+}
+
+// Pièces : toutes les pièces rattachées + les décaissements réglés SANS pièce (anomalie à traiter).
+async function listDocuments(client, scope = {}) {
+  const params = [];
+  const where = periodClause('m', scope, params);
+  const documents = (await client.query(
+    `SELECT d.doc_kind, d.doc_ref, d.doc_url, m.id AS movement_id, m.category, m.state, m.amount_native::text AS amount_native, m.currency, m.occurred_at
+       FROM financial_movement_documents d JOIN financial_movements m ON m.id = d.movement_id
+      WHERE true${where} ORDER BY m.occurred_at DESC LIMIT 200`, params)).rows;
+  const missing = (await client.query(
+    `SELECT m.id AS movement_id, m.category, m.amount_native::text AS amount_native, m.currency, m.occurred_at, m.provenance->>'reference' AS reference
+       FROM financial_movements m
+      WHERE m.direction = 'outflow' AND m.state = 'settled' AND m.category IN ('supplier_purchase', 'market_settlement', 'payment_fee')
+        AND NOT EXISTS (SELECT 1 FROM financial_movement_documents d WHERE d.movement_id = m.id)${where}
+      ORDER BY m.occurred_at DESC LIMIT 200`, params)).rows;
+  const labelled = row => ({ ...row, label: categoryLabel(row.category) });
+  return { documents: documents.map(labelled), missing_documents: missing.map(labelled) };
+}
+
 // Même cohorte que le dashboard Finance (CA encaissé) : commandes payées, hors annulées/remboursées, simulations exclues.
 async function reconcileWithSources(client, scope = {}) {
   const checks = [];
   const add = (name, journal, source, tolerance = 0) =>
-    checks.push({ name, journal: Number(journal), source: Number(source), ok: Math.abs(Number(journal) - Number(source)) <= tolerance });
+    checks.push({ name, label: CHECK_LABELS[name] || name, journal: Number(journal), source: Number(source), ok: Math.abs(Number(journal) - Number(source)) <= tolerance });
 
   const pay = (await client.query(
     `SELECT COALESCE(SUM((m.provenance->>'origin_kmf')::numeric), 0)::text AS journal_kmf,
@@ -143,4 +202,4 @@ async function reconcileWithSources(client, scope = {}) {
   return { ok: checks.every(check => check.ok), checks };
 }
 
-module.exports = { summarize, projection, reconcileWithSources };
+module.exports = { summarize, projection, listMovements, listDocuments, reconcileWithSources };

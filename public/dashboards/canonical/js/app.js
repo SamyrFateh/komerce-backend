@@ -553,7 +553,7 @@
 
   function renderFinanceAccountingWorkspace(root, user, adminContext, requestedMarket) {
     return canonicalMount(
-      global.KomerceCanonicalFinanceAccountingWorkspace,
+      global.KomerceCanonicalFinanceJournalWorkspace || global.KomerceCanonicalFinanceAccountingWorkspace,
       'canonical_accounting_workspace_module_missing',
       root,
       user,

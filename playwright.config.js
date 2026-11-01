@@ -28,6 +28,7 @@ const DASHBOARD_SPECS = [
   'context-return-links',
   'hub-live-cockpit',
   'relais-live-execution',
+  'finance-journal-workspace',
   'relais-live-cockpit',
   'import-runtime-cockpit',
   'sourcing-live-single-screen',
