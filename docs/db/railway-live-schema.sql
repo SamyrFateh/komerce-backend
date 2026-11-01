@@ -1409,6 +1409,41 @@ $$;
 
 
 --
+-- Name: financial_movements_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.financial_movements_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  rank_old int; rank_new int;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'financial_movements est append-only (DELETE interdit) : corriger par un mouvement reversed' USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF NEW.movement_key IS DISTINCT FROM OLD.movement_key OR NEW.source_kind IS DISTINCT FROM OLD.source_kind
+     OR NEW.source_id IS DISTINCT FROM OLD.source_id OR NEW.direction IS DISTINCT FROM OLD.direction
+     OR NEW.category IS DISTINCT FROM OLD.category
+     OR NEW.amount_native IS DISTINCT FROM OLD.amount_native OR NEW.currency IS DISTINCT FROM OLD.currency
+     OR NEW.occurred_at IS DISTINCT FROM OLD.occurred_at THEN
+    RAISE EXCEPTION 'financial_movements : identité et montants natifs immuables' USING ERRCODE = 'restrict_violation';
+  END IF;
+  -- EUR et taux : posables une seule fois (de unavailable vers converti), jamais modifiables ensuite.
+  IF OLD.fx_status <> 'unavailable' AND (NEW.amount_eur IS DISTINCT FROM OLD.amount_eur OR NEW.fx_legs IS DISTINCT FROM OLD.fx_legs
+     OR NEW.fx_status IS DISTINCT FROM OLD.fx_status OR NEW.fx_as_of IS DISTINCT FROM OLD.fx_as_of) THEN
+    RAISE EXCEPTION 'financial_movements : montant EUR et taux figés' USING ERRCODE = 'restrict_violation';
+  END IF;
+  rank_old := array_position(ARRAY['planned','committed','observed','settled','reversed'], OLD.state);
+  rank_new := array_position(ARRAY['planned','committed','observed','settled','reversed'], NEW.state);
+  IF rank_new < rank_old THEN
+    RAISE EXCEPTION 'financial_movements : l''état ne recule pas (% -> %)', OLD.state, NEW.state USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF NEW.state IS DISTINCT FROM OLD.state THEN NEW.state_changed_at := now(); END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: flag_customs_anomaly(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5599,6 +5634,70 @@ COMMENT ON COLUMN public.finance_config.margin_rail_d IS 'Marge Rail D — sourc
 --
 
 COMMENT ON COLUMN public.finance_config.taux_pln_kmf IS 'KMF per PLN, explicitly maintained in Finance sourcing configuration. NULL blocks PLN sourcing valuation; native provider amounts remain PLN.';
+
+
+--
+-- Name: financial_movement_documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.financial_movement_documents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    movement_id uuid NOT NULL,
+    doc_kind text NOT NULL,
+    doc_ref text NOT NULL,
+    doc_url text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_fmd_ref CHECK ((btrim(doc_ref) <> ''::text))
+);
+
+
+--
+-- Name: financial_movements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.financial_movements (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    movement_key text NOT NULL,
+    source_kind text NOT NULL,
+    source_id text NOT NULL,
+    facet text DEFAULT 'main'::text NOT NULL,
+    direction text NOT NULL,
+    category text NOT NULL,
+    state text NOT NULL,
+    market_id uuid,
+    order_id uuid,
+    purchase_order_id uuid,
+    shipment_id uuid,
+    parcel_id uuid,
+    supplier_id uuid,
+    relais_id uuid,
+    amount_native numeric(18,4) NOT NULL,
+    currency text NOT NULL,
+    amount_eur numeric(18,2),
+    fx_status text NOT NULL,
+    fx_legs jsonb DEFAULT '[]'::jsonb NOT NULL,
+    fx_as_of timestamp with time zone,
+    occurred_at timestamp with time zone NOT NULL,
+    provenance jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    state_changed_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_fm_amount CHECK ((amount_native > (0)::numeric)),
+    CONSTRAINT chk_fm_currency CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT chk_fm_direction CHECK ((direction = ANY (ARRAY['inflow'::text, 'outflow'::text, 'cost'::text]))),
+    CONSTRAINT chk_fm_eur_presence CHECK (((fx_status = 'unavailable'::text) = (amount_eur IS NULL))),
+    CONSTRAINT chk_fm_fx_status CHECK ((fx_status = ANY (ARRAY['snapshot'::text, 'converted'::text, 'native_eur'::text, 'unavailable'::text]))),
+    CONSTRAINT chk_fm_key CHECK ((movement_key = ((((source_kind || ':'::text) || source_id) || ':'::text) || facet))),
+    CONSTRAINT chk_fm_legs_array CHECK ((jsonb_typeof(fx_legs) = 'array'::text)),
+    CONSTRAINT chk_fm_provenance_object CHECK ((jsonb_typeof(provenance) = 'object'::text)),
+    CONSTRAINT chk_fm_state CHECK ((state = ANY (ARRAY['planned'::text, 'committed'::text, 'observed'::text, 'settled'::text, 'reversed'::text])))
+);
+
+
+--
+-- Name: TABLE financial_movements; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.financial_movements IS 'Journal financier canonique (projection idempotente des faits métier) : natif + EUR + taux figés + état + provenance. Pas de partie double.';
 
 
 --
@@ -12770,6 +12869,22 @@ ALTER TABLE ONLY public.finance_config
 
 
 --
+-- Name: financial_movement_documents financial_movement_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_movement_documents
+    ADD CONSTRAINT financial_movement_documents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: financial_movements financial_movements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_movements
+    ADD CONSTRAINT financial_movements_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: fx_rate_observations fx_obs_unique_as_of; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14298,6 +14413,22 @@ ALTER TABLE ONLY public.customs_shipment_fees
 
 
 --
+-- Name: financial_movements uq_financial_movements_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_movements
+    ADD CONSTRAINT uq_financial_movements_key UNIQUE (movement_key);
+
+
+--
+-- Name: financial_movement_documents uq_fmd; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_movement_documents
+    ADD CONSTRAINT uq_fmd UNIQUE (movement_id, doc_kind, doc_ref);
+
+
+--
 -- Name: import_runtime_item_events uq_import_runtime_item_events_run_seq; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -15174,6 +15305,34 @@ CREATE INDEX idx_enrichment_runs_product ON public.catalog_enrichment_runs USING
 --
 
 CREATE INDEX idx_fabrics_available ON public.fabrics USING btree (fabric_type, sort_order) WHERE (is_available = true);
+
+
+--
+-- Name: idx_fm_market_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_fm_market_time ON public.financial_movements USING btree (market_id, occurred_at);
+
+
+--
+-- Name: idx_fm_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_fm_order ON public.financial_movements USING btree (order_id) WHERE (order_id IS NOT NULL);
+
+
+--
+-- Name: idx_fm_po; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_fm_po ON public.financial_movements USING btree (purchase_order_id) WHERE (purchase_order_id IS NOT NULL);
+
+
+--
+-- Name: idx_fm_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_fm_source ON public.financial_movements USING btree (source_kind, source_id);
 
 
 --
@@ -18418,6 +18577,13 @@ CREATE TRIGGER trg_fabrics_updated BEFORE UPDATE ON public.fabrics FOR EACH ROW 
 
 
 --
+-- Name: financial_movements trg_financial_movements_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_financial_movements_guard BEFORE DELETE OR UPDATE ON public.financial_movements FOR EACH ROW EXECUTE FUNCTION public.financial_movements_guard();
+
+
+--
 -- Name: hub_purchase_allocations trg_hub_allocation_purchase_line; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -19751,6 +19917,22 @@ ALTER TABLE ONLY public.economic_structure_cost_events
 
 ALTER TABLE ONLY public.economic_structure_cost_events
     ADD CONSTRAINT economic_structure_cost_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: financial_movement_documents financial_movement_documents_movement_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_movement_documents
+    ADD CONSTRAINT financial_movement_documents_movement_id_fkey FOREIGN KEY (movement_id) REFERENCES public.financial_movements(id) ON DELETE CASCADE;
+
+
+--
+-- Name: financial_movements financial_movements_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.financial_movements
+    ADD CONSTRAINT financial_movements_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
 
 
 --
