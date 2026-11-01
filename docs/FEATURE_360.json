@@ -3263,7 +3263,7 @@
             ]
           },
           "services": {
-            "count": 81,
+            "count": 83,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -3328,6 +3328,11 @@
               {
                 "declared": "services/catalog-market-exposure-service.js",
                 "resolvedPath": "services/catalog-market-exposure-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-media-recovery.js",
+                "resolvedPath": "services/catalog-media-recovery.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3438,6 +3443,11 @@
               {
                 "declared": "services/catalog-terminology-memory.js",
                 "resolvedPath": "services/catalog-terminology-memory.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-unified-registry.js",
+                "resolvedPath": "services/catalog-unified-registry.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -4708,7 +4718,7 @@
             ]
           }
         },
-        "totalFiles": 440,
+        "totalFiles": 442,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -4974,6 +4984,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "catalog_media_recovery_audit",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "catalog_media_visual_fr_reviews",
             "resolution": "declared-table-owner"
           },
@@ -5075,6 +5089,12 @@
           },
           {
             "table": "catalog_media",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_media_recovery_audit",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -5246,6 +5266,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "catalog_media_recovery_audit",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "catalog_media_visual_fr_reviews",
             "resolution": "declared-table-owner"
           },
@@ -5347,6 +5371,12 @@
           },
           {
             "table": "catalog_media",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_media_recovery_audit",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -10664,6 +10694,7 @@
           "gate de couverture économique par marché, fail-closed sur maturité, risque et charges de structure attribuées",
           "politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only",
           "corridor de prix issu de preuves marché locales, sans fallback silencieux depuis une référence globale",
+          "Exception ciblée Catalogue pays : un admin central vérifié peut prévisualiser, fixer, activer et repricer un prix local sur marché explicitement sélectionné ; mêmes gates économiques, aucune ouverture des observations/politiques locales par rôle seul, opérateurs toujours soumis aux capabilities.",
           "explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, nature économique, périmètre d allocation et impact",
           "strategies tarifaires et matrices admin",
           "gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain economic-engine au Lot O2, était @domain dashboard)"
@@ -10736,7 +10767,7 @@
             ]
           },
           "migrations": {
-            "count": 31,
+            "count": 32,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -10892,6 +10923,11 @@
                 "declared": "migrations/269_market_cost_attributions_conservation_guard.sql",
                 "resolvedPath": "migrations/269_market_cost_attributions_conservation_guard.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/355_international_n1_reconciliation.sql",
+                "resolvedPath": "migrations/355_international_n1_reconciliation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -10966,7 +11002,7 @@
             ]
           },
           "services": {
-            "count": 49,
+            "count": 51,
             "files": [
               {
                 "declared": "scripts/market-cost-attribution-conservation-check.js",
@@ -11089,8 +11125,18 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/international-n1-reconciliation.js",
+                "resolvedPath": "services/international-n1-reconciliation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/market-cost-attribution-service.js",
                 "resolvedPath": "services/market-cost-attribution-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-structure-charge-reference.js",
+                "resolvedPath": "services/market-structure-charge-reference.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -11216,7 +11262,7 @@
             ]
           },
           "tests": {
-            "count": 100,
+            "count": 102,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -11464,6 +11510,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/international-n1-reconciliation.test.js",
+                "resolvedPath": "tests/unit/international-n1-reconciliation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/manual-cost-entry-service.test.js",
                 "resolvedPath": "tests/unit/manual-cost-entry-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11481,6 +11532,11 @@
               {
                 "declared": "tests/unit/market-cost-attribution-service.test.js",
                 "resolvedPath": "tests/unit/market-cost-attribution-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-structure-charge-reference.test.js",
+                "resolvedPath": "tests/unit/market-structure-charge-reference.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -11741,7 +11797,7 @@
             ]
           }
         },
-        "totalFiles": 203,
+        "totalFiles": 208,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11801,6 +11857,14 @@
           {
             "table": "finance_config",
             "resolution": "multi-writer-resolved-by-classification-signal"
+          },
+          {
+            "table": "international_n1_allocation_links",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "international_n1_reconciliations",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "market_cost_attributions",
@@ -11938,6 +12002,18 @@
           },
           {
             "table": "finance_config",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_n1_allocation_links",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_n1_reconciliations",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -12177,6 +12253,14 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "international_n1_allocation_links",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "international_n1_reconciliations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "market_cost_attributions",
             "resolution": "declared-table-owner"
           },
@@ -12312,6 +12396,18 @@
           },
           {
             "table": "finance_config",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_n1_allocation_links",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_n1_reconciliations",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -14412,7 +14508,7 @@
             ]
           },
           "middleware": {
-            "count": 6,
+            "count": 7,
             "files": [
               {
                 "declared": "middleware/error-handler.js",
@@ -14422,6 +14518,11 @@
               {
                 "declared": "middleware/rate-limit.js",
                 "resolvedPath": "middleware/rate-limit.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/recette-isolation-guard.js",
+                "resolvedPath": "middleware/recette-isolation-guard.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -15642,7 +15743,7 @@
             ]
           }
         },
-        "totalFiles": 393,
+        "totalFiles": 394,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -17399,8 +17500,13 @@
             ]
           },
           "docs": {
-            "count": 6,
+            "count": 7,
             "files": [
+              {
+                "declared": "docs/contract/INTERNATIONAL_SHIPMENT_CHAIN_V1_20261101.md",
+                "resolvedPath": "docs/contract/INTERNATIONAL_SHIPMENT_CHAIN_V1_20261101.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
                 "resolvedPath": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
@@ -17444,7 +17550,7 @@
             ]
           },
           "migrations": {
-            "count": 5,
+            "count": 6,
             "files": [
               {
                 "declared": "migrations/095_value_density_foundation.sql",
@@ -17469,6 +17575,11 @@
               {
                 "declared": "migrations/313_market_transport_sale_rates.sql",
                 "resolvedPath": "migrations/313_market_transport_sale_rates.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/354_international_shipment_journey.sql",
+                "resolvedPath": "migrations/354_international_shipment_journey.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -17569,7 +17680,7 @@
             ]
           },
           "services": {
-            "count": 35,
+            "count": 36,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -17614,6 +17725,11 @@
               {
                 "declared": "services/hub-reference.js",
                 "resolvedPath": "services/hub-reference.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/international-shipment-journey.js",
+                "resolvedPath": "services/international-shipment-journey.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -17749,7 +17865,7 @@
             ]
           },
           "tests": {
-            "count": 67,
+            "count": 69,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -17864,6 +17980,16 @@
               {
                 "declared": "tests/unit/hub.test.js",
                 "resolvedPath": "tests/unit/hub.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/international-journey-panel.test.js",
+                "resolvedPath": "tests/unit/international-journey-panel.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/international-shipment-journey.test.js",
+                "resolvedPath": "tests/unit/international-shipment-journey.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18109,7 +18235,7 @@
             ]
           }
         },
-        "totalFiles": 138,
+        "totalFiles": 143,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -18136,6 +18262,22 @@
           },
           {
             "table": "hub_purchase_allocations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "international_shipment_charges",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "international_shipment_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "international_shipment_parcels",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "international_shipments",
             "resolution": "declared-table-owner"
           },
           {
@@ -18206,6 +18348,30 @@
           },
           {
             "table": "hub_purchase_allocations",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_shipment_charges",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_shipment_events",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_shipment_parcels",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_shipments",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -18345,6 +18511,22 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "international_shipment_charges",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "international_shipment_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "international_shipment_parcels",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "international_shipments",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "parcel_events",
             "resolution": "single-writer"
           },
@@ -18412,6 +18594,30 @@
           },
           {
             "table": "hub_purchase_allocations",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_shipment_charges",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_shipment_events",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_shipment_parcels",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "international_shipments",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -21148,6 +21354,7 @@
           "D8 Partners : le registre historique multi-types est gouverné par partners.read (lecture) et partners.manage (mutation) ; provider.manage ne vaut jamais autorité implicite sur partners.",
           "D9 Pricing Workspace : chaque endpoint marché est autorisé par sa capability exacte ; le socle require-market-scope est supprimé et la projection viewer/manager dérive des capabilities réellement détenues.",
           "LOT 4 (écriture) : décision d’exposition produit x marché — capability catalog.expose, upsert auditable sur product_market_exposure (catalog, lifecycle owner), jamais de SQL direct",
+          "Exception Catalogue pays Admin central : rôle admin revérifié dans users, marché explicitement choisi avec assignment ACTIVE, lecture/exposition vérifiées côté serveur et écritures auditées ; les opérateurs restent soumis à catalog.read/catalog.expose et au ceiling de leur membership.",
           "LOT 4B (validation simple marché) : un candidat catalogue déjà préparé et publiable peut être validé par le Responsable pays ; market-delegation délègue la première publication à catalog-approval puis active l’exposition du marché dans la même transaction, sans reprendre l’autorité lifecycle de products",
           "LOT 4C (prêt à vendre) : la décision pays part uniquement d’une fiche déjà publiable/certifiée ; la projection assemble corridor économique, prix proposé et état d’exposition sans écrire, puis l’UI compose les writers canoniques pricing + catalog ; le bulk est réservé aux lignes vertes",
           "LOT 4 (cutover lecture) : catalog.expose LIVE — migration 206 (snapshot, catalog) préserve exactement la visibilité storefront existante au moment du cutover ; migration 207 (activation, market-delegation) ouvre le droit d’agir sans jamais toucher l’exposition elle-même ; séparation stricte entre les deux, vérifiée par test",
