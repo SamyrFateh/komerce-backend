@@ -24,6 +24,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const workspace = require('../services/shipping-customs-workspace');
+const journey = require('../services/international-shipment-journey');
 const log = require('../utils/logger').child({ module: 'admin-shipping-customs-workspace' });
 
 const router = express.Router();
@@ -202,6 +203,58 @@ router.post('/market/:marketCode/customs/shipments/:reference/activate', require
   } catch (err) {
     return sendWorkspaceError(err, res, next);
   }
+});
+
+// Transport réel (distinct du dossier de déclaration douanière).
+// All requests pass authenticate, explicit market resolution and logistics.read.
+// Financial writes remain Admin-only. No client market_id authority.
+function journeyError(err,res,next){
+  if(err instanceof journey.JourneyError) return res.status(err.status).json({error:err.message,code:err.code});
+  return next(err);
+}
+router.get('/market/:marketCode/international',async(req,res,next)=>{
+  try{
+    res.set('Cache-Control','private, no-store');
+    return res.json({shipments:await journey.list(req.workspaceMarket)});
+  }catch(err){return journeyError(err,res,next);}
+});
+router.get('/market/:marketCode/international/:reference',async(req,res,next)=>{
+  try{
+    res.set('Cache-Control','private, no-store');
+    return res.json(await journey.detail(req.workspaceMarket,req.params.reference));
+  }catch(err){return journeyError(err,res,next);}
+});
+router.post('/market/:marketCode/international',requireCustomsAction,async(req,res,next)=>{
+  try{
+    return res.status(201).json({ok:true,result:await journey.create(req.workspaceMarket,actionActor(req),req.body||{})});
+  }catch(err){return journeyError(err,res,next);}
+});
+router.post('/market/:marketCode/international/:reference/transition',
+  requireTransitAction,requireTransitExecutionForTransitaire,async(req,res,next)=>{
+    try{
+      return res.json({ok:true,result:await journey.transition(req.workspaceMarket,actionActor(req),req.params.reference,req.body||{})});
+    }catch(err){return journeyError(err,res,next);}
+  });
+router.post('/market/:marketCode/international/:reference/tracking',
+  requireRole(['admin','agent_transitaire']),requireTransitExecutionForTransitaire,async(req,res,next)=>{
+    try{
+      return res.json({ok:true,result:await journey.updateTracking(req.workspaceMarket,actionActor(req),req.params.reference,req.body||{})});
+    }catch(err){return journeyError(err,res,next);}
+  });
+router.post('/market/:marketCode/international/:reference/freight',requireCustomsAction,async(req,res,next)=>{
+  try{
+    return res.json({ok:true,result:await journey.recordFreight(req.workspaceMarket,actionActor(req),req.params.reference,req.body||{})});
+  }catch(err){return journeyError(err,res,next);}
+});
+router.post('/market/:marketCode/international/:reference/link-customs',requireCustomsAction,async(req,res,next)=>{
+  try{
+    return res.json({ok:true,result:await journey.linkCustoms(req.workspaceMarket,actionActor(req),req.params.reference,req.body||{})});
+  }catch(err){return journeyError(err,res,next);}
+});
+router.post('/market/:marketCode/international/:reference/costs',requireCustomsAction,async(req,res,next)=>{
+  try{
+    return res.status(201).json({ok:true,result:await journey.recordCost(req.workspaceMarket,actionActor(req),req.params.reference,req.body||{})});
+  }catch(err){return journeyError(err,res,next);}
 });
 
 module.exports = router;

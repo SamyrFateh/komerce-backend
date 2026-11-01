@@ -729,3 +729,29 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 `catalog_media_recovery_audit` conserve l'identité produit, la référence candidat fournisseur, l'acteur, la liste des identités médias fournisseur et l'empreinte SHA-256 du sous-ensemble média, avec les comptages avant/après. Le service `catalog-media-recovery` n'ajoute des médias à un brouillon inactif précédemment vide qu'après preuve source V2, sous autorisation Catalogue + Sourcing et transaction commune avec la ligne d'audit. Aucune publication ni exposition marché. Migration en PR, **non appliquée au staging** à ce stade.
 <!-- /schema-pending -->
+
+### Expéditions internationales — migration 354 (intended_migration_schema)
+
+<!-- schema-pending: international_shipments (migration 354, not yet live) -->
+
+`international_shipments` — Transport international réel : transitaire, mode, étape prouvée, volume, facture fret, suivi conteneur/BL et ETA ; dossier douane distinct.
+
+<!-- /schema-pending -->
+
+<!-- schema-pending: international_shipment_parcels (migration 354, not yet live) -->
+
+`international_shipment_parcels` — Composition physique : un colis par dossier, volume Hub et identité conservée.
+
+<!-- /schema-pending -->
+
+<!-- schema-pending: international_shipment_events (migration 354, not yet live) -->
+
+`international_shipment_events` — Preuves append-only de transitions, acteur et horodatage ; ETA révisable avec historique.
+
+<!-- /schema-pending -->
+
+<!-- schema-pending: international_shipment_charges (migration 354, not yet live) -->
+
+`international_shipment_charges` — Frais réels d'arrivée et de transport local, documentés, idempotents et append-only ; non ventilés en N1 sans rapprochement.
+
+<!-- /schema-pending -->

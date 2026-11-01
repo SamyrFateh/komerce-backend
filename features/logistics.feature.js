@@ -78,6 +78,7 @@ module.exports = {
       'migrations/233_hub_physical_identity_allocation_custody.sql',
       'migrations/309_hub_placement_guard_exclude_outcomes.sql',
       'migrations/313_market_transport_sale_rates.sql',
+      'migrations/354_international_shipment_journey.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
@@ -86,6 +87,7 @@ module.exports = {
       'docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md',
       'docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md',
       'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md',
+      'docs/contract/INTERNATIONAL_SHIPMENT_CHAIN_V1_20261101.md',
     ],
     utils: [
       'utils/parcelSync.js',
@@ -128,6 +130,7 @@ module.exports = {
       'services/hub-reference.js',
       'services/routing.js',
       'services/transport-rails.js',
+      'services/international-shipment-journey.js',
     ],
     routes: [
       'routes/parcels.js',
@@ -224,6 +227,8 @@ module.exports = {
       'tests/unit/tracking.test.js',
       'tests/unit/transit-dashboard.test.js',
       'tests/unit/transitaire-api.test.js',
+      'tests/unit/international-shipment-journey.test.js',
+      'tests/unit/international-journey-panel.test.js',
     ],
   },
 
