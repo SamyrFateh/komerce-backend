@@ -955,7 +955,7 @@
       inline: Boolean(inlineOptions?.inlineContainer),
       container: inlineOptions?.inlineContainer || options.root,
       previousValue: inlineOptions?.previousValue || null,
-      previousLabel: isMutualized ? 'Quote-part actuelle du marché' : 'Valeur reconnue sur la période',
+      previousLabel: isMutualized ? 'Quote-part actuelle du marché' : 'Montant déjà enregistré',
       createChargeEndpoint: inlineOptions?.allowCreateMarketDirect && !isMutualized
         ? `${marketEndpoint}/structure-charges` : null,
       onClose: () => {
@@ -1004,7 +1004,7 @@
     if (!components.length) form.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Aucun coût variable actif à ajuster.'));
 
     components.forEach(component => {
-      const row = el(doc, 'label', 'kmc-variable-cost-panel-row');
+      const row = el(doc, 'div', 'kmc-variable-cost-panel-row');
       const identity = el(doc, 'div', 'kmc-variable-cost-panel-identity');
       identity.appendChild(el(doc, 'small', '', `${allocationPerimeter(component) === 'mutualized' ? 'Mutualisé' : 'Direct'} · ${allocationLabel(component.allocation_method)}`));
       const editableIdentity = allocationPerimeter(component) !== 'mutualized';
