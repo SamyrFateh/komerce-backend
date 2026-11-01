@@ -154,3 +154,26 @@ describe('signaux de commandes de simulation (RCT1) exclus des lectures Action C
     for (const sql of sqls) expect(sql).toMatch(/simulation_scope IS NOT NULL/);
   });
 });
+
+test('« À traiter » liste uniquement les signaux bloquants avec statistiques du même périmètre',async()=>{
+  mockQuery.mockResolvedValue({rows:[{count:'0'}]});
+  await service.listSignals({business_only:true,market_id:'market-id'});
+  expect(mockQuery).toHaveBeenCalledTimes(2);
+  for(const [sql,params] of mockQuery.mock.calls){
+    expect(sql).toContain('s.signal_type = ANY($7::text[])');
+    expect(params[6]).toEqual(service.BUSINESS_BLOCKER_TYPES);
+  }
+  expect(mockQuery.mock.calls[0][0]).toContain('LIMIT $8 OFFSET $9');
+  mockQuery.mockClear();
+  await service.getStats({business_only:true,market_id:'market-id'});
+  expect(mockQuery).toHaveBeenCalledTimes(3);
+  expect(mockQuery.mock.calls[0][0]).toContain('s.signal_type = ANY($2::text[])');
+  expect(mockQuery.mock.calls[1][0]).toContain('s.signal_type = ANY($2::text[])');
+  expect(mockQuery.mock.calls[2][0]).toContain('s.signal_type = ANY($6::text[])');
+  expect(mockQuery.mock.calls[2][1][5]).toEqual(service.BUSINESS_BLOCKER_TYPES);
+  expect(service.CRITICAL_ONLY_BLOCKER_TYPES).toEqual(expect.arrayContaining(['parcel_blocked','supplier_payment_review']));
+  for(const [sql] of mockQuery.mock.calls) expect(sql).toContain("s.severity IN ('urgent','critical')");
+  expect(service.BUSINESS_BLOCKER_TYPES).not.toContain('margin_drift');
+  expect(service.BUSINESS_BLOCKER_TYPES).not.toContain('loyalty_pending');
+  expect(service.BUSINESS_BLOCKER_TYPES).toContain('parcel_blocked');
+});

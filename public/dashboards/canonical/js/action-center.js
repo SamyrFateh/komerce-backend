@@ -148,8 +148,8 @@
     } else {
       copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', market ? `Décisions · ${market.name || market.code}` : 'Décisions à traiter'));
       copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', market
-        ? 'Les points qui demandent une décision sur ce marché.'
-        : 'Les points qui demandent une décision maintenant.'));
+        ? 'Uniquement les blocages qui nécessitent une décision sur ce marché.'
+        : 'Uniquement les événements qui bloquent concrètement le business.'));
     }
 
     if (severity) {
@@ -173,10 +173,10 @@
 
   function metricItems(summary = {}) {
     return [
-      { key: 'urgent', label: 'Urgent / critique', value: Number(summary.urgent || 0), tone: summary.urgent ? 'critical' : 'neutral' },
-      { key: 'warning', label: 'Avertissements', value: Number(summary.warning || 0), tone: summary.warning ? 'warning' : 'neutral' },
-      { key: 'info', label: 'Informations', value: Number(summary.info || 0), tone: 'neutral' },
-      { key: 'total', label: 'Signaux actifs', value: Number(summary.total_active || 0), tone: 'neutral' },
+      { key: 'total', label: 'Blocages actifs', value: Number(summary.total_active || 0), tone: summary.total_active ? 'critical' : 'neutral' },
+      { key: 'urgent', label: 'Urgents / critiques', value: Number(summary.urgent || 0), tone: summary.urgent ? 'critical' : 'neutral' },
+      { key: 'overdue', label: 'Incidents hors délai', value: Number(summary.overdue || 0), tone: summary.overdue ? 'critical' : 'neutral' },
+      { key: 'unassigned', label: 'Sans responsable', value: Number(summary.unassigned || 0), tone: summary.unassigned ? 'warning' : 'neutral' },
     ];
   }
 
@@ -257,6 +257,39 @@
     rootNode.appendChild(section.element);
   }
 
+  function renderPhysicalBlockers(rootNode, ui, doc, payload) {
+    const incidents = (payload.physical_incidents || []).filter(i => i.business_blocking);
+    if (!incidents.length) return 0;
+    const section = ui.Section.create({
+      title: 'Blocages physiques et fournisseurs · ' + incidents.length,
+      description: 'Seuls les blocages métier prouvés, avec responsable et prochaine action.',
+    });
+    incidents.forEach(incident => {
+      const card = doc.createElement('article');
+      card.className = 'kmc-workspace-detail kmc-action-signal is-critical';
+      card.dataset.businessBlocker = incident.reference;
+      card.appendChild(text(doc, 'strong', '', [incident.reference, incident.title].filter(Boolean).join(' · ')));
+      if (incident.description) card.appendChild(text(doc, 'p', 'kmc-workspace-note', incident.description));
+      card.appendChild(text(doc, 'p', 'kmc-workspace-note',
+        'Responsable : ' + (incident.owner_role || 'à affecter') +
+        ' · Action attendue : ' + (incident.next_action || 'qualifier')));
+      if (incident.due_at) card.appendChild(text(doc, 'p', 'kmc-workspace-note',
+        'Échéance : ' + new Date(incident.due_at).toLocaleString('fr-FR')));
+      const href = incident.purchase_order_link || incident.order_link;
+      if (href) {
+        const link = text(doc, 'a', 'kmc-workspace-action', 'Traiter dans le contexte métier');
+        link.href = withReturn(href);
+        card.appendChild(link);
+      } else {
+        card.appendChild(text(doc, 'p', 'kmc-workspace-note',
+          'Lien de traitement indisponible : rattachement métier à vérifier.'));
+      }
+      section.slot.appendChild(card);
+    });
+    rootNode.appendChild(section.element);
+    return incidents.length;
+  }
+
   function renderFamilies(rootNode, ui, doc, payload) {
     const grouped = new Map();
     (payload.signals || []).forEach(signal => {
@@ -279,8 +312,8 @@
       rootNode.appendChild(section.element);
     });
 
-    if (!rendered) {
-      const section = ui.Section.create({ title: 'Aucun signal actif', description: 'Aucune décision n’est actuellement requise.' });
+    if (!rendered && !(payload.physical_incidents || []).some(i => i.business_blocking)) {
+      const section = ui.Section.create({ title: 'Aucun blocage métier', description: 'Aucune décision urgente n’est actuellement requise.' });
       section.slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Tout est en ordre pour les signaux actifs.'));
       rootNode.appendChild(section.element);
     }
@@ -372,6 +405,7 @@
 
 
 
+      renderPhysicalBlockers(rootNode, context.ui, context.document, payload);
       renderFamilies(rootNode, context.ui, context.document, payload);
       bind(rootNode, context);
       return payload;

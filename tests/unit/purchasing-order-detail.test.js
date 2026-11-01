@@ -3,22 +3,25 @@
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../services/purchasing-grouped-service', () => ({ getGroupedPurchaseOrder: jest.fn() }));
+jest.mock('../../services/incident-traceability-projection', () => ({ listForPurchaseOrder: jest.fn().mockResolvedValue([]) }));
 const db = require('../../db');
 const { getGroupedPurchaseOrder } = require('../../services/purchasing-grouped-service');
 const { getPurchaseOrderDetail } = require('../../services/purchasing-order-detail');
+const { listForPurchaseOrder } = require('../../services/incident-traceability-projection');
 
 const PO = '00000000-0000-0000-0000-000000000001';
 const detail = { purchase_order: { id: PO }, lines: [{ market_id: 'KM' }, { market_id: 'CM' }], markets: ['KM', 'CM'], multi_market: true };
 const empty = { orders: [], order_lines: [], groups: [], group_members: [], payments: [], proofs: [], events: [] };
 
-beforeEach(() => { jest.resetAllMocks(); });
+beforeEach(() => { jest.clearAllMocks(); listForPurchaseOrder.mockResolvedValue([]); });
 
 test('adds the execution projection without changing the existing detail or market scope', async () => {
   getGroupedPurchaseOrder.mockResolvedValueOnce(detail);
   db.query.mockResolvedValueOnce({ rows: [{ execution: empty }] });
   const result = await getPurchaseOrderDetail(PO);
   expect(getGroupedPurchaseOrder).toHaveBeenCalledWith(PO, db);
-  expect(result).toEqual({ ...detail, supplier_execution: empty });
+  expect(result).toEqual({ ...detail, supplier_execution: empty, incidents: [] });
+  expect(listForPurchaseOrder).toHaveBeenCalledWith(PO, db);
   expect(result.lines).toBe(detail.lines);
   expect(db.query).toHaveBeenCalledTimes(1);
   expect(db.query.mock.calls[0][1]).toEqual([PO]);

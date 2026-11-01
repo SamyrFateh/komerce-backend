@@ -525,6 +525,24 @@
     slot.setAttribute('data-purchasing-po', po.id);
     slot.setAttribute('data-purchasing-po-status', po.status);
     slot.appendChild(marketBadges(doc, detail.markets, detail.multi_market));
+    const relatedIncidents = Array.isArray(detail.incidents) ? detail.incidents : [];
+    const activeIncidents = relatedIncidents.filter(i => ['open','investigating'].includes(i.status));
+    if (activeIncidents.length) {
+      const panel = doc.createElement('section');
+      panel.className = 'kmc-workspace-detail kmc-purchasing-incident-summary';
+      panel.dataset.poIncidents = '';
+      panel.appendChild(text(doc, 'strong', '', 'Incidents liés à la commande fournisseur · ' + activeIncidents.length));
+      activeIncidents.forEach(i => {
+        const row = doc.createElement('div');
+        row.className = 'kmc-workspace-note';
+        row.dataset.poIncident = i.reference;
+        row.appendChild(text(doc, 'strong', '', [i.reference, i.title].filter(Boolean).join(' · ')));
+        row.appendChild(text(doc, 'p', '', 'Responsable : ' + (i.owner_role || 'à affecter')));
+        row.appendChild(text(doc, 'p', '', 'Action : ' + (i.next_action || 'à qualifier')));
+        panel.appendChild(row);
+      });
+      slot.appendChild(panel);
+    }
 
     const lines = detail.lines || [];
     const isDraft = po.status === 'draft';

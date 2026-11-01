@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        server_resolved_order, projection_options
  * @outputs       order_360_projection, authorized_purchasing_projection, authorized_costs_projection, logistics_control_position
- * @depends       db, logistics-control-chain-projection, dashboard-finance-canonical
+ * @depends       db, logistics-control-chain-projection, dashboard-finance-canonical, services/incident-traceability-projection.js
  * @used-by       routes/admin-order-360.js
- * @db-read       orders, users, relais, markets, order_items, products, parcels, parcel_items, order_status_history, scans, order_incidents, order_comments, client_notifications, invoices, transaction_documents, purchase_orders, purchase_lines, suppliers
+ * @db-read       incidents, orders, users, relais, markets, order_items, products, parcels, parcel_items, order_status_history, scans, order_incidents, order_comments, client_notifications, invoices, transaction_documents, purchase_orders, purchase_lines, suppliers
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority
@@ -22,6 +22,7 @@ const db = require('../db');
 const { resolveBusinessTimezone } = require('./market-business-day');
 const controlChain = require('./logistics-control-chain-projection');
 const financeCanonical = require('./dashboard-finance-canonical');
+const incidentTrace = require('./incident-traceability-projection');
 
 const ORDER_REFERENCE = /^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$/;
 
@@ -134,7 +135,7 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
 
   const orderId = order.id;
   const [itemsResult, parcelsResult, parcelItemsResult, historyResult, scansResult,
-    incidentsResult, commentsResult, notificationsResult, invoicesResult, documentsResult, purchasingResult, controlPosition] = await Promise.all([
+    incidentsResult, commentsResult, notificationsResult, invoicesResult, documentsResult, purchasingResult, controlPosition, canonicalIncidents] = await Promise.all([
     db.query(`
       SELECT oi.id, oi.product_id, oi.quantity, oi.price_kmf,
              p.product_ref, p.name AS product_name, p.category, p.image_url
@@ -227,6 +228,7 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
         `, [orderId])
       : Promise.resolve({ rows: [] }),
     controlChain.getOrderControlSnapshot(order),
+    incidentTrace.listForOrder(order),
   ]);
 
   const parcelItemsByParcel = new Map();
@@ -292,7 +294,14 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
     issued_at: row.issued_at,
   }));
 
-  const openIncidents = incidents.filter(row => !['resolved', 'closed'].includes(row.status)).length;
+  const tracedIncidents = canonicalIncidents.map(row => Object.freeze({
+    reference: row.reference, type: row.title || row.type, description: row.description,
+    priority: row.severity, status: row.status, owner_role: row.owner_role,
+    next_action: row.next_action, purchase_order_link: includePurchasing ? row.purchase_order_link : null,
+    created_at: row.created_at, source: 'hub_purchasing',
+  }));
+  const allIncidents = Object.freeze([...tracedIncidents, ...incidents]);
+  const openIncidents = allIncidents.filter(row => !['resolved', 'closed'].includes(row.status)).length;
   const totalQuantity = items.reduce((sum, row) => sum + row.quantity, 0);
   const purchaseOrders = purchasingResult.rows.map(row => Object.freeze({
     id: row.id,
@@ -326,7 +335,7 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
     scans: Object.freeze(scansResult.rows.map(row => Object.freeze({
       step: row.step, notes: row.notes || null, scanned_by: row.scanned_by_name || null, created_at: row.created_at,
     }))),
-    incidents: Object.freeze(incidents),
+    incidents: allIncidents,
     comments: Object.freeze(commentsResult.rows.map(row => Object.freeze({
       author: row.author_name || row.author_role || null,
       role: row.author_role || null,
@@ -354,7 +363,7 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
       generated_at: new Date().toISOString(),
       source_tables: Object.freeze([
         'orders', 'order_items', 'products', 'parcels', 'parcel_items',
-        'order_status_history', 'scans', 'order_incidents', 'order_comments',
+        'order_status_history', 'scans', 'order_incidents', 'incidents', 'order_comments',
         'client_notifications', 'invoices', 'transaction_documents',
         ...(includePurchasing ? ['purchase_orders', 'purchase_lines', 'suppliers'] : []),
       ]),

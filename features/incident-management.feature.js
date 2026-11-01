@@ -43,6 +43,7 @@ module.exports = {
   files: {
     services: [
       'services/incident-service.js',
+      'services/incident-traceability-projection.js',
       'services/incident-write-service.js',
       'services/incident-governance.js',
       'services/incident-escalation.js',
@@ -50,6 +51,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/incident-service.test.js',
+      'tests/unit/incident-traceability-projection.test.js',
       'tests/unit/incident-write-service.test.js',
       'tests/unit/incident-governance.test.js',
       'tests/unit/incident-escalation.test.js',
@@ -66,6 +68,9 @@ module.exports = {
     tables: [
       'incidents: RW!',
       'orders: R',
+      'order_items: R',
+      'purchase_orders: R',
+      'purchase_lines: R',
       'parcels: R',
       'scan_events: R',
     ],
@@ -107,6 +112,7 @@ module.exports = {
       'infrastructure (DB/logger/bootstrap techniques)',
       'logistics (producteur d’incidents physiques via incident-write-service ; consommateur du guard de transition F2/F3)',
       'decision-signals (sink durable Action Center pour escalade SLA via signal-service)',
+      'purchasing (lecture exacte des purchase_orders et purchase_lines pour projeter un incident PO sur les commandes concernées)',
     ],
   },
 

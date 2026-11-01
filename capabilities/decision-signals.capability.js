@@ -121,6 +121,7 @@ module.exports = {
       "auth (garde de route et contexte d’identité)",
       "infrastructure (acces DB et transaction partagée)",
       "logistics (lecture ou orchestration logistique)",
+      "incident-management (lecture des incidents canoniques bloquants dans le Centre d’actions global ; aucune mutation du lifecycle incident)",
       "purchasing (lecture de la population canonique supplier_payment_review ; aucune mutation du paiement fournisseur)",
       "business-rules (lecture du referentiel de regles metier)",
       "market-delegation (resolution serveur du Market ID, capability dashboard.market.read / decision_signal.manage et audit des mutations pays)",
