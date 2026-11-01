@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.international_n1_reconciliations (
   shipment_id uuid PRIMARY KEY REFERENCES public.international_shipments(id) ON DELETE RESTRICT,
   snapshot_hash text NOT NULL CHECK (length(snapshot_hash) = 64),
   total_freight_kmf numeric(14,2) NOT NULL DEFAULT 0,
+  freight_known boolean NOT NULL DEFAULT false,
   total_arrival_kmf numeric(14,2) NOT NULL DEFAULT 0,
   total_local_kmf numeric(14,2) NOT NULL DEFAULT 0,
   allocation_rows integer NOT NULL DEFAULT 0 CHECK (allocation_rows >= 0),
