@@ -25,6 +25,7 @@ module.exports = {
     in: [
       'generation de signaux depuis des requetes radar cross-feature (cash, colis, incidents)',
       'generation globale du signal supplier_payment_review depuis la population canonique Purchasing ambiguous/rejected/mismatched',
+      'signal financial_journal_gap par marche actif : ecart de reconciliation du journal financier ou conversion EUR indisponible, auto-resolu quand le journal est conforme',
       'cycle de vie du signal : acknowledge / resolve / snooze',
       'consultation admin des signaux (routes/signals.js)',
       'Action Center Canonical global : uniquement les signaux market_id NULL',

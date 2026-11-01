@@ -241,4 +241,25 @@ describeDb('journal financier — migration 360 (REAL_DB)', () => {
     expect(Array.isArray(docs.documents)).toBe(true);
     expect(Array.isArray(docs.missing_documents)).toBe(true);
   });
+
+  test('niveaux de coût : N1 (achat + coûts réels), N2 (frais), N3 non alimenté, jamais 0', async () => {
+    const proj = await reporting.projection(db, { marketId: km });
+    const levels = Object.fromEntries(proj.cost_levels.map(level => [level.level, level]));
+    expect(Object.keys(levels)).toEqual(['N1', 'N2', 'N3']);
+    expect(levels.N3.source_missing).toBe(true);
+    expect(levels.N3.states).toEqual([]);
+    levels.N1.states.forEach(item => { expect(['planned', 'committed', 'observed', 'settled']).toContain(item.state); expect(item.movements).toBeGreaterThan(0); });
+    const n1Movements = levels.N1.states.reduce((n, item) => n + item.movements, 0);
+    const lines = proj.lines.filter(line => ['outflow', 'cost'].includes(line.direction) && (line.category === 'supplier_purchase' || line.category.startsWith('cost:')));
+    expect(n1Movements).toBe(lines.reduce((n, line) => n + line.movements, 0));
+  });
+
+  test('Commerce : encaissé net lu dans le journal = ventes − remboursements (EUR connu), natif par devise', async () => {
+    const commerce = require('../../services/dashboard-commerce');
+    const got = await commerce.getCollectedFromJournal({ from: new Date(Date.now() - 86400e3).toISOString(), to: new Date(Date.now() + 86400e3).toISOString() }, { id: km });
+    expect(got.available).toBe(true);
+    const proj = await reporting.projection(db, { marketId: km, from: new Date(Date.now() - 86400e3).toISOString(), to: new Date(Date.now() + 86400e3).toISOString() });
+    const eur = cat => proj.lines.filter(l => l.category === cat && l.state !== 'reversed').reduce((n, l) => n + l.eur_total, 0);
+    expect(got.eur_net).toBeCloseTo(eur('sale') - eur('refund'), 2);
+  });
 });

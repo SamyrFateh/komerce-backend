@@ -7,6 +7,8 @@
  */
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
+// Le journal financier a sa propre lecture bornée (m.market_id) et ses propres tests PG : ici seule la cohorte commandes est comptée.
+jest.mock('../../services/financial-journal-reporting', () => ({ projection: jest.fn(async () => ({ journal_empty: true, lines: [] })) }));
 
 const mockMetrics = {
   getCAEncaisse: jest.fn(),
@@ -173,7 +175,7 @@ describe('dashboard-commerce', () => {
     expect(result.kpis[4].unit).toBe('count');
     expect(result.kpis[5]).toMatchObject({ key: 'quantites_vendues', value: 3, unit: 'count' });
     expect(result.top_products[0]).toEqual({
-      product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000,
+      product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000, share_pct: 100,
     });
     expect(result.product_profitability[0]).toEqual(expect.objectContaining({
       product_ref: 'PRD-1',
@@ -373,7 +375,20 @@ describe('dashboard-commerce', () => {
     expect(mockMetrics.getCmdsCreees.mock.calls[0][0]).not.toHaveProperty('market_id');
     db.query.mock.calls.forEach(([sql, params]) => {
       expect(String(sql)).not.toContain('o.market_id =');
-      expect(params).not.toContain('market-cm-id');
+      expect(params || []).not.toContain('market-cm-id');
     });
+  });
+
+  test('encaissé net : journal vide → indisponible (jamais le CA) ; part des lignes calculée sur la même cohorte', async () => {
+    const reporting = require('../../services/financial-journal-reporting');
+    reporting.projection.mockResolvedValueOnce({ journal_empty: false, lines: [
+      { category: 'sale', state: 'observed', eur_total: 100, eur_unavailable: 0, native: [{ currency: 'KMF', total: '49200' }] },
+      { category: 'refund', state: 'settled', eur_total: 10, eur_unavailable: 1, native: [{ currency: 'KMF', total: '4920' }] },
+    ] });
+    expect(typeof commerce.getCollectedFromJournal).toBe('function');
+    const got = await commerce.getCollectedFromJournal({ from: 'a', to: 'b' }, { id: 'm1' });
+    expect(got).toMatchObject({ available: true, eur_net: 90, eur_partial: true, native_net: [{ currency: 'KMF', total: 44280 }] });
+    const empty = await commerce.getCollectedFromJournal({}, null);
+    expect(empty).toEqual({ available: false, reason: 'journal_empty' });
   });
 });

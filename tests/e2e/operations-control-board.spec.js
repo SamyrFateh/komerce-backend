@@ -27,6 +27,7 @@ const order = (reference, health, summary, envelope, lineage) => ({
   exceptions: summary ? [{ code: 'cause', summary, owner_role: 'operations' }] : [],
   envelope: envelope || { type: 'ORDER', refs: [reference] },
   lineage: lineage || { purchase_orders: [], hub_units: [], parcels: [] },
+  transitions: [{ status: 'confirmed', at: '2026-10-30T09:00:00Z' }, { status: 'paid', at: '2026-10-29T09:00:00Z' }],
 });
 
 const payload = {
@@ -324,6 +325,8 @@ test.describe('Operations — logistics control board', () => {
     let detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail');
     await expect(detail).toContainText('Unité HUB · HU-104766');
     await expect(detail).toContainText('PO-104766');
+    await expect(detail.locator('[data-order-transitions]')).toContainText('confirmed');
+    await expect(detail.locator('[data-order-transitions]')).toContainText('paid');
 
     await page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104715' }).click();
     detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail').last();

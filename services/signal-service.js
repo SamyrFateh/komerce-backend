@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload, optional_server_resolved_market_id, optional_transaction_executor
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js, utils/rules.js, services/supplier-payment-review.js, services/cash-deposit-service.js
+ * @depends       db, utils/logger.js, utils/rules.js, services/supplier-payment-review.js, services/cash-deposit-service.js, services/financial-journal-reporting.js
  * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js,
  *                services/incident-escalation.js
- * @db-read       cash_collections, cash_deposits, customs_shipment_parcels, customs_shipments, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments, purchase_lines, supplier_execution_events
+ * @db-read       markets, cash_collections, cash_deposits, customs_shipment_parcels, customs_shipments, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments, purchase_lines, supplier_execution_events
  * @db-write      signals
  * @db-txn        optional_caller_owned_transaction_for_upsert
  * @doctrine      resolve_before_behavior_change, market_scope_is_server_authority, preserve_caller_transaction
@@ -222,6 +222,57 @@ GENERATORS.supplier_payment_review = async function() {
     return { generated, truncated: review.truncated === true };
   } catch (e) {
     log.warn({ err: e }, '[signal-service] supplier_payment_review error:');
+    return { generated: 0, error: e.message };
+  }
+};
+
+// Lot suivant — écarts du journal financier : un signal par marché actif, fermé automatiquement
+// quand la réconciliation redevient conforme et que toutes les conversions EUR sont disponibles.
+GENERATORS.financial_journal_gap = async function() {
+  try {
+    const reporting = require('./financial-journal-reporting');
+    const markets = (await db.query('SELECT id, code FROM markets WHERE is_active = TRUE')).rows;
+    let generated = 0;
+    const entityIds = [];
+    for (const market of markets) {
+      const recon = await reporting.reconcileWithSources(db, { marketId: market.id });
+      const summary = await reporting.summarize(db, { marketId: market.id });
+      const failed = recon.checks.filter(check => !check.ok);
+      const eurMissing = summary.eur_unavailable_movements || 0;
+      if (!failed.length && !eurMissing) continue;
+      entityIds.push(String(market.id));
+      const parts = [];
+      if (failed.length) parts.push(`${failed.length} écart(s) de réconciliation : ${failed.map(check => check.label || check.name).join(' ; ')}`);
+      if (eurMissing) parts.push(`${eurMissing} mouvement(s) sans conversion EUR (taux indisponible)`);
+      await upsertSignal({
+        signal_type: 'financial_journal_gap',
+        severity: failed.length ? 'critical' : 'warning',
+        title: `Journal financier à contrôler — ${market.code}`,
+        summary: parts.join(' · '),
+        source_module: 'signal-service',
+        target_shell: 'bo',
+        target_view: 'accounting',
+        target_filters: { tab: 'reconciliation' },
+        owner_role: 'finance',
+        entity_type: 'market',
+        entity_id: String(market.id),
+        recommendation: 'Ouvrir Comptabilité › Rapprochements et traiter les écarts avant toute validation',
+        confidence: 'high',
+        meta: { failed_checks: failed.map(check => check.name), eur_unavailable_movements: eurMissing },
+        market_id: market.id,
+      });
+      generated++;
+    }
+    await db.query(`
+      UPDATE signals
+         SET status = 'resolved', resolved_at = NOW(), snoozed_until = NULL, updated_at = NOW()
+       WHERE signal_type = 'financial_journal_gap'
+         AND status IN ('open','acknowledged','snoozed')
+         AND (entity_id IS NULL OR entity_id != ALL($1::text[]))
+    `, [entityIds]);
+    return { generated };
+  } catch (e) {
+    log.warn({ err: e }, '[signal-service] financial_journal_gap error:');
     return { generated: 0, error: e.message };
   }
 };

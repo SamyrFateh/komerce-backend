@@ -40,3 +40,16 @@ Unique autorité `services/fx-authority.js` (EUR pivot, rationnel exact, un arro
 1. Vue Finance : lecture `summarize` (états planned/committed/observed/settled/remaining, EUR par marché, native conservé).
 2. Comptabilité : onglets Synthèse / Journal / Rapprochements / Pièces sur ce journal.
 3. Planification de la projection (job) et alerte sur `conflicts` / `eur_unavailable`.
+
+
+## Niveaux de coût N1 / N2 / N3 (projection)
+Classification unique dans `services/financial-journal-reporting.js` (`COST_LEVELS`), lue par Finance et Comptabilité (`cost_levels`) :
+- **N1 · Coût rendu relais** : `supplier_purchase` + coûts réels alloués `cost:*` (fret, douane, relais…), états prévu / engagé / constaté / réglé, restant à décaisser fournisseur en natif.
+- **N2 · Variable métier** : `payment_fee`. *Hypothèse de classement à valider par le propriétaire.*
+- **N3 · Charge de période** : **non alimenté** (aucune source journalisée) — affiché « Non alimenté », jamais 0.
+
+## Signal `financial_journal_gap`
+Un signal par marché actif (`signal-service`), critique si une réconciliation échoue, avertissement si des conversions EUR manquent ; auto-résolu quand le journal est conforme.
+
+## Commerce
+« Encaissé net » = ventes − remboursements du journal par date de paiement (cohorte distincte du CA, EUR connu seulement, natif par devise). Contribution produit = part du montant des lignes produit payées (même cohorte que le classement), jamais du CA.

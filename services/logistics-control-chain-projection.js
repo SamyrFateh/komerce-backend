@@ -8,7 +8,7 @@
  * @outputs       canonical_logistics_control_chain_projection, single_order_control_snapshot
  * @depends       db, dashboard-metrics/_helpers
  * @used-by       services/dashboard-operations.js, services/order-360.js
- * @db-read       orders, order_items, purchase_lines, purchase_orders, supplier_execution_payments, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, incidents, alerts, signals
+ * @db-read       orders, order_status_history, order_items, purchase_lines, purchase_orders, supplier_execution_payments, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, incidents, alerts, signals
  * @db-write      none
  * @db-txn        none
  * @doctrine      DOCTRINE_LOGISTICS_CONTROL_CHAIN, dashboard_no_business_recompute, server_market_scope_is_authority
@@ -153,6 +153,9 @@ function projectRow(row) {
     exceptions,
     envelope: envelopeFor(row),
     split: Number(row.parcels_count || 0) > 1,
+    transitions: Object.freeze((Array.isArray(row.recent_transitions) ? row.recent_transitions : [])
+      .filter(item => item && item.status)
+      .map(item => Object.freeze({ status: String(item.status), at: item.at || null }))),
     lineage: Object.freeze({
       purchase_orders: Object.freeze(toTextArray(row.purchase_order_refs)),
       hub_units: Object.freeze(toTextArray(row.hub_unit_refs)),
@@ -500,7 +503,14 @@ async function getControlChain(options = {}) {
            purchase_order_refs,
            hub_unit_refs,
            parcel_refs,
-           parcels_count
+           parcels_count,
+           (SELECT COALESCE(jsonb_agg(jsonb_build_object('status', t.status, 'at', t.created_at) ORDER BY t.created_at DESC), '[]'::jsonb)
+              FROM (SELECT osh.status::text AS status, osh.created_at
+                      FROM order_status_history osh
+                      JOIN orders ho ON ho.id = osh.order_id
+                     WHERE ho.reference = projected.order_reference
+                     ORDER BY osh.created_at DESC
+                     LIMIT 6) t) AS recent_transitions
       FROM projected
      ORDER BY
        CASE health WHEN 'RED' THEN 1 WHEN 'ORANGE' THEN 2 WHEN 'UNKNOWN' THEN 3 ELSE 4 END,

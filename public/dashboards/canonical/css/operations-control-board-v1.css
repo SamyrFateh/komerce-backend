@@ -345,6 +345,16 @@ body.kmc-shell-v4 .kmc-control-order-lineage-group {
   gap: 2px;
 }
 
+body.kmc-shell-v4 .kmc-control-order-history {
+  display: grid;
+  gap: 2px;
+}
+
+body.kmc-shell-v4 .kmc-control-order-history-line {
+  color: #475569;
+  font-size: 12px;
+}
+
 body.kmc-shell-v4 .kmc-control-order-detail-label {
   color: #94a3b8;
   font-size: 11px;
