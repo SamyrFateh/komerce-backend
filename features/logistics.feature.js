@@ -250,6 +250,7 @@ module.exports = {
       'hub_purchase_allocations: RW!',
       'international_shipment_charges: RW!',
       'international_shipment_events: RW!',
+      'international_shipment_hub_units: RW!',
       'international_shipment_parcels: RW!',
       'international_shipments: RW!',
       'incidents: R',
