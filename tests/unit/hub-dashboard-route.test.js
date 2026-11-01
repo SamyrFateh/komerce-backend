@@ -304,8 +304,8 @@ describe('routes/hub-dashboard', () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [VALID_ORDER] })
         .mockResolvedValueOnce({ rows: [{ id: 'p1', reference: 'COL-000123' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'pi1' }] }) // INSERT parcel_items item1
-        .mockResolvedValueOnce({ rows: [{ id: 'pi2' }] }) // INSERT parcel_items item2
+        .mockResolvedValueOnce({ rows: [{ id: 'pi1' }], rowCount: 1 }) // INSERT parcel_items item1
+        .mockResolvedValueOnce({ rows: [{ id: 'pi2' }], rowCount: 1 }) // INSERT parcel_items item2
         .mockResolvedValueOnce({ rows: [] }); // INSERT order_comments
 
       const res = await request(buildApp())
@@ -376,8 +376,8 @@ describe('routes/hub-dashboard', () => {
         { rows: [{ id: 'o1', reference: 'CMD-1', status: 'confirmed' }] }, // order lock
         { rows: unassigned }, // unassigned items
         { rows: [{ id: 'p1', reference: 'COL-000123' }] }, // INSERT parcels
-        { rows: [] }, // INSERT parcel_items oi1
-        { rows: [] }, // INSERT parcel_items oi2
+        { rows: [], rowCount: 1 }, // INSERT parcel_items oi1
+        { rows: [], rowCount: 1 }, // INSERT parcel_items oi2
         { rows: [] }, // UPDATE weight_kg
         { rows: [] }, // SAVEPOINT sp_scans_auto_prepare
         { rows: [] }, // INSERT scans
@@ -393,6 +393,19 @@ describe('routes/hub-dashboard', () => {
       expect(res.body.items_assigned).toBe(2);
       expect(res.body.next_action).toBe('ready');
       expectTransactionCommitted(client);
+    });
+
+    test('rollback si une affectation canonique ne persiste aucune ligne', async () => {
+      const client = makeClient([
+        { rows: [{ id: 'o1', reference: 'CMD-1', status: 'preparation' }] },
+        { rows: [{ id: 'oi1', quantity: 1, product_id: 'p1', product_name: 'A', weight_kg: 0.2 }] },
+        { rows: [{ id: 'parcel1', reference: 'COL-1' }] },
+        { rows: [], rowCount: 0 }, // canonical writer refuses inconsistent/missing assignment
+      ]);
+      mockGetClient.mockResolvedValue(client);
+      const res = await request(buildApp()).post('/api/hub-dashboard/orders/o1/auto-prepare');
+      expect(res.status).not.toBe(201);
+      expectTransactionRolledBack(client);
     });
 
     test('rollback propre si une requête échoue en cours de transaction', async () => {

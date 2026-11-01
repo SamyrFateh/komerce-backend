@@ -344,12 +344,18 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
     });
 
     for (const item of unassigned) {
-      await assignParcelItem(client, {
+      const assigned = await assignParcelItem(client, {
         parcelId: parcel.id,
         orderItemId: item.id,
         productId: item.product_id,
         quantity: item.quantity,
       });
+      if (assigned.rowCount !== 1) {
+        const error = new Error('Article non affecté : identité, quantité ou unicité non conforme');
+        error.code = 'PARCEL_ITEM_ASSIGNMENT_REJECTED';
+        error.status = 409;
+        throw error; // Caller transaction is rolled back; no ghost parcel or false success.
+      }
     }
 
     const totalWeight = unassigned.reduce((s, i) => s + ((i.weight_kg || 0.5) * i.quantity), 0);
