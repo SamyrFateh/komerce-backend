@@ -9,7 +9,7 @@
  * @depends       db
  * @used-by       routes/hub.js
  * @db-read       hub_physical_units, international_shipments, international_shipment_hub_units
- * @db-write      international_shipment_hub_units
+ * @db-write      international_shipment_hub_units, international_shipment_events
  * @db-txn        service_owned
  * @doctrine      HUB-001 Physical Identity, Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché
  * @impact-areas  logistics
