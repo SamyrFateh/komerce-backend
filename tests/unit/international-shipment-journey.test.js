@@ -143,6 +143,38 @@ test('creating real journey requires exact parcel provenance and prevents duplic
   expect(y.executed.every(q=>!q.sql.includes('UPDATE orders'))).toBe(true);
 });
 
+test('canonical KOM-BOX joins its market shipment and refuses an unknown box',async()=>{
+  const x=fixture();
+  x.client.query.mockImplementation(async(sql,params)=>{
+    x.executed.push({sql:String(sql),params});
+    if(String(sql).includes('FROM hub_physical_units WHERE market_id='))
+      return {rows:[{id:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',reference:'KOM-BOX-101',state:'DISPATCHED'}]};
+    if(String(sql).includes('INSERT INTO international_shipments'))return {rows:[base]};
+    return {rows:[]};
+  });
+  const input={reference:'INT-BOX-101',forwarder_name:'Transitaire',transport_mode:'sea',
+    hub_box_refs:['KOM-BOX-101'],proof_ref:'MANIFEST-1'};
+  expect(await journey.create(market,admin,input,x.db)).toMatchObject({parcels:0,hub_boxes:1});
+  expect(x.executed.some(q=>q.sql.includes('INSERT INTO international_shipment_hub_boxes'))).toBe(true);
+  expect(x.executed.find(q=>q.sql.includes('FROM hub_physical_units WHERE market_id=')).params[0]).toBe(market.id);
+  const denied=fixture();
+  await expectError(journey.create(market,admin,input,denied.db),'JOURNEY_HUB_BOX_NOT_READY');
+});
+
+test('Hub handover refuses physically un-dispatched cartons',async()=>{
+  const x=fixture();
+  x.client.query.mockImplementation(async(sql,params)=>{
+    x.executed.push({sql:String(sql),params});
+    if(String(sql).startsWith('SELECT * FROM international_shipments'))return {rows:[base]};
+    if(String(sql).includes('COUNT(*)::int AS n FROM international_shipment_hub_boxes'))
+      return {rows:[{n:1}]};
+    return {rows:[]};
+  });
+  await expectError(journey.transition(market,hub,'INT-KM-001',
+    {to_stage:'handed_over',proof_ref:'HANDOVER-1'},x.db),'JOURNEY_HUB_BOX_NOT_DISPATCHED');
+  expect(x.executed.some(q=>q.sql.includes('UPDATE international_shipments SET stage'))).toBe(false);
+});
+
 test('schema has FK and audit-only financial boundary, no automatic N1 double counting',()=>{
   const fs=require('fs'),path=require('path');
   const migration=fs.readFileSync(path.join(__dirname,'../../migrations/354_international_shipment_journey.sql'),'utf8');
