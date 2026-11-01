@@ -60,12 +60,13 @@ async function lockAttachableBoxes(client, { marketId, unitIds }) {
   const ids = [...new Set((unitIds || []).map((value) => requireUuid(value, 'hub_unit_ids[]')))];
   if (!ids.length) return [];
   const { rows } = await client.query(
-    'SELECT id, reference, unit_type, state, market_id FROM hub_physical_units WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE',
+    'SELECT id, reference, unit_type, state, market_id, outcome_type FROM hub_physical_units WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE',
     [ids]
   );
   if (rows.length !== ids.length) throw failure(404, 'HUB_BOX_NOT_FOUND', 'Carton introuvable');
   for (const unit of rows) {
     if (unit.unit_type !== 'MARKET_PARCEL') throw failure(409, 'HUB_BOX_NOT_MARKET_PARCEL', `${unit.reference} n’est pas un carton marché (KOM-BOX)`);
+    if (unit.outcome_type) throw failure(409, 'HUB_BOX_OUTCOME_INVALID', `Carton en anomalie : ${unit.reference}`);
     if (!ATTACHABLE_STATES.includes(unit.state)) throw failure(409, 'HUB_BOX_NOT_PACKED', `${unit.reference} n’est pas emballé (état ${unit.state})`);
     if (String(unit.market_id || '') !== String(marketId)) throw failure(409, 'HUB_BOX_SHIPMENT_MARKET_MISMATCH', `${unit.reference} n’appartient pas au marché du dossier`);
   }
@@ -112,6 +113,9 @@ async function attachBoxToShipment({ unitId, shipmentReference, expectedMarketId
         'INSERT INTO international_shipment_hub_units(shipment_id, physical_unit_id, attached_by) VALUES ($1, $2, $3)',
         [shipment.id, unit, actor && actor.id ? actor.id : null]
       );
+      if(actor && actor.id) await client.query(
+        "INSERT INTO international_shipment_events(shipment_id,event_type,from_stage,to_stage,proof_ref,actor_id,payload) VALUES ($1,'box_attached',$2,$2,NULL,$3,$4::jsonb)",
+        [shipment.id,shipment.stage,String(actor.id),JSON.stringify({unit_id:unit})]);
       return { unit_id: unit, shipment_id: shipment.id, shipment_reference: reference, already_attached: false };
     });
   } catch (error) {
@@ -119,13 +123,22 @@ async function attachBoxToShipment({ unitId, shipmentReference, expectedMarketId
   }
 }
 
-async function detachBoxFromShipment({ unitId }) {
+async function detachBoxFromShipment({ unitId, expectedMarketId = null, actor = null }) {
   const unit = requireUuid(unitId, 'unit_id');
   try {
     return await db.withTransaction(async (client) => {
-      const { rowCount } = await client.query('DELETE FROM international_shipment_hub_units WHERE physical_unit_id = $1', [unit]);
-      if (!rowCount) throw failure(404, 'HUB_BOX_NOT_ATTACHED', 'Ce carton n’est rattaché à aucune expédition');
-      return { unit_id: unit, detached: true };
+      const {rows:[linked]}=await client.query(
+        'SELECT h.shipment_id,s.stage,s.market_id FROM international_shipment_hub_units h JOIN international_shipments s ON s.id=h.shipment_id WHERE h.physical_unit_id=$1 FOR UPDATE OF s',
+        [unit]);
+      if(!linked) throw failure(404,'HUB_BOX_NOT_ATTACHED','Ce carton n’est rattaché à aucune expédition');
+      if(expectedMarketId&&String(linked.market_id)!==String(expectedMarketId))
+        throw failure(403,'HUB_BOX_SHIPMENT_MARKET_MISMATCH','Expédition d’un autre marché');
+      const {rowCount}=await client.query('DELETE FROM international_shipment_hub_units WHERE physical_unit_id=$1',[unit]);
+      if(!rowCount)throw failure(409,'HUB_BOX_DETACH_CONCURRENT','Le carton a été modifié simultanément');
+      if(actor&&actor.id)await client.query(
+        "INSERT INTO international_shipment_events(shipment_id,event_type,from_stage,to_stage,proof_ref,actor_id,payload) VALUES ($1,'box_detached',$2,$2,NULL,$3,$4::jsonb)",
+        [linked.shipment_id,linked.stage,String(actor.id),JSON.stringify({unit_id:unit})]);
+      return {unit_id:unit,detached:true};
     });
   } catch (error) {
     throw translate(error);
