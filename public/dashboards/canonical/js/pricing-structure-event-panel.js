@@ -26,7 +26,7 @@
   const EVENT_KIND_LABELS = Object.freeze({
     ACCRUAL: 'Ajouter une charge pour cette période',
     ADJUSTMENT: 'Corriger une écriture existante',
-    REVERSAL: 'Reversal (annule un fait existant)',
+    REVERSAL: 'Annuler une écriture existante',
   });
   const SOURCE_KIND_LABELS = Object.freeze({
     INVOICE: 'Facture',
