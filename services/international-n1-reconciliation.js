@@ -160,6 +160,9 @@ async function reconcile(market, actor, reference, database = db) {
     }
     const freight=s.freight_invoice_kmf == null?null:cents(s.freight_invoice_kmf);
     const components=[];
+    if(freight===null && fees.length===0){
+      fail('INTERNATIONAL_N1_NO_REAL_FACTS','Aucune facture ou frais réel à rapprocher');
+    }
     if (freight !== null) {
       if (s.transport_mode==='air' && freight>0) {
         fail('INTERNATIONAL_N1_AIR_CALIBRATION_PENDING',
@@ -184,7 +187,7 @@ async function reconcile(market, actor, reference, database = db) {
       'SELECT COUNT(*)::int AS n FROM international_n1_allocation_links WHERE shipment_id=$1',[s.id]
     );
     if (old && old.snapshot_hash===hash && Number(linkCount.n)===Number(old.allocation_rows)) {
-      return {reference:s.reference,status:'reconciled',idempotent:true,
+      return {reference:s.reference,status:freight===null?'partial_reconciliation':'reconciled',idempotent:true,
         actual_n1_kmf:format(sum(components.map(c=>c.amount))),allocation_rows:old.allocation_rows};
     }
     // Only our projection is re-created; customs, manual and other sources stay untouched.
@@ -237,16 +240,16 @@ async function reconcile(market, actor, reference, database = db) {
     const local=sum(components.filter(c=>c.component==='local_distribution').map(c=>c.amount));
     await client.query(
       'INSERT INTO international_n1_reconciliations ' +
-      '(shipment_id,snapshot_hash,total_freight_kmf,total_arrival_kmf,total_local_kmf,allocation_rows,actor_id) ' +
-      'VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(shipment_id) DO UPDATE SET ' +
+      '(shipment_id,snapshot_hash,total_freight_kmf,total_arrival_kmf,total_local_kmf,allocation_rows,actor_id,freight_known) ' +
+      'VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(shipment_id) DO UPDATE SET ' +
       'snapshot_hash=EXCLUDED.snapshot_hash,total_freight_kmf=EXCLUDED.total_freight_kmf,' +
       'total_arrival_kmf=EXCLUDED.total_arrival_kmf,total_local_kmf=EXCLUDED.total_local_kmf,' +
-      'allocation_rows=EXCLUDED.allocation_rows,actor_id=EXCLUDED.actor_id,reconciled_at=now()',
-      [s.id,hash,format(freight||0),format(arrival),format(local),count,String(actor.id)]
+      'allocation_rows=EXCLUDED.allocation_rows,freight_known=EXCLUDED.freight_known,actor_id=EXCLUDED.actor_id,reconciled_at=now()',
+      [s.id,hash,format(freight||0),format(arrival),format(local),count,String(actor.id),freight!==null]
     );
     const {refreshCanonicalMarginForOrders}=require('./cost-allocation/canonical-margin-writer');
     await refreshCanonicalMarginForOrders([...new Set(parcels.map(p=>p.order_id))],{client});
-    return {reference:s.reference,status:'reconciled',idempotent:false,
+    return {reference:s.reference,status:freight===null?'partial_reconciliation':'reconciled',idempotent:false,
       actual_n1_kmf:format(total),freight_kmf:format(freight||0),arrival_kmf:format(arrival),
       local_kmf:format(local),allocation_rows:count};
   });
