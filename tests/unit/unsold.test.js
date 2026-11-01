@@ -214,9 +214,22 @@ describe('POST /api/unsold/:id/resolve', () => {
   );
 
   it('introuvable → 404', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
     const res = await request(buildApp()).post('/api/unsold/u1/resolve').send({ status: 'donated' });
     expect(res.status).toBe(404);
+  });
+
+  it('un statut terminal ne peut pas être remplacé par un autre', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ status: 'sold_whatsapp' }] });
+    const res = await request(buildApp()).post('/api/unsold/u1/resolve').send({ status: 'destroyed' });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('UNSOLD_ALREADY_RESOLVED');
+    expect(mockDbQuery.mock.calls[0][0]).toContain("AND status = 'available'");
+    expect(mockDbQuery.mock.calls[1][0]).toContain('SELECT status FROM unsold_items');
   });
 
   it('nominal vente revendeur → renvoie la ligne resolue avec prix et reseller_id', async () => {
