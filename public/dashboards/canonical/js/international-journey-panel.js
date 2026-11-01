@@ -186,7 +186,9 @@
     const status=s.cost_reconciliation||'not_reconciled';
     const message=status==='reconciled'
       ?'N1 réel rapproché : '+money(s.actual_n1_impact)+' · facture et frais ventilés par article.'
-      :status==='pending_reconciliation'
+      :status==='partial_reconciliation'
+        ?'Frais réels ventilés en N1 : '+money(s.actual_n1_impact)+' · fret encore inconnu.'
+        :status==='pending_reconciliation'
         ?'Nouveaux frais depuis le dernier rapprochement : N1 à actualiser.'
         :'Fret et frais documentés, non encore imputés au N1. Aucun double compte autorisé.';
     const alert=put(dossier,text(doc,'p','kmc-journey-cost-alert',message));
