@@ -255,7 +255,7 @@
         const po = String(r.purchase_order_id || '');
         return `<tr><td>${esc(r.market_code || '—')}</td><td title="${esc(po)}">${esc(po.slice(0,8))}</td>
           <td>${isBox ? esc(r.physical_reference) : `À emballer · ${esc(r.physical_reference)}`}</td>
-          <td>${num(r.quantity)}</td><td>${esc(traceState[r.state] || r.state || '—')}</td></tr>`;
+          <td>${num(r.quantity)}</td><td>${esc(r.outcome_type || traceState[r.state] || r.state || '—')}</td></tr>`;
       }), { empty:'Aucun placement physique lié à une PO.' })
       : `<p>Rapprochement physique non disponible.</p>`;
     return {
