@@ -45,7 +45,8 @@ function publicIncident(row) {
     description: row.description || null,
     severity: row.severity,
     status: row.status,
-    owner_role: resolverDomainToOwnerRole(row.resolver_domain),
+    owner_role: row.resolver_domain && row.resolver_domain !== 'UNCLASSIFIED'
+      ? resolverDomainToOwnerRole(row.resolver_domain) : null,
     next_action: nextAction(row),
     created_at: row.created_at,
     due_at: row.due_at || null,
