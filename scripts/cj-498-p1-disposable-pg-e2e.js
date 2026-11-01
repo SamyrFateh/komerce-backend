@@ -81,7 +81,7 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   if(activeSet.size<15||!activeSet.has('Mode & Beauté/Enfant')
     ||!activeSet.has('Auto/Accessoires')||!activeSet.has('Tech/Phones'))throw Error('CANONICAL_TAXONOMY_NOT_READY');
   const byStatus={},byEvidence={},byPair={},drift=[],samples=[];
-  let ignoredDiscovery=0,discoveryOnly=0,auto=0;
+  let ignoredDiscovery=0,discoveryOnly=0,auto=0,categoryOnly=0;
   for(const original of doc.products){
     const candidate=sourceCandidate(original);
     const v=await resolveCommercialTaxonomyVerdict(db,candidate);
@@ -91,6 +91,15 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
       auto++;inc(byPair,p);
       if(!activeSet.has(p)||v.source==='OPERATOR_OR_DISCOVERY'||v.source==='DISCOVERY_PRIOR')
         throw Error('UNJUSTIFIED_AUTO:'+original.candidate_ref+':'+JSON.stringify(v));
+    } else if(v.status==='CATEGORY_CLASSIFIED') {
+      categoryOnly++;
+      inc(byPair,p);
+      if(v.level!=='CATEGORY'||v.subcategory!==null||!activeSet.has(v.category+'/Femme')
+          && !active.some(row=>row.category===v.category)
+          ||v.source!=='SOURCE_AND_OBJECT_ROOT_CORROBORATED'
+          ||!Array.isArray(v.evidence)||v.evidence.length===0) {
+        throw Error('UNSUPPORTED_CATEGORY_ONLY_PLACEMENT:'+original.candidate_ref+':'+JSON.stringify(v));
+      }
     } else if(v.status==='EXPLICIT_REVIEW'){
       throw Error('HUMAN_CONFIRMATION_FABRICATED:'+original.candidate_ref);
     } else if(v.status==='REVIEW_REQUIRED') {
@@ -121,7 +130,12 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
     const trap={supplier_name:'CJdropshipping',product_name:'Silky Light Fog Lip Gloss',
       supplier_category:'Health, Beauty & Hair > Makeup > Lipstick',
       komerce_category:'cosmetiques',raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Éclairage'}}};
-    draftProofs.push(await transactionProof(client,'lip_gloss_discovery_wrong',trap,{shouldCreate:false}));
+    draftProofs.push(await transactionProof(client,'lip_gloss_corroborated_category_not_auto_lighting',trap,
+      {shouldCreate:true,expectedCategory:'Mode & Beauté',expectedSubcategory:null}));
+    const unproven={supplier_name:'CJdropshipping',product_name:'Unknown Mystery SKU',
+      supplier_category:'Generic > Unknown Products',komerce_category:'autre',
+      raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Éclairage'}}};
+    draftProofs.push(await transactionProof(client,'discovery_only_must_not_create',unproven,{shouldCreate:false}));
     const actualObject={supplier_name:'CJdropshipping',product_name:'Car Neck Pillow Memory Foam',
       supplier_category:'Automobiles > Car Accessories',komerce_category:'materiels',
       raw_payload:{discovery:{target_category:'Maison',target_subcategory:'Déco'}}};
@@ -148,7 +162,8 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   const out={kind:'REAL_PG_E2E_CJ_SOURCE_TO_CATALOG_DRAFT',
     certification:'PROVEN_BOUNDARY_NOT_PRODUCT_PRECISION',
     source_count:498,previous_automatic:doc.automatic,
-    candidate_automatic:auto,candidate_review:498-auto,
+    candidate_automatic:auto,candidate_category_only:categoryOnly,
+    candidate_review:498-auto-categoryOnly,
     prior_discovery_proposals:ignoredDiscovery,discovery_only:discoveryOnly,
     by_status:byStatus,by_evidence:byEvidence,by_pair:byPair,
     changed_examples:drift,review_samples:samples,product_draft_proofs:draftProofs,
@@ -156,7 +171,8 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   fs.mkdirSync(path.dirname(output),{recursive:true});
   fs.writeFileSync(output,JSON.stringify(out,null,2)+'\n');
   console.log('[CJ_P1_REAL_PG] '+JSON.stringify({inspected:498,automatic:auto,
-    review:498-auto,discovery_only:discoveryOnly,prior_seen:ignoredDiscovery,
+    category_only:categoryOnly,review:498-auto-categoryOnly,
+    discovery_only:discoveryOnly,prior_seen:ignoredDiscovery,
     by_evidence:byEvidence,draft_proofs:draftProofs.length,rollback:rolledBack}));
   return out;
 }

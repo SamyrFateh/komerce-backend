@@ -18,6 +18,7 @@
 'use strict';
 
 const { validatePublicationUpdate } = require('./product-publication-guard');
+const {categoryIntent}=require('./commercial-object-family-classifier');
 const { inspectMediaSet } = require('./catalog-media-visual-fr-proof');
 const { reconcileCertificationBatch } = require('../utils/certification-accounting');
 
@@ -65,7 +66,19 @@ function evaluateCatalogProductCertification(row = {}, options = {}) {
 
   if (!nonEmpty(row.category)) reasons.push('customs_category_missing');
   if (!nonEmpty(row.boutique_category_key)) reasons.push('boutique_category_missing');
-  if (!nonEmpty(row.boutique_subcategory_key)) reasons.push('boutique_subcategory_missing');
+  if (!nonEmpty(row.boutique_subcategory_key)) {
+    // Category-only retail certification is permitted ONLY if an attached
+    // supplier candidate can be rechecked from its own immutable object/title
+    // facts. No Discovery prior, historical customs field or unlinked native
+    // product can borrow this exception.
+    const root=row.has_sourcing_candidate===true
+      ?categoryIntent({product_name:row.supplier_product_name,
+        supplier_category:row.supplier_category})
+      :{kind:'none'};
+    if (root.kind!=='category'||root.category!==row.boutique_category_key) {
+      reasons.push('boutique_subcategory_missing');
+    }
+  }
   if (row.taxonomy_active !== true) reasons.push('boutique_taxonomy_inactive_or_invalid');
 
   if (Number(row.active_media || 0) < 1) reasons.push('media_missing');
@@ -158,7 +171,7 @@ async function loadCatalogProductCertificationFacts(q, productId) {
             p.category,
             p.boutique_category_key,
             p.boutique_subcategory_key,
-            CASE WHEN bc.key IS NOT NULL AND bs.key IS NOT NULL THEN TRUE ELSE FALSE END AS taxonomy_active,
+            CASE WHEN bc.key IS NOT NULL AND (p.boutique_subcategory_key IS NULL OR bs.key IS NOT NULL) THEN TRUE ELSE FALSE END AS taxonomy_active,
             p.price_kmf,
             p.cost_kmf,
             p.stock,
@@ -175,7 +188,8 @@ async function loadCatalogProductCertificationFacts(q, productId) {
             p.has_variants,
             sc.id IS NOT NULL AS has_sourcing_candidate,
             sc.supplier_name,
-            sc.supplier_product_id,
+            sc.supplier_product_name,
+            sc.supplier_category,
             sc.normalized_source_contract,
             UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) AS sourcing_decision,
             COALESCE(media.active_media,0)::int AS active_media,
@@ -187,6 +201,8 @@ async function loadCatalogProductCertificationFacts(q, productId) {
        LEFT JOIN LATERAL (
          SELECT candidate.id,
                 candidate.supplier_name,
+                candidate.product_name AS supplier_product_name,
+                candidate.supplier_category,
                 candidate.supplier_product_id,
                 candidate.normalized_source_contract,
                 candidate.scan_result
