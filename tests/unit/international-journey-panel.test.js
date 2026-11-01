@@ -29,7 +29,7 @@ test('3 tabs, one existing dossier list and clear not yet booked N1 status',()=>
   const headings=all(root,n=>n.tagName==='TH').map(n=>n.textContent);
   expect(headings).toEqual(['Référence','Étape','Transitaire','Colis','Volume facturé','Fret réel','ETA','Dossier']);
   expect(all(root,n=>n.className==='kmc-journey-cost-alert').at(0).textContent)
-    .toContain('aucune double imputation');
+    .toContain('Aucun double compte');
 });
 test('admin can prepare shipment + freight, market_operator only reads',()=>{
   const admin=mount('admin');
@@ -67,4 +67,14 @@ test('roles only see their next authorized physical step, no implicit payment/ma
   expect(file).not.toContain('order_item_real_cost_allocations');
   expect(file).not.toMatch(/\bwindow\.prompt\b/);
   expect(file).not.toMatch(/\binnerHTML\b/);
+});
+
+test('only an admin sees N1 reconciliation after customs dossier is linked',()=>{
+  const admin=mount('admin','arrival',{customs_reference:'CUS-1',cost_reconciliation:'pending_reconciliation'});
+  const controls=all(admin.root,n=>n.tagName==='BUTTON').map(n=>n.textContent);
+  expect(controls).toContain('Rapprocher les coûts réels (N1)');
+  expect(all(admin.root,n=>n.className==='kmc-journey-cost-alert')[0].textContent).toContain('N1 à actualiser');
+  const market=mount('market_operator','arrival',{customs_reference:'CUS-1'});
+  expect(all(market.root,n=>n.tagName==='BUTTON').map(n=>n.textContent))
+    .not.toContain('Rapprocher les coûts réels (N1)');
 });
