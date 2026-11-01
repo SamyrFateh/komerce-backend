@@ -38,9 +38,10 @@
  *   DELETE /api/purchasing/po/:po_id                  → annuler une purchase order
  *
  * Forme regroupée (PR 4, KOMERCE_GROUPED_PURCHASING=1 ; sinon 409 GROUPED_PURCHASING_DISABLED) :
- *   GET  /api/purchasing/open-lines[?market_id=]      → lignes ouvertes par (fournisseur, hub), marché visible, filtre opérateur
+ *   GET  /api/purchasing/open-lines[?market_id=]      → lignes ouvertes par (fournisseur, hub, marché), filtre opérateur
  *   GET  /api/purchasing/po/:po_id                    → lecture d'une PO regroupée (lignes + marchés)
  *   POST /api/purchasing/po/prepare                   → PO regroupée draft + rattachement des lignes
+ *   POST /api/purchasing/po/:po_id/attach             → ajouter des lignes ouvertes à une PO draft (même marché)
  *   POST /api/purchasing/po/:po_id/detach             → détacher des lignes d'une PO draft
  *   POST /api/purchasing/po/:po_id/discard            → abandonner une PO draft
  *   POST /api/purchasing/lines/:id/cancel             → annuler une ligne ouverte ou en brouillon
@@ -130,6 +131,11 @@ router.post('/po/prepare', ...guard, async (req, res, next) => {
   try {
     res.status(201).json(await grouped.preparePurchaseOrder(req.body || {}, { actor: req.user }));
   } catch (err) { groupedError(err, res, next); }
+});
+
+router.post('/po/:po_id/attach', ...guard, async (req, res, next) => {
+  try { res.json(await grouped.attachDraftLines(req.params.po_id, (req.body || {}).line_ids)); }
+  catch (err) { groupedError(err, res, next); }
 });
 
 router.post('/po/:po_id/detach', ...guard, async (req, res, next) => {
