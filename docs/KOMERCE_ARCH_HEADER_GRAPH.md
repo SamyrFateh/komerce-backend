@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 763
-- Files with full headers: 712
+- Scanned code files: 764
+- Files with full headers: 713
 - Files with lite headers: 51
-- Files with any headers: 763
+- Files with any headers: 764
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1900
-- Edges: 9413
-- DB tables: 214
-- Doctrines: 716
+- Graph nodes: 1908
+- Edges: 9429
+- DB tables: 218
+- Doctrines: 719
 - Impact areas: 207
 - Unresolved code edges: 908
 - Tables multi-écrivains directs (>=2): 90
@@ -44,7 +44,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 57
+- logistics: 58
 - loyalty: 3
 - market: 9
 - market-autonomy: 4
@@ -91,7 +91,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 446
+- service: 447
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -461,6 +461,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/incident-escalation.js — incident-sla-escalation (incident-management, high, full)
 - services/incident-governance.js — incident-management-governance-mapping (incident-management, high, full)
 - services/incident-write-service.js — incident-management-write-boundary (incident-management, high, full)
+- services/international-shipment-journey.js — international-shipment-journey-owner (logistics, high, full)
 - services/local-stock-checkout-preview.js — local-stock-checkout-preview (local-stock, high, full)
 - services/local-stock-decision-projection.js — local-stock-decision-projection (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
@@ -834,14 +835,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/incident-write-service.js -> incidents
 - WRITE services/providers-inquiry-service.js -> inquiries
 - WRITE services/providers-service.js -> inquiries
+- WRITE services/international-shipment-journey.js -> international_shipment_charges
+- WRITE services/international-shipment-journey.js -> international_shipment_events
+- WRITE services/international-shipment-journey.js -> international_shipment_parcels
+- WRITE services/international-shipment-journey.js -> international_shipments
 - WRITE services/inventory-service.js -> inventory_items
 - WRITE routes/admin/system.js -> invoices
 - WRITE routes/documents.js -> invoices
 - WRITE routes/invoices.js -> invoices
-- WRITE services/invoice-service.js -> invoices
-- WRITE services/order-payment-confirmation.js -> invoices
-- WRITE services/local-stock-service.js -> local_stock_allocations
-- WRITE services/local-stock-service.js -> local_stock
 
 ## DB Write-Via Edges (délégation déclarée)
 

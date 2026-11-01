@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 763,
-    "filesWithFullHeaders": 712,
+    "scannedCodeFiles": 764,
+    "filesWithFullHeaders": 713,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 763,
+    "filesWithAnyHeaders": 764,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1900,
-    "edges": 9413,
-    "dbTables": 214,
-    "doctrines": 716,
+    "graphNodes": 1908,
+    "edges": 9429,
+    "dbTables": 218,
+    "doctrines": 719,
     "impactAreas": 207,
     "unresolvedCodeEdges": 908,
     "dbWriteViaOverlapWarnings": 11,
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 66,
     "sourcing": 37,
-    "logistics": 57,
+    "logistics": 58,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -111,7 +111,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 446,
+    "service": 447,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -122,7 +122,7 @@
   "byCriticality": {
     "critical": 110,
     "medium": 153,
-    "high": 439,
+    "high": 440,
     "low": 60,
     "unknown": 1
   },
@@ -20080,6 +20080,58 @@
       "version": "2026-09"
     },
     {
+      "id": "services/international-shipment-journey.js",
+      "file": "services/international-shipment-journey.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "international-shipment-journey-owner",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "server_resolved_market",
+        "physical_evidence",
+        "real_invoices"
+      ],
+      "outputs": [
+        "immutable_shipment_facts",
+        "read_only_cost_reconciliation"
+      ],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "international_shipments",
+        "international_shipment_parcels",
+        "international_shipment_charges",
+        "international_shipment_events",
+        "parcels",
+        "orders",
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "customs_shipment_fees"
+      ],
+      "dbWrite": [
+        "international_shipments",
+        "international_shipment_parcels",
+        "international_shipment_events",
+        "international_shipment_charges"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "withTransaction"
+      ],
+      "doctrine": [
+        "market_scope_server_owned",
+        "fact_not_financial_allocation",
+        "no_customs_clearance_inferred"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
       "id": "services/inventory-service.js",
       "file": "services/inventory-service.js",
       "type": "file",
@@ -37553,6 +37605,26 @@
       "table": "import_runtime_item_events"
     },
     {
+      "id": "db:international_shipments",
+      "type": "db-table",
+      "table": "international_shipments"
+    },
+    {
+      "id": "db:international_shipment_parcels",
+      "type": "db-table",
+      "table": "international_shipment_parcels"
+    },
+    {
+      "id": "db:international_shipment_charges",
+      "type": "db-table",
+      "table": "international_shipment_charges"
+    },
+    {
+      "id": "db:international_shipment_events",
+      "type": "db-table",
+      "table": "international_shipment_events"
+    },
+    {
       "id": "db:inventory_items",
       "type": "db-table",
       "table": "inventory_items"
@@ -39956,6 +40028,21 @@
       "id": "doctrine:F3_PROOF_REVALIDATION_CONTRACT",
       "type": "doctrine",
       "doctrine": "F3_PROOF_REVALIDATION_CONTRACT"
+    },
+    {
+      "id": "doctrine:market_scope_server_owned",
+      "type": "doctrine",
+      "doctrine": "market_scope_server_owned"
+    },
+    {
+      "id": "doctrine:fact_not_financial_allocation",
+      "type": "doctrine",
+      "doctrine": "fact_not_financial_allocation"
+    },
+    {
+      "id": "doctrine:no_customs_clearance_inferred",
+      "type": "doctrine",
+      "doctrine": "no_customs_clearance_inferred"
     },
     {
       "id": "doctrine:invoice_displays_actual_payment_currency",
@@ -73624,6 +73711,102 @@
       "to": "impact:platform-ops",
       "type": "impact",
       "label": "platform-ops"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipment_parcels",
+      "type": "db-read",
+      "label": "international_shipment_parcels"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipment_charges",
+      "type": "db-read",
+      "label": "international_shipment_charges"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipment_events",
+      "type": "db-read",
+      "label": "international_shipment_events"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:customs_shipment_fees",
+      "type": "db-read",
+      "label": "customs_shipment_fees"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipments",
+      "type": "db-write",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipment_parcels",
+      "type": "db-write",
+      "label": "international_shipment_parcels"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipment_events",
+      "type": "db-write",
+      "label": "international_shipment_events"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipment_charges",
+      "type": "db-write",
+      "label": "international_shipment_charges"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "doctrine:market_scope_server_owned",
+      "type": "doctrine",
+      "label": "market_scope_server_owned"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "doctrine:fact_not_financial_allocation",
+      "type": "doctrine",
+      "label": "fact_not_financial_allocation"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "doctrine:no_customs_clearance_inferred",
+      "type": "doctrine",
+      "label": "no_customs_clearance_inferred"
     },
     {
       "from": "services/inventory-service.js",
@@ -119502,6 +119685,55 @@
         "services/incident-governance.js",
         "services/reconciliation-service.js",
         "services/scan-engine.js"
+      ]
+    },
+    "services/international-shipment-journey.js": {
+      "role": "international-shipment-journey-owner",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "international_shipments",
+        "international_shipment_parcels",
+        "international_shipment_charges",
+        "international_shipment_events",
+        "parcels",
+        "orders",
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "customs_shipment_fees"
+      ],
+      "dbWrite": [
+        "international_shipments",
+        "international_shipment_parcels",
+        "international_shipment_events",
+        "international_shipment_charges"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "market_scope_server_owned",
+        "fact_not_financial_allocation",
+        "no_customs_clearance_inferred"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "db:customs_shipment_fees",
+        "db:customs_shipment_parcels",
+        "db:customs_shipments",
+        "db:international_shipment_charges",
+        "db:international_shipment_events",
+        "db:international_shipment_parcels",
+        "db:international_shipments",
+        "db:orders",
+        "db:parcels",
+        "doctrine:fact_not_financial_allocation",
+        "doctrine:market_scope_server_owned",
+        "doctrine:no_customs_clearance_inferred"
       ]
     },
     "services/inventory-service.js": {
