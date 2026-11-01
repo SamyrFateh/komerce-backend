@@ -171,6 +171,8 @@ test('« À traiter » liste uniquement les signaux bloquants avec statistiques 
   expect(mockQuery.mock.calls[1][0]).toContain('s.signal_type = ANY($2::text[])');
   expect(mockQuery.mock.calls[2][0]).toContain('s.signal_type = ANY($6::text[])');
   expect(mockQuery.mock.calls[2][1][5]).toEqual(service.BUSINESS_BLOCKER_TYPES);
+  expect(service.CRITICAL_ONLY_BLOCKER_TYPES).toEqual(expect.arrayContaining(['parcel_blocked','supplier_payment_review']));
+  for(const [sql] of mockQuery.mock.calls) expect(sql).toContain("s.severity IN ('urgent','critical')");
   expect(service.BUSINESS_BLOCKER_TYPES).not.toContain('margin_drift');
   expect(service.BUSINESS_BLOCKER_TYPES).not.toContain('loyalty_pending');
   expect(service.BUSINESS_BLOCKER_TYPES).toContain('parcel_blocked');
