@@ -79,7 +79,6 @@ module.exports = {
       'migrations/309_hub_placement_guard_exclude_outcomes.sql',
       'migrations/313_market_transport_sale_rates.sql',
       'migrations/354_international_shipment_journey.sql',
-      'migrations/360_canonical_kom_box_shipment_costs.sql',
       'migrations/359_hub_draft_open_and_handover.sql',
     ],
     docs: [
