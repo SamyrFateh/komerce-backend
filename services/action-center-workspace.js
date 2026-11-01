@@ -229,15 +229,30 @@ async function buildScopedWorkspace({ market = null, filters = {}, canManage = t
     limit: filters.limit || 100,
     offset: filters.offset || 0,
     market_id: marketId,
+    business_only: true,
   };
   const [list, stats, incidentWorkItems] = await Promise.all([
     signalAdminService.listSignals(scopedFilters),
-    signalAdminService.getStats({ market_id: marketId }),
+    signalAdminService.getStats({ market_id: marketId, business_only: true }),
     // Global admin read-only lane; never infer membership from a grouped PO.
     // Market queues require their own per-order authorization proof.
     market ? Promise.resolve([]) : incidentTrace.listGlobalOpen(),
   ]);
   const entityMaps = await resolveEntityBusinessRefs(list.signals, marketId);
+  const signalStats = summaryFromStats(stats);
+  const now = Date.now();
+  const overdueIncidents = incidentWorkItems.filter(i => i.due_at && new Date(i.due_at).getTime() < now).length;
+  const urgentIncidents = incidentWorkItems.filter(i => ['critical', 'high'].includes(i.severity)).length;
+  const withoutOwner = list.signals.filter(i => !i.owner_role).length +
+    incidentWorkItems.filter(i => !i.owner_role).length;
+  const blockingSummary = {
+    ...signalStats,
+    total_active: signalStats.total_active + incidentWorkItems.length,
+    urgent: signalStats.urgent + urgentIncidents,
+    physical_incidents: incidentWorkItems.length,
+    overdue: overdueIncidents,
+    unassigned: withoutOwner,
+  };
 
   return {
     scope: market ? {
@@ -257,7 +272,7 @@ async function buildScopedWorkspace({ market = null, filters = {}, canManage = t
       market: null,
       market_note: 'Vue centrale limitée aux signaux globaux ; les signaux pays restent isolés dans leur Market ID.',
     },
-    summary: summaryFromStats(stats),
+    summary: blockingSummary,
     work_queues: workQueues(list.signals),
     signals: list.signals.map(signal => publicSignal(signal, entityMaps, canManage)),
     physical_incidents: incidentWorkItems,
