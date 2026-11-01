@@ -694,7 +694,7 @@
     const scope = payload && payload.margin_scope ? payload.margin_scope : null;
     let marginHelper = projected.marge && projected.marge.helper;
     if (scope && scope.eligible_margin_pct != null) {
-      marginHelper = `${base.formatNumber(scope.eligible_margin_pct, 1)} % sur ${base.formatNumber(scope.eligible_orders, 0)}/${base.formatNumber(scope.paid_orders, 0)} commandes finalisées`;
+      marginHelper = `${base.formatNumber(scope.eligible_margin_pct, 1)} % sur ${base.formatNumber(scope.eligible_orders, 0)}/${base.formatNumber(scope.paid_orders, 0)} commandes payées finalisées`;
     }
     const cards = [
       { key: 'ca-encaisse', label: 'Commandes payées — part hors avoir', icon: 'bars', tone: 'info', helper: 'Somme des commandes payées créées sur la période, hors part réglée par avoir. Ni chiffre d’affaires comptable, ni encaissement attesté.', note: 'ca-encaisse' },
@@ -710,7 +710,7 @@
         const value = projected[card.key].value;
         // Aucune commande finalisée : la marge réelle est INCONNUE, jamais « 0 KMF » (ni ton positif).
         if (card.key === 'marge' && scope && Number(scope.eligible_orders) === 0) {
-          return { ...card, value: '—', tone: 'neutral', badge: null, helper: `Aucune commande finalisée (0/${base.formatNumber(scope.paid_orders, 0)})`, unknown: true };
+          return { ...card, value: '—', tone: 'neutral', badge: null, helper: `Aucune commande finalisée (0/${base.formatNumber(scope.paid_orders, 0)} payées)`, unknown: true };
         }
         return { ...card, value };
       });
@@ -1012,7 +1012,7 @@
     const rows = known ? payload.incomplete_cost_orders : [];
     const first = rows.length ? rows[0].reference : null;
     const toFinalize = first
-      ? actionLink(doc, orderHref(base, first), `Commandes à finaliser (${rows.length}) →`)
+      ? actionLink(doc, orderHref(base, first), `Commandes aux coûts à établir (${payload.incomplete_cost_orders_total != null ? payload.incomplete_cost_orders_total : rows.length}) →`)
       : el(doc, 'span', 'kmc-fin3-links-muted', known ? 'Aucune commande à finaliser' : 'Commandes à finaliser : non disponible');
     if (first) toFinalize.setAttribute('data-finance-link', 'orders-to-finalize');
     nav.appendChild(toFinalize);

@@ -32,3 +32,10 @@ test('L10 : Finance affiche « Commandes payées — part hors avoir », jamais 
   expect(src).toContain('Commandes payées — part hors avoir');
   expect(src).toContain('Ni chiffre d’affaires comptable, ni encaissement attesté.');
 });
+
+test('Finance : « à établir » et « marge finalisée » nomment leur cohorte (plus de 12 vs 0/11 ambigu)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/finance-decision.js'), 'utf8');
+  expect(src).toContain('Commandes aux coûts à établir (');
+  expect(src).toContain('payées)');
+  expect(src).toContain('incomplete_cost_orders_total');
+});

@@ -696,6 +696,8 @@ async function buildFinance(query = {}, options = {}) {
       ...refunds.summary,
       recent: Object.freeze(recentRefunds),
     }),
+    // Total (non plafonné) de la même cohorte que la liste : commandes non annulées, payées ou non.
+    incomplete_cost_orders_total: coutIncomplet && coutIncomplet.value != null ? Number(coutIncomplet.value) : null,
     incomplete_cost_orders: Object.freeze(incompleteOrders.map(row => Object.freeze({
       reference: row.reference,
       market_code: row.market_code || null,
