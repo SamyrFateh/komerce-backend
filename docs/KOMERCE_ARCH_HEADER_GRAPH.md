@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 762
-- Files with full headers: 711
+- Scanned code files: 763
+- Files with full headers: 712
 - Files with lite headers: 51
-- Files with any headers: 762
+- Files with any headers: 763
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1896
-- Edges: 9402
+- Graph nodes: 1900
+- Edges: 9413
 - DB tables: 214
-- Doctrines: 713
+- Doctrines: 716
 - Impact areas: 207
 - Unresolved code edges: 908
 - Tables multi-écrivains directs (>=2): 90
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 30
 - decision-signals: 14
 - documents: 15
-- economic-engine: 65
+- economic-engine: 66
 - external-provider-contracts: 1
 - incident-management: 5
 - infrastructure: 25
@@ -91,7 +91,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 445
+- service: 446
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -787,6 +787,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/catalog-taxonomy-audit.js -> catalog_taxonomy_audit
 - WRITE bootstrap/startup-migrations.js -> charges
 - WRITE services/economic-engine-queries.js -> charges
+- WRITE services/market-structure-charge-reference.js -> charges
 - WRITE routes/client-notifications.js -> client_notifications
 - WRITE services/client-notification-service.js -> client_notifications
 - WRITE services/pricing-strategy-service.js -> competitor_prices
@@ -841,7 +842,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/order-payment-confirmation.js -> invoices
 - WRITE services/local-stock-service.js -> local_stock_allocations
 - WRITE services/local-stock-service.js -> local_stock
-- WRITE routes/admin-loyalty.js -> loyalty_rewards
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -871,6 +871,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/market-delegation-client-case-service.js -> disputes (via dispute-mutation-service)
 - WRITE routes/market-delegation-structure-event.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE services/market-delegation-structure-event-service.js -> economic_structure_cost_events (via pricing-period-structure)
+- WRITE services/market-structure-charge-reference.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE services/hub-operations.js -> hub_custody_events (via hub-physical-identity)
 - WRITE services/hub-operations.js -> hub_physical_unit_placements (via hub-physical-identity)
 - WRITE services/hub-operations.js -> hub_physical_units (via hub-physical-identity)
@@ -964,7 +965,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/payment-paypal.js -> order_status_history (via order-status-machine)
 - WRITE services/pickup-collection-recorder.js -> order_status_history (via order-status-machine)
 - WRITE services/pickup-collection-service.js -> order_status_history (via order-status-machine)
-- WRITE services/pickup-collection-service.js -> order_status_history (via pickup-collection-recorder)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
@@ -1006,6 +1006,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - wallets: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
 - cash_collections: 3 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
 - catalog_field_overrides: 3 écrivains directs — services/catalog-overrides.js, services/product-admin-service.js, services/refinery-fr-recheck.js
+- charges: 3 écrivains directs — bootstrap/startup-migrations.js, services/economic-engine-queries.js, services/market-structure-charge-reference.js
 - incidents: 3 écrivains directs — services/incident-escalation.js, services/incident-service.js, services/incident-write-service.js
 - parcel_events: 3 écrivains directs — services/parcel-item-mutation-service.js, services/parcel-security.js, utils/parcelSync.js
 - price_history: 3 écrivains directs — services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
@@ -1021,7 +1022,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
 - cash_deposits: 2 écrivains directs — routes/cash.js, services/cash-deposit-service.js
-- charges: 2 écrivains directs — bootstrap/startup-migrations.js, services/economic-engine-queries.js
 - client_notifications: 2 écrivains directs — routes/client-notifications.js, services/client-notification-service.js
 - customs_shipment_parcel_events: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 - customs_shipment_parcels: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
