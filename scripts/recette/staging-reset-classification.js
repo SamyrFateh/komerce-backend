@@ -81,6 +81,9 @@ const ENTRIES = [
   R('financial_movements', 'journal financier'), R('financial_movement_documents', 'documents du journal financier'),
   R('market_cost_attributions', 'attribution de couts marche (fait metier)'), R('inquiries', 'demandes de contact discovery'),
   R('catalog_field_sync_state', 'etat de synchro par produit (orphelin apres purge produits)'),
+  // Arbitrage utilisateur 2026-11-01 : sauvegardes ponctuelles de demo, suppression validee (vidage des lignes, pas de DROP).
+  R('demo_kpr_backup_20261024', 'sauvegarde de demo du 2026-10-24 : vidage valide par l utilisateur'),
+  R('demo_kpr_exposure_backup_20261024', 'sauvegarde de demo du 2026-10-24 : vidage valide par l utilisateur'),
   R('economic_risk_watermark_events', 'jalons de risque calcules sur commandes (FK RESTRICT users)', { uncertain: true }),
 
   // ── purge_via_fk : fermeture FK (verifiee contre PostgreSQL par le test d integration) ──
@@ -134,8 +137,6 @@ supplier_execution_groups supplier_payment_settlements unsold_items`.split(/\s+/
   F('provider_credentials', 'identifiants prestataires'), F('services', 'services discovery (chantier en cours)', true),
   F('physical_offers', 'offres locales discovery (chantier en cours)', true),
   F('revoked_tokens', 'jetons revoques (securite : purger reactiverait des jetons)', true),
-  F('demo_kpr_backup_20261024', 'sauvegarde ponctuelle du 2026-10-24', true),
-  F('demo_kpr_exposure_backup_20261024', 'sauvegarde ponctuelle du 2026-10-24', true),
 
   // ── fixture_scoped : lignes retirees uniquement si rattachees a un compte/une structure de test ──
   S('users', 'comptes : fixtures retirees, admin/technique en allowlist'), S('relais', 'relais : fixtures retirees'),
