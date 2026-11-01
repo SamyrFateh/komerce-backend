@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-01T11:19:10.013Z",
+  "generatedAt": "2026-11-01T11:47:10.671Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 764,
+  "count": 767,
   "routes": [
     {
       "method": "GET",
@@ -2493,6 +2493,16 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/boxes/:unitId/shipment",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/boxes/:unitId/shipment",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/operations/market/:marketCode/distribution/run",
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/distribution/run",
@@ -2556,6 +2566,26 @@
       "fullPath": "/api/admin/workspaces/operations/market/:marketCode/parcels/:reference/ship",
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/parcels/:reference/ship",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/supply",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/supply",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/supply/trace",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/supply/trace",
       "routeFile": "routes/admin-operations-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
