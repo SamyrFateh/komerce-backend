@@ -755,3 +755,10 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 `international_shipment_charges` — Frais réels d'arrivée et de transport local, documentés, idempotents et append-only ; non ventilés en N1 sans rapprochement.
 
 <!-- /schema-pending -->
+
+### Libellés des coûts variables par marché — migration 355 (intended_migration_schema)
+
+<!-- schema-pending: cost_component_market_overrides.label_override (migration 355, not yet live) -->
+<!-- schema-pending: cost_component_market_overrides.description_override (migration 355, not yet live) -->
+
+La migration 355 ajoute deux champs facultatifs au référentiel des surcharges de marché : `label_override` (160 caractères) et `description_override` (500 caractères). Ces champs personnalisent uniquement l’affichage du marché ; l’identifiant technique, le composant global, son montant de base et les calculs restent inchangés. Les modifications restent historisées dans `cost_component_market_override_events`.
