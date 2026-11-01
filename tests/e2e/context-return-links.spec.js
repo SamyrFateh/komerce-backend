@@ -74,8 +74,8 @@ test('Action Center → fiche Order 360 / PO : le retour revient à l’Action C
     });
   });
 
-  const orderHref = await page.getByRole('link', { name: 'Voir CMD-9' }).getAttribute('href');
-  const poHref = await page.getByRole('link', { name: 'Traiter' }).getAttribute('href');
+  const orderHref = await page.locator('[data-signal-ref="KSG-ORD-1"] a.kmc-workspace-action').getAttribute('href');
+  const poHref = await page.locator('[data-action-center-work-item="KSG-PO-1"]').getAttribute('href');
   expect(orderHref.startsWith('/admin/orders/CMD-9?')).toBe(true);
   expect(poHref.startsWith('/admin/workspaces/purchasing?po=PO-42&')).toBe(true);
 
