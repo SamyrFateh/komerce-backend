@@ -878,6 +878,28 @@
   font-size: 13.5px;
 }
 
+.kmc-variable-cost-panel-identity input,
+.kmc-variable-cost-panel-identity textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #172b4d;
+  font: inherit;
+  line-height: 1.4;
+}
+.kmc-variable-cost-panel-identity input { min-height: 40px; }
+.kmc-variable-cost-panel-identity textarea { min-height: 62px; resize: vertical; }
+.kmc-variable-cost-panel-identity input:focus-visible,
+.kmc-variable-cost-panel-identity textarea:focus-visible {
+  outline: 2px solid #1d5cd6;
+  outline-offset: 2px;
+}
+.kmc-variable-cost-panel-identity { min-width: 0; }
+
 .kmc-variable-cost-panel-control input {
   width: 100%;
   min-width: 0;

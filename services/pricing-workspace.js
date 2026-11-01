@@ -814,6 +814,8 @@ function marketOverridePayload(body = {}) {
   const payload = {};
   if (Object.prototype.hasOwnProperty.call(body, 'default_value')) payload.default_value = body.default_value;
   if (Object.prototype.hasOwnProperty.call(body, 'notes')) payload.notes = body.notes;
+  if (Object.prototype.hasOwnProperty.call(body, 'label')) payload.label = body.label;
+  if (Object.prototype.hasOwnProperty.call(body, 'description')) payload.description = body.description;
   return payload;
 }
 

@@ -955,7 +955,7 @@
       inline: Boolean(inlineOptions?.inlineContainer),
       container: inlineOptions?.inlineContainer || options.root,
       previousValue: inlineOptions?.previousValue || null,
-      previousLabel: isMutualized ? 'Quote-part actuelle du marché' : 'Valeur reconnue sur la période',
+      previousLabel: isMutualized ? 'Quote-part actuelle du marché' : 'Montant déjà enregistré',
       createChargeEndpoint: inlineOptions?.allowCreateMarketDirect && !isMutualized
         ? `${marketEndpoint}/structure-charges` : null,
       onClose: () => {
@@ -1004,10 +1004,33 @@
     if (!components.length) form.appendChild(el(doc, 'div', 'kmc-cockpit-empty-row', 'Aucun coût variable actif à ajuster.'));
 
     components.forEach(component => {
-      const row = el(doc, 'label', 'kmc-variable-cost-panel-row');
+      const row = el(doc, 'div', 'kmc-variable-cost-panel-row');
       const identity = el(doc, 'div', 'kmc-variable-cost-panel-identity');
-      identity.appendChild(el(doc, 'strong', '', component.label || component.key));
       identity.appendChild(el(doc, 'small', '', `${allocationPerimeter(component) === 'mutualized' ? 'Mutualisé' : 'Direct'} · ${allocationLabel(component.allocation_method)}`));
+      const editableIdentity = allocationPerimeter(component) !== 'mutualized';
+      if (editableIdentity) {
+        const labelEditor = doc.createElement('input');
+        labelEditor.type = 'text';
+        labelEditor.maxLength = 160;
+        labelEditor.value = component.label || component.key;
+        labelEditor.dataset.originalValue = labelEditor.value;
+        labelEditor.dataset.variableCostLabel = component.key;
+        labelEditor.setAttribute('aria-label', 'Libellé de ' + component.key);
+        identity.appendChild(labelEditor);
+        const descriptionEditor = doc.createElement('textarea');
+        descriptionEditor.rows = 2;
+        descriptionEditor.maxLength = 500;
+        descriptionEditor.placeholder = 'Description courte du coût';
+        descriptionEditor.value = component.description || '';
+        descriptionEditor.dataset.originalValue = descriptionEditor.value;
+        descriptionEditor.dataset.variableCostDescription = component.key;
+        descriptionEditor.setAttribute('aria-label', 'Description de ' + component.key);
+        identity.appendChild(descriptionEditor);
+        identity.appendChild(el(doc, 'small', '', 'Libellé et description propres au marché : modification enregistrée automatiquement.'));
+      } else {
+        identity.appendChild(el(doc, 'strong', '', component.label || component.key));
+        identity.appendChild(el(doc, 'small', '', 'Référence mutualisée en lecture seule ; modifiable au niveau global.'));
+      }
       row.appendChild(identity);
       const control = el(doc, 'div', 'kmc-variable-cost-panel-control');
       const input = doc.createElement('input');
@@ -1051,6 +1074,36 @@
     // Une valeur vide ou négative n'est jamais enregistrée (NULL ≠ 0) et l'erreur reste affichée.
     let autosaving = Promise.resolve();
     form.addEventListener('submit', event => event.preventDefault());
+    form.addEventListener('change', event => {
+      const input = event.target.closest('[data-variable-cost-label], [data-variable-cost-description]');
+      if (!input || input.value === input.dataset.originalValue) return;
+      const key = input.dataset.variableCostLabel || input.dataset.variableCostDescription;
+      const property = input.dataset.variableCostLabel ? 'label' : 'description';
+      if (property === 'label' && !input.value.trim()) {
+        error.textContent = 'Le libellé ne peut pas être vide.';
+        error.hidden = false;
+        return;
+      }
+      autosaving = autosaving.then(async () => {
+        const endpoint = workspace.endpointFor({ requestedMarket: options.requestedMarket });
+        const status = input.closest('.kmc-variable-cost-panel-row')?.querySelector('[data-autosave-status]');
+        if (status) status.textContent = 'Enregistrement…';
+        try {
+          await workspace.jsonRequest(options.fetch, `${endpoint}/cost-components/${encodeURIComponent(key)}/update`, {
+            method: 'POST', body: { [property]: input.value.trim() },
+          });
+          input.dataset.originalValue = input.value;
+          error.hidden = true;
+          if (status) status.textContent = '✓ Libellé / description enregistré';
+          await rootObject.KomerceCanonicalPricingWorkspace.mount(options);
+        } catch (err) {
+          if (status) status.textContent = '';
+          error.textContent = `Non enregistré : ${err.message}`;
+          error.hidden = false;
+        }
+      });
+    });
+
     form.addEventListener('change', event => {
       const input = event.target.closest('[data-variable-cost-input]');
       if (!input || input.value === input.dataset.originalValue) return;

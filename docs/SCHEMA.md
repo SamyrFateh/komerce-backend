@@ -769,3 +769,10 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 `international_n1_allocation_links` — Provenance exclusive des allocations N1 `order_item_real_cost_allocations` depuis un transport international ; isolation des écritures douane existantes, liens de colis et de lignes de commande.
 
 <!-- /schema-pending -->
+
+### Libellés de coûts par marché — migration 356 (intended_migration_schema)
+
+<!-- schema-pending: cost_component_market_overrides.label_override (migration 356, not yet live) -->
+<!-- schema-pending: cost_component_market_overrides.description_override (migration 356, not yet live) -->
+
+La migration 356 ajoute des libellés et descriptions spécifiques aux marchés, historisés et sans mutation du référentiel global.

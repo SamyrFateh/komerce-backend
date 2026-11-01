@@ -4300,6 +4300,8 @@ CREATE TABLE public.cost_component_market_overrides (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     created_by uuid,
     updated_by uuid,
+    label_override character varying(160),
+    description_override character varying(500),
     CONSTRAINT cost_component_market_overrides_default_value_check CHECK (((default_value IS NULL) OR (default_value >= (0)::numeric)))
 );
 
