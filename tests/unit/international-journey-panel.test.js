@@ -29,7 +29,7 @@ test('3 tabs, one existing dossier list and clear not yet booked N1 status',()=>
   const headings=all(root,n=>n.tagName==='TH').map(n=>n.textContent);
   expect(headings).toEqual(['Référence','Étape','Transitaire','KOM-BOX','Volume facturé','Fret réel','ETA','Dossier']);
   expect(all(root,n=>n.className==='kmc-journey-cost-alert').at(0).textContent)
-    .toContain('Aucun double compte');
+    .toContain('Un coût inconnu ne signifie jamais zéro');
 });
 test('nouveaux dossiers depuis Hub Live, fret admin et lecture seule responsable marché',()=>{
   const admin=mount('admin');
