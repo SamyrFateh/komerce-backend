@@ -126,13 +126,34 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     await expect(create).toBeDisabled();
     await boxes.getByLabel('Inclure BOX-1').check();
     await boxes.getByLabel('Référence de la nouvelle expédition').fill('SHIP-NEW');
-    await boxes.getByLabel('Transitaire', { exact: true }).fill('Transitaire X');
-    await boxes.getByLabel('Preuve de création').fill('BL-123');
     await expect(create).toBeEnabled();
     await create.click();
     await expect.poll(() => posts.length).toBe(1);
     expect(posts[0]).toEqual({ path: `${API}/boxes/shipment`, body: {
-      reference: 'SHIP-NEW', forwarder_name: 'Transitaire X', transport_mode: 'sea', proof_ref: 'BL-123', hub_unit_ids: [BOX] } });
+      reference: 'SHIP-NEW', hub_unit_ids: [BOX] } });
     await expect(boxes.getByLabel('Inclure BOX-2')).toHaveCount(0);
   });
+  test('ouvrir un dossier vide sans transitaire ni preuve', async ({ page }) => {
+    const posts = [];
+    await mount(page, posts);
+    const boxes = page.locator('[data-supply-boxes]');
+    const button = boxes.locator('[data-workspace-action="create-shipment-from-boxes"]');
+    await boxes.getByLabel('Référence de la nouvelle expédition').fill('SHIP-EMPTY');
+    await expect(button).toBeEnabled();
+    await expect(boxes.getByLabel('Transitaire', {exact:true})).toHaveCount(0);
+    await expect(boxes.getByLabel('Preuve de création')).toHaveCount(0);
+    await button.click();
+    await expect.poll(() => posts.length).toBe(1);
+    expect(posts[0]).toEqual({path:`${API}/boxes/shipment`,body:{reference:'SHIP-EMPTY',hub_unit_ids:[]}});
+  });
+  test('un carton rattaché reste détachable avant la remise', async ({ page }) => {
+    const posts = [];
+    await mount(page, posts);
+    const button = page.locator('[data-supply-boxes] [data-workspace-action="detach-box-shipment"]');
+    await expect(button).toHaveCount(1);
+    await button.click();
+    await expect.poll(() => posts.length).toBe(1);
+    expect(posts[0]).toEqual({path:`${API}/boxes/b2/detach`,body:{}});
+  });
+
 });
