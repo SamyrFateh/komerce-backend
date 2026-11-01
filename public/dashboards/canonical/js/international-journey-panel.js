@@ -21,7 +21,7 @@
   const STAGES=['hub_ready','handed_over','forwarder_received','in_transit','arrived',
     'customs_released','local_delivery','relay_received'];
   const STAGE_LABEL={
-    hub_ready:'Prêt au Hub',handed_over:'Remis au transitaire',
+    hub_ready:'En préparation au Hub',handed_over:'Remis au transitaire',
     forwarder_received:'Réceptionné par le transitaire',in_transit:'Expédié / en transit',
     arrived:'Arrivé',customs_released:'Mainlevée confirmée',
     local_delivery:'Transport local',relay_received:'Réception relais attestée',
@@ -132,13 +132,13 @@
     else{
       const table=put(list,doc.createElement('table'));table.className='kmc-workspace-table';
       const thead=put(table,doc.createElement('thead'));const tr=put(thead,doc.createElement('tr'));
-      for(const h of ['Référence','Étape','Transitaire','Colis','Volume facturé','Fret réel','ETA','Dossier'])
+      for(const h of ['Référence','Étape','Transitaire','KOM-BOX','Colis historiques','Volume facturé','Fret réel','ETA','Dossier'])
         put(tr,text(doc,'th','',h));
       const tbody=put(table,doc.createElement('tbody'));
       for(const s of rows){
         const line=put(tbody,doc.createElement('tr'));
-        for(const v of [s.reference,STAGE_LABEL[s.stage]||s.stage,s.forwarder_name,
-          s.parcel_count,s.volume_m3==null?'—':s.volume_m3+' m³',money(s.freight_invoice_kmf),date(s.estimated_arrival_at)])
+        for(const v of [s.reference,STAGE_LABEL[s.stage]||s.stage,s.forwarder_name||'À désigner',
+          s.hub_unit_count??0,s.parcel_count??0,s.volume_m3==null?'—':s.volume_m3+' m³',money(s.freight_invoice_kmf),date(s.estimated_arrival_at)])
           put(line,text(doc,'td','',v));
         const cell=put(line,doc.createElement('td'));
         const button=put(cell,text(doc,'button','kmc-entity-360-action',ctx.journeyRef===s.reference?'Ouvert':'Consulter'));
@@ -146,21 +146,12 @@
         button.addEventListener('click',()=>{ctx.journeyRef=s.reference;ctx.reload();});
       }
     }
-    if(ctx.journeyTab==='transport'&&actorCan(ctx,['admin'])){
-      task(doc,ctx,section,{
-        title:'Nouvelle expédition · colis remis par le Hub',
-        action:'',
-        fields:[
-          {name:'reference',label:'Référence expédition',required:true},
-          {name:'forwarder_name',label:'Transitaire',required:true},
-          {name:'transport_mode',label:'Transport',required:true,
-            options:[['sea','Bateau'],['air','Avion']]},
-          {name:'parcel_refs',label:'Références colis (séparées par virgules)',required:true},
-          {name:'volume_m3',label:'Volume facturable estimé (m³)',type:'number'},
-          {name:'freight_rate_kmf_per_m3',label:'Tarif fret convenu (KMF/m³)',type:'number'},
-          {name:'estimated_arrival_date',label:'ETA prévisionnelle',type:'date'},proof],
-        transform:raw=>({...raw,parcel_refs:String(raw.parcel_refs||'').split(',').map(x=>x.trim()).filter(Boolean)}),
-      });
+    if(ctx.journeyTab==='transport'&&actorCan(ctx,['admin','agent_hub'])){
+      const hint=put(section,doc.createElement('p'));
+      hint.className='kmc-workspace-note';
+      put(hint,text(doc,'span','','La création et la composition des expéditions se font dans Hub Live. La remise au transitaire est confirmée ici avec preuve réelle. '));
+      const link=put(hint,text(doc,'a','kmc-workspace-ref','Ouvrir Hub Live · Approvisionnement'));
+      link.href='/admin/hub-live?view=execute';
     }
     const s=rows.find(item=>item.reference===ctx.journeyRef);
     if(!s)return section;
@@ -168,7 +159,7 @@
     put(dossier,text(doc,'h3','',s.reference+' · '+(STAGE_LABEL[s.stage]||s.stage)));
     const snapshot=put(dossier,doc.createElement('div'));snapshot.className='kmc-journey-facts';
     const facts=[
-      ['Transport',s.transport_mode==='sea'?'Bateau':'Avion'],
+      ['Transport',s.transport_mode==='sea'?'Bateau':s.transport_mode==='air'?'Avion':'À définir'],
       ['Suivi',s.tracking_reference||s.bill_of_lading_ref||'Non reçu'],
       ['Conteneur',s.container_reference||'Non communiqué'],
       ['Départ constaté',date(s.departed_at)],['Arrivée estimée',date(s.estimated_arrival_at)],
@@ -219,7 +210,11 @@
        ctx.journeyTab==='relay'&&['local_delivery','relay_received'].includes(step))){
       task(doc,ctx,dossier,{
         title:'Confirmer : '+STAGE_LABEL[step],
-        action:ref+'/transition',fields:[proof,note],
+        action:ref+'/transition',
+        fields:step==='handed_over'&&s.hub_draft
+          ?[{name:'forwarder_name',label:'Transitaire qui prend physiquement les cartons',required:true},
+            {name:'transport_mode',label:'Mode de transport',required:true,options:[['sea','Bateau'],['air','Avion']]},proof,note]
+          :[proof,note],
         transform:raw=>({...raw,to_stage:step}),
       });
     }
@@ -273,7 +268,7 @@
       const extra=put(dossier,doc.createElement('details'));extra.className='kmc-journey-task';
       put(extra,text(doc,'summary','','Preuves et historique · '+(detail.events?.length||0)+' événement(s)'));
       for(const e of detail.events||[])
-        put(extra,text(doc,'p','kmc-journey-history',date(e.occurred_at)+' · '+e.event_type+' · '+e.proof_ref));
+        put(extra,text(doc,'p','kmc-journey-history',date(e.occurred_at)+' · '+e.event_type+' · '+(e.proof_ref||'Événement sans preuve de remise')));
       for(const c of detail.charges||[])
         put(extra,text(doc,'p','kmc-journey-history',c.fee_type+' · '+money(c.amount_kmf)+' · '+c.proof_ref));
     }

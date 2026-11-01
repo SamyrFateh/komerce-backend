@@ -203,6 +203,7 @@
       "international_n1_reconciliations",
       "international_shipment_charges",
       "international_shipment_events",
+      "international_shipment_hub_units",
       "international_shipment_parcels",
       "international_shipments",
       "invoices",

@@ -142,7 +142,7 @@ router.post('/box/:unit_id/shipment', ...hubAuth, async (req, res, next) => {
 });
 
 router.delete('/box/:unit_id/shipment', ...hubAuth, async (req, res, next) => {
-  try { res.json(await boxShipment.detachBoxFromShipment({ unitId: req.params.unit_id })); } catch (err) { boxShipmentError(err, res, next); }
+  try { res.json(await boxShipment.detachBoxFromShipment({ unitId: req.params.unit_id, actor: req.user })); } catch (err) { boxShipmentError(err, res, next); }
 });
 
 // Dossier d'approvisionnement par marché : projection en lecture seule (aucune seconde source de vérité).

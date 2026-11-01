@@ -79,6 +79,7 @@ module.exports = {
       'migrations/309_hub_placement_guard_exclude_outcomes.sql',
       'migrations/313_market_transport_sale_rates.sql',
       'migrations/354_international_shipment_journey.sql',
+      'migrations/359_hub_draft_open_and_handover.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
@@ -249,6 +250,7 @@ module.exports = {
       'hub_purchase_allocations: RW!',
       'international_shipment_charges: RW!',
       'international_shipment_events: RW!',
+      'international_shipment_hub_units: RW!',
       'international_shipment_parcels: RW!',
       'international_shipments: RW!',
       'incidents: R',

@@ -782,3 +782,10 @@ La migration 356 ajoute des libellés et descriptions spécifiques aux marchés,
 
 `international_shipment_hub_units` is a new, **not yet live** table proposed by migration 358 (#3247). It links a packed single-market KOM-BOX (`hub_physical_units`, `unit_type = MARKET_PARCEL`) to at most one `international_shipments` row of the same market while the shipment is still `hub_ready`. Columns: `shipment_id`, `physical_unit_id` (UNIQUE), `attached_by`, `attached_at`. Triggers refuse a non-packed unit, a cross-market link, a closed shipment, any UPDATE, and a DELETE after handover.
 <!-- /schema-pending -->
+
+
+### Ouverture des dossiers Hub et remise attestée — migration 359 (intended_migration_schema)
+
+La migration 359 ajoute **`international_shipments.hub_draft`** (booléen, défaut `false`) et autorise `forwarder_name` / `transport_mode` nuls uniquement avant la remise (`hub_ready`). Un brouillon Hub peut être créé sans carton et sans transitaire, sur un marché résolu côté serveur. Les anciens dossiers de transport (`hub_draft=false`) conservent leurs références `parcel_refs`.
+
+Le journal `international_shipment_events` accepte les événements `opened`, `box_attached` et `box_detached` avec preuve documentaire NULL (faits opérateur), sans jamais confondre ces événements avec le transfert de garde. La transition `handed_over` exige toujours une **preuve réelle** ; pour un brouillon Hub elle exige aussi un transitaire, un mode et au moins un KOM-BOX `DISPATCHED` sans anomalie (garde du service **et** trigger PostgreSQL). Les liens carton deviennent immuables après la remise (migration 358). La douane et N1 restent la suite #3250, hors du scope 359.
