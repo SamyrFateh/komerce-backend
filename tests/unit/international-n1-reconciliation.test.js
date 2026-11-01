@@ -84,14 +84,20 @@ test('sans KOM-BOX, aucune valeur économique annoncée',async()=>{
   await expect(reconcile(market,admin,'KM-EXP-1',fixture({noBoxes:true}).database))
     .rejects.toMatchObject({code:'SHIPMENT_COST_BOX_SCOPE'});
 });
+test('la clôture refuse une preuve sans attestation explicite de complétude',async()=>{
+  const x=fixture({stage:'relay_received'});
+  await expect(reconcile(market,admin,'KM-EXP-1',x.database,{close:true,proof_ref:'CLOSE-001'}))
+    .rejects.toMatchObject({code:'SHIPMENT_COST_COMPLETENESS_ATTESTATION_REQUIRED'});
+  expect(x.queries).toHaveLength(0);
+});
 test('clôture économique uniquement après relais, factures complètes et preuve',async()=>{
-  await expect(reconcile(market,admin,'KM-EXP-1',fixture().database,{close:true,proof_ref:'CL-1'}))
+  await expect(reconcile(market,admin,'KM-EXP-1',fixture().database,{close:true,proof_ref:'CL-1',complete_attested:true}))
     .rejects.toMatchObject({code:'SHIPMENT_COST_RELAY_REQUIRED'});
   await expect(reconcile(market,admin,'KM-EXP-1',fixture({stage:'relay_received',unknownFreight:true}).database,
-    {close:true,proof_ref:'CL-1'}))
+    {close:true,proof_ref:'CL-1',complete_attested:true}))
     .rejects.toMatchObject({code:'SHIPMENT_COST_INCOMPLETE'});
   const done=await reconcile(market,admin,'KM-EXP-1',fixture({stage:'relay_received'}).database,
-    {close:true,proof_ref:'CLOSE-2026'});
+    {close:true,proof_ref:'CLOSE-2026',complete_attested:true});
   expect(done).toMatchObject({status:'closed',financial_closed:true,allocation_rows:0});
 });
 test('le coût réel d’un transport aérien peut être constaté sans répartition au poids fictif',async()=>{
