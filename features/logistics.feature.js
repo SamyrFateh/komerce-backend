@@ -243,7 +243,7 @@ module.exports = {
   db: {
     tables: [
       'business_rules: R',
-      'customs_shipments: RW~',
+      'customs_shipments: R',
       'carriers: RW',
       'hub_custody_events: RW!',
       'hub_physical_unit_placements: RW!',
