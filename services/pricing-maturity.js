@@ -41,6 +41,9 @@
 
 'use strict';
 
+// Same physical parcel ownership as handoff and scan engine (shared parcels included).
+const { memberParcelPredicate } = require('./parcel-order-membership');
+
 const db = require('../db');
 const { SNAPSHOT_LANDED_TO_REAL_COST_TYPE } = require('./cost-allocation/cost-types');
 
@@ -383,39 +386,47 @@ async function getOrderMaturity(orderId, client = db) {
           AND alc.is_actual = TRUE
           AND alc.allocation_method <> 'estimated_fallback') AS actual_payment_records,
 
-      (SELECT COUNT(*)::int FROM parcels p WHERE p.order_id = o.id) AS parcel_count,
-      (SELECT COUNT(*)::int FROM parcels p WHERE p.order_id = o.id AND p.status = 'collected') AS collected_parcel_count,
+      (SELECT COUNT(*)::int FROM parcels p WHERE ${memberParcelPredicate('p', 'o.id')}
+          AND p.status::text <> 'cancelled') AS parcel_count,
+      (SELECT COUNT(*)::int FROM parcels p WHERE ${memberParcelPredicate('p', 'o.id')}
+          AND p.status::text <> 'cancelled' AND p.status = 'collected') AS collected_parcel_count,
 
       (SELECT COUNT(DISTINCT cs.id)::int
          FROM parcels p
          JOIN customs_shipment_parcels csp ON csp.parcel_id = p.id
          JOIN customs_shipments cs ON cs.id = csp.shipment_id
-        WHERE p.order_id = o.id) AS shipment_count,
+        WHERE ${memberParcelPredicate('p', 'o.id')}
+          AND p.status::text <> 'cancelled') AS shipment_count,
       (SELECT COUNT(DISTINCT cs.id)::int
          FROM parcels p
          JOIN customs_shipment_parcels csp ON csp.parcel_id = p.id
          JOIN customs_shipments cs ON cs.id = csp.shipment_id
-        WHERE p.order_id = o.id AND cs.status = 'confirmed') AS confirmed_shipment_count,
+        WHERE ${memberParcelPredicate('p', 'o.id')}
+          AND p.status::text <> 'cancelled' AND cs.status = 'confirmed') AS confirmed_shipment_count,
       (SELECT COUNT(DISTINCT cs.id)::int
          FROM parcels p
          JOIN customs_shipment_parcels csp ON csp.parcel_id = p.id
          JOIN customs_shipments cs ON cs.id = csp.shipment_id
-        WHERE p.order_id = o.id AND cs.customs_paid_kmf IS NOT NULL) AS customs_liquidated_shipment_count,
+        WHERE ${memberParcelPredicate('p', 'o.id')}
+          AND p.status::text <> 'cancelled' AND cs.customs_paid_kmf IS NOT NULL) AS customs_liquidated_shipment_count,
       (SELECT COUNT(DISTINCT cs.id)::int
          FROM parcels p
          JOIN customs_shipment_parcels csp ON csp.parcel_id = p.id
          JOIN customs_shipments cs ON cs.id = csp.shipment_id
-        WHERE p.order_id = o.id AND cs.freight_kmf IS NOT NULL) AS freight_known_shipment_count,
+        WHERE ${memberParcelPredicate('p', 'o.id')}
+          AND p.status::text <> 'cancelled' AND cs.freight_kmf IS NOT NULL) AS freight_known_shipment_count,
       (SELECT COUNT(DISTINCT cs.id)::int
          FROM parcels p
          JOIN customs_shipment_parcels csp ON csp.parcel_id = p.id
          JOIN customs_shipments cs ON cs.id = csp.shipment_id
-        WHERE p.order_id = o.id AND COALESCE(cs.freight_kmf, 0) > 0) AS positive_freight_shipment_count,
+        WHERE ${memberParcelPredicate('p', 'o.id')}
+          AND p.status::text <> 'cancelled' AND COALESCE(cs.freight_kmf, 0) > 0) AS positive_freight_shipment_count,
       (SELECT COUNT(DISTINCT cs.id)::int
          FROM parcels p
          JOIN customs_shipment_parcels csp ON csp.parcel_id = p.id
          JOIN customs_shipments cs ON cs.id = csp.shipment_id
-        WHERE p.order_id = o.id AND COALESCE(cs.customs_paid_kmf, 0) > 0) AS positive_customs_shipment_count,
+        WHERE ${memberParcelPredicate('p', 'o.id')}
+          AND p.status::text <> 'cancelled' AND COALESCE(cs.customs_paid_kmf, 0) > 0) AS positive_customs_shipment_count,
       (SELECT COUNT(DISTINCT alc.shipment_id)::int
          FROM order_item_real_cost_allocations alc
         WHERE alc.order_id = o.id AND alc.cost_type = 'freight'
