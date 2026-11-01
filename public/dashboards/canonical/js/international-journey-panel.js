@@ -21,7 +21,7 @@
   const STAGES=['hub_ready','handed_over','forwarder_received','in_transit','arrived',
     'customs_released','local_delivery','relay_received'];
   const STAGE_LABEL={
-    hub_ready:'Prêt au Hub',handed_over:'Remis au transitaire',
+    hub_ready:'En préparation au Hub',handed_over:'Remis au transitaire',
     forwarder_received:'Réceptionné par le transitaire',in_transit:'Expédié / en transit',
     arrived:'Arrivé',customs_released:'Mainlevée confirmée',
     local_delivery:'Transport local',relay_received:'Réception relais attestée',
@@ -137,7 +137,7 @@
       const tbody=put(table,doc.createElement('tbody'));
       for(const s of rows){
         const line=put(tbody,doc.createElement('tr'));
-        for(const v of [s.reference,STAGE_LABEL[s.stage]||s.stage,s.forwarder_name,
+        for(const v of [s.reference,STAGE_LABEL[s.stage]||s.stage,s.forwarder_name||'À désigner',
           s.parcel_count,s.volume_m3==null?'—':s.volume_m3+' m³',money(s.freight_invoice_kmf),date(s.estimated_arrival_at)])
           put(line,text(doc,'td','',v));
         const cell=put(line,doc.createElement('td'));
@@ -168,7 +168,7 @@
     put(dossier,text(doc,'h3','',s.reference+' · '+(STAGE_LABEL[s.stage]||s.stage)));
     const snapshot=put(dossier,doc.createElement('div'));snapshot.className='kmc-journey-facts';
     const facts=[
-      ['Transport',s.transport_mode==='sea'?'Bateau':'Avion'],
+      ['Transport',s.transport_mode==='sea'?'Bateau':s.transport_mode==='air'?'Avion':'À définir'],
       ['Suivi',s.tracking_reference||s.bill_of_lading_ref||'Non reçu'],
       ['Conteneur',s.container_reference||'Non communiqué'],
       ['Départ constaté',date(s.departed_at)],['Arrivée estimée',date(s.estimated_arrival_at)],
@@ -219,7 +219,11 @@
        ctx.journeyTab==='relay'&&['local_delivery','relay_received'].includes(step))){
       task(doc,ctx,dossier,{
         title:'Confirmer : '+STAGE_LABEL[step],
-        action:ref+'/transition',fields:[proof,note],
+        action:ref+'/transition',
+        fields:step==='handed_over'&&s.hub_draft
+          ?[{name:'forwarder_name',label:'Transitaire qui prend physiquement les cartons',required:true},
+            {name:'transport_mode',label:'Mode de transport',required:true,options:[['sea','Bateau'],['air','Avion']]},proof,note]
+          :[proof,note],
         transform:raw=>({...raw,to_stage:step}),
       });
     }
@@ -273,7 +277,7 @@
       const extra=put(dossier,doc.createElement('details'));extra.className='kmc-journey-task';
       put(extra,text(doc,'summary','','Preuves et historique · '+(detail.events?.length||0)+' événement(s)'));
       for(const e of detail.events||[])
-        put(extra,text(doc,'p','kmc-journey-history',date(e.occurred_at)+' · '+e.event_type+' · '+e.proof_ref));
+        put(extra,text(doc,'p','kmc-journey-history',date(e.occurred_at)+' · '+e.event_type+' · '+(e.proof_ref||'Événement sans preuve de remise')));
       for(const c of detail.charges||[])
         put(extra,text(doc,'p','kmc-journey-history',c.fee_type+' · '+money(c.amount_kmf)+' · '+c.proof_ref));
     }
