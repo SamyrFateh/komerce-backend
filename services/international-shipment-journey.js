@@ -6,8 +6,8 @@
  * @criticality high
  * @inputs authenticated_actor, server_resolved_market, physical_evidence, real_invoices
  * @outputs immutable_shipment_facts, read_only_cost_reconciliation
- * @db-read international_shipments, international_shipment_parcels, international_shipment_charges, international_shipment_events, parcels, orders, customs_shipments, customs_shipment_parcels, customs_shipment_fees
- * @db-write international_shipments, international_shipment_parcels, international_shipment_events, international_shipment_charges
+ * @db-read international_shipments, international_shipment_parcels, international_shipment_charges, international_shipment_events, international_shipment_hub_boxes, hub_physical_units, parcels, orders, customs_shipments, customs_shipment_parcels, customs_shipment_fees
+ * @db-write international_shipments, international_shipment_parcels, international_shipment_hub_boxes, international_shipment_events, international_shipment_charges
  * @db-txn withTransaction
  * @doctrine market_scope_server_owned, fact_not_financial_allocation, no_customs_clearance_inferred
  */
@@ -79,8 +79,9 @@ async function create(market,actor,input={},database=db){
   const mode=str(input.transport_mode,'transport_mode',10);
   if(!['sea','air'].includes(mode))fail(400,'JOURNEY_MODE_INVALID','Transport maritime ou aérien requis');
   const refs=Array.isArray(input.parcel_refs)?input.parcel_refs.map(x=>ref(x,'parcel_ref')):[];
-  if(!refs.length||refs.length>500||new Set(refs).size!==refs.length)
-    fail(400,'JOURNEY_PARCELS_REQUIRED','Un à 500 colis uniques requis');
+  const hubBoxRefs=Array.isArray(input.hub_box_refs)?input.hub_box_refs.map(x=>ref(x,'hub_box_ref')):[];
+  if((!refs.length&&!hubBoxRefs.length)||refs.length+hubBoxRefs.length>500||new Set(refs).size!==refs.length||new Set(hubBoxRefs).size!==hubBoxRefs.length)
+    fail(400,'JOURNEY_PARCELS_REQUIRED','Un à 500 colis ou KOM-BOX uniques requis');
   const proof=str(input.proof_ref,'proof_ref',240),volume=number(input.volume_m3,'volume_m3',{positive:true,scale:5});
   const rate=number(input.freight_rate_kmf_per_m3,'freight_rate_kmf_per_m3');
   const eta=date(input.estimated_arrival_date);
