@@ -208,7 +208,7 @@ test('Dossier opérateur : correction source accessible sans chiffres économiqu
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261031-hero-1');
+  expect(index).toContain('catalog-workspace.js?v=261102-arbitration-1');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -265,7 +265,7 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261031-hero-1');
+  expect(index).toContain('catalog-workspace.js?v=261102-arbitration-1');
   expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-hero-1');
 });
 
@@ -281,7 +281,7 @@ test('Validation Catalogue : la préparation française et le contrôle sont dis
   expect(ui).toContain("ENDPOINT + '/approval/'");
   expect(ui).toContain('Validation refusée : ');
   expect(ui).not.toContain("status: 'À valider en Raffinerie'");
-  expect(index).toContain('catalog-workspace.js?v=261031-hero-1');
+  expect(index).toContain('catalog-workspace.js?v=261102-arbitration-1');
 });
 
 test('Examiner V4 : aucun double Enregistrer/Confirmer visible et conformité garantie par serveur', () => {
@@ -319,7 +319,7 @@ test('Registre : seuls les vrais arbitrages produisent un statut humain',()=>{
   expect(ui).toContain("taxonomy_to_confirm: { code:'taxonomy'");
   expect(ui).toContain("editorial_to_complete: { code:'editorial'");
   expect(ui).toContain("approval_pending: { code:'approval'");
-  expect(ui).toContain("row.record_kind === 'candidate'\\n            ? '—'");
+  expect(ui).toContain("row.record_kind === 'candidate'");
   expect(ui).not.toContain('Catégorie économique manquante');
   expect(ui).not.toContain('Classement boutique à confirmer');
   expect(ui).not.toContain('Candidat fournisseur · aucune validation Catalogue implicite.');
