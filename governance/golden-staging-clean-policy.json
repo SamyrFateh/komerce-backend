@@ -199,6 +199,8 @@
       "customs_shipment_fees",
       "customs_shipment_financial_audit",
       "economic_risk_cost_events",
+      "international_n1_allocation_links",
+      "international_n1_reconciliations",
       "international_shipment_charges",
       "international_shipment_events",
       "international_shipment_parcels",
