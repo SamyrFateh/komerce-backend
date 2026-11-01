@@ -1825,6 +1825,20 @@ COMMENT ON FUNCTION public.hub_require_quarantine_incident() IS 'HUB-001 — tou
 
 
 --
+-- Name: international_facts_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.international_facts_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'international_shipment_facts append-only (% interdit)',TG_OP
+    USING ERRCODE='integrity_constraint_violation';
+END;
+$$;
+
+
+--
 -- Name: is_order_complete(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5772,6 +5786,115 @@ COMMENT ON COLUMN public.inquiries.intent IS 'Intention publique Komerce : reque
 --
 
 COMMENT ON COLUMN public.inquiries.requester_note IS 'Précision libre facultative du demandeur, 600 caractères maximum. Elle enrichit la cible et ne la remplace jamais.';
+
+
+--
+-- Name: international_shipment_charges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.international_shipment_charges (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    shipment_id uuid NOT NULL,
+    fee_type text NOT NULL,
+    kind text DEFAULT 'charge'::text NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    currency text DEFAULT 'KMF'::text NOT NULL,
+    proof_ref text NOT NULL,
+    idempotency_key text NOT NULL,
+    notes text,
+    actor_id text NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_international_charge_credit CHECK (((kind = 'charge'::text) OR (amount_kmf > (0)::numeric))),
+    CONSTRAINT international_shipment_charges_amount_kmf_check CHECK ((amount_kmf >= (0)::numeric)),
+    CONSTRAINT international_shipment_charges_currency_check CHECK ((currency = 'KMF'::text)),
+    CONSTRAINT international_shipment_charges_fee_type_check CHECK ((fee_type = ANY (ARRAY['handling'::text, 'storage'::text, 'forwarder'::text, 'local_tax'::text, 'exceptional'::text, 'other'::text, 'local_transport'::text]))),
+    CONSTRAINT international_shipment_charges_idempotency_key_check CHECK ((length(btrim(idempotency_key)) > 0)),
+    CONSTRAINT international_shipment_charges_kind_check CHECK ((kind = ANY (ARRAY['charge'::text, 'credit'::text]))),
+    CONSTRAINT international_shipment_charges_proof_ref_check CHECK ((length(btrim(proof_ref)) > 0))
+);
+
+
+--
+-- Name: TABLE international_shipment_charges; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.international_shipment_charges IS 'Faits de frais documentaires non ventilés au coût N1 tant que le rapprochement avec customs_shipment_fees n est pas certifié.';
+
+
+--
+-- Name: international_shipment_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.international_shipment_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    shipment_id uuid NOT NULL,
+    event_type text NOT NULL,
+    from_stage text,
+    to_stage text,
+    proof_ref text NOT NULL,
+    actor_id text NOT NULL,
+    notes text,
+    occurred_at timestamp with time zone DEFAULT now() NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT international_shipment_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'stage_changed'::text, 'tracking_updated'::text, 'freight_recorded'::text, 'customs_linked'::text]))),
+    CONSTRAINT international_shipment_events_proof_ref_check CHECK ((length(btrim(proof_ref)) > 0))
+);
+
+
+--
+-- Name: international_shipment_parcels; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.international_shipment_parcels (
+    shipment_id uuid NOT NULL,
+    parcel_id uuid NOT NULL,
+    volume_cm3 numeric(14,2),
+    attached_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT international_shipment_parcels_volume_cm3_check CHECK ((volume_cm3 >= (0)::numeric))
+);
+
+
+--
+-- Name: international_shipments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.international_shipments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    reference text NOT NULL,
+    forwarder_name text NOT NULL,
+    transport_mode text NOT NULL,
+    stage text DEFAULT 'hub_ready'::text NOT NULL,
+    volume_m3 numeric(12,5),
+    freight_rate_kmf_per_m3 numeric(14,2),
+    freight_invoice_kmf numeric(14,2),
+    freight_invoice_ref text,
+    tracking_reference text,
+    container_reference text,
+    bill_of_lading_ref text,
+    estimated_arrival_at timestamp with time zone,
+    departed_at timestamp with time zone,
+    arrived_at timestamp with time zone,
+    customs_shipment_id uuid,
+    created_by text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_international_invoice_proof CHECK (((freight_invoice_kmf IS NULL) OR ((freight_invoice_ref IS NOT NULL) AND (length(btrim(freight_invoice_ref)) > 0)))),
+    CONSTRAINT international_shipments_forwarder_name_check CHECK (((length(btrim(forwarder_name)) >= 2) AND (length(btrim(forwarder_name)) <= 180))),
+    CONSTRAINT international_shipments_freight_invoice_kmf_check CHECK ((freight_invoice_kmf >= (0)::numeric)),
+    CONSTRAINT international_shipments_freight_rate_kmf_per_m3_check CHECK ((freight_rate_kmf_per_m3 >= (0)::numeric)),
+    CONSTRAINT international_shipments_reference_check CHECK (((length(btrim(reference)) >= 3) AND (length(btrim(reference)) <= 96))),
+    CONSTRAINT international_shipments_stage_check CHECK ((stage = ANY (ARRAY['hub_ready'::text, 'handed_over'::text, 'forwarder_received'::text, 'in_transit'::text, 'arrived'::text, 'customs_released'::text, 'local_delivery'::text, 'relay_received'::text]))),
+    CONSTRAINT international_shipments_transport_mode_check CHECK ((transport_mode = ANY (ARRAY['sea'::text, 'air'::text]))),
+    CONSTRAINT international_shipments_volume_m3_check CHECK ((volume_m3 > (0)::numeric))
+);
+
+
+--
+-- Name: TABLE international_shipments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.international_shipments IS 'Transport international réel séparé des déclarations douanières; progression par preuves et coûts de fret facturés.';
 
 
 --
@@ -12474,6 +12597,38 @@ ALTER TABLE ONLY public.inquiries
 
 
 --
+-- Name: international_shipment_charges international_shipment_charges_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_charges
+    ADD CONSTRAINT international_shipment_charges_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: international_shipment_events international_shipment_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_events
+    ADD CONSTRAINT international_shipment_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: international_shipment_parcels international_shipment_parcels_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_parcels
+    ADD CONSTRAINT international_shipment_parcels_pkey PRIMARY KEY (shipment_id, parcel_id);
+
+
+--
+-- Name: international_shipments international_shipments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipments
+    ADD CONSTRAINT international_shipments_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: inventory_items inventory_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13826,6 +13981,38 @@ ALTER TABLE ONLY public.import_runtime_item_events
 
 
 --
+-- Name: international_shipment_charges uq_international_charge_idem; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_charges
+    ADD CONSTRAINT uq_international_charge_idem UNIQUE (shipment_id, idempotency_key);
+
+
+--
+-- Name: international_shipments uq_international_customs_shipment; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipments
+    ADD CONSTRAINT uq_international_customs_shipment UNIQUE (customs_shipment_id);
+
+
+--
+-- Name: international_shipments uq_international_market_reference; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipments
+    ADD CONSTRAINT uq_international_market_reference UNIQUE (market_id, reference);
+
+
+--
+-- Name: international_shipment_parcels uq_international_parcel; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_parcels
+    ADD CONSTRAINT uq_international_parcel UNIQUE (parcel_id);
+
+
+--
 -- Name: orders uq_orders_reference; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14814,6 +15001,27 @@ CREATE INDEX idx_inquiries_physical_offer ON public.inquiries USING btree (physi
 --
 
 CREATE INDEX idx_inquiries_service ON public.inquiries USING btree (service_id);
+
+
+--
+-- Name: idx_international_charges_shipment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_international_charges_shipment ON public.international_shipment_charges USING btree (shipment_id, recorded_at DESC);
+
+
+--
+-- Name: idx_international_events_shipment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_international_events_shipment ON public.international_shipment_events USING btree (shipment_id, occurred_at DESC);
+
+
+--
+-- Name: idx_international_shipments_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_international_shipments_market ON public.international_shipments USING btree (market_id, created_at DESC);
 
 
 --
@@ -17554,6 +17762,20 @@ CREATE TRIGGER fx_rate_observations_no_truncate BEFORE TRUNCATE ON public.fx_rat
 
 
 --
+-- Name: international_shipment_charges international_charges_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER international_charges_immutable BEFORE DELETE OR UPDATE ON public.international_shipment_charges FOR EACH ROW EXECUTE FUNCTION public.international_facts_immutable();
+
+
+--
+-- Name: international_shipment_events international_events_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER international_events_immutable BEFORE DELETE OR UPDATE ON public.international_shipment_events FOR EACH ROW EXECUTE FUNCTION public.international_facts_immutable();
+
+
+--
 -- Name: orders orders_snapshots_immutable; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -19341,6 +19563,54 @@ ALTER TABLE ONLY public.inquiries
 
 ALTER TABLE ONLY public.inquiries
     ADD CONSTRAINT inquiries_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id) ON DELETE CASCADE;
+
+
+--
+-- Name: international_shipment_charges international_shipment_charges_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_charges
+    ADD CONSTRAINT international_shipment_charges_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_shipment_events international_shipment_events_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_events
+    ADD CONSTRAINT international_shipment_events_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_shipment_parcels international_shipment_parcels_parcel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_parcels
+    ADD CONSTRAINT international_shipment_parcels_parcel_id_fkey FOREIGN KEY (parcel_id) REFERENCES public.parcels(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_shipment_parcels international_shipment_parcels_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_parcels
+    ADD CONSTRAINT international_shipment_parcels_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_shipments international_shipments_customs_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipments
+    ADD CONSTRAINT international_shipments_customs_shipment_id_fkey FOREIGN KEY (customs_shipment_id) REFERENCES public.customs_shipments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_shipments international_shipments_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipments
+    ADD CONSTRAINT international_shipments_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
 
 
 --
