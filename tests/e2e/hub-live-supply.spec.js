@@ -39,6 +39,7 @@ const DOSSIER = {
     { unit_id: BOX, reference: 'BOX-1', state: 'PACKED', shipment_ref: null, shipment_stage: null, contents: [{ order_ref: 'K-C1', line_id: 'l2', qty: 3 }] },
     { unit_id: 'b2', reference: 'BOX-2', state: 'PACKED', shipment_ref: 'SHIP-1', shipment_stage: 'hub_ready', contents: [{ order_ref: 'K-C2', line_id: 'l1', qty: 2 }] },
   ],
+  open_shipments: [{ reference: 'SHIP-2', forwarder_name: 'Transitaire X', transport_mode: 'sea', box_count: 0 }],
   to_handle: [{ kind: 'PO_MISSING_QTY', po_id: PO, supplier_name: 'Fournisseur A', reason: '1 unité(s) confirmée(s) non reçue(s)' }],
 };
 
@@ -64,7 +65,7 @@ async function mount(page, posts) {
     }
     if (route.request().method() === 'POST') {
       posts.push({ path: url.pathname, body: route.request().postDataJSON() });
-      return json({ unit_id: BOX, shipment_reference: 'SHIP-2', already_attached: false }, 201);
+      return json({ unit_id: BOX, shipment_reference: 'SHIP-2', already_attached: false, result: { reference: 'SHIP-NEW' } }, 201);
     }
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
@@ -103,16 +104,35 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     expect(posts).toHaveLength(0);
   });
 
-  test('rattachement d’un carton emballé : une mutation, route du carton, seulement si non rattaché', async ({ page }) => {
+  test('rattachement d’un carton à l’expédition choisie : sans ressaisie, une mutation, seulement si non rattaché', async ({ page }) => {
     const posts = [];
     await mount(page, posts);
     const boxes = page.locator('[data-supply-boxes]');
-    await expect(boxes.locator('[data-workspace-action="attach-box-shipment"]')).toHaveCount(1);
     const button = boxes.locator('[data-workspace-action="attach-box-shipment"]');
+    await expect(button).toHaveCount(1);
     await expect(button).toBeDisabled();
-    await boxes.locator('input').fill('SHIP-2');
+    await boxes.locator('[data-supply-shipment-bar] select').first().selectOption('SHIP-2');
+    await expect(button).toBeEnabled();
     await button.click();
     await expect.poll(() => posts.length).toBe(1);
     expect(posts[0]).toEqual({ path: `${API}/boxes/${BOX}/shipment`, body: { shipment_reference: 'SHIP-2' } });
+  });
+
+  test('création d’une expédition depuis les cartons cochés : un seul appel, ids des cartons', async ({ page }) => {
+    const posts = [];
+    await mount(page, posts);
+    const boxes = page.locator('[data-supply-boxes]');
+    const create = boxes.locator('[data-workspace-action="create-shipment-from-boxes"]');
+    await expect(create).toBeDisabled();
+    await boxes.getByLabel('Inclure BOX-1').check();
+    await boxes.getByLabel('Référence de la nouvelle expédition').fill('SHIP-NEW');
+    await boxes.getByLabel('Transitaire', { exact: true }).fill('Transitaire X');
+    await boxes.getByLabel('Preuve de création').fill('BL-123');
+    await expect(create).toBeEnabled();
+    await create.click();
+    await expect.poll(() => posts.length).toBe(1);
+    expect(posts[0]).toEqual({ path: `${API}/boxes/shipment`, body: {
+      reference: 'SHIP-NEW', forwarder_name: 'Transitaire X', transport_mode: 'sea', proof_ref: 'BL-123', hub_unit_ids: [BOX] } });
+    await expect(boxes.getByLabel('Inclure BOX-2')).toHaveCount(0);
   });
 });

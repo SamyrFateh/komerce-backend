@@ -627,33 +627,77 @@
     receipts.appendChild(simpleTable(doc, ['Colis', 'Référence fournisseur', 'État', 'Quantité', 'Reçu le'],
       (d.receipts || []).map(r => [r.reference, r.external_ref || '—', r.state, formatNumber(r.qty), formatDate(r.received_at)]), 'Aucun colis reçu.'));
 
-    const boxes = createSection(rootNode, ui, 'Cartons KOM-BOX', 'Contenu par commande ; un carton emballé se rattache à une expédition du même marché.');
+    const boxes = createSection(rootNode, ui, 'Cartons KOM-BOX', 'Cochez les cartons emballés du marché, puis créez le dossier d’expédition ou rattachez-les à une expédition ouverte. Le carton doit rester « expédié du Hub » avant la remise au transitaire.');
     boxes.setAttribute('data-supply-boxes', '');
-    boxes.appendChild(simpleTable(doc, ['Carton', 'État', 'Contenu', 'Expédition', 'Action'],
+    const open = Array.isArray(d.open_shipments) ? d.open_shipments : [];
+    const free = box => !box.shipment_ref && box.state === 'PACKED';
+    const checked = new Set();
+
+    const bar = doc.createElement('div');
+    bar.className = 'kmc-workspace-receive-footer';
+    bar.setAttribute('data-supply-shipment-bar', '');
+    const select = doc.createElement('select');
+    select.setAttribute('aria-label', 'Expédition ouverte');
+    select.appendChild(Object.assign(doc.createElement('option'), { value: '', textContent: open.length ? 'Choisir une expédition ouverte…' : 'Aucune expédition ouverte' }));
+    open.forEach(sh => select.appendChild(Object.assign(doc.createElement('option'), {
+      value: sh.reference, textContent: `${sh.reference} · ${sh.forwarder_name} · ${sh.box_count} carton(s)`,
+    })));
+    bar.appendChild(select);
+    const field = (placeholder, label) => {
+      const input = doc.createElement('input');
+      input.type = 'text'; input.maxLength = 120; input.placeholder = placeholder; input.className = 'kmc-workspace-receive-tracking';
+      input.setAttribute('aria-label', label);
+      return input;
+    };
+    const refInput = field('Nouvelle expédition : référence', 'Référence de la nouvelle expédition');
+    const forwarderInput = field('Transitaire', 'Transitaire');
+    const proofInput = field('Preuve de création', 'Preuve de création');
+    const mode = doc.createElement('select');
+    mode.setAttribute('aria-label', 'Mode de transport');
+    [['sea', 'Maritime'], ['air', 'Aérien']].forEach(([value, label]) => mode.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
+    const createButton = makeActionButton(doc, 'Créer l’expédition avec les cartons cochés', 'create-shipment-from-boxes');
+    createButton.disabled = true;
+    [refInput, forwarderInput, mode, proofInput, createButton].forEach(node => bar.appendChild(node));
+    boxes.appendChild(bar);
+
+    const attachButtons = [];
+    const syncBar = () => {
+      createButton.disabled = !(checked.size && refInput.value.trim() && forwarderInput.value.trim() && proofInput.value.trim());
+      attachButtons.forEach(({ button, box }) => { button.disabled = !select.value || !free(box); });
+    };
+    [refInput, forwarderInput, proofInput].forEach(input => input.addEventListener('input', syncBar));
+    select.addEventListener('change', syncBar);
+    createButton.addEventListener('click', () => runAction(context, createButton, {
+      url: endpointFor(context.marketCode, 'boxes/shipment'),
+      body: {
+        reference: refInput.value.trim(), forwarder_name: forwarderInput.value.trim(), transport_mode: mode.value,
+        proof_ref: proofInput.value.trim(), hub_unit_ids: [...checked],
+      },
+      runningMessage: 'Création de l’expédition…',
+      successMessage: result => `Expédition ${result && result.result ? result.result.reference : ''} créée avec ${checked.size} carton(s).`,
+    }).catch(() => {}));
+
+    boxes.appendChild(simpleTable(doc, ['', 'Carton', 'État', 'Contenu', 'Expédition', 'Action'],
       (d.boxes || []).map(box => {
         const contents = box.contents.map(c => `${c.order_ref} ×${formatNumber(c.qty)}`).join(', ');
+        let pick = '';
         let action = '—';
-        if (!box.shipment_ref && box.state === 'PACKED') {
-          action = doc.createElement('span');
-          const input = doc.createElement('input');
-          input.type = 'text';
-          input.maxLength = 120;
-          input.placeholder = 'Référence d’expédition';
-          input.className = 'kmc-workspace-receive-tracking';
-          input.setAttribute('aria-label', `Référence d’expédition pour ${box.reference}`);
-          const button = makeActionButton(doc, 'Rattacher à une expédition', 'attach-box-shipment');
-          button.disabled = true;
-          input.addEventListener('input', () => { button.disabled = !String(input.value || '').trim(); });
-          button.addEventListener('click', () => runAction(context, button, {
+        if (free(box)) {
+          pick = doc.createElement('input');
+          pick.type = 'checkbox';
+          pick.setAttribute('aria-label', `Inclure ${box.reference}`);
+          pick.addEventListener('change', () => { if (pick.checked) checked.add(box.unit_id); else checked.delete(box.unit_id); syncBar(); });
+          action = makeActionButton(doc, 'Rattacher à l’expédition choisie', 'attach-box-shipment');
+          action.disabled = true;
+          attachButtons.push({ button: action, box });
+          action.addEventListener('click', () => runAction(context, action, {
             url: endpointFor(context.marketCode, `boxes/${encodeURIComponent(box.unit_id)}/shipment`),
-            body: { shipment_reference: String(input.value || '').trim() },
+            body: { shipment_reference: select.value },
             runningMessage: 'Rattachement en cours…',
             successMessage: result => (result && result.already_attached ? 'Carton déjà rattaché à cette expédition.' : 'Carton rattaché à l’expédition.'),
           }).catch(() => {}));
-          action.appendChild(input);
-          action.appendChild(button);
         }
-        return [box.reference, box.state, contents || '—', box.shipment_ref || '—', action];
+        return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', action];
       }), 'Aucun carton.'));
 
     renderTracePanel(rootNode, ui, doc, context);

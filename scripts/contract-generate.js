@@ -1768,16 +1768,19 @@ const KNOWN_RESPONSES = {
     delete: { fields: ['unit_id','detached'], source: 'route-read' }
   },
   '/api/admin/workspaces/operations/market/{marketCode}/supply': {
-    get: { fields: ['market','market_id','generated_at','kpis','needs','purchase_orders','receipts','boxes','to_handle'], source: 'route-read' }
+    get: { fields: ['market','market_id','generated_at','kpis','needs','purchase_orders','receipts','boxes','open_shipments','to_handle'], source: 'route-read' }
   },
   '/api/admin/workspaces/operations/market/{marketCode}/supply/trace': {
     get: { fields: ['order_id','purchase_order_id','chain'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/operations/market/{marketCode}/boxes/shipment': {
+    post: { fields: ['ok','result'], source: 'route-read' }
   },
   '/api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/shipment': {
     post: { fields: ['unit_id','shipment_id','shipment_reference','already_attached'], source: 'route-read' }
   },
   '/api/hub/dossier': {
-    get: { fields: ['market','market_id','generated_at','kpis','needs','purchase_orders','receipts','boxes','to_handle'], source: 'route-read' }
+    get: { fields: ['market','market_id','generated_at','kpis','needs','purchase_orders','receipts','boxes','open_shipments','to_handle'], source: 'route-read' }
   },
   '/api/hub/trace': {
     get: { fields: ['order_id','purchase_order_id','chain'], source: 'route-read' }

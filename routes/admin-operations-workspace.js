@@ -27,6 +27,7 @@ const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard
 const workspace = require('../services/operations-workspace');
 const supply = require('../services/hub-procurement-dossier');
 const boxShipment = require('../services/hub-box-shipment-service');
+const shipmentJourney = require('../services/international-shipment-journey');
 const log = require('../utils/logger').child({ module: 'admin-operations-workspace' });
 
 const router = express.Router();
@@ -227,6 +228,29 @@ router.get(
         purchaseOrderId: req.query.po_id || null,
         allowedMarketIds: [req.workspaceMarket.id],
       }));
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
+  }
+);
+
+// Création d'un dossier d'expédition internationale directement depuis des KOM-BOX (service métier unique :
+// international-shipment-journey) ; l'autorité de création reste celle du journey (admin).
+router.post(
+  '/market/:marketCode/boxes/shipment',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async (req, res, next) => {
+    try {
+      const body = req.body || {};
+      const result = await shipmentJourney.create(req.workspaceMarket, actionActor(req), {
+        reference: body.reference,
+        forwarder_name: body.forwarder_name,
+        transport_mode: body.transport_mode,
+        proof_ref: body.proof_ref,
+        hub_unit_ids: body.hub_unit_ids,
+      });
+      return res.status(201).json({ ok: true, result });
     } catch (err) {
       return sendWorkspaceError(err, res, next);
     }
