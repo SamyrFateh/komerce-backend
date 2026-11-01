@@ -76,4 +76,17 @@ if (!process.env.DATABASE_URL) {
     const res = await request(app).post(`/api/hub/box/${nil}/shipment`).set(...bearer(agentHub)).send({ shipment_reference: 'INEXISTANT' });
     expect(res.status).toBe(404);
   });
+
+  test('workspace Hub live : le marché vient de la route, jamais du client ; sans délégation, rien ne s\'ouvre', async () => {
+    const base = '/api/admin/workspaces/operations/market/KM';
+    // Le marché KM de la base CI n'a pas d'assignation opérationnelle : la surface est fermée (409), jamais ouverte par défaut.
+    const closed = await request(app).get(`${base}/supply`).set(...bearer(admin));
+    expect(closed.status).toBe(409);
+    expect(closed.body.code).toBe('MARKET_ASSIGNMENT_NOT_ACTIVE');
+    const clientMarket = await request(app).get(`${base}/supply?market_id=${nil}`).set(...bearer(admin));
+    expect(clientMarket.status).toBe(400);
+    expect(clientMarket.body.code).toBe('client_market_id_forbidden');
+    const denied = await request(app).post(`${base}/boxes/${nil}/shipment`).set(...bearer(operator)).send({ shipment_reference: 'X' });
+    expect(denied.status).toBeGreaterThanOrEqual(403);
+  });
 }

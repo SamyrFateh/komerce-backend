@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 49,
-    "total_routes": 710,
+    "total_routes": 713,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -6376,6 +6376,183 @@
                       "x-observed": true
                     },
                     "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/supply": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/supply",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "market": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "market_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "generated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "kpis": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "needs": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "purchase_orders": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "receipts": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "boxes": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "to_handle": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/supply/trace": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/supply/trace",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "order_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "purchase_order_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "chain": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/shipment": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/shipment",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "unit_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "shipment_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "shipment_reference": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "already_attached": {
                       "type": "string",
                       "x-observed": true
                     }

@@ -70,8 +70,8 @@ async function mount(page, posts) {
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(WORKSPACE);
     if (url.pathname === '/api/scans/hub/receivable') return json({ purchase_orders: [] });
-    if (url.pathname === '/api/hub/dossier') return json(DOSSIER);
-    if (url.pathname === '/api/hub/trace') return json(TRACE);
+    if (url.pathname === `${API}/supply`) return json(DOSSIER);
+    if (url.pathname === `${API}/supply/trace`) return json(TRACE);
     return route.fulfill({ status: 404, body: '' });
   });
   await page.goto(`${ORIGIN}/admin/hub-live?view=execute`);
@@ -113,6 +113,6 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     await boxes.locator('input').fill('SHIP-2');
     await button.click();
     await expect.poll(() => posts.length).toBe(1);
-    expect(posts[0]).toEqual({ path: `/api/hub/box/${BOX}/shipment`, body: { shipment_reference: 'SHIP-2' } });
+    expect(posts[0]).toEqual({ path: `${API}/boxes/${BOX}/shipment`, body: { shipment_reference: 'SHIP-2' } });
   });
 });

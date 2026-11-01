@@ -354,9 +354,6 @@
     { id: 'inventory', label: 'Stock à affecter' },
   ]);
 
-  const DOSSIER_ENDPOINT = '/api/hub/dossier';
-  const TRACE_ENDPOINT = '/api/hub/trace';
-  const BOX_SHIPMENT_ENDPOINT = unitId => `/api/hub/box/${encodeURIComponent(unitId)}/shipment`;
   const PO_STAGE_LABELS = Object.freeze({
     draft: 'Brouillon',
     issued_not_sent: 'Bon émis, envoi non prouvé',
@@ -557,7 +554,7 @@
     button.addEventListener('click', async () => {
       button.disabled = true;
       try {
-        context.trace = await jsonRequest(context.fetch, `${TRACE_ENDPOINT}?${query}`);
+        context.trace = await jsonRequest(context.fetch, `${endpointFor(context.marketCode, 'supply/trace')}?${query}`);
         context.traceError = null;
       } catch (error) {
         context.trace = null;
@@ -648,7 +645,7 @@
           button.disabled = true;
           input.addEventListener('input', () => { button.disabled = !String(input.value || '').trim(); });
           button.addEventListener('click', () => runAction(context, button, {
-            url: BOX_SHIPMENT_ENDPOINT(box.unit_id),
+            url: endpointFor(context.marketCode, `boxes/${encodeURIComponent(box.unit_id)}/shipment`),
             body: { shipment_reference: String(input.value || '').trim() },
             runningMessage: 'Rattachement en cours…',
             successMessage: result => (result && result.already_attached ? 'Carton déjà rattaché à cette expédition.' : 'Carton rattaché à l’expédition.'),
@@ -955,7 +952,7 @@
           context.receivableError = error.message;
         }
         try {
-          context.dossier = await jsonRequest(fetchFn, `${DOSSIER_ENDPOINT}?market=${encodeURIComponent(marketCode)}`);
+          context.dossier = await jsonRequest(fetchFn, endpointFor(marketCode, 'supply'));
           context.dossierError = null;
         } catch (error) {
           context.dossier = null;

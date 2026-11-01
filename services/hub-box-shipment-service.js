@@ -52,12 +52,19 @@ function requireUuid(value, name) {
   return String(value);
 }
 
-async function attachBoxToShipment({ unitId, shipmentReference, actor = null }) {
+async function attachBoxToShipment({ unitId, shipmentReference, expectedMarketId = null, actor = null }) {
   const unit = requireUuid(unitId, 'unit_id');
   const reference = String(shipmentReference || '').trim();
   if (!reference) throw failure(400, 'HUB_OPERATOR_TEXT_INVALID', 'shipment_reference est requis');
   try {
     return await db.withTransaction(async (client) => {
+      if (expectedMarketId) {
+        const { rows: [box] } = await client.query('SELECT market_id FROM hub_physical_units WHERE id = $1', [unit]);
+        if (!box) throw failure(404, 'HUB_BOX_NOT_FOUND', 'Carton introuvable');
+        if (String(box.market_id || '') !== String(expectedMarketId)) {
+          throw failure(409, 'HUB_BOX_SHIPMENT_MARKET_MISMATCH', 'Ce carton n’appartient pas au marché de cette surface');
+        }
+      }
       const { rows: [shipment] } = await client.query(
         'SELECT id, market_id, stage FROM international_shipments WHERE reference = $1', [reference]
       );
