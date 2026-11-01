@@ -5,7 +5,7 @@
  * @test-runner jest
  * @test-requires postgres
  * @integration financial-journal-postgres.test.js
- * @brief Lot 5 — journal financier (migration 359) sur PostgreSQL réel : projection idempotente, natif + EUR + taux figés,
+ * @brief Lot 5 — journal financier (migration 360) sur PostgreSQL réel : projection idempotente, natif + EUR + taux figés,
  *        immuabilité, EUR jamais inventé, réconciliation événements métier ↔ journal ↔ agrégat dashboard Finance.
  */
 
@@ -17,7 +17,7 @@ const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
 
-describeDb('journal financier — migration 359 (REAL_DB)', () => {
+describeDb('journal financier — migration 360 (REAL_DB)', () => {
   const db = require('../../db');
   const fx = require('../../services/fx-authority');
   const journal = require('../../services/financial-journal');

@@ -5,7 +5,7 @@ Décision propriétaire : journal d'abord ; pivot EUR immédiatement après la d
 ## Ce que c'est / n'est pas
 Un **journal de mouvements** (un fait métier projeté = une ligne), pas une comptabilité en partie double : aucun compte débit/crédit. Les tables métier restent l'autorité ; le journal ne les corrige jamais.
 
-## Modèle (`financial_movements`, migration 359)
+## Modèle (`financial_movements`, migration 360)
 | Champ | Règle |
 |---|---|
 | `movement_key` | `source_kind:source_id:facet`, unique → projection **idempotente** |

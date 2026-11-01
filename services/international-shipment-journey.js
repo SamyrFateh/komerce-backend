@@ -75,6 +75,30 @@ async function evidence(client,s,type,actor,proof,from,to,payload={},notes=null)
     [s.id,type,from,to,str(proof,'proof_ref',240),String(actor.id),JSON.stringify(payload),notes?str(notes,'notes',2000):null]
   );
 }
+// Opening a Hub preparation dossier is not evidence of a physical handover.
+async function open(market,actor,input={},database=db){
+  marketOk(market);actorOk(actor,['admin','agent_hub']);
+  const reference=ref(input.reference);
+  const hubUnitIds=Array.isArray(input.hub_unit_ids)?input.hub_unit_ids.map(x=>String(x||'').trim()):[];
+  if(hubUnitIds.length>500||new Set(hubUnitIds).size!==hubUnitIds.length)
+    fail(400,'JOURNEY_HUB_UNITS_INVALID','Au maximum 500 cartons uniques');
+  if(Array.isArray(input.parcel_refs)&&input.parcel_refs.length)
+    fail(400,'JOURNEY_HUB_OPEN_PARCELS_FORBIDDEN','Utiliser des KOM-BOX pour ouvrir un dossier Hub');
+  return transact(database,async client=>{
+    let boxes=[];
+    try{boxes=await boxShipment.lockAttachableBoxes(client,{marketId:market.id,unitIds:hubUnitIds});}
+    catch(e){throw toJourneyError(e);}
+    const {rows:[s]}=await client.query(
+      'INSERT INTO international_shipments(market_id,reference,forwarder_name,transport_mode,created_by,hub_draft) VALUES ($1,$2,NULL,NULL,$3,TRUE) RETURNING *',
+      [market.id,reference,String(actor.id)]);
+    try{await boxShipment.insertBoxLinks(client,{shipmentId:s.id,units:boxes,actor});}
+    catch(e){throw toJourneyError(boxShipment.translate(e));}
+    await client.query(
+      "INSERT INTO international_shipment_events(shipment_id,event_type,from_stage,to_stage,proof_ref,actor_id,payload) VALUES ($1,'opened',NULL,'hub_ready',NULL,$2,$3::jsonb)",
+      [s.id,String(actor.id),JSON.stringify({hub_units:boxes.map(b=>({id:b.id,reference:b.reference}))})]);
+    return {reference:s.reference,stage:'hub_ready',hub_draft:true,hub_units:boxes.length};
+  });
+}
 async function create(market,actor,input={},database=db){
   marketOk(market);actorOk(actor,['admin']);
   const reference=ref(input.reference),forwarder=str(input.forwarder_name,'forwarder_name');
@@ -144,16 +168,30 @@ async function transition(market,actor,reference,body={},database=db){
       const {rows:units}=await client.query(
         'SELECT u.id,u.reference,u.state,u.outcome_type FROM international_shipment_hub_units h JOIN hub_physical_units u ON u.id=h.physical_unit_id WHERE h.shipment_id=$1 ORDER BY u.reference FOR UPDATE OF u',
         [s.id]);
+      if(s.hub_draft&&!units.length)fail(409,'JOURNEY_HUB_DRAFT_EMPTY','Ajoutez au moins un carton avant la remise');
       const bad=units.filter(u=>u.state!=='DISPATCHED'||u.outcome_type);
       if(bad.length)fail(409,'JOURNEY_HUB_UNITS_NOT_DISPATCHED',
         'Remise refusée : carton(s) non expédié(s) du Hub, en anomalie ou non conforme : '+bad.map(u=>u.reference+' ('+(u.outcome_type||u.state)+')').join(', '));
       handedUnits=units.map(u=>({id:u.id,reference:u.reference}));
     }
-    const stamped=target==='in_transit'?',departed_at=COALESCE(departed_at,now())'
-      :target==='arrived'?',arrived_at=COALESCE(arrived_at,now())':'';
-    await client.query('UPDATE international_shipments SET stage=$3,updated_at=now()'+stamped+
-      ' WHERE id=$1 AND market_id=$2',[s.id,market.id,target]);
-    await evidence(client,s,'stage_changed',actor,proof,s.stage,target,handedUnits?{physical_step:target,hub_units:handedUnits}:{physical_step:target},body.notes);
+    let transferDetails=null;
+    if(target==='handed_over'&&s.hub_draft){
+      const forwarder=str(body.forwarder_name||s.forwarder_name,'forwarder_name');
+      const mode=str(body.transport_mode||s.transport_mode,'transport_mode',10);
+      if(forwarder.length<2)fail(400,'JOURNEY_FORWARDER_REQUIRED','Transitaire identifié requis');
+      if(!['sea','air'].includes(mode))fail(400,'JOURNEY_MODE_INVALID','Mode de transport requis');
+      transferDetails={forwarder_name:forwarder,transport_mode:mode};
+      await client.query(
+        'UPDATE international_shipments SET stage=$3,forwarder_name=$4,transport_mode=$5,updated_at=now() WHERE id=$1 AND market_id=$2',
+        [s.id,market.id,target,forwarder,mode]);
+    }else{
+      const stamped=target==='in_transit'?',departed_at=COALESCE(departed_at,now())'
+        :target==='arrived'?',arrived_at=COALESCE(arrived_at,now())':'';
+      await client.query('UPDATE international_shipments SET stage=$3,updated_at=now()'+stamped+
+        ' WHERE id=$1 AND market_id=$2',[s.id,market.id,target]);
+    }
+    await evidence(client,s,'stage_changed',actor,proof,s.stage,target,
+      handedUnits?{physical_step:target,hub_units:handedUnits,...transferDetails}:{physical_step:target},body.notes);
     return {reference:s.reference,from_stage:s.stage,stage:target};
   });
 }
@@ -294,5 +332,5 @@ async function detail(market,reference,database=db){
   return {shipment:{...s,cost_reconciliation:n1?.cost_reconciliation||'not_reconciled',
     actual_n1_impact:n1?.actual_n1_impact??null},parcels:parcels.rows,hub_units:[...boxes.values()],events:events.rows,charges:charges.rows};
 }
-module.exports={STAGES,STAGE_ROLES,FEE_TYPES,JourneyError,create,transition,updateTracking,recordFreight,linkCustoms,recordCost,list,detail,
+module.exports={STAGES,STAGE_ROLES,FEE_TYPES,JourneyError,create,open,transition,updateTracking,recordFreight,linkCustoms,recordCost,list,detail,
   _internals:{ref,date,number,actorOk}};

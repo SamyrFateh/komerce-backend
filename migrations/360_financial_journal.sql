@@ -1,4 +1,4 @@
--- 359 — Journal financier canonique (Lot 5, décision propriétaire : journal d'abord, pivot EUR dès son contrat).
+-- 360 — Journal financier canonique (Lot 5, décision propriétaire : journal d'abord, pivot EUR dès son contrat).
 --
 -- Un mouvement financier = un fait métier projeté, avec ses montants NATIFS, ses taux historiques (jambes FX figées),
 -- son état et sa provenance. Idempotent par movement_key ; les champs monétaires sont immuables une fois posés,

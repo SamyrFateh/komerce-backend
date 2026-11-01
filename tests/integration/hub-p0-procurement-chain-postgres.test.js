@@ -401,6 +401,50 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
     });
   });
 
+  describe('ouverture autonome et remise opposable (#3251)', () => {
+    test('service réel PostgreSQL : dossier vide → composition → sortie → remise, sans preuve inventée', async () => {
+      const ref=`${tag}-DRAFT-3251`;
+      const hubActor={id:admin,role:'agent_hub'};
+      const opened=await journey.open({id:km,code:'KM'},hubActor,{reference:ref});
+      expect(opened).toMatchObject({stage:'hub_ready',hub_draft:true,hub_units:0});
+      const row=(await q('SELECT forwarder_name,transport_mode,hub_draft,stage FROM international_shipments WHERE reference=$1',[ref])).rows[0];
+      expect(row).toMatchObject({forwarder_name:null,transport_mode:null,hub_draft:true,stage:'hub_ready'});
+      const event=(await q("SELECT event_type,proof_ref,actor_id FROM international_shipment_events e JOIN international_shipments s ON s.id=e.shipment_id WHERE s.reference=$1 AND event_type='opened'",[ref])).rows[0];
+      expect(event).toMatchObject({event_type:'opened',proof_ref:null,actor_id:admin});
+      const transfer={to_stage:'handed_over',proof_ref:'HANDOVER-3251',forwarder_name:'Transitaire réel',transport_mode:'sea'};
+      await expect(journey.transition({id:km,code:'KM'},hubActor,ref,transfer))
+        .rejects.toMatchObject({code:'JOURNEY_HUB_DRAFT_EMPTY'});
+      // Même une écriture SQL directe reste refusée par le trigger.
+      await expect(q("UPDATE international_shipments SET stage='handed_over',forwarder_name='Transitaire réel',transport_mode='sea' WHERE reference=$1",[ref]))
+        .rejects.toThrow(/hub_draft_handover_empty/);
+      const box=await makeBox({market:km,state:'PACKED',label:'DRAFT-3251'});
+      const other=await makeBox({market:cm,state:'PACKED',label:'OTHER-3251'});
+      await expect(boxShipment.attachBoxToShipment({unitId:other,shipmentReference:ref,expectedMarketId:km,actor:hubActor}))
+        .rejects.toMatchObject({code:'HUB_BOX_SHIPMENT_MARKET_MISMATCH'});
+      const attached=await boxShipment.attachBoxToShipment({unitId:box,shipmentReference:ref,expectedMarketId:km,actor:hubActor});
+      expect(attached.already_attached).toBe(false);
+      await expect(journey.transition({id:km,code:'KM'},hubActor,ref,transfer))
+        .rejects.toMatchObject({code:'JOURNEY_HUB_UNITS_NOT_DISPATCHED'});
+      const client=await db.getClient();
+      try {
+        await client.query("SET session_replication_role='replica'");
+        await client.query("UPDATE hub_physical_units SET state='DISPATCHED' WHERE id=$1",[box]);
+      } finally {
+        await client.query("SET session_replication_role='origin'");
+        client.release();
+      }
+      await expect(journey.transition({id:km,code:'KM'},hubActor,ref,{to_stage:'handed_over',proof_ref:'HANDOVER-3251'}))
+        .rejects.toMatchObject({code:'JOURNEY_INVALID_forwarder_name'});
+      const done=await journey.transition({id:km,code:'KM'},hubActor,ref,transfer);
+      expect(done.stage).toBe('handed_over');
+      await expect(boxShipment.detachBoxFromShipment({unitId:box,expectedMarketId:km,actor:hubActor}))
+        .rejects.toMatchObject({code:'HUB_SHIPMENT_CLOSED'});
+      const events=(await q("SELECT e.event_type,e.actor_id,e.proof_ref FROM international_shipment_events e JOIN international_shipments s ON s.id=e.shipment_id WHERE s.reference=$1 ORDER BY e.occurred_at",[ref])).rows;
+      expect(events.map(e=>e.event_type)).toEqual(expect.arrayContaining(['opened','box_attached','stage_changed']));
+      expect(events.find(e=>e.event_type==='stage_changed').proof_ref).toBe('HANDOVER-3251');
+    });
+  });
+
   describe('concurrence', () => {
     test('deux PO tentent d\'attacher la même ligne : une seule réussit', async () => {
       const o = await makeOrder({ market: km, relais: relaisKm, supplier: supplierA, items: [{ sku: sku1, qty: 1 }] });

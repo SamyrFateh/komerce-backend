@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 666 | 666 | 0 |
+| backend | 36 | 36 | 663 | 663 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -219,11 +219,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Exposer les agrégats de pilotage et porter un portail interne Canonical unifié accessible depuis /admin, dont la navigation et les workspaces sont adaptés au rôle, aux scopes marché et aux capabilities résolus côté serveur, sans réutiliser les deux générations historiques de dashboards.
 
 - middleware: 1
-- services: 48
+- services: 44
 - routes: 28
 - migrations: 2
 - dash: 165
-- tests: 195
+- tests: 193
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 20
 - interfaces exposed: 90
@@ -589,7 +589,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 1
 - migrations: 13
 - scripts: 14
-- tests: 82
+- tests: 80
 - tables owned (lifecycle): 11 — `purchase_lines`, `purchase_orders`, `product_suppliers`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
 - tables written: 11
 - interfaces exposed: 20
@@ -2282,7 +2282,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2193 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2186 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2359,12 +2359,12 @@ Meta Graph monté : oui.
 | dashboard | economic-engine | static-code, data-read | 21 | **DECLARED_AND_OBSERVED** |
 | dashboard | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 112 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 111 | **DECLARED_AND_OBSERVED** |
 | dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | logistics | static-code, data-read, data-write | 35 | **DECLARED_AND_OBSERVED** |
+| dashboard | logistics | static-code, data-read, data-write | 32 | **DECLARED_AND_OBSERVED** |
 | dashboard | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
-| dashboard | market | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
+| dashboard | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | dashboard | market-autonomy | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | market-delegation | static-code | 28 | **DECLARED_AND_OBSERVED** |
 | dashboard | notifications | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
@@ -2594,8 +2594,8 @@ Meta Graph monté : oui.
 | purchasing | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
 | purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 58 | **DECLARED_AND_OBSERVED** |
-| purchasing | logistics | static-code, data-read | 13 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 55 | **DECLARED_AND_OBSERVED** |
+| purchasing | logistics | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
 | purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |

@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 220 | Vérifié sur le dump live Railway. |
+| Tables | 221 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 505 | Performance + contraintes uniques |
-| Foreign keys | 420 | Cohérence relationnelle |
-| Fonctions | 93 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 112 | Triggers présents dans le dump live Railway. |
+| Index | 506 | Performance + contraintes uniques |
+| Foreign keys | 425 | Cohérence relationnelle |
+| Fonctions | 98 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 117 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -783,9 +783,16 @@ La migration 356 ajoute des libellés et descriptions spécifiques aux marchés,
 `international_shipment_hub_units` is a new, **not yet live** table proposed by migration 358 (#3247). It links a packed single-market KOM-BOX (`hub_physical_units`, `unit_type = MARKET_PARCEL`) to at most one `international_shipments` row of the same market while the shipment is still `hub_ready`. Columns: `shipment_id`, `physical_unit_id` (UNIQUE), `attached_by`, `attached_at`. Triggers refuse a non-packed unit, a cross-market link, a closed shipment, any UPDATE, and a DELETE after handover.
 <!-- /schema-pending -->
 
-<!-- schema-pending: financial_movements (migration 359, not yet live) -->
-<!-- schema-pending: financial_movement_documents (migration 359, not yet live) -->
-### Journal financier canonique — migration 359 (intended_migration_schema)
 
-`financial_movements` is a new, **not yet live** append-only journal (migration 359, Lot 5). One row per projected business fact, idempotent on `movement_key = source_kind:source_id:facet`. It keeps the **native amount and currency**, the EUR amount (`amount_eur`, `fx_status` ∈ snapshot / converted / native_eur / unavailable) with the frozen FX `fx_legs`, the business `state` (planned → committed → observed → settled → reversed, forward-only), the `provenance` and the links (market, order, purchase order, shipment, parcel, supplier, relay). A trigger freezes identity, native amounts, EUR and rates, forbids DELETE and any state regression. It is **not a double-entry ledger** (no debit/credit accounts). `financial_movement_documents` stores the supporting documents (proof references) of a movement, unique per (movement, kind, reference).
+### Ouverture des dossiers Hub et remise attestée — migration 359 (intended_migration_schema)
+
+La migration 359 ajoute **`international_shipments.hub_draft`** (booléen, défaut `false`) et autorise `forwarder_name` / `transport_mode` nuls uniquement avant la remise (`hub_ready`). Un brouillon Hub peut être créé sans carton et sans transitaire, sur un marché résolu côté serveur. Les anciens dossiers de transport (`hub_draft=false`) conservent leurs références `parcel_refs`.
+
+Le journal `international_shipment_events` accepte les événements `opened`, `box_attached` et `box_detached` avec preuve documentaire NULL (faits opérateur), sans jamais confondre ces événements avec le transfert de garde. La transition `handed_over` exige toujours une **preuve réelle** ; pour un brouillon Hub elle exige aussi un transitaire, un mode et au moins un KOM-BOX `DISPATCHED` sans anomalie (garde du service **et** trigger PostgreSQL). Les liens carton deviennent immuables après la remise (migration 358). La douane et N1 restent la suite #3250, hors du scope 359.
+
+<!-- schema-pending: financial_movements (migration 360, not yet live) -->
+<!-- schema-pending: financial_movement_documents (migration 360, not yet live) -->
+### Journal financier canonique — migration 360 (intended_migration_schema)
+
+`financial_movements` is a new, **not yet live** append-only journal (migration 360, Lot 5). One row per projected business fact, idempotent on `movement_key = source_kind:source_id:facet`. It keeps the **native amount and currency**, the EUR amount (`amount_eur`, `fx_status` ∈ snapshot / converted / native_eur / unavailable) with the frozen FX `fx_legs`, the business `state` (planned → committed → observed → settled → reversed, forward-only), the `provenance` and the links (market, order, purchase order, shipment, parcel, supplier, relay). A trigger freezes identity, native amounts, EUR and rates, forbids DELETE and any state regression. It is **not a double-entry ledger** (no debit/credit accounts). `financial_movement_documents` stores the supporting documents (proof references) of a movement, unique per (movement, kind, reference).
 <!-- /schema-pending -->

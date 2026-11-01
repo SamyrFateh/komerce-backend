@@ -1877,6 +1877,75 @@ $$;
 
 
 --
+-- Name: international_hub_draft_transfer_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.international_hub_draft_transfer_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_count integer; v_bad integer;
+BEGIN
+  IF OLD.stage='hub_ready' AND NEW.stage='handed_over' AND OLD.hub_draft THEN
+    SELECT COUNT(*)::int,
+      COUNT(*) FILTER (WHERE u.state IS DISTINCT FROM 'DISPATCHED' OR u.outcome_type IS NOT NULL)::int
+      INTO v_count,v_bad FROM public.international_shipment_hub_units h
+      JOIN public.hub_physical_units u ON u.id=h.physical_unit_id
+      WHERE h.shipment_id=OLD.id;
+    IF v_count=0 THEN RAISE EXCEPTION 'hub_draft_handover_empty' USING ERRCODE='23514'; END IF;
+    IF v_bad>0 THEN RAISE EXCEPTION 'hub_draft_handover_undispatched' USING ERRCODE='23514'; END IF;
+    IF NEW.forwarder_name IS NULL OR length(btrim(NEW.forwarder_name))<2 OR NEW.transport_mode IS NULL THEN
+      RAISE EXCEPTION 'hub_draft_handover_transport_required' USING ERRCODE='23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: international_shipment_hub_units_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.international_shipment_hub_units_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_unit record;
+  v_shipment record;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    SELECT stage INTO v_shipment FROM public.international_shipments WHERE id = OLD.shipment_id FOR UPDATE;
+    IF v_shipment.stage IS DISTINCT FROM 'hub_ready' THEN
+      RAISE EXCEPTION 'hub_box_shipment_detach_after_handover' USING ERRCODE = '23514';
+    END IF;
+    RETURN OLD;
+  END IF;
+  IF TG_OP = 'UPDATE' THEN
+    RAISE EXCEPTION 'hub_box_shipment_link_immutable' USING ERRCODE = '23514';
+  END IF;
+
+  SELECT id, unit_type, state, market_id INTO v_unit
+    FROM public.hub_physical_units WHERE id = NEW.physical_unit_id FOR UPDATE;
+  SELECT id, market_id, stage INTO v_shipment
+    FROM public.international_shipments WHERE id = NEW.shipment_id FOR UPDATE;
+  IF v_unit.unit_type IS DISTINCT FROM 'MARKET_PARCEL' THEN
+    RAISE EXCEPTION 'hub_box_shipment_requires_market_parcel' USING ERRCODE = '23514';
+  END IF;
+  IF v_unit.state NOT IN ('PACKED','DISPATCHED') OR v_unit.market_id IS NULL THEN
+    RAISE EXCEPTION 'hub_box_shipment_requires_packed_box' USING ERRCODE = '23514';
+  END IF;
+  IF v_shipment.market_id IS DISTINCT FROM v_unit.market_id THEN
+    RAISE EXCEPTION 'hub_box_shipment_market_mismatch: carton et expédition de marchés différents'
+      USING ERRCODE = '23514';
+  END IF;
+  IF v_shipment.stage IS DISTINCT FROM 'hub_ready' THEN
+    RAISE EXCEPTION 'hub_box_shipment_closed: expédition déjà remise au transitaire'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: is_order_complete(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2591,6 +2660,48 @@ END $$;
 
 
 --
+-- Name: purchase_lines_guard_market_scope(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_lines_guard_market_scope() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_po_market uuid;
+  v_po_order uuid;
+  v_line_market uuid;
+BEGIN
+  IF NEW.purchase_order_id IS NULL THEN RETURN NEW; END IF;
+  IF TG_OP = 'UPDATE' AND NEW.purchase_order_id IS NOT DISTINCT FROM OLD.purchase_order_id
+       AND NEW.order_item_id IS NOT DISTINCT FROM OLD.order_item_id THEN
+    RETURN NEW;
+  END IF;
+
+  -- Le verrou de l'en-tête sérialise les rattachements concurrents.
+  SELECT market_id, order_id INTO v_po_market, v_po_order
+    FROM public.purchase_orders WHERE id = NEW.purchase_order_id FOR UPDATE;
+  IF NOT FOUND OR v_po_order IS NOT NULL THEN
+    RETURN NEW; -- Forme historique 1:1 préservée.
+  END IF;
+
+  IF v_po_market IS NULL THEN
+    RAISE EXCEPTION 'purchase_line_market_unset: ancien dossier sans marché unique, aucun nouveau rattachement'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT o.market_id INTO v_line_market
+    FROM public.order_items oi
+    JOIN public.orders o ON o.id = oi.order_id
+   WHERE oi.id = NEW.order_item_id;
+  IF v_line_market IS NULL OR v_line_market IS DISTINCT FROM v_po_market THEN
+    RAISE EXCEPTION 'purchase_line_market_mismatch: ligne non destinée au marché de la PO'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: purchase_orders_cancel_lines(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2602,6 +2713,67 @@ BEGIN
      SET cancelled_at = now(), cancel_reason = 'purchase_order_cancelled', updated_at = now()
    WHERE purchase_order_id = NEW.id AND cancelled_at IS NULL;
   RETURN NULL;
+END $$;
+
+
+--
+-- Name: purchase_orders_guard_market_scope(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_orders_guard_market_scope() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP = 'INSERT' AND NEW.order_id IS NULL AND NEW.market_id IS NULL THEN
+    RAISE EXCEPTION 'purchase_order_market_required: marché obligatoire pour une nouvelle PO regroupée'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF TG_OP = 'UPDATE' AND OLD.market_id IS NOT NULL
+       AND NEW.market_id IS DISTINCT FROM OLD.market_id THEN
+    RAISE EXCEPTION 'purchase_order_market_immutable: marché de la PO immuable'
+      USING ERRCODE = '23514';
+  END IF;
+
+  -- Même sur un ancien en-tête dont le marché était absent, le rendre
+  -- non-null exige que toutes les lignes déjà rattachées concordent.
+  IF NEW.order_id IS NULL AND NEW.market_id IS NOT NULL
+     AND (TG_OP = 'INSERT' OR NEW.market_id IS DISTINCT FROM OLD.market_id)
+     AND EXISTS (
+       SELECT 1 FROM public.purchase_lines pl
+       JOIN public.order_items oi ON oi.id = pl.order_item_id
+       JOIN public.orders o ON o.id = oi.order_id
+       WHERE pl.purchase_order_id = NEW.id
+         AND o.market_id IS DISTINCT FROM NEW.market_id
+     ) THEN
+    RAISE EXCEPTION 'purchase_order_market_mismatch: lignes de marché différent'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: purchase_orders_guard_sent_proof(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_orders_guard_sent_proof() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF OLD.sent_at IS NOT NULL AND (
+       NEW.sent_at IS DISTINCT FROM OLD.sent_at
+    OR NEW.sent_channel IS DISTINCT FROM OLD.sent_channel
+    OR NEW.sent_by IS DISTINCT FROM OLD.sent_by) THEN
+    RAISE EXCEPTION 'purchase_order_sent_proof_immutable: envoi déjà enregistré'
+      USING ERRCODE = '23514';
+  END IF;
+  IF OLD.sent_at IS NULL AND NEW.sent_at IS NOT NULL
+     AND NEW.status NOT IN ('notified','confirmed','shipped','hub_received') THEN
+    RAISE EXCEPTION 'purchase_order_sent_requires_submitted: seule une PO soumise peut être envoyée'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
 END $$;
 
 
@@ -5919,13 +6091,25 @@ CREATE TABLE public.international_shipment_events (
     event_type text NOT NULL,
     from_stage text,
     to_stage text,
-    proof_ref text NOT NULL,
+    proof_ref text,
     actor_id text NOT NULL,
     notes text,
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
-    CONSTRAINT international_shipment_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'stage_changed'::text, 'tracking_updated'::text, 'freight_recorded'::text, 'customs_linked'::text]))),
-    CONSTRAINT international_shipment_events_proof_ref_check CHECK ((length(btrim(proof_ref)) > 0))
+    CONSTRAINT chk_international_events_evidence CHECK ((((event_type = ANY (ARRAY['opened'::text, 'box_attached'::text, 'box_detached'::text])) AND (proof_ref IS NULL)) OR ((event_type <> ALL (ARRAY['opened'::text, 'box_attached'::text, 'box_detached'::text])) AND (proof_ref IS NOT NULL) AND (length(btrim(proof_ref)) > 0)))),
+    CONSTRAINT international_shipment_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'opened'::text, 'box_attached'::text, 'box_detached'::text, 'stage_changed'::text, 'tracking_updated'::text, 'freight_recorded'::text, 'customs_linked'::text])))
+);
+
+
+--
+-- Name: international_shipment_hub_units; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.international_shipment_hub_units (
+    shipment_id uuid NOT NULL,
+    physical_unit_id uuid NOT NULL,
+    attached_by uuid,
+    attached_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -5950,8 +6134,8 @@ CREATE TABLE public.international_shipments (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     market_id uuid NOT NULL,
     reference text NOT NULL,
-    forwarder_name text NOT NULL,
-    transport_mode text NOT NULL,
+    forwarder_name text,
+    transport_mode text,
     stage text DEFAULT 'hub_ready'::text NOT NULL,
     volume_m3 numeric(12,5),
     freight_rate_kmf_per_m3 numeric(14,2),
@@ -5967,6 +6151,8 @@ CREATE TABLE public.international_shipments (
     created_by text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    hub_draft boolean DEFAULT false NOT NULL,
+    CONSTRAINT chk_international_handover_transport CHECK (((stage = 'hub_ready'::text) OR ((forwarder_name IS NOT NULL) AND (transport_mode IS NOT NULL)))),
     CONSTRAINT chk_international_invoice_proof CHECK (((freight_invoice_kmf IS NULL) OR ((freight_invoice_ref IS NOT NULL) AND (length(btrim(freight_invoice_ref)) > 0)))),
     CONSTRAINT international_shipments_forwarder_name_check CHECK (((length(btrim(forwarder_name)) >= 2) AND (length(btrim(forwarder_name)) <= 180))),
     CONSTRAINT international_shipments_freight_invoice_kmf_check CHECK ((freight_invoice_kmf >= (0)::numeric)),
@@ -5983,6 +6169,13 @@ CREATE TABLE public.international_shipments (
 --
 
 COMMENT ON TABLE public.international_shipments IS 'Transport international réel séparé des déclarations douanières; progression par preuves et coûts de fret facturés.';
+
+
+--
+-- Name: COLUMN international_shipments.hub_draft; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.international_shipments.hub_draft IS 'Dossier ouvert en préparation au Hub : transitaire, mode et preuve de remise absents jusqu au transfert réel.';
 
 
 --
@@ -9205,9 +9398,15 @@ CREATE TABLE public.purchase_orders (
     supplier_currency text,
     supplier_total_price numeric(18,4) GENERATED ALWAYS AS ((supplier_unit_price * (qty)::numeric)) STORED,
     procurement_hub_ref text DEFAULT 'DXB'::text NOT NULL,
+    market_id uuid,
+    sent_at timestamp with time zone,
+    sent_channel text,
+    sent_by uuid,
+    sent_note text,
     CONSTRAINT chk_purchase_orders_header_shape CHECK ((((order_id IS NOT NULL) AND (qty IS NOT NULL) AND (supplier_sku IS NOT NULL)) OR ((order_id IS NULL) AND (order_item_id IS NULL) AND (product_sku_id IS NULL) AND (supplier_unit_ref IS NULL) AND (supplier_order_identity IS NULL) AND (qty IS NULL) AND (supplier_sku IS NULL) AND (supplier_unit_price IS NULL) AND (supplier_currency IS NULL)))),
     CONSTRAINT chk_purchase_orders_hub_ref CHECK ((btrim(procurement_hub_ref) <> ''::text)),
     CONSTRAINT chk_purchase_orders_qty CHECK (((qty IS NULL) OR (qty > 0))),
+    CONSTRAINT chk_purchase_orders_sent_proof CHECK ((((sent_at IS NULL) AND (sent_channel IS NULL) AND (sent_by IS NULL)) OR ((sent_at IS NOT NULL) AND (sent_channel IS NOT NULL) AND (sent_channel = ANY (ARRAY['email'::text, 'whatsapp'::text, 'phone'::text, 'api'::text, 'other'::text]))))),
     CONSTRAINT chk_purchase_orders_supplier_money_pair CHECK ((((supplier_unit_price IS NULL) AND (supplier_currency IS NULL)) OR ((supplier_unit_price > (0)::numeric) AND (supplier_currency ~ '^[A-Z]{3}$'::text)))),
     CONSTRAINT chk_purchase_orders_supplier_order_identity_shape CHECK (((supplier_order_identity IS NULL) OR ((product_sku_id IS NOT NULL) AND (supplier_unit_ref IS NOT NULL) AND (jsonb_typeof(supplier_order_identity) = 'object'::text) AND (jsonb_typeof((supplier_order_identity -> 'provider'::text)) = 'string'::text) AND (btrim((supplier_order_identity ->> 'provider'::text)) <> ''::text) AND (jsonb_typeof((supplier_order_identity -> 'version'::text)) = 'number'::text) AND ((supplier_order_identity ->> 'version'::text) ~ '^[0-9]+$'::text) AND (((supplier_order_identity ->> 'version'::text))::integer >= 1) AND (jsonb_typeof((supplier_order_identity -> 'payload'::text)) = 'object'::text) AND ((supplier_order_identity -> 'payload'::text) <> '{}'::jsonb)))),
     CONSTRAINT chk_purchase_orders_supplier_unit_ref_nonempty CHECK (((supplier_unit_ref IS NULL) OR (btrim(supplier_unit_ref) <> ''::text))),
@@ -9298,6 +9497,20 @@ COMMENT ON COLUMN public.purchase_orders.supplier_total_price IS 'Total fourniss
 --
 
 COMMENT ON COLUMN public.purchase_orders.procurement_hub_ref IS 'Hub d''approvisionnement destinataire de la PO (référence logique, ex. DXB). Toutes les lignes d''une PO regroupée partagent cette valeur.';
+
+
+--
+-- Name: COLUMN purchase_orders.market_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.market_id IS 'Marché unique de toute nouvelle PO regroupée. Autorité dérivée des commandes clientes. NULL uniquement pour anciens dossiers multi-marchés à préserver.';
+
+
+--
+-- Name: COLUMN purchase_orders.sent_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_orders.sent_at IS 'Envoi réellement effectué au fournisseur (déclaré par un opérateur ou un adaptateur API). NULL = bon préparé ou émis, transmission non prouvée.';
 
 
 --
@@ -12717,6 +12930,14 @@ ALTER TABLE ONLY public.international_shipment_events
 
 
 --
+-- Name: international_shipment_hub_units international_shipment_hub_units_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_hub_units
+    ADD CONSTRAINT international_shipment_hub_units_pkey PRIMARY KEY (shipment_id, physical_unit_id);
+
+
+--
 -- Name: international_shipment_parcels international_shipment_parcels_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14125,6 +14346,14 @@ ALTER TABLE ONLY public.international_shipment_parcels
 
 
 --
+-- Name: international_shipment_hub_units uq_international_shipment_hub_unit; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_hub_units
+    ADD CONSTRAINT uq_international_shipment_hub_unit UNIQUE (physical_unit_id);
+
+
+--
 -- Name: orders uq_orders_reference; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -15134,6 +15363,13 @@ CREATE INDEX idx_international_events_shipment ON public.international_shipment_
 --
 
 CREATE INDEX idx_international_n1_links_shipment ON public.international_n1_allocation_links USING btree (shipment_id);
+
+
+--
+-- Name: idx_international_shipment_hub_units_shipment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_international_shipment_hub_units_shipment ON public.international_shipment_hub_units USING btree (shipment_id);
 
 
 --
@@ -18252,6 +18488,20 @@ CREATE TRIGGER trg_incidents_updated BEFORE UPDATE ON public.incidents FOR EACH 
 
 
 --
+-- Name: international_shipments trg_international_hub_draft_transfer_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_international_hub_draft_transfer_guard BEFORE UPDATE OF stage ON public.international_shipments FOR EACH ROW EXECUTE FUNCTION public.international_hub_draft_transfer_guard();
+
+
+--
+-- Name: international_shipment_hub_units trg_international_shipment_hub_units_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_international_shipment_hub_units_guard BEFORE INSERT OR DELETE OR UPDATE ON public.international_shipment_hub_units FOR EACH ROW EXECUTE FUNCTION public.international_shipment_hub_units_guard();
+
+
+--
 -- Name: market_cash_destinations trg_market_cash_destinations_guard; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -18546,6 +18796,13 @@ CREATE TRIGGER trg_purchase_lines_a_groupable BEFORE INSERT OR UPDATE OF purchas
 
 
 --
+-- Name: purchase_lines trg_purchase_lines_b_market_scope; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_lines_b_market_scope BEFORE INSERT OR UPDATE OF purchase_order_id, order_item_id ON public.purchase_lines FOR EACH ROW EXECUTE FUNCTION public.purchase_lines_guard_market_scope();
+
+
+--
 -- Name: purchase_lines trg_purchase_lines_guard_attachment; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -18578,6 +18835,20 @@ CREATE TRIGGER trg_purchase_lines_guard_freeze BEFORE UPDATE ON public.purchase_
 --
 
 CREATE TRIGGER trg_purchase_orders_cancel_lines AFTER UPDATE OF status ON public.purchase_orders FOR EACH ROW WHEN (((new.status = 'cancelled'::text) AND (old.status IS DISTINCT FROM 'cancelled'::text))) EXECUTE FUNCTION public.purchase_orders_cancel_lines();
+
+
+--
+-- Name: purchase_orders trg_purchase_orders_market_scope; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_orders_market_scope BEFORE INSERT OR UPDATE OF market_id ON public.purchase_orders FOR EACH ROW EXECUTE FUNCTION public.purchase_orders_guard_market_scope();
+
+
+--
+-- Name: purchase_orders trg_purchase_orders_sent_proof; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_orders_sent_proof BEFORE UPDATE OF sent_at, sent_channel, sent_by ON public.purchase_orders FOR EACH ROW EXECUTE FUNCTION public.purchase_orders_guard_sent_proof();
 
 
 --
@@ -19752,6 +20023,30 @@ ALTER TABLE ONLY public.international_shipment_charges
 
 ALTER TABLE ONLY public.international_shipment_events
     ADD CONSTRAINT international_shipment_events_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_shipment_hub_units international_shipment_hub_units_attached_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_hub_units
+    ADD CONSTRAINT international_shipment_hub_units_attached_by_fkey FOREIGN KEY (attached_by) REFERENCES public.users(id);
+
+
+--
+-- Name: international_shipment_hub_units international_shipment_hub_units_physical_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_hub_units
+    ADD CONSTRAINT international_shipment_hub_units_physical_unit_id_fkey FOREIGN KEY (physical_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_shipment_hub_units international_shipment_hub_units_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_hub_units
+    ADD CONSTRAINT international_shipment_hub_units_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
 
 
 --
@@ -21123,6 +21418,14 @@ ALTER TABLE ONLY public.purchase_lines
 
 
 --
+-- Name: purchase_orders purchase_orders_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_orders
+    ADD CONSTRAINT purchase_orders_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
 -- Name: purchase_orders purchase_orders_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -21152,6 +21455,14 @@ ALTER TABLE ONLY public.purchase_orders
 
 ALTER TABLE ONLY public.purchase_orders
     ADD CONSTRAINT purchase_orders_product_supplier_id_fkey FOREIGN KEY (product_supplier_id) REFERENCES public.product_suppliers(id) ON DELETE SET NULL;
+
+
+--
+-- Name: purchase_orders purchase_orders_sent_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_orders
+    ADD CONSTRAINT purchase_orders_sent_by_fkey FOREIGN KEY (sent_by) REFERENCES public.users(id);
 
 
 --
