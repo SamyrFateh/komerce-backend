@@ -23,7 +23,7 @@ test('Sourcing garde Hero + décisions puis ses vrais outils métier',()=>{
 
   const start=decision.indexOf('function renderMetricOverview');
   const renderSource=decision.slice(start, decision.indexOf('function decorateUi', start));
-  expect(workspace).toContain("label:'Sources & imports'");
+  expect(fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','import-runtime.js'),'utf8')).toContain("tab('sources', 'Sources'");
   expect(decision).toContain('No artificial source decisions from scanned/WATCH totals');
   expect(renderSource).not.toContain('SummaryCards.render');
 
@@ -37,6 +37,6 @@ test('front sourcing shows commercial suggestion and hides customs category corr
   expect(workspace).not.toContain('boutique-category-options');
   expect(workspace).not.toContain('confirm-boutique-category');
   expect(workspace).toContain("'/admin/workspaces/catalog?search='");
-  expect(workspace).toContain("label:'Exceptions source'");
+  expect(workspace).toContain('sourcingRemedy');
   expect(workspace).not.toContain('Catégorie Komerce ·');
 });

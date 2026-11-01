@@ -35,6 +35,7 @@ const marketCommercialPrice = require('../services/market-commercial-price-servi
 const marketLocalPriceActivation = require('../services/market-local-price-activation-service');
 const marketDelegationCatalog = require('../services/market-delegation-catalog-service');
 const pricingPeriodStructure = require('../services/pricing-period-structure');
+const marketChargeReference = require('../services/market-structure-charge-reference');
 const marketCostAttribution = require('../services/market-cost-attribution-service');
 const { decorateMarketDecision } = marketDecisionProjection;
 
@@ -529,14 +530,45 @@ router.get('/market/:marketCode/charges', requirePricingReadCapability('pricing.
   try {
     res.set('Cache-Control', 'private, no-store');
     const { rows } = await db.query(
-      `SELECT id, family, name, is_active, recurrence_period
+      `SELECT id, family, name, is_active, recurrence_period, notes,
+              market_owner_id
          FROM charges
-        WHERE is_active = TRUE
-        ORDER BY family, name`
+        WHERE is_active = TRUE AND (market_owner_id IS NULL OR market_owner_id = $1)
+        ORDER BY market_owner_id NULLS FIRST, family, name`,
+      [req.workspaceMarket.id]
     );
     res.json({ charges: rows });
   } catch (error) { handleError(error, res, next); }
 });
+
+// Create a market-owned direct reference AND its evidenced first period fact
+// atomically. A market manager cannot create a GROUP pool or a fake 0-cost fact.
+router.post('/market/:marketCode/structure-charges',
+  requirePricingCapability('structure.event.record'), async (req,res,next) => {
+    try {
+      sendAction(res,'create_market_direct_structure_charge',
+        await marketChargeReference.createMarketChargeAndFact(
+          req.workspaceMarket,req.body || {},req.user.id),201);
+    } catch(error){ handleStructureEventError(error,res,next); }
+  });
+
+// Keep the historical /description URL compatible with deployed clients.
+// A market-owned reference may now update its label and note together; the
+// capability and resolved market scope are identical for both operations.
+router.patch('/market/:marketCode/structure-charges/:chargeId/description',
+  requirePricingCapability('structure.event.record'), async (req,res,next) => {
+    try {
+      if (req.body && Object.prototype.hasOwnProperty.call(req.body,'name')) {
+        sendAction(res,'update_market_direct_structure_details',
+          await marketChargeReference.updateMarketChargeDetails(
+            req.workspaceMarket,req.params.chargeId,req.body));
+      } else {
+        sendAction(res,'update_market_direct_structure_description',
+          await marketChargeReference.updateMarketChargeDescription(
+            req.workspaceMarket,req.params.chargeId,req.body?.description));
+      }
+    } catch(error){ handleError(error,res,next); }
+  });
 
 router.get('/market/:marketCode/structure-events', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {

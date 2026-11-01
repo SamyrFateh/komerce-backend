@@ -34,9 +34,9 @@ test('Sourcing : décisions définitives, quarantaine et exclusion ne sont pas d
 
 test('Sourcing : trois rubriques et aucune classification produit dupliquée', () => {
   const s=load('public/dashboards/canonical/js/sourcing-workspace.js');
-  expect(s).toContain("label:'Sources & imports'");
-  expect(s).toContain("label:'Exceptions source'");
-  expect(s).toContain("label:'Fournisseurs'");
+  expect(load('public/dashboards/canonical/js/import-runtime.js')).toContain("tab('sources', 'Sources'");
+  expect(s).toContain('sourcingRemedy');
+  expect(s).toContain('Fournisseurs sourcing');
   expect(s).not.toContain("const classify = makeButton(doc, 'Classer'");
   expect(s).not.toContain("'Découvrir 20 '");
   expect(s).toContain("panel.setAttribute('role','tabpanel')");

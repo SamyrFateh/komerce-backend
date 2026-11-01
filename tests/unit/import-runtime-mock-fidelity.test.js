@@ -67,7 +67,7 @@ describe('import-runtime — fidélité visuelle au mock', () => {
   });
 
   test('trois commandes humaines, sur les endpoints existants, avec leur présence visuelle', () => {
-    for (const label of ['Mettre à jour maintenant', "'Arrêter'", "'Redémarrer'", 'Mise à jour…', 'Arrêt…', 'Redémarrage…']) {
+    for (const label of ['Lancer un nouvel import', 'Suspendre l’automatisation', 'Activer l’automatisation', 'Mise à jour…', 'Arrêt…', 'Redémarrage…']) {
       expect(source).toContain(label);
     }
     expect(source).toContain('/import-now');

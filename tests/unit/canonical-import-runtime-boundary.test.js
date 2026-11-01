@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=261031-2');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=261031-1');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=261031-tabs-1');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=261031-tabs-1');
   expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=261017-1');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);

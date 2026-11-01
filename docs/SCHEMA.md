@@ -233,7 +233,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `cost_component_market_override_events` | Journal append-only des créations, mises à jour et resets d'overrides de composantes de coûts par marché. **Migration 159 — `verified_live_schema` (confirmé par dump Railway 2026-09-04).** |
 | `risk_provisions` | Provisions risques. |
 | `cost_benchmarks` | Seuils de part de coût attendue par famille/catégorie (`expected_share_pct`, `warn_ratio` 1.30, `alert_ratio` 1.60). Alimente les alertes d'écart coût. |
-| `charges` | Charges fixes. |
+| `charges` | Charges fixes (référentiel de structure, non une preuve de période). **Migration 353 (`intended_migration_schema`)** : + `market_owner_id` UUID nullable, FK `markets(id)`, pour les références privées d'un marché ; NULL = référence partagée. Index partiel (marché, nom actif) pour empêcher les doublons. Seuls les événements de période append-only alimentent les montants réels ; une référence marché ne peut jamais recevoir un fait GROUP ou d'un autre marché. |
 | `competitor_prices` | Prix concurrents globaux/informatifs ; ils ne constituent pas le corridor local d'un marché. |
 | `price_history` | Historique prix. |
 | `pricing_maturity_disposition_events` | Journal append-only des décisions humaines de disposition de maturité économique ; le dernier événement fait foi sans promouvoir une disposition en maturité réelle. **Migration 165 — promue le 2026-09-06 (schema-promote, dump live verifie).** |
