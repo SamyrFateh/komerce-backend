@@ -14,12 +14,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 1924
-- Edges: 9498
+- Edges: 9499
 - DB tables: 221
 - Doctrines: 729
 - Impact areas: 207
 - Unresolved code edges: 914
-- Tables multi-écrivains directs (>=2): 91
+- Tables multi-écrivains directs (>=2): 92
 - Avertissements db-write / db-write-via en chevauchement: 11
 
 ## Domains
@@ -841,11 +841,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/international-n1-reconciliation.js -> international_n1_allocation_links
 - WRITE services/international-n1-reconciliation.js -> international_n1_reconciliations
 - WRITE services/international-shipment-journey.js -> international_shipment_charges
+- WRITE services/hub-box-shipment-service.js -> international_shipment_events
 - WRITE services/international-shipment-journey.js -> international_shipment_events
 - WRITE services/hub-box-shipment-service.js -> international_shipment_hub_units
 - WRITE services/international-shipment-journey.js -> international_shipment_hub_units
 - WRITE services/international-shipment-journey.js -> international_shipment_parcels
-- WRITE services/international-shipment-journey.js -> international_shipments
 
 ## DB Write-Via Edges (délégation déclarée)
 
