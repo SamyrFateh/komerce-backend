@@ -98,6 +98,13 @@
         data.lines.map(line => [line.label, line.state_label, line.movements,
           line.eur_unavailable > 0 && line.eur_total === 0 ? '—' : money(line.eur_total, '€'), nativeText(line.native)]),
         'Aucun mouvement sur la période.'));
+      const nf = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      host.appendChild(table(doc, ['Niveau de coût', 'État', 'Nb', 'Montant EUR', 'Montants natifs'],
+        (data.cost_levels || []).flatMap(level => (level.source_missing
+          ? [[level.label, 'Non alimenté', '—', '—', 'Aucune source journalisée (jamais affiché comme 0)']]
+          : level.states.map(item => [level.label, item.state_label, item.movements,
+            item.eur_unavailable > 0 && item.eur_total === 0 ? '—' : `${nf.format(item.eur_total)} €${item.eur_unavailable > 0 ? ' (partiel)' : ''}`, nativeText(item.native)]))),
+        'Aucun coût sur la période.'));
       const remaining = data.supplier_remaining_native || [];
       host.appendChild(text(doc, 'p', 'kmc-workspace-note', remaining.length
         ? `Restant à décaisser fournisseurs (natif, jamais additionné entre devises) : ${nativeText(remaining)}.`

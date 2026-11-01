@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        dashboard_period, server_resolved_market
  * @outputs       canonical_commerce_projection, market_product_viability, market_product_availability, server_decision_signals
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, pricing-market-corridor, local-stock-decision-projection
+ * @depends       db, services/financial-journal-reporting, dashboard-metrics, dashboard-metrics/_helpers, pricing-market-corridor, local-stock-decision-projection
  * @used-by       routes/admin-dashboard-market.js
  * @db-read       orders, order_items, products, order_item_cost_imputations, order_item_real_cost_allocations, parcel_items, parcels, customs_shipments, customs_shipment_parcels, markets, users
  * @db-write      none
@@ -619,6 +619,32 @@ function publicScope(market) {
   });
 }
 
+// Encaissé net = paiements clients constatés dans la période (journal) moins remboursements clients.
+// Autre cohorte que le CA (date de commande) : jamais mélangé avec lui. EUR connu seulement ; natif conservé par devise.
+async function getCollectedFromJournal(filters, market) {
+  try {
+    const reporting = require('./financial-journal-reporting');
+    const projection = await reporting.projection(db, { marketId: market && market.id, from: filters.from, to: filters.to });
+    if (projection.journal_empty) return Object.freeze({ available: false, reason: 'journal_empty' });
+    const pick = (category) => projection.lines.filter(line => line.category === category && line.state !== 'reversed');
+    const sum = (lines, key) => lines.reduce((total, line) => total + (Number(line[key]) || 0), 0);
+    const sales = pick('sale');
+    const refunds = pick('refund');
+    const native = new Map();
+    sales.forEach(line => line.native.forEach(item => native.set(item.currency, (native.get(item.currency) || 0) + Number(item.total))));
+    refunds.forEach(line => line.native.forEach(item => native.set(item.currency, (native.get(item.currency) || 0) - Number(item.total))));
+    return Object.freeze({
+      available: true,
+      eur_net: Math.round((sum(sales, 'eur_total') - sum(refunds, 'eur_total')) * 100) / 100,
+      eur_partial: sum(sales, 'eur_unavailable') + sum(refunds, 'eur_unavailable') > 0,
+      native_net: Object.freeze([...native.entries()].sort().map(([currency, total]) => Object.freeze({ currency, total: Math.round(total * 100) / 100 }))),
+      basis: 'financial_movements_sale_minus_refund_by_payment_date',
+    });
+  } catch (error) {
+    return Object.freeze({ available: false, reason: 'journal_unavailable' });
+  }
+}
+
 async function buildCommerce(query = {}, options = {}) {
   const market = options.market || null;
   const { period, filters, timezone, timezone_source: timezoneSource } = buildPeriodFilters(query, market && market.id, options.now || new Date(), market);
@@ -658,7 +684,11 @@ async function buildCommerce(query = {}, options = {}) {
     categories.reduce((total, row) => total + row.quantity, 0), 'count', {
       itemsTotal: categories.reduce((total, row) => total + row.quantity, 0),
     });
-  const publicTopProducts = Object.freeze(topProducts.map(publicTopProduct));
+  // Contribution = part du montant des lignes produit (même cohorte payée que le classement et les catégories), jamais du CA.
+  const linesTotal = categories.reduce((total, row) => total + row.revenue_kmf, 0);
+  const share = value => (linesTotal > 0 ? Math.round((Number(value) / linesTotal) * 1000) / 10 : null);
+  const publicTopProducts = Object.freeze(topProducts.map(product => Object.freeze({ ...publicTopProduct(product), share_pct: share(product.revenue_kmf) })));
+  const collected = await getCollectedFromJournal(filters, market);
   const warnings = Object.freeze([...viability.warnings, ...availability.warnings]);
 
   return Object.freeze({
@@ -676,6 +706,8 @@ async function buildCommerce(query = {}, options = {}) {
     }),
     kpis: Object.freeze([sales.ca, commandes, sales.panier, marge, produitsActifsVendus, quantitySold]),
     top_products: publicTopProducts,
+    lines_revenue_kmf: linesTotal,
+    collected,
     product_profitability: Object.freeze(productProfitability),
     product_viability: viability.items,
     product_availability: availability.items,
@@ -720,6 +752,7 @@ module.exports = {
   buildPeriodFilters,
   getCommercePaidSales,
   getTopProducts,
+  getCollectedFromJournal,
   publicTopProduct,
   getProductProfitability,
   getCategoryPerformance,

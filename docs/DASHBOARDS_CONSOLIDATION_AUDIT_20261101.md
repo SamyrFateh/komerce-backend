@@ -34,3 +34,10 @@ Branche `feat/dashboards-consolidation-20261101` (empilée sur #3248). Aucun mer
 | Politique de contrôle cash marché | `market-cash-control.js` | Marché | inchangé |
 
 Aucun ancien écran n'est retiré : redirection seulement après la recette métier de l'utilisateur.
+
+
+## Lot suivant (2026-11-01 soir)
+- Alerte écarts du journal : signal `financial_journal_gap` (par marché, idempotent, auto-résolu). PG : `financial-journal-gap-signal-postgres`.
+- Opérations : historique des 6 dernières transitions (`order_status_history`) dans le panneau latéral, projeté côté serveur et borné au marché ; « prochaine action » = responsable de la cause (déjà affiché).
+- Finance / Comptabilité : niveaux N1/N2/N3 (N3 non alimenté, N2 = hypothèse de classement).
+- Commerce : encaissé net (journal) et part des lignes produit.

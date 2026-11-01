@@ -83,6 +83,7 @@ async function projection(client, scope = {}) {
     period_basis: 'occurred_at',
     lines: [...grouped.values()],
     supplier_remaining_native: remaining,
+    cost_levels: costLevels([...grouped.values()], remaining),
     eur_unavailable_movements: base.eur_unavailable_movements,
     eur_complete: base.eur_complete,
     last_projected_at: freshness.last_projected_at,
@@ -106,6 +107,35 @@ const CHECK_LABELS = Object.freeze({
   supplier_settlements_native: 'Règlements fournisseurs : journal ↔ règlements prouvés (natif)',
   movements_without_provenance: 'Mouvements sans provenance (doit être 0)',
 });
+
+// Niveaux de coût (doctrine N1/N2/N3) : classification unique, lue par Finance et Comptabilité.
+// N1 = coût rendu relais (achat fournisseur + coûts réels alloués fret/douane/relais) ; N2 = variable métier (frais de paiement).
+// N3 = charge de période : aucune source journalisée à ce jour → « non alimenté », jamais 0.
+const COST_LEVELS = Object.freeze([
+  { level: 'N1', label: 'N1 · Coût rendu relais', match: category => category === 'supplier_purchase' || String(category).startsWith('cost:') },
+  { level: 'N2', label: 'N2 · Variable métier', match: category => category === 'payment_fee' },
+  { level: 'N3', label: 'N3 · Charge de période', match: () => false, source_missing: true },
+]);
+const COST_STATES = Object.freeze(['planned', 'committed', 'observed', 'settled']);
+
+function costLevels(lines, supplierRemaining) {
+  return COST_LEVELS.map(def => {
+    if (def.source_missing) return { level: def.level, label: def.label, source_missing: true, states: [], remaining_native: [] };
+    const states = COST_STATES.map(state => {
+      const picked = lines.filter(line => line.state === state && ['outflow', 'cost'].includes(line.direction) && def.match(line.category));
+      const native = new Map();
+      picked.forEach(line => line.native.forEach(item => native.set(item.currency, (native.get(item.currency) || 0) + Number(item.total))));
+      return {
+        state, state_label: stateLabel(state),
+        movements: picked.reduce((n, line) => n + line.movements, 0),
+        eur_total: Math.round(picked.reduce((n, line) => n + line.eur_total, 0) * 100) / 100,
+        eur_unavailable: picked.reduce((n, line) => n + line.eur_unavailable, 0),
+        native: [...native.entries()].sort().map(([currency, total]) => ({ currency, total: total.toFixed(4) })),
+      };
+    }).filter(item => item.movements > 0);
+    return { level: def.level, label: def.label, source_missing: false, states, remaining_native: def.level === 'N1' ? supplierRemaining : [] };
+  });
+}
 
 const MOVEMENT_STATES = new Set(['planned', 'committed', 'observed', 'settled', 'reversed']);
 

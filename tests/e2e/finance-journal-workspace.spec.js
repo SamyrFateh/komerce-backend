@@ -15,7 +15,7 @@ const API = '/api/admin/workspaces/accounting/market/KM';
 const SHOTS = process.env.KMC_SHOTS_DIR;
 
 const payloads = {
-  summary: { journal_empty: false, eur_complete: false, eur_unavailable_movements: 1, supplier_remaining_native: [{ currency: 'USD', remaining_native: '120.00' }],
+  summary: { cost_levels: [{ level: 'N1', label: 'N1 · Coût rendu relais', source_missing: false, states: [{ state: 'settled', state_label: 'Réglé', movements: 1, eur_total: 0, eur_unavailable: 1, native: [{ currency: 'USD', total: '80.0000' }] }], remaining_native: [] }, { level: 'N3', label: 'N3 · Charge de période', source_missing: true, states: [], remaining_native: [] }], journal_empty: false, eur_complete: false, eur_unavailable_movements: 1, supplier_remaining_native: [{ currency: 'USD', remaining_native: '120.00' }],
     lines: [{ label: 'Encaissement commande', state_label: 'Constaté', movements: 3, eur_total: 450, eur_unavailable: 0, native: [{ currency: 'KMF', total: '221000' }] },
       { label: 'Règlement fournisseur', state_label: 'Réglé', movements: 1, eur_total: 0, eur_unavailable: 1, native: [{ currency: 'USD', total: '80' }] }] },
   movements: { total: 1, rows: [{ occurred_at: '2026-10-03T10:00:00Z', label: 'Encaissement commande', reference: 'CMD-1', state_label: 'Constaté', amount_native: '75000', currency: 'KMF', amount_eur: '152.45', documents: 1 }] },
@@ -58,6 +58,8 @@ for (const [label, size] of [['1440', { width: 1440, height: 900 }], ['390', { w
         await expect(page.locator('body')).toContainText('sans conversion EUR');
         await expect(page.locator('body')).toContainText('221');
         await expect(page.locator('body')).toContainText('pas une comptabilité en partie double');
+        await expect(page.locator('body')).toContainText('N1 · Coût rendu relais');
+        await expect(page.locator('body')).toContainText('Non alimenté');
         if (SHOTS && role === 'finance') await page.screenshot({ path: path.join(SHOTS, `journal-synthese-${label}.png`), fullPage: true });
         await page.locator('[data-journal-tab="movements"]').click();
         await expect(page.locator('body')).toContainText('CMD-1');
