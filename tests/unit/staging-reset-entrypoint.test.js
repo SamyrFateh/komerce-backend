@@ -92,27 +92,59 @@ describe('staging reset : aucune ecriture si la cible n est pas confirmee', () =
   });
 
   test('derive des referentiels existants : execute refuse sauf autorisation explicite', async () => {
-    const mkClient = (afterHash) => {
+    const mkClient = (afterName) => {
       let calls = 0;
       return {
         query: jest.fn(async (sql) => {
           if (/^(BEGIN|ROLLBACK)/.test(sql)) return { rows: [] };
           calls += 1;
-          const phase = calls <= 7 ? 'before' : 'after';
-          return { rows: [{ h: phase === 'before' ? 'h-old' : afterHash }] };
+          const table = reset.REFERENCE_TABLES[(calls - 1) % reset.REFERENCE_TABLES.length];
+          const phase = calls <= reset.REFERENCE_TABLES.length ? 'before' : 'after';
+          if (table !== 'markets') return { rows: [] };
+          return { rows: [{ r: { code: 'WM', name: phase === 'before' ? 'Ancien' : afterName, updated_at: 'x' } }] };
         }),
         release: jest.fn(),
       };
     };
     const d = dbSpy();
-    d.getClient.mockResolvedValue(mkClient('h-new'));
+    d.getClient.mockResolvedValue(mkClient('Nouveau'));
     const run = jest.fn(async () => ({ before: {}, cascade_tables: [], delete_roots: [], protected_before: {}, uncertain_foundation: [], fixtures: { blockers: [] } }));
     const deps = { db: d, purge: { run }, confirmTarget: async () => ({ confirmed: true }), seed: jest.fn(async () => ({})), verify: async () => ({ ok: true }) };
     await expect(reset.runReset('execute', { env: GOOD, deps })).rejects.toMatchObject({ code: 'STAGING_RESET_REFERENCE_DRIFT' });
     expect(run).not.toHaveBeenCalled();
-    d.getClient.mockResolvedValue(mkClient('h-new'));
+    d.getClient.mockResolvedValue(mkClient('Nouveau'));
     const report = await reset.runReset('execute', { env: { ...GOOD, KOMERCE_STAGING_RESET_ALLOW_REFERENCE_DRIFT: '1' }, deps });
     expect(report.status).toBe('RESET_OK');
+    expect(report.reference_drift.markets.diffs).toEqual([{ key: 'WM', column: 'name', staging: 'Ancien', seed: 'Nouveau', change: 'overwritten_by_seed' }]);
     expect(run).toHaveBeenCalledWith(expect.objectContaining({ execute: true, withFixtures: true }));
+  });
+
+  test('diff de referentiel : colonne, valeur staging, valeur seed ; ajout et retrait signales', () => {
+    const empty = Object.fromEntries(reset.REFERENCE_TABLES.map((t) => [t, []]));
+    const d = reset.diffReference(
+      { ...empty, currency_parities: [{ currency: 'XAF', eur_rate: 650 }], markets: [{ code: 'ZZ', name: 'x' }] },
+      { ...empty, currency_parities: [{ currency: 'XAF', eur_rate: 655.957 }], markets: [{ code: 'KM', name: 'Comores' }] }
+    );
+    expect(d.currency_parities.diffs).toEqual([{ key: 'XAF', column: 'eur_rate', staging: 650, seed: 655.957, change: 'overwritten_by_seed' }]);
+    expect(d.markets.diffs.map((x) => x.change).sort()).toEqual(['added_by_seed', 'removed']);
+  });
+
+  test('perimetre full : valeur invalide refusee, defaut prudent', () => {
+    expect(refused('dry-run', { KOMERCE_STAGING_RESET_MODE: 'full' })).toBeNull();
+    expect(refused('dry-run', { KOMERCE_STAGING_RESET_MODE: 'prudent' })).toBeNull();
+    expect(refused('dry-run', { KOMERCE_STAGING_RESET_MODE: 'tout' })).toBe('STAGING_RESET_SCOPE_INVALID');
+  });
+
+  test('stripe livemode : non stocke -> le dit ; colonne livemode -> decompte', async () => {
+    const q = (cols, rows) => ({ query: jest.fn(async (sql) => {
+      if (/information_schema/.test(sql)) return { rows: cols };
+      if (/COUNT\(\*\)::int AS n FROM stripe_events_processed$/.test(sql)) return { rows: [{ n: 3 }] };
+      return { rows };
+    }) });
+    expect(await reset.stripeLivemode(q([{ column_name: 'stripe_event_id', data_type: 'text' }], []))).toMatchObject({ stored: 'not_stored', by_livemode: null });
+    expect(await reset.stripeLivemode(q([{ column_name: 'livemode', data_type: 'boolean' }], [{ livemode: 'true', n: 2 }, { livemode: 'false', n: 1 }])))
+      .toMatchObject({ stored: 'column', by_livemode: { true: 2, false: 1 } });
+    expect(await reset.stripeLivemode(q([{ column_name: 'payload_summary', data_type: 'jsonb' }], [{ livemode: 'absent', n: 3 }])))
+      .toMatchObject({ stored: 'not_stored' });
   });
 });

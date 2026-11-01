@@ -84,6 +84,7 @@ const TABLE_DEFAULTS = Object.freeze({
       || (await insertRow(c, 'relais')).id,
     market_id: async (c, v) => (await c.query('SELECT market_id FROM relais WHERE id = $1', [v.relais_id])).rows[0].market_id,
   },
+  market_cash_destinations: { kind: 'BANK', currency: 'EUR', label: 'Compte test', account_ref: 'ACC-TEST-1' },
   partners: { partner_type: 'relais_simple' },
   purchase_orders: { order_id: async (c) => (await insertRow(c, 'orders')).id, supplier_sku: 'SKU-FX', qty: 1 },
 });

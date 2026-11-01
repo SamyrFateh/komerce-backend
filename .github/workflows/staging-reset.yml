@@ -15,6 +15,19 @@ on:
         options:
           - dry-run
           - execute
+      scope:
+        description: 'prudent (defaut) = fixtures reconnues seulement, blocage si reference par la fondation ; full = tout compte hors allowlist + purge nominative des lignes de fondation dont l auteur est retire'
+        required: false
+        type: choice
+        default: prudent
+        options:
+          - prudent
+          - full
+      simulate:
+        description: 'dry-run seulement : repetition generale dans une transaction annulee (verrous exclusifs bref sur les tables purgees) - hors activite uniquement'
+        required: false
+        type: boolean
+        default: false
       confirmation:
         description: 'Pour execute uniquement : saisir exactement RESET-STAGING-BUSINESS-DATA'
         required: false
@@ -29,7 +42,7 @@ concurrency:
 
 jobs:
   reset:
-    name: Staging reset - ${{ inputs.mode }}
+    name: Staging reset - ${{ inputs.mode }} / ${{ inputs.scope }}
     if: github.actor == github.repository_owner
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -41,6 +54,8 @@ jobs:
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
       RESET_MODE: ${{ inputs.mode }}
+      KOMERCE_STAGING_RESET_MODE: ${{ inputs.scope || 'prudent' }}
+      KOMERCE_STAGING_RESET_SIMULATE: ${{ inputs.simulate && inputs.mode == 'dry-run' && '1' || '0' }}
       RESET_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
       # Code execute = la ref depuis laquelle le workflow est lance (la PR avant merge : preuve dry-run, puis main).

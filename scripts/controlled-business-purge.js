@@ -168,7 +168,12 @@ async function run({ execute = false, withFixtures = false, env = process.env, q
 
   // Une cascade vers la fondation ou un schema non classe interdit meme un dry-run "vert".
   if (plan.protected_cascade_hits.length || plan.classification_drift.unclassified_tables.length) assertPlanSafe(plan, base);
-  if (!execute) return base;
+  if (!execute) {
+    if (env.KOMERCE_STAGING_RESET_SIMULATE === '1' && !(plan.fixtures && plan.fixtures.blockers.length)) {
+      base.simulation = await simulatePurge(plan, { withFixtures, env });
+    }
+    return base;
+  }
   assertPlanSafe(plan, base);
   if (String(env.KOMERCE_CONTROLLED_PURGE_CONFIRM || '') !== CONFIRM_TOKEN) {
     const error = new Error('PURGE_CONFIRMATION_TOKEN_MISSING');
@@ -189,75 +194,97 @@ async function run({ execute = false, withFixtures = false, env = process.env, q
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    // Ne jamais bloquer l'environnement partage : echec franc si un verrou n'est pas obtenu.
-    await client.query("SET LOCAL lock_timeout = '15s'");
-    await client.query("SET LOCAL statement_timeout = '300s'");
-
-    // Freeze acquisition before deleting its captures/candidates. Keep source
-    // definitions so operators can deliberately re-enable one source afterwards.
-    let sourcesDisabled = 0;
-    if ((await listPublicTables(client)).includes('sourcing_sources')) {
-      const disabled = await client.query(
-        `UPDATE sourcing_sources
-            SET autopilot_enabled = FALSE,
-                updated_at = NOW()
-          WHERE autopilot_enabled = TRUE`
-      );
-      sourcesDisabled = disabled.rowCount;
-    }
-
-    await client.query(
-      `TRUNCATE TABLE ${plan.roots.map(quoteIdent).join(', ')} RESTART IDENTITY CASCADE`
-    );
-
-    // sourcing_sources.production_certified_capture_id points back to captures.
-    // PostgreSQL TRUNCATE follows FK structure regardless of ON DELETE SET NULL,
-    // so making sourcing_captures a TRUNCATE root would also truncate the
-    // protected source registry. Its append-only children are already emptied
-    // by the roots above; DELETE can now safely clear captures and lets the FK
-    // null the certification pointer without touching sourcing_sources.
-    for (const table of plan.delete_roots) {
-      await client.query(`DELETE FROM ${quoteIdent(table)}`);
-    }
-
-    // Fixtures (comptes/relais/partenaires de test) : meme transaction, plan recalcule sur l'etat reel post-purge.
-    let fixturesDeleted = {};
-    if (withFixtures) {
-      const fixturePlan = await fixtures.buildFixturePlan(client, { env, purgeTables: [...plan.cascade_tables, ...plan.delete_roots] });
-      fixturesDeleted = await fixtures.retireFixtures(client, fixturePlan, { env });
-    }
-
-    // Fondation : lignes strictement inchangees. fixture_scoped : uniquement les suppressions planifiees.
-    const protectedAfter = await countTables(Object.keys(plan.protected_before), client);
-    const protectedChanged = Object.keys(plan.protected_before).filter((table) => {
-      const expected = Number(plan.protected_before[table]) - Number(fixturesDeleted[table] || 0);
-      return Number(protectedAfter[table]) !== expected;
-    });
-    if (protectedChanged.length) {
-      throw new Error(`PURGE_PROTECTED_ROWCOUNT_CHANGED:${protectedChanged.join(',')}`);
-    }
-
-    const afterCounts = await countTables([...plan.cascade_tables, ...plan.delete_roots], client);
-    const residual = nonZeroEntries(afterCounts);
-    if (Object.keys(residual).length) {
-      throw new Error(`PURGE_RESIDUAL_ROWS:${JSON.stringify(residual)}`);
-    }
-
+    const result = await applyPurge(client, plan, { withFixtures, env });
     await client.query('COMMIT');
-    return {
-      ...base,
-      success: true,
-      sourcing_sources_disabled: sourcesDisabled,
-      fixtures_deleted: fixturesDeleted,
-      after: residual,
-      protected_after: protectedAfter,
-    };
+    return { ...base, success: true, ...result };
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     throw error;
   } finally {
     client.release();
   }
+}
+
+/**
+ * Repetition generale OPT-IN (KOMERCE_STAGING_RESET_SIMULATE=1, dry-run uniquement) : joue exactement la purge dans une
+ * transaction puis ROLLBACK, pour reveler les triggers/contraintes qui ne se voient pas dans un plan (ex. triggers append-only).
+ * Prend brievement des verrous exclusifs sur les tables purgees : a ne lancer que hors activite.
+ */
+async function simulatePurge(plan, { withFixtures, env }) {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const result = await applyPurge(client, plan, { withFixtures, env });
+    return { ok: true, rolled_back: true, fixtures_deleted: result.fixtures_deleted };
+  } catch (error) {
+    return { ok: false, rolled_back: true, error: String(error.message).slice(0, 400) };
+  } finally {
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+  }
+}
+
+async function applyPurge(client, plan, { withFixtures, env }) {
+  // Ne jamais bloquer l'environnement partage : echec franc si un verrou n'est pas obtenu.
+  await client.query("SET LOCAL lock_timeout = '15s'");
+  await client.query("SET LOCAL statement_timeout = '300s'");
+
+  // Freeze acquisition before deleting its captures/candidates. Keep source
+  // definitions so operators can deliberately re-enable one source afterwards.
+  let sourcesDisabled = 0;
+  if ((await listPublicTables(client)).includes('sourcing_sources')) {
+    const disabled = await client.query(
+      `UPDATE sourcing_sources
+          SET autopilot_enabled = FALSE,
+              updated_at = NOW()
+        WHERE autopilot_enabled = TRUE`
+    );
+    sourcesDisabled = disabled.rowCount;
+  }
+
+  await client.query(
+    `TRUNCATE TABLE ${plan.roots.map(quoteIdent).join(', ')} RESTART IDENTITY CASCADE`
+  );
+
+  // sourcing_sources.production_certified_capture_id points back to captures.
+  // PostgreSQL TRUNCATE follows FK structure regardless of ON DELETE SET NULL,
+  // so making sourcing_captures a TRUNCATE root would also truncate the
+  // protected source registry. Its append-only children are already emptied
+  // by the roots above; DELETE can now safely clear captures and lets the FK
+  // null the certification pointer without touching sourcing_sources.
+  for (const table of plan.delete_roots) {
+    await client.query(`DELETE FROM ${quoteIdent(table)}`);
+  }
+
+  // Fixtures (comptes/relais/partenaires de test) : meme transaction, plan recalcule sur l'etat reel post-purge.
+  let fixturesDeleted = {};
+  if (withFixtures) {
+    const fixturePlan = await fixtures.buildFixturePlan(client, { env, purgeTables: [...plan.cascade_tables, ...plan.delete_roots] });
+    fixturesDeleted = await fixtures.retireFixtures(client, fixturePlan, { env });
+  }
+
+  // Fondation : lignes strictement inchangees. fixture_scoped : uniquement les suppressions planifiees.
+  const protectedAfter = await countTables(Object.keys(plan.protected_before), client);
+  const protectedChanged = Object.keys(plan.protected_before).filter((table) => {
+    const expected = Number(plan.protected_before[table]) - Number(fixturesDeleted[table] || 0);
+    return Number(protectedAfter[table]) !== expected;
+  });
+  if (protectedChanged.length) {
+    throw new Error(`PURGE_PROTECTED_ROWCOUNT_CHANGED:${protectedChanged.join(',')}`);
+  }
+
+  const afterCounts = await countTables([...plan.cascade_tables, ...plan.delete_roots], client);
+  const residual = nonZeroEntries(afterCounts);
+  if (Object.keys(residual).length) {
+    throw new Error(`PURGE_RESIDUAL_ROWS:${JSON.stringify(residual)}`);
+  }
+
+  return {
+    sourcing_sources_disabled: sourcesDisabled,
+    fixtures_deleted: fixturesDeleted,
+    after: residual,
+    protected_after: protectedAfter,
+  };
 }
 
 if (require.main === module) {
