@@ -36,6 +36,13 @@ const BUSINESS_BLOCKER_TYPES = Object.freeze([
   'financial_close_economic_facts_pending',
 ]);
 
+// Some generator signals start as advisory/warning. Only their critical
+// versions are business blockers, even if the signal type is on the allowlist.
+const CRITICAL_ONLY_BLOCKER_TYPES = Object.freeze([
+  'parcel_blocked', 'supplier_payment_review', 'financial_close_economic_facts_pending',
+]);
+const CRITICAL_ONLY_SQL = "s.signal_type NOT IN ('parcel_blocked','supplier_payment_review','financial_close_economic_facts_pending') OR s.severity IN ('urgent','critical')";
+
 const TYPE_FAMILY = Object.freeze(Object.entries(FAMILY_TYPES).reduce((map, [family, types]) => {
   types.forEach(type => { map[type] = family; });
   return map;
@@ -101,7 +108,7 @@ async function listSignals(filters = {}) {
   const limit = normalizeLimit(filters.limit);
   const offset = normalizeOffset(filters.offset);
   const businessOnly = filters.business_only === true;
-  const blockerClause = businessOnly ? ' AND s.signal_type = ANY($7::text[])' : '';
+  const blockerClause = businessOnly ? ` AND s.signal_type = ANY($7::text[]) AND (${CRITICAL_ONLY_SQL})` : '';
   const filterParams = [status, severityList, signalType, ownerRole, familyTypes, marketId];
   const queryParams = businessOnly ? [...filterParams, BUSINESS_BLOCKER_TYPES] : filterParams;
   const limitIndex = businessOnly ? 8 : 7;
@@ -157,9 +164,9 @@ async function listSignals(filters = {}) {
 async function getStats(options = {}) {
   const marketId = exactMarketId(options.market_id);
   const businessOnly = options.business_only === true;
-  const blockerClause = businessOnly ? ' AND s.signal_type = ANY($2::text[])' : '';
+  const blockerClause = businessOnly ? ` AND s.signal_type = ANY($2::text[]) AND (${CRITICAL_ONLY_SQL})` : '';
   const arg = businessOnly ? [marketId, BUSINESS_BLOCKER_TYPES] : [marketId];
-  const familyClause = businessOnly ? ' AND s.signal_type = ANY($6::text[])' : '';
+  const familyClause = businessOnly ? ` AND s.signal_type = ANY($6::text[]) AND (${CRITICAL_ONLY_SQL})` : '';
   const familyArgs = [FAMILY_TYPES.ops, FAMILY_TYPES.eco, FAMILY_TYPES.sourcing, FAMILY_TYPES.disputes, marketId];
   if (businessOnly) familyArgs.push(BUSINESS_BLOCKER_TYPES);
   const [severityResult, typeResult, familyResult] = await Promise.all([
@@ -359,6 +366,7 @@ module.exports = {
   FAMILY_TYPES,
   familyForType,
   BUSINESS_BLOCKER_TYPES,
+  CRITICAL_ONLY_BLOCKER_TYPES,
   listSignals,
   getStats,
   acknowledgeById,
