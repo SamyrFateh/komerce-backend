@@ -7,6 +7,8 @@
  */
 
 const mockDbQuery = jest.fn();
+const mockListGlobalIncidents = jest.fn();
+jest.mock('../../services/incident-traceability-projection', () => ({ listGlobalOpen: (...args) => mockListGlobalIncidents(...args) }));
 jest.mock('../../db', () => ({ query: (...args) => mockDbQuery(...args) }));
 
 const mockAdmin = {
@@ -29,6 +31,7 @@ const workspace = require('../../services/action-center-workspace');
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockListGlobalIncidents.mockResolvedValue([]);
   mockAdmin.reactivateExpiredSnoozes.mockResolvedValue(0);
   mockAdmin.getStats.mockResolvedValue({
     total: 1,
@@ -71,7 +74,7 @@ test('global projection is explicitly global-only and never exposes internal UUI
 
   expect(mockAdmin.reactivateExpiredSnoozes).toHaveBeenCalledWith(null);
   expect(mockAdmin.listSignals).toHaveBeenCalledWith(expect.objectContaining({ market_id: null }));
-  expect(mockAdmin.getStats).toHaveBeenCalledWith({ market_id: null });
+  expect(mockAdmin.getStats).toHaveBeenCalledWith({ market_id: null, business_only: true });
   expect(result.scope).toMatchObject({ mode: 'global_decision_signals', market_dimension: 'canonical', market: null });
   expect(result.work_queues).toEqual([{ owner_role: 'sourcing', count: 1 }]);
   expect(result.signals[0]).toMatchObject({
@@ -101,7 +104,7 @@ test('market projection passes exact server market id but publishes only market 
 
   expect(mockAdmin.reactivateExpiredSnoozes).toHaveBeenCalledWith(market.id);
   expect(mockAdmin.listSignals).toHaveBeenCalledWith(expect.objectContaining({ market_id: market.id }));
-  expect(mockAdmin.getStats).toHaveBeenCalledWith({ market_id: market.id });
+  expect(mockAdmin.getStats).toHaveBeenCalledWith({ market_id: market.id, business_only: true });
   expect(result.scope).toMatchObject({
     mode: 'market_decision_signals', market_dimension: 'canonical',
     market: { code: 'CM', name: 'Cameroun', currency: 'XAF' },
