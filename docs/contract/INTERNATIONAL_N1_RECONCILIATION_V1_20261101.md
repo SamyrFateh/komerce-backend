@@ -15,7 +15,7 @@ Un administrateur habilité, avec autorité marché serveur, lance **Rapprocher 
 4. Colis hors marché, ligne de commande étrangère, total sans porteur, crédit supérieur aux frais ou erreur d'arrondi : transaction annulée intégralement.
 5. Maritime : volume Hub observé, ou répartition égale signalée comme faible confiance si tout volume manque. Frais annexes : répartition égale documentée par colis ; détail article par quantité.
 6. Aérien : fret **non imputable tant que le poids taxable contractuel n'est pas calibré**. Aucun coefficient arbitraire.
-7. Une nouvelle facture ou modification de dossier rend le rapprochement **à actualiser** dans l'interface ; la réexécution refait les quotes-parts depuis les faits.
+7. Fret réel inconnu (NULL) avec frais documentés : rapprochement **partiel**, jamais un fret réel à zéro. Aucun fait réel : rapprochement refusé. Une nouvelle facture ou modification de dossier rend le rapprochement **à actualiser** dans l'interface ; la réexécution refait les quotes-parts depuis les faits.
 
 ## Sortie affichée
 Montants N1 effectivement ventilés : fret, frais d'arrivée/port-transitaire, transport local vers relais ; statut *non rapproché*, *à actualiser* ou *rapproché*. Ce sont des coûts réels, pas un second prix de vente.
