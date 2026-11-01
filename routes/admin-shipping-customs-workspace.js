@@ -225,11 +225,6 @@ router.get('/market/:marketCode/international/:reference',async(req,res,next)=>{
     return res.json(await journey.detail(req.workspaceMarket,req.params.reference));
   }catch(err){return journeyError(err,res,next);}
 });
-router.post('/market/:marketCode/international',requireCustomsAction,async(req,res,next)=>{
-  try{
-    return res.status(201).json({ok:true,result:await journey.create(req.workspaceMarket,actionActor(req),req.body||{})});
-  }catch(err){return journeyError(err,res,next);}
-});
 router.post('/market/:marketCode/international/:reference/transition',
   requireTransitAction,requireTransitExecutionForTransitaire,async(req,res,next)=>{
     try{
@@ -252,6 +247,11 @@ router.post('/market/:marketCode/international/:reference/link-customs',requireC
     return res.json({ok:true,result:await journey.linkCustoms(req.workspaceMarket,actionActor(req),req.params.reference,req.body||{})});
   }catch(err){return journeyError(err,res,next);}
 });
+// Customs amount belongs to the shipment dossier, not to article allocations.
+router.post('/market/:marketCode/international/:reference/customs-amount',requireCustomsAction,async(req,res,next)=>{
+  try{return res.json({ok:true,result:await journey.declareCustoms(req.workspaceMarket,actionActor(req),req.params.reference,req.body||{})});}
+  catch(err){return journeyError(err,res,next);}
+});
 router.post('/market/:marketCode/international/:reference/costs',requireCustomsAction,async(req,res,next)=>{
   try{
     return res.status(201).json({ok:true,result:await journey.recordCost(req.workspaceMarket,actionActor(req),req.params.reference,req.body||{})});
@@ -259,9 +259,9 @@ router.post('/market/:marketCode/international/:reference/costs',requireCustomsA
 });
 
 // Décision économique explicite Admin : la lecture responsable marché reste seule autorisée.
-router.post('/market/:marketCode/international/:reference/reconcile-n1',requireCustomsAction,async(req,res,next)=>{
+router.post('/market/:marketCode/international/:reference/reconcile-costs',requireCustomsAction,async(req,res,next)=>{
   try{
-    const result=await internationalN1.reconcile(req.workspaceMarket,actionActor(req),req.params.reference);
+    const result=await internationalN1.reconcile(req.workspaceMarket,actionActor(req),req.params.reference,undefined,req.body||{});
     return res.json({ok:true,result});
   }catch(err){
     if(err instanceof internationalN1.ReconciliationError){
