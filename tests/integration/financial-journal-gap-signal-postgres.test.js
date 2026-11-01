@@ -17,7 +17,7 @@ describeDb('financial_journal_gap (REAL_DB)', () => {
   const active = async () => (await q("SELECT count(*)::int AS n FROM signals WHERE signal_type='financial_journal_gap' AND market_id=$1 AND status IN ('open','acknowledged','snoozed')", [km])).rows[0].n;
 
   beforeAll(async () => {
-    const row = (await q("SELECT id, is_active FROM markets WHERE code='KM'")).rows[0];
+    const row = (await q("SELECT id, is_active FROM markets WHERE code <> 'KM' ORDER BY code DESC LIMIT 1")).rows[0];
     km = row.id;
     wasActive = row.is_active;
     if (!wasActive) await q('UPDATE markets SET is_active = TRUE WHERE id = $1', [km]);
@@ -29,7 +29,7 @@ describeDb('financial_journal_gap (REAL_DB)', () => {
     const baseline = await active();
     // Un mouvement sans EUR (taux indisponible) déclenche le signal warning.
     await db.withTransaction(client => journal.recordMovement(client, {
-      sourceKind: 'order_refund', sourceId: tag, direction: 'outflow', category: 'refund', state: 'committed',
+      sourceKind: 'gap_test', sourceId: tag, direction: 'outflow', category: 'market_settlement', state: 'committed',
       amountNative: 150, currency: 'ZZZ', links: { marketId: km }, occurredAt: new Date(), provenance: { source: 'test', tag },
     }));
     expect((await q('SELECT fx_status FROM financial_movements WHERE source_id = $1', [tag])).rows[0].fx_status).toBe('unavailable');
@@ -42,7 +42,7 @@ describeDb('financial_journal_gap (REAL_DB)', () => {
     expect(row.summary).toMatch(/sans conversion EUR/);
     // Rattrapage : le mouvement reçoit son EUR → condition disparue → auto-résolution.
     await db.withTransaction(client => journal.recordMovement(client, {
-      sourceKind: 'order_refund', sourceId: tag, direction: 'outflow', category: 'refund', state: 'committed',
+      sourceKind: 'gap_test', sourceId: tag, direction: 'outflow', category: 'market_settlement', state: 'committed',
       amountNative: 150, currency: 'ZZZ', links: { marketId: km }, occurredAt: new Date(), eur: { amount: 0.9, legs: [{ id: 'manual-proof' }] }, provenance: { source: 'test', tag },
     }));
     await signals.generateSignals(['financial_journal_gap']);
