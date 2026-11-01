@@ -331,9 +331,15 @@
         const item = doc.createElement('option'); item.value = value; item.textContent = label;
         recurrence.appendChild(item);
       });
-      [[name,'Nom du poste'],[description,'Description'],[recurrence,'Fréquence']].forEach(([field,label])=>{
+      [
+        [name, 'Nom du poste', 'Nom affiché dans les coûts du marché.'],
+        [description, 'Description', 'Précisez ce que couvre réellement cette dépense.'],
+        [recurrence, 'Fréquence', 'Rythme habituel : mensuel, annuel ou ponctuel. Les périodes futures ne sont pas créées automatiquement.'],
+      ].forEach(([field,label,hint])=>{
         const wrap = el(doc,'label','kmc-structure-new-reference-field',label);
-        wrap.appendChild(field); fields.appendChild(wrap);
+        wrap.appendChild(field);
+        wrap.appendChild(el(doc,'small','kmc-structure-panel-hint',hint));
+        fields.appendChild(wrap);
       });
       built.chargeSelect.closest('.kmc-structure-panel-field').after(fields);
       const toggle = () => {
@@ -341,6 +347,7 @@
         fields.hidden = !creating;
         if (creating) built.eventKindSelect.value = 'ACCRUAL';
         built.eventKindSelect.disabled = creating;
+        built.eventKindSelect.closest('.kmc-structure-panel-field').hidden = creating;
       };
       built.chargeSelect.addEventListener('change',toggle);
       built.chargeSelect.value = '__new__';
@@ -359,7 +366,7 @@
         `${config.previousLabel || 'Montant déjà enregistré'} : ${config.previousValue || '—'}`);
       const amount = built.form.querySelector('[name="amount_original"]');
       amount?.closest('.kmc-structure-panel-row')?.prepend(current);
-      amount.placeholder = 'Nouvelle écriture';
+      amount.placeholder = 'Montant pour cette période';
       // The row itself identifies the charge; other mandatory financial
       // fields keep their safe defaults but do not overcrowd the ordinary edit.
       if (config.initialChargeId) built.chargeSelect.closest('.kmc-structure-panel-field').hidden = true;
@@ -373,7 +380,7 @@
       ].forEach(fieldNode => { if (fieldNode) advanced.appendChild(fieldNode); });
       built.form.appendChild(advanced);
       const hint = el(doc, 'p', 'kmc-structure-inline-hint',
-        'Une nouvelle charge s’ajoute ; pour corriger un fait existant, choisissez « Ajustement » et son écriture d’origine.');
+        'Une nouvelle charge s’ajoute ; pour corriger un fait existant, choisissez « Corriger une écriture existante » et son écriture d’origine.');
       const history = el(doc, 'details', 'kmc-structure-inline-history');
       history.appendChild(el(doc, 'summary', '', 'Consulter l’historique'));
       history.appendChild(historyList);
