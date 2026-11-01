@@ -24,8 +24,8 @@
   if (root) root.KomerceCanonicalStructureEventPanel = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createStructureEventPanel() {
   const EVENT_KIND_LABELS = Object.freeze({
-    ACCRUAL: 'Accrual (nouvelle charge de période)',
-    ADJUSTMENT: 'Ajustement (corrige un fait existant)',
+    ACCRUAL: 'Ajouter une charge pour cette période',
+    ADJUSTMENT: 'Corriger une écriture existante',
     REVERSAL: 'Reversal (annule un fait existant)',
   });
   const SOURCE_KIND_LABELS = Object.freeze({
@@ -123,7 +123,7 @@
       opt.textContent = `${charge.name} (${charge.family})`;
       chargeSelect.appendChild(opt);
     });
-    form.appendChild(field('Charge', chargeSelect));
+    form.appendChild(field('Charge', chargeSelect, 'Choisissez le poste à renseigner, ou créez un nouveau poste propre à ce marché.'));
 
     const eventKindSelect = doc.createElement('select');
     eventKindSelect.name = 'event_kind';
@@ -134,7 +134,7 @@
       eventKindSelect.appendChild(opt);
     });
     eventKindSelect.value = 'ACCRUAL';
-    form.appendChild(field('Type d’événement', eventKindSelect));
+    form.appendChild(field('Action sur la charge', eventKindSelect, 'Ajout : nouvelle dépense pour la période. Correction ou annulation : conserve l’écriture précédente dans l’historique.'));
 
     const adjustsWrap = el(doc, 'div', 'kmc-structure-panel-field');
     adjustsWrap.hidden = true;
@@ -154,8 +154,8 @@
     toInput.type = 'date';
     toInput.name = 'economic_to';
     toInput.required = true;
-    periodRow.appendChild(field('Période — début', fromInput));
-    periodRow.appendChild(field('Période — fin', toInput));
+    periodRow.appendChild(field('Début de la période', fromInput, 'Début de la période concernée, pas forcément la date de paiement.'));
+    periodRow.appendChild(field('Fin de la période', toInput, 'Fin de la période concernée.'));
     form.appendChild(periodRow);
 
     const moneyRow = el(doc, 'div', 'kmc-structure-panel-row');
@@ -171,7 +171,7 @@
     currencyInput.maxLength = 3;
     currencyInput.style.textTransform = 'uppercase';
     currencyInput.required = true;
-    moneyRow.appendChild(field('Montant', amountInput, 'Positif pour un accrual, négatif pour une annulation.'));
+    moneyRow.appendChild(field('Montant de la période', amountInput, 'Montant de cette dépense pour la période sélectionnée. En cas d’annulation, le montant est négatif.'));
     moneyRow.appendChild(field('Devise', currencyInput));
     form.appendChild(moneyRow);
 
@@ -213,7 +213,7 @@
     evidenceInput.name = 'evidence_ref';
     evidenceInput.required = true;
     evidenceInput.placeholder = 'ex. invoice://railway/2026-09';
-    form.appendChild(field('Référence de preuve', evidenceInput, 'Traçabilité obligatoire — facture, contrat ou export connecteur.'));
+    form.appendChild(field('Justificatif', evidenceInput, 'Indiquez une référence retrouvable : numéro de facture, contrat ou pièce comptable. La traçabilité reste obligatoire.'));
 
     const notesInput = doc.createElement('textarea');
     notesInput.name = 'notes';
@@ -356,7 +356,7 @@
 
     if (inline) {
       const current = el(doc, 'span', 'kmc-structure-inline-previous',
-        `${config.previousLabel || 'Dernière valeur de période'} : ${config.previousValue || '—'}`);
+        `${config.previousLabel || 'Montant déjà enregistré'} : ${config.previousValue || '—'}`);
       const amount = built.form.querySelector('[name="amount_original"]');
       amount?.closest('.kmc-structure-panel-row')?.prepend(current);
       amount.placeholder = 'Nouvelle écriture';
