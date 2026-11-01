@@ -138,7 +138,7 @@
       for(const s of rows){
         const line=put(tbody,doc.createElement('tr'));
         for(const v of [s.reference,STAGE_LABEL[s.stage]||s.stage,s.forwarder_name,
-          s.parcel_count,s.volume_m3==null?'—':s.volume_m3+' m³',money(s.freight_invoice_kmf),date(s.estimated_arrival_at)])
+          (Number(s.parcel_count||0)+Number(s.hub_box_count||0)),s.volume_m3==null?'—':s.volume_m3+' m³',money(s.freight_invoice_kmf),date(s.estimated_arrival_at)])
           put(line,text(doc,'td','',v));
         const cell=put(line,doc.createElement('td'));
         const button=put(cell,text(doc,'button','kmc-entity-360-action',ctx.journeyRef===s.reference?'Ouvert':'Consulter'));
@@ -155,11 +155,13 @@
           {name:'forwarder_name',label:'Transitaire',required:true},
           {name:'transport_mode',label:'Transport',required:true,
             options:[['sea','Bateau'],['air','Avion']]},
-          {name:'parcel_refs',label:'Références colis (séparées par virgules)',required:true},
+          {name:'hub_box_refs',label:'Cartons Hub KOM-BOX (séparés par virgules)'},
+          {name:'parcel_refs',label:'Colis historiques (facultatif, séparés par virgules)'},
           {name:'volume_m3',label:'Volume facturable estimé (m³)',type:'number'},
           {name:'freight_rate_kmf_per_m3',label:'Tarif fret convenu (KMF/m³)',type:'number'},
           {name:'estimated_arrival_date',label:'ETA prévisionnelle',type:'date'},proof],
-        transform:raw=>({...raw,parcel_refs:String(raw.parcel_refs||'').split(',').map(x=>x.trim()).filter(Boolean)}),
+        transform:raw=>({...raw,parcel_refs:String(raw.parcel_refs||'').split(',').map(x=>x.trim()).filter(Boolean),
+          hub_box_refs:String(raw.hub_box_refs||'').split(',').map(x=>x.trim()).filter(Boolean)}),
       });
     }
     const s=rows.find(item=>item.reference===ctx.journeyRef);
@@ -268,6 +270,13 @@
             {name:'amount_kmf',label:'Montant réel (KMF)',type:'number',required:true},
             {name:'idempotency_key',label:'Clé unique facture',required:true},proof,note],
         });
+    }
+    if(detail?.hub_boxes?.length){
+      const boxSection=put(dossier,doc.createElement('section'));
+      put(boxSection,text(doc,'h4','','Cartons Hub et PO contenues'));
+      for(const b of detail.hub_boxes)
+        put(boxSection,text(doc,'p','kmc-journey-history',
+          b.reference+' · PO '+String(b.purchase_order_id).slice(0,8)+' · '+b.quantity+' unité(s) · '+b.state));
     }
     if(detail){
       const extra=put(dossier,doc.createElement('details'));extra.className='kmc-journey-task';
