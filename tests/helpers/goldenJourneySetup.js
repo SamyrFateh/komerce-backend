@@ -60,8 +60,8 @@ async function createGoldenJourney(db, { marketCode = 'KM' } = {}) {
       VALUES($1,$2,'product_purchase',7000,'direct','supplier_execution_payment',TRUE,'high')`,
       [ids.order, ids.item]);
     await db.query(`INSERT INTO purchase_orders
-      (id,order_id,supplier_id,status,trigger_mode,procurement_hub_ref,qty,supplier_sku)
-      VALUES($1,NULL,$2,'draft','auto','DXB',NULL,NULL)`, [ids.po, ids.supplier]);
+      (id,order_id,supplier_id,market_id,status,trigger_mode,procurement_hub_ref,qty,supplier_sku)
+      VALUES($1,NULL,$2,$3,'draft','auto','DXB',NULL,NULL)`, [ids.po, ids.supplier, market.id]);
     await db.query(`INSERT INTO purchase_lines
       (id,purchase_order_id,order_item_id,supplier_id,product_sku_id,supplier_sku,
        supplier_unit_ref,supplier_order_identity,quantity,supplier_unit_price,supplier_currency,procurement_hub_ref)
