@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-31T09:03:51.055Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 771,
-    "protected": 716,
+    "total": 772,
+    "protected": 717,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -5060,6 +5060,13 @@
     },
     {
       "key": "POST /api/purchasing/lines/{id}/settle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/po/{po_id}/attach",
       "level": "PROTECTED",
       "roles": [
         "admin"
