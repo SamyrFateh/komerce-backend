@@ -8,7 +8,7 @@
  * @outputs       journal_summary, source_reconciliation
  * @depends       services/financial-journal.js
  * @used-by       finance projections, accounting workspace
- * @db-read       financial_movements, orders, refunds, supplier_payment_settlements, supplier_execution_payments, purchase_orders, order_item_real_cost_allocations
+ * @db-read       financial_movements, financial_movement_documents, orders, refunds, supplier_payment_settlements, supplier_execution_payments, purchase_orders, order_item_real_cost_allocations
  * @db-write      none
  * @db-txn        none
  * @doctrine      single_projection_rules, native_amounts_preserved, eur_never_invented, reconcile_before_validate, not_double_entry

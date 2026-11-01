@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 767,
-    "filesWithFullHeaders": 716,
+    "scannedCodeFiles": 770,
+    "filesWithFullHeaders": 719,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 767,
+    "filesWithAnyHeaders": 770,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1924,
-    "edges": 9499,
+    "graphNodes": 1936,
+    "edges": 9548,
     "dbTables": 221,
-    "doctrines": 729,
+    "doctrines": 738,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 914,
+    "unresolvedCodeEdges": 919,
     "dbWriteViaOverlapWarnings": 11,
-    "multiWriterTables": 92
+    "multiWriterTables": 94
   },
   "byDomain": {
     "infrastructure": 25,
@@ -69,6 +69,7 @@
     "purchasing": 49,
     "unsold-resolution": 1,
     "external-provider-contracts": 1,
+    "finance": 3,
     "incident-management": 5,
     "market-autonomy": 4,
     "markets": 1,
@@ -111,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 450,
+    "service": 453,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -120,7 +121,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 110,
+    "critical": 113,
     "medium": 153,
     "high": 443,
     "low": 60,
@@ -277,7 +278,8 @@
         "economic_snapshots",
         "pickup_print_tokens",
         "pickup_reveal_codes",
-        "revoked_tokens"
+        "revoked_tokens",
+        "financial_movements"
       ],
       "dbWrite": [
         "fx_public_reference_quotes",
@@ -285,7 +287,9 @@
         "pickup_print_tokens",
         "pickup_reveal_codes",
         "revoked_tokens",
-        "signals"
+        "signals",
+        "financial_movements",
+        "financial_movement_documents"
       ],
       "dbWriteVia": [],
       "dbTxn": [],
@@ -6336,7 +6340,8 @@
         "middleware/auth",
         "middleware/require-market-delegated-capability",
         "middleware/require-dashboard-global-authority",
-        "services/finance-accounting-workspace"
+        "services/finance-accounting-workspace",
+        "services/financial-journal-reporting"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -17143,7 +17148,8 @@
         "db",
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
-        "supplier-payment-review"
+        "supplier-payment-review",
+        "financial-journal-reporting"
       ],
       "usedBy": [
         "routes/admin-dashboard-market.js"
@@ -17159,7 +17165,8 @@
         "parcel_items",
         "parcels",
         "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "financial_movements"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -18833,6 +18840,178 @@
       "version": "2026-06"
     },
     {
+      "id": "services/financial-journal-projectors.js",
+      "file": "services/financial-journal-projectors.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "financial-journal-projectors",
+      "domain": "finance",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "orders",
+        "refunds",
+        "supplier_execution_payments",
+        "supplier_payment_settlements",
+        "order_item_real_cost_allocations",
+        "market_settlements"
+      ],
+      "outputs": [
+        "financial_movements"
+      ],
+      "depends": [
+        "db",
+        "services/financial-journal.js"
+      ],
+      "usedBy": [
+        "finance journal reconciliation",
+        "finance projections"
+      ],
+      "dbRead": [
+        "orders",
+        "refunds",
+        "supplier_execution_payments",
+        "supplier_execution_payment_proofs",
+        "supplier_payment_settlements",
+        "purchase_orders",
+        "order_item_real_cost_allocations",
+        "market_settlements",
+        "markets"
+      ],
+      "dbWrite": [
+        "financial_movements",
+        "financial_movement_documents"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_provided_client"
+      ],
+      "doctrine": [
+        "idempotent_projection",
+        "sources_stay_authoritative",
+        "native_amounts_preserved",
+        "not_double_entry",
+        "custody_ledger_out_of_scope"
+      ],
+      "impactAreas": [
+        "finance",
+        "accounting"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/financial-journal-reporting.js",
+      "file": "services/financial-journal-reporting.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "financial-journal-reporting",
+      "domain": "finance",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_id",
+        "period",
+        "financial_movements"
+      ],
+      "outputs": [
+        "journal_summary",
+        "source_reconciliation"
+      ],
+      "depends": [
+        "services/financial-journal.js"
+      ],
+      "usedBy": [
+        "finance projections",
+        "accounting workspace"
+      ],
+      "dbRead": [
+        "financial_movements",
+        "financial_movement_documents",
+        "orders",
+        "refunds",
+        "supplier_payment_settlements",
+        "supplier_execution_payments",
+        "purchase_orders",
+        "order_item_real_cost_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "single_projection_rules",
+        "native_amounts_preserved",
+        "eur_never_invented",
+        "reconcile_before_validate",
+        "not_double_entry"
+      ],
+      "impactAreas": [
+        "finance",
+        "accounting",
+        "dashboards"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/financial-journal.js",
+      "file": "services/financial-journal.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "financial-journal",
+      "domain": "finance",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "source_fact",
+        "native_amount",
+        "currency",
+        "occurred_at",
+        "eur_snapshot",
+        "documents"
+      ],
+      "outputs": [
+        "financial_movements",
+        "financial_movement_documents"
+      ],
+      "depends": [
+        "db",
+        "services/fx-authority.js"
+      ],
+      "usedBy": [
+        "services/financial-journal-projectors.js"
+      ],
+      "dbRead": [
+        "financial_movements"
+      ],
+      "dbWrite": [
+        "financial_movements",
+        "financial_movement_documents"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_provided_client"
+      ],
+      "doctrine": [
+        "eur_is_the_pivot",
+        "single_conversion_authority",
+        "idempotent_projection",
+        "native_amounts_preserved",
+        "historical_rates_frozen",
+        "not_double_entry"
+      ],
+      "impactAreas": [
+        "finance",
+        "accounting",
+        "dashboards"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/fx-authority.js",
       "file": "services/fx-authority.js",
       "type": "file",
@@ -20191,7 +20370,7 @@
       "file": "services/international-n1-reconciliation.js",
       "type": "file",
       "headerType": "full",
-      "role": "international-n1-reconciliation-owner",
+      "role": "international-shipment-costs-owner",
       "domain": "economic-engine",
       "layer": "service",
       "criticality": "high",
@@ -20199,59 +20378,48 @@
       "purpose": null,
       "inputs": [
         "server_resolved_market",
-        "authorized_admin_actor",
-        "immutable_international_facts"
+        "admin_actor",
+        "shipment_documented_facts"
       ],
       "outputs": [
-        "traceable_real_order_item_n1",
-        "conserved_cent_balances"
+        "reconciled_real_costs_per_shipment",
+        "financial_closure_evidence"
       ],
       "depends": [
         "db",
-        "crypto",
-        "cost-allocation/_helpers",
-        "cost-allocation/canonical-margin-writer"
+        "crypto"
       ],
       "usedBy": [
         "routes/admin-shipping-customs-workspace.js"
       ],
       "dbRead": [
         "international_shipments",
-        "international_shipment_parcels",
+        "international_shipment_hub_units",
+        "hub_physical_units",
         "international_shipment_charges",
         "international_n1_reconciliations",
-        "international_n1_allocation_links",
         "customs_shipments",
-        "customs_shipment_fees",
-        "customs_shipment_parcels",
-        "parcels",
-        "orders",
-        "order_items",
-        "parcel_items",
-        "order_item_real_cost_allocations"
+        "customs_shipment_fees"
       ],
       "dbWrite": [
-        "international_n1_reconciliations",
-        "international_n1_allocation_links",
-        "order_item_real_cost_allocations"
+        "international_n1_reconciliations"
       ],
       "dbWriteVia": [],
       "dbTxn": [
         "withTransaction"
       ],
       "doctrine": [
-        "N1_actual_only",
-        "no_duplicate_legacy_freight_or_fees",
-        "no_N3",
-        "source_snapshot_idempotency",
-        "conserve_cents"
+        "real_facts_per_shipment",
+        "no_article_cost_allocation",
+        "no_auto_N1",
+        "unknown_is_not_zero",
+        "idempotent_snapshot"
       ],
       "impactAreas": [
-        "economic-engine",
         "logistics",
         "customs",
-        "security",
-        "dashboard"
+        "economic-engine",
+        "dashboards"
       ],
       "version": null
     },
@@ -20280,14 +20448,12 @@
       "usedBy": [],
       "dbRead": [
         "international_shipments",
-        "international_shipment_parcels",
         "international_shipment_hub_units",
         "hub_physical_units",
         "hub_physical_unit_placements",
         "hub_purchase_allocations",
         "international_shipment_charges",
         "international_shipment_events",
-        "parcels",
         "orders",
         "customs_shipments",
         "customs_shipment_parcels",
@@ -20296,12 +20462,18 @@
       ],
       "dbWrite": [
         "international_shipments",
-        "international_shipment_parcels",
         "international_shipment_hub_units",
         "international_shipment_events",
         "international_shipment_charges"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "customs-shipment-service",
+          "tables": [
+            "customs_shipments"
+          ]
+        }
+      ],
       "dbTxn": [
         "withTransaction"
       ],
@@ -36942,6 +37114,11 @@
       "table": "revoked_tokens"
     },
     {
+      "id": "db:financial_movements",
+      "type": "db-table",
+      "table": "financial_movements"
+    },
+    {
       "id": "db:fx_public_reference_quotes",
       "type": "db-table",
       "table": "fx_public_reference_quotes"
@@ -36950,6 +37127,11 @@
       "id": "db:signals",
       "type": "db-table",
       "table": "signals"
+    },
+    {
+      "id": "db:financial_movement_documents",
+      "type": "db-table",
+      "table": "financial_movement_documents"
     },
     {
       "id": "db:charges",
@@ -37752,6 +37934,11 @@
       "table": "economic_variables"
     },
     {
+      "id": "db:supplier_execution_payment_proofs",
+      "type": "db-table",
+      "table": "supplier_execution_payment_proofs"
+    },
+    {
       "id": "db:fx_pegs",
       "type": "db-table",
       "table": "fx_pegs"
@@ -37802,11 +37989,6 @@
       "table": "import_runtime_item_events"
     },
     {
-      "id": "db:international_shipment_parcels",
-      "type": "db-table",
-      "table": "international_shipment_parcels"
-    },
-    {
       "id": "db:international_shipment_charges",
       "type": "db-table",
       "table": "international_shipment_charges"
@@ -37815,11 +37997,6 @@
       "id": "db:international_n1_reconciliations",
       "type": "db-table",
       "table": "international_n1_reconciliations"
-    },
-    {
-      "id": "db:international_n1_allocation_links",
-      "type": "db-table",
-      "table": "international_n1_allocation_links"
     },
     {
       "id": "db:inventory_items",
@@ -37955,11 +38132,6 @@
       "id": "db:supplier_execution_group_members",
       "type": "db-table",
       "table": "supplier_execution_group_members"
-    },
-    {
-      "id": "db:supplier_execution_payment_proofs",
-      "type": "db-table",
-      "table": "supplier_execution_payment_proofs"
     },
     {
       "id": "db:supplier_execution_events",
@@ -39982,6 +40154,46 @@
       "doctrine": "deposit_review_audited_in_same_transaction"
     },
     {
+      "id": "doctrine:idempotent_projection",
+      "type": "doctrine",
+      "doctrine": "idempotent_projection"
+    },
+    {
+      "id": "doctrine:sources_stay_authoritative",
+      "type": "doctrine",
+      "doctrine": "sources_stay_authoritative"
+    },
+    {
+      "id": "doctrine:native_amounts_preserved",
+      "type": "doctrine",
+      "doctrine": "native_amounts_preserved"
+    },
+    {
+      "id": "doctrine:not_double_entry",
+      "type": "doctrine",
+      "doctrine": "not_double_entry"
+    },
+    {
+      "id": "doctrine:custody_ledger_out_of_scope",
+      "type": "doctrine",
+      "doctrine": "custody_ledger_out_of_scope"
+    },
+    {
+      "id": "doctrine:single_projection_rules",
+      "type": "doctrine",
+      "doctrine": "single_projection_rules"
+    },
+    {
+      "id": "doctrine:eur_never_invented",
+      "type": "doctrine",
+      "doctrine": "eur_never_invented"
+    },
+    {
+      "id": "doctrine:reconcile_before_validate",
+      "type": "doctrine",
+      "doctrine": "reconcile_before_validate"
+    },
+    {
       "id": "doctrine:eur_is_the_pivot",
       "type": "doctrine",
       "doctrine": "eur_is_the_pivot"
@@ -39990,6 +40202,11 @@
       "id": "doctrine:single_conversion_authority",
       "type": "doctrine",
       "doctrine": "single_conversion_authority"
+    },
+    {
+      "id": "doctrine:historical_rates_frozen",
+      "type": "doctrine",
+      "doctrine": "historical_rates_frozen"
     },
     {
       "id": "doctrine:fail_closed",
@@ -40252,29 +40469,29 @@
       "doctrine": "F3_PROOF_REVALIDATION_CONTRACT"
     },
     {
-      "id": "doctrine:N1_actual_only",
+      "id": "doctrine:real_facts_per_shipment",
       "type": "doctrine",
-      "doctrine": "N1_actual_only"
+      "doctrine": "real_facts_per_shipment"
     },
     {
-      "id": "doctrine:no_duplicate_legacy_freight_or_fees",
+      "id": "doctrine:no_article_cost_allocation",
       "type": "doctrine",
-      "doctrine": "no_duplicate_legacy_freight_or_fees"
+      "doctrine": "no_article_cost_allocation"
     },
     {
-      "id": "doctrine:no_N3",
+      "id": "doctrine:no_auto_N1",
       "type": "doctrine",
-      "doctrine": "no_N3"
+      "doctrine": "no_auto_N1"
     },
     {
-      "id": "doctrine:source_snapshot_idempotency",
+      "id": "doctrine:unknown_is_not_zero",
       "type": "doctrine",
-      "doctrine": "source_snapshot_idempotency"
+      "doctrine": "unknown_is_not_zero"
     },
     {
-      "id": "doctrine:conserve_cents",
+      "id": "doctrine:idempotent_snapshot",
       "type": "doctrine",
-      "doctrine": "conserve_cents"
+      "doctrine": "idempotent_snapshot"
     },
     {
       "id": "doctrine:market_scope_server_owned",
@@ -42572,6 +42789,11 @@
       "area": "external-provider-contracts"
     },
     {
+      "id": "impact:dashboards",
+      "type": "impact-area",
+      "area": "dashboards"
+    },
+    {
       "id": "impact:transport",
       "type": "impact-area",
       "area": "transport"
@@ -42625,11 +42847,6 @@
       "id": "impact:pickup",
       "type": "impact-area",
       "area": "pickup"
-    },
-    {
-      "id": "impact:dashboards",
-      "type": "impact-area",
-      "area": "dashboards"
     },
     {
       "id": "impact:infrastructure",
@@ -43076,6 +43293,12 @@
     },
     {
       "from": "bootstrap/crons.js",
+      "to": "db:financial_movements",
+      "type": "db-read",
+      "label": "financial_movements"
+    },
+    {
+      "from": "bootstrap/crons.js",
       "to": "db:fx_public_reference_quotes",
       "type": "db-write",
       "label": "fx_public_reference_quotes"
@@ -43109,6 +43332,18 @@
       "to": "db:signals",
       "type": "db-write",
       "label": "signals"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "db:financial_movements",
+      "type": "db-write",
+      "label": "financial_movements"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "db:financial_movement_documents",
+      "type": "db-write",
+      "label": "financial_movement_documents"
     },
     {
       "from": "bootstrap/crons.js",
@@ -51711,6 +51946,12 @@
       "to": "services/finance-accounting-workspace",
       "type": "depends",
       "label": "services/finance-accounting-workspace"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "services/financial-journal-reporting",
+      "type": "depends",
+      "label": "services/financial-journal-reporting"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -68789,6 +69030,12 @@
       "label": "supplier-payment-review"
     },
     {
+      "from": "services/dashboard-finance-canonical.js",
+      "to": "services/financial-journal-reporting.js",
+      "type": "depends",
+      "label": "financial-journal-reporting"
+    },
+    {
       "from": "routes/admin-dashboard-market.js",
       "to": "services/dashboard-finance-canonical.js",
       "type": "uses",
@@ -68859,6 +69106,12 @@
       "to": "db:customs_shipment_parcels",
       "type": "db-read",
       "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/dashboard-finance-canonical.js",
+      "to": "db:financial_movements",
+      "type": "db-read",
+      "label": "financial_movements"
     },
     {
       "from": "services/dashboard-finance-canonical.js",
@@ -71659,6 +71912,342 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "services/financial-journal.js",
+      "type": "depends",
+      "label": "services/financial-journal.js"
+    },
+    {
+      "from": "finance journal reconciliation",
+      "to": "services/financial-journal-projectors.js",
+      "type": "uses",
+      "label": "finance journal reconciliation"
+    },
+    {
+      "from": "finance projections",
+      "to": "services/financial-journal-projectors.js",
+      "type": "uses",
+      "label": "finance projections"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:supplier_execution_payments",
+      "type": "db-read",
+      "label": "supplier_execution_payments"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:supplier_execution_payment_proofs",
+      "type": "db-read",
+      "label": "supplier_execution_payment_proofs"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:supplier_payment_settlements",
+      "type": "db-read",
+      "label": "supplier_payment_settlements"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:market_settlements",
+      "type": "db-read",
+      "label": "market_settlements"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:financial_movements",
+      "type": "db-write",
+      "label": "financial_movements"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db:financial_movement_documents",
+      "type": "db-write",
+      "label": "financial_movement_documents"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "doctrine:idempotent_projection",
+      "type": "doctrine",
+      "label": "idempotent_projection"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "doctrine:sources_stay_authoritative",
+      "type": "doctrine",
+      "label": "sources_stay_authoritative"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "doctrine:native_amounts_preserved",
+      "type": "doctrine",
+      "label": "native_amounts_preserved"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "doctrine:not_double_entry",
+      "type": "doctrine",
+      "label": "not_double_entry"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "doctrine:custody_ledger_out_of_scope",
+      "type": "doctrine",
+      "label": "custody_ledger_out_of_scope"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "impact:accounting",
+      "type": "impact",
+      "label": "accounting"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "services/financial-journal.js",
+      "type": "depends",
+      "label": "services/financial-journal.js"
+    },
+    {
+      "from": "finance projections",
+      "to": "services/financial-journal-reporting.js",
+      "type": "uses",
+      "label": "finance projections"
+    },
+    {
+      "from": "accounting workspace",
+      "to": "services/financial-journal-reporting.js",
+      "type": "uses",
+      "label": "accounting workspace"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "db:financial_movements",
+      "type": "db-read",
+      "label": "financial_movements"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "db:financial_movement_documents",
+      "type": "db-read",
+      "label": "financial_movement_documents"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "db:supplier_payment_settlements",
+      "type": "db-read",
+      "label": "supplier_payment_settlements"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "db:supplier_execution_payments",
+      "type": "db-read",
+      "label": "supplier_execution_payments"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "doctrine:single_projection_rules",
+      "type": "doctrine",
+      "label": "single_projection_rules"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "doctrine:native_amounts_preserved",
+      "type": "doctrine",
+      "label": "native_amounts_preserved"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "doctrine:eur_never_invented",
+      "type": "doctrine",
+      "label": "eur_never_invented"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "doctrine:reconcile_before_validate",
+      "type": "doctrine",
+      "label": "reconcile_before_validate"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "doctrine:not_double_entry",
+      "type": "doctrine",
+      "label": "not_double_entry"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "impact:accounting",
+      "type": "impact",
+      "label": "accounting"
+    },
+    {
+      "from": "services/financial-journal-reporting.js",
+      "to": "impact:dashboards",
+      "type": "impact",
+      "label": "dashboards"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "services/financial-journal-projectors.js",
+      "to": "services/financial-journal.js",
+      "type": "uses",
+      "label": "services/financial-journal-projectors.js"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "db:financial_movements",
+      "type": "db-read",
+      "label": "financial_movements"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "db:financial_movements",
+      "type": "db-write",
+      "label": "financial_movements"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "db:financial_movement_documents",
+      "type": "db-write",
+      "label": "financial_movement_documents"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "label": "eur_is_the_pivot"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "doctrine:single_conversion_authority",
+      "type": "doctrine",
+      "label": "single_conversion_authority"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "doctrine:idempotent_projection",
+      "type": "doctrine",
+      "label": "idempotent_projection"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "doctrine:native_amounts_preserved",
+      "type": "doctrine",
+      "label": "native_amounts_preserved"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "doctrine:historical_rates_frozen",
+      "type": "doctrine",
+      "label": "historical_rates_frozen"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "doctrine:not_double_entry",
+      "type": "doctrine",
+      "label": "not_double_entry"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "impact:accounting",
+      "type": "impact",
+      "label": "accounting"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "impact:dashboards",
+      "type": "impact",
+      "label": "dashboards"
+    },
+    {
       "from": "services/fx-authority.js",
       "to": "db",
       "type": "depends",
@@ -74170,18 +74759,6 @@
       "label": "crypto"
     },
     {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "cost-allocation/_helpers",
-      "type": "depends",
-      "label": "cost-allocation/_helpers"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "cost-allocation/canonical-margin-writer",
-      "type": "depends",
-      "label": "cost-allocation/canonical-margin-writer"
-    },
-    {
       "from": "routes/admin-shipping-customs-workspace.js",
       "to": "services/international-n1-reconciliation.js",
       "type": "uses",
@@ -74195,9 +74772,15 @@
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "db:international_shipment_parcels",
+      "to": "db:international_shipment_hub_units",
       "type": "db-read",
-      "label": "international_shipment_parcels"
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/international-n1-reconciliation.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
     },
     {
       "from": "services/international-n1-reconciliation.js",
@@ -74213,12 +74796,6 @@
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "db:international_n1_allocation_links",
-      "type": "db-read",
-      "label": "international_n1_allocation_links"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
       "to": "db:customs_shipments",
       "type": "db-read",
       "label": "customs_shipments"
@@ -74231,93 +74808,39 @@
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "db:customs_shipment_parcels",
-      "type": "db-read",
-      "label": "customs_shipment_parcels"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:order_items",
-      "type": "db-read",
-      "label": "order_items"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:parcel_items",
-      "type": "db-read",
-      "label": "parcel_items"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:order_item_real_cost_allocations",
-      "type": "db-read",
-      "label": "order_item_real_cost_allocations"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
       "to": "db:international_n1_reconciliations",
       "type": "db-write",
       "label": "international_n1_reconciliations"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "db:international_n1_allocation_links",
-      "type": "db-write",
-      "label": "international_n1_allocation_links"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "db:order_item_real_cost_allocations",
-      "type": "db-write",
-      "label": "order_item_real_cost_allocations"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:N1_actual_only",
+      "to": "doctrine:real_facts_per_shipment",
       "type": "doctrine",
-      "label": "N1_actual_only"
+      "label": "real_facts_per_shipment"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:no_duplicate_legacy_freight_or_fees",
+      "to": "doctrine:no_article_cost_allocation",
       "type": "doctrine",
-      "label": "no_duplicate_legacy_freight_or_fees"
+      "label": "no_article_cost_allocation"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:no_N3",
+      "to": "doctrine:no_auto_N1",
       "type": "doctrine",
-      "label": "no_N3"
+      "label": "no_auto_N1"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:source_snapshot_idempotency",
+      "to": "doctrine:unknown_is_not_zero",
       "type": "doctrine",
-      "label": "source_snapshot_idempotency"
+      "label": "unknown_is_not_zero"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "doctrine:conserve_cents",
+      "to": "doctrine:idempotent_snapshot",
       "type": "doctrine",
-      "label": "conserve_cents"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "impact:economic-engine",
-      "type": "impact",
-      "label": "economic-engine"
+      "label": "idempotent_snapshot"
     },
     {
       "from": "services/international-n1-reconciliation.js",
@@ -74333,27 +74856,21 @@
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "impact:security",
+      "to": "impact:economic-engine",
       "type": "impact",
-      "label": "security"
+      "label": "economic-engine"
     },
     {
       "from": "services/international-n1-reconciliation.js",
-      "to": "impact:dashboard",
+      "to": "impact:dashboards",
       "type": "impact",
-      "label": "dashboard"
+      "label": "dashboards"
     },
     {
       "from": "services/international-shipment-journey.js",
       "to": "db:international_shipments",
       "type": "db-read",
       "label": "international_shipments"
-    },
-    {
-      "from": "services/international-shipment-journey.js",
-      "to": "db:international_shipment_parcels",
-      "type": "db-read",
-      "label": "international_shipment_parcels"
     },
     {
       "from": "services/international-shipment-journey.js",
@@ -74393,12 +74910,6 @@
     },
     {
       "from": "services/international-shipment-journey.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/international-shipment-journey.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
@@ -74435,12 +74946,6 @@
     },
     {
       "from": "services/international-shipment-journey.js",
-      "to": "db:international_shipment_parcels",
-      "type": "db-write",
-      "label": "international_shipment_parcels"
-    },
-    {
-      "from": "services/international-shipment-journey.js",
       "to": "db:international_shipment_hub_units",
       "type": "db-write",
       "label": "international_shipment_hub_units"
@@ -74456,6 +74961,13 @@
       "to": "db:international_shipment_charges",
       "type": "db-write",
       "label": "international_shipment_charges"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:customs_shipments",
+      "type": "db-write-via",
+      "label": "customs_shipments",
+      "via": "customs-shipment-service"
     },
     {
       "from": "services/international-shipment-journey.js",
@@ -100275,7 +100787,8 @@
         "economic_snapshots",
         "pickup_print_tokens",
         "pickup_reveal_codes",
-        "revoked_tokens"
+        "revoked_tokens",
+        "financial_movements"
       ],
       "dbWrite": [
         "fx_public_reference_quotes",
@@ -100283,7 +100796,9 @@
         "pickup_print_tokens",
         "pickup_reveal_codes",
         "revoked_tokens",
-        "signals"
+        "signals",
+        "financial_movements",
+        "financial_movement_documents"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -100304,6 +100819,8 @@
       ],
       "mustCheck": [
         "db:economic_snapshots",
+        "db:financial_movement_documents",
+        "db:financial_movements",
         "db:fx_public_reference_quotes",
         "db:pickup_print_tokens",
         "db:pickup_reveal_codes",
@@ -106538,7 +107055,8 @@
         "middleware/auth",
         "middleware/require-market-delegated-capability",
         "middleware/require-dashboard-global-authority",
-        "services/finance-accounting-workspace"
+        "services/finance-accounting-workspace",
+        "services/financial-journal-reporting"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -117319,7 +117837,8 @@
         "db",
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
-        "supplier-payment-review"
+        "supplier-payment-review",
+        "services/financial-journal-reporting.js"
       ],
       "directUsedBy": [
         "routes/admin-dashboard-market.js"
@@ -117336,7 +117855,8 @@
         "parcel_items",
         "parcels",
         "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "financial_movements"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -117355,6 +117875,7 @@
       "mustCheck": [
         "db:customs_shipment_parcels",
         "db:customs_shipments",
+        "db:financial_movements",
         "db:markets",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
@@ -117373,6 +117894,7 @@
         "impact:market-authorization",
         "impact:purchasing",
         "routes/admin-dashboard-market.js",
+        "services/financial-journal-reporting.js",
         "services/supplier-payment-review.js"
       ]
     },
@@ -119058,6 +119580,184 @@
         "utils/logger.js"
       ]
     },
+    "services/financial-journal-projectors.js": {
+      "role": "financial-journal-projectors",
+      "domain": "finance",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/financial-journal.js"
+      ],
+      "directUsedBy": [
+        "finance journal reconciliation",
+        "finance projections"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "refunds",
+        "supplier_execution_payments",
+        "supplier_execution_payment_proofs",
+        "supplier_payment_settlements",
+        "purchase_orders",
+        "order_item_real_cost_allocations",
+        "market_settlements",
+        "markets"
+      ],
+      "dbWrite": [
+        "financial_movements",
+        "financial_movement_documents"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "idempotent_projection",
+        "sources_stay_authoritative",
+        "native_amounts_preserved",
+        "not_double_entry",
+        "custody_ledger_out_of_scope"
+      ],
+      "impactAreas": [
+        "finance",
+        "accounting"
+      ],
+      "mustCheck": [
+        "db:financial_movement_documents",
+        "db:financial_movements",
+        "db:market_settlements",
+        "db:markets",
+        "db:order_item_real_cost_allocations",
+        "db:orders",
+        "db:purchase_orders",
+        "db:refunds",
+        "db:supplier_execution_payment_proofs",
+        "db:supplier_execution_payments",
+        "db:supplier_payment_settlements",
+        "doctrine:custody_ledger_out_of_scope",
+        "doctrine:idempotent_projection",
+        "doctrine:native_amounts_preserved",
+        "doctrine:not_double_entry",
+        "doctrine:sources_stay_authoritative",
+        "impact:accounting",
+        "impact:finance",
+        "services/financial-journal.js"
+      ]
+    },
+    "services/financial-journal-reporting.js": {
+      "role": "financial-journal-reporting",
+      "domain": "finance",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/financial-journal.js"
+      ],
+      "directUsedBy": [
+        "finance projections",
+        "accounting workspace"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "financial_movements",
+        "financial_movement_documents",
+        "orders",
+        "refunds",
+        "supplier_payment_settlements",
+        "supplier_execution_payments",
+        "purchase_orders",
+        "order_item_real_cost_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "single_projection_rules",
+        "native_amounts_preserved",
+        "eur_never_invented",
+        "reconcile_before_validate",
+        "not_double_entry"
+      ],
+      "impactAreas": [
+        "finance",
+        "accounting",
+        "dashboards"
+      ],
+      "mustCheck": [
+        "db:financial_movement_documents",
+        "db:financial_movements",
+        "db:order_item_real_cost_allocations",
+        "db:orders",
+        "db:purchase_orders",
+        "db:refunds",
+        "db:supplier_execution_payments",
+        "db:supplier_payment_settlements",
+        "doctrine:eur_never_invented",
+        "doctrine:native_amounts_preserved",
+        "doctrine:not_double_entry",
+        "doctrine:reconcile_before_validate",
+        "doctrine:single_projection_rules",
+        "impact:accounting",
+        "impact:dashboards",
+        "impact:finance",
+        "services/dashboard-finance-canonical.js",
+        "services/financial-journal.js"
+      ]
+    },
+    "services/financial-journal.js": {
+      "role": "financial-journal",
+      "domain": "finance",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/fx-authority.js"
+      ],
+      "directUsedBy": [
+        "services/financial-journal-projectors.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "financial_movements"
+      ],
+      "dbWrite": [
+        "financial_movements",
+        "financial_movement_documents"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "eur_is_the_pivot",
+        "single_conversion_authority",
+        "idempotent_projection",
+        "native_amounts_preserved",
+        "historical_rates_frozen",
+        "not_double_entry"
+      ],
+      "impactAreas": [
+        "finance",
+        "accounting",
+        "dashboards"
+      ],
+      "mustCheck": [
+        "db:financial_movement_documents",
+        "db:financial_movements",
+        "doctrine:eur_is_the_pivot",
+        "doctrine:historical_rates_frozen",
+        "doctrine:idempotent_projection",
+        "doctrine:native_amounts_preserved",
+        "doctrine:not_double_entry",
+        "doctrine:single_conversion_authority",
+        "impact:accounting",
+        "impact:dashboards",
+        "impact:finance",
+        "services/financial-journal-projectors.js",
+        "services/financial-journal-reporting.js",
+        "services/fx-authority.js"
+      ]
+    },
     "services/fx-authority.js": {
       "role": "fx-authority",
       "domain": "market",
@@ -119111,6 +119811,7 @@
         "impact:payments",
         "impact:pricing",
         "impact:transport",
+        "services/financial-journal.js",
         "services/fx-chain-service.js",
         "services/fx-engine-rates.js",
         "services/market-transport-sale-rates.js",
@@ -120467,7 +121168,7 @@
       ]
     },
     "services/international-n1-reconciliation.js": {
-      "role": "international-n1-reconciliation-owner",
+      "role": "international-shipment-costs-owner",
       "domain": "economic-engine",
       "criticality": "high",
       "headerType": "full",
@@ -120475,9 +121176,7 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "crypto",
-        "cost-allocation/_helpers",
-        "cost-allocation/canonical-margin-writer"
+        "crypto"
       ],
       "directUsedBy": [
         "routes/admin-shipping-customs-workspace.js"
@@ -120485,63 +121184,47 @@
       "ownedFiles": [],
       "dbRead": [
         "international_shipments",
-        "international_shipment_parcels",
+        "international_shipment_hub_units",
+        "hub_physical_units",
         "international_shipment_charges",
         "international_n1_reconciliations",
-        "international_n1_allocation_links",
         "customs_shipments",
-        "customs_shipment_fees",
-        "customs_shipment_parcels",
-        "parcels",
-        "orders",
-        "order_items",
-        "parcel_items",
-        "order_item_real_cost_allocations"
+        "customs_shipment_fees"
       ],
       "dbWrite": [
-        "international_n1_reconciliations",
-        "international_n1_allocation_links",
-        "order_item_real_cost_allocations"
+        "international_n1_reconciliations"
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "N1_actual_only",
-        "no_duplicate_legacy_freight_or_fees",
-        "no_N3",
-        "source_snapshot_idempotency",
-        "conserve_cents"
+        "real_facts_per_shipment",
+        "no_article_cost_allocation",
+        "no_auto_N1",
+        "unknown_is_not_zero",
+        "idempotent_snapshot"
       ],
       "impactAreas": [
-        "economic-engine",
         "logistics",
         "customs",
-        "security",
-        "dashboard"
+        "economic-engine",
+        "dashboards"
       ],
       "mustCheck": [
         "db:customs_shipment_fees",
-        "db:customs_shipment_parcels",
         "db:customs_shipments",
-        "db:international_n1_allocation_links",
+        "db:hub_physical_units",
         "db:international_n1_reconciliations",
         "db:international_shipment_charges",
-        "db:international_shipment_parcels",
+        "db:international_shipment_hub_units",
         "db:international_shipments",
-        "db:order_item_real_cost_allocations",
-        "db:order_items",
-        "db:orders",
-        "db:parcel_items",
-        "db:parcels",
-        "doctrine:N1_actual_only",
-        "doctrine:conserve_cents",
-        "doctrine:no_N3",
-        "doctrine:no_duplicate_legacy_freight_or_fees",
-        "doctrine:source_snapshot_idempotency",
+        "doctrine:idempotent_snapshot",
+        "doctrine:no_article_cost_allocation",
+        "doctrine:no_auto_N1",
+        "doctrine:real_facts_per_shipment",
+        "doctrine:unknown_is_not_zero",
         "impact:customs",
-        "impact:dashboard",
+        "impact:dashboards",
         "impact:economic-engine",
         "impact:logistics",
-        "impact:security",
         "routes/admin-shipping-customs-workspace.js"
       ]
     },
@@ -120557,14 +121240,12 @@
       "ownedFiles": [],
       "dbRead": [
         "international_shipments",
-        "international_shipment_parcels",
         "international_shipment_hub_units",
         "hub_physical_units",
         "hub_physical_unit_placements",
         "hub_purchase_allocations",
         "international_shipment_charges",
         "international_shipment_events",
-        "parcels",
         "orders",
         "customs_shipments",
         "customs_shipment_parcels",
@@ -120573,12 +121254,18 @@
       ],
       "dbWrite": [
         "international_shipments",
-        "international_shipment_parcels",
         "international_shipment_hub_units",
         "international_shipment_events",
         "international_shipment_charges"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "customs-shipment-service",
+          "tables": [
+            "customs_shipments"
+          ]
+        }
+      ],
       "doctrines": [
         "market_scope_server_owned",
         "fact_not_financial_allocation",
@@ -120596,10 +121283,8 @@
         "db:international_shipment_charges",
         "db:international_shipment_events",
         "db:international_shipment_hub_units",
-        "db:international_shipment_parcels",
         "db:international_shipments",
         "db:orders",
-        "db:parcels",
         "doctrine:fact_not_financial_allocation",
         "doctrine:market_scope_server_owned",
         "doctrine:no_customs_clearance_inferred"
@@ -137279,18 +137964,6 @@
       ]
     },
     {
-      "table": "order_item_real_cost_allocations",
-      "writerCount": 6,
-      "writers": [
-        "services/cost-allocation/allocate.js",
-        "services/cost-allocation/index.js",
-        "services/cost-allocation/manual-cost-entry-service.js",
-        "services/customs-shipment-service.js",
-        "services/international-n1-reconciliation.js",
-        "services/transport-cost-allocation.js"
-      ]
-    },
-    {
       "table": "pickup_print_tokens",
       "writerCount": 6,
       "writers": [
@@ -137406,6 +138079,17 @@
         "routes/invoices.js",
         "services/invoice-service.js",
         "services/order-payment-confirmation.js"
+      ]
+    },
+    {
+      "table": "order_item_real_cost_allocations",
+      "writerCount": 5,
+      "writers": [
+        "services/cost-allocation/allocate.js",
+        "services/cost-allocation/index.js",
+        "services/cost-allocation/manual-cost-entry-service.js",
+        "services/customs-shipment-service.js",
+        "services/transport-cost-allocation.js"
       ]
     },
     {
@@ -137576,6 +138260,24 @@
         "bootstrap/startup-migrations.js",
         "services/economic-engine-queries.js",
         "services/market-structure-charge-reference.js"
+      ]
+    },
+    {
+      "table": "financial_movement_documents",
+      "writerCount": 3,
+      "writers": [
+        "bootstrap/crons.js",
+        "services/financial-journal-projectors.js",
+        "services/financial-journal.js"
+      ]
+    },
+    {
+      "table": "financial_movements",
+      "writerCount": 3,
+      "writers": [
+        "bootstrap/crons.js",
+        "services/financial-journal-projectors.js",
+        "services/financial-journal.js"
       ]
     },
     {
@@ -138679,6 +139381,12 @@
       "to": "services/finance-accounting-workspace",
       "type": "depends",
       "label": "services/finance-accounting-workspace"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "services/financial-journal-reporting",
+      "type": "depends",
+      "label": "services/financial-journal-reporting"
     },
     {
       "from": "routes/admin-finance-config.js",
@@ -141063,6 +141771,42 @@
       "label": "db.js"
     },
     {
+      "from": "services/financial-journal-projectors.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "finance journal reconciliation",
+      "to": "services/financial-journal-projectors.js",
+      "type": "uses",
+      "label": "finance journal reconciliation"
+    },
+    {
+      "from": "finance projections",
+      "to": "services/financial-journal-projectors.js",
+      "type": "uses",
+      "label": "finance projections"
+    },
+    {
+      "from": "finance projections",
+      "to": "services/financial-journal-reporting.js",
+      "type": "uses",
+      "label": "finance projections"
+    },
+    {
+      "from": "accounting workspace",
+      "to": "services/financial-journal-reporting.js",
+      "type": "uses",
+      "label": "accounting workspace"
+    },
+    {
+      "from": "services/financial-journal.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
       "from": "services/fx-authority.js",
       "to": "db",
       "type": "depends",
@@ -141343,18 +142087,6 @@
       "to": "crypto",
       "type": "depends",
       "label": "crypto"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "cost-allocation/_helpers",
-      "type": "depends",
-      "label": "cost-allocation/_helpers"
-    },
-    {
-      "from": "services/international-n1-reconciliation.js",
-      "to": "cost-allocation/canonical-margin-writer",
-      "type": "depends",
-      "label": "cost-allocation/canonical-margin-writer"
     },
     {
       "from": "services/inventory-service.js",

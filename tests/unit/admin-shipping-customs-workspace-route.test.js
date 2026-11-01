@@ -82,7 +82,7 @@ jest.mock('../../services/international-n1-reconciliation',()=>({
   reconcile:(...args)=>mockInternationalN1(...args),
 }));
 // International transport stages remain separate from customs writes.
-const mockJourneyList=jest.fn(),mockJourneyDetail=jest.fn(),mockJourneyCreate=jest.fn();
+const mockJourneyList=jest.fn(),mockJourneyDetail=jest.fn(),mockJourneyDeclareCustoms=jest.fn();
 const mockJourneyTransition=jest.fn(),mockJourneyTracking=jest.fn();
 const mockJourneyFreight=jest.fn(),mockJourneyCustoms=jest.fn(),mockJourneyCost=jest.fn();
 jest.mock('../../services/international-shipment-journey',()=>({
@@ -91,7 +91,7 @@ jest.mock('../../services/international-shipment-journey',()=>({
   },
   list:(...args)=>mockJourneyList(...args),
   detail:(...args)=>mockJourneyDetail(...args),
-  create:(...args)=>mockJourneyCreate(...args),
+  declareCustoms:(...args)=>mockJourneyDeclareCustoms(...args),
   transition:(...args)=>mockJourneyTransition(...args),
   updateTracking:(...args)=>mockJourneyTracking(...args),
   recordFreight:(...args)=>mockJourneyFreight(...args),
@@ -155,10 +155,10 @@ beforeEach(() => {
     customs: { shipments: [], candidates: [] },
   });
   mockConfirmTransit.mockResolvedValue({ parcel_ref: 'PCL-CM-001', status: 'in_transit' });
-  mockInternationalN1.mockResolvedValue({status:'reconciled',actual_n1_kmf:'12000.00'});
+  mockInternationalN1.mockResolvedValue({status:'partial',documented_total_kmf:'12000.00',allocation_rows:0});
   mockJourneyList.mockResolvedValue([]);
   mockJourneyDetail.mockResolvedValue({shipment:{reference:'INT-CM-001'},events:[],charges:[],parcels:[]});
-  mockJourneyCreate.mockResolvedValue({reference:'INT-CM-001'});
+  mockJourneyDeclareCustoms.mockResolvedValue({amount_kmf:'0',customs_status:'declared'});
   mockJourneyTransition.mockResolvedValue({stage:'in_transit'});
   mockJourneyTracking.mockResolvedValue({tracking_reference:'BOL-001'});
   mockJourneyFreight.mockResolvedValue({amount_kmf:'12000'});
@@ -350,9 +350,9 @@ describe('Chaîne internationale réelle — autorité marché et gestes sépar�
     expect((await request(app()).get(base)).status).toBe(200);
     expect(mockJourneyList).toHaveBeenCalledWith(expect.objectContaining({code:'CM'}));
     expect((await request(app()).get(base+'/INT-CM-001')).status).toBe(200);
-    expect((await request(app()).post(base).send({reference:'INT-CM-001'})).status).toBe(403);
+    expect((await request(app()).post(base+'/INT-CM-001/customs-amount').send({amount_kmf:5})).status).toBe(403);
     expect((await request(app()).post(base+'/INT-CM-001/freight').send({amount_kmf:2})).status).toBe(403);
-    expect(mockJourneyCreate).not.toHaveBeenCalled();
+    expect(mockJourneyDeclareCustoms).not.toHaveBeenCalled();
   });
   test('agent transitaire peut confirmer un transit avec capability mais jamais saisir un coût',async()=>{
     mockUserRole='agent_transitaire';
@@ -374,27 +374,24 @@ describe('Chaîne internationale réelle — autorité marché et gestes sépar�
     expect(mockJourneyTransition).not.toHaveBeenCalled();
     expect((await request(app()).post(base.replace('/CM/','/CG/')+'/INT-CG-001/transition').send({proof_ref:'BL-2'})).status).toBe(403);
   });
-  test('admin crée, enregistre fret et frais uniquement dans le marché résolu',async()=>{
+  test('admin enregistre fret, droits et frais uniquement dans le marché résolu',async()=>{
     mockUserRole='admin';mockGlobalAllowed=true;
-    expect((await request(app()).post(base).send({reference:'INT-CM-001',parcel_refs:['P-001']})).status).toBe(201);
-    expect(mockJourneyCreate).toHaveBeenCalledWith(
-      expect.objectContaining({id:'market-cm-id'}),expect.objectContaining({role:'admin'}),
-      expect.objectContaining({reference:'INT-CM-001'})
-    );
     expect((await request(app()).post(base+'/INT-CM-001/freight').send({invoice_ref:'FR-001',amount_kmf:12000})).status).toBe(200);
     expect((await request(app()).post(base+'/INT-CM-001/costs').send({fee_type:'handling',amount_kmf:50})).status).toBe(201);
     expect((await request(app()).post(base+'/INT-CM-001/link-customs').send({customs_reference:'CUS-001'})).status).toBe(200);
-    expect((await request(app()).post(base).send({market_id:'fake'})).status).toBe(400);
+    expect((await request(app()).post(base+'/INT-CM-001/customs-amount').send({amount_kmf:'0',proof_ref:'DECL-1'})).status).toBe(200);
+    expect(mockJourneyDeclareCustoms).toHaveBeenCalled();
+    expect((await request(app()).post(base+'/INT-CM-001/customs-amount').send({market_id:'fake'})).status).toBe(400);
   });
 });
 
-test('N1 reconciliation is Admin-only and market-scoped',async()=>{
-  const url='/api/admin/workspaces/shipping-customs/market/CM/international/INT-CM-001/reconcile-n1';
+test('shipment financial reconciliation is Admin-only and market-scoped',async()=>{
+  const url='/api/admin/workspaces/shipping-customs/market/CM/international/INT-CM-001/reconcile-costs';
   mockUserRole='market_operator';
   expect((await request(app()).post(url).send({})).status).toBe(403);
   expect(mockInternationalN1).not.toHaveBeenCalled();
   mockUserRole='admin';mockGlobalAllowed=true;
   expect((await request(app()).post(url).send({})).status).toBe(200);
   expect(mockInternationalN1).toHaveBeenCalledWith(
-    expect.objectContaining({id:'market-cm-id'}),expect.objectContaining({role:'admin'}),'INT-CM-001');
+    expect.objectContaining({id:'market-cm-id'}),expect.objectContaining({role:'admin'}),'INT-CM-001',undefined,{});
 });

@@ -243,6 +243,7 @@ module.exports = {
   db: {
     tables: [
       'business_rules: R',
+      'customs_shipments: R',
       'carriers: RW',
       'hub_custody_events: RW!',
       'hub_physical_unit_placements: RW!',
@@ -251,7 +252,6 @@ module.exports = {
       'international_shipment_charges: RW!',
       'international_shipment_events: RW!',
       'international_shipment_hub_units: RW!',
-      'international_shipment_parcels: RW!',
       'international_shipments: RW!',
       'incidents: R',
       'invoices: R',
@@ -402,6 +402,7 @@ module.exports = {
       { fn: 'recordPhysicalUnitOutcome', file: 'services/hub-physical-identity.js' },
     ],
     consumes: [
+      'customs (lien documentaire international : le service douane possède seul la déclaration des droits et taxes ; le Hub orchestre sa transaction)',
       'documents (dépendance data cross-feature observée et gouvernée par O5)',
       'incident-management (incident persistence via incident-write-service)',
       'infrastructure (DB + transactional outbox F0 ; les constats physiques sont publiés via outbox-producer dans la transaction du fait)',
