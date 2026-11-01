@@ -350,7 +350,7 @@ describe('Chaîne internationale réelle — autorité marché et gestes sépar�
     expect((await request(app()).get(base)).status).toBe(200);
     expect(mockJourneyList).toHaveBeenCalledWith(expect.objectContaining({code:'CM'}));
     expect((await request(app()).get(base+'/INT-CM-001')).status).toBe(200);
-    expect((await request(app()).post(base).send({reference:'INT-CM-001'})).status).toBe(403);
+    expect((await request(app()).post(base+'/INT-CM-001/customs-amount').send({amount_kmf:5})).status).toBe(403);
     expect((await request(app()).post(base+'/INT-CM-001/freight').send({amount_kmf:2})).status).toBe(403);
     expect(mockJourneyDeclareCustoms).not.toHaveBeenCalled();
   });
