@@ -29,7 +29,7 @@
 
 const {
   FIXTURE_OWNER_COLUMNS, FIXTURE_ROOT_TABLES, classOf, allowlistFrom,
-  userFixtureReason, relaisFixtureReason, partnerFixtureReason,
+  userFixtureReason, relaisFixtureReason, partnerFixtureReason, resetScope, FULL_MODE_PURGE_COLUMNS,
 } = require('./staging-reset-classification');
 
 const ident = (name) => {
@@ -37,6 +37,11 @@ const ident = (name) => {
   return `"${name}"`;
 };
 const maskEmail = (e) => (e ? String(e).replace(/^(.{2}).*(@.*)$/, '$1***$2') : null);
+// Tables de fondation a trigger BEFORE DELETE qui interdit tout DELETE (append-only). Seule voie sans desactiver de trigger :
+// TRUNCATE, uniquement si TOUTES les lignes de la table sont a retirer et si tous ses referenceurs sont des tables purgees.
+const GUARDED_TRUNCATE_ONLY = Object.freeze(['market_cash_destinations']);
+// Ordres imposes par des triggers de garde : les droits des membres doivent partir avant leurs plafonds.
+const EXTRA_ORDER = Object.freeze([{ child: 'membership_capabilities', parent: 'assignment_capability_ceiling' }]);
 const ROOT_PARAM = Object.freeze({ users: '$1', relais: '$2', partners: '$3' });
 
 async function foreignKeys(q) {
@@ -60,11 +65,17 @@ async function foreignKeys(q) {
 /** Identifie fixtures et comptes conserves. Lecture seule. */
 async function findFixtures(q, env = process.env) {
   const allow = allowlistFrom(env);
+  const full = resetScope(env) === 'full';
   const { rows: users } = await q.query(`SELECT id, email, full_name, role::text AS role FROM users ORDER BY id`);
-  const { rows: relais } = await q.query(`SELECT id, name, address FROM relais ORDER BY id`);
+  const { rows: relais } = await q.query(
+    `SELECT r.id, r.name, r.address, r.island, r.is_active, m.code AS market_code FROM relais r LEFT JOIN markets m ON m.id = r.market_id ORDER BY r.id`);
   const { rows: partners } = await q.query(`SELECT id, name, email FROM partners ORDER BY id`);
   const fx = {
-    users: users.map((u) => ({ u, reason: userFixtureReason(u, allow) })).filter((x) => x.reason),
+    users: users.map((u) => ({
+      u,
+      reason: userFixtureReason(u, allow)
+        || (full && !allow.has(String(u.email || '').toLowerCase()) ? 'full_mode_not_allowlisted' : null),
+    })).filter((x) => x.reason),
     relais: relais.map((r) => ({ r, reason: relaisFixtureReason(r) })).filter((x) => x.reason),
     partners: partners.map((p) => ({ p, reason: partnerFixtureReason(p) })).filter((x) => x.reason),
   };
@@ -77,6 +88,7 @@ async function findFixtures(q, env = process.env) {
     summary: {
       users: fx.users.length,
       relais: fx.relais.length,
+      relais_removed: fx.relais.map((x) => ({ id: x.r.id, market: x.r.market_code, name: x.r.name, island: x.r.island, reason: x.reason })),
       partners: fx.partners.length,
       users_by_reason: fx.users.reduce((a, x) => ({ ...a, [x.reason]: (a[x.reason] || 0) + 1 }), {}),
       users_removed_sample: fx.users.slice(0, 20).map((x) => ({ email: maskEmail(x.u.email), role: x.u.role })),
@@ -98,7 +110,7 @@ function orPreds(set) {
  * Retourne { predicates: Map(table -> Set(pred)), classified } sans aucune ecriture. Le predicat d'une table est
  * l'union (OR) des termes de ses aretes "delete" entrantes, evalues recursivement sur le predicat du parent (memoise).
  */
-function buildDeleteGraph(edges, purgeSet) {
+function buildDeleteGraph(edges, purgeSet, { forced = new Set() } = {}) {
   const classified = [];
   const inDelete = new Set(FIXTURE_ROOT_TABLES);
   const queue = [...FIXTURE_ROOT_TABLES];
@@ -106,8 +118,11 @@ function buildDeleteGraph(edges, purgeSet) {
     const parent = queue.shift();
     for (const e of edges.filter((x) => x.parent === parent && x.child !== parent)) {
       let action;
+      const key = `${e.child}.${e.cols.join('+')}`;
       if (purgeSet.has(e.child)) action = 'ignore';
+      else if (forced.has(key)) action = 'delete'; // mode full : colonne nominative autorisee
       else if (e.deltype === 'n') action = 'null';
+      else if (forced.size && e.deltype === 'c' && !FIXTURE_ROOT_TABLES.includes(e.parent) && inDelete.has(e.parent)) action = 'delete'; // cascade FK explicite d'une ligne deja purgee
       else if (classOf(e.child) === 'fixture_scoped') {
         const owner = (FIXTURE_OWNER_COLUMNS[e.child] || []).some((c) => e.cols.includes(c));
         const rootParent = FIXTURE_ROOT_TABLES.includes(e.parent);
@@ -155,6 +170,17 @@ function deleteOrder(tables, edges) {
 // PostgreSQL refuse un bind dont un parametre n'est pas reference : on reference toujours $1..$3 (tableaux d'ids non nuls).
 const BOUND = '$1::uuid[] IS NOT NULL AND $2::uuid[] IS NOT NULL AND $3::uuid[] IS NOT NULL';
 
+/** Toutes les tables qui referencent (transitivement) `table` : TRUNCATE exige qu'elles soient toutes listees. */
+function referrerClosure(table, edges) {
+  const out = new Set();
+  const queue = [table];
+  while (queue.length) {
+    const p = queue.shift();
+    for (const e of edges) if (e.parent === p && e.child !== table && !out.has(e.child)) { out.add(e.child); queue.push(e.child); }
+  }
+  return [...out].sort();
+}
+
 async function countWhere(q, table, where, params) {
   const { rows: [r] } = await q.query(`SELECT COUNT(*)::bigint AS c FROM ${ident(table)} WHERE (${where}) AND ${BOUND}`, params);
   return Number(r.c);
@@ -165,12 +191,14 @@ async function buildFixturePlan(q, { env = process.env, purgeTables = [] } = {})
   const fixtures = await findFixtures(q, env);
   const edges = await foreignKeys(q);
   const purgeSet = new Set(purgeTables);
-  const { predicates, classified } = buildDeleteGraph(edges, purgeSet);
+  const scope = resetScope(env);
+  const forced = scope === 'full' ? new Set(FULL_MODE_PURGE_COLUMNS) : new Set();
+  const { predicates, classified } = buildDeleteGraph(edges, purgeSet, { forced });
   const params = [fixtures.ids.users, fixtures.ids.relais, fixtures.ids.partners];
   const hasAny = params.some((p) => p.length);
 
   const wherefor = (t) => orPreds(predicates.get(t));
-  const order = deleteOrder([...predicates.keys()], edges);
+  const order = deleteOrder([...predicates.keys()], [...edges, ...EXTRA_ORDER]);
   const wouldDelete = {};
   if (hasAny) for (const t of order) wouldDelete[t] = await countWhere(q, t, wherefor(t), params);
 
@@ -189,13 +217,22 @@ async function buildFixturePlan(q, { env = process.env, purgeTables = [] } = {})
       else blockers.push({ code: 'FIXTURE_REFERENCED_BY_NON_FIXTURE_ROW', table: e.child, columns: e.cols, references: e.parent, rows: n });
     }
   }
+  for (const t of GUARDED_TRUNCATE_ONLY) {
+    if (!wouldDelete[t]) continue;
+    const { rows: [r] } = await q.query(`SELECT COUNT(*)::bigint AS c FROM ${ident(t)}`);
+    if (Number(r.c) !== wouldDelete[t]) blockers.push({ code: 'GUARDED_TABLE_PARTIAL_DELETE', table: t, columns: [], references: 'append-only', rows: Number(r.c) - wouldDelete[t] });
+    const nonPurge = referrerClosure(t, edges).filter((r) => !purgeSet.has(r));
+    if (nonPurge.length) blockers.push({ code: 'GUARDED_TABLE_REFERENCED_OUTSIDE_PURGE', table: t, columns: nonPurge, references: 'append-only', rows: 0 });
+  }
   if (fixtures.summary.users > 0 && fixtures.admins_remaining < 1) blockers.push({ code: 'NO_ADMIN_WOULD_REMAIN', table: 'users', rows: 0 });
   return {
+    scope,
+    forced_columns: [...forced],
     summary: fixtures.summary,
     would_delete: Object.fromEntries(Object.entries(wouldDelete).filter(([, n]) => n > 0)),
     nulled_references: nulled,
     blockers,
-    _exec: { order, predicates, params, wouldDelete, hasAny },
+    _exec: { order, predicates, params, wouldDelete, hasAny, edges, purgeSet },
   };
 }
 
@@ -206,12 +243,20 @@ async function retireFixtures(client, plan, { env = process.env } = {}) {
     err.report = plan;
     throw err;
   }
-  const { order, predicates, params, wouldDelete, hasAny } = plan._exec;
+  const { order, predicates, params, wouldDelete, hasAny, edges, purgeSet } = plan._exec;
   const deleted = {};
   if (hasAny) {
     for (const t of order) {
       const planned = await countWhere(client, t, orPreds(predicates.get(t)), params);
       if (planned !== (wouldDelete[t] || 0)) throw new Error(`FIXTURE_PLAN_DRIFT:${t}:${wouldDelete[t] || 0}->${planned}`);
+      if (GUARDED_TRUNCATE_ONLY.includes(t)) {
+        if (!planned) continue;
+        const referrers = referrerClosure(t, edges);
+        for (const r of referrers) if (!purgeSet.has(r)) throw new Error(`FIXTURE_GUARDED_REFERRER_OUTSIDE_PURGE:${t}:${r}`);
+        await client.query(`TRUNCATE TABLE ${[t, ...referrers].map(ident).join(', ')}`);
+        deleted[t] = planned;
+        continue;
+      }
       const res = await client.query(`DELETE FROM ${ident(t)} WHERE (${orPreds(predicates.get(t))}) AND ${BOUND}`, params);
       if (res.rowCount !== planned) throw new Error(`FIXTURE_DELETE_COUNT_MISMATCH:${t}:${planned}!=${res.rowCount}`);
       if (res.rowCount) deleted[t] = res.rowCount;

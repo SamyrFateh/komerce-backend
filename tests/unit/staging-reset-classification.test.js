@@ -156,6 +156,35 @@ describe('staging reset fixtures : graphe de suppression (pur)', () => {
     expect([...g.predicates.get('membership_capabilities')][0]).toContain('FROM "assignment_memberships"');
   });
 
+  test('mode full : colonne nominative -> suppression, cascade FK de la ligne purgee, autres references restent gardees', () => {
+    const edges = [
+      e('assignment_capability_ceiling', 'users', ['granted_by'], 'a'),
+      e('market_operating_assignments', 'users', ['granted_by'], 'a'),
+      e('market_cash_control_policies', 'market_operating_assignments', ['assignment_id'], 'r'),
+      e('assignment_memberships', 'market_operating_assignments', ['assignment_id'], 'c'),
+      e('economic_structure_cost_events', 'users', ['recorded_by'], 'r'),
+    ];
+    const forced = new Set(c.FULL_MODE_PURGE_COLUMNS);
+    const g = fixtures.buildDeleteGraph(edges, new Set(), { forced });
+    const act = (child, col) => g.classified.find((x) => x.child === child && x.cols[0] === col).action;
+    expect(act('assignment_capability_ceiling', 'granted_by')).toBe('delete');
+    expect(act('market_operating_assignments', 'granted_by')).toBe('delete');
+    expect(act('market_cash_control_policies', 'assignment_id')).toBe('delete');
+    expect(act('assignment_memberships', 'assignment_id')).toBe('delete');
+    expect(act('economic_structure_cost_events', 'recorded_by')).toBe('guard');
+    expect(fixtures.buildDeleteGraph(edges, new Set()).classified.find((x) => x.child === 'market_operating_assignments').action).toBe('guard');
+  });
+
+  test('mode full : liste nominative figee, perimetre invalide refuse', () => {
+    expect(c.FULL_MODE_PURGE_COLUMNS).toEqual([
+      'assignment_capability_ceiling.granted_by', 'market_delegation_audit.actor_user_id', 'market_operating_assignments.granted_by',
+      'market_cash_destinations.activated_by', 'market_cash_destinations.proposed_by', 'market_cash_control_policies.assignment_id',
+    ]);
+    expect(c.resetScope({})).toBe('prudent');
+    expect(c.resetScope({ KOMERCE_STAGING_RESET_MODE: 'FULL' })).toBe('full');
+    expect(() => c.resetScope({ KOMERCE_STAGING_RESET_MODE: 'x' })).toThrow(/SCOPE_INVALID/);
+  });
+
   test('ordre de suppression : enfants avant parents, cycle refuse', () => {
     const edges = [e('users', 'relais', ['relais_id'], 'a'), e('membership_capabilities', 'assignment_memberships', ['membership_id'], 'c'),
       e('assignment_memberships', 'users', ['user_id'], 'a')];
