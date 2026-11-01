@@ -115,34 +115,35 @@ test('arrival costs and relay transport cannot be posted prematurely or without 
   'JOURNEY_FEE_UNKNOWN');
 });
 
-test('creating real journey requires exact parcel provenance and prevents duplicated membership',async()=>{
-  const x=fixture();
+test('la douane suit la composition KOM-BOX et refuse les liens de colis historiques',async()=>{
+  const x=fixture('arrived');
+  const original=x.client.query.getMockImplementation();
   x.client.query.mockImplementation(async(sql,params)=>{
-    x.executed.push({sql:String(sql),params});
-    if(String(sql).includes('FROM parcels p JOIN orders o'))return {rows:[]};
-    return {rows:[]};
+    if(String(sql).includes('COUNT(*)::int AS total, COUNT(*) FILTER'))
+      return {rows:[{total:2,bad:0}]};
+    return original(sql,params);
   });
-  await expectError(journey.create(market,admin,{reference:'INT-001',forwarder_name:'T',
-      transport_mode:'sea',parcel_refs:['PCL-1'],proof_ref:'H-1'},x.db),
-    'JOURNEY_PARCELS_NOT_READY');
-  const y=fixture();
-  y.client.query.mockImplementation(async(sql,params)=>{
-    y.executed.push({sql:String(sql),params});
-    if(String(sql).includes('FROM parcels p JOIN orders o'))
-      return {rows:[{id:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',reference:'PCL-1',status:'collected',volume_cm3:'5000'}]};
-    if(String(sql).includes('SELECT parcel_id FROM international_shipment_parcels'))return {rows:[]};
-    if(String(sql).includes('INSERT INTO international_shipments'))return {rows:[base]};
-    return {rows:[]};
-  });
-  const result=await journey.create(market,admin,{
-    reference:'INT-001',forwarder_name:'Transitaire',transport_mode:'sea',
-    parcel_refs:['PCL-1'],volume_m3:'0.005',freight_rate_kmf_per_m3:'10000',
-    proof_ref:'H-1'},y.db);
-  expect(result.parcels).toBe(1);
-  expect(y.executed.some(q=>q.sql.includes('INSERT INTO international_shipment_parcels'))).toBe(true);
-  expect(y.executed.every(q=>!q.sql.includes('UPDATE orders'))).toBe(true);
+  const linked=await journey.linkCustoms(market,admin,'INT-KM-001',{customs_reference:'CUS-001',proof_ref:'CUSTOMS-1'},x.db);
+  expect(linked.customs_reference).toBe('CUS-001');
+  expect(x.executed.some(q=>q.sql.includes('international_shipment_hub_units'))).toBe(true);
+  expect(x.executed.some(q=>q.sql.includes('international_shipment_parcels'))).toBe(false);
+  const y=fixture('arrived');
+  await expectError(journey.linkCustoms(market,admin,'INT-KM-001',
+    {customs_reference:'CUS-001',proof_ref:'CUSTOMS-1'},y.db),'JOURNEY_CUSTOMS_BOX_SCOPE');
 });
-
+test('la déclaration documentée des droits ne ventile rien aux articles',async()=>{
+  const x=fixture('arrived',{customs_shipment_id:'33333333-3333-3333-3333-333333333333'});
+  const old=x.client.query.getMockImplementation();
+  x.client.query.mockImplementation(async(sql,params)=>{
+    if(String(sql).startsWith('SELECT id,status,is_active,customs_paid_kmf FROM customs_shipments'))
+      return {rows:[{id:'33333333-3333-3333-3333-333333333333',is_active:true,status:'pending',customs_paid_kmf:null}]};
+    return old(sql,params);
+  });
+  const r=await journey.declareCustoms(market,admin,'INT-KM-001',{amount_kmf:'0',proof_ref:'DECLARED-ZERO'},x.db);
+  expect(r).toMatchObject({amount_kmf:'0',customs_status:'declared'});
+  expect(x.executed.some(q=>q.sql.includes('UPDATE customs_shipments SET customs_paid_kmf'))).toBe(true);
+  expect(x.executed.every(q=>!q.sql.includes('order_item_real_cost_allocations'))).toBe(true);
+});
 test('un agent Hub ouvre un dossier vide sans transitaire, mode ni fausse preuve', async()=>{
   const x=fixture();
   x.client.query.mockImplementation(async(sql,params)=>{
@@ -196,7 +197,6 @@ test('la remise du brouillon refuse zéro carton ou carton non expédié, puis e
 test('schema has FK and audit-only financial boundary, no automatic N1 double counting',()=>{
   const fs=require('fs'),path=require('path');
   const migration=fs.readFileSync(path.join(__dirname,'../../migrations/354_international_shipment_journey.sql'),'utf8');
-  expect(migration).toContain('CONSTRAINT uq_international_parcel UNIQUE(parcel_id)');
   expect(migration).toContain('international_shipment_charges');
   expect(migration).toContain('BEFORE UPDATE OR DELETE');
   expect(migration).not.toMatch(/INSERT INTO public\.order_item_real_cost_allocations/);
