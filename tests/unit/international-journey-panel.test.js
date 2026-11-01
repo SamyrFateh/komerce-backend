@@ -86,7 +86,7 @@ test('un dossier KOM-BOX distingue les vrais cartons des colis historiques et de
   });
   const tr=all(x.root,n=>n.tagName==='TR').at(1);
   expect(all(tr,n=>n.tagName==='TD').map(n=>n.textContent)).toEqual(
-    expect.arrayContaining([2,0,'À désigner'])
+    expect.arrayContaining(['2','0','À désigner'])
   );
   const summaries=all(x.root,n=>n.tagName==='SUMMARY').map(n=>n.textContent);
   expect(summaries).toContain('Confirmer : Remis au transitaire');
