@@ -224,10 +224,10 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     // 2 — PO + SUPPLIER ORDER exact
     await q(
       `INSERT INTO purchase_orders
-         (id, order_id, supplier_id, status, trigger_mode, procurement_hub_ref,
+         (id, order_id, supplier_id, market_id, status, trigger_mode, procurement_hub_ref,
           qty, supplier_sku)
-       VALUES ($1,NULL,$2,'draft','auto','DXB',NULL,NULL)`,
-      [poId, supplierId]
+       VALUES ($1,NULL,$2,$3,'draft','auto','DXB',NULL,NULL)`,
+      [poId, supplierId, marketId]
     );
 
     // Une ligne destinée à une PO regroupée naît ouverte, puis est rattachée

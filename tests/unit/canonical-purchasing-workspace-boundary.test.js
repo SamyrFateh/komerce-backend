@@ -38,6 +38,7 @@ describe('Achats fournisseurs — frontière canonique', () => {
       "router.get('/open-lines'",
       "router.get('/po/:po_id'",
       "router.post('/po/prepare'",
+      "router.post('/po/:po_id/attach'",
       "router.post('/po/:po_id/detach'",
       "router.post('/po/:po_id/discard'",
       "router.post('/po/:po_id/submit'",
@@ -45,15 +46,16 @@ describe('Achats fournisseurs — frontière canonique', () => {
       "router.post('/lines/:id/cancel'",
     ];
     used.forEach((declaration) => expect(routes).toContain(declaration));
-    ['/open-lines', '/po/prepare', '/detach', '/discard', '/submit', '/confirm', '/cancel'].forEach((fragment) => {
+    ['/open-lines', '/po/prepare', '/attach', '/detach', '/discard', '/submit', '/confirm', '/cancel'].forEach((fragment) => {
       expect(source).toContain(fragment);
     });
   });
 
-  test('aucun calcul métier navigateur : le marché n’est jamais une clé de regroupement côté écran', () => {
+  test('le marché est une clé d’identification côté écran, sans calculer l’autorité métier', () => {
     const source = read(WORKSPACE);
-    expect(source).toContain('${group.supplier_id}|${group.procurement_hub_ref}');
-    expect(source).not.toMatch(/groupBy.*market|key\s*=.*market_id/);
+    expect(source).toContain('${group.supplier_id}|${group.procurement_hub_ref}|${group.market_id}');
+    expect(source).toContain('g.market_id === po.market_id');
+    expect(source).not.toMatch(/groupBy.*market/);
   });
 
   test('navigation : espace réservé à admin dans Opérations', () => {

@@ -35,6 +35,7 @@ const DASHBOARD_SPECS = [
   'pricing-atelier-mock',
   'pricing-atelier-views',
   'hub-live-execution',
+  'hub-live-supply',
   'dashboard-role-matrix',
   'order-360-lineage',
   'b9-ui-truth-paths',

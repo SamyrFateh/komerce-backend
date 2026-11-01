@@ -633,8 +633,51 @@ async function createManualLine(body = {}, { actor = null, context = {} } = {}) 
   return { line, ...summarizeMarkets([line]) };
 }
 
+// ─── Preuve d'envoi : « bon émis » (submit) ≠ « envoyé au fournisseur » ─────────────────────────
+// Un lien WhatsApp généré n'est pas une transmission. L'opérateur (ou un adaptateur API) déclare
+// l'envoi réellement effectué : canal, auteur, heure ; immuable ensuite (trigger migration 358).
+const SENT_CHANNELS = new Set(['email', 'whatsapp', 'phone', 'api', 'other']);
+
+async function recordPurchaseOrderSent(poId, body = {}, { actor = null } = {}) {
+  requireEnabled();
+  requireUuid(poId, 'po_id');
+  const channel = String((body && body.channel) || '').trim().toLowerCase();
+  if (!SENT_CHANNELS.has(channel)) {
+    throw fail(400, 'INVALID_INPUT', `channel doit valoir ${[...SENT_CHANNELS].join(', ')}`);
+  }
+  const supplierOrderId = optionalText(body && body.supplier_order_id);
+  const note = optionalText(body && body.note);
+
+  return withTransaction(async (client) => {
+    const po = await lockGroupedPo(client, poId, { requireDraft: false });
+    if (po.status !== 'notified') {
+      throw fail(409, 'PURCHASE_ORDER_NOT_SUBMITTED', `PO au statut "${po.status}" : seule une PO soumise (notified) peut être déclarée envoyée`, {
+        current_status: po.status,
+      });
+    }
+    const { rows: [header] } = await client.query(
+      'SELECT sent_at, sent_channel, supplier_order_id FROM purchase_orders WHERE id = $1', [po.id]
+    );
+    if (header.sent_at) {
+      if (header.sent_channel === channel) return { purchase_order_id: po.id, already_sent: true, sent_at: header.sent_at, sent_channel: header.sent_channel };
+      throw fail(409, 'PURCHASE_ORDER_ALREADY_SENT', `Envoi déjà enregistré par ${header.sent_channel}`, { current_status: po.status });
+    }
+    const { rows: [updated] } = await client.query(
+      `UPDATE purchase_orders
+          SET sent_at = NOW(), sent_channel = $2, sent_by = $3, sent_note = $4,
+              supplier_order_id = COALESCE(supplier_order_id, $5), updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, status, sent_at, sent_channel, sent_by, sent_note, supplier_order_id`,
+      [po.id, channel, actor && actor.id ? actor.id : null, note, supplierOrderId]
+    );
+    return { purchase_order_id: updated.id, already_sent: false, status: updated.status, sent_at: updated.sent_at,
+      sent_channel: updated.sent_channel, sent_by: updated.sent_by, supplier_order_id: updated.supplier_order_id };
+  });
+}
+
 module.exports = {
   summarizeCommitmentByMarket,
+  recordPurchaseOrderSent,
   submitPurchaseOrder,
   confirmGroupedPurchaseOrder,
   settleLine,

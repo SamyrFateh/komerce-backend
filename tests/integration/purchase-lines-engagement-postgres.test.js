@@ -34,7 +34,7 @@ const engagement = require('../../services/purchasing-engagement-service');
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
-const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql'];
+const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '357_purchase_orders_market_scope.sql'];
 const identityOf = (provider, payload = { supplier_sku: 'U1' }) => JSON.stringify({ provider, version: 1, payload });
 const NOON = identityOf('noon');
 const ALLEGRO = (offer) => identityOf('allegro', { environment: 'sandbox', offer_id: offer });
@@ -217,12 +217,12 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
 
   // ─── submit ───────────────────────────────────────────────────────────────────────────────────
   describe('submit', () => {
-    it('PO draft multi-marché → notified, groupes par supplier_unit_ref (quantité sommée), message admin après commit', async () => {
+    it('PO draft mono-marché → notified, groupes par supplier_unit_ref (quantité sommée), message admin après commit', async () => {
       process.env.ADMIN_PHONE = '+2250000';
       const supplier = await seedSupplier({ name: 'Noon Trading' });
       const a = await seedLine({ supplier, quantity: 2, market: 'KM', unitRef: 'U1' });
-      const b = await seedLine({ supplier, quantity: 3, market: 'CM', unitRef: 'U1' });
-      const c = await seedLine({ supplier, quantity: 1, market: 'CG', unitRef: 'U2' });
+      const b = await seedLine({ supplier, quantity: 3, market: 'KM', unitRef: 'U1' });
+      const c = await seedLine({ supplier, quantity: 1, market: 'KM', unitRef: 'U2' });
       const po = await preparedPo(supplier, [a.line, b.line, c.line]);
 
       const out = await engagement.submitPurchaseOrder(po.id);
@@ -232,8 +232,8 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       expect(out.place_order_invoked).toBe(false);
       const byRef = Object.fromEntries(out.groups.map((g) => [g.supplier_unit_ref, g.quantity]));
       expect(byRef).toEqual({ U1: 5, U2: 1 });
-      expect(out.multi_market).toBe(true);
-      expect(out.markets.map((m) => m.market_code)).toEqual(['CG', 'CM', 'KM']);
+      expect(out.multi_market).toBe(false);
+      expect(out.markets.map((m) => m.market_code)).toEqual(['KM']);
       expect(out.preflights.every((p) => p.ready && p.status === 'NOT_REQUIRED')).toBe(true);
       expect(out.notification.channel).toBe('admin_manual');
       expect(mockNotifyText).toHaveBeenCalledTimes(1);
@@ -311,7 +311,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
     it('confirmation partielle : la ligne d\'origine baisse d\'abord, le reliquat naît ouvert avec parent_line_id et le même marché', async () => {
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier, quantity: 5, market: 'KM' });
-      const b = await seedLine({ supplier, quantity: 2, market: 'CM', unitRef: 'U2' });
+      const b = await seedLine({ supplier, quantity: 2, market: 'KM', unitRef: 'U2' });
       const po = await submittedPo(supplier, [a.line, b.line]);
 
       const out = await engagement.confirmGroupedPurchaseOrder(po.id, {
@@ -333,14 +333,14 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       expect(out.lines.find((l) => l.line_id === b.line)).toMatchObject({ confirmed_quantity: 2, confirmed_unit_price: 10 });
       // I1 : la somme des effectifs de l'article reste égale au besoin (3 confirmés + 2 en reliquat).
       expect(await need(a.item)).toBe(5);
-      // Ventilation par marché (lecture seule) : quantités, reliquat et montants confirmés.
-      expect(out.multi_market).toBe(true);
-      const km = out.markets.find((m) => m.market_code === 'KM');
-      const cm = out.markets.find((m) => m.market_code === 'CM');
-      expect(km).toMatchObject({ confirmed_quantity: 3, remnant_quantity: 2, confirmed_amounts: [{ currency: 'USD', amount: 37.5 }] });
-      expect(cm).toMatchObject({ confirmed_quantity: 2, remnant_quantity: 0, confirmed_amounts: [{ currency: 'USD', amount: 20 }] });
-      // La PO ne porte aucun marché.
-      expect(Object.keys(out.purchase_order)).not.toContain('market_id');
+      // Tous les articles, y compris les reliquats, restent du même marché.
+      expect(out.multi_market).toBe(false);
+      expect(out.markets).toHaveLength(1);
+      expect(out.markets[0]).toMatchObject({
+        market_code: 'KM', confirmed_quantity: 5, remnant_quantity: 2,
+        confirmed_amounts: [{ currency: 'USD', amount: 57.5 }],
+      });
+      expect(out.purchase_order.market_id).toBe(await seedMarket('KM'));
     });
 
     it('un reliquat ouvert est regroupable dans une nouvelle PO (même fournisseur ou autre)', async () => {
@@ -464,7 +464,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier, quantity, market });
       const others = [];
-      for (const [i, q2] of extra.entries()) others.push(await seedLine({ supplier, quantity: q2, unitRef: `X${i}` }));
+      for (const [i, q2] of extra.entries()) others.push(await seedLine({ supplier, quantity: q2, market, unitRef: `X${i}` }));
       const po = await submittedPo(supplier, [a.line, ...others.map((o) => o.line)]);
       await engagement.confirmGroupedPurchaseOrder(po.id, {
         lines: [{ purchase_line_id: a.line, confirmed_quantity: quantity }, ...others.map((o, i) => ({ purchase_line_id: o.line, confirmed_quantity: extra[i] }))],

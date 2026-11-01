@@ -1874,6 +1874,20 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/catalog-unified-registry.js",
+        "resolvedPath": "services/catalog-unified-registry.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-media-recovery.js",
+        "resolvedPath": "services/catalog-media-recovery.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/refinery-fr-recheck.js",
         "resolvedPath": "services/refinery-fr-recheck.js",
         "status": "resolved-in-technical-graph"
@@ -8181,6 +8195,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/international-n1-reconciliation.js",
+        "resolvedPath": "services/international-n1-reconciliation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/transport-pricing.js",
         "resolvedPath": "services/transport-pricing.js",
         "status": "resolved-in-technical-graph"
@@ -8274,6 +8295,13 @@
         "category": "services",
         "declared": "services/pricing-period-structure.js",
         "resolvedPath": "services/pricing-period-structure.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/market-structure-charge-reference.js",
+        "resolvedPath": "services/market-structure-charge-reference.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -8540,6 +8568,13 @@
         "category": "migrations",
         "declared": "migrations/051_order_item_real_cost_allocations.sql",
         "resolvedPath": "migrations/051_order_item_real_cost_allocations.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/355_international_n1_reconciliation.sql",
+        "resolvedPath": "migrations/355_international_n1_reconciliation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8832,6 +8867,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/international-n1-reconciliation.test.js",
+        "resolvedPath": "tests/unit/international-n1-reconciliation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/cost-expectation.test.js",
         "resolvedPath": "tests/unit/cost-expectation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8988,6 +9030,13 @@
         "category": "tests",
         "declared": "tests/unit/pricing-period-structure.test.js",
         "resolvedPath": "tests/unit/pricing-period-structure.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/market-structure-charge-reference.test.js",
+        "resolvedPath": "tests/unit/market-structure-charge-reference.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9681,6 +9730,13 @@
         "category": "middleware",
         "declared": "middleware/rate-limit.js",
         "resolvedPath": "middleware/rate-limit.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "middleware",
+        "declared": "middleware/recette-isolation-guard.js",
+        "resolvedPath": "middleware/recette-isolation-guard.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -12548,6 +12604,13 @@
       },
       {
         "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/354_international_shipment_journey.sql",
+        "resolvedPath": "migrations/354_international_shipment_journey.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
         "category": "docs",
         "declared": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
         "resolvedPath": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
@@ -12586,6 +12649,13 @@
         "category": "docs",
         "declared": "docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md",
         "resolvedPath": "docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "docs",
+        "declared": "docs/contract/INTERNATIONAL_SHIPMENT_CHAIN_V1_20261101.md",
+        "resolvedPath": "docs/contract/INTERNATIONAL_SHIPMENT_CHAIN_V1_20261101.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12787,6 +12857,20 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-box-shipment-service.js",
+        "resolvedPath": "services/hub-box-shipment-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/hub-procurement-dossier.js",
+        "resolvedPath": "services/hub-procurement-dossier.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/hub-receivable.js",
         "resolvedPath": "services/hub-receivable.js",
         "status": "resolved-in-technical-graph"
@@ -12852,6 +12936,13 @@
         "category": "services",
         "declared": "services/transport-rails.js",
         "resolvedPath": "services/transport-rails.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/international-shipment-journey.js",
+        "resolvedPath": "services/international-shipment-journey.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -13468,6 +13559,20 @@
         "category": "tests",
         "declared": "tests/unit/transitaire-api.test.js",
         "resolvedPath": "tests/unit/transitaire-api.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/international-shipment-journey.test.js",
+        "resolvedPath": "tests/unit/international-shipment-journey.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/international-journey-panel.test.js",
+        "resolvedPath": "tests/unit/international-journey-panel.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -17463,6 +17568,20 @@
       {
         "feature": "purchasing",
         "category": "migrations",
+        "declared": "migrations/357_purchase_orders_market_scope.sql",
+        "resolvedPath": "migrations/357_purchase_orders_market_scope.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/358_hub_po_transmission_and_box_shipment.sql",
+        "resolvedPath": "migrations/358_hub_po_transmission_and_box_shipment.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
         "declared": "migrations/279_supplier_execution_persistence.sql",
         "resolvedPath": "migrations/279_supplier_execution_persistence.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -17647,6 +17766,13 @@
         "category": "tests",
         "declared": "tests/integration/purchase-lines-grouped-postgres.test.js",
         "resolvedPath": "tests/integration/purchase-lines-grouped-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/hub-p0-transmission-box-shipment-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-p0-transmission-box-shipment-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -33026,6 +33152,14 @@
                 "targetFile": "utils/certification-accounting.js"
               },
               {
+                "sourceFileId": "services/catalog-unified-registry.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/catalog-media-recovery.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/refinery-fr-recheck.js",
                 "targetFile": "db.js"
               },
@@ -33986,6 +34120,10 @@
                 "targetFile": "services/catalog-product-read-cutover-trial.js"
               },
               {
+                "sourceFileId": "routes/admin-catalog-workspace.js",
+                "targetFile": "middleware/require-sourcing-global-authority.js"
+              },
+              {
                 "sourceFileId": "routes/integrations-aliexpress.js",
                 "targetFile": "services/provider-credential-service.js"
               },
@@ -34726,6 +34864,10 @@
                 "targetFile": "services/simulation-scope-service.js"
               },
               {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "services/international-n1-reconciliation.js"
+              },
+              {
                 "sourceFileId": "routes/dashboard.js",
                 "targetFile": "routes/dashboard-finance.js"
               },
@@ -35338,6 +35480,10 @@
               {
                 "sourceFileId": "routes/admin/users.js",
                 "targetFile": "services/scan-write-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "services/international-shipment-journey.js"
               },
               {
                 "sourceFileId": "routes/dashboard-hub.js",
@@ -36780,6 +36926,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/international-n1-reconciliation.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/pricing-rates.js",
                 "targetFile": "db.js"
               },
@@ -36837,6 +36987,10 @@
               },
               {
                 "sourceFileId": "services/pricing-period-structure.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/market-structure-charge-reference.js",
                 "targetFile": "db.js"
               },
               {
@@ -36981,6 +37135,10 @@
               },
               {
                 "sourceFileId": "tests/unit/pricing-period-structure.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-structure-charge-reference.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -39003,6 +39161,14 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/hub-box-shipment-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/hub-procurement-dossier.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/hub-receivable.js",
                 "targetFile": "db.js"
               },
@@ -39021,6 +39187,10 @@
               {
                 "sourceFileId": "services/routing.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/international-shipment-journey.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "routes/parcels.js",
@@ -40054,6 +40224,10 @@
               {
                 "sourceFileId": "services/market-local-price-activation-service.js",
                 "targetFile": "services/pricing-market-decision-policy.js"
+              },
+              {
+                "sourceFileId": "services/market-local-price-activation-service.js",
+                "targetFile": "services/pricing-market-corridor.js"
               }
             ]
           }
@@ -40779,6 +40953,10 @@
               {
                 "sourceFileId": "services/market-operator-provisioning.js",
                 "targetFile": "services/market-scope-admin-service.js"
+              },
+              {
+                "sourceFileId": "services/market-ready-to-sell-projection.js",
+                "targetFile": "utils/currency.js"
               },
               {
                 "sourceFileId": "routes/market-delegation-catalog.js",
@@ -47119,7 +47297,7 @@
         {
           "sourceFileId": "tests/unit/admin-pricing-workspace-capability-mapping.test.js",
           "kind": "require",
-          "raw": "Pricing|LocalStrategy"
+          "raw": "Pricing|LocalStrategy|CatalogPrice"
         },
         {
           "sourceFileId": "scripts/boutique-ownership-full-check.js",
@@ -47237,7 +47415,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2173
+        "filesObserved": 2186
       },
       "boutique": {
         "filesObserved": 214,
@@ -48383,6 +48561,19 @@
       "lifecycleOwner": "catalog",
       "resolution": "declared-table-owner"
     },
+    "catalog_media_recovery_audit": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
+    },
     "product_skus": {
       "writers": [
         {
@@ -49490,6 +49681,32 @@
       "lifecycleOwner": "economic-engine",
       "resolution": "multi-writer-resolved-by-classification-signal"
     },
+    "international_n1_allocation_links": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "international_n1_reconciliations": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
     "garment_models": {
       "writers": [
         {
@@ -49844,6 +50061,58 @@
       "resolution": "single-writer"
     },
     "hub_custody_events": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "international_shipment_charges": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "international_shipment_events": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "international_shipment_parcels": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "international_shipments": {
       "writers": [
         {
           "feature": "logistics",
@@ -50910,8 +51179,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 655,
-        "technicalNodesOwned": 655,
+        "technicalNodesTotal": 663,
+        "technicalNodesOwned": 663,
         "technicalOrphans": 0
       },
       "dash": {

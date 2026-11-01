@@ -350,8 +350,20 @@
   const EXECUTION_VIEWS = Object.freeze([
     { id: 'hub', label: 'Hub' },
     { id: 'reception', label: 'Réception fournisseur' },
+    { id: 'supply', label: 'Approvisionnement' },
     { id: 'inventory', label: 'Stock à affecter' },
   ]);
+
+  const PO_STAGE_LABELS = Object.freeze({
+    draft: 'Brouillon',
+    issued_not_sent: 'Bon émis, envoi non prouvé',
+    sent: 'Envoyée',
+    confirmed: 'Confirmée',
+    partially_received: 'Partiellement reçue',
+    received: 'Reçue',
+    cancelled: 'Annulée',
+  });
+  const SENT_CHANNEL_LABELS = Object.freeze({ email: 'e-mail', whatsapp: 'WhatsApp', phone: 'téléphone', api: 'API', other: 'autre' });
 
   function newReceptionReference() {
     const crypto = globalThis.crypto;
@@ -513,6 +525,184 @@
     orders.forEach(po => slot.appendChild(createReceptionCard(doc, context, po)));
   }
 
+  // Hub live · Approvisionnement : projection serveur du dossier par marché (aucun calcul métier côté navigateur).
+  // Les PO s'enregistrent dans Achats fournisseurs ; ici on suit la chaîne physique et on rattache les cartons.
+  function simpleTable(doc, columns, rows, empty) {
+    if (!rows.length) return text(doc, 'div', 'kmc-workspace-empty', empty);
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table';
+    const headRow = doc.createElement('tr');
+    columns.forEach(label => headRow.appendChild(text(doc, 'th', '', label)));
+    const thead = doc.createElement('thead');
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+    const tbody = doc.createElement('tbody');
+    rows.forEach(cells => {
+      const row = doc.createElement('tr');
+      cells.forEach(cell => appendCell(doc, row, cell));
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  function createTraceButton(doc, context, label, query) {
+    const button = makeActionButton(doc, label, 'show-trace');
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try {
+        context.trace = await jsonRequest(context.fetch, `${endpointFor(context.marketCode, 'supply/trace')}?${query}`);
+        context.traceError = null;
+      } catch (error) {
+        context.trace = null;
+        context.traceError = error.message;
+      }
+      context.renderCurrent();
+    });
+    return button;
+  }
+
+  function renderTracePanel(rootNode, ui, doc, context) {
+    if (!context.trace && !context.traceError) return;
+    const slot = createSection(rootNode, ui, 'Filiation', 'Commande → ligne d’achat → PO → colis reçu → carton → expédition. Lecture seule.');
+    slot.setAttribute('data-supply-trace', '');
+    if (context.traceError) { slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', context.traceError)); return; }
+    const rows = [];
+    context.trace.chain.forEach(link => {
+      const po = link.purchase_order;
+      if (!link.placements.length) {
+        rows.push([link.order_ref, link.product, formatNumber(link.ordered), po ? (PO_STAGE_LABELS[po.status] || po.status) : 'Sans PO', '—', '—', '—']);
+      }
+      link.placements.forEach(placement => rows.push([
+        link.order_ref, link.product, formatNumber(link.ordered), po ? (PO_STAGE_LABELS[po.status] || po.status) : 'Sans PO',
+        `${placement.unit.reference} (${placement.unit.type === 'MARKET_PARCEL' ? 'carton' : 'colis'}) ×${formatNumber(placement.quantity)}${placement.active ? '' : ' · déplacé'}`,
+        placement.unit.state,
+        placement.shipment ? placement.shipment.reference : '—',
+      ]));
+    });
+    slot.appendChild(simpleTable(doc, ['Commande', 'Produit', 'Commandé', 'PO', 'Unité physique', 'État', 'Expédition'], rows, 'Aucune filiation trouvée.'));
+  }
+
+  function renderSupplySection(rootNode, ui, doc, context) {
+    const kpiSlot = createSection(rootNode, ui, 'Hub · Approvisionnement', 'Besoins, PO, réceptions et cartons de ce marché. Un bon émis n’est pas un envoi : seul l’envoi enregistré dans Achats fournisseurs compte.');
+    if (context.dossierError) { kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Dossier indisponible : ${context.dossierError}`)); return; }
+    const d = context.dossier;
+    if (!d) { kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Dossier non chargé.')); return; }
+    const k = d.kpis || {};
+    const strip = doc.createElement('div');
+    kpiSlot.appendChild(strip);
+    const kpi = (key, label, value, warn) => ({ key, label, value: formatNumber(value), tone: warn && value > 0 ? 'warning' : 'neutral' });
+    ui.MetricStrip.render(strip, { items: [
+      kpi('s-orders', 'Commandes en attente d’achat', k.orders_waiting, false),
+      kpi('s-draft', 'PO brouillon', k.po_draft, false),
+      kpi('s-issued', 'Bons émis non envoyés', k.po_issued_not_sent, true),
+      kpi('s-sent', 'Envoyées sans confirmation', k.po_sent_unconfirmed, false),
+      kpi('s-missing', 'Quantités manquantes', k.qty_missing, true),
+      kpi('s-boxes', 'Cartons non expédiés', k.boxes_unshipped, false),
+    ] });
+
+    const handle = createSection(rootNode, ui, 'Blocages à lever', 'Uniquement ce qui bloque la chaîne.');
+    handle.setAttribute('data-supply-to-handle', '');
+    handle.appendChild(simpleTable(doc, ['Sujet', 'Raison'], (d.to_handle || []).map(item => [item.supplier_name || item.kind, item.reason]), 'Rien à traiter.'));
+
+    const needs = createSection(rootNode, ui, 'Besoins', 'Lignes d’achat ouvertes, à constituer en PO dans Achats fournisseurs.');
+    needs.appendChild(simpleTable(doc, ['Commande', 'Produit', 'Fournisseur', 'Quantité'],
+      (d.needs || []).map(n => [n.order_ref, n.product_name || '—', n.supplier_name, formatNumber(n.quantity)]), 'Aucun besoin ouvert.'));
+
+    const pos = createSection(rootNode, ui, 'Purchase Orders', 'Étape dérivée du serveur. La réception se fait dans l’onglet Réception fournisseur.');
+    pos.setAttribute('data-supply-pos', '');
+    pos.appendChild(simpleTable(doc, ['PO', 'Fournisseur', 'Étape', 'Envoi', 'Reçu / confirmé', 'Manquant', 'Filiation'],
+      (d.purchase_orders || []).map(po => {
+        const sent = po.sent_at ? `${SENT_CHANNEL_LABELS[po.sent_channel] || po.sent_channel} · ${formatDate(po.sent_at)}` : '—';
+        const confirmed = po.totals.effective;
+        return [String(po.id).slice(0, 8), po.supplier_name, PO_STAGE_LABELS[po.stage] || po.stage, sent,
+          `${formatNumber(po.totals.received)} / ${formatNumber(confirmed)}`, formatNumber(po.totals.missing),
+          createTraceButton(doc, context, 'Voir', `po_id=${encodeURIComponent(po.id)}`)];
+      }), 'Aucune PO sur ce marché.'));
+
+    const receipts = createSection(rootNode, ui, 'Colis reçus', 'Colis fournisseur physiquement reçus pour ce marché.');
+    receipts.appendChild(simpleTable(doc, ['Colis', 'Référence fournisseur', 'État', 'Quantité', 'Reçu le'],
+      (d.receipts || []).map(r => [r.reference, r.external_ref || '—', r.state, formatNumber(r.qty), formatDate(r.received_at)]), 'Aucun colis reçu.'));
+
+    const boxes = createSection(rootNode, ui, 'Cartons KOM-BOX', 'Cochez les cartons emballés du marché, puis créez le dossier d’expédition ou rattachez-les à une expédition ouverte. Le carton doit rester « expédié du Hub » avant la remise au transitaire.');
+    boxes.setAttribute('data-supply-boxes', '');
+    const open = Array.isArray(d.open_shipments) ? d.open_shipments : [];
+    const free = box => !box.shipment_ref && box.state === 'PACKED';
+    const checked = new Set();
+
+    const bar = doc.createElement('div');
+    bar.className = 'kmc-workspace-receive-footer';
+    bar.setAttribute('data-supply-shipment-bar', '');
+    const select = doc.createElement('select');
+    select.setAttribute('aria-label', 'Expédition ouverte');
+    select.appendChild(Object.assign(doc.createElement('option'), { value: '', textContent: open.length ? 'Choisir une expédition ouverte…' : 'Aucune expédition ouverte' }));
+    open.forEach(sh => select.appendChild(Object.assign(doc.createElement('option'), {
+      value: sh.reference, textContent: `${sh.reference} · ${sh.forwarder_name} · ${sh.box_count} carton(s)`,
+    })));
+    bar.appendChild(select);
+    const field = (placeholder, label) => {
+      const input = doc.createElement('input');
+      input.type = 'text'; input.maxLength = 120; input.placeholder = placeholder; input.className = 'kmc-workspace-receive-tracking';
+      input.setAttribute('aria-label', label);
+      return input;
+    };
+    const refInput = field('Nouvelle expédition : référence', 'Référence de la nouvelle expédition');
+    const forwarderInput = field('Transitaire', 'Transitaire');
+    const proofInput = field('Preuve de création', 'Preuve de création');
+    const mode = doc.createElement('select');
+    mode.setAttribute('aria-label', 'Mode de transport');
+    [['sea', 'Maritime'], ['air', 'Aérien']].forEach(([value, label]) => mode.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
+    const createButton = makeActionButton(doc, 'Créer l’expédition avec les cartons cochés', 'create-shipment-from-boxes');
+    createButton.disabled = true;
+    [refInput, forwarderInput, mode, proofInput, createButton].forEach(node => bar.appendChild(node));
+    boxes.appendChild(bar);
+
+    const attachButtons = [];
+    const syncBar = () => {
+      createButton.disabled = !(checked.size && refInput.value.trim() && forwarderInput.value.trim() && proofInput.value.trim());
+      attachButtons.forEach(({ button, box }) => { button.disabled = !select.value || !free(box); });
+    };
+    [refInput, forwarderInput, proofInput].forEach(input => input.addEventListener('input', syncBar));
+    select.addEventListener('change', syncBar);
+    createButton.addEventListener('click', () => runAction(context, createButton, {
+      url: endpointFor(context.marketCode, 'boxes/shipment'),
+      body: {
+        reference: refInput.value.trim(), forwarder_name: forwarderInput.value.trim(), transport_mode: mode.value,
+        proof_ref: proofInput.value.trim(), hub_unit_ids: [...checked],
+      },
+      runningMessage: 'Création de l’expédition…',
+      successMessage: result => `Expédition ${result && result.result ? result.result.reference : ''} créée avec ${checked.size} carton(s).`,
+    }).catch(() => {}));
+
+    boxes.appendChild(simpleTable(doc, ['', 'Carton', 'État', 'Contenu', 'Expédition', 'Action'],
+      (d.boxes || []).map(box => {
+        const contents = box.contents.map(c => `${c.order_ref} ×${formatNumber(c.qty)}`).join(', ');
+        let pick = '';
+        let action = '—';
+        if (free(box)) {
+          pick = doc.createElement('input');
+          pick.type = 'checkbox';
+          pick.setAttribute('aria-label', `Inclure ${box.reference}`);
+          pick.addEventListener('change', () => { if (pick.checked) checked.add(box.unit_id); else checked.delete(box.unit_id); syncBar(); });
+          action = makeActionButton(doc, 'Rattacher à l’expédition choisie', 'attach-box-shipment');
+          action.disabled = true;
+          attachButtons.push({ button: action, box });
+          action.addEventListener('click', () => runAction(context, action, {
+            url: endpointFor(context.marketCode, `boxes/${encodeURIComponent(box.unit_id)}/shipment`),
+            body: { shipment_reference: select.value },
+            runningMessage: 'Rattachement en cours…',
+            successMessage: result => (result && result.already_attached ? 'Carton déjà rattaché à cette expédition.' : 'Carton rattaché à l’expédition.'),
+          }).catch(() => {}));
+        }
+        return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', action];
+      }), 'Aucun carton.'));
+
+    renderTracePanel(rootNode, ui, doc, context);
+  }
+
   function createViewTabs(doc, activeView, onSelect, views = WORKSPACE_VIEWS) {
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-tabs';
@@ -615,6 +805,7 @@
     }
 
     if (view === 'reception') renderReceptionSection(rootNode, ui, doc, context);
+    if (view === 'supply') renderSupplySection(rootNode, ui, doc, context);
 
     if (view === 'relay') {
     renderOrderActionSection(rootNode, ui, doc, context, {
@@ -804,12 +995,20 @@
           context.receivable = null;
           context.receivableError = error.message;
         }
+        try {
+          context.dossier = await jsonRequest(fetchFn, endpointFor(marketCode, 'supply'));
+          context.dossierError = null;
+        } catch (error) {
+          context.dossier = null;
+          context.dossierError = error.message;
+        }
       }
       currentPayload = payload;
       renderPayload(rootNode, ui, doc, payload, context);
       return payload;
     }
     context.reload = reload;
+    context.renderCurrent = () => renderPayload(rootNode, ui, doc, currentPayload, context);
 
     ui.UIState.render(rootNode, 'loading', `Chargement du Workspace Opérations · ${marketCode}…`);
     try {
