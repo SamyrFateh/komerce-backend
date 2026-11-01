@@ -82,6 +82,7 @@ async function create(market,actor,input={},database=db){
   const hubBoxRefs=Array.isArray(input.hub_box_refs)?input.hub_box_refs.map(x=>ref(x,'hub_box_ref')):[];
   if((!refs.length&&!hubBoxRefs.length)||refs.length+hubBoxRefs.length>500||new Set(refs).size!==refs.length||new Set(hubBoxRefs).size!==hubBoxRefs.length)
     fail(400,'JOURNEY_PARCELS_REQUIRED','Un à 500 colis ou KOM-BOX uniques requis');
+  if(refs.length&&hubBoxRefs.length)fail(409,'JOURNEY_MIXED_PARCEL_IDENTITY','Sélectionner des KOM-BOX ou des colis historiques, sans mélanger les identités');
   const proof=str(input.proof_ref,'proof_ref',240),volume=number(input.volume_m3,'volume_m3',{positive:true,scale:5});
   const rate=number(input.freight_rate_kmf_per_m3,'freight_rate_kmf_per_m3');
   const eta=date(input.estimated_arrival_date);
