@@ -646,3 +646,19 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-opera
   align-self: center;
   flex: 0 0 auto;
 }
+
+/* Dossier ouvert : panneau latéral contextuel (bottom-sheet sur mobile) */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-detail:not([hidden]) {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); z-index: 60;
+  overflow-y: auto; padding: 1rem 1.1rem; background: var(--kmc-surface, #fff);
+  box-shadow: -8px 0 28px rgba(0,0,0,.18); border-left: 1px solid rgba(0,0,0,.1);
+}
+.kmc-control-panel-head { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-bottom: .8rem; }
+.kmc-control-panel-title { font-size: 1.05rem; word-break: break-all; }
+.kmc-control-panel-stage { opacity: .7; font-size: .85rem; }
+.kmc-control-panel-close { margin-left: auto; border: 0; background: transparent; font-size: 1.5rem; line-height: 1; cursor: pointer; }
+@media (max-width: 640px) {
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-detail:not([hidden]) {
+    top: auto; left: 0; width: 100vw; max-height: 75vh; border-left: 0; border-top: 1px solid rgba(0,0,0,.15);
+  }
+}

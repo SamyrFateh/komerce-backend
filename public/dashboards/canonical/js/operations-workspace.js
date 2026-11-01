@@ -88,21 +88,22 @@
     header.setAttribute('data-dashboard-role', 'hero');
 
     const copy = doc.createElement('div');
-    const execution = mode === 'execution';
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', execution ? 'HUB LIVE · EXÉCUTION' : 'HUB & RELAIS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', execution ? 'Exécuter les opérations Hub' : 'Flux à traiter'));
+    const relayExec = mode === 'relay-execution';
+    const execution = mode === 'execution' || relayExec;
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', relayExec ? 'RELAIS LIVE · EXÉCUTION' : execution ? 'HUB LIVE · EXÉCUTION' : 'HUB & RELAIS'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Exécuter les opérations Relais' : execution ? 'Exécuter les opérations Hub' : 'Flux à traiter'));
     copy.appendChild(text(
       doc,
       'p',
       'kmc-workspace-subtitle',
-      `${payload.scope.code} · ${payload.scope.name} · ${execution ? 'commander, répartir, expédier, affecter' : 'voir ce qui attend une action'}`
+      `${payload.scope.code} · ${payload.scope.name} · ${relayExec ? 'encaisser, réceptionner, remettre au client' : execution ? 'commander, répartir, expédier, affecter' : 'voir ce qui attend une action'}`
     ));
     header.appendChild(copy);
 
     const nav = doc.createElement('nav');
     nav.className = 'kmc-workspace-nav';
-    const operations = text(doc, 'a', 'kmc-workspace-nav-link', '← Dashboard Opérations');
-    operations.setAttribute('href', '/admin/operations');
+    const operations = text(doc, 'a', 'kmc-workspace-nav-link', relayExec ? '← Relais live' : '← Dashboard Opérations');
+    operations.setAttribute('href', relayExec ? '/admin/relais-live' : '/admin/operations');
     nav.appendChild(operations);
     header.appendChild(nav);
 
@@ -353,6 +354,9 @@
     { id: 'supply', label: 'Approvisionnement' },
     { id: 'inventory', label: 'Stock à affecter' },
   ]);
+
+  // Relais live · Exécution : actions Relais uniquement (encaisser, réceptionner, remettre) — jamais Hub.
+  const RELAY_LIVE_TABS = Object.freeze([{ id: 'relay', label: 'Relais' }, { id: 'cash', label: 'Cash & dépôts' }]);
 
   const PO_STAGE_LABELS = Object.freeze({
     draft: 'Brouillon',
@@ -739,8 +743,9 @@
 
     // UX-07 : une vue = une question. Un seul groupe de sections à la fois.
     // Mode « execution » (Hub live) : uniquement les actions Hub ; les actions Relais restent hors de cette surface.
-    const views = context.mode === 'execution' ? EXECUTION_VIEWS : WORKSPACE_VIEWS;
-    const view = views.some(item => item.id === context.view) ? context.view : 'hub';
+    const views = context.mode === 'relay-execution' ? RELAY_LIVE_TABS
+      : context.mode === 'execution' ? EXECUTION_VIEWS : WORKSPACE_VIEWS;
+    const view = views.some(item => item.id === context.view) ? context.view : views[0].id;
     rootNode.appendChild(createViewTabs(doc, view, nextView => {
       context.view = nextView;
       renderPayload(rootNode, ui, doc, payload, context);
@@ -847,6 +852,23 @@
     }
 
     if (view === 'inventory') renderInventorySection(rootNode, ui, doc, payload, context);
+
+    // Cash & dépôts : module canonique de comptabilité (mêmes routes, mêmes contrôles) hébergé dans Relais live.
+    if (view === 'cash') {
+      const host = doc.createElement('div');
+      host.setAttribute('data-relay-cash-host', '');
+      rootNode.appendChild(host);
+      const cashModule = globalThis.KomerceCanonicalFinanceAccountingWorkspace;
+      if (!cashModule) {
+        host.appendChild(text(doc, 'p', 'kmc-workspace-note', 'Module Cash & dépôts indisponible.'));
+      } else {
+        cashModule.mount({
+          root: host, document: doc, ui, fetch: context.fetch, user: {},
+          adminContext: null, requestedMarket: context.marketCode,
+          contextContract: { resolveMarketView: () => ({ marketCode: context.marketCode }) },
+        }).catch(error => host.appendChild(text(doc, 'p', 'kmc-workspace-note', error.message)));
+      }
+    }
   }
 
   // L9c : le workspace Hub & Relais lit les files Hub ; les gestes Hub s'exécutent uniquement dans Hub live.
@@ -982,7 +1004,7 @@
       root: rootNode,
       fetch: fetchFn,
       marketCode,
-      mode: options.mode === 'execution' ? 'execution' : 'pilot',
+      mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),

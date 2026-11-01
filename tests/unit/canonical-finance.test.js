@@ -371,7 +371,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     const margin = cards.find(c => c.key === 'marge');
     expect(margin.label).toBe('Marge réelle finalisée');
     expect(margin.badge).toBe('Finalisée');
-    expect(margin.helper.replace(/[\u00a0\u202f]/g, ' ')).toBe('31,4 % sur 2/6 commandes finalisées');
+    expect(margin.helper.replace(/[\u00a0\u202f]/g, ' ')).toBe('31,4 % sur 2/6 commandes payées finalisées');
     payload.margin_scope.eligible_orders = 0;
     payload.margin_scope.eligible_margin_pct = null;
     const none = financeDecision.kpiCards(payload, finance).find(c => c.key === 'marge');

@@ -119,19 +119,23 @@
 
   function createPhoneCell(doc, phone) {
     const cell = doc.createElement('td');
+    cell.className = 'kmc-client-phone-cell';
     const label = text(doc, 'span', 'kmc-client-phone-masked', maskPhone(phone));
     cell.appendChild(label);
     if (!phone) return cell;
 
     let revealed = false;
-    const button = text(doc, 'button', 'kmc-entity-nav-link', 'Afficher');
+    const button = text(doc, 'button', 'kmc-client-phone-toggle', '\u{1F441}');
     button.type = 'button';
-    button.setAttribute('aria-label', 'Afficher ou masquer le téléphone');
+    button.setAttribute('title', 'Afficher le téléphone');
+    button.setAttribute('aria-label', 'Afficher le téléphone');
     button.setAttribute('aria-expanded', 'false');
     button.addEventListener('click', () => {
       revealed = !revealed;
       label.textContent = revealed ? String(phone) : maskPhone(phone);
-      button.textContent = revealed ? 'Masquer' : 'Afficher';
+      const action = revealed ? 'Masquer le téléphone' : 'Afficher le téléphone';
+      button.setAttribute('aria-label', action);
+      button.setAttribute('title', action);
       button.setAttribute('aria-expanded', String(revealed));
     });
     cell.appendChild(button);

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, accounting_action
  * @outputs       authorized_accounting_projection, authorized_cash_deposit_mutations
- * @depends       db, middleware/auth, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/finance-accounting-workspace
+ * @depends       db, middleware/auth, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/finance-accounting-workspace, services/financial-journal-reporting
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
@@ -189,6 +189,29 @@ router.get('/market/:marketCode', requireWorkspaceReadAccess, async (req, res, n
     return res.json(payload);
   } catch (err) {
     log.error({ err, market: req.workspaceMarket && req.workspaceMarket.code }, '[finance-accounting-workspace] read failed');
+    return sendWorkspaceError(err, res, next);
+  }
+});
+
+// Journal financier (Lot 5) : mêmes gardes de lecture que le workspace ; toujours borné au marché résolu côté serveur.
+function journalScope(req) {
+  return { marketId: req.workspaceMarket.id, from: req.query.from, to: req.query.to };
+}
+
+router.get('/market/:marketCode/journal/:view(summary|movements|documents|reconciliation)', requireWorkspaceReadAccess, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const scope = journalScope(req);
+    const db = require('../db');
+    const reporting = require('../services/financial-journal-reporting');
+    if (req.params.view === 'summary') return res.json(await reporting.projection(db, scope));
+    if (req.params.view === 'movements') {
+      return res.json(await reporting.listMovements(db, { ...scope, state: req.query.state, direction: req.query.direction, limit: req.query.limit, offset: req.query.offset }));
+    }
+    if (req.params.view === 'documents') return res.json(await reporting.listDocuments(db, scope));
+    return res.json(await reporting.reconcileWithSources(db, { marketId: scope.marketId }));
+  } catch (err) {
+    log.error({ err, market: req.workspaceMarket && req.workspaceMarket.code }, '[finance-accounting-workspace] journal read failed');
     return sendWorkspaceError(err, res, next);
   }
 });

@@ -1,4 +1,4 @@
--- 360 — Staging build : dossier KOM-BOX canonique, coûts financiers par expédition.
+-- 361 — Staging build : dossier KOM-BOX canonique, coûts financiers par expédition.
 -- Never turn unknown invoice amounts into zeros, never allocate shipment invoices to items.
 ALTER TABLE public.international_n1_reconciliations
   ADD COLUMN IF NOT EXISTS total_customs_kmf numeric(14,2) NOT NULL DEFAULT 0,
@@ -30,10 +30,10 @@ ALTER TABLE public.international_shipment_events
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM public.international_n1_allocation_links LIMIT 1) THEN
-    RAISE EXCEPTION 'MIGRATION_360_REVIEW_ITEM_ALLOCATIONS: prior actual allocations must be reconciled before canonical clean';
+    RAISE EXCEPTION 'MIGRATION_361_REVIEW_ITEM_ALLOCATIONS: prior actual allocations must be reconciled before canonical clean';
   END IF;
   IF EXISTS (SELECT 1 FROM public.international_shipment_parcels LIMIT 1) THEN
-    RAISE EXCEPTION 'MIGRATION_360_REVIEW_LEGACY_PARCELS: verify staging records before dropping old physical model';
+    RAISE EXCEPTION 'MIGRATION_361_REVIEW_LEGACY_PARCELS: verify staging records before dropping old physical model';
   END IF;
 END $$;
 DROP TABLE public.international_n1_allocation_links;

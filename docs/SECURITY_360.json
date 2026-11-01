@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-01T12:11:10.726Z",
+  "generatedAt": "2026-11-01T15:56:57.545Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 782,
-    "protected": 727,
+    "total": 783,
+    "protected": 728,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1351,6 +1351,16 @@
     },
     {
       "key": "GET /api/admin/workspaces/accounting/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/accounting/market/{marketCode}/journal/{view}(summary|movements|documents|reconciliation)",
       "level": "PROTECTED",
       "roles": [
         "admin",

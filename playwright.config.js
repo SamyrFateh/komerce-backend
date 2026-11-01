@@ -24,8 +24,11 @@ const { defineConfig } = require('@playwright/test');
 // Les specs boutique historiques de tests/e2e (dépendent d'un helper absent) n'en font pas partie.
 const DASHBOARD_SPECS = [
   'live-ops-shell',
+  'dashboards-consolidation',
   'context-return-links',
   'hub-live-cockpit',
+  'relais-live-execution',
+  'finance-journal-workspace',
   'relais-live-cockpit',
   'import-runtime-cockpit',
   'sourcing-live-single-screen',

@@ -612,6 +612,53 @@
     return { section, body };
   }
 
+  // Journal financier (Lot 5) : lecture directe de la projection serveur, jamais recalculée ici.
+  const eurText = value => `${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0)} €`;
+
+  function renderJournalSection(doc, payload) {
+    const card = cardSection(doc, 'Mouvements financiers (pivot EUR)',
+      'Journal canonique : montants natifs conservés, EUR par l’autorité de conversion, taux figés à la date du mouvement.', 'finance-journal');
+    card.section.setAttribute('data-dashboard-role', 'secondary');
+    const journal = payload && payload.journal;
+    if (!journal) {
+      card.body.appendChild(el(doc, 'p', 'kmc-finance-review-empty', 'Journal financier indisponible pour ce périmètre.'));
+      return card;
+    }
+    if (journal.journal_empty || !journal.lines.length) {
+      card.body.appendChild(el(doc, 'p', 'kmc-finance-review-empty', 'Aucun mouvement journalisé sur la période (la projection est périodique).'));
+      return card;
+    }
+    if (!journal.eur_complete) {
+      card.body.appendChild(el(doc, 'p', 'kmc-decision-dashboard-section-copy kmc-finance-journal-warning',
+        `${journal.eur_unavailable_movements} mouvement(s) sans conversion EUR (taux indisponible) : les totaux EUR sont partiels, jamais estimés.`));
+    }
+    const table = el(doc, 'table', 'kmc-com-table');
+    const head = el(doc, 'tr');
+    ['Mouvement', 'État', 'Nb', 'Montant EUR', 'Montants natifs'].forEach(label => head.appendChild(el(doc, 'th', '', label)));
+    const thead = el(doc, 'thead');
+    thead.appendChild(head);
+    table.appendChild(thead);
+    const tbody = el(doc, 'tbody');
+    journal.lines.forEach(line => {
+      const tr = el(doc, 'tr');
+      tr.setAttribute('data-journal-line', `${line.category}|${line.state}`);
+      tr.appendChild(el(doc, 'td', '', line.label || line.category));
+      tr.appendChild(el(doc, 'td', '', line.state_label || line.state));
+      tr.appendChild(el(doc, 'td', '', line.movements));
+      tr.appendChild(el(doc, 'td', '', line.eur_unavailable > 0 && line.eur_total === 0 ? '—' : eurText(line.eur_total)));
+      tr.appendChild(el(doc, 'td', '', line.native.map(item => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(Number(item.total))} ${item.currency}`).join(' · ')));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    card.body.appendChild(table);
+    const remaining = journal.supplier_remaining_native || [];
+    card.body.appendChild(el(doc, 'p', 'kmc-decision-dashboard-section-copy kmc-finance-journal-remaining',
+      remaining.length
+        ? `Restant à décaisser fournisseurs (natif, jamais additionné entre devises) : ${remaining.map(item => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(Number(item.remaining_native))} ${item.currency}`).join(' · ')}.`
+        : 'Aucun restant à décaisser fournisseur sur la période.'));
+    return card;
+  }
+
   function periodControl(doc, period, onPeriodChange) {
     const toolbar = doc.createElement('div');
     toolbar.className = 'kmc-decision-toolbar';
@@ -694,7 +741,7 @@
     const scope = payload && payload.margin_scope ? payload.margin_scope : null;
     let marginHelper = projected.marge && projected.marge.helper;
     if (scope && scope.eligible_margin_pct != null) {
-      marginHelper = `${base.formatNumber(scope.eligible_margin_pct, 1)} % sur ${base.formatNumber(scope.eligible_orders, 0)}/${base.formatNumber(scope.paid_orders, 0)} commandes finalisées`;
+      marginHelper = `${base.formatNumber(scope.eligible_margin_pct, 1)} % sur ${base.formatNumber(scope.eligible_orders, 0)}/${base.formatNumber(scope.paid_orders, 0)} commandes payées finalisées`;
     }
     const cards = [
       { key: 'ca-encaisse', label: 'Commandes payées — part hors avoir', icon: 'bars', tone: 'info', helper: 'Somme des commandes payées créées sur la période, hors part réglée par avoir. Ni chiffre d’affaires comptable, ni encaissement attesté.', note: 'ca-encaisse' },
@@ -710,7 +757,7 @@
         const value = projected[card.key].value;
         // Aucune commande finalisée : la marge réelle est INCONNUE, jamais « 0 KMF » (ni ton positif).
         if (card.key === 'marge' && scope && Number(scope.eligible_orders) === 0) {
-          return { ...card, value: '—', tone: 'neutral', badge: null, helper: `Aucune commande finalisée (0/${base.formatNumber(scope.paid_orders, 0)})`, unknown: true };
+          return { ...card, value: '—', tone: 'neutral', badge: null, helper: `Aucune commande finalisée (0/${base.formatNumber(scope.paid_orders, 0)} payées)`, unknown: true };
         }
         return { ...card, value };
       });
@@ -1012,7 +1059,7 @@
     const rows = known ? payload.incomplete_cost_orders : [];
     const first = rows.length ? rows[0].reference : null;
     const toFinalize = first
-      ? actionLink(doc, orderHref(base, first), `Commandes à finaliser (${rows.length}) →`)
+      ? actionLink(doc, orderHref(base, first), `Commandes aux coûts à établir (${payload.incomplete_cost_orders_total != null ? payload.incomplete_cost_orders_total : rows.length}) →`)
       : el(doc, 'span', 'kmc-fin3-links-muted', known ? 'Aucune commande à finaliser' : 'Commandes à finaliser : non disponible');
     if (first) toFinalize.setAttribute('data-finance-link', 'orders-to-finalize');
     nav.appendChild(toFinalize);
@@ -1083,6 +1130,8 @@
     renderVariances(doc, varianceDetail.body, payload, base);
     const details = el(doc, 'div', 'kmc-fin3-details');
     // Les composants détaillés sont conservés côté code pour migration vers leurs ateliers propriétaires.
+
+    dashboard.appendChild(renderJournalSection(doc, payload).section);
 
     // Une file centrale absente de la projection marché n'est jamais assimilée à zéro.
     const supplierState = supplierReviewState(payload);

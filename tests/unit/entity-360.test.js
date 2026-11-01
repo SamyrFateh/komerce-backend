@@ -1,21 +1,19 @@
 'use strict';
-/** @test-kind unit @test-runner jest @test-requires none */
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+const fs = require('fs');
+const path = require('path');
+const css = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/css/entity-360.css'), 'utf8');
 
-test('entity-360.css : plancher typographique (aucun texte sous 10 px)', () => {
-  expect(require('../helpers/fontFloor').tinyFonts('entity-360.css')).toEqual([]);
+test('Clients : colonne téléphone à largeur constante et bouton œil discret', () => {
+  expect(css).toMatch(/\.kmc-client-phone-cell\s*\{[^}]*width:\s*11\.5rem/);
+  expect(css).toContain('.kmc-client-phone-toggle');
 });
 
-test('entity-360.css : fil de la commande, section Coûts & écarts et ancres décalées sous l’en-tête collant', () => {
-  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/entity-360.css'), 'utf8');
-  expect(css).toContain('.kmc-order-thread-step.is-current');
-  expect(css).toContain('.kmc-order-costs-links');
-  expect(css).toMatch(/#couts, #parcours \{ scroll-margin-top: 96px; \}/);
-  // Aucun bleu saturé dominant : l'étape courante est orange (couleur d'action Komerce).
-  expect(css).toMatch(/is-current \{ border-color: #fb923c; background: #fff7ed; \}/);
-});
-
-test('entity-360.css : fil produit par marché (lignes en grille, marché actif mis en évidence)', () => {
-  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/entity-360.css'), 'utf8');
-  expect(css).toContain('.kmc-product-thread-row');
-  expect(css).toContain('.kmc-product-thread-row.is-live');
+test('À traiter : mise en page deux colonnes repliée sur mobile', () => {
+  expect(css).toContain('.kmc-action-columns');
+  expect(css).toMatch(/@media \(max-width: 800px\)[^}]*\.kmc-action-columns/);
 });

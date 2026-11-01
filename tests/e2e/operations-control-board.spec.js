@@ -179,21 +179,22 @@ test.describe('Operations — logistics control board', () => {
     expect(heroIndex).toBeGreaterThanOrEqual(0);
     expect(attentionIndex).toBeGreaterThan(heroIndex);
     expect(primaryIndex).toBeGreaterThan(attentionIndex);
-    // Seul bloc secondaire : les files d'action commandes, après la chaîne.
-    expect(secondaryIndex).toBeGreaterThan(primaryIndex);
-    expect(order.filter(x => x.role === 'secondary')).toHaveLength(1);
+    // Aucun bloc secondaire : la chaîne est l'unique surface de supervision.
+    expect(secondaryIndex).toBe(-1);
   });
 
-  test('les files Cash à confirmer, À commander, En attente de réception Hub et Préparer le colis sont visibles et ouvrent Order 360 avec retour Opérations', async ({ page }) => {
-    await expect(page.locator('#orders-pending-cash')).toContainText('CMD-CASH-1');
-    await expect(page.locator('#orders-pending-cash')).toContainText('1 sur 3 affichée(s)');
-    await expect(page.locator('#orders-ready-for-parcel')).toContainText('CMD-PARCEL-1');
-    await expect(page.locator('#orders-to-order')).toContainText('CMD-ORDER-1');
-    await expect(page.locator('#orders-awaiting-hub-reception')).toContainText('En attente de réception Hub (2/5)');
-    await expect(page.locator('#orders-awaiting-hub-reception')).not.toContainText('Créer le colis');
-    const href = await page.locator('#orders-pending-cash a').first().getAttribute('href');
-    expect(href).toContain('/admin/orders/CMD-CASH-1');
-    expect(decodeURIComponent(href)).toContain('/admin/operations');
+  test('les files redondantes sont retirées et un dossier s’ouvre en panneau latéral', async ({ page }) => {
+    for (const id of ['orders-pending-cash', 'orders-to-order', 'orders-awaiting-hub-reception', 'orders-ready-for-parcel']) {
+      await expect(page.locator(`#${id}`)).toHaveCount(0);
+    }
+    await page.locator('.kmc-control-order').first().click();
+    const panel = page.locator('.kmc-control-order-detail:not([hidden])');
+    await expect(panel).toBeVisible();
+    const box = await panel.boundingBox();
+    const vp = page.viewportSize();
+    expect(box.x + box.width).toBeGreaterThan(vp.width - 2);
+    await panel.locator('.kmc-control-panel-close').click();
+    await expect(panel).toHaveCount(0);
   });
 
   test('le récapitulatif couleur est compact et reflète uniquement la santé du tableau', async ({ page }) => {

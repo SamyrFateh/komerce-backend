@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 221 | Vérifié sur le dump live Railway. |
+| Tables | 223 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 506 | Performance + contraintes uniques |
-| Foreign keys | 425 | Cohérence relationnelle |
-| Fonctions | 98 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 117 | Triggers présents dans le dump live Railway. |
+| Index | 510 | Performance + contraintes uniques |
+| Foreign keys | 427 | Cohérence relationnelle |
+| Fonctions | 99 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 118 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -790,10 +790,17 @@ La migration 359 ajoute **`international_shipments.hub_draft`** (booléen, défa
 
 Le journal `international_shipment_events` accepte les événements `opened`, `box_attached` et `box_detached` avec preuve documentaire NULL (faits opérateur), sans jamais confondre ces événements avec le transfert de garde. La transition `handed_over` exige toujours une **preuve réelle** ; pour un brouillon Hub elle exige aussi un transitaire, un mode et au moins un KOM-BOX `DISPATCHED` sans anomalie (garde du service **et** trigger PostgreSQL). Les liens carton deviennent immuables après la remise (migration 358). La douane et N1 restent la suite #3250, hors du scope 359.
 
+<!-- schema-pending: financial_movements (migration 360, not yet live) -->
+<!-- schema-pending: financial_movement_documents (migration 360, not yet live) -->
+### Journal financier canonique — migration 360 (intended_migration_schema)
 
-### Migration 360 — intention de schéma : coûts documentés par expédition (staging)
+`financial_movements` is a new, **not yet live** append-only journal (migration 360, Lot 5). One row per projected business fact, idempotent on `movement_key = source_kind:source_id:facet`. It keeps the **native amount and currency**, the EUR amount (`amount_eur`, `fx_status` ∈ snapshot / converted / native_eur / unavailable) with the frozen FX `fx_legs`, the business `state` (planned → committed → observed → settled → reversed, forward-only), the `provenance` and the links (market, order, purchase order, shipment, parcel, supplier, relay). A trigger freezes identity, native amounts, EUR and rates, forbids DELETE and any state regression. It is **not a double-entry ledger** (no debit/credit accounts). `financial_movement_documents` stores the supporting documents (proof references) of a movement, unique per (movement, kind, reference).
+<!-- /schema-pending -->
 
-La **migration 360** harmonise le transport canonique KOM-BOX et la projection économique :
+
+### Migration 361 — intention de schéma : coûts documentés par expédition (staging)
+
+La **migration 361** harmonise le transport canonique KOM-BOX et la projection économique :
 - `international_n1_reconciliations.total_customs_kmf` : droits/taxes de douane **réellement documentés** pour l'expédition, pas une allocation par article.
 - `international_n1_reconciliations.total_customs_fees_kmf` : coûts annexes facturés dans le dossier douane, consolidés sans doublon.
 - `international_n1_reconciliations.documented_total_kmf` : somme des **postes documentés** du dossier. Ne pas assimiler à un total définitif si des postes sont inconnus.

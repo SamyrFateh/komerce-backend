@@ -742,7 +742,7 @@
     utilities.className = 'kmc-admin-utility-nav';
 
     const requireMarket = ['pricing-workspace', 'market-catalog', 'market-autonomy', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface)
-      || (surface === 'hub-live' && new URLSearchParams(String((global.location && global.location.search) || '')).get('view') === 'execute');
+      || ((surface === 'hub-live' || surface === 'relais-live') && new URLSearchParams(String((global.location && global.location.search) || '')).get('view') === 'execute');
     const marketControl = createMarketControl(doc, adminContext, requireMarket);
     if (marketControl) utilities.appendChild(marketControl);
 
