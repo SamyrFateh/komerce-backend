@@ -17680,7 +17680,7 @@
             ]
           },
           "services": {
-            "count": 36,
+            "count": 38,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -17690,6 +17690,11 @@
               {
                 "declared": "services/customer-handoff-reconciliation.js",
                 "resolvedPath": "services/customer-handoff-reconciliation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-box-shipment-service.js",
+                "resolvedPath": "services/hub-box-shipment-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -17710,6 +17715,11 @@
               {
                 "declared": "services/hub-physical-identity.js",
                 "resolvedPath": "services/hub-physical-identity.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-procurement-dossier.js",
+                "resolvedPath": "services/hub-procurement-dossier.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -18235,7 +18245,7 @@
             ]
           }
         },
-        "totalFiles": 143,
+        "totalFiles": 145,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

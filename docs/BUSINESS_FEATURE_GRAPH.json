@@ -12857,6 +12857,20 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-box-shipment-service.js",
+        "resolvedPath": "services/hub-box-shipment-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/hub-procurement-dossier.js",
+        "resolvedPath": "services/hub-procurement-dossier.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/hub-receivable.js",
         "resolvedPath": "services/hub-receivable.js",
         "status": "resolved-in-technical-graph"
@@ -39147,6 +39161,14 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/hub-box-shipment-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/hub-procurement-dossier.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/hub-receivable.js",
                 "targetFile": "db.js"
               },
@@ -47393,7 +47415,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2184
+        "filesObserved": 2186
       },
       "boutique": {
         "filesObserved": 214,
@@ -51157,8 +51179,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 661,
-        "technicalNodesOwned": 661,
+        "technicalNodesTotal": 663,
+        "technicalNodesOwned": 663,
         "technicalOrphans": 0
       },
       "dash": {

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-01T10:57:15.332Z",
+  "generatedAt": "2026-11-01T11:19:10.013Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 759,
+  "count": 764,
   "routes": [
     {
       "method": "GET",
@@ -4558,6 +4558,36 @@
       ]
     },
     {
+      "method": "DELETE",
+      "fullPath": "/api/hub/box/:unit_id/shipment",
+      "mountPrefix": "/api/hub",
+      "localPath": "/box/:unit_id/shipment",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/hub/box/:unit_id/shipment",
+      "mountPrefix": "/api/hub",
+      "localPath": "/box/:unit_id/shipment",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/hub/dossier",
+      "mountPrefix": "/api/hub",
+      "localPath": "/dossier",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "GET",
       "fullPath": "/api/hub/inventory/buffer",
       "mountPrefix": "/api/hub/inventory",
@@ -4752,6 +4782,16 @@
       "fullPath": "/api/hub/today",
       "mountPrefix": "/api/hub",
       "localPath": "/today",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/hub/trace",
+      "mountPrefix": "/api/hub",
+      "localPath": "/trace",
       "routeFile": "routes/hub.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -6630,6 +6670,16 @@
       "fullPath": "/api/purchasing/po/:po_id/discard",
       "mountPrefix": "/api/purchasing",
       "localPath": "/po/:po_id/discard",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/po/:po_id/sent",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id/sent",
       "routeFile": "routes/purchasing.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

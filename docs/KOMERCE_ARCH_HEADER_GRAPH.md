@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 765
-- Files with full headers: 714
+- Scanned code files: 767
+- Files with full headers: 716
 - Files with lite headers: 51
-- Files with any headers: 765
+- Files with any headers: 767
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1916
-- Edges: 9461
-- DB tables: 220
-- Doctrines: 724
+- Graph nodes: 1924
+- Edges: 9493
+- DB tables: 221
+- Doctrines: 729
 - Impact areas: 207
-- Unresolved code edges: 912
+- Unresolved code edges: 914
 - Tables multi-écrivains directs (>=2): 90
 - Avertissements db-write / db-write-via en chevauchement: 11
 
@@ -44,7 +44,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 58
+- logistics: 60
 - loyalty: 3
 - market: 9
 - market-autonomy: 4
@@ -91,7 +91,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 448
+- service: 450
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -452,8 +452,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/finance-metrics/payments.js — economic-engine-payments-detail (economic-engine, high, full)
 - services/finance-metrics/sales-analysis.js — economic-engine-sales-analysis (economic-engine, high, full)
 - services/fx-engine-rates.js — fx-engine-rates (market, high, full)
+- services/hub-box-shipment-service.js — hub-box-shipment (logistics, high, full)
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/hub-inbound-reconciliation.js — hub-inbound-reconciliation (logistics, high, full)
+- services/hub-procurement-dossier.js — hub-procurement-dossier (logistics, high, full)
 - services/hub-receive-idempotency.js — hub-receive-idempotency (logistics, high, full)
 - services/hub-reference.js — hub-reference (logistics, high, full)
 - services/import-lot-registry.js — import-lot-registry-projection (admin-dashboard, high, full)
@@ -840,10 +842,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/international-n1-reconciliation.js -> international_n1_reconciliations
 - WRITE services/international-shipment-journey.js -> international_shipment_charges
 - WRITE services/international-shipment-journey.js -> international_shipment_events
+- WRITE services/hub-box-shipment-service.js -> international_shipment_hub_units
 - WRITE services/international-shipment-journey.js -> international_shipment_parcels
 - WRITE services/international-shipment-journey.js -> international_shipments
 - WRITE services/inventory-service.js -> inventory_items
-- WRITE routes/admin/system.js -> invoices
 
 ## DB Write-Via Edges (délégation déclarée)
 

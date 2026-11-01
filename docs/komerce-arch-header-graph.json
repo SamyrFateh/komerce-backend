@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 765,
-    "filesWithFullHeaders": 714,
+    "scannedCodeFiles": 767,
+    "filesWithFullHeaders": 716,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 765,
+    "filesWithAnyHeaders": 767,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1916,
-    "edges": 9461,
-    "dbTables": 220,
-    "doctrines": 724,
+    "graphNodes": 1924,
+    "edges": 9493,
+    "dbTables": 221,
+    "doctrines": 729,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 912,
+    "unresolvedCodeEdges": 914,
     "dbWriteViaOverlapWarnings": 11,
     "multiWriterTables": 90
   },
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 67,
     "sourcing": 37,
-    "logistics": 58,
+    "logistics": 60,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -111,7 +111,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 448,
+    "service": 450,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -122,7 +122,7 @@
   "byCriticality": {
     "critical": 110,
     "medium": 153,
-    "high": 441,
+    "high": 443,
     "low": 60,
     "unknown": 1
   },
@@ -9345,7 +9345,8 @@
         "middleware/auth.js",
         "middleware/require-market-delegated-role.js",
         "middleware/require-market-delegated-capability.js",
-        "services/hub-operations.js"
+        "services/hub-operations.js",
+        "services/hub-box-shipment-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -19281,6 +19282,52 @@
       "version": "2026-10"
     },
     {
+      "id": "services/hub-box-shipment-service.js",
+      "file": "services/hub-box-shipment-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-box-shipment",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "physical_unit_id",
+        "shipment_reference",
+        "actor"
+      ],
+      "outputs": [
+        "box_shipment_link"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "routes/hub.js"
+      ],
+      "dbRead": [
+        "hub_physical_units",
+        "international_shipments",
+        "international_shipment_hub_units"
+      ],
+      "dbWrite": [
+        "international_shipment_hub_units"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "service_owned"
+      ],
+      "doctrine": [
+        "HUB-001 Physical Identity",
+        "Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché"
+      ],
+      "impactAreas": [
+        "logistics"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/hub-dashboard-queries.js",
       "file": "services/hub-dashboard-queries.js",
       "type": "file",
@@ -19582,6 +19629,65 @@
         "incident-management"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/hub-procurement-dossier.js",
+      "file": "services/hub-procurement-dossier.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-procurement-dossier",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market_id",
+        "optional_supplier_id",
+        "order_or_purchase_order_id"
+      ],
+      "outputs": [
+        "market_procurement_dossier",
+        "physical_trace"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "routes/hub.js"
+      ],
+      "dbRead": [
+        "markets",
+        "orders",
+        "order_items",
+        "products",
+        "suppliers",
+        "purchase_lines",
+        "purchase_orders",
+        "v_purchase_line_progress",
+        "hub_purchase_allocations",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "international_shipments",
+        "international_shipment_hub_units"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "une décision",
+        "une autorité",
+        "un enregistrement ; projection en lecture seule",
+        "aucune seconde source de vérité"
+      ],
+      "impactAreas": [
+        "logistics",
+        "purchasing",
+        "market"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/hub-receivable.js",
@@ -37655,6 +37761,16 @@
       "table": "supplier_execution_order_lines"
     },
     {
+      "id": "db:international_shipments",
+      "type": "db-table",
+      "table": "international_shipments"
+    },
+    {
+      "id": "db:international_shipment_hub_units",
+      "type": "db-table",
+      "table": "international_shipment_hub_units"
+    },
+    {
       "id": "db:v_purchase_line_progress",
       "type": "db-table",
       "table": "v_purchase_line_progress"
@@ -37673,11 +37789,6 @@
       "id": "db:import_runtime_item_events",
       "type": "db-table",
       "table": "import_runtime_item_events"
-    },
-    {
-      "id": "db:international_shipments",
-      "type": "db-table",
-      "table": "international_shipments"
     },
     {
       "id": "db:international_shipment_parcels",
@@ -39975,6 +40086,11 @@
       "doctrine": "proof_by_units_not_by_parcels"
     },
     {
+      "id": "doctrine:Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché",
+      "type": "doctrine",
+      "doctrine": "Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché"
+    },
+    {
       "id": "doctrine:market_operator_scoping (GAP-1)",
       "type": "doctrine",
       "doctrine": "market_operator_scoping (GAP-1)"
@@ -40003,6 +40119,26 @@
       "id": "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
       "type": "doctrine",
       "doctrine": "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
+    },
+    {
+      "id": "doctrine:une décision",
+      "type": "doctrine",
+      "doctrine": "une décision"
+    },
+    {
+      "id": "doctrine:une autorité",
+      "type": "doctrine",
+      "doctrine": "une autorité"
+    },
+    {
+      "id": "doctrine:un enregistrement ; projection en lecture seule",
+      "type": "doctrine",
+      "doctrine": "un enregistrement ; projection en lecture seule"
+    },
+    {
+      "id": "doctrine:aucune seconde source de vérité",
+      "type": "doctrine",
+      "doctrine": "aucune seconde source de vérité"
     },
     {
       "id": "doctrine:no_reception_from_supplier_status",
@@ -56328,6 +56464,12 @@
       "label": "services/hub-operations.js"
     },
     {
+      "from": "routes/hub.js",
+      "to": "services/hub-box-shipment-service.js",
+      "type": "depends",
+      "label": "services/hub-box-shipment-service.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/hub.js",
       "type": "uses",
@@ -72351,6 +72493,60 @@
       "label": "catalog"
     },
     {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/hub.js",
+      "to": "services/hub-box-shipment-service.js",
+      "type": "uses",
+      "label": "routes/hub.js"
+    },
+    {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-write",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "doctrine:HUB-001 Physical Identity",
+      "type": "doctrine",
+      "label": "HUB-001 Physical Identity"
+    },
+    {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "doctrine:Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché",
+      "type": "doctrine",
+      "label": "Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché"
+    },
+    {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
       "from": "services/hub-dashboard-queries.js",
       "to": "db",
       "type": "depends",
@@ -72987,6 +73183,138 @@
       "to": "impact:incident-management",
       "type": "impact",
       "label": "incident-management"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/hub.js",
+      "to": "services/hub-procurement-dossier.js",
+      "type": "uses",
+      "label": "routes/hub.js"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:v_purchase_line_progress",
+      "type": "db-read",
+      "label": "v_purchase_line_progress"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "doctrine:une décision",
+      "type": "doctrine",
+      "label": "une décision"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "doctrine:une autorité",
+      "type": "doctrine",
+      "label": "une autorité"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "doctrine:un enregistrement ; projection en lecture seule",
+      "type": "doctrine",
+      "label": "un enregistrement ; projection en lecture seule"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "doctrine:aucune seconde source de vérité",
+      "type": "doctrine",
+      "label": "aucune seconde source de vérité"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "services/hub-receivable.js",
@@ -109128,7 +109456,8 @@
         "middleware/auth.js",
         "middleware/require-market-delegated-role.js",
         "middleware/require-market-delegated-capability.js",
-        "services/hub-operations.js"
+        "services/hub-operations.js",
+        "services/hub-box-shipment-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -109174,7 +109503,9 @@
         "middleware/require-market-delegated-capability.js",
         "middleware/require-market-delegated-role.js",
         "middleware/validate.js",
-        "services/hub-operations.js"
+        "services/hub-box-shipment-service.js",
+        "services/hub-operations.js",
+        "services/hub-procurement-dossier.js"
       ]
     },
     "routes/integrations-aliexpress.js": {
@@ -119156,6 +119487,46 @@
         "impact:sourcing"
       ]
     },
+    "services/hub-box-shipment-service.js": {
+      "role": "hub-box-shipment",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "routes/hub.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "hub_physical_units",
+        "international_shipments",
+        "international_shipment_hub_units"
+      ],
+      "dbWrite": [
+        "international_shipment_hub_units"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "HUB-001 Physical Identity",
+        "Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché"
+      ],
+      "impactAreas": [
+        "logistics"
+      ],
+      "mustCheck": [
+        "db:hub_physical_units",
+        "db:international_shipment_hub_units",
+        "db:international_shipments",
+        "doctrine:Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché",
+        "doctrine:HUB-001 Physical Identity",
+        "impact:logistics",
+        "routes/hub.js"
+      ]
+    },
     "services/hub-dashboard-queries.js": {
       "role": "dashboard-hub-dashboard-queries",
       "domain": "dashboard",
@@ -119480,6 +119851,72 @@
         "services/hub-operations.js",
         "services/incident-write-service.js",
         "services/outbox-producer.js"
+      ]
+    },
+    "services/hub-procurement-dossier.js": {
+      "role": "hub-procurement-dossier",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "routes/hub.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "orders",
+        "order_items",
+        "products",
+        "suppliers",
+        "purchase_lines",
+        "purchase_orders",
+        "v_purchase_line_progress",
+        "hub_purchase_allocations",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "international_shipments",
+        "international_shipment_hub_units"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "une décision",
+        "une autorité",
+        "un enregistrement ; projection en lecture seule",
+        "aucune seconde source de vérité"
+      ],
+      "impactAreas": [
+        "logistics",
+        "purchasing",
+        "market"
+      ],
+      "mustCheck": [
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "db:international_shipment_hub_units",
+        "db:international_shipments",
+        "db:markets",
+        "db:order_items",
+        "db:orders",
+        "db:products",
+        "db:purchase_lines",
+        "db:purchase_orders",
+        "db:suppliers",
+        "db:v_purchase_line_progress",
+        "doctrine:aucune seconde source de vérité",
+        "doctrine:un enregistrement ; projection en lecture seule",
+        "doctrine:une autorité",
+        "doctrine:une décision",
+        "impact:logistics",
+        "impact:market",
+        "impact:purchasing",
+        "routes/hub.js"
       ]
     },
     "services/hub-receivable.js": {
@@ -140659,6 +141096,12 @@
       "label": "routes/admin-order-360"
     },
     {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
       "from": "services/hub-dashboard-queries.js",
       "to": "db",
       "type": "depends",
@@ -140735,6 +141178,12 @@
       "to": "services/hub-physical-identity.js",
       "type": "uses",
       "label": "HUB-001 internal logistics boundary"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "services/hub-receivable.js",

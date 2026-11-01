@@ -1255,14 +1255,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 143 fichier(s) déclaré(s)
+**Implementation** : 145 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 7
   - middleware : 1
   - migrations : 6
   - routes : 18
-  - services : 36
+  - services : 38
   - tests : 69
   - utils : 3
 
