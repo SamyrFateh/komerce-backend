@@ -6,14 +6,16 @@
  * @criticality high
  * @inputs authenticated_actor, server_resolved_market, physical_evidence, real_invoices
  * @outputs immutable_shipment_facts, read_only_cost_reconciliation
- * @db-read international_shipments, international_shipment_parcels, international_shipment_hub_units, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, international_shipment_charges, international_shipment_events, parcels, orders, customs_shipments, customs_shipment_parcels, customs_shipment_fees, international_n1_reconciliations
- * @db-write international_shipments, international_shipment_hub_units, international_shipment_events, international_shipment_charges, customs_shipments
+ * @db-read international_shipments, international_shipment_hub_units, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, international_shipment_charges, international_shipment_events, orders, customs_shipments, customs_shipment_parcels, customs_shipment_fees, international_n1_reconciliations
+ * @db-write international_shipments, international_shipment_hub_units, international_shipment_events, international_shipment_charges
+ * @db-write-via:customs-shipment-service customs_shipments
  * @db-txn withTransaction
  * @doctrine market_scope_server_owned, fact_not_financial_allocation, no_customs_clearance_inferred
  */
 'use strict';
 const db = require('../db');
 const boxShipment = require('./hub-box-shipment-service');
+const customsService = require('./customs-shipment-service');
 const STAGES = Object.freeze(['hub_ready','handed_over','forwarder_received','in_transit','arrived',
   'customs_released','local_delivery','relay_received']);
 const STAGE_ROLES = Object.freeze({
@@ -231,18 +233,11 @@ async function declareCustoms(market,actor,reference,body={},database=db){
     if(STAGES.indexOf(s.stage)<STAGES.indexOf('arrived'))
       fail(409,'JOURNEY_CUSTOMS_ARRIVAL_REQUIRED','Constater arrivée avant déclaration');
     if(!s.customs_shipment_id)fail(409,'JOURNEY_CUSTOMS_LINK_REQUIRED','Dossier douane non lié');
-    const {rows:[customs]}=await client.query(
-      'SELECT id,status,is_active,customs_paid_kmf FROM customs_shipments WHERE id=$1 AND market_id=$2 FOR UPDATE',
-      [s.customs_shipment_id,market.id]);
-    if(!customs?.is_active)fail(409,'JOURNEY_CUSTOMS_INACTIVE','Dossier douane inactif');
-    if(customs.customs_paid_kmf!=null)
-      fail(409,'JOURNEY_CUSTOMS_AMOUNT_IMMUTABLE','Droits déjà déclarés : correction documentée nécessaire');
-    const {rows:[legacy]}=await client.query(
-      'SELECT COUNT(*)::int AS n FROM customs_shipment_parcels WHERE shipment_id=$1',[customs.id]);
-    if(Number(legacy.n)>0)fail(409,'JOURNEY_CUSTOMS_LEGACY_MEMBERSHIP','Dossier douane non canonique');
-    await client.query(
-      "UPDATE customs_shipments SET customs_paid_kmf=$3,status='declared',declared_at=now(),declared_by=$4 WHERE id=$1 AND market_id=$2",
-      [customs.id,market.id,amount,String(actor.id)]);
+    try{
+      await customsService.declareInternationalCustomsAmount(client,{
+        shipmentId:s.customs_shipment_id,marketId:market.id,amountKmf:amount,actorId:actor.id,
+      });
+    }catch(e){throw toJourneyError(e);}
     await evidence(client,s,'customs_amount_confirmed',actor,proof,s.stage,s.stage,{amount_kmf:amount});
     return {reference:s.reference,amount_kmf:amount,customs_status:'declared'};
   });
