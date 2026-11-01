@@ -208,8 +208,10 @@
       if(s.stage==='relay_received'&&!s.financial_closed_at)
         task(doc,ctx,dossier,{
           title:'Clôturer économiquement l’expédition (après toutes les factures)',
-          action:ref+'/reconcile-costs',fields:[proof],
-          transform:raw=>({...raw,close:true}),
+          action:ref+'/reconcile-costs',
+          fields:[{name:'complete_attested',label:'Toutes les factures et absences de frais ont été vérifiées',required:true,
+            options:[['','Sélectionnez'],['yes','Oui, dossier de frais complet']]},proof],
+          transform:raw=>({...raw,complete_attested:raw.complete_attested==='yes',close:true}),
         });
     }
     const step=nextStage(s);
