@@ -99,48 +99,6 @@ async function open(market,actor,input={},database=db){
     return {reference:s.reference,stage:'hub_ready',hub_draft:true,hub_units:boxes.length};
   });
 }
-async function create(market,actor,input={},database=db){
-  marketOk(market);actorOk(actor,['admin']);
-  const reference=ref(input.reference),forwarder=str(input.forwarder_name,'forwarder_name');
-  const mode=str(input.transport_mode,'transport_mode',10);
-  if(!['sea','air'].includes(mode))fail(400,'JOURNEY_MODE_INVALID','Transport maritime ou aérien requis');
-  const refs=Array.isArray(input.parcel_refs)?input.parcel_refs.map(x=>ref(x,'parcel_ref')):[];
-  // KOM-BOX physiques du Hub (table de liaison migration 358) ; parcel_refs reste le chemin historique.
-  const hubUnitIds=Array.isArray(input.hub_unit_ids)?input.hub_unit_ids.map(x=>String(x||'').trim()):[];
-  if(refs.length>500||hubUnitIds.length>500||new Set(refs).size!==refs.length||new Set(hubUnitIds).size!==hubUnitIds.length||(!refs.length&&!hubUnitIds.length))
-    fail(400,'JOURNEY_PARCELS_REQUIRED','Un à 500 colis ou cartons KOM-BOX uniques requis');
-  const proof=str(input.proof_ref,'proof_ref',240),volume=number(input.volume_m3,'volume_m3',{positive:true,scale:5});
-  const rate=number(input.freight_rate_kmf_per_m3,'freight_rate_kmf_per_m3');
-  const eta=date(input.estimated_arrival_date);
-  if(rate!=null&&mode!=='sea')fail(400,'JOURNEY_SEA_RATE_ONLY','Tarif au m³ réservé au maritime');
-  return transact(database,async client=>{
-    let boxes=[];
-    try{boxes=await boxShipment.lockAttachableBoxes(client,{marketId:market.id,unitIds:hubUnitIds});}
-    catch(e){throw toJourneyError(e);}
-    const {rows:parcels}=refs.length?await client.query(
-      "SELECT p.id,p.reference,p.status,p.volume_cm3 FROM parcels p JOIN orders o ON o.id=p.order_id WHERE o.market_id=$1 AND p.reference=ANY($2::text[]) AND p.status IN ('collected','shipped','in_transit') FOR UPDATE OF p",
-      [market.id,refs]
-    ):{rows:[]};
-    if(parcels.length!==refs.length)fail(409,'JOURNEY_PARCELS_NOT_READY','Colis absents, hors marché ou non prêts');
-    const {rows:used}=parcels.length?await client.query(
-      'SELECT parcel_id FROM international_shipment_parcels WHERE parcel_id=ANY($1::uuid[]) LIMIT 1',
-      [parcels.map(p=>p.id)]
-    ):{rows:[]};
-    if(used.length)fail(409,'JOURNEY_PARCEL_ALREADY_ASSIGNED','Colis déjà intégré à un transport');
-    const {rows:[s]}=await client.query(
-      'INSERT INTO international_shipments (market_id,reference,forwarder_name,transport_mode,volume_m3,freight_rate_kmf_per_m3,estimated_arrival_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7::date,$8) RETURNING *',
-      [market.id,reference,forwarder,mode,volume,rate,eta,String(actor.id)]
-    );
-    for(const p of parcels)await client.query(
-      'INSERT INTO international_shipment_parcels (shipment_id,parcel_id,volume_cm3) VALUES($1,$2,$3)',
-      [s.id,p.id,p.volume_cm3??null]
-    );
-    try{await boxShipment.insertBoxLinks(client,{shipmentId:s.id,units:boxes,actor});}
-    catch(e){throw toJourneyError(boxShipment.translate(e));}
-    await evidence(client,s,'created',actor,proof,null,'hub_ready',{parcel_refs:refs,hub_units:boxes.map(b=>({id:b.id,reference:b.reference})),volume_m3:volume,rate});
-    return {reference:s.reference,stage:s.stage,parcels:refs.length,hub_units:boxes.length};
-  });
-}
 async function transition(market,actor,reference,body={},database=db){
   marketOk(market);
   const target=str(body.to_stage,'to_stage',40),roles=STAGE_ROLES[target];
@@ -243,14 +201,50 @@ async function linkCustoms(market,actor,reference,body={},database=db){
       'SELECT id FROM customs_shipments WHERE reference=$1 AND market_id=$2 AND is_active=TRUE',
       [customsRef,market.id]);
     if(!c)fail(404,'JOURNEY_CUSTOMS_NOT_FOUND','Dossier douane actif absent sur ce marché');
-    const {rows:[diff]}=await client.query(
-      'SELECT COUNT(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM international_shipment_parcels ip WHERE ip.shipment_id=$2 AND ip.parcel_id=cp.parcel_id))::int AS n, COUNT(*)::int AS total FROM customs_shipment_parcels cp WHERE cp.shipment_id=$1',
-      [c.id,s.id]);
-    if(diff.n>0||!diff.total)fail(409,'JOURNEY_CUSTOMS_PARCEL_MISMATCH','Dossier douane vide ou contenant des colis hors transport');
+    if(STAGES.indexOf(s.stage)<STAGES.indexOf('arrived'))
+      fail(409,'JOURNEY_CUSTOMS_ARRIVAL_REQUIRED','Liaison douane après arrivée constatée');
+    const {rows:[scope]}=await client.query(
+      "SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE u.market_id IS DISTINCT FROM $2 OR u.outcome_type IS NOT NULL)::int AS bad "+
+      "FROM international_shipment_hub_units h JOIN hub_physical_units u ON u.id=h.physical_unit_id WHERE h.shipment_id=$1",
+      [s.id,market.id]);
+    if(!scope||!Number(scope.total)||Number(scope.bad)>0)
+      fail(409,'JOURNEY_CUSTOMS_BOX_SCOPE','Aucun KOM-BOX valide du marché dans le dossier');
+    const {rows:[legacy]}=await client.query(
+      'SELECT COUNT(*)::int AS n FROM customs_shipment_parcels WHERE shipment_id=$1',[c.id]);
+    if(Number(legacy.n)>0)
+      fail(409,'JOURNEY_CUSTOMS_LEGACY_MEMBERSHIP','Dossier douane sur anciens colis : utiliser le flux KOM-BOX sans double modèle');
     await client.query('UPDATE international_shipments SET customs_shipment_id=$3,updated_at=now() WHERE id=$1 AND market_id=$2',
       [s.id,market.id,c.id]);
     await evidence(client,s,'customs_linked',actor,proof,s.stage,s.stage,{customs_reference:customsRef});
     return {reference:s.reference,customs_reference:customsRef};
+  });
+}
+// The canonical Hub flow declares the customs amount against its shipment dossier.
+// Unlike the legacy parcel-based declaration, it does not write item allocations.
+async function declareCustoms(market,actor,reference,body={},database=db){
+  marketOk(market);actorOk(actor,['admin']);
+  const amount=number(body.amount_kmf,'amount_kmf');
+  if(amount===null)fail(400,'JOURNEY_CUSTOMS_AMOUNT_REQUIRED','Droits/taxes connus requis : zéro confirmé accepté');
+  const proof=str(body.proof_ref,'proof_ref',240);
+  return transact(database,async client=>{
+    const s=await get(client,market,reference,true);
+    if(STAGES.indexOf(s.stage)<STAGES.indexOf('arrived'))
+      fail(409,'JOURNEY_CUSTOMS_ARRIVAL_REQUIRED','Constater arrivée avant déclaration');
+    if(!s.customs_shipment_id)fail(409,'JOURNEY_CUSTOMS_LINK_REQUIRED','Dossier douane non lié');
+    const {rows:[customs]}=await client.query(
+      'SELECT id,status,is_active,customs_paid_kmf FROM customs_shipments WHERE id=$1 AND market_id=$2 FOR UPDATE',
+      [s.customs_shipment_id,market.id]);
+    if(!customs?.is_active)fail(409,'JOURNEY_CUSTOMS_INACTIVE','Dossier douane inactif');
+    if(customs.customs_paid_kmf!=null)
+      fail(409,'JOURNEY_CUSTOMS_AMOUNT_IMMUTABLE','Droits déjà déclarés : correction documentée nécessaire');
+    const {rows:[legacy]}=await client.query(
+      'SELECT COUNT(*)::int AS n FROM customs_shipment_parcels WHERE shipment_id=$1',[customs.id]);
+    if(Number(legacy.n)>0)fail(409,'JOURNEY_CUSTOMS_LEGACY_MEMBERSHIP','Dossier douane non canonique');
+    await client.query(
+      "UPDATE customs_shipments SET customs_paid_kmf=$3,status='declared',declared_at=now(),declared_by=$4 WHERE id=$1 AND market_id=$2",
+      [customs.id,market.id,amount,String(actor.id)]);
+    await evidence(client,s,'customs_amount_confirmed',actor,proof,s.stage,s.stage,{amount_kmf:amount});
+    return {reference:s.reference,amount_kmf:amount,customs_status:'declared'};
   });
 }
 async function recordCost(market,actor,reference,body={},database=db){
@@ -299,19 +293,26 @@ async function recordCost(market,actor,reference,body={},database=db){
 async function list(market,database=db){
   marketOk(market);
   const {rows}=await database.query(
-    "SELECT s.*, (SELECT COUNT(*)::int FROM international_shipment_parcels ip WHERE ip.shipment_id=s.id) AS parcel_count, (SELECT COUNT(*)::int FROM international_shipment_hub_units hu WHERE hu.shipment_id=s.id) AS hub_unit_count, (SELECT COALESCE(SUM(CASE WHEN c.kind='credit' THEN -c.amount_kmf ELSE c.amount_kmf END),0) FROM international_shipment_charges c WHERE c.shipment_id=s.id) AS supplementary_costs_kmf, cs.reference AS customs_reference, cs.customs_paid_kmf,cs.status AS customs_status, CASE WHEN n1.shipment_id IS NULL THEN 'not_reconciled' WHEN n1.reconciled_at < GREATEST(s.updated_at, COALESCE(latest_cost.last_at,s.updated_at)) THEN 'pending_reconciliation' WHEN n1.freight_known = false THEN 'partial_reconciliation' ELSE 'reconciled' END AS cost_reconciliation, CASE WHEN n1.shipment_id IS NOT NULL AND n1.reconciled_at >= GREATEST(s.updated_at, COALESCE(latest_cost.last_at,s.updated_at)) THEN n1.total_freight_kmf+n1.total_arrival_kmf+n1.total_local_kmf ELSE NULL END AS actual_n1_impact FROM international_shipments s LEFT JOIN customs_shipments cs ON cs.id=s.customs_shipment_id AND cs.market_id=s.market_id LEFT JOIN international_n1_reconciliations n1 ON n1.shipment_id=s.id LEFT JOIN LATERAL (SELECT MAX(c.recorded_at) AS last_at FROM international_shipment_charges c WHERE c.shipment_id=s.id) latest_cost ON TRUE WHERE s.market_id=$1 ORDER BY s.created_at DESC LIMIT 100",
-    [market.id]
+    "SELECT s.*, (SELECT COUNT(*)::int FROM international_shipment_hub_units hu WHERE hu.shipment_id=s.id) AS hub_unit_count, "+
+    "(SELECT COALESCE(SUM(CASE WHEN c.kind='credit' THEN -c.amount_kmf ELSE c.amount_kmf END),0) FROM international_shipment_charges c WHERE c.shipment_id=s.id) AS supplementary_costs_kmf, "+
+    "cs.reference AS customs_reference,cs.customs_paid_kmf,cs.status AS customs_status, "+
+    "n1.documented_total_kmf,n1.total_customs_kmf,n1.financial_closed_at, "+
+    "CASE WHEN n1.shipment_id IS NULL THEN 'not_reconciled' "+
+    "WHEN n1.reconciled_at < GREATEST(s.updated_at,COALESCE(latest_cost.last_at,s.updated_at),COALESCE(cs.declared_at,s.updated_at)) THEN 'pending_reconciliation' "+
+    "WHEN n1.financial_closed_at IS NOT NULL THEN 'closed' ELSE 'partial' END AS cost_reconciliation "+
+    "FROM international_shipments s LEFT JOIN customs_shipments cs ON cs.id=s.customs_shipment_id AND cs.market_id=s.market_id "+
+    "LEFT JOIN international_n1_reconciliations n1 ON n1.shipment_id=s.id "+
+    "LEFT JOIN LATERAL (SELECT MAX(c.recorded_at) AS last_at FROM international_shipment_charges c WHERE c.shipment_id=s.id) latest_cost ON TRUE "+
+    "WHERE s.market_id=$1 ORDER BY s.created_at DESC LIMIT 100",[market.id]
   );
-  return rows.map(r=>({...r,
-    freight_estimated_kmf:r.transport_mode==='sea'&&r.volume_m3!=null&&r.freight_rate_kmf_per_m3!=null
-      ?(Number(r.volume_m3)*Number(r.freight_rate_kmf_per_m3)).toFixed(2):null,
-    cost_reconciliation:r.cost_reconciliation||'not_reconciled',actual_n1_impact:r.actual_n1_impact??null}));
+  return rows.map(r=>({...r,freight_estimated_kmf:
+    r.transport_mode==='sea'&&r.volume_m3!=null&&r.freight_rate_kmf_per_m3!=null
+      ?(Number(r.volume_m3)*Number(r.freight_rate_kmf_per_m3)).toFixed(2):null}));
 }
 async function detail(market,reference,database=db){
   marketOk(market);
   const s=await get(database,market,reference);
-  const [parcels,events,charges,hubRows]=await Promise.all([
-    database.query('SELECT p.reference,p.status,ip.volume_cm3 FROM international_shipment_parcels ip JOIN parcels p ON p.id=ip.parcel_id WHERE ip.shipment_id=$1 ORDER BY p.reference',[s.id]),
+  const [events,charges,hubRows,snapshot]=await Promise.all([
     database.query('SELECT event_type,from_stage,to_stage,proof_ref,occurred_at,actor_id,notes FROM international_shipment_events WHERE shipment_id=$1 ORDER BY occurred_at,id',[s.id]),
     database.query('SELECT fee_type,kind,amount_kmf,proof_ref,recorded_at,notes FROM international_shipment_charges WHERE shipment_id=$1 ORDER BY recorded_at,id',[s.id]),
     database.query(`SELECT u.id AS unit_id,u.reference,u.state,h.attached_at,a.purchase_order_id,a.purchase_line_id,a.product_sku_id,o.reference AS order_ref,p.quantity
@@ -319,18 +320,14 @@ async function detail(market,reference,database=db){
       LEFT JOIN hub_physical_unit_placements p ON p.physical_unit_id=u.id AND p.removed_at IS NULL
       LEFT JOIN hub_purchase_allocations a ON a.id=p.allocation_id LEFT JOIN orders o ON o.id=a.order_id
       WHERE h.shipment_id=$1 ORDER BY u.reference,o.reference`,[s.id]),
+    database.query('SELECT documented_total_kmf,financial_closed_at,reconciled_at,total_freight_kmf,total_customs_kmf,total_arrival_kmf,total_local_kmf FROM international_n1_reconciliations WHERE shipment_id=$1',[s.id]),
   ]);
   const boxes=new Map();
   for(const r of hubRows.rows){
     if(!boxes.has(r.unit_id))boxes.set(r.unit_id,{unit_id:r.unit_id,reference:r.reference,state:r.state,attached_at:r.attached_at,contents:[]});
     if(r.order_ref)boxes.get(r.unit_id).contents.push({order_ref:r.order_ref,purchase_order_id:r.purchase_order_id,purchase_line_id:r.purchase_line_id,product_sku_id:r.product_sku_id,quantity:Number(r.quantity)});
   }
-  const {rows:[n1]}=await database.query(
-    "SELECT CASE WHEN r.shipment_id IS NULL THEN 'not_reconciled' WHEN r.reconciled_at < GREATEST(s.updated_at,COALESCE((SELECT MAX(c.recorded_at) FROM international_shipment_charges c WHERE c.shipment_id=s.id),s.updated_at)) THEN 'pending_reconciliation' WHEN r.freight_known=false THEN 'partial_reconciliation' ELSE 'reconciled' END AS cost_reconciliation, CASE WHEN r.shipment_id IS NULL THEN NULL ELSE r.total_freight_kmf+r.total_arrival_kmf+r.total_local_kmf END AS actual_n1_impact FROM international_shipments s LEFT JOIN international_n1_reconciliations r ON r.shipment_id=s.id WHERE s.id=$1 AND s.market_id=$2",
-    [s.id,market.id]
-  );
-  return {shipment:{...s,cost_reconciliation:n1?.cost_reconciliation||'not_reconciled',
-    actual_n1_impact:n1?.actual_n1_impact??null},parcels:parcels.rows,hub_units:[...boxes.values()],events:events.rows,charges:charges.rows};
+  return {shipment:{...s,...(snapshot.rows[0]||{})},hub_units:[...boxes.values()],events:events.rows,charges:charges.rows};
 }
-module.exports={STAGES,STAGE_ROLES,FEE_TYPES,JourneyError,create,open,transition,updateTracking,recordFreight,linkCustoms,recordCost,list,detail,
+module.exports={STAGES,STAGE_ROLES,FEE_TYPES,JourneyError,open,transition,updateTracking,recordFreight,linkCustoms,declareCustoms,recordCost,list,detail,
   _internals:{ref,date,number,actorOk}};
