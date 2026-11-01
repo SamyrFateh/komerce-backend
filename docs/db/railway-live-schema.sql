@@ -1493,6 +1493,44 @@ $$;
 
 
 --
+-- Name: guard_international_n1_against_legacy_duplicate(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_international_n1_against_legacy_duplicate() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_TABLE_NAME = 'customs_shipments' THEN
+    IF NEW.freight_kmf IS NOT NULL AND NEW.freight_kmf > 0 AND EXISTS (
+      SELECT 1 FROM public.international_shipments s
+      JOIN public.international_n1_reconciliations n ON n.shipment_id=s.id
+      WHERE s.customs_shipment_id=NEW.id AND s.freight_invoice_kmf > 0
+    ) THEN
+      RAISE EXCEPTION 'INTERNATIONAL_N1_DUPLICATE_FREIGHT'
+        USING ERRCODE='check_violation';
+    END IF;
+  ELSIF TG_TABLE_NAME = 'customs_shipment_fees' THEN
+    IF EXISTS (
+      SELECT 1 FROM public.international_shipments s
+      JOIN public.international_n1_reconciliations n ON n.shipment_id=s.id
+      WHERE s.customs_shipment_id=NEW.shipment_id
+        AND (
+          EXISTS (SELECT 1 FROM public.international_shipment_charges c
+                  WHERE c.shipment_id=s.id AND
+                    (c.fee_type=NEW.fee_type OR lower(btrim(c.proof_ref))=lower(btrim(NEW.proof_ref))))
+          OR lower(btrim(COALESCE(s.freight_invoice_ref,'')))=lower(btrim(NEW.proof_ref))
+        )
+    ) THEN
+      RAISE EXCEPTION 'INTERNATIONAL_N1_DUPLICATE_FEE'
+        USING ERRCODE='check_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: hub_guard_allocation_purchase_line(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5786,6 +5824,54 @@ COMMENT ON COLUMN public.inquiries.intent IS 'Intention publique Komerce : reque
 --
 
 COMMENT ON COLUMN public.inquiries.requester_note IS 'Précision libre facultative du demandeur, 600 caractères maximum. Elle enrichit la cible et ne la remplace jamais.';
+
+
+--
+-- Name: international_n1_allocation_links; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.international_n1_allocation_links (
+    allocation_id uuid NOT NULL,
+    shipment_id uuid NOT NULL,
+    component text NOT NULL,
+    fee_type text DEFAULT ''::text NOT NULL,
+    parcel_id uuid NOT NULL,
+    order_item_id uuid NOT NULL,
+    CONSTRAINT international_n1_allocation_links_component_check CHECK ((component = ANY (ARRAY['freight'::text, 'port_transitaire'::text, 'local_distribution'::text])))
+);
+
+
+--
+-- Name: TABLE international_n1_allocation_links; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.international_n1_allocation_links IS 'Ownership of N1 allocations by international freight/fee projection; legacy customs allocator must not delete these rows.';
+
+
+--
+-- Name: international_n1_reconciliations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.international_n1_reconciliations (
+    shipment_id uuid NOT NULL,
+    snapshot_hash text NOT NULL,
+    total_freight_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    freight_known boolean DEFAULT false NOT NULL,
+    total_arrival_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    total_local_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    allocation_rows integer DEFAULT 0 NOT NULL,
+    actor_id text NOT NULL,
+    reconciled_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT international_n1_reconciliations_allocation_rows_check CHECK ((allocation_rows >= 0)),
+    CONSTRAINT international_n1_reconciliations_snapshot_hash_check CHECK ((length(snapshot_hash) = 64))
+);
+
+
+--
+-- Name: TABLE international_n1_reconciliations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.international_n1_reconciliations IS 'Idempotent source snapshot of actual international N1; never forecasts or N3.';
 
 
 --
@@ -12597,6 +12683,22 @@ ALTER TABLE ONLY public.inquiries
 
 
 --
+-- Name: international_n1_allocation_links international_n1_allocation_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_n1_allocation_links
+    ADD CONSTRAINT international_n1_allocation_links_pkey PRIMARY KEY (allocation_id);
+
+
+--
+-- Name: international_n1_reconciliations international_n1_reconciliations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_n1_reconciliations
+    ADD CONSTRAINT international_n1_reconciliations_pkey PRIMARY KEY (shipment_id);
+
+
+--
 -- Name: international_shipment_charges international_shipment_charges_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14005,6 +14107,14 @@ ALTER TABLE ONLY public.international_shipments
 
 
 --
+-- Name: international_n1_allocation_links uq_international_n1_share; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_n1_allocation_links
+    ADD CONSTRAINT uq_international_n1_share UNIQUE (shipment_id, component, fee_type, parcel_id, order_item_id);
+
+
+--
 -- Name: international_shipment_parcels uq_international_parcel; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -15015,6 +15125,13 @@ CREATE INDEX idx_international_charges_shipment ON public.international_shipment
 --
 
 CREATE INDEX idx_international_events_shipment ON public.international_shipment_events USING btree (shipment_id, occurred_at DESC);
+
+
+--
+-- Name: idx_international_n1_links_shipment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_international_n1_links_shipment ON public.international_n1_allocation_links USING btree (shipment_id);
 
 
 --
@@ -17762,6 +17879,20 @@ CREATE TRIGGER fx_rate_observations_no_truncate BEFORE TRUNCATE ON public.fx_rat
 
 
 --
+-- Name: customs_shipment_fees guard_customs_fee_after_international_n1; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER guard_customs_fee_after_international_n1 BEFORE INSERT ON public.customs_shipment_fees FOR EACH ROW EXECUTE FUNCTION public.guard_international_n1_against_legacy_duplicate();
+
+
+--
+-- Name: customs_shipments guard_customs_freight_after_international_n1; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER guard_customs_freight_after_international_n1 BEFORE UPDATE OF freight_kmf ON public.customs_shipments FOR EACH ROW EXECUTE FUNCTION public.guard_international_n1_against_legacy_duplicate();
+
+
+--
 -- Name: international_shipment_charges international_charges_immutable; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -19563,6 +19694,46 @@ ALTER TABLE ONLY public.inquiries
 
 ALTER TABLE ONLY public.inquiries
     ADD CONSTRAINT inquiries_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id) ON DELETE CASCADE;
+
+
+--
+-- Name: international_n1_allocation_links international_n1_allocation_links_allocation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_n1_allocation_links
+    ADD CONSTRAINT international_n1_allocation_links_allocation_id_fkey FOREIGN KEY (allocation_id) REFERENCES public.order_item_real_cost_allocations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: international_n1_allocation_links international_n1_allocation_links_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_n1_allocation_links
+    ADD CONSTRAINT international_n1_allocation_links_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id);
+
+
+--
+-- Name: international_n1_allocation_links international_n1_allocation_links_parcel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_n1_allocation_links
+    ADD CONSTRAINT international_n1_allocation_links_parcel_id_fkey FOREIGN KEY (parcel_id) REFERENCES public.parcels(id);
+
+
+--
+-- Name: international_n1_allocation_links international_n1_allocation_links_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_n1_allocation_links
+    ADD CONSTRAINT international_n1_allocation_links_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_n1_reconciliations international_n1_reconciliations_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_n1_reconciliations
+    ADD CONSTRAINT international_n1_reconciliations_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
 
 
 --
