@@ -26,11 +26,10 @@ const OPS_WORKSPACE = {
   distribution: { unassigned: [] },
   inventory: { items: [], open_parcels: [] },
 };
-const OPS_SURFACES = new Set(['Hub & Relais', 'Hub live · Exécution']);
+const OPS_SURFACES = new Set(['Hub live · Exécution']);
 
 const SHELL_SURFACES = [
   ['Prix & économie', '/admin/workspaces/pricing'],
-  ['Hub & Relais', '/admin/workspaces/operations'],
   ['Expéditions & Douane', '/admin/workspaces/shipping-customs'],
   ['Comptabilité', '/admin/workspaces/accounting'],
   ['Hub live · Exécution', '/admin/hub-live?view=execute'],

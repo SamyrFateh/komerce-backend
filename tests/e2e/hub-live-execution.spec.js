@@ -238,9 +238,9 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
   });
 }
 
-test.describe('L9c — parité Hub live / workspace Hub & Relais', () => {
+test.describe('L9c — Hub live Exécution (l’ancien workspace Hub & Relais est retiré)', () => {
   test.use({ viewport: { width: 1536, height: 1024 } });
-  test('Hub live Exécution propose tous les gestes Hub ; le workspace les lit sans bouton et renvoie vers Hub live', async ({ page }) => {
+  test('Hub live Exécution propose tous les gestes Hub', async ({ page }) => {
     await mount(page);
     for (const action of ['mark-ordered', 'run-distribution', 'ship']) await expect(page.locator(`[data-workspace-action="${action}"]`)).toHaveCount(1);
     await page.locator('[data-workspace-view="inventory"]').click();
@@ -248,16 +248,9 @@ test.describe('L9c — parité Hub live / workspace Hub & Relais', () => {
     await page.locator('[data-workspace-view="reception"]').click();
     await expect(page.locator('[data-workspace-action="receive-supplier"]')).toHaveCount(1);
   });
-  test('workspace : onglets Hub et Stock en lecture seule, lien Exécuter dans Hub live avec le marché, Relais inchangé', async ({ page }) => {
-    await mount(page, { pilot: true });
-    await expect(page.locator('[data-workspace-action="mark-ordered"], [data-workspace-action="run-distribution"], [data-workspace-action="ship"]')).toHaveCount(0);
-    await expect(page.locator('[data-action="open-hub-live"]')).toHaveAttribute('href', '/admin/hub-live?view=execute&market=KM');
-    await expect(page.getByText('K-ORDER-1')).toBeVisible();
-    await page.locator('[data-workspace-view="inventory"]').click();
-    await expect(page.locator('[data-workspace-action="assign-inventory"]')).toHaveCount(0);
-    await expect(page.locator('[data-action="open-hub-live"]')).toHaveCount(1);
-    await page.locator('[data-workspace-view="relay"]').click();
-    for (const action of ['confirm-cash', 'receive', 'collect']) await expect(page.locator(`[data-workspace-action="${action}"]`)).toHaveCount(1);
-    await expect(page.locator('[data-action="open-hub-live"]')).toHaveCount(0);
+  test('l’ancien écran Hub & Relais redirige vers Hub live · Exécution en gardant le marché', async ({ page }) => {
+    await mount(page);
+    await page.goto(`${ORIGIN}/admin/workspaces/operations?market=KM`);
+    await expect(page).toHaveURL(/\/admin\/hub-live\?view=execute&market=KM$/);
   });
 });

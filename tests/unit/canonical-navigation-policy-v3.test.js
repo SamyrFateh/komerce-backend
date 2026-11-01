@@ -52,7 +52,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(domainIds(nav, 'finance')).toEqual(['finance']);
     expect(domainIds(nav, 'sourcing')).toEqual(['live']);
     expect(domainIds(nav, 'agent_hub')).toEqual(['operations', 'live']);
-    expect(domainIds(nav, 'agent_relais')).toEqual(['operations', 'live', 'finance']);
+    expect(domainIds(nav, 'agent_relais')).toEqual(['live']);
     expect(domainIds(nav, 'agent_transitaire')).toEqual(['operations']);
     expect(domainIds(nav, 'support')).toEqual([]);
     for (const role of ['finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']) {
@@ -63,19 +63,17 @@ describe('Canonical Navigation Policy V3.1', () => {
   test('N2 Opérations reflète exactement les guards de lecture serveur', () => {
     const nav = loadPolicy();
     expect(spaceIds(nav, 'operations', 'admin')).toEqual([
-      'operations-overview', 'operations-workspace', 'shipping-customs-workspace', 'purchasing-workspace',
+      'operations-overview', 'shipping-customs-workspace', 'purchasing-workspace',
     ]);
     expect(spaceIds(nav, 'live', 'admin')).toEqual(['import-runtime', 'hub-live', 'relais-live']);
     expect(spaceIds(nav, 'live', 'sourcing')).toEqual(['import-runtime']);
     expect(spaceIds(nav, 'live', 'agent_hub')).toEqual(['hub-live']);
     expect(spaceIds(nav, 'live', 'agent_relais')).toEqual(['relais-live']);
     expect(spaceIds(nav, 'operations', 'market_operator')).toEqual([
-      'operations-overview', 'operations-workspace', 'shipping-customs-workspace',
+      'operations-overview', 'hub-execution', 'relais-execution', 'shipping-customs-workspace',
     ]);
-    expect(spaceIds(nav, 'operations', 'agent_hub')).toEqual([
-      'operations-workspace', 'shipping-customs-workspace',
-    ]);
-    expect(spaceIds(nav, 'operations', 'agent_relais')).toEqual(['operations-workspace']);
+    expect(spaceIds(nav, 'operations', 'agent_hub')).toEqual(['shipping-customs-workspace']);
+    expect(spaceIds(nav, 'operations', 'agent_relais')).toEqual([]);
     expect(spaceIds(nav, 'operations', 'agent_transitaire')).toEqual(['shipping-customs-workspace']);
     expect(spaceIds(nav, 'operations', 'sourcing')).toEqual([]);
   });
@@ -84,8 +82,8 @@ describe('Canonical Navigation Policy V3.1', () => {
     const nav = loadPolicy();
     expect(spaceIds(nav, 'finance', 'admin')).toEqual(['finance-overview', 'accounting-workspace']);
     expect(spaceIds(nav, 'finance', 'market_operator')).toEqual(['finance-overview', 'accounting-workspace']);
-    expect(spaceIds(nav, 'finance', 'finance')).toEqual(['accounting-workspace']);
-    expect(spaceIds(nav, 'finance', 'agent_relais')).toEqual(['accounting-workspace']);
+    expect(spaceIds(nav, 'finance', 'finance')).toEqual(['accounting-workspace', 'cash-deposits']);
+    expect(spaceIds(nav, 'finance', 'agent_relais')).toEqual([]);
   });
 
   test('les landings de domaines spécialisés ne pointent jamais vers une surface interdite', () => {
@@ -95,11 +93,11 @@ describe('Canonical Navigation Policy V3.1', () => {
     const live = nav.DOMAINS.find(item => item.id === 'live');
     expect(nav.landingForDomain(live, { role: 'sourcing' })).toBe('/admin/import-runtime');
     expect(nav.landingForDomain(operations, { role: 'sourcing' })).toBeNull();
-    expect(nav.landingForDomain(operations, { role: 'agent_hub' })).toBe('/admin/workspaces/operations');
-    expect(nav.landingForDomain(operations, { role: 'agent_relais' })).toBe('/admin/workspaces/operations');
+    expect(nav.landingForDomain(operations, { role: 'agent_hub' })).toBe('/admin/workspaces/shipping-customs');
+    expect(nav.landingForDomain(live, { role: 'agent_hub' })).toBe('/admin/hub-live');
+    expect(nav.landingForDomain(live, { role: 'agent_relais' })).toBe('/admin/relais-live');
     expect(nav.landingForDomain(operations, { role: 'agent_transitaire' })).toBe('/admin/workspaces/shipping-customs');
     expect(nav.landingForDomain(finance, { role: 'finance' })).toBe('/admin/workspaces/accounting');
-    expect(nav.landingForDomain(finance, { role: 'agent_relais' })).toBe('/admin/workspaces/accounting');
   });
 
   test('les landings générales correspondent au premier vrai espace métier', () => {
@@ -108,8 +106,8 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(nav.defaultLandingFor({ role: 'market_operator' })).toBe('/admin/pilotage');
     expect(nav.defaultLandingFor({ role: 'finance' })).toBe('/admin/workspaces/accounting');
     expect(nav.defaultLandingFor({ role: 'sourcing' })).toBe('/admin/import-runtime');
-    expect(nav.defaultLandingFor({ role: 'agent_hub' })).toBe('/admin/workspaces/operations');
-    expect(nav.defaultLandingFor({ role: 'agent_relais' })).toBe('/admin/workspaces/operations');
+    expect(nav.defaultLandingFor({ role: 'agent_hub' })).toBe('/admin/hub-live');
+    expect(nav.defaultLandingFor({ role: 'agent_relais' })).toBe('/admin/relais-live');
     expect(nav.defaultLandingFor({ role: 'agent_transitaire' })).toBe('/admin/workspaces/shipping-customs');
     expect(nav.defaultLandingFor({ role: 'support' })).toBe('/portail');
     expect(nav.defaultLandingFor({ role: 'unknown' })).toBe('/');

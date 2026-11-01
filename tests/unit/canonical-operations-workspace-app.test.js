@@ -57,7 +57,7 @@ function loadApp() {
   };
   global.document = document;
   global.window = {
-    location: { pathname: '/admin/workspaces/operations', search: '', hash: '', replace: jest.fn() },
+    location: { pathname: '/admin/relais-live', search: '?view=execute', hash: '', replace: jest.fn() },
     fetch: jest.fn(),
     document,
     Intl,
@@ -101,7 +101,7 @@ test('central ne reçoit jamais Global dans un Workspace : aucun marché implici
     },
   };
 
-  await env.api.renderOperationsWorkspaceShell(env.root, user, context);
+  await env.api.renderRelayLive(env.root, user, context);
 
   const bar = env.root.children[0];
   const surface = env.root.children[1];
@@ -137,7 +137,7 @@ test('opérateur CM ne peut pas falsifier CG dans le sélecteur Workspace', asyn
   };
   const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-  await env.api.renderOperationsWorkspaceShell(env.root, user, context);
+  await env.api.renderRelayLive(env.root, user, context);
   const select = env.root.children[0].children[1].children[1];
   expect(select.children.map(option => option.value)).toEqual(['CM']);
   expect(env.workspaceMount).toHaveBeenCalledTimes(1);
@@ -148,4 +148,15 @@ test('opérateur CM ne peut pas falsifier CG dans le sélecteur Workspace', asyn
   expect(env.workspaceMount).toHaveBeenCalledTimes(1);
   expect(select.value).toBe('CM');
   errorSpy.mockRestore();
+});
+
+test('l’ancien écran Hub & Relais redirige vers l’exécution Hub live / Relais live en gardant le marché', () => {
+  const env = loadApp();
+  env.window.location.pathname = '/admin/workspaces/operations';
+  env.window.location.search = '?market=CM';
+  expect(env.api.operationsWorkspaceTarget({ role: 'agent_relais' })).toBe('/admin/relais-live?view=execute&market=CM');
+  expect(env.api.operationsWorkspaceTarget({ role: 'admin' })).toBe('/admin/hub-live?view=execute&market=CM');
+  env.api.renderOperationsWorkspaceShell(env.root, { role: 'agent_hub' }, null);
+  expect(env.window.location.replace).toHaveBeenCalledWith('/admin/hub-live?view=execute&market=CM');
+  expect(env.workspaceMount).not.toHaveBeenCalled();
 });

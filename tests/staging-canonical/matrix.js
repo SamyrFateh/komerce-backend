@@ -22,7 +22,7 @@ const pages={
  finance:['/admin/workspaces/accounting'],
  sourcing:['/admin/import-runtime','/admin/workspaces/sourcing'],
  agent_hub:['/admin/workspaces/operations','/admin/workspaces/shipping-customs','/admin/hub-live'],
- agent_relais:['/admin/workspaces/operations','/admin/relais-live','/admin/workspaces/accounting'],
+ agent_relais:['/admin/workspaces/operations','/admin/relais-live'],
  agent_transitaire:['/admin/workspaces/shipping-customs']
 };
 const dimensions=['lifecycle PROVISIONING/ACTIVE/SUSPENDED/CLOSED','readiness et activation',

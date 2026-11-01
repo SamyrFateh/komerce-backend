@@ -130,7 +130,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
     expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients']);
     expect(labels('economy')).toEqual(['Prix & économie', 'Catalogue global']);
-    expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Achats fournisseurs']);
+    expect(labels('operations')).toEqual(['Vue opérations', 'Expéditions & Douane', 'Achats fournisseurs']);
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
       .toEqual(['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live']);
@@ -157,7 +157,8 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
       'entity-clients': 'client.read',
       'workspace-pricing': 'pricing.read',
       'flow-operations': 'operations.read',
-      'workspace-operations': 'operations.read',
+      'workspace-hub-exec': 'operations.read',
+      'workspace-relais-exec': 'operations.read',
       'workspace-shipping': 'operations.read',
       'flow-finance': 'finance.read',
       'workspace-accounting': 'finance.read',
@@ -208,7 +209,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
 
     const finance = nav.sidebarGroupsFor({ role: 'finance' }, null);
     expect(finance.map(group => group.id)).toEqual(['finance']);
-    expect(finance[0].items.map(item => item.id)).toEqual(['workspace-accounting']);
+    expect(finance[0].items.map(item => item.id)).toEqual(['workspace-accounting', 'workspace-cash']);
   });
 });
 

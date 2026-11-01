@@ -68,6 +68,13 @@ jest.mock('../../services/finance-accounting-workspace', () => {
   };
 });
 
+jest.mock('../../services/financial-journal-reporting', () => ({
+  projection: jest.fn(async () => ({ lines: [], journal_empty: true })),
+  listMovements: jest.fn(async () => ({ total: 0, rows: [] })),
+  listDocuments: jest.fn(async () => ({ documents: [], missing_documents: [] })),
+  reconcileWithSources: jest.fn(async () => ({ ok: true, checks: [] })),
+}));
+
 jest.mock('../../utils/logger', () => ({ child: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn() }) }));
 
 jest.mock('../../db', () => ({
@@ -434,4 +441,19 @@ describe('garde des espèces : réception, contrôle indépendant, décisions ce
     expect(res.body).toMatchObject({ code: 'custody_rule_violation' });
     expect(router._test.requireCentralAuthority).toBeInstanceOf(Function);
   });
+});
+
+test.each(['summary', 'movements', 'documents', 'reconciliation'])('journal %s : jamais exposé à un agent relais, même lié à son marché', async view => {
+  mockUserRole = 'agent_relais';
+  const res = await request(app()).get(`/api/admin/workspaces/accounting/market/CM/journal/${view}`);
+  expect(res.status).toBe(403);
+  expect(res.body.error).toMatch(/journal financier/);
+});
+
+test.each(['admin', 'finance'])('journal summary : %s autorisé avec une autorité serveur explicite', async role => {
+  mockUserRole = role;
+  mockGlobalAllowed = role === 'admin';
+  const res = await request(app()).get('/api/admin/workspaces/accounting/market/CM/journal/summary');
+  expect(res.status).toBe(200);
+  expect(res.body.journal_empty).toBe(true);
 });
