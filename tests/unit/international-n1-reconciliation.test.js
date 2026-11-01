@@ -117,5 +117,12 @@ test('source fee credit subtracts cost, never creates a negative N1 net',async()
     return original(sql,params);
   });
   const r=await reconcile(market,admin,'INT-KM-001',x.database);
-  expect(r).toMatchObject({actual_n1_kmf:'15.00',arrival_kmf:'15.00',local_kmf:'0.00'});
+  expect(r).toMatchObject({status:'partial_reconciliation',actual_n1_kmf:'15.00',arrival_kmf:'15.00',local_kmf:'0.00'});
+});
+
+test('unknown freight and no source charge can never become an actual zero',async()=>{
+  const x=fake({noFreight:true,noFees:true});
+  await expect(reconcile(market,admin,'INT-KM-001',x.database))
+    .rejects.toMatchObject({code:'INTERNATIONAL_N1_NO_REAL_FACTS'});
+  expect(x.allocations).toHaveLength(0);
 });
