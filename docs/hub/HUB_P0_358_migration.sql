@@ -15,7 +15,7 @@ ALTER TABLE public.purchase_orders
 ALTER TABLE public.purchase_orders DROP CONSTRAINT IF EXISTS chk_purchase_orders_sent_proof;
 ALTER TABLE public.purchase_orders ADD CONSTRAINT chk_purchase_orders_sent_proof CHECK (
   (sent_at IS NULL AND sent_channel IS NULL AND sent_by IS NULL)
-  OR (sent_at IS NOT NULL AND sent_channel IN ('email','whatsapp','phone','api','other'))
+  OR (sent_at IS NOT NULL AND sent_channel IS NOT NULL AND sent_channel IN ('email','whatsapp','phone','api','other'))
 );
 
 CREATE OR REPLACE FUNCTION public.purchase_orders_guard_sent_proof()
