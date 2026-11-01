@@ -27,6 +27,7 @@ function fixture(stage='hub_ready',other={}) {
     if(String(sql).includes('SELECT * FROM international_shipment_charges'))return {rows:[]};
     if(String(sql).includes('SELECT id FROM customs_shipment_fees'))return {rows:[]};
     if(String(sql).includes('AS net FROM international_shipment_charges'))return {rows:[{net:'100'}]};
+    if(String(sql).includes('COUNT(*)::int AS n FROM international_shipment_hub_boxes'))return {rows:[{n:0}]};
     if(String(sql).includes('RETURNING id'))return {rows:[{id:'cost-1'}]};
     return {rows:[]};
   })};
