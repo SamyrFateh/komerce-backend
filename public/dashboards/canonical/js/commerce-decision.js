@@ -511,6 +511,8 @@
       metricsHost.className = 'kmc-commerce-essential-metrics';
       ui.MetricStrip.render(metricsHost, { items: headline });
       activity.body.appendChild(metricsHost);
+      activity.body.appendChild(text(doc, 'p', 'kmc-decision-dashboard-section-copy kmc-commerce-revenue-definition',
+        'Chiffre d’affaires = commandes payées créées sur la période, avoir wallet inclus, hors annulées et remboursées. Ce n’est pas un encaissement de caisse.'));
     }
 
     const flowTitle = text(doc, 'h3', 'kmc-commerce-flow-title', 'Parcours des commandes');

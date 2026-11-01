@@ -13,3 +13,7 @@ test('Vue commerce : plus de carte « Dernières commandes » (dashboard de perf
   expect(src).not.toContain('commerce-recent-orders');
   expect(src).not.toContain('recentSection');
 });
+
+test('Vue commerce : la définition du chiffre d’affaires est explicite', () => {
+  expect(src).toContain('Chiffre d’affaires = commandes payées');
+});
